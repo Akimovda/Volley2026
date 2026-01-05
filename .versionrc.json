@@ -1,5 +1,5 @@
 {
-  "tagPrefix": "",
+  "tagPrefix": "v",
   "infile": "CHANGELOG.md",
   "types": [
     { "type": "feat", "section": "Features" },
@@ -19,3 +19,4 @@
     { "filename": "backend/package.json", "type": "json" }
   ]
 }
+
