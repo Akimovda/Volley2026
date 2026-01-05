@@ -23,6 +23,17 @@ jobs:
           path: CHANGELOG.md
           version: ${{ github.ref_name }}
 
+      # Fail hard if changelog section is missing or empty
+      - name: Validate CHANGELOG entry exists
+        shell: bash
+        run: |
+          if [ -z "${{ steps.changelog.outputs.changes }}" ]; then
+            echo "::error::No CHANGELOG entry found for tag '${{ github.ref_name }}'."
+            echo "Make sure CHANGELOG.md contains a section like:"
+            echo "## ${{ github.ref_name }}"
+            exit 1
+          fi
+
       - name: Create GitHub Release (from CHANGELOG)
         uses: softprops/action-gh-release@v2
         with:
