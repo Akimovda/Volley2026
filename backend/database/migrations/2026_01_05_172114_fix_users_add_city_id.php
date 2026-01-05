@@ -9,14 +9,18 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->foreignId('city_id')->nullable()->constrained('cities');
+            if (!Schema::hasColumn('users', 'city_id')) {
+                $table->foreignId('city_id')->nullable()->constrained('cities');
+            }
         });
     }
 
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->dropConstrainedForeignId('city_id');
+            if (Schema::hasColumn('users', 'city_id')) {
+                $table->dropConstrainedForeignId('city_id');
+            }
         });
     }
 };
