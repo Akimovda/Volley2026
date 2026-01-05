@@ -1,0 +1,142 @@
+<?php
+
+namespace App\Http\Controllers\Auth;
+
+use App\Http\Controllers\Controller;
+use App\Models\User;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Laravel\Socialite\Facades\Socialite;
+
+class VkAuthController extends Controller
+{
+    public function redirect()
+    {
+        // VK ID (OAuth 2.1 + PKCE)
+        // scopes берутся из config/services.php, можно не дублировать
+        return Socialite::driver('vkid')->redirect();
+    }
+
+    public function callback()
+    {
+        $vkUser = Socialite::driver('vkid')->user();
+
+        $vkId   = (string) $vkUser->getId();
+        $email  = $vkUser->getEmail(); // может быть null
+
+        // ✅ 3.1 Пользователь уже авторизован — привязка VK к текущему аккаунту
+        if (Auth::check()) {
+            /** @var User $current */
+            $current = Auth::user();
+
+            $existsForOther = User::where('vk_id', $vkId)
+                ->where('id', '!=', $current->id)
+                ->exists();
+
+            if ($existsForOther) {
+                abort(409, 'Этот VK уже привязан к другому аккаунту.');
+            }
+
+            $current->vk_id = $vkId;
+
+            // сохраняем vk_email отдельно (по ТЗ)
+            if ($email) {
+                $current->vk_email = $email;
+            }
+
+            // Если у текущего email служебный/пустой и VK прислал email — можно проставить в users.email, если не занят
+            if ($email && (
+                empty($current->email)
+                || str_ends_with($current->email, '@telegram.local')
+                || str_ends_with($current->email, '@vk.local')
+            )) {
+                $busy = User::where('email', $email)
+                    ->where('id', '!=', $current->id)
+                    ->exists();
+
+                if (!$busy) {
+                    $current->email = $email;
+                }
+            }
+
+            $current->save();
+
+            return redirect('/user/profile')->with('status', 'VK привязан');
+        }
+
+        // ✅ 3.2 Пользователь не авторизован — вход по VK
+
+        // 1) Поиск по vk_id
+        $user = User::where('vk_id', $vkId)->first();
+
+        // 2) Поиск по telegram_id из сессии (если вы его кладёте при Telegram flow)
+        $telegramId = session('telegram_id');
+        if (!$user && $telegramId) {
+            $user = User::where('telegram_id', $telegramId)->first();
+        }
+
+        // 3) Поиск по email (служебный/обычный)
+        if (!$user && $email) {
+            $user = User::where('email', $email)->first();
+        }
+
+        // Если не найден — создаём нового
+        if (!$user) {
+            $name = $vkUser->getName() ?: "VK User #{$vkId}";
+            $safeEmail = $email ?: "vk_{$vkId}@vk.local";
+
+            $user = User::create([
+                'name'     => $name,
+                'email'    => $safeEmail,
+                'password' => Hash::make(str()->random(32)),
+                'vk_id'    => $vkId,
+                'vk_email' => $email,
+            ]);
+        } else {
+            // если нашли по telegram/email, но vk_id ещё не привязан — привязываем
+            if (empty($user->vk_id)) {
+                $existsForOther = User::where('vk_id', $vkId)
+                    ->where('id', '!=', $user->id)
+                    ->exists();
+
+                if ($existsForOther) {
+                    abort(409, 'Этот VK уже привязан к другому аккаунту.');
+                }
+
+                $user->vk_id = $vkId;
+            }
+
+            // обновим vk_email, если VK отдал
+            if ($email) {
+                $user->vk_email = $email;
+            }
+
+            // опционально: если email служебный, а VK прислал реальный — можно обновить users.email, если не занят
+            if ($email && (
+                empty($user->email)
+                || str_ends_with($user->email, '@telegram.local')
+                || str_ends_with($user->email, '@vk.local')
+            )) {
+                $busy = User::where('email', $email)
+                    ->where('id', '!=', $user->id)
+                    ->exists();
+
+                if (!$busy) {
+                    $user->email = $email;
+                }
+            }
+
+            $user->save();
+        }
+
+        Auth::login($user, true);
+
+        return $this->postLoginRedirect($user);
+    }
+        private function postLoginRedirect(User $user)
+     {
+        return redirect()->intended('/events');
+     }
+
+    }
+}

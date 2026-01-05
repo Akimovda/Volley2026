@@ -1,0 +1,135 @@
+/* Volley UI helpers */
+
+/* Layout helpers */
+.v-container {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+/* Alerts */
+.v-alert {
+  border-radius: 12px;
+  padding: 14px 16px;
+  border: 1px solid transparent;
+}
+
+.v-alert__title {
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.v-alert__text {
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.v-alert--success {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+  color: #065f46;
+}
+
+.v-alert--warn {
+  background: #fffbeb;
+  border-color: #fde68a;
+  color: #92400e;
+}
+
+.v-alert--info {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1e40af;
+}
+
+/* Buttons / links */
+.v-actions {
+  margin-top: 14px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.v-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-weight: 600;
+  font-size: 14px;
+  border: 1px solid transparent;
+  text-decoration: none;
+}
+
+.v-btn--primary {
+  background: #111827;
+  color: #fff;
+}
+
+.v-btn--secondary {
+  background: #fff;
+  color: #111827;
+  border-color: #e5e7eb;
+}
+
+/* Required field highlight */
+.v-required {
+  outline: 2px solid #facc15; /* yellow-400 */
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* Small hint text */
+.v-hint {
+  margin-top: 10px;
+  color: #6b7280;
+  font-size: 12px;
+}
+/* Cards / badges for events */
+.v-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 14px 16px;
+  background: #fff;
+}
+
+.v-card__title {
+  font-weight: 800;
+  color: #111827;
+  margin-bottom: 10px;
+  font-size: 16px;
+}
+
+.v-card__meta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.v-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  border: 1px solid transparent;
+}
+.v-badge--success {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+  color: #065f46;
+}
+.v-badge--warn {
+  background: #fffbeb;
+  border-color: #fde68a;
+  color: #92400e;
+}
+
+.v-badge--info {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1e40af;
+}
