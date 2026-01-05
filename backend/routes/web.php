@@ -6,10 +6,31 @@ use App\Http\Controllers\Auth\TelegramAuthController;
 use App\Http\Controllers\Auth\VkAuthController;
 use App\Http\Controllers\EventRegistrationController;
 use App\Http\Controllers\EventsController;
+use App\Http\Controllers\OrganizerRequestController;
+use App\Http\Controllers\Admin\OrganizerRequestAdminController;
 
 Route::get('/', function () {
     return view('welcome');
 })->name('home');
+/*Отправки сообщений Админу что бы стать организатором*/
+
+Route::middleware(['auth'])->group(function () {
+    // User: send organizer request
+    Route::post('/organizer/request', [OrganizerRequestController::class, 'store'])
+        ->name('organizer.request');
+
+    // Admin: organizer requests
+    Route::middleware(['can:approve-organizer-request'])->prefix('admin')->group(function () {
+        Route::get('/organizer-requests', [OrganizerRequestAdminController::class, 'index'])
+            ->name('admin.organizer_requests.index');
+
+        Route::post('/organizer-requests/{request}/approve', [OrganizerRequestAdminController::class, 'approve'])
+            ->name('admin.organizer_requests.approve');
+
+        Route::post('/organizer-requests/{request}/reject', [OrganizerRequestAdminController::class, 'reject'])
+            ->name('admin.organizer_requests.reject');
+    });
+});
 
 /**
  * Events page
@@ -74,3 +95,4 @@ Route::middleware([
         return view('dashboard');
     })->name('dashboard');
 });
+
