@@ -12,7 +12,6 @@ class ProfileCompletionController extends Controller
         $section = (string) $request->query('section', '');
         $eventId = $request->query('event_id');
 
-        // сохраняем мероприятие, к которому пользователь хотел записаться
         if (!empty($eventId)) {
             $request->session()->put('pending_event_join', (int) $eventId);
         }
@@ -22,10 +21,9 @@ class ProfileCompletionController extends Controller
             ->filter()
             ->values();
 
-        // поддержка старого ?section=
         if ($required->isEmpty() && $section !== '') {
             $map = [
-                'personal' => ['full_name', 'phone', 'email'],
+                'personal' => ['full_name', 'patronymic', 'phone', 'city', 'birth_date'],
                 'classic'  => ['classic_level'],
                 'beach'    => ['beach_level'],
             ];
@@ -35,7 +33,6 @@ class ProfileCompletionController extends Controller
 
         $requiredKeys = $required->unique()->values()->all();
 
-        // сохраняем список требуемых полей для подсветки на /user/profile
         $request->session()->put('pending_profile_required', $requiredKeys);
 
         return view('profile.complete', [

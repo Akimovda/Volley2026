@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Event;
 use App\Services\EventRegistrationRequirements;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -13,48 +14,45 @@ class ProfileExtraController extends Controller
     public function update(Request $request)
     {
         $user = Auth::user();
+        $canEdit = $user->can('edit-protected-profile-fields');
 
         $data = $request->validate([
-            'first_name'    => ['nullable', 'string', 'max:255'],
-            'last_name'     => ['nullable', 'string', 'max:255'],
-            'phone'         => ['nullable', 'string', 'max:50'],
-            'classic_level' => ['nullable', 'integer', 'min:0', 'max:100'],
-            'beach_level'   => ['nullable', 'integer', 'min:0', 'max:100'],
+            'first_name' => ['nullable', 'string', 'max:255'],
+            'last_name' => ['nullable', 'string', 'max:255'],
+            'patronymic' => ['nullable', 'string', 'max:255'],
+            'phone' => ['nullable', 'string'],
+            'birth_date' => ['nullable', 'date'],
+            'city_id' => ['nullable', 'exists:cities,id'],
+            'classic_level' => ['nullable', 'integer'],
+            'beach_level' => ['nullable', 'integer'],
         ]);
 
-        $user->forceFill($data)->save();
+        $protected = [
+            'first_name','last_name','patronymic',
+            'phone','birth_date','classic_level','beach_level'
+        ];
 
-        // Попробовать автозаписать после сохранения анкеты
-        $eventId = session('pending_event_join');
-        if (!empty($eventId)) {
-            $event = Event::find((int) $eventId);
-
-            if ($event) {
-                /** @var EventRegistrationRequirements $requirements */
-                $requirements = app(EventRegistrationRequirements::class);
-
-                $missing = $requirements->missing($user, $event);
-
-                if (empty($missing)) {
-                    $requirements->ensureEligible($user, $event);
-
-                    DB::table('event_registrations')->updateOrInsert(
-                        ['event_id' => $event->id, 'user_id' => $user->id],
-                        ['created_at' => now(), 'updated_at' => now()]
-                    );
-
-                    session()->forget('pending_event_join');
-                    session()->forget('pending_profile_required');
-
-                    session()->flash(
-                        'status',
-                        'Вы успешно записаны на мероприятие, не забудьте взять с собой хорошее настроение.'
-                    );
-                } else {
-                    session()->put('pending_profile_required', $missing);
+        if (!$canEdit) {
+            foreach ($protected as $field) {
+                if (!empty($user->$field)) {
+                    unset($data[$field]);
                 }
             }
         }
+
+        $birth = $data['birth_date'] ?? $user->birth_date;
+        if ($birth) {
+            $age = Carbon::parse($birth)->age;
+            $allowed = $age < 18 ? [1,2,4] : [1,2,3,4,5,6,7];
+
+            foreach (['classic_level','beach_level'] as $lvl) {
+                if (isset($data[$lvl]) && !in_array($data[$lvl], $allowed, true)) {
+                    return back()->withErrors([$lvl => 'Недопустимый уровень']);
+                }
+            }
+        }
+
+        $user->forceFill($data)->save();
 
         return back()->with('status', 'Профиль обновлён.');
     }
