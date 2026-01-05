@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ProfileCompletionController extends Controller
 {
@@ -32,13 +33,16 @@ class ProfileCompletionController extends Controller
         }
 
         $requiredKeys = $required->unique()->values()->all();
-
         $request->session()->put('pending_profile_required', $requiredKeys);
+
+        // Города (пока простым запросом, без модели)
+        $cities = DB::table('cities')->orderBy('name')->limit(300)->get();
 
         return view('profile.complete', [
             'requiredKeys' => $requiredKeys,
             'eventId' => $eventId,
             'section' => $section,
+            'cities' => $cities,
         ]);
     }
 }
