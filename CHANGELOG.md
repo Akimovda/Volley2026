@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.1.1](https://github.com/Akimovda/Volley2026/compare/v0.1.1-alpha.0...v0.1.1) (2026-01-05)
+
+
+### CI
+
+* create GitHub Releases from CHANGELOG with prerelease support ([a37d28d](https://github.com/Akimovda/Volley2026/commit/a37d28d8bbca448b49195282d068fce1fcce8c7c))
+* fail release if changelog entry missing ([829267b](https://github.com/Akimovda/Volley2026/commit/829267b6b1895b4dea113505561dbe7c04772467))
+
 ### 0.1.1-alpha.0 (2026-01-05)
 
 
