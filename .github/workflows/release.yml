@@ -15,7 +15,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Create GitHub Release
+      # Extract release notes from CHANGELOG.md for this tag
+      - name: Read CHANGELOG
+        id: changelog
+        uses: mindsers/changelog-reader-action@v2
+        with:
+          path: CHANGELOG.md
+          version: ${{ github.ref_name }}
+
+      - name: Create GitHub Release (from CHANGELOG)
         uses: softprops/action-gh-release@v2
         with:
-          generate_release_notes: true
+          name: ${{ github.ref_name }}
+          body: ${{ steps.changelog.outputs.changes }}
+          prerelease: ${{ contains(github.ref_name, '-') }}
