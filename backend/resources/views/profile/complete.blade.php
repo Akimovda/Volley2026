@@ -132,7 +132,35 @@
                     </select>
                     @if($lockedCity)<div class="v-hint mt-1">{{ $lockHint }}</div>@endif
                 </div>
+{{-- Пол --}}
+<div>
+    <label class="block mb-1 font-medium">Пол</label>
+    <select name="gender" class="v-input w-full">
+        <option value="">— не указан —</option>
+        <option value="m" @selected(old('gender', $user?->gender) === 'm')>
+            Мужчина
+        </option>
+        <option value="f" @selected(old('gender', $user?->gender) === 'f')>
+            Женщина
+        </option>
+    </select>
+    <div class="v-hint mt-1">Пол виден всем.</div>
+</div>
 
+{{-- Рост --}}
+<div>
+    <label class="block mb-1 font-medium">Рост (см)</label>
+    <input
+        type="number"
+        name="height_cm"
+        min="40"
+        max="230"
+        class="v-input w-full"
+        value="{{ old('height_cm', $user?->height_cm) }}"
+    >
+    <div class="v-hint mt-1">Допустимый диапазон: 40–230 см. Рост виден всем.</div>
+</div>
+{{--Уровень игрока --}}
                 @php $lockedClassic = !$canEditProtected && $filled($user?->classic_level); @endphp
                 <div>
                     <label class="block mb-1 font-medium">Уровень (классика)</label>
