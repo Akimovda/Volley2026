@@ -24,16 +24,18 @@
                     <ul class="list-disc pl-6 mt-2">
                         @foreach ($requiredKeys as $key)
                             <li>
-                                @switch($key)
-                                    @case('full_name') Фамилия и имя @break
-                                    @case('patronymic') Отчество @break
-                                    @case('phone') Телефон @break
-                                    @case('city') Город @break
-                                    @case('birth_date') Дата рождения @break
-                                    @case('classic_level') Уровень (классика) @break
-                                    @case('beach_level') Уровень (пляж) @break
-                                    @default {{ $key }}
-                                @endswitch
+                            @switch($key)
+                             @case('full_name') Фамилия и имя @break
+                             @case('patronymic') Отчество @break
+                             @case('phone') Телефон @break
+                             @case('city') Город @break
+                             @case('birth_date') Дата рождения @break
+                             @case('gender') Пол @break
+                             @case('height_cm') Рост @break
+                             @case('classic_level') Уровень (классика) @break
+                             @case('beach_level') Уровень (пляж) @break
+                             @default {{ $key }}
+                            @endswitch
                             </li>
                         @endforeach
                     </ul>
