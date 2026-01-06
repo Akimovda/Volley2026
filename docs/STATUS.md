@@ -1,4 +1,0 @@
-- [x] Публичные страницы /users и /user/{id}
-- [x] Исправлен navigation-menu для гостей (не падает на Auth::user())
-- [x] Добавлены поля профиля: gender, height_cm
-- [x] Правила видимости sensitive полей через Gate view-sensitive-profile
