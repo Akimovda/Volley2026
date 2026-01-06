@@ -5,6 +5,7 @@ namespace App\Models;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
@@ -69,7 +70,17 @@ class User extends Authenticatable
 
     public function city(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\City::class);
+        return $this->belongsTo(City::class);
+    }
+
+    public function classicPositions(): HasMany
+    {
+        return $this->hasMany(UserClassicPosition::class);
+    }
+
+    public function beachZones(): HasMany
+    {
+        return $this->hasMany(UserBeachZone::class);
     }
 
     public function displayName(): string
