@@ -1,7 +1,8 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-
+use App\Http\Controllers\UserDirectoryController;
+use App\Http\Controllers\UserPublicController;
 use App\Http\Controllers\Auth\TelegramAuthController;
 use App\Http\Controllers\Auth\VkAuthController;
 use App\Http\Controllers\EventRegistrationController;
@@ -95,4 +96,12 @@ Route::middleware([
         return view('dashboard');
     })->name('dashboard');
 });
+/**
+ * Public users directory + public profile
+ */
+Route::get('/users', [UserDirectoryController::class, 'index'])
+    ->name('users.index');
 
+Route::get('/user/{user}', [UserPublicController::class, 'show'])
+    ->whereNumber('user')
+    ->name('users.show');

@@ -2,8 +2,9 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
@@ -13,29 +14,37 @@ use Laravel\Sanctum\HasApiTokens;
 class User extends Authenticatable
 {
     use HasApiTokens;
-
-    /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory;
     use HasProfilePhoto;
     use Notifiable;
     use TwoFactorAuthenticatable;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
         'name',
         'email',
         'password',
+
+        // профиль
+        'first_name',
+        'last_name',
+        'patronymic',
+        'phone',
+        'birth_date',
+        'city_id',
+        'gender',
+        'height_cm',
+        'classic_level',
+        'beach_level',
+        'beach_universal',
+
+        // роли/интеграции
+        'role',
+        'telegram_id',
+        'telegram_username',
+        'vk_id',
+        'vk_email',
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var array<int, string>
-     */
     protected $hidden = [
         'password',
         'remember_token',
@@ -43,25 +52,49 @@ class User extends Authenticatable
         'two_factor_secret',
     ];
 
-    /**
-     * The accessors to append to the model's array form.
-     *
-     * @var array<int, string>
-     */
     protected $appends = [
         'profile_photo_url',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
+            'phone_verified_at' => 'datetime',
+            'birth_date' => 'date',
             'password' => 'hashed',
+            'beach_universal' => 'boolean',
         ];
+    }
+
+    public function city(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\City::class);
+    }
+
+    public function displayName(): string
+    {
+        $last = trim((string) $this->last_name);
+        $first = trim((string) $this->first_name);
+
+        if ($last !== '' || $first !== '') {
+            return trim($last . ' ' . $first);
+        }
+
+        $tg = trim((string) $this->telegram_username);
+        if ($tg !== '') {
+            return '@' . ltrim($tg, '@');
+        }
+
+        return 'User #' . $this->id;
+    }
+
+    public function ageYears(): ?int
+    {
+        if (empty($this->birth_date)) {
+            return null;
+        }
+
+        return Carbon::parse($this->birth_date)->age;
     }
 }
