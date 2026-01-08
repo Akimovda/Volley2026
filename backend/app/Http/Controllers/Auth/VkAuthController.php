@@ -27,7 +27,7 @@ class VkAuthController extends Controller
     {
         $vkUser = Socialite::driver('vkid')->user();
 
-        $vkId    = (string) $vkUser->getId();
+        $vkId = (string) $vkUser->getId();
         $vkEmail = $vkUser->getEmail(); // может быть null
 
         /*
@@ -112,9 +112,7 @@ class VkAuthController extends Controller
         if (!$user) {
             $name = $vkUser->getName() ?: "VK User #{$vkId}";
 
-            /*
-             * users.email ДОЛЖЕН быть уникальным
-             */
+            // users.email ДОЛЖЕН быть уникальным
             if ($vkEmail && !User::where('email', $vkEmail)->exists()) {
                 $safeEmail = $vkEmail;
             } else {
@@ -122,21 +120,21 @@ class VkAuthController extends Controller
             }
 
             $user = User::create([
-                'name'     => $name,
-                'email'    => $safeEmail,
+                'name' => $name,
+                'email' => $safeEmail,
                 'password' => Hash::make(str()->random(32)),
-                'vk_id'    => $vkId,
+                'vk_id' => $vkId,
                 'vk_email' => $vkEmail,
             ]);
         }
 
         Auth::login($user, true);
 
-        /*
-        |--------------------------------------------------------------------------
-        | На первом этапе ВСЕГДА пускаем в сервис
-        |--------------------------------------------------------------------------
-        */
+        $request->session()->put('auth_provider', 'vk');
+        $request->session()->put('auth_provider_id', (string) $user->vk_id);
+        // ✅ ШАГ 4: фиксируем провайдера текущей сессии
+        session(['auth_provider' => 'vk']);
+
         return redirect()->intended('/events');
     }
 }

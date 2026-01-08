@@ -10,11 +10,14 @@ use App\Http\Controllers\EventsController;
 use App\Http\Controllers\OrganizerRequestController;
 use App\Http\Controllers\Admin\OrganizerRequestAdminController;
 
+use App\Http\Controllers\Account\LinkCodeController;
+use App\Http\Controllers\Account\LinkConsumeController;
+
 Route::get('/', function () {
     return view('welcome');
 })->name('home');
-/*Отправки сообщений Админу что бы стать организатором*/
 
+/*Отправки сообщений Админу что бы стать организатором*/
 Route::middleware(['auth'])->group(function () {
     // User: send organizer request
     Route::post('/organizer/request', [OrganizerRequestController::class, 'store'])
@@ -31,6 +34,18 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/organizer-requests/{request}/reject', [OrganizerRequestAdminController::class, 'reject'])
             ->name('admin.organizer_requests.reject');
     });
+
+    /**
+     * Account link-code flow (привязка Telegram/VK через одноразовый код)
+     */
+    Route::post('/account/link-code', [LinkCodeController::class, 'store'])
+        ->name('account.link_code.store');
+
+    Route::get('/account/link', [LinkConsumeController::class, 'show'])
+        ->name('account.link.show');
+
+    Route::post('/account/link', [LinkConsumeController::class, 'store'])
+        ->name('account.link.store');
 });
 
 /**
@@ -66,6 +81,7 @@ Route::middleware([
 ])->group(function () {
     Route::post('/events/{event}/join', [EventRegistrationController::class, 'store'])
         ->name('events.join');
+
     Route::delete('/events/{event}/leave', [EventRegistrationController::class, 'destroy'])
         ->name('events.leave');
 });
@@ -96,6 +112,7 @@ Route::middleware([
         return view('dashboard');
     })->name('dashboard');
 });
+
 /**
  * Public users directory + public profile
  */
@@ -105,3 +122,10 @@ Route::get('/users', [UserDirectoryController::class, 'index'])
 Route::get('/user/{user}', [UserPublicController::class, 'show'])
     ->whereNumber('user')
     ->name('users.show');
+Route::get('/debug/session', function () {
+    return response()->json([
+        'user_id' => auth()->id(),
+        'auth_provider' => session('auth_provider'),
+        'session_keys' => array_keys(session()->all()),
+    ]);
+})->middleware('auth');

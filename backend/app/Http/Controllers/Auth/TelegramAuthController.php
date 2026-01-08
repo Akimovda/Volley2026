@@ -19,7 +19,7 @@ class TelegramAuthController extends Controller
         }
 
         // защита от replay (например, сутки)
-        if (isset($data['auth_date']) && (time() - (int)$data['auth_date']) > 86400) {
+        if (isset($data['auth_date']) && (time() - (int) $data['auth_date']) > 86400) {
             abort(403, 'Telegram authentication expired');
         }
 
@@ -50,7 +50,7 @@ class TelegramAuthController extends Controller
             $currentUser->telegram_id = $telegramId;
             $currentUser->telegram_username = $telegramUsername;
             $currentUser->save();
-
+            session(['auth_provider' => 'telegram']);
             return redirect('/user/profile')->with('status', 'Telegram привязан');
         }
 
@@ -65,8 +65,8 @@ class TelegramAuthController extends Controller
         if (!$user) {
             // ВАЖНО: не использовать telegram username как name
             $user = User::create([
-                'name' => "TG User #{$telegramId}",   // служебное
-                'email' => $fakeEmail,                // служебное, уникальное
+                'name' => "TG User #{$telegramId}", // служебное
+                'email' => $fakeEmail,             // служебное, уникальное
                 'password' => Hash::make(str()->random(32)),
                 'telegram_id' => $telegramId,
                 'telegram_username' => $telegramUsername,
@@ -100,17 +100,21 @@ class TelegramAuthController extends Controller
             $user->save();
         }
 
-               Auth::login($user, true);
+        Auth::login($user, true);
+        $request->session()->put('auth_provider', 'telegram');
+        $request->session()->put('auth_provider_id', (string) $user->telegram_id);
+
+        // ✅ фиксируем, через какого провайдера залогинились
+        session(['auth_provider' => 'telegram']);
 
         // Если профиль не заполнен — отправим на заполнение (страницу сделаем позже)
-    //    $needsProfile = empty($user->last_name) || empty($user->first_name) || empty($user->phone);
-
-    //    if ($needsProfile) {
-    //        return redirect('/profile/complete');
-    //    }
+        // $needsProfile = empty($user->last_name) || empty($user->first_name) || empty($user->phone);
+        // if ($needsProfile) {
+        //     return redirect('/profile/complete');
+        // }
 
         return redirect()->intended('/events');
-    } // ✅ вот это закрывает callback()
+    }
 
     private function isValidTelegramAuth(array $data): bool
     {
@@ -136,6 +140,5 @@ class TelegramAuthController extends Controller
         $hash = hash_hmac('sha256', $dataCheckString, $secretKey);
 
         return hash_equals($hash, $checkHash);
-    } // ✅ закрывает isValidTelegramAuth()
-} // ✅ закрывает класс TelegramAuthController
-
+    }
+}
