@@ -24,18 +24,18 @@
                     <ul class="list-disc pl-6 mt-2">
                         @foreach ($requiredKeys as $key)
                             <li>
-                            @switch($key)
-                             @case('full_name') Фамилия и имя @break
-                             @case('patronymic') Отчество @break
-                             @case('phone') Телефон @break
-                             @case('city') Город @break
-                             @case('birth_date') Дата рождения @break
-                             @case('gender') Пол @break
-                             @case('height_cm') Рост @break
-                             @case('classic_level') Уровень (классика) @break
-                             @case('beach_level') Уровень (пляж) @break
-                             @default {{ $key }}
-                            @endswitch
+                                @switch($key)
+                                    @case('full_name') Фамилия и имя @break
+                                    @case('patronymic') Отчество @break
+                                    @case('phone') Телефон @break
+                                    @case('city') Город @break
+                                    @case('birth_date') Дата рождения @break
+                                    @case('gender') Пол @break
+                                    @case('height_cm') Рост @break
+                                    @case('classic_level') Уровень (классика) @break
+                                    @case('beach_level') Уровень (пляж) @break
+                                    @default {{ $key }}
+                                @endswitch
                             </li>
                         @endforeach
                     </ul>
@@ -53,6 +53,9 @@
             /** @var \App\Models\User|null $user */
             $user = $user ?? auth()->user();
 
+            // совместимость (в контроллере могло называться по-разному)
+            $hasPendingOrganizerRequest = (bool)($hasPendingOrganizerRequest ?? ($hasPendingRequest ?? false));
+
             // только admin может редактировать "зафиксированные" поля после заполнения
             $canEditProtected = (bool)($canEditProtected ?? ($user && $user->can('edit-protected-profile-fields')));
 
@@ -63,14 +66,31 @@
             };
 
             $lockHint = 'Поле уже заполнено. Изменить может только администратор.';
+
+            // Амплуа/зоны (для дефолтов)
+            $posMap = [
+                'setter'   => 'Связующий',
+                'outside'  => 'Доигровщик',
+                'opposite' => 'Диагональный',
+                'middle'   => 'Центральный блокирующий',
+                'libero'   => 'Либеро',
+            ];
+
+            // важно: отношения classicPositions/beachZones должны существовать в User модели
+            $classicPrimary = optional($user?->classicPositions)->firstWhere('is_primary', true)?->position;
+            $classicAll     = optional($user?->classicPositions)->pluck('position')->all() ?? [];
+
+            $beachPrimaryZone = optional($user?->beachZones)->firstWhere('is_primary', true)?->zone;
+            $beachModeCurrent = $user?->beach_universal ? 'universal' : (is_null($beachPrimaryZone) ? null : (string)$beachPrimaryZone);
         @endphp
 
-        {{-- Форма профиля --}}
-        <form method="POST" action="{{ route('profile.extra.update') }}" class="space-y-4">
+        <form method="POST" action="{{ route('profile.extra.update') }}" class="space-y-6">
             @csrf
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {{-- Персональные данные --}}
+            <div class="font-semibold text-lg">Персональные данные</div>
 
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 @php $lockedLast = !$canEditProtected && $filled($user?->last_name); @endphp
                 <div>
                     <label class="block mb-1 font-medium">Фамилия</label>
@@ -114,9 +134,20 @@
                 @php $lockedBirth = !$canEditProtected && $filled($user?->birth_date); @endphp
                 <div>
                     <label class="block mb-1 font-medium">Дата рождения</label>
-                    <input type="date" name="birth_date" class="v-input w-full"
-                           value="{{ old('birth_date', $user?->birth_date) }}"
-                           @disabled($lockedBirth)>
+@php
+    $birthValue = old('birth_date');
+    if ($birthValue === null) {
+        $birthValue = $user?->birth_date ? $user->birth_date->format('Y-m-d') : '';
+    }
+@endphp
+
+<input
+    type="date"
+    name="birth_date"
+    class="v-input w-full"
+    value="{{ $birthValue }}"
+    @disabled($lockedBirth)
+>
                     @if($lockedBirth)<div class="v-hint mt-1">{{ $lockHint }}</div>@endif
                 </div>
 
@@ -134,55 +165,128 @@
                     </select>
                     @if($lockedCity)<div class="v-hint mt-1">{{ $lockHint }}</div>@endif
                 </div>
-{{-- Пол --}}
-<div>
-    <label class="block mb-1 font-medium">Пол</label>
-    <select name="gender" class="v-input w-full">
-        <option value="">— не указан —</option>
-        <option value="m" @selected(old('gender', $user?->gender) === 'm')>
-            Мужчина
-        </option>
-        <option value="f" @selected(old('gender', $user?->gender) === 'f')>
-            Женщина
-        </option>
-    </select>
-    <div class="v-hint mt-1">Пол виден всем.</div>
-</div>
 
-{{-- Рост --}}
-<div>
-    <label class="block mb-1 font-medium">Рост (см)</label>
-    <input
-        type="number"
-        name="height_cm"
-        min="40"
-        max="230"
-        class="v-input w-full"
-        value="{{ old('height_cm', $user?->height_cm) }}"
-    >
-    <div class="v-hint mt-1">Допустимый диапазон: 40–230 см. Рост виден всем.</div>
-</div>
-{{--Уровень игрока --}}
-                @php $lockedClassic = !$canEditProtected && $filled($user?->classic_level); @endphp
+                {{-- Пол (НЕ фиксируемый) --}}
                 <div>
-                    <label class="block mb-1 font-medium">Уровень (классика)</label>
-                    <input name="classic_level" class="v-input w-full"
-                           value="{{ old('classic_level', $user?->classic_level) }}"
-                           @disabled($lockedClassic)>
-                    <div class="v-hint mt-1">Шкала: 1–7 (для &lt;18 только 1,2,4)</div>
-                    @if($lockedClassic)<div class="v-hint mt-1">{{ $lockHint }}</div>@endif
+                    <label class="block mb-1 font-medium">Пол</label>
+                    <select name="gender" class="v-input w-full">
+                        <option value="">— не указан —</option>
+                        <option value="m" @selected(old('gender', $user?->gender) === 'm')>Мужчина</option>
+                        <option value="f" @selected(old('gender', $user?->gender) === 'f')>Женщина</option>
+                    </select>
+                    <div class="v-hint mt-1">Пол виден всем.</div>
                 </div>
 
-                @php $lockedBeach = !$canEditProtected && $filled($user?->beach_level); @endphp
+                {{-- Рост (НЕ фиксируемый) --}}
                 <div>
-                    <label class="block mb-1 font-medium">Уровень (пляж)</label>
-                    <input name="beach_level" class="v-input w-full"
-                           value="{{ old('beach_level', $user?->beach_level) }}"
-                           @disabled($lockedBeach)>
-                    <div class="v-hint mt-1">Шкала: 1–7 (для &lt;18 только 1,2,4)</div>
-                    @if($lockedBeach)<div class="v-hint mt-1">{{ $lockHint }}</div>@endif
+                    <label class="block mb-1 font-medium">Рост (см)</label>
+                    <input type="number" name="height_cm" min="40" max="230" class="v-input w-full"
+                           value="{{ old('height_cm', $user?->height_cm) }}">
+                    <div class="v-hint mt-1">Допустимый диапазон: 40–230 см. Рост виден всем.</div>
+                </div>
+            </div>
+
+            {{-- Навыки --}}
+            <div class="font-semibold text-lg pt-2">Навыки в волейболе</div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {{-- Классика --}}
+                <div class="v-card">
+                    <div class="v-card__body space-y-3">
+                        <div class="font-semibold">Классический волейбол</div>
+
+                        @php $lockedClassic = !$canEditProtected && $filled($user?->classic_level); @endphp
+                        <div>
+                            <label class="block mb-1 font-medium">Уровень (классика)</label>
+                            <input name="classic_level" class="v-input w-full"
+                                   value="{{ old('classic_level', $user?->classic_level) }}"
+                                   @disabled($lockedClassic)>
+                            <div class="v-hint mt-1">Шкала: 1–7 (для &lt;18 только 1,2,4)</div>
+                            @if($lockedClassic)<div class="v-hint mt-1">{{ $lockHint }}</div>@endif
+                        </div>
+
+                        <div>
+                            <label class="block mb-1 font-medium">Какое твое основное амплуа?</label>
+                            <div class="space-y-1">
+                                @foreach($posMap as $key => $label)
+                                    <label class="flex items-center gap-2">
+                                        <input type="radio" name="classic_primary_position" value="{{ $key }}"
+                                               @checked(old('classic_primary_position', $classicPrimary) === $key)>
+                                        <span>{{ $label }}</span>
+                                    </label>
+                                @endforeach
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block mb-1 font-medium">
+                                В каком амплуа ты можешь играть ещё?
+                                <span class="text-sm text-gray-500">(можно пропустить)</span>
+                            </label>
+
+                            @php $primaryNow = old('classic_primary_position', $classicPrimary); @endphp
+                            <div class="space-y-1">
+                                @foreach($posMap as $key => $label)
+                                    @php
+                                        $checked = in_array($key, (array)old('classic_extra_positions', $classicAll), true);
+                                        $disabled = ($primaryNow === $key);
+                                    @endphp
+                                    <label class="flex items-center gap-2">
+                                        <input type="checkbox" name="classic_extra_positions[]" value="{{ $key }}"
+                                               @checked($checked) @disabled($disabled)>
+                                        <span>{{ $label }}</span>
+                                        @if($disabled)<span class="text-xs text-gray-500">(основное)</span>@endif
+                                    </label>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
+                {{-- Пляж --}}
+                <div class="v-card">
+                    <div class="v-card__body space-y-3">
+                        <div class="font-semibold">Пляжный волейбол</div>
+
+                        @php $lockedBeach = !$canEditProtected && $filled($user?->beach_level); @endphp
+                        <div>
+                            <label class="block mb-1 font-medium">Уровень (пляж)</label>
+                            <input name="beach_level" class="v-input w-full"
+                                   value="{{ old('beach_level', $user?->beach_level) }}"
+                                   @disabled($lockedBeach)>
+                            <div class="v-hint mt-1">Шкала: 1–7 (для &lt;18 только 1,2,4)</div>
+                            @if($lockedBeach)<div class="v-hint mt-1">{{ $lockHint }}</div>@endif
+                        </div>
+
+                        <div>
+                            <label class="block mb-1 font-medium">В какой зоне вы играете: 2, 4 или вы универсал?</label>
+
+                            <div class="space-y-1">
+                                <label class="flex items-center gap-2">
+                                    <input type="radio" name="beach_mode" value="2"
+                                           @checked(old('beach_mode', $beachModeCurrent) === '2')>
+                                    <span>Зона 2</span>
+                                </label>
+
+                                <label class="flex items-center gap-2">
+                                    <input type="radio" name="beach_mode" value="4"
+                                           @checked(old('beach_mode', $beachModeCurrent) === '4')>
+                                    <span>Зона 4</span>
+                                </label>
+
+                                <label class="flex items-center gap-2">
+                                    <input type="radio" name="beach_mode" value="universal"
+                                           @checked(old('beach_mode', $beachModeCurrent) === 'universal')>
+                                    <span>Универсал</span>
+                                </label>
+
+                                <div class="v-hint mt-2">
+                                    Если выбран “Универсал”, в профиле будут отмечены зоны 2 и 4 и будет пометка “универсальный игрок”.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="v-actions">
