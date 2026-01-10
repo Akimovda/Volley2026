@@ -10,35 +10,52 @@ use Illuminate\Support\Facades\Hash;
 
 class TelegramAuthController extends Controller
 {
+public function redirect(Request $request)
+{
+    // Для UX на /user/profile
+    $request->session()->put('auth_provider', 'telegram');
+
+    // Telegram Login Widget — это не OAuth redirect, а страница с виджетом
+    return view('auth.telegram-redirect', [
+        'botName' => config('services.telegram.bot_name'),
+        // Важно: сюда Telegram отправит query-параметры (id, hash, auth_date, username...)
+        'authUrl' => route('auth.telegram.callback'),
+    ]);
+}
     public function callback(Request $request)
     {
         $data = $request->query();
 
+        // ===== [SECURITY] Проверка подписи Telegram =====
         if (!$this->isValidTelegramAuth($data)) {
             abort(403, 'Invalid Telegram authentication');
         }
 
-        // защита от replay (например, сутки)
+        // ===== [SECURITY] Защита от replay (например, сутки) =====
         if (isset($data['auth_date']) && (time() - (int) $data['auth_date']) > 86400) {
             abort(403, 'Telegram authentication expired');
         }
 
+        // ===== [INPUT] Telegram user id =====
         $telegramId = (string) ($data['id'] ?? '');
         if ($telegramId === '') {
             abort(403, 'Telegram id missing');
         }
 
-        // Telegram username НЕ используем как имя пользователя.
-        // Храним только как telegram_username.
+        // ===== [INPUT] Username (НЕ используем как name) =====
         $telegramUsername = $data['username'] ?? null;
         $telegramUsername = $telegramUsername ? ltrim($telegramUsername, '@') : null;
 
-        // 1) Режим привязки: если пользователь уже залогинен (email/пароль)
+        /*
+        |--------------------------------------------------------------------------
+        | 1) Режим привязки: пользователь уже залогинен (email/пароль или другой провайдер)
+        |--------------------------------------------------------------------------
+        */
         if (Auth::check()) {
             /** @var \App\Models\User $currentUser */
             $currentUser = Auth::user();
 
-            // Запрет: telegram_id уже привязан к другому аккаунту
+            // Запрет: telegram_id уже привязан к ДРУГОМУ аккаунту
             $existsForOther = User::where('telegram_id', $telegramId)
                 ->where('id', '!=', $currentUser->id)
                 ->exists();
@@ -47,14 +64,23 @@ class TelegramAuthController extends Controller
                 abort(409, 'This Telegram account is already linked to another user.');
             }
 
+            // Привязываем TG к текущему пользователю
             $currentUser->telegram_id = $telegramId;
             $currentUser->telegram_username = $telegramUsername;
             $currentUser->save();
-            session(['auth_provider' => 'telegram']);
+
+            // ===== [SESSION] Запоминаем, что текущая сессия “TG” (для UX на /user/profile) =====
+            $request->session()->put('auth_provider', 'telegram');
+            $request->session()->put('auth_provider_id', (string) $telegramId);
+
             return redirect('/user/profile')->with('status', 'Telegram привязан');
         }
 
-        // 2) Режим входа через Telegram (пользователь не залогинен)
+        /*
+        |--------------------------------------------------------------------------
+        | 2) Режим входа через Telegram (пользователь НЕ залогинен)
+        |--------------------------------------------------------------------------
+        */
         $fakeEmail = "tg_{$telegramId}@telegram.local";
 
         // Ищем по telegram_id ИЛИ по служебному email (fallback на старые записи)
@@ -63,10 +89,10 @@ class TelegramAuthController extends Controller
             ->first();
 
         if (!$user) {
-            // ВАЖНО: не использовать telegram username как name
+            // Создаём нового пользователя (name/email считаем служебными)
             $user = User::create([
-                'name' => "TG User #{$telegramId}", // служебное
-                'email' => $fakeEmail,             // служебное, уникальное
+                'name' => "TG User #{$telegramId}",   // служебное
+                'email' => $fakeEmail,               // служебное, уникальное
                 'password' => Hash::make(str()->random(32)),
                 'telegram_id' => $telegramId,
                 'telegram_username' => $telegramUsername,
@@ -79,7 +105,7 @@ class TelegramAuthController extends Controller
                 'phone_verified_at' => null,
             ]);
         } else {
-            // Если нашли по email (старая запись) — проставим telegram_id
+            // Если нашли по email (старая запись) — проставим telegram_id (если пусто)
             if (empty($user->telegram_id)) {
                 $existsForOther = User::where('telegram_id', $telegramId)
                     ->where('id', '!=', $user->id)
@@ -100,14 +126,14 @@ class TelegramAuthController extends Controller
             $user->save();
         }
 
+        // ===== [AUTH] Логин =====
         Auth::login($user, true);
+
+        // ===== [SESSION] Запоминаем провайдера текущей сессии (НЕ дублируем session([...])) =====
         $request->session()->put('auth_provider', 'telegram');
         $request->session()->put('auth_provider_id', (string) $user->telegram_id);
 
-        // ✅ фиксируем, через какого провайдера залогинились
-        session(['auth_provider' => 'telegram']);
-
-        // Если профиль не заполнен — отправим на заполнение (страницу сделаем позже)
+        // Если профиль не заполнен — можно отправлять на заполнение (опционально)
         // $needsProfile = empty($user->last_name) || empty($user->first_name) || empty($user->phone);
         // if ($needsProfile) {
         //     return redirect('/profile/complete');
@@ -116,6 +142,7 @@ class TelegramAuthController extends Controller
         return redirect()->intended('/events');
     }
 
+    // ===== [SECURITY] Проверка подписи Telegram Login Widget =====
     private function isValidTelegramAuth(array $data): bool
     {
         if (empty($data['hash'])) {

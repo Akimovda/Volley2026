@@ -3,101 +3,205 @@
 namespace App\Http\Controllers\Account;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class LinkConsumeController extends Controller
 {
+    /**
+     * GET /account/link
+     * Страница "Ввести код" (вход вторым способом).
+     */
     public function show(Request $request)
     {
-        return view('account.link');
+        /** @var User $u */
+        $u = $request->user();
+
+        // История привязок (если таблица есть)
+        $audits = [];
+        if (DB::getSchemaBuilder()->hasTable('account_link_audits')) {
+            $audits = DB::table('account_link_audits')
+                ->where('user_id', $u->id)
+                ->orderByDesc('id')
+                ->limit(50)
+                ->get();
+        }
+
+        return view('account.link', [
+            'audits' => $audits,
+            'provider' => session('auth_provider'), // 'vk' | 'telegram' | null
+        ]);
     }
 
+    /**
+     * POST /account/link
+     * Вводим одноразовый код и привязываем текущий вход (TG/VK) к аккаунту-владельцу кода.
+     *
+     * Важно: делаем именно "перенос" провайдерных полей:
+     * - owner получает TG/VK из current
+     * - у current эти поля очищаются (иначе словим UNIQUE на users.telegram_id / users.vk_id)
+     */
     public function store(Request $request)
     {
-        $user = $request->user(); // тот, кто сейчас вошёл (например, через TG)
-        $data = $request->validate([
-            'code' => ['required', 'string', 'min:6', 'max:32'],
+        // ===== [AUTH] =====
+        /** @var User $current */
+        $current = $request->user();
+
+        // ===== [VALIDATION] =====
+        $validated = $request->validate([
+            'code' => ['required', 'string', 'min:4', 'max:32'],
+        ], [
+            'code.required' => 'Введите код.',
         ]);
 
-        $code = strtoupper(trim($data['code']));
-        $hash = hash('sha256', $code);
+        $plain = trim($validated['code']);
+        $hash  = hash('sha256', $plain);
 
-        return DB::transaction(function () use ($request, $user, $hash) {
+        // ===== [SESSION] текущий провайдер (для подсказок/валидации) =====
+        $provider = session('auth_provider'); // 'vk' | 'telegram' | null
 
-            // блокируем строку кода на время обработки
-            $row = DB::table('account_link_codes')
-                ->where('code_hash', $hash)
-                ->lockForUpdate()
-                ->first();
+        // ===== [LOAD CODE] =====
+        $code = DB::table('account_link_codes')
+            ->where('code_hash', $hash)
+            ->first();
 
-            if (!$row) {
-                return back()->withErrors(['code' => 'Код не найден.'])->withInput();
-            }
+        if (!$code) {
+            return back()->withErrors(['code' => 'Код не найден или уже использован.'])->withInput();
+        }
 
-            if (!is_null($row->consumed_at)) {
-                return back()->withErrors(['code' => 'Код уже использован.'])->withInput();
-            }
+        // ===== [CHECKS] срок/использование =====
+        if (!empty($code->consumed_at)) {
+            return back()->withErrors(['code' => 'Код уже использован.'])->withInput();
+        }
 
-            if (now()->greaterThan($row->expires_at)) {
-                return back()->withErrors(['code' => 'Код истёк. Сгенерируйте новый.'])->withInput();
-            }
+        if (!empty($code->expires_at) && now()->greaterThan($code->expires_at)) {
+            return back()->withErrors(['code' => 'Код истёк. Сгенерируйте новый.'])->withInput();
+        }
 
-            // владелец кода — "главный" аккаунт, к которому привязываемся
-            $ownerUserId = (int) $row->user_id;
+        // ===== [GUARD] Сам себе =====
+        if ((int) $code->user_id === (int) $current->id) {
+            return back()->withErrors([
+                'code' => "Нельзя привязать аккаунт к самому себе.\n" .
+                    "Этот код нужно вводить во ВТОРОМ аккаунте:\n" .
+                    "1) Скопируйте код\n" .
+                    "2) Выйдите из текущего аккаунта\n" .
+                    "3) Войдите вторым способом (Telegram/VK)\n" .
+                    "4) Введите код на этой странице",
+            ])->withInput();
+        }
 
-            if ($ownerUserId === (int) $user->id) {
-                return back()->withErrors(['code' => 'Нельзя привязать аккаунт к самому себе.'])->withInput();
-            }
+        // ===== [OPTIONAL] Код под конкретного провайдера =====
+        // target_provider = 'telegram' | 'vk' | null
+        if (!empty($code->target_provider) && $provider && $code->target_provider !== $provider) {
+            return back()->withErrors([
+                'code' => 'Этот код предназначен для входа через ' .
+                    ($code->target_provider === 'telegram' ? 'Telegram' : 'VK') .
+                    '. Перезайдите этим способом и введите код.',
+            ])->withInput();
+        }
 
-            // определяем текущего провайдера входа (мы добавим это в TG/VK контроллеры)
-            $provider = (string) $request->session()->get('auth_provider', '');
-            if (!in_array($provider, ['telegram', 'vk'], true)) {
-                return back()->withErrors(['code' => 'Не удалось определить провайдера входа (telegram/vk).'])->withInput();
-            }
+        /** @var User $owner */
+        $owner = User::findOrFail($code->user_id);
 
-            // вытаскиваем provider_user_id из текущего пользователя
-            // telegram => users.telegram_id, vk => users.vk_id
-            $providerUserId = null;
-            if ($provider === 'telegram') {
-                $providerUserId = $user->telegram_id;
-            } elseif ($provider === 'vk') {
-                $providerUserId = $user->vk_id;
-            }
+        // ===== [DETECT] что переносим из current в owner =====
+        $currentHasTg = !empty($current->telegram_id);
+        $currentHasVk = !empty($current->vk_id);
 
-            if (empty($providerUserId)) {
-                return back()->withErrors(['code' => 'В текущем аккаунте нет данных провайдера (telegram_id/vk_id).'])->withInput();
-            }
+        if (!$currentHasTg && !$currentHasVk) {
+            return back()->withErrors([
+                'code' => 'Не удалось определить Telegram/VK у текущего входа. Перезайдите через Telegram или VK и повторите.',
+            ])->withInput();
+        }
 
-            // защита: если этот provider_user_id уже привязан к кому-то — не даём дубль
-            $exists = DB::table('account_links')
-                ->where('provider', $provider)
-                ->where('provider_user_id', (string) $providerUserId)
-                ->exists();
+        // ===== [SAFETY] защита от перепривязки (не перезатираем чужое) =====
+        // Идемпотентно разрешаем только "то же самое значение".
+        if ($currentHasTg && !empty($owner->telegram_id) && (string) $owner->telegram_id !== (string) $current->telegram_id) {
+            return back()->withErrors([
+                'code' => 'У аккаунта-владельца кода уже привязан другой Telegram. Перепривязка запрещена.',
+            ])->withInput();
+        }
+        if ($currentHasVk && !empty($owner->vk_id) && (string) $owner->vk_id !== (string) $current->vk_id) {
+            return back()->withErrors([
+                'code' => 'У аккаунта-владельца кода уже привязан другой VK. Перепривязка запрещена.',
+            ])->withInput();
+        }
 
-            if ($exists) {
-                return back()->withErrors(['code' => 'Этот провайдер уже привязан к другому аккаунту.'])->withInput();
-            }
+        try {
+            DB::transaction(function () use ($request, $code, $owner, $current, $provider, $currentHasTg, $currentHasVk) {
+                // ---- 1) Уникальность провайдера: один TG/VK не может быть у двух user ----
+                if ($currentHasTg) {
+                    $busy = User::where('telegram_id', $current->telegram_id)
+                        ->where('id', '!=', $owner->id)
+                        ->exists();
+                    if ($busy) {
+                        abort(409, 'Этот Telegram уже привязан к другому аккаунту.');
+                    }
+                }
+                if ($currentHasVk) {
+                    $busy = User::where('vk_id', $current->vk_id)
+                        ->where('id', '!=', $owner->id)
+                        ->exists();
+                    if ($busy) {
+                        abort(409, 'Этот VK уже привязан к другому аккаунту.');
+                    }
+                }
 
-            // создаём привязку
-            DB::table('account_links')->insert([
-                'user_id' => $ownerUserId,
-                'provider' => $provider,
-                'provider_user_id' => (string) $providerUserId,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+                // ---- 2) ПЕРЕНОС: owner <= current ----
+                if ($currentHasTg) {
+                    $owner->telegram_id = $current->telegram_id;
+                    $owner->telegram_username = $current->telegram_username ?: $owner->telegram_username;
+                }
+                if ($currentHasVk) {
+                    $owner->vk_id = $current->vk_id;
+                    $owner->vk_email = $current->vk_email ?: $owner->vk_email;
+                }
+                $owner->save();
 
-            // помечаем код использованным
-            DB::table('account_link_codes')
-                ->where('id', $row->id)
-                ->update([
-                    'consumed_at' => now(),
-                    'consumed_by_user_id' => $user->id,
-                    'updated_at' => now(),
-                ]);
+                // ---- 3) ПЕРЕНОС: current очищаем (иначе UNIQUE constraint) ----
+                if ($currentHasTg) {
+                    $current->telegram_id = null;
+                    $current->telegram_username = null;
+                }
+                if ($currentHasVk) {
+                    $current->vk_id = null;
+                    $current->vk_email = null;
+                }
+                $current->save();
 
-            return redirect('/user/profile')->with('status', 'Аккаунт успешно привязан.');
-        });
+                // ---- 4) Код использован ----
+                DB::table('account_link_codes')
+                    ->where('id', $code->id)
+                    ->update([
+                        'consumed_at' => now(),
+                        'consumed_by_user_id' => $current->id,
+                        'updated_at' => now(),
+                    ]);
+
+                // ---- 5) Audit (история) ----
+                if (DB::getSchemaBuilder()->hasTable('account_link_audits')) {
+                    DB::table('account_link_audits')->insert([
+                        'user_id' => $owner->id,
+                        'linked_from_user_id' => $current->id,
+                        'provider' => $provider ?: ($currentHasTg ? 'telegram' : 'vk'),
+                        'provider_user_id' => $currentHasTg ? (string) $owner->telegram_id : (string) $owner->vk_id,
+                        'method' => 'link_code',
+                        'link_code_id' => $code->id,
+                        'ip' => $request->ip(),
+                        'user_agent' => substr((string) $request->userAgent(), 0, 255),
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+            });
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
+            // abort(409, ...) прилетает сюда
+            throw $e;
+        } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
+            // На всякий случай: если где-то всё же словили UNIQUE — возвращаем 409
+            abort(409, 'Этот Telegram/VK уже привязан к другому аккаунту.');
+        }
+
+        return redirect('/user/profile')->with('status', 'Аккаунты успешно привязаны ✅');
     }
 }

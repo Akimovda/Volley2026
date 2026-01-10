@@ -2,19 +2,14 @@
 
 namespace App\Http\Middleware;
 
-use Closure;
+use Illuminate\Http\Middleware\TrustProxies as Middleware;
 use Illuminate\Http\Request;
-use Symfony\Component\HttpFoundation\Response;
 
-class TrustProxies
+class TrustProxies extends Middleware
 {
-    /**
-     * Handle an incoming request.
-     *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
-     */
-    public function handle(Request $request, Closure $next): Response
-    {
-        return $next($request);
-    }
+    // nginx перед Laravel → доверяем прокси
+    protected $proxies = '*';
+
+    // учитываем X-Forwarded-* заголовки
+    protected $headers = Request::HEADER_X_FORWARDED_ALL;
 }
