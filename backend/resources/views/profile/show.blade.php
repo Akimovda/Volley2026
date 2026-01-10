@@ -1,3 +1,4 @@
+{{-- resources/views/profile/show.blade.php --}}
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
@@ -5,7 +6,9 @@
         </h2>
     </x-slot>
 
-    {{-- ===== [FLASH] Глобальное сообщение об успехе ===== --}}
+    {{-- ================================================================= --}}
+    {{-- ===== [FLASH] Глобальное сообщение ============================== --}}
+    {{-- ================================================================= --}}
     @if (session('status'))
         <div class="v-container mt-6">
             <div class="v-alert v-alert--success">
@@ -18,8 +21,9 @@
 
     @php
         /**
-         * ===== [DATA] Подготовка данных для страницы "Аккаунт" =====
-         * Здесь только чтение/форматирование (никаких сохранений).
+         * =====================================================================
+         * ===== [DATA] Подготовка данных для страницы "Аккаунт" ===============
+         * =====================================================================
          */
         /** @var \App\Models\User $u */
         $u = auth()->user();
@@ -51,7 +55,7 @@
             ->all() ?? [];
 
         // Возраст / дата рождения для вывода
-        $age = $u->ageYears();
+        $age   = method_exists($u, 'ageYears') ? $u->ageYears() : null;
         $birth = $u->birth_date ? $u->birth_date->format('Y-m-d') : '—';
     @endphp
 
@@ -59,7 +63,7 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-10">
 
             {{-- ================================================================= --}}
-            {{-- ===== [SECTION] Анкета игрока (ТОЛЬКО просмотр) =================== --}}
+            {{-- ===== [SECTION] Анкета игрока (ТОЛЬКО просмотр) ================== --}}
             {{-- ================================================================= --}}
             <x-action-section>
                 <x-slot name="title">
@@ -80,7 +84,7 @@
                         />
 
                         <div class="min-w-0 w-full">
-                            <div class="text-2xl font-bold">{{ $u->displayName() }}</div>
+                            <div class="text-2xl font-bold">{{ method_exists($u, 'displayName') ? $u->displayName() : ($u->name ?? '—') }}</div>
 
                             @if(!is_null($age))
                                 <div class="text-sm text-gray-600 mt-1">{{ $age }} лет</div>
@@ -127,7 +131,9 @@
                                 </div>
                             </div>
 
-                            {{-- ===== [BLOCK] Навыки ===== --}}
+                            {{-- ================================================================= --}}
+                            {{-- ===== [BLOCK] Навыки в волейболе (ВОЗВРАЩЕНО) ==================== --}}
+                            {{-- ================================================================= --}}
                             <div class="mt-6">
                                 <div class="font-semibold text-lg mb-2">Навыки в волейболе</div>
 
@@ -171,7 +177,7 @@
                                             <div>
                                                 Зона игры:
                                                 <span class="font-semibold">
-                                                    @if($u->beach_universal)
+                                                    @if(!empty($u->beach_universal))
                                                         Универсал (2 и 4)
                                                     @elseif(!is_null($beachPrimary))
                                                         Основная: {{ $beachPrimary }}
@@ -188,12 +194,13 @@
                                 </div>
                             </div>
 
-                            {{-- ===== [CTA] Редактировать профиль ===== --}}
+                            {{-- ===== [CTA] Редактировать профиль (ВОЗВРАЩЕНО) ===== --}}
                             <div class="pt-5">
                                 <a href="{{ url('/profile/complete') }}" class="v-btn v-btn--primary">
                                     Редактировать профиль
                                 </a>
                             </div>
+
                         </div>
                     </div>
                 </x-slot>
@@ -206,121 +213,124 @@
             {{-- ================================================================= --}}
             @php
                 /**
-                 * ===== [LINKING] Логика показа секции привязки =====
-                 * Показываем только если есть что привязывать (не привязаны оба провайдера).
+                 * UX:
+                 * - В профиле НЕ показываем кнопку "У меня уже есть код" (чтобы не вводили код в том же аккаунте)
+                 * - При этом генерация кода остаётся (account.link_code.store)
                  */
                 $provider = session('auth_provider'); // 'vk' | 'telegram' | null
                 $hasTg = !empty($u?->telegram_id);
                 $hasVk = !empty($u?->vk_id);
 
-                // какую привязку предлагать “по умолчанию”
                 $suggestProvider = null;
                 if ($provider === 'vk' && !$hasTg) $suggestProvider = 'telegram';
                 if ($provider === 'telegram' && !$hasVk) $suggestProvider = 'vk';
             @endphp
 
-{{-- ================================================================= --}}
-{{-- ===== [SECTION] Привязка Telegram / VK =========================== --}}
-{{-- ================================================================= --}}
+            <x-action-section>
+                <x-slot name="title">
+                    Привязка Telegram / VK
+                </x-slot>
 
-@if($hasTg && $hasVk)
-    {{-- ===== [STATE] Уже всё привязано (только сообщение) ===== --}}
-    <x-action-section>
-        <x-slot name="title">
-            Привязка Telegram / VK
-        </x-slot>
+                <x-slot name="description">
+                    Привяжите второй способ входа к текущему аккаунту.
+                </x-slot>
 
-        <x-slot name="description">
-            Способы входа уже связаны с этим аккаунтом.
-        </x-slot>
-
-        <x-slot name="content">
-            <div class="text-sm text-gray-700">
-                🔗 Telegram и VK уже привязаны ✅
-            </div>
-        </x-slot>
-    </x-action-section>
-
-    <x-section-border />
-@else
-    {{-- ===== [STATE] Есть что привязывать (генерация/ввод кода) ===== --}}
-    <x-action-section>
-        <x-slot name="title">
-            Привязка Telegram / VK
-        </x-slot>
-
-        <x-slot name="description">
-            Привяжите второй способ входа к текущему аккаунту.
-        </x-slot>
-
-        <x-slot name="content">
-            {{-- ===== [INFO] Текущий статус ===== --}}
-            <div class="text-sm text-gray-600 mb-3">
-                Текущий вход: <b>{{ $provider ?? 'не определён' }}</b><br>
-                Telegram: {!! $hasTg ? '<b>привязан</b>' : '<span class="text-gray-500">не привязан</span>' !!}<br>
-                VK: {!! $hasVk ? '<b>привязан</b>' : '<span class="text-gray-500">не привязан</span>' !!}
-            </div>
-
-            {{-- ===== [HINT] Рекомендуемая привязка ===== --}}
-            @if ($suggestProvider)
-                <div class="v-alert v-alert--info mb-4">
-                    <div class="v-alert__text">
-                        Рекомендуем привязать <b>{{ $suggestProvider === 'telegram' ? 'Telegram' : 'VK' }}</b>.
+                <x-slot name="content">
+                    {{-- Текущий статус --}}
+                    <div class="text-sm text-gray-600 mb-3">
+                        Текущий вход: <b>{{ $provider ?? 'не определён' }}</b><br>
+                        Telegram: {!! $hasTg ? '<b>привязан</b>' : '<span class="text-gray-500">не привязан</span>' !!}<br>
+                        VK: {!! $hasVk ? '<b>привязан</b>' : '<span class="text-gray-500">не привязан</span>' !!}
                     </div>
-                </div>
-            @endif
 
-            {{-- ===== [CODE] Показ одноразового кода, если только что сгенерировали ===== --}}
-            @if (session('link_code_plain'))
-                <div class="v-alert v-alert--info mb-4">
-                    <div class="v-alert__title">Ваш одноразовый код</div>
-                    <div class="v-alert__text">
-                        <div class="text-2xl font-mono font-bold tracking-widest">
-                            {{ session('link_code_plain') }}
+                    @if($hasTg && $hasVk)
+                        <div class="text-sm text-gray-700">
+                            🔗 Telegram и VK уже привязаны ✅
                         </div>
-                        <div class="mt-2 text-sm text-gray-600">
-                            Истекает: {{ session('link_code_expires_at') }}
+                    @else
+                        @if ($suggestProvider)
+                            <div class="v-alert v-alert--info mb-4">
+                                <div class="v-alert__text">
+                                    Рекомендуем привязать <b>{{ $suggestProvider === 'telegram' ? 'Telegram' : 'VK' }}</b>.
+                                </div>
+                            </div>
+                        @endif
+
+                        {{-- Инструкция --}}
+                        <div class="v-alert v-alert--info mb-4">
+                            <div class="v-alert__text">
+                                <div class="font-semibold mb-1">Как объединить аккаунты:</div>
+                                <ol class="list-decimal ml-5 space-y-1">
+                                    <li>Нажмите <b>«Сгенерировать код»</b> (в этом аккаунте).</li>
+                                    <li><b>Выйдите</b> из текущего аккаунта.</li>
+                                    <li>
+                                        Войдите <b>вторым способом</b>
+                                        @if($suggestProvider)
+                                            ({{ $suggestProvider === 'telegram' ? 'Telegram' : 'VK' }})
+                                        @else
+                                            (Telegram или VK)
+                                        @endif
+                                        .
+                                    </li>
+                                    <li>Во втором аккаунте откройте страницу ввода кода и вставьте код.</li>
+                                </ol>
+                                <div class="mt-2 text-sm text-gray-600">
+                                    Это предотвращает частую ошибку: ввод кода в том же аккаунте, где он был создан.
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </div>
-            @endif
 
-            {{-- ===== [FORM] Генерация кода (только когда есть что привязывать) ===== --}}
-            <form method="POST" action="{{ route('account.link_code.store') }}" class="space-y-3">
-                @csrf
+                        {{-- Показ кода, если только что сгенерировали --}}
+                        @if (session('link_code_plain'))
+                            <div class="v-alert v-alert--info mb-4">
+                                <div class="v-alert__title">Ваш одноразовый код</div>
+                                <div class="v-alert__text">
+                                    <div class="text-2xl font-mono font-bold tracking-widest">
+                                        {{ session('link_code_plain') }}
+                                    </div>
+                                    @if(session('link_code_expires_at'))
+                                        <div class="mt-2 text-sm text-gray-600">
+                                            Истекает: {{ session('link_code_expires_at') }}
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
+                        @endif
 
-                @if ($suggestProvider)
-                    {{-- Автоматически выбираем, что именно привязывать --}}
-                    <input type="hidden" name="target_provider" value="{{ $suggestProvider }}">
-                @else
-                    {{-- Если не смогли определить провайдера — даём выбор (без “любой”) --}}
-                    <div>
-                        <label class="block mb-1 font-medium">Что привязать?</label>
-                        <select name="target_provider" class="v-input w-full" required>
-                            <option value="">— выберите —</option>
-                            @if(!$hasTg)<option value="telegram">Telegram</option>@endif
-                            @if(!$hasVk)<option value="vk">VK</option>@endif
-                        </select>
-                    </div>
-                @endif
+                        {{-- Генерация кода --}}
+                        <form method="POST" action="{{ route('account.link_code.store') }}" class="space-y-3">
+                            @csrf
 
-                <div class="v-actions">
-                    <button type="submit" class="v-btn v-btn--primary">Сгенерировать код</button>
-                    <a class="v-btn v-btn--secondary" href="{{ route('account.link.show') }}">У меня уже есть код</a>
-                </div>
-            </form>
+                            @if ($suggestProvider)
+                                <input type="hidden" name="target_provider" value="{{ $suggestProvider }}">
+                            @else
+                                <div>
+                                    <label class="block mb-1 font-medium">Что привязать?</label>
+                                    <select name="target_provider" class="v-input w-full" required>
+                                        <option value="">— выберите —</option>
+                                        @if(!$hasTg)<option value="telegram">Telegram</option>@endif
+                                        @if(!$hasVk)<option value="vk">VK</option>@endif
+                                    </select>
+                                </div>
+                            @endif
 
-            {{-- ===== [OPTIONAL] Быстрая привязка VK напрямую (если вошли через TG) ===== --}}
-            @if($provider === 'telegram' && !$hasVk)
-                <div class="v-actions mt-3">
-                    <a class="v-btn v-btn--secondary" href="{{ route('auth.vk.redirect') }}">Привязать VK напрямую</a>
-                </div>
-            @endif
-        </x-slot>
-    </x-action-section>
+                            <div class="v-actions">
+                                <button type="submit" class="v-btn v-btn--primary">Сгенерировать код</button>
+                                {{-- Ссылку "У меня уже есть код" в профиле НЕ показываем --}}
+                            </div>
+                        </form>
 
-    <x-section-border />
-@endif
+                        {{-- Быстрая привязка VK напрямую (если вошли через TG) --}}
+                        @if($provider === 'telegram' && !$hasVk)
+                            <div class="v-actions mt-3">
+                                <a class="v-btn v-btn--secondary" href="{{ route('auth.vk.redirect') }}">Привязать VK напрямую</a>
+                            </div>
+                        @endif
+                    @endif
+                </x-slot>
+            </x-action-section>
+
+            <x-section-border />
 
             {{-- ================================================================= --}}
             {{-- ===== [JETSTREAM] Пароль / Сессии / Удаление аккаунта ============= --}}
