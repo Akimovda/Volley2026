@@ -10,7 +10,12 @@ use App\Http\Controllers\EventRegistrationController;
 use App\Http\Controllers\UserDirectoryController;
 use App\Http\Controllers\UserPublicController;
 use App\Http\Controllers\OrganizerRequestController;
+
 use App\Http\Controllers\Admin\OrganizerRequestAdminController;
+use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Admin\AdminUserController;
+use App\Http\Controllers\Admin\AdminRoleController;
+use App\Http\Controllers\Admin\AdminAuditController;
 
 use App\Http\Controllers\Account\LinkCodeController;
 use App\Http\Controllers\Account\LinkConsumeController;
@@ -54,6 +59,30 @@ Route::get('/auth/vk/callback', [VkAuthController::class, 'callback'])
 
 /*
 |--------------------------------------------------------------------------
+| ADMIN панель
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth', 'can:is-admin'])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
+        Route::get('/dashboard', [\App\Http\Controllers\Admin\AdminDashboardController::class, 'index'])
+            ->name('dashboard');
+
+        Route::get('/audits', [\App\Http\Controllers\Admin\AdminAuditController::class, 'index'])
+            ->name('audits.index');
+
+        Route::get('/users', [\App\Http\Controllers\Admin\AdminUserController::class, 'index'])
+            ->name('users.index');
+
+        Route::get('/users/{user}', [\App\Http\Controllers\Admin\AdminUserController::class, 'show'])
+            ->name('users.show');
+
+        Route::post('/users/{user}/role', [\App\Http\Controllers\Admin\AdminRoleController::class, 'updateUserRole'])
+            ->name('users.role.update');
+    });
+/*
+|--------------------------------------------------------------------------
 | Events (public)
 |--------------------------------------------------------------------------
 */
@@ -64,9 +93,7 @@ Route::get('/events', [EventsController::class, 'index'])
 |--------------------------------------------------------------------------
 | Account link-code flow (объединение/привязка через код)
 |--------------------------------------------------------------------------
-| ВАЖНО: это нужно для profile/show.blade.php -> route('account.link_code.store') и т.д.
 */
-/* привязка по коду часть 2 
 Route::middleware(['auth'])->group(function () {
     Route::post('/account/link-code', [LinkCodeController::class, 'store'])
         ->name('account.link_code.store');
@@ -76,7 +103,7 @@ Route::middleware(['auth'])->group(function () {
 
     Route::post('/account/link', [LinkConsumeController::class, 'store'])
         ->name('account.link.store');
-конец кода привязки по коду */
+});
     // Organizer requests
     Route::post('/organizer/request', [OrganizerRequestController::class, 'store'])
         ->name('organizer.request');
