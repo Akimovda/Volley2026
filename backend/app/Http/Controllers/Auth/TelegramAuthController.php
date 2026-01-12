@@ -12,7 +12,6 @@ class TelegramAuthController extends Controller
 {
     public function redirect(Request $request)
     {
-        // ВАЖНО: auth_provider тут не трогаем
         $request->session()->put('oauth_provider', 'telegram');
         $request->session()->put('oauth_intent', Auth::check() ? 'link' : 'login');
 
@@ -35,44 +34,37 @@ class TelegramAuthController extends Controller
         }
 
         $telegramId = (string) ($data['id'] ?? '');
-        if ($telegramId === '') {
-            abort(403, 'Telegram id missing');
-        }
+        if ($telegramId === '') abort(403, 'Telegram id missing');
 
         $telegramUsername = $data['username'] ?? null;
         $telegramUsername = $telegramUsername ? ltrim($telegramUsername, '@') : null;
 
         $intent = $request->session()->get('oauth_intent', Auth::check() ? 'link' : 'login');
 
-        // =========================
-        // MODE: LINK (привязка)
-        // =========================
+        // ===== LINK =====
         if ($intent === 'link' && Auth::check()) {
-            /** @var User $current */
-            $current = Auth::user();
+            $currentUser = Auth::user();
 
             $existsForOther = User::where('telegram_id', $telegramId)
-                ->where('id', '!=', $current->id)
+                ->where('id', '!=', $currentUser->id)
                 ->exists();
 
             if ($existsForOther) {
-                return redirect('/user/profile')->with('error', 'Этот Telegram уже привязан к другому аккаунту.');
+                return redirect('/user/profile')
+                    ->with('error', 'Этот Telegram уже привязан к другому аккаунту.');
             }
 
-            $current->telegram_id = $telegramId;
-            $current->telegram_username = $telegramUsername;
-            $current->save();
+            $currentUser->telegram_id = $telegramId;
+            $currentUser->telegram_username = $telegramUsername;
+            $currentUser->save();
 
-            // auth_provider ставим только на УСПЕХЕ
             $request->session()->put('auth_provider', 'telegram');
             $request->session()->put('auth_provider_id', $telegramId);
 
-            return redirect('/user/profile')->with('status', 'Telegram привязан');
+            return redirect('/user/profile')->with('status', 'Telegram привязан ✅');
         }
 
-        // =========================
-        // MODE: LOGIN (вход/создание)
-        // =========================
+        // ===== LOGIN =====
         $fakeEmail = "tg_{$telegramId}@telegram.local";
 
         $user = User::where('telegram_id', $telegramId)
@@ -93,9 +85,7 @@ class TelegramAuthController extends Controller
                     ->where('id', '!=', $user->id)
                     ->exists();
 
-                if ($existsForOther) {
-                    abort(409, 'Этот Telegram уже привязан к другому аккаунту.');
-                }
+                if ($existsForOther) abort(409, 'Этот Telegram уже привязан к другому аккаунту.');
 
                 $user->telegram_id = $telegramId;
             }
@@ -108,9 +98,10 @@ class TelegramAuthController extends Controller
         }
 
         Auth::login($user, true);
+        $request->session()->regenerate();
 
         $request->session()->put('auth_provider', 'telegram');
-        $request->session()->put('auth_provider_id', (string) $user->telegram_id);
+        $request->session()->put('auth_provider_id', $telegramId);
 
         return redirect()->intended('/events');
     }
