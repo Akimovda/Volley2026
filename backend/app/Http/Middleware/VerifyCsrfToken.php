@@ -2,19 +2,28 @@
 
 namespace App\Http\Middleware;
 
-use Closure;
-use Illuminate\Http\Request;
-use Symfony\Component\HttpFoundation\Response;
+use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken as Middleware;
 
-class VerifyCsrfToken
+class VerifyCsrfToken extends Middleware
 {
     /**
-     * Handle an incoming request.
+     * ------------------------------------------------------------------
+     * Исключения из CSRF-проверки
+     * ------------------------------------------------------------------
      *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     * ⚠️ ВАЖНО:
+     * - НЕ отключаем CSRF глобально
+     * - Исключаем ТОЛЬКО Telegram Login Widget callback
+     *
+     * Почему:
+     * - Telegram НЕ отправляет CSRF token
+     * - VK / Yandex — OAuth, CSRF не нужен (state handled Socialite)
+     * - Fortify (login/register/password/confirm) ОБЯЗАНЫ быть под CSRF
+     *
+     * @var array<int, string>
      */
-    public function handle(Request $request, Closure $next): Response
-    {
-        return $next($request);
-    }
+    protected $except = [
+        // Telegram Login Widget callback
+        'auth/telegram/callback',
+    ];
 }

@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
@@ -15,33 +13,26 @@ use Laravel\Socialite\Facades\Socialite;
 class VkAuthController extends Controller
 {
     /**
-     * ------------------------------------------------------------
-     * REDIRECT (единый контракт)
-     * ------------------------------------------------------------
-     * - пишет только oauth_provider/oauth_intent
-     * - НЕ трогает auth_provider
+     * ЕДИНООБРАЗНЫЙ redirect():
+     * - записываем oauth_provider / oauth_intent
+     * - auth_provider НЕ трогаем
      */
     public function redirect(Request $request)
     {
         $isLink = $request->boolean('link');
 
+        if ($isLink && !Auth::check()) {
+            return redirect()->route('login')->with('error', 'Сначала войдите, чтобы привязать VK.');
+        }
+
         $request->session()->put('oauth_provider', 'vk');
         $request->session()->put('oauth_intent', ($isLink && Auth::check()) ? 'link' : 'login');
-
-        if ($isLink && !Auth::check()) {
-            return redirect()->route('login')->with('error', 'Сначала войдите в аккаунт, чтобы привязать VK.');
-        }
 
         return Socialite::driver('vkid')
             ->scopes(['email'])
             ->redirect();
     }
 
-    /**
-     * ------------------------------------------------------------
-     * CALLBACK (единый login/link)
-     * ------------------------------------------------------------
-     */
     public function callback(Request $request)
     {
         try {
@@ -55,21 +46,17 @@ class VkAuthController extends Controller
         $name    = $vkUser->getName();
         $avatar  = $vkUser->getAvatar();
 
-        $intent = (string) $request->session()->get('oauth_intent', Auth::check() ? 'link' : 'login');
+        $intent = (string) $request->session()->pull('oauth_intent', Auth::check() ? 'link' : 'login');
+        $request->session()->forget('oauth_provider');
 
         // =========================
-        // MODE: LINK
+        // LINK
         // =========================
-        if ($intent === 'link') {
-            if (!Auth::check()) {
-                return redirect()->route('login')->with('error', 'Сессия истекла. Войдите и повторите привязку VK.');
-            }
-
+        if ($intent === 'link' && Auth::check()) {
             /** @var User $current */
             $current = Auth::user();
 
-            $existsForOther = User::query()
-                ->where('vk_id', $vkId)
+            $existsForOther = User::where('vk_id', $vkId)
                 ->where('id', '!=', $current->id)
                 ->exists();
 
@@ -77,24 +64,25 @@ class VkAuthController extends Controller
                 return redirect('/user/profile')->with('error', 'Этот VK уже привязан к другому аккаунту.');
             }
 
-            $current->vk_id = $vkId;
-            if (!empty($vkEmail)) {
+            if ($current->isFillable('vk_id')) {
+                $current->vk_id = $vkId;
+            }
+            if ($current->isFillable('vk_email') && !empty($vkEmail) && empty($current->vk_email)) {
                 $current->vk_email = $vkEmail;
             }
 
-            // avatar only if missing
-            $thumbPath = ProfilePhotoService::storeProviderAvatarIfMissing(
+            // avatar -> только если пусто
+            $baseName = ProfilePhotoService::storeProviderAvatarBasenameIfMissing(
                 userId: (int) $current->id,
-                avatarUrl: $avatar ?: null,
-                currentProfilePhotoPath: $current->profile_photo_path ?? null,
+                avatarUrl: $avatar,
+                currentProfilePhotoPath: $current->profile_photo_path ?? null
             );
-            if (!empty($thumbPath)) {
-                $current->profile_photo_path = $thumbPath;
+            if (!empty($baseName) && $current->isFillable('profile_photo_path')) {
+                $current->profile_photo_path = $baseName;
             }
 
             $current->save();
 
-            // фиксируем факт успешной привязки
             $request->session()->put('auth_provider', 'vk');
             $request->session()->put('auth_provider_id', $vkId);
 
@@ -102,75 +90,60 @@ class VkAuthController extends Controller
         }
 
         // =========================
-        // MODE: LOGIN
+        // LOGIN
         // =========================
-        $user = User::query()->where('vk_id', $vkId)->first();
+        $user = User::where('vk_id', $vkId)->first();
 
-        // fallback по email (если пришёл)
+        // (опционально) если email пришёл и есть совпадение — можно привязать к существующему
         if (!$user && !empty($vkEmail)) {
-            $user = User::query()->where('email', $vkEmail)->first();
-        }
-
-        if ($user) {
-            // дозапишем vk_id если найден по email
-            if (empty($user->vk_id)) {
-                $existsForOther = User::query()
-                    ->where('vk_id', $vkId)
-                    ->where('id', '!=', $user->id)
-                    ->exists();
-
+            $user = User::where('email', $vkEmail)->first();
+            if ($user) {
+                // убедимся, что vk_id не занят другим
+                $existsForOther = User::where('vk_id', $vkId)->where('id', '!=', $user->id)->exists();
                 if ($existsForOther) {
                     abort(409, 'Этот VK уже привязан к другому аккаунту.');
                 }
+                if ($user->isFillable('vk_id') && empty($user->vk_id)) $user->vk_id = $vkId;
+                if ($user->isFillable('vk_email') && !empty($vkEmail) && empty($user->vk_email)) $user->vk_email = $vkEmail;
+                $user->save();
+            }
+        }
 
-                $user->vk_id = $vkId;
+        if (!$user) {
+            $displayName = $name ?: "VK User #{$vkId}";
+
+            // users.email NOT NULL -> безопасный email
+            $safeEmail = null;
+            if (!empty($vkEmail) && !User::where('email', $vkEmail)->exists()) {
+                $safeEmail = $vkEmail;
+            }
+            if (empty($safeEmail)) {
+                $safeEmail = "vk_{$vkId}@vk.local";
+                if (User::where('email', $safeEmail)->exists()) {
+                    $safeEmail = "vk_{$vkId}_" . now()->timestamp . "@vk.local";
+                }
             }
 
-            if (!empty($vkEmail)) {
-                $user->vk_email = $vkEmail;
-            }
+            $user = new User();
+            if ($user->isFillable('name')) $user->name = $displayName;
+            if ($user->isFillable('email')) $user->email = $safeEmail;
+            if ($user->isFillable('password')) $user->password = Hash::make(str()->random(32));
 
-            // avatar only if missing
-            $thumbPath = ProfilePhotoService::storeProviderAvatarIfMissing(
-                userId: (int) $user->id,
-                avatarUrl: $avatar ?: null,
-                currentProfilePhotoPath: $user->profile_photo_path ?? null,
-            );
-            if (!empty($thumbPath)) {
-                $user->profile_photo_path = $thumbPath;
-            }
+            if ($user->isFillable('vk_id')) $user->vk_id = $vkId;
+            if ($user->isFillable('vk_email') && !empty($vkEmail)) $user->vk_email = $vkEmail;
 
             $user->save();
         }
 
-        if (!$user) {
-            $safeName = $name ?: "VK User #{$vkId}";
-
-            // email NOT NULL => делаем безопасный
-            if (!empty($vkEmail) && !User::query()->where('email', $vkEmail)->exists()) {
-                $safeEmail = $vkEmail;
-            } else {
-                $safeEmail = "vk_{$vkId}_" . now()->timestamp . "@vk.local";
-            }
-
-            $user = User::query()->create([
-                'name'     => $safeName,
-                'email'    => $safeEmail,
-                'password' => Hash::make(str()->random(32)),
-                'vk_id'    => $vkId,
-                'vk_email' => $vkEmail,
-            ]);
-
-            // avatar only if missing (после create id уже есть)
-            $thumbPath = ProfilePhotoService::storeProviderAvatarIfMissing(
-                userId: (int) $user->id,
-                avatarUrl: $avatar ?: null,
-                currentProfilePhotoPath: $user->profile_photo_path ?? null,
-            );
-            if (!empty($thumbPath)) {
-                $user->profile_photo_path = $thumbPath;
-                $user->save();
-            }
+        // avatar -> только если пусто
+        $baseName = ProfilePhotoService::storeProviderAvatarBasenameIfMissing(
+            userId: (int) $user->id,
+            avatarUrl: $avatar,
+            currentProfilePhotoPath: $user->profile_photo_path ?? null
+        );
+        if (!empty($baseName) && $user->isFillable('profile_photo_path')) {
+            $user->profile_photo_path = $baseName;
+            $user->save();
         }
 
         Auth::login($user, true);

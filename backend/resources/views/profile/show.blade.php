@@ -49,21 +49,64 @@
         $age   = method_exists($u, 'ageYears') ? $u->ageYears() : null;
         $birth = $u->birth_date ? $u->birth_date->format('Y-m-d') : '—';
 
-        // ВАЖНО: теперь поддерживаем yandex
-        $provider = session('auth_provider'); // 'vk' | 'telegram' | 'yandex' | null
+        // provider in session: telegram|vk|yandex|null
+        $provider = session('auth_provider');
 
         $hasTg = !empty($u?->telegram_id);
         $hasVk = !empty($u?->vk_id);
         $hasYa = !empty($u?->yandex_id);
 
-        // “провайдер выглядит подозрительно” — если в сессии одно, а привязано другое
+        // “provider looks off” (после неуспешной привязки мог остаться мусор в сессии)
         $providerLooksOff = false;
         if ($provider === 'telegram' && !$hasTg && ($hasVk || $hasYa)) $providerLooksOff = true;
         if ($provider === 'vk' && !$hasVk && ($hasTg || $hasYa)) $providerLooksOff = true;
         if ($provider === 'yandex' && !$hasYa && ($hasTg || $hasVk)) $providerLooksOff = true;
 
-        // Куда вести привязку Яндекса (у тебя link-режим по ?link=1)
-        $yandexLinkUrl = route('auth.yandex.redirect', ['link' => 1]);
+        // link urls (для VK/Yandex оставляем как было)
+        $vkLinkUrl     = route('auth.vk.redirect', ['link' => 1]);
+        $yandexLinkUrl  = route('auth.yandex.redirect', ['link' => 1]);
+
+        $allLinked = $hasTg && $hasVk && $hasYa;
+
+        // Telegram widget settings
+        $tgBotUsername = config('services.telegram.bot_username'); // ОБЯЗАТЕЛЬНО username бота, без @
+        $tgAuthUrl     = route('auth.telegram.callback', absolute: true); // ОБЯЗАТЕЛЬНО абсолютный URL
+
+        // UI helpers
+        $providerIcon = function (?string $p) {
+            $p = $p ?: 'unknown';
+
+            $base = 'display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid #e5e7eb;border-radius:9999px;background:#fff;';
+            $dot  = 'display:inline-block;width:10px;height:10px;border-radius:9999px;';
+            $txt  = 'font-weight:600;font-size:14px;line-height:1;color:#111827;';
+
+            if ($p === 'vk') {
+                return '<span style="'.$base.'"><span style="'.$dot.'background:#2787F5;"></span><span style="'.$txt.'">VK</span></span>';
+            }
+            if ($p === 'telegram') {
+                return '<span style="'.$base.'"><span style="'.$dot.'background:#2AABEE;"></span><span style="'.$txt.'">Telegram</span></span>';
+            }
+            if ($p === 'yandex') {
+                return '<span style="'.$base.'"><span style="'.$dot.'background:#FF0000;"></span><span style="'.$txt.'">Yandex</span></span>';
+            }
+
+            return '<span style="'.$base.'"><span style="'.$dot.'background:#9CA3AF;"></span><span style="'.$txt.'">—</span></span>';
+        };
+
+        $badge = function (bool $ok) {
+            if ($ok) {
+                return '<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:9999px;background:#ECFDF5;color:#065F46;font-weight:700;font-size:12px;">✓ привязан</span>';
+            }
+            return '<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:9999px;background:#F3F4F6;color:#6B7280;font-weight:700;font-size:12px;">— не привязан</span>';
+        };
+
+        $miniIcon = function (string $p) {
+            $dot  = 'display:inline-block;width:10px;height:10px;border-radius:9999px;';
+            if ($p === 'vk') return '<span title="VK" style="'.$dot.'background:#2787F5;"></span>';
+            if ($p === 'telegram') return '<span title="Telegram" style="'.$dot.'background:#2AABEE;"></span>';
+            if ($p === 'yandex') return '<span title="Yandex" style="'.$dot.'background:#FF0000;"></span>';
+            return '<span style="'.$dot.'background:#9CA3AF;"></span>';
+        };
     @endphp
 
     <div class="py-10">
@@ -75,6 +118,7 @@
                 <x-slot name="description">
                     Здесь отображаются данные анкеты. Для изменения нажмите «Редактировать профиль».
                 </x-slot>
+
                 <x-slot name="content">
                     <div class="flex items-start gap-4">
                         <img
@@ -139,10 +183,12 @@
                                     <div class="v-card">
                                         <div class="v-card__body space-y-2">
                                             <div class="font-semibold">Классический волейбол</div>
+
                                             <div>
                                                 Уровень (классика):
                                                 <span class="font-semibold">{{ $u->classic_level ?? '—' }}</span>
                                             </div>
+
                                             <div>
                                                 Амплуа игрока:
                                                 <span class="font-semibold">
@@ -162,10 +208,12 @@
                                     <div class="v-card">
                                         <div class="v-card__body space-y-2">
                                             <div class="font-semibold">Пляжный волейбол</div>
+
                                             <div>
                                                 Уровень (пляж):
                                                 <span class="font-semibold">{{ $u->beach_level ?? '—' }}</span>
                                             </div>
+
                                             <div>
                                                 Зона игры:
                                                 <span class="font-semibold">
@@ -207,59 +255,137 @@
                 </x-slot>
 
                 <x-slot name="content">
-                    <div class="text-sm text-gray-600 mb-4">
-                        Текущий вход (сессия): <b>{{ $provider ?? 'не определён' }}</b><br>
-                        Telegram: {!! $hasTg ? '<b>привязан</b>' : '<span class="text-gray-500">не привязан</span>' !!}<br>
-                        VK: {!! $hasVk ? '<b>привязан</b>' : '<span class="text-gray-500">не привязан</span>' !!}<br>
-                        Yandex: {!! $hasYa ? '<b>привязан</b>' : '<span class="text-gray-500">не привязан</span>' !!}
-                    </div>
+                    <div class="flex flex-col gap-4">
 
-                    @if($providerLooksOff)
-                        <div class="v-alert v-alert--info mb-4">
-                            <div class="v-alert__text">
-                                Провайдер в сессии мог измениться из‑за неуспешной попытки привязки.
-                                Ориентируйтесь на строки “привязан/не привязан”.
-                            </div>
-                        </div>
-                    @endif
-
-                    @if($hasTg && $hasVk && $hasYa)
                         <div class="text-sm text-gray-700">
-                            🔗 Telegram, VK и Yandex уже привязаны ✅
-                        </div>
-                    @else
-                        <div class="v-alert v-alert--info mb-4">
-                            <div class="v-alert__text">
-                                <div class="font-semibold mb-1">Как привязать:</div>
-                                <ol class="list-decimal ml-5 space-y-1">
-                                    <li>Нажмите кнопку привязки ниже.</li>
-                                    <li>Подтвердите вход во втором провайдере.</li>
-                                    <li>После возврата на сайт провайдер привяжется к текущему аккаунту.</li>
-                                </ol>
+                            <div class="flex items-center gap-2">
+                                <span class="text-gray-600">Текущий вход (сессия):</span>
+                                {!! $providerIcon($provider) !!}
+                            </div>
+
+                            <div class="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3">
+                                <div class="v-card">
+                                    <div class="v-card__body flex items-center justify-between gap-3">
+                                        <div class="flex items-center gap-2">
+                                            {!! $miniIcon('telegram') !!}
+                                            <span class="font-semibold">Telegram</span>
+                                        </div>
+                                        {!! $badge($hasTg) !!}
+                                    </div>
+                                </div>
+
+                                <div class="v-card">
+                                    <div class="v-card__body flex items-center justify-between gap-3">
+                                        <div class="flex items-center gap-2">
+                                            {!! $miniIcon('vk') !!}
+                                            <span class="font-semibold">VK</span>
+                                        </div>
+                                        {!! $badge($hasVk) !!}
+                                    </div>
+                                </div>
+
+                                <div class="v-card">
+                                    <div class="v-card__body flex items-center justify-between gap-3">
+                                        <div class="flex items-center gap-2">
+                                            {!! $miniIcon('yandex') !!}
+                                            <span class="font-semibold">Yandex</span>
+                                        </div>
+                                        {!! $badge($hasYa) !!}
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="v-actions flex flex-col md:flex-row gap-2 flex-wrap">
-                            {{-- Показываем ВСЕ доступные кнопки привязки, кроме "того, который уже привязан" --}}
-                            @if(!$hasVk)
-                                <a class="v-btn v-btn--secondary" href="{{ route('auth.vk.redirect') }}">
-                                    Привязать VK
-                                </a>
-                            @endif
+                        @if($providerLooksOff)
+                            <div class="v-alert v-alert--info">
+                                <div class="v-alert__text">
+                                    Провайдер в сессии мог измениться из‑за неуспешной попытки привязки.
+                                    Ориентируйтесь на статусы “привязан/не привязан”.
+                                </div>
+                            </div>
+                        @endif
 
-                            @if(!$hasTg)
-                                <a class="v-btn v-btn--secondary" href="{{ route('auth.telegram.redirect') }}">
-                                    Привязать Telegram
-                                </a>
-                            @endif
+                        @if($allLinked)
+                            <div class="v-alert v-alert--success">
+                                <div class="v-alert__text flex items-center gap-2">
+                                    <span>🔗</span>
+                                    <span class="font-semibold">Все способы входа уже привязаны</span>
+                                    <span class="inline-flex items-center gap-2">
+                                        {!! $miniIcon('telegram') !!}
+                                        {!! $miniIcon('vk') !!}
+                                        {!! $miniIcon('yandex') !!}
+                                    </span>
+                                    <span>✅</span>
+                                </div>
+                            </div>
+                        @else
+                            <div class="v-alert v-alert--info">
+                                <div class="v-alert__text">
+                                    <div class="font-semibold mb-1">Как привязать:</div>
+                                    <ol class="list-decimal ml-5 space-y-1">
+                                        <li>Нажмите кнопку нужного провайдера ниже.</li>
+                                        <li>Подтвердите вход у провайдера.</li>
+                                        <li>После возврата на сайт провайдер привяжется к текущему аккаунту.</li>
+                                    </ol>
+                                </div>
+                            </div>
 
-                            @if(!$hasYa)
-                                <a class="v-btn v-btn--secondary" href="{{ $yandexLinkUrl }}">
-                                    Привязать Yandex
-                                </a>
-                            @endif
-                        </div>
-                    @endif
+                            <div class="v-actions flex flex-col md:flex-row gap-3 flex-wrap items-start">
+                                {{-- VK: link button --}}
+                                @if(!$hasVk)
+                                    <a class="v-btn v-btn--secondary" href="{{ $vkLinkUrl }}">
+                                        <span class="inline-flex items-center gap-2">
+                                            {!! $miniIcon('vk') !!}
+                                            <span>Привязать VK</span>
+                                        </span>
+                                    </a>
+                                @endif
+
+                                {{-- Yandex: link button --}}
+                                @if(!$hasYa)
+                                    <a class="v-btn v-btn--secondary" href="{{ $yandexLinkUrl }}">
+                                        <span class="inline-flex items-center gap-2">
+                                            {!! $miniIcon('yandex') !!}
+                                            <span>Привязать Yandex</span>
+                                        </span>
+                                    </a>
+                                @endif
+
+                                {{-- Telegram: widget (без “подготовить привязку”) --}}
+                                @if(!$hasTg)
+                                    <div class="v-card">
+                                        <div class="v-card__body">
+                                            <div class="text-sm text-gray-700 mb-2 flex items-center gap-2">
+                                                {!! $miniIcon('telegram') !!}
+                                                <span class="font-semibold">Привязать Telegram</span>
+                                            </div>
+
+                                            @if(empty($tgBotUsername))
+                                                <div class="text-sm text-red-600">
+                                                    Не задан <code>services.telegram.bot_username</code> (TELEGRAM_BOT_USERNAME).
+                                                </div>
+                                            @else
+                                                <script
+                                                    async
+                                                    src="https://telegram.org/js/telegram-widget.js?22"
+                                                    data-telegram-login="{{ $tgBotUsername }}"
+                                                    data-size="large"
+                                                    data-radius="10"
+                                                    data-userpic="true"
+                                                    data-request-access="write"
+                                                    data-auth-url="{{ $tgAuthUrl }}">
+                                                </script>
+                                            @endif
+
+                                            <div class="text-xs text-gray-500 mt-2">
+                                                Если кнопка не появляется — проверьте <code>TELEGRAM_BOT_USERNAME</code> (без @) и разрешённый домен у бота в BotFather.
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endif
+                            </div>
+                        @endif
+                    </div>
                 </x-slot>
             </x-action-section>
 
@@ -283,6 +409,7 @@
                     @livewire('profile.delete-user-form')
                 </div>
             @endif
+
         </div>
     </div>
 </x-app-layout>

@@ -1,29 +1,32 @@
 <?php
 
-declare(strict_types=1);
-
 namespace App\Support;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 
+/**
+ * ProfilePhotoService
+ *
+ * ЕДИНЫЙ контракт для всех провайдеров (Telegram/VK/Yandex):
+ * - сохраняем оригинал в:  storage/app/public/avatars/original/{userId}/av-{userId}.{ext}
+ * - сохраняем thumb в:     storage/app/public/avatars/thumbs/{userId}/av-{userId}.jpg (250x250)
+ * - в БД пишем ТОЛЬКО basename без расширения: "av-{userId}"
+ *
+ * Важно: Этот сервис НЕ решает "как собирать URL" — это делается в User::getProfilePhotoUrlAttribute().
+ */
 class ProfilePhotoService
 {
     /**
-     * Скачивает аватар провайдера ТОЛЬКО если у пользователя ещё нет profile_photo_path.
+     * Скачиваем и сохраняем аватар провайдера ТОЛЬКО если у пользователя ещё нет profile_photo_path.
      *
-     * Структура хранения (disk=public):
-     *  - avatars/original/{userId}/av-{userId}-{ts}-{rand}.{ext}
-     *  - avatars/thumbs/{userId}/av-{userId}-{ts}-{rand}.jpg   (квадрат 250x250)
-     *
-     * Возвращает путь, который можно положить в users.profile_photo_path (thumb).
+     * @return string|null  Возвращает basename для БД: "av-{userId}" или null если ничего не сохранили
      */
-    public static function storeProviderAvatarIfMissing(
+    public static function storeProviderAvatarBasenameIfMissing(
         int $userId,
         ?string $avatarUrl,
         ?string $currentProfilePhotoPath
     ): ?string {
-        if ($userId <= 0) return null;
         if (!empty($currentProfilePhotoPath)) return null;
         if (empty($avatarUrl)) return null;
 
@@ -34,61 +37,67 @@ class ProfilePhotoService
             $bytes = (string) $resp->body();
             if ($bytes === '') return null;
 
-            // Определяем формат по содержимому/заголовку
-            $ext = self::guessExtension($resp->header('Content-Type'), $bytes) ?? 'jpg';
+            $contentType = $resp->header('Content-Type');
+            $ext = self::guessExtension($contentType) ?? self::guessExtensionFromBytes($bytes) ?? 'jpg';
 
-            // Короткое имя файла: av-45-20260112153010-1234
-            $base = self::makeBaseName($userId);
+            $baseName = "av-{$userId}";
 
-            $originalPath = "avatars/original/{$userId}/{$base}.{$ext}";
-            $thumbPath    = "avatars/thumbs/{$userId}/{$base}.jpg";
+            $originalPath = "avatars/original/{$userId}/{$baseName}.{$ext}";
+            $thumbPath    = "avatars/thumbs/{$userId}/{$baseName}.jpg";
 
-            // 1) оригинал
+            // original
             Storage::disk('public')->put($originalPath, $bytes);
 
-            // 2) thumb 250x250 (JPG)
-            $thumbJpg = self::makeThumb250Jpg($bytes);
+            // thumb 250x250 jpg
+            $thumbJpg = self::makeThumb250($bytes);
             if (empty($thumbJpg)) return null;
 
             Storage::disk('public')->put($thumbPath, $thumbJpg);
 
-            return $thumbPath;
+            // в БД пишем ТОЛЬКО basename
+            return $baseName;
         } catch (\Throwable $e) {
             return null;
         }
     }
 
-    private static function makeBaseName(int $userId): string
-    {
-        $ts = now()->format('YmdHis');
-        $rand = random_int(1000, 9999);
-        return "av-{$userId}-{$ts}-{$rand}";
-    }
-
-    private static function guessExtension(?string $contentType, string $bytes): ?string
+    private static function guessExtension(?string $contentType): ?string
     {
         $ct = strtolower((string) $contentType);
-
         if (str_contains($ct, 'image/jpeg')) return 'jpg';
         if (str_contains($ct, 'image/png'))  return 'png';
         if (str_contains($ct, 'image/webp')) return 'webp';
+        return null;
+    }
 
-        // fallback по фактическому mime
-        $info = @getimagesizefromstring($bytes);
-        $mime = strtolower((string)($info['mime'] ?? ''));
+    private static function guessExtensionFromBytes(string $bytes): ?string
+    {
+        // очень простой sniffing по сигнатурам
+        $head = substr($bytes, 0, 12);
 
-        if ($mime === 'image/jpeg') return 'jpg';
-        if ($mime === 'image/png')  return 'png';
-        if ($mime === 'image/webp') return 'webp';
+        // JPEG: FF D8 FF
+        if (strlen($head) >= 3 && ord($head[0]) === 0xFF && ord($head[1]) === 0xD8 && ord($head[2]) === 0xFF) {
+            return 'jpg';
+        }
+
+        // PNG: 89 50 4E 47 0D 0A 1A 0A
+        if (strlen($head) >= 8 && $head === "\x89PNG\x0D\x0A\x1A\x0A") {
+            return 'png';
+        }
+
+        // WEBP: "RIFF" .... "WEBP"
+        if (strlen($head) >= 12 && substr($head, 0, 4) === 'RIFF' && substr($head, 8, 4) === 'WEBP') {
+            return 'webp';
+        }
 
         return null;
     }
 
     /**
-     * Делает квадратный thumb 250x250 из JPG/PNG/WEBP (если GD поддерживает).
+     * Делает квадратный thumb 250x250. Поддерживает JPG/PNG/WEBP если GD умеет.
      * Возвращает JPG bytes.
      */
-    private static function makeThumb250Jpg(string $bytes): ?string
+    private static function makeThumb250(string $bytes): ?string
     {
         $im = @imagecreatefromstring($bytes);
         if (!$im) return null;
@@ -100,7 +109,6 @@ class ProfilePhotoService
             return null;
         }
 
-        // crop center square
         $side = min($w, $h);
         $srcX = (int) floor(($w - $side) / 2);
         $srcY = (int) floor(($h - $side) / 2);

@@ -8,11 +8,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Jetstream\HasProfilePhoto;
 use Laravel\Sanctum\HasApiTokens;
-
 
 class User extends Authenticatable
 {
@@ -41,8 +41,7 @@ class User extends Authenticatable
         'beach_level',
         'beach_universal',
 
-        // роли/интеграции
-        'role',
+        // провайдеры
         'telegram_id',
         'telegram_username',
         'vk_id',
@@ -50,8 +49,9 @@ class User extends Authenticatable
         'yandex_id',
         'yandex_email',
         'yandex_phone',
-        'yandex_avatar',
 
+        // ВАЖНО: здесь лежит ТОЛЬКО "av-{id}"
+        'profile_photo_path',
     ];
 
     protected $hidden = [
@@ -68,13 +68,46 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
-            'phone_verified_at' => 'datetime',
             'birth_date' => 'date',
-            'password' => 'hashed',
             'beach_universal' => 'boolean',
+            'password' => 'hashed',
         ];
     }
+
+    /**
+     * URL превью аватара
+     */
+    public function getProfilePhotoUrlAttribute(): string
+    {
+        $key = (string) ($this->profile_photo_path ?? '');
+
+        if ($key === '') {
+            return $this->defaultProfilePhotoUrl();
+        }
+
+        // ВСЕГДА thumb jpg
+        $path = "avatars/thumbs/{$this->id}/{$key}.jpg";
+
+        if (Storage::disk('public')->exists($path)) {
+            return Storage::disk('public')->url($path);
+        }
+
+        return $this->defaultProfilePhotoUrl();
+    }
+
+    protected function defaultProfilePhotoUrl(): string
+    {
+        $name = trim(collect(explode(' ', $this->name ?? 'User'))
+            ->map(fn ($s) => mb_substr($s, 0, 1))
+            ->join(' ')
+        );
+
+        return 'https://ui-avatars.com/api/?name='
+            . urlencode($name)
+            . '&color=7F9CF5&background=EBF4FF';
+    }
+
+    // ---------------- relations ----------------
 
     public function city(): BelongsTo
     {
@@ -91,6 +124,8 @@ class User extends Authenticatable
         return $this->hasMany(UserBeachZone::class);
     }
 
+    // ---------------- helpers ----------------
+
     public function displayName(): string
     {
         $last = trim((string) $this->last_name);
@@ -100,9 +135,8 @@ class User extends Authenticatable
             return trim($last . ' ' . $first);
         }
 
-        $tg = trim((string) $this->telegram_username);
-        if ($tg !== '') {
-            return '@' . ltrim($tg, '@');
+        if ($this->telegram_username) {
+            return '@' . ltrim($this->telegram_username, '@');
         }
 
         return 'User #' . $this->id;
@@ -110,10 +144,8 @@ class User extends Authenticatable
 
     public function ageYears(): ?int
     {
-        if (empty($this->birth_date)) {
-            return null;
-        }
-
-        return Carbon::parse($this->birth_date)->age;
+        return $this->birth_date
+            ? Carbon::parse($this->birth_date)->age
+            : null;
     }
 }
