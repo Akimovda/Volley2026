@@ -47,6 +47,11 @@ class User extends Authenticatable
         'telegram_username',
         'vk_id',
         'vk_email',
+        'yandex_id',
+        'yandex_email',
+        'yandex_phone',
+        'yandex_avatar',
+
     ];
 
     protected $hidden = [

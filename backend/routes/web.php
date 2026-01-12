@@ -4,27 +4,24 @@ use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\Auth\TelegramAuthController;
 use App\Http\Controllers\Auth\VkAuthController;
+use App\Http\Controllers\Auth\YandexAuthController;
 
 use App\Http\Controllers\EventsController;
 use App\Http\Controllers\EventRegistrationController;
+
 use App\Http\Controllers\UserDirectoryController;
 use App\Http\Controllers\UserPublicController;
+
 use App\Http\Controllers\OrganizerRequestController;
 
-use App\Http\Controllers\Admin\OrganizerRequestAdminController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\Admin\AdminRoleController;
 use App\Http\Controllers\Admin\AdminAuditController;
+use App\Http\Controllers\Admin\OrganizerRequestAdminController;
 
 use App\Http\Controllers\Account\LinkCodeController;
 use App\Http\Controllers\Account\LinkConsumeController;
-
-/* привязка по коду/
-use App\Http\Controllers\Auth\TelegramAuthController;
-use App\Http\Controllers\Auth\VkAuthController;
-*/
-
 
 /*
 |--------------------------------------------------------------------------
@@ -56,31 +53,68 @@ Route::get('/auth/vk/redirect', [VkAuthController::class, 'redirect'])
 
 Route::get('/auth/vk/callback', [VkAuthController::class, 'callback'])
     ->name('auth.vk.callback');
+/*
+|-------------------------------------------------------------------------
+| AUTH: Yandex
+|-------------------------------------------------------------------------
+*/
+Route::get('/auth/yandex/redirect', [YandexAuthController::class, 'redirect'])
+    ->name('auth.yandex.redirect');
+
+Route::get('/auth/yandex/callback', [YandexAuthController::class, 'callback'])
+    ->name('auth.yandex.callback');
 
 /*
 |--------------------------------------------------------------------------
-| ADMIN панель
+| ADMIN
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth', 'can:is-admin'])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
-        Route::get('/dashboard', [\App\Http\Controllers\Admin\AdminDashboardController::class, 'index'])
+        // dashboard
+        Route::get('/dashboard', [AdminDashboardController::class, 'index'])
             ->name('dashboard');
 
-        Route::get('/audits', [\App\Http\Controllers\Admin\AdminAuditController::class, 'index'])
+        // audits
+        Route::get('/audits', [AdminAuditController::class, 'index'])
             ->name('audits.index');
 
-        Route::get('/users', [\App\Http\Controllers\Admin\AdminUserController::class, 'index'])
+        // users
+        Route::get('/users', [AdminUserController::class, 'index'])
             ->name('users.index');
 
-        Route::get('/users/{user}', [\App\Http\Controllers\Admin\AdminUserController::class, 'show'])
+        Route::get('/users/{user}', [AdminUserController::class, 'show'])
             ->name('users.show');
 
-        Route::post('/users/{user}/role', [\App\Http\Controllers\Admin\AdminRoleController::class, 'updateUserRole'])
+        Route::post('/users/{user}/role', [AdminRoleController::class, 'updateUserRole'])
             ->name('users.role.update');
+
+        // delete / purge (ВАЖНО: purge делаем DELETE, без post-дубля)
+
+        Route::delete('/users/{user}/purge', [AdminUserController::class, 'purge'])
+            ->name('users.purge');
+
+        // organizer requests (тоже в admin, без второй группы/префикса)
+        Route::get('/organizer-requests', [OrganizerRequestAdminController::class, 'index'])
+            ->name('organizer_requests.index');
+
+        Route::post('/organizer-requests/{request}/approve', [OrganizerRequestAdminController::class, 'approve'])
+            ->name('organizer_requests.approve');
+
+        Route::post('/organizer-requests/{request}/reject', [OrganizerRequestAdminController::class, 'reject'])
+            ->name('organizer_requests.reject');
     });
+
+/*
+|--------------------------------------------------------------------------
+| Organizer request (public -> create request)
+|--------------------------------------------------------------------------
+*/
+Route::post('/organizer/request', [OrganizerRequestController::class, 'store'])
+    ->name('organizer.request');
+
 /*
 |--------------------------------------------------------------------------
 | Events (public)
@@ -88,36 +122,6 @@ Route::middleware(['auth', 'can:is-admin'])
 */
 Route::get('/events', [EventsController::class, 'index'])
     ->name('events.index');
-
-/*
-|--------------------------------------------------------------------------
-| Account link-code flow (объединение/привязка через код)
-|--------------------------------------------------------------------------
-*/
-Route::middleware(['auth'])->group(function () {
-    Route::post('/account/link-code', [LinkCodeController::class, 'store'])
-        ->name('account.link_code.store');
-
-    Route::get('/account/link', [LinkConsumeController::class, 'show'])
-        ->name('account.link.show');
-
-    Route::post('/account/link', [LinkConsumeController::class, 'store'])
-        ->name('account.link.store');
-});
-    // Organizer requests
-    Route::post('/organizer/request', [OrganizerRequestController::class, 'store'])
-        ->name('organizer.request');
-
-    Route::middleware(['can:approve-organizer-request'])->prefix('admin')->group(function () {
-        Route::get('/organizer-requests', [OrganizerRequestAdminController::class, 'index'])
-            ->name('admin.organizer_requests.index');
-
-        Route::post('/organizer-requests/{request}/approve', [OrganizerRequestAdminController::class, 'approve'])
-            ->name('admin.organizer_requests.approve');
-
-        Route::post('/organizer-requests/{request}/reject', [OrganizerRequestAdminController::class, 'reject'])
-            ->name('admin.organizer_requests.reject');
-});
 
 /*
 |--------------------------------------------------------------------------
@@ -135,6 +139,23 @@ Route::middleware([
         ->name('events.leave');
 });
 
+// /*
+/*
+|--------------------------------------------------------------------------
+| Account link-code flow (auth)  [DISABLED]
+|--------------------------------------------------------------------------
+*/
+// Route::middleware(['auth'])->group(function () {
+//     Route::post('/account/link-code', [LinkCodeController::class, 'store'])
+//         ->name('account.link_code.store');
+//
+//     Route::get('/account/link', [LinkConsumeController::class, 'show'])
+//         ->name('account.link.show');
+//
+//     Route::post('/account/link', [LinkConsumeController::class, 'store'])
+//         ->name('account.link.store');
+// });
+
 /*
 |--------------------------------------------------------------------------
 | Profile completion / extra data
@@ -150,7 +171,7 @@ Route::middleware(['auth'])->group(function () {
 
 /*
 |--------------------------------------------------------------------------
-| Dashboard (optional)
+| Dashboard (optional) - jetstream default
 |--------------------------------------------------------------------------
 */
 Route::middleware([
