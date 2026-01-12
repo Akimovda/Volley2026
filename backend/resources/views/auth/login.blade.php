@@ -1,3 +1,4 @@
+{{-- resources/views/auth/login.blade.php --}}
 <!doctype html>
 <html lang="ru">
 <head>
@@ -9,7 +10,7 @@
     <h1 style="margin: 0 0 16px;">Вход</h1>
 
     <p style="margin: 0 0 24px; color:#555;">
-        Войдите через Telegram или VK ID.
+        Войдите через Telegram, VK ID или Яндекс.
     </p>
 
     <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
@@ -19,10 +20,16 @@
             Войти через VK ID
         </a>
 
-        {{-- Telegram (через ваш редирект-экран /auth/telegram/redirect) --}}
+        {{-- Telegram (через экран с Telegram Login Widget) --}}
         <a href="{{ route('auth.telegram.redirect') }}"
            style="display:inline-block; padding:12px 16px; border:1px solid #ddd; border-radius:10px; text-decoration:none;">
             Войти через Telegram
+        </a>
+
+        {{-- Yandex --}}
+        <a href="{{ route('auth.yandex.redirect') }}"
+           style="display:inline-block; padding:12px 16px; border:1px solid #ddd; border-radius:10px; text-decoration:none;">
+            Войти через Яндекс
         </a>
     </div>
 
