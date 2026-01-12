@@ -1,99 +1,159 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Support\ProfilePhotoService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 
 class TelegramAuthController extends Controller
 {
+    /**
+     * ------------------------------------------------------------
+     * REDIRECT (единый контракт)
+     * ------------------------------------------------------------
+     * Telegram Login Widget не делает OAuth redirect, но нам нужен единый контракт:
+     * - oauth_provider/oauth_intent
+     * - НЕ трогать auth_provider
+     * - редирект на страницу, где стоит виджет (login / profile)
+     */
     public function redirect(Request $request)
     {
-        $request->session()->put('oauth_provider', 'telegram');
-        $request->session()->put('oauth_intent', Auth::check() ? 'link' : 'login');
+        $isLink = $request->boolean('link');
 
-        return view('auth.telegram-redirect', [
-            'botName' => config('services.telegram.bot_name'),
-            'authUrl' => route('auth.telegram.callback'),
-        ]);
+        $request->session()->put('oauth_provider', 'telegram');
+        $request->session()->put('oauth_intent', ($isLink && Auth::check()) ? 'link' : 'login');
+
+        if ($isLink && !Auth::check()) {
+            return redirect()->route('login')->with('error', 'Сначала войдите в аккаунт, чтобы привязать Telegram.');
+        }
+
+        return $isLink
+            ? redirect('/user/profile')
+            : redirect()->route('login');
     }
 
+    /**
+     * ------------------------------------------------------------
+     * CALLBACK (единый login/link)
+     * ------------------------------------------------------------
+     * Telegram виджет присылает:
+     * id, first_name, last_name, username, photo_url, auth_date, hash
+     */
     public function callback(Request $request)
     {
-        $data = $request->query();
+        $data = $request->all();
 
-        if (!$this->isValidTelegramAuth($data)) {
-            abort(403, 'Invalid Telegram authentication');
+        if (!$this->isTelegramLoginValid($data)) {
+            return redirect()->route('login')->with('error', 'Telegram auth: invalid signature.');
         }
 
-        if (isset($data['auth_date']) && (time() - (int) $data['auth_date']) > 86400) {
-            abort(403, 'Telegram authentication expired');
+        $authDate = (int) ($data['auth_date'] ?? 0);
+        if ($authDate <= 0 || (time() - $authDate) > 86400) {
+            return redirect()->route('login')->with('error', 'Telegram auth: expired login data.');
         }
 
-        $telegramId = (string) ($data['id'] ?? '');
-        if ($telegramId === '') abort(403, 'Telegram id missing');
+        $tgId      = (string) ($data['id'] ?? '');
+        $username  = isset($data['username']) ? (string) $data['username'] : null;
+        $firstName = isset($data['first_name']) ? (string) $data['first_name'] : null;
+        $lastName  = isset($data['last_name']) ? (string) $data['last_name'] : null;
+        $photoUrl  = isset($data['photo_url']) ? (string) $data['photo_url'] : null;
 
-        $telegramUsername = $data['username'] ?? null;
-        $telegramUsername = $telegramUsername ? ltrim($telegramUsername, '@') : null;
+        if ($tgId === '') {
+            return redirect()->route('login')->with('error', 'Telegram auth: missing id.');
+        }
 
-        $intent = $request->session()->get('oauth_intent', Auth::check() ? 'link' : 'login');
+        $intent = (string) $request->session()->get('oauth_intent', Auth::check() ? 'link' : 'login');
 
-        // ===== LINK =====
-        if ($intent === 'link' && Auth::check()) {
-            $currentUser = Auth::user();
+        // =========================
+        // MODE: LINK
+        // =========================
+        if ($intent === 'link') {
+            if (!Auth::check()) {
+                return redirect()->route('login')->with('error', 'Сессия истекла. Войдите и повторите привязку Telegram.');
+            }
 
-            $existsForOther = User::where('telegram_id', $telegramId)
-                ->where('id', '!=', $currentUser->id)
+            /** @var User $current */
+            $current = Auth::user();
+
+            $existsForOther = User::query()
+                ->where('telegram_id', $tgId)
+                ->where('id', '!=', $current->id)
                 ->exists();
 
             if ($existsForOther) {
-                return redirect('/user/profile')
-                    ->with('error', 'Этот Telegram уже привязан к другому аккаунту.');
+                return redirect('/user/profile')->with('error', 'Этот Telegram уже привязан к другому аккаунту.');
             }
 
-            $currentUser->telegram_id = $telegramId;
-            $currentUser->telegram_username = $telegramUsername;
-            $currentUser->save();
+            if ($current->isFillable('telegram_id')) $current->telegram_id = $tgId;
+            if ($current->isFillable('telegram_username')) $current->telegram_username = $username;
+
+            // аккуратно дополним имена, если пустые
+            if ($current->isFillable('first_name') && !empty($firstName) && empty($current->first_name)) {
+                $current->first_name = $firstName;
+            }
+            if ($current->isFillable('last_name') && !empty($lastName) && empty($current->last_name)) {
+                $current->last_name = $lastName;
+            }
+
+            // avatar only if missing
+            $thumbPath = ProfilePhotoService::storeProviderAvatarIfMissing(
+                userId: (int) $current->id,
+                avatarUrl: $photoUrl,
+                currentProfilePhotoPath: $current->profile_photo_path ?? null,
+            );
+            if (!empty($thumbPath) && $current->isFillable('profile_photo_path')) {
+                $current->profile_photo_path = $thumbPath;
+            }
+
+            $current->save();
 
             $request->session()->put('auth_provider', 'telegram');
-            $request->session()->put('auth_provider_id', $telegramId);
+            $request->session()->put('auth_provider_id', $tgId);
 
             return redirect('/user/profile')->with('status', 'Telegram привязан ✅');
         }
 
-        // ===== LOGIN =====
-        $fakeEmail = "tg_{$telegramId}@telegram.local";
-
-        $user = User::where('telegram_id', $telegramId)
-            ->orWhere('email', $fakeEmail)
-            ->first();
+        // =========================
+        // MODE: LOGIN
+        // =========================
+        $user = User::query()->where('telegram_id', $tgId)->first();
 
         if (!$user) {
-            $user = User::create([
-                'name'              => "TG User #{$telegramId}",
-                'email'             => $fakeEmail,
-                'password'          => Hash::make(str()->random(32)),
-                'telegram_id'       => $telegramId,
-                'telegram_username' => $telegramUsername,
-            ]);
-        } else {
-            if (empty($user->telegram_id)) {
-                $existsForOther = User::where('telegram_id', $telegramId)
-                    ->where('id', '!=', $user->id)
-                    ->exists();
+            $fullName = trim(($firstName ?? '') . ' ' . ($lastName ?? ''));
+            $safeName = $fullName !== '' ? $fullName : "Telegram User #{$tgId}";
 
-                if ($existsForOther) abort(409, 'Этот Telegram уже привязан к другому аккаунту.');
-
-                $user->telegram_id = $telegramId;
+            $safeEmail = "tg_{$tgId}@telegram.local";
+            if (User::query()->where('email', $safeEmail)->exists()) {
+                $safeEmail = "tg_{$tgId}_" . now()->timestamp . "@telegram.local";
             }
 
-            if ($telegramUsername !== $user->telegram_username) {
-                $user->telegram_username = $telegramUsername;
-            }
+            $user = new User();
+            if ($user->isFillable('name'))  $user->name = $safeName;
+            if ($user->isFillable('email')) $user->email = $safeEmail;
+            if ($user->isFillable('password')) $user->password = Hash::make(str()->random(32));
 
+            if ($user->isFillable('telegram_id')) $user->telegram_id = $tgId;
+            if ($user->isFillable('telegram_username')) $user->telegram_username = $username;
+            if ($user->isFillable('first_name')) $user->first_name = $firstName;
+            if ($user->isFillable('last_name'))  $user->last_name = $lastName;
+
+            $user->save();
+        }
+
+        // avatar only if missing
+        $thumbPath = ProfilePhotoService::storeProviderAvatarIfMissing(
+            userId: (int) $user->id,
+            avatarUrl: $photoUrl,
+            currentProfilePhotoPath: $user->profile_photo_path ?? null,
+        );
+        if (!empty($thumbPath) && $user->isFillable('profile_photo_path')) {
+            $user->profile_photo_path = $thumbPath;
             $user->save();
         }
 
@@ -101,30 +161,38 @@ class TelegramAuthController extends Controller
         $request->session()->regenerate();
 
         $request->session()->put('auth_provider', 'telegram');
-        $request->session()->put('auth_provider_id', $telegramId);
+        $request->session()->put('auth_provider_id', $tgId);
 
         return redirect()->intended('/events');
     }
 
-    private function isValidTelegramAuth(array $data): bool
+    /**
+     * Проверка подписи Telegram Login Widget.
+     * secret_key = sha256(bot_token) (binary), signature = HMAC-SHA256(data_check_string, secret_key)
+     */
+    private function isTelegramLoginValid(array $data): bool
     {
         if (empty($data['hash'])) return false;
 
-        $botToken = config('services.telegram.bot_token');
-        if (!$botToken) return false;
-
-        $checkHash = $data['hash'];
+        $hash = (string) $data['hash'];
         unset($data['hash']);
 
         ksort($data);
 
-        $dataCheckString = collect($data)
-            ->map(fn ($v, $k) => $k . '=' . $v)
-            ->implode("\n");
+        $pairs = [];
+        foreach ($data as $k => $v) {
+            if (is_array($v)) continue;
+            $pairs[] = $k . '=' . $v;
+        }
+
+        $dataCheckString = implode("\n", $pairs);
+
+        $botToken = (string) config('services.telegram.bot_token');
+        if ($botToken === '') return false;
 
         $secretKey = hash('sha256', $botToken, true);
-        $hash = hash_hmac('sha256', $dataCheckString, $secretKey);
+        $calculated = hash_hmac('sha256', $dataCheckString, $secretKey);
 
-        return hash_equals($hash, $checkHash);
+        return hash_equals($calculated, $hash);
     }
 }

@@ -12,32 +12,34 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Laravel\Socialite\Facades\Socialite;
 
-final class YandexAuthController extends Controller
+class YandexAuthController extends Controller
 {
     /**
-     * /auth/yandex/redirect          -> LOGIN
-     * /auth/yandex/redirect?link=1   -> LINK
+     * ------------------------------------------------------------
+     * REDIRECT (единый контракт)
+     * ------------------------------------------------------------
+     * - пишет только oauth_provider/oauth_intent
+     * - НЕ трогает auth_provider
      */
     public function redirect(Request $request)
     {
         $isLink = $request->boolean('link');
 
-        if ($isLink) {
-            if (!Auth::check()) {
-                return redirect()->route('login')->with('error', 'Сначала войдите в аккаунт, чтобы привязать Яндекс.');
-            }
+        $request->session()->put('oauth_provider', 'yandex');
+        $request->session()->put('oauth_intent', ($isLink && Auth::check()) ? 'link' : 'login');
 
-            $request->session()->put('linking_user_id', Auth::id());
-            $request->session()->put('linking_provider', 'yandex');
-        } else {
-            // intent для UI/логики (auth_provider ставим только после успешного login)
-            $request->session()->put('oauth_provider', 'yandex');
-            $request->session()->put('oauth_intent', 'login');
+        if ($isLink && !Auth::check()) {
+            return redirect()->route('login')->with('error', 'Сначала войдите в аккаунт, чтобы привязать Яндекс.');
         }
 
         return Socialite::driver('yandex')->redirect();
     }
 
+    /**
+     * ------------------------------------------------------------
+     * CALLBACK (единый login/link)
+     * ------------------------------------------------------------
+     */
     public function callback(Request $request)
     {
         try {
@@ -50,51 +52,53 @@ final class YandexAuthController extends Controller
         $email    = $yaUser->getEmail();
         $name     = $yaUser->getName() ?: ($yaUser->getNickname() ?: null);
         $avatar   = $yaUser->getAvatar();
-        $raw      = (array) $yaUser->user;
 
+        $raw   = (array) $yaUser->user;
         $phone = $raw['default_phone']['number'] ?? $raw['phone']['number'] ?? null;
 
-        // LINK?
-        $linkingUserId   = $request->session()->pull('linking_user_id');
-        $linkingProvider = $request->session()->pull('linking_provider');
+        $intent = (string) $request->session()->get('oauth_intent', Auth::check() ? 'link' : 'login');
 
-        if (!empty($linkingUserId) && $linkingProvider === 'yandex') {
-            $target = User::query()->find($linkingUserId);
-            if (!$target) {
-                return redirect()->route('login')->with('error', 'Не найден аккаунт для привязки Яндекса.');
+        // =========================
+        // MODE: LINK
+        // =========================
+        if ($intent === 'link') {
+            if (!Auth::check()) {
+                return redirect()->route('login')->with('error', 'Сессия истекла. Войдите и повторите привязку Яндекса.');
             }
 
-            $exists = User::query()
+            /** @var User $current */
+            $current = Auth::user();
+
+            $existsForOther = User::query()
                 ->where('yandex_id', $yandexId)
-                ->where('id', '!=', $target->id)
+                ->where('id', '!=', $current->id)
                 ->exists();
 
-            if ($exists) {
+            if ($existsForOther) {
                 return redirect('/user/profile')->with('error', 'Этот Яндекс уже привязан к другому аккаунту.');
             }
 
-            $target->yandex_id = $yandexId;
+            $current->yandex_id = $yandexId;
 
-            if ($target->isFillable('yandex_avatar')) $target->yandex_avatar = $avatar;
-            if ($target->isFillable('yandex_phone'))  $target->yandex_phone = $phone;
+            if ($current->isFillable('yandex_avatar')) $current->yandex_avatar = $avatar;
+            if ($current->isFillable('yandex_phone'))  $current->yandex_phone  = $phone;
 
-            if (empty($target->email) && !empty($email) && $target->isFillable('email')) {
-                // не перетираем существующий email
-                $target->email = $email;
+            // не перетираем email, только если пустой
+            if (empty($current->email) && !empty($email)) {
+                $current->email = $email;
             }
 
-            $target->save();
-
-            // аватар только если нет profile_photo_path
+            // avatar only if missing
             $thumbPath = ProfilePhotoService::storeProviderAvatarIfMissing(
-                userId: (int) $target->id,
-                avatarUrl: $avatar,
-                currentProfilePhotoPath: $target->profile_photo_path ?? null,
+                userId: (int) $current->id,
+                avatarUrl: $avatar ?: null,
+                currentProfilePhotoPath: $current->profile_photo_path ?? null,
             );
             if (!empty($thumbPath)) {
-                $target->profile_photo_path = $thumbPath;
-                $target->save();
+                $current->profile_photo_path = $thumbPath;
             }
+
+            $current->save();
 
             $request->session()->put('auth_provider', 'yandex');
             $request->session()->put('auth_provider_id', $yandexId);
@@ -102,7 +106,9 @@ final class YandexAuthController extends Controller
             return redirect('/user/profile')->with('status', 'Яндекс привязан ✅');
         }
 
-        // LOGIN
+        // =========================
+        // MODE: LOGIN
+        // =========================
         $user = User::query()->where('yandex_id', $yandexId)->first();
 
         if (!$user) {
@@ -112,14 +118,16 @@ final class YandexAuthController extends Controller
                 $user->name = $name ?: 'Yandex user';
             }
 
-            // users.email NOT NULL => нужен safe email всегда
+            // users.email NOT NULL => безопасный email
             $safeEmail = null;
-            if (!empty($email) && !User::where('email', $email)->exists()) {
+
+            if (!empty($email) && !User::query()->where('email', $email)->exists()) {
                 $safeEmail = $email;
             }
+
             if (empty($safeEmail)) {
                 $safeEmail = "ya_{$yandexId}@yandex.local";
-                if (User::where('email', $safeEmail)->exists()) {
+                if (User::query()->where('email', $safeEmail)->exists()) {
                     $safeEmail = "ya_{$yandexId}_" . now()->timestamp . "@yandex.local";
                 }
             }
@@ -133,21 +141,22 @@ final class YandexAuthController extends Controller
             }
 
             $user->yandex_id = $yandexId;
+
             if ($user->isFillable('yandex_avatar')) $user->yandex_avatar = $avatar;
-            if ($user->isFillable('yandex_phone'))  $user->yandex_phone = $phone;
+            if ($user->isFillable('yandex_phone'))  $user->yandex_phone  = $phone;
 
             $user->save();
+        }
 
-            // аватар только если нет profile_photo_path
-            $thumbPath = ProfilePhotoService::storeProviderAvatarIfMissing(
-                userId: (int) $user->id,
-                avatarUrl: $avatar,
-                currentProfilePhotoPath: $user->profile_photo_path ?? null,
-            );
-            if (!empty($thumbPath)) {
-                $user->profile_photo_path = $thumbPath;
-                $user->save();
-            }
+        // avatar only if missing
+        $thumbPath = ProfilePhotoService::storeProviderAvatarIfMissing(
+            userId: (int) $user->id,
+            avatarUrl: $avatar ?: null,
+            currentProfilePhotoPath: $user->profile_photo_path ?? null,
+        );
+        if (!empty($thumbPath)) {
+            $user->profile_photo_path = $thumbPath;
+            $user->save();
         }
 
         Auth::login($user, true);
