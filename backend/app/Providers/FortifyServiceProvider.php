@@ -16,27 +16,33 @@ use Laravel\Fortify\Fortify;
 
 class FortifyServiceProvider extends ServiceProvider
 {
-    /**
-     * Register any application services.
-     */
     public function register(): void
     {
-        //
+        // noop
     }
 
-    /**
-     * Bootstrap any application services.
-     */
     public function boot(): void
     {
+        /* ===================================================================
+         | Actions
+         | =================================================================== */
         Fortify::createUsersUsing(CreateNewUser::class);
         Fortify::updateUserProfileInformationUsing(UpdateUserProfileInformation::class);
         Fortify::updateUserPasswordsUsing(UpdateUserPassword::class);
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
-        Fortify::redirectUserForTwoFactorAuthenticationUsing(RedirectIfTwoFactorAuthenticatable::class);
 
+        Fortify::redirectUserForTwoFactorAuthenticationUsing(
+            RedirectIfTwoFactorAuthenticatable::class
+        );
+
+        /* ===================================================================
+         | Rate limiting
+         | Имена лимитеров соответствуют config/fortify.php -> limiters
+         | =================================================================== */
         RateLimiter::for('login', function (Request $request) {
-            $throttleKey = Str::transliterate(Str::lower($request->input(Fortify::username())).'|'.$request->ip());
+            $throttleKey = Str::transliterate(
+                Str::lower($request->input(Fortify::username())).'|'.$request->ip()
+            );
 
             return Limit::perMinute(5)->by($throttleKey);
         });
