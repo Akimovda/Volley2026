@@ -4,32 +4,36 @@ namespace App\Providers;
 
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
 use SocialiteProviders\Manager\SocialiteWasCalled;
-use SocialiteProviders\VKontakte\VKontakteExtendSocialite;
+
+// SocialiteProviders extenders
+use SocialiteProviders\Yandex\YandexExtendSocialite;
+// Нужен ТОЛЬКО если реально вызываешь Socialite::driver('vkontakte')
+// use SocialiteProviders\VKontakte\VKontakteExtendSocialite;
 
 class EventServiceProvider extends ServiceProvider
 {
     /**
      * The event listener mappings for the application.
      *
-     * @var array<class-string, array<int, class-string>>
+     * Важно: SocialiteProviders подключаются через событие SocialiteWasCalled.
+     *
+     * @var array<class-string, array<int, string>>
      */
     protected $listen = [
         SocialiteWasCalled::class => [
-            VKontakteExtendSocialite::class.'@handle',
+            // Добавляет driver('yandex')
+            YandexExtendSocialite::class.'@handle',
+
+            // Если когда-нибудь будешь использовать driver('vkontakte'), раскомментируй:
+            // VKontakteExtendSocialite::class.'@handle',
         ],
     ];
 
-    /**
-     * Register any events for your application.
-     */
     public function boot(): void
     {
-        //
+        // Пусто — нам достаточно $listen
     }
 
-    /**
-     * Determine if events and listeners should be automatically discovered.
-     */
     public function shouldDiscoverEvents(): bool
     {
         return false;

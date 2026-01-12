@@ -2,7 +2,6 @@
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">Users</h2>
     </x-slot>
-
     <div class="py-10">
         <div class="max-w-6xl mx-auto sm:px-6 lg:px-8 space-y-4">
 
@@ -17,22 +16,8 @@
                         @endforeach
                     </select>
 
-                    @if ($hasDeletedAt)
-                        <select class="v-input md:w-56" name="status">
-                            <option value="active" @selected(($status ?? 'active')==='active')>Только активные</option>
-                            <option value="deleted" @selected(($status ?? '')==='deleted')>Только удалённые</option>
-                            <option value="all" @selected(($status ?? '')==='all')>Все (включая удалённые)</option>
-                        </select>
-                    @endif
-
                     <button class="v-btn v-btn--primary" type="submit">Найти</button>
                 </form>
-
-                @if ($hasDeletedAt)
-                    <div class="text-xs text-gray-500 mt-2">
-                        Подсказка: удалённые = SoftDeletes (users.deleted_at).
-                    </div>
-                @endif
             </div></div>
 
             <div class="v-card"><div class="v-card__body overflow-x-auto">
@@ -45,9 +30,6 @@
                             <th class="text-left py-2 pr-4">TG</th>
                             <th class="text-left py-2 pr-4">VK</th>
                             <th class="text-left py-2 pr-4">Created</th>
-                            @if ($hasDeletedAt)
-                                <th class="text-left py-2 pr-4">Status</th>
-                            @endif
                         </tr>
                     </thead>
                     <tbody class="text-gray-800">
@@ -70,15 +52,7 @@
                                 <td class="py-2 pr-4">{{ $u->vk_id ? 'yes' : '—' }}</td>
                                 <td class="py-2 pr-4 whitespace-nowrap">{{ $u->created_at?->format('Y-m-d') }}</td>
 
-                                @if ($hasDeletedAt)
-                                    <td class="py-2 pr-4">
-                                        @if (!empty($u->deleted_at))
-                                            <span class="text-xs px-2 py-1 rounded bg-gray-100">deleted</span>
-                                        @else
-                                            <span class="text-xs px-2 py-1 rounded bg-gray-100">active</span>
-                                        @endif
                                     </td>
-                                @endif
                             </tr>
                         @endforeach
                     </tbody>

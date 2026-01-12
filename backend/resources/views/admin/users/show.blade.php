@@ -13,21 +13,30 @@
     <div class="py-10">
         <div class="max-w-5xl mx-auto sm:px-6 lg:px-8 space-y-6">
 
+            {{-- флеш-статусы --}}
             @if (session('status'))
                 <div class="v-alert v-alert--success">
                     <div class="v-alert__text">{{ session('status') }}</div>
                 </div>
             @endif
 
+            {{-- ошибки по user (например "нельзя удалить самого себя") --}}
+            @if ($errors->has('user'))
+                <div class="v-alert v-alert--error">
+                    <div class="v-alert__text">{{ $errors->first('user') }}</div>
+                </div>
+            @endif
+
             {{-- ===== USER CARD ===== --}}
             <div class="v-card">
                 <div class="v-card__body space-y-4">
-
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <div class="text-sm text-gray-500">Имя</div>
                             <div class="text-lg font-semibold">{{ $user->name }}</div>
-                            <div class="text-sm text-gray-600">{{ $user->last_name }} {{ $user->first_name }} {{ $user->patronymic }}</div>
+                            <div class="text-sm text-gray-600">
+                                {{ $user->last_name }} {{ $user->first_name }} {{ $user->patronymic }}
+                            </div>
                             <div class="text-sm text-gray-600">{{ $user->email }}</div>
                         </div>
 
@@ -37,17 +46,6 @@
                                 Created: <b>{{ $user->created_at?->format('Y-m-d H:i') }}</b><br>
                                 Updated: <b>{{ $user->updated_at?->format('Y-m-d H:i') }}</b>
                             </div>
-
-                            @if (property_exists($user, 'deleted_at') || \Illuminate\Support\Facades\Schema::hasColumn('users','deleted_at'))
-                                <div class="text-sm mt-2">
-                                    Deleted:
-                                    @if (!empty($user->deleted_at))
-                                        <b>{{ \Illuminate\Support\Carbon::parse($user->deleted_at)->format('Y-m-d H:i') }}</b>
-                                    @else
-                                        <b>—</b>
-                                    @endif
-                                </div>
-                            @endif
                         </div>
                     </div>
 
@@ -70,8 +68,11 @@
                     <div class="border-t pt-4">
                         <div class="text-lg font-semibold mb-2">Роль</div>
 
-                        <form method="POST" action="{{ route('admin.users.role.update', $user) }}" class="flex flex-col md:flex-row gap-3 items-start md:items-end">
+                        <form method="POST"
+                              action="{{ route('admin.users.role.update', $user) }}"
+                              class="flex flex-col md:flex-row gap-3 items-start md:items-end">
                             @csrf
+
                             <div class="w-full md:w-64">
                                 <label class="block mb-1 text-sm text-gray-600">Выбрать роль</label>
                                 <select class="v-input w-full" name="role" required>
@@ -94,14 +95,87 @@
 
                             <button class="v-btn v-btn--primary" type="submit">Сохранить роль</button>
                         </form>
-
-                        <div class="text-xs text-gray-500 mt-2">
-                            Важно: смену роли логируем в admin_audits (сделаем в контроллере роли).
-                        </div>
                     </div>
-
                 </div>
             </div>
+
+{{-- ===== DELETE USER (PURGE) ===== --}}
+<div class="v-card">
+    <div class="v-card__body space-y-3">
+        <div class="text-lg font-semibold">Удаление пользователя</div>
+
+        {{-- Ошибки/статусы --}}
+        @if (session('status'))
+            <div class="v-alert v-alert--success">
+                <div class="v-alert__text">{{ session('status') }}</div>
+            </div>
+        @endif
+
+        @if ($errors->has('user'))
+            <div class="v-alert v-alert--error">
+                <div class="v-alert__text">{{ $errors->first('user') }}</div>
+            </div>
+        @endif
+
+        @if ($errors->has('confirm'))
+            <div class="v-alert v-alert--error">
+                <div class="v-alert__text">{{ $errors->first('confirm') }}</div>
+            </div>
+        @endif
+
+        <div class="text-sm text-gray-600">
+            Это действие необратимо: будут удалены пользователь и связанные записи.
+        </div>
+
+        {{-- PURGE --}}
+        <form
+            id="purge-user-form"
+            method="POST"
+            action="{{ route('admin.users.purge', $user) }}"
+            onsubmit="return window.__confirmUserPurge(event, {{ (int)$user->id }});"
+            class="flex flex-col md:flex-row gap-2 items-start md:items-end"
+        >
+            @csrf
+            @method('DELETE')
+
+            {{-- ВАЖНО: контроллер требует confirm=yes --}}
+            <input type="hidden" name="confirm" value="yes" />
+
+            <div class="w-full md:flex-1">
+                <label class="block mb-1 text-sm text-gray-600">Примечание (необязательно)</label>
+                <input class="v-input w-full" name="note" maxlength="500" placeholder="Причина удаления" />
+            </div>
+
+            <button type="submit" class="v-btn v-btn--danger">
+                УДАЛЕНИЕ ПОЛЬЗОВАТЕЛЯ
+            </button>
+        </form>
+
+        <div class="text-xs text-gray-500">
+            Подтверждение: сначала confirm-окно, затем ввод <b>YES</b>.
+        </div>
+    </div>
+</div>
+
+<script>
+window.__confirmUserPurge = function (e, userId) {
+    // 1) первое предупреждение
+    var ok = confirm(
+        "Вы точно хотите УДАЛИТЬ ВСЕ ДАННЫЕ пользователя #" + userId + "?\n" +
+        "Это действие необратимо."
+    );
+    if (!ok) return false;
+
+    // 2) дополнительная защита: ввод YES
+    var answer = prompt("Введите YES для подтверждения полного удаления:", "");
+    if (!answer || answer.trim().toUpperCase() !== "YES") {
+        alert("Удаление отменено.");
+        return false;
+    }
+
+    return true;
+};
+</script>
 
             {{-- ===== LINK AUDITS ===== --}}
             <div class="v-card">
@@ -130,7 +204,9 @@
                                                 {{ \Illuminate\Support\Carbon::parse($a->created_at)->format('Y-m-d H:i') }}
                                             </td>
                                             <td class="py-2 pr-4">{{ $a->provider ?? '—' }}</td>
-                                            <td class="py-2 pr-4"><span class="font-mono text-xs">{{ $a->provider_user_id ?? '—' }}</span></td>
+                                            <td class="py-2 pr-4">
+                                                <span class="font-mono text-xs">{{ $a->provider_user_id ?? '—' }}</span>
+                                            </td>
                                             <td class="py-2 pr-4">{{ $a->linked_from_user_id ?? '—' }}</td>
                                             <td class="py-2 pr-4">{{ $a->method ?? '—' }}</td>
                                             <td class="py-2 pr-4">{{ $a->ip ?? '—' }}</td>
