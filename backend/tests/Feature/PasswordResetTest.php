@@ -34,9 +34,12 @@ class PasswordResetTest extends TestCase
 
         $user = User::factory()->create();
 
-        $this->post('/forgot-password', [
-            'email' => $user->email,
-        ]);
+        $this
+            ->withSession(['_token' => csrf_token()])
+            ->post('/forgot-password', [
+                '_token' => csrf_token(),
+                'email' => $user->email,
+            ]);
 
         Notification::assertSentTo($user, ResetPassword::class);
     }
@@ -51,15 +54,16 @@ class PasswordResetTest extends TestCase
 
         $user = User::factory()->create();
 
-        $this->post('/forgot-password', [
-            'email' => $user->email,
-        ]);
+        $this
+            ->withSession(['_token' => csrf_token()])
+            ->post('/forgot-password', [
+                '_token' => csrf_token(),
+                'email' => $user->email,
+            ]);
 
         Notification::assertSentTo($user, ResetPassword::class, function (object $notification) {
             $response = $this->get('/reset-password/'.$notification->token);
-
             $response->assertStatus(200);
-
             return true;
         });
     }
@@ -74,19 +78,26 @@ class PasswordResetTest extends TestCase
 
         $user = User::factory()->create();
 
-        $this->post('/forgot-password', [
-            'email' => $user->email,
-        ]);
-
-        Notification::assertSentTo($user, ResetPassword::class, function (object $notification) use ($user) {
-            $response = $this->post('/reset-password', [
-                'token' => $notification->token,
+        $this
+            ->withSession(['_token' => csrf_token()])
+            ->post('/forgot-password', [
+                '_token' => csrf_token(),
                 'email' => $user->email,
-                'password' => 'password',
-                'password_confirmation' => 'password',
             ]);
 
+        Notification::assertSentTo($user, ResetPassword::class, function (object $notification) use ($user) {
+            $response = $this
+                ->withSession(['_token' => csrf_token()])
+                ->post('/reset-password', [
+                    '_token' => csrf_token(),
+                    'token' => $notification->token,
+                    'email' => $user->email,
+                    'password' => 'password',
+                    'password_confirmation' => 'password',
+                ]);
+
             $response->assertSessionHasNoErrors();
+            $response->assertRedirect();
 
             return true;
         });

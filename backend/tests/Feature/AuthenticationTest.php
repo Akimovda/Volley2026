@@ -18,14 +18,13 @@ class AuthenticationTest extends TestCase
 
     public function test_users_can_authenticate_using_the_login_screen(): void
     {
-        // Важно: пароль у factory по умолчанию должен быть bcrypt('password') (Jetstream/Fortify так делает).
         $user = User::factory()->create();
 
-        // В вашем проекте после логина редирект НЕ обязан быть на /dashboard (он под verified),
-        // поэтому проверяем, что авторизация произошла, и что ответ — редирект куда угодно.
         $response = $this
             ->from(route('login', absolute: false))
+            ->withSession(['_token' => csrf_token()])
             ->post(route('login.store', absolute: false), [
+                '_token' => csrf_token(),
                 'email' => $user->email,
                 'password' => 'password',
             ]);
@@ -40,7 +39,9 @@ class AuthenticationTest extends TestCase
 
         $response = $this
             ->from(route('login', absolute: false))
+            ->withSession(['_token' => csrf_token()])
             ->post(route('login.store', absolute: false), [
+                '_token' => csrf_token(),
                 'email' => $user->email,
                 'password' => 'wrong-password',
             ]);
