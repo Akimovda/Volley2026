@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
 use Laravel\Jetstream\Jetstream;
 use Tests\TestCase;
@@ -38,24 +37,18 @@ class RegistrationTest extends TestCase
             $this->markTestSkipped('Registration support is not enabled.');
         }
 
-        $response = $this
-            ->withSession(['_token' => csrf_token()])
-            ->post(route('register.store', absolute: false), [
-                '_token' => csrf_token(),
-                'name' => 'Test User',
-                'email' => 'test@example.com',
-                'password' => 'password',
-                'password_confirmation' => 'password',
-                'terms' => Jetstream::hasTermsAndPrivacyPolicyFeature(),
-            ]);
+        $response = $this->post(route('register.store', absolute: false), [
+            'name' => 'Test User',
+            'email' => 'test@example.com',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+            'terms' => Jetstream::hasTermsAndPrivacyPolicyFeature(),
+        ]);
 
         $this->assertAuthenticated();
 
-        // у вас может не быть dashboard — не привязываемся жестко
-        if (Route::has('dashboard')) {
-            $response->assertRedirect(route('dashboard', absolute: false));
-        } else {
-            $response->assertRedirect();
-        }
+        // Не привязываемся к /dashboard. Берём фактический home Fortify.
+        $expected = config('fortify.home', '/');
+        $response->assertRedirect($expected);
     }
 }
