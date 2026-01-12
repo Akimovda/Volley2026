@@ -6,39 +6,20 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Support\AdminAuditLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 
 class AdminUserController extends Controller
 {
     public function index(Request $request)
     {
-        $q      = trim((string) $request->get('q', ''));
-        $role   = $request->get('role');   // admin|organizer|staff|user|null
-        $status = $request->get('status'); // active|deleted|all|null
-
-        $hasDeletedAt = Schema::hasColumn('users', 'deleted_at');
+        $q    = trim((string) $request->get('q', ''));
+        $role = $request->get('role'); // admin|organizer|staff|user|null
 
         $query = User::query();
 
-        // status filter (soft deletes)
-        if ($hasDeletedAt) {
-            if ($status === 'deleted') {
-                $query->onlyTrashed();
-            } elseif ($status === 'all') {
-                $query->withTrashed();
-            } else {
-                // default = active
-                $query->withoutTrashed();
-                $status = $status ?: 'active';
-            }
-        } else {
-            // если deleted_at нет — статус не применяем
-            $status = null;
-        }
-
-        // search
         if ($q !== '') {
             $query->where(function ($w) use ($q) {
                 $w->where('name', 'like', "%{$q}%")
@@ -52,24 +33,18 @@ class AdminUserController extends Controller
             });
         }
 
-        // role filter
         if (!empty($role)) {
             $query->where('role', $role);
         }
 
-        $users = $query
-            ->orderByDesc('id')
-            ->paginate(25)
-            ->withQueryString();
-
+        $users = $query->orderByDesc('id')->paginate(25)->withQueryString();
         $roles = ['user', 'admin', 'organizer', 'staff'];
 
-        return view('admin.users.index', compact('users', 'roles', 'q', 'role', 'status', 'hasDeletedAt'));
+        return view('admin.users.index', compact('users', 'roles', 'q', 'role'));
     }
 
     public function show(User $user)
     {
-        // account_link_audits (если таблица есть)
         $linkAudits = [];
         if (DB::getSchemaBuilder()->hasTable('account_link_audits')) {
             $linkAudits = DB::table('account_link_audits')
@@ -79,7 +54,6 @@ class AdminUserController extends Controller
                 ->get();
         }
 
-        // admin_audits по этому юзеру (если таблица есть)
         $adminAudits = [];
         if (DB::getSchemaBuilder()->hasTable('admin_audits')) {
             $adminAudits = DB::table('admin_audits')
@@ -93,5 +67,63 @@ class AdminUserController extends Controller
         $roles = ['user', 'admin', 'organizer', 'staff'];
 
         return view('admin.users.show', compact('user', 'roles', 'linkAudits', 'adminAudits'));
+    }
+
+    /**
+     * Полное удаление пользователя (purge).
+     * Требуем confirm=yes
+     */
+    public function purge(Request $request, User $user)
+    {
+        if ((int) auth()->id() === (int) $user->id) {
+            return back()->withErrors(['user' => 'Нельзя удалить самого себя.']);
+        }
+
+        $data = $request->validate([
+            'confirm' => ['required', 'in:yes'],
+            'note'    => ['nullable', 'string', 'max:500'],
+        ], [
+            'confirm.in' => 'Подтверждение удаления не пройдено.',
+        ]);
+
+        $userId = (int) $user->id;
+        $email  = (string) ($user->email ?? '');
+
+        DB::transaction(function () use ($request, $user, $userId, $email, $data) {
+
+            // 1) Удаляем файл профиля (если есть)
+            $path = $user->profile_photo_path ?? null;
+            if (!empty($path)) {
+                $disk = config('jetstream.profile_photo_disk', 'public');
+                try {
+                    Storage::disk($disk)->delete($path);
+                } catch (\Throwable $e) {
+                    // не роняем purge из-за файла
+                }
+            }
+
+            // 2) Удаляем пользователя (FK каскад/нулл сделает остальное)
+            if (method_exists($user, 'forceDelete')) {
+                $user->forceDelete();
+            } else {
+                $user->delete();
+            }
+
+            // 3) Аудит
+            AdminAuditLogger::log(
+                action: 'user.delete.purge',
+                targetType: 'user',
+                targetId: (string) $userId,
+                meta: [
+                    'email'   => $email,
+                    'confirm' => 'yes',
+                ],
+                note: !empty($data['note']) ? (string) $data['note'] : 'Purge from admin',
+                request: $request,
+            );
+        });
+
+        return redirect()->route('admin.users.index')
+            ->with('status', "Пользователь #{$userId} удалён полностью (purge).");
     }
 }
