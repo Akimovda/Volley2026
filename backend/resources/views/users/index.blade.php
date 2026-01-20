@@ -1,7 +1,7 @@
-<x-app-layout>
+<x-voll-layout>
     <div class="v-container">
         <div class="flex items-center justify-between gap-4 mb-4">
-            <h1 class="text-2xl font-bold">Игроки</h1>
+            <h1 class="text-2xl font-bold">Игроки -999-</h1>
         </div>
 
         <form method="GET" action="{{ route('users.index') }}" class="v-card mb-6">
@@ -70,4 +70,4 @@
             {{ $users->links() }}
         </div>
     </div>
-</x-app-layout>
+</x-voll-layout>

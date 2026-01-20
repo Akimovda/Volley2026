@@ -17,10 +17,11 @@
         <!-- Styles -->
         @livewireStyles
     </head>
+
     <body class="font-sans antialiased">
         <x-banner />
 
-        <div class="min-h-screen bg-gray-100">
+        <div class="min-h-screen bg-gray-100 flex flex-col">
             @livewire('navigation-menu')
 
             <!-- Page Heading -->
@@ -33,13 +34,30 @@
             @endif
 
             <!-- Page Content -->
-            <main>
+            <main class="flex-1">
                 {{ $slot }}
             </main>
+
+            <!-- Global Footer -->
+            <footer class="bg-white border-t">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                        <div class="text-sm text-gray-500">
+                            © {{ date('Y') }} {{ config('app.name', 'Volley') }}
+                        </div>
+
+                        <div class="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+                            <a href="{{ url('/personal_data_agreement') }}"
+                               class="text-gray-600 hover:text-gray-900 underline-offset-4 hover:underline">
+                                Обработка персональных данных
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </footer>
         </div>
 
         @stack('modals')
-
         @livewireScripts
     </body>
 </html>

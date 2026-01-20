@@ -1,6 +1,7 @@
+@import './volley.css';
+
 @tailwind base;
 @tailwind components;
-@import './volley.css';
 @tailwind utilities;
 
 [x-cloak] {

@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Support\ProfilePhotoService;
+use App\Support\UserPhotoFromProviderService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -61,6 +61,7 @@ class TelegramAuthController extends Controller
             return redirect()->route('login')->with('error', 'Telegram auth: missing id.');
         }
 
+        // intent из сессии (без query param)
         $intent = (string) $request->session()->pull('oauth_intent', Auth::check() ? 'link' : 'login');
         $request->session()->forget('oauth_provider');
 
@@ -79,22 +80,18 @@ class TelegramAuthController extends Controller
                 return redirect('/user/profile')->with('error', 'Этот Telegram уже привязан к другому аккаунту.');
             }
 
-            if ($current->isFillable('telegram_id')) $current->telegram_id = $tgId;
+            if ($current->isFillable('telegram_id')) {
+                $current->telegram_id = $tgId;
+            }
+
             if ($current->isFillable('telegram_username') && !empty($username) && empty($current->telegram_username)) {
                 $current->telegram_username = $username;
             }
 
-            // avatar -> только если пусто
-            $baseName = ProfilePhotoService::storeProviderAvatarBasenameIfMissing(
-                userId: (int) $current->id,
-                avatarUrl: $photoUrl,
-                currentProfilePhotoPath: $current->profile_photo_path ?? null
-            );
-            if (!empty($baseName) && $current->isFillable('profile_photo_path')) {
-                $current->profile_photo_path = $baseName;
-            }
-
             $current->save();
+
+            // avatar -> только если галерея пустая (и не новый пользователь)
+            UserPhotoFromProviderService::seedFromProviderIfAllowed($current, $photoUrl, false);
 
             $request->session()->put('auth_provider', 'telegram');
             $request->session()->put('auth_provider_id', $tgId);
@@ -106,6 +103,7 @@ class TelegramAuthController extends Controller
         // LOGIN
         // =========================
         $user = User::where('telegram_id', $tgId)->first();
+        $isNewUser = false;
 
         if (!$user) {
             $fullName = trim(($firstName ?? '') . ' ' . ($lastName ?? ''));
@@ -118,6 +116,8 @@ class TelegramAuthController extends Controller
             }
 
             $user = new User();
+            $isNewUser = true;
+
             if ($user->isFillable('name')) $user->name = $displayName;
             if ($user->isFillable('email')) $user->email = $safeEmail;
             if ($user->isFillable('password')) $user->password = Hash::make(str()->random(32));
@@ -128,16 +128,8 @@ class TelegramAuthController extends Controller
             $user->save();
         }
 
-        // avatar -> только если пусто
-        $baseName = ProfilePhotoService::storeProviderAvatarBasenameIfMissing(
-            userId: (int) $user->id,
-            avatarUrl: $photoUrl,
-            currentProfilePhotoPath: $user->profile_photo_path ?? null
-        );
-        if (!empty($baseName) && $user->isFillable('profile_photo_path')) {
-            $user->profile_photo_path = $baseName;
-            $user->save();
-        }
+        // avatar -> при регистрации всегда можно, при логине только если пусто (сервис сам решит)
+        UserPhotoFromProviderService::seedFromProviderIfAllowed($user, $photoUrl, $isNewUser);
 
         Auth::login($user, true);
         $request->session()->regenerate();

@@ -5,6 +5,16 @@
             Аккаунт
         </h2>
     </x-slot>
+@if (session('restricted') || (isset($activeRestriction) && $activeRestriction))
+    <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 mt-6">
+        <div class="mb-4 p-4 rounded-lg bg-yellow-50 text-yellow-900 border border-yellow-200">
+            <div class="font-extrabold">У Вашей учетной записи есть ограничения!</div>
+            <div class="mt-1 text-sm">
+                {{ session('restricted') }}
+            </div>
+        </div>
+    </div>
+@endif
 
     {{-- FLASH --}}
     @if (session('status'))
@@ -14,7 +24,6 @@
             </div>
         </div>
     @endif
-
     @if (session('error'))
         <div class="v-container mt-6">
             <div class="v-alert v-alert--error">
@@ -56,26 +65,25 @@
         $hasVk = !empty($u?->vk_id);
         $hasYa = !empty($u?->yandex_id);
 
-        // “provider looks off” (после неуспешной привязки мог остаться мусор в сессии)
+        // “provider looks off”
         $providerLooksOff = false;
         if ($provider === 'telegram' && !$hasTg && ($hasVk || $hasYa)) $providerLooksOff = true;
         if ($provider === 'vk' && !$hasVk && ($hasTg || $hasYa)) $providerLooksOff = true;
         if ($provider === 'yandex' && !$hasYa && ($hasTg || $hasVk)) $providerLooksOff = true;
 
-        // link urls (для VK/Yandex оставляем как было)
+        // link urls
         $vkLinkUrl     = route('auth.vk.redirect', ['link' => 1]);
         $yandexLinkUrl  = route('auth.yandex.redirect', ['link' => 1]);
 
         $allLinked = $hasTg && $hasVk && $hasYa;
 
         // Telegram widget settings
-        $tgBotUsername = config('services.telegram.bot_username'); // ОБЯЗАТЕЛЬНО username бота, без @
-        $tgAuthUrl     = route('auth.telegram.callback', absolute: true); // ОБЯЗАТЕЛЬНО абсолютный URL
+        $tgBotUsername = config('services.telegram.bot_username'); // username бота, без @
+        $tgAuthUrl     = route('auth.telegram.callback', absolute: true); // абсолютный URL
 
         // UI helpers
         $providerIcon = function (?string $p) {
             $p = $p ?: 'unknown';
-
             $base = 'display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid #e5e7eb;border-radius:9999px;background:#fff;';
             $dot  = 'display:inline-block;width:10px;height:10px;border-radius:9999px;';
             $txt  = 'font-weight:600;font-size:14px;line-height:1;color:#111827;';
@@ -89,7 +97,6 @@
             if ($p === 'yandex') {
                 return '<span style="'.$base.'"><span style="'.$dot.'background:#FF0000;"></span><span style="'.$txt.'">Yandex</span></span>';
             }
-
             return '<span style="'.$base.'"><span style="'.$dot.'background:#9CA3AF;"></span><span style="'.$txt.'">—</span></span>';
         };
 
@@ -121,13 +128,24 @@
 
                 <x-slot name="content">
                     <div class="flex items-start gap-4">
-                        <img
-                            src="{{ $u->profile_photo_url }}"
-                            alt="avatar"
-                            class="rounded-full"
-                            style="width:84px;height:84px;object-fit:cover;"
-                        />
+                        {{-- LEFT: avatar + button --}}
+                        <div class="shrink-0 flex flex-col items-center">
+                            <img
+                                src="{{ $u->profile_photo_url }}"
+                                alt="avatar"
+                                class="rounded-full"
+                                style="width:84px;height:84px;object-fit:cover;"
+                            />
 
+                            <div class="mt-3">
+                                <a href="{{ route('user.photos') }}"
+                                   class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition">
+                                    Изменить фото
+                                </a>
+                            </div>
+                        </div>
+
+                        {{-- RIGHT: profile data --}}
                         <div class="min-w-0 w-full">
                             <div class="text-2xl font-bold">
                                 {{ method_exists($u, 'displayName') ? $u->displayName() : ($u->name ?? '—') }}
@@ -178,17 +196,14 @@
 
                             <div class="mt-6">
                                 <div class="font-semibold text-lg mb-2">Навыки в волейболе</div>
-
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div class="v-card">
                                         <div class="v-card__body space-y-2">
                                             <div class="font-semibold">Классический волейбол</div>
-
                                             <div>
                                                 Уровень (классика):
                                                 <span class="font-semibold">{{ $u->classic_level ?? '—' }}</span>
                                             </div>
-
                                             <div>
                                                 Амплуа игрока:
                                                 <span class="font-semibold">
@@ -208,12 +223,10 @@
                                     <div class="v-card">
                                         <div class="v-card__body space-y-2">
                                             <div class="font-semibold">Пляжный волейбол</div>
-
                                             <div>
                                                 Уровень (пляж):
                                                 <span class="font-semibold">{{ $u->beach_level ?? '—' }}</span>
                                             </div>
-
                                             <div>
                                                 Зона игры:
                                                 <span class="font-semibold">
@@ -239,7 +252,6 @@
                                     Редактировать профиль
                                 </a>
                             </div>
-
                         </div>
                     </div>
                 </x-slot>
@@ -256,7 +268,6 @@
 
                 <x-slot name="content">
                     <div class="flex flex-col gap-4">
-
                         <div class="text-sm text-gray-700">
                             <div class="flex items-center gap-2">
                                 <span class="text-gray-600">Текущий вход (сессия):</span>
@@ -351,7 +362,7 @@
                                     </a>
                                 @endif
 
-                                {{-- Telegram: widget (без “подготовить привязку”) --}}
+                                {{-- Telegram: widget --}}
                                 @if(!$hasTg)
                                     <div class="v-card">
                                         <div class="v-card__body">
@@ -409,7 +420,6 @@
                     @livewire('profile.delete-user-form')
                 </div>
             @endif
-
         </div>
     </div>
 </x-app-layout>

@@ -1,0 +1,11 @@
+/etc/nginx/sites-available/volley-bot.store
+Удалить ЭТИ 3 строки:
+
+
+    # === ЗАЩИТА ПАРОЛЕМ ===
+    auth_basic "Development Site";
+    auth_basic_user_file /var/www/volley-bot/.htpasswd;
+    # =====================
+
+Перезагрузить Nginx:
+sudo systemctl reload nginx

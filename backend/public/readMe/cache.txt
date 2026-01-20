@@ -1,0 +1,28 @@
+--------------
+ОБРАТНЫЙ ПРОЦЕСС:
+1. NGINX конфиг (/etc/nginx/sites-available/volley-bot.store) — ВКЛЮЧИТЬ OPCache:
+location ~ \.php$ {
+    include snippets/fastcgi-php.conf;
+    fastcgi_pass unix:/run/php/php8.3-fpm.sock;
+    
+    # УБИРАЕМ или КОММЕНТИРУЕМ эти строки:
+    # fastcgi_param PHP_VALUE "opcache.enable=0";
+    # fastcgi_param PHP_ADMIN_VALUE "opcache.enable=0";
+}
+
+
+2. .env — ВКЛЮЧИТЬ кэш для продакшена:
+
+APP_ENV=production         # ← production вместо local
+APP_DEBUG=false            # ← false для скрытия ошибок
+VIEW_CACHE=true            # ← true для кэша Blade
+CACHE_STORE=database       # ← database/file вместо array
+
+
+3. config/view.php — УДАЛИТЬ или изменить:
+
+// Вариант A: Удалить файл совсем
+rm config/view.php
+// Вариант B: Изменить на продакшен
+'cache' => env('VIEW_CACHE', true),  // true по умолчанию
+-------------

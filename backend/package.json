@@ -9,7 +9,16 @@
     "release": "cd .. && npx --prefix backend standard-version"
   },
   "devDependencies": {
-    "vite": "^7.3.0",
-    "standard-version": "^9.5.0"
+    "@tailwindcss/forms": "^0.5.9",
+    "@tailwindcss/typography": "^0.5.13",
+    "autoprefixer": "^10.4.23",
+    "laravel-vite-plugin": "^2.0.1",
+    "postcss": "^8.5.6",
+    "standard-version": "^9.5.0",
+    "tailwindcss": "^3.4.17",
+    "vite": "^7.3.0"
+  },
+  "dependencies": {
+    "axios": "^1.13.2"
   }
 }
