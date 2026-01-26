@@ -23,7 +23,25 @@ jobs:
           --health-cmd="pg_isready -U postgres"
           --health-interval=10s
           --health-timeout=5s
-          --health-retries=5
+          --health-retries=10
+
+    env:
+      APP_ENV: testing
+      APP_DEBUG: "false"
+      APP_URL: http://localhost
+
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_DATABASE: volley_test
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+
+      CACHE_STORE: array
+      SESSION_DRIVER: array
+      QUEUE_CONNECTION: sync
+      MAIL_MAILER: log
+      BROADCAST_CONNECTION: log
 
     steps:
       - name: Checkout
@@ -45,8 +63,7 @@ jobs:
 
       - name: Install backend dependencies (composer)
         working-directory: backend
-        run: |
-          composer install --no-interaction --prefer-dist --no-progress
+        run: composer install --no-interaction --prefer-dist --no-progress
 
       - name: Install frontend deps (npm)
         working-directory: backend
@@ -60,37 +77,16 @@ jobs:
         working-directory: backend
         run: |
           cp .env.example .env
-          php artisan key:generate
-        env:
-          APP_ENV: testing
-          APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
-          DB_CONNECTION: pgsql
-          DB_HOST: 127.0.0.1
-          DB_PORT: 5432
-          DB_DATABASE: volley_test
-          DB_USERNAME: postgres
-          DB_PASSWORD: postgres
+          php artisan key:generate --force
+          php artisan config:clear
+          php artisan route:clear
+          php artisan view:clear
+          php artisan cache:clear
 
       - name: Run migrations
         working-directory: backend
         run: php artisan migrate --force
-        env:
-          APP_ENV: testing
-          DB_CONNECTION: pgsql
-          DB_HOST: 127.0.0.1
-          DB_PORT: 5432
-          DB_DATABASE: volley_test
-          DB_USERNAME: postgres
-          DB_PASSWORD: postgres
 
-      - name: Run tests
+      - name: Run tests (stop on first failure)
         working-directory: backend
-        run: php artisan test
-        env:
-          APP_ENV: testing
-          DB_CONNECTION: pgsql
-          DB_HOST: 127.0.0.1
-          DB_PORT: 5432
-          DB_DATABASE: volley_test
-          DB_USERNAME: postgres
-          DB_PASSWORD: postgres
+        run: php artisan test --stop-on-failure -vvv
