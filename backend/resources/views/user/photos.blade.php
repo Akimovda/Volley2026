@@ -80,7 +80,7 @@
                     @csrf
 
                     <label class="inline-flex items-center gap-2 text-sm text-gray-700 mb-3">
-                        <input id="make_avatar" type="checkbox" class="rounded border-gray-300" />
+                        <input id="make_avatar" name="make_avatar" type="checkbox" class="rounded border-gray-300" />
                         <span>Сделать это фото аватаром</span>
                     </label>
 

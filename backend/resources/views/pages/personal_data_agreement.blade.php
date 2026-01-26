@@ -100,11 +100,8 @@
                     </div>
 
                     <div class="pt-2 flex flex-wrap gap-3">
-                        <a href="{{ url('/register') }}" class="v-btn v-btn--primary">
-                            Перейти к регистрации
-                        </a>
-                        <a href="{{ url('/login') }}" class="v-btn v-btn--secondary">
-                            Перейти ко входу
+                        <a href="{{ url('/events') }}" class="v-btn v-btn--primary">
+                            Перейти к мероприятиям
                         </a>
                     </div>
 

@@ -74,6 +74,8 @@ class User extends Authenticatable implements HasMedia
          * пока не мигрировали полностью на MediaLibrary.
          */
         'profile_photo_path',
+        'allow_user_contact',
+
     ];
 
     protected $hidden = [
@@ -93,6 +95,7 @@ class User extends Authenticatable implements HasMedia
             'birth_date' => 'date',
             'beach_universal' => 'boolean',
             'password' => 'hashed',
+            'allow_user_contact' => 'boolean',
         ];
     }
 

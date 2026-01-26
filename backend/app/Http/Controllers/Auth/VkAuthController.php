@@ -15,14 +15,74 @@ use Laravel\Socialite\Facades\Socialite;
 
 class VkAuthController extends Controller
 {
+    private function debug(): bool
+    {
+        return (bool) config('app.debug');
+    }
+
+    private function logDebug(string $msg, array $ctx = []): void
+    {
+        if (!$this->debug()) return;
+        Log::debug('[VK_OAUTH] ' . $msg, $ctx);
+    }
+
+    private function logWarn(string $msg, array $ctx = []): void
+    {
+        if (!$this->debug()) return;
+        Log::warning('[VK_OAUTH] ' . $msg, $ctx);
+    }
+
+    /**
+     * Сохраняем безопасный return URL в сессии.
+     */
+    private function storeReturnTo(Request $request): void
+    {
+        $returnTo = (string) ($request->query('return') ?: url()->previous() ?: '');
+        $returnTo = $this->sanitizeReturnTo($returnTo);
+        $request->session()->put('oauth_return_to', $returnTo);
+    }
+
+    /**
+     * Возвращаем только на наш домен, исключая /auth/* и /logout.
+     */
+    private function sanitizeReturnTo(string $url): string
+    {
+        $fallback = url('/events');
+
+        $url = trim($url);
+        if ($url === '') return $fallback;
+
+        $appHost = parse_url(config('app.url'), PHP_URL_HOST);
+        $urlHost = parse_url($url, PHP_URL_HOST);
+
+        // если передали абсолютный URL на другой домен — запрещаем
+        if ($urlHost && $appHost && strcasecmp($urlHost, $appHost) !== 0) {
+            return $fallback;
+        }
+
+        // запрещаем циклы на oauth и logout
+        if (str_contains($url, '/auth/') || str_contains($url, '/logout')) {
+            return $fallback;
+        }
+
+        return $url;
+    }
+
+    private function popReturnTo(Request $request): string
+    {
+        return (string) $request->session()->pull('oauth_return_to', url('/events'));
+    }
+
     /**
      * Redirect to VKID.
-     * - сохраняем intent в сессию
-     * - строго stateful (без stateless тут)
+     * - сохраняем intent + return_to в сессию
+     * - строго stateful
      */
     public function redirect(Request $request)
     {
         $intent = Auth::check() ? 'link' : 'login';
+
+        $this->storeReturnTo($request);
 
         $request->session()->put('oauth_provider', 'vk');
         $request->session()->put('oauth_intent', $intent);
@@ -34,20 +94,22 @@ class VkAuthController extends Controller
 
     /**
      * Callback от VKID.
-     * ВАЖНО: без fallback stateless — если state потерялся, возвращаем юзера на login с понятной ошибкой.
+     * ВАЖНО: stateless не используем.
      */
     public function callback(Request $request)
     {
+        $returnTo = $this->popReturnTo($request);
+
         try {
             $vkUser = Socialite::driver('vkid')->user();
         } catch (\Throwable $e) {
-            Log::warning('VKID callback failed (state/session lost?)', [
-                'error' => $e->getMessage(),
+            $this->logWarn('callback failed (state/session lost?)', [
+                'e' => $e->getMessage(),
+                'has_code' => $request->filled('code'),
+                'query_keys' => array_keys($request->query()),
             ]);
 
-            // чистим intent/provider, чтобы не залипало
-            $request->session()->forget('oauth_intent');
-            $request->session()->forget('oauth_provider');
+            $request->session()->forget(['oauth_intent', 'oauth_provider']);
 
             return redirect()->route('login')
                 ->with('error', 'VK: сессия авторизации истекла/потерялась. Нажми “Войти через VK” ещё раз.');
@@ -58,25 +120,24 @@ class VkAuthController extends Controller
         $avatar      = $vkUser->getAvatar();
         $accessToken = (string) ($vkUser->token ?? '');
 
-        // email: иногда лежит не в getEmail(), а в accessTokenResponseBody['email']
+        // email: иногда лежит в accessTokenResponseBody['email']
         $vkEmail = (string) ($vkUser->getEmail() ?? '');
         $body = $vkUser->accessTokenResponseBody ?? null;
-        if (empty($vkEmail) && is_array($body)) {
+        if ($vkEmail === '' && is_array($body)) {
             $vkEmail = (string) ($body['email'] ?? '');
         }
 
-        // Телефон: отдельный запрос к VK API по access_token
+        // Телефон: отдельный запрос (может не вернуться)
         $vkPhone = $this->fetchVkPhone($vkId, $accessToken);
         if (!empty($vkPhone) && !$this->isValidPhone($vkPhone)) {
             $vkPhone = null;
         }
 
-        // intent из сессии (без query param)
         $intent = (string) $request->session()->pull('oauth_intent', Auth::check() ? 'link' : 'login');
         $request->session()->forget('oauth_provider');
 
         // -------------------------
-        // LINK (привязка)
+        // LINK
         // -------------------------
         if ($intent === 'link') {
             if (!Auth::check()) {
@@ -86,22 +147,19 @@ class VkAuthController extends Controller
             /** @var User $current */
             $current = $request->user();
 
-            // anti-takeover: vk_id не может быть у другого user
             $existsForOther = User::query()
                 ->where('vk_id', $vkId)
                 ->where('id', '!=', $current->id)
                 ->exists();
 
             if ($existsForOther) {
-                return redirect('/user/profile')
-                    ->with('error', 'Этот VK уже привязан к другому аккаунту.');
+                return redirect('/user/profile')->with('error', 'Этот VK уже привязан к другому аккаунту.');
             }
 
             if ($current->isFillable('vk_id')) {
                 $current->vk_id = $vkId;
             }
-
-            if ($current->isFillable('vk_email') && !empty($vkEmail) && empty($current->vk_email)) {
+            if ($current->isFillable('vk_email') && $vkEmail !== '' && empty($current->vk_email)) {
                 $current->vk_email = $vkEmail;
             }
 
@@ -115,13 +173,12 @@ class VkAuthController extends Controller
 
             $current->save();
 
-            // avatar -> только если галерея пустая (и не новый пользователь)
             UserPhotoFromProviderService::seedFromProviderIfAllowed($current, $avatar, false);
 
             $request->session()->put('auth_provider', 'vk');
             $request->session()->put('auth_provider_id', $vkId);
 
-            return redirect('/user/profile')->with('status', 'VK привязан ✅');
+            return redirect()->to($returnTo)->with('status', 'VK привязан ✅');
         }
 
         // -------------------------
@@ -129,8 +186,8 @@ class VkAuthController extends Controller
         // -------------------------
         $user = User::query()->where('vk_id', $vkId)->first();
 
-        // (опционально) если email пришёл и есть совпадение — можно привязать к существующему
-        if (!$user && !empty($vkEmail)) {
+        // (опционально) привязка по email
+        if (!$user && $vkEmail !== '') {
             $candidate = User::query()->where('email', $vkEmail)->first();
             if ($candidate) {
                 $existsForOther = User::query()
@@ -139,18 +196,15 @@ class VkAuthController extends Controller
                     ->exists();
 
                 if ($existsForOther) {
-                    return redirect()->route('login')
-                        ->with('error', 'Этот VK уже привязан к другому аккаунту.');
+                    return redirect()->route('login')->with('error', 'Этот VK уже привязан к другому аккаунту.');
                 }
 
                 if ($candidate->isFillable('vk_id') && empty($candidate->vk_id)) {
                     $candidate->vk_id = $vkId;
                 }
-
-                if ($candidate->isFillable('vk_email') && !empty($vkEmail) && empty($candidate->vk_email)) {
+                if ($candidate->isFillable('vk_email') && $vkEmail !== '' && empty($candidate->vk_email)) {
                     $candidate->vk_email = $vkEmail;
                 }
-
                 if (!empty($vkPhone)) {
                     if ($candidate->isFillable('phone') && empty($candidate->phone)) {
                         $candidate->phone = $vkPhone;
@@ -167,16 +221,13 @@ class VkAuthController extends Controller
         $isNewUser = false;
 
         if (!$user) {
-            $displayName = $name ?: "VK User #{$vkId}";
+            $displayName = $name !== '' ? $name : "VK User #{$vkId}";
 
-            // users.email NOT NULL -> безопасный surrogate email
             $safeEmail = null;
-
-            if (!empty($vkEmail) && !User::query()->where('email', $vkEmail)->exists()) {
+            if ($vkEmail !== '' && !User::query()->where('email', $vkEmail)->exists()) {
                 $safeEmail = $vkEmail;
             }
-
-            if (empty($safeEmail)) {
+            if (!$safeEmail) {
                 $safeEmail = "vk_{$vkId}@vk.local";
                 if (User::query()->where('email', $safeEmail)->exists()) {
                     $safeEmail = "vk_{$vkId}_" . Str::random(6) . "@vk.local";
@@ -186,25 +237,12 @@ class VkAuthController extends Controller
             $user = new User();
             $isNewUser = true;
 
-            if ($user->isFillable('name')) {
-                $user->name = $displayName;
-            }
+            if ($user->isFillable('name')) $user->name = $displayName;
+            if ($user->isFillable('email')) $user->email = $safeEmail;
+            if ($user->isFillable('password')) $user->password = Hash::make(Str::random(32));
 
-            if ($user->isFillable('email')) {
-                $user->email = $safeEmail;
-            }
-
-            if ($user->isFillable('password')) {
-                $user->password = Hash::make(Str::random(32));
-            }
-
-            if ($user->isFillable('vk_id')) {
-                $user->vk_id = $vkId;
-            }
-
-            if ($user->isFillable('vk_email') && !empty($vkEmail)) {
-                $user->vk_email = $vkEmail;
-            }
+            if ($user->isFillable('vk_id')) $user->vk_id = $vkId;
+            if ($user->isFillable('vk_email') && $vkEmail !== '') $user->vk_email = $vkEmail;
 
             if (!empty($vkPhone)) {
                 if ($user->isFillable('phone')) {
@@ -216,10 +254,9 @@ class VkAuthController extends Controller
 
             $user->save();
         } else {
-            // при логине: можно добить телефон, если пусто
+            // при логине: можно добить телефон только если пусто
             if (!empty($vkPhone)) {
                 $changed = false;
-
                 if ($user->isFillable('phone') && empty($user->phone)) {
                     $user->phone = $vkPhone;
                     $changed = true;
@@ -227,14 +264,10 @@ class VkAuthController extends Controller
                     $user->vk_phone = $vkPhone;
                     $changed = true;
                 }
-
-                if ($changed) {
-                    $user->save();
-                }
+                if ($changed) $user->save();
             }
         }
 
-        // avatar -> при регистрации всегда можно, при логине только если пусто (сервис сам решит)
         UserPhotoFromProviderService::seedFromProviderIfAllowed($user, $avatar, $isNewUser);
 
         Auth::login($user, true);
@@ -243,18 +276,16 @@ class VkAuthController extends Controller
         $request->session()->put('auth_provider', 'vk');
         $request->session()->put('auth_provider_id', $vkId);
 
-        return redirect()->intended('/events');
+        return redirect()->to($returnTo);
     }
 
     /**
      * Добираем телефон после callback через VK API.
-     * Важно: не логируем access_token и не логируем телефон/PII.
+     * Не логируем access_token и PII; логируем только debug и без телефона.
      */
     private function fetchVkPhone(string $vkId, string $accessToken): ?string
     {
-        if (empty($accessToken)) {
-            return null;
-        }
+        if ($accessToken === '') return null;
 
         try {
             $resp = Http::timeout(8)->get('https://api.vk.ru/method/users.get', [
@@ -265,8 +296,8 @@ class VkAuthController extends Controller
             ]);
 
             if (!$resp->ok()) {
-                Log::warning('VK phone fetch failed: http_not_ok', [
-                    'vk_id'  => $vkId,
+                $this->logWarn('phone fetch http_not_ok', [
+                    'vk_id' => $vkId,
                     'status' => $resp->status(),
                 ]);
                 return null;
@@ -274,10 +305,7 @@ class VkAuthController extends Controller
 
             $data = $resp->json();
             $u = $data['response'][0] ?? null;
-
-            if (!is_array($u)) {
-                return null;
-            }
+            if (!is_array($u)) return null;
 
             $mobile = $u['mobile_phone'] ?? null;
             $home   = $u['home_phone'] ?? null;
@@ -287,9 +315,9 @@ class VkAuthController extends Controller
 
             return $phone ?: null;
         } catch (\Throwable $e) {
-            Log::warning('VK phone fetch failed: exception', [
+            $this->logWarn('phone fetch exception', [
                 'vk_id' => $vkId,
-                'error' => $e->getMessage(),
+                'e' => $e->getMessage(),
             ]);
             return null;
         }
@@ -298,10 +326,7 @@ class VkAuthController extends Controller
     private function isValidPhone(string $phone): bool
     {
         $phone = trim($phone);
-
-        if ($phone === '' || $phone === 'null' || $phone === 'false') {
-            return false;
-        }
+        if ($phone === '' || $phone === 'null' || $phone === 'false') return false;
 
         $clean = preg_replace('/(?!^\+)[^\d]/', '', $phone);
 

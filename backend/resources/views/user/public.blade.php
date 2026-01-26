@@ -60,6 +60,35 @@
 
         $beachPrimary = optional($user->beachZones)->firstWhere('is_primary', true)?->zone;
         $beachExtras  = optional($user->beachZones)->where('is_primary', false)->pluck('zone')->values()->all() ?? [];
+
+        // --- Contacts logic (аккуратно, без кривых ссылок) ---
+        $allowContact = (bool)($user->allow_user_contact ?? true);
+        $isAuthed = auth()->check();
+        $isSelf = $isAuthed && auth()->id() === $user->id;
+
+        $tgUrl = null;
+        $tgUsername = trim((string)($user->telegram_username ?? ''));
+        if ($tgUsername !== '') {
+            $tgUsername = ltrim($tgUsername, '@');
+            if ($tgUsername !== '') {
+                $tgUrl = 'https://t.me/' . $tgUsername;
+            }
+        }
+
+        $vkUrl = null;
+        $vkId = trim((string)($user->vk_id ?? ''));
+        if ($vkId !== '') {
+            $vkUrl = 'https://vk.com/id' . $vkId;
+        }
+
+        $hasAnyContact = (bool)($tgUrl || $vkUrl);
+
+        // показываем кнопки только если:
+        // - авторизован
+        // - не свой профиль
+        // - пользователь разрешил контакты
+        // - есть хоть один контакт
+        $canShowContactButtons = $isAuthed && !$isSelf && $allowContact && $hasAnyContact;
     @endphp
 
     <div class="py-10">
@@ -75,10 +104,12 @@
                             class="rounded-full border border-gray-100"
                             style="width:96px;height:96px;object-fit:cover;"
                         />
+
                         <div class="min-w-0">
                             <div class="text-2xl font-bold text-gray-900 truncate">
                                 {{ method_exists($user, 'displayName') ? $user->displayName() : ($user->name ?? '—') }}
                             </div>
+
                             <div class="text-sm text-gray-600 mt-1">
                                 @if(!is_null($age))
                                     {{ $age }} лет
@@ -169,12 +200,50 @@
                 </div>
             </div>
 
-            {{-- Optional small info --}}
+            {{-- Contacts --}}
             <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                 <div class="text-lg font-bold text-gray-900">Контакты</div>
                 <div class="mt-3 text-sm text-gray-600">
                     Телефон и прочие приватные данные тут не показываем.
                 </div>
+
+                @if($isSelf)
+                    <div class="mt-3 text-sm text-gray-500">
+                        Это ваш профиль — контакты для связи тут не нужны.
+                    </div>
+                @elseif(!$allowContact)
+                    <div class="mt-3 text-sm text-gray-600">
+                        Пользователь запретил связываться с ним через Telegram/VK.
+                    </div>
+                @elseif(!$hasAnyContact)
+                    <div class="mt-3 text-sm text-gray-600">
+                        Пользователь не указал Telegram/VK для связи.
+                    </div>
+                @elseif(!$isAuthed)
+                    <div class="mt-3 p-3 rounded-lg bg-blue-50 text-blue-900 border border-blue-100 text-sm">
+                        Чтобы написать пользователю в Telegram/VK, нужно войти в аккаунт.
+                    </div>
+                @elseif($canShowContactButtons)
+                    <div class="mt-4 flex flex-wrap gap-3">
+                        @if($tgUrl)
+                            <a class="inline-flex items-center px-4 py-2 rounded-lg font-semibold text-sm border border-gray-200 bg-white hover:bg-gray-50"
+                               href="{{ $tgUrl }}" target="_blank" rel="noopener noreferrer">
+                                Написать в Telegram
+                            </a>
+                        @endif
+
+                        @if($vkUrl)
+                            <a class="inline-flex items-center px-4 py-2 rounded-lg font-semibold text-sm border border-gray-200 bg-white hover:bg-gray-50"
+                               href="{{ $vkUrl }}" target="_blank" rel="noopener noreferrer">
+                                Написать в VK
+                            </a>
+                        @endif
+                    </div>
+
+                    <div class="mt-2 text-xs text-gray-500">
+                        Откроется в новой вкладке.
+                    </div>
+                @endif
             </div>
 
         </div>
