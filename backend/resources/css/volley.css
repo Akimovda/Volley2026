@@ -133,3 +133,17 @@
   border-color: #bfdbfe;
   color: #1e40af;
 }
+/* Photos gallery grid: 2..8 columns responsive */
+.vb-gallery-grid{
+  display:grid;
+  gap:16px;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+}
+@media (min-width:640px){  .vb-gallery-grid{ grid-template-columns:repeat(3,minmax(0,1fr)); } }
+@media (min-width:768px){  .vb-gallery-grid{ grid-template-columns:repeat(4,minmax(0,1fr)); } }
+@media (min-width:1024px){ .vb-gallery-grid{ grid-template-columns:repeat(6,minmax(0,1fr)); } }
+@media (min-width:1280px){ .vb-gallery-grid{ grid-template-columns:repeat(8,minmax(0,1fr)); } }
+/* Gallery should be wide (not limited by v-container) */
+.vb-gallery-grid {
+  width: 100%;
+}

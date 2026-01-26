@@ -49,6 +49,14 @@ return [
     |                    "errorlog", "monolog", "custom", "stack"
     |
     */
+    'channels' => [
+    // ...
+    'oauth' => [
+        'driver' => 'single',
+        'path' => storage_path('logs/oauth.log'),
+        'level' => 'info',
+    ],
+],
 
     'channels' => [
 

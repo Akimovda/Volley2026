@@ -14,6 +14,12 @@ class EventRegistrationController extends Controller
     {
         $user = Auth::user();
 
+        // 0) Check event restriction (block only JOIN)
+        if ($this->isUserBannedForEvent((int)$user->id, (int)$event->id)) {
+            return redirect()->to('/events')
+                ->with('error', 'У вашей учетной записи есть ограничения: запись на это мероприятие недоступна.');
+        }
+
         // 1) Missing profile fields -> redirect to profile completion
         $missing = $requirements->missing($user, $event);
         if (!empty($missing)) {
@@ -57,6 +63,7 @@ class EventRegistrationController extends Controller
 
     public function destroy(Request $request, Event $event)
     {
+        // LEAVE allowed always
         $user = Auth::user();
 
         DB::table('event_registrations')
@@ -64,12 +71,39 @@ class EventRegistrationController extends Controller
             ->where('user_id', $user->id)
             ->delete();
 
-        // If pending join was for this event, clear it
         if ((int) $request->session()->get('pending_event_join') === (int) $event->id) {
             $request->session()->forget('pending_event_join');
             $request->session()->forget('pending_profile_required');
         }
 
         return redirect()->to('/events')->with('status', 'Запись на мероприятие отменена.');
+    }
+
+    private function isUserBannedForEvent(int $userId, int $eventId): bool
+    {
+        $now = now();
+
+        $rows = DB::table('user_restrictions')
+            ->select(['ends_at', 'event_ids'])
+            ->where('user_id', $userId)
+            ->where('scope', 'events')
+            ->where(function ($q) use ($now) {
+                $q->whereNull('ends_at')->orWhere('ends_at', '>', $now);
+            })
+            ->get();
+
+        foreach ($rows as $r) {
+            $ids = $r->event_ids;
+
+            if (is_string($ids)) {
+                $ids = json_decode($ids, true) ?: [];
+            }
+
+            if (is_array($ids) && in_array($eventId, array_map('intval', $ids), true)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

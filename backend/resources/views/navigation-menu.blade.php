@@ -19,9 +19,16 @@
                     <x-nav-link href="{{ route('users.index') }}" :active="request()->routeIs('users.index')">
                         {{ __('Players') }}
                     </x-nav-link>
+                   <x-nav-link
+    href="{{ url('/level_players') }}"
+    :active="request()->is('level_players')"
+>
+    Уровни игроков
+</x-nav-link>
 
+              
                     @auth
-                        <x-nav-link href="{{ route('dashboard') }}" :active="request()->routeIs('dashboard')">
+                        <x-nav-link href="{{ route('events.index') }}" :active="request()->routeIs('events.index')">
                             {{ __('Dashboard') }}
                         </x-nav-link>
                     @endauth
@@ -171,7 +178,7 @@
             </x-responsive-nav-link>
 
             @auth
-                <x-responsive-nav-link href="{{ route('dashboard') }}" :active="request()->routeIs('dashboard')">
+                <x-responsive-nav-link href="{{ route('events.index') }}" :active="request()->routeIs('events.index')">
                     {{ __('Dashboard') }}
                 </x-responsive-nav-link>
             @endauth

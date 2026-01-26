@@ -28,14 +28,14 @@
 
     <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-bottom:16px;">
         {{-- VK ID --}}
-        <a href="{{ route('auth.vk.redirect') }}"
-           style="display:inline-block; padding:12px 16px; border:1px solid #ddd; border-radius:10px; text-decoration:none;">
+        <a href="{{ route('auth.vk.redirect', ['return' => url()->full()]) }}"
+             style="display:inline-block; padding:12px 16px; border:1px solid #ddd; border-radius:10px; text-decoration:none;">
             Войти через VK ID
         </a>
 
         {{-- Yandex --}}
-        <a href="{{ route('auth.yandex.redirect') }}"
-           style="display:inline-block; padding:12px 16px; border:1px solid #ddd; border-radius:10px; text-decoration:none;">
+        <a href="{{ route('auth.yandex.redirect', ['return' => url()->full()]) }}"
+             style="display:inline-block; padding:12px 16px; border:1px solid #ddd; border-radius:10px; text-decoration:none;">
             Войти через Яндекс
         </a>
     </div>
@@ -43,8 +43,10 @@
     @php
         // Telegram Login Widget требует username бота (без @)
         $tgBotUsername = config('services.telegram.bot_username') ?: env('TELEGRAM_BOT_USERNAME');
+
         // Telegram дергает auth_url с клиента — лучше абсолютный URL
-        $tgAuthUrl = route('auth.telegram.callback', absolute: true);
+        // + добавляем return (URL-энкодим, т.к. руками конкатенируем query)
+        $tgAuthUrl = route('auth.telegram.callback', absolute: true) . '?return=' . urlencode(url()->full());
     @endphp
 
     {{-- Telegram Login Widget --}}

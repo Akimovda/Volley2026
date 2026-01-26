@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\Auth\TelegramAuthController;
@@ -11,36 +13,71 @@ use App\Http\Controllers\EventRegistrationController;
 
 use App\Http\Controllers\UserDirectoryController;
 use App\Http\Controllers\UserPublicController;
+use App\Http\Controllers\UserPhotoController;
 
 use App\Http\Controllers\OrganizerRequestController;
+
+// unlink providers
+use App\Http\Controllers\AccountUnlinkController;
+
+// account delete request
+use App\Http\Controllers\AccountDeleteRequestController;
+
+// ✅ privacy toggle controller
+use App\Http\Controllers\ProfileContactPrivacyController;
 
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\Admin\AdminRoleController;
 use App\Http\Controllers\Admin\AdminAuditController;
 use App\Http\Controllers\Admin\OrganizerRequestAdminController;
+use App\Http\Controllers\Admin\AdminUserRestrictionController;
+
+// ✅ создание мероприятий
+use App\Http\Controllers\EventCreateController;
+use App\Http\Controllers\LocationController;
 
 /*
 |--------------------------------------------------------------------------
 | Home
 |--------------------------------------------------------------------------
 */
-Route::get('/', function () {
-    return view('welcome');
-})->name('home');
+Route::get('/', fn () => view('welcome'))->name('home');
+
+/*
+|--------------------------------------------------------------------------
+| Events (PUBLIC ENTRY POINT)
+|--------------------------------------------------------------------------
+*/
+Route::get('/events', [EventsController::class, 'index'])
+    ->name('events.index');
+
+/*
+|--------------------------------------------------------------------------
+| Dashboard (user) + Alias /Dashboard
+|--------------------------------------------------------------------------
+*/
+Route::middleware([
+    'auth:sanctum',
+    config('jetstream.auth_session'),
+])->group(function () {
+    Route::get('/dashboard', fn () => view('dashboard'))->name('dashboard');
+});
+
+// Alias for old URL (case-sensitive path)
+Route::get('/Dashboard', fn () => redirect()->to('/dashboard'))->name('Dashboard');
 
 /*
 |--------------------------------------------------------------------------
 | AUTH: Telegram / VK / Yandex
 |--------------------------------------------------------------------------
-| Важно:
-| - callback'и должны быть доступны без auth middleware
-| - Telegram виджет ходит на auth-url (обычно GET)
 */
-Route::get('/auth/telegram/redirect', [TelegramAuthController::class, 'redirect'])
-    ->name('auth.telegram.redirect');
-Route::match(['GET', 'POST'], '/auth/telegram/callback', [TelegramAuthController::class, 'callback'])
+Route::get('/auth/telegram/callback', [TelegramAuthController::class, 'callback'])
     ->name('auth.telegram.callback');
+
+// (опционально) если когда-нибудь понадобится отдельная "подготовка" сессии для telegram
+// Route::get('/auth/telegram/redirect', [TelegramAuthController::class, 'redirect'])
+//     ->name('auth.telegram.redirect');
 
 Route::get('/auth/vk/redirect', [VkAuthController::class, 'redirect'])
     ->name('auth.vk.redirect');
@@ -54,28 +91,88 @@ Route::get('/auth/yandex/callback', [YandexAuthController::class, 'callback'])
 
 /*
 |--------------------------------------------------------------------------
-| ADMIN
+| Event join / leave (auth + verified + restricted)
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth', 'can:is-admin'])
-    ->prefix('admin')
-    ->name('admin.')
-    ->group(function () {
-        Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+Route::middleware([
+    'auth:sanctum',
+    config('jetstream.auth_session'),
+    'verified',
+    'user.restricted',
+])->group(function () {
+    Route::post('/events/{event}/join', [EventRegistrationController::class, 'store'])
+        ->name('events.join');
+    Route::delete('/events/{event}/leave', [EventRegistrationController::class, 'destroy'])
+        ->name('events.leave');
+});
 
-        Route::get('/audits', [AdminAuditController::class, 'index'])->name('audits.index');
+/*
+|--------------------------------------------------------------------------
+| Profile / Photos / Unlink / Delete-request / Privacy (auth + verified)
+|--------------------------------------------------------------------------
+*/
+Route::middleware([
+    'auth:sanctum',
+    config('jetstream.auth_session'),
+    'verified',
+])->group(function () {
+    // Photos / avatar gallery
+    Route::get('/user/photos', [UserPhotoController::class, 'index'])->name('user.photos');
+    Route::post('/user/photos', [UserPhotoController::class, 'store'])->name('user.photos.store');
+    Route::post('/user/photos/{media}/set-avatar', [UserPhotoController::class, 'setAvatar'])->name('user.photos.setAvatar');
+    Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->name('user.photos.destroy');
 
-        Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');
-        Route::get('/users/{user}', [AdminUserController::class, 'show'])->name('users.show');
-        Route::post('/users/{user}/role', [AdminRoleController::class, 'updateUserRole'])->name('users.role.update');
+    // Unlink provider routes (POST)
+    Route::post('/account/unlink/telegram', [AccountUnlinkController::class, 'telegram'])
+        ->name('account.unlink.telegram');
+    Route::post('/account/unlink/vk', [AccountUnlinkController::class, 'vk'])
+        ->name('account.unlink.vk');
+    Route::post('/account/unlink/yandex', [AccountUnlinkController::class, 'yandex'])
+        ->name('account.unlink.yandex');
 
-        // Purge: DELETE (не POST)
-        Route::delete('/users/{user}/purge', [AdminUserController::class, 'purge'])->name('users.purge');
+    // Account delete request
+    Route::post('/account/delete-request', [AccountDeleteRequestController::class, 'store'])
+        ->name('account.delete.request');
 
-        Route::get('/organizer-requests', [OrganizerRequestAdminController::class, 'index'])->name('organizer_requests.index');
-        Route::post('/organizer-requests/{request}/approve', [OrganizerRequestAdminController::class, 'approve'])->name('organizer_requests.approve');
-        Route::post('/organizer-requests/{request}/reject', [OrganizerRequestAdminController::class, 'reject'])->name('organizer_requests.reject');
-    });
+    // ✅ Privacy toggle (совпадает с Blade: route('profile.contact_privacy.update'))
+    Route::post('/profile/contact-privacy', [ProfileContactPrivacyController::class, 'update'])
+        ->name('profile.contact_privacy.update');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Event create + quick locations (admin/organizer/staff)
+|--------------------------------------------------------------------------
+*/
+Route::middleware([
+    'auth:sanctum',
+    config('jetstream.auth_session'),
+    'verified',
+    'user.restricted',
+])->group(function () {
+    Route::get('/events/create', [EventCreateController::class, 'create'])
+        ->name('events.create');
+
+    Route::post('/events', [EventCreateController::class, 'store'])
+        ->name('events.store');
+
+    // quick-create location (AJAX/обычный POST)
+    Route::post('/locations/quick', [LocationController::class, 'quickStore'])
+        ->name('locations.quick_store');
+});
+
+
+/*
+|--------------------------------------------------------------------------
+| Profile completion / extra data (auth)
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth'])->group(function () {
+    Route::get('/profile/complete', [\App\Http\Controllers\ProfileCompletionController::class, 'show'])
+        ->name('profile.complete');
+    Route::post('/profile/extra', [\App\Http\Controllers\ProfileExtraController::class, 'update'])
+        ->name('profile.extra.update');
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -87,54 +184,45 @@ Route::post('/organizer/request', [OrganizerRequestController::class, 'store'])
 
 /*
 |--------------------------------------------------------------------------
-| Events (public)
+| ADMIN
 |--------------------------------------------------------------------------
 */
-Route::get('/events', [EventsController::class, 'index'])
-    ->name('events.index');
+Route::middleware(['auth', 'can:is-admin'])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
+        Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
 
-/*
-|--------------------------------------------------------------------------
-| Event join/leave (auth)
-|--------------------------------------------------------------------------
-| Если у вас join/leave делается обычными формами с web-сессией,
-| можно заменить на ['auth'] вместо sanctum.
-*/
-Route::middleware([
-    'auth:sanctum',
-    config('jetstream.auth_session'),
-])->group(function () {
-    Route::post('/events/{event}/join', [EventRegistrationController::class, 'store'])->name('events.join');
-    Route::delete('/events/{event}/leave', [EventRegistrationController::class, 'destroy'])->name('events.leave');
-});
+        Route::get('/audits', [AdminAuditController::class, 'index'])
+            ->name('audits.index');
 
-/*
-|--------------------------------------------------------------------------
-| Profile completion / extra data
-|--------------------------------------------------------------------------
-*/
-Route::middleware(['auth'])->group(function () {
-    Route::get('/profile/complete', [\App\Http\Controllers\ProfileCompletionController::class, 'show'])
-        ->name('profile.complete');
+        Route::get('/users', [AdminUserController::class, 'index'])
+            ->name('users.index');
 
-    Route::post('/profile/extra', [\App\Http\Controllers\ProfileExtraController::class, 'update'])
-        ->name('profile.extra.update');
-});
+        Route::get('/users/{user}', [AdminUserController::class, 'show'])
+            ->name('users.show');
 
-/*
-|--------------------------------------------------------------------------
-| Dashboard (Jetstream default) — under verified
-|--------------------------------------------------------------------------
-*/
-Route::middleware([
-    'auth:sanctum',
-    config('jetstream.auth_session'),
-    'verified',
-])->group(function () {
-    Route::get('/dashboard', function () {
-        return view('dashboard');
-    })->name('dashboard');
-});
+        Route::post('/users/{user}/role', [AdminRoleController::class, 'updateUserRole'])
+            ->name('users.role.update');
+
+        Route::delete('/users/{user}/purge', [AdminUserController::class, 'purge'])
+            ->name('users.purge');
+
+        Route::post('/users/{user}/restrictions/events', [AdminUserRestrictionController::class, 'banEvents'])
+            ->name('users.restrictions.events');
+
+        Route::post('/users/{user}/restrictions/clear', [AdminUserRestrictionController::class, 'clearAll'])
+            ->name('users.restrictions.clear');
+
+        Route::get('/organizer-requests', [OrganizerRequestAdminController::class, 'index'])
+            ->name('organizer_requests.index');
+
+        Route::post('/organizer-requests/{request}/approve', [OrganizerRequestAdminController::class, 'approve'])
+            ->name('organizer_requests.approve');
+
+        Route::post('/organizer-requests/{request}/reject', [OrganizerRequestAdminController::class, 'reject'])
+            ->name('organizer_requests.reject');
+    });
 
 /*
 |--------------------------------------------------------------------------
@@ -150,13 +238,23 @@ Route::get('/user/{user}', [UserPublicController::class, 'show'])
 
 /*
 |--------------------------------------------------------------------------
-| Debug
+| Public pages
+|--------------------------------------------------------------------------
+*/
+Route::get('/level_players', fn () => view('pages.level_players'))
+    ->name('level_players');
+
+Route::view('/personal_data_agreement', 'pages.personal_data_agreement')
+    ->name('personal_data_agreement');
+
+/*
+|--------------------------------------------------------------------------
+| Debug (optional)
 |--------------------------------------------------------------------------
 */
 Route::get('/debug/session', function () {
     return response()->json([
         'user_id' => auth()->id(),
-        'auth_provider' => session('auth_provider'),
-        'session_keys' => array_keys(session()->all()),
+        'session' => session()->all(),
     ]);
 })->middleware('auth');

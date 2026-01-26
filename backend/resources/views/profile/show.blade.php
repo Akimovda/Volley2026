@@ -56,30 +56,36 @@
         $hasVk = !empty($u?->vk_id);
         $hasYa = !empty($u?->yandex_id);
 
+        $linkedCount = (int)$hasTg + (int)$hasVk + (int)$hasYa;
+
         // “provider looks off” (после неуспешной привязки мог остаться мусор в сессии)
         $providerLooksOff = false;
         if ($provider === 'telegram' && !$hasTg && ($hasVk || $hasYa)) $providerLooksOff = true;
         if ($provider === 'vk' && !$hasVk && ($hasTg || $hasYa)) $providerLooksOff = true;
         if ($provider === 'yandex' && !$hasYa && ($hasTg || $hasVk)) $providerLooksOff = true;
 
-        // link urls (для VK/Yandex оставляем как было)
+        // link urls
         $vkLinkUrl     = route('auth.vk.redirect', ['link' => 1]);
-        $yandexLinkUrl  = route('auth.yandex.redirect', ['link' => 1]);
+        $yandexLinkUrl = route('auth.yandex.redirect', ['link' => 1]);
 
         $allLinked = $hasTg && $hasVk && $hasYa;
 
         // Telegram widget settings
-        $tgBotUsername = config('services.telegram.bot_username'); // ОБЯЗАТЕЛЬНО username бота, без @
-        $tgAuthUrl     = route('auth.telegram.callback', absolute: true); // ОБЯЗАТЕЛЬНО абсолютный URL
+        $tgBotUsername = config('services.telegram.bot_username'); // username бота, без @
+
+        // ✅ Важно для LINK: Telegram widget не вызывает redirect(), поэтому intent передаем в callback явно
+        // Laravel: route(name, params, absolute=true)
+        $tgAuthUrl = route('auth.telegram.callback', ['intent' => 'link'], true);
+
+        // can unlink only if more than one provider linked (чтобы не потерять доступ)
+        $canUnlink = $linkedCount > 1;
 
         // UI helpers
         $providerIcon = function (?string $p) {
             $p = $p ?: 'unknown';
-
             $base = 'display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid #e5e7eb;border-radius:9999px;background:#fff;';
             $dot  = 'display:inline-block;width:10px;height:10px;border-radius:9999px;';
             $txt  = 'font-weight:600;font-size:14px;line-height:1;color:#111827;';
-
             if ($p === 'vk') {
                 return '<span style="'.$base.'"><span style="'.$dot.'background:#2787F5;"></span><span style="'.$txt.'">VK</span></span>';
             }
@@ -89,7 +95,6 @@
             if ($p === 'yandex') {
                 return '<span style="'.$base.'"><span style="'.$dot.'background:#FF0000;"></span><span style="'.$txt.'">Yandex</span></span>';
             }
-
             return '<span style="'.$base.'"><span style="'.$dot.'background:#9CA3AF;"></span><span style="'.$txt.'">—</span></span>';
         };
 
@@ -137,6 +142,14 @@
                                 <div class="text-sm text-gray-600 mt-1">{{ $age }} лет</div>
                             @endif
 
+                            {{-- КНОПКА "ИЗМЕНИТЬ АВАТАР" --}}
+                            <div class="mt-3">
+                                <a href="{{ route('user.photos') }}"
+                                   class="inline-flex items-center px-4 py-2 rounded-lg font-semibold text-sm border border-gray-200 bg-white hover:bg-gray-50">
+                                    Изменить аватар / фото
+                                </a>
+                            </div>
+
                             <div class="mt-5">
                                 <div class="font-semibold text-lg mb-2">Персональные данные</div>
                                 <div class="space-y-1 text-sm">
@@ -178,17 +191,14 @@
 
                             <div class="mt-6">
                                 <div class="font-semibold text-lg mb-2">Навыки в волейболе</div>
-
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div class="v-card">
                                         <div class="v-card__body space-y-2">
                                             <div class="font-semibold">Классический волейбол</div>
-
                                             <div>
                                                 Уровень (классика):
                                                 <span class="font-semibold">{{ $u->classic_level ?? '—' }}</span>
                                             </div>
-
                                             <div>
                                                 Амплуа игрока:
                                                 <span class="font-semibold">
@@ -208,12 +218,10 @@
                                     <div class="v-card">
                                         <div class="v-card__body space-y-2">
                                             <div class="font-semibold">Пляжный волейбол</div>
-
                                             <div>
                                                 Уровень (пляж):
                                                 <span class="font-semibold">{{ $u->beach_level ?? '—' }}</span>
                                             </div>
-
                                             <div>
                                                 Зона игры:
                                                 <span class="font-semibold">
@@ -239,7 +247,6 @@
                                     Редактировать профиль
                                 </a>
                             </div>
-
                         </div>
                     </div>
                 </x-slot>
@@ -256,7 +263,6 @@
 
                 <x-slot name="content">
                     <div class="flex flex-col gap-4">
-
                         <div class="text-sm text-gray-700">
                             <div class="flex items-center gap-2">
                                 <span class="text-gray-600">Текущий вход (сессия):</span>
@@ -264,36 +270,86 @@
                             </div>
 
                             <div class="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3">
+                                {{-- Telegram card --}}
                                 <div class="v-card">
                                     <div class="v-card__body flex items-center justify-between gap-3">
                                         <div class="flex items-center gap-2">
                                             {!! $miniIcon('telegram') !!}
                                             <span class="font-semibold">Telegram</span>
                                         </div>
-                                        {!! $badge($hasTg) !!}
+                                        <div class="flex items-center gap-2">
+                                            {!! $badge($hasTg) !!}
+                                            @if($hasTg && $canUnlink)
+                                                <form method="POST"
+                                                      action="{{ route('account.unlink.telegram') }}"
+                                                      onsubmit="return confirm('Отвязать Telegram от аккаунта?');">
+                                                    @csrf
+                                                    <button type="submit"
+                                                            class="inline-flex items-center px-3 py-2 rounded-lg text-xs font-extrabold bg-white text-gray-900 border border-gray-200 hover:bg-gray-100">
+                                                        Отвязать
+                                                    </button>
+                                                </form>
+                                            @endif
+                                        </div>
                                     </div>
                                 </div>
 
+                                {{-- VK card --}}
                                 <div class="v-card">
                                     <div class="v-card__body flex items-center justify-between gap-3">
                                         <div class="flex items-center gap-2">
                                             {!! $miniIcon('vk') !!}
                                             <span class="font-semibold">VK</span>
                                         </div>
-                                        {!! $badge($hasVk) !!}
+                                        <div class="flex items-center gap-2">
+                                            {!! $badge($hasVk) !!}
+                                            @if($hasVk && $canUnlink)
+                                                <form method="POST"
+                                                      action="{{ route('account.unlink.vk') }}"
+                                                      onsubmit="return confirm('Отвязать VK от аккаунта?');">
+                                                    @csrf
+                                                    <button type="submit"
+                                                            class="inline-flex items-center px-3 py-2 rounded-lg text-xs font-extrabold bg-white text-gray-900 border border-gray-200 hover:bg-gray-100">
+                                                        Отвязать
+                                                    </button>
+                                                </form>
+                                            @endif
+                                        </div>
                                     </div>
                                 </div>
 
+                                {{-- Yandex card --}}
                                 <div class="v-card">
                                     <div class="v-card__body flex items-center justify-between gap-3">
                                         <div class="flex items-center gap-2">
                                             {!! $miniIcon('yandex') !!}
                                             <span class="font-semibold">Yandex</span>
                                         </div>
-                                        {!! $badge($hasYa) !!}
+                                        <div class="flex items-center gap-2">
+                                            {!! $badge($hasYa) !!}
+                                            @if($hasYa && $canUnlink)
+                                                <form method="POST"
+                                                      action="{{ route('account.unlink.yandex') }}"
+                                                      onsubmit="return confirm('Отвязать Yandex от аккаунта?');">
+                                                    @csrf
+                                                    <button type="submit"
+                                                            class="inline-flex items-center px-3 py-2 rounded-lg text-xs font-extrabold bg-white text-gray-900 border border-gray-200 hover:bg-gray-100">
+                                                        Отвязать
+                                                    </button>
+                                                </form>
+                                            @endif
+                                        </div>
                                     </div>
                                 </div>
                             </div>
+
+                            @if(($hasTg || $hasVk || $hasYa) && !$canUnlink)
+                                <div class="mt-3 v-alert v-alert--info">
+                                    <div class="v-alert__text">
+                                        Отвязка последнего способа входа запрещена — сначала привяжите ещё один.
+                                    </div>
+                                </div>
+                            @endif
                         </div>
 
                         @if($providerLooksOff)
@@ -331,7 +387,6 @@
                             </div>
 
                             <div class="v-actions flex flex-col md:flex-row gap-3 flex-wrap items-start">
-                                {{-- VK: link button --}}
                                 @if(!$hasVk)
                                     <a class="v-btn v-btn--secondary" href="{{ $vkLinkUrl }}">
                                         <span class="inline-flex items-center gap-2">
@@ -341,7 +396,6 @@
                                     </a>
                                 @endif
 
-                                {{-- Yandex: link button --}}
                                 @if(!$hasYa)
                                     <a class="v-btn v-btn--secondary" href="{{ $yandexLinkUrl }}">
                                         <span class="inline-flex items-center gap-2">
@@ -351,7 +405,6 @@
                                     </a>
                                 @endif
 
-                                {{-- Telegram: widget (без “подготовить привязку”) --}}
                                 @if(!$hasTg)
                                     <div class="v-card">
                                         <div class="v-card__body">
@@ -391,25 +444,73 @@
 
             <x-section-border />
 
-            {{-- Jetstream --}}
-            @if (Laravel\Fortify\Features::enabled(Laravel\Fortify\Features::updatePasswords()))
-                <div>
-                    @livewire('profile.update-password-form')
-                </div>
-                <x-section-border />
-            @endif
+            {{-- ✅ Приватность --}}
+            <x-action-section>
+                <x-slot name="title">Приватность</x-slot>
+                <x-slot name="description">
+                    Разрешить другим пользователям писать вам в Telegram/VK со страницы профиля.
+                </x-slot>
 
-            <div>
-                @livewire('profile.logout-other-browser-sessions-form')
-            </div>
+                <x-slot name="content">
+                    <form method="POST" action="{{ route('profile.contact_privacy.update') }}">
+                        @csrf
 
-            @if (Laravel\Jetstream\Jetstream::hasAccountDeletionFeatures())
-                <x-section-border />
-                <div>
-                    @livewire('profile.delete-user-form')
-                </div>
-            @endif
+                        <div class="v-card">
+                            <div class="v-card__body space-y-3">
+                                <label class="flex items-center gap-3">
+                                    <input type="hidden" name="allow_user_contact" value="0">
+                                    <input type="checkbox" name="allow_user_contact" value="1"
+                                           @checked((bool)($u->allow_user_contact ?? true))>
+                                    <span class="text-sm font-semibold">
+                                        Могут ли со мной связаться другие пользователи (Telegram/VK)
+                                    </span>
+                                </label>
 
+                                <button type="submit" class="v-btn v-btn--secondary">
+                                    Сохранить
+                                </button>
+
+                                <div class="text-xs text-gray-500">
+                                    Кнопки “Написать” видны только авторизованным пользователям и только если вы включили этот переключатель.
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </x-slot>
+            </x-action-section>
+
+            <x-section-border />
+
+            {{-- ✅ Удаление аккаунта — заявка админу (по-взрослому) --}}
+            <x-action-section>
+                <x-slot name="title">Удаление аккаунта</x-slot>
+                <x-slot name="description">
+                    Самостоятельное удаление отключено. Вы можете отправить администратору заявку на удаление.
+                </x-slot>
+
+                <x-slot name="content">
+                    <div class="v-alert v-alert--info">
+                        <div class="v-alert__text text-sm">
+                            Заявка попадёт администратору. После обработки аккаунт будет удалён/деактивирован.
+                        </div>
+                    </div>
+
+                    <form method="POST"
+                          action="{{ route('account.delete.request') }}"
+                          class="mt-4"
+                          onsubmit="return confirm('Отправить заявку на удаление аккаунта администратору?');">
+                        @csrf
+                        <button type="submit" class="v-btn v-btn--secondary">
+                            Запросить удаление аккаунта
+                        </button>
+                    </form>
+                </x-slot>
+            </x-action-section>
+
+            {{-- ❌ УБРАНО:
+                 - @livewire('profile.update-password-form')
+                 - @livewire('profile.delete-user-form')
+            --}}
         </div>
     </div>
 </x-app-layout>

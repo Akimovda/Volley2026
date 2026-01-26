@@ -1,161 +1,157 @@
 # Authentication & Identity — Volley
 
-## 1. Цели авторизации
-
-Проект Volley использует **мульти-провайдерную авторизацию** с возможностью
-объединения (привязки) аккаунтов.
+## 1) Цели авторизации
+Volley использует **мульти‑провайдерную авторизацию** с возможностью **привязки** дополнительных способов входа к текущему аккаунту.
 
 Поддерживаемые способы входа:
-- Telegram Login (основной)
-- VK ID (альтернативный)
-- Passkey (планируется)
+- **Telegram Login Widget** (основной)
+- **VK ID** (альтернативный)
+- **Yandex** (альтернативный)
+- **Passkey/WebAuthn** (планируется)
 
-Один пользователь = одна учетная запись в системе,
-но может иметь несколько способов входа.
-
----
-
-## 2. Основная модель идентификации
-
-### Ключевые поля пользователя:
-- telegram_id — основной внешний идентификатор
-- vk_id — альтернативный внешний идентификатор
-- email — служебный (может быть fake)
-- phone — основной контакт
-- first_name
-- last_name
-- patronymic (админ-only)
-- classic_level / beach_level — уровни игрока
-
-### Отображение пользователя:
-- `Фамилия + Имя`, если заполнены
-- иначе — `telegram_username`
+Принцип: **1 пользователь = 1 аккаунт в системе**, но у аккаунта может быть несколько внешних идентификаторов.
 
 ---
 
-## 3. Telegram Login (основной)
+## 2) Модель идентификации (User)
+Ключевые поля:
+- `telegram_id`, `telegram_username`
+- `vk_id`, `vk_email`
+- `yandex_id`, `yandex_email`, `yandex_phone` (опционально), `yandex_avatar` (опционально)
+- `email` — служебный (может быть “fake”, т.к. внешние провайдеры не всегда возвращают email)
+- `phone`, `first_name`, `last_name`, `patronymic` и пр. — анкета/профиль игрока
 
-### Используем:
-- Telegram Login Widget
-- Проверка hash по bot_token
-- Защита от replay-атак (auth_date ≤ 24 часа)
-
-### Принципы:
-- telegram_username **НЕ используется как имя пользователя**
-- email создаётся служебный
-
-### Сценарии:
-
-#### 3.1 Пользователь уже авторизован
-→ Telegram **привязывается** к текущему аккаунту  
-→ Проверка, что telegram_id не привязан к другому пользователю
-
-#### 3.2 Пользователь не авторизован
-→ Поиск пользователя:
-- по telegram_id
-- либо по email
-
-→ Если не найден — создаётся новый пользователь  
-→ После входа:
-- redirect `/events`
-- логика заполнения профиля **не выполняется при логине**
+Отображение пользователя (`displayName()`):
+1) `last_name + first_name` (если заполнены)
+2) `@telegram_username` (если есть)
+3) `User #{id}`
 
 ---
 
-## 4. VK ID Login
+## 3) Единый контракт “login vs link”
+Во всех провайдерах используется **одинаковая схема намерения**:
 
-Используется **VK ID (OAuth 2.1 + PKCE)**.
+### Сессионные ключи (технические)
+- `oauth_provider` = `telegram|vk|yandex`
+- `oauth_intent` = `login|link`
 
-### Храним:
-- vk_id (уникальный)
-- email от VK (если предоставлен)
-
-### Сценарии:
-- вход по VK
-- привязка VK к существующему аккаунту
-- защита от привязки одного vk_id к разным пользователям
-
----
-
-## 5. Проверка профиля (ВАЖНО)
-
-Проверка заполненности профиля **НЕ выполняется при логине**.
-
-Она выполняется:
-- **при попытке записи на мероприятие**
-
-Если данные не заполнены:
-→ redirect `/profile/complete?required=...&event_id=...`
-
-Поддерживается:
-- новый формат `required=phone,classic_level,...`
-- legacy формат `section=personal|classic|beach`
+### Принципы
+- `redirect()` **НЕ трогает** `auth_provider` (чтобы UI не “прыгал”).
+- `callback()`/успешный логин или привязка **записывает**:
+  - `auth_provider` = `telegram|vk|yandex`
+  - `auth_provider_id` = внешний id (если используем)
 
 ---
 
-## 6. Анкета игрока
+## 4) Telegram Login (основной)
 
-Дополнительная анкета:
-- first_name / last_name
-- phone
-- classic_level
-- beach_level
+### 4.1 Как работает
+Используется **Telegram Login Widget**, который отправляет данные на `data-auth-url` (наш callback).
 
-Реализована отдельным POST:
-`POST /profile/extra`
+Валидации:
+- проверка `hash` (HMAC-SHA256) по `bot_token`
+- защита от replay: `auth_date` считается валидным в окне (например, до 24 часов)
 
-После сохранения:
-- повторно проверяются требования мероприятия
-- при успехе происходит **автозапись**
-- пользователь получает flash-сообщение
+### 4.2 Сценарии
 
----
+#### A) Пользователь НЕ авторизован (login)
+1) Поиск пользователя по `telegram_id`.
+2) Если не найден — создаём нового пользователя:
+   - `email` создаётся служебный (уникальный), потому что Telegram может не вернуть email
+   - пароль задаём случайным (Fortify/Jetstream требуют наличие)
+3) `Auth::login(...)`, `session()->regenerate()`
+4) redirect: `intended('/events')`
 
-## 7. Merge аккаунтов (план)
-
-### Возможные дубли:
-- Telegram
-- VK
-- Email (в будущем)
-
-### Критерии поиска:
-1. phone
-2. ФИО
-
-### Правила:
-- основной аккаунт сохраняется
-- дубликаты удаляются
-- внешние ID переносятся
+#### B) Пользователь УЖЕ авторизован (link)
+1) Проверяем, что `telegram_id` не принадлежит другому пользователю.
+2) Пишем `telegram_id`, `telegram_username` (и опционально first/last при пустых полях).
+3) Аватар: **только если у пользователя нет profile photo** (см. раздел “Аватары”).
+4) redirect обратно на `/user/profile` с flash `status`.
 
 ---
 
-## 8. Passkey (WebAuthn) — план
+## 5) VK ID (Socialite)
 
-Passkey добавляется как **дополнительный способ входа**  
-и не создаёт нового пользователя.
+### 5.1 Что храним
+- `vk_id` (уникальный)
+- `vk_email` (если пришёл)
 
----
-
-## 9. Безопасность
-
-- Все внешние ID уникальны
-- Один Telegram / VK = один пользователь
-- Merge выполняется только явно
-- Все sensitive-операции логируются
+### 5.2 Сценарии
+- login: найти по `vk_id`, иначе (если есть email) можно найти по `email` и “допривязать”, иначе создать нового
+- link: привязать `vk_id` к текущему пользователю, запретить если `vk_id` уже у другого
 
 ---
 
-## 10. Текущее состояние
+## 6) Yandex (Socialite)
 
+### 6.1 Что храним
+- `yandex_id` (уникальный)
+- опциональные поля: `yandex_avatar`, `yandex_phone`, `yandex_email` (если вы храните)
+
+### 6.2 Сценарии
+- login: найти по `yandex_id`, иначе создать нового с безопасным `email` (служебным)
+- link: привязать `yandex_id` к текущему пользователю, запретить если `yandex_id` уже у другого
+
+---
+
+## 7) Роуты
+Ожидаемые роуты (пример):
+- `GET /auth/telegram/redirect` → подготовка intent (login/link) и редирект на страницу с виджетом
+- `GET /auth/telegram/callback` → обработка данных виджета
+- `GET /auth/vk/redirect` → Socialite redirect
+- `GET /auth/vk/callback` → Socialite callback
+- `GET /auth/yandex/redirect` → Socialite redirect
+- `GET /auth/yandex/callback` → Socialite callback
+
+---
+
+## 8) Аватары (единая политика)
+Правило одно: **аватар провайдера сохраняем только если у пользователя ещё нет своего**.
+
+Хранилище:
+- original: `avatars/original/{userId}/av-{userId}.{ext}`
+- thumb:    `avatars/thumbs/{userId}/av-{userId}.jpg`
+
+В базе (`users.profile_photo_path`) храним **только базовое имя**:
+- `av-{userId}` (без расширения и без директорий)
+
+URL собирается в модели `User`:
+- если в `profile_photo_path` лежит “старый формат” с `/` → считаем это путём и отдаём как есть
+- если лежит `av-{id}` → строим `avatars/thumbs/{id}/av-{id}.jpg`
+
+---
+
+## 9) Конфигурация провайдеров (важно)
+### Telegram (Widget)
+В `config/services.php` должен быть ключ:
+- `services.telegram.bot_username` (username бота, без @)
+- `services.telegram.bot_token`
+
+### VK / Yandex (SocialiteProviders)
+Ошибка вида “There is no services entry for vkid/yandex” означает:
+- в `config/services.php` **нет** секций `vkid` и/или `yandex`
+- или не заполнены env‑переменные
+
+Минимально нужно добавить:
+- `services.vkid.{client_id, client_secret, redirect}`
+- `services.yandex.{client_id, client_secret, redirect}`
+
+---
+
+## 10) Текущее состояние
 ✔ Telegram Login — готов  
-✔ VK ID Login — готов  
-✔ Профиль / анкета — готово  
-✔ Проверка требований мероприятий — готово  
-✔ Автозапись — готово  
-⏳ Merge UI — в планах  
-⏳ Passkey — в планах
-## auth_provider в сессии
-После успешного логина/привязки мы пишем:
-- telegram -> session(['auth_provider' => 'telegram'])
-- vk -> session(['auth_provider' => 'vk'])
-Это нужно для UX на /user/profile (показываем кнопку привязки только второго провайдера).
+✔ VK Login — готов (при корректном services.php)  
+✔ Yandex Login — готов (при корректном services.php)  
+✔ Привязка провайдеров — готово  
+✔ Avatar only if missing — готово  
+⏳ Merge аккаунтов (UI) — в планах  
+
+---
+
+## 11) auth_provider в сессии (UX)
+После успешного логина/привязки:
+- `telegram` → `session(['auth_provider' => 'telegram'])`
+- `vk` → `session(['auth_provider' => 'vk'])`
+- `yandex` → `session(['auth_provider' => 'yandex'])`
+
+Это используется на `/user/profile` для отображения “текущего способа входа” и статусов привязок.

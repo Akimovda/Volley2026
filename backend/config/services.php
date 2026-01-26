@@ -1,7 +1,6 @@
 <?php
 
 return [
-
     /*
     |--------------------------------------------------------------------------
     | Third Party Services
@@ -37,23 +36,30 @@ return [
 
     // Telegram Login Widget (не Socialite)
     'telegram' => [
-        'bot_token'    => env('TELEGRAM_BOT_TOKEN'),
+        'bot_token' => env('TELEGRAM_BOT_TOKEN'),
         'bot_username' => env('TELEGRAM_BOT_USERNAME'), // именно username бота для виджета
+
+        // ✅ NEW: куда слать уведомление админу
+        'admin_chat_id' => env('TELEGRAM_ADMIN_CHAT_ID'),
     ],
 
     // VK ID via SocialiteProviders (driver: vkid)
     // Socialite::driver('vkid')
     'vkid' => [
-        'client_id'     => env('VKID_CLIENT_ID'),
+        'client_id' => env('VKID_CLIENT_ID'),
         'client_secret' => env('VKID_CLIENT_SECRET'),
-        'redirect'      => env('VKID_REDIRECT_URI'),
+        'redirect' => env('VKID_REDIRECT_URI'),
+
+        // ✅ NEW: уведомление админу через VK API messages.send
+        'admin_token' => env('VK_ADMIN_TOKEN'),
+        'admin_peer_id' => env('VK_ADMIN_PEER_ID'),
     ],
 
     // Yandex via SocialiteProviders (driver: yandex)
     // Socialite::driver('yandex')
     'yandex' => [
-        'client_id'     => env('YANDEX_CLIENT_ID'),
+        'client_id' => env('YANDEX_CLIENT_ID'),
         'client_secret' => env('YANDEX_CLIENT_SECRET'),
-        'redirect'      => env('YANDEX_REDIRECT_URI'),
+        'redirect' => env('YANDEX_REDIRECT_URI'),
     ],
 ];

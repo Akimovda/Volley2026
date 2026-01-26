@@ -15,9 +15,26 @@ class AdminUserController extends Controller
 {
     public function index(Request $request)
     {
-        $q    = trim((string) $request->get('q', ''));
+        // -----------------------------
+        // Filters
+        // -----------------------------
+        $q = trim((string) $request->get('q', ''));
         $role = $request->get('role'); // admin|organizer|staff|user|null
 
+        // Только events-блокировки:
+        // all | restricted | not_restricted
+        $restricted = (string) $request->get('restricted', 'all');
+
+        // Опции для select в blade (раньше отсутствовали => ошибка)
+        $restrictedOptions = [
+            'all'            => 'Все',
+            'restricted'     => 'Только с блокировками (events)',
+            'not_restricted' => 'Только без блокировок',
+        ];
+
+        // -----------------------------
+        // Base query
+        // -----------------------------
         $query = User::query();
 
         if ($q !== '') {
@@ -29,7 +46,9 @@ class AdminUserController extends Controller
                     ->orWhere('telegram_username', 'like', "%{$q}%")
                     ->orWhere('telegram_id', 'like', "%{$q}%")
                     ->orWhere('vk_id', 'like', "%{$q}%")
-                    ->orWhere('vk_email', 'like', "%{$q}%");
+                    ->orWhere('vk_email', 'like', "%{$q}%")
+                    ->orWhere('yandex_id', 'like', "%{$q}%")
+                    ->orWhere('yandex_email', 'like', "%{$q}%");
             });
         }
 
@@ -37,10 +56,40 @@ class AdminUserController extends Controller
             $query->where('role', $role);
         }
 
+        // -----------------------------
+        // Restriction filter (active events restrictions)
+        // active = ends_at is null OR ends_at > now()
+        // scope = 'events'
+        // -----------------------------
+        if ($restricted === 'restricted' || $restricted === 'not_restricted') {
+            $now = now();
+
+            $restrictedUserIdsSubquery = DB::table('user_restrictions')
+                ->select('user_id')
+                ->where('scope', 'events')
+                ->where(function ($q) use ($now) {
+                    $q->whereNull('ends_at')
+                      ->orWhere('ends_at', '>', $now);
+                });
+
+            if ($restricted === 'restricted') {
+                $query->whereIn('id', $restrictedUserIdsSubquery);
+            } else { // not_restricted
+                $query->whereNotIn('id', $restrictedUserIdsSubquery);
+            }
+        }
+
         $users = $query->orderByDesc('id')->paginate(25)->withQueryString();
         $roles = ['user', 'admin', 'organizer', 'staff'];
 
-        return view('admin.users.index', compact('users', 'roles', 'q', 'role'));
+        return view('admin.users.index', compact(
+            'users',
+            'roles',
+            'q',
+            'role',
+            'restricted',
+            'restrictedOptions'
+        ));
     }
 
     public function show(User $user)
@@ -64,9 +113,23 @@ class AdminUserController extends Controller
                 ->get();
         }
 
+        // Active restrictions for right-block (если используете в show.blade.php)
+        $restrictions = [];
+        if (DB::getSchemaBuilder()->hasTable('user_restrictions')) {
+            $now = now();
+            $restrictions = DB::table('user_restrictions')
+                ->where('user_id', $user->id)
+                ->where('scope', 'events')
+                ->where(function ($q) use ($now) {
+                    $q->whereNull('ends_at')->orWhere('ends_at', '>', $now);
+                })
+                ->orderByDesc('id')
+                ->get();
+        }
+
         $roles = ['user', 'admin', 'organizer', 'staff'];
 
-        return view('admin.users.show', compact('user', 'roles', 'linkAudits', 'adminAudits'));
+        return view('admin.users.show', compact('user', 'roles', 'linkAudits', 'adminAudits', 'restrictions'));
     }
 
     /**
@@ -102,7 +165,7 @@ class AdminUserController extends Controller
                 }
             }
 
-            // 2) Удаляем пользователя (FK каскад/нулл сделает остальное)
+            // 2) Удаляем пользователя
             if (method_exists($user, 'forceDelete')) {
                 $user->forceDelete();
             } else {

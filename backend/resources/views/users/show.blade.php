@@ -1,3 +1,4 @@
+{{-- resources/views/users/show.blade.php --}}
 <x-app-layout>
     <div class="v-container">
         <div class="v-card">
@@ -32,6 +33,23 @@
                         ->pluck('zone')
                         ->values()
                         ->all() ?? [];
+
+                    // контакты (по политике: только для авторизованных + только если пользователь разрешил)
+                    $allowContact = (bool) ($u?->allow_user_contact ?? false);
+
+                    $tgUsername = trim((string)($u?->telegram_username ?? ''));
+                    $hasTgLink = $tgUsername !== '';
+                    $tgLink = $hasTgLink ? ('https://t.me/' . ltrim($tgUsername, '@')) : null;
+
+                    $vkIdRaw = trim((string)($u?->vk_id ?? ''));
+                    $hasVkLink = $vkIdRaw !== '';
+                    // если vk_id числовой — делаем /id123, иначе — /username
+                    $vkLink = null;
+                    if ($hasVkLink) {
+                        $vkLink = ctype_digit($vkIdRaw)
+                            ? ('https://vk.com/id' . $vkIdRaw)
+                            : ('https://vk.com/' . $vkIdRaw);
+                    }
                 @endphp
 
                 @if(!$u)
@@ -48,19 +66,79 @@
                         />
 
                         <div class="min-w-0 w-full">
-                            <h1 class="text-2xl font-bold">{{ $u->displayName() }}</h1>
+                            <h1 class="text-2xl font-bold">{{ method_exists($u, 'displayName') ? $u->displayName() : ($u->name ?? '—') }}</h1>
 
                             <div class="text-sm text-gray-600 mt-1">
-                                @php $age = $u->ageYears(); @endphp
+                                @php $age = method_exists($u, 'ageYears') ? $u->ageYears() : null; @endphp
                                 @if(!is_null($age))
                                     {{ $age }} лет
                                 @endif
                             </div>
 
+                            {{-- ✅ Контакты (только для авторизованных + если пользователь разрешил) --}}
+                            <div class="mt-4">
+                                <div class="font-semibold text-lg mb-2">Связаться</div>
+
+                                @auth
+                                    @if(auth()->id() === $u->id)
+                                        <div class="v-alert v-alert--info">
+                                            <div class="v-alert__text">
+                                                Это ваш профиль. Разрешение “могут ли со мной связаться” настраивается в <a class="underline" href="{{ route('profile.show') }}">Аккаунт</a>.
+                                            </div>
+                                        </div>
+                                    @else
+                                        @if(!$allowContact)
+                                            <div class="v-alert v-alert--info">
+                                                <div class="v-alert__text">
+                                                    Пользователь запретил связываться с ним.
+                                                </div>
+                                            </div>
+                                        @else
+                                            <div class="v-actions flex flex-wrap gap-2">
+                                                @if($hasTgLink)
+                                                    <a class="v-btn v-btn--secondary"
+                                                       href="{{ $tgLink }}"
+                                                       target="_blank" rel="noopener">
+                                                        Написать в Telegram
+                                                    </a>
+                                                @endif
+
+                                                @if($hasVkLink)
+                                                    <a class="v-btn v-btn--secondary"
+                                                       href="{{ $vkLink }}"
+                                                       target="_blank" rel="noopener">
+                                                        Написать в VK
+                                                    </a>
+                                                @endif
+
+                                                @if(!$hasTgLink && !$hasVkLink)
+                                                    <div class="v-alert v-alert--info">
+                                                        <div class="v-alert__text">
+                                                            У пользователя не указаны публичные контакты (Telegram/VK).
+                                                        </div>
+                                                    </div>
+                                                @endif
+                                            </div>
+
+                                            @if(($u->telegram_id ?? null) && !$hasTgLink)
+                                                <div class="text-xs text-gray-500 mt-2">
+                                                    Telegram привязан, но нет username — ссылку на чат показать нельзя.
+                                                </div>
+                                            @endif
+                                        @endif
+                                    @endif
+                                @else
+                                    <div class="v-alert v-alert--info">
+                                        <div class="v-alert__text">
+                                            Чтобы написать пользователю, нужно войти в аккаунт.
+                                        </div>
+                                    </div>
+                                @endauth
+                            </div>
+
                             {{-- Персональные данные --}}
                             <div class="mt-5">
                                 <div class="font-semibold text-lg mb-2">Персональные данные</div>
-
                                 <div class="space-y-1 text-sm">
                                     <div>Фамилия: <span class="font-semibold">{{ $u->last_name ?? '—' }}</span></div>
                                     <div>Имя: <span class="font-semibold">{{ $u->first_name ?? '—' }}</span></div>
@@ -101,7 +179,6 @@
                                     <div>
                                         Дата рождения:
                                         <span class="font-semibold">
-                                            {{-- на публичной карточке лучше не светить точную дату, но оставляю как было "—/дата" --}}
                                             {{ $u->birth_date?->format('Y-m-d') ?? '—' }}
                                         </span>
                                     </div>
@@ -111,13 +188,11 @@
                             {{-- Навыки --}}
                             <div class="mt-6">
                                 <div class="font-semibold text-lg mb-2">Навыки в волейболе</div>
-
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div class="v-card">
                                         <div class="v-card__body space-y-1">
                                             <div class="font-semibold">Классический волейбол</div>
                                             <div>Уровень (классика): <span class="font-semibold">{{ $u->classic_level ?? '—' }}</span></div>
-
                                             <div>
                                                 Амплуа игрока:
                                                 <span class="font-semibold">
@@ -138,7 +213,6 @@
                                         <div class="v-card__body space-y-1">
                                             <div class="font-semibold">Пляжный волейбол</div>
                                             <div>Уровень (пляж): <span class="font-semibold">{{ $u->beach_level ?? '—' }}</span></div>
-
                                             <div>
                                                 Зона игры:
                                                 <span class="font-semibold">
