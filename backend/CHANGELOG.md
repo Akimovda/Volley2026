@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### [0.1.2](https://github.com/Akimovda/Volley2026/compare/v0.1.1...v0.1.2) (2026-01-05)
 
+## [v0.3.0](https://github.com/Akimovda/Volley2026/compare/v0.1.2...v0.3.0) (2026-01-26)
+- Auth providers: Telegram/VK/Yandex (link/unlink)
+- Profile privacy toggle + контакты (Telegram/VK) на публичном профиле
+- Scaffolding: locations + events create page + migrations
+- New layout component: voll-layout
 
 ### Documentation
 
