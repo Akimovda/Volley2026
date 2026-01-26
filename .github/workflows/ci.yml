@@ -89,4 +89,4 @@ jobs:
 
       - name: Run tests (stop on first failure)
         working-directory: backend
-        run: php artisan test --stop-on-failure -vvv
+        run: php artisan test --stop-on-failure --debug
