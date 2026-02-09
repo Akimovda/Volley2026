@@ -1,0 +1,123 @@
+[90m= [39m[
+    {#5879
+      +"[1mname[22m": "[32mMoscow[39m",
+      +"[1mregion[22m": "[32mМосква[39m",
+      +"[1mcountry_code[22m": "[32mRU[39m",
+      +"[1mpopulation[22m": [35m10381222[39m,
+    },
+    {#5880
+      +"[1mname[22m": "[32mSaint Petersburg[39m",
+      +"[1mregion[22m": "[32mСанкт-Петербург[39m",
+      +"[1mcountry_code[22m": "[32mRU[39m",
+      +"[1mpopulation[22m": [35m5351935[39m,
+    },
+    {#5881
+      +"[1mname[22m": "[32mNovosibirsk[39m",
+      +"[1mregion[22m": "[32mНовосибирская Область[39m",
+      +"[1mcountry_code[22m": "[32mRU[39m",
+      +"[1mpopulation[22m": [35m1612833[39m,
+    },
+    {#5858
+      +"[1mname[22m": "[32mYekaterinburg[39m",
+      +"[1mregion[22m": "[32mСвердловская Область[39m",
+      +"[1mcountry_code[22m": "[32mRU[39m",
+      +"[1mpopulation[22m": [35m1495066[39m,
+    },
+    {#5860
+      +"[1mname[22m": "[32mNizhniy Novgorod[39m",
+      +"[1mregion[22m": "[32mНижегородская Область[39m",
+      +"[1mcountry_code[22m": "[32mRU[39m",
+      +"[1mpopulation[22m": [35m1259013[39m,
+    },
+    {#5878
+      +"[1mname[22m": "[32mKazan[39m",
+      +"[1mregion[22m": "[32mРеспублика Татарстан[39m",
+      +"[1mcountry_code[22m": "[32mRU[39m",
+      +"[1mpopulation[22m": [35m1243500[39m,
+    },
+    {#1094
+      +"[1mname[22m": "[32mChelyabinsk[39m",
+      +"[1mregion[22m": "[32mЧелябинская Область[39m",
+      +"[1mcountry_code[22m": "[32mRU[39m",
+      +"[1mpopulation[22m": [35m1202371[39m,
+    },
+    {#5875
+      +"[1mname[22m": "[32mOmsk[39m",
+      +"[1mregion[22m": "[32mОмская Область[39m",
+      +"[1mcountry_code[22m": "[32mRU[39m",
+      +"[1mpopulation[22m": [35m1172070[39m,
+    },
+    {#5871
+      +"[1mname[22m": "[32mSamara[39m",
+      +"[1mregion[22m": "[32mСамарская Область[39m",
+      +"[1mcountry_code[22m": "[32mRU[39m",
+      +"[1mpopulation[22m": [35m1163399[39m,
+    },
+    {#5885
+      +"[1mname[22m": "[32mRostov-na-Donu[39m",
+      +"[1mregion[22m": "[32mРостовская Область[39m",
+      +"[1mcountry_code[22m": "[32mRU[39m",
+      +"[1mpopulation[22m": [35m1130305[39m,
+    },
+    {#5886
+      +"[1mname[22m": "[32mUfa[39m",
+      +"[1mregion[22m": "[32mБашкортостан[39m",
+      +"[1mcountry_code[22m": "[32mRU[39m",
+      +"[1mpopulation[22m": [35m1120547[39m,
+    },
+    {#5887
+      +"[1mname[22m": "[32mKrasnoyarsk[39m",
+      +"[1mregion[22m": "[32mКрасноярский Край[39m",
+      +"[1mcountry_code[22m": "[32mRU[39m",
+      +"[1mpopulation[22m": [35m1090811[39m,
+    },
+    {#5888
+      +"[1mname[22m": "[32mVoronezh[39m",
+      +"[1mregion[22m": "[32mВоронежская Область[39m",
+      +"[1mcountry_code[22m": "[32mRU[39m",
+      +"[1mpopulation[22m": [35m1047549[39m,
+    },
+    {#5889
+      +"[1mname[22m": "[32mVolgograd[39m",
+      +"[1mregion[22m": "[32mВолгоградская Область[39m",
+      +"[1mcountry_code[22m": "[32mRU[39m",
+      +"[1mpopulation[22m": [35m1013533[39m,
+    },
+    {#5890
+      +"[1mname[22m": "[32mPerm[39m",
+      +"[1mregion[22m": "[32mПермский край[39m",
+      +"[1mcountry_code[22m": "[32mRU[39m",
+      +"[1mpopulation[22m": [35m982419[39m,
+    },
+    {#5891
+      +"[1mname[22m": "[32mKrasnodar[39m",
+      +"[1mregion[22m": "[32mКраснодарский край[39m",
+      +"[1mcountry_code[22m": "[32mRU[39m",
+      +"[1mpopulation[22m": [35m899541[39m,
+    },
+    {#5892
+      +"[1mname[22m": "[32mSaratov[39m",
+      +"[1mregion[22m": "[32mСаратовская Область[39m",
+      +"[1mcountry_code[22m": "[32mRU[39m",
+      +"[1mpopulation[22m": [35m844858[39m,
+    },
+    {#5893
+      +"[1mname[22m": "[32mTyumen[39m",
+      +"[1mregion[22m": "[32mТюмень[39m",
+      +"[1mcountry_code[22m": "[32mRU[39m",
+      +"[1mpopulation[22m": [35m768358[39m,
+    },
+    {#5894
+      +"[1mname[22m": "[32mTolyatti[39m",
+      +"[1mregion[22m": "[32mСамарская Область[39m",
+      +"[1mcountry_code[22m": "[32mRU[39m",
+      +"[1mpopulation[22m": [35m702879[39m,
+    },
+    {#5895
+      +"[1mname[22m": "[32mIzhevsk[39m",
+      +"[1mregion[22m": "[32mРеспублика Удмуртия[39m",
+      +"[1mcountry_code[22m": "[32mRU[39m",
+      +"[1mpopulation[22m": [35m648213[39m,
+    },
+  ]
+

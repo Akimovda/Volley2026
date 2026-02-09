@@ -3,18 +3,46 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
-class Location extends Model
+class Location extends Model implements HasMedia
 {
+    use InteractsWithMedia;
+
     protected $fillable = [
+        'organizer_id',
         'name',
         'address',
-        'organizer_id', // null = общая локация
+        'city',
+        'timezone',
+        'note',
+        'short_text',
+        'long_text',
+        'lat',
+        'lng',
     ];
 
-    public function organizer(): BelongsTo
+    protected $casts = [
+        'lat' => 'float',
+        'lng' => 'float',
+    ];
+
+    public function registerMediaCollections(): void
     {
-        return $this->belongsTo(User::class, 'organizer_id');
+        $this->addMediaCollection('photos')
+            ->useDisk(config('media-library.disk_name', 'public'))
+            ->onlyKeepLatest(5);
+    }
+
+    public function registerMediaConversions(?Media $media = null): void
+    {
+        // Миниатюра для админки/превью
+        $this->addMediaConversion('thumb')
+            ->width(480)
+            ->height(320)
+            ->sharpen(10)
+            ->nonQueued();
     }
 }

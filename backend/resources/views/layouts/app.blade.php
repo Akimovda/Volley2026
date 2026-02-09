@@ -4,7 +4,33 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
-
+        <script>
+        (function () {
+          try {
+            const isAuthed = {{ auth()->check() ? 'true' : 'false' }};
+            if (!isAuthed) return;
+        
+            const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            if (!tz) return;
+        
+            const key = 'user_tz_last_sent';
+            if (localStorage.getItem(key) === tz) return;
+        
+            fetch('/profile/timezone', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+              },
+              body: JSON.stringify({ timezone: tz }),
+              credentials: 'same-origin',
+            }).then(() => {
+              localStorage.setItem(key, tz);
+            }).catch(() => {});
+          } catch (e) {}
+        })();
+        </script>
         <title>{{ config('app.name', 'Laravel') }}</title>
 
         <!-- Fonts -->

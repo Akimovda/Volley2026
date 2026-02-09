@@ -1,58 +1,105 @@
-<div class="v-card">
+{{-- resources/views/users/_card.blade.php --}}
+@php
+    /** @var \App\Models\User $u */
+
+    $age = $u->ageYears();
+    $gender = (string)($u->gender ?? '');
+    $genderLabel = $gender === 'm' ? 'Мужчина' : ($gender === 'f' ? 'Женщина' : null);
+
+    $cityLabel = null;
+    if ($u->city) {
+        $cityLabel = $u->city->name . ($u->city->region ? ' (' . $u->city->region . ')' : '');
+    }
+
+    $metaParts = array_values(array_filter([
+        $cityLabel,
+        !is_null($age) ? ($age . ' лет') : null,
+        $genderLabel,
+        !empty($u->height_cm) ? ($u->height_cm . ' см') : null,
+    ]));
+
+    $classic = $u->classic_level ?? null;
+    $beach   = $u->beach_level ?? null;
+
+    $profileUrl = route('users.show', ['user' => $u->id]);
+@endphp
+
+<div class="v-card h-full">
     <div class="v-card__body">
         <div class="flex items-start gap-3">
-            <img
-                src="{{ $u->profile_photo_url }}"
-                alt="avatar"
-                class="rounded-full"
-                style="width:48px;height:48px;object-fit:cover;"
-            />
+            <a href="{{ $profileUrl }}" class="shrink-0">
+                <img
+                    src="{{ $u->profile_photo_url }}"
+                    alt="avatar"
+                    class="rounded-full border border-gray-200 bg-gray-100"
+                    style="width:52px;height:52px;object-fit:cover;"
+                    loading="lazy"
+                />
+            </a>
 
-            <div class="min-w-0">
-                <div class="font-semibold">
-                    <a class="underline" href="{{ route('users.show', ['user' => $u->id]) }}">
-                        {{ $u->displayName() }}
-                    </a>
-                </div>
+            <div class="min-w-0 flex-1">
+                <div class="flex items-start justify-between gap-2">
+                    <div class="min-w-0">
+                        <div class="font-semibold text-gray-900 leading-tight truncate">
+                            <a class="hover:underline" href="{{ $profileUrl }}">
+                                {{ $u->displayName() }}
+                            </a>
+                        </div>
 
-                <div class="text-sm text-gray-600">
-                    @if($u->city)
-                        {{ $u->city->name }}@if($u->city->region) ({{ $u->city->region }})@endif
-                        ·
-                    @endif
-
-                    @php $age = $u->ageYears(); @endphp
-                    @if(!is_null($age))
-                        {{ $age }} лет ·
-                    @endif
-
-                    @if($u->gender === 'm')
-                        Мужчина
-                    @elseif($u->gender === 'f')
-                        Женщина
-                    @endif
-
-                    @if(!empty($u->height_cm))
-                        · {{ $u->height_cm }} см
-                    @endif
-                </div>
-
-                <div class="text-sm mt-2">
-                    <div>Классика: <span class="font-semibold">{{ $u->classic_level ?? '—' }}</span></div>
-                    <div>Пляж: <span class="font-semibold">{{ $u->beach_level ?? '—' }}</span></div>
-                </div>
-
-                {{-- Скрытые поля: только owner/admin/organizer/staff --}}
-                @can('view-sensitive-profile', $u)
-                    <div class="text-sm mt-2">
-                        @if(!empty($u->patronymic))
-                            <div>Отчество: <span class="font-semibold">{{ $u->patronymic }}</span></div>
-                        @endif
-                        @if(!empty($u->phone))
-                            <div>Телефон: <span class="font-semibold">{{ $u->phone }}</span></div>
+                        @if(!empty($metaParts))
+                            <div class="text-xs text-gray-500 mt-1 leading-snug">
+                                {{ implode(' · ', $metaParts) }}
+                            </div>
                         @endif
                     </div>
+
+                    @if($gender === 'm' || $gender === 'f')
+                        <span class="shrink-0 inline-flex items-center px-2 py-1 rounded-full text-[11px] font-semibold
+                            {{ $gender === 'm' ? 'bg-blue-50 text-blue-700 border border-blue-100' : 'bg-pink-50 text-pink-700 border border-pink-100' }}">
+                            {{ $gender === 'm' ? 'M' : 'F' }}
+                        </span>
+                    @endif
+                </div>
+
+                <div class="mt-3 grid grid-cols-2 gap-2">
+                    <div class="rounded-lg border border-gray-100 bg-gray-50 px-3 py-2">
+                        <div class="text-[11px] text-gray-500">Классика</div>
+                        <div class="font-semibold text-gray-900 leading-tight">
+                            {{ !is_null($classic) && $classic !== '' ? $classic : '—' }}
+                        </div>
+                    </div>
+                    <div class="rounded-lg border border-gray-100 bg-gray-50 px-3 py-2">
+                        <div class="text-[11px] text-gray-500">Пляж</div>
+                        <div class="font-semibold text-gray-900 leading-tight">
+                            {{ !is_null($beach) && $beach !== '' ? $beach : '—' }}
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Sensitive fields --}}
+                @can('view-sensitive-profile', $u)
+                    @php
+                        $sensParts = [];
+                        if (!empty($u->patronymic)) $sensParts[] = 'Отчество: ' . $u->patronymic;
+                        if (!empty($u->phone)) $sensParts[] = 'Телефон: ' . $u->phone;
+                    @endphp
+
+                    @if(!empty($sensParts))
+                        <div class="mt-3 text-xs text-gray-600 border-t border-gray-100 pt-3">
+                            @foreach($sensParts as $line)
+                                <div class="truncate">{{ $line }}</div>
+                            @endforeach
+                        </div>
+                    @endif
                 @endcan
+
+                <div class="mt-3">
+                    <a href="{{ $profileUrl }}"
+                       class="inline-flex items-center justify-center w-full px-3 py-2 rounded-lg text-sm font-semibold
+                              border border-gray-200 bg-white hover:bg-gray-50">
+                        Открыть профиль →
+                    </a>
+                </div>
             </div>
         </div>
     </div>

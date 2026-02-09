@@ -6,7 +6,11 @@
         - Телефон: маска +7 (___) ___-__-__ (курсор НЕ прыгает), сохраняем E.164 в hidden "phone"
         - Уровни: select
         - Sticky Save: sidebar (desktop) + bottom bar (mobile)
+        - Город: поиск/автокомплит (AJAX) + НЕ ломаем форму:
+          * сохраняем city_id как hidden
+          * оставляем fallback <select> (если JS выключен)
     ============================================================ --}}
+
     @php
         /** @var \App\Models\User|null $user */
         $user = $user ?? auth()->user();
@@ -33,14 +37,14 @@
         $classicPrimary = optional($user?->classicPositions)->firstWhere('is_primary', true)?->position;
         $classicAll     = optional($user?->classicPositions)->pluck('position')->all() ?? [];
 
-        $beachPrimaryZone = optional($user?->beachZones)->firstWhere('is_primary', true)?->zone;
-        $beachModeCurrent = $user?->beach_universal ? 'universal' : (is_null($beachPrimaryZone) ? null : (string)$beachPrimaryZone);
+        $beachPrimaryZone  = optional($user?->beachZones)->firstWhere('is_primary', true)?->zone;
+        $beachModeCurrent  = $user?->beach_universal ? 'universal' : (is_null($beachPrimaryZone) ? null : (string)$beachPrimaryZone);
 
         // уровни: UX — если уже есть birth_date и <18, показываем только [1,2,4]
         $age = $user?->birth_date ? \Carbon\Carbon::parse($user->birth_date)->age : null;
         $levels = ($age !== null && $age < 18) ? [1,2,4] : [1,2,3,4,5,6,7];
 
-        // Prefill маски телефона на сервере, чтобы не зависеть от JS/disabled
+        // Prefill маски телефона на сервере
         $phoneMaskedPrefill = old('phone_masked');
         if ($phoneMaskedPrefill === null) {
             $p = old('phone', $user?->phone);
@@ -48,6 +52,19 @@
                 $phoneMaskedPrefill = '+7 (' . substr($p, 2, 3) . ') ' . substr($p, 5, 3) . '-' . substr($p, 8, 2) . '-' . substr($p, 10, 2);
             } else {
                 $phoneMaskedPrefill = '';
+            }
+        }
+
+        // City prefill
+        $selectedCityId = old('city_id', $user?->city_id);
+        $selectedCityLabel = '';
+        if (!empty($selectedCityId) && !empty($cities)) {
+            $found = collect($cities)->firstWhere('id', (int)$selectedCityId);
+            if ($found) {
+                $selectedCityLabel =
+                    ($found->country_code ? $found->country_code . ': ' : '') .
+                    ($found->name ?? '') .
+                    (!empty($found->region) ? ' (' . $found->region . ')' : '');
             }
         }
     @endphp
@@ -74,14 +91,12 @@
                     <div class="v-alert__text">{{ session('status') }}</div>
                 </div>
             @endif
-
             @if (session('error'))
                 <div class="v-alert v-alert--warn mb-4">
                     <div class="v-alert__title">Ошибка</div>
                     <div class="v-alert__text">{{ session('error') }}</div>
                 </div>
             @endif
-
             @if ($errors->any())
                 <div class="v-alert v-alert--warn mb-4">
                     <div class="v-alert__title">Проверьте поля</div>
@@ -119,7 +134,6 @@
                             @endforeach
                         </ul>
                     </div>
-
                     @if (!empty($eventId))
                         <div class="v-hint mt-3">
                             После сохранения профиля мы попробуем автоматически записать вас на мероприятие.
@@ -204,7 +218,6 @@
                                             Телефон <span class="text-xs text-gray-500">(видно вам, админу и организаторам)</span>
                                         </label>
 
-                                        {{-- ВИДИМЫЙ: маска --}}
                                         <input
                                             name="phone_masked"
                                             id="phone_masked"
@@ -216,7 +229,6 @@
                                             @disabled($lockedPhone)
                                         >
 
-                                        {{-- СКРЫТЫЙ: E.164 (то, что реально сохраняем) --}}
                                         <input
                                             type="hidden"
                                             name="phone"
@@ -250,25 +262,76 @@
                                         @error('birth_date')<div class="text-xs text-red-600 mt-1">{{ $message }}</div>@enderror
                                     </div>
 
-                                    {{-- -------- Город -------- --}}
+                                    {{-- -------- Город (AUTOCOMPLETE + fallback select) -------- --}}
                                     @php $lockedCity = !$canEditProtected && $filled($user?->city_id); @endphp
-                                    <div>
+                                    <div class="md:col-span-2">
                                         <label class="block mb-1 font-medium">Город</label>
-                                        <select
+
+                                        {{-- То, что реально сохраняем --}}
+                                        <input
+                                            type="hidden"
                                             name="city_id"
-                                            class="v-input w-full {{ $errors->has('city_id') ? 'ring-2 ring-red-500 border-red-500' : '' }}"
-                                            @disabled($lockedCity)
+                                            id="city_id"
+                                            value="{{ old('city_id', $user?->city_id) }}"
                                         >
-                                            <option value="">— выберите —</option>
-                                            @foreach(($cities ?? []) as $city)
-                                                <option value="{{ $city->id }}"
-                                                    @selected((string)old('city_id', $user?->city_id) === (string)$city->id)>
-                                                    {{ $city->name }}@if($city->region) ({{ $city->region }})@endif
-                                                </option>
-                                            @endforeach
-                                        </select>
+
+                                        {{-- UI input (поиск) --}}
+                                        <div class="relative" id="city-autocomplete" data-search-url="{{ route('cities.search') }}">
+                                            <input
+                                                type="text"
+                                                id="city_search"
+                                                class="v-input w-full {{ $errors->has('city_id') ? 'ring-2 ring-red-500 border-red-500' : '' }}"
+                                                placeholder="Начните вводить город…"
+                                                value="{{ old('city_search', $selectedCityLabel) }}"
+                                                autocomplete="off"
+                                                @disabled($lockedCity)
+                                            >
+                                            {{-- dropdown --}}
+                                            <div
+                                                id="city_dropdown"
+                                                class="absolute left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden hidden"
+                                                style="max-height: 28rem; overflow-y: auto; z-index: 60;"
+                                            >
+                                                <div class="px-3 py-2 text-xs text-gray-500 border-b border-gray-100">
+                                                    Введите минимум 2 символа. Выбор сохранится как <b>город</b>.
+                                                </div>
+                                                <div id="city_results"></div>
+                                            </div>
+                                        </div>
+
+                                        <div class="text-xs text-gray-500 mt-1">
+                                            Поиск по городу, с группировкой по стране (RU / KZ / UZ) и регионом.
+                                        </div>
+
                                         @if($lockedCity)<div class="v-hint mt-1">{{ $lockHint }}</div>@endif
                                         @error('city_id')<div class="text-xs text-red-600 mt-1">{{ $message }}</div>@enderror
+
+                                        {{-- Fallback select (если JS выключен) --}}
+                                        <noscript>
+                                            <div class="mt-3">
+                                                <select name="city_id" class="v-input w-full" @disabled($lockedCity)>
+                                                    <option value="">Выберите город</option>
+
+                                                    @php
+                                                        $byCountry = collect($cities ?? [])->groupBy(fn($c) => $c->country_code ?: 'OTHER');
+                                                        $order = ['RU','KZ','UZ','OTHER'];
+                                                    @endphp
+
+                                                    @foreach($order as $cc)
+                                                        @php $group = $byCountry->get($cc, collect()); @endphp
+                                                        @if($group->isNotEmpty())
+                                                            <optgroup label="{{ $cc }}">
+                                                                @foreach($group->sortBy([['region','asc'],['name','asc']]) as $city)
+                                                                    <option value="{{ $city->id }}" @selected((string)old('city_id', $user->city_id ?? null) === (string)$city->id)>
+                                                                        {{ $city->name }}@if($city->region) ({{ $city->region }})@endif
+                                                                    </option>
+                                                                @endforeach
+                                                            </optgroup>
+                                                        @endif
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                        </noscript>
                                     </div>
 
                                     {{-- -------- Пол (НЕ фиксируемый) -------- --}}
@@ -311,7 +374,6 @@
                                         <div class="text-sm text-gray-600">Уровень и амплуа.</div>
                                     </div>
 
-                                    {{-- Уровень (классика) -> SELECT --}}
                                     @php $lockedClassic = !$canEditProtected && $filled($user?->classic_level); @endphp
                                     <div>
                                         <label class="block mb-1 font-medium">Уровень (классика)</label>
@@ -330,7 +392,6 @@
                                         @error('classic_level')<div class="text-xs text-red-600 mt-1">{{ $message }}</div>@enderror
                                     </div>
 
-                                    {{-- Primary position --}}
                                     <div>
                                         <label class="block mb-1 font-medium">Какое твое основное амплуа?</label>
                                         <div class="space-y-1">
@@ -344,7 +405,6 @@
                                         </div>
                                     </div>
 
-                                    {{-- Extra positions --}}
                                     <div>
                                         <label class="block mb-1 font-medium">
                                             В каком амплуа ты можешь играть ещё? <span class="text-sm text-gray-500">(можно пропустить)</span>
@@ -376,7 +436,6 @@
                                         <div class="text-sm text-gray-600">Уровень и зона.</div>
                                     </div>
 
-                                    {{-- Уровень (пляж) -> SELECT --}}
                                     @php $lockedBeach = !$canEditProtected && $filled($user?->beach_level); @endphp
                                     <div>
                                         <label class="block mb-1 font-medium">Уровень (пляж)</label>
@@ -395,7 +454,6 @@
                                         @error('beach_level')<div class="text-xs text-red-600 mt-1">{{ $message }}</div>@enderror
                                     </div>
 
-                                    {{-- Beach mode --}}
                                     <div>
                                         <label class="block mb-1 font-medium">В какой зоне вы играете: 2, 4 или вы универсал?</label>
                                         <div class="space-y-1">
@@ -492,6 +550,7 @@
                                     <li>ФИО — кириллица, минимум 2 символа, “С Заглавной”.</li>
                                     <li>Если введёте латиницей — автоматически переведём в кириллицу.</li>
                                     <li>Телефон сохраняем как <b>+7XXXXXXXXXX</b>.</li>
+                                    <li>Город выбирайте из подсказок (так гарантируем корректный <b>city_id</b>).</li>
                                 </ul>
                             </div>
                         </div>
@@ -503,10 +562,9 @@
 
     {{-- ============================================================
         JS:
-        - ФИО: нормализация на blur + подсветка
-        - Телефон: НЕ перерисовываем маску на input (чтобы курсор не прыгал),
-                  маску приводим на blur, hidden phone обновляем всегда
-        - Submit: подсветка и scroll к первому плохому
+        - ФИО: нормализация
+        - Телефон: маска на blur + hidden E.164
+        - Город: автокомплит (GET cities.search?q=...)
     ============================================================ --}}
     <script>
         (function () {
@@ -536,7 +594,6 @@
 
                 while (i < lower.length) {
                     const ch = lower[i];
-
                     if (!/[a-z]/.test(ch)) { out += s[i]; i++; continue; }
 
                     const tri = lower.slice(i, i+3);
@@ -560,7 +617,6 @@
                 s = s.replace(/\s+/g, ' ');
                 s = s.replace(/[’]/g, "'");
                 s = s.replace(/-{2,}/g, '-');
-
                 s = s.replace(/[^А-Яа-яЁё \-']/g, '');
 
                 const parts = s.split(/(\s+|-|')/);
@@ -622,7 +678,6 @@
 
                 inp.addEventListener('input', () => {
                     if (inp.disabled) return;
-                    // если начали печатать латиницей — сразу мягко приводим
                     if (/[A-Za-z]/.test(inp.value)) {
                         inp.value = normalizeCyrName(inp.value);
                     }
@@ -634,18 +689,200 @@
             const phoneE164 = document.getElementById('phone_e164');
 
             if (phoneMasked && phoneE164) {
-                // input: обновляем hidden, НЕ трогаем value (иначе прыгает курсор)
                 phoneMasked.addEventListener('input', () => {
                     if (phoneMasked.disabled) return;
                     phoneE164.value = toE164Ru(phoneMasked.value);
                 });
 
-                // blur: приводим маску красиво
                 phoneMasked.addEventListener('blur', () => {
                     if (phoneMasked.disabled) return;
                     phoneE164.value = toE164Ru(phoneMasked.value);
                     phoneMasked.value = formatMaskFromDigits(phoneMasked.value);
                 });
+            }
+
+            // ---------- City autocomplete ----------
+            const cityWrap = document.getElementById('city-autocomplete');
+            const cityInput = document.getElementById('city_search');
+            const cityId = document.getElementById('city_id');
+            const dd = document.getElementById('city_dropdown');
+            const results = document.getElementById('city_results');
+
+            function escapeHtml(s) {
+                return String(s || '')
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#039;');
+            }
+
+            function showDropdown() {
+                if (!dd) return;
+                dd.classList.remove('hidden');
+            }
+
+            function hideDropdown() {
+                if (!dd) return;
+                dd.classList.add('hidden');
+            }
+
+            function clearResults() {
+                if (results) results.innerHTML = '';
+            }
+
+            function renderGroup(title, items) {
+                const html = [];
+                html.push('<div class="px-3 py-2 text-xs font-semibold text-gray-700 bg-gray-50 border-b border-gray-100">' + escapeHtml(title) + '</div>');
+                items.forEach(item => {
+                    const label = (item.country_code ? item.country_code + ': ' : '') + item.name + (item.region ? ' (' + item.region + ')' : '');
+                    html.push(
+                        '<button type="button" class="w-full text-left px-3 py-2 hover:bg-gray-50 border-b border-gray-100 city-item" ' +
+                        'data-id="' + escapeHtml(item.id) + '" data-label="' + escapeHtml(label) + '">' +
+                            '<div class="text-sm text-gray-900">' + escapeHtml(item.name) + '</div>' +
+                            '<div class="text-xs text-gray-500">' +
+                                (item.country_code ? escapeHtml(item.country_code) : '') +
+                                (item.region ? ' • ' + escapeHtml(item.region) : '') +
+                            '</div>' +
+                        '</button>'
+                    );
+                });
+                return html.join('');
+            }
+
+            let lastReqId = 0;
+            function debounce(fn, ms) {
+                let t = null;
+                return function (...args) {
+                    clearTimeout(t);
+                    t = setTimeout(() => fn.apply(this, args), ms);
+                };
+            }
+
+            async function fetchCities(q) {
+                if (!cityWrap) return null;
+                const url = cityWrap.getAttribute('data-search-url');
+                if (!url) return null;
+
+                const reqId = ++lastReqId;
+
+                const u = new URL(url, window.location.origin);
+                u.searchParams.set('q', q || '');
+                u.searchParams.set('limit', '30');
+
+                const r = await fetch(u.toString(), {
+                    headers: { 'Accept': 'application/json' },
+                    credentials: 'same-origin'
+                });
+
+                // устаревший запрос — игнорируем
+                if (reqId !== lastReqId) return null;
+
+                if (!r.ok) return null;
+                return await r.json();
+            }
+
+            function applySelected(id, label) {
+                if (cityId) cityId.value = id ? String(id) : '';
+                if (cityInput) cityInput.value = label || '';
+                hideDropdown();
+            }
+
+            function groupByCountry(list) {
+                const groups = { RU: [], KZ: [], UZ: [], OTHER: [] };
+                (list || []).forEach(x => {
+                    const cc = (x.country_code || '').toUpperCase();
+                    if (cc === 'RU') groups.RU.push(x);
+                    else if (cc === 'KZ') groups.KZ.push(x);
+                    else if (cc === 'UZ') groups.UZ.push(x);
+                    else groups.OTHER.push(x);
+                });
+                return groups;
+            }
+
+            if (cityWrap && cityInput && cityId && dd && results) {
+                if (cityInput.disabled) {
+                    // ничего
+                } else {
+                    const runSearch = debounce(async () => {
+                        const q = (cityInput.value || '').trim();
+
+                        // если пользователь вручную меняет строку — сбрасываем id (пока не выберет из списка)
+                        // (НО: если строка совпала с текущей — оставим)
+                        if (q.length === 0) {
+                            cityId.value = '';
+                            clearResults();
+                            hideDropdown();
+                            return;
+                        }
+                        if (q.length < 2) {
+                            clearResults();
+                            showDropdown();
+                            results.innerHTML = '<div class="px-3 py-3 text-sm text-gray-500">Введите ещё символы…</div>';
+                            return;
+                        }
+
+                        clearResults();
+                        showDropdown();
+                        results.innerHTML = '<div class="px-3 py-3 text-sm text-gray-500">Поиск…</div>';
+
+                        const data = await fetchCities(q);
+                        if (!data) {
+                            results.innerHTML = '<div class="px-3 py-3 text-sm text-gray-500">Не удалось загрузить список.</div>';
+                            return;
+                        }
+
+                        // Ожидаем формат: { items: [...] } или просто [...]
+                        const items = Array.isArray(data) ? data : (data.items || []);
+                        if (!items.length) {
+                            results.innerHTML = '<div class="px-3 py-3 text-sm text-gray-500">Ничего не найдено.</div>';
+                            return;
+                        }
+
+                        const g = groupByCountry(items);
+
+                        let html = '';
+                        if (g.RU.length) html += renderGroup('RU', g.RU);
+                        if (g.KZ.length) html += renderGroup('KZ', g.KZ);
+                        if (g.UZ.length) html += renderGroup('UZ', g.UZ);
+                        if (g.OTHER.length) html += renderGroup('Другие', g.OTHER);
+
+                        results.innerHTML = html;
+
+                        // bind items
+                        results.querySelectorAll('.city-item').forEach(btn => {
+                            btn.addEventListener('click', () => {
+                                const id = btn.getAttribute('data-id');
+                                const label = btn.getAttribute('data-label');
+                                applySelected(id, label);
+                            });
+                        });
+                    }, 220);
+
+                    cityInput.addEventListener('input', () => {
+                        // если начали менять — сбросим city_id, пока не выберут подсказку
+                        cityId.value = '';
+                        runSearch();
+                    });
+
+                    cityInput.addEventListener('focus', () => {
+                        // если уже есть 2+ символа — покажем подсказки
+                        const q = (cityInput.value || '').trim();
+                        if (q.length >= 2) runSearch();
+                    });
+
+                    document.addEventListener('click', (e) => {
+                        if (!cityWrap.contains(e.target)) {
+                            hideDropdown();
+                        }
+                    });
+
+                    cityInput.addEventListener('keydown', (e) => {
+                        if (e.key === 'Escape') hideDropdown();
+                    });
+
+                    // если есть уже выбранный id, но label пустой — попробуем не ломать: оставляем как есть
+                }
             }
 
             // ---------- Submit: final check ----------
@@ -671,6 +908,15 @@
                     phoneE164.value = toE164Ru(phoneMasked.value);
                     const bad = !!phoneE164.value && !phoneRe.test((phoneE164.value || '').trim());
                     setInvalid(phoneMasked, bad);
+                    ok = ok && !bad;
+                }
+
+                // City: если введено что-то, но city_id не выбран — подсветим
+                if (cityInput && !cityInput.disabled && cityId) {
+                    const q = (cityInput.value || '').trim();
+                    const id = (cityId.value || '').trim();
+                    const bad = (q.length > 0 && id.length === 0);
+                    setInvalid(cityInput, bad);
                     ok = ok && !bad;
                 }
 

@@ -54,7 +54,10 @@ return [
         'admin_token' => env('VK_ADMIN_TOKEN'),
         'admin_peer_id' => env('VK_ADMIN_PEER_ID'),
     ],
-
+    // Yandex maps
+     'yandex_maps' => [
+        'key' => env('YANDEX_MAPS_API_KEY'),
+    ],
     // Yandex via SocialiteProviders (driver: yandex)
     // Socialite::driver('yandex')
     'yandex' => [
