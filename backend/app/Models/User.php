@@ -51,6 +51,7 @@ class User extends Authenticatable implements HasMedia
         'phone',
         'birth_date',
         'city_id',
+        'timezone',
         'gender',
         'height_cm',
         'classic_level',

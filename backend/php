@@ -1,0 +1,20 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Event;
+
+class PublicEventController extends Controller
+{
+    public function show(string $token)
+    {
+        $event = Event::query()
+            ->where('public_token', $token)
+            ->where('is_private', true)
+            ->firstOrFail();
+
+        // показываем тот же шаблон, что и обычный show
+        // (или отдельный, если надо)
+        return view('events.show', ['event' => $event]);
+    }
+}

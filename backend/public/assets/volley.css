@@ -1,0 +1,283 @@
+/* Volley UI helpers */
+
+/* Layout helpers */
+.v-container {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+/* Alerts */
+.v-alert {
+  border-radius: 12px;
+  padding: 14px 16px;
+  border: 1px solid transparent;
+}
+
+.v-alert__title {
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.v-alert__text {
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.v-alert--success {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+  color: #065f46;
+}
+
+.v-alert--warn {
+  background: #fffbeb;
+  border-color: #fde68a;
+  color: #92400e;
+}
+
+.v-alert--info {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1e40af;
+}
+
+/* Buttons / links */
+.v-actions {
+  margin-top: 14px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.v-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-weight: 600;
+  font-size: 14px;
+  border: 1px solid transparent;
+  text-decoration: none;
+}
+
+.v-btn--primary {
+  background: #111827;
+  color: #fff;
+}
+
+.v-btn--secondary {
+  background: #fff;
+  color: #111827;
+  border-color: #e5e7eb;
+}
+
+/* Required field highlight */
+.v-required {
+  outline: 2px solid #facc15; /* yellow-400 */
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* Small hint text */
+.v-hint {
+  margin-top: 10px;
+  color: #6b7280;
+  font-size: 12px;
+}
+/* Cards / badges for events */
+.v-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 14px 16px;
+  background: #fff;
+}
+
+.v-card__title {
+  font-weight: 800;
+  color: #111827;
+  margin-bottom: 10px;
+  font-size: 16px;
+}
+
+.v-card__meta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.v-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  border: 1px solid transparent;
+}
+.v-badge--success {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+  color: #065f46;
+}
+.v-badge--warn {
+  background: #fffbeb;
+  border-color: #fde68a;
+  color: #92400e;
+}
+
+.v-badge--info {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1e40af;
+}
+  /* Обёртка шага */
+  .step-card {
+    border: 1px solid rgb(229 231 235);
+    border-radius: 1rem;
+    background: white;
+    transition: box-shadow .2s ease, border-color .2s ease, transform .2s ease;
+  }
+
+  /* Активный шаг: заметная подсветка */
+  .step-card.is-active {
+    border-color: rgb(99 102 241);            /* indigo-500 */
+    box-shadow: 0 10px 25px rgba(99,102,241,.15);
+    background: linear-gradient(180deg, rgba(99,102,241,.08), rgba(255,255,255,1) 55%);
+  }
+
+  /* Заголовок шага на “цветной плашке” */
+  .step-head {
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid rgb(243 244 246);
+  }
+  .step-badge {
+    display:inline-flex; align-items:center; gap:8px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 12px;
+    background: rgb(17 24 39);  /* gray-900 */
+    color: white;               /* чтобы не было белого на белом */
+  }
+  .step-subtitle { font-size: 12px; color: rgb(107 114 128); }
+
+  /* Процент выполнения внутри шага */
+  .step-meter {
+    margin-top: 10px;
+    height: 8px;
+    border-radius: 999px;
+    background: rgb(243 244 246);
+    overflow: hidden;
+  }
+  .step-meter > div {
+    height: 8px;
+    border-radius: 999px;
+    width: 0%;
+    transition: width .2s ease, background-color .2s ease;
+  }
+
+  /* Верхняя полоска (общая) */
+  #wizard_bar {
+    transition: width .25s ease, background-color .25s ease;
+  }
+/* ===== voll-layout: layout with sidebar slot ===== */
+.sidebar-container{
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px 16px;
+
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 24px;
+  align-items: start;
+}
+
+.sidebar-container .main-content{
+  min-width: 0; /* критично для grid внутри */
+}
+
+.sidebar-container .sidebar{
+  min-width: 0;
+}
+
+/* Mobile: sidebar below content */
+@media (max-width: 1024px){
+  .sidebar-container{
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Optional sticky sidebar */
+@media (min-width: 1025px){
+  .sidebar-container .sidebar{
+    position: sticky;
+    top: 96px; /* под твой фикс-хедер, можно подстроить */
+  }
+}
+/* Users page should be wider than default v-container */
+.users-page .v-container{
+  max-width: 1200px;
+}
+/* Sticky search/filter on /users */
+.users-filter-sticky{
+  position: sticky;
+  top: 76px;              /* под шапку; если шапка выше/ниже — подстрой */
+  z-index: 30;
+  background: #fff;
+  padding: 10px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+/* если есть темная тема */
+.dark .users-filter-sticky{
+  background: #0b1220;
+  border-bottom-color: rgba(255,255,255,.08);
+}
+
+/* Players grid: 2..6 columns responsive */
+.players-grid{
+  display:grid;
+  gap:16px;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+}
+
+/* >= 640px: 3 columns */
+@media (min-width:640px){
+  .players-grid{ grid-template-columns:repeat(3,minmax(0,1fr)); }
+}
+
+/* >= 768px: 4 columns */
+@media (min-width:768px){
+  .players-grid{ grid-template-columns:repeat(4,minmax(0,1fr)); }
+}
+
+/* >= 1024px: 5 columns */
+@media (min-width:1024px){
+  .players-grid{ grid-template-columns:repeat(5,minmax(0,1fr)); }
+}
+
+/* >= 1280px: 6 columns */
+@media (min-width:1280px){
+  .players-grid{ grid-template-columns:repeat(6,minmax(0,1fr)); }
+}
+
+/* Photos gallery grid: 2..8 columns responsive */
+.vb-gallery-grid{
+  display:grid;
+  gap:16px;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+}
+@media (min-width:640px){  .vb-gallery-grid{ grid-template-columns:repeat(3,minmax(0,1fr)); } }
+@media (min-width:768px){  .vb-gallery-grid{ grid-template-columns:repeat(4,minmax(0,1fr)); } }
+@media (min-width:1024px){ .vb-gallery-grid{ grid-template-columns:repeat(6,minmax(0,1fr)); } }
+@media (min-width:1280px){ .vb-gallery-grid{ grid-template-columns:repeat(8,minmax(0,1fr)); } }
+/* Gallery should be wide (not limited by v-container) */
+.vb-gallery-grid {
+  width: 100%;
+}
+/* в твой <style> где .ac-dd */
+#trainer_dd { max-height: 320px; overflow:auto; }

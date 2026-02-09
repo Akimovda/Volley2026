@@ -7,3 +7,59 @@
 [x-cloak] {
     display: none;
 }
+/* =========================
+   Wizard (create event)
+========================= */
+
+/* Pills */
+.wizard-pill {
+  border: 1px solid rgb(229 231 235); /* gray-200 */
+  background: rgb(249 250 251);       /* gray-50 */
+  color: rgb(55 65 81);               /* gray-700 */
+  transition: background-color .2s ease, color .2s ease, border-color .2s ease;
+}
+.wizard-pill.is-active {
+  background: rgb(79 70 229); /* indigo-600 */
+  border-color: rgb(79 70 229);
+  color: #fff;
+}
+.wizard-pill.is-done {
+  background: rgb(16 185 129); /* emerald-500 */
+  border-color: rgb(16 185 129);
+  color: #fff;
+}
+
+/* Step card подсветка */
+.wizard-step {
+  border: 1px solid rgb(229 231 235);
+  border-radius: 1rem;               /* rounded-2xl */
+  background: #fff;
+  transition: box-shadow .2s ease, border-color .2s ease, transform .2s ease;
+}
+.wizard-step.is-active {
+  border-color: rgb(79 70 229);      /* indigo */
+  box-shadow: 0 10px 30px rgba(79, 70, 229, 0.18);
+}
+
+/* Progress bar (цвет/анимация) */
+.wizard-bar {
+  height: 0.5rem;
+  background: rgb(229 231 235);
+  border-radius: 9999px;
+  overflow: hidden;
+}
+.wizard-bar > div {
+  height: 0.5rem;
+  width: 0%;
+  border-radius: 9999px;
+  transition: width .25s ease, background-color .25s ease;
+  background: rgb(79 70 229); /* indigo-600 */
+}
+.wizard-bar.is-step-1 > div { background: rgb(79 70 229); }  /* indigo */
+.wizard-bar.is-step-2 > div { background: rgb(245 158 11); } /* amber-500 */
+.wizard-bar.is-step-3 > div { background: rgb(16 185 129); } /* emerald-500 */
+
+/* % badge */
+.wizard-percent {
+  font-variant-numeric: tabular-nums;
+}
