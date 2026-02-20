@@ -20,55 +20,66 @@ class Event extends Model implements HasMedia
     protected $fillable = [
         'title',
         'requires_personal_data',
-
+    
         'classic_level_min',
         'classic_level_max',
         'beach_level_min',
         'beach_level_max',
         'trainer_user_id',
-
+    
         'organizer_id',
         'location_id',
         'timezone',
         'starts_at',
         'ends_at',
-
+    
         'is_private',
         'visibility',
         'public_token',
-
+    
         'direction',
         'format',
         'allow_registration',
-
+    
+        // ✅ окна регистрации
+        'registration_starts_at',
+        'registration_ends_at',
+        'cancel_self_until',
+    
         'is_recurring',
         'recurrence_rule',
-
+    
         'is_paid',
         'price_text',
-
-        // ✅ templates via events
+    
         'is_template',
     ];
 
+
     protected $casts = [
         'requires_personal_data' => 'boolean',
-
+    
         'classic_level_min' => 'integer',
         'classic_level_max' => 'integer',
         'beach_level_min' => 'integer',
         'beach_level_max' => 'integer',
-
+    
         'starts_at' => 'datetime',
         'ends_at' => 'datetime',
-
+    
+        // ✅ окна регистрации
+        'registration_starts_at' => 'datetime',
+        'registration_ends_at' => 'datetime',
+        'cancel_self_until' => 'datetime',
+    
         'is_private' => 'boolean',
         'allow_registration' => 'boolean',
         'is_recurring' => 'boolean',
         'is_paid' => 'boolean',
-
+    
         'is_template' => 'boolean',
     ];
+
 
     // ✅ Обложка события (1 файл)
     public function registerMediaCollections(): void
@@ -98,6 +109,6 @@ class Event extends Model implements HasMedia
 
     public function gameSettings(): HasOne
     {
-        return $this->hasOne(\App\Models\EventGameSetting::class);
+        return $this->hasOne(\App\Models\EventGameSetting::class, 'event_id', 'id');
     }
 }

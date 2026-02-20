@@ -10,6 +10,12 @@
 		<meta name="csrf-token" content="{{ csrf_token() }}">
 		<title>{{ $title ?? 'Волейбольный сервис Your Volley Club!' }}</title>
 		<meta name="description" content="{{ $description ?? 'Волейбольный сервис Your Volley Club!' }}">
+		<link rel="icon" type="image/png" href="/icons/favicon-96x96.png" sizes="96x96" />
+		<link rel="icon" type="image/svg+xml" href="/icons/favicon.svg" />
+		<link rel="shortcut icon" href="/icons/favicon.ico" />
+		<link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
+		<meta name="apple-mobile-web-app-title" content="VolleyClub" />
+		<link rel="manifest" href="/icons/site.webmanifest" />		
 		@if(isset($canonical))
         <link rel="canonical" href="{{ trim($canonical) }}">
 		@endif
@@ -155,15 +161,9 @@
 								<a href="/profile/complete" class="menu-item">
 									<span class="menu-text">Редактировать профиль</span>
 								</a>
-								<a href="/user/edit" class="menu-item">
-									<span class="menu-text">Фотографии</span>
+								<a href="/user/photos" class="menu-item">
+									<span class="menu-text">Ваши фотографии</span>
 								</a>								
-								<a href="/dashboard" class="menu-item">
-									<span class="menu-text">Дашборд</span>
-								</a>
-								<a href="/settings" class="menu-item">
-									<span class="menu-text">Настройки</span>
-								</a>
 								<form method="POST" action="{{ route('logout') }}" class="logout-form" x-data>
 									@csrf
 									<button type="submit" class="menu-item">Выйти</button>
@@ -176,10 +176,15 @@
 							<nav class="menu-nav">
 								<div class="menu-item-title">
 									<span class="menu-text">Меню организатора</span>
-								</div>							
+								</div>	
+								<a href="/events/create/event_management" class="menu-item">
+									<span class="menu-text">Управление мероприятиями</span>
+								</a>								
 								<a href="/events/create" class="menu-item">
 									<span class="menu-text">Создать мероприятие</span>
 								</a>
+								
+								
 							</nav>
 						</div>	
 						@if(auth()->user()->role == 'admin')
@@ -209,42 +214,56 @@
 					@endphp
 					
 					<div class="social-auth">
-					<!-- Кнопка VK -->
-					<div data-href="{{ route('auth.vk.redirect', ['return' => $returnUrl]) }}" class="auth-btn auth-btn-vk">
-						<span class="auth-icon-circle">
-							<span class="icon-vk"></span>
-						</span>
-						<span class="auth-text">Войти через ВКонтакте</span>
-					</div>
-					
-					<!-- Кнопка Яндекс -->
-					<div data-href="{{ route('auth.yandex.redirect', ['return' => $returnUrl]) }}" class="auth-btn auth-btn-yandex">
-						<span class="auth-icon-circle">
-							<span class="icon-yandex"></span>
-						</span>
-						<span class="auth-text">Войти с Яндекс ID</span>
-					</div>
-					
-					<div class="auth-btn auth-btn-telegram">
-						<div class="auth-btn-telegram-widget">						
-							<script async 
-							src="https://telegram.org/js/telegram-widget.js?22"
-							data-telegram-login="VolleyEvent_bot"
-							data-size="large"
-							data-userpic="false"
-							data-radius="6"
-							data-request-access="write"
-							data-auth-url="{{ route('auth.telegram.callback', ['return' => url()->full()]) }}"
-							data-lang="ru">
-							</script>								
-						</div>			
-						<div class="auth-btn-telegram-widget-up">					
+						
+						
+						
+						<!-- Кнопка VK -->
+						<div data-href="{{ route('auth.vk.redirect', ['return' => $returnUrl]) }}" class="auth-btn auth-btn-vk">
 							<span class="auth-icon-circle">
-								<span class="icon-tg"></span>
+								<span class="icon-vk"></span>
 							</span>
-							<span class="auth-text">Войти через Telegram</span>
-						</div>				
-					</div>
+							<span class="auth-text">Войти через ВКонтакте</span>
+						</div>
+						
+						<!-- Кнопка Яндекс -->
+						<div data-href="{{ route('auth.yandex.redirect', ['return' => $returnUrl]) }}" class="auth-btn auth-btn-yandex">
+							<span class="auth-icon-circle">
+								<span class="icon-yandex"></span>
+							</span>
+							<span class="auth-text">Войти с Яндекс ID</span>
+						</div>
+						
+						<div class="auth-btn auth-btn-telegram">
+							<div class="auth-btn-telegram-widget">						
+								<script async 
+								src="https://telegram.org/js/telegram-widget.js?22"
+								data-telegram-login="VolleyEvent_bot"
+								data-size="large"
+								data-userpic="false"
+								data-radius="6"
+								data-request-access="write"
+								data-auth-url="{{ route('auth.telegram.callback', ['return' => url()->full()]) }}"
+								data-lang="ru">
+								</script>								
+							</div>			
+							<div class="auth-btn-telegram-widget-up">					
+								<span class="auth-icon-circle">
+									<span class="icon-tg"></span>
+								</span>
+								<span class="auth-text">Войти через Telegram</span>
+							</div>				
+						</div>
+						{{--
+						<div data-href="#max" class="auth-btn auth-btn-max">
+							<span class="auth-icon-circle">
+								<span class="icon-max"></span>
+							</span>
+							<span class="auth-text">Войти через Max</span>
+						</div>								
+						--}}
+						
+						
+						
 					</div>
 					@endauth
 				</div>
@@ -269,7 +288,7 @@
 									<span class="menu-text">Уровни игроков</span>
 								</a>	
 								<a href="#" class="menu-item">
-									<span class="menu-text">О сервисе</span>
+								<span class="menu-text">О сервисе</span>
 								</a>									
 							</nav>
 						</div>
@@ -325,10 +344,10 @@
 					@else
 					<div class="top-section-img" data-aos="fade" data-aos-duration="1000">
 						<div class="top-section-light-img">
-							<img src="/img/police.png" alt="img">
+							<img src="/img/main.png" alt="img">
 						</div>	
 						<div class="top-section-dark-img">
-							<img src="/img/police-dark.png" alt="img">
+							<img src="/img/main-dark.png" alt="img">
 						</div>
 					</div>					
 					@endif	

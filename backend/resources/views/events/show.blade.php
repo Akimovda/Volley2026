@@ -3,7 +3,6 @@
     /** @var \App\Models\Event $event */
     /** @var \App\Models\EventOccurrence|null $occurrence */
     /** @var array $availability */
-
     $user = auth()->user();
 
     $userTz = $user?->timezone ?: ($occurrence?->timezone ?: ($event->timezone ?: 'UTC'));
@@ -29,16 +28,14 @@
     ]);
     $address = $addressParts ? implode(', ', $addressParts) : null;
 
-    // Для карты
     $mapQuery = $address ? urlencode($address) : null;
 
-    // availability meta (совместимость)
     $meta = $availability['meta'] ?? [];
     $maxPlayers = (int)($meta['max_players'] ?? ($availability['max_players'] ?? 0));
     $registeredTotal = (int)($meta['registered_total'] ?? ($availability['registered_total'] ?? 0));
 
     // =========================
-    // ✅ UI-фильтр по Gender Policy (как у вас было)
+    // ✅ UI-фильтр по Gender Policy
     // =========================
     $normalizeGender = function ($g): ?string {
         $g = is_string($g) ? trim($g) : null;
@@ -96,7 +93,7 @@
         }
     }
 
-    $policyRequiresGender = in_array($effectivePolicy, ['only_male','only_female','mixed_open','mixed_limited'], true);
+    $policyRequiresGender = in_array($effectivePolicy, ['only_male','only_female','mixed_open','mixed_limited','mixed_5050'], true);
 
     $freePositions = $availability['free_positions'] ?? [];
     $filteredFreePositions = $freePositions;
@@ -119,7 +116,7 @@
         }
     }
 
-    // ✅ Trainer label
+    // ✅ Trainer label (legacy single)
     $trainer = $event->trainer_user ?? null;
     $trainerLabel = null;
     if ($trainer) {
@@ -129,17 +126,28 @@
         if ($trainerLabel === '') $trainerLabel = (string)($trainer->phone ?? '');
     }
 
-    // ✅ Лучше использовать локальный файл (а не страницу flaticon)
-    // положите иконку сюда: public/images/trainer.png
-    $trainerIcon = asset('icons/trainer.png'); // ✅ public/icons/trainer.png
+    $trainerIcon = asset('icons/trainer.png'); // public/icons/trainer.png
+
+    // ✅ Description html (Trix)
+    $descHtml = (string)($event->description_html ?? '');
+    $hasDesc = trim(strip_tags($descHtml)) !== '';
 @endphp
 
 <x-app-layout>
     <x-slot name="header">
         <div class="flex items-center justify-between">
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                {{ $event->title }}
-            </h2>
+            <div>
+                <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+                    {{ $event->title }}
+                </h2>
+                @if(!empty($event->is_private))
+                    <div class="text-sm text-gray-500 flex items-center gap-2 mt-1">
+                        <span title="Приватное">🙈 invisible️</span>
+                        <span>Приватное мероприятие</span>
+                    </div>
+                @endif
+            </div>
+
             <a href="{{ route('events.index') }}" class="v-btn v-btn--secondary">
                 ← К списку мероприятий
             </a>
@@ -166,8 +174,8 @@
                 </div>
             </div>
 
-            {{-- ✅ Trainer badge (только training/training_game) --}}
-            @if(in_array(($event?->format ?? ''), ['training','training_game'], true) && $trainer && $trainerLabel)
+            {{-- ✅ Trainer badge --}}
+            @if(in_array(($event?->format ?? ''), ['training','training_game','training_pro_am','camp','coach_student'], true) && $trainer && $trainerLabel)
                 <div>
                     <span class="v-badge v-badge--info" style="display:inline-flex;align-items:center;gap:.35rem;">
                         <img src="{{ $trainerIcon }}" alt="" style="width:14px;height:14px;opacity:.85;">
@@ -176,6 +184,19 @@
                 </div>
             @endif
         </div>
+
+        {{-- ✅ Описание --}}
+        @if($hasDesc)
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                <div class="font-semibold text-gray-900 mb-3">Описание мероприятия</div>
+
+                {{-- ВАЖНО: это HTML из Trix. Если у вас нет server-side sanitize —
+                     лучше ограничить теги через Purifier. Пока оставляем как есть. --}}
+                <div class="prose max-w-none trix-content">
+                    {!! $descHtml !!}
+                </div>
+            </div>
+        @endif
 
         {{-- Карта --}}
         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
@@ -207,6 +228,30 @@
                     Всего мест: {{ $maxPlayers }},
                     занято: {{ $registeredTotal }}
                 </div>
+               @if (($meta['gender_policy'] ?? null) === 'mixed_5050')
+                    @php
+                        // ✅ Берём из API meta (чтобы работало даже когда participants не переданы / ok=false)
+                        $limit  = (int)($meta['gender_5050_limit'] ?? (($maxPlayers > 0) ? intdiv((int)$maxPlayers, 2) : 0));
+                        $male   = (int)($meta['gender_5050_male'] ?? 0);
+                        $female = (int)($meta['gender_5050_female'] ?? 0);
+                
+                        // 🔁 fallback на participants (если вдруг meta пустая)
+                        if (($meta['gender_5050_male'] ?? null) === null || ($meta['gender_5050_female'] ?? null) === null) {
+                            $norm = function($g){
+                                $g = is_string($g) ? mb_strtolower(trim($g)) : '';
+                                if (in_array($g, ['m','male','man'], true)) return 'male';
+                                if (in_array($g, ['f','female','woman'], true)) return 'female';
+                                return null;
+                            };
+                            $male = collect($participants ?? [])->filter(fn($u) => $norm(data_get($u,'gender')) === 'male')->count();
+                            $female = collect($participants ?? [])->filter(fn($u) => $norm(data_get($u,'gender')) === 'female')->count();
+                        }
+                    @endphp
+                
+                    <div class="text-sm text-gray-600">
+                        М: {{ $male }}/{{ $limit }}, Ж: {{ $female }}/{{ $limit }}
+                    </div>
+                @endif
             </div>
 
             @if(!$event->allow_registration)
@@ -245,12 +290,27 @@
                         </button>
                     @endforeach
                 </div>
+
                 <div class="text-xs text-gray-500">
                     Нажми на позицию, чтобы записаться.
                     @if($effectivePolicy === 'mixed_limited' && $effectiveLimitedSide && $userGender === $effectiveLimitedSide && is_array($effectiveLimitedPositions) && count($effectiveLimitedPositions) > 0)
                         <span class="ml-2">Вам доступны только выбранные позиции по гендерному ограничению.</span>
                     @endif
                 </div>
+            @endif
+            @if(($event->show_participants ?? true) && !empty($participants))
+              <div class="mt-6 p-4 rounded-xl border border-gray-100 bg-white">
+                <div class="font-semibold">Список записавшихся игроков:</div>
+                <ol class="list-decimal ml-5 mt-2 space-y-1">
+                  @foreach($participants as $u)
+                    <li>
+                      <a class="text-blue-700 hover:underline" href="{{ route('users.show', $u->id) }}">
+                        {{ trim(($u->last_name ?? '').' '.($u->first_name ?? '')) !== '' ? trim(($u->last_name ?? '').' '.($u->first_name ?? '')) : ($u->name ?? ('User #'.$u->id)) }}
+                      </a>
+                    </li>
+                  @endforeach
+                </ol>
+              </div>
             @endif
         </div>
     </div>

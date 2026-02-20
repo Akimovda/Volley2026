@@ -7,8 +7,8 @@
 
     $fmtDt = function ($event) {
         $tz = $event->timezone ?: 'UTC';
-        $s = $event->starts_at ? \Illuminate\Support\Carbon::parse($event->starts_at)->setTimezone($tz) : null;
-        $e = $event->ends_at ? \Illuminate\Support\Carbon::parse($event->ends_at)->setTimezone($tz) : null;
+        $s = $event->starts_at ? $event->starts_at->copy()->setTimezone($tz) : null;
+        $e = $event->ends_at ? $event->ends_at->copy()->setTimezone($tz) : null;
         if (!$s) return '—';
         $date = $s->format('d.m.Y');
         $time = $s->format('H:i') . ($e ? '–' . $e->format('H:i') : '');
@@ -177,12 +177,16 @@
 
                                         <td class="px-4 py-3 text-right whitespace-nowrap">
                                             <div class="inline-flex gap-2">
-                                                {{-- ✅ FIX: копия через /events/create?from_event_id=ID --}}
+                                                <a href="{{ route('events.event_management.edit', ['event' => (int)$event->id]) }}"
+                                                   class="inline-flex items-center px-3 py-2 rounded-lg text-sm font-semibold border border-blue-200 bg-white hover:bg-blue-50 text-blue-700">
+                                                    Изменить
+                                                </a>
+                                        
                                                 <a href="{{ url('/events/create?from_event_id=' . (int)$event->id) }}"
                                                    class="inline-flex items-center px-3 py-2 rounded-lg text-sm font-semibold bg-gray-900 text-white hover:bg-black">
                                                     Создать копию
                                                 </a>
-
+                                        
                                                 <a href="{{ url('/events/' . (int)$event->id) }}"
                                                    class="inline-flex items-center px-3 py-2 rounded-lg text-sm font-semibold border border-gray-200 bg-white hover:bg-gray-50">
                                                     Открыть

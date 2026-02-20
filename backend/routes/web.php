@@ -100,10 +100,9 @@ Route::get('/cities/search', [CitySearchController::class, 'search'])
 | Поиск игроков и тренеров
 |--------------------------------------------------------------------------
 */
-Route::get('/api/users/search', [UserSearchController::class, 'search'])
-    ->middleware(['auth:sanctum', config('jetstream.auth_session')]);
-
-
+Route::get('api/users/search', [UserSearchController::class, 'search'])
+    ->middleware('web')
+    ->name('api.users.search');
 /*
 |--------------------------------------------------------------------------
 | Dashboard (user) + Alias /Dashboard
@@ -196,18 +195,28 @@ Route::middleware([
     'verified',
     'user.restricted',
 ])->group(function () {
+
     Route::get('/events/create', [EventCreateController::class, 'choose'])
         ->name('events.create');
-
-    // Создать копию события -> редирект на /events/create?from_event_id=ID (ты это уже сделал в контроллере)
-    Route::post('/events/{event}/copy', [EventCreateController::class, 'fromEvent'])
-        ->name('events.copy');
 
     Route::get('/events/create/event_management', [EventManagementController::class, 'index'])
         ->name('events.create.event_management');
 
+    // ✅ edit/update
+    Route::get('/events/create/event_management/{event}/edit', [EventManagementController::class, 'edit'])
+        ->name('events.event_management.edit');
+
+    Route::put('/events/create/event_management/{event}', [EventManagementController::class, 'update'])
+        ->name('events.event_management.update');
+
+    // ✅ создание события
     Route::post('/events', [EventCreateController::class, 'store'])
         ->name('events.store');
+
+    // ⚠️ Вариант А: если ты копируешь через /events/create?from_event_id=ID (как в blade) —
+    // этот POST-роут не обязателен. Оставляй только если реально используешь его где-то.
+    Route::post('/events/{event}/copy', [EventCreateController::class, 'fromEvent'])
+        ->name('events.copy');
 
     Route::post('/locations/quick', [LocationController::class, 'quickStore'])
         ->name('locations.quick_store')

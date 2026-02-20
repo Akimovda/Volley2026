@@ -1,4 +1,18 @@
 {{-- resources/views/events/create.blade.php --}}
+<link rel="stylesheet" href="https://unpkg.com/trix@2.1.8/dist/trix.css">
+
+<style>
+    trix-editor {
+        min-height: 200px;
+        background: #fff;
+        border-radius: 12px;
+    }
+
+    .trix-button-group {
+        border-radius: 8px;
+    }
+</style>
+
 @php
     $prefill = $prefill ?? [];
     $formats = [
@@ -9,18 +23,30 @@
         'tournament' => 'Турнир',
         'camp' => 'КЕМП',
     ];
-    $timezones = [
-        'Europe/Moscow', 'Europe/Berlin', 'Europe/Kyiv',
-        'Asia/Dubai', 'Asia/Almaty',
-        'UTC',
-    ];
+    // ✅ Timezones groups приходят из контроллера: $tzGroups + $tzDefault
+        //    (если вдруг не пришли — не падаем)
+        $timezoneGroups  = $tzGroups ?? [];
+        $timezoneDefault = !empty($prefill['timezone'])
+            ? (string)$prefill['timezone']
+            : (string)($tzDefault ?? 'Europe/Moscow');
+        
+        $currentTimezone = (string) old('timezone', $timezoneDefault);
+        
+        $timezoneGroups = $tzGroups ?? (array) config('event_timezones.groups', []);
+
+        $currentTimezone = old('timezone', $timezoneDefault);
+
+
     $isAdmin = (auth()->user()?->role ?? null) === 'admin';
 
     $step1Fields = [
         'organizer_id',
         'title','direction','format',
         // ✅ trainer
-        'trainer_user_id',
+        'trainer_user_ids',      // новое
+        'trainer_user_id',       // legacy оставить
+        'trainer_user_label',    // чтобы ошибки лейбла тоже попадали в шаг 1 (если будут)
+
 
         'game_subtype','game_min_players','game_max_players',
         'game_libero_mode',
@@ -28,54 +54,105 @@
         'classic_level_min','classic_level_max',
         'beach_level_min','beach_level_max',
         'allow_registration',
+        'age_policy','is_snow',
     ];
-    // ✅ recurring перенесён в Step 2
-    $step2Fields = [
-        'timezone','starts_at_local','ends_at_local','location_id',
-        'is_recurring','recurrence_type','recurrence_interval','recurrence_months','recurrence_rule',
-    ];
-    $step3Fields = [
-        'is_private',
-        'is_paid','price_text',
-        'requires_personal_data',
-        'save_as_template','template_name','template_payload_text',
-        'cover_upload','cover_media_id',
-    ];
+        // ✅ Step 2 fields (including registration timings)
+        $step2Fields = [
+            'timezone','starts_at_local','ends_at_local','location_id',
+            'is_recurring','recurrence_type','recurrence_interval','recurrence_months','recurrence_rule',
+            'reg_starts_days_before','reg_ends_minutes_before','cancel_lock_minutes_before',
+        ];
 
-    $initialStep = 1;
-    if ($errors->any()) {
-        foreach ($step3Fields as $f) { if ($errors->has($f)) { $initialStep = 3; break; } }
-        if ($initialStep === 1) {
-            foreach ($step2Fields as $f) { if ($errors->has($f)) { $initialStep = 2; break; } }
-        }
-    } else {
-        if (
-            old('timezone') || old('starts_at_local') || old('location_id') ||
-            old('is_recurring') || old('recurrence_type') || old('recurrence_interval') || old('recurrence_months')
-        ) {
-            $initialStep = 2;
-        } elseif (
-            old('is_private') || old('is_paid') ||
-            old('save_as_template') || old('template_name') ||
-            old('requires_personal_data') ||
-            old('cover_media_id')
-        ) {
-            $initialStep = 3;
+            $step3Fields = [
+            'is_private',
+            'is_paid','price_text',
+            'requires_personal_data',
+            'remind_registration_enabled',
+            'remind_registration_minutes_before',
+            'show_participants',
+            'cover_upload','cover_media_id',
+            'description_html', // ✅ описание
+        ];
+
+
+            // --- wizard initial step (server-side) ---
+    $initialStep = (int) session('wizard_initial_step', 0);
+
+    // helper: ловим и обычные ошибки, и ошибки массива вида field.0
+    $hasErr = function (string $field) use ($errors): bool {
+        return $errors->has($field) || $errors->has($field . '.*');
+    };
+
+    if ($initialStep < 1 || $initialStep > 3) {
+        $initialStep = 1;
+
+        if ($errors->any()) {
+            foreach ($step3Fields as $f) { if ($hasErr($f)) { $initialStep = 3; break; } }
+
+            if ($initialStep === 1) {
+                foreach ($step2Fields as $f) { if ($hasErr($f)) { $initialStep = 2; break; } }
+            }
+        } else {
+            // fallback по old()
+            if (
+                old('timezone') || old('starts_at_local') || old('location_id') ||
+                old('is_recurring') || old('recurrence_type') || old('recurrence_interval') || old('recurrence_months') ||
+                old('reg_starts_days_before') || old('reg_ends_minutes_before') || old('cancel_lock_minutes_before')
+            ) {
+                $initialStep = 2;
+            } elseif (
+                old('is_private') || old('is_paid') ||
+                old('requires_personal_data') ||
+                old('cover_media_id') ||
+                old('remind_registration_enabled') ||
+                old('remind_registration_minutes_before') ||
+                old('show_participants') ||
+                old('description_html') // ✅ чтобы оставаться на шаге 3
+            ) {
+                $initialStep = 3;
+            }
         }
     }
 
+    // --- other precomputed helpers ---
     $monthsMap = [
         1=>'Янв',2=>'Фев',3=>'Мар',4=>'Апр',5=>'Май',6=>'Июн',
         7=>'Июл',8=>'Авг',9=>'Сен',10=>'Окт',11=>'Ноя',12=>'Дек'
     ];
+
     $oldMonths = old('recurrence_months', $prefill['recurrence_months'] ?? []);
     if (is_string($oldMonths)) $oldMonths = [$oldMonths];
     if (!is_array($oldMonths)) $oldMonths = [];
     $oldMonths = array_map('intval', $oldMonths);
 
-    // ✅ Prefill trainer
-    $oldTrainerId = (int)old('trainer_user_id', $prefill['trainer_user_id'] ?? 0);
-    $oldTrainerLabel = (string)old('trainer_user_label', $prefill['trainer_user_label'] ?? '');
+    // ✅ Prefill trainers (multi + legacy fallback)
+    $oldTrainerIds = old('trainer_user_ids', $prefill['trainer_user_ids'] ?? []);
+    if (is_string($oldTrainerIds)) $oldTrainerIds = [$oldTrainerIds];
+    if (!is_array($oldTrainerIds)) $oldTrainerIds = [];
+    $oldTrainerIds = array_values(array_filter(array_unique(array_map('intval', $oldTrainerIds)), fn($id) => $id > 0));
+    // ✅ Prefill tозрастные ограничения
+    $oldAgePolicy = (string) old('age_policy', $prefill['age_policy'] ?? 'any');
+    if (!in_array($oldAgePolicy, ['adult','child','any'], true)) $oldAgePolicy = 'any';
+
+    
+    // legacy fallback: если пришёл один trainer_user_id
+    $legacyOne = (int) old('trainer_user_id', $prefill['trainer_user_id'] ?? 0);
+    if ($legacyOne > 0 && !in_array($legacyOne, $oldTrainerIds, true)) {
+        $oldTrainerIds[] = $legacyOne;
+    }
+    
+    // label для инпута (теперь контроллер отдаёт trainerPrefillLabel)
+    $oldTrainerLabel = (string) old('trainer_user_label', $trainerPrefillLabel ?? ($prefill['trainer_user_label'] ?? ''));
+
+
+    // ✅ registration offsets defaults
+    $oldRegStartsDaysBefore = (int) old('reg_starts_days_before', 3);
+    $oldRegEndsMinutesBefore = (int) old('reg_ends_minutes_before', 15);
+    $oldCancelLockMinutesBefore = (int) old('cancel_lock_minutes_before', 60);
+
+    if ($oldRegStartsDaysBefore < 0) $oldRegStartsDaysBefore = 3;
+    if ($oldRegEndsMinutesBefore < 0) $oldRegEndsMinutesBefore = 15;
+    if ($oldCancelLockMinutesBefore < 0) $oldCancelLockMinutesBefore = 60;
 @endphp
 
 <x-app-layout>
@@ -92,6 +169,16 @@
     </x-slot>
 
     {{-- FLASH --}}
+    @if (session('private_link'))
+      <div class="mb-4 p-3 rounded-lg bg-blue-50 text-blue-900 border border-blue-100">
+        <div class="font-semibold">🙈 Ссылка на приватное мероприятие:</div>
+        <div class="mt-1">
+          <a class="text-blue-700 underline break-all" href="{{ session('private_link') }}">
+            {{ session('private_link') }}
+          </a>
+        </div>
+      </div>
+    @endif
     <div class="max-w-4xl mx-auto sm:px-6 lg:px-8 mt-6">
         @if (session('status'))
             <div class="mb-4 p-3 rounded-lg bg-green-50 text-green-800 border border-green-100">
@@ -156,13 +243,20 @@
                 </div>
                 <div class="mt-4 flex flex-wrap gap-2 text-xs">
                     <span class="wizard-pill pill px-3 py-1 rounded-full border" id="pill_1">1) Настройка мероприятия</span>
-                    <span class="wizard-pill pill px-3 py-1 rounded-full border" id="pill_2">2) Выбор локации и времени</span>
-                    <span class="wizard-pill pill px-3 py-1 rounded-full border" id="pill_3">3) Доступность и шаблон</span>
+                    <span class="wizard-pill pill px-3 py-1 rounded-full border" id="pill_2">2) Выбор локации,времени и ограничений записи</span>
+                    <span class="wizard-pill pill px-3 py-1 rounded-full border" id="pill_3">3) Доступность, описание и др.</span>
                 </div>
             </div>
 
             <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                <form method="POST" action="{{ route('events.store') }}" data-initial-step="{{ $initialStep }}" enctype="multipart/form-data">
+                <form
+                     method="POST"
+                      action="{{ route('events.store') }}"
+                      data-initial-step="{{ $initialStep }}"
+                      data-users-search-url="{{ route('api.users.search') }}"
+                      enctype="multipart/form-data"
+                    >
+
                     @csrf
 
                     {{-- STEP 1 --}}
@@ -211,7 +305,47 @@
                                         <option value="beach" @selected(old('direction', $prefill['direction'] ?? '')==='beach')>Пляжный волейбол</option>
                                     </select>
                                 </div>
+                                    @php
+                                      $agePolicy = (string) old('age_policy', $prefill['age_policy'] ?? 'any'); // adult|child|any
+                                    @endphp
+                                    
+                                    <div class="md:col-span-2" id="age_policy_block">
+                                      <div class="p-4 rounded-xl border border-gray-100 bg-gray-50">
+                                        <div class="font-semibold text-sm text-gray-800">Возрастные ограничения</div>
+                                        <div class="text-xs text-gray-500 mt-1">Мероприятие для:</div>
+                                    
+                                        <div class="mt-3 flex flex-col sm:flex-row gap-3">
+                                          <label class="inline-flex items-center gap-2">
+                                            <input type="radio" name="age_policy" value="adult" @checked($agePolicy==='adult')>
+                                            <span class="text-sm font-semibold">Взрослых 👨‍🦰👩‍🦰</span>
+                                          </label>
+                                    
+                                          <label class="inline-flex items-center gap-2">
+                                            <input type="radio" name="age_policy" value="child" @checked($agePolicy==='child')>
+                                            <span class="text-sm font-semibold">Детей 👧🧒</span>
+                                          </label>
+                                    
+                                          <label class="inline-flex items-center gap-2">
+                                            <input type="radio" name="age_policy" value="any" @checked($agePolicy==='any')>
+                                            <span class="text-sm font-semibold">Без ограничений 🧑‍🧑‍🧒‍🧒</span>
+                                          </label>
+                                        </div>
+                                    
+                                        {{-- ✅ Климатические условия только для пляжа + "Игра" --}}
+                                        <div class="mt-4" id="climate_block" style="display:none;">
+                                          <div class="font-semibold text-sm text-gray-800">Климатические условия</div>
+                                    
+                                          <label class="mt-3 flex items-center gap-3" id="is_snow_wrap">
+                                            <input type="hidden" name="is_snow" value="0">
+                                            <input type="checkbox" name="is_snow" value="1" id="is_snow"
+                                                   @checked(old('is_snow', $prefill['is_snow'] ?? false))>
+                                            <span class="text-sm font-semibold">Снег/зима (только для “Игра”)</span>
+                                          </label>
+                                        </div>
+                                      </div>
+                                    </div>
 
+                                
                                 <div>
                                     <label class="block text-sm font-semibold text-gray-700 mb-2">Тип мероприятия</label>
                                     <select name="format" id="format" class="w-full rounded-lg border-gray-200">
@@ -227,34 +361,46 @@
                                 {{-- ✅ TRAINER (только training/training_game) --}}
                                 @php
                                   $fmt0 = (string)old('format', $prefill['format'] ?? 'game');
-                                  $showTrainer0 = in_array($fmt0, ['training','training_game'], true);
+                                  $showTrainer0 = in_array($fmt0, ['training','training_game','training_pro_am','camp','coach_student'], true);
                                 @endphp
                                 <div class="md:col-span-2" id="trainer_block" style="{{ $showTrainer0 ? '' : 'display:none;' }}">
 
-                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Тренер</label>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Тренеры</label>
 
-                                    <div class="ac-box">
-                                        <input type="text"
-                                               id="trainer_search"
-                                               class="w-full rounded-lg border-gray-200"
-                                               placeholder="Начни вводить имя, ник, username…"
-                                               value="{{ e($oldTrainerLabel) }}"
-                                               autocomplete="off">
-
-                                        <input type="hidden" name="trainer_user_id" id="trainer_user_id" value="{{ $oldTrainerId ?: '' }}">
-                                        <input type="hidden" name="trainer_user_label" id="trainer_user_label" value="{{ e($oldTrainerLabel) }}">
-
-                                        <div id="trainer_dd" class="ac-dd"></div>
-                                    </div>
-
-                                    <div class="mt-2 flex items-center gap-2 text-xs text-gray-500">
-                                        <span>Выбранный тренер сохраняется в событии и будет виден в списке/карточке.</span>
-                                        <button type="button" id="trainer_clear" class="text-blue-600 font-semibold hover:text-blue-700">Сбросить</button>
-                                    </div>
-
-                                    <div class="text-xs text-gray-500 mt-1">
-                                        Поле показывается только для “Тренировка” и “Тренировка + Игра”.
-                                    </div>
+                                        <div class="ac-box">
+                                            {{-- chips --}}
+                                            <div id="trainer_chips" class="mb-2 flex flex-wrap gap-2">
+                                                @foreach($oldTrainerIds as $tid)
+                                                    <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gray-100 border border-gray-200 text-sm">
+                                                        <span>#{{ (int)$tid }}</span>
+                                                        <button type="button" class="trainer-chip-remove text-gray-500 hover:text-gray-800" data-id="{{ (int)$tid }}">×</button>
+                                                    </span>
+                                                    <input type="hidden" name="trainer_user_ids[]" value="{{ (int)$tid }}" data-trainer-hidden="{{ (int)$tid }}">
+                                                @endforeach
+                                            </div>
+                                        
+                                            <input type="text"
+                                                   id="trainer_search"
+                                                   class="w-full rounded-lg border-gray-200"
+                                                   placeholder="Начни вводить имя, ник, username…"
+                                                   value=""
+                                                   autocomplete="off">
+                                        
+                                            {{-- legacy hidden (первый тренер, чтобы старые места не ломались) --}}
+                                            <input type="hidden" name="trainer_user_id" id="trainer_user_id_legacy" value="{{ $oldTrainerIds[0] ?? '' }}">
+                                            <input type="hidden" name="trainer_user_label" id="trainer_user_label" value="{{ e($oldTrainerLabel) }}">
+                                        
+                                            <div id="trainer_dd" class="ac-dd"></div>
+                                        </div>
+                                        
+                                        <div class="mt-2 flex items-center gap-2 text-xs text-gray-500">
+                                            <span>Можно выбрать несколько тренеров.</span>
+                                            <button type="button" id="trainer_clear" class="text-blue-600 font-semibold hover:text-blue-700">Сбросить</button>
+                                        </div>
+                                        
+                                        <div class="text-xs text-gray-500 mt-1">
+                                            Поле показывается только для “Тренировка”, “Тренировка + Игра”, “Тренер + ученик”, “Кемп”.
+                                        </div>
                                 </div>
 
                                 {{-- Game config --}}
@@ -262,7 +408,7 @@
                                     <div class="p-4 rounded-xl border border-gray-100 bg-white">
                                         <div class="text-sm font-semibold text-gray-800">Игровые настройки</div>
                                         <div class="text-xs text-gray-500 mt-1" id="game_defaults_hint">
-                                            Подсказки: 4×4 → 8; 4×2 → 10–12; 5×1 → 10–12 (режим либеро — ниже).
+                                            Подсказки: 4×4 → 8; 4×2 → 10–12; 5×1 → 6–12 (режим либеро — ниже).
                                         </div>
                                         <div class="text-xs text-gray-500 mt-1">
                                             Сейчас применяется для <span class="font-semibold">classic + “Игра”</span>.
@@ -278,30 +424,31 @@
                                                     <option value="5x1" @selected(old('game_subtype', $prefill['game_subtype'] ?? '')==='5x1')>5×1</option>
                                                 </select>
                                             </div>
-
+                                            
                                             <div class="flex gap-3">
-                                                <div class="w-1/2">
-                                                    <label class="block text-xs font-semibold text-gray-600 mb-1">Мин. участников</label>
-                                                    <input type="number"
-                                                           name="game_min_players"
-                                                           id="game_min_players"
-                                                           value="{{ old('game_min_players', $prefill['game_min_players'] ?? '') }}"
-                                                           class="w-full rounded-lg border-gray-200"
-                                                           min="1" max="99"
-                                                           placeholder="напр. 10">
-                                                    <div class="text-xs text-gray-500 mt-1" id="game_min_hint" style="display:none;"></div>
-                                                </div>
-                                                <div class="w-1/2">
-                                                    <label class="block text-xs font-semibold text-gray-600 mb-1">Макс. участников</label>
-                                                    <input type="number"
-                                                           name="game_max_players"
-                                                           id="game_max_players"
-                                                           value="{{ old('game_max_players', $prefill['game_max_players'] ?? '') }}"
-                                                           class="w-full rounded-lg border-gray-200"
-                                                           min="1" max="99"
-                                                           placeholder="напр. 12">
-                                                    <div class="text-xs text-gray-500 mt-1" id="game_max_hint" style="display:none;"></div>
-                                                </div>
+                                              <div class="w-1/2">
+                                                <label class="block text-xs font-semibold text-gray-600 mb-1">От (min)</label>
+                                                <input type="number"
+                                                       name="game_min_players"
+                                                       id="game_min_players"
+                                                       min="0" max="99"
+                                                       value="{{ old('game_min_players', $prefill['game_min_players'] ?? '') }}"
+                                                       class="w-full rounded-lg border-gray-200"
+                                                       placeholder="например 6">
+                                                <div id="game_min_hint" class="text-xs text-gray-500 mt-1" style="display:none;"></div>
+                                              </div>
+                                            
+                                              <div class="w-1/2">
+                                                <label class="block text-xs font-semibold text-gray-600 mb-1">До (max)</label>
+                                                <input type="number"
+                                                       name="game_max_players"
+                                                       id="game_max_players"
+                                                       min="1" max="99"
+                                                       value="{{ old('game_max_players', $prefill['game_max_players'] ?? '') }}"
+                                                       class="w-full rounded-lg border-gray-200"
+                                                       placeholder="например 12">
+                                                <div id="game_max_hint" class="text-xs text-gray-500 mt-1" style="display:none;"></div>
+                                              </div>
                                             </div>
                                         </div>
 
@@ -333,6 +480,7 @@
                                                         <option value="only_female" @selected(old('game_gender_policy', $prefill['game_gender_policy'] ?? '')==='only_female')>Только Ж</option>
                                                         <option value="mixed_limited" @selected(old('game_gender_policy', $prefill['game_gender_policy'] ?? '')==='mixed_limited')>М/Ж (с ограничениями)</option>
                                                     </select>
+                                                    <div id="gender_5050_hint" class="text-sm text-gray-500 mt-2 hidden"></div>
                                                 </div>
 
                                                 <div id="gender_limited_side_wrap" class="hidden">
@@ -400,51 +548,76 @@
                                 </div>
 
                                 {{-- Levels --}}
+                                @php
+                                    $classicMin = old('classic_level_min', $prefill['classic_level_min'] ?? null);
+                                    $classicMax = old('classic_level_max', $prefill['classic_level_max'] ?? null);
+                                    $beachMin   = old('beach_level_min',   $prefill['beach_level_min'] ?? null);
+                                    $beachMax   = old('beach_level_max',   $prefill['beach_level_max'] ?? null);
+                                @endphp
+                                
                                 <div class="md:col-span-2">
                                     <div class="p-4 rounded-xl border border-gray-100 bg-gray-50">
                                         <div class="font-semibold text-sm text-gray-800">Уровень допуска</div>
-
                                         <div id="levels_classic" class="mt-3 hidden">
-                                            <div class="text-xs font-semibold text-gray-600 mb-2">Classic</div>
-                                            <div class="flex gap-3">
-                                                <div class="w-1/2">
-                                                    <label class="block text-xs font-semibold text-gray-600 mb-1">От (min)</label>
-                                                    <input type="number" name="classic_level_min"
-                                                           value="{{ old('classic_level_min', $prefill['classic_level_min'] ?? '') }}"
-                                                           class="w-full rounded-lg border-gray-200" min="0" max="10">
-                                                </div>
-                                                <div class="w-1/2">
-                                                    <label class="block text-xs font-semibold text-gray-600 mb-1">До (max)</label>
-                                                    <input type="number" name="classic_level_max"
-                                                           value="{{ old('classic_level_max', $prefill['classic_level_max'] ?? '') }}"
-                                                           class="w-full rounded-lg border-gray-200" min="0" max="10">
-                                                </div>
+                                          <div class="text-xs font-semibold text-gray-600 mb-2">🏐 Classic (Классический волейбол)</div>
+                           
+                                          <div class="flex gap-3">
+                                            <div class="w-1/2">
+                                              <label class="block text-xs font-semibold text-gray-600 mb-1">От (min)</label>
+                                              <select name="classic_level_min" class="w-full rounded-lg border-gray-200">
+                                               <option value="">—</option>
+                                                  @for ($i = 1; $i <= 7; $i++)
+                                                    <option value="{{ $i }}" @selected((string)$classicMin === (string)$i)>{{ $i }}</option>
+                                                  @endfor
+                                             </select>
                                             </div>
+                                        
+                                            <div class="w-1/2">
+                                              <label class="block text-xs font-semibold text-gray-600 mb-1">До (max)</label>
+                                              <select name="classic_level_max" class="w-full rounded-lg border-gray-200">
+                                                  <option value="">—</option>
+                                                  @for ($i = 1; $i <= 7; $i++)
+                                                    <option value="{{ $i }}" @selected((string)$classicMax === (string)$i)>{{ $i }}</option>
+                                                  @endfor
+                                                </select>
+                                            </div>
+                                          </div>
                                         </div>
 
+                                
                                         <div id="levels_beach" class="mt-3 hidden">
-                                            <div class="text-xs font-semibold text-gray-600 mb-2">Beach</div>
+                                            <div class="text-xs font-semibold text-gray-600 mb-2">🏝 Beach (Пляжный волейбол)</div>
                                             <div class="flex gap-3">
                                                 <div class="w-1/2">
                                                     <label class="block text-xs font-semibold text-gray-600 mb-1">От (min)</label>
-                                                    <input type="number" name="beach_level_min"
-                                                           value="{{ old('beach_level_min', $prefill['beach_level_min'] ?? '') }}"
-                                                           class="w-full rounded-lg border-gray-200" min="0" max="10">
+                                                    <select name="beach_level_min" class="w-full rounded-lg border-gray-200">
+                                                        <option value="">-</option>
+                                                        @for ($i = 1; $i <= 7; $i++)
+                                                            <option value="{{ $i }}" @selected((string)$beachMin === (string)$i)>{{ $i }}</option>
+                                                        @endfor
+                                                    </select>
+                                                    @error('beach_level_min')<div class="text-xs text-red-600 mt-1">{{ $message }}</div>@enderror
                                                 </div>
+                                
                                                 <div class="w-1/2">
                                                     <label class="block text-xs font-semibold text-gray-600 mb-1">До (max)</label>
-                                                    <input type="number" name="beach_level_max"
-                                                           value="{{ old('beach_level_max', $prefill['beach_level_max'] ?? '') }}"
-                                                           class="w-full rounded-lg border-gray-200" min="0" max="10">
+                                                    <select name="beach_level_max" class="w-full rounded-lg border-gray-200">
+                                                        <option value="">-</option>
+                                                        @for ($i = 1; $i <= 7; $i++)
+                                                            <option value="{{ $i }}" @selected((string)$beachMax === (string)$i)>{{ $i }}</option>
+                                                        @endfor
+                                                    </select>
+                                                    @error('beach_level_max')<div class="text-xs text-red-600 mt-1">{{ $message }}</div>@enderror
                                                 </div>
                                             </div>
                                         </div>
-
+                                
                                         <div class="mt-2 text-xs text-gray-500">
-                                            Если заполнены оба — диапазон “от и до”. Если заполнено одно — ограничение будет по нему.
+                                            Если выбраны оба — диапазона “от и до”. Если заполнено одно — ограничение будет по нему.
                                         </div>
                                     </div>
                                 </div>
+
 
                                 {{-- allow_registration --}}
                                 <div class="md:col-span-2 p-4 rounded-xl border border-gray-100 bg-white">
@@ -486,12 +659,33 @@
                         <div class="step-card bg-white rounded-2xl border border-gray-100 p-5">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Часовой пояс</label>
-                                    <select name="timezone" class="w-full rounded-lg border-gray-200">
-                                        @foreach($timezones as $tz)
-                                            <option value="{{ $tz }}" @selected(old('timezone', $prefill['timezone'] ?? 'Europe/Moscow')===$tz)>{{ $tz }}</option>
-                                        @endforeach
-                                    </select>
+                                 <label class="block text-sm font-semibold text-gray-700 mb-2">Часовой пояс</label>
+                                        <select name="timezone" class="w-full rounded-lg border-gray-200">
+                                          @forelse(($timezoneGroups ?? []) as $groupLabel => $items)
+                                            <optgroup label="{{ $groupLabel }}">
+                                              @foreach(($items ?? []) as $tzValue => $tzLabel)
+                                                <option value="{{ $tzValue }}" @selected($currentTimezone === $tzValue)>
+                                                  {{ $tzLabel }}
+                                                </option>
+                                              @endforeach
+                                            </optgroup>
+                                          @empty
+                                            <option value="Europe/Moscow" @selected($currentTimezone === 'Europe/Moscow')>
+                                              Москва (UTC+3) — Europe/Moscow
+                                            </option>
+                                            <option value="UTC" @selected($currentTimezone === 'UTC')>
+                                              UTC (UTC+0) — UTC
+                                            </option>
+                                          @endforelse
+                                        </select>
+                                        @error('timezone')
+                                          <div class="text-xs text-red-600 mt-1">{{ $message }}</div>
+                                        @enderror
+
+                                    <div class="text-xs text-gray-500 mt-1">
+                                      Хранится как IANA timezone (например: <span class="font-mono">Europe/Moscow</span>).
+                                    </div>
+
                                 </div>
 
                                 <div>
@@ -500,7 +694,7 @@
                                            name="starts_at_local"
                                            value="{{ old('starts_at_local') }}"
                                            class="w-full rounded-lg border-gray-200">
-                                    <div class="text-xs text-gray-500 mt-1">Для шаблонов можно оставить пустым.</div>
+                                    <div class="text-xs text-gray-500 mt-1">Обязательное поле.</div>
                                 </div>
 
                                 <div>
@@ -510,6 +704,53 @@
                                            value="{{ old('ends_at_local') }}"
                                            class="w-full rounded-lg border-gray-200">
                                     <div class="text-xs text-gray-500 mt-1">Можно оставить пустым.</div>
+                                </div>
+                                {{-- ✅ Registration timings (Step 2) --}}
+                                <div class="md:col-span-2 mt-2 p-4 rounded-xl border border-gray-100 bg-gray-50" id="reg_timing_box">
+                                    <div class="font-semibold text-sm text-gray-800">Окно регистрации</div>
+                                    <div class="text-xs text-gray-500 mt-1">
+                                        Эти настройки применяются только если в шаге 1 выбрано “Регистрация игроков через сервис: Да”.
+                                        Время считается от <span class="font-semibold">начала мероприятия</span>.
+                                    </div>
+                                
+                                    <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <div>
+                                            <label class="block text-xs font-semibold text-gray-600 mb-1">Начало регистрации (дней до)</label>
+                                            <input type="number"
+                                                   name="reg_starts_days_before"
+                                                   id="reg_starts_days_before"
+                                                   min="0" max="365"
+                                                   value="{{ $oldRegStartsDaysBefore }}"
+                                                   class="w-full rounded-lg border-gray-200">
+                                            <div class="text-xs text-gray-500 mt-1">По умолчанию: 3 дня.</div>
+                                        </div>
+                                
+                                        <div>
+                                            <label class="block text-xs font-semibold text-gray-600 mb-1">Окончание регистрации (минут до)</label>
+                                            <input type="number"
+                                                   name="reg_ends_minutes_before"
+                                                   id="reg_ends_minutes_before"
+                                                   min="0" max="10080"
+                                                   value="{{ $oldRegEndsMinutesBefore }}"
+                                                   class="w-full rounded-lg border-gray-200">
+                                            <div class="text-xs text-gray-500 mt-1">По умолчанию: 15 минут.</div>
+                                        </div>
+                                
+                                        <div>
+                                            <label class="block text-xs font-semibold text-gray-600 mb-1">Запрет отмены записи (минут до)</label>
+                                            <input type="number"
+                                                   name="cancel_lock_minutes_before"
+                                                   id="cancel_lock_minutes_before"
+                                                   min="0" max="10080"
+                                                   value="{{ $oldCancelLockMinutesBefore }}"
+                                                   class="w-full rounded-lg border-gray-200">
+                                            <div class="text-xs text-gray-500 mt-1">По умолчанию: 60 минут.</div>
+                                        </div>
+                                    </div>
+                                
+                                    <div class="mt-3 text-xs text-gray-500">
+                                        Пример: “Запрет отмены 60 минут” → за час до начала кнопка отмены станет недоступной.
+                                    </div>
                                 </div>
 
                                 <div>
@@ -696,6 +937,59 @@
                                     </div>
                                 </div>
                             </div>
+                            {{-- ✅ Notifications + participants visibility --}}
+                            <div class="mt-6 p-4 rounded-xl border border-gray-100 bg-white">
+                              <div class="font-semibold text-sm text-gray-800">Уведомления и видимость</div>
+                            
+                              @php
+                                $remEnabled = (bool) old('remind_registration_enabled', $prefill['remind_registration_enabled'] ?? true);
+                                $remMin = (int) old('remind_registration_minutes_before', $prefill['remind_registration_minutes_before'] ?? 600);
+                                if ($remMin < 0) $remMin = 600;
+                                $showParts = (bool) old('show_participants', $prefill['show_participants'] ?? true);
+                              @endphp
+                            
+                              <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="p-4 rounded-xl border border-gray-100 bg-gray-50">
+                                  <div class="font-semibold text-sm text-gray-800">Напоминание игроку о записи</div>
+                            
+                                  <label class="mt-3 flex items-center gap-3">
+                                    <input type="hidden" name="remind_registration_enabled" value="0">
+                                    <input type="checkbox" name="remind_registration_enabled" value="1" id="remind_registration_enabled"
+                                           @checked($remEnabled)>
+                                    <span class="text-sm font-semibold">Включено</span>
+                                  </label>
+                            
+                                  <div class="mt-3">
+                                    <label class="block text-xs font-semibold text-gray-600 mb-1">За сколько минут до начала</label>
+                                    <input type="number"
+                                           name="remind_registration_minutes_before"
+                                           min="0" max="10080"
+                                           value="{{ $remMin }}"
+                                           class="w-full rounded-lg border-gray-200">
+                                    <div class="text-xs text-gray-500 mt-1">По умолчанию: 600 минут (10 часов). Каналы: Telegram и VK.</div>
+                                  </div>
+                                </div>
+                            
+                                <div class="p-4 rounded-xl border border-gray-100 bg-gray-50">
+                                  <div class="font-semibold text-sm text-gray-800">Показывать список записавшихся</div>
+                            
+                                  <div class="mt-3 flex flex-col gap-2">
+                                    <label class="inline-flex items-center gap-2">
+                                      <input type="radio" name="show_participants" value="1" @checked($showParts)>
+                                      <span class="text-sm font-semibold">Да</span>
+                                    </label>
+                                    <label class="inline-flex items-center gap-2">
+                                      <input type="radio" name="show_participants" value="0" @checked(!$showParts)>
+                                      <span class="text-sm font-semibold">Нет</span>
+                                    </label>
+                                  </div>
+                            
+                                  <div class="text-xs text-gray-500 mt-2">
+                                    Если “Нет” — на странице события список участников не показываем.
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
 
                             {{-- ✅ COVER --}}
                             <div class="mt-6 p-4 rounded-xl border border-gray-100 bg-white">
@@ -725,30 +1019,22 @@
                                     </div>
                                 </div>
                             </div>
-
-                            {{-- Save as template --}}
-                            <div class="mt-6 p-4 rounded-xl border border-gray-100 bg-gray-50">
-                                <div class="font-semibold text-sm text-gray-800">Шаблон</div>
-                                <label class="flex items-center gap-3 mt-3">
-                                    <input type="hidden" name="save_as_template" value="0">
-                                    <input type="checkbox"
-                                           id="save_as_template_toggle"
-                                           name="save_as_template"
-                                           value="1"
-                                           @checked(old('save_as_template'))>
-                                    <span class="text-sm font-semibold">Сохранить как шаблон (is_template)</span>
-                                </label>
-                                <div id="save_as_template_fields" class="mt-3 hidden">
-                                    <label class="block text-xs font-semibold text-gray-600 mb-1">Название шаблона</label>
-                                    <input type="text"
-                                           name="template_name"
-                                           class="w-full rounded-lg border-gray-200"
-                                           value="{{ old('template_name') }}"
-                                           placeholder="Напр. Classic 5×1 — вечер">
-                                    <input type="hidden" name="template_payload_text" id="template_payload_text" value="{{ old('template_payload_text','') }}">
-                                    <div class="text-xs text-gray-500 mt-2">
-                                        Шаблон будет создан как событие с is_template=true. Даты можно не заполнять.
-                                    </div>
+                            {{-- STEP 3: Описание мероприятия --}}
+                            <div class="mt-4">
+                                <label class="block text-sm font-medium mb-2">Описание мероприятия</label>
+                            
+                                {{-- Важно: hidden input + trix-editor --}}
+                                <input id="description_html" type="hidden" name="description_html"
+                                     value="{{ old('description_html', $prefill['description_html'] ?? '') }}">
+                                     
+                                <trix-editor input="description_html" class="trix-content"></trix-editor>
+                            
+                                @error('description_html')
+                                    <div class="text-red-600 text-sm mt-2">{{ $message }}</div>
+                                @enderror
+                            
+                                <div class="text-gray-500 text-xs mt-2">
+                                    Можно форматировать текст: жирный/курсив, списки, ссылки.
                                 </div>
                             </div>
 
@@ -768,846 +1054,17 @@
             </div>
         </div>
     </div>
-         <script>
-        (function () {
-            function hasClass(el, c) { return el && el.classList && el.classList.contains(c); }
-            function addClass(el, c) { if (el && el.classList) el.classList.add(c); }
-            function removeClass(el, c) { if (el && el.classList) el.classList.remove(c); }
-            function toggleClass(el, c, on) { if (!el || !el.classList) return; if (on) el.classList.add(c); else el.classList.remove(c); }
-        
-            function qs(sel, root) { return (root || document).querySelector(sel); }
-            function qsa(sel, root) { return (root || document).querySelectorAll(sel); }
-        
-            function trim(s) { return String(s || '').replace(/^\s+|\s+$/g, ''); }
-        
-            function escHtml(s) {
-                return String(s || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-            }
-        
-            // ====== Base refs ======
-            var dirEl = document.getElementById('direction');
-            var fmtEl = document.getElementById('format');
-        
-            // steps
-            var stepBlocks = qsa('[data-step]');
-            var btnNext = qsa('[data-next]');
-            var btnBack = qsa('[data-back]');
-            var stepNumEl = document.getElementById('wizard_step_num');
-            var stepTitleEl = document.getElementById('wizard_step_title');
-            var percentEl = document.getElementById('wizard_percent');
-            var barEl = document.getElementById('wizard_bar');
-            var pill1 = document.getElementById('pill_1');
-            var pill2 = document.getElementById('pill_2');
-            var pill3 = document.getElementById('pill_3');
-        
-            var titles = { 1:'Настройка мероприятия', 2:'Выбор локации и времени', 3:'Доступность и шаблон' };
-        
-            function setActivePills(step) {
-                var pills = [
-                    { el: pill1, s: 1 },
-                    { el: pill2, s: 2 },
-                    { el: pill3, s: 3 }
-                ];
-                for (var i = 0; i < pills.length; i++) {
-                    var p = pills[i];
-                    if (!p.el) continue;
-                    removeClass(p.el, 'is-active');
-                    removeClass(p.el, 'is-done');
-                    if (p.s < step) addClass(p.el, 'is-done');
-                    else if (p.s === step) addClass(p.el, 'is-active');
-                }
-            }
-        
-            function stepPercent(step) {
-                if (step === 1) return 33;
-                if (step === 2) return 66;
-                return 100;
-            }
-        
-            function setBarColor(step) {
-                var c = '#111827';
-                if (step === 1) c = '#4f46e5';
-                if (step === 2) c = '#10b981';
-                if (step === 3) c = '#f59e0b';
-                if (barEl) barEl.style.backgroundColor = c;
-            }
-        
-            function showStep(step) {
-                for (var i = 0; i < stepBlocks.length; i++) {
-                    var b = stepBlocks[i];
-                    var isActive = Number(b.getAttribute('data-step')) === step;
-                    toggleClass(b, 'hidden', !isActive);
-                    toggleClass(b, 'is-active', isActive);
-                }
-                if (stepNumEl) stepNumEl.textContent = String(step);
-                if (stepTitleEl) stepTitleEl.textContent = titles[step] || '';
-                var pct = stepPercent(step);
-                if (barEl) barEl.style.width = pct + '%';
-                if (percentEl) percentEl.textContent = pct + '%';
-                setActivePills(step);
-                setBarColor(step);
-                try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) { window.scrollTo(0,0); }
-            }
-        
-            function getCurrentStep() {
-                for (var i = 0; i < stepBlocks.length; i++) {
-                    if (!hasClass(stepBlocks[i], 'hidden')) return Number(stepBlocks[i].getAttribute('data-step')) || 1;
-                }
-                return 1;
-            }
-        
-            // ✅ coach_student only beach (как было)
-            function syncFormatOptions() {
-                var direction = dirEl ? dirEl.value : '';
-                var optCoach = fmtEl ? fmtEl.querySelector('option[value="coach_student"]') : null;
-                if (!optCoach) return;
-                var shouldShow = (direction === 'beach');
-                optCoach.disabled = !shouldShow;
-                optCoach.hidden = !shouldShow;
-                if (!shouldShow && fmtEl && fmtEl.value === 'coach_student') fmtEl.value = 'training';
-            }
-        
-            // ✅ trainer field visibility
-            var trainerBlock = document.getElementById('trainer_block');
-            function syncTrainerVisibility() {
-                var fmt = fmtEl ? trim(fmtEl.value) : '';
-                var show = (fmt === 'training' || fmt === 'training_game');
-                if (trainerBlock) trainerBlock.style.display = show ? '' : 'none';
-            }
-        
-            // levels by direction
-            var levelsClassic = document.getElementById('levels_classic');
-            var levelsBeach = document.getElementById('levels_beach');
-            function syncLevelsUI() {
-                var direction = dirEl ? dirEl.value : '';
-                if (levelsClassic) toggleClass(levelsClassic, 'hidden', direction !== 'classic');
-                if (levelsBeach) toggleClass(levelsBeach, 'hidden', direction !== 'beach');
-            }
-        
-            // game UI
-            var gameSubtype = document.getElementById('game_subtype');
-            var gameMinEl = document.getElementById('game_min_players');
-            var gameMaxEl = document.getElementById('game_max_players');
-            var liberoModeBlock = document.getElementById('libero_mode_block');
-            var liberoModeSelect = document.getElementById('game_libero_mode');
-            var gameDefaultsHint = document.getElementById('game_defaults_hint');
-            var gameMinHint = document.getElementById('game_min_hint');
-            var gameMaxHint = document.getElementById('game_max_hint');
-        
-            var subtypeMeta = {
-                '4x4': { max: 8,  min: null, range: '8' },
-                '4x2': { max: 12, min: 10,   range: '10–12' },
-                '5x1': { max: 12, min: 10,   range: '10–12' }
-            };
-        
-            function isEmptyInput(el) { return !el || trim(el.value) === ''; }
-        
-            function applySmartDefaults() {
-                var st = gameSubtype ? trim(gameSubtype.value) : '';
-                var meta = subtypeMeta[st];
-                if (!meta) return;
-                if (gameMaxEl && isEmptyInput(gameMaxEl) && typeof meta.max === 'number') gameMaxEl.value = String(meta.max);
-                if (gameMinEl && isEmptyInput(gameMinEl) && typeof meta.min === 'number') gameMinEl.value = String(meta.min);
-            }
-        
-            function updateRecommendedHints() {
-                var st = gameSubtype ? trim(gameSubtype.value) : '';
-                var meta = subtypeMeta[st];
-        
-                if (gameDefaultsHint) {
-                    if (!meta) gameDefaultsHint.textContent = 'Подсказки: 4×4 → 8; 4×2 → 10–12; 5×1 → 10–12 (режим либеро — ниже).';
-                    else if (st === '4x4') gameDefaultsHint.textContent = 'Подсказки: 4×4 → обычно 8 участников.';
-                    else if (st === '4x2') gameDefaultsHint.textContent = 'Подсказки: 4×2 → обычно 10–12 участников.';
-                    else if (st === '5x1') gameDefaultsHint.textContent = 'Подсказки: 5×1 → обычно 10–12 участников (режим либеро — ниже).';
-                }
-        
-                var show = !!meta;
-                if (gameMinHint) {
-                    gameMinHint.style.display = show ? '' : 'none';
-                    gameMinHint.textContent = show ? ('Рекомендуемо: ' + meta.range) : '';
-                }
-                if (gameMaxHint) {
-                    gameMaxHint.style.display = show ? '' : 'none';
-                    gameMaxHint.textContent = show ? ('Рекомендуемо: ' + meta.range) : '';
-                }
-            }
-        
-            function syncGameUI() {
-                var direction = dirEl ? dirEl.value : '';
-                var format = fmtEl ? fmtEl.value : '';
-                var isClassicGame = (direction === 'classic' && format === 'game');
-                var st = gameSubtype ? trim(gameSubtype.value) : '';
-        
-                if (liberoModeBlock) toggleClass(liberoModeBlock, 'hidden', !(isClassicGame && st === '5x1'));
-                if (st !== '5x1' && liberoModeSelect) liberoModeSelect.value = 'with_libero';
-        
-                updateRecommendedHints();
-            }
-        
-            // gender UI (оставлено как было логически, только ES5)
-            var genderPolicyEl = document.getElementById('game_gender_policy');
-            var limitedSideWrap = document.getElementById('gender_limited_side_wrap');
-            var limitedMaxWrap = document.getElementById('gender_limited_max_wrap');
-            var limitedPositionsWrap = document.getElementById('gender_limited_positions_wrap');
-            var genderMaxEl = document.getElementById('game_gender_limited_max');
-            var positionsBox = document.getElementById('gender_positions_box');
-            var positionsOldJson = document.getElementById('gender_positions_old_json');
-            var positionsClearBtn = document.getElementById('gender_positions_clear');
-            var legacyAllowGirls = document.getElementById('game_allow_girls_legacy');
-            var legacyGirlsMax = document.getElementById('game_girls_max_legacy');
-        
-            var POS_LABELS = {
-                setter:   'Связующий (setter)',
-                outside:  'Доигровщик (outside)',
-                opposite: 'Диагональный (opposite)',
-                middle:   'Центральный (middle)',
-                libero:   'Либеро (libero)'
-            };
-        
-            function positionsForSubtype() {
-                var st = gameSubtype ? trim(gameSubtype.value) : '';
-                var libero = liberoModeSelect ? trim(liberoModeSelect.value || 'with_libero') : 'with_libero';
-        
-                if (st === '4x2') return ['setter','outside'];
-                if (st === '4x4') return ['setter','outside','opposite'];
-                if (st === '5x1') return (libero === 'with_libero')
-                    ? ['setter','outside','opposite','middle','libero']
-                    : ['setter','outside','opposite','middle'];
-                return [];
-            }
-        
-            function getOldSelectedPositions() {
-                try {
-                    var raw = positionsOldJson ? (positionsOldJson.value || '[]') : '[]';
-                    var arr = JSON.parse(raw);
-                    if (!arr || !arr.length) return [];
-                    var out = [];
-                    for (var i = 0; i < arr.length; i++) out.push(String(arr[i]));
-                    return out;
-                } catch (e) {
-                    return [];
-                }
-            }
-        
-            function getCurrentSelectedPositions() {
-                if (!positionsBox) return [];
-                var cbs = positionsBox.querySelectorAll('input[type="checkbox"][name="game_gender_limited_positions[]"]:checked');
-                var out = [];
-                for (var i = 0; i < cbs.length; i++) out.push(String(cbs[i].value));
-                return out;
-            }
-        
-            function buildPositionsCheckboxes() {
-                if (!positionsBox) return;
-        
-                var list = positionsForSubtype();
-                var cur = getCurrentSelectedPositions();
-                var old = getOldSelectedPositions();
-        
-                var curMap = {};
-                for (var i = 0; i < cur.length; i++) curMap[cur[i]] = true;
-        
-                var oldMap = {};
-                for (var j = 0; j < old.length; j++) oldMap[old[j]] = true;
-        
-                positionsBox.innerHTML = '';
-        
-                if (!list.length) {
-                    var div = document.createElement('div');
-                    div.className = 'text-xs text-gray-500';
-                    div.textContent = 'Сначала выбери подтип игры (и режим либеро для 5×1), чтобы показать список позиций.';
-                    positionsBox.appendChild(div);
-                    return;
-                }
-        
-                for (var k = 0; k < list.length; k++) {
-                    var key = list[k];
-        
-                    var label = document.createElement('label');
-                    label.className = 'flex items-center gap-3 p-3 rounded-lg border border-gray-200 bg-white';
-        
-                    var cb = document.createElement('input');
-                    cb.type = 'checkbox';
-                    cb.name = 'game_gender_limited_positions[]';
-                    cb.value = key;
-        
-                    // если уже есть текущий выбор — используем его, иначе старый
-                    var hasCur = (cur.length > 0);
-                    cb.checked = hasCur ? !!curMap[key] : !!oldMap[key];
-        
-                    var span = document.createElement('span');
-                    span.className = 'text-sm font-semibold text-gray-800';
-                    span.textContent = POS_LABELS[key] || key;
-        
-                    label.appendChild(cb);
-                    label.appendChild(span);
-                    positionsBox.appendChild(label);
-                }
-            }
-        
-            function clearPositionsSelection() {
-                if (!positionsBox) return;
-                var all = positionsBox.querySelectorAll('input[type="checkbox"][name="game_gender_limited_positions[]"]');
-                for (var i = 0; i < all.length; i++) all[i].checked = false;
-            }
-        
-            function updateLegacyMappingOnly() {
-                if (!legacyAllowGirls || !legacyGirlsMax) return;
-        
-                var policy = genderPolicyEl ? trim(genderPolicyEl.value || 'mixed_open') : 'mixed_open';
-        
-                if (policy === 'only_male') {
-                    legacyAllowGirls.value = '0';
-                    legacyGirlsMax.value = '';
-                    return;
-                }
-        
-                legacyAllowGirls.value = '1';
-        
-                if (policy === 'mixed_limited') {
-                    var sideEl = qs('input[name="game_gender_limited_side"]:checked');
-                    var side = sideEl ? trim(sideEl.value || 'female') : 'female';
-                    legacyGirlsMax.value = (side === 'female') ? String(trim(genderMaxEl ? genderMaxEl.value : '')) : '';
-                } else {
-                    legacyGirlsMax.value = '';
-                }
-            }
-        
-            function syncGenderLimitedBlocks() {
-                var policy = genderPolicyEl ? trim(genderPolicyEl.value || 'mixed_open') : 'mixed_open';
-                var isLimited = (policy === 'mixed_limited');
-        
-                if (limitedSideWrap) toggleClass(limitedSideWrap, 'hidden', !isLimited);
-                if (limitedMaxWrap) toggleClass(limitedMaxWrap, 'hidden', !isLimited);
-                if (limitedPositionsWrap) toggleClass(limitedPositionsWrap, 'hidden', !isLimited);
-        
-                if (isLimited) buildPositionsCheckboxes();
-                updateLegacyMappingOnly();
-            }
-        
-            if (genderPolicyEl) genderPolicyEl.addEventListener('change', syncGenderLimitedBlocks);
-        
-            var sideRadios = qsa('input[name="game_gender_limited_side"]');
-            for (var sr = 0; sr < sideRadios.length; sr++) {
-                sideRadios[sr].addEventListener('change', syncGenderLimitedBlocks);
-            }
-        
-            if (genderMaxEl) genderMaxEl.addEventListener('input', updateLegacyMappingOnly);
-            if (positionsClearBtn) positionsClearBtn.addEventListener('click', clearPositionsSelection);
-        
-            if (gameSubtype) gameSubtype.addEventListener('change', function () {
-                if (genderPolicyEl && trim(genderPolicyEl.value || '') === 'mixed_limited') buildPositionsCheckboxes();
-            });
-        
-            if (liberoModeSelect) liberoModeSelect.addEventListener('change', function () {
-                if (genderPolicyEl && trim(genderPolicyEl.value || '') === 'mixed_limited') buildPositionsCheckboxes();
-            });
-        
-            // ✅ Recurrence UI (Step 2)
-            var recEl = document.getElementById('is_recurring');
-            var recFields = document.getElementById('recurrence_fields');
-            var recType = document.getElementById('recurrence_type');
-            var recInterval = document.getElementById('recurrence_interval');
-            var monthsWrap = document.getElementById('months_wrap');
-            var recurrenceHint = document.getElementById('recurrence_hint');
-        
-            function syncMonthsVisibility() {
-                if (!monthsWrap || !recType) return;
-                monthsWrap.style.display = (recType.value === 'monthly') ? '' : 'none';
-            }
-        
-            function syncRecFieldsVisibility() {
-                if (!recEl || !recFields) return;
-                recFields.style.display = recEl.checked ? '' : 'none';
-                syncMonthsVisibility();
-            }
-        
-            if (recEl) recEl.addEventListener('change', syncRecFieldsVisibility);
-            if (recType) recType.addEventListener('change', syncMonthsVisibility);
-        
-            // Step validation (логика та же, только ES5)
-            function validateStep(step) {
-                if (step === 1) {
-                    var title = qs('input[name="title"]');
-                    var v = title ? trim(title.value) : '';
-                    if (!v) { alert('Заполни название мероприятия.'); if (title) title.focus(); return false; }
-        
-                    var direction = dirEl ? dirEl.value : '';
-                    var format = fmtEl ? fmtEl.value : '';
-        
-                    if (direction === 'classic' && format === 'game') {
-                        if (!gameSubtype || !trim(gameSubtype.value)) { alert('Выбери подтип игры (4×4 / 4×2 / 5×1).'); if (gameSubtype) gameSubtype.focus(); return false; }
-                        if (!gameMaxEl || !trim(gameMaxEl.value)) { alert('Укажи максимум участников для игры.'); if (gameMaxEl) gameMaxEl.focus(); return false; }
-        
-                        var hasMin = gameMinEl && trim(gameMinEl.value) !== '';
-                        var hasMax = gameMaxEl && trim(gameMaxEl.value) !== '';
-                        var minP = hasMin ? Number(trim(gameMinEl.value)) : 0;
-                        var maxP = hasMax ? Number(trim(gameMaxEl.value)) : 0;
-        
-                        if (hasMin && hasMax && !isNaN(minP) && !isNaN(maxP) && maxP < minP) {
-                            alert('Макс. участников не может быть меньше Мин. участников.');
-                            if (gameMaxEl) gameMaxEl.focus();
-                            return false;
-                        }
-        
-                        var policy = genderPolicyEl ? trim(genderPolicyEl.value || 'mixed_open') : 'mixed_open';
-                        if (policy === 'mixed_limited') {
-                            var side = qs('input[name="game_gender_limited_side"]:checked');
-                            if (!side) { alert('Выбери, кого ограничиваем (М или Ж).'); return false; }
-                            if (!genderMaxEl || !trim(genderMaxEl.value)) { alert('Укажи максимум мест для ограничиваемых.'); if (genderMaxEl) genderMaxEl.focus(); return false; }
-                        }
-                    }
-        
-                    function checkMinMaxPair(minName, maxName, label) {
-                        var minEl = qs('input[name="' + minName + '"]');
-                        var maxEl = qs('input[name="' + maxName + '"]');
-                        var hasMin2 = minEl && trim(minEl.value) !== '';
-                        var hasMax2 = maxEl && trim(maxEl.value) !== '';
-                        if (!hasMin2 || !hasMax2) return true;
-        
-                        var a = Number(minEl.value);
-                        var b = Number(maxEl.value);
-                        if (!isNaN(a) && !isNaN(b) && b < a) {
-                            alert(label + ': "До (max)" не может быть меньше "От (min)".');
-                            if (maxEl) maxEl.focus();
-                            return false;
-                        }
-                        return true;
-                    }
-        
-                    if (!checkMinMaxPair('classic_level_min', 'classic_level_max', 'Уровень Classic')) return false;
-                    if (!checkMinMaxPair('beach_level_min', 'beach_level_max', 'Уровень Beach')) return false;
-        
-                    return true;
-                }
-        
-                if (step === 2) {
-                    var loc = document.getElementById('location_id');
-                    if (!loc || !trim(loc.value)) { alert('Выбери локацию.'); if (loc) loc.focus(); return false; }
-        
-                    if (recEl && recEl.checked) {
-                        var t = recType ? trim(recType.value) : '';
-                        var i = recInterval ? trim(recInterval.value) : '';
-                        if (!t) { alert('Выбери тип повторения (ежедневно/еженедельно/ежемесячно).'); if (recType) recType.focus(); return false; }
-                        if (!i) { alert('Укажи интервал повторения.'); if (recInterval) recInterval.focus(); return false; }
-                    }
-                    return true;
-                }
-        
-                if (step === 3) {
-                    var paidEl = document.getElementById('is_paid');
-                    var isPaid = paidEl ? !!paidEl.checked : false;
-                    var price = qs('input[name="price_text"]');
-                    if (isPaid && (!price || !trim(price.value))) { alert('Укажи стоимость/условия оплаты (price_text).'); if (price) price.focus(); return false; }
-        
-                    var tplToggle = document.getElementById('save_as_template_toggle');
-                    var saveTpl = tplToggle ? !!tplToggle.checked : false;
-                    var tplName = qs('input[name="template_name"]');
-                    if (saveTpl && (!tplName || !trim(tplName.value))) { alert('Укажи название шаблона.'); if (tplName) tplName.focus(); return false; }
-        
-                    return true;
-                }
-        
-                return true;
-            }
-        
-            for (var iN = 0; iN < btnNext.length; iN++) {
-                btnNext[iN].addEventListener('click', function () {
-                    var step = getCurrentStep();
-                    if (!validateStep(step)) return;
-                    showStep(Math.min(3, step + 1));
-                });
-            }
-        
-            for (var iB = 0; iB < btnBack.length; iB++) {
-                btnBack[iB].addEventListener('click', function () {
-                    var step = getCurrentStep();
-                    showStep(Math.max(1, step - 1));
-                });
-            }
-        
-            // Location preview
-            var sel = document.getElementById('location_id');
-            var wrap = document.getElementById('location_preview');
-            var img = document.getElementById('location_preview_img');
-            var noimg = document.getElementById('location_preview_noimg');
-            var nameEl = document.getElementById('location_preview_name');
-            var metaEl = document.getElementById('location_preview_meta');
-            var shortEl = document.getElementById('location_preview_short');
-            var mapWrap = document.getElementById('location_preview_map_wrap');
-            var mapEl = document.getElementById('location_preview_map');
-            var coordsEl = document.getElementById('location_preview_coords');
-        
-            function updatePreview() {
-                if (!sel) return;
-        
-                var opt = null;
-                if (sel.selectedIndex >= 0) opt = sel.options[sel.selectedIndex];
-        
-                if (!opt || !opt.value) {
-                    if (wrap) addClass(wrap, 'hidden');
-                    if (mapEl) mapEl.src = '';
-                    return;
-                }
-        
-                var name = opt.getAttribute('data-name') || '';
-                var city = opt.getAttribute('data-city') || '';
-                var address = opt.getAttribute('data-address') || '';
-                var shortText = opt.getAttribute('data-short') || '';
-                var thumb = opt.getAttribute('data-thumb') || '';
-                var lat = trim(opt.getAttribute('data-lat') || '');
-                var lng = trim(opt.getAttribute('data-lng') || '');
-        
-                if (wrap) removeClass(wrap, 'hidden');
-                if (nameEl) nameEl.textContent = name;
-        
-                var metaParts = [];
-                if (city) metaParts.push(city);
-                if (address) metaParts.push(address);
-                if (metaEl) metaEl.textContent = metaParts.join(' • ');
-        
-                if (shortEl) {
-                    if (trim(shortText)) { shortEl.style.display = ''; shortEl.textContent = shortText; }
-                    else { shortEl.style.display = 'none'; shortEl.textContent = ''; }
-                }
-        
-                if (thumb && img && noimg) {
-                    img.src = thumb;
-                    removeClass(img, 'hidden');
-                    addClass(noimg, 'hidden');
-                } else if (img && noimg) {
-                    img.src = '';
-                    addClass(img, 'hidden');
-                    removeClass(noimg, 'hidden');
-                }
-        
-                var hasCoords = (lat !== '' && lng !== '' && !isNaN(Number(lat)) && !isNaN(Number(lng)));
-                if (mapWrap && mapEl && coordsEl) {
-                    if (hasCoords) {
-                        mapWrap.style.display = '';
-                        coordsEl.style.display = '';
-                        coordsEl.textContent = 'Координаты: ' + lat + ', ' + lng;
-                        mapEl.src = 'https://www.openstreetmap.org/export/embed.html?layer=mapnik&marker=' +
-                            encodeURIComponent(lat) + ',' + encodeURIComponent(lng) + '&zoom=16';
-                    } else {
-                        mapWrap.style.display = 'none';
-                        coordsEl.style.display = 'none';
-                        coordsEl.textContent = '';
-                        mapEl.src = '';
-                    }
-                }
-            }
-        
-            if (sel) sel.addEventListener('change', updatePreview);
-            updatePreview();
-        
-            // paid UX
-            var paidEl2 = document.getElementById('is_paid');
-            var priceWrap = document.getElementById('price_wrap');
-            function togglePaid() {
-                if (!paidEl2 || !priceWrap) return;
-                priceWrap.style.opacity = paidEl2.checked ? '1' : '0.45';
-            }
-            if (paidEl2) paidEl2.addEventListener('change', togglePaid);
-            togglePaid();
-        
-            // template toggle
-            var tplToggle2 = document.getElementById('save_as_template_toggle');
-            var tplFields2 = document.getElementById('save_as_template_fields');
-            function syncTplFields() {
-                if (!tplToggle2 || !tplFields2) return;
-                toggleClass(tplFields2, 'hidden', !tplToggle2.checked);
-            }
-            if (tplToggle2) tplToggle2.addEventListener('change', syncTplFields);
-            syncTplFields();
-        
-            // allow_registration rule (affects recurring)
-            var noRegStub = document.getElementById('no_registration_stub');
-        
-            function getAllowRegistrationValue() {
-                var el = qs('input[name="allow_registration"]:checked');
-                if (!el) return 1;
-                return Number(el.value) === 1 ? 1 : 0;
-            }
-        
-            function clearRecurrenceInputs() {
-                if (recEl) recEl.checked = false;
-                if (recType) recType.value = '';
-                if (recInterval) recInterval.value = '1';
-        
-                var monthCbs = qsa('input[name="recurrence_months[]"]');
-                for (var i = 0; i < monthCbs.length; i++) monthCbs[i].checked = false;
-        
-                var legacy = qs('input[name="recurrence_rule"]');
-                if (legacy) legacy.value = '';
-            }
-        
-            function enforceRegistrationRules() {
-                var allowReg = getAllowRegistrationValue();
-        
-                if (noRegStub) toggleClass(noRegStub, 'hidden', allowReg === 1);
-        
-                if (recEl) {
-                    if (allowReg === 0) {
-                        clearRecurrenceInputs();
-                        recEl.disabled = true;
-                        if (recFields) recFields.style.opacity = '0.45';
-                        if (recurrenceHint) recurrenceHint.style.display = '';
-                    } else {
-                        recEl.disabled = false;
-                        if (recFields) recFields.style.opacity = '1';
-                        if (recurrenceHint) recurrenceHint.style.display = 'none';
-                    }
-                }
-                syncRecFieldsVisibility();
-            }
-        
-            var allowRegs = qsa('input[name="allow_registration"]');
-            for (var ar = 0; ar < allowRegs.length; ar++) {
-                allowRegs[ar].addEventListener('change', enforceRegistrationRules);
-            }
-    
-            // ---------- Trainer autocomplete (как города) ----------
-            (function () {
-                const trainerInput = document.getElementById('trainer_search');
-                const trainerId    = document.getElementById('trainer_user_id');
-                const trainerLabel = document.getElementById('trainer_user_label');
-                const dd           = document.getElementById('trainer_dd'); // твой .ac-dd
-                const clearBtn     = document.getElementById('trainer_clear');
-                const fmtEl        = document.getElementById('format');
-            
-                if (!trainerInput || !trainerId || !dd) return;
-            
-                function escapeHtml(s) {
-                    return String(s || '')
-                        .replace(/&/g, '&amp;')
-                        .replace(/</g, '&lt;')
-                        .replace(/>/g, '&gt;')
-                        .replace(/"/g, '&quot;')
-                        .replace(/'/g, '&#039;');
-                }
-            
-                function showDropdown() { 
-                    dd.style.display = 'block'; 
-                    
-                }
-                function hideDropdown() { 
-                    dd.style.display = 'none'; 
-                    
-                }
-            
-                function clearResults() {
-                    dd.innerHTML = '';
-                }
-            
-                function applySelected(id, label) {
-                    trainerId.value = id ? String(id) : '';
-                    if (trainerInput) trainerInput.value = label || '';
-                    if (trainerLabel) trainerLabel.value = label || '';
-                    hideDropdown();
-                }
-            
-                function clearTrainer() {
-                    applySelected('', '');
-                    clearResults();
-                }
-            
-                if (clearBtn) clearBtn.addEventListener('click', clearTrainer);
-            
-                // защита от “устаревших” запросов (как у городов)
-                let lastReqId = 0;
-            
-                async function fetchUsers(q) {
-                    const reqId = ++lastReqId;
-            
-                    const url = new URL('/api/users/search', window.location.origin);
-                    url.searchParams.set('q', q || '');
-            
-                    const r = await fetch(url.toString(), {
-                        headers: { 'Accept': 'application/json' },
-                        credentials: 'same-origin'
-                    });
-            
-                    if (reqId !== lastReqId) return null; // устаревший — игнор
-                    if (!r.ok) return null;
-            
-                    return await r.json();
-                }
-            
-                function renderItems(items) {
-                    const html = [];
-            
-                    items.forEach(item => {
-                        const id = item.id;
-                        const label = item.label || '';
-                        const meta = item.meta || item.sub || '';
-            
-                        html.push(
-                            '<button type="button" class="w-full text-left px-3 py-2 hover:bg-gray-50 border-b border-gray-100 trainer-item" ' +
-                            'data-id="' + escapeHtml(id) + '" data-label="' + escapeHtml(label) + '">' +
-                                '<div class="text-sm text-gray-900">' + escapeHtml(label) + '</div>' +
-                                (meta ? '<div class="text-xs text-gray-500">' + escapeHtml(meta) + '</div>' : '') +
-                            '</button>'
-                        );
-                    });
-            
-                    dd.innerHTML = html.join('');
-            
-                    dd.querySelectorAll('.trainer-item').forEach(btn => {
-                        btn.addEventListener('click', () => {
-                            const id = btn.getAttribute('data-id');
-                            const label = btn.getAttribute('data-label');
-                            applySelected(id, label);
-                        });
-                    });
-                }
-            
-                function debounce(fn, ms) {
-                    let t = null;
-                    return function (...args) {
-                        clearTimeout(t);
-                        t = setTimeout(() => fn.apply(this, args), ms);
-                    };
-                }
-            
-                const runSearch = debounce(async () => {
-                    const q = (trainerInput.value || '').trim();
-            
-                    if (q.length === 0) {
-                        trainerId.value = '';
-                        if (trainerLabel) trainerLabel.value = '';
-                        clearResults();
-                        hideDropdown();
-                        return;
-                    }
-            
-                    if (q.length < 2) {
-                        trainerId.value = '';
-                        if (trainerLabel) trainerLabel.value = '';
-                        clearResults();
-                        showDropdown();
-                        dd.innerHTML = '<div class="px-3 py-3 text-sm text-gray-500">Введите ещё символы…</div>';
-                        return;
-                    }
-            
-                    trainerId.value = ''; // пока не выберут из списка — id сброшен
-                    if (trainerLabel) trainerLabel.value = '';
-            
-                    clearResults();
-                    showDropdown();
-                    dd.innerHTML = '<div class="px-3 py-3 text-sm text-gray-500">Поиск…</div>';
-            
-                    const data = await fetchUsers(q);
-            
-                    if (!data) {
-                        dd.innerHTML = '<div class="px-3 py-3 text-sm text-gray-500">Не удалось загрузить список.</div>';
-                        return;
-                    }
-            
-                    const items = Array.isArray(data) ? data : (data.items || []);
-            
-                    if (!items.length) {
-                        dd.innerHTML = '<div class="px-3 py-3 text-sm text-gray-500">Ничего не найдено.</div>';
-                        return;
-                    }
-            
-                    renderItems(items.slice(0, 10));
-                }, 220);
-            
-                trainerInput.addEventListener('input', () => {
-                    runSearch();
-                });
-            
-                trainerInput.addEventListener('focus', () => {
-                    const q = (trainerInput.value || '').trim();
-                    if (q.length >= 2) runSearch();
-                });
-            
-                document.addEventListener('click', (e) => {
-                    // закрываем если клик вне блока с инпутом/дропдауном
-                    if (e.target !== trainerInput && !dd.contains(e.target)) {
-                        hideDropdown();
-                    }
-                });
-            
-                trainerInput.addEventListener('keydown', (e) => {
-                    if (e.key === 'Escape') hideDropdown();
-                });
-            
-                // ✅ жёсткая проверка перед submit
-                const formEl = trainerInput.closest('form');
-                if (formEl) {
-                    formEl.addEventListener('submit', function (e) {
-                        const fmt = fmtEl ? String(fmtEl.value || '') : '';
-                        const needTrainer = (fmt === 'training' || fmt === 'training_game');
-            
-                        if (needTrainer) {
-                            const idv = String(trainerId.value || '').trim();
-                            if (!idv) {
-                                e.preventDefault();
-                                alert('Выбери тренера из выпадающего списка.');
-                                trainerInput.focus();
-                                return false;
-                            }
-                        }
-                        return true;
-                    });
-                }
-            
-                // стартовое состояние
-                hideDropdown();
-            })();
+   
+   {{-- Trix (CDN) --}}
+  <script src="https://unpkg.com/trix@2.1.8/dist/trix.umd.min.js"></script>
 
+  {{-- запрет загрузки файлов/картинок в trix --}}
+  <script>
+    document.addEventListener("trix-file-accept", function (event) {
+      event.preventDefault();
+    });
+  </script>
 
-            // initial step (ES5)
-            var formInit = qs('form[data-initial-step]');
-            var initial = 1;
-            if (formInit) initial = Number(formInit.getAttribute('data-initial-step') || '1');
-            if (initial !== 1 && initial !== 2 && initial !== 3) initial = 1;
-            showStep(initial);
-        
-            // events
-            if (dirEl) {
-                dirEl.addEventListener('change', function () {
-                    syncFormatOptions();
-                    syncLevelsUI();
-                    syncGameUI();
-                    syncTrainerVisibility();
-                });
-            }
-        
-            if (fmtEl) {
-                fmtEl.addEventListener('change', function () {
-                    syncGameUI();
-                    syncTrainerVisibility();
-                });
-            }
-        
-            if (gameSubtype) {
-                gameSubtype.addEventListener('change', function () {
-                    syncGameUI();
-                    applySmartDefaults();
-                    updateRecommendedHints();
-                });
-            }
-        
-            // initial sync
-            syncFormatOptions();
-            syncLevelsUI();
-            enforceRegistrationRules();
-            syncGameUI();
-            applySmartDefaults();
-            updateRecommendedHints();
-            syncGenderLimitedBlocks();
-        
-            // если mixed_limited — отрисовать позиции
-            if (genderPolicyEl && trim(genderPolicyEl.value || '') === 'mixed_limited') buildPositionsCheckboxes();
-        
-            updateLegacyMappingOnly();
-            syncRecFieldsVisibility();
-            syncMonthsVisibility();
-            syncTrainerVisibility();
-        })();
-        </script>
-
+  {{-- Page JS --}}
+  <script src="{{ asset('js/events-create.js') }}?v={{ filemtime(public_path('js/events-create.js')) }}"></script>
 </x-app-layout>

@@ -471,67 +471,93 @@ $(function () {
 		setTimeout(initTableScroll, 100);
 	});	
 	
-	// Глобальная функция для обновления подсветки
-	window.updateAllTabHighlights = function() {
-		$('.tabs').each(function() {
-			var $tabsContainer = $(this);
-			var $highlight = $tabsContainer.find('.tab-highlight');
-			var $activeTab = $tabsContainer.find('.tab.active');
-			
-			if ($activeTab.length) {
-				// Получаем позицию активного таба ОТНОСИТЕЛЬНО .tabs
-				var tabPosition = $activeTab.position();
-				var tabWidth = $activeTab.outerWidth();
-				var tabHeight = $activeTab.outerHeight();
-				
-				// Создаем подсветку если ее нет
-				if (!$highlight.length) {
-					$highlight = $('<div class="tab-highlight"></div>');
-					$tabsContainer.append($highlight);
-				}
-				
-				
-				// Устанавливаем размеры и позицию
-				$highlight.css({
-					width: tabWidth + 'px',
-					height: tabHeight + 'px',
-					transform: 'translate(' + tabPosition.left + 'px, ' + tabPosition.top + 'px)',
-					opacity: 1
-				});
-			}
-		});
-	};
-	
-	// Функция для инициализации табов (ваша старая, с небольшим изменением)
-	function initTabSet($container) {
-		var $tabs = $container.children('.tabs').children('.tab');
-		var $panes = $container.children('.tab-panes').children('.tab-pane');
+// Глобальная функция для обновления подсветки
+window.updateAllTabHighlights = function() {
+	$('.tabs-content').each(function() {
+		var $container = $(this);
+		// Ищем .tabs ТОЛЬКО внутри этого контейнера
+		var $tabsContainer = $container.find('.tabs');
 		
-		if ($tabs.length > 0 && $tabs.filter('.active').length === 0) {
-			var $firstTab = $tabs.first();
-			var firstTabId = $firstTab.data('tab');
-			
-			$firstTab.addClass('active');
-			$panes.filter('#' + firstTabId).addClass('active');
+		// Если нет .tabs, возможно табы лежат просто в родителе (как в твоем случае)
+		if ($tabsContainer.length === 0) {
+			// Ищем родителя табов (первый общий контейнер для всех .tab)
+			var $firstTab = $container.find('.tab').first();
+			if ($firstTab.length) {
+				$tabsContainer = $firstTab.parent();
+			}
 		}
 		
-		$tabs.off('click').on('click', function() {
-			var tabId = $(this).data('tab');
+		if (!$tabsContainer || !$tabsContainer.length) return;
+		
+		var $highlight = $tabsContainer.find('.tab-highlight');
+		var $activeTab = $tabsContainer.find('.tab.active');
+		
+		if ($activeTab.length) {
+			var tabPosition = $activeTab.position();
+			var tabWidth = $activeTab.outerWidth();
+			var tabHeight = $activeTab.outerHeight();
 			
-			$tabs.removeClass('active');
-			$(this).addClass('active');
+			if (!$highlight.length) {
+				$highlight = $('<div class="tab-highlight"></div>');
+				$tabsContainer.append($highlight);
+			}
 			
-			$panes.removeClass('active');
-			$panes.filter('#' + tabId).addClass('active');
-			
-			// Обновляем подсветку ВЕЗДЕ
-			window.updateAllTabHighlights();
-			
-			setTimeout(initTableScroll, 100);
+			$highlight.css({
+				width: tabWidth + 'px',
+				height: tabHeight + 'px',
+				transform: 'translate(' + tabPosition.left + 'px, ' + tabPosition.top + 'px)',
+				opacity: 1
+			});
+		}
+	});
+};
+
+// Функция для инициализации табов (почти без изменений)
+function initTabSet($container) {
+	// Ищем ТОЛЬКО непосредственных детей для табов и панелей
+	// Это защищает от вложенных табов
+	var $tabs = $container.children('.tabs').children('.tab');
+	var $panes = $container.children('.tab-panes').children('.tab-pane');
+	
+	// Если нет структуры .tbs/.tab-panes, ищем глубже (для твоего случая)
+	if ($tabs.length === 0) {
+		$tabs = $container.find('.tab');
+		// Фильтруем, чтобы не захватывать вложенные табы
+		$tabs = $tabs.filter(function() {
+			// Проверяем, что таб находится в том же контейнере, что и панели
+			return $(this).closest('.tabs-content').is($container);
 		});
 	}
 	
-	// Инициализация при загрузке
+	if ($panes.length === 0) {
+		$panes = $container.find('.tab-pane');
+		$panes = $panes.filter(function() {
+			return $(this).closest('.tabs-content').is($container);
+		});
+	}
+	
+	if ($tabs.length > 0 && $tabs.filter('.active').length === 0) {
+		var $firstTab = $tabs.first();
+		var firstTabId = $firstTab.data('tab');
+		
+		$firstTab.addClass('active');
+		$panes.filter('#' + firstTabId).addClass('active');
+	}
+	
+	$tabs.off('click').on('click', function() {
+		var tabId = $(this).data('tab');
+		
+		$tabs.removeClass('active');
+		$(this).addClass('active');
+		
+		$panes.removeClass('active');
+		$panes.filter('#' + tabId).addClass('active');
+		
+		window.updateAllTabHighlights();
+		
+		setTimeout(initTableScroll, 100);
+	});
+}
 	
     // Инициализация табов
     $('.tabs-content').each(function() {
@@ -550,245 +576,224 @@ $(function () {
 	
 	
 	
-
-    // Функция для создания кастомного селекта
-    function createCustomSelect($select) {
-        // Создаём обёртку
-        const $wrapper = $('<div>', {
-            class: 'form-select-wrapper',
-            'data-select-id': $select.attr('id') || 'select-' + Math.random().toString(36).substr(2, 9)
+	
+// Функция для создания кастомного селекта
+function createCustomSelect($select) {
+    // Создаём обёртку
+    const $wrapper = $('<div>', {
+        class: 'form-select-wrapper',
+        'data-select-id': $select.attr('id') || 'select-' + Math.random().toString(36).substr(2, 9)
+    });
+    
+    // Создаём кастомный элемент
+    const $customSelect = $('<div>', {
+        class: 'form-select-custom' + ($select.is(':disabled') ? ' form-select-custom--disabled' : '')
+    });
+    
+    // Создаём отображаемое значение
+    const $valueSpan = $('<span>', {
+        class: 'form-select-value'
+    });
+    
+    // Стрелка (SVG)
+    const $arrow = $('<span>', {
+        class: 'form-select-arrow',
+        html: `<svg viewBox="0 0 24 24">
+            <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>`
+    });
+    
+    // Добавляем в кастомный селект
+    $customSelect.append($valueSpan, $arrow);
+    
+    // Создаём выпадающий список
+    const $dropdown = $('<div>', {
+        class: 'form-select-dropdown'
+    });
+    
+    // Собираем опции из оригинального селекта
+    $select.find('option').each(function() {
+        const $option = $(this);
+        const $customOption = $('<div>', {
+            class: 'form-select-option' + 
+                ($option.is(':selected') ? ' form-select-option--selected' : '') +
+                ($option.is(':disabled') ? ' form-select-option--disabled' : ''),
+            'data-value': $option.val(),
+            html: $option.text()
         });
         
-        // Создаём кастомный элемент
-        const $customSelect = $('<div>', {
-            class: 'form-select-custom',
-            tabindex: '0'
-        });
-        
-        // Создаём отображаемое значение
-        const $valueSpan = $('<span>', {
-            class: 'form-select-value'
-        });
-        
-        // Стрелка
-        const $arrow = $('<span>', {
-            class: 'form-select-arrow',
-            html: '▼'
-        });
-        
-        // Добавляем в кастомный селект
-        $customSelect.append($valueSpan, $arrow);
-        
-        // Создаём выпадающий список
-        const $dropdown = $('<div>', {
-            class: 'form-select-dropdown'
-        });
-        
-        // Собираем опции из оригинального селекта
-        $select.find('option').each(function() {
-            const $option = $(this);
-            const $customOption = $('<div>', {
-                class: 'form-select-option' + 
-                      ($option.is(':selected') ? ' form-select-option--selected' : '') +
-                      ($option.is(':disabled') ? ' form-select-option--disabled' : ''),
-                'data-value': $option.val(),
-                html: $option.text(),
-                tabindex: '0'
-            });
+        // Обработчик клика на опцию
+        $customOption.on('click', function(e) {
+            if ($option.is(':disabled') || $select.is(':disabled')) return;
             
-            // Обработчик клика на опцию
-            $customOption.on('click', function(e) {
-                if ($option.is(':disabled')) return;
-                
-                e.stopPropagation();
-                
-                // Обновляем значение в оригинальном селекте
-                $select.val($option.val()).trigger('change');
-                
-                // Обновляем отображаемое значение
-                updateCustomSelect($select, $wrapper);
-                
-                // Закрываем dropdown
-                $customSelect.removeClass('form-select-custom--active');
-                $dropdown.removeClass('form-select-dropdown--active');
-                
-                // Фокус на кастомный селект
-                $customSelect.focus();
-            });
-            
-            $dropdown.append($customOption);
-        });
-        
-        // Собираем всё вместе
-        $wrapper.append($customSelect, $dropdown);
-        
-        // Вставляем перед оригинальным селектом
-        $select.before($wrapper);
-        
-        // Обновляем отображение
-        updateCustomSelect($select, $wrapper);
-        
-        // Обработчики событий для кастомного селекта
-        $customSelect.on('click', function(e) {
             e.stopPropagation();
             
-            // Закрываем другие открытые селекты
-            $('.form-select-custom--active').not($customSelect).removeClass('form-select-custom--active');
-            $('.form-select-dropdown--active').not($dropdown).removeClass('form-select-dropdown--active');
+            // Обновляем значение в оригинальном селекте
+            $select.val($option.val()).trigger('change');
             
-            // Переключаем состояние текущего
-            $customSelect.toggleClass('form-select-custom--active');
-            $dropdown.toggleClass('form-select-dropdown--active');
-        });
-        
-        // Закрытие при клике вне
-        $(document).on('click', function(e) {
-            if (!$wrapper.is(e.target) && $wrapper.has(e.target).length === 0) {
-                $customSelect.removeClass('form-select-custom--active');
-                $dropdown.removeClass('form-select-dropdown--active');
-            }
-        });
-        
-        // Навигация с клавиатуры
-        $customSelect.on('keydown', function(e) {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                $customSelect.trigger('click');
-            } else if (e.key === 'Escape') {
-                $customSelect.removeClass('form-select-custom--active');
-                $dropdown.removeClass('form-select-dropdown--active');
-            }
-        });
-        
-        // Навигация по опциям с клавиатуры
-        $dropdown.on('keydown', '.form-select-option', function(e) {
-            const $current = $(this);
-            const $options = $dropdown.find('.form-select-option:not(.form-select-option--disabled)');
-            const currentIndex = $options.index($current);
+            // Обновляем отображаемое значение
+            updateCustomSelect($select, $wrapper);
             
-            if (e.key === 'ArrowDown') {
-                e.preventDefault();
-                const $next = $options.eq(currentIndex + 1);
-                if ($next.length) {
-                    $current.removeAttr('tabindex');
-                    $next.focus().attr('tabindex', '0');
-                }
-            } else if (e.key === 'ArrowUp') {
-                e.preventDefault();
-                const $prev = $options.eq(currentIndex - 1);
-                if ($prev.length) {
-                    $current.removeAttr('tabindex');
-                    $prev.focus().attr('tabindex', '0');
-                }
-            } else if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                $current.trigger('click');
-            } else if (e.key === 'Escape') {
-                $customSelect.removeClass('form-select-custom--active');
-                $dropdown.removeClass('form-select-dropdown--active');
-                $customSelect.focus();
-            }
+            // Закрываем dropdown
+            $customSelect.removeClass('form-select-custom--active');
+            $dropdown.removeClass('form-select-dropdown--active');
         });
         
-        // Слушаем изменения оригинального селекта
-        $select.on('change', function() {
-            updateCustomSelect($(this), $wrapper);
-        });
-        
-        return $wrapper;
-    }
+        $dropdown.append($customOption);
+    });
     
-    // Функция обновления отображаемого значения
-    function updateCustomSelect($select, $wrapper) {
-        const $customSelect = $wrapper.find('.form-select-custom');
-        const $valueSpan = $wrapper.find('.form-select-value');
-        const $dropdown = $wrapper.find('.form-select-dropdown');
-        
-        const selectedValue = $select.val();
-        const selectedText = $select.find('option:selected').text();
-        
-        // Обновляем отображаемое значение
-        $valueSpan.text(selectedText);
-        if (!selectedValue && $select.find('option[value=""]').length) {
-            $valueSpan.addClass('form-select-placeholder');
-        } else {
-            $valueSpan.removeClass('form-select-placeholder');
-        }
-        
-        // Обновляем выбранную опцию в dropdown
-        $dropdown.find('.form-select-option').removeClass('form-select-option--selected');
-        $dropdown.find(`.form-select-option[data-value="${selectedValue}"]`).addClass('form-select-option--selected');
-    }
+    // Собираем всё вместе
+    $wrapper.append($customSelect, $dropdown);
     
-    // Инициализация всех селектов в формах
-    function initCustomSelects() {
-        $('.form select').each(function() {
-            const $select = $(this);
-            
-            // Проверяем, не инициализирован ли уже этот селект
-            if ($select.data('custom-initialized')) return;
-            
-            // Скрываем оригинальный селект
-            $select.css({
-                position: 'absolute',
-                width: '1px',
-                height: '1px',
-                padding: '0',
-                margin: '-1px',
-                overflow: 'hidden',
-                clip: 'rect(0, 0, 0, 0)',
-                border: '0'
-            });
-            
-            // Создаём кастомный селект
-            createCustomSelect($select);
-            
-            // Помечаем как инициализированный
-            $select.data('custom-initialized', true);
-        });
-    }
+    // Вставляем перед оригинальным селектом
+    $select.before($wrapper);
     
-    // Инициализация при загрузке
-    initCustomSelects();
+    // Обновляем отображение
+    updateCustomSelect($select, $wrapper);
     
-    // Инициализация динамически добавленных селектов
-    $(document).on('DOMNodeInserted', '.form select', function() {
-        if (!$(this).data('custom-initialized')) {
-            initCustomSelects();
+    // Обработчики событий для кастомного селекта
+    $customSelect.on('click', function(e) {
+        if ($select.is(':disabled')) return;
+        
+        e.stopPropagation();
+        
+        // Закрываем другие открытые селекты
+        $('.form-select-custom--active').not($customSelect).removeClass('form-select-custom--active');
+        $('.form-select-dropdown--active').not($dropdown).removeClass('form-select-dropdown--active');
+        
+        // Переключаем состояние текущего
+        $customSelect.toggleClass('form-select-custom--active');
+        $dropdown.toggleClass('form-select-dropdown--active');
+    });
+    
+    // Закрытие при клике вне
+    $(document).on('click', function(e) {
+        if (!$wrapper.is(e.target) && $wrapper.has(e.target).length === 0) {
+            $customSelect.removeClass('form-select-custom--active');
+            $dropdown.removeClass('form-select-dropdown--active');
         }
     });
     
-    // Публичные методы для использования извне
-    window.customSelect = {
-        update: function(selectId) {
-            const $select = $(`#${selectId}`);
-            const $wrapper = $select.prev('.form-select-wrapper');
-            if ($wrapper.length) {
-                updateCustomSelect($select, $wrapper);
-            }
-        },
+    // Слушаем изменения оригинального селекта
+    $select.on('change', function() {
+        updateCustomSelect($(this), $wrapper);
+    });
+    
+    return $wrapper;
+}
+
+// Функция обновления отображаемого значения
+function updateCustomSelect($select, $wrapper) {
+    const $customSelect = $wrapper.find('.form-select-custom');
+    const $valueSpan = $wrapper.find('.form-select-value');
+    const $dropdown = $wrapper.find('.form-select-dropdown');
+    
+    const selectedValue = $select.val();
+    const selectedText = $select.find('option:selected').text();
+    
+    // Обновляем отображаемое значение
+    $valueSpan.text(selectedText);
+    if (!selectedValue && $select.find('option[value=""]').length) {
+        $valueSpan.addClass('form-select-placeholder');
+    } else {
+        $valueSpan.removeClass('form-select-placeholder');
+    }
+    
+    // Обновляем выбранную опцию в dropdown
+    $dropdown.find('.form-select-option').removeClass('form-select-option--selected');
+    $dropdown.find(`.form-select-option[data-value="${selectedValue}"]`).addClass('form-select-option--selected');
+}
+
+// Инициализация всех селектов в формах
+function initCustomSelects() {
+    $('.form select').each(function() {
+        const $select = $(this);
         
-        destroy: function(selectId) {
-            const $select = $(`#${selectId}`);
-            const $wrapper = $select.prev('.form-select-wrapper');
-            
-            if ($wrapper.length) {
-                $wrapper.remove();
-                $select.removeData('custom-initialized').css({
-                    position: '',
-                    width: '',
-                    height: '',
-                    padding: '',
-                    margin: '',
-                    overflow: '',
-                    clip: '',
-                    border: ''
-                });
+        // Проверяем, не инициализирован ли уже этот селект
+        if ($select.data('custom-initialized')) return;
+        
+        // Создаём кастомный селект
+        createCustomSelect($select);
+        
+        // Помечаем как инициализированный
+        $select.data('custom-initialized', true);
+    });
+}
+
+// Инициализация при загрузке
+$(document).ready(function() {
+    initCustomSelects();
+});
+
+// Инициализация динамически добавленных селектов
+$(document).on('DOMNodeInserted', '.form select', function() {
+    if (!$(this).data('custom-initialized')) {
+        initCustomSelects();
+    }
+});
+
+// Публичные методы для использования извне
+window.customSelect = {
+    update: function(selectId) {
+        const $select = $(`#${selectId}`);
+        const $wrapper = $select.prev('.form-select-wrapper');
+        if ($wrapper.length) {
+            updateCustomSelect($select, $wrapper);
+        }
+    },
+    
+    destroy: function(selectId) {
+        const $select = $(`#${selectId}`);
+        const $wrapper = $select.prev('.form-select-wrapper');
+        
+        if ($wrapper.length) {
+            $wrapper.remove();
+            $select.removeData('custom-initialized');
+        }
+    },
+    
+    disable: function(selectId, disabled) {
+        const $select = $(`#${selectId}`);
+        const $wrapper = $select.prev('.form-select-wrapper');
+        
+        if ($wrapper.length) {
+            const $customSelect = $wrapper.find('.form-select-custom');
+            if (disabled) {
+                $customSelect.addClass('form-select-custom--disabled');
+            } else {
+                $customSelect.removeClass('form-select-custom--disabled');
             }
         }
-    };
-
-
+    }
+};
+	
+	
+	
+	// Отслеживаем движение мыши внутри .ramka и .card-ramka
+	$('.ramka, .card-ramka').on('mousemove', function(e) {
+        
+        // Координаты относительно текущего элемента
+        const rect = this.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        
+        // Устанавливаем CSS-переменные для этого элемента
+        this.style.setProperty('--mouse-x', `${x}px`);
+        this.style.setProperty('--mouse-y', `${y}px`);
+	});
+    
+    // Опционально: убираем свечение, когда мышь уходит с родителя
+    $('.ramka, .card-ramka').on('mouseleave', function() {
+        // Можно оставить как есть, а можно убрать переменные
+        // this.style.removeProperty('--mouse-x');
+        // this.style.removeProperty('--mouse-y');
+        // Оставляем как есть — свечение гаснет через transition
+	});	
+	
+	$('.ufilter-btn').on('click', function() {
+		$('.users-filter').toggleClass('open');
+		$('.top-section-img').toggleClass('mhide');
+	});
 	
 	
 });

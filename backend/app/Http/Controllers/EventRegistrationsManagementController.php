@@ -98,10 +98,10 @@ class EventRegistrationsManagementController extends Controller
         $endsLocal = null;
 
         if (!empty($event->starts_at)) {
-            $startsLocal = Carbon::parse($event->starts_at)->setTimezone($tz);
+            $startsLocal = $event->starts_at ? Carbon::parse($event->starts_at, 'UTC')->setTimezone($tz) : null;
         }
         if (!empty($event->ends_at)) {
-            $endsLocal = Carbon::parse($event->ends_at)->setTimezone($tz);
+            $endsLocal   = $event->ends_at   ? Carbon::parse($event->ends_at,   'UTC')->setTimezone($tz) : null;
         }
 
         // blade ждёт freeCount/activeCount
