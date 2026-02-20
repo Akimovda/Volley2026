@@ -313,7 +313,7 @@ class EventCreateController extends Controller
             $organizerId = (int) $request->input('organizer_id');
         }
 
-               $validator = Validator::make($request->all(), [
+        $validator = Validator::make($request->all(), [
             'title' => ['required', 'string', 'max:255'],
             'direction' => ['required', 'in:classic,beach'],
             'format' => ['required', 'in:game,training,training_game,training_pro_am,coach_student,tournament,camp'],
@@ -398,9 +398,10 @@ class EventCreateController extends Controller
         $validator->after(function ($v) {
             $data   = $v->getData();
             $policy = (string)($data['game_gender_policy'] ?? '');
-            $max    = (int)($data['game_max_players'] ?? 0);
-
-            if ($policy === 'mixed_5050') {
+            $maxRaw = $data['game_max_players'] ?? null;
+            $max    = is_null($maxRaw) || $maxRaw === '' ? 0 : (int)$maxRaw;
+            
+            if ($policy === 'mixed_5050' && $max > 0) {
                 if ($max < 2) {
                     $v->errors()->add('game_max_players', 'Для 50/50 минимум 2 участника.');
                 } elseif ($max % 2 !== 0) {
@@ -725,29 +726,29 @@ if ($isRecurring) {
             if (empty($data['game_min_players'])) $data['game_min_players'] = 6;
             if (empty($data['game_max_players'])) $data['game_max_players'] = 12;
         }
-        $minPlayers = isset($data['game_min_players']) ? (int)$data['game_min_players'] : null;
+       $minPlayers = isset($data['game_min_players']) ? (int)$data['game_min_players'] : null;
         $maxPlayers = isset($data['game_max_players']) ? (int)$data['game_max_players'] : null;
         
-        if ($genderPolicy === 'mixed_5050') {
-                if (empty($maxPlayers) || $maxPlayers < 2) {
-                    return back()->withErrors(['game_max_players' => 'Для 50/50 минимум 2 участника.'])->withInput();
-                }
-                if ($maxPlayers % 2 !== 0) {
-                    return back()->withErrors(['game_max_players' => 'Для 50/50 макс. участников должен быть чётным.'])->withInput();
-                }
-            }
-
+        // ✅ сначала определяем gender policy (иначе Undefined variable)
+        $genderPolicy = (string)($data['game_gender_policy'] ?? '');
+        $genderLimitedSide = $data['game_gender_limited_side'] ?? null;
+        $genderLimitedMax  = isset($data['game_gender_limited_max']) ? (int)$data['game_gender_limited_max'] : null;
+        $genderLimitedPositions = $data['game_gender_limited_positions'] ?? null;
         
+        if (is_string($genderLimitedPositions)) $genderLimitedPositions = [$genderLimitedPositions];
+        if (is_array($genderLimitedPositions)) {
+            $genderLimitedPositions = array_values(array_unique(array_map('strval', $genderLimitedPositions)));
+            if (count($genderLimitedPositions) === 0) $genderLimitedPositions = null;
+        } else {
+            $genderLimitedPositions = null;
+        }
+        
+        // ✅ 1) базовая проверка min/max
         if (!is_null($minPlayers) && !is_null($maxPlayers) && $maxPlayers < $minPlayers) {
             return $this->backWizard([
                 'game_max_players' => ['Макс. участников не может быть меньше Мин. участников.'],
             ], 1);
         }
-
-        $genderPolicy = (string) ($data['game_gender_policy'] ?? '');
-        $genderLimitedSide = $data['game_gender_limited_side'] ?? null;
-        $genderLimitedMax = isset($data['game_gender_limited_max']) ? (int) $data['game_gender_limited_max'] : null;
-        $genderLimitedPositions = $data['game_gender_limited_positions'] ?? null;
 
         if (is_string($genderLimitedPositions)) $genderLimitedPositions = [$genderLimitedPositions];
         if (is_array($genderLimitedPositions)) {
@@ -763,6 +764,11 @@ if ($isRecurring) {
             : null;
 
         if ($isGameClassic) {
+            if ($genderPolicy === 'mixed_5050') {
+                return $this->backWizard([
+                    'game_gender_policy' => ['50/50 доступно только для пляжной игры.'],
+                ], 1);
+            }
             if ($genderPolicy === '') {
                 if (!$legacyAllowGirls) {
                     $genderPolicy = 'only_male';
@@ -805,7 +811,20 @@ if ($isRecurring) {
             $genderLimitedSide = null;
             $genderLimitedMax = null;
             $genderLimitedPositions = null;
-        
+        // ✅ beach: проверка 50/50 (только если выбран mixed_5050)
+            if ($genderPolicy === 'mixed_5050') {
+                if (empty($maxPlayers) || $maxPlayers < 2) {
+                    return $this->backWizard([
+                        'game_max_players' => ['Для 50/50 минимум 2 участника.'],
+                    ], 1);
+                }
+                if ($maxPlayers % 2 !== 0) {
+                    return $this->backWizard([
+                        'game_max_players' => ['Для 50/50 макс. участников должен быть чётным.'],
+                    ], 1);
+                }
+            }
+
             // legacy поля пляжу не нужны
             $data['game_allow_girls'] = 0;
             $data['game_girls_max'] = null;
