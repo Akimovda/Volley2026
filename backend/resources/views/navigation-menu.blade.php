@@ -26,7 +26,10 @@
     Уровни игроков
 </x-nav-link>
 
-              
+<x-nav-link href="{{ route('locations.index') }}" :active="request()->routeIs('locations.*')">
+    {{ __('Локации') }}
+</x-nav-link>
+
                     @auth
                         <x-nav-link href="{{ route('events.index') }}" :active="request()->routeIs('events.index')">
                             {{ __('Dashboard') }}

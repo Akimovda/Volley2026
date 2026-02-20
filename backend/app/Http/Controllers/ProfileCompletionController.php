@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\City;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -10,8 +11,8 @@ class ProfileCompletionController extends Controller
     public function show(Request $request)
     {
         $requiredRaw = (string) $request->query('required', '');
-        $section = (string) $request->query('section', '');
-        $eventId = $request->query('event_id');
+        $section     = (string) $request->query('section', '');
+        $eventId     = $request->query('event_id');
 
         if (!empty($eventId)) {
             $request->session()->put('pending_event_join', (int) $eventId);
@@ -28,18 +29,19 @@ class ProfileCompletionController extends Controller
                 'classic'  => ['classic_level'],
                 'beach'    => ['beach_level'],
             ];
-
             $required = collect($map[$section] ?? []);
         }
 
         $requiredKeys = $required->unique()->values()->all();
         $request->session()->put('pending_profile_required', $requiredKeys);
 
-        // Города
-        $cities = DB::table('cities')
+        // Города (RU/KZ/UZ) — полный список из базы
+        $cities = City::query()
+            ->whereIn('country_code', ['RU', 'KZ', 'UZ'])
+            ->orderBy('country_code')
+            ->orderByRaw('region nulls last')
             ->orderBy('name')
-            ->limit(300)
-            ->get();
+            ->get(['id', 'name', 'region', 'country_code']);
 
         // Есть ли pending-заявка на организатора
         $user = $request->user();
@@ -53,11 +55,11 @@ class ProfileCompletionController extends Controller
         }
 
         return view('profile.complete', [
-            'requiredKeys'       => $requiredKeys,
-            'eventId'            => $eventId,
-            'section'            => $section,
-            'cities'             => $cities,
-            'hasPendingRequest'  => $hasPendingRequest,
+            'requiredKeys'      => $requiredKeys,
+            'eventId'           => $eventId,
+            'section'           => $section,
+            'cities'            => $cities,
+            'hasPendingRequest' => $hasPendingRequest,
         ]);
     }
 }

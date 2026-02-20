@@ -1,58 +1,141 @@
-<div class="v-card">
-    <div class="v-card__body">
-        <div class="flex items-start gap-3">
-            <img
-                src="{{ $u->profile_photo_url }}"
-                alt="avatar"
-                class="rounded-full"
-                style="width:48px;height:48px;object-fit:cover;"
-            />
+@php
+    $age = $u->ageYears();
+    $gender = (string)($u->gender ?? '');
+    $genderClass = $gender === 'm' ? 'male' : ($gender === 'f' ? 'female' : '');
+    
+    $genderLabel = $gender === 'm' ? 'Мужчина' : ($gender === 'f' ? 'Женщина' : null);
 
-            <div class="min-w-0">
-                <div class="font-semibold">
-                    <a class="underline" href="{{ route('users.show', ['user' => $u->id]) }}">
-                        {{ $u->displayName() }}
-                    </a>
+    $cityLabel = null;
+    if ($u->city) {
+        $cityLabel = $u->city->name . ($u->city->region ? ' (' . $u->city->region . ')' : '');
+    }
+
+    $metaParts = array_values(array_filter([
+        $cityLabel,
+        !is_null($age) ? ($age . ' лет') : null,
+        $genderLabel,
+        !empty($u->height_cm) ? ($u->height_cm . ' см') : null,
+    ]));
+
+    $classic = $u->classic_level ?? null;
+    $beach   = $u->beach_level ?? null;
+    
+    $classicLevel = !is_null($classic) && $classic !== '' ? (int)$classic : null;
+    $beachLevel = !is_null($beach) && $beach !== '' ? (int)$beach : null;
+
+    $profileUrl = route('users.show', ['user' => $u->id]);
+@endphp
+
+<div data-aos="fade" class="card-ramka user-card {{ $genderClass }}">
+    <div class="user-avatar-wrapper">
+        <a href="{{ $profileUrl }}" class="user-avatar-link">
+            <div class="user-avatar-img-wrapper">
+                <img
+                    src="{{ $u->profile_photo_url }}"
+                    alt=""
+                    class="user-card-avatar-img"
+                    loading="lazy"
+                />
+            </div>
+            
+            <span class="user-card-name">
+                @if(!empty($u->first_name) && !empty($u->last_name))
+                    {{ $u->first_name }}<br>{{ $u->last_name }}
+                @else
+                    Пользователь<br>#{{ $u->id }}
+                @endif
+            </span>
+        </a>
+    </div>
+    
+@if(!empty($metaParts))
+    <div class="user-meta-list">
+        @php
+            $genderText = '';
+            $ageText = '';
+            $cityText = '';
+            
+            foreach($metaParts as $part) {
+                if ($part === 'Мужчина' || $part === 'Женщина') {
+                    $genderText = $part;
+                } elseif (str_ends_with($part, ' лет')) {
+                    $ageText = $part;
+                } elseif (str_contains($part, '(') && str_contains($part, ')')) {
+                    $cityText = $part;
+                }
+            }
+        @endphp
+        
+        @if($cityText)
+            <div class="user-meta-item {{ $genderClass }}">
+                <span class="user-meta-icon user-icon-city"></span>
+                <span class="user-meta-text">{{ $cityText }}</span>
+            </div>
+        @endif
+        
+        @if($genderText || $ageText)
+            <div class="user-meta-item {{ $genderClass }}">
+                <span class="user-meta-icon user-icon-gender"></span>
+                <span class="user-meta-text">
+                    @if($genderText && $ageText)
+                        {{ $genderText }}, {{ $ageText }}
+                    @elseif($genderText)
+                        {{ $genderText }}
+                    @elseif($ageText)
+                        {{ $ageText }}
+                    @endif
+                </span>
+            </div>
+        @endif
+    </div>
+@endif
+
+{{-- Чувствительные поля закомментированы
+@can('view-sensitive-profile', $u)
+    @php
+        $sensParts = [];
+        if (!empty($u->patronymic)) $sensParts['patronymic'] = 'Отчество: ' . $u->patronymic;
+        if (!empty($u->phone)) $sensParts['phone'] = 'Телефон: ' . $u->phone;
+    @endphp
+    
+    @if(!empty($sensParts))
+        <div class="user-sensitive-list">
+            @foreach($sensParts as $type => $line)
+                @php
+                    $iconClass = 'icon-' . $type;
+                @endphp
+                
+                <div class="user-sensitive-item {{ $genderClass }}">
+                    <span class="user-sensitive-icon {{ $iconClass }}"></span>
+                    <span class="user-sensitive-text">{{ $line }}</span>
                 </div>
+            @endforeach
+        </div>
+    @endif
+@endcan
+--}}
+    
 
-                <div class="text-sm text-gray-600">
-                    @if($u->city)
-                        {{ $u->city->name }}@if($u->city->region) ({{ $u->city->region }})@endif
-                        ·
-                    @endif
-
-                    @php $age = $u->ageYears(); @endphp
-                    @if(!is_null($age))
-                        {{ $age }} лет ·
-                    @endif
-
-                    @if($u->gender === 'm')
-                        Мужчина
-                    @elseif($u->gender === 'f')
-                        Женщина
-                    @endif
-
-                    @if(!empty($u->height_cm))
-                        · {{ $u->height_cm }} см
-                    @endif
-                </div>
-
-                <div class="text-sm mt-2">
-                    <div>Классика: <span class="font-semibold">{{ $u->classic_level ?? '—' }}</span></div>
-                    <div>Пляж: <span class="font-semibold">{{ $u->beach_level ?? '—' }}</span></div>
-                </div>
-
-                {{-- Скрытые поля: только owner/admin/organizer/staff --}}
-                @can('view-sensitive-profile', $u)
-                    <div class="text-sm mt-2">
-                        @if(!empty($u->patronymic))
-                            <div>Отчество: <span class="font-semibold">{{ $u->patronymic }}</span></div>
-                        @endif
-                        @if(!empty($u->phone))
-                            <div>Телефон: <span class="font-semibold">{{ $u->phone }}</span></div>
-                        @endif
-                    </div>
-                @endcan
+    
+    <div class="user-levels">
+        <div class="user-level">
+            <div class="user-level-label">Классика</div>
+            <div class="user-level-value">
+                @if($classicLevel)
+                    <span class="levelmark level-{{ $classicLevel }}">{{ $classic }}</span>
+                @else
+                    <span class="levelmark level-na">!?</span>
+                @endif
+            </div>
+        </div>
+        <div class="user-level">
+            <div class="user-level-label">Пляж</div>
+            <div class="user-level-value">
+                @if($beachLevel)
+                    <span class="levelmark level-{{ $beachLevel }}">{{ $beach }}</span>
+                @else
+                    <span class="levelmark level-na">!?</span>
+                @endif
             </div>
         </div>
     </div>

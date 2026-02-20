@@ -4,67 +4,63 @@ namespace App\Http\Controllers;
 
 use App\Models\Location;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class LocationController extends Controller
 {
+    /**
+     * Быстрое создание локации (AJAX) — строго только admin.
+     * Роут дополнительно закрыт middleware can:is-admin.
+     */
     public function quickStore(Request $request)
     {
         $user = $request->user();
         $role = (string)($user->role ?? 'user');
 
-        if (!in_array($role, ['admin', 'organizer', 'staff'], true)) {
+        // Строго только админ (даже если вдруг middleware снимут/сломают)
+        if ($role !== 'admin') {
             abort(403);
         }
 
-        // staff -> organizer_id через organizer_staff
-        $organizerId = null;
-        if ($role === 'organizer') {
-            $organizerId = (int)$user->id;
-        } elseif ($role === 'staff') {
-            $row = DB::table('organizer_staff')
-                ->where('staff_user_id', (int)$user->id)
-                ->orderBy('id')
-                ->first(['organizer_id']);
-
-            if (!$row) {
-                return $this->respond($request, false, 'Staff не привязан к organizer — создание локаций запрещено.');
-            }
-            $organizerId = (int)$row->organizer_id;
-        } else {
-            // admin: может создавать общую или под organizer (упростим: создаём общую)
-            $organizerId = null;
-        }
-
         $data = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'address' => ['nullable', 'string', 'max:255'],
+            'name'       => ['required', 'string', 'max:255'],
+            'address'    => ['nullable', 'string', 'max:255'],
+            'city'       => ['nullable', 'string', 'max:255'],
+
+            'short_text' => ['nullable', 'string', 'max:255'],
+            'long_text'  => ['nullable', 'string'],
+
+            // Берём диапазоны как у широты/долготы
+            'lat'        => ['nullable', 'numeric', 'between:-90,90'],
+            'lng'        => ['nullable', 'numeric', 'between:-180,180'],
         ]);
 
         $location = new Location();
+        $location->organizer_id = null; // admin создаёт общую локацию
         $location->name = $data['name'];
         $location->address = $data['address'] ?? null;
-        $location->organizer_id = $organizerId; // organizer/staff => их organizer, admin => общая
+        $location->city = $data['city'] ?? null;
+
+        $location->short_text = $data['short_text'] ?? null;
+        $location->long_text = $data['long_text'] ?? null;
+
+        $location->lat = array_key_exists('lat', $data) ? $data['lat'] : null;
+        $location->lng = array_key_exists('lng', $data) ? $data['lng'] : null;
+
         $location->save();
 
-        return $this->respond($request, true, 'Локация создана ✅', [
-            'id' => $location->id,
-            'name' => $location->name,
-        ]);
-    }
-
-    private function respond(Request $request, bool $ok, string $message, array $payload = [])
-    {
-        if ($request->expectsJson() || $request->ajax()) {
-            return response()->json([
-                'ok' => $ok,
-                'message' => $message,
-                'data' => $payload,
-            ], $ok ? 200 : 422);
-        }
-
-        return $ok
-            ? back()->with('status', $message)
-            : back()->with('error', $message);
+        return response()->json([
+            'ok' => true,
+            'message' => 'Локация создана ✅',
+            'data' => [
+                'id' => $location->id,
+                'name' => $location->name,
+                'address' => $location->address,
+                'city' => $location->city,
+                'short_text' => $location->short_text,
+                'long_text' => $location->long_text,
+                'lat' => $location->lat,
+                'lng' => $location->lng,
+            ],
+        ], 200);
     }
 }

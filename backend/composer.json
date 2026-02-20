@@ -17,6 +17,7 @@
         "laravel/tinker": "^2.10.1",
         "livewire/livewire": "^3.6.4",
         "movemoveapp/vkid": "^1.0",
+        "rlanvin/php-rrule": "^2.6",
         "socialiteproviders/vkontakte": "^5.1",
         "socialiteproviders/yandex": "^4.1",
         "spatie/laravel-medialibrary": "^11.17"
@@ -32,14 +33,14 @@
         "phpunit/phpunit": "^11.5.3"
     },
     "autoload": {
+        "files": [
+            "app/helpers.php"
+        ],
         "psr-4": {
             "App\\": "app/",
             "Database\\Factories\\": "database/factories/",
             "Database\\Seeders\\": "database/seeders/"
-        },
-        "files": [
-            "app/helpers.php"
-        ]
+        }
     },
     "autoload-dev": {
         "psr-4": {
