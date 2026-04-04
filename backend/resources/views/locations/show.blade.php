@@ -1,194 +1,315 @@
-<x-app-layout>
-    <x-slot name="header">
-        <div class="flex items-center justify-between gap-4">
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                {{ $location->name }}
-            </h2>
-            <a href="{{ route('locations.index') }}"
-               class="inline-flex items-center px-4 py-2 rounded-lg font-semibold text-sm border border-gray-200 bg-white hover:bg-gray-50">
-                ← К локациям
-            </a>
-        </div>
-    </x-slot>
-
+{{-- resources/views/locations/show.blade.php --}}
+<x-voll-layout body_class="location-page">
+	
+	
+	
     @php
-        $hasCoords = $location->lat !== null && $location->lng !== null;
-        $lat = $location->lat;
-        $lng = $location->lng;
-
-        // OSM embed (простая карта)
-        $mapUrl = $hasCoords
-            ? "https://www.openstreetmap.org/export/embed.html?layer=mapnik&marker={$lat},{$lng}&zoom=16"
-            : null;
-
-        $first = $location->getFirstMediaUrl('photos');
+	$hasCoords = is_numeric($location->lat) && is_numeric($location->lng);
+	$lat = $location->lat;
+	$lng = $location->lng;
+	
+	$firstMedia = $location->getFirstMedia('photos');
+	$cityName = $location->city?->name;
+	$regionName = $location->city?->region;
+	$query = trim(implode(', ', array_filter([$cityName, $location->address, $location->name])));
+	$yandexLink = $hasCoords
+	? ('https://yandex.ru/maps/?pt=' . rawurlencode($lng . ',' . $lat) . '&z=16&l=map')
+	: ('https://yandex.ru/maps/?text=' . rawurlencode($query));
+	
+	$user = auth()->user();
+	$userTz = \App\Support\DateTime::effectiveUserTz(auth()->user());
+	
+	$tzLabel = function (? \Carbon\Carbon $c, string $fallbackTz) {
+	if (!$c) return $fallbackTz;
+	return $c->format('T') . ' (UTC' . $c->format('P') . ')';
+	};
     @endphp
+	
+    <x-slot name="title">
+        {{ $location->name }} — локация
+	</x-slot>
+	
+    <x-slot name="description">
+        {{ $location->short_text ? strip_tags($location->short_text) : 'Информация о локации ' . $location->name }}
+	</x-slot>
+	
+    <x-slot name="canonical">
+		@php
+        $slug = Str::slug($location->name);
+		@endphp
+		{{ route('locations.show', ['location' => $location->id, 'slug' => $slug]) }}
+	</x-slot>
 
-    <div class="max-w-6xl mx-auto sm:px-6 lg:px-8 py-10 space-y-6">
-        {{-- HERO --}}
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-            <div class="aspect-[21/9] bg-gray-100">
-                @if(!empty($first))
-                    <img src="{{ $first }}" alt="" class="w-full h-full object-cover">
-                @else
-                    <div class="w-full h-full flex items-center justify-center text-sm text-gray-400">
-                        Нет фото
-                    </div>
-                @endif
-            </div>
+	
+	
+    <x-slot name="style">
+        <style>
+.location-swiper {
+	border-radius: 1rem;
+	overflow: hidden;
+}		
+.swiper-slide img {
+	aspect-ratio: 4/3 ;
+	object-fit: cover;
+	cursor: pointer;
+}
+.event-card {
+	height: 100%;
+}		
+.location-adress {
+	display: flex;
+	align-items: center;
+}			
+.location-adress span {
+	flex: 0 0 2rem;
+	margin-right: 1rem;
+	width: 2rem;
+	height: 2rem;	
+}			
+.location-adress span svg {
+	fill: #E7612F;
+	width: 2rem;
+	height: 2rem;	
+}
+		</style>
+	</x-slot>
+	
+    <x-slot name="h1">
+        {{ $location->name }}
+	</x-slot>
+	
+    <x-slot name="h2">
+		{{ $cityName }}
+	</x-slot>
+    <x-slot name="t_description">
+       тут будет область
+	</x-slot>	
 
-            <div class="p-6">
-                <div class="text-sm text-gray-600">
-                    @if(!empty($location->city))
-                        <span>{{ $location->city }}</span>
+
+    <x-slot name="breadcrumbs">
+        <li itemprop="itemListElement" itemscope="" itemtype="http://schema.org/ListItem">
+            <a href="{{ route('locations.index') }}" itemprop="item"><span itemprop="name">Локации</span></a>
+            <meta itemprop="position" content="1">
+		</li>
+        <li itemprop="itemListElement" itemscope="" itemtype="http://schema.org/ListItem">
+            <span itemprop="name">{{ $location->name }}</span>
+            <meta itemprop="position" content="2">
+		</li>
+	</x-slot>
+	
+	
+    <div class="container">
+        {{-- Основная информация --}}
+		<div class="row mb-0">
+			<div class="col-md-8">
+				<div class="ramka mb-0">
+                    <div class="mb-2">
+                        @if(!empty($location->address))
+						<div class="location-adress">
+							<span class="icon-map"></span>
+							<strong class="cd f-20">{{ $location->address }}</strong>
+						</div>
+                        @endif
+					</div>
+					
+
+					
+                    @if(!empty($location->long_text_full))
+					<div>
+						{!! $location->long_text_full !!}
+					</div>
                     @endif
-                    @if(!empty($location->address))
-                        <span class="text-gray-400">•</span>
-                        <span>{{ $location->address }}</span>
-                    @endif
-                </div>
-
-                @if(!empty($location->short_text))
-                    <div class="mt-3 text-gray-800">
-                        {{ $location->short_text }}
-                    </div>
-                @endif
-
-                @if(!empty($location->long_text))
-                    <div class="mt-4 text-sm text-gray-700 whitespace-pre-line">
-                        {{ $location->long_text }}
-                    </div>
-                @endif
-            </div>
-        </div>
-
-        {{-- PHOTOS GRID --}}
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <div class="font-semibold text-gray-800 mb-3">Фото</div>
-
-            @if($photos->isEmpty())
-                <div class="text-sm text-gray-500">Фото пока нет.</div>
+					{{--
+                    @if(!empty($location->note))
+					<div class="mb-2">
+						<strong>Примечание:</strong> {{ $location->note }}
+					</div>
+                    @endif					
+					--}}
+				</div>
+			</div>
+			<div class="col-md-4">
+				<div class="sticky mb-0">
+					<div class="ramka p-1 mb-0 no-highlight">	
+						{{-- Галерея со Swiper + Fancybox --}}
+						@if($photos->isNotEmpty())
+						
+						<div class="location-gallery">
+							<div class="swiper location-swiper">
+								<div class="swiper-wrapper">
+									@foreach($photos as $media)
+									<div class="swiper-slide">
+										<div class="hover-image">
+											<a href="{{ $media->getUrl() }}" class="fancybox" data-fancybox="gallery">
+												<img src="{{ $media->getUrl('thumb') ?: $media->getUrl() }}" alt="" loading="lazy">
+												<span></span>
+												<div class="hover-image-circle"></div>
+											</a>
+										</div>								
+									</div>
+									@endforeach
+								</div>
+							</div>
+							<div class="swiper-pagination"></div>
+						</div>
+						@endif	
+					</div>
+				</div>
+			</div>
+		</div>
+		
+		
+        {{-- Яндекс.Карта с ленивой загрузкой --}}
+        <div class="ramka p-1 no-highlight">
+            <div class="row">
+                <div class="col-12">
+					
+					@if($hasCoords)
+					@php
+					$theme = request()->cookie('theme') == 'dark' ? 'dark' : 'light';
+					$ll = $lng . ',' . $lat;
+					$pt = $lng . ',' . $lat . ',pm2rdm';
+					$mapSrc = "https://yandex.ru/map-widget/v1/?ll={$ll}&z=16&l=map&pt={$pt}&scroll=false";
+					@endphp
+					
+					<div class="map-container f-0">
+						<iframe
+						data-src="{{ $mapSrc }}"
+						class="w-100 lazy-map iframe-map"
+						style="height: 42rem; border: 0; border-radius: 1rem;"
+						frameborder="0"
+						allowfullscreen="true"
+						loading="lazy"
+						title="Карта локации {{ $location->name }}"
+						></iframe>
+					</div>
+					@else
+					<div class="alert alert-info">
+						Для отображения карты нужны координаты. Сейчас они не указаны.
+					</div>
+					@endif
+				</div>
+			</div>
+		</div>
+		
+        {{-- Мероприятия в этой локации --}}
+        <div class="ramka">
+			<h2 class="-mt-05">Мероприятия в этой локации</h2>
+			
+			
+            @php
+			$occList = $occurrences ?? collect();
+			$evList  = $events ?? collect();
+            @endphp
+			
+            @if($occList->isEmpty() && $evList->isEmpty())
+			<div class="alert alert-info">Пока нет ближайших мероприятий для этой локации.</div>
             @else
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    @foreach($photos as $m)
-                        @php
-                            $u = $m->getUrl('thumb');
-                            if (empty($u)) $u = $m->getUrl();
-                        @endphp
-                        <a href="{{ $m->getUrl() }}" target="_blank" class="block">
-                            <img src="{{ $u }}" class="w-full h-32 object-cover rounded-xl border border-gray-100" alt="">
-                        </a>
-                    @endforeach
-                </div>
+			<div class="row">
+				{{-- Occurrences --}}
+				@foreach($occList as $occ)
+				@php $event = $occ->event; @endphp
+				@continue(!$event)
+				
+				<div class="col-md-6">
+					<a href="{{ url('/events/' . (int)$event->id) }}" class="card event-card text-decoration-none">
+						<div class="card-body">
+							<h3 class="card-title h5">{{ $event->title }}</h3>
+							<div class="card-subtitle mb-2 text-muted small">
+								{{ $event->location?->name }}
+								@if($city = $event->location?->city?->name)
+								<span class="mx-1">•</span> {{ $city }}
+								@endif
+								@if($event->location?->address)
+								<span class="mx-1">•</span> {{ $event->location->address }}
+								@endif
+							</div>
+							
+							@php
+							$eventTz = $occ->timezone ?: ($event->timezone ?: 'UTC');
+							$sUser = $occ->starts_at ? \Carbon\Carbon::parse($occ->starts_at, 'UTC')->setTimezone($userTz) : null;
+							$eUser = $occ->ends_at   ? \Carbon\Carbon::parse($occ->ends_at,   'UTC')->setTimezone($userTz) : null;
+							$userTzLabel = $tzLabel($sUser, $userTz);
+							@endphp
+							
+							<div class="card-text mt-2">
+								@if($sUser)
+								{{ $sUser->format('d.m.Y · H:i') }}@if($eUser)–{{ $eUser->format('H:i') }}@endif
+								<span class="text-muted small d-block">({{ $userTzLabel }})</span>
+								<span class="text-muted small d-block">Таймзона события: {{ $eventTz }}</span>
+								@else
+								—
+								@endif
+							</div>
+						</div>
+					</a>
+				</div>
+				@endforeach
+				
+				{{-- Fallback events --}}
+				@foreach($evList as $event)
+				<div class="col-md-6">
+					<a href="{{ url('/events/' . (int)$event->id) }}" class="card event-card text-decoration-none">
+						<div class="card-body">
+							<h3 class="card-title h5">{{ $event->title }}</h3>
+							<div class="card-subtitle mb-2 text-muted small">
+								{{ $event->location?->name }}
+								@if($city = $event->location?->city?->name)
+								<span class="mx-1">•</span> {{ $city }}
+								@endif
+								@if($event->location?->address)
+								<span class="mx-1">•</span> {{ $event->location->address }}
+								@endif
+							</div>
+							
+							@php
+							$eventTz = $event->timezone ?: 'UTC';
+							$sUser = $event->starts_at ? \Carbon\Carbon::parse($event->starts_at, 'UTC')->setTimezone($userTz) : null;
+							$eUser = $event->ends_at   ? \Carbon\Carbon::parse($event->ends_at,   'UTC')->setTimezone($userTz) : null;
+							$userTzLabel = $tzLabel($sUser, $userTz);
+							@endphp
+							
+							<div class="card-text mt-2">
+								@if($sUser)
+								{{ $sUser->format('d.m.Y · H:i') }}@if($eUser)–{{ $eUser->format('H:i') }}@endif
+								<span class="text-muted small d-block">({{ $userTzLabel }})</span>
+								<span class="text-muted small d-block">Таймзона события: {{ $eventTz }}</span>
+								@else
+								—
+								@endif
+							</div>
+						</div>
+					</a>
+				</div>
+				@endforeach
+			</div>
             @endif
-        </div>
-
-        {{-- MAP --}}
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <div class="font-semibold text-gray-800 mb-3">Карта</div>
-
-            @if($hasCoords)
-                <div class="rounded-2xl overflow-hidden border border-gray-100">
-                    <iframe
-                        src="{{ $mapUrl }}"
-                        class="w-full"
-                        style="height: 420px;"
-                        loading="lazy"
-                        referrerpolicy="no-referrer-when-downgrade"
-                    ></iframe>
-                </div>
-
-                <div class="mt-3 text-xs text-gray-500">
-                    Координаты: {{ $lat }}, {{ $lng }}
-                </div>
-            @else
-                <div class="text-sm text-gray-500">
-                    Для этой локации не указаны координаты (lat/lng).
-                </div>
-            @endif
-            {{-- =========================
-    SECTION: MAP (Yandex)
-========================== --}}
-@php
-    $fullAddress = trim(implode(', ', array_filter([
-        $location->city ?? null,
-        $location->address ?? null,
-    ])));
-
-    $lat = $location->lat;
-    $lng = $location->lng;
-    $yKey = config('services.yandex_maps.key');
-@endphp
-
-<div class="mt-6 bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-    <div class="flex items-center justify-between">
-        <div class="font-semibold text-gray-800">Карта</div>
-        @if(!$yKey)
-            <div class="text-xs text-red-600">YANDEX_MAPS_API_KEY не задан в .env</div>
-        @endif
-    </div>
-
-    <div class="mt-3 rounded-2xl overflow-hidden border border-gray-100">
-        <div id="yandex_map" style="height: 320px; width: 100%;"></div>
-    </div>
-
-    @if($fullAddress)
-        <div class="mt-2 text-xs text-gray-500">Адрес: {{ $fullAddress }}</div>
-    @endif
-</div>
-
-{{-- MAP (Yandex widget, no API key needed) --}}
-@php
-    $lat = $location->lat;
-    $lng = $location->lng;
-
-    $hasCoords = is_numeric($lat) && is_numeric($lng);
-
-    // yandex widget expects ll=lng,lat and pt=lng,lat
-    $ll = $hasCoords ? ($lng . ',' . $lat) : '';
-    $pt = $hasCoords ? ($lng . ',' . $lat . ',pm2rdm') : '';
-
-    $query = trim(implode(', ', array_filter([
-        $location->city ?? null,
-        $location->address ?? null,
-        $location->name ?? null,
-    ])));
-
-    $yandexLink = $hasCoords
-        ? ('https://yandex.ru/maps/?pt=' . rawurlencode($lng . ',' . $lat) . '&z=16&l=map')
-        : ('https://yandex.ru/maps/?text=' . rawurlencode($query));
-@endphp
-
-<div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-    <div class="p-6 flex items-center justify-between gap-3">
-        <div class="font-semibold text-gray-800">Карта</div>
-        <a href="{{ $yandexLink }}" target="_blank" rel="noopener"
-           class="text-sm font-semibold text-blue-600 hover:text-blue-700">
-            Открыть в Яндекс.Картах →
-        </a>
-    </div>
-
-    @if($hasCoords)
-        <iframe
-            src="https://yandex.ru/map-widget/v1/?ll={{ e($ll) }}&z=16&l=map&pt={{ e($pt) }}"
-            class="w-full"
-            style="height: 420px;"
-            frameborder="0"
-            allowfullscreen="true"
-            loading="lazy"
-        ></iframe>
-
-        <div class="px-6 pb-6 text-xs text-gray-500">
-            Координаты: {{ $lat }}, {{ $lng }}
-        </div>
-    @else
-        <div class="px-6 pb-6 text-sm text-gray-600">
-            Для карты нужны координаты <code>lat/lng</code>. Сейчас их нет.
-            Добавь их в админке — и карта появится.
-        </div>
-    @endif
-</div>
-
-        </div>
-    </div>
-</x-app-layout>
+		</div>
+	</div>
+	
+    <x-slot name="script">
+		<script src="/assets/fas.js"></script> 		
+		<script>
+			document.addEventListener('DOMContentLoaded', function() {
+						
+				// === Инициализация Swiper ===
+				@if($photos->isNotEmpty())
+				const swiper = new Swiper('.location-swiper', {
+					slidesPerView: 2,
+					spaceBetween: 8,
+					pagination: {
+						el: '.swiper-pagination',
+						clickable: true,
+					},
+						breakpoints: {
+							768: {
+								slidesPerView: 1, 
+								spaceBetween: 12
+							}					
+						}
+				});	
+				@endif
+			});		
+		</script>				
+	</x-slot>
+</x-voll-layout>

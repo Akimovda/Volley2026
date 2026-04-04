@@ -1,10 +1,5 @@
 <?php
 
-use Illuminate\Support\Facades\Schedule;
+use Illuminate\Support\Facades\Artisan;
 
-Schedule::command('events:expand-recurring --horizon=90 --chunk=200 --maxCreates=500')
-    ->dailyAt('03:10')
-    ->withoutOverlapping();
-
-// на время отладки можно так:
-// ->everyMinute();
+// можно оставить пустым — главное, что команды автозагружаются из app/Console/Commands

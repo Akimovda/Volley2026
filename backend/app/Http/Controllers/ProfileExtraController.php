@@ -12,24 +12,80 @@ class ProfileExtraController extends Controller
 {
     public function update(Request $request)
     {
-        /** @var User $user */
-        $user = Auth::user();
-        $canEditProtected = $user->can('edit-protected-profile-fields');
+        /** @var User $actor */
+        $actor = Auth::user();
+
+        // --- Права ---
+        $isAdmin = (bool) $actor->can('edit-protected-profile-fields'); // admin
+        $isOrganizer = !$isAdmin && (bool) $actor->can('edit-player-levels'); // organizer
+
+        // --- target (кого редактируем) ---
+        $target = $actor;
+        $targetId = (int) $request->input('user_id');
+
+        if ($targetId > 0 && $targetId !== (int) $actor->id) {
+            if (!($isAdmin || $isOrganizer)) {
+                abort(403);
+            }
+            $target = User::query()->findOrFail($targetId);
+        }
+
+        $isEditingOther = ((int) $target->id !== (int) $actor->id);
+
+        $mode = ($isAdmin && $isEditingOther) ? 'admin_other'
+            : (($isOrganizer && $isEditingOther) ? 'organizer_other' : 'self');
+
+        // --- Allowlist входных полей по режимам ---
+        $classicAllowed = ['setter', 'outside', 'opposite', 'middle', 'libero'];
+
+        $allowedByMode = [
+            'self' => [
+                'first_name', 'last_name', 'patronymic',
+                'phone', 'phone_masked',
+                'birth_date',
+                'city_id',
+                'classic_level', 'beach_level',
+                'gender', 'height_cm',
+                'classic_primary_position', 'classic_extra_positions',
+                'beach_mode',
+            ],
+            // organizer редактирует чужого: только дата/уровни + амплуа/зона
+            'organizer_other' => [
+                'birth_date',
+                'classic_level', 'beach_level',
+                'classic_primary_position', 'classic_extra_positions',
+                'beach_mode',
+            ],
+            // admin редактирует чужого: всё как self
+            'admin_other' => [
+                'first_name', 'last_name', 'patronymic',
+                'phone', 'phone_masked',
+                'birth_date',
+                'city_id',
+                'classic_level', 'beach_level',
+                'gender', 'height_cm',
+                'classic_primary_position', 'classic_extra_positions',
+                'beach_mode',
+            ],
+        ];
+
+        $allowed = $allowedByMode[$mode] ?? $allowedByMode['self'];
+
+        // ЖЁСТКО выкидываем всё лишнее из request (чтобы подмена формы не работала)
+        $request->replace($request->only(array_merge($allowed, ['user_id'])));
 
         // =========================
-        // 0) Pre-normalize input (server-side)
+        // 0) Pre-normalize input — только из allowlist
         // =========================
         $normalized = [];
 
-        // ФИО: автотранслит латиницы -> кириллица + "С Заглавной"
         foreach (['first_name', 'last_name', 'patronymic'] as $k) {
-            if ($request->has($k)) {
+            if (in_array($k, $allowed, true) && $request->has($k)) {
                 $normalized[$k] = $this->normalizeCyrName($request->input($k));
             }
         }
 
-        // Телефон: берём либо phone (hidden E.164), либо phone_masked (если JS выключен)
-        if ($request->hasAny(['phone', 'phone_masked'])) {
+        if (in_array('phone', $allowed, true) && $request->hasAny(['phone', 'phone_masked'])) {
             $rawPhone = $request->input('phone');
             if (empty($rawPhone)) {
                 $rawPhone = $request->input('phone_masked');
@@ -37,74 +93,85 @@ class ProfileExtraController extends Controller
             $normalized['phone'] = $this->normalizeRuPhoneToE164($rawPhone);
         }
 
-        // Закинем нормализованное обратно в request ДО validate()
         if (!empty($normalized)) {
             $request->merge($normalized);
         }
 
         // =========================
-        // 1) Validate
+        // 1) Validate (по режиму)
         // =========================
-        $classicAllowed = ['setter', 'outside', 'opposite', 'middle', 'libero'];
+        $rules = [];
 
-        $data = $request->validate([
-            // защищаемые (после заполнения редактирует только admin)
-            'first_name'  => ['nullable', 'string', 'min:2', 'max:255', 'regex:/^[А-Яа-яЁё \-\'’]+$/u'],
-            'last_name'   => ['nullable', 'string', 'min:2', 'max:255', 'regex:/^[А-Яа-яЁё \-\'’]+$/u'],
-            'patronymic'  => ['nullable', 'string', 'min:2', 'max:255', 'regex:/^[А-Яа-яЁё \-\'’]+$/u'],
-            'phone'       => ['nullable', 'string', 'regex:/^\+7\d{10}$/'], // E.164 RU: +7XXXXXXXXXX
-            'birth_date'  => ['nullable', 'date'],
-            'city_id'     => ['nullable', 'exists:cities,id'],
-            'classic_level' => ['nullable', 'integer'],
-            'beach_level'   => ['nullable', 'integer'],
+        $addRuleIfAllowed = function (string $field, array $rule) use (&$rules, $allowed) {
+            if (in_array($field, $allowed, true)) {
+                $rules[$field] = $rule;
+            }
+        };
 
-            // незащищаемые (пользователь может менять)
-            'gender'    => ['nullable', 'in:m,f'],
-            'height_cm' => ['nullable', 'integer', 'min:40', 'max:230'],
+        $addRuleIfAllowed('first_name',   ['nullable', 'string', 'min:2', 'max:255', 'regex:/^[А-Яа-яЁё \-\'’]+$/u']);
+        $addRuleIfAllowed('last_name',    ['nullable', 'string', 'min:2', 'max:255', 'regex:/^[А-Яа-яЁё \-\'’]+$/u']);
+        $addRuleIfAllowed('patronymic',   ['nullable', 'string', 'min:2', 'max:255', 'regex:/^[А-Яа-яЁё \-\'’]+$/u']);
 
-            // "виртуальные" поля формы
-            'classic_primary_position'  => ['nullable', 'in:' . implode(',', $classicAllowed)],
-            'classic_extra_positions'   => ['nullable', 'array'],
-            'classic_extra_positions.*' => ['nullable', 'in:' . implode(',', $classicAllowed)],
-            'beach_mode'                => ['nullable', 'in:2,4,universal'],
+        $addRuleIfAllowed('phone',        ['nullable', 'string', 'regex:/^\+7\d{10}$/']);
+        $addRuleIfAllowed('phone_masked', ['nullable', 'string', 'max:50']);
 
-            // если JS выключен и прислали phone_masked — пусть не падает
-            'phone_masked' => ['nullable', 'string', 'max:50'],
-        ], [
+        $addRuleIfAllowed('birth_date',   ['nullable', 'date']);
+        $addRuleIfAllowed('city_id',      ['nullable', 'exists:cities,id']);
+
+        $addRuleIfAllowed('classic_level', ['nullable', 'integer', 'in:1,2,3,4,5,6,7']);
+        $addRuleIfAllowed('beach_level',   ['nullable', 'integer', 'in:1,2,3,4,5,6,7']);
+
+        $addRuleIfAllowed('gender',       ['nullable', 'in:m,f']);
+        $addRuleIfAllowed('height_cm',    ['nullable', 'integer', 'min:40', 'max:230']);
+
+        $addRuleIfAllowed('classic_primary_position', ['nullable', 'in:' . implode(',', $classicAllowed)]);
+
+        // ВАЖНО: массив + элементы массива
+        if (in_array('classic_extra_positions', $allowed, true)) {
+            $rules['classic_extra_positions'] = ['nullable', 'array'];
+            $rules['classic_extra_positions.*'] = ['nullable', 'in:' . implode(',', $classicAllowed)];
+        }
+
+        $addRuleIfAllowed('beach_mode', ['nullable', 'in:2,4,universal']);
+
+        $messages = [
             'first_name.regex' => 'Имя должно быть на кириллице (разрешены пробел/дефис).',
             'last_name.regex'  => 'Фамилия должна быть на кириллице (разрешены пробел/дефис).',
             'patronymic.regex' => 'Отчество должно быть на кириллице (разрешены пробел/дефис).',
             'phone.regex'      => 'Телефон должен быть в формате +7XXXXXXXXXX (11 цифр после +7).',
-        ]);
-
-        // =========================
-        // 2) Protect fields after first fill (if not admin)
-        // =========================
-        $protected = [
-            'first_name', 'last_name', 'patronymic',
-            'phone', 'birth_date', 'city_id',
-            'classic_level', 'beach_level',
         ];
 
-        if (!$canEditProtected) {
+        $data = $request->validate($rules, $messages);
+
+        // =========================
+        // 2) Защита “после заполнения” (только для self, если не admin)
+        // =========================
+        if ($mode === 'self' && !$isAdmin) {
+            $protected = [
+                'first_name', 'last_name', 'patronymic',
+                'phone', 'birth_date', 'city_id',
+                'classic_level', 'beach_level',
+            ];
+
             foreach ($protected as $field) {
-                if (!empty($user->$field)) {
+                if (array_key_exists($field, $data) && $this->filled($target->$field)) {
                     unset($data[$field]);
                 }
             }
         }
 
         // =========================
-        // 3) Age-based level rule (server truth)
+        // 3) Возрастное правило уровней (server truth)
         // =========================
-        $birth = $data['birth_date'] ?? $user->birth_date;
+        $birth = $data['birth_date'] ?? ($target->birth_date ? $target->birth_date->format('Y-m-d') : null);
+
         if (!empty($birth)) {
             $age = Carbon::parse($birth)->age;
-            $allowed = $age < 18 ? [1, 2, 4] : [1, 2, 3, 4, 5, 6, 7];
+            $allowedLevels = ($age < 18) ? [1, 2, 4] : [1, 2, 3, 4, 5, 6, 7];
 
             foreach (['classic_level', 'beach_level'] as $lvl) {
                 if (array_key_exists($lvl, $data) && !is_null($data[$lvl])) {
-                    if (!in_array((int) $data[$lvl], $allowed, true)) {
+                    if (!in_array((int) $data[$lvl], $allowedLevels, true)) {
                         return back()
                             ->withErrors([$lvl => 'Недопустимый уровень для вашего возраста.'])
                             ->withInput();
@@ -114,48 +181,72 @@ class ProfileExtraController extends Controller
         }
 
         // =========================
-        // 4) Remove virtual fields (not in users table)
+        // 4) Отделяем “виртуальные” поля от users-таблицы
         // =========================
+        $virtualClassicPrimary = $data['classic_primary_position'] ?? null;
+        $virtualClassicExtras  = $data['classic_extra_positions'] ?? null;
+        $virtualBeachMode      = $data['beach_mode'] ?? null;
+
         unset(
             $data['classic_primary_position'],
             $data['classic_extra_positions'],
             $data['beach_mode'],
-            $data['phone_masked'],
+            $data['phone_masked']
         );
 
         // =========================
         // 5) Save (users + relations)
         // =========================
-        DB::transaction(function () use ($request, $user, $data, $classicAllowed) {
+        DB::transaction(function () use (
+            $target,
+            $data,
+            $classicAllowed,
+            $virtualClassicPrimary,
+            $virtualClassicExtras,
+            $virtualBeachMode,
+            $allowed
+        ) {
             // 5.1 users
-            $user->forceFill($data)->save();
+            $userFill = array_intersect_key($data, array_flip([
+                'first_name', 'last_name', 'patronymic',
+                'phone', 'birth_date', 'city_id',
+                'classic_level', 'beach_level',
+                'gender', 'height_cm',
+            ]));
 
-            // 5.2 Classic positions rebuild
-            $primary = $request->input('classic_primary_position');
-            $extrasRaw = $request->input('classic_extra_positions', null);
-            $extras = is_array($extrasRaw) ? $extrasRaw : [];
-
-            $extras = array_values(array_unique(array_filter($extras, function ($p) use ($classicAllowed) {
-                return in_array($p, $classicAllowed, true);
-            })));
-
-            if (!empty($primary)) {
-                $extras = array_values(array_filter($extras, fn ($p) => $p !== $primary));
+            if (!empty($userFill)) {
+                $target->forceFill($userFill)->save();
             }
 
-            $shouldRebuildClassic = !empty($primary) || is_array($extrasRaw);
-            if ($shouldRebuildClassic) {
-                $user->classicPositions()->delete();
+            // 5.2 Classic positions rebuild
+            $canTouchClassicPositions =
+                in_array('classic_primary_position', $allowed, true)
+                || in_array('classic_extra_positions', $allowed, true);
+
+            if ($canTouchClassicPositions && ($virtualClassicPrimary !== null || is_array($virtualClassicExtras))) {
+                $primary = $virtualClassicPrimary;
+                $extras = is_array($virtualClassicExtras) ? $virtualClassicExtras : [];
+
+                $extras = array_values(array_unique(array_filter(
+                    $extras,
+                    fn ($p) => in_array($p, $classicAllowed, true)
+                )));
 
                 if (!empty($primary)) {
-                    $user->classicPositions()->create([
+                    $extras = array_values(array_filter($extras, fn ($p) => $p !== $primary));
+                }
+
+                $target->classicPositions()->delete();
+
+                if (!empty($primary) && in_array($primary, $classicAllowed, true)) {
+                    $target->classicPositions()->create([
                         'position' => $primary,
                         'is_primary' => true,
                     ]);
                 }
 
                 foreach ($extras as $p) {
-                    $user->classicPositions()->create([
+                    $target->classicPositions()->create([
                         'position' => $p,
                         'is_primary' => false,
                     ]);
@@ -163,26 +254,31 @@ class ProfileExtraController extends Controller
             }
 
             // 5.3 Beach zones rebuild + beach_universal
-            $mode = $request->input('beach_mode');
+            $canTouchBeach = in_array('beach_mode', $allowed, true);
 
-            if (!empty($mode)) {
-                $user->beachZones()->delete();
+            if ($canTouchBeach && !empty($virtualBeachMode)) {
+                $target->beachZones()->delete();
 
-                if ($mode === 'universal') {
-                    $user->forceFill(['beach_universal' => true])->save();
-
-                    $user->beachZones()->create(['zone' => 2, 'is_primary' => true]);
-                    $user->beachZones()->create(['zone' => 4, 'is_primary' => false]);
-                } elseif ($mode === '2' || $mode === '4') {
-                    $user->forceFill(['beach_universal' => false])->save();
-
-                    $zone = (int) $mode;
-                    $user->beachZones()->create(['zone' => $zone, 'is_primary' => true]);
+                if ($virtualBeachMode === 'universal') {
+                    $target->forceFill(['beach_universal' => true])->save();
+                    $target->beachZones()->create(['zone' => 2, 'is_primary' => true]);
+                    $target->beachZones()->create(['zone' => 4, 'is_primary' => false]);
+                } elseif ($virtualBeachMode === '2' || $virtualBeachMode === '4') {
+                    $target->forceFill(['beach_universal' => false])->save();
+                    $zone = (int) $virtualBeachMode;
+                    $target->beachZones()->create(['zone' => $zone, 'is_primary' => true]);
                 }
             }
         });
 
         return back()->with('status', 'Профиль обновлён.');
+    }
+
+    private function filled($value): bool
+    {
+        if (is_null($value)) return false;
+        if (is_string($value)) return trim($value) !== '';
+        return true;
     }
 
     // =========================================================
@@ -195,21 +291,18 @@ class ProfileExtraController extends Controller
         $s = trim($value);
         if ($s === '') return null;
 
-        // если есть латиница — транслитим
         if (preg_match('/[A-Za-z]/', $s)) {
             $s = $this->translitLatinToCyr($s);
         }
 
-        // нормализуем пробелы/разделители
         $s = preg_replace('/\s+/u', ' ', $s);
         $s = preg_replace("/[’]/u", "'", $s);
         $s = preg_replace("/-{2,}/u", "-", $s);
 
-        // оставляем только кириллицу + пробел/дефис/апостроф
         $s = preg_replace("/[^А-Яа-яЁё \-']/u", '', $s);
 
-        // "С Заглавной" по сегментам (пробел/дефис/апостроф)
         $parts = preg_split("/(\s+|-|')/u", $s, -1, PREG_SPLIT_DELIM_CAPTURE);
+
         $out = '';
         foreach ($parts as $p) {
             if ($p === '' || $p === ' ' || $p === '-' || $p === "'" || preg_match('/^\s+$/u', $p)) {
@@ -221,6 +314,7 @@ class ProfileExtraController extends Controller
         }
 
         $out = trim($out);
+
         return $out === '' ? null : $out;
     }
 
@@ -229,21 +323,19 @@ class ProfileExtraController extends Controller
         $map = [
             'sch' => 'щ', 'yo' => 'ё', 'zh' => 'ж', 'kh' => 'х', 'ts' => 'ц', 'ch' => 'ч',
             'sh'  => 'ш', 'yu' => 'ю', 'ya' => 'я',
-
             'a'=>'а','b'=>'б','v'=>'в','g'=>'г','d'=>'д','e'=>'е','z'=>'з','i'=>'и','j'=>'й','k'=>'к',
             'l'=>'л','m'=>'м','n'=>'н','o'=>'о','p'=>'п','r'=>'р','s'=>'с','t'=>'т','u'=>'у','f'=>'ф',
             'h'=>'х','c'=>'к','y'=>'ы','w'=>'в','q'=>'к','x'=>'кс',
         ];
 
-        $lower = mb_strtolower($s, 'UTF-8');
+        $lower = strtolower($s); // ASCII достаточно
         $out = '';
         $len = strlen($lower);
 
-        // работаем посимвольно (ASCII-латиница), остальные символы оставляем
         for ($i = 0; $i < $len; $i++) {
             $ch = $lower[$i];
 
-            if (!preg_match('/[a-z]/', $ch)) {
+            if ($ch < 'a' || $ch > 'z') {
                 $out .= $s[$i];
                 continue;
             }
@@ -253,9 +345,8 @@ class ProfileExtraController extends Controller
 
             if (isset($map[$tri])) { $out .= $map[$tri]; $i += 2; continue; }
             if (isset($map[$bi]))  { $out .= $map[$bi];  $i += 1; continue; }
-            if (isset($map[$ch]))  { $out .= $map[$ch]; continue; }
 
-            $out .= $ch;
+            $out .= $map[$ch] ?? $ch;
         }
 
         return $out;
@@ -268,25 +359,22 @@ class ProfileExtraController extends Controller
     {
         if ($raw === null) return null;
 
-        $digits = preg_replace('/\D+/', '', $raw ?? '');
+        $digits = preg_replace('/\D+/', '', (string) $raw);
         if ($digits === '') return null;
 
-        // 8XXXXXXXXXX -> 7XXXXXXXXXX
         if (strlen($digits) === 11 && str_starts_with($digits, '8')) {
             $digits = '7' . substr($digits, 1);
         }
 
-        // 7XXXXXXXXXX -> +7XXXXXXXXXX
         if (strlen($digits) === 11 && str_starts_with($digits, '7')) {
             return '+7' . substr($digits, 1);
         }
 
-        // XXXXXXXXXX -> +7XXXXXXXXXX
         if (strlen($digits) === 10) {
             return '+7' . $digits;
         }
 
-        // любой другой случай — вернём "+..." чтобы не потерять, но validate отфейлит
+        // любой другой случай — вернём "+..." (валидатор отфейлит)
         return '+' . $digits;
     }
 }

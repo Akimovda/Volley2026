@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Event;
 use App\Models\User;
+use App\Services\EventRegistrationGroupService;
+use App\Services\UserNotificationService;
+use DomainException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -11,6 +14,11 @@ use Illuminate\Support\Facades\Schema;
 
 class EventRegistrationsManagementController extends Controller
 {
+    public function __construct(
+        private EventRegistrationGroupService $groupService,
+        private UserNotificationService $userNotificationService
+    ) {}
+
     /**
      * GET /events/{event}/registrations
      */
@@ -22,19 +30,17 @@ class EventRegistrationsManagementController extends Controller
         $this->ensureCanCreateEvents($user);
         $this->ensureCanManageEvent($user, $event);
 
-        // Единый источник истины для "отменено/активно"
         if (!Schema::hasColumn('event_registrations', 'cancelled_at')) {
             return back()->with('error', 'Нет колонки cancelled_at в event_registrations.');
         }
 
         $hasPosition = Schema::hasColumn('event_registrations', 'position');
+        $hasGroupKey = Schema::hasColumn('event_registrations', 'group_key');
 
-        // max players
         $maxPlayers = (int) DB::table('event_game_settings')
             ->where('event_id', (int) $event->id)
             ->value('max_players');
 
-        // active count — считаем в БД
         $activeRegs = (int) DB::table('event_registrations')
             ->where('event_id', (int) $event->id)
             ->whereNull('cancelled_at')
@@ -45,35 +51,32 @@ class EventRegistrationsManagementController extends Controller
             $freeSeats = max(0, $maxPlayers - $activeRegs);
         }
 
-        // registrations (включая отменённые — для UI), сортировка: активные сверху
         $registrations = DB::table('event_registrations as er')
             ->join('users as u', 'u.id', '=', 'er.user_id')
             ->where('er.event_id', (int) $event->id)
             ->select([
                 'er.id',
                 'er.user_id',
+                $hasGroupKey ? 'er.group_key' : DB::raw('NULL::text as group_key'),
                 $hasPosition ? 'er.position' : DB::raw('NULL::text as position'),
                 'er.cancelled_at',
                 'er.created_at',
                 'u.name',
                 'u.email',
-                // если у вас есть phone:
-                // 'u.phone',
             ])
             ->orderByRaw('CASE WHEN er.cancelled_at IS NULL THEN 0 ELSE 1 END ASC')
             ->orderByDesc('er.id')
             ->get();
 
-        // header: location
         $location = null;
         if (!empty($event->location_id) && Schema::hasTable('locations')) {
             $location = DB::table('locations')
                 ->where('id', (int) $event->location_id)
-                ->first(['id', 'name', 'city', 'address']);
+                ->first(['id', 'name', 'address', 'city_id']);
         }
 
-        // add player search (если q пустой — покажем последних 200 как “без JS”)
         $q = trim((string) $request->query('q', ''));
+
         if ($q !== '') {
             $users = User::query()
                 ->select(['id', 'name', 'email'])
@@ -92,19 +95,37 @@ class EventRegistrationsManagementController extends Controller
                 ->get();
         }
 
-        // ✅ переменные, которые ждёт твой blade
+        $groupInvites = DB::table('event_registration_group_invites as i')
+            ->join('users as fu', 'fu.id', '=', 'i.from_user_id')
+            ->join('users as tu', 'tu.id', '=', 'i.to_user_id')
+            ->where('i.event_id', (int) $event->id)
+            ->orderByDesc('i.id')
+            ->get([
+                'i.id',
+                'i.group_key',
+                'i.from_user_id',
+                'i.to_user_id',
+                'i.status',
+                'i.auto_join_after_registration',
+                'i.created_at',
+                'fu.name as from_user_name',
+                'fu.email as from_user_email',
+                'tu.name as to_user_name',
+                'tu.email as to_user_email',
+            ]);
+
         $tz = (string) ($event->timezone ?: 'UTC');
         $startsLocal = null;
         $endsLocal = null;
 
         if (!empty($event->starts_at)) {
-            $startsLocal = $event->starts_at ? Carbon::parse($event->starts_at, 'UTC')->setTimezone($tz) : null;
-        }
-        if (!empty($event->ends_at)) {
-            $endsLocal   = $event->ends_at   ? Carbon::parse($event->ends_at,   'UTC')->setTimezone($tz) : null;
+            $startsLocal = Carbon::parse($event->starts_at, 'UTC')->setTimezone($tz);
         }
 
-        // blade ждёт freeCount/activeCount
+        if (!empty($event->ends_at)) {
+            $endsLocal = Carbon::parse($event->ends_at, 'UTC')->setTimezone($tz);
+        }
+
         $freeCount = is_null($freeSeats) ? 0 : (int) $freeSeats;
         $activeCount = (int) $activeRegs;
 
@@ -112,18 +133,15 @@ class EventRegistrationsManagementController extends Controller
             'event' => $event,
             'location' => $location,
             'registrations' => $registrations,
-
+            'groupInvites' => $groupInvites,
             'maxPlayers' => $maxPlayers,
             'activeRegs' => $activeRegs,
             'freeSeats' => $freeSeats,
-
-            // ✅ алиасы под текущий blade
             'tz' => $tz,
             'startsLocal' => $startsLocal,
             'endsLocal' => $endsLocal,
             'freeCount' => $freeCount,
             'activeCount' => $activeCount,
-
             'hasPosition' => $hasPosition,
             'q' => $q,
             'users' => $users,
@@ -135,11 +153,11 @@ class EventRegistrationsManagementController extends Controller
      */
     public function addPlayer(Request $request, Event $event)
     {
-        $user = $request->user();
-        if (!$user) return redirect()->route('login');
+        $authUser = $request->user();
+        if (!$authUser) return redirect()->route('login');
 
-        $this->ensureCanCreateEvents($user);
-        $this->ensureCanManageEvent($user, $event);
+        $this->ensureCanCreateEvents($authUser);
+        $this->ensureCanManageEvent($authUser, $event);
 
         if (!Schema::hasColumn('event_registrations', 'cancelled_at')) {
             return back()->with('error', 'Нет колонки cancelled_at в event_registrations.');
@@ -153,9 +171,6 @@ class EventRegistrationsManagementController extends Controller
         $userId = (int) $data['user_id'];
         $pos = trim((string) ($data['position'] ?? ''));
 
-        // Если запись уже есть:
-        // - если отменена -> восстанавливаем
-        // - если активна -> ошибка
         $existing = DB::table('event_registrations')
             ->where('event_id', (int) $event->id)
             ->where('user_id', $userId)
@@ -163,11 +178,25 @@ class EventRegistrationsManagementController extends Controller
 
         if ($existing) {
             if (!empty($existing->cancelled_at)) {
-                $upd = ['cancelled_at' => null, 'updated_at' => now()];
+                $upd = [
+                    'cancelled_at' => null,
+                    'updated_at' => now(),
+                ];
+
                 if (Schema::hasColumn('event_registrations', 'position')) {
                     $upd['position'] = $pos;
                 }
-                DB::table('event_registrations')->where('id', (int) $existing->id)->update($upd);
+
+                DB::table('event_registrations')
+                    ->where('id', (int) $existing->id)
+                    ->update($upd);
+
+                $this->userNotificationService->createRegistrationCreatedNotification(
+                    userId: $userId,
+                    eventId: (int) $event->id,
+                    occurrenceId: null,
+                    eventTitle: (string) ($event->title ?? ('Мероприятие #' . $event->id))
+                );
 
                 return back()->with('status', 'Игрок восстановлен ✅');
             }
@@ -188,6 +217,13 @@ class EventRegistrationsManagementController extends Controller
         }
 
         DB::table('event_registrations')->insert($insert);
+
+        $this->userNotificationService->createRegistrationCreatedNotification(
+            userId: $userId,
+            eventId: (int) $event->id,
+            occurrenceId: null,
+            eventTitle: (string) ($event->title ?? ('Мероприятие #' . $event->id))
+        );
 
         return back()->with('status', 'Игрок добавлен ✅');
     }
@@ -216,7 +252,9 @@ class EventRegistrationsManagementController extends Controller
             ->where('event_id', (int) $event->id)
             ->first(['id']);
 
-        if (!$row) return back()->with('error', 'Регистрация не найдена.');
+        if (!$row) {
+            return back()->with('error', 'Регистрация не найдена.');
+        }
 
         DB::table('event_registrations')
             ->where('id', $registration)
@@ -230,17 +268,17 @@ class EventRegistrationsManagementController extends Controller
 
     /**
      * PATCH /events/{event}/registrations/{registration}/cancel
-     * ✅ toggle:
+     * toggle:
      * - если активна -> отменяем (cancelled_at = now)
      * - если отменена -> восстанавливаем (cancelled_at = null)
      */
     public function cancel(Request $request, Event $event, int $registration)
     {
-        $user = $request->user();
-        if (!$user) return redirect()->route('login');
+        $authUser = $request->user();
+        if (!$authUser) return redirect()->route('login');
 
-        $this->ensureCanCreateEvents($user);
-        $this->ensureCanManageEvent($user, $event);
+        $this->ensureCanCreateEvents($authUser);
+        $this->ensureCanManageEvent($authUser, $event);
 
         if (!Schema::hasColumn('event_registrations', 'cancelled_at')) {
             return back()->with('error', 'Нет колонки cancelled_at в event_registrations.');
@@ -249,11 +287,21 @@ class EventRegistrationsManagementController extends Controller
         $row = DB::table('event_registrations')
             ->where('id', $registration)
             ->where('event_id', (int) $event->id)
-            ->first(['id', 'cancelled_at']);
+            ->first(['id', 'user_id', 'group_key', 'cancelled_at']);
 
-        if (!$row) return back()->with('error', 'Регистрация не найдена.');
+        if (!$row) {
+            return back()->with('error', 'Регистрация не найдена.');
+        }
 
         $isCancelled = !empty($row->cancelled_at);
+
+        if (!$isCancelled && !empty($row->group_key)) {
+            try {
+                $this->groupService->leaveGroup((int) $event->id, (int) $row->user_id);
+            } catch (DomainException $e) {
+                return back()->with('error', $e->getMessage());
+            }
+        }
 
         DB::table('event_registrations')
             ->where('id', $registration)
@@ -262,7 +310,26 @@ class EventRegistrationsManagementController extends Controller
                 'updated_at' => now(),
             ]);
 
-        return back()->with('status', $isCancelled ? 'Восстановлено ✅' : 'Бронь отменена ✅');
+        if ($isCancelled) {
+            $this->userNotificationService->createRegistrationCreatedNotification(
+                userId: (int) $row->user_id,
+                eventId: (int) $event->id,
+                occurrenceId: null,
+                eventTitle: (string) ($event->title ?? ('Мероприятие #' . $event->id))
+            );
+
+            return back()->with('status', 'Восстановлено ✅');
+        }
+
+        $this->userNotificationService->createRegistrationCancelledByOrganizerNotification(
+            userId: (int) $row->user_id,
+            eventId: (int) $event->id,
+            occurrenceId: null,
+            eventTitle: (string) ($event->title ?? ('Мероприятие #' . $event->id)),
+            cancelledByUserId: (int) $authUser->id
+        );
+
+        return back()->with('status', 'Бронь отменена ✅');
     }
 
     /**
@@ -270,23 +337,145 @@ class EventRegistrationsManagementController extends Controller
      */
     public function destroy(Request $request, Event $event, int $registration)
     {
-        $user = $request->user();
-        if (!$user) return redirect()->route('login');
+        $authUser = $request->user();
+        if (!$authUser) return redirect()->route('login');
 
-        $this->ensureCanCreateEvents($user);
-        $this->ensureCanManageEvent($user, $event);
+        $this->ensureCanCreateEvents($authUser);
+        $this->ensureCanManageEvent($authUser, $event);
+
+        $row = DB::table('event_registrations')
+            ->where('id', $registration)
+            ->where('event_id', (int) $event->id)
+            ->first(['id', 'user_id', 'group_key']);
+
+        if (!$row) {
+            return back()->with('error', 'Регистрация не найдена.');
+        }
+
+        if (!empty($row->group_key)) {
+            try {
+                $this->groupService->leaveGroup((int) $event->id, (int) $row->user_id);
+            } catch (DomainException $e) {
+                return back()->with('error', $e->getMessage());
+            }
+        }
 
         $deleted = DB::table('event_registrations')
             ->where('id', $registration)
             ->where('event_id', (int) $event->id)
             ->delete();
 
-        if (!$deleted) return back()->with('error', 'Регистрация не найдена.');
+        if (!$deleted) {
+            return back()->with('error', 'Регистрация не найдена.');
+        }
+
+        $this->userNotificationService->createRegistrationCancelledByOrganizerNotification(
+            userId: (int) $row->user_id,
+            eventId: (int) $event->id,
+            occurrenceId: null,
+            eventTitle: (string) ($event->title ?? ('Мероприятие #' . $event->id)),
+            cancelledByUserId: (int) $authUser->id
+        );
 
         return back()->with('status', 'Регистрация удалена ✅');
     }
 
-    // ----------------- access control helpers -----------------
+    /**
+     * POST /events/{event}/registrations/{registration}/group/create
+     */
+    public function createGroup(Request $request, Event $event, int $registration)
+    {
+        $user = $request->user();
+        if (!$user) return redirect()->route('login');
+
+        $this->ensureCanCreateEvents($user);
+        $this->ensureCanManageEvent($user, $event);
+
+        $row = DB::table('event_registrations')
+            ->where('id', $registration)
+            ->where('event_id', (int) $event->id)
+            ->first(['id', 'user_id', 'cancelled_at']);
+
+        if (!$row) {
+            return back()->with('error', 'Регистрация не найдена.');
+        }
+
+        if (!empty($row->cancelled_at)) {
+            return back()->with('error', 'Нельзя создать группу для отменённой регистрации.');
+        }
+
+        try {
+            $groupKey = $this->groupService->createGroupForRegistration(
+                (int) $event->id,
+                (int) $row->user_id
+            );
+
+            return back()->with('status', 'Группа создана ✅ ' . $groupKey);
+        } catch (DomainException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * POST /events/{event}/registrations/group/invite
+     */
+    public function inviteToGroup(Request $request, Event $event)
+    {
+        $user = $request->user();
+        if (!$user) return redirect()->route('login');
+
+        $this->ensureCanCreateEvents($user);
+        $this->ensureCanManageEvent($user, $event);
+
+        $data = $request->validate([
+            'from_user_id' => ['required', 'integer', 'exists:users,id'],
+            'to_user_id' => ['required', 'integer', 'exists:users,id'],
+        ]);
+
+        try {
+            $this->groupService->inviteToGroup(
+                (int) $event->id,
+                (int) $data['from_user_id'],
+                (int) $data['to_user_id']
+            );
+
+            return back()->with('status', 'Приглашение в группу отправлено ✅');
+        } catch (DomainException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * PATCH /events/{event}/registrations/{registration}/group/leave
+     */
+    public function leaveGroup(Request $request, Event $event, int $registration)
+    {
+        $user = $request->user();
+        if (!$user) return redirect()->route('login');
+
+        $this->ensureCanCreateEvents($user);
+        $this->ensureCanManageEvent($user, $event);
+
+        $row = DB::table('event_registrations')
+            ->where('id', $registration)
+            ->where('event_id', (int) $event->id)
+            ->first(['id', 'user_id']);
+
+        if (!$row) {
+            return back()->with('error', 'Регистрация не найдена.');
+        }
+
+        try {
+            $this->groupService->leaveGroup(
+                (int) $event->id,
+                (int) $row->user_id
+            );
+
+            return back()->with('status', 'Игрок убран из группы ✅');
+        } catch (DomainException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+    }
 
     private function ensureCanCreateEvents($user): void
     {

@@ -1,0 +1,408 @@
+/*!
+	* FilePond Custom Themed
+	* Light & Dark themes, rem-based sizing (1rem = 10px)
+*/
+
+/* ============================================
+	BASE ROOT SETUP
+============================================ */
+.filepond--root {
+	font-size: 1.8rem; /* 10px - фиксируем базовый размер */
+	font-weight: 500;
+	text-align: left;
+	position: relative;
+	box-sizing: border-box;
+	margin: 0;
+}
+
+/* ============================================
+	LIGHT THEME (default)
+============================================ */
+.filepond--root {
+	--fp-bg-primary: #fff;
+	--fp-bg-secondary: #fff;
+	--fp-text-primary: #212529;
+	--fp-text-secondary: #6c757d;
+	--fp-border-color: transparent;
+	--fp-panel-bg: #fff;
+	--fp-panel-shadow: 0 0.2rem 0.4rem rgba(0, 0, 0, 0.05);
+	--fp-success-color: #28a745;
+	--fp-error-color: #dc3545;
+	--fp-button-bg: #0d6efd;
+	--fp-button-hover-bg: #0b5ed7;
+	--fp-button-text: #fff;
+	--fp-overlay-idle: rgba(0, 0, 0, 0.85);
+	--fp-overlay-success: #28a745;
+	--fp-overlay-failure: #dc3545;
+}
+
+/* Dark Theme */
+body.dark .filepond--root {
+	--fp-bg-primary: #222333;
+	--fp-bg-secondary: #222333;
+	--fp-text-primary: #e9ecef;
+	--fp-text-secondary: #adb5bd;
+	--fp-border-color: transparent;
+	--fp-panel-bg: #2a2b3a;
+	--fp-panel-shadow: 0 0.2rem 0.4rem rgba(0, 0, 0, 0.3);
+	--fp-success-color: #2c9e4e;
+	--fp-error-color: #e55353;
+	--fp-button-bg: #3b7cff;
+	--fp-button-hover-bg: #2c68e6;
+	--fp-button-text: #fff;
+	--fp-overlay-idle: rgba(255, 255, 255, 0.85);
+	--fp-overlay-success: #2c9e4e;
+	--fp-overlay-failure: #e55353;
+}
+
+/* ============================================
+	ТЕКСТОВЫЕ РАЗМЕРЫ (минимально 12px)
+============================================ */
+.filepond--drop-label {
+	color: var(--fp-text-secondary);
+		min-height: 10rem !important; 
+}
+.filepond--drop-label.filepond--drop-label label {
+	font-weight: normal;
+	line-height: 1.5;
+	display: flex;
+    align-items: center;
+    justify-content: center;	
+	flex-flow: column; 
+	min-height: 10rem !important; 
+}
+
+.filepond--label-action {
+	text-decoration: underline;
+	cursor: pointer;
+	color: var(--fp-button-bg);
+}
+
+/* Информация о файле */
+.filepond--file-info .filepond--file-info-main {
+	font-size: 1.6rem;
+	line-height: 1.2;
+	text-overflow: ellipsis;
+	overflow: hidden;
+	white-space: nowrap;
+}
+
+.filepond--file-info .filepond--file-info-sub {
+	font-size: 1.6rem; /* 11px - можно чуть меньше для второстепенного текста */
+	color: var(--fp-text-secondary);
+}
+
+.filepond--file-status .filepond--file-status-main {
+	font-size: 1.2rem; /* 12px */
+	line-height: 1.2;
+}
+
+.filepond--file-status .filepond--file-status-sub {
+	font-size: 1.1rem; /* 11px */
+	opacity: 0.7;
+	color: var(--fp-text-secondary);
+}
+
+/* ============================================
+	ПАНЕЛИ И КОНТЕЙНЕРЫ
+============================================ */
+.filepond--panel-root {
+	background-color: var(--fp-panel-bg);
+	border-radius: 1rem; 
+	box-shadow: var(--fp-panel-shadow);
+	padding: 1rem;
+}
+
+.filepond--panel-top,
+.filepond--panel-bottom {
+	height: 0.5rem; /* 5px */
+}
+
+.filepond--panel-center {
+	height: 10rem !important; /* 100px */
+}
+
+.filepond--item-panel {
+	background-color: var(--fp-bg-secondary);
+	border-radius: 0.5rem; /* 5px */
+	transition: background-color 0.25s;
+}
+
+/* Состояния файлов */
+.filepond--item[data-filepond-item-state='processing-complete'] .filepond--item-panel {
+	background-color: var(--fp-success-color);
+}
+
+.filepond--item[data-filepond-item-state*='invalid'] .filepond--item-panel,
+.filepond--item[data-filepond-item-state*='error'] .filepond--item-panel {
+	background-color: var(--fp-error-color);
+}
+
+/* Элементы файлов */
+.filepond--item {
+	margin: 0.25rem; /* 2.5px */
+}
+
+.filepond--file {
+	padding: 0 1rem;
+	color: var(--fp-text-primary);
+}
+
+/* ============================================
+	КНОПКИ (размеры нормальные)
+============================================ */
+.filepond--file-action-button {
+	width: 2rem; /* 20px - комфортный размер для тапа */
+	height: 2rem;
+	border-radius: 50%;
+	background-color: rgba(0, 0, 0, 0.5);
+	color: #fff;
+	cursor: pointer;
+	transition: box-shadow 0.25s ease-in;
+	border: none;
+}
+
+.filepond--file-action-button:hover,
+.filepond--file-action-button:focus {
+	box-shadow: 0 0 0 0.125rem rgba(255, 255, 255, 0.9); /* 1.25px */
+}
+
+/* Кнопка редактирования */
+.filepond--action-edit-item {
+	background-color: var(--fp-button-bg);
+	color: var(--fp-button-text);
+	width: 2rem; /* 20px */
+	height: 2rem;
+	padding: 0.25rem; /* 2.5px */
+	border-radius: 0.375rem; /* 3.75px */
+}
+
+.filepond--action-edit-item:hover {
+	background-color: var(--fp-button-hover-bg);
+}
+
+/* Прогресс-индикатор */
+.filepond--progress-indicator {
+	width: 1.5rem; /* 15px */
+	height: 1.5rem;
+	color: var(--fp-text-primary);
+}
+
+/* ============================================
+	ПРЕДПРОСМОТР ИЗОБРАЖЕНИЙ
+============================================ */
+.filepond--image-preview-wrapper {
+	border-radius: 0.45rem; /* 4.5px */
+	overflow: hidden;
+}
+
+.filepond--image-preview {
+	background: var(--fp-bg-secondary);
+}
+.filepond--image-preview-overlay {
+	display: none;
+}
+.filepond--image-preview-overlay-idle {
+	mix-blend-mode: multiply;
+	color: var(--fp-overlay-idle);
+}
+
+.filepond--image-preview-overlay-success {
+	mix-blend-mode: normal;
+	color: var(--fp-overlay-success);
+}
+
+.filepond--image-preview-overlay-failure {
+	mix-blend-mode: normal;
+	color: var(--fp-overlay-failure);
+}
+
+/* Сетка прозрачности */
+.filepond--image-clip[data-transparency-indicator='grid'] img,
+.filepond--image-clip[data-transparency-indicator='grid'] canvas {
+	background-color: #fff;
+	background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg' fill='%23eee'%3E%3Cpath d='M0 0 H50 V50 H0'/%3E%3Cpath d='M50 50 H100 V100 H50'/%3E%3C/svg%3E");
+	background-size: 1.25rem 1.25rem; /* 12.5px */
+}
+
+/* ============================================
+	СЕТКА (Bootstrap-like)
+============================================ */
+.filepond--list {
+	left: 0.75rem; /* 7.5px */
+	right: 0.75rem;
+}
+
+.filepond--list-scroller {
+	margin-top: 1rem; /* 10px */
+	margin-bottom: 1rem;
+}
+
+/* Grid layout */
+.filepond--root[data-layout="grid"] .filepond--list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem; /* 5px */
+}
+
+.filepond--root[data-layout="grid"] .filepond--item {
+	flex: 0 0 auto;
+	width: calc(33.333% - 0.5rem);
+	margin: 0;
+}
+
+@media (min-width: 768px) {
+	.filepond--root[data-layout="grid"] .filepond--item {
+		width: calc(25% - 0.5rem);
+	}
+}
+
+@media (min-width: 992px) {
+	.filepond--root[data-layout="grid"] .filepond--item {
+		width: calc(20% - 0.5rem);
+	}
+}
+
+/* ============================================
+	КРУГЛЫЙ ЛАЙАУТ
+============================================ */
+.filepond--root[data-style-panel-layout~='circle'] {
+	border-radius: 9999rem;
+	overflow: hidden;
+}
+
+.filepond--root[data-style-panel-layout~='circle'] .filepond--file-info,
+.filepond--root[data-style-panel-layout~='circle'] .filepond--file-status {
+	display: none;
+}
+
+/* ============================================
+	АНИМАЦИИ
+============================================ */
+@keyframes spin {
+	0% { transform: rotateZ(0deg); }
+	100% { transform: rotateZ(360deg); }
+}
+
+@keyframes shake {
+	10%, 90% { transform: translateX(-0.0625rem); }
+	20%, 80% { transform: translateX(0.125rem); }
+	30%, 50%, 70% { transform: translateX(-0.25rem); }
+	40%, 60% { transform: translateX(0.25rem); }
+}
+
+@keyframes fall {
+	0% {
+		opacity: 0;
+		transform: scale(0.5);
+	}
+	70% {
+		opacity: 1;
+		transform: scale(1.1);
+	}
+	100% {
+		transform: scale(1);
+	}
+}
+
+[data-filepond-item-state='processing-complete'] .filepond--action-revert-item-processing svg {
+	animation: fall 0.5s 0.125s linear both;
+}
+
+[data-filepond-item-state*='busy'] .filepond--progress-indicator svg {
+	animation: spin 1s linear infinite;
+}
+
+/* ============================================
+	BOOTSTRAP-СОВМЕСТИМОСТЬ
+============================================ */
+.btn-filepond {
+	display: inline-block;
+	font-weight: 400;
+	line-height: 1.5;
+	color: var(--fp-button-text);
+	background-color: var(--fp-button-bg);
+	border: 1px solid transparent;
+	padding: 0.375rem 0.75rem; /* 3.75px 7.5px */
+	font-size: 1.2rem; /* 12px */
+	border-radius: 0.375rem; /* 3.75px */
+	cursor: pointer;
+}
+
+.btn-filepond:hover {
+	background-color: var(--fp-button-hover-bg);
+}
+
+/* Скроллбар */
+.filepond--list-scroller::-webkit-scrollbar {
+	width: 0.8rem; /* 8px */
+}
+
+.filepond--list-scroller::-webkit-scrollbar-thumb {
+	background-color: rgba(0, 0, 0, 0.3);
+	border-radius: 9999px;
+	border: 0.2rem solid transparent;
+	background-clip: content-box;
+}
+
+/*!
+ * FilePond - Только расположение элементов
+ * Ваши размеры остаются без изменений
+ */
+
+/* ============================================
+   1. УВЕЛИЧЕНИЕ НАЧАЛЬНОЙ ВЫСОТЫ
+============================================ */
+.filepond--drop-label {
+	min-height: 12rem !important;
+}
+
+.filepond--drop-label label {
+	display: flex !important;
+	flex-direction: column !important;
+	align-items: center !important;
+	justify-content: center !important;
+	min-height: 12rem !important;
+}
+
+/* ============================================
+   2. УБИРАЕМ ЛИШНИЕ ЭФФЕКТЫ У КАРТИНОК
+============================================ */
+.filepond--image-preview-wrapper,
+.filepond--image-preview,
+.filepond--panel-root,
+.filepond--file-info-main {
+	box-shadow: none !important;
+	border: none !important;
+}
+
+.filepond--image-preview-overlay {
+	display: none !important;
+}
+
+.filepond--panel-top,
+.filepond--panel-bottom {
+	display: none !important;
+}
+
+
+
+/* ============================================
+   4. ВАШИ РАЗМЕРЫ (НЕ ТРОГАЕМ)
+============================================ */
+/* Только переопределяем то, что сломали, остальное оставляем как у вас */
+.filepond--root {
+	font-size: 1.8rem;
+}
+
+.filepond--file-info .filepond--file-info-main {
+	font-size: 1.6rem !important;
+}
+
+.filepond--file-info .filepond--file-info-sub {
+	font-size: 1.4rem !important;
+}
+
+.filepond--drop-label.filepond--drop-label label {
+	font-size: 1.6rem !important;
+}

@@ -18,7 +18,7 @@
     $fmtPlace = function () use ($location) {
         if (!$location) return '—';
         $parts = array_filter([
-            $location->city ?? null,
+            $location->city?->name ?? null,
             $location->name ?? null,
             $location->address ?? null,
         ]);

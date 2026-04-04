@@ -1,245 +1,274 @@
-<x-app-layout>
-    <x-slot name="header">
-        <div class="flex items-center justify-between gap-4">
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">Создать локацию (admin)</h2>
-        </div>
-    </x-slot>
-
-    <div class="max-w-3xl mx-auto sm:px-6 lg:px-8 py-10">
-        @if (session('status'))
-            <div class="mb-4 p-3 rounded-lg bg-green-50 text-green-800 border border-green-100">
-                {{ session('status') }}
-            </div>
-        @endif
-
-        @if ($errors->any())
-            <div class="mb-4 p-3 rounded-lg bg-red-50 text-red-800 border border-red-100 text-sm">
-                <div class="font-semibold mb-2">Ошибки:</div>
-                <ul class="list-disc ml-5 space-y-1">
-                    @foreach ($errors->all() as $err)
-                        <li>{{ $err }}</li>
-                    @endforeach
-                </ul>
-            </div>
-        @endif
-
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <form method="POST" action="{{ route('admin.locations.store') }}" enctype="multipart/form-data">
+{{-- resources/views/admin/locations/create.blade.php --}}
+<x-voll-layout body_class="admin-page admin-locations-create">
+    <x-slot name="title">
+        Создать локацию (admin)
+	</x-slot>	
+	
+    <x-slot name="description">
+        Страница создания новой локации в административной панели
+	</x-slot>
+	
+    <x-slot name="canonical">
+        {{-- Здесь каноническая ссылка не нужна --}}
+	</x-slot>
+	
+	
+    <x-slot name="h1">
+        Создать локацию
+	</x-slot>
+	
+    <x-slot name="h2">
+        Административная панель
+	</x-slot>
+	
+    <x-slot name="t_description">
+        Заполните форму для создания новой локации. Поля, отмеченные *, обязательны для заполнения.
+	</x-slot>
+	
+    <x-slot name="breadcrumbs">
+        <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
+            <a href="{{ route('admin.dashboard') }}" itemprop="item"><span itemprop="name">Админ-панель</span></a>
+            <meta itemprop="position" content="2">
+		</li>
+        <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
+            <a href="{{ route('admin.locations.index') }}" itemprop="item"><span itemprop="name">Локации</span></a>
+            <meta itemprop="position" content="3">
+		</li>
+        <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
+            <span itemprop="name">Создание</span>
+            <meta itemprop="position" content="4">
+		</li>
+	</x-slot>
+    <x-slot name="style">
+        <link href="/assets/org.css" rel="stylesheet">
+	</x-slot>	
+	
+    <x-slot name="script">
+		<script src="/assets/city.js"></script>  
+		<script src="/assets/org.js"></script>     
+        <script>
+            (function () {
+                // --- trix: запрет вложений
+                document.addEventListener('trix-file-accept', function (event) {
+                    event.preventDefault();
+				});
+				
+                // --- ограничение файлов (до 5)
+                const photos = document.getElementById('loc_photos');
+                if (photos) {
+                    photos.addEventListener('change', () => {
+                        if ((photos.files || []).length > 5) {
+                            alert('Можно выбрать максимум 5 файлов.');
+                            photos.value = '';
+						}
+					});
+				}				
+				
+			})();
+		</script>
+	</x-slot>
+	
+    <div class="container">
+		
+		@if (session('status'))
+		<div class="ramka">
+			<div class="alert alert-success">
+				{{ session('status') }}
+			</div>
+		</div>
+		@endif
+		
+		@if ($errors->any())
+		<div class="ramka">
+			<div class="alert alert-danger">
+				<div class="font-semibold mb-2">Ошибки:</div>
+				<ul class="list-disc ml-5 space-y-1">
+					@foreach ($errors->all() as $err)
+					<li>{{ $err }}</li>
+					@endforeach
+				</ul>
+			</div>
+		</div>	
+		@endif
+		<div class="ramka">
+		<h2 class="-mt-05">Данные локации</h2>
+            <form method="POST" action="{{ route('admin.locations.store') }}" enctype="multipart/form-data" class="form">
                 @csrf
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="md:col-span-2">
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">Название</label>
-                        <input name="name" class="w-full rounded-lg border-gray-200" value="{{ old('name') }}" required>
-                    </div>
-
-                    <div class="md:col-span-2">
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">Адрес</label>
-                        <input name="address" class="w-full rounded-lg border-gray-200" value="{{ old('address') }}">
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">Город</label>
-
-                        {{-- CITY autocomplete, сохраняем в locations.city (строка) --}}
-                        <div class="relative" id="loc-city-autocomplete" data-search-url="{{ route('cities.search') }}">
-                            <input
-                                type="text"
-                                id="loc_city"
-                                name="city"
-                                class="w-full rounded-lg border-gray-200 @error('city') ring-2 ring-red-500 border-red-500 @enderror"
-                                value="{{ old('city', $location->city ?? '') }}"
-                                placeholder="Начните вводить город…"
-                                autocomplete="off"
-                            >
-
-                            <div
-                                id="loc_city_dropdown"
-                                class="absolute left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden hidden"
-                                style="max-height: 28rem; overflow-y: auto; z-index: 60;"
-                            >
-                                <div class="px-3 py-2 text-xs text-gray-500 border-b border-gray-100">
-                                    Введите минимум 2 символа — выберите город из списка.
-                                </div>
-                                <div id="loc_city_results"></div>
-                            </div>
-                        </div>
-
-                        @error('city')<div class="text-xs text-red-600 mt-1">{{ $message }}</div>@enderror
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">Timezone</label>
-                        <input name="timezone" class="w-full rounded-lg border-gray-200"
-                               value="{{ old('timezone', 'Europe/Berlin') }}" required>
-                        <div class="text-xs text-gray-500 mt-1">IANA timezone, напр. Europe/Moscow</div>
-                    </div>
-
-                    <div class="md:col-span-2">
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">Short text</label>
-                        <input name="short_text" class="w-full rounded-lg border-gray-200" value="{{ old('short_text') }}">
-                    </div>
-
-                    <div class="md:col-span-2">
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">Long text</label>
-                        <textarea name="long_text" rows="4" class="w-full rounded-lg border-gray-200">{{ old('long_text') }}</textarea>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">lat</label>
-                        <input name="lat" type="number" step="any" class="w-full rounded-lg border-gray-200" value="{{ old('lat') }}">
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">lng</label>
-                        <input name="lng" type="number" step="any" class="w-full rounded-lg border-gray-200" value="{{ old('lng') }}">
-                    </div>
-
-                    <div class="md:col-span-2">
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">Фото локации (до 5)</label>
-                        <input type="file" name="photos[]" multiple accept="image/*" class="w-full rounded-lg border-gray-200">
-                        <div class="text-xs text-gray-500 mt-1">jpg/jpeg/png/webp, до 5MB каждое, максимум 5 файлов</div>
-                    </div>
-                </div>
-
-                <div class="mt-6">
-                    <button class="v-btn v-btn--primary" type="submit">Сохранить</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <script>
-        (function () {
-            const wrap = document.getElementById('loc-city-autocomplete');
-            const input = document.getElementById('loc_city');
-            const dd = document.getElementById('loc_city_dropdown');
-            const results = document.getElementById('loc_city_results');
-            if (!wrap || !input || !dd || !results) return;
-
-            function escapeHtml(s) {
-                return String(s || '')
-                    .replace(/&/g, '&amp;')
-                    .replace(/</g, '&lt;')
-                    .replace(/>/g, '&gt;')
-                    .replace(/"/g, '&quot;')
-                    .replace(/'/g, '&#039;');
-            }
-            function show() { dd.classList.remove('hidden'); }
-            function hide() { dd.classList.add('hidden'); }
-            function clear() { results.innerHTML = ''; }
-
-            function groupByCountry(list) {
-                const g = { RU: [], KZ: [], UZ: [], OTHER: [] };
-                (list || []).forEach(x => {
-                    const cc = (x.country_code || '').toUpperCase();
-                    if (cc === 'RU') g.RU.push(x);
-                    else if (cc === 'KZ') g.KZ.push(x);
-                    else if (cc === 'UZ') g.UZ.push(x);
-                    else g.OTHER.push(x);
-                });
-                return g;
-            }
-
-            function renderGroup(title, items) {
-                let html = '';
-                html += '<div class="px-3 py-2 text-xs font-semibold text-gray-700 bg-gray-50 border-b border-gray-100">' + escapeHtml(title) + '</div>';
-                items.forEach(item => {
-                    const label = item.name + (item.region ? ' (' + item.region + ')' : '');
-                    html +=
-                        '<button type="button" class="w-full text-left px-3 py-2 hover:bg-gray-50 border-b border-gray-100 loc-city-item" ' +
-                        'data-label="' + escapeHtml(label) + '" data-name="' + escapeHtml(item.name) + '">' +
-                            '<div class="text-sm text-gray-900">' + escapeHtml(item.name) + '</div>' +
-                            '<div class="text-xs text-gray-500">' +
-                                (item.country_code ? escapeHtml(item.country_code) : '') +
-                                (item.region ? ' • ' + escapeHtml(item.region) : '') +
-                            '</div>' +
-                        '</button>';
-                });
-                return html;
-            }
-
-            let lastReqId = 0;
-            function debounce(fn, ms) {
-                let t = null;
-                return function (...args) {
-                    clearTimeout(t);
-                    t = setTimeout(() => fn.apply(this, args), ms);
-                };
-            }
-
-            async function fetchCities(q) {
-                const url = wrap.getAttribute('data-search-url');
-                if (!url) return null;
-
-                const reqId = ++lastReqId;
-                const u = new URL(url, window.location.origin);
-                u.searchParams.set('q', q || '');
-                u.searchParams.set('limit', '30');
-
-                const r = await fetch(u.toString(), {
-                    headers: { 'Accept': 'application/json' },
-                    credentials: 'same-origin'
-                });
-
-                if (reqId !== lastReqId) return null;
-                if (!r.ok) return null;
-
-                return await r.json();
-            }
-
-            const run = debounce(async () => {
-                const q = (input.value || '').trim();
-                if (q.length === 0) { clear(); hide(); return; }
-
-                if (q.length < 2) {
-                    show();
-                    results.innerHTML = '<div class="px-3 py-3 text-sm text-gray-500">Введите ещё символы…</div>';
-                    return;
-                }
-
-                show();
-                results.innerHTML = '<div class="px-3 py-3 text-sm text-gray-500">Поиск…</div>';
-
-                const data = await fetchCities(q);
-                const items = Array.isArray(data) ? data : (data && data.items ? data.items : []);
-
-                if (!items.length) {
-                    results.innerHTML = '<div class="px-3 py-3 text-sm text-gray-500">Ничего не найдено.</div>';
-                    return;
-                }
-
-                const g = groupByCountry(items);
-                let html = '';
-                if (g.RU.length) html += renderGroup('RU', g.RU);
-                if (g.KZ.length) html += renderGroup('KZ', g.KZ);
-                if (g.UZ.length) html += renderGroup('UZ', g.UZ);
-                if (g.OTHER.length) html += renderGroup('Другие', g.OTHER);
-
-                results.innerHTML = html;
-
-                results.querySelectorAll('.loc-city-item').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        // В locations.city кладём только name (без региона)
-                        input.value = btn.getAttribute('data-name') || '';
-                        hide();
-                    });
-                });
-            }, 220);
-
-            input.addEventListener('input', run);
-            input.addEventListener('focus', () => {
-                const q = (input.value || '').trim();
-                if (q.length >= 2) run();
-            });
-
-            document.addEventListener('click', (e) => {
-                if (!wrap.contains(e.target)) hide();
-            });
-
-            input.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape') hide();
-            });
-        })();
-    </script>
-</x-app-layout>
+				
+                <div class="row">
+                    {{-- NAME --}}
+                    <div class="col-12">
+						<div class="card">
+							<label>Название <span class="text-danger">*</span></label>
+							<input
+							type="text"
+							name="name"
+							class="@error('name') is-invalid @enderror"
+							value="{{ old('name') }}"
+							required
+							>
+							
+							@error('name')<div class="invalid-feedback">{{ $message }}</div>@enderror
+							<div class="pb-05"></div>
+						</div>
+					</div>
+					
+					
+					<div class="col-md-4">
+						<div class="card">
+							<label>Город *</label>
+							
+							{{-- То, что реально сохраняем --}}
+							<input type="hidden" name="city_id" id="city_id" value="{{ old('city_id') }}" required>
+							
+							{{-- UI input (поиск) --}}
+							<div class="city-autocomplete" id="city-autocomplete" data-search-url="{{ route('cities.search') }}">
+								<input type="text"
+								id="city_search"
+								placeholder="Начните вводить город…"
+								value="{{ old('city_label') }}"
+								autocomplete="off"
+								@error('city_id') class="error" @enderror>
+								
+								{{-- dropdown --}}
+								<div id="city_dropdown" class="city-dropdown">
+									<div id="city_results"></div>
+								</div>
+							</div>
+							@error('city_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+							<div class="pb-05"></div>
+						</div>
+					</div>
+                    {{-- ADDRESS --}}
+                    <div class="col-md-8">
+						<div class="card">
+							<label>Адрес</label>
+							<input
+							type="text"
+							name="address"
+							class="@error('address') is-invalid @enderror"
+							value="{{ old('address') }}"
+							>
+							@error('address')<div class="invalid-feedback">{{ $message }}</div>@enderror
+							<div class="pb-05"></div>
+						</div>					
+					</div>
+					
+					
+					
+                    {{-- SHORT_TEXT --}}
+                    <div class="col-12">
+						<div class="card">
+							<label>Description</label>
+							<input
+							type="text"
+							name="short_text"
+							class="@error('short_text') is-invalid @enderror"
+							value="{{ old('short_text') }}"
+							>
+							@error('short_text')<div class="invalid-feedback">{{ $message }}</div>@enderror
+							<div class="pb-05"></div>
+						</div>
+					</div>
+                    {{-- LONG_TEXT (Trix) --}}
+                    <div class="col-12">
+						<div class="card">
+							<label>Короткое иписание (только для превью)</label>
+							<input id="long_text" type="hidden" name="long_text" value="{{ old('long_text') }}">
+							<trix-editor
+							input="long_text"
+							class="trix-content"
+							></trix-editor>
+							@error('long_text')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+							<div class="pb-05"></div>
+						</div>
+					</div>
+                    {{-- LONG_TEXT_FULL (Trix) --}}
+                    <div class="col-12">
+						<div class="card">
+							<label>Полное иписание</label>
+							<input id="long_text_full" type="hidden" name="long_text_full" value="{{ old('long_text_full') }}">
+							<trix-editor
+							input="long_text_full"
+							class="trix-content"
+							></trix-editor>
+							<div class="pb-05"></div>
+							@error('long_text_full')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+						</div>
+					</div>
+                    {{-- COORDS --}}
+                    <div class="col-md-6">
+						<div class="card">
+							<label>Широта (lat)</label>
+							<input
+							type="number"
+							name="lat"
+							step="any"
+							class="@error('lat') is-invalid @enderror"
+							value="{{ old('lat') }}"
+							>
+							@error('lat')<div class="invalid-feedback">{{ $message }}</div>@enderror
+							<div class="pb-05"></div>
+						</div>
+					</div>
+                    <div class="col-md-6">
+						<div class="card">
+							<label>Долгота (lng)</label>
+							<input
+							type="number"
+							name="lng"
+							step="any"
+							class="@error('lng') is-invalid @enderror"
+							value="{{ old('lng') }}"
+							>
+							@error('lng')<div class="invalid-feedback">{{ $message }}</div>@enderror
+							<div class="pb-05"></div>
+						</div>
+					</div>
+					
+					
+					
+                    {{-- PHOTOS --}}
+                    <div class="col-12">
+						<div class="card">
+							<label>Фото локации (до 5)</label>
+							<input
+							id="loc_photos"
+							type="file"
+							name="photos[]"
+							multiple
+							accept="image/*"
+							class="@error('photos') is-invalid @enderror"
+							>
+							<div class="f-16 b-500 mt-1">
+								jpg/jpeg/png/webp, до 5MB каждое, максимум 5 файлов
+							</div>
+							@error('photos')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+							@error('photos.*')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+							<div class="pb-05"></div>
+						</div>
+					</div>
+                    {{-- NOTE --}}
+                    <div class="col-12">
+						<div class="card">
+							<label>Примечание</label>
+							<input
+							type="text"
+							name="note"
+							class="@error('note') is-invalid @enderror"
+							value="{{ old('note') }}"
+							>
+							@error('note')<div class="invalid-feedback">{{ $message }}</div>@enderror
+							<div class="pb-05"></div>
+						</div>					
+					</div>	
+					
+				</div>
+				
+                <div class="mt-2 text-center">
+                    <button type="submit" class="btn btn-primary">Сохранить</button>
+				</div>
+			</form>
+		</div>
+	</div>
+</x-voll-layout>

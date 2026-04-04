@@ -32,6 +32,7 @@
 				document.body.classList.add('dark');
 			}
 		</script>	
+		
 		<header>
 			<div class="fix-header">
 				<div class="fix-header-main">
@@ -76,18 +77,25 @@
 								<span class="icon-login">								
 									<svg enable-background="new 0 0 512 512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><g><path d="m437.019 74.98c-48.352-48.351-112.639-74.98-181.019-74.98s-132.667 26.629-181.02 74.98c-48.351 48.353-74.98 112.64-74.98 181.02s26.628 132.667 74.98 181.02c48.353 48.351 112.64 74.98 181.02 74.98s132.668-26.629 181.02-74.98c48.351-48.353 74.98-112.64 74.98-181.02s-26.629-132.667-74.981-181.02zm-319.202 359.724c19.683-59.009 75.183-99.437 138.183-99.437s118.501 40.43 138.182 99.438c-38.232 29.63-86.18 47.295-138.182 47.295s-99.951-17.665-138.183-47.296zm300.338-21.455c-26.927-64.621-90.521-107.982-162.155-107.982-71.635 0-135.228 43.36-162.156 107.981-39.49-40.711-63.844-96.185-63.844-157.248 0-124.617 101.383-226 226-226s226 101.383 226 226c0 61.063-24.354 116.538-63.845 157.249z"/><path d="m256 80.334c-52.567 0-95.333 42.767-95.333 95.333s42.766 95.333 95.333 95.333 95.334-42.767 95.334-95.333-42.767-95.333-95.334-95.333zm0 160.666c-36.025 0-65.333-29.309-65.333-65.333s29.308-65.333 65.333-65.333 65.334 29.309 65.334 65.333-29.309 65.333-65.334 65.333z"/></g></svg>								
 								</span>							
-								
-								<!--
-									<span class="user-avatar-small">
-									<img src="/img/no-avatar.png" alt="avatar">
-									</span>
-								-->
 								@else
 								<span class="icon-login icon-login-svg"><svg viewBox="0 -10 490.66667 490" xmlns="http://www.w3.org/2000/svg"><path d="m325.332031 251h-309.332031c-8.832031 0-16-7.167969-16-16s7.167969-16 16-16h309.332031c8.832031 0 16 7.167969 16 16s-7.167969 16-16 16zm0 0"/><path d="m240 336.332031c-4.097656 0-8.191406-1.554687-11.308594-4.691406-6.25-6.25-6.25-16.382813 0-22.636719l74.027344-74.023437-74.027344-74.027344c-6.25-6.25-6.25-16.386719 0-22.636719 6.253906-6.25 16.386719-6.25 22.636719 0l85.332031 85.335938c6.25 6.25 6.25 16.382812 0 22.632812l-85.332031 85.332032c-3.136719 3.160156-7.230469 4.714843-11.328125 4.714843zm0 0"/><path d="m256 469.667969c-97.089844 0-182.804688-58.410157-218.410156-148.824219-3.242188-8.191406.808594-17.492188 9.023437-20.734375 8.191407-3.199219 17.515625.789063 20.757813 9.046875 30.742187 78.058594 104.789062 128.511719 188.628906 128.511719 111.742188 0 202.667969-90.925781 202.667969-202.667969s-90.925781-202.667969-202.667969-202.667969c-83.839844 0-157.886719 50.453125-188.628906 128.511719-3.265625 8.257812-12.566406 12.246094-20.757813 9.046875-8.214843-3.242187-12.265625-12.542969-9.023437-20.734375 35.605468-90.414062 121.320312-148.824219 218.410156-148.824219 129.386719 0 234.667969 105.28125 234.667969 234.667969s-105.28125 234.667969-234.667969 234.667969zm0 0"/></svg></span>
 								@endif
 								<span class="icon-close"></span>
 							</div>
 						</div>	
+						
+						<div class="fix-header-btn-mail-wrap">
+							<div class="fix-header-btn-mail">
+								<span class="icon-mail"><svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><path d="m256 0c-141.159 0-256 114.841-256 256s114.841 256 256 256 256-114.841 256-256-114.841-256-256-256zm0 480c-123.514 0-224-100.486-224-224s100.486-224 224-224 224 100.486 224 224-100.486 224-224 224zm115.229-184.306a16.079 16.079 0 0 0 -2.008-1.525c-12.718-8.16-12.873-16.643-12.009-36.747 1.084-25.2 2.569-59.715-41.583-91.3a103.691 103.691 0 0 0 -23.537-12.622 38.932 38.932 0 1 0 -72.183 0 103.741 103.741 0 0 0 -23.538 12.62c-44.153 31.584-42.668 66.1-41.584 91.3.865 20.1.709 28.586-12.008 36.746a16.006 16.006 0 0 0 -2.008 1.525 40.287 40.287 0 0 0 21.365 69.986 15.976 15.976 0 0 0 2.163.147h34.758a58.2 58.2 0 0 0 113.886 0h34.757a15.976 15.976 0 0 0 2.163-.147 40.287 40.287 0 0 0 21.365-69.986zm-115.229-163.694a6.932 6.932 0 1 1 -6.931 6.932 6.94 6.94 0 0 1 6.931-6.932zm0 248a26.22 26.22 0 0 1 -23.265-14.173h46.53a26.22 26.22 0 0 1 -23.265 14.173zm96.342-51.817a8.313 8.313 0 0 1 -6.017 5.644h-180.65a8.287 8.287 0 0 1 -4.221-13.641c27.272-18.353 26.183-43.7 25.3-64.139-.978-22.75-1.823-42.4 28.232-63.9a69.575 69.575 0 0 1 82.022 0c30.055 21.5 29.21 41.148 28.231 63.9-.879 20.435-1.968 45.787 25.3 64.139a8.318 8.318 0 0 1 1.803 7.997z"/></svg></span>
+								<span class="icon-close"></span>													
+							</div>		
+								@if(!empty($notificationsUnread) && $notificationsUnread > 0)
+								<span class="notificationsUnread">
+									{{ $notificationsUnread > 99 ? '99+' : $notificationsUnread }}
+								</span>
+								@endif								
+						</div>	
+						
 						<div class="fix-header-btn-hamm">
 							<span class="icon-hamm"><svg enable-background="new 0 0 512 512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><path d="m256 .001c-141.158 0-255.999 114.841-255.999 255.999s114.841 255.999 255.999 255.999 255.999-114.841 255.999-255.999-114.841-255.999-255.999-255.999zm0 479.998c-123.513 0-223.999-100.485-223.999-223.999s100.486-223.999 223.999-223.999 223.999 100.485 223.999 223.999-100.486 223.999-223.999 223.999zm141-223.999c0 8.837-7.164 16-16 16h-250c-8.836 0-16-7.163-16-16s7.164-16 16-16h250c8.836 0 16 7.163 16 16zm0-99c0 8.837-7.164 16-16 16h-250c-8.836 0-16-7.163-16-16s7.164-16 16-16h250c8.836 0 16 7.163 16 16zm0 198c0 8.837-7.164 16-16 16h-250c-8.836 0-16-7.163-16-16s7.164-16 16-16h250c8.836 0 16 7.163 16 16z"/></svg></span>
 							<span class="icon-close"></span>
@@ -101,9 +109,7 @@
 						</div>							
 					</div>		
 				</div>			
-				<div class="fix-header-menu fix-header-menu-1">
-					
-				</div>		
+				
 				<div class="fix-header-menu fix-header-menu-2">
 					@auth
 					<div class="menu-user-login">
@@ -119,13 +125,11 @@
 								</div>
 								<div class="user-info">
 									<div class="user-name">
-										@if($isAuth && !empty($user->first_name) && !empty($user->last_name))
-										{{ $user->first_name }} {{ $user->last_name }}
-										@elseif($isAuth)
-										Пользователь #{{ $user->id }} 
+										@if($isAuth)
+										{{ $user->name }}
 										@else
-										Error
-										@endif									
+										Вход
+										@endif								
 									</div>
 									
 									@php
@@ -155,6 +159,13 @@
 						<!-- Колонка 2: Основное меню -->
 						<div class="menu-column column-main">
 							<nav class="menu-nav">
+								
+								<a href="{{ route('notifications.index') }}" class="menu-item">
+									<span class="menu-text">Уведомления</span>
+								</a>
+								<a href="/" class="menu-item">
+									<span class="menu-text">Ваши мероприятия</span>
+								</a>
 								<a href="/user/profile" class="menu-item">
 									<span class="menu-text">Профиль</span>
 								</a>
@@ -176,15 +187,16 @@
 							<nav class="menu-nav">
 								<div class="menu-item-title">
 									<span class="menu-text">Меню организатора</span>
-								</div>	
+								</div>
+								<a href="/org/dashboard" class="menu-item">
+									<span class="menu-text">Панель организатора</span>
+								</a>								
 								<a href="/events/create/event_management" class="menu-item">
 									<span class="menu-text">Управление мероприятиями</span>
 								</a>								
 								<a href="/events/create" class="menu-item">
 									<span class="menu-text">Создать мероприятие</span>
 								</a>
-								
-								
 							</nav>
 						</div>	
 						@if(auth()->user()->role == 'admin')
@@ -194,14 +206,27 @@
 									<span class="menu-text">Меню администратора</span>
 								</div>							
 								<a href="/admin/dashboard" class="menu-item">
-									<span class="menu-text">Админ-панель</span>
+									<span class="menu-text">Панель администратора</span>
 								</a>
 								<a href="/admin/users" class="menu-item">
 									<span class="menu-text">Пользователи</span>
 								</a>
+								<a href="/admin/locations" class="menu-item">
+									<span class="menu-text">Локации</span>
+								</a>	
 								<a href="/admin/locations/create" class="menu-item">
 									<span class="menu-text">Создать локацию</span>
+								</a>
+								<a href="/admin/notification-templates" class="menu-item">
+									<span class="menu-text">Шаблоны уведомлений</span>
 								</a>								
+								<a href="/admin/broadcasts/create" class="menu-item">
+									<span class="menu-text">Новая рассылка</span>
+								</a>								
+								<a href="/admin/broadcasts/" class="menu-item">
+									<span class="menu-text">Рассылки</span>
+								</a>								
+								
 							</nav>	
 						</div>
 						@endif
@@ -214,9 +239,6 @@
 					@endphp
 					
 					<div class="social-auth">
-						
-						
-						
 						<!-- Кнопка VK -->
 						<div data-href="{{ route('auth.vk.redirect', ['return' => $returnUrl]) }}" class="auth-btn auth-btn-vk">
 							<span class="auth-icon-circle">
@@ -267,6 +289,38 @@
 					</div>
 					@endauth
 				</div>
+				
+				
+				<div class="fix-header-menu fix-header-menu-1">
+					
+					@if($isAuth)
+					
+					<nav class="menu-nav mb-1">
+						<a href="{{ route('notifications.index') }}" class="menu-item">
+							<span class="menu-text">Уведомление 1</span>
+						</a>
+						<a href="{{ route('notifications.index') }}" class="menu-item">
+							<span class="menu-text">Уведомление 2</span>
+						</a>							
+					</nav>				
+					<hr>
+					
+					<nav class="menu-nav mt-1">
+						<a href="{{ route('notifications.index') }}" class="menu-item">
+							<span class="menu-text">Все уведомления</span>
+						</a>
+					</nav>				
+					
+					@else
+					Войдите или зарегистрируйтесь <br>чтобы пользоваться всеми возможностями сайта
+					@endif					
+					
+				</div>						
+				
+				
+				
+				
+				
 				<div class="fix-header-menu fix-header-menu-3">
 					<div class="menu-site">
 						<!-- Колонка 1:  -->
@@ -275,8 +329,8 @@
 								<a href="/events" class="menu-item">
 									<span class="menu-text">Игры и тренировки</span>
 								</a>
-								<a href="#" class="menu-item">
-									<span class="menu-text">Клубы и Тренировки</span>
+								<a href="/locations" class="menu-item">
+									<span class="menu-text">Места</span>
 								</a>
 								<a href="#" class="menu-item">
 									<span class="menu-text">Правила сервиса</span>
@@ -288,7 +342,7 @@
 									<span class="menu-text">Уровни игроков</span>
 								</a>	
 								<a href="#" class="menu-item">
-								<span class="menu-text">О сервисе</span>
+									<span class="menu-text">О сервисе</span>
 								</a>									
 							</nav>
 						</div>
@@ -367,7 +421,14 @@
 				@else
 				{{ $slot }}	
 				@endif			
-			</div>			
+			</div>	
+			<div class="bg-effects" aria-hidden="true">
+				<div class="bg-gradient"></div>
+				<div class="bg-grid"></div>
+				<div class="bg-orb orb-1"></div>
+				<div class="bg-orb orb-2"></div>
+				<div class="bg-orb orb-3"></div>
+			</div>	
 		</main>
 		
 		<footer>

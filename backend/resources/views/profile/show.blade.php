@@ -1,4 +1,5 @@
 {{-- resources/views/profile/show.blade.php --}}
+
 <x-voll-layout body_class="profile-page">
     
     <x-slot name="title">
@@ -73,6 +74,8 @@
     @php
     /** @var \App\Models\User $u */
     $u = auth()->user();
+	$u->refresh();
+	
     $u->loadMissing(['city', 'classicPositions', 'beachZones']);
     
     $posMap = [
@@ -96,20 +99,51 @@
     $age   = method_exists($u, 'ageYears') ? $u->ageYears() : null;
     $birth = $u->birth_date ? $u->birth_date->format('Y-m-d') : '—';
     
-    // provider in session: telegram|vk|yandex|null
-    $provider = session('auth_provider');
     
     $hasTg = !empty($u?->telegram_id);
     $hasVk = !empty($u?->vk_id);
     $hasYa = !empty($u?->yandex_id);
+        // персональные уведомления
+    $hasMaxNotify = !empty($u?->max_chat_id);
+    $hasTelegramNotify = !empty($u?->telegram_notify_chat_id);
+    $hasVkNotify = !empty($u?->vk_notify_user_id);
+    
+    // provider in session: telegram|vk|yandex|null
+    $provider = session('auth_provider');
+    $providerId = (string) session('auth_provider_id', '');
+    
+    if (!$provider && $providerId !== '') {
+        if ($hasTg && (string) $u->telegram_id === $providerId) {
+            $provider = 'telegram';
+        } elseif ($hasVk && (string) $u->vk_id === $providerId) {
+            $provider = 'vk';
+        } elseif ($hasYa && (string) $u->yandex_id === $providerId) {
+            $provider = 'yandex';
+        }
+    }
+    
+    // fallback 1: если в сессии ничего нет, но привязан только один вход
+    if (!$provider) {
+        $linkedProviders = array_filter([
+            'telegram' => $hasTg,
+            'vk' => $hasVk,
+            'yandex' => $hasYa,
+        ]);
+    
+        if (count($linkedProviders) === 1) {
+            $provider = array_key_first($linkedProviders);
+        }
+    }
+    
+    // fallback 2: если определить нельзя, но входы есть
+    if (!$provider && ($hasTg || $hasVk || $hasYa)) {
+        $provider = 'unknown';
+    }
     
     $linkedCount = (int)$hasTg + (int)$hasVk + (int)$hasYa;
     
     // “provider looks off” (после неуспешной привязки мог остаться мусор в сессии)
-    $providerLooksOff = false;
-    if ($provider === 'telegram' && !$hasTg && ($hasVk || $hasYa)) $providerLooksOff = true;
-    if ($provider === 'vk' && !$hasVk && ($hasTg || $hasYa)) $providerLooksOff = true;
-    if ($provider === 'yandex' && !$hasYa && ($hasTg || $hasVk)) $providerLooksOff = true;
+	
     
     // link urls
     $vkLinkUrl     = route('auth.vk.redirect', ['link' => 1]);
@@ -132,17 +166,17 @@
     $base = 'provider-icon';
     $dot  = 'provider-dot';
     $txt  = 'provider-text';
-    
-    if ($p === 'vk') {
-    return '<span class="'.$base.'"><span class="'.$dot.'" style="background:#2787F5;"></span><span class="'.$txt.'">VK</span></span>';
-    }
-    if ($p === 'telegram') {
-    return '<span class="'.$base.'"><span class="'.$dot.'" style="background:#2AABEE;"></span><span class="'.$txt.'">Telegram</span></span>';
-    }
-    if ($p === 'yandex') {
-    return '<span class="'.$base.'"><span class="'.$dot.'" style="background:#FF0000;"></span><span class="'.$txt.'">Yandex</span></span>';
-    }
-    return '<span class="'.$base.'"><span class="'.$dot.'" style="background:#9CA3AF;"></span><span class="'.$txt.'">—</span></span>';
+
+        if ($p === 'vk') {
+            return '<span class="'.$base.'"><span class="'.$dot.'" style="background:#2787F5;"></span><span class="'.$txt.'">VK</span></span>';
+        }
+        if ($p === 'telegram') {
+            return '<span class="'.$base.'"><span class="'.$dot.'" style="background:#2AABEE;"></span><span class="'.$txt.'">Telegram</span></span>';
+        }
+        if ($p === 'yandex') {
+            return '<span class="'.$base.'"><span class="'.$dot.'" style="background:#FF0000;"></span><span class="'.$txt.'">Yandex</span></span>';
+        }
+        return '<span class="'.$base.'"><span class="'.$dot.'" style="background:#9CA3AF;"></span><span class="'.$txt.'">Не определён</span></span>';
     };
     
     $badge = function (bool $ok) {
@@ -161,7 +195,7 @@
     };
     @endphp
 	
-
+	
 	
     <div class="container">
         <div class="row">
@@ -217,26 +251,26 @@
 							<ul class="list mb-0">	
 								<li>
 									<span class="b-600">Пол:</span>		
-										@if($u->gender === 'm') Мужчина
-										@elseif($u->gender === 'f') Женщина
-										@else — @endif
-																
+									@if($u->gender === 'm') Мужчина
+									@elseif($u->gender === 'f') Женщина
+									@else — @endif
+									
 								</li>
 								<li>
 									<span class="b-600">Рост:</span>			
 									
-										{{ !empty($u->height_cm) ? ($u->height_cm.' см') : '—' }}
-														
+									{{ !empty($u->height_cm) ? ($u->height_cm.' см') : '—' }}
+									
 								</li>
 								<li>
 									<span class="b-600">Город:</span>		
 									
-										@if($u->city)
-										{{ $u->city->name }}@if($u->city->region) ({{ $u->city->region }})@endif
-										@else
-										—
-										@endif
-																
+									@if($u->city)
+									{{ $u->city->name }}@if($u->city->region) ({{ $u->city->region }})@endif
+									@else
+									—
+									@endif
+									
 								</li>
 								<li><span class="b-600">Дата рождения:</span> {{ $birth }} 					@if(!is_null($age))
 									({{ $age }} лет)
@@ -247,7 +281,7 @@
 					
 				</div>
 				
-
+				
 				<div class="ramka">  	
 					<h2 class="-mt-05">Навыки в волейболе</h2>
 					<div class="row">
@@ -296,18 +330,18 @@
 											<li>
 												<span class="b-600">Зона игры:</span><br>
 												
-										
-											@if(!empty($u->beach_universal))
-											Универсал (2 и 4)
-										@elseif(!is_null($beachPrimary))
-										Основная: {{ $beachPrimary }}
-										@if(!empty($beachExtras))
-										; Доп.: {{ collect($beachExtras)->join(', ') }}
-										@endif
-										@else
-										—
-										@endif
-										
+												
+												@if(!empty($u->beach_universal))
+												Универсал (2 и 4)
+												@elseif(!is_null($beachPrimary))
+												Основная: {{ $beachPrimary }}
+												@if(!empty($beachExtras))
+												; Доп.: {{ collect($beachExtras)->join(', ') }}
+												@endif
+												@else
+												—
+												@endif
+												
 											</li>
 										</ul>
 									</div>
@@ -319,17 +353,17 @@
 					
 					
 				</div>	
-				<div class="ramka">  	
+				<div class="ramka" id="providers">  	
 					
-					{{-- Привязка провайдеров --}}
+                    {{-- Привязка провайдеров --}}
 					
 					<h2 class="-mt-05">Привязка входов</h2>
 					<p>Привяжите дополнительные способы входа к текущему аккаунту.</p>
 					
 					<p>
-						<span class="text-muted">Текущий вход (сессия):</span>
-						{!! $providerIcon($provider) !!}
-					</p>
+                        <span class="text-muted">Текущий вход:</span>
+                        {!! $providerIcon($provider) !!}
+                    </p>
 					
 					@if($allLinked)
 					<p>Все способы входа уже привязаны !</p>
@@ -366,7 +400,11 @@
 										onsubmit="return confirm('Отвязать VK от аккаунта?');">
 											@csrf
 											{{-- btn-danger --}}
-											<button type="submit" class="w-100 btn btn-small btn-secondary">
+											<button type="submit" class="btn-alert w-100 btn btn-small btn-secondary"
+											data-title="Отвязать VK от аккаунта?"
+											data-icon="warning"
+											data-confirm-text="Да, отвязать"
+											data-cancel-text="Отмена">
 												Отвязать
 											</button>
 										</form>
@@ -403,7 +441,11 @@
 										onsubmit="return confirm('Отвязать Yandex от аккаунта?');">
 											@csrf
 											{{-- btn-danger --}}
-											<button type="submit" class="w-100 btn btn-small btn-secondary">
+											<button type="submit" class="w-100 btn btn-alert btn-small btn-secondary"
+											data-title="Отвязать Yandex от аккаунта?"
+											data-icon="warning"
+											data-confirm-text="Да, отвязать"
+											data-cancel-text="Отмена">											
 												Отвязать
 											</button>
 										</form>
@@ -440,7 +482,11 @@
 										onsubmit="return confirm('Отвязать Telegram от аккаунта?');">
 											@csrf
 											{{-- btn-danger --}}
-											<button type="submit" class="w-100 btn btn-small btn-secondary">
+											<button type="submit" class="btn-alert w-100 btn btn-small btn-secondary"
+											data-title="Отвязать Telegram от аккаунта?"
+											data-icon="warning"
+											data-confirm-text="Да, отвязать"
+											data-cancel-text="Отмена">												
 												Отвязать
 											</button>
 										</form>
@@ -499,15 +545,8 @@
 									</div>
 								</div>
 							</div>
-						</div>
-						
+						</div>						
 					</div>
-					
-					
-					
-					
-					
-					
 					
 					
 					@if(($hasTg || $hasVk || $hasYa) && !$canUnlink)
@@ -515,20 +554,268 @@
 					@endif
 					
 					
-					@if($providerLooksOff)
-					<div class="alert alert-info">
-						Провайдер в сессии мог измениться из‑за неуспешной попытки привязки.
-						Ориентируйтесь на статусы “привязан/не привязан”.
-					</div>
-					@endif
-					
-					
-					
-					
-					
-					
-					
 				</div>	
+				
+				<div class="ramka">
+                    <h2 class="-mt-05">Уведомления и рассылки</h2>
+                
+                    <p class="mb-15">
+                        Не пропустите ни одного важного события — подпишитесь на уведомления, и вы всегда будете в курсе
+                        новостей, анонсов мероприятий и своевременных напоминаний о начале.
+                    </p>
+                
+                    <div class="row provider-cards">
+                        {{-- Telegram --}}
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="provider-card__header">
+                                    <span class="provider-card__icon icon-tg"></span>
+                                    <span class="provider-card__title">Уведомления в Telegram</span>
+                                </div>
+                        
+                                @if($hasTelegramNotify)
+                                    <div class="provider-card__status">
+                                        <span class="badge badge-success"></span>
+                                    </div>
+                        
+                                    <ul class="list">
+                                        <li>Личные уведомления в <b>Telegram</b> включены.</li>
+                                    </ul>
+                        
+                                    <form method="POST" action="{{ route('profile.telegram.disconnect') }}" class="mt-3">
+                                        @csrf
+                                        <button
+                                            type="submit"
+                                            class="w-100 btn btn-small btn-secondary btn-alert"
+                                            data-title="Отключить уведомления в Telegram?"
+                                            data-icon="warning"
+                                            data-confirm-text="Да, отключить"
+                                            data-cancel-text="Отмена"
+                                        >
+                                            Отключить
+                                        </button>
+                                    </form>
+                                @else
+                                    <div class="provider-card__status">
+                                        <span class="badge badge-muted"></span>
+                                    </div>
+                        
+                                    <ul class="list f-16">
+                                        <li>Хотите получать уведомления в <b>Telegram</b>?</li>
+                                    </ul>
+                        
+                                    <button type="button" id="connect-telegram-btn" class="w-100 btn btn-small">
+                                        Подключить Telegram
+                                    </button>
+                        
+                                    <div id="connect-telegram-result" class="mt-1 hidden">
+                                        <ul class="list f-16">
+                                            <li>Нажмите на ссылку ниже</li>
+                                            <li>Откройте личный чат с Telegram-ботом</li>
+                                            <li>Нажмите <b>Start</b></li>
+                                            <li>После этого личные уведомления подключатся автоматически</li>
+                                        </ul>
+                        
+                                        <a
+                                            style="word-break: break-all"
+                                            id="connect-telegram-link"
+                                            href="#"
+                                            target="_blank"
+                                            rel="noopener"
+                                            class="f-16 b-600"
+                                        ></a>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                
+                        {{-- VK --}}
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="provider-card__header">
+                                    <span class="provider-card__icon icon-vk"></span>
+                                    <span class="provider-card__title">Уведомления во VK</span>
+                                </div>
+                        
+                                @if($hasVkNotify)
+                                    <div class="provider-card__status">
+                                        <span class="badge badge-success"></span>
+                                    </div>
+                        
+                                    <ul class="list">
+                                        <li>Личные уведомления во <b>VK</b> включены.</li>
+                                    </ul>
+                        
+                                    <form method="POST" action="{{ route('profile.vk.disconnect') }}" class="mt-3">
+                                        @csrf
+                                        <button
+                                            type="submit"
+                                            class="w-100 btn btn-small btn-secondary btn-alert"
+                                            data-title="Отключить уведомления во VK?"
+                                            data-icon="warning"
+                                            data-confirm-text="Да, отключить"
+                                            data-cancel-text="Отмена"
+                                        >
+                                            Отключить
+                                        </button>
+                                    </form>
+                                @else
+                                    <div class="provider-card__status">
+                                        <span class="badge badge-muted"></span>
+                                    </div>
+                                
+                                    <ul class="list f-16">
+                                        <li>Хотите получать уведомления во <b>VK</b>?</li>
+                                    </ul>
+                                
+                                    <button type="button" id="connect-vk-btn" class="w-100 btn btn-small">
+                                        Открыть VK и скопировать команду
+                                    </button>
+                                
+                                    <div id="connect-vk-result" class="mt-1 hidden">
+                                        <ul class="list f-16">
+                                            <li>Нажмите на ссылку ниже</li>
+                                            <li>Откройте личный диалог с VK-ботом</li>
+                                            <li>Команда уже скопирована в буфер обмена</li>
+                                            <li>Просто вставьте её в чат и отправьте</li>
+                                            <li>После этого личные уведомления подключатся автоматически</li>
+                                        </ul>
+                                
+                                        <a
+                                            style="word-break: break-all"
+                                            id="connect-vk-link"
+                                            href="#"
+                                            target="_blank"
+                                            rel="noopener"
+                                            class="f-16 b-600"
+                                        ></a>
+                                
+                                        <div id="connect-vk-command-box" class="mt-1 hidden">
+                                            <div class="f-14 text-muted">Команда для бота:</div>
+                                            <div id="connect-vk-command" class="f-16 b-600"></div>
+                                            <div id="connect-vk-copy-hint" class="f-14 text-muted mt-05 hidden">
+                                                Команда скопирована в буфер обмена.
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                
+                        {{-- MAX --}}
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="provider-card__header">
+                                    <span class="provider-card__icon icon-max"></span>
+                                    <span class="provider-card__title">Уведомления в MAX</span>
+                                </div>
+                
+                                @if($hasMaxNotify)
+                                    <div class="provider-card__status">
+                                        <span class="badge badge-success"></span>
+                                    </div>
+                
+                                    <ul class="list">
+                                        <li>Личные уведомления в <b>MAX</b> включены.</li>
+                                    </ul>
+                
+                                    <form method="POST" action="{{ route('profile.max.disconnect') }}" class="mt-3">
+                                        @csrf
+                                        <button type="submit" class="w-100 btn btn-small btn-secondary btn-alert" data-title="Отключить MAX-уведомления?" data-icon="warning" data-confirm-text="Да, отключить" data-cancel-text="Отмена">
+                                            Отключить
+                                        </button>
+                                    </form>
+                                @else
+                                    <div class="provider-card__status">
+                                        <span class="badge badge-muted"></span>
+                                    </div>
+                
+                                    <ul class="list f-16">
+                                        <li>Хотите получать уведомления в <b>MAX</b>?</li>
+                                    </ul>
+                
+                                    <button type="button" id="connect-max-btn" class="w-100 btn btn-small">
+                                        Подключить MAX
+                                    </button>
+                
+                                    <div id="connect-max-result" class="mt-1 hidden">
+                                        <ul class="list f-16">
+                                        	<li>Нажмите на ссылку ниже</li>
+                                        	<li>Откройте личный чат с ботом MAX</li>
+                                        	<li>Нажмите <b>«Начать»</b></li>
+                                        	<li>После этого личные уведомления подключатся автоматически</li>
+                                        </ul>
+                
+                                        <a
+                                            style="word-break: break-all"
+                                            id="connect-max-link"
+                                            href="#"
+                                            target="_blank"
+                                            rel="noopener"
+                                            class="f-16 b-600"
+                                        ></a>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                </div>
+				
+               @php
+                $canManageNotificationChannels = in_array((string)($u->role ?? 'user'), ['admin', 'organizer', 'staff'], true);
+                
+                $notificationChannels = collect();
+                
+                if (
+                    $canManageNotificationChannels &&
+                    \Illuminate\Support\Facades\Schema::hasTable('user_notification_channels')
+                ) {
+                    $notificationChannels = \Illuminate\Support\Facades\DB::table('user_notification_channels')
+                        ->where('user_id', (int) $u->id)
+                        ->orderBy('created_at')
+                        ->get([
+                            'id',
+                            'title',
+                            'platform',
+                            'chat_id',
+                            'is_verified',
+                        ]);
+                }
+                @endphp
+              @if($canManageNotificationChannels)
+                <div class="ramka">
+                    <h2 class="-mt-05">Каналы уведомлений</h2>
+            
+                    @if($notificationChannels->isNotEmpty())
+                        <p><b>Список подключенных 📣:</b></p>
+                        <ol class="list">
+                            @foreach($notificationChannels as $channel)
+                                <li>
+                                    {{ $channel->title ?: ('Канал #' . $channel->id) }}
+                                    @if(!empty($channel->platform))
+                                        <span class="text-muted">({{ strtoupper($channel->platform) }})</span>
+                                    @endif
+                                    @if(!(bool) $channel->is_verified)
+                                        <span class="text-muted">— не подтверждён</span>
+                                    @endif
+                                </li>
+                            @endforeach
+                        </ol>
+                    @endif
+            
+                    <p>
+                        Подключайте Telegram / VK / MAX каналы для анонсов мероприятий,
+                        открытия регистрации и обновления списков участников.
+                    </p>
+            
+                    <div class="mt-2 m-center">
+                        <a href="{{ route('profile.notification_channels') }}" class="btn">
+                            Управление каналами уведомлений
+                        </a>
+                    </div>
+                </div>
+            @endif
+				
 				<div class="ramka">  	
 					
 					{{-- ✅ Приватность --}}
@@ -565,10 +852,12 @@
 						</div>
 						
 					</form>
-					
-					
-					
 				</div>	
+				
+				
+				
+				
+				
 				<div class="ramka">  	
 					
 					{{-- ✅ Удаление аккаунта — заявка админу --}}
@@ -594,4 +883,146 @@
 			</div>
 		</div>
 	</div>	
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    async function copyToClipboard(text) {
+        if (!text) return false;
+
+        if (navigator.clipboard && window.isSecureContext) {
+            try {
+                await navigator.clipboard.writeText(text);
+                return true;
+            } catch (e) {
+                console.warn('Clipboard API copy failed', e);
+            }
+        }
+
+        try {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.setAttribute('readonly', '');
+            textarea.style.position = 'fixed';
+            textarea.style.left = '-9999px';
+            textarea.style.top = '0';
+            document.body.appendChild(textarea);
+            textarea.focus();
+            textarea.select();
+
+            const ok = document.execCommand('copy');
+            document.body.removeChild(textarea);
+            return ok;
+        } catch (e) {
+            console.warn('Fallback copy failed', e);
+            return false;
+        }
+    }
+
+    function setupBindButton(buttonId, resultId, linkId, url, payload = {}, options = {}) {
+        const button = document.getElementById(buttonId);
+        if (!button) {
+            console.warn('Bind button not found:', buttonId);
+            return;
+        }
+
+        button.addEventListener('click', async function () {
+            button.disabled = true;
+
+            try {
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload),
+                });
+
+                let data = null;
+                try {
+                    data = await res.json();
+                } catch (e) {
+                    console.error('Invalid JSON response', e);
+                    alert('Сервер вернул некорректный ответ');
+                    return;
+                }
+
+                if (!res.ok || !data?.ok) {
+                    alert(data?.message || 'Не удалось создать ссылку');
+                    return;
+                }
+
+                const box = document.getElementById(resultId);
+                const link = document.getElementById(linkId);
+
+                if (link && data.link) {
+                    link.href = data.link;
+                    link.textContent = data.link;
+                }
+
+                if (options.commandBoxId && options.commandId) {
+                    const commandBox = document.getElementById(options.commandBoxId);
+                    const commandEl = document.getElementById(options.commandId);
+                    const copyHint = options.copyHintId
+                        ? document.getElementById(options.copyHintId)
+                        : null;
+
+                    if (commandBox && commandEl && data.command) {
+                        commandEl.textContent = data.command;
+                        commandBox.classList.remove('hidden');
+
+                        const copied = await copyToClipboard(data.command);
+                        if (copied && copyHint) {
+                            copyHint.classList.remove('hidden');
+                        }
+                    }
+                }
+
+                if (box) {
+                    box.classList.remove('hidden');
+                }
+
+                if (options.autoOpenLink && data.link) {
+                    window.open(data.link, '_blank', 'noopener');
+                }
+            } catch (e) {
+                console.error(e);
+                alert('Ошибка запроса при создании ссылки');
+            } finally {
+                button.disabled = false;
+            }
+        });
+    }
+
+    setupBindButton(
+        'connect-max-btn',
+        'connect-max-result',
+        'connect-max-link',
+        '{{ route('profile.max.generate_link') }}',
+        { kind: 'personal' }
+    );
+
+    setupBindButton(
+        'connect-telegram-btn',
+        'connect-telegram-result',
+        'connect-telegram-link',
+        '{{ route('profile.telegram.generate_link') }}',
+        { kind: 'personal' }
+    );
+
+    setupBindButton(
+        'connect-vk-btn',
+        'connect-vk-result',
+        'connect-vk-link',
+        '{{ route('profile.vk.generate_link') }}',
+        { kind: 'personal' },
+        {
+            commandBoxId: 'connect-vk-command-box',
+            commandId: 'connect-vk-command',
+            copyHintId: 'connect-vk-copy-hint',
+            autoOpenLink: true,
+        }
+    );
+});
+</script>
 </x-voll-layout>

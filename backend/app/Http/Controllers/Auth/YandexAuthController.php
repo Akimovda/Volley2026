@@ -28,9 +28,15 @@ class YandexAuthController extends Controller
 
     private function logWarn(string $msg, array $ctx = []): void
     {
-        if (!$this->debug()) return;
+        if (!$this->debug()) {
+            return;
+        }
         Log::warning('[YANDEX_OAUTH] ' . $msg, $ctx);
     }
+
+    /* -----------------------------------------------------------------
+     | Return URL helpers
+     |-----------------------------------------------------------------*/
 
     private function storeReturnTo(Request $request): void
     {
@@ -42,9 +48,11 @@ class YandexAuthController extends Controller
     private function sanitizeReturnTo(string $url): string
     {
         $fallback = url('/events');
-
         $url = trim($url);
-        if ($url === '') return $fallback;
+
+        if ($url === '') {
+            return $fallback;
+        }
 
         $appHost = parse_url(config('app.url'), PHP_URL_HOST);
         $urlHost = parse_url($url, PHP_URL_HOST);
@@ -65,16 +73,22 @@ class YandexAuthController extends Controller
         return (string) $request->session()->pull('oauth_return_to', url('/events'));
     }
 
+    /* -----------------------------------------------------------------
+     | Redirect
+     |-----------------------------------------------------------------*/
+
     public function redirect(Request $request)
     {
-        $intent = Auth::check() ? 'link' : 'login';
+        // ЯВНО: кнопка "Привязать" всегда = link
+        $intent = $request->boolean('link')
+            ? 'link'
+            : (Auth::check() ? 'link' : 'login');
 
         $this->storeReturnTo($request);
 
         $request->session()->put('oauth_provider', 'yandex');
         $request->session()->put('oauth_intent', $intent);
 
-        // ВАЖНО: Yandex scope — пробелами
         $scopeStr = implode(' ', $this->scopes);
 
         $driver = Socialite::driver('yandex')
@@ -84,84 +98,67 @@ class YandexAuthController extends Controller
                 'include_granted_scopes' => 'true',
             ]);
 
-        // в debug можно посмотреть финальный URL
         if ($this->debug()) {
             try {
                 $targetUrl = $driver->redirect()->getTargetUrl();
                 $this->logWarn('redirect()', [
                     'intent' => $intent,
-                    'scopes_requested' => $this->scopes,
-                    'scope_str' => $scopeStr,
                     'target_url' => $targetUrl,
                 ]);
                 return redirect()->away($targetUrl);
             } catch (\Throwable $e) {
-                $this->logWarn('redirect() build url failed', ['e' => $e->getMessage()]);
+                $this->logWarn('redirect build failed', ['e' => $e->getMessage()]);
             }
         }
 
         return $driver->redirect();
     }
 
+    /* -----------------------------------------------------------------
+     | Callback
+     |-----------------------------------------------------------------*/
+
     public function callback(Request $request)
     {
         $returnTo = $this->popReturnTo($request);
 
-        // Если Яндекс вернул ошибку
         if ($request->has('error')) {
-            $this->logWarn('callback() error from yandex', [
-                'error' => (string) $request->query('error'),
-                'error_description' => (string) $request->query('error_description'),
-                'query_keys' => array_keys($request->query()),
-                'scopes_requested' => $this->scopes,
-            ]);
-
             return redirect()->route('login')->with(
                 'error',
-                'Яндекс OAuth: ' . (string) $request->query('error') . ' — ' . (string) $request->query('error_description')
+                'Яндекс OAuth: ' .
+                (string) $request->query('error') . ' — ' .
+                (string) $request->query('error_description')
             );
         }
 
         try {
-            // stateful
             $yaUser = Socialite::driver('yandex')->user();
         } catch (\Throwable $e) {
-            $this->logWarn('callback() Socialite::user() failed', [
-                'e' => $e->getMessage(),
-                'has_code' => $request->filled('code'),
-                'query_keys' => array_keys($request->query()),
-            ]);
-
-            return redirect()->route('login')->with('error', 'Не удалось войти через Яндекс. Попробуйте ещё раз.');
+            $this->logWarn('Socialite user() failed', ['e' => $e->getMessage()]);
+            return redirect()->route('login')
+                ->with('error', 'Не удалось войти через Яндекс. Попробуйте ещё раз.');
         }
 
         $yandexId = (string) $yaUser->getId();
         $name     = (string) ($yaUser->getName() ?? '');
         $email    = (string) ($yaUser->getEmail() ?? '');
         $avatar   = $yaUser->getAvatar();
+        $raw      = is_array($yaUser->user ?? null) ? $yaUser->user : [];
 
-        $raw = $yaUser->user ?? [];
-        $raw = is_array($raw) ? $raw : [];
+        $intent = (string) $request->session()->pull(
+            'oauth_intent',
+            Auth::check() ? 'link' : 'login'
+        );
 
-        // только безопасные метки в debug
-        $this->logWarn('callback() user ok', [
-            'id' => $yandexId,
-            'has_email' => ($email !== ''),
-            'has_avatar' => !empty($avatar),
-            'raw_keys' => array_keys($raw),
-            'has_birthday' => !empty($raw['birthday'] ?? null),
-            'has_default_phone' => !empty($raw['default_phone']['number'] ?? null),
-        ]);
-
-        $intent = (string) $request->session()->pull('oauth_intent', Auth::check() ? 'link' : 'login');
         $request->session()->forget('oauth_provider');
 
-        // -------------------------
-        // LINK
-        // -------------------------
+        /* ===============================================================
+         | LINK (привязка к текущему аккаунту)
+         |===============================================================*/
         if ($intent === 'link') {
             if (!Auth::check()) {
-                return redirect()->route('login')->with('error', 'Сначала войдите, чтобы привязать Яндекс.');
+                return redirect()->route('login')
+                    ->with('error', 'Сначала войдите, чтобы привязать Яндекс.');
             }
 
             /** @var User $current */
@@ -173,34 +170,44 @@ class YandexAuthController extends Controller
                 ->exists();
 
             if ($existsForOther) {
-                return redirect('/user/profile')->with('error', 'Этот Яндекс уже привязан к другому аккаунту.');
+                return redirect('/user/profile')
+                    ->with('error', 'Этот Яндекс уже привязан к другому аккаунту.');
             }
 
-            if ($current->isFillable('yandex_id')) {
-                $current->yandex_id = $yandexId;
-            }
-            if ($current->isFillable('yandex_email') && $email !== '' && empty($current->yandex_email)) {
+            // 🔒 OAuth-поля — ТОЛЬКО прямое присваивание
+            $current->yandex_id = $yandexId;
+
+            if ($email !== '' && empty($current->yandex_email)) {
                 $current->yandex_email = $email;
             }
 
             $current->save();
 
-            UserPhotoFromProviderService::seedFromProviderIfAllowed($current, $avatar, false);
+            UserPhotoFromProviderService::seedFromProviderIfAllowed(
+                $current,
+                $avatar,
+                false
+            );
 
             $request->session()->put('auth_provider', 'yandex');
             $request->session()->put('auth_provider_id', $yandexId);
 
-            return redirect()->to($returnTo)->with('status', 'Яндекс привязан ✅');
+            return redirect()->to($returnTo)
+                ->with('status', 'Яндекс привязан ✅');
         }
 
-        // -------------------------
-        // LOGIN
-        // -------------------------
-        $user = User::query()->where('yandex_id', $yandexId)->first();
+        /* ===============================================================
+         | LOGIN
+         |===============================================================*/
+
+        $user = User::query()
+            ->where('yandex_id', $yandexId)
+            ->first();
 
         // (опционально) привязка по email
         if (!$user && $email !== '') {
             $candidate = User::query()->where('email', $email)->first();
+
             if ($candidate) {
                 $existsForOther = User::query()
                     ->where('yandex_id', $yandexId)
@@ -208,13 +215,15 @@ class YandexAuthController extends Controller
                     ->exists();
 
                 if ($existsForOther) {
-                    return redirect()->route('login')->with('error', 'Этот Яндекс уже привязан к другому аккаунту.');
+                    return redirect()->route('login')
+                        ->with('error', 'Этот Яндекс уже привязан к другому аккаунту.');
                 }
 
-                if ($candidate->isFillable('yandex_id') && empty($candidate->yandex_id)) {
+                if (empty($candidate->yandex_id)) {
                     $candidate->yandex_id = $yandexId;
                 }
-                if ($candidate->isFillable('yandex_email') && $email !== '' && empty($candidate->yandex_email)) {
+
+                if ($email !== '' && empty($candidate->yandex_email)) {
                     $candidate->yandex_email = $email;
                 }
 
@@ -228,12 +237,16 @@ class YandexAuthController extends Controller
         if (!$user) {
             $isNewUser = true;
 
-            $displayName = $name !== '' ? $name : "Yandex User #{$yandexId}";
+            $displayName = $name !== ''
+                ? $name
+                : "Yandex User #{$yandexId}";
 
             $safeEmail = null;
+
             if ($email !== '' && !User::query()->where('email', $email)->exists()) {
                 $safeEmail = $email;
             }
+
             if (!$safeEmail) {
                 $safeEmail = "yandex_{$yandexId}@yandex.local";
                 if (User::query()->where('email', $safeEmail)->exists()) {
@@ -242,52 +255,61 @@ class YandexAuthController extends Controller
             }
 
             $user = new User();
+            $user->name       = $displayName;
+            $user->email      = $safeEmail;
+            $user->password   = Hash::make(Str::random(32));
+            $user->yandex_id  = $yandexId;
 
-            if ($user->isFillable('name')) $user->name = $displayName;
-            if ($user->isFillable('email')) $user->email = $safeEmail;
-            if ($user->isFillable('password')) $user->password = Hash::make(Str::random(32));
-
-            if ($user->isFillable('yandex_id')) $user->yandex_id = $yandexId;
-            if ($user->isFillable('yandex_email') && $email !== '') $user->yandex_email = $email;
+            if ($email !== '') {
+                $user->yandex_email = $email;
+            }
 
             $user->save();
         }
 
-        // мягкое заполнение профиля данными Яндекса (ТОЛЬКО если пусто)
-        $yaBirthday = $raw['birthday'] ?? null;
-        $yaPhone    = $raw['default_phone']['number'] ?? null;
-        $yaSex      = $raw['sex'] ?? null; // male/female
-        $yaFirst    = $raw['first_name'] ?? null;
-        $yaLast     = $raw['last_name'] ?? null;
+        /* ---------------------------------------------------------------
+         | Мягкое заполнение профиля
+         |---------------------------------------------------------------*/
+        $data = [];
 
-        $changed = false;
-
-        if ($user->isFillable('first_name') && empty($user->first_name) && $yaFirst) { $user->first_name = $yaFirst; $changed = true; }
-        if ($user->isFillable('last_name')  && empty($user->last_name)  && $yaLast)  { $user->last_name  = $yaLast;  $changed = true; }
-
-        if ($user->isFillable('birth_date') && empty($user->birth_date) && $yaBirthday) {
-            $user->birth_date = $yaBirthday; // YYYY-MM-DD
-            $changed = true;
+        if (empty($user->first_name) && !empty($raw['first_name'])) {
+            $data['first_name'] = $raw['first_name'];
         }
 
-        if ($user->isFillable('phone') && empty($user->phone) && $yaPhone) {
-            $user->phone = $yaPhone; // E.164
-            $changed = true;
+        if (empty($user->last_name) && !empty($raw['last_name'])) {
+            $data['last_name'] = $raw['last_name'];
         }
 
-        if ($user->isFillable('gender') && empty($user->gender) && $yaSex) {
-            $g = $yaSex === 'male' ? 'm' : ($yaSex === 'female' ? 'f' : null);
+        if (empty($user->birth_date) && !empty($raw['birthday'])) {
+            $data['birth_date'] = $raw['birthday']; // YYYY-MM-DD
+        }
+
+        if (
+            empty($user->phone) &&
+            !empty($raw['default_phone']['number'])
+        ) {
+            $data['phone'] = $raw['default_phone']['number'];
+        }
+
+        if (empty($user->gender) && !empty($raw['sex'])) {
+            $g = $raw['sex'] === 'male'
+                ? 'm'
+                : ($raw['sex'] === 'female' ? 'f' : null);
+
             if ($g) {
-                $user->gender = $g;
-                $changed = true;
+                $data['gender'] = $g;
             }
         }
 
-        if ($changed) {
-            $user->save();
+        if (!empty($data)) {
+            $user->forceFill($data)->save();
         }
 
-        UserPhotoFromProviderService::seedFromProviderIfAllowed($user, $avatar, $isNewUser);
+        UserPhotoFromProviderService::seedFromProviderIfAllowed(
+            $user,
+            $avatar,
+            $isNewUser
+        );
 
         Auth::login($user, true);
         $request->session()->regenerate();

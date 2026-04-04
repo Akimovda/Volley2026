@@ -27,7 +27,22 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
-
+    
+     'bind' => [
+        'secret' => env('BIND_WEBHOOK_SECRET'),
+    ],
+        'vk' => [
+            'token' => env('VK_TOKEN'),
+            'version' => env('VK_API_VERSION', '5.199'),
+            'bot_link' => env('VK_BOT_LINK'),
+            'bot_api_url' => env('VK_BOT_API_URL'),
+    ],
+    'max' => [
+        'bot_api_url' => env('MAX_BOT_API_URL'),
+        'bot_link' => env('MAX_BOT_LINK'),
+        'bot_id' => env('MAX_BOT_ID'),
+        'bot_token' => env('MAX_BOT_TOKEN'),
+    ],
     /*
     |--------------------------------------------------------------------------
     | OAuth / Socialite providers
@@ -55,11 +70,11 @@ return [
         'admin_peer_id' => env('VK_ADMIN_PEER_ID'),
     ],
     // Yandex maps
-     'yandex_maps' => [
+    'yandex_maps' => [
         'key' => env('YANDEX_MAPS_API_KEY'),
     ],
+
     // Yandex via SocialiteProviders (driver: yandex)
-    // Socialite::driver('yandex')
     'yandex' => [
         'client_id' => env('YANDEX_CLIENT_ID'),
         'client_secret' => env('YANDEX_CLIENT_SECRET'),

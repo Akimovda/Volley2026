@@ -1,209 +1,530 @@
 {{-- resources/views/events/event_management.blade.php --}}
 @php
-    $tabs = [
-        'archive'   => 'Архив',
-        'mine'      => 'Мои',
-    ];
+/**
+* ВАЖНО:
+* - В tab=mine актуальность идёт по next_occurrence_starts_at (если есть),
+*   поэтому в колонке "Дата и время" показываем NEXT как основную дату.
+* - events.starts_at (root) может быть в прошлом у recurring — показываем вторичной строкой.
+*/
 
-    $fmtDt = function ($event) {
-        $tz = $event->timezone ?: 'UTC';
-        $s = $event->starts_at ? $event->starts_at->copy()->setTimezone($tz) : null;
-        $e = $event->ends_at ? $event->ends_at->copy()->setTimezone($tz) : null;
-        if (!$s) return '—';
-        $date = $s->format('d.m.Y');
-        $time = $s->format('H:i') . ($e ? '–' . $e->format('H:i') : '');
-        return $date . ' · ' . $time . ' (' . $tz . ')';
-    };
+$tabs = [
+'archive' => 'Архив',
+'mine'    => 'Мои',
+];
 
-    $fmtLocation = function ($event) {
-        $parts = array_filter([
-            $event->location?->name,
-            $event->location?->city,
-            $event->location?->address,
-        ]);
-        return $parts ? implode(', ', $parts) : '—';
-    };
+// ✅ ROOT дата (events.starts_at/ends_at) — может быть в прошлом у recurring
+$fmtRootDt = function ($event) {
+$tz = $event->timezone ?: 'UTC';
+$s = $event->starts_at ? $event->starts_at->copy()->setTimezone($tz) : null;
+$e = $event->ends_at ? $event->ends_at->copy()->setTimezone($tz) : null;
+if (!$s) return '—';
+$date = $s->format('d.m.Y');
+$time = $s->format('H:i') . ($e ? '–' . $e->format('H:i') : '');
+return $date . ' · ' . $time . ' (' . $tz . ')';
+};
 
-    // ВАЖНО: считаем места по тем полям, которые отдаёт контроллер:
-    // - max_players (int)
-    // - active_regs (int) — только активные (не cancelled)
-    $seatMeta = function ($event) {
-        $max = (int)($event->max_players ?? 0);
-        $registered = (int)($event->active_regs ?? 0);
+// ✅ Форматтер для серии (начало и конец серии)
+$fmtSeriesDt = function ($event) {
+$tz = $event->timezone ?: 'UTC';
 
-        if (!(bool)$event->allow_registration) {
-            return ['label' => 'Регистрация выключена', 'free' => null, 'max' => null, 'registered' => $registered];
-        }
-        if ($max <= 0) {
-            return ['label' => 'Мест: —', 'free' => null, 'max' => null, 'registered' => $registered];
-        }
+$first = $event->starts_at ? $event->starts_at->copy()->setTimezone($tz) : null;
+if (!$first) return '—';
 
-        $free = max(0, $max - $registered);
-        return ['label' => "Мест: {$free}/{$max}", 'free' => $free, 'max' => $max, 'registered' => $registered];
-    };
-@endphp
+$lastUtc = $event->last_occurrence_starts_at ?? null;
+$last = $lastUtc ? \Carbon\Carbon::parse($lastUtc, 'UTC')->setTimezone($tz) : null;
 
-<x-app-layout>
-    <x-slot name="header">
-        <div class="flex items-start justify-between gap-4">
-            <div>
-                <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                    Управление мероприятиями
-                </h2>
-                <div class="text-sm text-gray-500 mt-1">
-                    Быстрое создание копии (“Создать копию”), а также доступ к регистрации.
-                </div>
-            </div>
+if ($last) {
+return $first->format('d.m.Y') . ' — ' . $last->format('d.m.Y') . ' (' . $tz . ')';
+}
 
-            {{-- ✅ FIX: новая форма теперь живёт на /events/create --}}
-            <a href="{{ route('events.create') }}"
-               class="inline-flex items-center px-4 py-2 rounded-lg font-semibold text-sm border border-gray-200 bg-white hover:bg-gray-50">
-                + Создать новое
-            </a>
-        </div>
-    </x-slot>
+return 'с ' . $first->format('d.m.Y') . ' (' . $tz . ')';
+};
 
-    <div class="py-10">
-        <div class="max-w-6xl mx-auto sm:px-6 lg:px-8 space-y-6">
+$fmtLocation = function ($event) {
+$parts = array_filter([
+$event->location?->name,
+$event->location?->city?->name,
+$event->location?->address,
+]);
+return $parts ? implode(', ', $parts) : '—';
+};
 
-            {{-- Tabs (server-side, без JS) --}}
-            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
-                <div class="flex flex-wrap gap-2">
-                    @foreach($tabs as $key => $label)
-                        <a href="{{ route('events.create.event_management', ['tab' => $key]) }}"
-                           class="px-4 py-2 rounded-full border text-sm font-semibold
-                                  {{ $tab === $key ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50' }}">
-                            {{ $label }}
-                        </a>
-                    @endforeach
-                </div>
-            </div>
+$seatMeta = function ($event) {
+$max = (int)($event->max_players ?? 0);
+$registered = (int)($event->active_regs ?? 0);
 
-            {{-- Table --}}
-            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <div class="px-6 py-4 border-b border-gray-100">
-                    <div class="font-semibold text-gray-900">
-                        {{ $tabs[$tab] ?? 'Список' }}
-                    </div>
-
-                    {{-- ✅ FIX: обновили подсказку --}}
-                    <div class="text-xs text-gray-500 mt-1">
-                        “Создать копию” откроет обычное создание:
-                        <span class="font-mono">/events/create?from_event_id=ID</span>
-                    </div>
-                </div>
-
-                @if($events->isEmpty())
-                    <div class="p-6 text-sm text-gray-600">
-                        Здесь пока пусто.
-                    </div>
-                @else
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full text-sm">
-                            <thead class="bg-gray-50 text-gray-600">
-                                <tr>
-                                    <th class="text-left px-4 py-3">ID</th>
-                                    <th class="text-left px-4 py-3">Название</th>
-                                    <th class="text-left px-4 py-3">Местоположение</th>
-                                    <th class="text-left px-4 py-3">Дата и время</th>
-                                    <th class="text-left px-4 py-3">Организатор</th>
-                                    <th class="text-left px-4 py-3">Регистрация</th>
-                                    <th class="text-right px-4 py-3">Действия</th>
-                                </tr>
-                            </thead>
-
-                            <tbody class="divide-y divide-gray-100">
-                                @foreach($events as $event)
-                                    @php
-                                        $org = $event->organizer;
-                                        $seat = $seatMeta($event);
-                                    @endphp
-
-                                    <tr class="hover:bg-gray-50/60">
-                                        <td class="px-4 py-3 text-gray-900 font-semibold">
-                                            #{{ $event->id }}
-                                        </td>
-
-                                        <td class="px-4 py-3">
-                                            <div class="font-semibold text-gray-900">{{ $event->title }}</div>
-                                            <div class="text-xs text-gray-500 mt-1">
-                                                {{ strtoupper((string)$event->direction) }} · {{ (string)$event->format }}
-                                                @if(\Illuminate\Support\Facades\Schema::hasColumn('events','is_template') && (bool)$event->is_template)
-                                                    · <span class="font-semibold">TEMPLATE</span>
-                                                @endif
-                                            </div>
-                                        </td>
-
-                                        <td class="px-4 py-3 text-gray-700">
-                                            {{ $fmtLocation($event) }}
-                                        </td>
-
-                                        <td class="px-4 py-3 text-gray-700">
-                                            {{ $fmtDt($event) }}
-                                        </td>
-
-                                        <td class="px-4 py-3">
-                                            @if($org)
-                                                <div class="font-semibold text-gray-900">
-                                                    #{{ $org->id }} — {{ $org->name ?? $org->email }}
-                                                </div>
-                                                <div class="text-xs text-gray-500">
-                                                    {{ ucfirst((string)($org->role ?? 'user')) }}
-                                                </div>
-                                            @else
-                                                <span class="text-xs text-gray-400">—</span>
-                                            @endif
-                                        </td>
-
-                                        {{-- Колонка “Регистрация”: ссылка + места X/Y --}}
-                                        <td class="px-4 py-3">
-                                            <div class="font-semibold text-gray-900">{{ $seat['label'] }}</div>
-                                            <div class="text-xs text-gray-500 mt-1">
-                                                Записано: {{ (int)$seat['registered'] }}
-                                            </div>
-                                            <div class="mt-2">
-                                                @if((bool)$event->allow_registration)
-                                                    <a href="{{ route('events.registrations.index', ['event' => $event->id]) }}"
-                                                       class="inline-flex items-center px-3 py-2 rounded-lg text-sm font-semibold border border-gray-200 bg-white hover:bg-gray-50">
-                                                        Регистрация →
-                                                    </a>
-                                                @else
-                                                    <span class="inline-flex items-center px-3 py-2 rounded-lg text-sm font-semibold border border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed">
-                                                        Регистрация →
-                                                    </span>
-                                                @endif
-                                            </div>
-                                        </td>
-
-                                        <td class="px-4 py-3 text-right whitespace-nowrap">
-                                            <div class="inline-flex gap-2">
-                                                <a href="{{ route('events.event_management.edit', ['event' => (int)$event->id]) }}"
-                                                   class="inline-flex items-center px-3 py-2 rounded-lg text-sm font-semibold border border-blue-200 bg-white hover:bg-blue-50 text-blue-700">
-                                                    Изменить
-                                                </a>
+if (!(bool)$event->allow_registration) {
+return ['label' => 'Регистрация выключена', 'free' => null, 'max' => null, 'registered' => $registered];
+}
+if ($max <= 0) {
+return ['label' => 'Мест: —', 'free' => null, 'max' => null, 'registered' => $registered];
+    }
+    
+    $free = max(0, $max - $registered);
+    return ['label' => "Мест: {$free}/{$max}", 'free' => $free, 'max' => $max, 'registered' => $registered];
+	};
+	
+	// ✅ Исправленный детектор повторяющихся мероприятий
+	$isRecurringEvent = function ($event) {
+    return (bool)($event->is_recurring ?? false)
+	|| trim((string)($event->recurrence_rule ?? '')) !== '';
+	};
+	
+	$isAdmin = (auth()->user()?->role ?? null) === 'admin';
+	$organizerFilter = (int)($organizerFilter ?? request()->query('organizer_id', 0));
+	@endphp
+	
+	<x-voll-layout>
+		<x-slot name="title">Управление мероприятиями</x-slot>
+		<x-slot name="h1">Управление мероприятиями</x-slot>
+		
+		<x-slot name="breadcrumbs">
+			<li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
+				<a href="{{ route('events.create.event_management') }}" itemprop="item">
+					<span itemprop="name">Управление мероприятиями</span>
+				</a>
+				<meta itemprop="position" content="2">
+			</li>
+		</x-slot>    
+		
+		<x-slot name="t_description">Быстрое создание копии ("Создать копию"), а также доступ к регистрации.</x-slot>    
+		
+		<x-slot name="d_description">
+			<div data-aos-delay="250" data-aos="fade-up">
+				<a href="{{ route('events.create') }}" class="mt-2 btn btn-outline-secondary">
+					Создать новое
+				</a>
+			</div>        
+		</x-slot>    
+		
+		<div class="container">
+			@if (session('status'))
+			<div class="ramka">    
+				<div class="alert alert-success">
+					{{ session('status') }}
+				</div>
+			</div>
+			@endif
+			
+			@if (session('error'))
+			<div class="ramka">    
+				<div class="alert alert-error">
+					{{ session('error') }}
+				</div>
+			</div>
+			@endif        
+			
+			<div class="ramka">
+				<div class="row row2">
+					<div class="col-md-6">
+						<div class="tabs-content">
+							<div class="tabs">
+								@foreach($tabs as $key => $label)
+								<a href="{{ route('events.create.event_management', array_merge(['tab' => $key], request()->only('organizer_id'))) }}" class="tab {{ $tab === $key ? 'active' : '' }}">
+									{{ $label }}
+								</a>
+								@endforeach                    
+								<div class="tab-highlight"></div>
+							</div>                
+						</div>
+					</div>    
+					
+					{{-- Admin: filter by organizer --}}
+					@if($isAdmin)
+					<div class="col-md-6">    
+						<div class="form">
+							<div class="card mb-2">
+								<form method="GET" action="{{ route('events.create.event_management') }}">
+									<input type="hidden" name="tab" value="{{ $tab }}">
+									<label>Организатор:</label>
+									<select name="organizer_id" onchange="this.form.submit()">
+										<option value="0">Все</option>
+										@foreach(($organizers ?? []) as $o)
+										<option value="{{ (int)$o->id }}" {{ $organizerFilter === (int)$o->id ? 'selected' : '' }}>
+											#{{ (int)$o->id }} — {{ $o->name ?: $o->email }}
+										</option>
+										@endforeach
+									</select>
+									
+									@if($organizerFilter > 0)
+									<a href="{{ route('events.create.event_management', ['tab' => $tab]) }}" class="mt-1 blink">
+										Сбросить
+									</a>
+									@endif
+								</form>
+							</div>    
+						</div>
+					</div>
+					@endif
+				</div>
+				
+				@if($events->isEmpty())
+				<div class="p-6 text-sm text-gray-600">
+					@if($tab === 'mine')
+					Актуальных мероприятий нет — проверь вкладку «Архив».
+					@else
+					Здесь пока пусто.
+					@endif
+				</div>
+				@else
+				{{-- BULK ACTIONS UI --}}
+				<div class="row form row2 mb-1">
+					<div class="col-md-6 mb-1">
+						<label class="checkbox-item">
+							<input type="checkbox" id="bulkSelectAll">
+							<div class="custom-checkbox"></div>
+							<span>Выбрать всё на странице (выбрано: <span id="bulkSelectedCount" class="cd b-600">0</span>)</span>
+						</label>
+					</div>
+					<div class="col-md-6 text-right mb-1">
+						<button type="button" id="bulkCancelBtn" class="btn-alert btn btn-small" disabled>Отменить выбранные</button>
+						
+						@if($isAdmin)
+						<button type="button" id="bulkForceDeleteBtn" class="btn-alert btn btn-small" disabled>Удалить навсегда</button>
+						@endif
+					</div>
+				</div>
+				
+				<div class="form table-scrollable mb-0">
+					<div class="table-drag-indicator"></div>
+					<table class="table">
+						<colgroup>
+							<col style="width:4rem" />
+							<col style="width:7rem" />
+							<col style="width:34%" />
+							<col />
+							<col style="width:18%" />
+							@if($isAdmin)
+							<col style="width:18%" />
+							@endif
+							<col style="width:18%" />
+							<col style="width:18rem" />
+						</colgroup>
+						
+						<thead class="bg-gray-50 text-gray-600">
+							<tr>
+								<th></th>
+								<th>ID</th>
+								<th>Название</th>
+								<th>Местоположение</th>
+								<th>Дата и время</th>
+								@if($isAdmin)
+								<th>Организатор</th>
+								@endif
+								<th>Регистрация / Даты</th>
+								<th>Действия</th>
+							</tr>
+						</thead>
+						
+						<tbody>
+							@foreach($events as $event)
+							@php
+							$org = $event->organizer;
+							$seat = $seatMeta($event);
+							
+							$isRecurring = $isRecurringEvent($event);
+							$hasNext = !empty($event->next_occurrence_starts_at ?? null);
+							
+							$tz = $event->timezone ?: 'UTC';
+							$nextLocal = $hasNext
+                            ? \Carbon\Carbon::parse($event->next_occurrence_starts_at, 'UTC')->setTimezone($tz)
+                            : null;
+							@endphp
+							
+							<tr>
+								<td class="align-top">
+									<label class="checkbox-item">
+										<input type="checkbox" class="bulkItem" value="{{ (int)$event->id }}">
+										<div class="custom-checkbox mr-0"></div>
+									</label>        
+								</td>
+								
+								<td class="nowrap align-top">
+									#{{ (int)$event->id }}
+								</td>
+								
+								<td class="align-top">
+									<div class="d-flex">
+										@if($isRecurring)
+										<span class="emo" title="Повторяющееся мероприятие">🔁</span>
+										@endif    
+										<div>
+											<a class="blink" href="{{ url('/events/' . (int)$event->id) }}">{{ $event->title }}</a>
+											<div class="f-16 pt-1">
+												{{ strtoupper((string)$event->direction) }} · {{ (string)$event->format }}
+												@if(\Illuminate\Support\Facades\Schema::hasColumn('events','is_template') && (bool)$event->is_template)
+												· <span class="font-semibold">TEMPLATE</span>
+												@endif
+											</div>
+										</div>
+									</div>                                    
+								</td>
+								
+								<td class="align-top f-16">
+									{{ $fmtLocation($event) }}
+								</td>
+								
+								{{-- ✅ Дата и время: разделено для single и recurring --}}
+								<td class="align-top f-16">
+									@if($isRecurring)
+                                    <div>{{ $fmtSeriesDt($event) }}</div>
+                                    @if($nextLocal)
+                                    <div class="mt-1">
+                                        Следующее: {{ $nextLocal->format('d.m.Y · H:i') }} ({{ $tz }})
+									</div>
+                                    @endif
+									@else
+                                    <div class="break-words">{{ $fmtRootDt($event) }}</div>
+                                    @if($tab === 'mine' && $nextLocal)
+                                    <div class="mt-1">
+                                        Следующее: {{ $nextLocal->format('d.m.Y · H:i') }} ({{ $tz }})
+									</div>
+                                    @endif
+									@endif
+								</td>
+								@if($isAdmin)
+								<td class="align-top f-16">
+									@if($org)
+									<div>
+										#{{ (int)$org->id }} — {{ $org->name ?? $org->email }}
+									</div>
+									<div>
+										{{ ucfirst((string)($org->role ?? 'user')) }}
+									</div>
+									@else
+									<span>—</span>
+									@endif
+								</td>
+								@endif
+								{{-- Регистрация / Даты --}}
+								<td class="align-top f-16">
+									@if($isRecurring)
+                                    <a href="{{ route('events.event_management.occurrences', ['event' => (int)$event->id]) }}"
+									class="btn btn-small btn-secondary">
+                                        Открыть даты
+									</a>
+									@else
+                                    <div class="b-600">{{ $seat['label'] }}</div>
+                                    <div class="mt-1">Записано: <strong>{{ (int)$seat['registered'] }}</strong></div>
+                                    
+                                    @if((bool)$event->allow_registration)
+                                    <div class="mt-1">
+                                        <a href="{{ route('events.registrations.index', ['event' => (int)$event->id]) }}"
+										class="btn btn-small btn-secondary">
+                                            Регистрации
+										</a>
+									</div>
+                                    @endif
+									@endif
+								</td>
+								
+								{{-- Действия --}}
+								<td class="nowrap align-top f-0">
+									<div class="d-flex">
+										@if($isRecurring)
+                                        {{-- Для recurring: изменить серию, открыть даты, отменить всю серию --}}
+                                        <a href="{{ route('events.event_management.edit', ['event' => (int)$event->id]) }}"
+										class="mr-1 icon-edit btn btn-svg"
+										title="Изменить серию"></a>
                                         
-                                                <a href="{{ url('/events/create?from_event_id=' . (int)$event->id) }}"
-                                                   class="inline-flex items-center px-3 py-2 rounded-lg text-sm font-semibold bg-gray-900 text-white hover:bg-black">
-                                                    Создать копию
-                                                </a>
+                                        <a href="{{ route('events.event_management.occurrences', ['event' => (int)$event->id]) }}"
+										class="mr-1 icon-list btn btn-svg"
+										title="Открыть даты"></a>
                                         
-                                                <a href="{{ url('/events/' . (int)$event->id) }}"
-                                                   class="inline-flex items-center px-3 py-2 rounded-lg text-sm font-semibold border border-gray-200 bg-white hover:bg-gray-50">
-                                                    Открыть
-                                                </a>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div class="px-6 py-4 border-t border-gray-100">
-                        {{ $events->links() }}
-                    </div>
-                @endif
-            </div>
-        </div>
-    </div>
-</x-app-layout>
+                                        <form method="POST"
+										action="{{ route('events.event_management.destroy', ['event' => (int)$event->id]) }}"
+										class="d-inline-block">
+                                            @csrf
+                                            @method('DELETE')
+                                            <input type="hidden" name="delete_mode" value="series">
+                                            <button type="submit"
+											class="btn-alert btn btn-danger btn-svg icon-stop"
+											data-title="Отменить всю серию?"
+											data-text="Все даты серии будут отменены. История сохранится."
+											data-confirm-text="Да, отменить"
+											data-cancel-text="Отмена">
+											</button>
+										</form>
+                                        
+                                        {{-- Force delete для recurring (только для админа) --}}
+                                        @if($isAdmin)
+                                        <form method="POST"
+										action="{{ route('events.event_management.destroy', ['event' => (int)$event->id]) }}"
+										class="d-inline-block">
+                                            @csrf
+                                            @method('DELETE')
+                                            <input type="hidden" name="delete_mode" value="force">
+                                            <button type="submit"
+											class="btn-alert btn btn-danger btn-svg icon-delete"
+											data-title="Удалить всю серию навсегда?"
+											data-text="Будут удалены все даты серии без возможности восстановления."
+											data-confirm-text="Да, удалить"
+											data-cancel-text="Отмена">
+											</button>
+										</form>
+                                        @endif
+										@else
+                                        {{-- Для single: изменить, копировать, отменить --}}
+                                        <a href="{{ route('events.event_management.edit', ['event' => (int)$event->id]) }}"
+										class="mr-1 icon-edit btn btn-svg"
+										title="Изменить"></a>
+                                        
+                                        <a href="{{ url('/events/create?from_event_id=' . (int)$event->id) }}"
+										class="mr-1 icon-copy btn btn-svg"
+										title="Создать копию"></a>
+                                        
+                                        <form method="POST"
+										action="{{ route('events.event_management.destroy', ['event' => (int)$event->id]) }}"
+										class="d-inline-block">
+                                            @csrf
+                                            @method('DELETE')
+                                            <input type="hidden" name="delete_mode" value="single">
+                                            <button type="submit"
+											class="btn-alert mr-1 btn btn-danger btn-svg icon-stop"
+											data-title="Отменить мероприятие?"
+											data-text="История сохранится, событие исчезнет из списка."
+											data-confirm-text="Да, отменить"
+											data-cancel-text="Отмена">
+											</button>
+										</form>
+                                        
+                                        @if($isAdmin)
+                                        <form method="POST"
+										action="{{ route('events.event_management.destroy', ['event' => (int)$event->id]) }}"
+										class="d-inline-block">
+                                            @csrf
+                                            @method('DELETE')
+                                            <input type="hidden" name="delete_mode" value="force">
+                                            <button type="submit"
+											class="btn-alert btn btn-danger btn-svg icon-delete"
+											data-title="Удалить навсегда?"
+											data-text="Данные будут удалены без возможности восстановления. Только для тестовых данных."
+											data-confirm-text="Да, удалить"
+											data-cancel-text="Отмена">
+											</button>
+										</form>
+                                        @endif
+										@endif
+									</div>
+								</td>
+							</tr>
+							@endforeach
+						</tbody>
+					</table>
+				</div>
+				@endif
+			</div>
+		</div>
+		
+		{{ $events->links() }} 
+		
+		{{-- bulk form --}}
+		<form id="bulkForm"
+		method="POST"
+		action="{{ route('events.create.event_management.bulk_delete', array_merge(['tab' => $tab], request()->only('organizer_id'))) }}"
+		class="hidden">
+			@csrf
+			<input type="hidden" name="delete_mode" id="bulkDeleteMode" value="">
+			<div id="bulkIds"></div>
+		</form>
+		
+		<script>
+			document.addEventListener('DOMContentLoaded', () => {
+				// ===== Bulk функционал через btn-alert (без нативного confirm)
+				const bulkForm = document.getElementById('bulkForm');
+				if (!bulkForm) return;
+				
+				const selectAll    = document.getElementById('bulkSelectAll');
+				const countEl      = document.getElementById('bulkSelectedCount');
+				const cancelBtn    = document.getElementById('bulkCancelBtn');
+				const forceDeleteBtn = document.getElementById('bulkForceDeleteBtn');
+				const deleteModeEl = document.getElementById('bulkDeleteMode');
+				const idsWrap      = document.getElementById('bulkIds');
+				
+				const items = () => Array.from(document.querySelectorAll('.bulkItem'));
+				
+				function getSelectedIds() {
+					return items().filter(i => i.checked).map(i => i.value);
+				}
+				
+				function refreshBulk() {
+					const selected = getSelectedIds().length;
+					
+					if (countEl) countEl.textContent = String(selected);
+					if (cancelBtn) cancelBtn.disabled = selected === 0;
+					if (forceDeleteBtn) forceDeleteBtn.disabled = selected === 0;
+					
+					if (selectAll) {
+						const all = items();
+						selectAll.checked = all.length > 0 && all.every(i => i.checked);
+					}
+				}
+				
+				function submitBulk(deleteMode) {
+					if (!idsWrap) return;
+					
+					idsWrap.innerHTML = '';
+					
+					const ids = getSelectedIds();
+					ids.forEach(id => {
+						const inp = document.createElement('input');
+						inp.type = 'hidden';
+						inp.name = 'ids[]';
+						inp.value = id;
+						idsWrap.appendChild(inp);
+					});
+					
+					if (deleteModeEl) deleteModeEl.value = deleteMode;
+					bulkForm.submit();
+				}
+				
+				// Обработка bulk-кнопок через btn-alert (события от компонента)
+				if (cancelBtn) {
+					cancelBtn.addEventListener('click', () => {
+						const event = new CustomEvent('btn-alert:show', {
+							detail: {
+								title: 'Отменить выбранные мероприятия?',
+								text: 'История будет сохранена, события исчезнут из списка.',
+								confirmText: 'Да, отменить',
+								cancelText: 'Отмена',
+								onConfirm: () => submitBulk('cancel')
+							}
+						});
+						document.dispatchEvent(event);
+					});
+				}
+				
+				if (forceDeleteBtn) {
+					forceDeleteBtn.addEventListener('click', () => {
+						const event = new CustomEvent('btn-alert:show', {
+							detail: {
+								title: 'Удалить выбранные навсегда?',
+								text: 'Данные будут удалены без возможности восстановления. Только для тестовых данных.',
+								confirmText: 'Да, удалить',
+								cancelText: 'Отмена',
+								onConfirm: () => submitBulk('force')
+							}
+						});
+						document.dispatchEvent(event);
+					});
+				}
+				
+				if (selectAll) {
+					selectAll.addEventListener('change', () => {
+						items().forEach(i => {
+							i.checked = selectAll.checked;
+						});
+						refreshBulk();
+					});
+				}
+				
+				document.addEventListener('change', (e) => {
+					if (e.target && e.target.classList && e.target.classList.contains('bulkItem')) {
+						refreshBulk();
+					}
+				});
+				
+				refreshBulk();
+			});
+		</script>
+	</x-voll-layout>	

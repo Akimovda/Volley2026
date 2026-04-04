@@ -1,0 +1,152 @@
+{{-- body_class - класс для body --}}
+<x-voll-layout body_class="notification-templates-page">
+    
+    <x-slot name="title">
+        Редактирование шаблона уведомлений
+	</x-slot>
+    
+    <x-slot name="description">
+        Редактирование шаблона уведомления {{ $template->name }}
+	</x-slot>
+    
+    <x-slot name="canonical">
+        {{ route('admin.notification_templates.edit', $template->id) }}
+	</x-slot>
+    
+    <x-slot name="style">
+        <style>
+            /* Дополнительные стили при необходимости */
+		</style>
+	</x-slot>
+    
+    <x-slot name="h1">
+        Редактирование шаблона
+	</x-slot>
+    
+
+
+    <x-slot name="breadcrumbs">
+        <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
+            <a href="{{ route('admin.dashboard') }}" itemprop="item"><span itemprop="name">Админ-панель</span></a>
+            <meta itemprop="position" content="2">
+		</li>	
+        <li itemprop="itemListElement" itemscope="" itemtype="http://schema.org/ListItem">
+            <a href="{{ route('admin.notification_templates.index') }}" itemprop="item">
+                <span itemprop="name">Шаблоны уведомлений</span>
+			</a>
+            <meta itemprop="position" content="3">
+		</li>
+        <li itemprop="itemListElement" itemscope="" itemtype="http://schema.org/ListItem">
+            <span itemprop="name">Редактирование</span>
+            <meta itemprop="position" content="4">
+		</li>
+	</x-slot>
+    
+    <x-slot name="t_description">
+        <div class="f-22 b-600">
+			Код: <span class="cd">{{ $template->code }}</span>
+		</div>		
+        <div class="f-22 b-600">
+			Канал: <span class="cd">{{ $template->channel ?: 'общий' }}</span>
+		</div>	
+	</x-slot>
+    
+    <x-slot name="script">
+        <script>
+            // Дополнительные скрипты при необходимости
+		</script>
+	</x-slot>
+    
+    <div class="container">
+        <div class="row">
+            <div class="col-12">
+                @if(session('status'))
+				<div class="ramka">
+                    <div class="alert alert-success">
+                        {{ session('status') }}
+					</div>
+				</div>
+                @endif
+                
+                <form method="POST" action="{{ route('admin.notification_templates.update', $template->id) }}" class="form">
+                    @csrf
+                    @method('PATCH')
+                    
+                    <div class="row row2">
+                        <div class="col-12 col-lg-8">
+                            <div class="ramka">
+								<h2 class="-mt-05">Основная информация</h2>
+								<div class="row">
+									<div class="col-12">
+										<div class="card">
+											<label>Название</label>
+											<input type="text" name="name" value="{{ old('name', $template->name) }}" >
+										</div>	
+									</div>
+									<div class="col-12">
+										<div class="card">
+											<label>Заголовок</label>
+											<input type="text" name="title_template" value="{{ old('title_template', $template->title_template) }}" >
+										</div>
+									</div>
+									<div class="col-12">
+										<div class="card">
+											<label>Текст</label>
+											<textarea name="body_template" rows="10" >{{ old('body_template', $template->body_template) }}</textarea>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+                        
+                        <div class="col-12 col-lg-4">
+							<div class="sticky">
+								<div class="ramka">
+									
+									
+									<h2 class="-mt-05">Дополнительные настройки</h2>
+                                    
+									<div class="row">
+										<div class="col-12">		
+											<div class="card">
+												<label>Картинка (URL)</label>
+												<input type="text" name="image_url" value="{{ old('image_url', $template->image_url) }}" >
+											</div>
+										</div>
+										<div class="col-12">		
+											<div class="card">
+												<label>Текст кнопки</label>
+												<input type="text" name="button_text" value="{{ old('button_text', $template->button_text) }}" >
+											</div>
+										</div>
+										<div class="col-12">		
+											<div class="card">
+												<label>Ссылка кнопки</label>
+												<input type="text" name="button_url_template" value="{{ old('button_url_template', $template->button_url_template) }}" >
+											</div>
+										</div>
+									</div>
+                                    <div class="mb-2 mt-2">
+                                        <label class="checkbox-item">
+                                            <input type="checkbox" name="is_active" value="1" {{ old('is_active', $template->is_active) ? 'checked' : '' }}>
+                                            <div class="custom-checkbox"></div>
+                                            <span>Шаблон активен</span>
+										</label>
+									</div>
+								</div>
+								<div class="ramka">
+                                    <div class="text-center">
+										<button type="submit" class="btn">
+											Сохранить
+										</button>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+    
+</x-voll-layout>

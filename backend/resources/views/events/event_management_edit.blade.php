@@ -122,7 +122,7 @@
                     value="{{ (int)$loc->id }}"
                     @selected((int)old('location_id', (int)$event->location_id)===(int)$loc->id)
                     data-name="{{ e((string)$loc->name) }}"
-                    data-city="{{ e((string)($loc->city ?? '')) }}"
+                    data-city="{{ e((string)($loc->city?->name ?? '')) }}"
                     data-address="{{ e((string)($loc->address ?? '')) }}"
                     data-short="{{ e((string)($loc->short_text ?? '')) }}"
                     data-lat="{{ $loc->lat ?? '' }}"

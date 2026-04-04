@@ -1,0 +1,674 @@
+<?php
+	
+	namespace App\Services;
+	
+	use App\Models\User;
+	use App\Models\EventOccurrence;
+	use App\Services\EventRoleSlotService;
+	use Illuminate\Support\Carbon;
+	use Illuminate\Support\Facades\Schema;
+	use Illuminate\Support\Collection;
+	
+	final class EventRegistrationGuard
+	{
+		private EventRoleSlotService $slotService;
+		
+		public function __construct(EventRoleSlotService $slotService)
+		{
+			$this->slotService = $slotService;
+		}
+		
+		public function check(
+			?User $user,
+			EventOccurrence $occurrence,
+			array $context = []
+		): GuardResult {
+			
+			$result = GuardResult::allow([
+				'free_positions' => [],
+				'is_registered'  => false,
+				'user_position'  => null,
+			]);
+			
+			$result->meta['is_registered'] = false;
+			$result->meta['user_position'] = null;
+			
+			$position = $this->normalizePosition($context);
+			$event = $occurrence->event;
+			
+			if (!$event) {
+				$result->errors[] = 'Событие не найдено.';
+				return $result;
+			}
+			
+			$direction = (string) ($event->direction ?? 'classic');
+            $isClassic = $direction === 'classic';
+            $isBeach = $direction === 'beach';
+			
+			/*
+				|--------------------------------------------------------------------------
+				| REGISTRATIONS
+				|--------------------------------------------------------------------------
+			*/
+			
+			$registrations = ($occurrence->registrations ?? collect())
+				->filter(fn($r) => !$r->is_cancelled && $r->status !== 'cancelled')
+				->values();
+			if (!$registrations instanceof Collection) {
+				$registrations = collect($registrations);
+			}
+			
+			$registrationsByPosition = $registrations->groupBy('position');
+			
+			$userRegistration = $this->detectUserRegistration(
+				$user,
+				$registrations,
+				$result
+			);
+			
+			/*
+				|--------------------------------------------------------------------------
+				| MAX PLAYERS
+				|--------------------------------------------------------------------------
+			*/
+			
+			$settings = $event->gameSettings ?? null;
+			
+			$maxPlayers = (int)(
+				$occurrence->max_players
+				?? ($settings?->max_players ?? 0)
+			);
+			
+			/*
+				|--------------------------------------------------------------------------
+				| AGE POLICY
+				|--------------------------------------------------------------------------
+			*/
+			
+			$agePolicy = $occurrence->age_policy
+				?? $event->age_policy
+				?? 'any';
+			
+			/*
+				|--------------------------------------------------------------------------
+				| ПОСЛЕДОВАТЕЛЬНОСТЬ ПРОВЕРОК (ИСПРАВЛЕНО)
+				|--------------------------------------------------------------------------
+			*/
+			
+			// 1. Проверка авторизации и окна регистрации
+			$this->checkAuthAndWindow($user, $occurrence, $event, $result);
+			
+			// 2. Проверка возрастной политики (исправлено)
+			$this->checkAgePolicy($user, $occurrence, $event, $agePolicy, $result);
+			
+			// 3. Проверка гендерной политики
+			[$genderBlocked, $policy] = $this->applyGenderPolicy(
+                $user,
+                $settings,
+                $registrations,
+                $maxPlayers,
+                $result
+            );
+			
+			// 4. Проверка уровня игрока
+			$this->checkLevelPolicy($user, $occurrence, $event, $result);
+			
+			// 5. Расчет свободных позиций (только после всех проверок)
+			$freePositions = $this->calculatePositions(
+				$event,
+				$settings,
+				$registrationsByPosition,
+				$userRegistration,
+				$position,
+				$user
+			);
+			
+			// 6. Проверка доступности мест / позиций
+            $this->checkCapacityAndPositions(
+                $occurrence,
+                $registrations,
+                $maxPlayers,
+                $freePositions,
+                $position,
+                $isClassic,
+                $isBeach,
+                $result
+            );
+			
+			/*
+				|--------------------------------------------------------------------------
+				| SNAPSHOT
+				|--------------------------------------------------------------------------
+			*/
+			
+			$this->buildAvailabilitySnapshot(
+				$occurrence,
+				$registrations,
+				$maxPlayers,
+				$result,
+				$freePositions,
+				$agePolicy,
+				$policy,
+				$genderBlocked
+			);
+			
+			if (!empty($result->errors)) {
+				$result->allowed = false;
+			}
+			
+			return $result;
+		}
+		
+		/*
+			|--------------------------------------------------------------------------
+			| USER REGISTRATION
+			|--------------------------------------------------------------------------
+		*/
+		
+		private function detectUserRegistration(
+			?User $user,
+			Collection $registrations,
+			GuardResult $result
+		) {
+			
+			if (!$user) {
+				return null;
+			}
+			
+			$userRegistration = $registrations->firstWhere('user_id', $user->id);
+			
+			if ($userRegistration) {
+				$result->meta['is_registered'] = true;
+				$result->meta['user_position'] = $userRegistration->position;
+			}
+			
+			return $userRegistration;
+		}
+		
+		
+		/*
+			|--------------------------------------------------------------------------
+			| POSITIONS
+			|--------------------------------------------------------------------------
+		*/
+		
+		private function calculatePositions(
+			$event,
+			$settings,
+			Collection $registrationsByPosition,
+			$userRegistration,
+			?string $position,
+			?User $user
+		): array {
+			
+			$freePositions = [];
+			$slots = $this->slotService->getSlots($event);
+			
+			/*
+				|--------------------------------------------------------------------------
+				| REAL TAKEN PER POSITION
+				|--------------------------------------------------------------------------
+			*/
+			
+			$takenPerRole = [];
+			
+			foreach ($slots as $slot) {
+				
+				$taken = $registrationsByPosition
+					->get($slot->role)?->count() ?? 0;
+				
+				if (
+					($userRegistration)
+					&& $userRegistration->position === $slot->role
+				) {
+					$taken--;
+				}
+				
+				$takenPerRole[$slot->role] = $taken;
+			}
+			
+			/*
+				|--------------------------------------------------------------------------
+				| NORMAL PLAYERS (REAL SLOTS)
+				|--------------------------------------------------------------------------
+			*/
+			
+			foreach ($slots as $slot) {
+				
+				$taken = $takenPerRole[$slot->role] ?? 0;
+				$free  = $slot->max_slots - $taken;
+				
+				// Проверяем наличие свободных мест на позиции
+				if ($free <= 0) {
+					continue;
+				}
+				
+				/*
+					|--------------------------------------------------------------------------
+					| GENDER LIMITED FILTER
+					|--------------------------------------------------------------------------
+				*/
+				
+				if ($settings && $settings->gender_policy === 'mixed_limited' && $user) {
+					
+					$viewerGender = strtolower((string)$user->gender);
+					
+					$side = $settings->gender_limited_side;
+					$positions = $settings->gender_limited_positions ?? [];
+					
+					if (is_string($positions)) {
+						$positions = json_decode($positions, true) ?: [];
+					}
+					
+					$targetGender = null;
+					
+					if ($side === 'male')   $targetGender = 'm';
+					if ($side === 'female') $targetGender = 'f';
+					
+					if (
+						$targetGender &&
+						$viewerGender &&
+						$viewerGender[0] === $targetGender &&
+						!in_array($slot->role, $positions, true)
+					) {
+						continue;
+					}
+					
+				}
+				
+				$freePositions[] = [
+					'key'   => $slot->role,
+					'free'  => $free,
+					'limit' => $slot->max_slots
+				];
+			}
+			
+			return $freePositions;
+		}
+		
+		/*
+			|--------------------------------------------------------------------------
+			| AUTH + REGISTRATION WINDOW
+			|--------------------------------------------------------------------------
+		*/
+		
+		private function checkAuthAndWindow(
+			?User $user,
+			EventOccurrence $occurrence,
+			$event,
+			GuardResult $result
+		): void {
+			
+			if (!$user) {
+				$result->errors[] = 'Для записи необходимо войти в аккаунт.';
+			}
+			
+			$nowUtc = Carbon::now('UTC');
+			
+			if (
+				$occurrence->starts_at &&
+				$nowUtc->greaterThanOrEqualTo(
+					Carbon::parse($occurrence->starts_at, 'UTC')
+				)
+			) {
+				$result->errors[] = 'Мероприятие уже началось.';
+			}
+			
+            if (!$occurrence->effectiveAllowRegistration()) {
+                $result->errors[] = 'Регистрация на мероприятие выключена.';
+            }
+			
+			if (
+				$occurrence->registration_starts_at &&
+				$nowUtc->lessThan(
+					Carbon::parse($occurrence->registration_starts_at, 'UTC')
+				)
+			) {
+				$result->errors[] = 'Регистрация ещё не началась.';
+			}
+			
+			if (
+				$occurrence->registration_ends_at &&
+				$nowUtc->greaterThanOrEqualTo(
+					Carbon::parse($occurrence->registration_ends_at, 'UTC')
+				)
+			) {
+				$result->errors[] = 'Регистрация уже завершена.';
+			}
+		}
+		
+		/*
+			|--------------------------------------------------------------------------
+			| AGE (ИСПРАВЛЕНО)
+			|--------------------------------------------------------------------------
+		*/
+		
+		private function checkAgePolicy(
+			?User $user,
+			EventOccurrence $occurrence,
+			$event,
+			string $policy,
+			GuardResult $result
+		): void {
+			
+			// Если политика не 'child', пропускаем (adult обрабатывается отдельно или игнорируется)
+			if ($policy !== 'child') {
+				return;
+			}
+			
+			// Проверяем наличие даты рождения у пользователя
+			if (!$user) {
+				$result->errors[] = 'Для записи на детское мероприятие необходимо войти в аккаунт.';
+				return;
+			}
+			
+			if (!Schema::hasColumn('users', 'birth_date') || !$user->birth_date) {
+				$result->errors[] = 'Для записи на детское мероприятие укажи дату рождения в профиле.';
+				return;
+			}
+			
+			// Определяем дату мероприятия (сначала occurrence, потом event)
+			$eventDate = $occurrence->starts_at
+				? Carbon::parse($occurrence->starts_at, 'UTC')
+				: ($event->starts_at ? Carbon::parse($event->starts_at, 'UTC') : null);
+			
+			if (!$eventDate) {
+				$result->errors[] = 'Дата мероприятия не указана.';
+				return;
+			}
+			
+			$birthDate = Carbon::parse($user->birth_date);
+			
+			// Считаем полный возраст на момент мероприятия
+			$age = $birthDate->diffInYears($eventDate);
+			
+			$min = (int)($event->child_age_min ?? 0);
+			$max = (int)($event->child_age_max ?? 0);
+			
+			if ($min > 0 && $age < $min) {
+				$result->errors[] = "Возраст участника меньше допустимого для этого мероприятия (нужно от {$min} лет).";
+				return;
+			}
+			
+			if ($max > 0 && $age > $max) {
+				$result->errors[] = "Возраст участника больше допустимого для этого мероприятия (нужно до {$max} лет).";
+				return;
+			}
+		}
+		
+		/*
+			|--------------------------------------------------------------------------
+			| LEVEL POLICY
+			|--------------------------------------------------------------------------
+		*/
+		
+		private function checkLevelPolicy(
+			?User $user,
+			EventOccurrence $occurrence,
+			$event,
+			GuardResult $result
+		): void {
+			if (!$user) {
+				return;
+			}
+			
+			$direction = (string) ($event->direction ?? 'classic');
+			
+			if ($direction === 'beach') {
+				$userLevel = $user->beach_level;
+				$min = $occurrence->effectiveBeachLevelMin();
+				$max = $occurrence->effectiveBeachLevelMax();
+			} else {
+				$userLevel = $user->classic_level;
+				$min = $occurrence->effectiveClassicLevelMin();
+				$max = $occurrence->effectiveClassicLevelMax();
+			}
+			
+			$hasRestriction = !is_null($min) || !is_null($max);
+			
+			if ($hasRestriction && is_null($userLevel)) {
+				$result->errors[] = 'Для записи необходимо указать игровой уровень.';
+				return;
+			}
+			
+			if (!is_null($min) && $userLevel < $min) {
+				$result->errors[] = 'Ваш уровень ниже допустимого для этого мероприятия.';
+			}
+			
+			if (!is_null($max) && $userLevel > $max) {
+				$result->errors[] = 'Ваш уровень выше допустимого для этого мероприятия.';
+			}
+		}
+		
+		/*
+			|--------------------------------------------------------------------------
+			| CAPACITY AND POSITIONS (НОВЫЙ МЕТОД)
+			|--------------------------------------------------------------------------
+		*/
+		
+		private function checkCapacityAndPositions(
+			EventOccurrence $occurrence,
+			Collection $registrations,
+			int $maxPlayers,
+			array $freePositions,
+			?string $position,
+			bool $isClassic,
+			bool $isBeach,
+			GuardResult $result
+		): void {
+			$registeredTotal = $occurrence->registrations_count ?? $registrations->count();
+			$remainingTotal = max(0, $maxPlayers - $registeredTotal);
+			
+			// Пляжка: проверяем только общий лимит мест
+			if ($isBeach) {
+				if ($maxPlayers > 0 && $remainingTotal <= 0) {
+					$result->errors[] = 'Свободных мест на мероприятие больше нет.';
+				}
+				return;
+			}
+			
+			// Классика: если вообще нет свободных позиций — запись невозможна
+			if ($isClassic) {
+                if ($maxPlayers > 0 && empty($freePositions)) {
+                    $result->errors[] = 'Свободных мест на мероприятие больше нет.';
+                    return;
+                }
+            
+                if ($maxPlayers <= 0 && empty($freePositions)) {
+                    $result->errors[] = 'Для классического волейбола не настроены позиции для записи.';
+                    return;
+                }
+            
+                if ($position !== null) {
+                    $selected = collect($freePositions)->firstWhere('key', $position);
+            
+                    if (!$selected || (int) ($selected['free'] ?? 0) <= 0) {
+                        $result->errors[] = 'На выбранную позицию мест больше нет.';
+                    }
+                }
+            }
+		}
+		
+		/*
+			|--------------------------------------------------------------------------
+			| GENDER POLICY
+			|--------------------------------------------------------------------------
+		*/
+		
+		private function applyGenderPolicy(
+            ?User $user,
+            $settings,
+            Collection $registrations,
+            int $maxPlayers,
+            GuardResult $result
+        ): array {
+			
+			$policy = (string)($settings?->gender_policy ?? 'mixed_open');
+			
+			$viewerGender = null;
+			
+			if ($user && Schema::hasColumn('users', 'gender')) {
+				
+				$g = strtolower(trim((string)$user->gender));
+				
+				if (in_array($g, ['m','male'], true)) $viewerGender = 'm';
+				if (in_array($g, ['f','female'], true)) $viewerGender = 'f';
+			}
+			
+			$male = 0;
+			$female = 0;
+			
+			foreach ($registrations as $r) {
+				
+				$g = strtolower(trim((string)($r->user->gender ?? '')));
+				
+				if (in_array($g, ['m','male'], true)) $male++;
+				if (in_array($g, ['f','female'], true)) $female++;
+			}
+			
+			$genderBlocked = false;
+			
+			if ($viewerGender && $policy === 'only_male' && $viewerGender !== 'm') {
+				
+				$genderBlocked = true;
+				$result->errors[] = 'Запись доступна только для мужчин.';
+			}
+			
+			if ($viewerGender && $policy === 'only_female' && $viewerGender !== 'f') {
+				
+				$genderBlocked = true;
+				$result->errors[] = 'Запись доступна только для женщин.';
+			}
+			
+			if ($viewerGender && $policy === 'mixed_5050') {
+                if ($maxPlayers > 0) {
+                    $perGenderLimit = intdiv($maxPlayers, 2);
+            
+                    if ($viewerGender === 'm' && $male >= $perGenderLimit) {
+                        $genderBlocked = true;
+                        $result->errors[] = 'Достигнут лимит мужских мест для формата 50/50.';
+                    }
+            
+                    if ($viewerGender === 'f' && $female >= $perGenderLimit) {
+                        $genderBlocked = true;
+                        $result->errors[] = 'Достигнут лимит женских мест для формата 50/50.';
+                    }
+                }
+            }
+			/*
+				|--------------------------------------------------------------------------
+				| MIXED LIMITED
+				|--------------------------------------------------------------------------
+			*/
+			if ($viewerGender && $policy === 'mixed_limited' && $settings) {
+				
+				$side = $settings->gender_limited_side;
+				$limit = (int)($settings->gender_limited_max ?? 0);
+				
+				$positions = $settings->gender_limited_positions ?? [];
+				
+				if (is_string($positions)) {
+					$positions = json_decode($positions, true) ?: [];
+				}
+				
+				$targetGender = null;
+				
+				if ($side === 'male')   $targetGender = 'm';
+				if ($side === 'female') $targetGender = 'f';
+				
+				if ($targetGender && $viewerGender === $targetGender) {
+					
+					$count = 0;
+					
+					foreach ($registrations as $r) {
+						
+						$g = strtolower((string)($r->user->gender ?? ''));
+						$pos = $r->position ?? null;
+						
+						if (
+							$g &&
+							$g[0] === $targetGender &&
+							in_array($pos, $positions, true)
+						) {
+							$count++;
+						}
+						
+					}
+					
+					if ($count >= $limit) {
+						
+						$genderBlocked = true;
+						
+						$result->errors[] = 'Все места для вашего пола уже заняты.';
+						
+					}
+				}
+			}
+			return [$genderBlocked, $policy];
+		}
+		
+		/*
+			|--------------------------------------------------------------------------
+			| SNAPSHOT
+			|--------------------------------------------------------------------------
+		*/
+		
+		private function buildAvailabilitySnapshot(
+			EventOccurrence $occurrence,
+			Collection $registrations,
+			int $maxPlayers,
+			GuardResult $result,
+			array $freePositions,
+			string $agePolicy,
+			string $policy,
+			bool $genderBlocked
+		): void {
+			
+			$registeredTotal = $occurrence->registrations_count ?? $registrations->count();
+			$direction = (string) ($occurrence->event->direction ?? 'classic');
+			
+			$remainingTotal = max(0, $maxPlayers - $registeredTotal);
+			$remainingSlots = collect($freePositions)->sum('free');
+			
+			$effectiveRemaining = $direction === 'classic'
+				? $remainingSlots
+				: $remainingTotal;
+			
+			$result->data['free_positions'] = $freePositions;
+			
+			$result->data['meta'] = [
+				'max_players'      => $maxPlayers,
+				'registered_total' => $registeredTotal,
+				'remaining_total'  => $effectiveRemaining,
+				'is_registered'    => $result->meta['is_registered'] ?? false,
+				'user_position'    => $result->meta['user_position'] ?? null,
+				'age_policy'       => $agePolicy,
+				'age_blocked'      => false,
+				'need_birthdate'   => false,
+				'gender_policy'    => $policy,
+				'gender_blocked'   => $genderBlocked
+			];
+		}
+		
+		/*
+			|--------------------------------------------------------------------------
+			| HELPERS
+			|--------------------------------------------------------------------------
+		*/
+		
+		private function normalizePosition(array $context): ?string
+		{
+			
+			if (!array_key_exists('position', $context) || !is_string($context['position'])) {
+				return null;
+			}
+			
+			$p = trim($context['position']);
+			
+			if ($p === '' || mb_strlen($p) > 32) {
+				return null;
+			}
+			
+			return $p;
+		}
+	}

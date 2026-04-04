@@ -177,9 +177,7 @@ class TelegramAuthController extends Controller
                     ->with('error', 'Этот Telegram уже привязан к другому аккаунту.');
             }
 
-            if ($current->isFillable('telegram_id')) {
-                $current->telegram_id = $tgId;
-            }
+            $current->telegram_id = $tgId;
 
             if (!empty($username) && $current->isFillable('telegram_username') && empty($current->telegram_username)) {
                 $current->telegram_username = $username;
@@ -205,29 +203,48 @@ class TelegramAuthController extends Controller
 
         $user = User::query()->where('telegram_id', $tgId)->first();
         $isNewUser = false;
-
+        
+        if (!$user) {
+            // Fallback: если вход ещё не привязан, но Telegram-уведомления уже подключены,
+            // считаем, что это тот же пользователь, и дозаписываем telegram_id.
+            $user = User::query()
+                ->where('telegram_notify_chat_id', $tgId)
+                ->first();
+        
+            if ($user) {
+                $user->telegram_id = $tgId;
+        
+                if (!empty($username) && $user->isFillable('telegram_username') && empty($user->telegram_username)) {
+                    $user->telegram_username = $username;
+                }
+        
+                $user->save();
+            }
+        }
+        
         if (!$user) {
             $isNewUser = true;
-
+        
             $fullName = trim(($firstName ?? '') . ' ' . ($lastName ?? ''));
             $name = $fullName !== '' ? $fullName : "Telegram User #{$tgId}";
-
             $email = "tg_{$tgId}@telegram.local";
+        
             if (User::where('email', $email)->exists()) {
                 $email = "tg_{$tgId}_" . now()->timestamp . "@telegram.local";
             }
-
+        
             $user = new User();
             $user->name = $name;
             $user->email = $email;
             $user->password = Hash::make(Str::random(32));
             $user->telegram_id = $tgId;
-
+        
             if (!empty($username)) {
                 $user->telegram_username = $username;
             }
-
+        
             $user->save();
+
         }
 
         Auth::login($user, true);

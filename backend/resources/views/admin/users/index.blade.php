@@ -35,7 +35,7 @@
     <x-slot name="breadcrumbs">
 		{{-- Крошки в шапку, например  --}} 
 		<li itemprop="itemListElement" itemscope="" itemtype="http://schema.org/ListItem">
-			<a href="{{ route('admin.dashboard') }}" itemprop="item"><span itemprop="name">Админка</span></a>
+			<a href="{{ route('admin.dashboard') }}" itemprop="item"><span itemprop="name">Админ-панель</span></a>
 			<meta itemprop="position" content="2">
 		</li>		
 		<li itemprop="itemListElement" itemscope="" itemtype="http://schema.org/ListItem">
@@ -131,13 +131,9 @@
 						<td>{{ $u->id }}</td>
 						
 						<td>
-							<a href="{{ route('admin.users.show', $u) }}">
+							<a class="blink b-600" href="{{ route('admin.users.show', $u) }}">
 								{{ $u->name }}
 							</a>
-							<div class="f-15">{{ $u->email }}</div>
-							<div class="f-15">
-								{{ $u->last_name }} {{ $u->first_name }}
-							</div>
 						</td>
 						
 						<td>{{ $u->role ?? 'user' }}</td>

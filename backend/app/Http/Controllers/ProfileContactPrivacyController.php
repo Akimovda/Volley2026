@@ -8,17 +8,38 @@ class ProfileContactPrivacyController extends Controller
 {
     public function update(Request $request)
     {
-        $user = $request->user();
+        // -------------------------------------------------
+        // 1. Actor (только self)
+        // -------------------------------------------------
+        $actor = $request->user();
+        abort_unless($actor, 403);
 
-        $validated = $request->validate([
+        // -------------------------------------------------
+        // 2. Allowlist входных полей
+        // -------------------------------------------------
+        $allowed = ['allow_user_contact'];
+
+        // Жёстко выбрасываем всё лишнее
+        $request->replace($request->only($allowed));
+
+        // -------------------------------------------------
+        // 3. Validate
+        // -------------------------------------------------
+        $data = $request->validate([
             'allow_user_contact' => ['nullable', 'boolean'],
         ]);
 
-        // checkbox + hidden(0) -> придёт "0" или "1"
-        $allow = (bool)($validated['allow_user_contact'] ?? false);
+        // -------------------------------------------------
+        // 4. Normalize checkbox (hidden + checkbox)
+        // -------------------------------------------------
+        $allow = array_key_exists('allow_user_contact', $data)
+            ? (bool) $data['allow_user_contact']
+            : false;
 
-        // если поле есть в users и разрешено к массовому присвоению — ок
-        $user->forceFill([
+        // -------------------------------------------------
+        // 5. Save
+        // -------------------------------------------------
+        $actor->forceFill([
             'allow_user_contact' => $allow,
         ])->save();
 

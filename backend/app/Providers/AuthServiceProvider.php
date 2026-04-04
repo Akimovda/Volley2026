@@ -2,76 +2,110 @@
 
 namespace App\Providers;
 
-use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
+use App\Models\User;
+use App\Policies\UserPolicy;
+use App\Services\ProfileUpdateGuard;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 
 class AuthServiceProvider extends ServiceProvider
 {
     protected $policies = [
-        //
+        User::class => UserPolicy::class,
     ];
 
     public function boot(): void
     {
         $this->registerPolicies();
 
-        // Роли
-        Gate::define('is-admin', fn ($user) => ($user->role ?? 'user') === 'admin');
-        Gate::define('is-organizer', fn ($user) => ($user->role ?? 'user') === 'organizer');
-        Gate::define('is-staff', fn ($user) => ($user->role ?? 'user') === 'staff');
+        // --------------------------------------------------
+        // БАЗОВЫЕ РОЛИ (ЕДИНАЯ ТОЧКА)
+        // --------------------------------------------------
 
-        // Заявки на organizer — только admin
-        Gate::define('approve-organizer-request', fn ($user) => ($user->role ?? 'user') === 'admin');
+        Gate::define('is-admin', fn (?User $u) =>
+            $u && $u->isAdmin()
+        );
+
+        Gate::define('is-organizer', fn (?User $u) =>
+            $u && $u->isOrganizer()
+        );
+
+        Gate::define('is-staff', fn (?User $u) =>
+            $u && method_exists($u, 'isStaff') && $u->isStaff()
+        );
+
+        // --------------------------------------------------
+        // ЗАЯВКИ / УПРАВЛЕНИЕ РОЛЯМИ
+        // --------------------------------------------------
+
+        Gate::define('approve-organizer-request', fn (?User $u) =>
+            $u && $u->isAdmin()
+        );
+
+        // --------------------------------------------------
+        // ПРОФИЛЬ / ПЕРСОНАЛЬНЫЕ ДАННЫЕ
+        // --------------------------------------------------
 
         /**
-         * Видимость "скрытых" полей профиля (patronymic/phone):
-         * - владелец профиля
-         * - admin / organizer / staff
-         * ВАЖНО: гость (null) не видит.
+         * Просмотр чувствительных полей (phone, patronymic)
          */
-        Gate::define('view-sensitive-profile', function ($viewer, $targetUser) {
-            if (!$viewer || !$targetUser) {
+        Gate::define('view-sensitive-profile', function (?User $viewer, User $target) {
+            if (!$viewer) {
                 return false;
             }
 
-            if ((int) $viewer->id === (int) $targetUser->id) {
+            if ($viewer->id === $target->id) {
                 return true;
             }
 
-            return in_array($viewer->role ?? 'user', ['admin', 'organizer', 'staff'], true);
+            return $viewer->isAdmin()
+                || $viewer->isOrganizer()
+                || (method_exists($viewer, 'isStaff') && $viewer->isStaff());
         });
 
         /**
-         * Редактирование "зафиксированных" полей после первичного заполнения:
-         * - только admin
+         * Редактирование "зафиксированных" полей
+         * (имя, телефон после первого сохранения)
          */
-        Gate::define('edit-protected-profile-fields', fn ($user) => ($user->role ?? 'user') === 'admin');
+        Gate::define('edit-protected-profile-fields', fn (?User $u) =>
+            $u && $u->isAdmin()
+        );
 
         /**
-         * Редактирование уровней после первичного выбора:
-         * - admin, organizer
+         * Редактирование уровней игрока
          */
-        Gate::define('edit-player-levels', fn ($user) => in_array($user->role ?? 'user', ['admin', 'organizer'], true));
+        Gate::define('edit-player-levels', fn (?User $u) =>
+            $u && ($u->isAdmin() || $u->isOrganizer())
+        );
 
         /**
-         * Управление мероприятием:
-         * - admin: любое
-         * - organizer: свои (events.organizer_id = user.id)
-         * - staff: мероприятия organizer-а, который назначил staff (organizer_staff)
+         * Редактирование профиля ДРУГОГО пользователя
+         * (тонкий прокси к ProfileUpdateGuard)
          */
-        Gate::define('manage-event', function ($user, $event) {
-            $role = $user->role ?? 'user';
+        Gate::define('edit-user-profile-extra', function (?User $actor, User $target) {
+            if (!$actor) {
+                return false;
+            }
 
-            if ($role === 'admin') {
+            return ProfileUpdateGuard::viewMode($actor, $target) !== null
+                && $actor->id !== $target->id;
+        });
+
+        // --------------------------------------------------
+        // МЕРОПРИЯТИЯ
+        // --------------------------------------------------
+
+        Gate::define('manage-event', function (User $user, $event) {
+            if ($user->isAdmin()) {
                 return true;
             }
 
-            if ($role === 'organizer') {
+            if ($user->isOrganizer()) {
                 return (int) $event->organizer_id === (int) $user->id;
             }
 
-            if ($role === 'staff') {
+            if (method_exists($user, 'isStaff') && $user->isStaff()) {
                 if (empty($event->organizer_id)) {
                     return false;
                 }
@@ -85,22 +119,20 @@ class AuthServiceProvider extends ServiceProvider
             return false;
         });
 
-        // Полное удаление мероприятия: admin, organizer(свои)
-        Gate::define('delete-event', function ($user, $event) {
-            $role = $user->role ?? 'user';
-
-            if ($role === 'admin') {
+        Gate::define('delete-event', function (User $user, $event) {
+            if ($user->isAdmin()) {
                 return true;
             }
 
-            if ($role === 'organizer') {
+            if ($user->isOrganizer()) {
                 return (int) $event->organizer_id === (int) $user->id;
             }
 
             return false;
         });
 
-        // Назначение staff: admin, organizer
-        Gate::define('assign-staff', fn ($user) => in_array($user->role ?? 'user', ['admin', 'organizer'], true));
+        Gate::define('assign-staff', fn (?User $u) =>
+            $u && ($u->isAdmin() || $u->isOrganizer())
+        );
     }
 }

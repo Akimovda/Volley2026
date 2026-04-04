@@ -102,7 +102,7 @@
                             if ($loc) {
                                 $parts = array_filter([
                                     $loc->name ?? null,
-                                    !empty($loc->city) ? $loc->city : null,
+                                    $loc->city?->name ?? null,
                                     !empty($loc->address) ? $loc->address : null,
                                 ]);
                                 $locLabel = implode(' • ', $parts);

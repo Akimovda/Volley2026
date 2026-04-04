@@ -1,307 +1,451 @@
 {{-- resources/views/admin/dashboard/index.blade.php --}}
-<x-app-layout>
-    {{-- =========================
-         HEADER
-    ========================== --}}
-    <x-slot name="header">
-        <div class="flex items-center justify-between gap-4">
-            <div class="min-w-0">
-                <h2 class="font-semibold text-xl text-gray-800 leading-tight truncate">
-                    Admin / Dashboard
-                </h2>
-                <div class="text-xs text-gray-500">
-                    Сводка по пользователям / провайдерам / блокировкам / мероприятиям
-                </div>
-            </div>
-
-            <div class="flex items-center gap-2">
-                <a class="v-btn v-btn--secondary" href="{{ route('admin.users.index') }}">Users</a>
-                <a class="v-btn v-btn--secondary" href="{{ route('events.index') }}">/events</a>
-            </div>
-        </div>
-    </x-slot>
-
-    <div class="py-10">
-        <div class="max-w-6xl mx-auto sm:px-6 lg:px-8 space-y-6">
-
-            {{-- =========================
-                 FLASH
-            ========================== --}}
-            @if (session('status'))
-                <div class="v-alert v-alert--success">
-                    <div class="v-alert__text">{{ session('status') }}</div>
-                </div>
-            @endif
-
-            @php
-                // providers map from controller
-                $p = $providers ?? [];
-
-                // total “has at least 1 provider”
-                $totalConnected =
-                    ($p['tg_only'] ?? 0) + ($p['vk_only'] ?? 0) + ($p['ya_only'] ?? 0) +
-                    ($p['tg_vk'] ?? 0) + ($p['tg_ya'] ?? 0) + ($p['ya_vk'] ?? 0) +
-                    ($p['ya_vk_tg'] ?? 0);
-
-                // small helper: provider "chip" (в стиле profile, но компактнее)
-                $chip = function(string $label) {
-                    return '<span class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full border border-gray-200 bg-white text-xs font-semibold">'.
-                           '<span class="inline-flex items-center justify-center rounded-full border border-gray-300" style="width:18px;height:18px;font-size:11px;">'.e($label).'</span>'.
-                           '<span>'.e($label).'</span>'.
-                           '</span>';
-                };
-
-                // small helper: row like "TG:" from profile
-                $rowLabel = function(string $label) {
-                    return '<span class="w-24 text-gray-500">'.e($label).'</span>';
-                };
-            @endphp
-
-            {{-- =========================
-                 ROW 1: KPI CARDS
-                 (современно: 4 карточки сверху)
-            ========================== --}}
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-
-                {{-- Users total --}}
-                <div class="v-card">
-                    <div class="v-card__body">
-                        <div class="text-xs text-gray-500">Users</div>
-                        <div class="text-3xl font-extrabold text-gray-900 mt-1">{{ $totalUsers }}</div>
-                        <div class="text-xs text-gray-500 mt-2">Всего пользователей</div>
-                    </div>
-                </div>
-
-                {{-- Active users --}}
-                <div class="v-card">
-                    <div class="v-card__body">
-                        <div class="text-xs text-gray-500">Active</div>
-                        <div class="text-3xl font-extrabold text-gray-900 mt-1">{{ $activeUsers }}</div>
-                        <div class="text-xs text-gray-500 mt-2">Без deleted_at</div>
-                    </div>
-                </div>
-
-                {{-- Events count --}}
-                <div class="v-card">
-                    <div class="v-card__body">
-                        <div class="text-xs text-gray-500">Events</div>
-                        <div class="text-3xl font-extrabold text-gray-900 mt-1">{{ $eventsCount ?? 0 }}</div>
-                        <div class="text-xs text-gray-500 mt-2">Кол-во мероприятий</div>
-                    </div>
-                </div>
-
-                {{-- Restrictions count --}}
-                <div class="v-card">
-                    <div class="v-card__body">
-                        <div class="text-xs text-gray-500">Restrictions</div>
-                        <div class="text-3xl font-extrabold text-gray-900 mt-1">{{ $eventAllRestrictions ?? 0 }}</div>
-                        <div class="text-xs text-gray-500 mt-2">Event All (active)</div>
-                    </div>
-                </div>
-
-            </div>
-
-            {{-- =========================
-                 ROW 2: USERS DETAILS (как было, но компактнее)
-            ========================== --}}
-            <div class="v-card">
-                <div class="v-card__body">
-                    <div class="flex items-center justify-between gap-3">
-                        <div class="text-lg font-semibold">Users / динамика</div>
-                        <a class="v-btn v-btn--primary" href="{{ route('admin.users.index') }}">Открыть пользователей</a>
-                    </div>
-
-                    <div class="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm mt-4">
-                        <div>
-                            <div class="text-gray-500">Всего</div>
-                            <div class="text-xl font-bold">{{ $totalUsers }}</div>
-                        </div>
-                        <div>
-                            <div class="text-gray-500">Активные</div>
-                            <div class="text-xl font-bold">{{ $activeUsers }}</div>
-                        </div>
-                        <div>
-                            <div class="text-gray-500">Удалённые</div>
-                            <div class="text-xl font-bold">{{ $deletedUsers }}</div>
-                        </div>
-                        <div>
-                            <div class="text-gray-500">Регистраций сегодня</div>
-                            <div class="text-xl font-bold">{{ $usersCreatedToday }}</div>
-                        </div>
-                        <div>
-                            <div class="text-gray-500">Удалений сегодня</div>
-                            <div class="text-xl font-bold">{{ $usersDeletedToday }}</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {{-- =========================
-                 ROW 3: PROVIDERS + RESTRICTIONS (2 колонки)
-            ========================== --}}
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-
-                {{-- PROVIDERS (2/3 ширины) --}}
-                <div class="v-card lg:col-span-2">
-                    <div class="v-card__body">
-                        <div class="flex items-center justify-between gap-3 mb-2">
-                            <div class="text-lg font-semibold">Провайдеры</div>
-                            <div class="text-xs text-gray-500">
-                                С ≥1 провайдером: <b>{{ $totalConnected }}</b>
-                            </div>
-                        </div>
-
-                        {{-- “как в profile”, только про сегменты --}}
-                        <div class="text-sm text-gray-800 space-y-3">
-
-                            {{-- TG only --}}
-                            <div class="flex items-center justify-between gap-3 border-t pt-3">
-                                <div class="flex items-center gap-2 min-w-0">
-                                    {!! $rowLabel('TG only:') !!}
-                                    {!! $chip('TG') !!}
-                                    <span class="text-xs text-gray-500">только Telegram</span>
-                                </div>
-                                <div class="font-extrabold text-gray-900">{{ $p['tg_only'] ?? 0 }}</div>
-                            </div>
-
-                            {{-- VK only --}}
-                            <div class="flex items-center justify-between gap-3">
-                                <div class="flex items-center gap-2 min-w-0">
-                                    {!! $rowLabel('VK only:') !!}
-                                    {!! $chip('VK') !!}
-                                    <span class="text-xs text-gray-500">только VK</span>
-                                </div>
-                                <div class="font-extrabold text-gray-900">{{ $p['vk_only'] ?? 0 }}</div>
-                            </div>
-
-                            {{-- Ya only --}}
-                            <div class="flex items-center justify-between gap-3">
-                                <div class="flex items-center gap-2 min-w-0">
-                                    {!! $rowLabel('Ya only:') !!}
-                                    {!! $chip('Ya') !!}
-                                    <span class="text-xs text-gray-500">только Yandex</span>
-                                </div>
-                                <div class="font-extrabold text-gray-900">{{ $p['ya_only'] ?? 0 }}</div>
-                            </div>
-
-                            {{-- TG+VK --}}
-                            <div class="flex items-center justify-between gap-3 border-t pt-3">
-                                <div class="flex items-center gap-2 min-w-0">
-                                    {!! $rowLabel('TG+VK:') !!}
-                                    {!! $chip('TG') !!}{!! $chip('VK') !!}
-                                </div>
-                                <div class="font-extrabold text-gray-900">{{ $p['tg_vk'] ?? 0 }}</div>
-                            </div>
-
-                            {{-- TG+Ya --}}
-                            <div class="flex items-center justify-between gap-3">
-                                <div class="flex items-center gap-2 min-w-0">
-                                    {!! $rowLabel('TG+Ya:') !!}
-                                    {!! $chip('TG') !!}{!! $chip('Ya') !!}
-                                </div>
-                                <div class="font-extrabold text-gray-900">{{ $p['tg_ya'] ?? 0 }}</div>
-                            </div>
-
-                            {{-- Ya+VK --}}
-                            <div class="flex items-center justify-between gap-3">
-                                <div class="flex items-center gap-2 min-w-0">
-                                    {!! $rowLabel('Ya+VK:') !!}
-                                    {!! $chip('Ya') !!}{!! $chip('VK') !!}
-                                </div>
-                                <div class="font-extrabold text-gray-900">{{ $p['ya_vk'] ?? 0 }}</div>
-                            </div>
-
-                            {{-- Ya+VK+TG --}}
-                            <div class="flex items-center justify-between gap-3">
-                                <div class="flex items-center gap-2 min-w-0">
-                                    {!! $rowLabel('Ya+VK+TG:') !!}
-                                    {!! $chip('Ya') !!}{!! $chip('VK') !!}{!! $chip('TG') !!}
-                                </div>
-                                <div class="font-extrabold text-gray-900">{{ $p['ya_vk_tg'] ?? 0 }}</div>
-                            </div>
-
-                        </div>
-                    </div>
-                </div>
-
-                {{-- RESTRICTIONS (1/3 ширины) --}}
-                <div class="v-card">
-                    <div class="v-card__body">
-                        <div class="text-lg font-semibold mb-2">Блокировки</div>
-                        <div class="text-xs text-gray-500 mb-3">
-                            Активные: ends_at NULL или ends_at &gt; now()
-                        </div>
-
-                        {{-- Event All --}}
-                        <div class="flex items-center justify-between border-t py-2 text-sm">
-                            <div class="font-mono">Event All</div>
-                            <div class="font-extrabold">{{ $eventAllRestrictions ?? 0 }}</div>
-                        </div>
-
-                        {{-- By event_id --}}
-                        @php($map = $restrictionByEvent ?? [])
-                        @if(!empty($map))
-                            @foreach($map as $eid => $cnt)
-                                <div class="flex items-center justify-between border-t py-2 text-sm">
-                                    <div class="font-mono">Event_{{ (int)$eid }}</div>
-                                    <div class="font-extrabold">{{ (int)$cnt }}</div>
-                                </div>
-                            @endforeach
-                        @else
-                            <div class="border-t py-2 text-xs text-gray-500">
-                                Нет активных блокировок по конкретным event_id.
-                            </div>
-                        @endif
-
-                        <div class="mt-4">
-                            <a class="v-btn v-btn--secondary w-full text-center" href="{{ route('admin.users.index') }}">
-                                Перейти к пользователям
-                            </a>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-
-            {{-- =========================
-                 ROW 4: ROLES + ORGANIZER REQUESTS (как было)
-            ========================== --}}
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-
-                {{-- Roles --}}
-                <div class="v-card">
-                    <div class="v-card__body">
-                        <div class="text-lg font-semibold mb-3">Роли</div>
-                        <div class="text-sm text-gray-700">
-                            @foreach($roles as $r)
-                                <div class="flex justify-between border-t py-2">
-                                    <div class="font-mono">{{ $r->role ?? 'null' }}</div>
-                                    <div class="font-semibold">{{ $r->c }}</div>
-                                </div>
-                            @endforeach
-                        </div>
-                    </div>
-                </div>
-
-                {{-- Organizer requests --}}
-                <div class="v-card">
-                    <div class="v-card__body">
-                        <div class="text-lg font-semibold mb-3">Organizer requests</div>
-                        <div class="text-sm text-gray-700">
-                            @forelse($organizerRequests as $r)
-                                <div class="flex justify-between border-t py-2">
-                                    <div class="font-mono">{{ $r->status ?? 'null' }}</div>
-                                    <div class="font-semibold">{{ $r->c }}</div>
-                                </div>
-                            @empty
-                                <div class="text-xs text-gray-500">Нет данных (или таблицы organizer_requests).</div>
-                            @endforelse
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-
-        </div>
-    </div>
-</x-app-layout>
+<x-voll-layout body_class="admin-dashboard-page">
+    
+    <x-slot name="title">
+		Админ-панель
+	</x-slot>
+    
+    <x-slot name="description">
+        Сводка по пользователям, провайдерам, блокировкам и мероприятиям
+	</x-slot>
+    
+    <x-slot name="canonical">
+        {{ route('admin.dashboard') }}
+	</x-slot>
+    
+    <x-slot name="style">
+        <style>
+            /* Дополнительные стили для чипов */
+            .provider-chip {
+			display: inline-flex;
+			align-items: center;
+			gap: 0.5rem;
+			padding: 0.25rem 0.75rem;
+			border-radius: 9999px;
+			border: 1px solid #e5e7eb;
+			background-color: white;
+			font-size: 0.75rem;
+			font-weight: 600;
+            }
+            .provider-chip .badge {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			width: 18px;
+			height: 18px;
+			border-radius: 9999px;
+			border: 1px solid #d1d5db;
+			font-size: 11px;
+            }
+		</style>
+	</x-slot>
+    
+    <x-slot name="h1">
+		Админ-панель
+	</x-slot>
+    
+    
+    <x-slot name="t_description">
+        Статистика и мониторинг системы
+	</x-slot>
+    
+    <x-slot name="d_description">
+		<div data-aos-delay="250" data-aos="fade-up">
+			<button class="btn ufilter-btn mt-2">Навигация</button>
+		</div>	
+	</x-slot>	
+	
+	
+    <x-slot name="breadcrumbs">
+        <li itemprop="itemListElement" itemscope="" itemtype="http://schema.org/ListItem">
+            <span itemprop="name">Админ-панель</span>
+            <meta itemprop="position" content="2">
+		</li>
+	</x-slot>
+    
+    
+    <x-slot name="script">
+        <script>
+            // Дополнительные скрипты при необходимости
+		</script>
+	</x-slot>
+    
+    <div class="container">
+		
+		
+		<div class="users-filter">
+			<div class="ramka">
+				
+				<div class="row">
+					<div class="col-sm-6 col-lg-3">	
+						<nav class="menu-nav">
+							<div class="menu-item-title cd">
+								<span class="menu-text">Пользователи</span>
+							</div>							
+							<a href="/admin/users" class="menu-item">
+								<span class="menu-text">Список пользователей</span>
+							</a>							
+							<a href="/admin/" class="menu-item">
+								<span class="menu-text">Управление ботами</span>
+							</a>	
+							<a href="/admin/" class="menu-item">
+								<span class="menu-text">Бан список</span>
+							</a>							
+							<a href="/admin/" class="menu-item">
+								<span class="menu-text">Создать пользователя</span>
+							</a>							
+						</nav>					
+					</div>
+					<div class="col-sm-6 col-lg-3">	
+						<nav class="menu-nav">
+							<div class="menu-item-title cd">
+								<span class="menu-text">Мероприятия</span>
+							</div>							
+							<a href="/events/create/event_management" class="menu-item">
+								<span class="menu-text">Управление мероприятиями</span>
+							</a>
+							<a href="/events/create" class="menu-item">
+								<span class="menu-text">Создать мероприятие</span>
+							</a>														
+						</nav>					
+					</div>						
+					<div class="col-sm-6 col-lg-3">	
+						<nav class="menu-nav">
+							<div class="menu-item-title cd">
+								<span class="menu-text">Уведомления</span>
+							</div>	
+							<a href="/admin/broadcasts/" class="menu-item">
+								<span class="menu-text">Рассылки</span>
+							</a>								
+							<a href="/admin/notification-templates" class="menu-item">
+								<span class="menu-text">Шаблоны уведомлений</span>
+							</a>								
+							<a href="/admin/broadcasts/create" class="menu-item">
+								<span class="menu-text">Новая рассылка</span>
+							</a>															
+						</nav>					
+					</div>						
+					<div class="col-sm-6 col-lg-3">	
+						<nav class="menu-nav">
+							<div class="menu-item-title cd">
+								<span class="menu-text">Контент</span>
+							</div>							
+							<a href="/admin/locations" class="menu-item">
+								<span class="menu-text">Локации</span>
+							</a>	
+							<a href="/admin/locations/create" class="menu-item">
+								<span class="menu-text">Создать локацию</span>
+							</a>	
+							<a href="/admin/" class="menu-item">
+								<span class="menu-text">Новости</span>
+							</a>	
+							<a href="/admin/" class="menu-item">
+								<span class="menu-text">Создать новость</span>
+							</a>							
+						</nav>					
+					</div>						
+					
+				</div>		
+			</div>
+		</div>
+		
+		
+		@if (session('status'))
+		<div class="ramka">
+			<div class="alert alert-success">
+				{{ session('status') }}
+			</div>
+		</div>
+		@endif
+		
+		@php
+		// providers map from controller
+		$p = $providers ?? [];
+		
+		// total "has at least 1 provider"
+		$totalConnected = ($p['tg_only'] ?? 0) + ($p['vk_only'] ?? 0) + ($p['ya_only'] ?? 0) +
+		($p['tg_vk'] ?? 0) + ($p['tg_ya'] ?? 0) + ($p['ya_vk'] ?? 0) +
+		($p['ya_vk_tg'] ?? 0);
+		@endphp
+		
+		{{-- ROW 1: KPI CARDS --}}
+		<div class="row row2">
+			<div class="col-12 col-sm-6 col-lg-3">
+				<div class="ramka">
+					<div class="card-body">
+						<div class="text-muted small">Users</div>
+						<div class="fs-1 fw-bold mt-1">{{ $totalUsers }}</div>
+						<div class="text-muted small mt-2">Всего пользователей</div>
+					</div>
+				</div>
+			</div>
+			<div class="col-12 col-sm-6 col-lg-3">
+				<div class="ramka">
+					<div class="card-body">
+						<div class="text-muted small">Active</div>
+						<div class="fs-1 fw-bold mt-1">{{ $activeUsers }}</div>
+						<div class="text-muted small mt-2">Без deleted_at</div>
+					</div>
+				</div>
+			</div>
+			
+			<div class="col-12 col-sm-6 col-lg-3">
+				<div class="ramka">
+					<div class="card-body">
+						<div class="text-muted small">Events</div>
+						<div class="fs-1 fw-bold mt-1">{{ $eventsCount ?? 0 }}</div>
+						<div class="text-muted small mt-2">Кол-во мероприятий</div>
+					</div>
+				</div>
+			</div>
+			
+			<div class="col-12 col-sm-6 col-lg-3">
+				<div class="ramka">
+					<div class="card-body">
+						<div class="text-muted small">Restrictions</div>
+						<div class="fs-1 fw-bold mt-1">{{ $eventAllRestrictions ?? 0 }}</div>
+						<div class="text-muted small mt-2">Event All (active)</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		
+		{{-- ROW 2: USERS DETAILS --}}
+		<div class="ramka">
+			<div class="card-body">
+				<div class="d-flex align-items-center justify-content-between">
+					<div class="fw-semibold fs-5">Users / динамика</div>
+					<a href="{{ route('admin.users.index') }}" class="btn btn-primary">Открыть пользователей</a>
+				</div>
+				
+				<div class="row mt-4 text-center text-sm-start">
+					<div class="col-6 col-md">
+						<div class="text-muted small">Всего</div>
+						<div class="fs-4 fw-bold">{{ $totalUsers }}</div>
+					</div>
+					<div class="col-6 col-md">
+						<div class="text-muted small">Активные</div>
+						<div class="fs-4 fw-bold">{{ $activeUsers }}</div>
+					</div>
+					<div class="col-6 col-md">
+						<div class="text-muted small">Удалённые</div>
+						<div class="fs-4 fw-bold">{{ $deletedUsers }}</div>
+					</div>
+					<div class="col-6 col-md">
+						<div class="text-muted small">Регистраций сегодня</div>
+						<div class="fs-4 fw-bold">{{ $usersCreatedToday }}</div>
+					</div>
+					<div class="col-6 col-md">
+						<div class="text-muted small">Удалений сегодня</div>
+						<div class="fs-4 fw-bold">{{ $usersDeletedToday }}</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		
+		{{-- ROW 3: PROVIDERS + RESTRICTIONS --}}
+		<div class="ramka">
+			<div class="row">
+				{{-- PROVIDERS --}}
+				<div class="col-12 col-lg-8">
+					<div class="card">
+						<div class="card-body">
+							<div class="d-flex align-items-center justify-content-between mb-3">
+								<div class="fw-semibold fs-5">Провайдеры</div>
+								<div class="text-muted small">
+									С ≥1 провайдером: <strong>{{ $totalConnected }}</strong>
+								</div>
+							</div>
+							
+							<div class="small">
+								{{-- TG only --}}
+								<div class="d-flex align-items-center justify-content-between border-top pt-3">
+									<div class="d-flex align-items-center gap-2">
+										<span class="text-muted" style="width: 70px;">TG only:</span>
+										<span class="provider-chip">
+											<span class="badge">TG</span>
+											<span>TG</span>
+										</span>
+										<span class="text-muted">только Telegram</span>
+									</div>
+									<div class="fw-bold">{{ $p['tg_only'] ?? 0 }}</div>
+								</div>
+								
+								{{-- VK only --}}
+								<div class="d-flex align-items-center justify-content-between mt-2">
+									<div class="d-flex align-items-center gap-2">
+										<span class="text-muted" style="width: 70px;">VK only:</span>
+										<span class="provider-chip">
+											<span class="badge">VK</span>
+											<span>VK</span>
+										</span>
+										<span class="text-muted">только VK</span>
+									</div>
+									<div class="fw-bold">{{ $p['vk_only'] ?? 0 }}</div>
+								</div>
+								
+								{{-- Ya only --}}
+								<div class="d-flex align-items-center justify-content-between mt-2">
+									<div class="d-flex align-items-center gap-2">
+										<span class="text-muted" style="width: 70px;">Ya only:</span>
+										<span class="provider-chip">
+											<span class="badge">Ya</span>
+											<span>Ya</span>
+										</span>
+										<span class="text-muted">только Yandex</span>
+									</div>
+									<div class="fw-bold">{{ $p['ya_only'] ?? 0 }}</div>
+								</div>
+								
+								{{-- TG+VK --}}
+								<div class="d-flex align-items-center justify-content-between border-top pt-3 mt-2">
+									<div class="d-flex align-items-center gap-2">
+										<span class="text-muted" style="width: 70px;">TG+VK:</span>
+										<span class="provider-chip">
+											<span class="badge">TG</span>
+											<span>TG</span>
+										</span>
+										<span class="provider-chip">
+											<span class="badge">VK</span>
+											<span>VK</span>
+										</span>
+									</div>
+									<div class="fw-bold">{{ $p['tg_vk'] ?? 0 }}</div>
+								</div>
+								
+								{{-- TG+Ya --}}
+								<div class="d-flex align-items-center justify-content-between mt-2">
+									<div class="d-flex align-items-center gap-2">
+										<span class="text-muted" style="width: 70px;">TG+Ya:</span>
+										<span class="provider-chip">
+											<span class="badge">TG</span>
+											<span>TG</span>
+										</span>
+										<span class="provider-chip">
+											<span class="badge">Ya</span>
+											<span>Ya</span>
+										</span>
+									</div>
+									<div class="fw-bold">{{ $p['tg_ya'] ?? 0 }}</div>
+								</div>
+								
+								{{-- Ya+VK --}}
+								<div class="d-flex align-items-center justify-content-between mt-2">
+									<div class="d-flex align-items-center gap-2">
+										<span class="text-muted" style="width: 70px;">Ya+VK:</span>
+										<span class="provider-chip">
+											<span class="badge">Ya</span>
+											<span>Ya</span>
+										</span>
+										<span class="provider-chip">
+											<span class="badge">VK</span>
+											<span>VK</span>
+										</span>
+									</div>
+									<div class="fw-bold">{{ $p['ya_vk'] ?? 0 }}</div>
+								</div>
+								
+								{{-- Ya+VK+TG --}}
+								<div class="d-flex align-items-center justify-content-between mt-2">
+									<div class="d-flex align-items-center gap-2">
+										<span class="text-muted" style="width: 70px;">Ya+VK+TG:</span>
+										<span class="provider-chip">
+											<span class="badge">Ya</span>
+											<span>Ya</span>
+										</span>
+										<span class="provider-chip">
+											<span class="badge">VK</span>
+											<span>VK</span>
+										</span>
+										<span class="provider-chip">
+											<span class="badge">TG</span>
+											<span>TG</span>
+										</span>
+									</div>
+									<div class="fw-bold">{{ $p['ya_vk_tg'] ?? 0 }}</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				
+				{{-- RESTRICTIONS --}}
+				<div class="col-12 col-lg-4">
+					<div class="card">
+						<div class="card-body">
+							<div class="fw-semibold fs-5 mb-2">Блокировки</div>
+							<div class="text-muted small mb-3">
+								Активные: ends_at NULL или ends_at &gt; now()
+							</div>
+							
+							<div class="d-flex align-items-center justify-content-between border-top py-2 small">
+								<div class="font-monospace">Event All</div>
+								<div class="fw-bold">{{ $eventAllRestrictions ?? 0 }}</div>
+							</div>
+							
+							@php($map = $restrictionByEvent ?? [])
+							@if(!empty($map))
+							@foreach($map as $eid => $cnt)
+							<div class="d-flex align-items-center justify-content-between border-top py-2 small">
+								<div class="font-monospace">Event_{{ (int)$eid }}</div>
+								<div class="fw-bold">{{ (int)$cnt }}</div>
+							</div>
+							@endforeach
+							@else
+							<div class="border-top py-2 text-muted small">
+								Нет активных блокировок по конкретным event_id.
+							</div>
+							@endif
+							
+							<div class="mt-4">
+								<a href="{{ route('admin.users.index') }}" class="btn btn-secondary w-100 text-center">
+									Перейти к пользователям
+								</a>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		{{-- ROW 4: ROLES + ORGANIZER REQUESTS --}}
+		<div class="ramka">
+			<div class="row">
+				<div class="col-12 col-lg-6">
+					<div class="card">
+						<div class="card-body">
+							<div class="fw-semibold fs-5 mb-3">Роли</div>
+							<div class="small">
+								@foreach($roles as $r)
+								<div class="d-flex align-items-center justify-content-between border-top py-2">
+									<div class="font-monospace">{{ $r->role ?? 'null' }}</div>
+									<div class="fw-semibold">{{ $r->c }}</div>
+								</div>
+								@endforeach
+							</div>
+						</div>
+					</div>
+				</div>
+				
+				<div class="col-12 col-lg-6">
+					<div class="card">
+						<div class="card-body">
+							<div class="fw-semibold fs-5 mb-3">Organizer requests</div>
+							<div class="small">
+								@forelse($organizerRequests as $r)
+								<div class="d-flex align-items-center justify-content-between border-top py-2">
+									<div class="font-monospace">{{ $r->status ?? 'null' }}</div>
+									<div class="fw-semibold">{{ $r->c }}</div>
+								</div>
+								@empty
+								<div class="text-muted small">Нет данных (или таблицы organizer_requests).</div>
+								@endforelse
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	
+	
+</x-voll-layout>	

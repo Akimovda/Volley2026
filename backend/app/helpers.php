@@ -77,6 +77,68 @@ if (! function_exists('str_clip')) {
 }
 
 // =========================
+// Volleyball Positions
+// =========================
+if (! function_exists('position_name')) {
+    function position_name(?string $role): string
+    {
+        $map = [
+
+            'outside'  => 'Доигровщик',
+            'opposite' => 'Диагональный',
+            'middle'   => 'Центральный блокирующий',
+            'setter'   => 'Связующий',
+            'libero'   => 'Либеро',
+            'player'   => 'Игрок',
+
+        ];
+
+        if (!$role) {
+            return '';
+        }
+
+        $role = strtolower(trim($role));
+
+        return $map[$role] ?? ucfirst($role);
+    }
+}
+// =========================
+// Валюта
+// =========================
+if (!function_exists('money_human')) {
+    function money_human(?int $minor, ?string $currency = 'RUB'): string
+    {
+        if ($minor === null) {
+            return '—';
+        }
+
+        $currency = strtoupper((string)($currency ?: 'RUB'));
+
+        $symbols = [
+            'RUB' => '₽',
+            'USD' => '$',
+            'EUR' => '€',
+            'KZT' => '₸',
+            'KGS' => 'сом',
+            'BYN' => 'Br',
+            'UZS' => 'сум',
+            'AMD' => '֏',
+            'AZN' => '₼',
+            'TJS' => 'сомони',
+            'TMT' => 'манат',
+            'GEL' => '₾',
+            'MDL' => 'лей',
+        ];
+
+        $amount = $minor / 100;
+        $formatted = number_format($amount, 2, ',', ' ');
+        $symbol = $symbols[$currency] ?? $currency;
+
+        return $formatted . ' ' . $symbol;
+    }
+}
+
+// =========================
 // Dates
 // =========================
 

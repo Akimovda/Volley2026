@@ -10,17 +10,20 @@ class City extends Model
 {
     use HasFactory;
 
-    protected $table = 'cities';
+   protected $table = 'cities';
 
-    // Обычно таблица cities без created_at/updated_at
-    public $timestamps = false;
 
     protected $fillable = [
         'name',
         'region',
+        'timezone',   // ✅ если есть в таблице
     ];
-
-    public function users(): HasMany
+        // app/Models/City.php
+        public function locations()
+    {
+        return $this->hasMany(\App\Models\Location::class, 'city_id');
+    }
+       public function users(): HasMany
     {
         return $this->hasMany(User::class, 'city_id');
     }

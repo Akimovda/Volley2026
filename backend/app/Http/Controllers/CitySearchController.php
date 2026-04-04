@@ -26,21 +26,23 @@ class CitySearchController extends Controller
         $items = DB::table('cities')
             ->select(['id', 'name', 'region', 'country_code', 'population'])
             ->whereIn('country_code', ['RU', 'KZ', 'UZ'])
+
             // Убираем районы Москвы (оставляем только "Москва")
+            // Т.е. region='Moscow' допустим только если name='Москва'
             ->where(function ($w) {
-                $w->whereNull('country_code')
-                  ->orWhere('country_code', '<>', 'RU')
-                  ->orWhereNull('region')
+                $w->whereNull('region')
                   ->orWhere('region', '<>', 'Moscow')
                   ->orWhere('name', '=', 'Москва');
             })
+
             ->where(function ($w) use ($like) {
                 $w->where('name', 'ilike', $like)
                   ->orWhere('region', 'ilike', $like)
                   ->orWhere('country_code', 'ilike', $like);
             })
-            // “релевантность”: сначала точные совпадения, потом популярные, потом алфавит
-            ->orderByRaw("CASE WHEN name ILIKE ? THEN 0 ELSE 1 END", [$q])
+
+            // “релевантность”: сначала точные совпадения (без регистра), потом популярные, потом алфавит
+            ->orderByRaw("CASE WHEN lower(name) = lower(?) THEN 0 ELSE 1 END", [$q])
             ->orderByRaw("population DESC NULLS LAST")
             ->orderBy('country_code')
             ->orderByRaw("region NULLS LAST")

@@ -7,11 +7,6 @@ use Illuminate\Support\Facades\Log;
 
 class UserPhotoFromProviderService
 {
-    /**
-     * Политика:
-     * - если новый пользователь (регистрация) -> добавляем фото в галерею и ставим аватар
-     * - если существующий -> добавляем ТОЛЬКО если галерея и avatar пустые
-     */
     public static function seedFromProviderIfAllowed(User $user, ?string $avatarUrl, bool $isNewUser): void
     {
         $avatarUrl = is_string($avatarUrl) ? trim($avatarUrl) : '';
@@ -19,19 +14,28 @@ class UserPhotoFromProviderService
             return;
         }
 
-        $hasAvatar = (bool) $user->getFirstMedia('avatar');
-        $hasPhotos = $user->getMedia('photos')->isNotEmpty();
-
-        if (!$isNewUser && ($hasAvatar || $hasPhotos)) {
+        // Сохраняем аватар ТОЛЬКО для новых пользователей
+        if (!$isNewUser) {
             return;
         }
 
         try {
-            $photo = $user->addMediaFromUrl($avatarUrl)->toMediaCollection('photos');
-
-            if (!$user->getFirstMedia('avatar') && $photo) {
-                $user->addMedia($photo->getPath())->toMediaCollection('avatar');
-            }
+            // Сохраняем фото в галерею
+            $media = $user->addMediaFromUrl($avatarUrl)
+                ->preservingOriginal()
+                ->toMediaCollection('photos');
+            
+            // Создаем thumb 480x480
+            $user->addMediaConversion('thumb')
+                ->fit(\Spatie\Image\Enums\Fit::Crop, 480, 480)
+                ->nonQueued()
+                ->performOnCollections('photos')
+                ->perform();
+            
+            // Сохраняем ID как аватар
+            $user->avatar_media_id = $media->id;
+            $user->save();
+            
         } catch (\Throwable $e) {
             Log::warning('Provider avatar seed failed', [
                 'user_id' => (int) $user->id,

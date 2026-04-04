@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 class UserSearchController extends Controller
 {
@@ -13,100 +12,157 @@ class UserSearchController extends Controller
         $q = trim((string) $request->query('q', ''));
 
         if (mb_strlen($q) < 2) {
-            return response()->json(['ok' => true, 'items' => []]);
+            return response()->json([
+                'ok' => true,
+                'items' => [],
+            ]);
         }
 
-        // поддержка @nickname
+        // Поддержка @username
         if (mb_substr($q, 0, 1) === '@') {
             $q = trim(mb_substr($q, 1));
         }
 
-        $hasNickname = Schema::hasColumn('users', 'nickname');
-        $hasUsername = Schema::hasColumn('users', 'username');
+        $variants = $this->buildSearchVariants($q);
+        $likes = $this->buildLikePatterns($variants);
 
-        $cols = ['id', 'name', 'email'];
-        if ($hasNickname) $cols[] = 'nickname';
-        if ($hasUsername) $cols[] = 'username';
+        $items = DB::table('users')
+            ->select([
+                'id',
+                'first_name',
+                'last_name',
+                'name',
+                'telegram_username',
+            ])
+            ->where(function ($w) use ($likes, $q) {
+                if (ctype_digit($q) && (int) $q > 0) {
+                    $w->orWhere('id', (int) $q);
+                }
 
-        $q2 = $this->ruToLat($q); // "акимов" -> "akimov"
-        $variants = array_values(array_unique(array_filter([$q, $q2], function ($v) {
-            return trim((string)$v) !== '';
-        })));
-
-        // экранируем LIKE
-        $likes = [];
-        foreach ($variants as $v) {
-            $v = str_replace(['\\', '%', '_'], ['\\\\', '\%', '\_'], $v);
-            $likes[] = '%' . $v . '%';
-        }
-
-        $query = DB::table('users')->select($cols);
-
-        $query->where(function ($w) use ($likes, $hasNickname, $hasUsername, $q) {
-            // поиск по id, если ввели число
-            if (ctype_digit($q) && (int)$q > 0) {
-                $w->orWhere('id', (int)$q);
-            }
-
-            foreach ($likes as $like) {
-                $w->orWhere('name', 'like', $like)
-                  ->orWhere('email', 'like', $like);
-
-                if ($hasNickname) $w->orWhere('nickname', 'like', $like);
-                if ($hasUsername) $w->orWhere('username', 'like', $like);
-            }
-        });
-
-        $items = $query
-            ->orderBy('name', 'asc')
+                foreach ($likes as $like) {
+                    $w->orWhere('first_name', 'ILIKE', $like)
+                        ->orWhere('last_name', 'ILIKE', $like)
+                        ->orWhereRaw("(coalesce(last_name, '') || ' ' || coalesce(first_name, '')) ILIKE ?", [$like])
+                        ->orWhereRaw("(coalesce(first_name, '') || ' ' || coalesce(last_name, '')) ILIKE ?", [$like])
+                        ->orWhere('name', 'ILIKE', $like)
+                        ->orWhere('telegram_username', 'ILIKE', $like);
+                }
+            })
+            ->orderByRaw("CASE WHEN coalesce(last_name, '') <> '' OR coalesce(first_name, '') <> '' THEN 0 ELSE 1 END")
+            ->orderBy('last_name')
+            ->orderBy('first_name')
+            ->orderBy('name')
             ->limit(10)
             ->get()
-            ->map(function ($u) use ($hasNickname, $hasUsername) {
-                $label = trim((string)($u->name ?? ''));
-                if ($label === '' && $hasNickname) $label = (string)($u->nickname ?? '');
-                if ($label === '' && $hasUsername) $label = (string)($u->username ?? '');
-                if ($label === '') $label = (string)($u->email ?? ('#' . $u->id));
+            ->map(function ($u) {
+                $firstName = trim((string) ($u->first_name ?? ''));
+                $lastName = trim((string) ($u->last_name ?? ''));
+                $fullName = trim($lastName . ' ' . $firstName);
+                $plainName = trim((string) ($u->name ?? ''));
+                $telegramRaw = trim((string) ($u->telegram_username ?? ''));
+                $telegram = $this->normalizeTelegramUsername($telegramRaw);
+
+                $label = $fullName;
+
+                if ($label === '' && $plainName !== '') {
+                    $label = $plainName;
+                }
+
+                if ($label === '' && $telegram !== '') {
+                    $label = $telegram;
+                }
+
+                if ($label === '') {
+                    $label = '#' . $u->id;
+                }
 
                 $meta = [];
-                if ($hasNickname && !empty($u->nickname)) $meta[] = '@' . $u->nickname;
-                elseif ($hasUsername && !empty($u->username)) $meta[] = '@' . $u->username;
-                if (!empty($u->email)) $meta[] = (string)$u->email;
+
+                if ($telegram !== '') {
+                    $meta[] = $telegram;
+                }
+
+                if (
+                    $fullName !== '' &&
+                    $plainName !== '' &&
+                    mb_strtolower($plainName) !== mb_strtolower($fullName)
+                ) {
+                    $meta[] = $plainName;
+                }
 
                 $metaStr = implode(' • ', array_filter($meta));
 
                 return [
-                    'id'    => (int)$u->id,
+                    'id' => (int) $u->id,
                     'label' => $label,
-                    'meta'  => $metaStr, // под твой фронт
-                    'sub'   => $metaStr, // совместимость
+                    'name' => $label,
+                    'full_name' => $fullName,
+                    'username' => $telegram,
+                    'telegram_username' => $telegram,
+                    'meta' => $metaStr,
+                    'sub' => $metaStr,
                 ];
             })
             ->values()
             ->all();
 
-        return response()->json(['ok' => true, 'items' => $items]);
+        return response()->json([
+            'ok' => true,
+            'items' => $items,
+        ]);
+    }
+
+    private function buildSearchVariants(string $q): array
+    {
+        $q2 = $this->ruToLat($q);
+
+        return array_values(array_unique(array_filter([$q, $q2], function ($value) {
+            return trim((string) $value) !== '';
+        })));
+    }
+
+    private function buildLikePatterns(array $variants): array
+    {
+        $likes = [];
+
+        foreach ($variants as $value) {
+            $value = str_replace(['\\', '%', '_'], ['\\\\', '\%', '\_'], $value);
+            $likes[] = '%' . $value . '%';
+        }
+
+        return $likes;
+    }
+
+    private function normalizeTelegramUsername(?string $username): string
+    {
+        $username = trim((string) $username);
+
+        if ($username === '') {
+            return '';
+        }
+
+        return '@' . ltrim($username, '@');
     }
 
     private function ruToLat(string $s): string
     {
         $map = [
-            'а'=>'a','б'=>'b','в'=>'v','г'=>'g','д'=>'d','е'=>'e','ё'=>'e','ж'=>'zh','з'=>'z','и'=>'i','й'=>'y',
-            'к'=>'k','л'=>'l','м'=>'m','н'=>'n','о'=>'o','п'=>'p','р'=>'r','с'=>'s','т'=>'t','у'=>'u','ф'=>'f',
-            'х'=>'h','ц'=>'ts','ч'=>'ch','ш'=>'sh','щ'=>'sch','ъ'=>'','ы'=>'y','ь'=>'','э'=>'e','ю'=>'yu','я'=>'ya',
+            'а' => 'a',  'б' => 'b',   'в' => 'v',  'г' => 'g',   'д' => 'd',
+            'е' => 'e',  'ё' => 'e',   'ж' => 'zh', 'з' => 'z',   'и' => 'i',
+            'й' => 'y',  'к' => 'k',   'л' => 'l',  'м' => 'm',   'н' => 'n',
+            'о' => 'o',  'п' => 'p',   'р' => 'r',  'с' => 's',   'т' => 't',
+            'у' => 'u',  'ф' => 'f',   'х' => 'h',  'ц' => 'ts',  'ч' => 'ch',
+            'ш' => 'sh', 'щ' => 'sch', 'ъ' => '',   'ы' => 'y',   'ь' => '',
+            'э' => 'e',  'ю' => 'yu',  'я' => 'ya',
         ];
 
         $out = '';
         $len = mb_strlen($s);
 
         for ($i = 0; $i < $len; $i++) {
-            $ch  = mb_substr($s, $i, 1);
+            $ch = mb_substr($s, $i, 1);
             $low = mb_strtolower($ch);
-
-            if (isset($map[$low])) {
-                $out .= $map[$low];
-            } else {
-                $out .= $ch;
-            }
+            $out .= $map[$low] ?? $ch;
         }
 
         return $out;

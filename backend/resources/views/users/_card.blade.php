@@ -1,13 +1,13 @@
 @php
     $age = $u->ageYears();
     $gender = (string)($u->gender ?? '');
-    $genderClass = $gender === 'm' ? 'male' : ($gender === 'f' ? 'female' : '');
+    $genderClass = $gender === 'm' ? 'icon-male' : ($gender === 'f' ? 'icon-female' : '');
     
     $genderLabel = $gender === 'm' ? 'Мужчина' : ($gender === 'f' ? 'Женщина' : null);
 
     $cityLabel = null;
     if ($u->city) {
-        $cityLabel = $u->city->name . ($u->city->region ? ' (' . $u->city->region . ')' : '');
+        $cityLabel = $u->city->name . ($u->city->region ? ' <span class="d-inline-block f-13">(' . $u->city->region . ')</span>' : '');
     }
 
     $metaParts = array_values(array_filter([
@@ -26,7 +26,7 @@
     $profileUrl = route('users.show', ['user' => $u->id]);
 @endphp
 
-<div data-aos="fade" class="card-ramka user-card {{ $genderClass }}">
+<div data-aos="fade" class="card-ramka user-card">
     <div class="user-avatar-wrapper">
         <a href="{{ $profileUrl }}" class="user-avatar-link">
             <div class="user-avatar-img-wrapper">
@@ -67,16 +67,16 @@
         @endphp
         
         @if($cityText)
-            <div class="user-meta-item {{ $genderClass }}">
-                <span class="user-meta-icon user-icon-city"></span>
-                <span class="user-meta-text">{{ $cityText }}</span>
+            <div class="user-meta-item">
+                <span class="user-meta-icon user-icon-city icon-map"></span>
+                <span class="user-meta-text f-16">{!! $cityText !!}</span>
             </div>
         @endif
         
         @if($genderText || $ageText)
-            <div class="user-meta-item {{ $genderClass }}">
-                <span class="user-meta-icon user-icon-gender"></span>
-                <span class="user-meta-text">
+            <div class="user-meta-item">
+                <span class="user-meta-icon user-icon-gender {{ $genderClass }}"></span>
+                <span class="user-meta-text f-16">
                     @if($genderText && $ageText)
                         {{ $genderText }}, {{ $ageText }}
                     @elseif($genderText)
@@ -105,9 +105,9 @@
                     $iconClass = 'icon-' . $type;
                 @endphp
                 
-                <div class="user-sensitive-item {{ $genderClass }}">
+                <div class="user-sensitive-item">
                     <span class="user-sensitive-icon {{ $iconClass }}"></span>
-                    <span class="user-sensitive-text">{{ $line }}</span>
+                    <span class="user-sensitive-text f-16">{{ $line }}</span>
                 </div>
             @endforeach
         </div>

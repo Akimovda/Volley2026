@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -15,8 +16,21 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
-           'user.restricted' => \App\Http\Middleware\EnsureUserNotRestricted::class,
+            'user.restricted' => \App\Http\Middleware\EnsureUserNotRestricted::class,
         ]);
+    })
+    ->withSchedule(function (Schedule $schedule) {
+        // Expand recurring events: раз в день, на 90 дней вперёд
+        $schedule->command('events:expand-recurring --days=90 --chunk=200 --maxCreates=500')
+            ->dailyAt('03:10')
+            ->withoutOverlapping()
+            ->appendOutputTo(storage_path('logs/cron-events-expand.log'));
+
+        // Reminders: каждую минуту
+        $schedule->command('events:send-registration-reminders')
+            ->everyMinute()
+            ->withoutOverlapping()
+            ->appendOutputTo(storage_path('logs/cron-events-reminders.log'));
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

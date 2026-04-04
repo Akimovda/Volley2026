@@ -1,78 +1,141 @@
 {{-- resources/views/admin/locations/index.blade.php --}}
-<x-app-layout>
-    <x-slot name="header">
-        <div class="flex items-center justify-between gap-4">
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">Локации</h2>
-            <a href="{{ route('admin.locations.create') }}"
-               class="inline-flex items-center px-4 py-2 rounded-lg font-semibold text-sm border border-gray-200 bg-white hover:bg-gray-50">
-                + Добавить
-            </a>
-        </div>
-    </x-slot>
-
-    <div class="max-w-5xl mx-auto sm:px-6 lg:px-8 py-10">
+<x-voll-layout body_class="admin-page admin-locations-index">
+    <x-slot name="title">
+        Локации (админ-панель)
+	</x-slot>
+	
+    <x-slot name="description">
+        Управление локациями в административной панели
+	</x-slot>
+	
+    <x-slot name="h1">
+        Локации
+	</x-slot>
+	
+    <x-slot name="h2">
+        Административная панель
+	</x-slot>
+	
+    <x-slot name="breadcrumbs">
+        <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
+            <a href="{{ route('admin.dashboard') }}" itemprop="item"><span itemprop="name">Админ-панель</span></a>
+            <meta itemprop="position" content="1">
+		</li>
+        <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
+            <span itemprop="name">Локации</span>
+            <meta itemprop="position" content="2">
+		</li>
+	</x-slot>
+	
+    <x-slot name="t_description">
+        Управление локациями
+	</x-slot>	
+	
+    <x-slot name="d_description">
+		<div data-aos-delay="250" data-aos="fade-up">
+			<a href="{{ route('admin.locations.create') }}" class="btn mt-2">
+				Добавить локацию
+			</a>
+		</div>
+	</x-slot>
+	
+	
+	
+	
+    <div class="container">
         @if (session('status'))
-            <div class="mb-4 p-3 rounded-lg bg-green-50 text-green-800 border border-green-100">
+        <div class="ramka">
+            <div class="alert alert-success">
                 {{ session('status') }}
-            </div>
+			</div>
+		</div>
         @endif
-
+		
         @if (session('error'))
-            <div class="mb-4 p-3 rounded-lg bg-red-50 text-red-800 border border-red-100">
+        <div class="ramka">
+            <div class="alert alert-danger">
                 {{ session('error') }}
-            </div>
+			</div>
+		</div>
         @endif
-
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-            <table class="w-full text-sm">
-                <thead class="bg-gray-50 text-gray-600">
-                    <tr>
-                        <th class="text-left p-3">ID</th>
-                        <th class="text-left p-3">Город</th>
-                        <th class="text-left p-3">Название</th>
-                        <th class="text-left p-3">Адрес</th>
-                        <th class="text-right p-3">Действия</th>
-                    </tr>
-                </thead>
-
-                <tbody>
-                @foreach($locations as $loc)
-                    <tr class="border-t">
-                        <td class="p-3">{{ $loc->id }}</td>
-                        <td class="p-3">{{ $loc->city }}</td>
-                        <td class="p-3 font-semibold">
-                            <a href="{{ route('admin.locations.edit', $loc) }}" class="hover:underline">
-                                {{ $loc->name }}
-                            </a>
-                        </td>
-                        <td class="p-3">{{ $loc->address }}</td>
-                        <td class="p-3">
-                            <div class="flex items-center justify-end gap-2">
-                                <a href="{{ route('admin.locations.edit', $loc) }}"
-                                   class="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-200 bg-white hover:bg-gray-50">
-                                    Редактировать
-                                </a>
-
-                                <form method="POST"
-                                      action="{{ route('admin.locations.destroy', $loc) }}"
-                                      onsubmit="return confirm('Удалить локацию и все её фото?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit"
-                                            class="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold border border-red-200 bg-white text-red-700 hover:bg-red-50">
-                                        Удалить
-                                    </button>
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
-                @endforeach
-                </tbody>
-            </table>
-
-            <div class="p-4">
-                {{ $locations->links() }}
-            </div>
-        </div>
-    </div>
-</x-app-layout>
+		
+        <div class="ramka">
+			
+			<div class="table-scrollable mb-0">
+				<div class="table-drag-indicator"></div>
+				<table class="table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th style="min-width: 20rem">Город</th>
+                            <th style="min-width: 24rem">Название</th>
+                            <th style="min-width: 24rem">Адрес</th>
+                            <th style="min-width: 10rem">Действия</th>
+						</tr>
+					</thead>
+                    <tbody>
+                        @foreach($locations as $loc)
+                        <tr>
+                            <td>{{ $loc->id }}</td>
+                            <td>
+                                @if($loc->city)
+								{{ $loc->city->name }}
+								@if($loc->city->region || $loc->city->country_code)
+								<div class="city-details">
+									@php
+									$parts = [];
+									if($loc->city->country_code) $parts[] = $loc->city->country_code;
+									if($loc->city->region) $parts[] = $loc->city->region;
+									@endphp
+									{{ implode(' • ', $parts) }}
+								</div>
+								@endif
+                                @else
+								—
+                                @endif
+							</td>
+                            <td>
+								@php
+								$slug = Str::slug($loc->name);
+								@endphp
+								
+                                <a href="{{ route('locations.show', ['location' => $loc->id, 'slug' => $slug]) }}" class="b-600 blink">
+                                    {{ $loc->name }}
+								</a>
+							</td>
+                            <td>{{ $loc->address ?? '—' }}</td>
+                            <td>
+                                <div class="d-flex fc">
+                                    <a href="{{ route('admin.locations.edit', $loc) }}" class="icon-edit btn mr-1 btn-svg">
+									</a>
+                                    <form class="d-inline-block" method="POST"
+									action="{{ route('admin.locations.destroy', $loc) }}">
+                                        @csrf
+                                        @method('DELETE')
+										<button type="submit" 
+										class="icon-delete btn-alert btn btn-danger btn-svg"
+										data-title="Удалить локацию?"
+										data-text="Все фото локации также будут удалены. Отменить нельзя!"
+										data-icon="warning"
+										data-confirm-text="Да, удалить"
+										data-cancel-text="Отмена">
+										</button>										
+										
+										
+									</form>
+								</div>
+							</td>
+						</tr>
+                        @endforeach
+					</tbody>
+				</table>
+			</div>
+			
+            @if(method_exists($locations, 'links'))
+			
+			{{ $locations->links() }}
+			
+            @endif
+		</div>
+	</div>
+</x-voll-layout>

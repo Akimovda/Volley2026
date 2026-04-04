@@ -1,264 +1,415 @@
 {{-- resources/views/admin/locations/edit.blade.php --}}
-<x-app-layout>
-    <x-slot name="header">
-        <div class="flex items-center justify-between gap-4">
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                Редактировать локацию (admin)
-            </h2>
-
-            <div class="flex gap-2">
-                <a href="{{ route('admin.locations.index') }}" class="v-btn v-btn--secondary">← К списку</a>
-
-                <form method="POST"
-                      action="{{ route('admin.locations.destroy', $location) }}"
-                      onsubmit="return confirm('Удалить локацию и все её фото?')">
-                    @csrf
-                    @method('DELETE')
-                    <button class="v-btn v-btn--danger" type="submit">Удалить</button>
-                </form>
-            </div>
-        </div>
-    </x-slot>
-
-    <div class="max-w-4xl mx-auto sm:px-6 lg:px-8 py-10">
-        {{-- FLASH --}}
+<x-voll-layout body_class="admin-page admin-locations-edit">
+    <x-slot name="title">
+        Редактировать локацию (admin)
+	</x-slot>
+	
+    <x-slot name="description">
+        Страница редактирования локации в административной панели
+	</x-slot>
+	
+    <x-slot name="canonical">
+        {{-- Здесь каноническая ссылка не нужна --}}
+	</x-slot>
+	
+    <x-slot name="h1">
+        Редактировать локацию
+	</x-slot>
+	
+    <x-slot name="h2">
+        Административная панель
+	</x-slot>
+	
+    <x-slot name="t_description">
+        Отредактируйте информацию о локации. Поля, отмеченные *, обязательны для заполнения.
+	</x-slot>
+	
+    <x-slot name="breadcrumbs">
+        <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
+            <a href="{{ route('admin.dashboard') }}" itemprop="item"><span itemprop="name">Админ-панель</span></a>
+            <meta itemprop="position" content="1">
+		</li>
+        <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
+            <a href="{{ route('admin.locations.index') }}" itemprop="item"><span itemprop="name">Локации</span></a>
+            <meta itemprop="position" content="2">
+		</li>
+        <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
+            <span itemprop="name">{{ $location->name }}</span>
+            <meta itemprop="position" content="3">
+		</li>
+	</x-slot>
+	
+    <x-slot name="style">
+        <link href="/assets/org.css" rel="stylesheet">
+	</x-slot>	
+	
+    <x-slot name="script">
+		<script src="/assets/city.js"></script>  
+		<script src="/assets/org.js"></script>     
+        <script>
+            (function () {
+                // --- trix: запрет вложений
+                document.addEventListener('trix-file-accept', function (event) {
+                    event.preventDefault();
+				});
+				
+                // --- photos reorder
+                const grid = document.getElementById('photos_grid');
+                if (grid) {
+                    const hint = document.getElementById('photos_hint');
+                    const saveBtn = document.getElementById('photos_save_btn');
+                    const reorderUrl = @json(route('admin.locations.photos.reorder', $location));
+                    const csrf = @json(csrf_token());
+					
+                    function currentOrderIds() {
+                        return Array.from(grid.querySelectorAll('[data-photo-id]'))
+						.map(el => Number(el.getAttribute('data-photo-id')))
+						.filter(n => Number.isFinite(n));
+					}
+					
+                    async function saveOrder() {
+                        const photo_ids = currentOrderIds();
+                        if (!photo_ids.length) return;
+						
+                        if (hint) hint.textContent = 'Сохраняю порядок...';
+                        try {
+                            const res = await fetch(reorderUrl, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Accept': 'application/json',
+                                    'X-CSRF-TOKEN': csrf,
+								},
+                                body: JSON.stringify({ photo_ids }),
+							});
+							
+                            if (!res.ok) {
+                                if (hint) hint.textContent = 'Не удалось сохранить порядок (HTTP ' + res.status + ').';
+                                return;
+							}
+                            if (hint) hint.textContent = 'Порядок фото сохранён ✅';
+							} catch (e) {
+                            if (hint) hint.textContent = 'Ошибка сети при сохранении порядка.';
+						}
+					}
+					
+                    new Sortable(grid, { animation: 150, ghostClass: 'opacity-50' });
+                    saveBtn?.addEventListener('click', saveOrder);
+				}
+			})();
+		</script>
+	</x-slot>
+	
+	
+	
+    <div class="container">
+		
         @if (session('status'))
-            <div class="mb-4 p-3 rounded-lg bg-green-50 text-green-800 border border-green-100">
+        <div class="ramka">
+            <div class="alert alert-success">
                 {{ session('status') }}
-            </div>
+			</div>
+		</div>
         @endif
-
+		
         @if (session('error'))
-            <div class="mb-4 p-3 rounded-lg bg-red-50 text-red-800 border border-red-100">
+        <div class="ramka">
+            <div class="alert alert-danger">
                 {{ session('error') }}
-            </div>
+			</div>
+		</div>
         @endif
-
+		
         @if ($errors->any())
-            <div class="mb-4 p-3 rounded-lg bg-red-50 text-red-800 border border-red-100 text-sm">
+        <div class="ramka">
+            <div class="alert alert-danger">
                 <div class="font-semibold mb-2">Ошибки:</div>
                 <ul class="list-disc ml-5 space-y-1">
                     @foreach ($errors->all() as $err)
-                        <li>{{ $err }}</li>
+                    <li>{{ $err }}</li>
                     @endforeach
-                </ul>
-            </div>
+				</ul>
+			</div>
+		</div>
         @endif
-
-        {{-- =========================
-            SECTION: MAIN FORM
-        ========================== --}}
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <form method="POST"
-                  action="{{ route('admin.locations.update', $location) }}"
-                  enctype="multipart/form-data">
+		
+		
+		@php
+		// Конфигурация отображения города (все true)
+		$cityDisplayConfig = [
+        'showCountry' => true,
+        'showRegion' => true,
+        'inputShowCountry' => true,
+        'inputShowRegion' => true,
+		];
+		
+		// Подготавливаем метку для города
+		$selectedCityId = old('city_id', $location->city_id);
+		$selectedCityLabel = '';
+		
+		// Формируем метку для инпута: Город (Страна, Регион)
+		if (!empty($selectedCityId) && ($location->city ?? null)) {
+        $city = $location->city;
+        $cityName = $city->name ?? '';
+        $details = [];
+		
+        if ($cityDisplayConfig['inputShowCountry'] && !empty($city->country_code)) {
+		$details[] = $city->country_code;
+        }
+        if ($cityDisplayConfig['inputShowRegion'] && !empty($city->region)) {
+		$details[] = $city->region;
+        }
+		
+        if (!empty($details)) {
+		$selectedCityLabel = $cityName . ' (' . implode(', ', $details) . ')';
+        } else {
+		$selectedCityLabel = $cityName;
+        }
+		}
+		@endphp
+		
+		
+		
+        <div class="ramka">
+		<h2 class="-mt-05">Данные локации</h2>
+            <form method="POST" action="{{ route('admin.locations.update', $location) }}" enctype="multipart/form-data" class="form">
                 @csrf
                 @method('PUT')
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {{-- Name --}}
-                    <div class="md:col-span-2">
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">Название</label>
-                        <input name="name"
-                               class="w-full rounded-lg border-gray-200"
-                               value="{{ old('name', $location->name) }}"
-                               required>
-                    </div>
-
-                    {{-- Address --}}
-                    <div class="md:col-span-2">
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">Адрес</label>
-                        <input name="address"
-                               class="w-full rounded-lg border-gray-200"
-                               value="{{ old('address', $location->address) }}">
-                    </div>
-
-                    {{-- City --}}
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">Город</label>
-                        <input name="city"
-                               class="w-full rounded-lg border-gray-200"
-                               value="{{ old('city', $location->city) }}">
-                    </div>
-
-                    {{-- Timezone --}}
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">Timezone</label>
-                        <input name="timezone"
-                               class="w-full rounded-lg border-gray-200"
-                               value="{{ old('timezone', $location->timezone ?? 'Europe/Berlin') }}"
-                               required>
-                    </div>
-
-                    {{-- Short text --}}
-                    <div class="md:col-span-2">
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">Short text</label>
-                        <input name="short_text"
-                               class="w-full rounded-lg border-gray-200"
-                               value="{{ old('short_text', $location->short_text) }}">
-                    </div>
-
-                    {{-- Long text --}}
-                    <div class="md:col-span-2">
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">Long text</label>
-                        <textarea name="long_text"
-                                  rows="4"
-                                  class="w-full rounded-lg border-gray-200">{{ old('long_text', $location->long_text) }}</textarea>
-                    </div>
-
-                    {{-- Lat --}}
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">lat</label>
-                        <input name="lat"
-                               type="number"
-                               step="any"
-                               class="w-full rounded-lg border-gray-200"
-                               value="{{ old('lat', $location->lat) }}">
-                    </div>
-
-                    {{-- Lng --}}
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">lng</label>
-                        <input name="lng"
-                               type="number"
-                               step="any"
-                               class="w-full rounded-lg border-gray-200"
-                               value="{{ old('lng', $location->lng) }}">
-                    </div>
-
-                    {{-- Upload photos --}}
-                    <div class="md:col-span-2">
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">Добавить фото (до 5)</label>
-                        <input name="photos[]"
-                               type="file"
-                               multiple
-                               accept="image/*"
-                               class="w-full rounded-lg border-gray-200">
-                        <div class="text-xs text-gray-500 mt-1">
-                            Если загрузить больше 5 — останутся последние 5.
-                        </div>
-                    </div>
-                </div>
-
-                <div class="mt-6">
-                    <button class="v-btn v-btn--primary" type="submit">Сохранить</button>
-                </div>
-            </form>
-        </div>
-
-        {{-- =========================
-            SECTION: PHOTOS (D&D SORT)
-            - ВАЖНО: без вложенных form (HTML запрещает form внутри form)
-            - Сохранение порядка: AJAX POST на admin.locations.photos.reorder
-        ========================== --}}
-        <div class="mt-6 bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <div class="flex items-center justify-between gap-3">
-                <div class="font-semibold text-gray-800">Фото (drag & drop)</div>
-
-                @if(!$photos->isEmpty())
-                    <button type="button" id="photos_save_btn" class="v-btn v-btn--secondary">
-                        Сохранить порядок
-                    </button>
-                @endif
-            </div>
-
-            <div class="text-xs text-gray-500 mt-2" id="photos_hint">
-                @if($photos->isEmpty())
-                    Фото пока нет.
-                @else
-                    Перетащи карточки мышкой и нажми «Сохранить порядок».
-                @endif
-            </div>
-
-            @if(!$photos->isEmpty())
-                <div id="photos_grid" class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
-                    @foreach($photos as $m)
-                        <div class="border rounded-xl p-2 bg-white cursor-move"
-                             data-photo-id="{{ $m->id }}">
-                            {{-- Если у вас нет conversion "thumb", используй getUrl() --}}
-                            <img src="{{ $m->getUrl() }}"
-                                 class="w-full h-32 object-cover rounded-lg"
-                                 alt="">
-
-                            <div class="mt-2 flex items-center justify-between gap-2">
-                                <span class="text-xs text-gray-500">#{{ $m->id }}</span>
-
-                                <form method="POST"
-                                      action="{{ route('admin.locations.photos.destroy', [$location, $m]) }}"
-                                      onsubmit="return confirm('Удалить фото?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="text-xs text-red-600 hover:underline">
-                                        Удалить
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
-            @endif
-        </div>
-
-        {{-- =========================
-            SECTION: SCRIPTS
-            - SortableJS
-            - AJAX reorder
-        ========================== --}}
-        <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
-        <script>
-            (function () {
-                const grid = document.getElementById('photos_grid');
-                if (!grid) return;
-
-                const hint = document.getElementById('photos_hint');
-                const saveBtn = document.getElementById('photos_save_btn');
-
-                const reorderUrl = @json(route('admin.locations.photos.reorder', $location));
-                const csrf = @json(csrf_token());
-
-                function currentOrderIds() {
-                    return Array.from(grid.querySelectorAll('[data-photo-id]'))
-                        .map(el => Number(el.getAttribute('data-photo-id')))
-                        .filter(n => Number.isFinite(n));
-                }
-
-                async function saveOrder() {
-                    const photo_ids = currentOrderIds();
-                    if (!photo_ids.length) return;
-
-                    if (hint) hint.textContent = 'Сохраняю порядок...';
-
-                    try {
-                        const res = await fetch(reorderUrl, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Accept': 'application/json',
-                                'X-CSRF-TOKEN': csrf,
-                            },
-                            body: JSON.stringify({ photo_ids }),
-                        });
-
-                        if (!res.ok) {
-                            if (hint) hint.textContent = 'Не удалось сохранить порядок (HTTP ' + res.status + ').';
-                            return;
-                        }
-
-                        if (hint) hint.textContent = 'Порядок фото сохранён ✅';
-                    } catch (e) {
-                        if (hint) hint.textContent = 'Ошибка сети при сохранении порядка.';
-                    }
-                }
-
-                // D&D
-                new Sortable(grid, {
-                    animation: 150,
-                    ghostClass: 'opacity-50',
-                });
-
-                // Save button
-                saveBtn?.addEventListener('click', saveOrder);
-            })();
-        </script>
-    </div>
-</x-app-layout>
+				
+                <div class="row">
+                    {{-- NAME --}}
+                    <div class="col-12">
+                        <div class="card">
+                            <label>Название <span class="text-danger">*</span></label>
+                            <input
+							type="text"
+							name="name"
+							class="@error('name') is-invalid @enderror"
+							value="{{ old('name', $location->name) }}"
+							required
+                            >
+                            @error('name')<div class="invalid-feedback">{{ $message }}</div>@enderror
+						</div>
+					</div>
+					
+                    {{-- CITY --}}
+					<div class="col-md-4">
+						<div class="card">
+							<label>Город *</label>
+							
+							{{-- То, что реально сохраняем --}}
+							<input type="hidden" name="city_id" id="city_id" value="{{ old('city_id', $location->city_id) }}" required>
+							
+							{{-- UI input (поиск) --}}
+							<div class="city-autocomplete" id="city-autocomplete" data-search-url="{{ route('cities.search') }}">
+								<input type="text"
+								id="city_search"
+								placeholder="Начните вводить город…"
+								value="{{ old('city_label', $selectedCityLabel) }}"
+								autocomplete="off"
+								@error('city_id') class="error" @enderror>
+								
+								{{-- dropdown --}}
+								<div id="city_dropdown" class="city-dropdown">
+									<div id="city_results"></div>
+								</div>
+							</div>
+							@error('city_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+						</div>
+					</div>
+					
+                    {{-- ADDRESS --}}
+                    <div class="col-md-8">
+                        <div class="card">
+                            <label>Адрес</label>
+                            <input
+							type="text"
+							name="address"
+							class="@error('address') is-invalid @enderror"
+							value="{{ old('address', $location->address) }}"
+                            >
+                            @error('address')<div class="invalid-feedback">{{ $message }}</div>@enderror
+						</div>
+					</div>
+					
+                    {{-- SHORT_TEXT --}}
+                    <div class="col-12">
+                        <div class="card">
+                            <label>Description</label>
+                            <input
+							type="text"
+							name="short_text"
+							class="@error('short_text') is-invalid @enderror"
+							value="{{ old('short_text', $location->short_text) }}"
+                            >
+                            @error('short_text')<div class="invalid-feedback">{{ $message }}</div>@enderror
+						</div>
+					</div>
+					
+                    {{-- LONG_TEXT (Trix) --}}
+                    <div class="col-12">
+                        <div class="card">
+                            <label>Короткое описание (только для превью)</label>
+                            <input id="long_text" type="hidden" name="long_text" value="{{ old('long_text', $location->long_text) }}">
+                            <trix-editor
+							input="long_text"
+							class="trix-content"
+                            ></trix-editor>
+                            @error('long_text')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+						</div>
+					</div>
+					
+                    {{-- LONG_TEXT_FULL (Trix) --}}
+                    <div class="col-12">
+                        <div class="card">
+                            <label>Полное описание</label>
+                            <input id="long_text_full" type="hidden" name="long_text_full" value="{{ old('long_text_full', $location->long_text_full) }}">
+                            <trix-editor
+							input="long_text_full"
+							class="trix-content"
+                            ></trix-editor>
+                            @error('long_text_full')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+						</div>
+					</div>
+					
+                    {{-- COORDS --}}
+                    <div class="col-md-6">
+                        <div class="card">
+                            <label>Широта (lat)</label>
+                            <input
+							type="number"
+							name="lat"
+							step="any"
+							class="@error('lat') is-invalid @enderror"
+							value="{{ old('lat', $location->lat) }}"
+                            >
+                            @error('lat')<div class="invalid-feedback">{{ $message }}</div>@enderror
+						</div>
+					</div>
+					
+                    <div class="col-md-6">
+                        <div class="card">
+                            <label>Долгота (lng)</label>
+                            <input
+							type="number"
+							name="lng"
+							step="any"
+							class="@error('lng') is-invalid @enderror"
+							value="{{ old('lng', $location->lng) }}"
+                            >
+                            @error('lng')<div class="invalid-feedback">{{ $message }}</div>@enderror
+						</div>
+					</div>
+					
+                    {{-- PHOTOS (новые) --}}
+                    <div class="col-12">
+                        <div class="card">
+                            <label>Добавить новые фото (до 5)</label>
+                            <input
+							id="loc_photos"
+							type="file"
+							name="photos[]"
+							multiple
+							accept="image/*"
+							class="@error('photos') is-invalid @enderror"
+                            >
+                            <div class="f-16 b-500 mt-1">
+                                jpg/jpeg/png/webp, до 5MB каждое, максимум 5 файлов
+							</div>
+                            @error('photos')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                            @error('photos.*')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+						</div>
+					</div>
+					
+                    {{-- NOTE --}}
+                    <div class="col-12">
+                        <div class="card">
+                            <label>Примечание</label>
+                            <input
+							type="text"
+							name="note"
+							class="@error('note') is-invalid @enderror"
+							value="{{ old('note', $location->note) }}"
+                            >
+                            @error('note')<div class="invalid-feedback">{{ $message }}</div>@enderror
+						</div>
+					</div>
+				</div>
+				
+				<div class="mt-2 text-center">
+					<button type="submit" class="btn btn-primary">Сохранить изменения</button>
+				</div>
+			</form>
+			{{-- 
+			<div class="row">
+				<div class="col-6 text-end">
+					<div class="mt-3">
+						<form method="POST"
+						action="{{ route('admin.locations.destroy', $location) }}"
+						onsubmit="return confirm('Удалить локацию и все её фото?')"
+						style="display: inline;">
+							@csrf
+							@method('DELETE')
+							<button class="btn btn-danger" type="submit">Удалить локацию</button>
+						</form>
+					</div>
+				</div>			
+			</div>
+			--}}
+		</div>
+		
+        {{-- PHOTOS (D&D SORT) --}}
+        @if(!$photos->isEmpty())
+        <div class="ramka">
+			<h2 class="-mt-05">Загруженные фотографии</h2>
+			<div class="f-16 b-500"> Перетащи карточки мышкой и нажми «Сохранить порядок».</div>
+			
+			
+			
+			
+			
+			
+            <div id="photos_grid" class="row mt-2">
+                @foreach($photos as $m)
+				<div class="col-md-3 col-6">
+					<div class="card cursor-move"
+					data-photo-id="{{ $m->id }}">
+						@php
+						$u = $m->getUrl('thumb');
+						if (empty($u)) $u = $m->getUrl();
+						@endphp
+						<img src="{{ $u }}"
+						class="w-full h-32 object-cover rounded-lg"
+						alt="">
+						<div class="mt-1 d-flex between fvc">
+							<span class="b-600 cd">#{{ $m->id }}</span>
+							<form method="POST"
+							action="{{ route('admin.locations.photos.destroy', [$location, $m]) }}"
+							onsubmit="return confirm('Удалить фото?')">
+								@csrf
+								@method('DELETE')
+								<button type="submit" 
+								class="btn btn-small btn-danger btn-alert"
+								data-title="Удалить фото?"
+								data-icon="warning"
+								data-confirm-text="Да, удалить"
+								data-cancel-text="Отмена">
+									Удалить
+								</button>								
+								
+							</form>
+						</div>
+					</div>
+				</div>
+                @endforeach
+			</div>
+			<div class="mt-2 text-center">
+				<button type="button" id="photos_save_btn" class="btn">
+					Сохранить порядок
+				</button>
+			</div>
+			
+		</div>
+        @endif
+	</div>
+</x-voll-layout>
