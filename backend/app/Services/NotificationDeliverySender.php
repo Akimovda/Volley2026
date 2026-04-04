@@ -137,52 +137,51 @@ final class NotificationDeliverySender
 
     private function sendVk(User $user, array $payload): void
     {
-        // vk_notify_user_id — сохраняется при привязке VK-бота (VkNotifyWebhookController)
-        // vk_id — OAuth-поле для входа, для сообщений не подходит
-        $vkUserId = (string) ($user->vk_notify_user_id ?? '');
+        // vk_notify_user_id — VK user_id, сохранённый когда пользователь написал боту notify_<token>
+        // Для личных сообщений peer_id == user_id, поэтому передаём его напрямую как chat_id
+        $vkUserId = trim((string) ($user->vk_notify_user_id ?? ''));
         if ($vkUserId === '') {
             throw new \RuntimeException('У пользователя не привязан VK-бот (vk_notify_user_id пуст).');
         }
 
-        $token = (string) config('services.vk.admin_token');
-        if ($token === '') {
-            throw new \RuntimeException('Не настроен services.vk.admin_token.');
+        // Маршрутизируем через VK-бота (как VkChannelPublisher):
+        // Laravel → POST /send на VK-бот → VK API messages.send
+        // Бот сам держит community token и строит keyboard
+        $endpoint = rtrim((string) config('services.vk.bot_api_url'), '/');
+        if ($endpoint === '') {
+            throw new \RuntimeException('Не настроен services.vk.bot_api_url.');
         }
 
-        $rich    = $this->buildRichPayload($payload);
-        $text    = $this->buildFormattedText($payload);
-
-        $params = [
-            'access_token' => $token,
-            'user_id'      => $vkUserId,
-            'message'      => $text,
-            'random_id'    => random_int(1, PHP_INT_MAX),
-            'v'            => '5.199',
-        ];
-
-        $keyboard = $this->buildVkKeyboard($rich);
-        if ($keyboard !== null) {
-            $params['keyboard'] = json_encode($keyboard, JSON_UNESCAPED_UNICODE);
+        $secret = (string) config('services.bind.secret');
+        if ($secret === '') {
+            throw new \RuntimeException('Не настроен BIND_WEBHOOK_SECRET.');
         }
 
-        if ($rich['image_url'] !== '') {
-            $attachment = $this->uploadVkMessagePhoto($token, $rich['image_url']);
-            if ($attachment !== null) {
-                $params['attachment'] = $attachment;
-            }
-        }
+        $rich       = $this->buildRichPayload($payload);
+        $text       = $this->buildFormattedText($payload);
+        $buttonUrl  = $rich['button_url'];
+        $buttonText = $rich['button_text'] !== '' ? $rich['button_text'] : ($buttonUrl !== '' ? 'Подробнее' : '');
 
         $resp = Http::timeout(20)
-            ->asForm()
-            ->post('https://api.vk.com/method/messages.send', $params);
+            ->withHeaders([
+                'X-Bind-Secret' => $secret,
+                'Accept'        => 'application/json',
+            ])
+            ->post($endpoint . '/send', array_filter([
+                'chat_id'     => $vkUserId,
+                'text'        => $text,
+                'button_url'  => $buttonUrl !== '' ? $buttonUrl : null,
+                'button_text' => $buttonText !== '' ? $buttonText : null,
+                'image_url'   => $rich['image_url'] !== '' ? $rich['image_url'] : null,
+            ], fn ($v) => $v !== null));
 
         if (!$resp->ok()) {
-            throw new \RuntimeException('VK HTTP ' . $resp->status() . ': ' . $resp->body());
+            throw new \RuntimeException('VK bot HTTP ' . $resp->status() . ': ' . $resp->body());
         }
 
         $json = $resp->json();
-        if (!empty($json['error'])) {
-            throw new \RuntimeException('VK API error: ' . json_encode($json['error'], JSON_UNESCAPED_UNICODE));
+        if (!is_array($json) || empty($json['ok'])) {
+            throw new \RuntimeException('VK bot error: ' . $resp->body());
         }
     }
 
@@ -430,88 +429,6 @@ final class NotificationDeliverySender
         throw new \RuntimeException('MAX image message HTTP ' . $resp->status() . ': ' . $body);
     }
 
-    private function uploadVkMessagePhoto(string $token, string $imageUrl): ?string
-    {
-        $serverResp = Http::timeout(20)
-            ->asForm()
-            ->post('https://api.vk.com/method/photos.getMessagesUploadServer', [
-                'access_token' => $token,
-                'v'            => '5.199',
-            ]);
-
-        if (!$serverResp->ok()) {
-            throw new \RuntimeException('VK photos.getMessagesUploadServer HTTP ' . $serverResp->status() . ': ' . $serverResp->body());
-        }
-
-        $serverJson = $serverResp->json();
-        if (!empty($serverJson['error'])) {
-            throw new \RuntimeException('VK photos.getMessagesUploadServer error: ' . json_encode($serverJson['error'], JSON_UNESCAPED_UNICODE));
-        }
-
-        $uploadUrl = (string) ($serverJson['response']['upload_url'] ?? '');
-        if ($uploadUrl === '') {
-            throw new \RuntimeException('VK не вернул upload_url для messages photo.');
-        }
-
-        $file = Http::timeout(30)->get($imageUrl);
-        if (!$file->ok()) {
-            throw new \RuntimeException('VK image download HTTP ' . $file->status());
-        }
-
-        $tmp = tmpfile();
-        if ($tmp === false) {
-            throw new \RuntimeException('Не удалось создать tmpfile для VK image.');
-        }
-
-        fwrite($tmp, $file->body());
-        $meta = stream_get_meta_data($tmp);
-        $path = $meta['uri'];
-
-        $uploadResp = Http::timeout(30)
-            ->attach('photo', file_get_contents($path), 'image.jpg')
-            ->post($uploadUrl);
-
-        fclose($tmp);
-
-        if (!$uploadResp->ok()) {
-            throw new \RuntimeException('VK upload photo HTTP ' . $uploadResp->status() . ': ' . $uploadResp->body());
-        }
-
-        $uploadJson = $uploadResp->json();
-        if (!is_array($uploadJson)) {
-            throw new \RuntimeException('VK upload photo вернул невалидный JSON.');
-        }
-
-        $saveResp = Http::timeout(20)
-            ->asForm()
-            ->post('https://api.vk.com/method/photos.saveMessagesPhoto', [
-                'access_token' => $token,
-                'photo'        => $uploadJson['photo'] ?? null,
-                'server'       => $uploadJson['server'] ?? null,
-                'hash'         => $uploadJson['hash'] ?? null,
-                'v'            => '5.199',
-            ]);
-
-        if (!$saveResp->ok()) {
-            throw new \RuntimeException('VK photos.saveMessagesPhoto HTTP ' . $saveResp->status() . ': ' . $saveResp->body());
-        }
-
-        $saveJson = $saveResp->json();
-        if (!empty($saveJson['error'])) {
-            throw new \RuntimeException('VK photos.saveMessagesPhoto error: ' . json_encode($saveJson['error'], JSON_UNESCAPED_UNICODE));
-        }
-
-        $photo   = $saveJson['response'][0] ?? null;
-        $ownerId = $photo['owner_id'] ?? null;
-        $mediaId = $photo['id'] ?? null;
-
-        if ($ownerId === null || $mediaId === null) {
-            throw new \RuntimeException('VK photos.saveMessagesPhoto не вернул owner_id/id.');
-        }
-
-        return 'photo' . $ownerId . '_' . $mediaId;
-    }
-
     private function buildRichPayload(array $payload): array
     {
         return [
@@ -531,26 +448,6 @@ final class NotificationDeliverySender
             'markdown', 'markdownv2' => 'MarkdownV2',
             default                  => null,
         };
-    }
-
-    private function buildVkKeyboard(array $rich): ?array
-    {
-        if ($rich['button_url'] === '') {
-            return null;
-        }
-
-        return [
-            'inline'  => true,
-            'buttons' => [[
-                [
-                    'action' => [
-                        'type'  => 'open_link',
-                        'link'  => $rich['button_url'],
-                        'label' => $rich['button_text'] !== '' ? $rich['button_text'] : 'Подробнее',
-                    ],
-                ],
-            ]],
-        ];
     }
 
     private function decodePayload(mixed $payload): array
