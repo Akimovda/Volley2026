@@ -75,15 +75,16 @@ final class NotificationDeliverySender
         }
 
         $rich = $this->buildRichPayload($payload);
-        $text = $this->buildText($payload);
+        // Используем форматированный текст (без URL в теле — он идёт кнопкой)
+        $text = $this->buildFormattedText($payload);
 
         $replyMarkup = null;
         if ($rich['button_url'] !== '') {
             $replyMarkup = [
                 'inline_keyboard' => [[
                     [
-                        'text' => $rich['button_text'] !== '' ? $rich['button_text'] : 'Открыть',
-                        'url' => $rich['button_url'],
+                        'text' => $rich['button_text'] !== '' ? $rich['button_text'] : 'Подробнее',
+                        'url'  => $rich['button_url'],
                     ],
                 ]],
             ];
@@ -93,10 +94,10 @@ final class NotificationDeliverySender
             $resp = Http::timeout(20)->post(
                 "https://api.telegram.org/bot{$token}/sendPhoto",
                 array_filter([
-                    'chat_id' => (string) $user->telegram_id,
-                    'photo' => $rich['image_url'],
-                    'caption' => $text,
-                    'parse_mode' => $this->telegramParseMode($rich['format']),
+                    'chat_id'      => (string) $user->telegram_id,
+                    'photo'        => $rich['image_url'],
+                    'caption'      => $text,
+                    'parse_mode'   => $this->telegramParseMode($rich['format']),
                     'reply_markup' => $replyMarkup ? json_encode($replyMarkup, JSON_UNESCAPED_UNICODE) : null,
                 ], fn ($v) => $v !== null)
             );
@@ -116,11 +117,11 @@ final class NotificationDeliverySender
         $resp = Http::timeout(20)->post(
             "https://api.telegram.org/bot{$token}/sendMessage",
             array_filter([
-                'chat_id' => (string) $user->telegram_id,
-                'text' => $text,
-                'parse_mode' => $this->telegramParseMode($rich['format']),
+                'chat_id'                  => (string) $user->telegram_id,
+                'text'                     => $text,
+                'parse_mode'               => $this->telegramParseMode($rich['format']),
                 'disable_web_page_preview' => false,
-                'reply_markup' => $replyMarkup ? json_encode($replyMarkup, JSON_UNESCAPED_UNICODE) : null,
+                'reply_markup'             => $replyMarkup ? json_encode($replyMarkup, JSON_UNESCAPED_UNICODE) : null,
             ], fn ($v) => $v !== null)
         );
 
@@ -145,15 +146,15 @@ final class NotificationDeliverySender
             throw new \RuntimeException('Не настроен services.vk.admin_token.');
         }
 
-        $rich = $this->buildRichPayload($payload);
-        $text = $this->buildText($payload);
+        $rich    = $this->buildRichPayload($payload);
+        $text    = $this->buildFormattedText($payload);
 
         $params = [
             'access_token' => $token,
-            'user_id' => (string) $user->vk_id,
-            'message' => $text,
-            'random_id' => random_int(1, PHP_INT_MAX),
-            'v' => '5.199',
+            'user_id'      => (string) $user->vk_id,
+            'message'      => $text,
+            'random_id'    => random_int(1, PHP_INT_MAX),
+            'v'            => '5.199',
         ];
 
         $keyboard = $this->buildVkKeyboard($rich);
@@ -161,7 +162,6 @@ final class NotificationDeliverySender
             $params['keyboard'] = json_encode($keyboard, JSON_UNESCAPED_UNICODE);
         }
 
-        $attachment = null;
         if ($rich['image_url'] !== '') {
             $attachment = $this->uploadVkMessagePhoto($token, $rich['image_url']);
             if ($attachment !== null) {
@@ -194,28 +194,147 @@ final class NotificationDeliverySender
             throw new \RuntimeException('Не настроен services.max.bot_token.');
         }
 
-        $rich = $this->buildRichPayload($payload);
+        $rich   = $this->buildRichPayload($payload);
         $chatId = (string) $user->max_chat_id;
 
         if ($rich['image_url'] !== '') {
             $this->sendMaxImageByUrl($token, $chatId, $rich['image_url']);
         }
 
-        $text = $this->buildTextWithLinkFallback($payload);
+        // Форматированный текст без дублирования ссылки в теле
+        $text = $this->buildFormattedText($payload);
+
+        $body = ['text' => $text];
+
+        // Inline-кнопка (как у Telegram)
+        if ($rich['button_url'] !== '') {
+            $buttonText = $rich['button_text'] !== '' ? $rich['button_text'] : 'Подробнее';
+            $body['attachments'] = [[
+                'type'    => 'inline_keyboard',
+                'payload' => [
+                    'buttons' => [[
+                        [
+                            'type' => 'link',
+                            'text' => $buttonText,
+                            'url'  => $rich['button_url'],
+                        ],
+                    ]],
+                ],
+            ]];
+        }
 
         $resp = Http::timeout(20)
             ->withHeaders([
                 'Authorization' => $token,
-                'Content-Type' => 'application/json',
+                'Content-Type'  => 'application/json',
             ])
-            ->post('https://platform-api.max.ru/messages?chat_id=' . urlencode($chatId), [
-                'text' => $text,
-            ]);
+            ->post('https://platform-api.max.ru/messages?chat_id=' . urlencode($chatId), $body);
 
         if (!$resp->ok()) {
             throw new \RuntimeException('MAX HTTP ' . $resp->status() . ': ' . $resp->body());
         }
     }
+
+    // -------------------------------------------------------------------------
+    // Форматирование текста
+    // -------------------------------------------------------------------------
+
+    /**
+     * Строит красиво оформленное сообщение с эмодзи из структурированных данных
+     * (occurrence_datetime, location_full / location_address), которые теперь
+     * сохраняются в payload доставки через UserNotificationService.
+     *
+     * URL намеренно НЕ добавляется в текст — он идёт отдельной кнопкой.
+     */
+    private function buildFormattedText(array $payload): string
+    {
+        $rich = $this->buildRichPayload($payload);
+        $type = (string) ($payload['template_code'] ?? '');
+
+        // ---- Эмодзи по типу уведомления ----
+        $emoji = match ($type) {
+            'registration_created'                                  => '✅',
+            'registration_cancelled',
+            'registration_cancelled_by_organizer'                   => '❌',
+            'event_reminder'                                        => '⏰',
+            'event_cancelled', 'event_cancelled_quorum'             => '🚫',
+            'group_invite', 'tournament_team_invite'                => '🤝',
+            default                                                 => '📢',
+        };
+
+        $lines = [];
+        $lines[] = $emoji . ' ' . $rich['title'];
+
+        // ---- Дата/время ----
+        $datetime = trim((string) (
+            $payload['occurrence_datetime']
+            ?? $payload['event_datetime']
+            ?? $payload['occurrence_date'] . ($payload['occurrence_time'] ? ' ' . $payload['occurrence_time'] : '')
+            ?? ''
+        ));
+        if ($datetime !== '') {
+            $lines[] = '📆 Дата: ' . $datetime;
+        }
+
+        // ---- Адрес ----
+        $address = trim((string) ($payload['location_full'] ?? $payload['location_address'] ?? ''));
+        if ($address !== '') {
+            $lines[] = '📍 Адрес: ' . $address;
+        }
+
+        // ---- Дополнительный текст (для типов с body-сообщением, напр. group_invite) ----
+        $extra = $this->extractExtraBody($rich['body'], $rich['button_url'], $type);
+        if ($extra !== '') {
+            $lines[] = '';
+            $lines[] = $extra;
+        }
+
+        return implode("\n", $lines);
+    }
+
+    /**
+     * Извлекает «дополнительный» текст из body для типов, где body несёт
+     * смысловую нагрузку (group_invite, tournament_team_invite и т.п.).
+     * Для структурированных типов возвращает ''.
+     *
+     * Из body удаляются строки с URL и шаблонные строки типа "Дата: ...",
+     * "Адрес: ...", "Открыть мероприятие:" — они формируются из структурных полей выше.
+     */
+    private function extractExtraBody(string $body, string $buttonUrl, string $type): string
+    {
+        // Для структурированных типов body полностью заменяем на поля выше
+        $structuredTypes = [
+            'registration_created',
+            'registration_cancelled',
+            'registration_cancelled_by_organizer',
+            'event_cancelled',
+            'event_cancelled_quorum',
+            'event_reminder',
+        ];
+
+        if (in_array($type, $structuredTypes, true) || $body === '') {
+            return '';
+        }
+
+        // Удаляем строки с URL
+        if ($buttonUrl !== '') {
+            $body = str_replace($buttonUrl, '', $body);
+        }
+
+        // Удаляем шаблонные строки, которые уже показаны выше
+        $body = preg_replace('/^(Дата|Дата и время|Date)\s*:.*$/mu', '', $body ?? '');
+        $body = preg_replace('/^(Адрес|Address)\s*:.*$/mu', '', $body ?? '');
+        $body = preg_replace('/^(Открыть|Подробнее|открыть)[^\n]*/mu', '', $body ?? '');
+
+        // Схлопываем пустые строки
+        $body = preg_replace('/\n{3,}/', "\n\n", $body ?? '');
+
+        return trim($body ?? '');
+    }
+
+    // -------------------------------------------------------------------------
+    // Вспомогательные методы (без изменений)
+    // -------------------------------------------------------------------------
 
     private function sendMaxImageByUrl(string $token, string $chatId, string $imageUrl): void
     {
@@ -225,9 +344,7 @@ final class NotificationDeliverySender
         }
 
         $uploadMeta = Http::timeout(20)
-            ->withHeaders([
-                'Authorization' => $token,
-            ])
+            ->withHeaders(['Authorization' => $token])
             ->post('https://platform-api.max.ru/uploads?type=image');
 
         if (!$uploadMeta->ok()) {
@@ -235,7 +352,7 @@ final class NotificationDeliverySender
         }
 
         $uploadJson = $uploadMeta->json();
-        $uploadUrl = (string) ($uploadJson['url'] ?? '');
+        $uploadUrl  = (string) ($uploadJson['url'] ?? '');
         if ($uploadUrl === '') {
             throw new \RuntimeException('MAX uploads не вернул url.');
         }
@@ -269,12 +386,12 @@ final class NotificationDeliverySender
         $resp = Http::timeout(20)
             ->withHeaders([
                 'Authorization' => $token,
-                'Content-Type' => 'application/json',
+                'Content-Type'  => 'application/json',
             ])
             ->post('https://platform-api.max.ru/messages?chat_id=' . urlencode($chatId), [
-                'text' => '',
+                'text'        => '',
                 'attachments' => [[
-                    'type' => 'image',
+                    'type'    => 'image',
                     'payload' => $uploadPayload,
                 ]],
             ]);
@@ -290,12 +407,12 @@ final class NotificationDeliverySender
             $retry = Http::timeout(20)
                 ->withHeaders([
                     'Authorization' => $token,
-                    'Content-Type' => 'application/json',
+                    'Content-Type'  => 'application/json',
                 ])
                 ->post('https://platform-api.max.ru/messages?chat_id=' . urlencode($chatId), [
-                    'text' => '',
+                    'text'        => '',
                     'attachments' => [[
-                        'type' => 'image',
+                        'type'    => 'image',
                         'payload' => $uploadPayload,
                     ]],
                 ]);
@@ -316,7 +433,7 @@ final class NotificationDeliverySender
             ->asForm()
             ->post('https://api.vk.com/method/photos.getMessagesUploadServer', [
                 'access_token' => $token,
-                'v' => '5.199',
+                'v'            => '5.199',
             ]);
 
         if (!$serverResp->ok()) {
@@ -366,10 +483,10 @@ final class NotificationDeliverySender
             ->asForm()
             ->post('https://api.vk.com/method/photos.saveMessagesPhoto', [
                 'access_token' => $token,
-                'photo' => $uploadJson['photo'] ?? null,
-                'server' => $uploadJson['server'] ?? null,
-                'hash' => $uploadJson['hash'] ?? null,
-                'v' => '5.199',
+                'photo'        => $uploadJson['photo'] ?? null,
+                'server'       => $uploadJson['server'] ?? null,
+                'hash'         => $uploadJson['hash'] ?? null,
+                'v'            => '5.199',
             ]);
 
         if (!$saveResp->ok()) {
@@ -381,11 +498,7 @@ final class NotificationDeliverySender
             throw new \RuntimeException('VK photos.saveMessagesPhoto error: ' . json_encode($saveJson['error'], JSON_UNESCAPED_UNICODE));
         }
 
-        $photo = $saveJson['response'][0] ?? null;
-        if (!is_array($photo)) {
-            throw new \RuntimeException('VK photos.saveMessagesPhoto вернул пустой response.');
-        }
-
+        $photo   = $saveJson['response'][0] ?? null;
         $ownerId = $photo['owner_id'] ?? null;
         $mediaId = $photo['id'] ?? null;
 
@@ -399,45 +512,21 @@ final class NotificationDeliverySender
     private function buildRichPayload(array $payload): array
     {
         return [
-            'title' => trim((string) ($payload['title'] ?? 'Уведомление')),
-            'body' => trim((string) ($payload['body'] ?? '')),
-            'image_url' => trim((string) ($payload['image_url'] ?? '')),
-            'button_text' => trim((string) ($payload['button_text'] ?? '')),
+            'title'      => trim((string) ($payload['title'] ?? 'Уведомление')),
+            'body'       => trim((string) ($payload['body'] ?? '')),
+            'image_url'  => trim((string) ($payload['image_url'] ?? '')),
+            'button_text'=> trim((string) ($payload['button_text'] ?? '')),
             'button_url' => trim((string) ($payload['button_url'] ?? '')),
-            'format' => trim((string) ($payload['format'] ?? 'plain')),
+            'format'     => trim((string) ($payload['format'] ?? 'plain')),
         ];
-    }
-
-    private function buildText(array $payload): string
-    {
-        $rich = $this->buildRichPayload($payload);
-
-        if ($rich['body'] === '') {
-            return $rich['title'];
-        }
-
-        return $rich['title'] . "\n\n" . $rich['body'];
-    }
-
-    private function buildTextWithLinkFallback(array $payload): string
-    {
-        $rich = $this->buildRichPayload($payload);
-        $text = $this->buildText($payload);
-
-        if ($rich['button_url'] !== '') {
-            $label = $rich['button_text'] !== '' ? $rich['button_text'] : 'Открыть';
-            $text .= "\n\n" . $label . ': ' . $rich['button_url'];
-        }
-
-        return $text;
     }
 
     private function telegramParseMode(string $format): ?string
     {
         return match (mb_strtolower($format)) {
-            'html' => 'HTML',
+            'html'                   => 'HTML',
             'markdown', 'markdownv2' => 'MarkdownV2',
-            default => null,
+            default                  => null,
         };
     }
 
@@ -448,13 +537,13 @@ final class NotificationDeliverySender
         }
 
         return [
-            'inline' => true,
+            'inline'  => true,
             'buttons' => [[
                 [
                     'action' => [
-                        'type' => 'open_link',
-                        'link' => $rich['button_url'],
-                        'label' => $rich['button_text'] !== '' ? $rich['button_text'] : 'Открыть',
+                        'type'  => 'open_link',
+                        'link'  => $rich['button_url'],
+                        'label' => $rich['button_text'] !== '' ? $rich['button_text'] : 'Подробнее',
                     ],
                 ],
             ]],
@@ -480,9 +569,9 @@ final class NotificationDeliverySender
         DB::table('notification_deliveries')
             ->where('id', $deliveryId)
             ->update([
-                'status' => 'sent',
-                'sent_at' => now(),
-                'error' => null,
+                'status'     => 'sent',
+                'sent_at'    => now(),
+                'error'      => null,
                 'updated_at' => now(),
             ]);
     }
@@ -492,14 +581,14 @@ final class NotificationDeliverySender
         DB::table('notification_deliveries')
             ->where('id', $deliveryId)
             ->update([
-                'status' => 'failed',
-                'error' => mb_substr($error, 0, 4000),
+                'status'     => 'failed',
+                'error'      => mb_substr($error, 0, 4000),
                 'updated_at' => now(),
             ]);
 
         Log::warning('Notification delivery failed', [
             'delivery_id' => $deliveryId,
-            'error' => $error,
+            'error'       => $error,
         ]);
     }
 }

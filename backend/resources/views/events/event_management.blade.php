@@ -526,5 +526,5 @@ return ['label' => 'Мест: —', 'free' => null, 'max' => null, 'registered' 
 				
 				refreshBulk();
 			});
-		</script>
+</script>
 	</x-voll-layout>	

@@ -43,46 +43,53 @@ final class UserNotificationService
                 fallbackBody: $body
             );
 
+            // Базовый payload для хранения в БД (без template_data — он большой)
             $notificationPayload = array_merge($payload, [
-                'title' => $rendered['title'],
-                'body' => $rendered['body'],
-                'image_url' => $rendered['image_url'],
-                'button_text' => $rendered['button_text'],
-                'button_url' => $rendered['button_url'],
+                'title'         => $rendered['title'],
+                'body'          => $rendered['body'],
+                'image_url'     => $rendered['image_url'],
+                'button_text'   => $rendered['button_text'],
+                'button_url'    => $rendered['button_url'],
                 'template_code' => $type,
             ]);
 
             $notification = UserNotification::query()->create([
-                'user_id' => $userId,
-                'type' => $type,
-                'title' => $rendered['title'],
-                'body' => $rendered['body'],
-                'payload' => $notificationPayload,
-                'read_at' => null,
+                'user_id'  => $userId,
+                'type'     => $type,
+                'title'    => $rendered['title'],
+                'body'     => $rendered['body'],
+                'payload'  => $notificationPayload,
+                'read_at'  => null,
             ]);
 
             $channels = $this->normalizeChannels($channels, $user);
 
             foreach ($channels as $channel) {
-                $deliveryPayload = array_merge($notificationPayload, [
-                    'user_notification_id' => $notification->id,
-                    'channel' => $channel,
-                ]);
+                // Для внешних каналов добавляем структурированные данные (дата, адрес и т.д.)
+                // чтобы NotificationDeliverySender мог строить красивое сообщение
+                $deliveryPayload = array_merge(
+                    $channel !== 'in_app' ? ($rendered['template_data'] ?? []) : [],
+                    $notificationPayload,
+                    [
+                        'user_notification_id' => $notification->id,
+                        'channel'              => $channel,
+                    ]
+                );
 
                 $deliveryId = (int) DB::table('notification_deliveries')->insertGetId([
-                    'event_id' => $payload['event_id'] ?? null,
+                    'event_id'      => $payload['event_id'] ?? null,
                     'occurrence_id' => $payload['occurrence_id'] ?? null,
-                    'user_id' => $userId,
-                    'type' => $type,
-                    'channel' => $channel,
-                    'status' => $channel === 'in_app' ? 'sent' : 'pending',
-                    'scheduled_at' => now(),
-                    'sent_at' => $channel === 'in_app' ? now() : null,
-                    'dedupe_key' => $this->makeDedupeKey($notification->id, $channel, $type),
-                    'payload' => json_encode($deliveryPayload, JSON_UNESCAPED_UNICODE),
-                    'error' => null,
-                    'created_at' => now(),
-                    'updated_at' => now(),
+                    'user_id'       => $userId,
+                    'type'          => $type,
+                    'channel'       => $channel,
+                    'status'        => $channel === 'in_app' ? 'sent' : 'pending',
+                    'scheduled_at'  => now(),
+                    'sent_at'       => $channel === 'in_app' ? now() : null,
+                    'dedupe_key'    => $this->makeDedupeKey($notification->id, $channel, $type),
+                    'payload'       => json_encode($deliveryPayload, JSON_UNESCAPED_UNICODE),
+                    'error'         => null,
+                    'created_at'    => now(),
+                    'updated_at'    => now(),
                 ]);
 
                 if (in_array($channel, ['telegram', 'vk', 'max'], true)) {
@@ -104,11 +111,11 @@ final class UserNotificationService
         string $groupKey,
         bool $autoJoinAfterRegistration = false
     ): UserNotification {
-        $fromUser = User::query()->find($fromUserId);
+        $fromUser  = User::query()->find($fromUserId);
         $fromLabel = $fromUser?->name ?: $fromUser?->email ?: ('#' . $fromUserId);
 
         $title = 'Приглашение в группу';
-        $body = $autoJoinAfterRegistration
+        $body  = $autoJoinAfterRegistration
             ? "Пользователь {$fromLabel} пригласил вас в пару на мероприятие. Сначала запишитесь на мероприятие, потом примите приглашение."
             : "Пользователь {$fromLabel} пригласил вас в пару на мероприятие.";
 
@@ -118,16 +125,17 @@ final class UserNotificationService
             title: $title,
             body: $body,
             payload: [
-                'event_id' => $eventId,
-                'invite_id' => $inviteId,
-                'group_key' => $groupKey,
-                'from_user_id' => $fromUserId,
-                'from_user_name' => $fromLabel,
+                'event_id'                   => $eventId,
+                'invite_id'                  => $inviteId,
+                'group_key'                  => $groupKey,
+                'from_user_id'               => $fromUserId,
+                'from_user_name'             => $fromLabel,
                 'auto_join_after_registration' => $autoJoinAfterRegistration,
             ],
             channels: ['in_app', 'telegram', 'vk', 'max']
         );
     }
+
     public function createTournamentTeamInviteNotification(
         int $toUserId,
         int $fromUserId,
@@ -141,52 +149,53 @@ final class UserNotificationService
         ?string $positionCode = null
     ): UserNotification {
         $fromUser = User::query()->find($fromUserId);
-    
+
         $fromLabel = $fromUser?->name
             ?: $fromUser?->email
             ?: ('#' . $fromUserId);
-    
+
         $roleLabel = match ($teamRole) {
-            'player' => 'основной игрок',
+            'player'  => 'основной игрок',
             'reserve' => 'запасной',
-            default => $teamRole,
+            default   => $teamRole,
         };
-    
+
         $positionLabel = match ($positionCode) {
-            'setter' => 'связующий',
-            'outside' => 'доигровщик',
+            'setter'   => 'связующий',
+            'outside'  => 'доигровщик',
             'opposite' => 'диагональный',
-            'middle' => 'центральный блокирующий',
-            'libero' => 'либеро',
-            default => null,
+            'middle'   => 'центральный блокирующий',
+            'libero'   => 'либеро',
+            default    => null,
         };
-    
+
         $body = $positionLabel
             ? "Капитан {$fromLabel} приглашает вас в команду «{$teamName}» на турнир «{$eventTitle}». Роль: {$roleLabel}, позиция: {$positionLabel}."
             : "Капитан {$fromLabel} приглашает вас в команду «{$teamName}» на турнир «{$eventTitle}». Роль: {$roleLabel}.";
-    
+
         return $this->create(
             userId: $toUserId,
             type: 'tournament_team_invite',
             title: 'Приглашение в команду',
             body: $body,
             payload: [
-                'event_id' => $eventId,
-                'team_id' => $teamId,
-                'invite_id' => $inviteId,
-                'invite_url' => $inviteUrl,
-                'team_name' => $teamName,
-                'event_title' => $eventTitle,
-                'team_role' => $teamRole,
+                'event_id'      => $eventId,
+                'team_id'       => $teamId,
+                'invite_id'     => $inviteId,
+                'invite_url'    => $inviteUrl,
+                'team_name'     => $teamName,
+                'event_title'   => $eventTitle,
+                'team_role'     => $teamRole,
                 'position_code' => $positionCode,
-                'from_user_id' => $fromUserId,
-                'from_user_name' => $fromLabel,
-                'button_text' => 'Открыть приглашение',
-                'button_url' => $inviteUrl,
+                'from_user_id'  => $fromUserId,
+                'from_user_name'=> $fromLabel,
+                'button_text'   => 'Открыть приглашение',
+                'button_url'    => $inviteUrl,
             ],
             channels: ['in_app', 'telegram', 'vk', 'max']
         );
     }
+
     public function createRegistrationCreatedNotification(
         int $userId,
         int $eventId,
@@ -199,9 +208,9 @@ final class UserNotificationService
             title: 'Вы записаны на мероприятие',
             body: "Вы успешно записались на мероприятие «{$eventTitle}».",
             payload: [
-                'event_id' => $eventId,
+                'event_id'      => $eventId,
                 'occurrence_id' => $occurrenceId,
-                'event_title' => $eventTitle,
+                'event_title'   => $eventTitle,
             ],
             channels: ['in_app', 'telegram', 'vk', 'max']
         );
@@ -219,9 +228,9 @@ final class UserNotificationService
             title: 'Запись на мероприятие отменена',
             body: "Вы отменили запись на мероприятие «{$eventTitle}».",
             payload: [
-                'event_id' => $eventId,
+                'event_id'      => $eventId,
                 'occurrence_id' => $occurrenceId,
-                'event_title' => $eventTitle,
+                'event_title'   => $eventTitle,
             ],
             channels: ['in_app', 'telegram', 'vk', 'max']
         );
@@ -242,11 +251,11 @@ final class UserNotificationService
             title: 'Ваша запись была отменена',
             body: "Организатор отменил вашу запись на мероприятие «{$eventTitle}».",
             payload: [
-                'event_id' => $eventId,
-                'occurrence_id' => $occurrenceId,
-                'event_title' => $eventTitle,
-                'cancelled_by_user_id' => $cancelledByUserId,
-                'organizer_name' => $cancelledByUser?->name,
+                'event_id'               => $eventId,
+                'occurrence_id'          => $occurrenceId,
+                'event_title'            => $eventTitle,
+                'cancelled_by_user_id'   => $cancelledByUserId,
+                'organizer_name'         => $cancelledByUser?->name,
             ],
             channels: ['in_app', 'telegram', 'vk', 'max']
         );
@@ -269,9 +278,9 @@ final class UserNotificationService
             title: 'Скоро начало мероприятия',
             body: $body,
             payload: [
-                'event_id' => $eventId,
-                'occurrence_id' => $occurrenceId,
-                'event_title' => $eventTitle,
+                'event_id'       => $eventId,
+                'occurrence_id'  => $occurrenceId,
+                'event_title'    => $eventTitle,
                 'starts_at_text' => $startsAtText,
             ],
             channels: ['in_app', 'telegram', 'vk', 'max']
@@ -295,11 +304,11 @@ final class UserNotificationService
             title: 'Мероприятие отменено',
             body: $body,
             payload: [
-                'event_id' => $eventId,
+                'event_id'      => $eventId,
                 'occurrence_id' => $occurrenceId,
-                'event_title' => $eventTitle,
+                'event_title'   => $eventTitle,
                 'cancel_reason' => $reason,
-                'reason' => $reason,
+                'reason'        => $reason,
             ],
             channels: ['in_app', 'telegram', 'vk', 'max']
         );
@@ -317,11 +326,11 @@ final class UserNotificationService
             title: 'Мероприятие отменено',
             body: "Мероприятие «{$eventTitle}» отменено, потому что не набрался кворум.",
             payload: [
-                'event_id' => $eventId,
+                'event_id'      => $eventId,
                 'occurrence_id' => $occurrenceId,
-                'event_title' => $eventTitle,
+                'event_title'   => $eventTitle,
                 'cancel_reason' => 'quorum_not_reached',
-                'reason' => 'quorum_not_reached',
+                'reason'        => 'quorum_not_reached',
             ],
             channels: ['in_app', 'telegram', 'vk', 'max']
         );
@@ -352,7 +361,7 @@ final class UserNotificationService
             ->whereRaw("(payload->>'invite_id')::int = ?", [$inviteId])
             ->whereNull('read_at')
             ->update([
-                'read_at' => now(),
+                'read_at'    => now(),
                 'updated_at' => now(),
             ]);
     }
@@ -363,7 +372,7 @@ final class UserNotificationService
             ->where('user_id', $userId)
             ->whereNull('read_at')
             ->update([
-                'read_at' => now(),
+                'read_at'    => now(),
                 'updated_at' => now(),
             ]);
     }
@@ -375,6 +384,23 @@ final class UserNotificationService
             ->whereNull('read_at')
             ->count();
     }
+
+    public function delete(int $notificationId, int $userId): void
+    {
+        $notification = UserNotification::where('id', $notificationId)
+            ->where('user_id', $userId)
+            ->first();
+
+        if (!$notification) {
+            throw new DomainException('Уведомление не найдено.');
+        }
+
+        $notification->delete();
+    }
+
+    // -------------------------------------------------------------------------
+    // Private
+    // -------------------------------------------------------------------------
 
     private function normalizeChannels(array $channels, User $user): array
     {
@@ -444,20 +470,22 @@ final class UserNotificationService
 
         if (!$template) {
             return [
-                'title' => $this->templateRenderer->render($fallbackTitle, $templateData) ?? $fallbackTitle,
-                'body' => $this->templateRenderer->render($fallbackBody, $templateData),
-                'image_url' => $payload['image_url'] ?? null,
-                'button_text' => $payload['button_text'] ?? null,
-                'button_url' => $payload['button_url'] ?? null,
+                'title'         => $this->templateRenderer->render($fallbackTitle, $templateData) ?? $fallbackTitle,
+                'body'          => $this->templateRenderer->render($fallbackBody, $templateData),
+                'image_url'     => $payload['image_url'] ?? null,
+                'button_text'   => $payload['button_text'] ?? null,
+                'button_url'    => $payload['button_url'] ?? null,
+                'template_data' => $templateData,  // ← структурированные данные для Sender-а
             ];
         }
 
         return [
-            'title' => $this->templateRenderer->render($template->title_template ?: $fallbackTitle, $templateData) ?? $fallbackTitle,
-            'body' => $this->templateRenderer->render($template->body_template ?: $fallbackBody, $templateData),
-            'image_url' => $this->templateRenderer->render($template->image_url ?? ($payload['image_url'] ?? null), $templateData),
-            'button_text' => $this->templateRenderer->render($template->button_text ?? ($payload['button_text'] ?? null), $templateData),
-            'button_url' => $this->templateRenderer->render($template->button_url_template ?? ($payload['button_url'] ?? null), $templateData),
+            'title'         => $this->templateRenderer->render($template->title_template ?: $fallbackTitle, $templateData) ?? $fallbackTitle,
+            'body'          => $this->templateRenderer->render($template->body_template ?: $fallbackBody, $templateData),
+            'image_url'     => $this->templateRenderer->render($template->image_url ?? ($payload['image_url'] ?? null), $templateData),
+            'button_text'   => $this->templateRenderer->render($template->button_text ?? ($payload['button_text'] ?? null), $templateData),
+            'button_url'    => $this->templateRenderer->render($template->button_url_template ?? ($payload['button_url'] ?? null), $templateData),
+            'template_data' => $templateData,  // ← структурированные данные для Sender-а
         ];
     }
 
@@ -475,18 +503,4 @@ final class UserNotificationService
 
         return $q->latest('id')->first();
     }
-	
-public function delete(int $notificationId, int $userId): void
-{
-    $notification = UserNotification::where('id', $notificationId)
-        ->where('user_id', $userId)
-        ->first();
-    
-    if (!$notification) {
-        throw new DomainException('Уведомление не найдено.');
-    }
-    
-    $notification->delete();
-}	
-	
 }
