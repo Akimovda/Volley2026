@@ -137,8 +137,11 @@ final class NotificationDeliverySender
 
     private function sendVk(User $user, array $payload): void
     {
-        if (empty($user->vk_id)) {
-            throw new \RuntimeException('У пользователя нет vk_id.');
+        // vk_notify_user_id — сохраняется при привязке VK-бота (VkNotifyWebhookController)
+        // vk_id — OAuth-поле для входа, для сообщений не подходит
+        $vkUserId = (string) ($user->vk_notify_user_id ?? '');
+        if ($vkUserId === '') {
+            throw new \RuntimeException('У пользователя не привязан VK-бот (vk_notify_user_id пуст).');
         }
 
         $token = (string) config('services.vk.admin_token');
@@ -151,7 +154,7 @@ final class NotificationDeliverySender
 
         $params = [
             'access_token' => $token,
-            'user_id'      => (string) $user->vk_id,
+            'user_id'      => $vkUserId,
             'message'      => $text,
             'random_id'    => random_int(1, PHP_INT_MAX),
             'v'            => '5.199',

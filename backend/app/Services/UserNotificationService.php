@@ -416,7 +416,8 @@ final class UserNotificationService
             if ($channel === 'telegram' && empty($user->telegram_id)) {
                 continue;
             }
-            if ($channel === 'vk' && empty($user->vk_id)) {
+            // vk_notify_user_id — сохраняется при привязке VK-бота, а не vk_id (OAuth)
+            if ($channel === 'vk' && empty($user->vk_notify_user_id)) {
                 continue;
             }
             if ($channel === 'max' && empty($user->max_chat_id)) {
