@@ -32,8 +32,6 @@ class BotAssistCommand extends Command
             ->join('events as e', 'e.id', '=', 'eo.event_id')
             ->where('e.bot_assistant_enabled', true)
             ->where('eo.starts_at', '>', Carbon::now()->addHours(3)->utc())
-            ->whereNull('eo.deleted_at')
-            ->whereNull('e.deleted_at')
             ->select('eo.id as occurrence_id', 'e.id as event_id', 'e.title', 'eo.starts_at');
 
         // Только открытая запись
