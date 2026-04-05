@@ -18,11 +18,25 @@ class UserSearchController extends Controller
             ]);
         }
 
-        // Поддержка @username
+         // Поддержка @username
         if (mb_substr($q, 0, 1) === '@') {
             $q = trim(mb_substr($q, 1));
         }
-
+ 
+        // Спецпоиск ботов по ключевому слову
+        if (in_array(mb_strtolower($q), ['bot', 'бот', 'боты', 'bots'], true)) {
+            $items = DB::table('users')
+                ->select(['id', 'first_name', 'last_name', 'name', 'telegram_username', 'is_bot'])
+                ->where('is_bot', true)
+                ->orderBy('last_name')->orderBy('first_name')
+                ->limit(40)
+                ->get()
+                ->map(fn ($u) => $this->mapUserRow($u))
+                ->values()->all();
+ 
+            return response()->json(['ok' => true, 'items' => $items]);
+        }
+ 
         $variants = $this->buildSearchVariants($q);
         $likes = $this->buildLikePatterns($variants);
 
@@ -33,6 +47,7 @@ class UserSearchController extends Controller
                 'last_name',
                 'name',
                 'telegram_username',
+                'is_bot',
             ])
             ->where(function ($w) use ($likes, $q) {
                 if (ctype_digit($q) && (int) $q > 0) {
@@ -93,14 +108,15 @@ class UserSearchController extends Controller
                 $metaStr = implode(' • ', array_filter($meta));
 
                 return [
-                    'id' => (int) $u->id,
-                    'label' => $label,
-                    'name' => $label,
-                    'full_name' => $fullName,
-                    'username' => $telegram,
-                    'telegram_username' => $telegram,
-                    'meta' => $metaStr,
-                    'sub' => $metaStr,
+                    'id'               => (int) $u->id,
+                    'label'            => $label,
+                    'name'             => $label,
+                    'full_name'        => $fullName,
+                    'username'         => $telegram,
+                    'telegram_username'=> $telegram,
+                    'meta'             => $metaStr,
+                    'sub'              => $metaStr,
+                    'is_bot'           => (bool) ($u->is_bot ?? false),
                 ];
             })
             ->values()
@@ -111,7 +127,36 @@ class UserSearchController extends Controller
             'items' => $items,
         ]);
     }
-
+    private function mapUserRow(object $u): array
+    {
+        $firstName = trim((string) ($u->first_name ?? ''));
+        $lastName  = trim((string) ($u->last_name ?? ''));
+        $fullName  = trim($lastName . ' ' . $firstName);
+        $plainName = trim((string) ($u->name ?? ''));
+        $telegram  = $this->normalizeTelegramUsername($u->telegram_username ?? null);
+        $isBot     = (bool) ($u->is_bot ?? false);
+ 
+        $label = $fullName ?: $plainName ?: $telegram ?: ('#' . $u->id);
+ 
+        $meta = [];
+        if ($telegram !== '') $meta[] = $telegram;
+        if ($fullName !== '' && $plainName !== '' && mb_strtolower($plainName) !== mb_strtolower($fullName)) {
+            $meta[] = $plainName;
+        }
+        if ($isBot) $meta[] = 'бот';
+ 
+        return [
+            'id'               => (int) $u->id,
+            'label'            => $label,
+            'name'             => $label,
+            'full_name'        => $fullName,
+            'username'         => $telegram,
+            'telegram_username'=> $telegram,
+            'meta'             => implode(' • ', array_filter($meta)),
+            'sub'              => implode(' • ', array_filter($meta)),
+            'is_bot'           => $isBot,
+        ];
+    }
     private function buildSearchVariants(string $q): array
     {
         $q2 = $this->ruToLat($q);

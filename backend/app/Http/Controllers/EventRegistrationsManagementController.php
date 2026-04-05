@@ -34,8 +34,18 @@ class EventRegistrationsManagementController extends Controller
             return back()->with('error', 'Нет колонки cancelled_at в event_registrations.');
         }
 
-        $hasPosition = Schema::hasColumn('event_registrations', 'position');
-        $hasGroupKey = Schema::hasColumn('event_registrations', 'group_key');
+        $hasPosition    = Schema::hasColumn('event_registrations', 'position');
+        $hasGroupKey    = Schema::hasColumn('event_registrations', 'group_key');
+        $hasCancelledAt = true; // уже проверили выше
+        $hasIsCancelled = Schema::hasColumn('event_registrations', 'is_cancelled');
+        $hasStatus      = Schema::hasColumn('event_registrations', 'status');
+ 
+        // Game context для позиций и группировки
+        $event->loadMissing('gameSettings');
+        $direction          = (string) ($event->direction ?? 'classic');
+        $gameSubtype        = (string) ($event->gameSettings?->subtype ?? '');
+        $liberoMode         = (string) ($event->gameSettings?->libero_mode ?? 'with_libero');
+        $availablePositions = $this->resolvePositions($direction, $gameSubtype, $liberoMode);
 
         $maxPlayers = (int) DB::table('event_game_settings')
             ->where('event_id', (int) $event->id)
@@ -57,11 +67,14 @@ class EventRegistrationsManagementController extends Controller
             ->select([
                 'er.id',
                 'er.user_id',
-                $hasGroupKey ? 'er.group_key' : DB::raw('NULL::text as group_key'),
-                $hasPosition ? 'er.position' : DB::raw('NULL::text as position'),
+                $hasGroupKey    ? 'er.group_key'    : DB::raw('NULL::text as group_key'),
+                $hasPosition    ? 'er.position'     : DB::raw('NULL::text as position'),
                 'er.cancelled_at',
+                $hasIsCancelled ? 'er.is_cancelled' : DB::raw('NULL::boolean as is_cancelled'),
+                $hasStatus      ? 'er.status'       : DB::raw('NULL::text as status'),
                 'er.created_at',
                 'u.name',
+                'u.email',   // нужно для отображения в blade
                 'u.is_bot',
             ])
             ->orderByRaw('CASE WHEN er.cancelled_at IS NULL THEN 0 ELSE 1 END ASC')
@@ -75,44 +88,55 @@ class EventRegistrationsManagementController extends Controller
                 ->first(['id', 'name', 'address', 'city_id']);
         }
 
-        $q = trim((string) $request->query('q', ''));
-
+        $q     = trim((string) $request->query('q', ''));
+        $users = collect();
+ 
         if ($q !== '') {
-            $users = User::query()
-                ->select(['id', 'name', 'email'])
-                ->where(function ($w) use ($q) {
-                    $w->where('name', 'ilike', "%{$q}%")
-                        ->orWhere('email', 'ilike', "%{$q}%");
-                })
-                ->orderBy('name')
-                ->limit(30)
-                ->get();
-        } else {
-            $users = User::query()
-                ->select(['id', 'name', 'email'])
-                ->orderByDesc('id')
-                ->limit(200)
-                ->get();
+            $isBotKeyword = in_array(mb_strtolower($q), ['bot', 'бот', 'боты', 'bots'], true);
+ 
+            if ($isBotKeyword) {
+                $users = User::query()
+                    ->select(['id', 'name', 'email', 'is_bot'])
+                    ->where('is_bot', true)
+                    ->orderBy('name')
+                    ->limit(40)
+                    ->get();
+            } else {
+                $like  = "%{$q}%";
+                $users = User::query()
+                    ->select(['id', 'name', 'email', 'is_bot'])
+                    ->where(fn ($w) => $w
+                        ->where('name', 'ilike', $like)
+                        ->orWhere('email', 'ilike', $like)
+                        ->orWhere('first_name', 'ilike', $like)
+                        ->orWhere('last_name', 'ilike', $like))
+                    ->orderBy('name')
+                    ->limit(30)
+                    ->get();
+            }
         }
 
-        $groupInvites = DB::table('event_registration_group_invites as i')
-            ->join('users as fu', 'fu.id', '=', 'i.from_user_id')
-            ->join('users as tu', 'tu.id', '=', 'i.to_user_id')
-            ->where('i.event_id', (int) $event->id)
-            ->orderByDesc('i.id')
-            ->get([
-                'i.id',
-                'i.group_key',
-                'i.from_user_id',
-                'i.to_user_id',
-                'i.status',
-                'i.auto_join_after_registration',
-                'i.created_at',
-                'fu.name as from_user_name',
-                'fu.email as from_user_email',
-                'tu.name as to_user_name',
-                'tu.email as to_user_email',
-            ]);
+        $groupInvites = collect();
+        if ($direction === 'beach' && Schema::hasTable('event_registration_group_invites')) {
+            $groupInvites = DB::table('event_registration_group_invites as i')
+                ->join('users as fu', 'fu.id', '=', 'i.from_user_id')
+                ->join('users as tu', 'tu.id', '=', 'i.to_user_id')
+                ->where('i.event_id', (int) $event->id)
+                ->orderByDesc('i.id')
+                ->get([
+                    'i.id',
+                    'i.group_key',
+                    'i.from_user_id',
+                    'i.to_user_id',
+                    'i.status',
+                    'i.auto_join_after_registration',
+                    'i.created_at',
+                    'fu.name as from_user_name',
+                    'fu.email as from_user_email',
+                    'tu.name as to_user_name',
+                    'tu.email as to_user_email',
+                ]);
+        }
 
         $tz = (string) ($event->timezone ?: 'UTC');
         $startsLocal = null;
@@ -130,22 +154,29 @@ class EventRegistrationsManagementController extends Controller
         $activeCount = (int) $activeRegs;
 
         return view('events.registrations.index', [
-            'event' => $event,
-            'location' => $location,
-            'registrations' => $registrations,
-            'groupInvites' => $groupInvites,
-            'maxPlayers' => $maxPlayers,
-            'activeRegs' => $activeRegs,
-            'freeSeats' => $freeSeats,
-            'tz' => $tz,
-            'startsLocal' => $startsLocal,
-            'endsLocal' => $endsLocal,
-            'freeCount' => $freeCount,
-            'activeCount' => $activeCount,
-            'hasPosition' => $hasPosition,
-            'q' => $q,
-            'users' => $users,
-        ]);
+                    'event'              => $event,
+                    'location'           => $location,
+                    'registrations'      => $registrations,
+                    'groupInvites'       => $groupInvites,
+                    'maxPlayers'         => $maxPlayers,
+                    'activeRegs'         => $activeRegs,
+                    'freeSeats'          => $freeSeats,
+                    'tz'                 => $tz,
+                    'startsLocal'        => $startsLocal,
+                    'endsLocal'          => $endsLocal,
+                    'freeCount'          => is_null($freeSeats) ? 0 : (int) $freeSeats,
+                    'activeCount'        => (int) $activeRegs,
+                    'hasPosition'        => $hasPosition,
+                    'hasCancelledAt'     => $hasCancelledAt,
+                    'hasIsCancelled'     => $hasIsCancelled,
+                    'hasStatus'          => $hasStatus,
+                    'q'                  => $q,
+                    'users'              => $users,
+                    // game context
+                    'direction'          => $direction,
+                    'gameSubtype'        => $gameSubtype,
+                    'availablePositions' => $availablePositions,
+                ]);
     }
 
     /**
@@ -476,7 +507,37 @@ class EventRegistrationsManagementController extends Controller
             return back()->with('error', $e->getMessage());
         }
     }
-
+    private function resolvePositions(string $direction, string $subtype, string $liberoMode): array
+    {
+        if ($direction === 'beach') return [];
+ 
+        $labels = [
+            'setter'   => 'Связующий',
+            'outside'  => 'Доигровщик',
+            'opposite' => 'Диагональный',
+            'middle'   => 'Центральный',
+            'libero'   => 'Либеро',
+        ];
+ 
+        $map = [
+            '4x2' => ['setter', 'outside'],
+            '4x4' => ['setter', 'outside', 'opposite'],
+            '5x1' => ['setter', 'outside', 'opposite', 'middle'],
+        ];
+ 
+        $keys = $map[$subtype] ?? array_keys($labels);
+ 
+        if ($subtype === '5x1' && $liberoMode === 'with_libero') {
+            $keys[] = 'libero';
+        }
+ 
+        $result = [];
+        foreach ($keys as $key) {
+            $result[$key] = $labels[$key] ?? $key;
+        }
+        return $result;
+    }
+    
     private function ensureCanCreateEvents($user): void
     {
         if (!$user) abort(403);
