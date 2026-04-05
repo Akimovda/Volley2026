@@ -252,7 +252,73 @@
               </div>
             </div>
           </div>
-
+         {{-- Помощник записи --}}
+          <div class="mt-6 p-4 rounded-xl border border-gray-100 bg-gray-50">
+            <div class="font-semibold text-sm text-gray-800 mb-3">Помощник записи 🤖</div>
+ 
+            <label class="inline-flex items-center gap-3 cursor-pointer">
+              <input type="hidden" name="bot_assistant_enabled" value="0">
+              <input
+                type="checkbox"
+                name="bot_assistant_enabled"
+                value="1"
+                id="bot_assistant_enabled_edit"
+                @checked((bool) old('bot_assistant_enabled', $event->bot_assistant_enabled ?? false))
+                onchange="document.getElementById('bot_assistant_settings_edit').style.display = this.checked ? '' : 'none'"
+              >
+              <span class="text-sm font-semibold text-gray-700">Включить</span>
+            </label>
+ 
+            <div
+              id="bot_assistant_settings_edit"
+              class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4"
+              style="{{ old('bot_assistant_enabled', $event->bot_assistant_enabled ?? false) ? '' : 'display:none' }}"
+            >
+              {{-- Порог --}}
+              <div class="p-4 rounded-xl border border-gray-100 bg-white">
+                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                  Порог запуска:
+                  <strong id="bot_threshold_val_edit" class="text-blue-600">
+                    {{ old('bot_assistant_threshold', $event->bot_assistant_threshold ?? 10) }}%
+                  </strong>
+                </label>
+                <input
+                  type="range"
+                  name="bot_assistant_threshold"
+                  id="bot_assistant_threshold_edit"
+                  min="5" max="30" step="5"
+                  value="{{ old('bot_assistant_threshold', $event->bot_assistant_threshold ?? 10) }}"
+                  class="w-full"
+                  oninput="document.getElementById('bot_threshold_val_edit').textContent = this.value + '%'"
+                >
+                <div class="text-xs text-gray-500 mt-1">
+                  Если за сутки &lt; порога живых игроков — боты включаются (5–30%).
+                </div>
+              </div>
+ 
+              {{-- Макс. заполнение --}}
+              <div class="p-4 rounded-xl border border-gray-100 bg-white">
+                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                  Макс. заполнение ботами:
+                  <strong id="bot_fill_val_edit" class="text-blue-600">
+                    {{ old('bot_assistant_max_fill_pct', $event->bot_assistant_max_fill_pct ?? 40) }}%
+                  </strong>
+                </label>
+                <input
+                  type="range"
+                  name="bot_assistant_max_fill_pct"
+                  id="bot_assistant_max_fill_pct_edit"
+                  min="10" max="60" step="10"
+                  value="{{ old('bot_assistant_max_fill_pct', $event->bot_assistant_max_fill_pct ?? 40) }}"
+                  class="w-full"
+                  oninput="document.getElementById('bot_fill_val_edit').textContent = this.value + '%'"
+                >
+                <div class="text-xs text-gray-500 mt-1">
+                  Боты не займут больше этого % мест. Минимум 2 места всегда свободны.
+                </div>
+              </div>
+            </div>
+          </div>
           <div class="mt-6 flex justify-end gap-3">
             <a class="v-btn v-btn--secondary" href="{{ route('events.create.event_management', ['tab'=>'mine']) }}">Отмена</a>
             <button class="v-btn v-btn--primary" type="submit">Сохранить</button>

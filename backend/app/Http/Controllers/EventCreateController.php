@@ -585,6 +585,9 @@
             'trainer_user_id',
             'trainer_id',
             'registration_mode',
+            'bot_assistant_enabled',
+            'bot_assistant_threshold',
+            'bot_assistant_max_fill_pct',
 			]);
 			if (!empty($src->price_minor)) {
                 $prefill['price_amount'] = number_format(((int)$src->price_minor) / 100, 2, '.', '');
@@ -709,6 +712,9 @@
             'remind_registration_enabled',
             'remind_registration_minutes_before',
             'show_participants',
+            'bot_assistant_enabled',
+            'bot_assistant_threshold',
+            'bot_assistant_max_fill_pct',
 			];
 			
 			foreach ($step3 as $f) if (array_key_exists($f, $errors)) return 3;

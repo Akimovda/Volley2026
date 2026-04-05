@@ -55,7 +55,9 @@ class Event extends Model implements HasMedia
         'price_minor',
         'price_currency',
         'price_text',
-
+        'bot_assistant_enabled',
+        'bot_assistant_threshold',
+        'bot_assistant_max_fill_pct',
         'is_template',
     ];
 
@@ -76,7 +78,9 @@ class Event extends Model implements HasMedia
 
         'is_private' => 'boolean',
         'allow_registration' => 'boolean',
-
+        'bot_assistant_enabled' => 'boolean',
+        'bot_assistant_threshold' => 'integer',
+        'bot_assistant_max_fill_pct' => 'integer',
         'is_recurring' => 'boolean',
         'is_paid' => 'boolean',
         'price_minor' => 'integer',

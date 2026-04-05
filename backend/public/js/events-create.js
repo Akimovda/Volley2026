@@ -2507,6 +2507,44 @@ document.addEventListener("trix-file-accept", function (event) {
     
     // ✅ ВАЖНО: вызываем toggleChildAgeWrap при инициализации
     toggleChildAgeWrap();
+    
 })();	
-	
+
+// ========== BOT ASSISTANT TOGGLE ==========
+(function () {
+    var enabledCb  = document.getElementById('bot_assistant_enabled');
+    var settingsEl = document.getElementById('bot_assistant_settings');
+    var fillEl     = document.getElementById('bot_assistant_fill');
+    var thresholdEl = document.getElementById('bot_assistant_threshold');
+    var thresholdHint = document.getElementById('bot_threshold_hint');
+    var fillHint   = document.getElementById('bot_fill_hint');
+
+    if (!enabledCb) return;
+
+    function toggleBotSettings() {
+        var show = enabledCb.checked;
+        if (settingsEl) settingsEl.style.display = show ? '' : 'none';
+        if (fillEl)     fillEl.style.display     = show ? '' : 'none';
+    }
+
+    enabledCb.addEventListener('change', toggleBotSettings);
+
+    // Синхронизируем hint с ползунком в реальном времени
+    if (thresholdEl && thresholdHint) {
+        thresholdEl.addEventListener('input', function () {
+            thresholdHint.textContent = this.value + '%';
+        });
+    }
+
+    if (fillEl) {
+        var fillRange = fillEl.querySelector('input[type="range"]');
+        if (fillRange && fillHint) {
+            fillRange.addEventListener('input', function () {
+                fillHint.textContent = this.value + '%';
+            });
+        }
+    }
+
+    toggleBotSettings();
+})();
 })();

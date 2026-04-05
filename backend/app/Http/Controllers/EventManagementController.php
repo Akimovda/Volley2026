@@ -299,6 +299,9 @@ if ($role === 'admin') {
             'game_gender_limited_positions.*' => ['string', 'max:32'],
             'game_allow_girls' => ['nullable', 'boolean'],
             'game_girls_max'   => ['nullable', 'integer', 'min:0'],
+            'bot_assistant_enabled'      => ['sometimes', 'boolean'],
+            'bot_assistant_threshold'    => ['sometimes', 'integer', 'min:5', 'max:30'],
+            'bot_assistant_max_fill_pct' => ['sometimes', 'integer', 'min:10', 'max:60'],
         ]);
     
         DB::transaction(function () use ($event, $data) {
@@ -323,7 +326,10 @@ if ($role === 'admin') {
             $event->classic_level_max = $data['classic_level_max'] ?? null;
             $event->beach_level_min = $data['beach_level_min'] ?? null;
             $event->beach_level_max = $data['beach_level_max'] ?? null;
-    
+            $event->bot_assistant_enabled      = (bool) ($data['bot_assistant_enabled'] ?? false);
+            $event->bot_assistant_threshold    = max(5, min(30, (int) ($data['bot_assistant_threshold'] ?? 10)));
+            $event->bot_assistant_max_fill_pct = max(10, min(60, (int) ($data['bot_assistant_max_fill_pct'] ?? 40)));
+            
             if ($allowReg) {
                 $event->registration_starts_at = $startsUtc->copy()->subDays($daysBefore);
                 $event->registration_ends_at = $startsUtc->copy()->subMinutes($endsMinBefore);

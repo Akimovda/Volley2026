@@ -1736,6 +1736,89 @@ if ($initialStep < 1 || $initialStep > 3) {
 								</div>
 							</div>
 						</div>
+						{{-- ===== Помощник записи 🤖 =====--}}
+
+                        <div class="ramka" data-show-if="allow_registration=1" id="bot_assistant_block">
+                            <h2 class="-mt-05">Помощник записи 🤖</h2>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="card">
+                                        <label class="checkbox-item">
+                                            <input type="hidden" name="bot_assistant_enabled" value="0">
+                                            <input
+                                                type="checkbox"
+                                                name="bot_assistant_enabled"
+                                                value="1"
+                                                id="bot_assistant_enabled"
+                                                @checked((bool) old('bot_assistant_enabled', $prefill['bot_assistant_enabled'] ?? false))
+                                            >
+                                            <div class="custom-checkbox"></div>
+                                            <span>Включить помощника записи</span>
+                                        </label>
+                        
+                                        <ul class="list f-16 mt-1">
+                                            <li>Если за первые сутки после открытия записи зарегистрировалось меньше <strong>порога</strong> — боты начнут постепенно занимать места.</li>
+                                            <li>По мере прихода живых игроков боты уходят и освобождают места.</li>
+                                            <li>Видно только организатору и администратору.</li>
+                                            <li>Боты не занимают последнее свободное место.</li>
+                                            <li>Активность ботов замораживается за 3 часа до начала.</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                        
+                                <div class="col-md-4" id="bot_assistant_settings" @if(!old('bot_assistant_enabled', $prefill['bot_assistant_enabled'] ?? false)) style="display:none" @endif>
+                                    <div class="card">
+                                        <label>Порог запуска (%)</label>
+                                        <div class="d-flex fvc gap-2 mt-1">
+                                            <input
+                                                type="range"
+                                                name="bot_assistant_threshold"
+                                                id="bot_assistant_threshold"
+                                                min="5"
+                                                max="30"
+                                                step="5"
+                                                value="{{ old('bot_assistant_threshold', $prefill['bot_assistant_threshold'] ?? 10) }}"
+                                                style="flex:1"
+                                                oninput="document.getElementById('bot_threshold_val').textContent = this.value + '%'"
+                                            >
+                                            <strong id="bot_threshold_val" class="cd" style="min-width:3rem; text-align:right">
+                                                {{ old('bot_assistant_threshold', $prefill['bot_assistant_threshold'] ?? 10) }}%
+                                            </strong>
+                                        </div>
+                                        <ul class="list f-16 mt-1">
+                                            <li>Если через сутки записалось меньше <strong id="bot_threshold_hint">{{ old('bot_assistant_threshold', $prefill['bot_assistant_threshold'] ?? 10) }}%</strong> от максимума — боты включаются.</li>
+                                            <li>Диапазон: 5–30%.</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                        
+                                <div class="col-md-4" id="bot_assistant_fill" @if(!old('bot_assistant_enabled', $prefill['bot_assistant_enabled'] ?? false)) style="display:none" @endif>
+                                    <div class="card">
+                                        <label>Макс. заполнение ботами (%)</label>
+                                        <div class="d-flex fvc gap-2 mt-1">
+                                            <input
+                                                type="range"
+                                                name="bot_assistant_max_fill_pct"
+                                                id="bot_assistant_max_fill_pct"
+                                                min="10"
+                                                max="60"
+                                                step="10"
+                                                value="{{ old('bot_assistant_max_fill_pct', $prefill['bot_assistant_max_fill_pct'] ?? 40) }}"
+                                                style="flex:1"
+                                                oninput="document.getElementById('bot_fill_val').textContent = this.value + '%'"
+                                            >
+                                            <strong id="bot_fill_val" class="cd" style="min-width:3rem; text-align:right">
+                                                {{ old('bot_assistant_max_fill_pct', $prefill['bot_assistant_max_fill_pct'] ?? 40) }}%
+                                            </strong>
+                                        </div>
+                                        <ul class="list f-16 mt-1">
+                                            <li>Боты не займут больше <strong id="bot_fill_hint">{{ old('bot_assistant_max_fill_pct', $prefill['bot_assistant_max_fill_pct'] ?? 40) }}%</strong> мест одновременно.</li>
+                                            <li>Минимум 2 места всегда остаются свободными для живых игроков.</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 						<div class="ramka">
 							<h2 class="-mt-05">Уведомления и видимость</h2>		
 							<div class="row">

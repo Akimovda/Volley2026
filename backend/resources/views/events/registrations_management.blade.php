@@ -236,7 +236,7 @@
                                         <td class="px-4 py-3">
                                             <div class="font-semibold text-gray-900">
                                                 <a href="{{ route('users.show', ['user' => (int)$r->user_id]) }}" class="hover:underline">
-                                                    {{ $displayName }}
+                                                    {{ $displayName }}@if(!empty($r->is_bot)) <span title="Бот-помощник" class="text-gray-400 text-xs">🤖</span>@endif
                                                 </a>
                                             </div>
                                             <div class="text-xs text-gray-500 mt-1">

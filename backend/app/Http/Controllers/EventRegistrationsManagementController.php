@@ -62,7 +62,7 @@ class EventRegistrationsManagementController extends Controller
                 'er.cancelled_at',
                 'er.created_at',
                 'u.name',
-                'u.email',
+                'u.is_bot',
             ])
             ->orderByRaw('CASE WHEN er.cancelled_at IS NULL THEN 0 ELSE 1 END ASC')
             ->orderByDesc('er.id')
