@@ -22,6 +22,8 @@ class PublishOccurrenceAnnouncementService
                 'notificationChannels.channel',
                 'media',
                 'location',
+                'location.city', 
+                'organizer',
             ])
             ->firstOrFail();
 
