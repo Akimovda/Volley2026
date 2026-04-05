@@ -59,6 +59,7 @@ class Event extends Model implements HasMedia
         'bot_assistant_threshold',
         'bot_assistant_max_fill_pct',
         'is_template',
+		'event_photos',
     ];
 
     protected $casts = [
@@ -88,6 +89,7 @@ class Event extends Model implements HasMedia
         'child_age_min' => 'integer',
         'child_age_max' => 'integer',
         'is_template' => 'boolean',
+		'event_photos' => 'array',
     ];
 
     /* ===================== Media ===================== */

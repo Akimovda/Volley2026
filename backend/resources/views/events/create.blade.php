@@ -80,17 +80,17 @@ $step2Fields = [
 ];
 
 $step3Fields = [
-    'is_private',
-    'is_paid',
-    'price_amount',
-    'price_currency',
-    'requires_personal_data',
-    'remind_registration_enabled',
-    'remind_registration_minutes_before',
-    'show_participants',
-    'cover_upload',
-    'cover_media_id',
-    'description_html',
+'is_private',
+'is_paid',
+'price_amount',
+'price_currency',
+'requires_personal_data',
+'remind_registration_enabled',
+'remind_registration_minutes_before',
+'show_participants',
+'cover_upload',
+'cover_media_id',
+'description_html',
 ];
 
 
@@ -246,7 +246,7 @@ if ($initialStep < 1 || $initialStep > 3) {
 				position: absolute;
 				}
 				body.dark #wizard_percent {	
-					background: #222333;
+				background: #222333;
 				}
 				.progress-pill { background: rgba(17,24,39,0.06); border: 1px solid rgba(17,24,39,0.08); }
 				.pill.is-active { border-color: rgba(59,130,246,0.55) !important; background: rgba(59,130,246,0.06); color: #111827; }
@@ -886,6 +886,51 @@ if ($initialStep < 1 || $initialStep > 3) {
 													<span>Для детей</span>
 												</label>
 												
+												<div id="child_age_wrap" class="{{ old('age_policy', $prefill['age_policy'] ?? 'adult') === 'child' ? '' : 'hidden' }}">
+													<div class="row mt-1">
+														<div class="col-md-6">
+															<label class="form-label">Возраст от</label>
+															<input
+															type="number"
+															name="child_age_min"
+															class="form-input"
+															min="6"
+															max="17"
+															step="1"
+															value="{{ old('child_age_min', $prefill['child_age_min'] ?? 6) }}"
+															placeholder="Например: 8"
+															>
+															@error('child_age_min')
+															<div class="text-danger small mt-1">{{ $message }}</div>
+															@enderror
+														</div>
+														
+														<div class="col-md-6">
+															<label class="form-label">Возраст до</label>
+															<input
+															type="number"
+															name="child_age_max"
+															class="form-input"
+															min="6"
+															max="17"
+															step="1"
+															value="{{ old('child_age_max', $prefill['child_age_max'] ?? 17) }}"
+															placeholder="Например: 14"
+															>
+															@error('child_age_max')
+															<div class="text-danger small mt-1">{{ $message }}</div>
+															@enderror
+														</div>
+													</div>
+													
+													<ul class="list f-16 mt-1 mb-2">
+														<li>Допустимый возраст участников: от 6 до 17 лет.</li>
+													</ul>											
+													
+												</div>												
+												
+												
+												
 												<label class="radio-item">
 													<input type="radio" name="age_policy" value="any">
 													<div class="custom-radio"></div>
@@ -894,47 +939,7 @@ if ($initialStep < 1 || $initialStep > 3) {
 												
 											</div>	
 										</div>
-										<div id="child_age_wrap" class="{{ old('age_policy', $prefill['age_policy'] ?? 'adult') === 'child' ? '' : 'hidden' }}">
-                                            <div class="row mt-2">
-                                                <div class="col-md-6">
-                                                    <label class="form-label">Возраст от</label>
-                                                    <input
-                                                        type="number"
-                                                        name="child_age_min"
-                                                        class="form-input"
-                                                        min="6"
-                                                        max="17"
-                                                        step="1"
-                                                        value="{{ old('child_age_min', $prefill['child_age_min'] ?? 6) }}"
-                                                        placeholder="Например: 8"
-                                                    >
-                                                    @error('child_age_min')
-                                                        <div class="text-danger small mt-1">{{ $message }}</div>
-                                                    @enderror
-                                                </div>
-                                        
-                                                <div class="col-md-6">
-                                                    <label class="form-label">Возраст до</label>
-                                                    <input
-                                                        type="number"
-                                                        name="child_age_max"
-                                                        class="form-input"
-                                                        min="6"
-                                                        max="17"
-                                                        step="1"
-                                                        value="{{ old('child_age_max', $prefill['child_age_max'] ?? 17) }}"
-                                                        placeholder="Например: 14"
-                                                    >
-                                                    @error('child_age_max')
-                                                        <div class="text-danger small mt-1">{{ $message }}</div>
-                                                    @enderror
-                                                </div>
-                                            </div>
-                                        
-                                            <div class="mt-1 text-muted small">
-                                                Допустимый возраст участников: от 6 до 17 лет.
-                                            </div>
-                                        </div>
+										
 										
 										
 										{{-- Game config --}}
@@ -1184,26 +1189,26 @@ if ($initialStep < 1 || $initialStep > 3) {
 							<div class="row">
 								
 								<div class="col-lg-4">
-<div class="card">
-    <label>Начало (локальное)</label>
-    @php
-    $minDate = now()->format('Y-m-d\TH:i');
-    $maxDate = now()->addYear()->format('Y-m-d\TH:i');
-    
-    // Устанавливаем завтра в 19:00
-    $defaultDate = now()->addDay()->setTime(19, 0)->format('Y-m-d\TH:i');
-    @endphp
-    
-    <input type="datetime-local"
-    name="starts_at_local"
-    value="{{ old('starts_at_local', $defaultDate) }}"
-    min="{{ $minDate }}"
-    max="{{ $maxDate }}">
-    <div class="pb-05"></div>
-    @error('starts_at_local')
-    <div class="text-xs text-red-600 mt-1">{{ $message }}</div>
-    @enderror
-</div>
+									<div class="card">
+										<label>Начало (локальное)</label>
+										@php
+										$minDate = now()->format('Y-m-d\TH:i');
+										$maxDate = now()->addYear()->format('Y-m-d\TH:i');
+										
+										// Устанавливаем завтра в 19:00
+										$defaultDate = now()->addDay()->setTime(19, 0)->format('Y-m-d\TH:i');
+										@endphp
+										
+										<input type="datetime-local"
+										name="starts_at_local"
+										value="{{ old('starts_at_local', $defaultDate) }}"
+										min="{{ $minDate }}"
+										max="{{ $maxDate }}">
+										<div class="pb-05"></div>
+										@error('starts_at_local')
+										<div class="text-xs text-red-600 mt-1">{{ $message }}</div>
+										@enderror
+									</div>
 								</div>							
 								
 								{{-- ✅ CITY (autocomplete -> hidden city_id) --}}
@@ -1656,71 +1661,71 @@ if ($initialStep < 1 || $initialStep > 3) {
                                         <label class="checkbox-item">
                                             <input type="hidden" name="is_paid" value="0">
                                             <input
-                                                type="checkbox"
-                                                name="is_paid"
-                                                value="1"
-                                                id="is_paid"
-                                                @checked((bool) old('is_paid', $prefill['is_paid'] ?? false))
+											type="checkbox"
+											name="is_paid"
+											value="1"
+											id="is_paid"
+											@checked((bool) old('is_paid', $prefill['is_paid'] ?? false))
                                             >
                                             <div class="custom-checkbox"></div>
                                             <span>Платное</span>
-                                        </label>
-                                
+										</label>
+										
                                         <div class="row mt-2" id="price_wrap">
                                             <div class="col-md-6">
                                                 <label class="form-label">Стоимость</label>
                                                 <input
-                                                    type="number"
-                                                    name="price_amount"
-                                                    class="form-input"
-                                                    value="{{ old('price_amount', $prefill['price_amount'] ?? '') }}"
-                                                    placeholder="Например: 134"
-                                                    min="10"
-                                                    max="500000"
-                                                    step="0.01"
-                                                    inputmode="decimal"
+												type="number"
+												name="price_amount"
+												class="form-input"
+												value="{{ old('price_amount', $prefill['price_amount'] ?? '') }}"
+												placeholder="Например: 134"
+												min="10"
+												max="500000"
+												step="0.01"
+												inputmode="decimal"
                                                 >
                                                 @error('price_amount')
-                                                    <div class="text-xs text-red-600 mt-1">{{ $message }}</div>
+												<div class="text-xs text-red-600 mt-1">{{ $message }}</div>
                                                 @enderror
-                                            </div>
-                                
+											</div>
+											
                                             <div class="col-md-6">
                                                 <label class="form-label">Валюта</label>
                                                 <select name="price_currency" class="form-select">
                                                     @php
-                                                        $currencyOptions = [
-                                                            'RUB' => 'RUB — Российский рубль (₽)',
-                                                            'USD' => 'USD — Доллар США ($)',
-                                                            'EUR' => 'EUR — Евро (€)',
-                                                            'KZT' => 'KZT — Тенге (₸)',
-                                                            'KGS' => 'KGS — Киргизский сом',
-                                                            'BYN' => 'BYN — Белорусский рубль',
-                                                            'UZS' => 'UZS — Узбекский сум',
-                                                            'AMD' => 'AMD — Армянский драм (֏)',
-                                                            'AZN' => 'AZN — Азербайджанский манат (₼)',
-                                                            'TJS' => 'TJS — Сомони',
-                                                            'TMT' => 'TMT — Туркменский манат',
-                                                            'GEL' => 'GEL — Лари (₾)',
-                                                            'MDL' => 'MDL — Молдавский лей',
-                                                        ];
-                                
-                                                        $selectedCurrency = old('price_currency', $prefill['price_currency'] ?? 'RUB');
+													$currencyOptions = [
+													'RUB' => 'RUB — Российский рубль (₽)',
+													'USD' => 'USD — Доллар США ($)',
+													'EUR' => 'EUR — Евро (€)',
+													'KZT' => 'KZT — Тенге (₸)',
+													'KGS' => 'KGS — Киргизский сом',
+													'BYN' => 'BYN — Белорусский рубль',
+													'UZS' => 'UZS — Узбекский сум',
+													'AMD' => 'AMD — Армянский драм (֏)',
+													'AZN' => 'AZN — Азербайджанский манат (₼)',
+													'TJS' => 'TJS — Сомони',
+													'TMT' => 'TMT — Туркменский манат',
+													'GEL' => 'GEL — Лари (₾)',
+													'MDL' => 'MDL — Молдавский лей',
+													];
+													
+													$selectedCurrency = old('price_currency', $prefill['price_currency'] ?? 'RUB');
                                                     @endphp
-                                
+													
                                                     @foreach($currencyOptions as $code => $label)
-                                                        <option value="{{ $code }}" @selected($selectedCurrency === $code)>
-                                                            {{ $label }}
-                                                        </option>
+													<option value="{{ $code }}" @selected($selectedCurrency === $code)>
+														{{ $label }}
+													</option>
                                                     @endforeach
-                                                </select>
+												</select>
                                                 @error('price_currency')
-                                                    <div class="text-xs text-red-600 mt-1">{{ $message }}</div>
+												<div class="text-xs text-red-600 mt-1">{{ $message }}</div>
                                                 @enderror
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+											</div>
+										</div>
+									</div>
+								</div>
 								<div class="col-md-4">
 									<div class="card">
 										<label class="checkbox-item">
@@ -1737,88 +1742,88 @@ if ($initialStep < 1 || $initialStep > 3) {
 							</div>
 						</div>
 						{{-- ===== Помощник записи 🤖 =====--}}
-
+						
                         <div class="ramka" data-show-if="allow_registration=1" id="bot_assistant_block">
                             <h2 class="-mt-05">Помощник записи 🤖</h2>
                             <div class="row">
-                                <div class="col-md-4">
+                                <div class="col-md-12">
                                     <div class="card">
                                         <label class="checkbox-item">
                                             <input type="hidden" name="bot_assistant_enabled" value="0">
                                             <input
-                                                type="checkbox"
-                                                name="bot_assistant_enabled"
-                                                value="1"
-                                                id="bot_assistant_enabled"
-                                                @checked((bool) old('bot_assistant_enabled', $prefill['bot_assistant_enabled'] ?? false))
+											type="checkbox"
+											name="bot_assistant_enabled"
+											value="1"
+											id="bot_assistant_enabled"
+											@checked((bool) old('bot_assistant_enabled', $prefill['bot_assistant_enabled'] ?? false))
                                             >
                                             <div class="custom-checkbox"></div>
                                             <span>Включить помощника записи</span>
-                                        </label>
-                        
+										</label>
+										
                                         <ul class="list f-16 mt-1">
                                             <li>Если за первые сутки после открытия записи зарегистрировалось меньше <strong>порога</strong> — боты начнут постепенно занимать места.</li>
                                             <li>По мере прихода живых игроков боты уходят и освобождают места.</li>
                                             <li>Видно только организатору и администратору.</li>
                                             <li>Боты не занимают последнее свободное место.</li>
                                             <li>Активность ботов замораживается за 3 часа до начала.</li>
-                                        </ul>
-                                    </div>
-                                </div>
-                        
-                                <div class="col-md-4" id="bot_assistant_settings" @if(!old('bot_assistant_enabled', $prefill['bot_assistant_enabled'] ?? false)) style="display:none" @endif>
+										</ul>
+									</div>
+								</div>
+								
+                                <div class="col-md-6" id="bot_assistant_settings" @if(!old('bot_assistant_enabled', $prefill['bot_assistant_enabled'] ?? false)) style="display:none" @endif>
                                     <div class="card">
                                         <label>Порог запуска (%)</label>
                                         <div class="d-flex fvc gap-2 mt-1">
                                             <input
-                                                type="range"
-                                                name="bot_assistant_threshold"
-                                                id="bot_assistant_threshold"
-                                                min="5"
-                                                max="30"
-                                                step="5"
-                                                value="{{ old('bot_assistant_threshold', $prefill['bot_assistant_threshold'] ?? 10) }}"
-                                                style="flex:1"
-                                                oninput="document.getElementById('bot_threshold_val').textContent = this.value + '%'"
+											type="range"
+											name="bot_assistant_threshold"
+											id="bot_assistant_threshold"
+											min="5"
+											max="30"
+											step="5"
+											value="{{ old('bot_assistant_threshold', $prefill['bot_assistant_threshold'] ?? 10) }}"
+											style="flex:1"
+											oninput="document.getElementById('bot_threshold_val').textContent = this.value + '%'"
                                             >
                                             <strong id="bot_threshold_val" class="cd" style="min-width:3rem; text-align:right">
                                                 {{ old('bot_assistant_threshold', $prefill['bot_assistant_threshold'] ?? 10) }}%
-                                            </strong>
-                                        </div>
+											</strong>
+										</div>
                                         <ul class="list f-16 mt-1">
                                             <li>Если через сутки записалось меньше <strong id="bot_threshold_hint">{{ old('bot_assistant_threshold', $prefill['bot_assistant_threshold'] ?? 10) }}%</strong> от максимума — боты включаются.</li>
                                             <li>Диапазон: 5–30%.</li>
-                                        </ul>
-                                    </div>
-                                </div>
-                        
-                                <div class="col-md-4" id="bot_assistant_fill" @if(!old('bot_assistant_enabled', $prefill['bot_assistant_enabled'] ?? false)) style="display:none" @endif>
+										</ul>
+									</div>
+								</div>
+								
+                                <div class="col-md-6" id="bot_assistant_fill" @if(!old('bot_assistant_enabled', $prefill['bot_assistant_enabled'] ?? false)) style="display:none" @endif>
                                     <div class="card">
                                         <label>Макс. заполнение ботами (%)</label>
                                         <div class="d-flex fvc gap-2 mt-1">
                                             <input
-                                                type="range"
-                                                name="bot_assistant_max_fill_pct"
-                                                id="bot_assistant_max_fill_pct"
-                                                min="10"
-                                                max="60"
-                                                step="10"
-                                                value="{{ old('bot_assistant_max_fill_pct', $prefill['bot_assistant_max_fill_pct'] ?? 40) }}"
-                                                style="flex:1"
-                                                oninput="document.getElementById('bot_fill_val').textContent = this.value + '%'"
+											type="range"
+											name="bot_assistant_max_fill_pct"
+											id="bot_assistant_max_fill_pct"
+											min="10"
+											max="60"
+											step="10"
+											value="{{ old('bot_assistant_max_fill_pct', $prefill['bot_assistant_max_fill_pct'] ?? 40) }}"
+											style="flex:1"
+											oninput="document.getElementById('bot_fill_val').textContent = this.value + '%'"
                                             >
                                             <strong id="bot_fill_val" class="cd" style="min-width:3rem; text-align:right">
                                                 {{ old('bot_assistant_max_fill_pct', $prefill['bot_assistant_max_fill_pct'] ?? 40) }}%
-                                            </strong>
-                                        </div>
+											</strong>
+										</div>
                                         <ul class="list f-16 mt-1">
                                             <li>Боты не займут больше <strong id="bot_fill_hint">{{ old('bot_assistant_max_fill_pct', $prefill['bot_assistant_max_fill_pct'] ?? 40) }}%</strong> мест одновременно.</li>
                                             <li>Минимум 2 места всегда остаются свободными для живых игроков.</li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+										</ul>
+									</div>
+								</div>
+							</div>
+						</div>
 						<div class="ramka">
 							<h2 class="-mt-05">Уведомления и видимость</h2>		
 							<div class="row">
@@ -1832,7 +1837,7 @@ if ($initialStep < 1 || $initialStep > 3) {
 								$showParts = (bool) old('show_participants', $prefill['show_participants'] ?? true);
 								@endphp
 								
-								<div class="col-md-6">
+								<div class="col-md-4">
 									<div class="card">
 										<label>Напоминание игроку о записи</label>
 										
@@ -1891,7 +1896,7 @@ if ($initialStep < 1 || $initialStep > 3) {
 								->get();
                                 @endphp
                                 
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <div class="card">
                                         <label>Анонс в каналы</label>
 										
@@ -1956,7 +1961,7 @@ if ($initialStep < 1 || $initialStep > 3) {
                                         @endif
 									</div>
 								</div>
-								<div class="col-md-6">
+								<div class="col-md-4">
 									<div class="card">
 										<label>Показывать список записавшихся</label>
 										<label class="radio-item">
@@ -1982,10 +1987,17 @@ if ($initialStep < 1 || $initialStep > 3) {
 							<h2 class="-mt-05">Фото и описание</h2>		
 							
 							<div class="row">
+								
+								
+
+								
 								{{-- ✅ COVER --}}
+								
 								<div class="col-md-4">
 									<div class="card">
-										<label>Обложка мероприятия</label>
+										
+										{{--
+										
 										<p>
 											Можно загрузить файл или выбрать из вашей галереи. Если загружен файл — он важнее выбора из галереи.
 										</p>
@@ -1997,20 +2009,118 @@ if ($initialStep < 1 || $initialStep > 3) {
 										<ul class="list f-16 mt-1">
 											<li>JPG / PNG / WebP, до 5MB.</li>
 										</ul>												
+										--}}	
 										
-										<div class="mt-2">
-											<label>Или выбрать из галереи</label>
-											<select name="cover_media_id" class="w-full rounded-lg border-gray-200">
-												<option value="">— не выбирать —</option>
-												@foreach(($userCovers ?? []) as $m)
-												<option value="{{ (int)$m->id }}" @selected((int)old('cover_media_id') === (int)$m->id)>
-													#{{ (int)$m->id }} — {{ $m->file_name }} @if($m->collection_name) ({{ $m->collection_name }}) @endif
-												</option>
-												@endforeach
-											</select>
+										
+										
+										@php
+										$userEventPhotos = auth()->user()->getMedia('event_photos')->sortByDesc('created_at');
+										@endphp
+										
+										@if($userEventPhotos->count() > 0)
+										<div>
+											<label>Фотографии для мероприятия</label>
+											
+											
+											
+											
+											<div class="event-photos-selector" 
+											data-selected='{{ json_encode(old('event_photos', $eventPhotos ?? [])) }}'>
+											
+											<div class="swiper eventPhotosSwiper">
+											<div class="swiper-wrapper">
+											@foreach($userEventPhotos as $photo)
+											<div class="swiper-slide">
+											<div class="hover-image mb-1">
+											<img src="{{ $photo->getUrl('event_thumb') }}" alt="event photo" loading="lazy"/>
+										</div>
+										<div class="mt-1 d-flex between fvc">
+											<label class="checkbox-item mb-0">
+												<input type="checkbox" class="photo-select" value="{{ $photo->id }}">
+												<div class="custom-checkbox"></div>
+												<span>Выбрать</span>
+											</label>    
+											<div class="photo-order-badge f-16 b-600 cd"></div>
 										</div>
 									</div>
+									@endforeach
 								</div>
+								<div class="swiper-pagination"></div>
+							</div>
+							
+							<ul class="list f-16 mt-1">
+								<li>Выберите фото для галереи. Первое отмеченное фото будет главным.</li>
+								<li>Фотографии можно добавить (с галочкой "Для мероприятий") в разделе <a href="{{ route('user.photos') }}">Ваши фотографии</a></li>
+							</ul>								
+							
+							
+							<input type="hidden" name="event_photos" id="event_photos_input" value="">
+						</div>
+					</div>
+					<script>
+						document.addEventListener('DOMContentLoaded', function() {
+							// Инициализация Swiper
+							new Swiper('.eventPhotosSwiper', {
+								slidesPerView: 1,
+								spaceBetween: 15,
+								pagination: { el: '.swiper-pagination', clickable: true },
+								breakpoints: { 640: { slidesPerView: 1 }, 768: { slidesPerView: 1 }, 1024: { slidesPerView: 1 } }
+							});
+							
+							const container = document.querySelector('.event-photos-selector');
+							const savedPhotos = JSON.parse(container.dataset.selected || '[]');
+							let selectedPhotos = [...savedPhotos]; // копируем массив
+							
+							function updateUI() {
+								document.querySelectorAll('.photo-select').forEach(checkbox => {
+									const id = parseInt(checkbox.value);
+									const isSelected = selectedPhotos.includes(id);
+									checkbox.checked = isSelected;
+									
+									const badge = checkbox.closest('.swiper-slide').querySelector('.photo-order-badge');
+									if (isSelected) {
+										const order = selectedPhotos.indexOf(id) + 1;
+										badge.textContent = order === 1 ? '★ Главное' : `Фото: ${order}`;
+										} else {
+										badge.textContent = '';
+									}
+								});
+								
+								document.getElementById('event_photos_input').value = JSON.stringify(selectedPhotos);
+							}
+							
+							document.querySelectorAll('.photo-select').forEach(checkbox => {
+								checkbox.addEventListener('change', function() {
+									const id = parseInt(this.value);
+									
+									if (this.checked) {
+										selectedPhotos.push(id);
+										} else {
+										const index = selectedPhotos.indexOf(id);
+										if (index !== -1) selectedPhotos.splice(index, 1);
+									}
+									
+									updateUI();
+								});
+							});
+							
+							updateUI();
+						});
+					</script>
+					@else
+					<div class="mt-2">
+						<div class="alert alert-info">
+							<p>У вас нет фотографий для мероприятий.</p> 
+							<p><a href="{{ route('user.photos') }}">Загрузите фото</a> с галочкой "Для мероприятий".</p>
+						</div>
+					</div>
+					@endif
+					
+					
+					
+				</div>
+			</div>
+			
 								{{-- STEP 3: Описание мероприятия --}}
 								<div class="col-md-8">
 									<div class="card">
@@ -2026,102 +2136,107 @@ if ($initialStep < 1 || $initialStep > 3) {
 										@enderror
 										
 									</div>
-								</div>
-								
-							</div>
-						</div>
-						<div class="ramka text-center">
-							<button type="button" class="btn btn-secondary" data-back>
-								Назад
-							</button>
-							<button type="submit" class="btn">Создать</button>
-						</div>							
-					</div>	
-				</form>
-				
-			</div>
+								</div>							
+											
+			
+			
+			
+			
 		</div>
+	</div>
+	<div class="ramka text-center">
+		<button type="button" class="btn btn-secondary" data-back>
+			Назад
+		</button>
+		<button type="submit" class="btn">Создать</button>
+	</div>							
+</div>	
+</form>
+
+</div>
+</div>
+
+
+<x-slot name="script"> 
+	<script src="/assets/fas.js"></script>    
+	<script src="/assets/org.js"></script>
+	<script>
+		window.volleyballConfig = @json($volleyballConfig);
+	</script>
+	{{-- Page JS --}}
+	<script src="/js/config/volleyball-config.js"></script>
+	<script src="/js/events-create.js?v={{ time() }}"></script>
+	
+	<script>
+		let rerenderTimer = null;
 		
-		
-		<x-slot name="script"> 
-			<script src="/assets/org.js"></script>
-			<script>
-				window.volleyballConfig = @json($volleyballConfig);
-			</script>
-			{{-- Page JS --}}
-			<script src="/js/config/volleyball-config.js"></script>
-			<script src="/js/events-create.js?v={{ time() }}"></script>
+		// Универсальная функция перерисовки одного селекта
+		function safeRerenderEl(selector) {
+			const $select = $(selector);
+			if (!$select.length) {
+				//console.log('Селект не найден:', selector);
+				return;
+			}
 			
-			<script>
-				let rerenderTimer = null;
+			const $wrapper = $select.prev('.form-select-wrapper');
+			
+			if ($wrapper.length) {
+				// Сохраняем значение
+				const currentValue = $select.val();
 				
-				// Универсальная функция перерисовки одного селекта
-				function safeRerenderEl(selector) {
-					const $select = $(selector);
-					if (!$select.length) {
-						//console.log('Селект не найден:', selector);
-						return;
-					}
+				// Удаляем старую обертку
+				$wrapper.remove();
+				$select.removeData('custom-initialized');
+				
+				// Создаем новую
+				if (typeof createCustomSelect === 'function') {
+					createCustomSelect($select);
+					$select.val(currentValue);
 					
-					const $wrapper = $select.prev('.form-select-wrapper');
-					
-					if ($wrapper.length) {
-						// Сохраняем значение
-						const currentValue = $select.val();
-						
-						// Удаляем старую обертку
-						$wrapper.remove();
-						$select.removeData('custom-initialized');
-						
-						// Создаем новую
-						if (typeof createCustomSelect === 'function') {
-							createCustomSelect($select);
-							$select.val(currentValue);
-							
-							// Обновляем отображение
-							setTimeout(function() {
-								const $newWrapper = $select.prev('.form-select-wrapper');
-								if ($newWrapper.length && typeof updateCustomSelect === 'function') {
-									updateCustomSelect($select, $newWrapper);
-								}
-							}, 20);
+					// Обновляем отображение
+					setTimeout(function() {
+						const $newWrapper = $select.prev('.form-select-wrapper');
+						if ($newWrapper.length && typeof updateCustomSelect === 'function') {
+							updateCustomSelect($select, $newWrapper);
 						}
-						} else {
-						//console.log('Нет кастомной обертки для:', selector);
-					}
+					}, 20);
 				}
-				
-				// Существующая функция для всех селектов
-				function safeRerenderAll() {
-					if (rerenderTimer) clearTimeout(rerenderTimer);
-					rerenderTimer = setTimeout(function() {
-						$('select').each(function() {
-							safeRerenderEl(this);
-						});
-					}, 150);
-				}
-				
-				// Делаем функции глобальными (чтоб из консоли можно было вызывать)
-				window.safeRerenderEl = safeRerenderEl;
-				window.safeRerenderAll = safeRerenderAll;
-				
-				// Вешаем на все значимые события
-				$('form').on('change', '#direction, #format, #game_subtype, #game_libero_mode, #game_gender_policy', safeRerenderAll);
-				
-				// На клик по городу
-				$('body').on('click', '.city-item', function() {
-					setTimeout(safeRerenderAll, 100);
-				});
-				
-				// Первичная отрисовка
-				safeRerenderEl('#format');
-				safeRerenderEl('#game_gender_policy');
-				
-				// На AJAX
-				$(document).ajaxComplete(safeRerenderAll);
-				
-			</script>			
-			
-		</x-slot>			
+				} else {
+				//console.log('Нет кастомной обертки для:', selector);
+			}
+		}
 		
-	</x-voll-layout>
+		// Существующая функция для всех селектов
+		function safeRerenderAll() {
+			if (rerenderTimer) clearTimeout(rerenderTimer);
+			rerenderTimer = setTimeout(function() {
+				$('select').each(function() {
+					safeRerenderEl(this);
+				});
+			}, 150);
+		}
+		
+		// Делаем функции глобальными (чтоб из консоли можно было вызывать)
+		window.safeRerenderEl = safeRerenderEl;
+		window.safeRerenderAll = safeRerenderAll;
+		
+		// Вешаем на все значимые события
+		$('form').on('change', '#direction, #format, #game_subtype, #game_libero_mode, #game_gender_policy', safeRerenderAll);
+		
+		// На клик по городу
+		$('body').on('click', '.city-item', function() {
+			setTimeout(safeRerenderAll, 100);
+		});
+		
+		// Первичная отрисовка
+		safeRerenderEl('#format');
+		safeRerenderEl('#game_gender_policy');
+		
+		// На AJAX
+		$(document).ajaxComplete(safeRerenderAll);
+		
+	</script>			
+	
+</x-slot>			
+
+</x-voll-layout>

@@ -42,6 +42,17 @@ class EventStoreService
 
         $validator = app(EventCreateValidator::class)->make($request);
         $data = $validator->validate();
+		
+    // 👇 НОВЫЙ КОД: Обработка фото для галереи мероприятия
+    if ($request->has('event_photos')) {
+        $eventPhotos = json_decode($request->event_photos, true);
+        $data['event_photos'] = $eventPhotos;
+    } else {
+        $data['event_photos'] = [];
+    }		
+		
+		
+		
         \Log::info('EVENT STORE VALIDATED', [
     'is_paid' => $data['is_paid'] ?? null,
     'price_amount' => $data['price_amount'] ?? null,
@@ -377,7 +388,7 @@ class EventStoreService
             if ($firstTrainerId > 0) {
                 $event->trainer_user_id = $firstTrainerId;
             }
-
+			$event->event_photos = $data['event_photos'] ?? [];
             $event->save();
 
             /*
@@ -566,7 +577,28 @@ class EventStoreService
             }
     
                 DB::commit();
-    
+                // Отправляем анонс если регистрация уже открыта
+                try {
+                    $firstOcc = $event->occurrences()
+                        ->where('registration_starts_at', '<=', now())
+                        ->whereNull('cancelled_at')
+                        ->orderBy('starts_at')
+                        ->first();
+                
+                    if ($firstOcc && $event->notificationChannels()->exists()) {
+                        app(\App\Services\PublishOccurrenceAnnouncementService::class)
+                            ->publish($firstOcc->load([
+                                'event.notificationChannels.channel',
+                                'event.media',
+                                'event.location.city',
+                                'event.organizer',
+                                'event.gameSettings',
+                            ]));
+                    }
+                } catch (\Throwable $e) {
+                    \Log::warning('Auto-announce failed after event create: ' . $e->getMessage());
+                    // Не бросаем — мероприятие уже создано
+                }
             } catch (\Throwable $e) {
     
                 DB::rollBack();

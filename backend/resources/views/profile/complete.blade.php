@@ -375,6 +375,10 @@
 									<div class="col-9 col-lg-12">
 										<nav class="menu-nav">
 											@if(!$isEditingOther)
+											<a href="{{ route('users.show', ['user' => $user->id]) }}" class="menu-item">
+												<span class="menu-text">Публичный профиль</span>
+											</a>												
+											
 											<a href="{{ route('profile.show') }}" class="menu-item">
 												<span class="menu-text">Ваш профиль</span>
 											</a>
@@ -384,6 +388,7 @@
 											<a href="{{ route('user.photos') }}" class="menu-item">
 												<span class="menu-text">Ваши фотографии</span>
 											</a>
+											
 											{{-- logout: только logout --}}
 											<form method="POST" action="{{ route('logout') }}" class="logout-form" x-data>
 												@csrf
@@ -403,7 +408,14 @@
 													@endif
 												</strong>
 											</a>
-                                            
+                                     @if(($mode ?? 'self') === 'admin_other')       
+                                    <a href="{{ url('/user/photos?user_id=' . $user->id) }}" class="menu-item">
+                                        <span class="menu-text">
+                                            Редактировать фото пользователя
+										</span>
+									</a>											
+										@endif	
+											
 											@endif
                                             
 											

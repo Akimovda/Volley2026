@@ -268,7 +268,7 @@ class OccurrenceAnnouncementMessageBuilder
         if ($mins <= 0) return '';
         $h = intdiv($mins, 60);
         $m = $mins % 60;
-        return $m > 0 ? "{$h}:{$m:02d}" : "{$h}:00";
+        return $m > 0 ? sprintf('%d:%02d', $h, $m) : "{$h}:00";
     }
 
     private function currencySymbol(string $code): string

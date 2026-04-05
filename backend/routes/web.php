@@ -320,10 +320,11 @@
     config('jetstream.auth_session'),
     'verified',
 	])->group(function () {
-		Route::get('/user/photos', [UserPhotoController::class, 'index'])->name('user.photos');
-		Route::post('/user/photos', [UserPhotoController::class, 'store'])->name('user.photos.store');
-		Route::post('/user/photos/{media}/set-avatar', [UserPhotoController::class, 'setAvatar'])->name('user.photos.setAvatar');
-		Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->name('user.photos.destroy');
+Route::get('/user/photos', [UserPhotoController::class, 'index'])->name('user.photos');
+Route::post('/user/photos', [UserPhotoController::class, 'store'])->name('user.photos.store');
+Route::post('/user/photos/{media}/set-avatar', [UserPhotoController::class, 'setAvatar'])->name('user.photos.setAvatar');
+Route::delete('/user/photos/event/{media}', [UserPhotoController::class, 'destroyEventPhoto'])->name('user.photos.destroyEventPhoto');
+Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->name('user.photos.destroy');
 		
 		Route::post('/account/unlink/telegram', [AccountUnlinkController::class, 'telegram'])->name('account.unlink.telegram');
 		Route::post('/account/unlink/vk', [AccountUnlinkController::class, 'vk'])->name('account.unlink.vk');

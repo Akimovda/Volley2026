@@ -274,50 +274,50 @@ document.addEventListener("trix-file-accept", function (event) {
 		}
 	}
 	// ========== 3.1 НАСТРОЙКИ ПО УМОЛЧАНИЮ  ==========
-	function applyDirectionDefaults(force) {
-    	var direction = dirEl ? String(dirEl.value || '') : '';
-    	force = !!force;
-		
-    	if (direction === 'beach') {
-    		if (gameSubtype && (force || !trim(gameSubtype.value || ''))) gameSubtype.value = '2x2';
-    		if (teamsEl && (force || !trim(teamsEl.value || ''))) teamsEl.value = '3';
-    		if (gameMinEl && (force || !trim(gameMinEl.value || ''))) gameMinEl.value = '4';
-			} else {
-    		if (gameSubtype && (force || !trim(gameSubtype.value || ''))) gameSubtype.value = '4x2';
-    		if (teamsEl && (force || !trim(teamsEl.value || ''))) teamsEl.value = '2';
-    		if (gameMinEl && (force || !trim(gameMinEl.value || ''))) gameMinEl.value = '8';
-		}
-	}
+function applyDirectionDefaults(force) {
+    var direction = dirEl ? String(dirEl.value || '') : '';
+    force = !!force;
     
-    function applySubtypeDefaults(force) {
-    	var direction = dirEl ? String(dirEl.value || '') : '';
-    	var subtype = gameSubtype ? String(gameSubtype.value || '') : '';
-    	force = !!force;
-		
-    	if (direction === 'beach') {
-    		if (subtype === '2x2') {
-    			if (teamsEl && (force || !trim(teamsEl.value || ''))) teamsEl.value = '3';
-    			if (gameMinEl && (force || !trim(gameMinEl.value || ''))) gameMinEl.value = '4';
-				} else if (subtype === '3x3') {
-    			if (teamsEl && (force || !trim(teamsEl.value || ''))) teamsEl.value = '2';
-    			if (gameMinEl && (force || !trim(gameMinEl.value || ''))) gameMinEl.value = '4';
-				} else if (subtype === '4x4') {
-    			if (teamsEl && (force || !trim(teamsEl.value || ''))) teamsEl.value = '2';
-    			if (gameMinEl && (force || !trim(gameMinEl.value || ''))) gameMinEl.value = '6';
-			}
-			} else {
-    		if (subtype === '4x4') {
-    			if (teamsEl && (force || !trim(teamsEl.value || ''))) teamsEl.value = '2';
-    			if (gameMinEl && (force || !trim(gameMinEl.value || ''))) gameMinEl.value = '6';
-				} else if (subtype === '4x2') {
-    			if (teamsEl && (force || !trim(teamsEl.value || ''))) teamsEl.value = '2';
-    			if (gameMinEl && (force || !trim(gameMinEl.value || ''))) gameMinEl.value = '8';
-				} else if (subtype === '5x1' || subtype === '5x1_libero') {
-    			if (teamsEl && (force || !trim(teamsEl.value || ''))) teamsEl.value = '2';
-    			if (gameMinEl && (force || !trim(gameMinEl.value || ''))) gameMinEl.value = '8';
-			}
-		}
-	}
+    if (direction === 'beach') {
+        if (gameSubtype && (force || !trim(gameSubtype.value || ''))) gameSubtype.value = '2x2';
+        if (teamsEl && (force || !trim(teamsEl.value || ''))) teamsEl.value = '3';
+        if (gameMinEl) gameMinEl.value = '4';  // Убрали проверку на пустоту
+    } else {
+        if (gameSubtype && (force || !trim(gameSubtype.value || ''))) gameSubtype.value = '4x2';
+        if (teamsEl && (force || !trim(teamsEl.value || ''))) teamsEl.value = '2';
+        if (gameMinEl) gameMinEl.value = '8';  // Убрали проверку на пустоту
+    }
+}
+
+function applySubtypeDefaults(force) {
+    var direction = dirEl ? String(dirEl.value || '') : '';
+    var subtype = gameSubtype ? String(gameSubtype.value || '') : '';
+    force = !!force;
+    
+    if (direction === 'beach') {
+        if (subtype === '2x2') {
+            if (teamsEl && (force || !trim(teamsEl.value || ''))) teamsEl.value = '3';
+            if (gameMinEl) gameMinEl.value = '4';  // Всегда устанавливаем
+        } else if (subtype === '3x3') {
+            if (teamsEl && (force || !trim(teamsEl.value || ''))) teamsEl.value = '2';
+            if (gameMinEl) gameMinEl.value = '4';  // Всегда устанавливаем
+        } else if (subtype === '4x4') {
+            if (teamsEl && (force || !trim(teamsEl.value || ''))) teamsEl.value = '2';
+            if (gameMinEl) gameMinEl.value = '6';  // Всегда устанавливаем
+        }
+    } else {
+        if (subtype === '4x4') {
+            if (teamsEl && (force || !trim(teamsEl.value || ''))) teamsEl.value = '2';
+            if (gameMinEl) gameMinEl.value = '6';  // Всегда устанавливаем
+        } else if (subtype === '4x2') {
+            if (teamsEl && (force || !trim(teamsEl.value || ''))) teamsEl.value = '2';
+            if (gameMinEl) gameMinEl.value = '8';  // Всегда устанавливаем
+        } else if (subtype === '5x1' || subtype === '5x1_libero') {
+            if (teamsEl && (force || !trim(teamsEl.value || ''))) teamsEl.value = '2';
+            if (gameMinEl) gameMinEl.value = '8';  // Всегда устанавливаем
+        }
+    }
+}
 	// ========== 4. ОСНОВНЫЕ ФУНКЦИИ ==========
 	
 	function setActivePills(step) {
@@ -1045,7 +1045,7 @@ document.addEventListener("trix-file-accept", function (event) {
 					return false;
 				}
 			}
-			
+			updatePreview();
 			return true;
 		}
 		

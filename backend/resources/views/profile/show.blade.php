@@ -214,6 +214,9 @@
 							</div>
 							<div class="col-9 col-lg-12">
 								<nav class="menu-nav">
+											<a href="{{ route('users.show', ['user' => $user->id]) }}" class="menu-item">
+												<span class="menu-text">Публичный профиль</span>
+											</a>								
 									<a href="{{ route('profile.show') }}" class="menu-item active">
 										<strong class="cd menu-text">Ваш профиль</strong>
 									</a>
@@ -566,7 +569,7 @@
                 
                     <div class="row provider-cards">
                         {{-- Telegram --}}
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                             <div class="card">
                                 <div class="provider-card__header">
                                     <span class="provider-card__icon icon-tg"></span>
@@ -629,8 +632,66 @@
                             </div>
                         </div>
                 
+
+                        {{-- MAX --}}
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="provider-card__header">
+                                    <span class="provider-card__icon icon-max"></span>
+                                    <span class="provider-card__title">Уведомления в MAX</span>
+                                </div>
+                
+                                @if($hasMaxNotify)
+                                    <div class="provider-card__status">
+                                        <span class="badge badge-success"></span>
+                                    </div>
+                
+                                    <ul class="list">
+                                        <li>Личные уведомления в <b>MAX</b> включены.</li>
+                                    </ul>
+                
+                                    <form method="POST" action="{{ route('profile.max.disconnect') }}" class="mt-3">
+                                        @csrf
+                                        <button type="submit" class="w-100 btn btn-small btn-secondary btn-alert" data-title="Отключить MAX-уведомления?" data-icon="warning" data-confirm-text="Да, отключить" data-cancel-text="Отмена">
+                                            Отключить
+                                        </button>
+                                    </form>
+                                @else
+                                    <div class="provider-card__status">
+                                        <span class="badge badge-muted"></span>
+                                    </div>
+                
+                                    <ul class="list f-16">
+                                        <li>Хотите получать уведомления в <b>MAX</b>?</li>
+                                    </ul>
+                
+                                    <button type="button" id="connect-max-btn" class="w-100 btn btn-small">
+                                        Подключить MAX
+                                    </button>
+                
+                                    <div id="connect-max-result" class="mt-1 hidden">
+                                        <ul class="list f-16">
+                                        	<li>Нажмите на ссылку ниже</li>
+                                        	<li>Откройте личный чат с ботом MAX</li>
+                                        	<li>Нажмите <b>«Начать»</b></li>
+                                        	<li>После этого личные уведомления подключатся автоматически</li>
+                                        </ul>
+                
+                                        <a
+                                            style="word-break: break-all"
+                                            id="connect-max-link"
+                                            href="#"
+                                            target="_blank"
+                                            rel="noopener"
+                                            class="f-16 b-600"
+                                        ></a>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+						
                         {{-- VK --}}
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                             <div class="card">
                                 <div class="provider-card__header">
                                     <span class="provider-card__icon icon-vk"></span>
@@ -692,7 +753,7 @@
                                 
                                         <div id="connect-vk-command-box" class="mt-1 hidden">
                                             <div class="f-14 text-muted">Команда для бота:</div>
-                                            <div id="connect-vk-command" class="f-16 b-600"></div>
+                                            <div style="overflow-wrap:break-word" id="connect-vk-command" class="f-16 b-600"></div>
                                             <div id="connect-vk-copy-hint" class="f-14 text-muted mt-05 hidden">
                                                 Команда скопирована в буфер обмена.
                                             </div>
@@ -701,63 +762,9 @@
                                 @endif
                             </div>
                         </div>
-                
-                        {{-- MAX --}}
-                        <div class="col-md-4">
-                            <div class="card">
-                                <div class="provider-card__header">
-                                    <span class="provider-card__icon icon-max"></span>
-                                    <span class="provider-card__title">Уведомления в MAX</span>
-                                </div>
-                
-                                @if($hasMaxNotify)
-                                    <div class="provider-card__status">
-                                        <span class="badge badge-success"></span>
-                                    </div>
-                
-                                    <ul class="list">
-                                        <li>Личные уведомления в <b>MAX</b> включены.</li>
-                                    </ul>
-                
-                                    <form method="POST" action="{{ route('profile.max.disconnect') }}" class="mt-3">
-                                        @csrf
-                                        <button type="submit" class="w-100 btn btn-small btn-secondary btn-alert" data-title="Отключить MAX-уведомления?" data-icon="warning" data-confirm-text="Да, отключить" data-cancel-text="Отмена">
-                                            Отключить
-                                        </button>
-                                    </form>
-                                @else
-                                    <div class="provider-card__status">
-                                        <span class="badge badge-muted"></span>
-                                    </div>
-                
-                                    <ul class="list f-16">
-                                        <li>Хотите получать уведомления в <b>MAX</b>?</li>
-                                    </ul>
-                
-                                    <button type="button" id="connect-max-btn" class="w-100 btn btn-small">
-                                        Подключить MAX
-                                    </button>
-                
-                                    <div id="connect-max-result" class="mt-1 hidden">
-                                        <ul class="list f-16">
-                                        	<li>Нажмите на ссылку ниже</li>
-                                        	<li>Откройте личный чат с ботом MAX</li>
-                                        	<li>Нажмите <b>«Начать»</b></li>
-                                        	<li>После этого личные уведомления подключатся автоматически</li>
-                                        </ul>
-                
-                                        <a
-                                            style="word-break: break-all"
-                                            id="connect-max-link"
-                                            href="#"
-                                            target="_blank"
-                                            rel="noopener"
-                                            class="f-16 b-600"
-                                        ></a>
-                                    </div>
-                                @endif
-                            </div>
-                        </div>
+                						
+						
+						
                     </div>
                 </div>
 				

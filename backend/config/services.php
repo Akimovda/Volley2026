@@ -31,7 +31,7 @@ return [
      'bind' => [
         'secret' => env('BIND_WEBHOOK_SECRET'),
     ],
-        'vk' => [
+     'vk' => [
             'token' => env('VK_TOKEN'),
             'version' => env('VK_API_VERSION', '5.199'),
             'bot_link' => env('VK_BOT_LINK'),

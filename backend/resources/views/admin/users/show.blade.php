@@ -106,10 +106,10 @@
                             <div><strong>Имя/Фамилия:</strong> {{ $user->last_name }} {{ $user->first_name }}</div>
                             <div><strong>Телефон:</strong> {{ $user->phone ?? '—' }}</div>
 						</div>
-                        <div class="mt-1">
-                           <a href="/profile/complete?user_id={{ $user->id }}">Редактировать данные пользователя</a>
-                           
-						</div>						
+                        <ul class="list mt-1">
+                           <li><a class="blink" href="/profile/complete?user_id={{ $user->id }}">Редактировать данные пользователя</a></li>
+                           <li><a class="blink" href="/user/photos?user_id={{ $user->id }}">Редактировать фото пользователя</a></li>                           
+						</ul>						
 					</div>
 				</div>
 				

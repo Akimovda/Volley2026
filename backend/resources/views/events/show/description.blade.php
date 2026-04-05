@@ -3,50 +3,34 @@
 	
 	<h2 class="-mt-05">Описание</h2>
 	
-	<div class="row row2 pb-1">
-		
-		{{-- COVER --}}
-		@if($event->media && $event->media->first())
-		<div class="col-sm-4">	
-			<div class="event-photo border mb-1">
-				<img src="{{ $event->media->first()->getUrl() }}" >
-			</div>
-		</div>
-			<div class="col-sm-8">	
-				@else
-				<div class="col-sm-12">
+				
+				{{-- ТЕКСТ ОПИСАНИЯ --}}
+				@if(!empty($event->description_html))
+				<div class="mb-2">
+					{!! $event->description_html !!}
+				</div>
 				@endif
 				
-		{{-- ТЕКСТ ОПИСАНИЯ --}}
-		@if(!empty($event->description_html))
-		<div class="mb-2">
-			{!! $event->description_html !!}
-		</div>
-		@endif
-		
-		
-		{{-- КРАТКАЯ СВОДКА СОБЫТИЯ --}}
-		@php
-		
-		$dirLabel = match($event->direction) {
-		'classic' => '🏐 Классика',
-		'beach' => '🏖 Пляжка',
-		default => '🏐 Волейбол'
-		};
-		
-		$levels = [
-		1=>'⚪️',2=>'🟡',3=>'🟠',
-		4=>'🔵',5=>'🟣',6=>'🔴',7=>'⚫️'
-		];
-		
-		@endphp
-						
 				
-			</div>
-		</div>
+				{{-- КРАТКАЯ СВОДКА СОБЫТИЯ --}}
+				@php
+				
+				$dirLabel = match($event->direction) {
+				'classic' => '🏐 Классика',
+				'beach' => '🏖 Пляжка',
+				default => '🏐 Волейбол'
+				};
+				
+				$levels = [
+				1=>'⚪️',2=>'🟡',3=>'🟠',
+				4=>'🔵',5=>'🟣',6=>'🔴',7=>'⚫️'
+				];
+				
+				@endphp
+				
+
 		
 		
-	
 		
 		<div class="row">
 			<div class="col-md-6">
@@ -194,12 +178,12 @@
 								{{-- ВОЗРАСТ --}}
 								
 								@if(($event->age_policy ?? '') === 'child')
-                                    <div class="text-muted small mt-1">
-                                        👶 Для детей
-                                        @if(!is_null($event->child_age_min) && !is_null($event->child_age_max))
-                                            от {{ (int)$event->child_age_min }} до {{ (int)$event->child_age_max }} лет
-                                        @endif
-                                    </div>
+								<div class="text-muted small mt-1">
+									👶 Для детей
+									@if(!is_null($event->child_age_min) && !is_null($event->child_age_max))
+									от {{ (int)$event->child_age_min }} до {{ (int)$event->child_age_max }} лет
+									@endif
+								</div>
                                 @endif
 								@if($effectiveAgePolicy === 'adult')
 								<li>Только взрослые (18+)</li>
@@ -344,4 +328,4 @@
 		@endif
 		
 		
-	</div>	
+	</div>		

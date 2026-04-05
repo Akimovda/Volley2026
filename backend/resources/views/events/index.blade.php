@@ -7,18 +7,18 @@ $evList  = $events ?? collect();
 
 $hasOcc = false;
 if ($occList instanceof \Illuminate\Contracts\Pagination\Paginator) {
-    $hasOcc = $occList->count() > 0;
+$hasOcc = $occList->count() > 0;
 } elseif ($occList instanceof \Illuminate\Support\Collection) {
-    $hasOcc = $occList->isNotEmpty();
+$hasOcc = $occList->isNotEmpty();
 }
 
 $hasEvents = false;
 if (!$hasOcc) {
-    if ($evList instanceof \Illuminate\Contracts\Pagination\Paginator) {
-        $hasEvents = $evList->count() > 0;
-    } elseif ($evList instanceof \Illuminate\Support\Collection) {
-        $hasEvents = $evList->isNotEmpty();
-    }
+if ($evList instanceof \Illuminate\Contracts\Pagination\Paginator) {
+$hasEvents = $evList->count() > 0;
+} elseif ($evList instanceof \Illuminate\Support\Collection) {
+$hasEvents = $evList->isNotEmpty();
+}
 }
 
 
@@ -433,7 +433,7 @@ $groupedByDate[$dateKey] = ['date' => $date, 'occurrences' => []];
 										
 										$positions = $gs?->positions;
                                         if (is_string($positions)) {
-                                            $positions = json_decode($positions, true);
+										$positions = json_decode($positions, true);
                                         }
                                         
                                         $isClassicDirection = ((string)($event?->direction ?? 'classic') === 'classic');
@@ -490,6 +490,86 @@ $groupedByDate[$dateKey] = ['date' => $date, 'occurrences' => []];
 										};
 										@endphp
 										
+										
+										@php
+										// direction label
+										$dirLabel = ($dir === 'beach') ? 'Пляжка' : (($dir === 'classic') ? 'Классика' : '—');
+										
+										// ✅ показываем в TZ пользователя
+										$tzUser  = $userTz ?? 'UTC';
+										
+										// TZ события (если нужно отдельно показывать/передавать)
+										$tzEvent = (string)($occ->timezone ?: ($event?->timezone ?: 'UTC'));
+										
+										$sLocal = $occ->starts_at
+										? \Illuminate\Support\Carbon::parse($occ->starts_at, 'UTC')->setTimezone($tzUser)
+										: null;
+										
+										$eLocal = null;
+										if ($sLocal && !empty($occ->duration_sec)) {
+										$eLocal = $sLocal->copy()->addSeconds((int)$occ->duration_sec);
+										}
+										
+										
+										// "ДД ММММ" (по-русски)
+										$dateLong = $sLocal ? $sLocal->locale('ru')->translatedFormat('d F') : '—';
+										
+										// time "HH:MM-HH:MM"
+										$timeRange = $sLocal
+										? $sLocal->format('H:i') . ($eLocal ? '-' . $eLocal->format('H:i') : '')
+										: '—';
+										
+										// подпись зоны пользователя: "MSK (UTC+03:00)"
+										$tzLabel = $sLocal ? ($sLocal->format('T') . ' (UTC' . $sLocal->format('P') . ')') : ($tzUser);
+										
+										// duration "⏳ 1:30"
+										$durLabel = null;
+										if (!empty($occ->duration_sec)) {
+										$mins = intdiv((int)$occ->duration_sec, 60);
+										$h = intdiv($mins, 60);
+										$m = $mins % 60;
+										$durLabel = sprintf('%d:%02d', $h, $m);
+										}
+										
+										
+										// levels "2 - 6" (по направлению)
+										if ($dir === 'beach') {
+										$lvMin = is_null($event?->beach_level_min) ? null : (int)$event->beach_level_min;
+										$lvMax = is_null($event?->beach_level_max) ? null : (int)$event->beach_level_max;
+										} else {
+										$lvMin = is_null($event?->classic_level_min) ? null : (int)$event->classic_level_min;
+										$lvMax = is_null($event?->classic_level_max) ? null : (int)$event->classic_level_max;
+										}
+										$levelLabel = ($lvMin !== null || $lvMax !== null)
+										? (($lvMin !== null ? $lvMin : '—') . ' - ' . ($lvMax !== null ? $lvMax : '—'))
+										: null;
+										
+										// price
+										$priceLabel = null;
+										
+										if (!empty($event?->is_paid)) {
+										if (!is_null($event?->price_minor)) {
+										$priceLabel = money_human(
+										(int) $event->price_minor,
+										(string) ($event->price_currency ?? 'RUB')
+										);
+										} elseif (trim((string) ($event?->price_text ?? '')) !== '') {
+										// legacy fallback for old events
+										$priceLabel = trim((string) $event->price_text);
+										}
+										}
+										
+										// trainer link (через trainersById + trainerColumn)
+										$trainerUrl = null;
+										if ($isTrainingFmt && $trainerColumn && $event) {
+										$tid = (int)($event->{$trainerColumn} ?? 0);
+										if ($tid > 0) {
+										$trainerUrl = url('/user/' . $tid);
+										}
+										}
+										@endphp						
+										
+										
 										<div class="col-12 col-xl-4 col-lg-4 col-md-6 col-sm-6">
 											<div class="card-ramka">  
 												<div
@@ -501,9 +581,23 @@ $groupedByDate[$dateKey] = ['date' => $date, 'occurrences' => []];
 												data-beach-min="{{ e($bMin) }}"
 												data-beach-max="{{ e($bMax) }}"
 												>
-													@if(!empty($coverUrl))
-													<img src="{{ $coverUrl }}" alt="" class="card-img-top" style="height:180px;object-fit:cover;">
-													@endif
+													
+													<div class="border f-0 mb-1">
+														@if(!empty($event->event_photos) && count($event->event_photos) > 0)
+														@php
+														$firstPhoto = \Spatie\MediaLibrary\MediaCollections\Models\Media::find($event->event_photos[0]);
+														@endphp
+														@if($firstPhoto)
+														<img src="{{ $firstPhoto->getUrl('event_thumb') }}" alt="" class="card-img-top">
+														@else
+														<img src="/img/{{ $event->direction === 'beach' ? 'beach.webp' : 'classic.webp' }}" alt="" class="card-img-top">
+														@endif
+														@elseif(!empty($coverUrl))
+														<img src="{{ $coverUrl }}" alt="" class="card-img-top">
+														@else
+														<img src="/img/{{ $event->direction === 'beach' ? 'beach.webp' : 'classic.webp' }}" alt="" class="card-img-top">
+														@endif
+													</div>
 													
 													<div class="card-body">
 														<div class="d-flex gap-3 justify-content-between align-items-start">
@@ -516,83 +610,7 @@ $groupedByDate[$dateKey] = ['date' => $date, 'occurrences' => []];
 																	@endif
 																</a>
 																
-																@php
-																// direction label
-																$dirLabel = ($dir === 'beach') ? 'Пляжка' : (($dir === 'classic') ? 'Классика' : '—');
 																
-																// ✅ показываем в TZ пользователя
-																$tzUser  = $userTz ?? 'UTC';
-																
-																// TZ события (если нужно отдельно показывать/передавать)
-																$tzEvent = (string)($occ->timezone ?: ($event?->timezone ?: 'UTC'));
-																
-																$sLocal = $occ->starts_at
-																? \Illuminate\Support\Carbon::parse($occ->starts_at, 'UTC')->setTimezone($tzUser)
-																: null;
-																
-																$eLocal = null;
-if ($sLocal && !empty($occ->duration_sec)) {
-    $eLocal = $sLocal->copy()->addSeconds((int)$occ->duration_sec);
-}
-																
-																
-																// "ДД ММММ" (по-русски)
-																$dateLong = $sLocal ? $sLocal->locale('ru')->translatedFormat('d F') : '—';
-																
-																// time "HH:MM-HH:MM"
-																$timeRange = $sLocal
-																? $sLocal->format('H:i') . ($eLocal ? '-' . $eLocal->format('H:i') : '')
-																: '—';
-																
-																// подпись зоны пользователя: "MSK (UTC+03:00)"
-																$tzLabel = $sLocal ? ($sLocal->format('T') . ' (UTC' . $sLocal->format('P') . ')') : ($tzUser);
-																
-																// duration "⏳ 1:30"
-																$durLabel = null;
-																if (!empty($occ->duration_sec)) {
-																$mins = intdiv((int)$occ->duration_sec, 60);
-																$h = intdiv($mins, 60);
-																$m = $mins % 60;
-																$durLabel = sprintf('%d:%02d', $h, $m);
-																}
-																
-																
-																// levels "2 - 6" (по направлению)
-																if ($dir === 'beach') {
-																$lvMin = is_null($event?->beach_level_min) ? null : (int)$event->beach_level_min;
-																$lvMax = is_null($event?->beach_level_max) ? null : (int)$event->beach_level_max;
-																} else {
-																$lvMin = is_null($event?->classic_level_min) ? null : (int)$event->classic_level_min;
-																$lvMax = is_null($event?->classic_level_max) ? null : (int)$event->classic_level_max;
-																}
-																$levelLabel = ($lvMin !== null || $lvMax !== null)
-																? (($lvMin !== null ? $lvMin : '—') . ' - ' . ($lvMax !== null ? $lvMax : '—'))
-																: null;
-																
-										    					// price
-                                                                $priceLabel = null;
-                                                                
-                                                                if (!empty($event?->is_paid)) {
-                                                                    if (!is_null($event?->price_minor)) {
-                                                                        $priceLabel = money_human(
-                                                                            (int) $event->price_minor,
-                                                                            (string) ($event->price_currency ?? 'RUB')
-                                                                        );
-                                                                    } elseif (trim((string) ($event?->price_text ?? '')) !== '') {
-                                                                        // legacy fallback for old events
-                                                                        $priceLabel = trim((string) $event->price_text);
-                                                                    }
-                                                                }
-																
-																// trainer link (через trainersById + trainerColumn)
-																$trainerUrl = null;
-																if ($isTrainingFmt && $trainerColumn && $event) {
-																$tid = (int)($event->{$trainerColumn} ?? 0);
-																if ($tid > 0) {
-																$trainerUrl = url('/user/' . $tid);
-																}
-																}
-																@endphp
 																
 																<div class="d-flex flex-wrap gap-2 mt-1">
 																	<span class="badge text-bg-secondary">{{ $dirLabel }}</span>
@@ -799,9 +817,9 @@ if ($sLocal && !empty($occ->duration_sec)) {
 							
 							@else
 							<div class="ramka">	
-							<div class="alert alert-info">
-								Пока мероприятий нет. Но скоро появятся 🙂
-							</div>
+								<div class="alert alert-info">
+									Пока мероприятий нет. Но скоро появятся 🙂
+								</div>
 							</div>
 							@endif
 						</div>
@@ -896,73 +914,73 @@ if ($sLocal && !empty($occ->duration_sec)) {
 										const btn = document.createElement('button');
 										btn.type = 'button';
 										btn.className = 'btn btn-primary w-100';
-									btn.innerHTML = `${p.label || p.key} <span class="ms-2 small opacity-75">(${p.free ?? 0})</span>`;
-									btn.addEventListener('click', () => {
-									joinForm.action = `/occurrences/${occurrenceId}/join`;
-									joinPos.value = p.key;
-									joinForm.submit();
+										btn.innerHTML = `${p.label || p.key} <span class="ms-2 small opacity-75">(${p.free ?? 0})</span>`;
+										btn.addEventListener('click', () => {
+											joinForm.action = `/occurrences/${occurrenceId}/join`;
+											joinPos.value = p.key;
+											joinForm.submit();
+										});
+										col.appendChild(btn);
+										posWrap.appendChild(col);
 									});
-									col.appendChild(btn);
-									posWrap.appendChild(col);
-									});
-									}
-									async function fetchAvailability(occurrenceId) {
+								}
+								async function fetchAvailability(occurrenceId) {
 									const res = await fetch(`/occurrences/${occurrenceId}/availability`, {
-									method: 'GET',
-									headers: { 'Accept': 'application/json' },
-									credentials: 'same-origin',
+										method: 'GET',
+										headers: { 'Accept': 'application/json' },
+										credentials: 'same-origin',
 									});
 									let data = null;
 									try { data = await res.json(); } catch (e) {}
 									if (data && data.redirect_url) {
-									window.location = data.redirect_url;
-									return null;
+										window.location = data.redirect_url;
+										return null;
 									}
 									if (!res.ok || !data || data.ok === false) {
-									const msg = (data && data.message) ? data.message : 'Не удалось получить доступность мероприятия.';
-									showError(msg);
-									return null;
+										const msg = (data && data.message) ? data.message : 'Не удалось получить доступность мероприятия.';
+										showError(msg);
+										return null;
 									}
 									return data;
-									}
-									
-									document.querySelectorAll('.js-open-join').forEach(btn => {
+								}
+								
+								document.querySelectorAll('.js-open-join').forEach(btn => {
 									btn.addEventListener('click', async () => {
-									const occurrenceId = btn.dataset.occurrenceId;
-									openModalShell({
-									title: btn.dataset.title,
-									date: btn.dataset.date,
-									time: btn.dataset.time,
-									tz: btn.dataset.tz,
-									address: btn.dataset.address,
-									});
-									const data = await fetchAvailability(occurrenceId);
-									setLoading(false);
-									if (!data) return;
-									renderPositions(
+										const occurrenceId = btn.dataset.occurrenceId;
+										openModalShell({
+											title: btn.dataset.title,
+											date: btn.dataset.date,
+											time: btn.dataset.time,
+											tz: btn.dataset.tz,
+											address: btn.dataset.address,
+										});
+										const data = await fetchAvailability(occurrenceId);
+										setLoading(false);
+										if (!data) return;
+										renderPositions(
                                         occurrenceId,
                                         data.free_positions || data.data?.free_positions || []
-                                    );
+										);
 									});
-									});
-									
-									document.querySelectorAll('.js-close-join').forEach(btn => {
+								});
+								
+								document.querySelectorAll('.js-close-join').forEach(btn => {
 									btn.addEventListener('click', closeModal);
-									});
-									
-									if (backdrop) {
+								});
+								
+								if (backdrop) {
 									backdrop.addEventListener('click', (e) => {
-									if (e.target === backdrop) closeModal();
+										if (e.target === backdrop) closeModal();
 									});
-									}
-									document.addEventListener('keydown', (e) => {
+								}
+								document.addEventListener('keydown', (e) => {
 									if (e.key === 'Escape') closeModal();
-									});
-									
-									// ===== Seats line =====
-									const seatLines = Array.from(document.querySelectorAll('[data-seatline]'));
-									
-									async function loadSeatLine(el) {
+								});
+								
+								// ===== Seats line =====
+								const seatLines = Array.from(document.querySelectorAll('[data-seatline]'));
+								
+								async function loadSeatLine(el) {
 									const occId = el.dataset.occurrenceId;
 									const regEnabled = el.dataset.registrationEnabled === '1';
 									const regNotStarted = el.dataset.regNotStarted === '1';
@@ -981,23 +999,23 @@ if ($sLocal && !empty($occ->duration_sec)) {
                                     if (regNotStarted || regClosed || !regEnabled) {
                                         if (leftEl) leftEl.textContent = maxCard;
                                         return;
-                                    }
+									}
 									
 									try {
-									const res = await fetch(`/occurrences/${occId}/availability`, {
-									method: 'GET',
-									headers: { 'Accept': 'application/json' },
-									credentials: 'same-origin',
-									});
-									
-									let data = null;
-									try { data = await res.json(); } catch (e) {}
+										const res = await fetch(`/occurrences/${occId}/availability`, {
+											method: 'GET',
+											headers: { 'Accept': 'application/json' },
+											credentials: 'same-origin',
+										});
+										
+										let data = null;
+										try { data = await res.json(); } catch (e) {}
                                         const meta = data?.meta || data?.data?.meta || null;
                                         
                                         if (!data || !meta) {
                                             if (leftEl) leftEl.textContent = maxCard;
                                             return;
-                                        }
+										}
                                         
                                         const apiMax = Number(meta.max_players ?? 0) || 0;
                                         const effectiveMax = apiMax > 0 ? apiMax : maxCard;
@@ -1005,119 +1023,119 @@ if ($sLocal && !empty($occ->duration_sec)) {
                                         let remainingTotal = Number(meta.remaining_total);
                                         
                                         const meta = data?.meta || data?.data?.meta || null;
-
-                                            if (!data || !meta) {
-                                                if (leftEl) leftEl.textContent = maxCard;
-                                                return;
-                                            }
-                                            
-                                            const apiMax = Number(meta.max_players ?? 0) || 0;
-                                            const effectiveMax = apiMax > 0 ? apiMax : maxCard;
-                                            
-                                            let remainingTotal = Number(meta.remaining_total);
-                                            
-                                            if (!Number.isFinite(remainingTotal)) {
-                                                const registeredTotal = Number(meta.registered_total ?? 0) || 0;
-                                                remainingTotal = Math.max(0, effectiveMax - registeredTotal);
-                                            }
-                                            
-                                            if (leftEl)  leftEl.textContent  = String(remainingTotal);
-                                            if (totalEl) totalEl.textContent = String(effectiveMax);
+										
+										if (!data || !meta) {
+											if (leftEl) leftEl.textContent = maxCard;
+											return;
+										}
+										
+										const apiMax = Number(meta.max_players ?? 0) || 0;
+										const effectiveMax = apiMax > 0 ? apiMax : maxCard;
+										
+										let remainingTotal = Number(meta.remaining_total);
+										
+										if (!Number.isFinite(remainingTotal)) {
+											const registeredTotal = Number(meta.registered_total ?? 0) || 0;
+											remainingTotal = Math.max(0, effectiveMax - registeredTotal);
 										}
 										
 										if (leftEl)  leftEl.textContent  = String(remainingTotal);
 										if (totalEl) totalEl.textContent = String(effectiveMax);
-										} catch (e) {}
-										}
-										
-										if (seatLines.length) {
-										const concurrency = 3;
-										let i = 0;
-										
-										async function worker() {
-										while (i < seatLines.length) {
+									}
+									
+									if (leftEl)  leftEl.textContent  = String(remainingTotal);
+									if (totalEl) totalEl.textContent = String(effectiveMax);
+								} catch (e) {}
+							}
+							
+							if (seatLines.length) {
+								const concurrency = 3;
+								let i = 0;
+								
+								async function worker() {
+									while (i < seatLines.length) {
 										const idx = i++;
 										await loadSeatLine(seatLines[idx]);
-										}
-										}
-										
-										for (let k = 0; k < concurrency; k++) worker();
-										}
-										
-										// ===== Days strip =====
-										function activateTab(tabId) {
-										document.querySelectorAll('.tab-pane').forEach(p => p.classList.add('hidden'));
-											const pane = document.getElementById(tabId);
-											if (pane) pane.classList.remove('hidden');
-											
-											document.querySelectorAll('.day-chip').forEach(c => c.classList.remove('active'));
-											const chip = document.querySelector(`.day-chip[data-tab="${tabId}"]`);
-											if (chip) chip.classList.add('active');
-											}
-											
-											document.querySelectorAll('.day-chip').forEach(chip => {
-											chip.addEventListener('click', () => activateTab(chip.dataset.tab));
-											});
-											
-											(function initToday() {
-											const chips = Array.from(document.querySelectorAll('.day-chip'));
-											if (!chips.length) return;
-											
-											const root = document.getElementById('eventsTabsRoot');
-											const todayKey = (root && root.dataset && root.dataset.today) ? root.dataset.today : null;
-											
-											const todayChip = todayKey ? chips.find(c => c.dataset.date === todayKey) : null;
-											
-											if (todayChip) {
-											activateTab(todayChip.dataset.tab);
-											todayChip.scrollIntoView({behavior:'smooth', inline:'center', block:'nearest'});
-											} else {
-											activateTab(chips[0].dataset.tab);
-											}
-											})();
-											
-											
-											
-											// ===== Countdown blocks: "До регистрации осталось" =====
-											function pad2(n){ n = Math.max(0, n|0); return (n<10?'0':'')+n; }
-											
-											function tickCountdown(el){
-											var iso = el.getAttribute('data-target-utc');
-											if (!iso) return;
-											
-											var target = Date.parse(iso);
-											if (isNaN(target)) return;
-											
-											var now = Date.now();
-											var diff = target - now;
-											
-											if (diff <= 0) {
-											el.textContent = 'Регистрация доступна — обнови страницу';
-											return;
-											}
-											
-											var totalMin = Math.floor(diff / 60000);
-											var days = Math.floor(totalMin / (60*24));
-											var minsLeft = totalMin - days*60*24;
-											var hh = Math.floor(minsLeft / 60);
-											var mm = minsLeft - hh*60;
-											
-											var ddEl = el.querySelector('[data-dd]');
-											var hhmmEl = el.querySelector('[data-hhmm]');
-											if (ddEl) ddEl.textContent = String(days);
-											if (hhmmEl) hhmmEl.textContent = pad2(hh) + ':' + pad2(mm);
-											}
-											
-											function tickAllCountdowns(){
-											document.querySelectorAll('[data-countdown]').forEach(tickCountdown);
-											}
-											
-											tickAllCountdowns();
-											setInterval(tickAllCountdowns, 30000);
-											})();
-											</script>
-											</x-slot>	
-											
-											
-										</x-voll-layout>
-																		
+									}
+								}
+								
+								for (let k = 0; k < concurrency; k++) worker();
+							}
+							
+							// ===== Days strip =====
+							function activateTab(tabId) {
+								document.querySelectorAll('.tab-pane').forEach(p => p.classList.add('hidden'));
+								const pane = document.getElementById(tabId);
+								if (pane) pane.classList.remove('hidden');
+								
+								document.querySelectorAll('.day-chip').forEach(c => c.classList.remove('active'));
+								const chip = document.querySelector(`.day-chip[data-tab="${tabId}"]`);
+								if (chip) chip.classList.add('active');
+							}
+							
+							document.querySelectorAll('.day-chip').forEach(chip => {
+								chip.addEventListener('click', () => activateTab(chip.dataset.tab));
+							});
+							
+							(function initToday() {
+								const chips = Array.from(document.querySelectorAll('.day-chip'));
+								if (!chips.length) return;
+								
+								const root = document.getElementById('eventsTabsRoot');
+								const todayKey = (root && root.dataset && root.dataset.today) ? root.dataset.today : null;
+								
+								const todayChip = todayKey ? chips.find(c => c.dataset.date === todayKey) : null;
+								
+								if (todayChip) {
+									activateTab(todayChip.dataset.tab);
+									todayChip.scrollIntoView({behavior:'smooth', inline:'center', block:'nearest'});
+									} else {
+									activateTab(chips[0].dataset.tab);
+								}
+							})();
+							
+							
+							
+							// ===== Countdown blocks: "До регистрации осталось" =====
+							function pad2(n){ n = Math.max(0, n|0); return (n<10?'0':'')+n; }
+							
+							function tickCountdown(el){
+								var iso = el.getAttribute('data-target-utc');
+								if (!iso) return;
+								
+								var target = Date.parse(iso);
+								if (isNaN(target)) return;
+								
+								var now = Date.now();
+								var diff = target - now;
+								
+								if (diff <= 0) {
+									el.textContent = 'Регистрация доступна — обнови страницу';
+									return;
+								}
+								
+								var totalMin = Math.floor(diff / 60000);
+								var days = Math.floor(totalMin / (60*24));
+								var minsLeft = totalMin - days*60*24;
+								var hh = Math.floor(minsLeft / 60);
+								var mm = minsLeft - hh*60;
+								
+								var ddEl = el.querySelector('[data-dd]');
+								var hhmmEl = el.querySelector('[data-hhmm]');
+								if (ddEl) ddEl.textContent = String(days);
+								if (hhmmEl) hhmmEl.textContent = pad2(hh) + ':' + pad2(mm);
+							}
+							
+							function tickAllCountdowns(){
+								document.querySelectorAll('[data-countdown]').forEach(tickCountdown);
+							}
+							
+							tickAllCountdowns();
+							setInterval(tickAllCountdowns, 30000);
+						})();
+					</script>
+				</x-slot>	
+				
+				
+			</x-voll-layout>
+				

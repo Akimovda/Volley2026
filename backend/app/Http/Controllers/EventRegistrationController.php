@@ -54,7 +54,20 @@ class EventRegistrationController extends Controller
 
         return $this->storeOccurrence($request, $occ);
     }
-
+    private function dispatchAnnounceUpdate(EventOccurrence $occurrence): void
+    {
+        $hasChannels = \Illuminate\Support\Facades\DB::table('event_notification_channels')
+            ->where('event_id', (int) $occurrence->event_id)
+            ->exists();
+    
+        if (!$hasChannels) {
+            return;
+        }
+    
+        \App\Jobs\RefreshOccurrenceAnnouncementJob::dispatch((int) $occurrence->id)
+            ->onQueue('default')
+            ->afterCommit();
+    }
     /**
      * Legacy: DELETE /events/{event}/leave
      * Отписка от "первого occurrence".
@@ -253,7 +266,8 @@ class EventRegistrationController extends Controller
                 eventTitle: $eventTitle
             );
         }
-
+        $this->dispatchAnnounceUpdate($occurrence);
+        
         return redirect()->route('events.show', [
             'event' => (int) $occurrence->event_id,
             'occurrence' => (int) $occurrence->id,
@@ -325,7 +339,8 @@ class EventRegistrationController extends Controller
                 occurrenceId: (int) $occurrence->id,
                 eventTitle: $eventTitle
             );
-
+            $this->dispatchAnnounceUpdate($occurrence);
+            
             return $target('status', 'Запись отменена ✅');
         } catch (\Throwable $e) {
             DB::rollBack();

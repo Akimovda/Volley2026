@@ -84,26 +84,39 @@ class User extends Authenticatable implements HasMedia
     // Media Library
     // --------------------------------------------------
 
-    public function registerMediaCollections(): void
-    {
-        // Коллекция photos - храним оригиналы
-        $this->addMediaCollection('photos')
-            ->useDisk('public');
-        
-        // Коллекция avatar - пока оставляем, но можем убрать если не нужна
-        $this->addMediaCollection('avatar')
-            ->singleFile()
-            ->useDisk('public');
-    }
+public function registerMediaCollections(): void
+{
+    // Коллекция photos - храним оригиналы (как было)
+    $this->addMediaCollection('photos')
+        ->useDisk('public');
+    
+    // НОВАЯ коллекция для фото мероприятий
+    $this->addMediaCollection('event_photos')
+        ->useDisk('public');
+    
+    // Коллекция avatar - как было
+    $this->addMediaCollection('avatar')
+        ->singleFile()
+        ->useDisk('public');
+}
 
 public function registerMediaConversions(Media $media = null): void
 {
-    // THUMB — объявляем путь, но перезаписываем вручную
+	
+    // THUMB — как было, для коллекции photos
     $this->addMediaConversion('thumb')
-        ->format($media->mime_type === 'image/webp' ? 'webp' : 'jpg')
+        ->format($media && $media->mime_type === 'image/webp' ? 'webp' : 'jpg')
         ->fit(Fit::Crop, 360, 360)
         ->nonQueued()
         ->performOnCollections('photos');
+    
+    // НОВАЯ конверсия для фото мероприятий
+    $this->addMediaConversion('event_thumb')
+        ->format($media && $media->mime_type === 'image/webp' ? 'webp' : 'jpg')
+        ->fit(Fit::Crop, 640, 360)  // 👈 было '>fit', исправил на '->fit'
+        ->nonQueued()
+        ->performOnCollections('event_photos');
+		
 }
 
     // --------------------------------------------------

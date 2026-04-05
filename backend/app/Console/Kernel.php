@@ -16,6 +16,7 @@ class Kernel extends ConsoleKernel
             \App\Console\Commands\SendPendingNotifications::class,
             \App\Console\Commands\SendEventRegistrationReminders::class,
             \App\Console\Commands\CancelEventsByQuorum::class,
+            \App\Console\Commands\BotAssistCommand::class,
         ];
 
     /**
