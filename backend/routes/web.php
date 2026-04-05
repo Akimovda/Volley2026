@@ -11,6 +11,7 @@
 	use App\Http\Controllers\EventsController;
 	use App\Http\Controllers\EventCreateController;
 	use App\Http\Controllers\EventRegistrationController;
+use App\Http\Controllers\EventRegistrationInviteController;
 	use App\Http\Controllers\EventManagementController;
 	use App\Http\Controllers\EventRegistrationsManagementController;
 	use App\Http\Controllers\EventRegistrationGroupController;
@@ -270,6 +271,9 @@
 		
 		Route::delete('/occurrences/{occurrence}/leave', [EventRegistrationController::class, 'destroyOccurrence'])
         ->name('occurrences.leave');
+
+Route::post('/events/{event}/invite', [EventRegistrationInviteController::class, 'store'])
+    ->name('events.invite');
 		
 		Route::post('/profile/max/generate-link', [MaxBindingController::class, 'generate'])
         ->name('profile.max.generate_link');

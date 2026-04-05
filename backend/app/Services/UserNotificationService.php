@@ -336,6 +336,38 @@ final class UserNotificationService
         );
     }
 
+    public function createEventInviteNotification(
+        int $toUserId,
+        int $fromUserId,
+        int $eventId,
+        int $occurrenceId,
+        string $eventTitle,
+        string $eventUrl
+    ): UserNotification {
+        $fromUser  = User::query()->find($fromUserId);
+        $fromName  = trim(($fromUser?->last_name ?? '') . ' ' . ($fromUser?->first_name ?? ''));
+        if ($fromName === '') {
+            $fromName = $fromUser?->name ?: $fromUser?->email ?: ('#' . $fromUserId);
+        }
+
+        return $this->create(
+            userId: $toUserId,
+            type: 'event_invite',
+            title: "Приглашение на мероприятие «{$eventTitle}»",
+            body: "Вас приглашает {$fromName} присоединиться к: {$eventTitle}.",
+            payload: [
+                'event_id'       => $eventId,
+                'occurrence_id'  => $occurrenceId,
+                'event_title'    => $eventTitle,
+                'from_user_id'   => $fromUserId,
+                'from_user_name' => $fromName,
+                'button_text'    => 'Записаться',
+                'button_url'     => $eventUrl,
+            ],
+            channels: ['in_app', 'telegram', 'vk', 'max']
+        );
+    }
+
     public function markAsRead(int $notificationId, int $userId): void
     {
         $notification = UserNotification::query()

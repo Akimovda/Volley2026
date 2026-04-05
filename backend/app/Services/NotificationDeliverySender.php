@@ -261,6 +261,7 @@ final class NotificationDeliverySender
             'event_reminder'                                        => '⏰',
             'event_cancelled', 'event_cancelled_quorum'             => '🚫',
             'group_invite', 'tournament_team_invite'                => '🤝',
+            'event_invite'                                          => '🏐',
             default                                                 => '📢',
         };
 

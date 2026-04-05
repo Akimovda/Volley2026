@@ -196,6 +196,109 @@
     @endif
 </div>	
 {{-- ===============================
+ПРИГЛАСИТЬ ИГРОКА
+=============================== --}}
+@if ($isRegistered && auth()->check())
+@php
+    $inviteSearchUrl = route('api.users.search');
+    $inviteAction    = route('events.invite', ['event' => $event->id]);
+@endphp
+<div class="ramka">
+    <h2 class="-mt-05">Пригласить игрока</h2>
+    <div class="text-muted small mb-2">
+        Игрок получит уведомление с информацией о мероприятии и ссылкой для записи.
+    </div>
+
+    @if(session('status') && str_contains(session('status'), 'Приглашение'))
+        <div class="alert alert-success">{{ session('status') }}</div>
+    @endif
+
+    <form method="POST" action="{{ $inviteAction }}" id="invite-player-form">
+        @csrf
+        <input type="hidden" name="occurrence_id" value="{{ $occurrence->id }}">
+        <input type="hidden" name="to_user_id" id="invite-userid">
+
+        <div class="relative mb-2" id="invite-ac-wrap">
+            <input
+                type="text"
+                id="invite-ac-input"
+                autocomplete="off"
+                class="form-control"
+                placeholder="Введите имя или email игрока…"
+            >
+            <div id="invite-ac-dd"
+                 style="display:none;position:absolute;left:0;right:0;top:100%;z-index:50;background:#fff;border:1px solid #ddd;border-radius:8px;max-height:200px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.1)">
+            </div>
+        </div>
+        <div id="invite-ac-selected" style="display:none;font-size:13px;color:green;margin-bottom:6px;"></div>
+
+        <button type="submit" id="invite-submit-btn" class="btn btn-primary w-100" disabled>
+            Отправить приглашение
+        </button>
+    </form>
+</div>
+
+<script>
+(function(){
+    var input   = document.getElementById('invite-ac-input');
+    var dd      = document.getElementById('invite-ac-dd');
+    var hidden  = document.getElementById('invite-userid');
+    var sel     = document.getElementById('invite-ac-selected');
+    var btn     = document.getElementById('invite-submit-btn');
+    var timer   = null;
+    var url     = '{{ $inviteSearchUrl }}';
+
+    if (!input) return;
+
+    function clear() { hidden.value=''; btn.disabled=true; sel.style.display='none'; }
+    function pick(id, label) {
+        hidden.value=id; btn.disabled=false;
+        sel.textContent='✅ '+label; sel.style.display='block';
+        dd.style.display='none'; dd.innerHTML='';
+        input.value=label;
+    }
+    function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    function render(items){
+        dd.innerHTML='';
+        if(!items.length){ dd.innerHTML='<div style="padding:10px;color:#999;font-size:13px">Ничего не найдено</div>'; dd.style.display='block'; return; }
+        items.forEach(function(item){
+            var d=document.createElement('div');
+            d.style.cssText='padding:8px 12px;cursor:pointer;font-size:14px;border-bottom:1px solid #f0f0f0';
+            d.innerHTML='<span style="font-weight:600">'+esc(item.label||item.name)+'</span>'+(item.meta?'<span style="color:#999;font-size:12px;margin-left:8px">'+esc(item.meta)+'</span>':'');
+            d.onmouseover=function(){d.style.background='#f8f8f8'};
+            d.onmouseout=function(){d.style.background=''};
+            d.onclick=function(){ pick(item.id, item.label||item.name); };
+            dd.appendChild(d);
+        });
+        dd.style.display='block';
+    }
+
+    input.addEventListener('input', function(){
+        clear();
+        clearTimeout(timer);
+        var q=input.value.trim();
+        if(q.length<2){ dd.style.display='none'; return; }
+        dd.innerHTML='<div style="padding:10px;color:#999;font-size:13px">Поиск…</div>'; dd.style.display='block';
+        timer=setTimeout(function(){
+            fetch(url+'?q='+encodeURIComponent(q),{headers:{'Accept':'application/json'},credentials:'same-origin'})
+            .then(function(r){return r.json();})
+            .then(function(data){render(data.items||[]);})
+            .catch(function(){ dd.innerHTML='<div style="padding:10px;color:red;font-size:13px">Ошибка</div>'; dd.style.display='block'; });
+        },250);
+    });
+
+    document.addEventListener('click',function(e){
+        if(!document.getElementById('invite-ac-wrap').contains(e.target)) dd.style.display='none';
+    });
+
+    document.getElementById('invite-player-form').addEventListener('submit',function(e){
+        if(!hidden.value){ e.preventDefault(); input.focus(); }
+    });
+})();
+</script>
+
+{{-- ===============================
 ГРУППА НА ПЛЯЖКУ
 =============================== --}}
 @if((!empty($groupUi['enabled'])) && ($isRegistered))

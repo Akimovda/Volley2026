@@ -29,12 +29,39 @@ class OccurrenceAnnouncementMessageBuilder
         // Картинка
         $imageUrl = null;
         if ((bool) ($options['include_image'] ?? true)) {
+            // 1. Сначала ищем cover (загруженный файл напрямую на Event)
             $media = $event->media?->first();
+        
             if ($media) {
                 $imageUrl = $media->getUrl();
+            } else {
+                // 2. Потом ищем из галереи организатора (event_photos — JSON массив ID)
+                $photoIds = $event->event_photos ?? [];
+                if (is_string($photoIds)) {
+                    $photoIds = json_decode($photoIds, true) ?: [];
+                }
+        
+                if (!empty($photoIds)) {
+                    $galleryMedia = \Spatie\MediaLibrary\MediaCollections\Models\Media::find($photoIds[0]);
+                    if ($galleryMedia) {
+                        $imageUrl = $galleryMedia->getUrl();
+                    }
+                }
+            }
+        
+            // 3. Фолбэк — дефолтная картинка по направлению
+            if (!$imageUrl) {
+                $direction = (string) ($event->direction ?? 'classic');
+                $appUrl    = rtrim((string) config('app.url'), '/');
+                $imageUrl  = $direction === 'beach'
+                    ? $appUrl . '/img/beach.webp'
+                    : $appUrl . '/img/classic.webp';
             }
         }
-
+        // Для MAX конвертируем WebP → JPEG
+        if (!empty($imageUrl) && ($options['platform'] ?? '') === 'max') {
+            $imageUrl = $this->convertWebpToJpegUrl($imageUrl) ?? null;
+        }
         // Текст анонса
         $text = $this->buildText($occurrence, $options, $starts, $ends, $tz, $platform);
 
@@ -169,6 +196,53 @@ class OccurrenceAnnouncementMessageBuilder
             return "<b>{$text}</b>";
         }
         return $text;
+    }
+    /**
+     * Конвертирует WebP URL → JPEG для платформ которые не поддерживают WebP (MAX).
+     * Скачивает файл, конвертирует через GD и сохраняет во временный публичный файл.
+     */
+    private function convertWebpToJpegUrl(string $url): ?string
+    {
+        if (!str_ends_with(strtolower(parse_url($url, PHP_URL_PATH) ?? ''), '.webp')) {
+            return $url;
+        }
+    
+        try {
+            $cacheDir = public_path('img/converted/');
+            if (!is_dir($cacheDir)) {
+                mkdir($cacheDir, 0755, true);
+            }
+    
+            $cacheFile = $cacheDir . md5($url) . '.jpg';
+            $cacheUrl  = rtrim(config('app.url'), '/') . '/img/converted/' . md5($url) . '.jpg';
+    
+            // Уже конвертировали — отдаём кэш
+            if (file_exists($cacheFile)) {
+                return $cacheUrl;
+            }
+    
+            // Если это локальный файл — читаем напрямую, иначе скачиваем
+            $localPath = public_path(parse_url($url, PHP_URL_PATH));
+            if (file_exists($localPath)) {
+                $img = imagecreatefromwebp($localPath);
+            } else {
+                $content = file_get_contents($url);
+                if (!$content) return null;
+                $tmpIn = tempnam(sys_get_temp_dir(), 'webp_') . '.webp';
+                file_put_contents($tmpIn, $content);
+                $img = imagecreatefromwebp($tmpIn);
+                unlink($tmpIn);
+            }
+    
+            if (!$img) return null;
+            imagejpeg($img, $cacheFile, 90);
+            imagedestroy($img);
+    
+            return $cacheUrl;
+        } catch (\Throwable $e) {
+            \Log::warning('WebP→JPEG failed: ' . $e->getMessage());
+            return null;
+        }
     }
 
     /**
