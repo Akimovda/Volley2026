@@ -875,280 +875,239 @@ data-address="{{ e($address) }}"
 					<x-slot name="script">
 						<script>
 							(function () {
-								const backdrop  = document.getElementById('joinModalBackdrop');
-								const titleEl   = document.getElementById('jmTitle');
-								const metaEl    = document.getElementById('jmMeta');
-								const addrEl    = document.getElementById('jmAddr');
-								const posWrap   = document.getElementById('jmPositions');
-								const errBox    = document.getElementById('jmError');
-								const loadingEl = document.getElementById('jmLoading');
-								const joinForm  = document.getElementById('joinForm');
-								const joinPos   = document.getElementById('joinPosition');
-								
-								function showError(message) {
-									if (!errBox) { alert(message); return; }
-									errBox.textContent = message;
-									errBox.classList.remove('d-none');
-								}
-								function clearError() {
-									if (!errBox) return;
-									errBox.textContent = '';
-									errBox.classList.add('d-none');
-								}
-								function setLoading(isLoading) {
-									if (!loadingEl) return;
-									loadingEl.classList.toggle('d-none', !isLoading);
-								}
-								function openModalShell(payload) {
-									clearError();
-									setLoading(true);
-									titleEl.textContent = payload.title || 'Запись';
-									metaEl.textContent  = [payload.date, payload.time, payload.tz ? '('+payload.tz+')' : ''].filter(Boolean).join(' ');
-									addrEl.textContent  = payload.address || '';
-									posWrap.innerHTML = '';
-									backdrop.classList.remove('hidden');
-								}
-								function closeModal() {
-									backdrop.classList.add('hidden');
-									posWrap.innerHTML = '';
-									clearError();
-									setLoading(false);
-								}
-								function renderPositions(occurrenceId, freePositions) {
-									posWrap.innerHTML = '';
-									if (!Array.isArray(freePositions) || freePositions.length === 0) {
-										showError('Свободных мест больше нет (или нет доступных позиций по ограничениям).');
-										return;
-									}
-									freePositions.forEach(p => {
-										const col = document.createElement('div');
-										col.className = 'col-12';
-										const btn = document.createElement('button');
-										btn.type = 'button';
-										btn.className = 'btn btn-primary w-100';
-										btn.innerHTML = `${p.label || p.key} <span class="ms-2 small opacity-75">(${p.free ?? 0})</span>`;
-										btn.addEventListener('click', () => {
-											joinForm.action = `/occurrences/${occurrenceId}/join`;
-											joinPos.value = p.key;
-											joinForm.submit();
-										});
-										col.appendChild(btn);
-										posWrap.appendChild(col);
-									});
-								}
-								async function fetchAvailability(occurrenceId) {
-									const res = await fetch(`/occurrences/${occurrenceId}/availability`, {
-										method: 'GET',
-										headers: { 'Accept': 'application/json' },
-										credentials: 'same-origin',
-									});
-									let data = null;
-									try { data = await res.json(); } catch (e) {}
-									if (data && data.redirect_url) {
-										window.location = data.redirect_url;
-										return null;
-									}
-									if (!res.ok || !data || data.ok === false) {
-										const msg = (data && data.message) ? data.message : 'Не удалось получить доступность мероприятия.';
-										showError(msg);
-										return null;
-									}
-									return data;
-								}
-								
-								document.querySelectorAll('.js-open-join').forEach(btn => {
-									btn.addEventListener('click', async () => {
-										const occurrenceId = btn.dataset.occurrenceId;
-										openModalShell({
-											title: btn.dataset.title,
-											date: btn.dataset.date,
-											time: btn.dataset.time,
-											tz: btn.dataset.tz,
-											address: btn.dataset.address,
-										});
-										const data = await fetchAvailability(occurrenceId);
-										setLoading(false);
-										if (!data) return;
-										renderPositions(
-                                        occurrenceId,
-                                        data.free_positions || data.data?.free_positions || []
-										);
-									});
-								});
-								
-								document.querySelectorAll('.js-close-join').forEach(btn => {
-									btn.addEventListener('click', closeModal);
-								});
-								
-								if (backdrop) {
-									backdrop.addEventListener('click', (e) => {
-										if (e.target === backdrop) closeModal();
-									});
-								}
-								document.addEventListener('keydown', (e) => {
-									if (e.key === 'Escape') closeModal();
-								});
-								
-								// ===== Seats line =====
-								const seatLines = Array.from(document.querySelectorAll('[data-seatline]'));
-								
-								async function loadSeatLine(el) {
-									const occId = el.dataset.occurrenceId;
-									const regEnabled = el.dataset.registrationEnabled === '1';
-									const regNotStarted = el.dataset.regNotStarted === '1';
-									const regClosed = el.dataset.regClosed === '1';
-									
-									const maxCard = Number(el.dataset.maxPlayers ?? 0) || 0;
-									if (maxCard <= 0) return;
-									
-									// ✅ более надежные селекторы (и fallback на старые индексы)
-									const leftEl  = el.querySelector('[data-left]')  || (el.querySelectorAll('span')[2] || null);
-									const totalEl = el.querySelector('[data-total]') || (el.querySelectorAll('span')[4] || null);
-									
-									if (totalEl) totalEl.textContent = String(maxCard);
-									
-    								// если регистрация закрыта или не началась — просто показываем общий лимит
-                                    if (regNotStarted || regClosed || !regEnabled) {
-                                        if (leftEl) leftEl.textContent = maxCard;
+                                // ===== Join Modal =====
+                                const backdrop  = document.getElementById('joinModalBackdrop');
+                                const titleEl   = document.getElementById('jmTitle');
+                                const metaEl    = document.getElementById('jmMeta');
+                                const addrEl    = document.getElementById('jmAddr');
+                                const posWrap   = document.getElementById('jmPositions');
+                                const errBox    = document.getElementById('jmError');
+                                const loadingEl = document.getElementById('jmLoading');
+                                const joinForm  = document.getElementById('joinForm');
+                                const joinPos   = document.getElementById('joinPosition');
+                            
+                                function showError(message) {
+                                    if (!errBox) { alert(message); return; }
+                                    errBox.textContent = message;
+                                    errBox.classList.remove('d-none');
+                                }
+                                function clearError() {
+                                    if (!errBox) return;
+                                    errBox.textContent = '';
+                                    errBox.classList.add('d-none');
+                                }
+                                function setLoading(isLoading) {
+                                    if (!loadingEl) return;
+                                    loadingEl.classList.toggle('d-none', !isLoading);
+                                }
+                                function openModalShell(payload) {
+                                    clearError();
+                                    setLoading(true);
+                                    titleEl.textContent = payload.title || 'Запись';
+                                    metaEl.textContent  = [payload.date, payload.time, payload.tz ? '('+payload.tz+')' : ''].filter(Boolean).join(' ');
+                                    addrEl.textContent  = payload.address || '';
+                                    posWrap.innerHTML = '';
+                                    backdrop.classList.remove('hidden');
+                                }
+                                function closeModal() {
+                                    backdrop.classList.add('hidden');
+                                    posWrap.innerHTML = '';
+                                    clearError();
+                                    setLoading(false);
+                                }
+                                function renderPositions(occurrenceId, freePositions) {
+                                    posWrap.innerHTML = '';
+                                    if (!Array.isArray(freePositions) || freePositions.length === 0) {
+                                        showError('Свободных мест больше нет (или нет доступных позиций по ограничениям).');
                                         return;
-									}
-									
-									try {
-										const res = await fetch(`/occurrences/${occId}/availability`, {
-											method: 'GET',
-											headers: { 'Accept': 'application/json' },
-											credentials: 'same-origin',
-										});
-										
-										let data = null;
-										try { data = await res.json(); } catch (e) {}
+                                    }
+                                    freePositions.forEach(p => {
+                                        const col = document.createElement('div');
+                                        col.className = 'col-12';
+                                        const btn = document.createElement('button');
+                                        btn.type = 'button';
+                                        btn.className = 'btn btn-primary w-100';
+                                        btn.innerHTML = `${p.label || p.key} <span class="ms-2 small opacity-75">(${p.free ?? 0})</span>`;
+                                        btn.addEventListener('click', () => {
+                                            joinForm.action = `/occurrences/${occurrenceId}/join`;
+                                            joinPos.value = p.key;
+                                            joinForm.submit();
+                                        });
+                                        col.appendChild(btn);
+                                        posWrap.appendChild(col);
+                                    });
+                                }
+                                async function fetchAvailability(occurrenceId) {
+                                    const res = await fetch(`/occurrences/${occurrenceId}/availability`, {
+                                        method: 'GET',
+                                        headers: { 'Accept': 'application/json' },
+                                        credentials: 'same-origin',
+                                    });
+                                    let data = null;
+                                    try { data = await res.json(); } catch (e) {}
+                                    if (data && data.redirect_url) { window.location = data.redirect_url; return null; }
+                                    if (!res.ok || !data || data.ok === false) {
+                                        showError((data && data.message) ? data.message : 'Не удалось получить доступность мероприятия.');
+                                        return null;
+                                    }
+                                    return data;
+                                }
+                            
+                                document.querySelectorAll('.js-open-join').forEach(btn => {
+                                    btn.addEventListener('click', async () => {
+                                        const occurrenceId = btn.dataset.occurrenceId;
+                                        openModalShell({
+                                            title: btn.dataset.title,
+                                            date: btn.dataset.date,
+                                            time: btn.dataset.time,
+                                            tz: btn.dataset.tz,
+                                            address: btn.dataset.address,
+                                        });
+                                        const data = await fetchAvailability(occurrenceId);
+                                        setLoading(false);
+                                        if (!data) return;
+                                        renderPositions(occurrenceId, data.free_positions || data.data?.free_positions || []);
+                                    });
+                                });
+                            
+                                document.querySelectorAll('.js-close-join').forEach(btn => btn.addEventListener('click', closeModal));
+                                if (backdrop) {
+                                    backdrop.addEventListener('click', (e) => { if (e.target === backdrop) closeModal(); });
+                                }
+                                document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+                            
+                                // ===== Seats line =====
+                                const seatLines = Array.from(document.querySelectorAll('[data-seatline]'));
+                            
+                                async function loadSeatLine(el) {
+                                    const occId        = el.dataset.occurrenceId;
+                                    const regEnabled   = el.dataset.registrationEnabled === '1';
+                                    const regNotStarted = el.dataset.regNotStarted === '1';
+                                    const regClosed    = el.dataset.regClosed === '1';
+                                    const maxCard      = Number(el.dataset.maxPlayers ?? 0) || 0;
+                                    if (maxCard <= 0) return;
+                            
+                                    const leftEl  = el.querySelector('[data-left]');
+                                    const totalEl = el.querySelector('[data-total]');
+                                    if (totalEl) totalEl.textContent = String(maxCard);
+                            
+                                    if (regNotStarted || regClosed || !regEnabled) {
+                                        if (leftEl) leftEl.textContent = String(maxCard);
+                                        return;
+                                    }
+                            
+                                    try {
+                                        const res = await fetch(`/occurrences/${occId}/availability`, {
+                                            method: 'GET',
+                                            headers: { 'Accept': 'application/json' },
+                                            credentials: 'same-origin',
+                                        });
+                                        let data = null;
+                                        try { data = await res.json(); } catch (e) {}
+                            
                                         const meta = data?.meta || data?.data?.meta || null;
-                                        
                                         if (!data || !meta) {
-                                            if (leftEl) leftEl.textContent = maxCard;
+                                            if (leftEl) leftEl.textContent = String(maxCard);
                                             return;
-										}
-                                        
-                                        const apiMax = Number(meta.max_players ?? 0) || 0;
+                                        }
+                            
+                                        const apiMax       = Number(meta.max_players ?? 0) || 0;
                                         const effectiveMax = apiMax > 0 ? apiMax : maxCard;
-                                        
                                         let remainingTotal = Number(meta.remaining_total);
-										
-										if (!Number.isFinite(remainingTotal)) {
-											const registeredTotal = Number(meta.registered_total ?? 0) || 0;
-											remainingTotal = Math.max(0, effectiveMax - registeredTotal);
-										}
-										
-										if (leftEl)  leftEl.textContent  = String(remainingTotal);
-										if (totalEl) totalEl.textContent = String(effectiveMax);
-									}
-									
-									if (leftEl)  leftEl.textContent  = String(remainingTotal);
-									if (totalEl) totalEl.textContent = String(effectiveMax);
-								} catch (e) {}
-							}
-							
-							if (seatLines.length) {
-								const concurrency = 3;
-								let i = 0;
-								
-								async function worker() {
-									while (i < seatLines.length) {
-										const idx = i++;
-										await loadSeatLine(seatLines[idx]);
-									}
-								}
-								
-								for (let k = 0; k < concurrency; k++) worker();
-							}
-							
-							// ===== Days strip =====
-							function activateTab(tabId) {
-								document.querySelectorAll('.tab-pane').forEach(p => p.classList.add('hidden'));
-								const pane = document.getElementById(tabId);
-								if (pane) pane.classList.remove('hidden');
-								
-								document.querySelectorAll('.day-chip').forEach(c => c.classList.remove('active'));
-								const chip = document.querySelector(`.day-chip[data-tab="${tabId}"]`);
-								if (chip) chip.classList.add('active');
-							}
-							
-							document.querySelectorAll('.day-chip').forEach(chip => {
-								chip.addEventListener('click', () => activateTab(chip.dataset.tab));
-							});
-							
-							(function initToday() {
-								const chips = Array.from(document.querySelectorAll('.day-chip'));
-								if (!chips.length) return;
-								
-								const root = document.getElementById('eventsTabsRoot');
-								const todayKey = (root && root.dataset && root.dataset.today) ? root.dataset.today : null;
-								
-								const todayChip = todayKey ? chips.find(c => c.dataset.date === todayKey) : null;
-								
-								if (todayChip) {
-									activateTab(todayChip.dataset.tab);
-									todayChip.scrollIntoView({behavior:'smooth', inline:'center', block:'nearest'});
-									} else {
-									activateTab(chips[0].dataset.tab);
-								}
-							})();
-							
-							
-							
-							// ===== Countdown blocks: "До регистрации осталось" =====
-							function pad2(n){ n = Math.max(0, n|0); return (n<10?'0':'')+n; }
-							
-							function tickCountdown(el){
-								var iso = el.getAttribute('data-target-utc');
-								if (!iso) return;
-								
-								var target = Date.parse(iso);
-								if (isNaN(target)) return;
-								
-								var now = Date.now();
-								var diff = target - now;
-								
-								if (diff <= 0) {
-									el.textContent = 'Регистрация доступна — обнови страницу';
-									return;
-								}
-								
-								var totalMin = Math.floor(diff / 60000);
-								var days = Math.floor(totalMin / (60*24));
-								var minsLeft = totalMin - days*60*24;
-								var hh = Math.floor(minsLeft / 60);
-								var mm = minsLeft - hh*60;
-								
-								var ddEl = el.querySelector('[data-dd]');
-								var hhmmEl = el.querySelector('[data-hhmm]');
-								if (ddEl) ddEl.textContent = String(days);
-								if (hhmmEl) hhmmEl.textContent = pad2(hh) + ':' + pad2(mm);
-							}
-							
-							function tickAllCountdowns(){
-								document.querySelectorAll('[data-countdown]').forEach(tickCountdown);
-							}
-							
-							tickAllCountdowns();
-							setInterval(tickAllCountdowns, 30000);
-
-							// ===== Toggle event image =====
-							var _imgHidden = JSON.parse(localStorage.getItem('eventImgHidden') || '{}');
-							function toggleEventImg(btn) {
-								var wrap = btn.closest('.event-img-wrap');
-								var img = wrap ? wrap.querySelector('.event-card-img') : null;
-								if (!img) return;
-								var isHidden = img.style.display === 'none';
-								img.style.display = isHidden ? '' : 'none';
-								btn.textContent = isHidden ? '\u{1F441}\uFE0F' : '\u{1F648}';
-								localStorage.setItem('eventImgHidden', JSON.stringify({hidden: !isHidden}));
-							}
-							if (_imgHidden.hidden) {
-								document.querySelectorAll('.event-card-img').forEach(function(img){ img.style.display = 'none'; });
-								document.querySelectorAll('.btn-toggle-img').forEach(function(b){ b.textContent = '\u{1F648}'; });
-							}
-						})();
+                            
+                                        if (!Number.isFinite(remainingTotal)) {
+                                            const registeredTotal = Number(meta.registered_total ?? 0) || 0;
+                                            remainingTotal = Math.max(0, effectiveMax - registeredTotal);
+                                        }
+                            
+                                        if (leftEl)  leftEl.textContent  = String(remainingTotal);
+                                        if (totalEl) totalEl.textContent = String(effectiveMax);
+                                    } catch (e) {}
+                                }
+                            
+                                if (seatLines.length) {
+                                    const concurrency = 3;
+                                    let i = 0;
+                                    async function worker() {
+                                        while (i < seatLines.length) { const idx = i++; await loadSeatLine(seatLines[idx]); }
+                                    }
+                                    for (let k = 0; k < concurrency; k++) worker();
+                                }
+                            
+                                // ===== Days strip =====
+                                function activateTab(tabId) {
+                                    document.querySelectorAll('.tab-pane').forEach(p => p.classList.add('hidden'));
+                                    const pane = document.getElementById(tabId);
+                                    if (pane) pane.classList.remove('hidden');
+                                    document.querySelectorAll('.day-chip').forEach(c => c.classList.remove('active'));
+                                    const chip = document.querySelector(`.day-chip[data-tab="${tabId}"]`);
+                                    if (chip) chip.classList.add('active');
+                                }
+                            
+                                document.querySelectorAll('.day-chip').forEach(chip => {
+                                    chip.addEventListener('click', () => activateTab(chip.dataset.tab));
+                                });
+                            
+                                (function initToday() {
+                                    const chips = Array.from(document.querySelectorAll('.day-chip'));
+                                    if (!chips.length) return;
+                                    const root     = document.getElementById('eventsTabsRoot');
+                                    const todayKey = root?.dataset?.today ?? null;
+                                    const todayChip = todayKey ? chips.find(c => c.dataset.date === todayKey) : null;
+                                    if (todayChip) {
+                                        activateTab(todayChip.dataset.tab);
+                                        todayChip.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                                    } else {
+                                        activateTab(chips[0].dataset.tab);
+                                    }
+                                })();
+                            
+                                // ===== Countdown =====
+                                function pad2(n) { n = Math.max(0, n|0); return (n < 10 ? '0' : '') + n; }
+                                function tickCountdown(el) {
+                                    var iso = el.getAttribute('data-target-utc');
+                                    if (!iso) return;
+                                    var target = Date.parse(iso);
+                                    if (isNaN(target)) return;
+                                    var diff = target - Date.now();
+                                    if (diff <= 0) { el.textContent = 'Регистрация доступна — обнови страницу'; return; }
+                                    var totalMin = Math.floor(diff / 60000);
+                                    var days = Math.floor(totalMin / (60*24));
+                                    var minsLeft = totalMin - days*60*24;
+                                    var hh = Math.floor(minsLeft / 60);
+                                    var mm = minsLeft - hh*60;
+                                    var ddEl = el.querySelector('[data-dd]');
+                                    var hhmmEl = el.querySelector('[data-hhmm]');
+                                    if (ddEl) ddEl.textContent = String(days);
+                                    if (hhmmEl) hhmmEl.textContent = pad2(hh) + ':' + pad2(mm);
+                                }
+                                function tickAllCountdowns() {
+                                    document.querySelectorAll('[data-countdown]').forEach(tickCountdown);
+                                }
+                                tickAllCountdowns();
+                                setInterval(tickAllCountdowns, 30000);
+                            
+                                // ===== Toggle ALL photos =====
+                                var _allHidden = JSON.parse(localStorage.getItem('eventImgHidden') || '{}').hidden || false;
+                            
+                                function applyImgState(hidden) {
+                                    document.querySelectorAll('.border.f-0.mb-1').forEach(function(wrap) {
+                                        wrap.style.display = hidden ? 'none' : '';
+                                    });
+                                    var btn = document.getElementById('btn-toggle-all-imgs');
+                                    if (btn) btn.textContent = hidden ? '🙉 Показать фото' : '🙈 Скрыть фото';
+                                    localStorage.setItem('eventImgHidden', JSON.stringify({ hidden: hidden }));
+                                    _allHidden = hidden;
+                                }
+                            
+                                // применяем сохранённое состояние при загрузке
+                                if (_allHidden) applyImgState(true);
+                            
+                                window.toggleAllImgs = function(btn) {
+                                    applyImgState(!_allHidden);
+                                };
+                            
+                            })();
 					</script>
 				</x-slot>	
 				

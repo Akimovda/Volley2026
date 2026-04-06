@@ -100,7 +100,7 @@ class EventIndexService
         
         $occQ->orderBy('starts_at', 'asc');
 
-        $occQ->whereHas('event', function ($q) use ($user,$userId,$isAdmin,$direction,$format,$level) {
+        $occQ->whereHas('event', function ($q) use ($user,$userId,$isAdmin,$direction,$format,$level,$location) {
 
             if (!$isAdmin) {
 

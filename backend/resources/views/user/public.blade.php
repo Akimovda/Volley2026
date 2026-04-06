@@ -46,9 +46,15 @@
 	$canShowContactButtons = $isAuthed && !$isSelf && $allowContact && $hasAnyContact;
 	
 	
-$age = method_exists($user, 'ageYears') && $user->ageYears() 
-    ? $user->ageYears() . ' лет' 
-    : '—';
+$age = '—';
+if (method_exists($user, 'ageYears') && $years = $user->ageYears()) {
+    $ending = match($years % 10) {
+        1 => 'год',
+        2,3,4 => 'года',
+        default => 'лет'
+    };
+    $age = $years . ' ' . $ending;
+}
     
 $birth = $user->birth_date 
     ? $user->birth_date->isoFormat('D MMMM YYYY') 
@@ -188,7 +194,6 @@ $birth = $user->birth_date
 										</li>										
 									</ul>
 								</div>
-								
                                 <div class="col-12">          
 									@auth
 									@if(!$isSelf)
@@ -315,6 +320,17 @@ $birth = $user->birth_date
 							Чтобы написать пользователю в Telegram/VK, нужно войти в аккаунт.
 						</div>
                         @elseif($canShowContactButtons)
+						<div class="d-flex flex-wrap gap-1 fc">
+						
+@auth
+    @if((auth()->user()->isAdmin() || auth()->user()->isOrganizer()) && $user->phone)
+        <a class="btn" href="tel:{{ $user->phone }}">
+            {{ $user->formatted_phone }}
+        </a>
+    @endif
+@endauth	
+						
+						
 							@if($tgUrl)
 							<a class="btn"
 							href="{{ $tgUrl }}" target="_blank" rel="noopener noreferrer">
@@ -328,6 +344,7 @@ $birth = $user->birth_date
 								Написать в VK
 							</a>
 							@endif
+						</div>
                         @endif
 					</div>
 				</div>
