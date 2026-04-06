@@ -795,7 +795,7 @@ $canUploadEventPhotos = auth()->user()?->isAdmin() || auth()->user()?->isOrganiz
 									</form>                                         
                                     @else
                                     <a href="{{ route('users.show', ['user' => $user->id]) }}" class="menu-item">
-                                        <span class="menu-text">Публичная страница пользователя</span>
+                                        <span class="menu-text">Публичный профиль пользователя</span>
 									</a>
                                     
                                     <a href="{{ url('/profile/complete?user_id=' . $user->id) }}" class="menu-item">
@@ -897,12 +897,7 @@ $canUploadEventPhotos = auth()->user()?->isAdmin() || auth()->user()?->isOrganiz
                                             <div class="hover-image-circle"></div>
 										</a>
 									</div>                              
-                                    
-                                    
-                                    
-                                    
-                                    
-                                    
+
                                     
                                     <div class="mt-1 d-flex between fvc">
                                         
@@ -982,6 +977,7 @@ $canUploadEventPhotos = auth()->user()?->isAdmin() || auth()->user()?->isOrganiz
 											<button type="submit" 
 											class="icon-delete btn-alert btn btn-danger btn-svg"
 											data-title="Удалить фото?"
+											data-text="Если в ваших мероприятиях используется эта фотография, она также будет удалена"
 											data-icon="warning"
 											data-confirm-text="Да, удалить"
 											data-cancel-text="Отмена">

@@ -1,251 +1,348 @@
 {{-- resources/views/user/public.blade.php --}}
-<x-app-layout>
-    <x-slot name="header">
-        <div class="flex items-center justify-between gap-4">
-            <div class="min-w-0">
-                <h2 class="font-semibold text-xl text-gray-800 leading-tight truncate">
-                    Профиль игрока
-                </h2>
-                <div class="text-sm text-gray-500 truncate">
-                    {{ method_exists($user, 'displayName') ? $user->displayName() : ($user->name ?? '—') }}
-                </div>
-            </div>
-
-            <div class="flex items-center gap-2">
-                <a href="{{ route('users.index') }}"
-                   class="inline-flex items-center px-4 py-2 rounded-lg font-semibold text-sm border border-gray-200 bg-white hover:bg-gray-50">
-                    ← К списку игроков
-                </a>
-
-                @auth
-                    @if(auth()->id() === $user->id)
-                        <a href="{{ route('user.photos') }}"
-                           class="inline-flex items-center px-4 py-2 rounded-lg font-semibold text-sm bg-indigo-600 text-white hover:bg-indigo-700">
-                            Фото
-                        </a>
-                    @endif
-                @endauth
-            </div>
-        </div>
-    </x-slot>
-
-    {{-- FLASH --}}
-    <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 mt-6">
-        @if (session('status'))
-            <div class="mb-4 p-3 rounded-lg bg-green-50 text-green-800 border border-green-100">
-                {{ session('status') }}
-            </div>
-        @endif
-        @if (session('error'))
-            <div class="mb-4 p-3 rounded-lg bg-red-50 text-red-800 border border-red-100">
-                {{ session('error') }}
-            </div>
-        @endif
-    </div>
-
+<x-voll-layout body_class="user-public-page">
+	
+	
     @php
-        /** @var \App\Models\User $user */
-        $age = method_exists($user, 'ageYears') ? $user->ageYears() : null;
-
-        $posMap = [
-            'setter'   => 'Связующий',
-            'outside'  => 'Доигровщик',
-            'opposite' => 'Диагональный',
-            'middle'   => 'Центральный блокирующий',
-            'libero'   => 'Либеро',
-        ];
-
-        $classicPrimary = optional($user->classicPositions)->firstWhere('is_primary', true)?->position;
-        $classicExtras  = optional($user->classicPositions)->where('is_primary', false)->pluck('position')->values()->all() ?? [];
-
-        $beachPrimary = optional($user->beachZones)->firstWhere('is_primary', true)?->zone;
-        $beachExtras  = optional($user->beachZones)->where('is_primary', false)->pluck('zone')->values()->all() ?? [];
-
-        // --- Contacts logic (аккуратно, без кривых ссылок) ---
-        $allowContact = (bool)($user->allow_user_contact ?? true);
-        $isAuthed = auth()->check();
-        $isSelf = $isAuthed && auth()->id() === $user->id;
-
-        $tgUrl = null;
-        $tgUsername = trim((string)($user->telegram_username ?? ''));
-        if ($tgUsername !== '') {
-            $tgUsername = ltrim($tgUsername, '@');
-            if ($tgUsername !== '') {
-                $tgUrl = 'https://t.me/' . $tgUsername;
-            }
-        }
-
-        $vkUrl = null;
-        $vkId = trim((string)($user->vk_id ?? ''));
-        if ($vkId !== '') {
-            $vkUrl = 'https://vk.com/id' . $vkId;
-        }
-
-        $hasAnyContact = (bool)($tgUrl || $vkUrl);
-
-        // показываем кнопки только если:
-        // - авторизован
-        // - не свой профиль
-        // - пользователь разрешил контакты
-        // - есть хоть один контакт
-        $canShowContactButtons = $isAuthed && !$isSelf && $allowContact && $hasAnyContact;
-    @endphp
-
-    <div class="py-10">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-10">
-
-            {{-- Main card --}}
-            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                <div class="flex items-start gap-6 flex-col md:flex-row">
-                    <div class="flex items-center gap-5">
-                        <img
-                            src="{{ $user->profile_photo_url }}"
-                            alt="avatar"
-                            class="rounded-full border border-gray-100"
-                            style="width:96px;height:96px;object-fit:cover;"
-                        />
-
-                        <div class="min-w-0">
-                            <div class="text-2xl font-bold text-gray-900 truncate">
-                                {{ method_exists($user, 'displayName') ? $user->displayName() : ($user->name ?? '—') }}
-                            </div>
-
-                            <div class="text-sm text-gray-600 mt-1">
-                                @if(!is_null($age))
-                                    {{ $age }} лет
-                                @else
-                                    —
-                                @endif
-                            </div>
-
-                            @if(!empty($user->city))
-                                <div class="text-sm text-gray-600 mt-1">
-                                    {{ $user->city->name }}@if($user->city->region) ({{ $user->city->region }})@endif
-                                </div>
-                            @endif
-                        </div>
-                    </div>
-
-                    <div class="w-full md:w-auto md:ml-auto">
-                        @auth
-                            @if(auth()->id() === $user->id)
-                                <div class="flex gap-2">
-                                    <a href="{{ route('profile.show') }}"
-                                       class="inline-flex items-center px-4 py-2 rounded-lg font-semibold text-sm border border-gray-200 bg-white hover:bg-gray-50">
-                                        Аккаунт
-                                    </a>
-                                    <a href="{{ route('user.photos') }}"
-                                       class="inline-flex items-center px-4 py-2 rounded-lg font-semibold text-sm bg-indigo-600 text-white hover:bg-indigo-700">
-                                        Фото
-                                    </a>
-                                </div>
-                            @endif
-                        @endauth
-                    </div>
-                </div>
-            </div>
-
-            {{-- Skills --}}
-            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                <div class="text-lg font-bold text-gray-900">Навыки в волейболе</div>
-
-                <div class="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="v-card">
-                        <div class="v-card__body space-y-2">
-                            <div class="font-semibold">Классический волейбол</div>
-                            <div class="text-sm">
-                                Уровень:
-                                <span class="font-semibold">{{ $user->classic_level ?? '—' }}</span>
-                            </div>
-                            <div class="text-sm">
-                                Амплуа:
-                                <span class="font-semibold">
-                                    @if($classicPrimary)
-                                        Основное: {{ $posMap[$classicPrimary] ?? $classicPrimary }}
-                                        @if(!empty($classicExtras))
-                                            ; Доп.: {{ collect($classicExtras)->map(fn($p) => $posMap[$p] ?? $p)->join(', ') }}
-                                        @endif
-                                    @else
-                                        —
-                                    @endif
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="v-card">
-                        <div class="v-card__body space-y-2">
-                            <div class="font-semibold">Пляжный волейбол</div>
-                            <div class="text-sm">
-                                Уровень:
-                                <span class="font-semibold">{{ $user->beach_level ?? '—' }}</span>
-                            </div>
-                            <div class="text-sm">
-                                Зона:
-                                <span class="font-semibold">
-                                    @if(!empty($user->beach_universal))
-                                        Универсал (2 и 4)
-                                    @elseif(!is_null($beachPrimary))
-                                        Основная: {{ $beachPrimary }}
-                                        @if(!empty($beachExtras))
-                                            ; Доп.: {{ collect($beachExtras)->join(', ') }}
-                                        @endif
-                                    @else
-                                        —
-                                    @endif
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Contacts --}}
-            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                <div class="text-lg font-bold text-gray-900">Контакты</div>
-                <div class="mt-3 text-sm text-gray-600">
-                    Телефон и прочие приватные данные тут не показываем.
-                </div>
-
+	/** @var \App\Models\User $user */
+	$age = method_exists($user, 'ageYears') ? $user->ageYears() : null;
+	$isSelf = auth()->check() && auth()->id() === $user->id;
+	
+	$posMap = [
+	'setter'   => 'Связующий',
+	'outside'  => 'Доигровщик',
+	'opposite' => 'Диагональный',
+	'middle'   => 'Центральный блокирующий',
+	'libero'   => 'Либеро',
+	];
+	
+	$classicPrimary = optional($user->classicPositions)->firstWhere('is_primary', true)?->position;
+	$classicExtras  = optional($user->classicPositions)->where('is_primary', false)->pluck('position')->values()->all() ?? [];
+	
+	$beachPrimary = optional($user->beachZones)->firstWhere('is_primary', true)?->zone;
+	$beachExtras  = optional($user->beachZones)->where('is_primary', false)->pluck('zone')->values()->all() ?? [];
+	
+	// --- Contacts logic ---
+	$allowContact = (bool)($user->allow_user_contact ?? true);
+	$isAuthed = auth()->check();
+	$isSelf = $isAuthed && auth()->id() === $user->id;
+	
+	$tgUrl = null;
+	$tgUsername = trim((string)($user->telegram_username ?? ''));
+	if ($tgUsername !== '') {
+	$tgUsername = ltrim($tgUsername, '@');
+	if ($tgUsername !== '') {
+	$tgUrl = 'https://t.me/' . $tgUsername;
+	}
+	}
+	
+	$vkUrl = null;
+	$vkId = trim((string)($user->vk_id ?? ''));
+	if ($vkId !== '') {
+	$vkUrl = 'https://vk.com/id' . $vkId;
+	}
+	
+	$hasAnyContact = (bool)($tgUrl || $vkUrl);
+	
+	$canShowContactButtons = $isAuthed && !$isSelf && $allowContact && $hasAnyContact;
+	
+	
+    $age   = method_exists($user, 'ageYears') ? $user->ageYears() : null;
+    $birth = $user->birth_date ? $user->birth_date->format('Y-m-d') : '—';	
+	
+    @endphp	
+	
+    <x-slot name="title">
+        @if($isSelf)
+		Ваш публичный профиль
+        @else
+		Профиль игрока: {{ $user->name }}
+        @endif
+	</x-slot>
+	
+	<x-slot name="description">
+        @if($isSelf)
+		Ваш публичный профиль на платформе
+        @else
+		Профиль игрока {{ $user->name }}
+        @endif
+	</x-slot>
+	
+    <x-slot name="canonical">
+        {{ route('users.show', $user->id) }}
+	</x-slot>
+	
+    <x-slot name="style">
+        <style>
+			
+		</style>
+	</x-slot>
+	
+    <x-slot name="h1">
+        @if($isSelf)
+		Ваш публичный профиль
+        @else
+		Профиль игрока
+        @endif
+	</x-slot>
+	
+    <x-slot name="h2">
+		{{ $user->name }}
+	</x-slot>
+	
+    <x-slot name="t_description">
+        @if($isSelf)
+		Примерно так его видят другие пользователи
+        @else
+		Информация об игроке
+        @endif
+	</x-slot>
+	
+    <x-slot name="breadcrumbs">
+        <li itemprop="itemListElement" itemscope="" itemtype="http://schema.org/ListItem">
+            <a href="{{ route('users.index') }}" itemprop="item">
+                <span itemprop="name">Игроки</span>
+			</a>
+            <meta itemprop="position" content="2">
+		</li>
+        <li itemprop="itemListElement" itemscope="" itemtype="http://schema.org/ListItem">
+            <span itemprop="name">
                 @if($isSelf)
-                    <div class="mt-3 text-sm text-gray-500">
-                        Это ваш профиль — контакты для связи тут не нужны.
-                    </div>
-                @elseif(!$allowContact)
-                    <div class="mt-3 text-sm text-gray-600">
-                        Пользователь запретил связываться с ним через Telegram/VK.
-                    </div>
-                @elseif(!$hasAnyContact)
-                    <div class="mt-3 text-sm text-gray-600">
-                        Пользователь не указал Telegram/VK для связи.
-                    </div>
-                @elseif(!$isAuthed)
-                    <div class="mt-3 p-3 rounded-lg bg-blue-50 text-blue-900 border border-blue-100 text-sm">
-                        Чтобы написать пользователю в Telegram/VK, нужно войти в аккаунт.
-                    </div>
-                @elseif($canShowContactButtons)
-                    <div class="mt-4 flex flex-wrap gap-3">
-                        @if($tgUrl)
-                            <a class="inline-flex items-center px-4 py-2 rounded-lg font-semibold text-sm border border-gray-200 bg-white hover:bg-gray-50"
-                               href="{{ $tgUrl }}" target="_blank" rel="noopener noreferrer">
-                                Написать в Telegram
-                            </a>
-                        @endif
-
-                        @if($vkUrl)
-                            <a class="inline-flex items-center px-4 py-2 rounded-lg font-semibold text-sm border border-gray-200 bg-white hover:bg-gray-50"
-                               href="{{ $vkUrl }}" target="_blank" rel="noopener noreferrer">
-                                Написать в VK
-                            </a>
-                        @endif
-                    </div>
-
-                    <div class="mt-2 text-xs text-gray-500">
-                        Откроется в новой вкладке.
-                    </div>
+				Ваш публичный профиль
+                @else
+				{{ $user->name }}
                 @endif
-            </div>
-
-        </div>
-    </div>
-</x-app-layout>
+			</span>
+            <meta itemprop="position" content="2">
+		</li>
+	</x-slot>
+	
+    <x-slot name="script">
+        <script>
+            // Дополнительные скрипты при необходимости
+		</script>
+	</x-slot>
+	
+	
+    <div class="container">
+		
+		{{-- FLASH --}}
+		@if (session('status'))
+		<div class="ramka">
+			<div class="alert alert-success mb-4">
+				{{ session('status') }}
+			</div>
+		</div>
+		@endif
+		@if (session('error'))
+		<div class="ramka">
+			<div class="alert alert-danger mb-4">
+				{{ session('error') }}
+			</div>
+		</div>
+		@endif	
+		
+		
+        <div class="row row2">
+            {{-- SIDEBAR (левая колонка) --}}
+            <div class="col-lg-4 col-xl-3 order-1 order-lg-2">
+                <div class="sticky">
+                    <div class="ramka">
+                        <div class="card-body">
+                            <div class="row row2">
+                                <div class="col-12 text-center">
+									<div class="profile-avatar">
+										<img
+										src="{{ $user->profile_photo_url }}"
+										alt="avatar"
+										class="avatar"
+										/>			
+									</div>
+								</div>
+								<div class="col-12">    
+									<ul class="list mb-0 mt-2">	
+										<li><span class="b-600">Фамилия:</span> {{ $user->last_name ?? '—' }}</li>
+										<li><span class="b-600">Имя:</span> {{ $user->first_name ?? '—' }}</li>
+										@if(auth()->user()->isAdmin() || auth()->user()->isOrganizer())		
+										<li><span class="b-600">Отчество:</span> {{ $user->patronymic ?? '—' }}</li>
+										@endif	
+										<li><span class="b-600">Пол:</span>
+											@if($user->gender === 'm') Мужчина
+											@elseif($user->gender === 'f') Женщина
+											@else — @endif										
+										</li>
+										<li><span class="b-600">Рост:</span> {{ !empty($user->height_cm) ? ($user->height_cm.' см') : '—' }}</li>
+										<li><span class="b-600">Город:</span>
+											@if($user->city)
+											{{ $user->city->name }}@if($user->city->region) ({{ $user->city->region }})@endif
+											@else
+											—
+										@endif</li>
+										<li><span class="b-600">Дата рождения:</span> {{ $birth }} 	
+										</li>
+										<li><span class="b-600">Возраст:</span>	
+											@if(!is_null($age))
+											({{ $age }} лет)
+											@endif										
+										</li>										
+									</ul>
+								</div>
+								
+                                <div class="col-12">          
+									@auth
+									@if(!$isSelf)
+									@if(auth()->user()->isAdmin() || auth()->user()->isOrganizer())		
+									<hr class="mt-1 mb-1">
+									<nav class="menu-nav">   		
+										<a href="{{ url('/profile/complete?user_id=' . $user->id) }}" class="menu-item">
+											<span class="menu-text">
+												@if(auth()->user()->isAdmin())
+												Редактировать пользователя
+												@else
+												Настроить уровни
+												@endif
+											</span>
+										</a>
+										@if(auth()->user()->isAdmin())       
+										<a href="{{ url('/user/photos?user_id=' . $user->id) }}" class="menu-item">
+											<span class="menu-text">
+												Редактировать фото пользователя
+											</span>
+										</a>											
+										@endif	
+									</nav>
+									@endif
+									@endif
+									
+									
+									@endauth	
+								</div>  
+							</div>
+						</div>
+					</div>
+				</div>   
+			</div>
+			
+            {{-- MAIN CONTENT (правая колонка) --}}
+            <div class="col-lg-8 col-xl-9 order-2 order-lg-1">
+				
+                {{-- Skills --}}
+				<div class="ramka">  	
+					<h2 class="-mt-05">Навыки в волейболе</h2>
+					<div class="row">
+						<div class="col-md-6 col-lg-12 col-xl-6">
+							<div class="card">
+								<p class="b-600 mb-1">Классический волейбол</p>
+								
+								<div class="level-wrap">
+									<div class="level-levelmark levelmark level-{{ $user->classic_level ?? '—' }}">
+										<div class="f-11">Уровень: </div>
+										<div class="f-22 l-13">{{ $user->classic_level ?? '—' }}</div>
+										<div class="f-11">{{ level_name($user->classic_level) ?? '—' }}</div>
+									</div>	
+									<div class="level-level">	
+										<ul class="list">
+											<li>
+												<span class="b-600">Амплуа игрока:</span><br>
+												
+												@if($classicPrimary)
+												{{ $posMap[$classicPrimary] ?? $classicPrimary }}
+												@if(!empty($classicExtras))
+												</li><li><span class="b-600">Дополнительно:</span><br>{{ collect($classicExtras)->map(fn($p) => $posMap[$p] ?? $p)->join(', ') }}
+												@endif
+												@else
+												—
+												@endif
+											</li>
+										</ul>
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="col-md-6 col-lg-12 col-xl-6">
+							<div class="card">
+								<p class="b-600 mb-1">Пляжный волейбол</p>
+								
+								
+								<div class="level-wrap">
+									<div class="level-levelmark levelmark level-{{ $user->beach_level ?? '—' }}">
+										<div class="f-11">Уровень: </div>
+										<div class="f-22 l-13">{{ $user->beach_level ?? '—' }}</div>
+										<div class="f-11">{{ level_name($user->beach_level) ?? '—' }}</div>
+									</div>	
+									<div class="level-level">	
+										<ul class="list">
+											<li>
+												<span class="b-600">Зона игры:</span><br>
+												
+												
+												@if(!empty($user->beach_universal))
+												Универсал (2 и 4)
+												@elseif(!is_null($beachPrimary))
+												Основная: {{ $beachPrimary }}
+												@if(!empty($beachExtras))
+												; Доп.: {{ collect($beachExtras)->join(', ') }}
+												@endif
+												@else
+												—
+												@endif
+												
+											</li>
+										</ul>
+									</div>
+								</div>								
+							</div>
+						</div>
+					</div>
+				</div>	
+				
+                {{-- Contacts --}}
+                <div class="ramka">
+                    <div class="card-body">
+                        <div class="fs-5 fw-bold mb-2">Контакты</div>
+                        <div class="text-muted small mb-3">
+                            Телефон и прочие приватные данные тут не показываем.
+						</div>
+                        
+                        @if($isSelf)
+						<div class="text-muted small">
+							Это ваш профиль — контакты для связи тут не нужны.
+						</div>
+                        @elseif(!$allowContact)
+						<div class="text-muted small">
+							Пользователь запретил связываться с ним через Telegram/VK.
+						</div>
+                        @elseif(!$hasAnyContact)
+						<div class="text-muted small">
+							Пользователь не указал Telegram/VK для связи.
+						</div>
+                        @elseif(!$isAuthed)
+						<div class="alert alert-info">
+							Чтобы написать пользователю в Telegram/VK, нужно войти в аккаунт.
+						</div>
+                        @elseif($canShowContactButtons)
+						<div class="d-flex flex-wrap gap-2 mt-3">
+							@if($tgUrl)
+							<a class="btn btn-outline-secondary"
+							href="{{ $tgUrl }}" target="_blank" rel="noopener noreferrer">
+								Написать в Telegram
+							</a>
+							@endif
+							
+							@if($vkUrl)
+							<a class="btn btn-outline-secondary"
+							href="{{ $vkUrl }}" target="_blank" rel="noopener noreferrer">
+								Написать в VK
+							</a>
+							@endif
+						</div>
+						<div class="text-muted small mt-2">
+							Откроется в новой вкладке.
+						</div>
+                        @endif
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+    
+</x-voll-layout>

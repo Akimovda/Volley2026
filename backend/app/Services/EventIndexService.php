@@ -133,7 +133,23 @@ class EventIndexService
             $this->visibility->applyPrivateVisibilityScope($q, $user, '');
         });
 
-        $occurrences = $occQ->paginate(30);
+        // Берём ближайшие 10 уникальных дат
+        $allDates = (clone $occQ)
+            ->reorder()
+            ->selectRaw('DATE(starts_at) as day')
+            ->groupBy('day')
+            ->orderBy('day')
+            ->limit(10)
+            ->pluck('day');
+
+        if ($allDates->isEmpty()) {
+            $occurrences = $occQ->paginate(30);
+        } else {
+            $lastDate = $allDates->last();
+            $occurrences = $occQ
+                ->whereDate('starts_at', '<=', $lastDate)
+                ->paginate(500);
+        }
 
         /*
         |--------------------------------------------------------------------------

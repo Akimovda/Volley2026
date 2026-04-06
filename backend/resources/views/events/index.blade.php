@@ -232,28 +232,46 @@ $groupedByDate[$dateKey] = ['date' => $date, 'occurrences' => []];
 			<div class="users-filter">
 				<div class="ramka">
 					<div class="form">
+						@php
+						$fDir      = request('direction', '');
+						$fFormat   = request('format', '');
+						$fLevel    = request('level', '');
+						$fLocation = request('location', '');
+
+						$formatLabels = [
+							'game'               => 'Игра',
+							'training'           => 'Тренировка',
+							'training_game'      => 'Тренировка + игра',
+							'training_pro_am'    => 'Про-ам тренировка',
+							'coach_student'      => 'Тренер + ученик',
+							'tournament'         => 'Турнир',
+							'tournament_classic' => 'Турнир (классика)',
+							'tournament_beach'   => 'Турнир (пляж)',
+							'camp'               => 'Кемп',
+						];
+						@endphp
 						<form method="GET" action="{{ route('events.index') }}">
-							<div class="row">
-								<div class="col-12 col-md-4">
+							<div class="row g-2">
+								<div class="col-12 col-md-3">
 									<label class="form-label mb-1">Направление</label>
 									<select name="direction" class="form-select">
 										<option value="" {{ $fDir==='' ? 'selected' : '' }}>Все</option>
-										<option value="classic" {{ $fDir==='classic' ? 'selected' : '' }}>Классика</option>
-										<option value="beach" {{ $fDir==='beach' ? 'selected' : '' }}>Пляжка</option>
+										<option value="classic" {{ $fDir==='classic' ? 'selected' : '' }}>🏐 Классика</option>
+										<option value="beach" {{ $fDir==='beach' ? 'selected' : '' }}>🏖 Пляжка</option>
 									</select>
 								</div>
-								
-								<div class="col-12 col-md-4">
+
+								<div class="col-12 col-md-3">
 									<label class="form-label mb-1">Тип мероприятия</label>
 									<select name="format" class="form-select">
 										<option value="" {{ $fFormat==='' ? 'selected' : '' }}>Все</option>
-										@foreach(($formatOptions ?? []) as $k => $title)
-										<option value="{{ e($k) }}" {{ $fFormat===$k ? 'selected' : '' }}>{{ e($title) }}</option>
+										@foreach($formatLabels as $k => $lbl)
+										<option value="{{ $k }}" {{ $fFormat===$k ? 'selected' : '' }}>{{ $lbl }}</option>
 										@endforeach
 									</select>
 								</div>
-								
-								<div class="col-12 col-md-4">
+
+								<div class="col-12 col-md-2">
 									<label class="form-label mb-1">Уровень</label>
 									<select name="level" class="form-select">
 										<option value="" {{ $fLevel==='' ? 'selected' : '' }}>Любой</option>
@@ -262,12 +280,24 @@ $groupedByDate[$dateKey] = ['date' => $date, 'occurrences' => []];
 										@endforeach
 									</select>
 								</div>
-								
-								<div class="col-12 text-right m-center">
+
+								<div class="col-12 col-md-4">
+									<label class="form-label mb-1">Локация</label>
+									<input type="text"
+										name="location"
+										class="form-control"
+										placeholder="Название или адрес…"
+										value="{{ e($fLocation) }}"
+										id="filter-location-input"
+									>
+								</div>
+
+								<div class="col-12 d-flex flex-wrap gap-2 align-items-center">
 									<button type="submit" class="btn">Применить</button>
-									
 									<a href="{{ route('events.index') }}" class="btn btn-secondary">Сброс</a>
-									
+									<button type="button" id="btn-toggle-all-imgs" class="btn btn-outline-secondary ms-auto" onclick="toggleAllImgs(this)">
+										🙈 Скрыть фото
+									</button>
 								</div>
 							</div>
 						</form>
@@ -726,76 +756,58 @@ $groupedByDate[$dateKey] = ['date' => $date, 'occurrences' => []];
 														
 														<div class="mt-3 d-flex flex-wrap gap-2 align-items-center">
 															
-															{{-- ======= АВТОРИЗОВАН ======= --}}
-															@auth
-															
-															{{-- === УЖЕ ЗАПИСАН === --}}
-															@if ($isJoined)
-															
-															@if ($cancel->allowed)
-															<form method="POST" action="{{ route('occurrences.leave', ['occurrence' => $occ->id]) }}">
-																@csrf
-																@method('DELETE')
-																<button type="submit" class="btn btn-outline-secondary">
-																	Отменить запись
-																</button>
-															</form>
-															@else
-															<div class="small text-danger fw-semibold">
-																{{ $cancel->message }}
-															</div>
-															@endif
-															
-															{{-- === НЕ ЗАПИСАН === --}}
-															@else
-															
-															@if (! $join->allowed)
-															<button class="btn btn-primary" disabled style="opacity:.55;cursor:not-allowed;">
-																Записаться
-															</button>
-															
-															@if ($join->message)
-															<div class="w-100 small text-muted mt-1">
-																{{ $join->message }}
-															</div>
-															@endif
-															
-															@else
-															{{-- МОЖНО ЗАПИСАТЬСЯ --}}
-															@if (!$requiresPositionChoice)
-															<form method="POST" action="{{ route('occurrences.join', ['occurrence' => $occ->id]) }}">
-																@csrf
-																<button type="submit" class="btn btn-primary">
-																	Записаться
-																</button>
-															</form>
-															@else
-															<button
-															type="button"
-															class="btn btn-primary js-open-join"
-															data-occurrence-id="{{ (int)$occ->id }}"
-															data-title="{{ e($event?->title ?? '') }}"
-															data-date="{{ e($dt['date']) }}"
-															data-time="{{ e($dt['time']) }}"
-															data-tz="{{ e($dt['tzLabel'] ?? $dt['tz']) }}"
-															data-address="{{ e($address) }}"
-															>
-																Записаться
-															</button>
-															@endif
-															@endif
-															
-															@endif
-															
-															{{-- ======= ГОСТЬ ======= --}}
-															@else
-															<button class="btn btn-primary" disabled style="opacity:.55">
-																Записаться
-															</button>
-															<div class="small text-muted mt-1">
-																Только для авторизованных пользователей
-															</div>
-															@endauth
+@php
+    $eventStarted2   = $startsAtUtc ? $nowUtc->gte($startsAtUtc) : false;
+    $regClosed2      = $regEndsUtc ? $nowUtc->gte($regEndsUtc) : false;
+@endphp
+
+@if ($eventStarted2)
+<div class="small fw-semibold text-warning">🎉 Мероприятие уже началось</div>
+
+@elseif (!auth()->check())
+<div class="small fw-semibold text-muted">🔐 Вам нужно войти на сайт!</div>
+
+@elseif ($isJoined)
+@if ($cancel->allowed)
+<form method="POST" action="{{ route('occurrences.leave', ['occurrence' => $occ->id]) }}">
+@csrf
+@method('DELETE')
+<button type="submit" class="btn btn-outline-secondary">Отменить запись</button>
+</form>
+@else
+<div class="small text-danger fw-semibold">{{ $cancel->message ?? 'Отмена недоступна' }}</div>
+@endif
+
+@elseif ($regClosed2)
+<div class="small fw-semibold text-danger">❗️ Для записи Вам необходима помощь организатора</div>
+
+@elseif (!$join->allowed)
+<button class="btn btn-primary" disabled style="opacity:.55;cursor:not-allowed;">Записаться</button>
+@if ($join->message)
+<div class="w-100 small text-muted mt-1">{{ $join->message }}</div>
+@endif
+
+@else
+@if (!$requiresPositionChoice)
+<form method="POST" action="{{ route('occurrences.join', ['occurrence' => $occ->id]) }}">
+@csrf
+<button type="submit" class="btn btn-primary">Записаться</button>
+</form>
+@else
+<button
+type="button"
+class="btn btn-primary js-open-join"
+data-occurrence-id="{{ (int)$occ->id }}"
+data-title="{{ e($event?->title ?? '') }}"
+data-date="{{ e($dt['date']) }}"
+data-time="{{ e($dt['time']) }}"
+data-tz="{{ e($dt['tzLabel'] ?? $dt['tz']) }}"
+data-address="{{ e($address) }}"
+>
+Записаться
+</button>
+@endif
+@endif
 														</div>
 														
 														
@@ -1132,6 +1144,22 @@ $groupedByDate[$dateKey] = ['date' => $date, 'occurrences' => []];
 							
 							tickAllCountdowns();
 							setInterval(tickAllCountdowns, 30000);
+
+							// ===== Toggle event image =====
+							var _imgHidden = JSON.parse(localStorage.getItem('eventImgHidden') || '{}');
+							function toggleEventImg(btn) {
+								var wrap = btn.closest('.event-img-wrap');
+								var img = wrap ? wrap.querySelector('.event-card-img') : null;
+								if (!img) return;
+								var isHidden = img.style.display === 'none';
+								img.style.display = isHidden ? '' : 'none';
+								btn.textContent = isHidden ? '\u{1F441}\uFE0F' : '\u{1F648}';
+								localStorage.setItem('eventImgHidden', JSON.stringify({hidden: !isHidden}));
+							}
+							if (_imgHidden.hidden) {
+								document.querySelectorAll('.event-card-img').forEach(function(img){ img.style.display = 'none'; });
+								document.querySelectorAll('.btn-toggle-img').forEach(function(b){ b.textContent = '\u{1F648}'; });
+							}
 						})();
 					</script>
 				</x-slot>	

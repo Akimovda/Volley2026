@@ -7,6 +7,7 @@ use App\Models\EventOccurrence;
 use App\Models\User;
 use App\Services\UserNotificationService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class EventRegistrationInviteController extends Controller
 {
@@ -22,21 +23,13 @@ class EventRegistrationInviteController extends Controller
         }
 
         $data = $request->validate([
-            'to_user_id'    => ['required', 'integer', 'min:1'],
+            'to_user_ids'   => ['required', 'array', 'min:1', 'max:20'],
+            'to_user_ids.*' => ['integer', 'min:1'],
             'occurrence_id' => ['required', 'integer', 'min:1'],
         ]);
 
-        $toUserId    = (int) $data['to_user_id'];
         $occurrenceId = (int) $data['occurrence_id'];
-
-        if ($toUserId === (int) $user->id) {
-            return back()->with('error', 'Нельзя пригласить самого себя.');
-        }
-
-        $toUser = User::query()->find($toUserId);
-        if (!$toUser) {
-            return back()->with('error', 'Пользователь не найден.');
-        }
+        $toUserIds    = array_unique(array_map('intval', $data['to_user_ids']));
 
         $occurrence = EventOccurrence::query()
             ->where('id', $occurrenceId)
@@ -47,30 +40,84 @@ class EventRegistrationInviteController extends Controller
             return back()->with('error', 'Occurrence не найден.');
         }
 
+        // Уже записанные на это occurrence
+        $registeredUserIds = DB::table('event_registrations')
+            ->where('occurrence_id', $occurrenceId)
+            ->where(function ($q) {
+                $q->whereNull('cancelled_at')
+                  ->where(function ($q2) {
+                      $q2->whereNull('status')->orWhere('status', 'confirmed');
+                  });
+            })
+            ->pluck('user_id')
+            ->map(fn ($id) => (int) $id)
+            ->toArray();
+
         $eventUrl = route('events.show', [
             'event'      => (int) $event->id,
             'occurrence' => $occurrenceId,
         ]);
 
-        // Если приватное — даём приватную ссылку
         if (!empty($event->is_private) && !empty($event->public_token)) {
             $eventUrl = route('events.public', ['token' => $event->public_token]);
         }
 
-        try {
-            $this->notificationService->createEventInviteNotification(
-                toUserId:    $toUserId,
-                fromUserId:  (int) $user->id,
-                eventId:     (int) $event->id,
-                occurrenceId: $occurrenceId,
-                eventTitle:  (string) $event->title,
-                eventUrl:    $eventUrl,
-            );
+        $sent    = 0;
+        $skipped = [];
+        $errors  = [];
 
-            return back()->with('status', "Приглашение отправлено игроку {$toUser->name}.");
-        } catch (\Throwable $e) {
-            report($e);
-            return back()->with('error', 'Не удалось отправить приглашение: ' . $e->getMessage());
+        foreach ($toUserIds as $toUserId) {
+            if ($toUserId === (int) $user->id) {
+                $skipped[] = '😉 Вы уже записаны!';
+                continue;
+            }
+
+            if (in_array($toUserId, $registeredUserIds, true)) {
+                $toUser = User::query()->find($toUserId);
+                $name   = $toUser?->name ?: ('#' . $toUserId);
+                $skipped[] = "😉 {$name} уже записан на это мероприятие!";
+                continue;
+            }
+
+            $toUser = User::query()->find($toUserId);
+            if (!$toUser) {
+                continue;
+            }
+
+            try {
+                $this->notificationService->createEventInviteNotification(
+                    toUserId:     $toUserId,
+                    fromUserId:   (int) $user->id,
+                    eventId:      (int) $event->id,
+                    occurrenceId: $occurrenceId,
+                    eventTitle:   (string) $event->title,
+                    eventUrl:     $eventUrl,
+                );
+                $sent++;
+            } catch (\Throwable $e) {
+                report($e);
+                $errors[] = $toUser->name . ': ' . $e->getMessage();
+            }
         }
+
+        $parts = [];
+
+        if ($sent > 0) {
+            $parts[] = "✅ Приглашения отправлены: {$sent} игрок(ам).";
+        }
+
+        if (!empty($skipped)) {
+            $parts = array_merge($parts, $skipped);
+        }
+
+        if (!empty($errors)) {
+            $parts[] = 'Ошибки: ' . implode('; ', $errors);
+        }
+
+        if ($sent === 0 && empty($skipped)) {
+            return back()->with('error', 'Не удалось отправить ни одного приглашения.');
+        }
+
+        return back()->with('status', implode(' ', $parts));
     }
 }

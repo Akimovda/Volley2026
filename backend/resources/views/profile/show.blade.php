@@ -569,7 +569,7 @@
                 
                     <div class="row provider-cards">
                         {{-- Telegram --}}
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <div class="card">
                                 <div class="provider-card__header">
                                     <span class="provider-card__icon icon-tg"></span>
@@ -634,7 +634,7 @@
                 
 
                         {{-- MAX --}}
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <div class="card">
                                 <div class="provider-card__header">
                                     <span class="provider-card__icon icon-max"></span>
@@ -691,11 +691,11 @@
                         </div>
 						
                         {{-- VK --}}
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <div class="card">
                                 <div class="provider-card__header">
                                     <span class="provider-card__icon icon-vk"></span>
-                                    <span class="provider-card__title">Уведомления во VK</span>
+                                    <span class="provider-card__title">Уведомления в VK</span>
                                 </div>
                         
                                 @if($hasVkNotify)
@@ -728,10 +728,10 @@
                                     <ul class="list f-16">
                                         <li>Хотите получать уведомления во <b>VK</b>?</li>
                                     </ul>
-                                
+                              
                                     <button type="button" id="connect-vk-btn" class="w-100 btn btn-small">
-                                        Открыть VK и скопировать команду
-                                    </button>
+                                         Подключить VK
+                                    </button>					
                                 
                                     <div id="connect-vk-result" class="mt-1 hidden">
                                         <ul class="list f-16">
@@ -742,6 +742,8 @@
                                             <li>После этого личные уведомления подключатся автоматически</li>
                                         </ul>
                                 
+							
+								
                                         <a
                                             style="word-break: break-all"
                                             id="connect-vk-link"
@@ -752,11 +754,9 @@
                                         ></a>
                                 
                                         <div id="connect-vk-command-box" class="mt-1 hidden">
-                                            <div class="f-14 text-muted">Команда для бота:</div>
+                                            <div class="f-16 text-muted">Команда для бота (скопирована в буфер):</div>
                                             <div style="overflow-wrap:break-word" id="connect-vk-command" class="f-16 b-600"></div>
-                                            <div id="connect-vk-copy-hint" class="f-14 text-muted mt-05 hidden">
-                                                Команда скопирована в буфер обмена.
-                                            </div>
+                                            <div id="connect-vk-copy-hint" class="f-14 text-muted mt-05 hidden"></div>
                                         </div>
                                     </div>
                                 @endif
@@ -1027,7 +1027,7 @@ document.addEventListener('DOMContentLoaded', function () {
             commandBoxId: 'connect-vk-command-box',
             commandId: 'connect-vk-command',
             copyHintId: 'connect-vk-copy-hint',
-            autoOpenLink: true,
+            autoOpenLink: false,
         }
     );
 });

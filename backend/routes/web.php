@@ -272,6 +272,9 @@ use App\Http\Controllers\EventRegistrationInviteController;
 		Route::delete('/occurrences/{occurrence}/leave', [EventRegistrationController::class, 'destroyOccurrence'])
         ->name('occurrences.leave');
 
+    Route::post('/events/{event}/invite', [EventRegistrationInviteController::class, 'store'])
+        ->name('events.invite');
+
 Route::post('/events/{event}/invite', [EventRegistrationInviteController::class, 'store'])
     ->name('events.invite');
 		

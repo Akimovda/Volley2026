@@ -3924,3 +3924,83 @@ body.dark .swiper-pagination-bullet {
 	background: #E7612F;
 	border: 0.4rem solid #222333;
 }
+.wizard-wrap {
+	padding: 2rem 0 0;
+	position: relative;
+}
+#wizard_percent {
+	display: flex;
+	flex-flow: column;
+	align-items: center;
+	justify-content: center;
+	height: 5rem;
+	width: 5rem;
+	top: 0;
+	border-radius: 50%; 
+	right: 0;
+	background: rgba(255,255,255,0.8);
+	box-shadow: 0 1rem 2.2rem rgba(0, 0, 0, 0.05), 0 0.5rem 1.2rem rgba(0, 0, 0, 0.03);
+	position: absolute;
+}
+body.dark #wizard_percent {	
+	background: #222333;
+}
+.progress-pill { background: rgba(17,24,39,0.06); border: 1px solid rgba(17,24,39,0.08); }
+.pill.is-active { border-color: rgba(59,130,246,0.55) !important; background: rgba(59,130,246,0.06); color: #111827; }
+.pill.is-done { border-color: rgba(16,185,129,0.45) !important; background: rgba(16,185,129,0.06); color: #065f46; }
+.ac-box { position: relative; }
+.ac-dd { position:absolute; left:0; right:0; top: calc(100% + 6px); z-index:50; background:#fff; border:1px solid rgba(17,24,39,0.12); border-radius:12px; overflow:hidden; box-shadow: 0 12px 28px rgba(15,23,42,0.10); display:none; }
+.ac-item { padding:10px 12px; cursor:pointer; display:flex; justify-content:space-between; gap:10px; }
+.ac-item:hover { background: rgba(59,130,246,0.06); }
+.ac-meta { font-size:12px; color:#6b7280; }
+
+#wizard_bar {
+	transition: width .25s ease, background-color .25s ease;
+	height: 1rem;
+	border-radius: 1rem;
+}			
+.wizard-line {
+	background: rgba(255,255,255,0.8);
+	width: 100%;
+	height: 1rem;
+	border-radius: 1rem;
+}
+body.dark .wizard-line {
+	background: #222333;
+}				
+.trainer-chip-remove {
+	width: 2rem;
+	height: 2rem;
+	padding: 0;
+	display: flex;
+	flex-flow: column;
+	align-items: center;
+	justify-content: center;				
+}
+.location_preview {
+	display: flex;
+	flex-flow: column;
+	align-items: center;
+	justify-content: center;	
+	aspect-ratio: 16 / 11;
+}
+.location_preview img {
+	object-fit: cover;
+	width: 100%;
+	height: 100%;
+}
+.location_preview svg {
+	fill: #2967BA;
+	width: 6rem;
+	height: 6rem;
+}	
+body.dark .location_preview svg {
+	fill: #E7612F;
+}
+
+.wizard-pill.is-active {
+	color: #2967BA;
+}
+body.dark .wizard-pill.is-active {
+	color: #E7612F;
+}	

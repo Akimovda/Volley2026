@@ -1,8 +1,8 @@
 
 <script src="/assets/fas.js"></script>    
 
-<script src="https://cdn.jsdelivr.net/npm/pusher-js@8/dist/web/pusher.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/laravel-echo@1/dist/echo.iife.js"></script>
+<script src="/js/pusher.min.js"></script>
+<script src="/js/echo.iife.js"></script>
 <script>
 	
 	// Инициализация Swiper для галереи

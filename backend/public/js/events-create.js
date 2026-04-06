@@ -273,51 +273,8 @@ document.addEventListener("trix-file-accept", function (event) {
 			fmtEl.value = 'game';
 		}
 	}
-	// ========== 3.1 НАСТРОЙКИ ПО УМОЛЧАНИЮ  ==========
-function applyDirectionDefaults(force) {
-    var direction = dirEl ? String(dirEl.value || '') : '';
-    force = !!force;
-    
-    if (direction === 'beach') {
-        if (gameSubtype && (force || !trim(gameSubtype.value || ''))) gameSubtype.value = '2x2';
-        if (teamsEl && (force || !trim(teamsEl.value || ''))) teamsEl.value = '3';
-        if (gameMinEl) gameMinEl.value = '4';  // Убрали проверку на пустоту
-    } else {
-        if (gameSubtype && (force || !trim(gameSubtype.value || ''))) gameSubtype.value = '4x2';
-        if (teamsEl && (force || !trim(teamsEl.value || ''))) teamsEl.value = '2';
-        if (gameMinEl) gameMinEl.value = '8';  // Убрали проверку на пустоту
-    }
-}
 
-function applySubtypeDefaults(force) {
-    var direction = dirEl ? String(dirEl.value || '') : '';
-    var subtype = gameSubtype ? String(gameSubtype.value || '') : '';
-    force = !!force;
-    
-    if (direction === 'beach') {
-        if (subtype === '2x2') {
-            if (teamsEl && (force || !trim(teamsEl.value || ''))) teamsEl.value = '3';
-            if (gameMinEl) gameMinEl.value = '4';  // Всегда устанавливаем
-        } else if (subtype === '3x3') {
-            if (teamsEl && (force || !trim(teamsEl.value || ''))) teamsEl.value = '2';
-            if (gameMinEl) gameMinEl.value = '4';  // Всегда устанавливаем
-        } else if (subtype === '4x4') {
-            if (teamsEl && (force || !trim(teamsEl.value || ''))) teamsEl.value = '2';
-            if (gameMinEl) gameMinEl.value = '6';  // Всегда устанавливаем
-        }
-    } else {
-        if (subtype === '4x4') {
-            if (teamsEl && (force || !trim(teamsEl.value || ''))) teamsEl.value = '2';
-            if (gameMinEl) gameMinEl.value = '6';  // Всегда устанавливаем
-        } else if (subtype === '4x2') {
-            if (teamsEl && (force || !trim(teamsEl.value || ''))) teamsEl.value = '2';
-            if (gameMinEl) gameMinEl.value = '8';  // Всегда устанавливаем
-        } else if (subtype === '5x1' || subtype === '5x1_libero') {
-            if (teamsEl && (force || !trim(teamsEl.value || ''))) teamsEl.value = '2';
-            if (gameMinEl) gameMinEl.value = '8';  // Всегда устанавливаем
-        }
-    }
-}
+
 	// ========== 4. ОСНОВНЫЕ ФУНКЦИИ ==========
 	
 	function setActivePills(step) {
@@ -2176,62 +2133,71 @@ function applySubtypeDefaults(force) {
 		totalPlayers + '</b>';
 	}
 	
-	function recalcPlayers() {
-		var cfg = window.volleyballConfig || {};
-		
-		var dirEl2 = document.getElementById('direction');
-		var subtypeEl2 = document.getElementById('game_subtype');
-		var teamsEl2 = document.getElementById('teams_count');
-		
-		var direction = dirEl2 ? dirEl2.value : '';
-		var subtype = subtypeEl2 ? subtypeEl2.value : '';
-		var teams = parseInt(teamsEl2 ? teamsEl2.value : 2);
-		
-		if (!direction || !subtype) {
-			return;
-		}
-		
-		var playersPerTeam = 0;
-		
-		if (
-			cfg[direction] &&
-			cfg[direction].subtypes &&
-			cfg[direction].subtypes[subtype]
-			) {
-			var subtypeCfg = cfg[direction].subtypes[subtype];
-			playersPerTeam = subtypeCfg.players_per_team || 0;
-			
-			var liberoModeEl = document.getElementById('game_libero_mode');
-			var liberoMode = liberoModeEl ? liberoModeEl.value : '';
-			
-			if (subtype === '5x1' && liberoMode === 'with_libero') {
-				playersPerTeam += 1;
-			}
-		}
-		
-		var maxPlayers = playersPerTeam * teams;
-		
-		var maxEl = document.getElementById('game_max_players');
-		
-		if (maxEl) {
-			if (!maxEl.dataset.listener) {
-				maxEl.addEventListener('input', function () {
-					this.dataset.manual = "1";
-				});
-				maxEl.dataset.listener = "1";
-			}
-			
-			if (!maxEl.dataset.manual) {
-				maxEl.value = maxPlayers;
-			}
-		}
-		
-		var preview = document.getElementById('players_preview');
-		
-		if (preview) {
-			preview.textContent = maxPlayers + " игроков";
-		}
-	}
+function recalcPlayers() {
+    var cfg = window.volleyballConfig || {};
+    
+    var dirEl2 = document.getElementById('direction');
+    var subtypeEl2 = document.getElementById('game_subtype');
+    var teamsEl2 = document.getElementById('teams_count');
+    
+    var direction = dirEl2 ? dirEl2.value : '';
+    var subtype = subtypeEl2 ? subtypeEl2.value : '';
+    var teams = parseInt(teamsEl2 ? teamsEl2.value : 2);
+    
+    if (!direction || !subtype) {
+        return;
+    }
+    
+    // ДОБАВЛЯЕМ установку минимума из конфига
+    if (cfg[direction] && cfg[direction].subtypes && cfg[direction].subtypes[subtype]) {
+        var subtypeCfg = cfg[direction].subtypes[subtype];
+        var minEl = document.getElementById('game_min_players');
+        if (minEl && subtypeCfg.min_players) {
+            minEl.value = subtypeCfg.min_players;
+        }
+    }
+    
+    var playersPerTeam = 0;
+    
+    if (
+        cfg[direction] &&
+        cfg[direction].subtypes &&
+        cfg[direction].subtypes[subtype]
+        ) {
+        var subtypeCfg = cfg[direction].subtypes[subtype];
+        playersPerTeam = subtypeCfg.players_per_team || 0;
+        
+        var liberoModeEl = document.getElementById('game_libero_mode');
+        var liberoMode = liberoModeEl ? liberoModeEl.value : '';
+        
+        if (subtype === '5x1' && liberoMode === 'with_libero') {
+            playersPerTeam += 1;
+        }
+    }
+    
+    var maxPlayers = playersPerTeam * teams;
+    
+    var maxEl = document.getElementById('game_max_players');
+    
+    if (maxEl) {
+        if (!maxEl.dataset.listener) {
+            maxEl.addEventListener('input', function () {
+                this.dataset.manual = "1";
+            });
+            maxEl.dataset.listener = "1";
+        }
+        
+        if (!maxEl.dataset.manual) {
+            maxEl.value = maxPlayers;
+        }
+    }
+    
+    var preview = document.getElementById('players_preview');
+    
+    if (preview) {
+        preview.textContent = maxPlayers + " игроков";
+    }
+}
 	
     function refreshUI(reason) {
     	syncFormatOptions();
@@ -2243,18 +2209,6 @@ function applySubtypeDefaults(force) {
     	cacheGameState();
     	ensureDefaultSubtypeIfEmpty();
 		
-    	if (reason === 'direction') {
-            applyDirectionDefaults(false);
-		}
-        
-        if (reason === 'direction' || reason === 'subtype') {
-            applySubtypeDefaults(false);
-		}
-		
-    	if (reason === 'init') {
-    		applyDirectionDefaults(false);
-    		applySubtypeDefaults(false);
-		}
 		
     	applyGameDefaults();
 		

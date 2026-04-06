@@ -162,7 +162,54 @@
 	МОЖНО ЗАПИСАТЬСЯ
 	=============================== --}}
 	@else
-	@if (empty($freePositions))
+	@php
+        $regMode = $registrationMode ?? 'single';
+        $isTeamClassic = in_array($regMode, ['team_classic', 'team']);
+        $isTeamBeach   = $regMode === 'team_beach';
+    @endphp
+
+    @if ($isTeamClassic || $isTeamBeach)
+    {{-- ===== КОМАНДНАЯ ЗАПИСЬ ===== --}}
+    <div class="alert alert-info">
+        🏐 Для этого мероприятия используется командная запись.
+    </div>
+    @php
+        $myTeams = $myTournamentTeams ?? collect();
+    @endphp
+    @if($myTeams->count() > 0)
+        @foreach($myTeams as $myTeam)
+        <div class="border rounded p-2 mb-2" style="font-size:14px">
+            <div class="fw-bold">{{ $myTeam->name }}</div>
+            <div class="text-muted small">Статус: {{ $myTeam->status }} · Игроков: {{ $myTeam->members->count() }}</div>
+            <a href="{{ route('tournamentTeams.show', [$event, $myTeam]) }}" class="btn btn-sm btn-outline-primary mt-1">
+                Открыть команду
+            </a>
+        </div>
+        @endforeach
+    @endif
+    @if(auth()->check())
+    <form method="POST" action="{{ route('tournamentTeams.store', $event) }}" class="mt-2">
+        @csrf
+        <input type="text" name="name" class="form-control mb-2" placeholder="Название команды" required>
+        <input type="hidden" name="occurrence_id" value="{{ $occurrence->id }}">
+        <input type="hidden" name="team_kind" value="{{ $isTeamBeach ? 'beach_pair' : 'classic_team' }}">
+        @if($isTeamClassic)
+        <select name="captain_position_code" class="form-select mb-2" required>
+            <option value="">— ваша позиция в команде —</option>
+            <option value="setter">Связующий</option>
+            <option value="outside">Доигровщик</option>
+            <option value="opposite">Диагональный</option>
+            <option value="middle">Центральный</option>
+            <option value="libero">Либеро</option>
+        </select>
+        @endif
+        <button type="submit" class="btn btn-primary w-100">
+            Создать команду
+        </button>
+    </form>
+    @endif
+
+    @elseif (empty($freePositions))
 	<div class="alert alert-warning">
 		Свободных мест нет.
 	</div>
@@ -203,7 +250,7 @@
     $inviteSearchUrl = route('api.users.search');
     $inviteAction    = route('events.invite', ['event' => $event->id]);
 @endphp
-<div class="ramka">
+<div class="ramka" style="z-index:5">
     <h2 class="-mt-05">Пригласить игрока</h2>
     <div class="text-muted small mb-2">
         Игрок получит уведомление с информацией о мероприятии и ссылкой для записи.
@@ -213,87 +260,193 @@
         <div class="alert alert-success">{{ session('status') }}</div>
     @endif
 
-    <form method="POST" action="{{ $inviteAction }}" id="invite-player-form">
-        @csrf
-        <input type="hidden" name="occurrence_id" value="{{ $occurrence->id }}">
-        <input type="hidden" name="to_user_id" id="invite-userid">
+<form class="form" method="POST" action="{{ $inviteAction }}" id="invite-player-form">
+    @csrf
+    <input type="hidden" name="occurrence_id" value="{{ $occurrence->id }}">
 
-        <div class="relative mb-2" id="invite-ac-wrap">
-            <input
-                type="text"
+    <div class="ac-box">
+        {{-- chips --}}
+        <div id="invite-selected-list" class="mb-2"></div>
+        
+        <div style="position: relative" class="mb-2" id="invite-ac-wrap">
+            <input type="text"
                 id="invite-ac-input"
                 autocomplete="off"
                 class="form-control"
                 placeholder="Введите имя или email игрока…"
             >
-            <div id="invite-ac-dd"
-                 style="display:none;position:absolute;left:0;right:0;top:100%;z-index:50;background:#fff;border:1px solid #ddd;border-radius:8px;max-height:200px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.1)">
-            </div>
+            <div id="invite-ac-dd" class="form-select-dropdown trainer_dd"></div>
         </div>
-        <div id="invite-ac-selected" style="display:none;font-size:13px;color:green;margin-bottom:6px;"></div>
-
+        
         <button type="submit" id="invite-submit-btn" class="btn btn-primary w-100" disabled>
-            Отправить приглашение
+            Отправить приглашения
         </button>
-    </form>
+    </div>
+</form>
 </div>
-
 <script>
 (function(){
     var input   = document.getElementById('invite-ac-input');
     var dd      = document.getElementById('invite-ac-dd');
-    var hidden  = document.getElementById('invite-userid');
-    var sel     = document.getElementById('invite-ac-selected');
+    var selList = document.getElementById('invite-selected-list');
     var btn     = document.getElementById('invite-submit-btn');
+    var form    = document.getElementById('invite-player-form');
     var timer   = null;
-    var url     = '{{ $inviteSearchUrl }}';
+    var url     = '/api/users/search';
+    var selected = {}; // id -> label
 
     if (!input) return;
 
-    function clear() { hidden.value=''; btn.disabled=true; sel.style.display='none'; }
-    function pick(id, label) {
-        hidden.value=id; btn.disabled=false;
-        sel.textContent='✅ '+label; sel.style.display='block';
-        dd.style.display='none'; dd.innerHTML='';
-        input.value=label;
-    }
     function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-    function render(items){
-        dd.innerHTML='';
-        if(!items.length){ dd.innerHTML='<div style="padding:10px;color:#999;font-size:13px">Ничего не найдено</div>'; dd.style.display='block'; return; }
-        items.forEach(function(item){
-            var d=document.createElement('div');
-            d.style.cssText='padding:8px 12px;cursor:pointer;font-size:14px;border-bottom:1px solid #f0f0f0';
-            d.innerHTML='<span style="font-weight:600">'+esc(item.label||item.name)+'</span>'+(item.meta?'<span style="color:#999;font-size:12px;margin-left:8px">'+esc(item.meta)+'</span>':'');
-            d.onmouseover=function(){d.style.background='#f8f8f8'};
-            d.onmouseout=function(){d.style.background=''};
-            d.onclick=function(){ pick(item.id, item.label||item.name); };
-            dd.appendChild(d);
-        });
-        dd.style.display='block';
+    function showDd() {
+        dd.classList.add('form-select-dropdown--active');
     }
 
-    input.addEventListener('input', function(){
-        clear();
+    function hideDd() {
+        dd.classList.remove('form-select-dropdown--active');
+    }
+
+    function renderSelected() {
+        selList.innerHTML = '';
+        var ids = Object.keys(selected);
+        
+        if (ids.length === 0) {
+            selList.innerHTML = '';
+            return;
+        }
+        
+        ids.forEach(function(id) {
+            var span = document.createElement('span');
+            span.className = 'd-flex mb-1 between f-16 fvc pl-1 pr-1';
+            
+            var t = document.createElement('span');
+            t.textContent = selected[id];
+            
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'trainer-chip-remove btn btn-small btn-secondary';
+            btn.setAttribute('data-id', id);
+            btn.textContent = '×';
+            btn.addEventListener('click', function() {
+                delete selected[id];
+                var f = form.querySelector('input[name="to_user_ids[]"][value="'+id+'"]');
+                if (f) f.remove();
+                renderSelected();
+                updateBtn();
+            });
+            
+            span.appendChild(t);
+            span.appendChild(btn);
+            selList.appendChild(span);
+            
+            var hidden = document.createElement('input');
+            hidden.type = 'hidden';
+            hidden.name = 'to_user_ids[]';
+            hidden.value = id;
+            hidden.setAttribute('data-invite-hidden', id);
+            form.appendChild(hidden);
+        });
+    }
+
+    function updateBtn() {
+        var count = Object.keys(selected).length;
+        btn.disabled = count === 0;
+        btn.textContent = count > 0
+            ? 'Отправить приглашения (' + count + ')'
+            : 'Отправить приглашения';
+    }
+
+    function pick(id, label) {
+        id = String(id);
+        if (selected[id]) {
+            hideDd();
+            input.value = '';
+            return;
+        }
+        selected[id] = label;
+        renderSelected();
+        updateBtn();
+        hideDd();
+        dd.innerHTML = '';
+        input.value = '';
+        input.focus();
+    }
+
+    function render(items) {
+        dd.innerHTML = '';
+        if (!items.length) {
+            dd.innerHTML = '<div class="city-message">Ничего не найдено</div>';
+            showDd();
+            return;
+        }
+        
+        items.forEach(function(item) {
+            var id = String(item.id);
+            var already = !!selected[id];
+            var div = document.createElement('div');
+            div.className = 'trainer-item form-select-option';
+            if (already) div.style.opacity = '0.4';
+            div.setAttribute('data-id', id);
+            div.setAttribute('data-label', item.label || item.name);
+            
+            div.innerHTML = '<div class="text-sm text-gray-900">' + esc(item.label || item.name) + '</div>';
+            
+            if (!already) {
+                div.addEventListener('click', function() {
+                    pick(id, item.label || item.name);
+                });
+            }
+            
+            dd.appendChild(div);
+        });
+        
+        showDd();
+    }
+
+    input.addEventListener('input', function() {
         clearTimeout(timer);
-        var q=input.value.trim();
-        if(q.length<2){ dd.style.display='none'; return; }
-        dd.innerHTML='<div style="padding:10px;color:#999;font-size:13px">Поиск…</div>'; dd.style.display='block';
-        timer=setTimeout(function(){
-            fetch(url+'?q='+encodeURIComponent(q),{headers:{'Accept':'application/json'},credentials:'same-origin'})
-            .then(function(r){return r.json();})
-            .then(function(data){render(data.items||[]);})
-            .catch(function(){ dd.innerHTML='<div style="padding:10px;color:red;font-size:13px">Ошибка</div>'; dd.style.display='block'; });
-        },250);
+        var q = input.value.trim();
+        if (q.length < 2) {
+            hideDd();
+            return;
+        }
+        
+        dd.innerHTML = '<div class="city-message">Поиск…</div>';
+        showDd();
+        
+        timer = setTimeout(function() {
+            fetch(url + '?q=' + encodeURIComponent(q), {
+                headers: { 'Accept': 'application/json' },
+                credentials: 'same-origin'
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                render(data.items || []);
+            })
+            .catch(function() {
+                dd.innerHTML = '<div class="city-message">Ошибка загрузки</div>';
+                showDd();
+            });
+        }, 250);
     });
 
-    document.addEventListener('click',function(e){
-        if(!document.getElementById('invite-ac-wrap').contains(e.target)) dd.style.display='none';
+    document.addEventListener('click', function(e) {
+        var wrap = document.getElementById('invite-ac-wrap');
+        if (wrap && !wrap.contains(e.target)) {
+            hideDd();
+        }
     });
 
-    document.getElementById('invite-player-form').addEventListener('submit',function(e){
-        if(!hidden.value){ e.preventDefault(); input.focus(); }
+    input.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') hideDd();
+    });
+
+    form.addEventListener('submit', function(e) {
+        if (Object.keys(selected).length === 0) {
+            e.preventDefault();
+            input.focus();
+        }
     });
 })();
 </script>
@@ -301,6 +454,8 @@
 {{-- ===============================
 ГРУППА НА ПЛЯЖКУ
 =============================== --}}
+@endif
+
 @if((!empty($groupUi['enabled'])) && ($isRegistered))
 
 <div class="ramka">

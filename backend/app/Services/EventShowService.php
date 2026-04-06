@@ -271,6 +271,8 @@ class EventShowService
         | RETURN PAGE DATA
         |--------------------------------------------------------------------------
         */
+        $registrationMode = (string) ($event->registration_mode ?? 'single');
+
         return [
             'event' => $event,
             'occurrence' => $occurrence,
@@ -283,6 +285,7 @@ class EventShowService
                 'myTeams' => $myTournamentTeams,
             ],
             'myTournamentTeams' => $myTournamentTeams,
+            'registrationMode' => $registrationMode,
         ];
     }
 }

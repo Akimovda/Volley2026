@@ -396,7 +396,7 @@
 											</form>											
 											@else
 											<a href="{{ route('users.show', ['user' => $user->id]) }}" class="menu-item">
-												<span class="menu-text">Публичная страница пользователя</span>
+												<span class="menu-text">Публичный профиль пользователя</span>
 											</a>
                                             
 											<a href="{{ url('/profile/complete?user_id=' . $user->id) }}" class="menu-item active">

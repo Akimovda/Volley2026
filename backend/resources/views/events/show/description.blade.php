@@ -29,12 +29,63 @@
 				@endphp
 				
 
-		
+		<div class="row row2">
+			<div class="col-md-6 mb-2">
+				
+				@if($event->organizer)
+				
+				<div class="d-flex">
+					<span class="emo">🧑‍💼</span>
+					<div>
+						<div class="b-600"> Организатор</div>
+						<a class="blink" href="{{ route('users.show', $event->organizer->id) }}">
+							{{ $event->organizer->name ?? '—' }}
+						</a>
+					</div>
+				</div>	
+				@if($event->organizer && $event->organizer->phone)
+				<div class="d-flex mt-1">	
+					<span class="emo">📞</span>
+					<a class="blink" href="tel:{{ $event->organizer->phone }}">
+						{{ $event->organizer->phone }}
+					</a>
+				</div>	
+				@endif
+				
+				@endif		
+				
+			</div>
+			<div class="col-md-6 mb-2">
+				
+				{{-- ТРЕНЕР --}}
+				@if($event->trainers && $event->trainers->count())
+				
+				<div class="d-flex">	
+					<span class="emo">‍👨‍🏫‍</span>
+					<div>
+						<div class="b-600">Тренер</div>
+						
+						
+						@foreach($event->trainers as $trainer)
+						<div>
+							<a class="blink" href="{{ route('users.show', $trainer->id) }}">
+								{{ $trainer->name ?? $trainer->nickname ?? '—' }}
+							</a>
+						</div>
+						@endforeach
+					</div>
+				</div>
+				@endif		
+				
+			</div>			
+		</div>	
+	
+	
 		
 		
 		<div class="row">
 			<div class="col-md-6">
-				<div class="card">
+				<div class="card pt-1">
 					
 					@if($event->gameSettings)
 					
@@ -113,7 +164,7 @@
 				</div>
 			</div>
 			<div class="col-md-6">
-				<div class="card pb-05">
+				<div class="card pb-05 pt-1">
 					@php
 					$effectiveAgePolicy = 'any';
 					
@@ -271,56 +322,7 @@
 		</div>
 		
 		
-		<div class="row">
-			<div class="col-md-6">
-				
-				@if($event->organizer)
-				
-				<div class="d-flex mt-2">
-					<span class="emo">🧑‍💼</span>
-					<div>
-						<div class="b-600"> Организатор</div>
-						<a class="blink" href="{{ route('users.show', $event->organizer->id) }}">
-							{{ $event->organizer->name ?? '—' }}
-						</a>
-					</div>
-				</div>	
-				@if($event->organizer && $event->organizer->phone)
-				<div class="d-flex mt-1">	
-					<span class="emo">📞</span>
-					<a class="blink" href="tel:{{ $event->organizer->phone }}">
-						{{ $event->organizer->phone }}
-					</a>
-				</div>	
-				@endif
-				
-				@endif		
-				
-			</div>
-			<div class="col-md-6">
-				
-				{{-- ТРЕНЕР --}}
-				@if($event->trainers && $event->trainers->count())
-				
-				<div class="d-flex mt-1">	
-					<span class="emo">‍👨‍🏫‍</span>
-					<div>
-						<div class="b-600">Тренер</div>
-						
-						
-						@foreach($event->trainers as $trainer)
-						<div>
-							<a class="blink" href="{{ route('users.show', $trainer->id) }}">
-								{{ $trainer->name ?? $trainer->nickname ?? '—' }}
-							</a>
-						</div>
-						@endforeach
-					</div>
-				</div>
-				@endif		
-				
-			</div>			
-		</div>
+
 		
 		
 		

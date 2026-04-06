@@ -86,7 +86,7 @@ if (! function_exists('position_name')) {
 
             'outside'  => 'Доигровщик',
             'opposite' => 'Диагональный',
-            'middle'   => 'Центральный блокирующий',
+            'middle'   => 'ЦБ',
             'setter'   => 'Связующий',
             'libero'   => 'Либеро',
             'player'   => 'Игрок',
