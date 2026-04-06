@@ -281,16 +281,19 @@ $groupedByDate[$dateKey] = ['date' => $date, 'occurrences' => []];
 									</select>
 								</div>
 
-								<div class="col-12 col-md-4">
-									<label class="form-label mb-1">Локация</label>
-									<input type="text"
-										name="location"
-										class="form-control"
-										placeholder="Название или адрес…"
-										value="{{ e($fLocation) }}"
-										id="filter-location-input"
-									>
-								</div>
+                                <div class="col-12 col-md-4">
+                                    <label class="form-label mb-1">Локация</label>
+                                    <input type="text"
+                                        name="location"
+                                        class="form-control"
+                                        placeholder="Название или адрес…"
+                                        value="{{ e($fLocation) }}"
+                                        id="filter-location-input"
+                                        autocomplete="off"
+                                        list="location-datalist"
+                                    >
+                                    <datalist id="location-datalist"></datalist>
+                                </div>
 
 								<div class="col-12 d-flex flex-wrap gap-2 align-items-center">
 									<button type="submit" class="btn">Применить</button>
@@ -346,30 +349,56 @@ $groupedByDate[$dateKey] = ['date' => $date, 'occurrences' => []];
 					<div class="card-ramka event-dates-ramka">
 						
 						<div class="days-strip tabs mb-0" id="daysStrip">
-							@foreach($groupedByDate as $dateKey => $dayData)
-							@php
-							$d = $dayData['date'];
-							$day = (int)$d->format('j');
-							$month = (int)$d->format('n');
-							$weekday = (int)$d->format('N');
-							$labelDate = $day . ' ' . ($months[$month] ?? '');
-							$dow = $daysOfWeek[$weekday] ?? '';
-							@endphp
-							<a href="#days" class="tab day-chip {{ $loop->first ? 'active' : '' }}"
-							data-tab="day-{{ $loop->iteration }}"
-							data-date="{{ $dateKey }}">
-								<div class="dc-date">{{ $labelDate }}</div>
-								<div class="dc-dow">{{ $dow }}</div>
-							</a>		
-							@endforeach
-							@if(count($groupedByDate) >= 10)
-							<a href="{{ route('events.index', ['offset' => 10]) }}" class="no-highlight day-chip last-tab tab">
-								<div class="dc-dow">Следующие</div>			
-								<div class="dc-date">10 дней</div>			
-							</a>
-							@endif									
-							<div class="tab-highlight"></div>
-						</div>	
+                            {{-- Чипы дат --}}
+                            @foreach($groupedByDate as $dateKey => $dayData)
+                            @php
+                                $d       = $dayData['date'];
+                                $day     = (int)$d->format('j');
+                                $month   = (int)$d->format('n');
+                                $weekday = (int)$d->format('N');
+                                $labelDate = $day . ' ' . ($months[$month] ?? '');
+                                $dow = $daysOfWeek[$weekday] ?? '';
+                            @endphp
+                            <a href="#days" class="tab day-chip {{ $loop->first ? 'active' : '' }}"
+                                data-tab="day-{{ $loop->iteration }}"
+                                data-date="{{ $dateKey }}">
+                                <div class="dc-date">{{ $labelDate }}</div>
+                                <div class="dc-dow">{{ $dow }}</div>
+                            </a>
+                            @endforeach
+                        
+                            {{-- Навигация prev/next --}}
+                            @if(count($groupedByDate) >= 10 || request('offset', 0) > 0)
+                            @php
+                                $currentOffset = (int) request('offset', 0);
+                                $nextOffset    = $currentOffset + 10;
+                                $prevOffset    = max(0, $currentOffset - 10);
+                                $baseParams    = array_filter([
+                                    'direction' => request('direction'),
+                                    'format'    => request('format'),
+                                    'level'     => request('level'),
+                                    'location'  => request('location'),
+                                ], fn($v) => $v !== '' && $v !== null);
+                            @endphp
+                        
+                            @if($currentOffset > 0)
+                            <a href="{{ route('events.index', array_merge($baseParams, ['offset' => $prevOffset])) }}"
+                               class="no-highlight day-chip last-tab tab">
+                                <div class="dc-dow">◀ Пред.</div>
+                                <div class="dc-date">10 дней</div>
+                            </a>
+                            @endif
+                        
+                            @if(count($groupedByDate) >= 10)
+                            <a href="{{ route('events.index', array_merge($baseParams, ['offset' => $nextOffset])) }}"
+                               class="no-highlight day-chip last-tab tab">
+                                <div class="dc-dow">Следующие</div>
+                                <div class="dc-date">10 дней ▶</div>
+                            </a>
+                            @endif
+                            @endif
+                            <div class="tab-highlight"></div>
+                        </div>
 					</div>
 				</div>
 				
@@ -1106,7 +1135,27 @@ data-address="{{ e($address) }}"
                                 window.toggleAllImgs = function(btn) {
                                     applyImgState(!_allHidden);
                                 };
-                            
+                                // ===== Location autocomplete =====
+                                (function () {
+                                    var datalist = document.getElementById('location-datalist');
+                                    var input    = document.getElementById('filter-location-input');
+                                    if (!datalist || !input) return;
+                                
+                                    fetch('/ajax/locations/with-events?active=1', {
+                                        headers: { 'Accept': 'application/json' },
+                                        credentials: 'same-origin',
+                                    })
+                                    .then(function(r) { return r.json(); })
+                                    .then(function(data) {
+                                        if (!data.ok || !Array.isArray(data.items)) return;
+                                        data.items.forEach(function(item) {
+                                            var opt = document.createElement('option');
+                                            opt.value = item.name;
+                                            datalist.appendChild(opt);
+                                        });
+                                    })
+                                    .catch(function() {});
+                                })();
                             })();
 					</script>
 				</x-slot>	

@@ -46,18 +46,18 @@
 	$canShowContactButtons = $isAuthed && !$isSelf && $allowContact && $hasAnyContact;
 	
 	
-$age = '—';
-if (method_exists($user, 'ageYears') && $years = $user->ageYears()) {
+	$age = '—';
+	if (method_exists($user, 'ageYears') && $years = $user->ageYears()) {
     $ending = match($years % 10) {
-        1 => 'год',
-        2,3,4 => 'года',
-        default => 'лет'
+	1 => 'год',
+	2,3,4 => 'года',
+	default => 'лет'
     };
     $age = $years . ' ' . $ending;
-}
+	}
     
 $birth = $user->birth_date 
-    ? $user->birth_date->isoFormat('D MMMM YYYY') 
+    ? $user->birth_date->isoFormat('D MMMM YYYY') . ' г.'
     : '—';
 	
     @endphp	
@@ -88,6 +88,37 @@ $birth = $user->birth_date
 		</style>
 	</x-slot>
 	
+    <x-slot name="script">
+        <script src="/assets/fas.js"></script>   	
+        <script>
+            // === Инициализация Swiper ===
+            const swiper = new Swiper('.photo-swiper', {
+                slidesPerView: 2,
+                spaceBetween: 20,
+                pagination: {
+                    el: '.swiper-pagination',
+                    clickable: true,
+				},
+                breakpoints: {
+                    640: {
+                        slidesPerView: 3, 
+					},
+                    768: {
+                        slidesPerView: 3,
+					},
+                    992: {
+                        slidesPerView: 3,
+					},
+                    1024: {
+                        slidesPerView: 3,
+					},
+                    1280: {
+                        slidesPerView: 4,
+					}
+				}   
+			});     
+		</script>	
+	</x-slot>
     <x-slot name="h1">
         @if($isSelf)
 		Ваш публичный профиль
@@ -127,11 +158,7 @@ $birth = $user->birth_date
 		</li>
 	</x-slot>
 	
-    <x-slot name="script">
-        <script>
-            // Дополнительные скрипты при необходимости
-		</script>
-	</x-slot>
+
 	
 	
     <div class="container">
@@ -305,8 +332,8 @@ $birth = $user->birth_date
                 {{-- Contacts --}}
                 <div class="ramka">
                     <div class="card-body">
-					<h2 class="-mt-05">Контакты</h2>
- 
+						<h2 class="-mt-05">Контакты</h2>
+						
                         @if(!$allowContact)
 						<div class="alert alert-info">
 							Пользователь запретил связываться с ним через Telegram/VK.
@@ -321,16 +348,16 @@ $birth = $user->birth_date
 						</div>
                         @elseif($canShowContactButtons)
 						<div class="d-flex flex-wrap gap-1 fc">
-						
-@auth
-    @if((auth()->user()->isAdmin() || auth()->user()->isOrganizer()) && $user->phone)
-        <a class="btn" href="tel:{{ $user->phone }}">
-            {{ $user->formatted_phone }}
-        </a>
-    @endif
-@endauth	
-						
-						
+							
+							@auth
+							@if((auth()->user()->isAdmin() || auth()->user()->isOrganizer()) && $user->phone)
+							<a class="btn" href="tel:{{ $user->phone }}">
+								{{ $user->formatted_phone }}
+							</a>
+							@endif
+							@endauth	
+							
+							
 							@if($tgUrl)
 							<a class="btn"
 							href="{{ $tgUrl }}" target="_blank" rel="noopener noreferrer">
@@ -348,6 +375,50 @@ $birth = $user->birth_date
                         @endif
 					</div>
 				</div>
+                <div class="ramka">        
+                    {{-- Gallery --}}
+                    <h2 class="-mt-05">Фотографии</h2>
+					
+                    <div class="mt-2">
+                        @if($photos->isEmpty())
+                        <div class="alert alert-info">
+							У пользователя нет загруженных фотографий
+						</div>
+                        @else
+                        <div class="swiper photo-swiper">
+                            <div class="swiper-wrapper">
+                                @foreach($photos as $m)
+                                @php
+                                $thumbUrl = method_exists($m, 'hasGeneratedConversion') && $m->hasGeneratedConversion('thumb')
+                                ? $m->getUrl('thumb')
+                                : $m->getUrl();
+                                @endphp
+                                <div class="swiper-slide">
+                                    
+                                    <div class="hover-image">
+                                        <a href="{{ $m->getUrl() }}" class="fancybox" data-fancybox="gallery">
+                                            <img
+                                            src="{{ $thumbUrl }}"
+                                            alt="photo"
+                                            loading="lazy"
+                                            />
+                                            <span></span>
+                                            <div class="hover-image-circle"></div>
+										</a>
+									</div>                                                          
+								</div>
+                                @endforeach
+							</div>
+                            <div class="swiper-pagination"></div>
+						</div>
+                        @endif
+					</div>
+					<div class="text-right">
+					    <p>Всего: <strong class="cd">{{ $photos->count() }}</strong> фото</p>
+					</div>  	
+				</div>  				
+				
+				
 			</div>
 		</div>
 	</div>

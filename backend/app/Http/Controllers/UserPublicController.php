@@ -9,17 +9,21 @@ class UserPublicController extends Controller
 {
     public function show(Request $request, User $user)
     {
-        // SoftDeletes: удалённые пользователи не попадут сюда через биндинг.
-        // На всякий случай:
         abort_if(method_exists($user, 'trashed') && $user->trashed(), 404);
 
         $user->loadMissing(['city']);
 
         $isSelf = auth()->check() && (int)auth()->id() === (int)$user->id;
 
+        // Только photos, event_photos не тянем
+        $photos = $user->getMedia('photos')
+            ->sortByDesc('created_at')
+            ->values();
+
         return view('user.public', [
             'user' => $user,
             'isSelf' => $isSelf,
+            'photos' => $photos,
         ]);
     }
 }

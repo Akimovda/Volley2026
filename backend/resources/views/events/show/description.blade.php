@@ -47,7 +47,7 @@
 				<div class="d-flex mt-1">	
 					<span class="emo">📞</span>
 					<a class="blink" href="tel:{{ $event->organizer->phone }}">
-						{{ $event->organizer->phone }}
+						 {{ $event->organizer->formatted_phone }}
 					</a>
 				</div>	
 				@endif

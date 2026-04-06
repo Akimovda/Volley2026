@@ -168,6 +168,9 @@ use App\Http\Controllers\EventRegistrationInviteController;
 	
 	Route::get('/cities/search', [CitySearchController::class, 'search'])
     ->name('cities.search');
+    
+    Route::get('/ajax/locations/with-events', LocationsByCityController::class)
+    ->name('ajax.locations.withEvents');
 	
 	/*
 		|--------------------------------------------------------------------------
