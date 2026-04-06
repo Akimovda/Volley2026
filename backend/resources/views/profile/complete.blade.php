@@ -373,7 +373,7 @@
 										</div>
 									</div>
 									<div class="col-9 col-lg-12">
-										<nav class="menu-nav">
+										<nav class="menu-nav sidebar-menu">
 											@if(!$isEditingOther)
 											<a href="{{ route('users.show', ['user' => $user->id]) }}" class="menu-item">
 												<span class="menu-text">Публичный профиль</span>
@@ -388,6 +388,16 @@
 											<a href="{{ route('user.photos') }}" class="menu-item">
 												<span class="menu-text">Ваши фотографии</span>
 											</a>
+											
+									<a href="{{ route('notifications.index') }}" class="menu-item">
+										<span class="menu-text">Уведомления</span>
+										@if(!empty($notificationsUnread) && $notificationsUnread > 0)
+										<span class="notificationsUnread">
+											{{ $notificationsUnread > 99 ? '99+' : $notificationsUnread }}
+										</span>
+										@endif										
+									</a>											
+											
 											
 											{{-- logout: только logout --}}
 											<form method="POST" action="{{ route('logout') }}" class="logout-form" x-data>

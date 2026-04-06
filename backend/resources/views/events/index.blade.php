@@ -784,66 +784,73 @@ $groupedByDate[$dateKey] = ['date' => $date, 'occurrences' => []];
 														
 														
 														<div class="mt-3 d-flex flex-wrap gap-2 align-items-center">
-															
-@php
-    $eventStarted2   = $startsAtUtc ? $nowUtc->gte($startsAtUtc) : false;
-    $regClosed2      = $regEndsUtc ? $nowUtc->gte($regEndsUtc) : false;
-@endphp
-
-@if ($eventStarted2)
-<div class="small fw-semibold text-warning">🎉 Мероприятие уже началось</div>
-
-@elseif (!auth()->check())
-<div class="small fw-semibold text-muted">🔐 Вам нужно войти на сайт!</div>
-
-@elseif ($isJoined)
-@if ($cancel->allowed)
-<form method="POST" action="{{ route('occurrences.leave', ['occurrence' => $occ->id]) }}">
-@csrf
-@method('DELETE')
-<button type="submit" class="btn btn-outline-secondary">Отменить запись</button>
-</form>
-@else
-<div class="small text-danger fw-semibold">{{ $cancel->message ?? 'Отмена недоступна' }}</div>
-@endif
-
-@elseif ($regClosed2)
-<div class="small fw-semibold text-danger">❗️ Для записи Вам необходима помощь организатора</div>
-
-@elseif (!$join->allowed)
-<button class="btn btn-primary" disabled style="opacity:.55;cursor:not-allowed;">Записаться</button>
-@if ($join->message)
-<div class="w-100 small text-muted mt-1">{{ $join->message }}</div>
-@endif
-
-@else
-@if (!$requiresPositionChoice)
-<form method="POST" action="{{ route('occurrences.join', ['occurrence' => $occ->id]) }}">
-@csrf
-<button type="submit" class="btn btn-primary">Записаться</button>
-</form>
-@else
-<button
-type="button"
-class="btn btn-primary js-open-join"
-data-occurrence-id="{{ (int)$occ->id }}"
-data-title="{{ e($event?->title ?? '') }}"
-data-date="{{ e($dt['date']) }}"
-data-time="{{ e($dt['time']) }}"
-data-tz="{{ e($dt['tzLabel'] ?? $dt['tz']) }}"
-data-address="{{ e($address) }}"
->
-Записаться
-</button>
-@endif
-@endif
+                                                        @php
+                                                            $eventStarted2 = $startsAtUtc ? $nowUtc->gte($startsAtUtc) : false;
+                                                            $regClosed2    = $regEndsUtc  ? $nowUtc->gte($regEndsUtc)  : false;
+                                                            $regMode       = (string)($event->registration_mode ?? 'single');
+                                                            $isGroupMode   = in_array($regMode, ['mixed_group','team_beach','team_classic','team'], true);
+                                                            $eventPageUrl  = url('/events/'.(int)$event->id).'?occurrence='.(int)$occ->id;
+                                                            $joinCode      = $occ->join->code ?? null;
+                                                        @endphp
+                                                        
+                                                                @if ($eventStarted2)
+                                                                    <div class="small fw-semibold text-warning">🎉 Мероприятие уже началось</div>
+                                                                
+                                                                @elseif (!auth()->check())
+                                                                    <div class="small fw-semibold text-muted">🔐 Вам нужно войти на сайт!</div>
+                                                                
+                                                                @elseif ($joinCode === 'age_blocked')
+                                                                    <div class="small fw-semibold text-danger">{{ $occ->join->message }}</div>
+                                                                
+                                                                @elseif ($joinCode === 'level_too_high')
+                                                                    <div class="small fw-semibold text-info">{{ $occ->join->message }}</div>
+                                                                
+                                                                @elseif ($joinCode === 'level_too_low')
+                                                            <div class="small fw-semibold text-warning">{{ $occ->join->message }}</div>
+                                                        
+                                                                @elseif ($isJoined)
+                                                                    @if ($cancel->allowed)
+                                                                        <form method="POST" action="{{ route('occurrences.leave', ['occurrence' => $occ->id]) }}">
+                                                                            @csrf
+                                                                            @method('DELETE')
+                                                                            <button type="submit" class="btn btn-outline-secondary">Отменить запись</button>
+                                                                        </form>
+                                                                    @else
+                                                                        <div class="small text-danger fw-semibold">{{ $cancel->message ?? 'Отмена недоступна' }}</div>
+                                                                    @endif
+                                                                
+                                                                @elseif ($regClosed2)
+                                                                    <div class="small fw-semibold text-danger">❗️ Для записи Вам необходима помощь организатора</div>
+                                                                
+                                                                @elseif ($isGroupMode)
+                                                                    <a href="{{ $eventPageUrl }}" class="btn btn-primary">Записаться</a>
+                                                                
+                                                                @elseif (!$join->allowed)
+                                                                    <button class="btn btn-primary" disabled style="opacity:.55;cursor:not-allowed;">Записаться</button>
+                                                                    @if ($join->message)
+                                                                        <div class="w-100 small text-muted mt-1">{{ $join->message }}</div>
+                                                                    @endif
+                                                                
+                                                                @else
+                                                            @if (!$requiresPositionChoice)
+                                                                <form method="POST" action="{{ route('occurrences.join', ['occurrence' => $occ->id]) }}">
+                                                                    @csrf
+                                                                    <button type="submit" class="btn btn-primary">Записаться</button>
+                                                                </form>
+                                                            @else
+                                                                <button
+                                                                    type="button"
+                                                                    class="btn btn-primary js-open-join"
+                                                                    data-occurrence-id="{{ (int)$occ->id }}"
+                                                                    data-title="{{ e($event?->title ?? '') }}"
+                                                                    data-date="{{ e($dt['date']) }}"
+                                                                    data-time="{{ e($dt['time']) }}"
+                                                                    data-tz="{{ e($dt['tzLabel'] ?? $dt['tz']) }}"
+                                                                    data-address="{{ e($address) }}"
+                                                                >Записаться</button>
+                                                            @endif
+                                                        @endif
 														</div>
-														
-														
-														
-														
-														
-														
 													</div>
 												</div>
 											</div>
@@ -853,9 +860,7 @@ data-address="{{ e($address) }}"
 								</div>
 								@endforeach
 							</div>
-							
-							
-							
+
 							@else
 							<div class="ramka">	
 								<div class="alert alert-info">

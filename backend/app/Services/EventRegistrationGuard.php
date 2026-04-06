@@ -184,13 +184,74 @@
 			
 			return $userRegistration;
 		}
-		
-		
 		/*
 			|--------------------------------------------------------------------------
-			| POSITIONS
+			| USER REGISTRATION для главной страницы EVENTS
 			|--------------------------------------------------------------------------
 		*/
+		public function quickCheck(?User $user, EventOccurrence $occurrence): object
+        {
+            if (!$user) {
+                return (object)['allowed' => true, 'code' => null, 'message' => null];
+            }
+        
+            $event    = $occurrence->event;
+            $dir      = (string)($event?->direction ?? 'classic');
+            $agePolicy = (string)($occurrence->age_policy ?? $event?->age_policy ?? 'any');
+        
+            // --- Возраст ---
+            if ($agePolicy === 'child') {
+                $birthDate = $user->birth_date ?? null;
+                if (!$birthDate) {
+                    return (object)['allowed' => false, 'code' => 'age_blocked',
+                        'message' => '🔞 Вы не проходите по возрасту'];
+                }
+                $age    = \Illuminate\Support\Carbon::parse($birthDate)
+                            ->diffInYears(\Illuminate\Support\Carbon::parse($occurrence->starts_at, 'UTC'));
+                $ageMin = (int)($event?->child_age_min ?? 0);
+                $ageMax = (int)($event?->child_age_max ?? 0);
+                if ($ageMax > 0 && $age > $ageMax) {
+                    return (object)['allowed' => false, 'code' => 'age_blocked',
+                        'message' => '🔞 Вы не проходите по возрасту'];
+                }
+                if ($ageMin > 0 && $age < $ageMin) {
+                    return (object)['allowed' => false, 'code' => 'age_blocked',
+                        'message' => '🔞 Вы не проходите по возрасту'];
+                }
+            }
+        
+            // --- Уровень ---
+            if ($dir === 'beach') {
+                $userLevel = $user->beach_level;
+                $lvMin = $occurrence->effectiveBeachLevelMin();
+                $lvMax = $occurrence->effectiveBeachLevelMax();
+            } else {
+                $userLevel = $user->classic_level;
+                $lvMin = $occurrence->effectiveClassicLevelMin();
+                $lvMax = $occurrence->effectiveClassicLevelMax();
+            }
+        
+            $hasRestriction = !is_null($lvMin) || !is_null($lvMax);
+        
+            if ($hasRestriction && !is_null($userLevel)) {
+                if (!is_null($lvMax) && $userLevel > $lvMax) {
+                    return (object)['allowed' => false, 'code' => 'level_too_high',
+                        'message' => '😎 Вы слишком крут(а) для этого мероприятия!'];
+                }
+               if (!is_null($lvMin) && $userLevel < $lvMin) {
+                return (object)['allowed' => false, 'code' => 'level_too_low',
+                    'message' => '😥 Вы ещё не готовы для этого мероприятия!'];
+            }
+        }
+
+        return (object)['allowed' => true, 'code' => null, 'message' => null];
+    }
+
+    /*
+        |--------------------------------------------------------------------------
+        | POSITIONS
+        |--------------------------------------------------------------------------
+    */
 		
 		private function calculatePositions(
 			$event,

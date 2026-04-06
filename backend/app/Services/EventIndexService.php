@@ -208,10 +208,13 @@ class EventIndexService
 
             $isJoined = in_array((int)$occ->id, $userRegistrations, true);
 
-            $occ->join = (object)[
-                'allowed' => !$isJoined,
-                'message' => $isJoined ? 'Вы уже записаны.' : null,
-            ];
+         
+            $quick = app(\App\Services\EventRegistrationGuard::class)->quickCheck($user, $occ);
+            
+            $occ->join = !$quick->allowed
+                ? (object)['allowed' => false, 'code' => $quick->code, 'message' => $quick->message]
+                : (object)['allowed' => !$isJoined, 'code' => null,
+                'message' => $isJoined ? 'Вы уже записаны.' : null];
 
             $occ->cancel = (object)[
                 'allowed' => $isJoined,

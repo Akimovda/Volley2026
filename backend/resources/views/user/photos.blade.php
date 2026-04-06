@@ -284,13 +284,13 @@ $canUploadEventPhotos = auth()->user()?->isAdmin() || auth()->user()?->isOrganiz
 	</x-slot>
     
     <x-slot name="h1">
-	
+		
 		@if(!$isEditingOther)
         Ваши фотографии
 		@else
 		Редактирование фотографий
 		@endif		
-	
+		
 	</x-slot>
     
     <x-slot name="h2">
@@ -326,7 +326,7 @@ $canUploadEventPhotos = auth()->user()?->isAdmin() || auth()->user()?->isOrganiz
 		@endif		
 		
 		
-
+		
 	</x-slot>
     
     
@@ -774,11 +774,11 @@ $canUploadEventPhotos = auth()->user()?->isAdmin() || auth()->user()?->isOrganiz
 								</div>
 							</div>
                             <div class="col-9 col-lg-12">
-                                <nav class="menu-nav">
+                                <nav class="menu-nav sidebar-menu">
                                     @if(!$isEditingOther)
-											<a href="{{ route('users.show', ['user' => $user->id]) }}" class="menu-item">
-												<span class="menu-text">Публичный профиль</span>
-											</a>										
+									<a href="{{ route('users.show', ['user' => $user->id]) }}" class="menu-item">
+										<span class="menu-text">Публичный профиль</span>
+									</a>										
                                     <a href="{{ route('profile.show') }}" class="menu-item">
                                         <span class="menu-text">Ваш профиль</span>
 									</a>
@@ -788,6 +788,18 @@ $canUploadEventPhotos = auth()->user()?->isAdmin() || auth()->user()?->isOrganiz
                                     <a href="{{ route('user.photos') }}" class="menu-item active">
                                         <strong class="cd menu-text">Ваши фотографии</strong>
 									</a>
+									
+									
+									<a href="{{ route('notifications.index') }}" class="menu-item">
+										<span class="menu-text">Уведомления</span>
+										@if(!empty($notificationsUnread) && $notificationsUnread > 0)
+										<span class="notificationsUnread">
+											{{ $notificationsUnread > 99 ? '99+' : $notificationsUnread }}
+										</span>
+										@endif										
+									</a>									
+									
+									
                                     {{-- logout: только logout --}}
                                     <form method="POST" action="{{ route('logout') }}" class="logout-form" x-data>
                                         @csrf
@@ -842,7 +854,7 @@ $canUploadEventPhotos = auth()->user()?->isAdmin() || auth()->user()?->isOrganiz
                                 <span>Сделать это фото аватаром</span>
 							</label>
                             
-                           @if($canUploadEventPhotos)
+							@if($canUploadEventPhotos)
                             <label class="checkbox-item mb-2" id="forEventsLabel">
                                 <input id="for_events" name="for_events" type="checkbox" class="rounded border-gray-300" />
                                 <div class="custom-checkbox"></div>
@@ -897,7 +909,7 @@ $canUploadEventPhotos = auth()->user()?->isAdmin() || auth()->user()?->isOrganiz
                                             <div class="hover-image-circle"></div>
 										</a>
 									</div>                              
-
+									
                                     
                                     <div class="mt-1 d-flex between fvc">
                                         
