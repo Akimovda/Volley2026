@@ -46,8 +46,13 @@
 	$canShowContactButtons = $isAuthed && !$isSelf && $allowContact && $hasAnyContact;
 	
 	
-    $age   = method_exists($user, 'ageYears') ? $user->ageYears() : null;
-    $birth = $user->birth_date ? $user->birth_date->format('Y-m-d') : '—';	
+$age = method_exists($user, 'ageYears') && $user->ageYears() 
+    ? $user->ageYears() . ' лет' 
+    : '—';
+    
+$birth = $user->birth_date 
+    ? $user->birth_date->isoFormat('D MMMM YYYY') 
+    : '—';
 	
     @endphp	
 	
@@ -144,7 +149,7 @@
 		
         <div class="row row2">
             {{-- SIDEBAR (левая колонка) --}}
-            <div class="col-lg-4 col-xl-3 order-1 order-lg-2">
+            <div class="col-lg-4 col-xl-4 order-1 order-lg-1">
                 <div class="sticky">
                     <div class="ramka">
                         <div class="card-body">
@@ -159,7 +164,7 @@
 									</div>
 								</div>
 								<div class="col-12">    
-									<ul class="list mb-0 mt-2">	
+									<ul class="list mb-0 mt-2 -ml-1">	
 										<li><span class="b-600">Фамилия:</span> {{ $user->last_name ?? '—' }}</li>
 										<li><span class="b-600">Имя:</span> {{ $user->first_name ?? '—' }}</li>
 										@if(auth()->user()->isAdmin() || auth()->user()->isOrganizer())		
@@ -179,10 +184,7 @@
 										@endif</li>
 										<li><span class="b-600">Дата рождения:</span> {{ $birth }} 	
 										</li>
-										<li><span class="b-600">Возраст:</span>	
-											@if(!is_null($age))
-											({{ $age }} лет)
-											@endif										
+										<li><span class="b-600">Возраст:</span>	{{ $age }}								
 										</li>										
 									</ul>
 								</div>
@@ -223,7 +225,7 @@
 			</div>
 			
             {{-- MAIN CONTENT (правая колонка) --}}
-            <div class="col-lg-8 col-xl-9 order-2 order-lg-1">
+            <div class="col-lg-8 col-xl-8 order-2 order-lg-2">
 				
                 {{-- Skills --}}
 				<div class="ramka">  	
@@ -298,21 +300,14 @@
                 {{-- Contacts --}}
                 <div class="ramka">
                     <div class="card-body">
-                        <div class="fs-5 fw-bold mb-2">Контакты</div>
-                        <div class="text-muted small mb-3">
-                            Телефон и прочие приватные данные тут не показываем.
-						</div>
-                        
-                        @if($isSelf)
-						<div class="text-muted small">
-							Это ваш профиль — контакты для связи тут не нужны.
-						</div>
-                        @elseif(!$allowContact)
-						<div class="text-muted small">
+					<h2 class="-mt-05">Контакты</h2>
+ 
+                        @if(!$allowContact)
+						<div class="alert alert-info">
 							Пользователь запретил связываться с ним через Telegram/VK.
 						</div>
                         @elseif(!$hasAnyContact)
-						<div class="text-muted small">
+						<div class="alert alert-info">
 							Пользователь не указал Telegram/VK для связи.
 						</div>
                         @elseif(!$isAuthed)
@@ -320,24 +315,19 @@
 							Чтобы написать пользователю в Telegram/VK, нужно войти в аккаунт.
 						</div>
                         @elseif($canShowContactButtons)
-						<div class="d-flex flex-wrap gap-2 mt-3">
 							@if($tgUrl)
-							<a class="btn btn-outline-secondary"
+							<a class="btn"
 							href="{{ $tgUrl }}" target="_blank" rel="noopener noreferrer">
 								Написать в Telegram
 							</a>
 							@endif
 							
 							@if($vkUrl)
-							<a class="btn btn-outline-secondary"
+							<a class="btn"
 							href="{{ $vkUrl }}" target="_blank" rel="noopener noreferrer">
 								Написать в VK
 							</a>
 							@endif
-						</div>
-						<div class="text-muted small mt-2">
-							Откроется в новой вкладке.
-						</div>
                         @endif
 					</div>
 				</div>

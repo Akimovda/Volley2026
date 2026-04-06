@@ -66,13 +66,14 @@ class EventIndexService
 
         $levelRaw = $request->query('level');
         $level = ($levelRaw === null || $levelRaw === '') ? null : (int) $levelRaw;
-
+        $location = trim((string) $request->query('location', ''));
+        
         if (!in_array($direction, ['', 'classic', 'beach'], true)) {
             $direction = '';
         }
 
         if ($this->hasOccurrences) {
-            return $this->occurrenceIndex($user, $userId, $isAdmin, $direction, $format, $level);
+            return $this->occurrenceIndex($user, $userId, $isAdmin, $direction, $format, $level, $location);
         }
 
         return $this->legacyIndex($user, $userId, $isAdmin, $direction, $format, $level);
@@ -84,7 +85,7 @@ class EventIndexService
     |--------------------------------------------------------------------------
     */
 
-    private function occurrenceIndex($user, int $userId, bool $isAdmin, string $direction, string $format, ?int $level)
+    private function occurrenceIndex($user, int $userId, bool $isAdmin, string $direction, string $format, ?int $level, string $location = '')
     {
         $occQ = EventOccurrence::query()
             ->with([
@@ -127,10 +128,20 @@ class EventIndexService
             if ($format !== '') {
                 $q->where('format', $format);
             }
-
+            
             $this->applyLevelFilterVariantB($q, $direction, $level);
 
             $this->visibility->applyPrivateVisibilityScope($q, $user, '');
+            
+            if ($location !== '') {
+                $like = '%' . str_replace(['%', '_'], ['\%', '\_'], $location) . '%';
+                $q->whereHas('location', function ($lq) use ($like) {
+                    $lq->where(function ($w) use ($like) {
+                        $w->where('name', 'ilike', $like)
+                          ->orWhere('address', 'ilike', $like);
+                    });
+                });
+            }
         });
 
         // Берём ближайшие 10 уникальных дат

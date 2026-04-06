@@ -1033,18 +1033,6 @@ data-address="{{ e($address) }}"
                                         const effectiveMax = apiMax > 0 ? apiMax : maxCard;
                                         
                                         let remainingTotal = Number(meta.remaining_total);
-                                        
-                                        const meta = data?.meta || data?.data?.meta || null;
-										
-										if (!data || !meta) {
-											if (leftEl) leftEl.textContent = maxCard;
-											return;
-										}
-										
-										const apiMax = Number(meta.max_players ?? 0) || 0;
-										const effectiveMax = apiMax > 0 ? apiMax : maxCard;
-										
-										let remainingTotal = Number(meta.remaining_total);
 										
 										if (!Number.isFinite(remainingTotal)) {
 											const registeredTotal = Number(meta.registered_total ?? 0) || 0;
