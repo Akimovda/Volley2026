@@ -11,6 +11,8 @@ use MoveMoveApp\VKID\VKIDExtendSocialite;
 use SocialiteProviders\Manager\SocialiteWasCalled;
 use Illuminate\Pagination\Paginator;
 use App\Observers\EventRegistrationObserver;
+use App\Observers\UserObserver;
+use App\Models\User;
 
 
 class AppServiceProvider extends ServiceProvider
@@ -23,6 +25,7 @@ class AppServiceProvider extends ServiceProvider
 public function boot(): void
 {
     EventRegistration::observe(EventRegistrationObserver::class);
+        User::observe(UserObserver::class);
     
 View::composer('*', function ($view) {
     $notificationsUnread = 0;

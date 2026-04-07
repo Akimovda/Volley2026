@@ -11,36 +11,84 @@ Copyright © 2023 37signals, LLC
 // Функция добавления эмодзи
 function addEmojiPanel(editor) {
     if (editor.parentElement.querySelector('.emoji-panel')) return;
-    
+
+    var categories = [
+        { label: '😊 Смайлы', emojis: ['😀','😁','😂','🤣','😃','😄','😅','😆','😉','😊','😋','😎','😍','🥰','😘','😗','😙','😚','🙂','🤗','🤩','🤔','🤨','😐','😑','😶','🙄','😏','😣','😥','😮','🤐','😯','😪','😫','😴','😌','😛','😜','😝','🤤','😒','😓','😔','😕','🙃','🤑','😲','🤯','😳','🥺','😦','😧','😨','😰','😱','🥵','🥶','😖','😞','😟','😤'] },
+        { label: '👋 Жесты', emojis: ['👋','🤚','🖐','✋','🖖','👌','🤌','🤏','✌️','🤞','🤟','🤘','🤙','👈','👉','👆','🖕','👇','☝️','👍','👎','✊','👊','🤛','🤜','👏','🙌','🫶','👐','🤲','🤝','🙏','✍️','💅','🤳','💪','🦵','🦶','👂','🦻','👃','🫀','🫁','🧠','🦷','🦴','👀','👁','👅','👄','🫦'] },
+        { label: '❤️ Эмоции', emojis: ['❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❣️','💕','💞','💓','💗','💖','💘','💝','💟','☮️','✝️','☪️','🕉','✡️','🔯','🪯','☯️','☦️','🛐','⛎','♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓','🆔','⚛️','🉑','☢️','☣️','📴','📳','🈶','🈚','🈸','🈺','🈷️','✴️','🆚','💮','🉐','㊙️','㊗️','🈴','🈵','🈹','🈲','🅰️','🅱️','🆎','🆑','🅾️','🆘','❌','⛔','🚫','💯','💢','♨️','🚷','🚯','🚳','🚱','🔞','📵','🚭','❗','❕','❓','❔','‼️','⁉️','🔅','🔆','🔱','⚜️','🔰','♻️','✅','🈯','💹','❇️','✳️','🌐','💠','Ⓜ️','🌀','💤','🏧','🚾','♿','🅿️','🛗','🈳','🈹','🚺','🚹','🚼','🚻','🚮','🎦','📶','🈁','🔣','ℹ️','🔤','🔡','🔠','🆖','🆗','🆙','🆒','🆕','🆓','0️⃣','1️⃣','2️⃣','3️⃣','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣','🔟','🔢','⏏️','▶️','⏸','⏹','⏺','⏭','⏮','⏩','⏪','⏫','⏬','◀️','🔼','🔽','➡️','⬅️','⬆️','⬇️','↗️','↘️','↙️','↖️','↕️','↔️','↪️','↩️','⤴️','⤵️','🔀','🔁','🔂','🔄','🔃','🎵','🎶','➕','➖','➗','✖️','♾','💲','💱','™️','©️','®️','〰️','➰','➿','🔚','🔙','🔛','🔝','🔜','✔️','☑️','🔘','🔲','🔳','▪️','▫️','◾','◽','◼️','◻️','⬛','⬜','🟥','🟧','🟨','🟩','🟦','🟪','🟫','🔶','🔷','🔸','🔹','🔺','🔻','💠','🔘','🔳','🔲'] },
+        { label: '🏐 Спорт', emojis: ['🏐','⚽','🏀','🏈','⚾','🎾','🏉','🥏','🎱','🏓','🏸','🥊','🥋','🎽','🛹','🛼','🛷','⛸','🥌','🎿','⛷','🏂','🪂','🏋️','🤼','🤸','⛹️','🤺','🏇','🧘','🏄','🏊','🤽','🚣','🧗','🚵','🚴','🏆','🥇','🥈','🥉','🏅','🎖','🏵','🎗','🎫','🎟','🎪','🤹','🎭','🎨','🎬','🎤','🎧','🎼','🎹','🥁','🪘','🎷','🎺','🎸','🪕','🎻','🎲','♟','🎯','🎳','🎮','🎰','🧩'] },
+        { label: '🍕 Еда', emojis: ['🍕','🍔','🌭','🥪','🌮','🌯','🫔','🥙','🧆','🥚','🍳','🥘','🍲','🫕','🥣','🥗','🍿','🧈','🧂','🥫','🍱','🍘','🍙','🍚','🍛','🍜','🍝','🍠','🍢','🧁','🍡','🍧','🍨','🍦','🥧','🍰','🎂','🍮','🍭','🍬','🍫','🍿','🍩','🍪','🌰','🥜','🍯','🍼','🥛','☕','🫖','🍵','🧃','🥤','🧋','🍶','🍺','🍻','🥂','🍷','🥃','🍸','🍹','🧉','🍾','🧊','🥄','🍴','🍽','🥢','🧆','🧇','🥞','🧇','🍗','🍖','🦴','🥩','🥓','🌽','🥕','🫛','🥦','🥬','🥒','🌶','🫑','🧄','🧅','🥔','🍠','🫚','🫙','🥐','🥯','🍞','🥖','🥨','🧀','🥚','🥗','🥙','🫔'] },
+        { label: '🌍 Природа', emojis: ['🌍','🌎','🌏','🌐','🗺','🧭','🏔','⛰','🌋','🗻','🏕','🏖','🏜','🏝','🏞','🏟','🏛','🏗','🧱','🪨','🪵','🛖','🏠','🏡','🏢','🏣','🏤','🏥','🏦','🏨','🏩','🏪','🏫','🏭','🏯','🏰','💒','🗼','🗽','⛪','🕌','🛕','🕍','⛩','🕋','⛲','⛺','🌁','🌃','🏙','🌄','🌅','🌆','🌇','🌉','🌌','🌠','🎇','🎆','🌈','☀️','🌤','⛅','🌥','☁️','🌦','🌧','⛈','🌩','🌨','❄️','☃️','⛄','🌬','💨','🌀','🌊','🌏','🌿','🍀','🍁','🍂','🍃','🌱','🌲','🌳','🌴','🌵','🎋','🎄','🌾','💐','🌷','🌹','🥀','🌺','🌸','🌼','🌻','🌞','🌝','🌛','🌜','🌚','🌕','🌖','🌗','🌘','🌑','🌒','🌓','🌔','🌙','🌟','⭐','🌠','✨','💫','⚡','🔥','💧','🌊'] },
+        { label: '🐶 Животные', emojis: ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐻‍❄️','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🙈','🙉','🙊','🐔','🐧','🐦','🐤','🦆','🦅','🦉','🦇','🐺','🐗','🐴','🦄','🐝','🐛','🦋','🐌','🐞','🐜','🪲','🐢','🐍','🦎','🦖','🦕','🐙','🦑','🦐','🦞','🦀','🐡','🐠','🐟','🐬','🐳','🐋','🦈','🐊','🐅','🐆','🦓','🦍','🦧','🦣','🐘','🦛','🦏','🐪','🐫','🦒','🦘','🦬','🐃','🐂','🐄','🐎','🐖','🐏','🐑','🦙','🐐','🦌','🐕','🐩','🦮','🐕‍🦺','🐈','🐈‍⬛','🐓','🦃','🦤','🦚','🦜','🦢','🦩','🕊','🐇','🦝','🦨','🦡','🦫','🦦','🦥','🐁','🐀','🐿','🦔'] },
+        { label: '🔔 Символы', emojis: ['📢','📣','🔔','🔕','📳','📴','📵','📶','📱','💬','💭','🗯','📩','📨','📧','📤','📥','📦','📫','📪','📬','📭','📮','🗳','✏️','✒️','🖊','🖋','📝','📁','📂','🗂','📅','📆','🗒','🗓','📇','📈','📉','📊','📋','📌','📍','📎','🖇','📏','📐','✂️','🗃','🗄','🗑','🔒','🔓','🔏','🔐','🔑','🗝','🔨','🪓','⛏','⚒','🛠','🗡','⚔️','🔫','🪃','🏹','🛡','🪚','🔧','🪛','🔩','⚙️','🗜','⚖️','🦯','🔗','⛓','🪝','🧲','⚗️','🧪','🧫','🧬','🔬','🔭','📡','💡','🔦','🕯','🪔','💰','💳','💎','⚠️','🚨','⛽','🛞','⚓','🪝','🧯','💈','🔭'] },
+    ];
+
     var panel = document.createElement('div');
     panel.className = 'emoji-panel';
-    panel.style.marginTop = '10px';
-    panel.style.display = 'flex';
-    panel.style.flexWrap = 'wrap';
-    panel.style.gap = '5px';
-    
-    var emojis = ['😊', '👍', '❤️', '🔥', '🎉', '🏐', '😂', '✅', '⭐', '💪', '👋', '🎯'];
-    
-    emojis.forEach(function(emoji) {
-        var btn = document.createElement('button');
-        btn.textContent = emoji;
-        btn.type = 'button';
-        btn.className = 'btn btn-sm btn-secondary';
-        btn.style.padding = '0.4rem';
-        btn.style.fontSize = '2rem';
-        btn.style.cursor = 'pointer';
-        
-        btn.addEventListener('click', function(e) {
-            e.preventDefault();
-            if (editor.editor) {
-                editor.editor.insertString(emoji);
-            }
+    panel.style.marginTop = '8px';
+    panel.style.border = '1px solid #dee2e6';
+    panel.style.borderRadius = '8px';
+    panel.style.overflow = 'hidden';
+
+    // Вкладки
+    var tabs = document.createElement('div');
+    tabs.style.display = 'flex';
+    tabs.style.flexWrap = 'wrap';
+    tabs.style.background = '#f8f9fa';
+    tabs.style.borderBottom = '1px solid #dee2e6';
+    tabs.style.gap = '2px';
+    tabs.style.padding = '4px';
+
+    // Контейнер эмодзи
+    var emojiBox = document.createElement('div');
+    emojiBox.style.display = 'flex';
+    emojiBox.style.flexWrap = 'wrap';
+    emojiBox.style.gap = '2px';
+    emojiBox.style.padding = '8px';
+    emojiBox.style.maxHeight = '180px';
+    emojiBox.style.overflowY = 'auto';
+
+    var activeTab = null;
+
+    function showCategory(idx) {
+        if (activeTab !== null) {
+            tabs.children[activeTab].style.fontWeight = 'normal';
+            tabs.children[activeTab].style.background = 'transparent';
+        }
+        activeTab = idx;
+        tabs.children[activeTab].style.fontWeight = 'bold';
+        tabs.children[activeTab].style.background = '#fff';
+
+        emojiBox.innerHTML = '';
+        categories[idx].emojis.forEach(function(emoji) {
+            var btn = document.createElement('button');
+            btn.textContent = emoji;
+            btn.type = 'button';
+            btn.title = emoji;
+            btn.style.cssText = 'background:none;border:1px solid transparent;border-radius:4px;cursor:pointer;font-size:1.4rem;padding:2px 4px;line-height:1;transition:background 0.1s';
+            btn.addEventListener('mouseenter', function(){ this.style.background='#e9ecef'; this.style.borderColor='#ced4da'; });
+            btn.addEventListener('mouseleave', function(){ this.style.background='none'; this.style.borderColor='transparent'; });
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (editor.editor) editor.editor.insertString(emoji);
+            });
+            emojiBox.appendChild(btn);
         });
-        
-        panel.appendChild(btn);
+    }
+
+    categories.forEach(function(cat, idx) {
+        var tab = document.createElement('button');
+        tab.type = 'button';
+        tab.textContent = cat.label;
+        tab.style.cssText = 'background:transparent;border:1px solid transparent;border-radius:4px;cursor:pointer;font-size:0.7rem;padding:3px 6px;white-space:nowrap;';
+        tab.addEventListener('click', function(e) { e.preventDefault(); showCategory(idx); });
+        tabs.appendChild(tab);
     });
-    
+
+    panel.appendChild(tabs);
+    panel.appendChild(emojiBox);
     editor.parentElement.insertBefore(panel, editor.nextSibling);
+    showCategory(0);
 }
 
 // Функция проверки всех редакторов
