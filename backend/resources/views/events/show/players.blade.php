@@ -427,6 +427,158 @@
     </div>
 </form>
 </div>
+
+{{-- ===============================
+ГРУППА НА ПЛЯЖКУ / КОМАНДА / ПАРА
+=============================== --}}
+@endif
+
+@if((!empty($groupUi['enabled'])) && ($isRegistered))
+@php
+    $gs        = $event->gameSettings ?? null;
+    $subtype   = (string)($gs->subtype ?? '');
+    $isPair    = $subtype === '2x2';
+    $isTeam    = in_array($subtype, ['3x3','4x4'], true);
+
+    $blockTitle   = $isPair ? '👥 Пара на пляжку'   : '🧑‍🧑‍🧒‍🧒 Команда на пляжку';
+    $inviteLabel  = $isPair ? 'Пригласить игрока в пару' : 'Пригласить игрока в команду';
+    $groupLabel   = $isPair ? 'Состав пары'          : 'Состав команды';
+    $leaveLabel   = $isPair ? 'Выйти из пары'        : 'Выйти из команды';
+@endphp
+
+<div class="ramka">
+    <h2 class="-mt-05">{{ $blockTitle }}</h2>
+
+    {{-- Пользователь ещё не в группе --}}
+    @if(empty($groupUi['registration']))
+        @if(!empty($groupUi['pending_invites']) && $groupUi['pending_invites']->count())
+        <div class="alert alert-info mt-2">
+            У вас есть приглашения в {{ $isPair ? 'пару' : 'команду' }} для этого мероприятия.
+        </div>
+
+        @foreach($groupUi['pending_invites'] as $invite)
+        <div class="border rounded p-3 mt-2">
+            <div class="text-sm">
+                Приглашение от
+                <strong>{{ $invite->from_user_name ?: $invite->from_user_email ?: ('#'.$invite->from_user_id) }}</strong>
+            </div>
+            <div class="mt-2">
+                <div class="alert alert-secondary mb-2">
+                    Чтобы принять приглашение, сначала запишитесь на мероприятие.
+                    После этого вы сможете вернуться и принять приглашение.
+                </div>
+                <form method="POST" action="{{ route('events.group.decline', ['event' => $event->id, 'invite' => $invite->id]) }}">
+                    @csrf
+                    <button type="submit" class="btn btn-outline-secondary">Отклонить</button>
+                </form>
+            </div>
+        </div>
+        @endforeach
+        @endif
+
+    {{-- Пользователь записан --}}
+    @else
+
+        {{-- Нет группы — кнопка объединиться --}}
+        @if(empty($groupUi['group_key']))
+        <form method="POST" action="{{ route('events.group.create', ['event' => $event->id]) }}" class="mt-2">
+            @csrf
+            <button type="submit" class="btn btn-outline-primary">Объединиться</button>
+        </form>
+        @endif
+
+        {{-- Есть группа --}}
+        @if(!empty($groupUi['group_key']))
+        <div class="mt-3">
+            <div class="fw-bold">{{ $groupLabel }}</div>
+
+            @if(!empty($groupUi['group_members']) && $groupUi['group_members']->count())
+            <ul class="mt-2 mb-2">
+                @foreach($groupUi['group_members'] as $member)
+                <li>
+                    {{ $member->name ?: $member->email ?: ('#'.$member->user_id) }}
+                    @if((int)$member->user_id === (int)auth()->id())
+                    <strong>(Вы)</strong>
+                    @endif
+                </li>
+                @endforeach
+            </ul>
+            @else
+            <div class="text-muted small mt-2">
+                Пока {{ $isPair ? 'в паре только вы' : 'в команде только вы' }}.
+            </div>
+            @endif
+
+            <form method="POST" action="{{ route('events.group.leave', ['event' => $event->id]) }}" class="mt-2">
+                @csrf
+                <button type="submit" class="btn btn-outline-danger">{{ $leaveLabel }}</button>
+            </form>
+        </div>
+        @endif
+
+       {{-- Приглашение игроков --}}
+        <div class="mt-4">
+            <label class="form-label">{{ $inviteLabel }}</label>
+            <form method="POST" action="{{ route('events.group.invite', ['event' => $event->id]) }}" id="group-invite-form">
+                @csrf
+                <input type="hidden" name="to_user_id" id="group-invite-user-id" value="">
+        
+                <div style="position:relative" class="mb-2" id="group-invite-ac-wrap">
+                    <input
+                        type="text"
+                        id="group-invite-ac-input"
+                        autocomplete="off"
+                        class="form-control"
+                        placeholder="Введите имя, фамилию, ник или телефон…"
+                    >
+                    <div id="group-invite-ac-dd" class="form-select-dropdown trainer_dd"></div>
+                </div>
+        
+                <div id="group-invite-selected" class="mb-2 text-muted small"></div>
+        
+                <button type="submit" id="group-invite-btn" class="btn btn-outline-primary" disabled>
+                    {{ $isPair ? 'Пригласить в пару' : 'Пригласить в команду' }}
+                </button>
+            </form>
+        </div>
+
+        {{-- Входящие приглашения --}}
+        @if(!empty($groupUi['pending_invites']) && $groupUi['pending_invites']->count())
+        <div class="mt-4">
+            <div class="fw-bold">Входящие приглашения</div>
+            @foreach($groupUi['pending_invites'] as $invite)
+            <div class="border rounded p-3 mt-2">
+                <div class="text-sm">
+                    Приглашение от
+                    <strong>{{ $invite->from_user_name ?: $invite->from_user_email ?: ('#'.$invite->from_user_id) }}</strong>
+                </div>
+                <div class="mt-2 d-flex gap-2 flex-wrap">
+                    <form method="POST" action="{{ route('events.group.accept', ['event' => $event->id, 'invite' => $invite->id]) }}">
+                        @csrf
+                        <button type="submit" class="btn btn-primary">Принять</button>
+                    </form>
+                    <form method="POST" action="{{ route('events.group.decline', ['event' => $event->id, 'invite' => $invite->id]) }}">
+                        @csrf
+                        <button type="submit" class="btn btn-outline-secondary">Отклонить</button>
+                    </form>
+                </div>
+            </div>
+            @endforeach
+        </div>
+        @endif
+    @endif
+</div>
+@endif
+{{-- ===============================
+СПИСОК ИГРОКОВ
+=============================== --}}
+@if($showParticipants)
+<div class="ramka">
+    <h2 class="-mt-05">Записанные игроки</h2>	
+	
+    <div id="players-list"></div>
+</div>
+@endif
 <script>
 (function(){
     var input   = document.getElementById('invite-ac-input');
@@ -592,160 +744,94 @@
         }
     });
 })();
+
+// ===== Group invite autocomplete =====
+(function () {
+    var input   = document.getElementById('group-invite-ac-input');
+    var dd      = document.getElementById('group-invite-ac-dd');
+    var hidden  = document.getElementById('group-invite-user-id');
+    var selected = document.getElementById('group-invite-selected');
+    var btn     = document.getElementById('group-invite-btn');
+    var form    = document.getElementById('group-invite-form');
+    var timer   = null;
+
+    if (!input) return;
+
+    function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    function showDd() { dd.classList.add('form-select-dropdown--active'); }
+    function hideDd() { dd.classList.remove('form-select-dropdown--active'); }
+
+    function pick(id, label) {
+        hidden.value = String(id);
+        selected.textContent = '✅ Выбран: ' + label;
+        btn.disabled = false;
+        hideDd();
+        dd.innerHTML = '';
+        input.value = label;
+    }
+
+    function reset() {
+        hidden.value = '';
+        selected.textContent = '';
+        btn.disabled = true;
+    }
+
+    function render(items) {
+        dd.innerHTML = '';
+        if (!items.length) {
+            dd.innerHTML = '<div class="city-message">Ничего не найдено</div>';
+            showDd();
+            return;
+        }
+        items.forEach(function(item) {
+            var div = document.createElement('div');
+            div.className = 'trainer-item form-select-option';
+            div.innerHTML = '<div class="text-sm">' + esc(item.label || item.name) + '</div>';
+            div.addEventListener('click', function() {
+                pick(item.id, item.label || item.name);
+            });
+            dd.appendChild(div);
+        });
+        showDd();
+    }
+
+    input.addEventListener('input', function() {
+        clearTimeout(timer);
+        reset();
+        var q = input.value.trim();
+        if (q.length < 2) { hideDd(); return; }
+
+        dd.innerHTML = '<div class="city-message">Поиск…</div>';
+        showDd();
+
+        timer = setTimeout(function() {
+            fetch('/api/users/search?q=' + encodeURIComponent(q), {
+                headers: { 'Accept': 'application/json' },
+                credentials: 'same-origin'
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) { render(data.items || []); })
+            .catch(function() {
+                dd.innerHTML = '<div class="city-message">Ошибка загрузки</div>';
+                showDd();
+            });
+        }, 250);
+    });
+
+    document.addEventListener('click', function(e) {
+        var wrap = document.getElementById('group-invite-ac-wrap');
+        if (wrap && !wrap.contains(e.target)) hideDd();
+    });
+
+    input.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') hideDd();
+    });
+
+    form.addEventListener('submit', function(e) {
+        if (!hidden.value) {
+            e.preventDefault();
+            input.focus();
+        }
+    });
+})();
 </script>
-
-{{-- ===============================
-ГРУППА НА ПЛЯЖКУ
-=============================== --}}
-@endif
-
-@if((!empty($groupUi['enabled'])) && ($isRegistered))
-
-<div class="ramka">
-	<h2 class="-mt-05">Группа на пляжку</h2>
-	
-	
-	{{-- Пользователь еще не записан --}}
-	@if(empty($groupUi['registration']))
-	@if(!empty($groupUi['pending_invites']) && $groupUi['pending_invites']->count())
-	<div class="alert alert-info mt-2">
-		У вас есть приглашения в группу для этого мероприятия.
-	</div>
-	
-	@foreach($groupUi['pending_invites'] as $invite)
-	<div class="border rounded p-3 mt-2">
-		<div class="text-sm">
-			Приглашение от
-			<strong>{{ $invite->from_user_name ?: $invite->from_user_email ?: ('#'.$invite->from_user_id) }}</strong>
-		</div>
-		
-		<div class="mt-2">
-			<div class="alert alert-secondary mb-2">
-				Чтобы принять приглашение, сначала зарегистрируйтесь в системе, затем запишитесь на мероприятие.
-				После этого вы сможете вернуться и принять приглашение в группу.
-			</div>
-			
-			<form method="POST" action="{{ route('events.group.decline', ['event' => $event->id, 'invite' => $invite->id]) }}">
-				@csrf
-				<button type="submit" class="btn btn-outline-secondary">
-					Отклонить
-				</button>
-			</form>
-		</div>
-	</div>
-	@endforeach
-	@endif
-	
-	{{-- Пользователь записан --}}
-	@else
-	
-	{{-- Пока нет группы --}}
-	@if(empty($groupUi['group_key']))
-	<form method="POST" action="{{ route('events.group.create', ['event' => $event->id]) }}" class="mt-2">
-		@csrf
-		<button type="submit" class="btn btn-outline-primary">
-			Объединиться
-		</button>
-	</form>
-	@endif
-	
-	{{-- Уже есть группа --}}
-	@if(!empty($groupUi['group_key']))
-	<div class="mt-3">
-		<div class="fw-bold">Состав группы</div>
-		
-		@if(!empty($groupUi['group_members']) && $groupUi['group_members']->count())
-		<ul class="mt-2 mb-2">
-			@foreach($groupUi['group_members'] as $member)
-			<li>
-				{{ $member->name ?: $member->email ?: ('#'.$member->user_id) }}
-				@if((int)$member->user_id === (int)auth()->id())
-				<strong>(Вы)</strong>
-				@endif
-			</li>
-			@endforeach
-		</ul>
-		@else
-		<div class="text-muted small mt-2">
-			Пока в группе только вы.
-		</div>
-		@endif
-		
-		<form method="POST" action="{{ route('events.group.leave', ['event' => $event->id]) }}" class="mt-2">
-			@csrf
-			<button type="submit" class="btn btn-outline-danger">
-				Выйти из группы
-			</button>
-		</form>
-	</div>
-	@endif
-	
-	{{-- Приглашение других игроков --}}
-	@if(!empty($groupUi['invite_candidates']) && $groupUi['invite_candidates']->count())
-	<div class="mt-4">
-		<label class="form-label">Пригласить игрока в группу</label>
-		
-		<form method="POST" action="{{ route('events.group.invite', ['event' => $event->id]) }}">
-			@csrf
-			
-			<select name="to_user_id" class="form-select" required>
-				<option value="">— выбрать игрока —</option>
-				@foreach($groupUi['invite_candidates'] as $candidate)
-				<option value="{{ $candidate->id }}">
-					{{ $candidate->name ?: $candidate->email ?: ('#'.$candidate->id) }}
-				</option>
-				@endforeach
-			</select>
-			
-			<button type="submit" class="btn btn-outline-primary mt-2">
-				Пригласить
-			</button>
-		</form>
-	</div>
-	@endif
-	
-	{{-- Входящие приглашения --}}
-	@if(!empty($groupUi['pending_invites']) && $groupUi['pending_invites']->count())
-	<div class="mt-4">
-		<div class="fw-bold">Входящие приглашения</div>
-		
-		@foreach($groupUi['pending_invites'] as $invite)
-		<div class="border rounded p-3 mt-2">
-			<div class="text-sm">
-				Приглашение от
-				<strong>{{ $invite->from_user_name ?: $invite->from_user_email ?: ('#'.$invite->from_user_id) }}</strong>
-			</div>
-			
-			<div class="mt-2 d-flex gap-2 flex-wrap">
-				<form method="POST" action="{{ route('events.group.accept', ['event' => $event->id, 'invite' => $invite->id]) }}">
-					@csrf
-					<button type="submit" class="btn btn-primary">
-						Принять
-					</button>
-				</form>
-				
-				<form method="POST" action="{{ route('events.group.decline', ['event' => $event->id, 'invite' => $invite->id]) }}">
-					@csrf
-					<button type="submit" class="btn btn-outline-secondary">
-						Отклонить
-					</button>
-				</form>
-			</div>
-		</div>
-		@endforeach
-	</div>
-	@endif
-	@endif
-</div>
-@endif
-
-{{-- ===============================
-СПИСОК ИГРОКОВ
-=============================== --}}
-@if($showParticipants)
-<div class="ramka">
-    <h2 class="-mt-05">Записанные игроки</h2>	
-	
-    <div id="players-list"></div>
-</div>
-@endif
