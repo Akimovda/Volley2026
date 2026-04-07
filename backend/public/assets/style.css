@@ -1610,10 +1610,15 @@ body.dark .breadcrumbs li:last-child a {
     color: #999;
     font-size: 2rem;
 }
+
 @media (max-width: 768px) {
+	
     .breadcrumbs {
-		display: none;
+		/*display: none;*/
+		justify-content: center;
+		font-size: 1.5rem;
 	}
+	
 }
 
 /* Анимации */
@@ -1946,7 +1951,7 @@ body.dark .level-pro td {
 	z-index: 20;
 	/*background: rgba(255, 255, 255, 0.7);*/
 	background-image: 
-	linear-gradient(to bottom, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.45) 100%);	
+	linear-gradient(to bottom, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 100%);	
 	backdrop-filter: blur(8px);
 	box-shadow: 0 1rem 2.2rem rgba(0, 0, 0, 0.05), 0 0.5rem 1.2rem rgba(0, 0, 0, 0.03);
 	/*border: 0.1rem solid rgba(255, 255, 255, 0);	*/
@@ -1955,7 +1960,7 @@ body.dark .level-pro td {
 
 body.dark .fix-header {
 	position: fixed;
-	background-image: linear-gradient(to bottom, rgba(34, 35, 51, 0.8) 0%, rgba(30,31,45, 0.4) 100%);
+	background-image: linear-gradient(to bottom, rgba(34, 35, 51, 0.8) 0%, rgba(30,31,45, 0.5) 100%);
 	box-shadow: 0 1rem 2.2rem rgba(0, 0, 0, 0.1), 0 0.5rem 1.2rem rgba(0, 0, 0, 0.05);
 	/*border: 0.1rem solid rgba(0, 0, 0, 0);	*/
 }
@@ -2181,6 +2186,10 @@ body.dark .fix-header-user.active {
 	font-weight: 600;
 	line-height: 1;
 	position: absolute;
+}
+.sidebar-menu .notificationsUnread {
+	top: calc(50% - 1rem);
+	border-radius: 6px;
 }
 .fix-header-btn-user .icon-login-svg {
 	padding: 0.3rem;
@@ -2926,7 +2935,7 @@ body.dark .role-organizer .role-badge {
 	/*background: #fff;*/
 	margin-bottom: 2rem;
 	position: relative;
-    background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.5) 100%);
+    background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 100%);
 	box-shadow: 0 1rem 2.2rem rgba(0, 0, 0, 0.05);	
 	z-index: 3;
 }
@@ -3053,6 +3062,9 @@ body.dark .top-section-dark-img {
 }
 
 @media (max-width: 768px) {	
+	.top-section-img {
+	margin-top: 2rem;
+	}
 	.top-section-txt,
 	.top-section-img {
 		width: 100%;

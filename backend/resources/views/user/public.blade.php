@@ -132,11 +132,7 @@ $birth = $user->birth_date
 	</x-slot>
 	
     <x-slot name="t_description">
-        @if($isSelf)
-		Примерно так его видят другие пользователи
-        @else
 		Информация об игроке
-        @endif
 	</x-slot>
 	
     <x-slot name="breadcrumbs">

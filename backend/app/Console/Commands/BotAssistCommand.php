@@ -36,13 +36,13 @@ class BotAssistCommand extends Command
 
         // Только открытая запись
         $query->where(function ($q) {
-            $q->whereNull('e.registration_starts_at')
-              ->orWhere('e.registration_starts_at', '<=', Carbon::now());
+            $q->whereNull('eo.registration_starts_at')
+              ->orWhere('eo.registration_starts_at', '<=', Carbon::now());
         });
-
+        
         $query->where(function ($q) {
-            $q->whereNull('e.registration_ends_at')
-              ->orWhere('e.registration_ends_at', '>=', Carbon::now());
+            $q->whereNull('eo.registration_ends_at')
+              ->orWhere('eo.registration_ends_at', '>=', Carbon::now());
         });
 
         if ($occurrenceId) {

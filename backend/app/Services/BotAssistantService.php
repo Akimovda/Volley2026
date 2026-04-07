@@ -43,17 +43,19 @@ final class BotAssistantService
             return; // слишком маленький формат
         }
 
-        $startsAt = Carbon::parse($occurrence->starts_at, 'UTC');
+       $startsAt = Carbon::parse($occurrence->starts_at, 'UTC');
 
-        // Заморозка за 3 часа до начала
-        if ($startsAt->diffInHours(now(), false) > -self::FREEZE_HOURS_BEFORE) {
-            Log::info("BotAssistant: occurrence #{$occurrence->id} frozen (< 3h before start)");
+        $hoursUntilStart = now('UTC')->diffInHours($startsAt, true);
+        if ($hoursUntilStart < self::FREEZE_HOURS_BEFORE) {
+            Log::warning("BotAssistant: occurrence #{$occurrence->id} frozen (< 3h before start)");
             return;
         }
 
         // Регистрация должна быть открыта
-        $registrationStartsAt = $event->registration_starts_at
-            ? Carbon::parse($event->registration_starts_at)
+        $registrationStartsAt = $occurrence->registration_starts_at
+            ?? $event->registration_starts_at;
+        $registrationStartsAt = $registrationStartsAt
+            ? Carbon::parse($registrationStartsAt)
             : null;
 
         if ($registrationStartsAt && $registrationStartsAt->isFuture()) {
@@ -68,8 +70,8 @@ final class BotAssistantService
 
         // Порог: прошли ли сутки с открытия записи?
         $registrationAge = $registrationStartsAt
-            ? $registrationStartsAt->diffInHours(now())
-            : Carbon::parse($occurrence->created_at)->diffInHours(now());
+            ? $registrationStartsAt->diffInHours(now('UTC'), true)
+            : Carbon::parse($occurrence->created_at)->diffInHours(now('UTC'), true);
 
         $threshold    = (int) ($event->bot_assistant_threshold ?? 10);
         $maxFillPct   = (int) ($event->bot_assistant_max_fill_pct ?? 40);
@@ -91,7 +93,7 @@ final class BotAssistantService
             registrationAgeHours: $registrationAge
         );
 
-        Log::info("BotAssistant: occurrence #{$occurrence->id}", [
+        Log::warning("BotAssistant: occurrence #{$occurrence->id}", [
             'live' => $liveCount,
             'bots' => $botCount,
             'target_bots' => $targetBotCount,
@@ -153,7 +155,7 @@ final class BotAssistantService
     // Добавление ботов
     // -------------------------------------------------------------------------
 
-    private function addBots(
+   private function addBots(
         EventOccurrence $occurrence,
         Event $event,
         int $count,
@@ -164,15 +166,62 @@ final class BotAssistantService
             count: $count,
             excludeUserIds: $currentBotUserIds
         );
-
+    
         foreach ($bots as $bot) {
-            // Случайная задержка — имитация органичной записи
-            // В реальности джоб запускается раз в N минут, задержка тут символическая
-            // Для более реалистичного поведения джоб сам управляет расписанием
-            $this->registerBot($bot, $occurrence, $event);
-
-            Log::info("BotAssistant: bot #{$bot->id} ({$bot->name}) joined occurrence #{$occurrence->id}");
+            // Перезагружаем occurrence чтобы Guard видел актуальные регистрации
+            $occurrence->unsetRelation('registrations');
+            $occurrence->load(['registrations.user', 'event.gameSettings']);
+    
+            $registered = $this->registerBot($bot, $occurrence, $event);
+    
+            if ($registered) {
+                Log::warning("BotAssistant: bot #{$bot->id} ({$bot->name}) joined occurrence #{$occurrence->id}");
+            } else {
+                Log::warning("BotAssistant: bot #{$bot->id} ({$bot->name}) blocked by guard, skipped");
+            }
         }
+    }
+    
+    private function registerBot(User $bot, EventOccurrence $occurrence, Event $event): bool
+    {
+        $guard  = app(\App\Services\EventRegistrationGuard::class);
+        $result = $guard->check($bot, $occurrence);
+    
+        if (!$result->allowed) {
+            return false;
+        }
+    
+        $freePositions = $result->data['free_positions'] ?? [];
+        $position = null;
+    
+        if (!empty($freePositions)) {
+            $pos      = $freePositions[array_rand($freePositions)];
+            $position = $pos['key'];
+        }
+    
+        // Проверяем существование ДО транзакции
+        $exists = EventRegistration::query()
+            ->where('user_id', $bot->id)
+            ->where('occurrence_id', $occurrence->id)
+            ->exists();
+    
+        if ($exists) {
+            return false;
+        }
+    
+        DB::transaction(function () use ($bot, $occurrence, $event, $position) {
+            EventRegistration::query()->create([
+                'user_id'       => $bot->id,
+                'event_id'      => $event->id,
+                'occurrence_id' => $occurrence->id,
+                'status'        => 'confirmed',
+                'position'      => $position,
+            ]);
+        });
+    
+        app(\App\Services\EventOccurrenceStatsService::class)->increment($occurrence->id);
+    
+        return true;
     }
 
     private function selectBots(Event $event, int $count, array $excludeUserIds): Collection
@@ -206,39 +255,7 @@ final class BotAssistantService
 
         return $query->inRandomOrder()->limit($count)->get();
     }
-
-    private function registerBot(User $bot, EventOccurrence $occurrence, Event $event): void
-    {
-        DB::transaction(function () use ($bot, $occurrence, $event) {
-            // Проверяем — вдруг уже записан
-            $exists = EventRegistration::query()
-                ->where('user_id', $bot->id)
-                ->where('occurrence_id', $occurrence->id)
-                ->exists();
-
-            if ($exists) {
-                return;
-            }
-
-            // Определяем позицию — боты всегда в хвосте списка
-            $maxPosition = EventRegistration::query()
-                ->where('occurrence_id', $occurrence->id)
-                ->max('position') ?? 0;
-
-            EventRegistration::query()->create([
-                'user_id'       => $bot->id,
-                'event_id'      => $event->id,
-                'occurrence_id' => $occurrence->id,
-                'status'        => 'confirmed',
-                'position'      => $maxPosition + 1,
-            ]);
-        });
-    }
-
     // -------------------------------------------------------------------------
-    // Удаление ботов
-    // -------------------------------------------------------------------------
-
     private function removeBots(int $occurrenceId, int $count, Collection $registrations): void
     {
         // Удаляем ботов с конца (самые последние в очереди уходят первыми)
@@ -251,7 +268,8 @@ final class BotAssistantService
             EventRegistration::query()
                 ->where('id', $reg->registration_id)
                 ->delete();
-
+            app(\App\Services\EventOccurrenceStatsService::class)->decrement($occurrenceId);
+            
             Log::info("BotAssistant: bot #{$reg->user_id} ({$reg->user_name}) left occurrence #{$occurrenceId}");
         }
     }

@@ -107,6 +107,7 @@
                             <div><strong>Телефон:</strong> {{ $user->phone ?? '—' }}</div>
 						</div>
                         <ul class="list mt-1">
+                           <li><a class="blink" href="/user/{{ $user->id }}">Публичный профиль пользователя</a></li>						
                            <li><a class="blink" href="/profile/complete?user_id={{ $user->id }}">Редактировать данные пользователя</a></li>
                            <li><a class="blink" href="/user/photos?user_id={{ $user->id }}">Редактировать фото пользователя</a></li>                           
 						</ul>						

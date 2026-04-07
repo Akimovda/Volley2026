@@ -8,11 +8,17 @@
     <x-slot name="h1">Уведомления</x-slot>
 	
 	<x-slot name="breadcrumbs">
+        <li itemprop="itemListElement" itemscope="" itemtype="http://schema.org/ListItem">
+            <a href="{{ route('profile.show') }}" itemprop="item">
+                <span itemprop="name">Ваши профиль</span>
+			</a>
+            <meta itemprop="position" content="2">
+		</li>	
 		<li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
 			<a href="{{ route('notifications.index') }}" itemprop="item">
 				<span itemprop="name">Уведомления</span>
 			</a>
-			<meta itemprop="position" content="2">
+			<meta itemprop="position" content="3">
 		</li>
 	</x-slot>
 	<x-slot name="t_description">Непрочитанных: <strong class="cd">{{ $unreadCount }}</strong></x-slot>
