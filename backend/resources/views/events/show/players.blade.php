@@ -243,6 +243,149 @@
     @endif
 </div>	
 {{-- ===============================
+РЕЗЕРВ
+=============================== --}}
+@php
+    $regMode       = (string)($event->registration_mode ?? 'single');
+    $isTournament  = in_array($regMode, ['team_classic','team_beach'], true);
+    $isFinished    = $occurrence->isFinished();
+    $isRunning     = $occurrence->isRunning();
+    $eventStarted  = $isFinished || $isRunning;
+
+    $maxPlayers    = $occurrence->effectiveMaxPlayers();
+    $registered    = $registered_total ?? 0;
+    $isFull        = $maxPlayers > 0 && $registered >= $maxPlayers;
+
+    $direction     = (string)($event->direction ?? 'classic');
+    $isBeach       = $direction === 'beach';
+    $isClassic     = $direction === 'classic';
+
+    // Позиции для резерва (из game settings)
+    $gs            = $event->gameSettings ?? null;
+    $allPositions  = [];
+    if ($isClassic && $gs) {
+        $slots = app(\App\Services\EventRoleSlotService::class)->getSlots($event);
+        foreach ($slots as $slot) {
+            $allPositions[$slot->role] = position_name($slot->role);
+        }
+    }
+
+    // Текущий пользователь в резерве?
+    $myWaitlist = null;
+    if (auth()->check()) {
+        $myWaitlist = \App\Models\OccurrenceWaitlist::query()
+            ->where('occurrence_id', $occurrence->id)
+            ->where('user_id', auth()->id())
+            ->first();
+    }
+
+    // Список резерва для организатора
+    $isOrganizer = auth()->check() && (
+        auth()->user()->role === 'admin' ||
+        (int)($event->organizer_id ?? 0) === auth()->id()
+    );
+
+    $waitlistCount = \App\Models\OccurrenceWaitlist::query()
+        ->where('occurrence_id', $occurrence->id)
+        ->count();
+
+    $showWaitlist = !$isTournament && !$eventStarted && $isFull && auth()->check();
+@endphp
+
+@if(!$isTournament && !$eventStarted && $isFull)
+<div class="ramka">
+    <h2 class="-mt-05">🔔 Резерв</h2>
+
+    @if(!auth()->check())
+        <div class="text-muted small">🔐 Войдите на сайт чтобы записаться в резерв.</div>
+
+    @elseif($myWaitlist)
+        {{-- Уже в резерве --}}
+        <div class="alert alert-success">
+            ✅ Вы в резерве. Мы уведомим вас когда освободится место.
+            @if($isClassic && !empty($myWaitlist->positions))
+                <div class="mt-1 small">
+                    Ваши позиции: <strong>{{ implode(', ', array_map('position_name', $myWaitlist->positions)) }}</strong>
+                </div>
+            @endif
+            @if($myWaitlist->notification_expires_at && $myWaitlist->notification_expires_at->isFuture())
+                <div class="mt-1 small text-warning">
+                    ⏳ Место зарезервировано для вас до {{ $myWaitlist->notification_expires_at->setTimezone($userTz ?? 'UTC')->format('H:i') }}
+                </div>
+            @endif
+        </div>
+
+        <form method="POST" action="{{ route('occurrences.waitlist.leave', $occurrence) }}" class="mt-2">
+            @csrf
+            @method('DELETE')
+            <button type="submit" class="btn btn-outline-secondary">Покинуть резерв</button>
+        </form>
+
+    @else
+        {{-- Форма записи в резерв --}}
+        <div class="text-muted small mb-2">
+            Все места заняты. Запишитесь в резерв — мы уведомим вас первым когда освободится место.
+        </div>
+
+        @if($waitlistCount > 0)
+        <div class="text-muted small mb-2">
+            В резерве: <strong>{{ $waitlistCount }}</strong> {{ trans_choice('человек|человека|человек', $waitlistCount) }}
+        </div>
+        @endif
+
+        <form method="POST" action="{{ route('occurrences.waitlist.join', $occurrence) }}">
+            @csrf
+
+            @if($isClassic && !empty($allPositions))
+            <div class="mb-2">
+                <label class="form-label mb-1">Выберите позиции (можно несколько):</label>
+                <div class="d-flex flex-wrap gap-2">
+                    @foreach($allPositions as $key => $label)
+                    <label class="checkbox-item mb-0">
+                        <input type="checkbox" name="positions[]" value="{{ $key }}">
+                        <div class="custom-checkbox"></div>
+                        <span>{{ $label }}</span>
+                    </label>
+                    @endforeach
+                </div>
+                <div class="text-muted small mt-1">
+                    Если не выбрать позиции — уведомим при освобождении любого места.
+                </div>
+            </div>
+            @endif
+
+            <button type="submit" class="btn btn-primary">🔔 Записаться в резерв</button>
+        </form>
+    @endif
+
+    {{-- Список резерва для организатора --}}
+    @if($isOrganizer && $waitlistCount > 0)
+    @php
+        $waitlistEntries = \App\Models\OccurrenceWaitlist::query()
+            ->where('occurrence_id', $occurrence->id)
+            ->with('user')
+            ->orderBy('created_at')
+            ->get();
+    @endphp
+    <div class="mt-3">
+        <div class="fw-semibold small mb-1">Список резерва:</div>
+        @foreach($waitlistEntries as $i => $entry)
+        <div class="d-flex align-items-center gap-2 small py-1 border-bottom">
+            <span class="text-muted">{{ $i + 1 }}.</span>
+            <span>{{ $entry->user->name ?? '#'.$entry->user_id }}</span>
+            @if(!empty($entry->positions))
+                <span class="text-muted">({{ implode(', ', array_map('position_name', $entry->positions)) }})</span>
+            @endif
+            @if($entry->isNotificationActive())
+                <span class="badge bg-warning text-dark ms-auto">⏳ уведомлён</span>
+            @endif
+        </div>
+        @endforeach
+    </div>
+    @endif
+</div>
+@endif
+{{-- ===============================
 ПРИГЛАСИТЬ ИГРОКА
 =============================== --}}
 @if ($isRegistered && auth()->check())

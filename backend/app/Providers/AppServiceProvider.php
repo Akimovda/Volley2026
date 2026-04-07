@@ -3,12 +3,15 @@
 namespace App\Providers;
 
 use App\Models\UserNotification;
+use App\Models\EventRegistration;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use MoveMoveApp\VKID\VKIDExtendSocialite;
 use SocialiteProviders\Manager\SocialiteWasCalled;
 use Illuminate\Pagination\Paginator;
+use App\Observers\EventRegistrationObserver;
+
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -19,6 +22,8 @@ class AppServiceProvider extends ServiceProvider
 
 public function boot(): void
 {
+    EventRegistration::observe(EventRegistrationObserver::class);
+    
     View::composer('*', function ($view) {
         $notificationsUnread = 0;
 

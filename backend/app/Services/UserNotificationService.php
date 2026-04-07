@@ -102,7 +102,58 @@ final class UserNotificationService
             return $notification;
         });
     }
-
+    public function createWaitlistJoinedNotification(
+        int $userId,
+        int $eventId,
+        ?int $occurrenceId,
+        string $eventTitle,
+        array $positions = []
+    ): UserNotification {
+        $posText = !empty($positions)
+            ? implode(', ', array_map(fn($p) => position_name($p), $positions))
+            : 'любое место';
+    
+        return $this->create(
+            userId: $userId,
+            type: 'waitlist_joined',
+            title: 'Вы записаны в резерв',
+            body: "ℹ️ Вы записаны в резерв на мероприятие «{$eventTitle}».\n"
+                . "Ваша подписка на позиции: {$posText}.\n"
+                . "🔔 Мы Вас уведомим, как позиция будет доступна!",
+            payload: [
+                'event_id'      => $eventId,
+                'occurrence_id' => $occurrenceId,
+                'event_title'   => $eventTitle,
+                'positions'     => $positions,
+            ],
+            channels: ['in_app', 'telegram', 'vk', 'max']
+        );
+    }
+    
+    public function createWaitlistSpotFreedNotification(
+        int $userId,
+        int $eventId,
+        ?int $occurrenceId,
+        string $eventTitle,
+        string $position = ''
+    ): UserNotification {
+        $posLabel = $position ? position_name($position) : 'место';
+    
+        return $this->create(
+            userId: $userId,
+            type: 'waitlist_spot_freed',
+            title: 'Освободилось место на мероприятии',
+            body: "🔥❗️ На мероприятие «{$eventTitle}» освободилось место: {$posLabel}.\n"
+                . "Запишитесь, пока оно свободно! У вас есть 15 минут.",
+            payload: [
+                'event_id'      => $eventId,
+                'occurrence_id' => $occurrenceId,
+                'event_title'   => $eventTitle,
+                'position'      => $position,
+            ],
+            channels: ['in_app', 'telegram', 'vk', 'max']
+        );
+    }
     public function createGroupInviteNotification(
         int $toUserId,
         int $fromUserId,

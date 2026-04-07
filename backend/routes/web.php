@@ -11,7 +11,7 @@
 	use App\Http\Controllers\EventsController;
 	use App\Http\Controllers\EventCreateController;
 	use App\Http\Controllers\EventRegistrationController;
-use App\Http\Controllers\EventRegistrationInviteController;
+    use App\Http\Controllers\EventRegistrationInviteController;
 	use App\Http\Controllers\EventManagementController;
 	use App\Http\Controllers\EventRegistrationsManagementController;
 	use App\Http\Controllers\EventRegistrationGroupController;
@@ -31,6 +31,7 @@ use App\Http\Controllers\EventRegistrationInviteController;
 	use App\Http\Controllers\ProfileNotificationChannelController;
 	use App\Http\Controllers\TelegramNotifyBindingController;
 	use App\Http\Controllers\VkNotifyBindingController;
+	use App\Http\Controllers\OccurrenceWaitlistController;
 	
 	// ADMIN
 	use App\Http\Controllers\Admin\AdminDashboardController;
@@ -261,6 +262,12 @@ use App\Http\Controllers\EventRegistrationInviteController;
     'verified',
     'user.restricted',
 	])->group(function () {
+	    
+	    Route::post('/occurrences/{occurrence}/waitlist', [OccurrenceWaitlistController::class, 'store'])
+         ->name('occurrences.waitlist.join');
+
+        Route::delete('/occurrences/{occurrence}/waitlist', [OccurrenceWaitlistController::class, 'destroy'])
+          ->name('occurrences.waitlist.leave');
 		// legacy join/leave by Event (пишет в первый occurrence)
 		Route::post('/events/{event}/join', [EventRegistrationController::class, 'store'])
         ->name('events.join');
