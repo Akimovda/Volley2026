@@ -194,122 +194,206 @@
 		
         {{-- Мероприятия в этой локации --}}
         <div class="ramka">
-			<h2 class="-mt-05">Мероприятия в этой локации</h2>
-			
-			
-            @php
-			$occList = $occurrences ?? collect();
-			$evList  = $events ?? collect();
-            @endphp
-			
-            @if($occList->isEmpty() && $evList->isEmpty())
-			<div class="alert alert-info">Пока нет ближайших мероприятий для этой локации.</div>
+            <h2 class="-mt-05">Мероприятия в этой локации</h2>
+        
+        @php
+        $nowUtc         = \Illuminate\Support\Carbon::now('UTC');
+        $occList        = $occurrences ?? collect();
+        $trainerIconUrl = asset('icons/trainer.png');
+        $trainersById   = [];
+        $trainerColumn  = null;
+        $fmtDate = function ($occ) use ($userTz) {
+            $eventTz = $occ->timezone ?: ($occ->event?->timezone ?: 'UTC');
+            $sUser = $occ->starts_at
+                ? \Illuminate\Support\Carbon::parse($occ->starts_at, 'UTC')->setTimezone($userTz)
+                : null;
+            if (!$sUser) return ['date'=>'—','time'=>'—','tz'=>$userTz,'tzLabel'=>$userTz,'eventTz'=>$eventTz];
+            return [
+                'date'    => $sUser->format('d.m.Y'),
+                'time'    => $sUser->format('H:i'),
+                'tz'      => $userTz,
+                'tzLabel' => $sUser->format('T').' (UTC'.$sUser->format('P').')',
+                'eventTz' => $eventTz,
+            ];
+        };
+        
+        // Фильтруем прошедшие
+        $futureOcc = $occList->filter(function($occ) use ($nowUtc) {
+            return $occ->starts_at && \Illuminate\Support\Carbon::parse($occ->starts_at, 'UTC')->gt($nowUtc);
+        })->sortBy('starts_at');
+        
+        // ✅ Обогащаем join/cancel через Guard
+        $guard = app(\App\Services\EventRegistrationGuard::class);
+        foreach ($futureOcc as $occ) {
+            if (!isset($occ->join)) {
+                $occ->join   = $guard->quickCheck(auth()->user(), $occ);
+                $occ->cancel = null;
+            }
+        }
+        
+        $joinedOccurrenceIds     = [];
+        $restrictedOccurrenceIds = [];
+        if (auth()->check()) {
+            $joinedOccurrenceIds = \App\Models\EventRegistration::where('user_id', auth()->id())
+                ->whereIn('occurrence_id', $futureOcc->pluck('id'))
+                ->where('status', 'active')
+                ->pluck('occurrence_id')
+                ->map(fn($id) => (int)$id)
+                ->toArray();
+        }
+        @endphp
+        
+            @if($futureOcc->isEmpty())
+                <div class="alert alert-info">Пока нет ближайших мероприятий для этой локации.</div>
             @else
-			<div class="row">
-				{{-- Occurrences --}}
-				@foreach($occList as $occ)
-				@php $event = $occ->event; @endphp
-				@continue(!$event)
-				
-				<div class="col-md-6">
-					<a href="{{ url('/events/' . (int)$event->id) }}" class="card event-card text-decoration-none">
-						<div class="card-body">
-							<h3 class="card-title h5">{{ $event->title }}</h3>
-							<div class="card-subtitle mb-2 text-muted small">
-								{{ $event->location?->name }}
-								@if($city = $event->location?->city?->name)
-								<span class="mx-1">•</span> {{ $city }}
-								@endif
-								@if($event->location?->address)
-								<span class="mx-1">•</span> {{ $event->location->address }}
-								@endif
-							</div>
-							
-							@php
-							$eventTz = $occ->timezone ?: ($event->timezone ?: 'UTC');
-							$sUser = $occ->starts_at ? \Carbon\Carbon::parse($occ->starts_at, 'UTC')->setTimezone($userTz) : null;
-							$eUser = $occ->ends_at   ? \Carbon\Carbon::parse($occ->ends_at,   'UTC')->setTimezone($userTz) : null;
-							$userTzLabel = $tzLabel($sUser, $userTz);
-							@endphp
-							
-							<div class="card-text mt-2">
-								@if($sUser)
-								{{ $sUser->format('d.m.Y · H:i') }}@if($eUser)–{{ $eUser->format('H:i') }}@endif
-								<span class="text-muted small d-block">({{ $userTzLabel }})</span>
-								<span class="text-muted small d-block">Таймзона события: {{ $eventTz }}</span>
-								@else
-								—
-								@endif
-							</div>
-						</div>
-					</a>
-				</div>
-				@endforeach
-				
-				{{-- Fallback events --}}
-				@foreach($evList as $event)
-				<div class="col-md-6">
-					<a href="{{ url('/events/' . (int)$event->id) }}" class="card event-card text-decoration-none">
-						<div class="card-body">
-							<h3 class="card-title h5">{{ $event->title }}</h3>
-							<div class="card-subtitle mb-2 text-muted small">
-								{{ $event->location?->name }}
-								@if($city = $event->location?->city?->name)
-								<span class="mx-1">•</span> {{ $city }}
-								@endif
-								@if($event->location?->address)
-								<span class="mx-1">•</span> {{ $event->location->address }}
-								@endif
-							</div>
-							
-							@php
-							$eventTz = $event->timezone ?: 'UTC';
-							$sUser = $event->starts_at ? \Carbon\Carbon::parse($event->starts_at, 'UTC')->setTimezone($userTz) : null;
-							$eUser = $event->ends_at   ? \Carbon\Carbon::parse($event->ends_at,   'UTC')->setTimezone($userTz) : null;
-							$userTzLabel = $tzLabel($sUser, $userTz);
-							@endphp
-							
-							<div class="card-text mt-2">
-								@if($sUser)
-								{{ $sUser->format('d.m.Y · H:i') }}@if($eUser)–{{ $eUser->format('H:i') }}@endif
-								<span class="text-muted small d-block">({{ $userTzLabel }})</span>
-								<span class="text-muted small d-block">Таймзона события: {{ $eventTz }}</span>
-								@else
-								—
-								@endif
-							</div>
-						</div>
-					</a>
-				</div>
-				@endforeach
-			</div>
+                <div class="row mb-0">
+                    @foreach($futureOcc as $occ)
+                        @include('events._card')
+                    @endforeach
+                </div>
             @endif
-		</div>
+        </div>
+        {{-- JOIN MODAL --}}
+        <div id="joinModalBackdrop" class="join-backdrop hidden" style="position:fixed;inset:0;z-index:1050;background:rgba(0,0,0,.55);">
+            <div class="h-100 d-flex align-items-center justify-content-center p-3">
+                <div class="join-modal" style="max-width:720px;width:100%;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.25);">
+                    <div class="p-3 border-bottom d-flex align-items-start justify-content-between gap-3">
+                        <div>
+                            <div id="jmTitle" class="fw-semibold fs-5">Запись</div>
+                            <div id="jmMeta" class="text-muted small mt-1"></div>
+                            <div id="jmAddr" class="text-muted small mt-1"></div>
+                        </div>
+                        <button type="button" class="btn btn-outline-secondary btn-sm js-close-join">✕</button>
+                    </div>
+                    <div class="p-3">
+                        <div id="jmError" class="alert alert-danger d-none mb-2"></div>
+                        <div class="text-muted small mb-2">Выбери позицию (показаны только свободные):</div>
+                        <div id="jmLoading" class="text-muted small d-none mb-2">Загружаю доступные позиции…</div>
+                        <div id="jmPositions" class="row g-2"></div>
+                        <div class="mt-3 text-muted small">После выбора позиции вы сразу будете записаны.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <form id="joinForm" method="POST" action="" class="d-none">
+            @csrf
+            <input type="hidden" name="position" id="joinPosition" value="">
+        </form>
+        <style>.join-backdrop.hidden{display:none!important;}.hidden{display:none!important;}</style>
 	</div>
 	
     <x-slot name="script">
-		<script src="/assets/fas.js"></script> 		
-		<script>
-			document.addEventListener('DOMContentLoaded', function() {
-						
-				// === Инициализация Swiper ===
-				@if($photos->isNotEmpty())
-				const swiper = new Swiper('.location-swiper', {
-					slidesPerView: 2,
-					spaceBetween: 8,
-					pagination: {
-						el: '.swiper-pagination',
-						clickable: true,
-					},
-						breakpoints: {
-							768: {
-								slidesPerView: 1, 
-								spaceBetween: 12
-							}					
-						}
-				});	
-				@endif
-			});		
-		</script>				
+		<script src="/assets/fas.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+
+            @if($photos->isNotEmpty())
+            const swiper = new Swiper('.location-swiper', {
+                slidesPerView: 2,
+                spaceBetween: 8,
+                pagination: { el: '.swiper-pagination', clickable: true },
+                breakpoints: { 768: { slidesPerView: 1, spaceBetween: 12 } }
+            });
+            @endif
+
+            // ===== Join Modal =====
+            const backdrop  = document.getElementById('joinModalBackdrop');
+            const titleEl   = document.getElementById('jmTitle');
+            const metaEl    = document.getElementById('jmMeta');
+            const addrEl    = document.getElementById('jmAddr');
+            const posWrap   = document.getElementById('jmPositions');
+            const errBox    = document.getElementById('jmError');
+            const loadingEl = document.getElementById('jmLoading');
+            const joinForm  = document.getElementById('joinForm');
+            const joinPos   = document.getElementById('joinPosition');
+
+            function showError(msg) { errBox.textContent = msg; errBox.classList.remove('d-none'); }
+            function clearError()   { errBox.textContent = ''; errBox.classList.add('d-none'); }
+            function setLoading(v)  { loadingEl.classList.toggle('d-none', !v); }
+
+            function openModal(payload) {
+                clearError(); setLoading(true);
+                titleEl.textContent = payload.title || 'Запись';
+                metaEl.textContent  = [payload.date, payload.time, payload.tz ? '('+payload.tz+')' : ''].filter(Boolean).join(' ');
+                addrEl.textContent  = payload.address || '';
+                posWrap.innerHTML   = '';
+                backdrop.classList.remove('hidden');
+            }
+            function closeModal() {
+                backdrop.classList.add('hidden');
+                posWrap.innerHTML = '';
+                clearError(); setLoading(false);
+            }
+            function renderPositions(occurrenceId, freePositions) {
+                posWrap.innerHTML = '';
+                if (!Array.isArray(freePositions) || !freePositions.length) {
+                    showError('Свободных мест больше нет.'); return;
+                }
+                freePositions.forEach(p => {
+                    const col = document.createElement('div');
+                    col.className = 'col-12';
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'btn btn-primary w-100';
+                    btn.innerHTML = `${p.label || p.key} <span class="ms-2 small opacity-75">(${p.free ?? 0})</span>`;
+                    btn.addEventListener('click', () => {
+                        joinForm.action = `/occurrences/${occurrenceId}/join`;
+                        joinPos.value = p.key;
+                        joinForm.submit();
+                    });
+                    col.appendChild(btn);
+                    posWrap.appendChild(col);
+                });
+            }
+            async function fetchAvailability(occurrenceId) {
+                const res = await fetch(`/occurrences/${occurrenceId}/availability`, {
+                    headers: { 'Accept': 'application/json' }, credentials: 'same-origin'
+                });
+                let data = null;
+                try { data = await res.json(); } catch(e) {}
+                if (!res.ok || !data || data.ok === false) {
+                    showError((data?.message) || 'Не удалось получить данные.'); return null;
+                }
+                return data;
+            }
+
+            document.querySelectorAll('.js-open-join').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const occurrenceId = btn.dataset.occurrenceId;
+                    openModal({ title: btn.dataset.title, date: btn.dataset.date, time: btn.dataset.time, tz: btn.dataset.tz, address: btn.dataset.address });
+                    const data = await fetchAvailability(occurrenceId);
+                    setLoading(false);
+                    if (!data) return;
+                    renderPositions(occurrenceId, data.free_positions || data.data?.free_positions || []);
+                });
+            });
+
+            document.querySelectorAll('.js-close-join').forEach(btn => btn.addEventListener('click', closeModal));
+            backdrop?.addEventListener('click', e => { if (e.target === backdrop) closeModal(); });
+            document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+            // ===== Seatline =====
+            Array.from(document.querySelectorAll('[data-seatline]')).forEach(async el => {
+                const occId      = el.dataset.occurrenceId;
+                const regEnabled = el.dataset.registrationEnabled === '1';
+                const maxCard    = Number(el.dataset.maxPlayers) || 0;
+                const leftEl     = el.querySelector('[data-left]');
+                const totalEl    = el.querySelector('[data-total]');
+                if (!maxCard || !regEnabled) return;
+                try {
+                    const res  = await fetch(`/occurrences/${occId}/availability`, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' });
+                    const data = await res.json();
+                    const meta = data?.meta || data?.data?.meta;
+                    if (!meta) return;
+                    const apiMax    = Number(meta.max_players) || maxCard;
+                    const remaining = Number.isFinite(Number(meta.remaining_total))
+                        ? Number(meta.remaining_total)
+                        : Math.max(0, apiMax - (Number(meta.registered_total) || 0));
+                    if (leftEl)  leftEl.textContent  = String(remaining);
+                    if (totalEl) totalEl.textContent = String(apiMax);
+                } catch(e) {}
+            });
+        });
+    </script>
 	</x-slot>
 </x-voll-layout>

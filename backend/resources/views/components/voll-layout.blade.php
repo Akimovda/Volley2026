@@ -43,7 +43,10 @@
 						</a>
 					</div>
 					<div class="fix-header-nav">
-						<!-- тут навигация -->
+
+
+
+
 					</div>
 					<div class="fix-header-btn">
 						@if(!$isErrorPage)
@@ -354,7 +357,7 @@
 									<span class="menu-text">Игры и тренировки</span>
 								</a>
 								<a href="/locations" class="menu-item">
-									<span class="menu-text">Места</span>
+									<span class="menu-text">Локации</span>
 								</a>
 								<a href="#" class="menu-item">
 									<span class="menu-text">Правила сервиса</span>

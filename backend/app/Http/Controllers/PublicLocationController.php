@@ -208,7 +208,7 @@ $occQ->whereNotNull('starts_at')
                             },
                             'gameSettings',
                             'media',
-                            'organizer:id,name,email,role',
+                            'organizer:id,name,first_name,last_name,email,role',
                         ]);
                     },
                 ])
@@ -256,7 +256,7 @@ $eventsQ->whereNotNull('starts_at')
                     },
                     'gameSettings',
                     'media',
-                    'organizer:id,name,email,role',
+                    'organizer:id,name,first_name,last_name,email,role',
                 ])
                 ->orderBy('starts_at')
                 ->limit(50)

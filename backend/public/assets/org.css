@@ -4,14 +4,13 @@ trix-editor {
     border: 0.2rem solid rgba(0, 0, 0, 0.1);
     border-radius: 1rem;
     font-size: 1.8rem;
-    background: #FFFFFF;
     color: #222333;
     transition: all 0.25s ease;
     appearance: none;
     box-shadow: 0 0.2rem 0.4rem rgba(0, 0, 0, 0.03);
     background-color: rgba(0, 0, 0, 0.02);
-    min-height: 5em;
     outline: none;
+	min-height: 16rem;
 }
 
 trix-editor:hover {
