@@ -168,38 +168,20 @@ final class BotAssistantService
         );
     
         foreach ($bots as $bot) {
-            // Перезагружаем occurrence чтобы Guard видел актуальные регистрации
-            $occurrence->unsetRelation('registrations');
-            $occurrence->load(['registrations.user', 'event.gameSettings']);
-    
             $registered = $this->registerBot($bot, $occurrence, $event);
     
             if ($registered) {
-                Log::warning("BotAssistant: bot #{$bot->id} ({$bot->name}) joined occurrence #{$occurrence->id}");
+                Log::info("BotAssistant: bot #{$bot->id} ({$bot->name}) joined occurrence #{$occurrence->id}");
             } else {
-                Log::warning("BotAssistant: bot #{$bot->id} ({$bot->name}) blocked by guard, skipped");
+                Log::warning("BotAssistant: bot #{$bot->id} ({$bot->name}) skipped (full or duplicate)");
             }
         }
     }
     
+
     private function registerBot(User $bot, EventOccurrence $occurrence, Event $event): bool
     {
-        $guard  = app(\App\Services\EventRegistrationGuard::class);
-        $result = $guard->check($bot, $occurrence);
-    
-        if (!$result->allowed) {
-            return false;
-        }
-    
-        $freePositions = $result->data['free_positions'] ?? [];
-        $position = null;
-    
-        if (!empty($freePositions)) {
-            $pos      = $freePositions[array_rand($freePositions)];
-            $position = $pos['key'];
-        }
-    
-        // Проверяем существование ДО транзакции
+        // Дубликат
         $exists = EventRegistration::query()
             ->where('user_id', $bot->id)
             ->where('occurrence_id', $occurrence->id)
@@ -209,6 +191,21 @@ final class BotAssistantService
             return false;
         }
     
+        // Проверяем что ещё есть место (общий лимит)
+        $maxPlayers = $this->getMaxPlayers($event);
+        $currentCount = EventRegistration::query()
+            ->where('occurrence_id', $occurrence->id)
+            ->where('status', 'confirmed')
+            ->where('is_cancelled', false)
+            ->count();
+    
+        if ($maxPlayers > 0 && $currentCount >= $maxPlayers) {
+            return false;
+        }
+    
+        // Выбираем позицию
+        $position = $this->pickBotPosition($event, $occurrence);
+    
         DB::transaction(function () use ($bot, $occurrence, $event, $position) {
             EventRegistration::query()->create([
                 'user_id'       => $bot->id,
@@ -216,12 +213,59 @@ final class BotAssistantService
                 'occurrence_id' => $occurrence->id,
                 'status'        => 'confirmed',
                 'position'      => $position,
+                'is_cancelled'  => false,
             ]);
         });
     
         app(\App\Services\EventOccurrenceStatsService::class)->increment($occurrence->id);
     
         return true;
+    }
+    
+    private function pickBotPosition(Event $event, EventOccurrence $occurrence): ?string
+    {
+        $direction = (string)($event->direction ?? 'classic');
+    
+        // Пляжка — позиций нет
+        if ($direction === 'beach') {
+            return null;
+        }
+    
+        // Берём слоты через тот же сервис что и Guard
+        $slotService = app(\App\Services\EventRoleSlotService::class);
+        $slots = $slotService->getSlots($event);
+    
+        if (empty($slots)) {
+            return 'player'; // fallback
+        }
+    
+        // Считаем занятые позиции на этом occurrence
+        $taken = DB::table('event_registrations')
+            ->where('occurrence_id', $occurrence->id)
+            ->where('status', 'confirmed')
+            ->where('is_cancelled', false)
+            ->select('position', DB::raw('count(*) as cnt'))
+            ->groupBy('position')
+            ->pluck('cnt', 'position')
+            ->toArray();
+    
+        // Собираем свободные позиции
+        $free = [];
+        foreach ($slots as $slot) {
+            $takenCount = (int)($taken[$slot->role] ?? 0);
+            if ($takenCount < $slot->max_slots) {
+                // Добавляем с весом — чем больше мест, тем чаще выбирается
+                for ($i = 0; $i < ($slot->max_slots - $takenCount); $i++) {
+                    $free[] = $slot->role;
+                }
+            }
+        }
+    
+        if (empty($free)) {
+            return 'player'; // все слоты заняты, запишем как обычный игрок
+        }
+    
+        return $free[array_rand($free)];
     }
 
     private function selectBots(Event $event, int $count, array $excludeUserIds): Collection
