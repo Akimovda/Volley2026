@@ -27,6 +27,16 @@ class EventVisibilityService
     public function canViewPrivateEvent(Event $event, ?User $user): bool
     {
         if (!$this->isPrivateEventRow($event)) return true;
+            // ✅ Доступ по публичному токену — для незалогиненных
+        $requestToken = request()->route('token') ?? request()->query('token');
+        if (
+            $requestToken &&
+            !empty($event->public_token) &&
+            $event->public_token === $requestToken
+        ) {
+            return true;
+        }
+   
         if (!$user) return false;
 
         $role = strtolower(trim((string) ($user->role ?? 'user')));

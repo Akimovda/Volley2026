@@ -122,7 +122,7 @@
 					@endphp
 					
 					
-					<div class="card  {{ !$loop->last ? 'mb-2' : '' }}">
+					<div id="notification-{{ $notification->id }}" class="card {{ !$loop->last ? 'mb-2' : '' }}">
 						<div class="d-flex between fvc mb-1">
 							<div>
 								<div class="b-600">							

@@ -24,18 +24,28 @@ public function boot(): void
 {
     EventRegistration::observe(EventRegistrationObserver::class);
     
-    View::composer('*', function ($view) {
-        $notificationsUnread = 0;
+View::composer('*', function ($view) {
+    $notificationsUnread = 0;
+    $unreadNotifications = collect(); // 👈 только непрочитанные
 
-        if (auth()->check()) {
-            $notificationsUnread = UserNotification::query()
-                ->where('user_id', auth()->id())
-                ->whereNull('read_at')
-                ->count();
-        }
+    if (auth()->check()) {
+        $notificationsUnread = UserNotification::query()
+            ->where('user_id', auth()->id())
+            ->whereNull('read_at')
+            ->count();
+        
+        // 👈 берем 5 последних непрочитанных
+        $unreadNotifications = UserNotification::query()
+            ->where('user_id', auth()->id())
+            ->whereNull('read_at')
+            ->orderBy('created_at', 'desc')
+            ->limit(5)
+            ->get();
+    }
 
-        $view->with('notificationsUnread', $notificationsUnread);
-    });
+    $view->with('notificationsUnread', $notificationsUnread);
+    $view->with('unreadNotifications', $unreadNotifications);
+});
 
     Event::listen(
         SocialiteWasCalled::class,

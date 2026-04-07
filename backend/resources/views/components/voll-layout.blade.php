@@ -1,6 +1,6 @@
-{{-- DEBUG: voll-layout --}}
 @props([
-'body_class' => ''
+    'body_class' => '',
+    'isErrorPage' => false  // 👈 добавить
 ])
 <!DOCTYPE html>
 <html lang="ru">
@@ -26,7 +26,7 @@
         {{ $style }}
 		@endif	
 	</head>
-	<body @class([$body_class ?? null])>
+	<body @class([$body_class ?? null])>	
 		<script>
 			if (localStorage.getItem('theme') === 'dark') {
 				document.body.classList.add('dark');
@@ -46,6 +46,7 @@
 						<!-- тут навигация -->
 					</div>
 					<div class="fix-header-btn">
+						@if(!$isErrorPage)
 						<div class="fix-header-users">
 							
 							@php
@@ -89,12 +90,14 @@
 								<span class="icon-mail"><svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><path d="m256 0c-141.159 0-256 114.841-256 256s114.841 256 256 256 256-114.841 256-256-114.841-256-256-256zm0 480c-123.514 0-224-100.486-224-224s100.486-224 224-224 224 100.486 224 224-100.486 224-224 224zm115.229-184.306a16.079 16.079 0 0 0 -2.008-1.525c-12.718-8.16-12.873-16.643-12.009-36.747 1.084-25.2 2.569-59.715-41.583-91.3a103.691 103.691 0 0 0 -23.537-12.622 38.932 38.932 0 1 0 -72.183 0 103.741 103.741 0 0 0 -23.538 12.62c-44.153 31.584-42.668 66.1-41.584 91.3.865 20.1.709 28.586-12.008 36.746a16.006 16.006 0 0 0 -2.008 1.525 40.287 40.287 0 0 0 21.365 69.986 15.976 15.976 0 0 0 2.163.147h34.758a58.2 58.2 0 0 0 113.886 0h34.757a15.976 15.976 0 0 0 2.163-.147 40.287 40.287 0 0 0 21.365-69.986zm-115.229-163.694a6.932 6.932 0 1 1 -6.931 6.932 6.94 6.94 0 0 1 6.931-6.932zm0 248a26.22 26.22 0 0 1 -23.265-14.173h46.53a26.22 26.22 0 0 1 -23.265 14.173zm96.342-51.817a8.313 8.313 0 0 1 -6.017 5.644h-180.65a8.287 8.287 0 0 1 -4.221-13.641c27.272-18.353 26.183-43.7 25.3-64.139-.978-22.75-1.823-42.4 28.232-63.9a69.575 69.575 0 0 1 82.022 0c30.055 21.5 29.21 41.148 28.231 63.9-.879 20.435-1.968 45.787 25.3 64.139a8.318 8.318 0 0 1 1.803 7.997z"/></svg></span>
 								<span class="icon-close"></span>													
 							</div>		
-								@if(!empty($notificationsUnread) && $notificationsUnread > 0)
-								<span class="notificationsUnread">
-									{{ $notificationsUnread > 99 ? '99+' : $notificationsUnread }}
-								</span>
-								@endif								
+							@if(!empty($notificationsUnread) && $notificationsUnread > 0)
+							<span class="notificationsUnread">
+								{{ $notificationsUnread > 99 ? '99+' : $notificationsUnread }}
+							</span>
+							@endif								
 						</div>	
+						@endif
+						
 						
 						<div class="fix-header-btn-hamm">
 							<span class="icon-hamm"><svg enable-background="new 0 0 512 512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><path d="m256 .001c-141.158 0-255.999 114.841-255.999 255.999s114.841 255.999 255.999 255.999 255.999-114.841 255.999-255.999-114.841-255.999-255.999-255.999zm0 479.998c-123.513 0-223.999-100.485-223.999-223.999s100.486-223.999 223.999-223.999 223.999 100.485 223.999 223.999-100.486 223.999-223.999 223.999zm141-223.999c0 8.837-7.164 16-16 16h-250c-8.836 0-16-7.163-16-16s7.164-16 16-16h250c8.836 0 16 7.163 16 16zm0-99c0 8.837-7.164 16-16 16h-250c-8.836 0-16-7.163-16-16s7.164-16 16-16h250c8.836 0 16 7.163 16 16zm0 198c0 8.837-7.164 16-16 16h-250c-8.836 0-16-7.163-16-16s7.164-16 16-16h250c8.836 0 16 7.163 16 16z"/></svg></span>
@@ -109,7 +112,7 @@
 						</div>							
 					</div>		
 				</div>			
-				
+				@if(!$isErrorPage)
 				<div class="fix-header-menu fix-header-menu-2">
 					@auth
 					<div class="menu-user-login">
@@ -290,19 +293,40 @@
 					@endauth
 				</div>
 				
-				
 				<div class="fix-header-menu fix-header-menu-1">
 					
 					@if($isAuth)
 					
-					<nav class="menu-nav mb-1">
-						<a href="{{ route('notifications.index') }}" class="menu-item">
-							<span class="menu-text">Уведомление 1</span>
-						</a>
-						<a href="{{ route('notifications.index') }}" class="menu-item">
-							<span class="menu-text">Уведомление 2</span>
-						</a>							
-					</nav>				
+<div class="menu-nav mb-1">
+    @if($unreadNotifications->isNotEmpty())
+        @foreach($unreadNotifications as $notification)
+           <a href="{{ route('notifications.index', ['#notification-' . $notification->id]) }}" class="menu-item">
+                <div class="d-flex between w-100">
+				
+                    <span class="menu-text f-18 d-flex -ml-1">
+					<span class="emo">🔴</span>
+                         {{ Str::limit($notification->title, 35) }}
+                    </span>
+                    <span class="menu-date f-15 pl-2" style="padding-top: 0.3rem; flex: 0 0 11rem">
+                        {{ $notification->created_at?->format('d.m H:i') }}
+                    </span>
+                </div>
+            </a>
+        @endforeach
+        
+        {{-- Если есть еще непрочитанные сверх 5 --}}
+        @if($notificationsUnread > 5)
+			
+                <div class="text-right menu-text f-18 pr-2">
+                    и еще <strong class="cd">{{ $notificationsUnread - 5 }}</strong> непрочитанных...
+                </div>
+        @endif
+    @else
+        <div class="menu-item" style="cursor: default;">
+            <div class="menu-text text-muted">Новых уведомлений нет</div>
+        </div>
+    @endif
+</div>			
 					<hr>
 					
 					<nav class="menu-nav mt-1">
@@ -317,7 +341,7 @@
 					
 				</div>						
 				
-				
+				@endif			
 				
 				
 				

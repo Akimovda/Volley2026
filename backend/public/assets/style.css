@@ -66,9 +66,6 @@ body.dark::-webkit-scrollbar-thumb {
 body.dark::-webkit-scrollbar-thumb:hover {
     background: #FFB171; /* Светлее оранжевый при ховере */
 }
-
-
-
 body {
 	margin: 0;
 	padding: 0;
@@ -88,6 +85,9 @@ body.dark  {
 	scrollbar-color: #E7612F #222333;
 	color-scheme: dark;
 	color: #cacaca;
+}
+[id^="notification-"] {
+    scroll-margin-top: 10rem; 
 }
 p {
 	margin-bottom: 1rem;
