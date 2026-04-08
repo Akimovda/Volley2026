@@ -58,7 +58,7 @@
 
                     $headerMeta = array_values(array_filter([
                         $cityLabel,
-                        !is_null($age) ? ($age . ' лет') : null,
+                        !is_null($age) ? (($u->gender === 'f' && $u->hide_age) ? '🤷‍♀️' : ($age . ' лет')) : null,
                         $genderLabel !== '—' ? $genderLabel : null,
                         !empty($u?->height_cm) ? ($u->height_cm . ' см') : null,
                     ]));

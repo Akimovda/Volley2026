@@ -223,6 +223,11 @@ class EventOccurrence extends Model
         return now('UTC')->greaterThanOrEqualTo($ends);
     }
     
+
+    public function isCancelled(): bool
+    {
+        return !empty($this->cancelled_at) || (bool)($this->is_cancelled ?? false);
+    }
     public function isRunning(): bool
     {
         return $this->isStarted() && !$this->isFinished();

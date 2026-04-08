@@ -45,7 +45,7 @@ class ProfileExtraController extends Controller
                 'birth_date',
                 'city_id',
                 'classic_level', 'beach_level',
-                'gender', 'height_cm',
+                'gender', 'height_cm', 'hide_age',
                 'classic_primary_position', 'classic_extra_positions',
                 'beach_mode',
             ],
@@ -63,7 +63,7 @@ class ProfileExtraController extends Controller
                 'birth_date',
                 'city_id',
                 'classic_level', 'beach_level',
-                'gender', 'height_cm',
+                'gender', 'height_cm', 'hide_age',
                 'classic_primary_position', 'classic_extra_positions',
                 'beach_mode',
             ],
@@ -123,6 +123,7 @@ class ProfileExtraController extends Controller
 
         $addRuleIfAllowed('gender',       ['nullable', 'in:m,f']);
         $addRuleIfAllowed('height_cm',    ['nullable', 'integer', 'min:40', 'max:230']);
+        $addRuleIfAllowed('hide_age',      ['boolean']);
 
         $addRuleIfAllowed('classic_primary_position', ['nullable', 'in:' . implode(',', $classicAllowed)]);
 
@@ -211,11 +212,17 @@ class ProfileExtraController extends Controller
                 'first_name', 'last_name', 'patronymic',
                 'phone', 'birth_date', 'city_id',
                 'classic_level', 'beach_level',
-                'gender', 'height_cm',
+                'gender', 'height_cm', 'hide_age',
             ]));
 
             if (!empty($userFill)) {
                 $target->forceFill($userFill)->save();
+
+            // hide_age только для женщин
+            if ($target->gender !== 'f') {
+                $target->hide_age = false;
+                $target->save();
+            }
             }
 
             // 5.2 Classic positions rebuild

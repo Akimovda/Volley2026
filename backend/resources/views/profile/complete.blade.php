@@ -594,6 +594,7 @@
 												$birthValue = $user?->birth_date ? $user->birth_date->format('Y-m-d') : '';
 												}
 												@endphp
+											
 												<input
 												type="date"
 												min="1945-01-01" 
@@ -609,6 +610,17 @@
 												</ul>														
 											</div>
 										</div>
+										{{-- Скрыть возраст (только для женщин) --}}
+                                        <div id="hide_age_wrap" class="{{ old('gender', $user?->gender) === 'f' ? '' : 'hidden' }}">
+                                            <label class="checkbox-item mt-1">
+                                                <input type="hidden" name="hide_age" value="0">
+                                                <input type="checkbox" name="hide_age" value="1"
+                                                    id="hide_age_checkbox"
+                                                    @checked(old('hide_age', $user?->hide_age ?? false))>
+                                                <div class="custom-checkbox"></div>
+                                                <span>Скрыть мой возраст от других пользователей</span>
+                                            </label>
+                                        </div>
 										{{-- -------- Город (AUTOCOMPLETE + fallback select) -------- --}}
 										@php $lockedCity = !$canEditProtected && $filled($user?->city_id); @endphp
 										@if(!$organizerLimitedView)
@@ -1108,6 +1120,22 @@
 							const birthInput = document.querySelector('input[name="birth_date"]');
 							const isClassicLocked = {{ $lockedClassic ? 'true' : 'false' }};
 							const isBeachLocked = {{ $lockedBeach ? 'true' : 'false' }};
+							// Показывать/скрывать "Скрыть возраст" в зависимости от пола
+                            const genderSelect = document.querySelector('select[name="gender"]');
+                            const hideAgeWrap  = document.getElementById('hide_age_wrap');
+                            const hideAgeCheck = document.getElementById('hide_age_checkbox');
+                            
+                            function syncHideAge() {
+                                if (!genderSelect || !hideAgeWrap) return;
+                                const isFemale = genderSelect.value === 'f';
+                                hideAgeWrap.classList.toggle('hidden', !isFemale);
+                                if (!isFemale && hideAgeCheck) hideAgeCheck.checked = false;
+                            }
+                            
+                            if (genderSelect) {
+                                genderSelect.addEventListener('change', syncHideAge);
+                                syncHideAge();
+                            }
 							
 							// Функция расчета возраста
 							function calculateAge(birthDate) {

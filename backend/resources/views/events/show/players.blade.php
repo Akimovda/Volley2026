@@ -106,7 +106,12 @@
     {{-- ===============================
     СТАТУС СОБЫТИЯ
     =============================== --}}
-    @if($occurrence->isFinished())
+    @if($occurrence->isCancelled())
+	<div class="alert alert-danger">
+		⛔️ Отменено❗️ Мероприятие не состоится в связи с отсутствием кворума.
+	</div>
+
+    @elseif($occurrence->isFinished())
 	<div class="alert alert-info">
 		🏁 Мероприятие завершено!
 	</div>

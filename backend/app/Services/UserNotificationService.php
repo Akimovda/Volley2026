@@ -369,13 +369,24 @@ final class UserNotificationService
         int $userId,
         int $eventId,
         ?int $occurrenceId,
-        string $eventTitle
+        string $eventTitle,
+        ?string $startsAtText = null,
+        ?string $locationText = null,
+        ?string $userName = null
     ): UserNotification {
+        $userGreeting = $userName ? "Уважаем(ая)ый, {$userName}! " : '';
+        $dateStr  = $startsAtText ? "📅 {$startsAtText}" : '';
+        $locStr   = $locationText ? "📍 {$locationText}" : '';
+        $body = "⚠️ {$userGreeting}Приносим свои извинения, но в связи с отсутствием кворума, мероприятие ℹ️ «{$eventTitle}»";
+        if ($dateStr) $body .= " {$dateStr}";
+        if ($locStr)  $body .= " {$locStr}";
+        $body .= " не состоится! 💔 Будем Вас ждать в следующий раз!";
+
         return $this->create(
             userId: $userId,
             type: 'event_cancelled_quorum',
             title: 'Мероприятие отменено',
-            body: "Мероприятие «{$eventTitle}» отменено, потому что не набрался кворум.",
+            body: $body,
             payload: [
                 'event_id'      => $eventId,
                 'occurrence_id' => $occurrenceId,

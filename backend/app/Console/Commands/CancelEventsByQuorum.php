@@ -45,15 +45,20 @@ class CancelEventsByQuorum extends Command
         $q = DB::table('event_occurrences as eo')
             ->join('events as e', 'e.id', '=', 'eo.event_id')
             ->join('event_game_settings as egs', 'egs.event_id', '=', 'e.id')
+            ->leftJoin('locations as loc', 'loc.id', '=', 'eo.location_id')
             ->select([
                 'eo.id',
                 'eo.event_id',
                 'eo.starts_at',
                 'eo.timezone',
+                'eo.registration_ends_at',
                 'e.title as event_title',
                 'egs.min_players',
+                'loc.name as location_name',
+                'loc.address as location_address',
             ])
             ->whereNotNull('eo.starts_at')
+            ->whereNotNull('eo.registration_ends_at')
             ->whereNotNull('egs.min_players')
             ->where('egs.min_players', '>', 0);
 
@@ -86,13 +91,16 @@ class CancelEventsByQuorum extends Command
             $timezone = (string) ($row->timezone ?: 'UTC');
             $minPlayers = (int) $row->min_players;
 
-            $cancelAtUtc = $this->resolveQuorumCancelAt($startsUtc, $timezone);
+            // Триггер — момент окончания регистрации
+            $regEndsUtc = Carbon::parse($row->registration_ends_at, 'UTC');
 
-            if ($nowUtc->lt($cancelAtUtc)) {
+            // Ещё не наступило время окончания регистрации
+            if ($nowUtc->lt($regEndsUtc)) {
                 $skipped++;
                 continue;
             }
 
+            // Мероприятие уже началось — не трогаем
             if ($nowUtc->gte($startsUtc)) {
                 $skipped++;
                 continue;
@@ -143,12 +151,29 @@ class CancelEventsByQuorum extends Command
                     ->where('id', (int) $row->id)
                     ->update($payload);
 
+                $locationText = implode(', ', array_filter([
+                    $row->location_name ?? null,
+                    $row->location_address ?? null,
+                ]));
+
+                $startsLocalText = $startsUtc->copy()->setTimezone($timezone)->format('d.m.Y в H:i') . ' (' . $timezone . ')';
+
                 foreach ($userIds as $userId) {
+                    $user = \App\Models\User::find((int) $userId);
+                    $userName = null;
+                    if ($user) {
+                        $full = trim(($user->last_name ?? '') . ' ' . ($user->first_name ?? ''));
+                        $userName = $full !== '' ? $full : ($user->name ?? null);
+                    }
+
                     $notifications->createEventCancelledByQuorumNotification(
                         userId: (int) $userId,
                         eventId: (int) $row->event_id,
                         occurrenceId: (int) $row->id,
-                        eventTitle: (string) ($row->event_title ?? ('Мероприятие #' . $row->event_id))
+                        eventTitle: (string) ($row->event_title ?? ('Мероприятие #' . $row->event_id)),
+                        startsAtText: $startsLocalText,
+                        locationText: $locationText ?: null,
+                        userName: $userName,
                     );
                 }
             });
