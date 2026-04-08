@@ -177,10 +177,10 @@ return ['label' => 'Мест: —', 'free' => null, 'max' => null, 'registered' 
 						</label>
 					</div>
 					<div class="col-md-6 text-right mb-1">
-						<button type="button" id="bulkCancelBtn" class="btn-alert btn btn-small" disabled>Отменить выбранные</button>
+						<button type="button" id="bulkCancelBtn" class="btn btn-small" disabled>Отменить выбранные</button>
 						
 						@if($isAdmin)
-						<button type="button" id="bulkForceDeleteBtn" class="btn-alert btn btn-small" disabled>Удалить навсегда</button>
+						<button type="button" id="bulkForceDeleteBtn" class="btn btn-small" disabled>Удалить навсегда</button>
 						@endif
 					</div>
 				</div>
@@ -197,7 +197,6 @@ return ['label' => 'Мест: —', 'free' => null, 'max' => null, 'registered' 
 							@if($isAdmin)
 							<col style="width:18%" />
 							@endif
-							<col style="width:18%" />
 							<col style="width:18rem" />
 						</colgroup>
 						
@@ -211,7 +210,6 @@ return ['label' => 'Мест: —', 'free' => null, 'max' => null, 'registered' 
 								@if($isAdmin)
 								<th>Организатор</th>
 								@endif
-								<th>Регистрация / Даты</th>
 								<th>Действия</th>
 							</tr>
 						</thead>
@@ -296,28 +294,6 @@ return ['label' => 'Мест: —', 'free' => null, 'max' => null, 'registered' 
 									@endif
 								</td>
 								@endif
-								{{-- Регистрация / Даты --}}
-								<td class="align-top f-16">
-									@if($isRecurring)
-                                    <a href="{{ route('events.event_management.occurrences', ['event' => (int)$event->id]) }}"
-									class="btn btn-small btn-secondary">
-                                        Открыть даты
-									</a>
-									@else
-                                    <div class="b-600">{{ $seat['label'] }}</div>
-                                    <div class="mt-1">Записано: <strong>{{ (int)$seat['registered'] }}</strong></div>
-                                    
-                                    @if((bool)$event->allow_registration)
-                                    <div class="mt-1">
-                                        <a href="{{ route('events.registrations.index', ['event' => (int)$event->id]) }}"
-										class="btn btn-small btn-secondary">
-                                            Регистрации
-										</a>
-									</div>
-                                    @endif
-									@endif
-								</td>
-								
 								{{-- Действия --}}
 								<td class="nowrap align-top f-0">
 									<div class="d-flex">
@@ -328,8 +304,8 @@ return ['label' => 'Мест: —', 'free' => null, 'max' => null, 'registered' 
 										title="Изменить серию"></a>
                                         
                                         <a href="{{ route('events.event_management.occurrences', ['event' => (int)$event->id]) }}"
-										class="mr-1 icon-list btn btn-svg"
-										title="Открыть даты"></a>
+										class="mr-1 btn btn-svg" style="font-size:1.2rem;line-height:1;display:flex;align-items:center;justify-content:center"
+										title="Открыть даты">📆</a>
                                         
                                         <form method="POST"
 										action="{{ route('events.event_management.destroy', ['event' => (int)$event->id]) }}"
@@ -372,6 +348,12 @@ return ['label' => 'Мест: —', 'free' => null, 'max' => null, 'registered' 
                                         <a href="{{ url('/events/create?from_event_id=' . (int)$event->id) }}"
 										class="mr-1 icon-copy btn btn-svg"
 										title="Создать копию"></a>
+                                        @if((bool)$event->allow_registration)
+                                        <a href="{{ route('events.registrations.index', ['event' => (int)$event->id]) }}"
+class="mr-1 btn btn-svg"
+title="Регистрации"
+style="font-size:1.1rem;line-height:1;display:flex;align-items:center;justify-content:center">🧑‍🧑‍🧒‍🧒</a>
+                                        @endif
                                         
                                         <form method="POST"
 										action="{{ route('events.event_management.destroy', ['event' => (int)$event->id]) }}"
@@ -478,34 +460,20 @@ return ['label' => 'Мест: —', 'free' => null, 'max' => null, 'registered' 
 					bulkForm.submit();
 				}
 				
-				// Обработка bulk-кнопок через btn-alert (события от компонента)
+				// Обработка bulk-кнопок
 				if (cancelBtn) {
 					cancelBtn.addEventListener('click', () => {
-						const event = new CustomEvent('btn-alert:show', {
-							detail: {
-								title: 'Отменить выбранные мероприятия?',
-								text: 'История будет сохранена, события исчезнут из списка.',
-								confirmText: 'Да, отменить',
-								cancelText: 'Отмена',
-								onConfirm: () => submitBulk('cancel')
-							}
-						});
-						document.dispatchEvent(event);
+if (confirm('Отменить выбранные мероприятия? История будет сохранена, события исчезнут из списка.')) {
+							submitBulk('cancel');
+						}
 					});
 				}
 				
 				if (forceDeleteBtn) {
 					forceDeleteBtn.addEventListener('click', () => {
-						const event = new CustomEvent('btn-alert:show', {
-							detail: {
-								title: 'Удалить выбранные навсегда?',
-								text: 'Данные будут удалены без возможности восстановления. Только для тестовых данных.',
-								confirmText: 'Да, удалить',
-								cancelText: 'Отмена',
-								onConfirm: () => submitBulk('force')
-							}
-						});
-						document.dispatchEvent(event);
+if (confirm('Удалить выбранные навсегда? Данные будут удалены без возможности восстановления.')) {
+							submitBulk('force');
+						}
 					});
 				}
 				
@@ -524,6 +492,16 @@ return ['label' => 'Мест: —', 'free' => null, 'max' => null, 'registered' 
 					}
 				});
 				
+				// Клик по кастомным чекбоксам (e.target может быть div внутри label)
+				document.addEventListener("click", (e) => {
+					const label = e.target.closest("label.checkbox-item");
+					if (label) {
+						const cb = label.querySelector(".bulkItem");
+						if (cb) { setTimeout(refreshBulk, 0); return; }
+						const sa = label.querySelector("#bulkSelectAll");
+						if (sa) { setTimeout(() => { items().forEach(i => { i.checked = sa.checked; }); refreshBulk(); }, 0); }
+					}
+				});
 				refreshBulk();
 			});
 </script>
