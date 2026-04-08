@@ -275,30 +275,43 @@ if ($role === 'admin') {
         }
     
         $data = $request->validate([
-            'title' => ['required', 'string', 'max:255'],
-            'starts_at' => ['required', 'date'],
-            'timezone' => ['required', 'string', 'max:64'],
+            'title'       => ['required', 'string', 'max:255'],
+            'direction'   => ['nullable', 'string', 'in:classic,beach'],
+            'format'      => ['nullable', 'string', 'max:32'],
+            'starts_at'   => ['required', 'date'],
+            'timezone'    => ['required', 'string', 'max:64'],
             'location_id' => ['required', 'integer'],
-            'duration_minutes' => ['nullable', 'integer', 'min:1', 'max:1440'],
-            'allow_registration' => ['sometimes', 'boolean'],
-            'classic_level_min' => ['nullable', 'integer', 'min:0', 'max:10'],
-            'classic_level_max' => ['nullable', 'integer', 'min:0', 'max:10'],
-            'beach_level_min'   => ['nullable', 'integer', 'min:0', 'max:10'],
-            'beach_level_max'   => ['nullable', 'integer', 'min:0', 'max:10'],
-            'reg_starts_days_before' => ['nullable', 'integer', 'min:0', 'max:365'],
-            'reg_ends_minutes_before' => ['nullable', 'integer', 'min:0', 'max:10080'],
+            'duration_sec'     => ['nullable', 'integer', 'min:0'],
+            'duration_hours'   => ['nullable', 'integer', 'min:0', 'max:23'],
+            'duration_minutes' => ['nullable', 'integer', 'min:0', 'max:59'],
+            'allow_registration'       => ['sometimes', 'boolean'],
+            'classic_level_min'        => ['nullable', 'integer', 'min:0', 'max:10'],
+            'classic_level_max'        => ['nullable', 'integer', 'min:0', 'max:10'],
+            'beach_level_min'          => ['nullable', 'integer', 'min:0', 'max:10'],
+            'beach_level_max'          => ['nullable', 'integer', 'min:0', 'max:10'],
+            'age_policy'               => ['nullable', 'string', 'in:adult,child,any'],
+            'reg_starts_days_before'   => ['nullable', 'integer', 'min:0', 'max:365'],
+            'reg_ends_minutes_before'  => ['nullable', 'integer', 'min:0', 'max:10080'],
             'cancel_lock_minutes_before' => ['nullable', 'integer', 'min:0', 'max:10080'],
-            'game_max_players' => ['nullable', 'integer', 'min:0'],
-            'game_min_players' => ['nullable', 'integer', 'min:0'],
-            'game_subtype' => ['nullable', 'string', 'max:32'],
-            'game_libero_mode' => ['nullable', 'string', 'max:32'],
-            'game_gender_policy' => ['nullable', 'string', 'max:64'],
+            'game_max_players'         => ['nullable', 'integer', 'min:0'],
+            'game_min_players'         => ['nullable', 'integer', 'min:0'],
+            'game_subtype'             => ['nullable', 'string', 'max:32'],
+            'game_libero_mode'         => ['nullable', 'string', 'max:32'],
+            'game_gender_policy'       => ['nullable', 'string', 'max:64'],
             'game_gender_limited_side' => ['nullable', 'string', 'max:16'],
-            'game_gender_limited_max' => ['nullable', 'integer', 'min:0'],
-            'game_gender_limited_positions' => ['nullable', 'array'],
+            'game_gender_limited_max'  => ['nullable', 'integer', 'min:0'],
+            'game_gender_limited_positions'   => ['nullable', 'array'],
             'game_gender_limited_positions.*' => ['string', 'max:32'],
-            'game_allow_girls' => ['nullable', 'boolean'],
-            'game_girls_max'   => ['nullable', 'integer', 'min:0'],
+            'game_allow_girls'         => ['nullable', 'boolean'],
+            'game_girls_max'           => ['nullable', 'integer', 'min:0'],
+            'is_private'               => ['sometimes', 'boolean'],
+            'is_paid'                  => ['sometimes', 'boolean'],
+            'price_amount'             => ['nullable', 'numeric', 'min:0', 'max:500000'],
+            'price_currency'           => ['nullable', 'string', 'max:3'],
+            'show_participants'        => ['sometimes', 'boolean'],
+            'remind_registration_enabled'         => ['sometimes', 'boolean'],
+            'remind_registration_minutes_before'  => ['nullable', 'integer', 'min:0'],
+            'description_html'         => ['nullable', 'string'],
             'bot_assistant_enabled'      => ['sometimes', 'boolean'],
             'bot_assistant_threshold'    => ['sometimes', 'integer', 'min:5', 'max:30'],
             'bot_assistant_max_fill_pct' => ['sometimes', 'integer', 'min:10', 'max:60'],
@@ -307,9 +320,15 @@ if ($role === 'admin') {
         DB::transaction(function () use ($event, $data) {
             $tz = (string) $data['timezone'];
             $startsUtc = Carbon::parse($data['starts_at'], $tz)->utc();
-            $durationSec = !empty($data['duration_minutes'])
-                ? ((int) $data['duration_minutes'] * 60)
-                : null;
+            // duration: приоритет у duration_sec (вычислен JS), fallback hours+min
+            if (!empty($data['duration_sec'])) {
+                $durationSec = (int) $data['duration_sec'];
+            } elseif (!empty($data['duration_hours']) || !empty($data['duration_minutes'])) {
+                $durationSec = ((int)($data['duration_hours'] ?? 0)) * 3600
+                             + ((int)($data['duration_minutes'] ?? 0)) * 60;
+            } else {
+                $durationSec = null;
+            }
     
             $allowReg = (bool) ($data['allow_registration'] ?? false);
             $daysBefore = (int) ($data['reg_starts_days_before'] ?? 3);
@@ -329,7 +348,38 @@ if ($role === 'admin') {
             $event->bot_assistant_enabled      = (bool) ($data['bot_assistant_enabled'] ?? false);
             $event->bot_assistant_threshold    = max(5, min(30, (int) ($data['bot_assistant_threshold'] ?? 10)));
             $event->bot_assistant_max_fill_pct = max(10, min(60, (int) ($data['bot_assistant_max_fill_pct'] ?? 40)));
-            
+
+            // Новые поля
+            if (array_key_exists('direction', $data) && $data['direction']) {
+                $event->direction = $data['direction'];
+            }
+            if (array_key_exists('format', $data) && $data['format']) {
+                $event->format = $data['format'];
+            }
+            if (array_key_exists('age_policy', $data)) {
+                $event->age_policy = $data['age_policy'] ?? 'adult';
+            }
+            $event->is_private        = (bool) ($data['is_private'] ?? false);
+            $event->is_paid           = (bool) ($data['is_paid'] ?? false);
+            $event->price_minor       = $event->is_paid && !empty($data['price_amount'])
+                ? (int) round((float)$data['price_amount'] * 100)
+                : null;
+            $event->price_currency    = $event->is_paid
+                ? ($data['price_currency'] ?? 'RUB')
+                : null;
+            $event->show_participants = (bool) ($data['show_participants'] ?? false);
+            $event->remind_registration_enabled        = (bool) ($data['remind_registration_enabled'] ?? false);
+            $event->remind_registration_minutes_before = $data['remind_registration_minutes_before'] ?? null;
+
+            if (array_key_exists('description_html', $data) && $data['description_html'] !== null) {
+                // описание хранится в отдельной таблице через EventDescriptionService
+                // сохраняем напрямую через модель description
+                $event->description()->updateOrCreate(
+                    ['event_id' => $event->id],
+                    ['html' => $data['description_html']]
+                );
+            }
+
             if ($allowReg) {
                 $event->registration_starts_at = $startsUtc->copy()->subDays($daysBefore);
                 $event->registration_ends_at = $startsUtc->copy()->subMinutes($endsMinBefore);

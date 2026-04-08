@@ -585,7 +585,7 @@
 											<div class="card">
 												<label>
 													<div>Дата рождения</div>
-													<div class="f-16 b-500">Видно всем пользователям</div>
+													<div class="f-16 b-500">Видно всем пользователям в формате: "30 лет"</div>
 												</label>													
 												
 												@php
@@ -607,10 +607,8 @@
 												<ul class="list f-16 mt-1">
 													@error('birth_date')<li class="red b-600">{{ $message }}</li>@enderror
 													@if($lockedBirth)<li>{{ $lockHint }}</li>@endif
-												</ul>														
-											</div>
-										</div>
-										{{-- Скрыть возраст (только для женщин) --}}
+												</ul>
+													{{-- Скрыть возраст (только для женщин) --}}
                                         <div id="hide_age_wrap" class="{{ old('gender', $user?->gender) === 'f' ? '' : 'hidden' }}">
                                             <label class="checkbox-item mt-1">
                                                 <input type="hidden" name="hide_age" value="0">
@@ -621,6 +619,9 @@
                                                 <span>Скрыть мой возраст от других пользователей</span>
                                             </label>
                                         </div>
+											</div>
+										</div>
+									
 										{{-- -------- Город (AUTOCOMPLETE + fallback select) -------- --}}
 										@php $lockedCity = !$canEditProtected && $filled($user?->city_id); @endphp
 										@if(!$organizerLimitedView)

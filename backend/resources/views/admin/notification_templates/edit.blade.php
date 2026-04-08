@@ -22,8 +22,6 @@
     <x-slot name="h1">
         Редактирование шаблона
 	</x-slot>
-    
-
 
     <x-slot name="breadcrumbs">
         <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
@@ -97,15 +95,88 @@
 									</div>
 								</div>
 							</div>
+                            {{-- ===== ХЕЛПЕР ШОРТКОДОВ ===== --}}
+                            <div class="ramka mt-2">
+                                <h2 class="-mt-05">📋 Доступные шорткоды</h2>
+                                <div class="row row2">
+
+                                    <div class="col-md-6">
+                                        <div class="card">
+                                            <div class="b-600 mb-1">📅 Дата и время</div>
+                                            <table class="table f-16">
+                                                <tr><td class="cd b-600 nowrap">{event_date}</td><td>Дата мероприятия (напр. 25.04.2026)</td></tr>
+                                                <tr><td class="cd b-600 nowrap">{event_time}</td><td>Время начала (напр. 19:00)</td></tr>
+                                                <tr><td class="cd b-600 nowrap">{event_datetime}</td><td>Дата и время вместе</td></tr>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="card">
+                                            <div class="b-600 mb-1">🏐 Мероприятие</div>
+                                            <table class="table f-16">
+                                                <tr><td class="cd b-600 nowrap">{event_title}</td><td>Название мероприятия</td></tr>
+                                                <tr><td class="cd b-600 nowrap">{event_url}</td><td>Ссылка на страницу мероприятия</td></tr>
+                                                <tr><td class="cd b-600 nowrap">{cancel_reason}</td><td>Причина отмены (для event_cancelled)</td></tr>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="card">
+                                            <div class="b-600 mb-1">📍 Место проведения</div>
+                                            <table class="table f-16">
+                                                <tr><td class="cd b-600 nowrap">{event_address}</td><td>Адрес локации</td></tr>
+                                                <tr><td class="cd b-600 nowrap">{event_location}</td><td>Название локации</td></tr>
+                                                <tr><td class="cd b-600 nowrap">{event_city}</td><td>Город</td></tr>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="card">
+                                            <div class="b-600 mb-1">👤 Пользователь</div>
+                                            <table class="table f-16">
+                                                <tr><td class="cd b-600 nowrap">{user_name}</td><td>Полное имя получателя</td></tr>
+                                                <tr><td class="cd b-600 nowrap">{user_first_name}</td><td>Только имя (без фамилии)</td></tr>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="card">
+                                            <div class="b-600 mb-1">👥 Группы и команды</div>
+                                            <table class="table f-16">
+                                                <tr><td class="cd b-600 nowrap">{invite_id}</td><td>ID приглашения в группу</td></tr>
+                                                <tr><td class="cd b-600 nowrap">{team_name}</td><td>Название команды (турнир)</td></tr>
+                                                <tr><td class="cd b-600 nowrap">{captain_name}</td><td>Имя капитана команды</td></tr>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="card">
+                                            <div class="b-600 mb-1">💰 Оплата</div>
+                                            <table class="table f-16">
+                                                <tr><td class="cd b-600 nowrap">{price}</td><td>Стоимость участия</td></tr>
+                                                <tr><td class="cd b-600 nowrap">{currency}</td><td>Валюта (RUB, USD…)</td></tr>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                </div>
+                                <ul class="list f-16 mt-1">
+                                    <li>Шорткоды работают в полях <strong>Заголовок</strong>, <strong>Текст</strong> и <strong>Ссылка кнопки</strong>.</li>
+                                    <li>Если переменная не передана — шорткод заменяется пустой строкой.</li>
+                                </ul>
+                            </div>
+                            {{-- ===== END ХЕЛПЕР ===== --}}
 						</div>
                         
                         <div class="col-12 col-lg-4">
 							<div class="sticky">
 								<div class="ramka">
-									
-									
 									<h2 class="-mt-05">Дополнительные настройки</h2>
-                                    
 									<div class="row">
 										<div class="col-12">		
 											<div class="card">

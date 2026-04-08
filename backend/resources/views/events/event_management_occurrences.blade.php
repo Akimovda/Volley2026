@@ -123,7 +123,6 @@
                             <col style="width:24%" />
                             <col style="width:18%" />
                             <col style="width:18%" />
-                            <col />
                             <col style="width:18rem" />
                         </colgroup>
 
@@ -133,7 +132,6 @@
                                 <th>Дата и время</th>
                                 <th>Статус</th>
                                 <th>Регистрация</th>
-                                <th>Регистрации</th>
                                 <th>Действия</th>
                             </tr>
                         </thead>
@@ -167,15 +165,15 @@
                                         <div class="mt-1">Записано: <strong>{{ (int)$seat['registered'] }}</strong></div>
                                     </td>
 
-                                    <td class="align-top f-16">
-                                        <a href="{{ route('events.registrations.index', ['event' => (int)$event->id, 'occurrence' => (int)$occ->id]) }}"
-                                           class="btn btn-small btn-secondary">
-                                            Открыть
-                                        </a>
-                                    </td>
+
 
                                     <td class="align-top nowrap f-0">
                                         <div class="d-flex">
+                                            <a href="{{ route('events.registrations.index', ['event' => (int)$event->id, 'occurrence' => (int)$occ->id]) }}"
+                                               class="btn btn-small btn-secondary mr-1"
+                                               title="Список участников">
+                                                🧑‍🧑‍🧒‍🧒
+                                            </a>
                                             <form method="POST"
                                                   action="{{ route('occurrences.destroy', ['occurrence' => (int)$occ->id]) }}"
                                                   class="d-inline-block">
