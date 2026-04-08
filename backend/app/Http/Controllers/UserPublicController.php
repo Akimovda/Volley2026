@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\UserLevelVote;
+use App\Models\UserPlayLike;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class UserPublicController extends Controller
 {
@@ -20,10 +23,45 @@ class UserPublicController extends Controller
             ->sortByDesc('created_at')
             ->values();
 
+        $authId = auth()->id();
+
+        // Оценки уровня
+        $classicVotes = UserLevelVote::where('target_id', $user->id)
+            ->where('direction', 'classic')
+            ->get();
+        $beachVotes = UserLevelVote::where('target_id', $user->id)
+            ->where('direction', 'beach')
+            ->get();
+
+        $classicAvg = $classicVotes->count() ? round($classicVotes->avg('level'), 1) : null;
+        $beachAvg   = $beachVotes->count() ? round($beachVotes->avg('level'), 1) : null;
+
+        $myClassicVote = $authId ? $classicVotes->firstWhere('voter_id', $authId)?->level : null;
+        $myBeachVote   = $authId ? $beachVotes->firstWhere('voter_id', $authId)?->level : null;
+
+        // Лайки "нравится играть"
+        $likes = UserPlayLike::where('target_id', $user->id)
+            ->with('liker:id,first_name,last_name,avatar_media_id')
+            ->orderByDesc('id')
+            ->limit(30)
+            ->get();
+
+        $iLiked = $authId
+            ? UserPlayLike::where('liker_id', $authId)->where('target_id', $user->id)->exists()
+            : false;
+
         return view('user.public', [
-            'user' => $user,
-            'isSelf' => $isSelf,
-            'photos' => $photos,
+            'user'          => $user,
+            'isSelf'        => $isSelf,
+            'photos'        => $photos,
+            'classicVotes'  => $classicVotes,
+            'beachVotes'    => $beachVotes,
+            'classicAvg'    => $classicAvg,
+            'beachAvg'      => $beachAvg,
+            'myClassicVote' => $myClassicVote,
+            'myBeachVote'   => $myBeachVote,
+            'likes'         => $likes,
+            'iLiked'        => $iLiked,
         ]);
     }
 }

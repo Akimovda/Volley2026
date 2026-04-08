@@ -196,7 +196,7 @@ $birth = $user->birth_date
 									<ul class="list mb-0 mt-2 -ml-1">	
 										<li><span class="b-600">Фамилия:</span> {{ $user->last_name ?? '—' }}</li>
 										<li><span class="b-600">Имя:</span> {{ $user->first_name ?? '—' }}</li>
-										@if(auth()->user()->isAdmin() || auth()->user()->isOrganizer())		
+										@if(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isOrganizer()))		
 										<li><span class="b-600">Отчество:</span> {{ $user->patronymic ?? '—' }}</li>
 										@endif	
 										<li><span class="b-600">Пол:</span>
@@ -220,19 +220,19 @@ $birth = $user->birth_date
                                 <div class="col-12">          
 									@auth
 									@if(!$isSelf)
-									@if(auth()->user()->isAdmin() || auth()->user()->isOrganizer())		
+									@if(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isOrganizer()))		
 									<hr class="mt-1 mb-1">
 									<nav class="menu-nav">   		
 										<a href="{{ url('/profile/complete?user_id=' . $user->id) }}" class="menu-item">
 											<span class="menu-text">
-												@if(auth()->user()->isAdmin())
+												@if(auth()->check() && auth()->user()->isAdmin())
 												Редактировать пользователя
 												@else
 												Настроить уровни
 												@endif
 											</span>
 										</a>
-										@if(auth()->user()->isAdmin())       
+										@if(auth()->check() && auth()->user()->isAdmin())       
 										<a href="{{ url('/user/photos?user_id=' . $user->id) }}" class="menu-item">
 											<span class="menu-text">
 												Редактировать фото пользователя
@@ -325,6 +325,176 @@ $birth = $user->birth_date
 					</div>
 				</div>	
 				
+                {{-- ===== ОЦЕНКА УРОВНЯ ===== --}}
+                @php
+                    $levelEmojis = [1=>"⚪️",2=>"🟡",3=>"🟠",4=>"🔵",5=>"🟣",6=>"🔴",7=>"⚫️"];
+                    $levelColors = [1=>"#e5e7eb",2=>"#fbbf24",3=>"#f97316",4=>"#3b82f6",5=>"#a855f7",6=>"#ef4444",7=>"#1f2937"];
+                @endphp
+
+                <div class="ramka">
+                    <h2 class="-mt-05">⭐ Оценка уровня игроками</h2>
+                    <div class="row row2">
+
+                        {{-- КЛАССИКА --}}
+                        <div class="col-md-6">
+                            <div class="card">
+                                <p class="b-600 mb-1">🏐 Классический волейбол</p>
+
+                                @if(auth()->check() && !$isSelf)
+                                <form method="POST" action="{{ route('user.vote', $user->id) }}" class="mb-2">
+                                    @csrf
+                                    <input type="hidden" name="direction" value="classic">
+                                    <div class="d-flex flex-wrap gap-1 mb-1">
+                                        @foreach($levelEmojis as $lvl => $emoji)
+                                        <button type="submit" name="level" value="{{ $lvl }}"
+                                            class="btn btn-small {{ $myClassicVote == $lvl ? '' : 'btn-secondary' }}"
+                                            title="{{ $lvl }} — {{ level_name($lvl) }}"
+                                            style="font-size:2rem; padding: 0.2rem 0.6rem; {{ $myClassicVote == $lvl ? 'outline: 2px solid var(--cd)' : '' }}">
+                                            {{ $emoji }}
+                                        </button>
+                                        @endforeach
+                                    </div>
+                                    <div class="f-14" style="opacity:.6">
+                                        @if($myClassicVote) Ваша оценка: <strong>{{ $myClassicVote }}</strong> {{ $levelEmojis[$myClassicVote] }}
+                                        @else Выберите уровень @endif
+                                    </div>
+                                </form>
+                                @elseif($isSelf)
+                                <div class="f-16 mb-2" style="opacity:.6">Нельзя оценивать себя</div>
+                                @else
+                                <div class="f-16 mb-2" style="opacity:.6"><a href="{{ route('login') }}">Войдите</a> чтобы оценить</div>
+                                @endif
+
+                                {{-- Полоска с указателем --}}
+                                @if($classicAvg !== null)
+                                @php
+                                    $pct = (($classicAvg - 1) / 6) * 100;
+                                    $colorIdx = (int)round($classicAvg);
+                                    $colorIdx = max(1, min(7, $colorIdx));
+                                @endphp
+                                <div class="mt-2">
+                                    <div class="d-flex between f-14 mb-05">
+                                        <span style="opacity:.6">{{ $classicVotes->count() }} {{ trans_choice('оценка|оценки|оценок', $classicVotes->count()) }}</span>
+                                        <span class="b-600 cd">Средняя: {{ $classicAvg }}</span>
+                                    </div>
+                                    {{-- Указатель --}}
+                                    <div style="position:relative; padding-bottom: 0.4rem;">
+                                        <div style="position:absolute; left:{{ $pct }}%; transform:translateX(-50%); font-size:1.2rem; bottom:0.2rem; line-height:1">✔️</div>
+                                    </div>
+                                    {{-- Полоска --}}
+                                    <div style="display:flex; border-radius:0.6rem; overflow:hidden; height:1.2rem;">
+                                        @foreach($levelColors as $lvl => $color)
+                                        <div style="flex:1; background:{{ $color }};"></div>
+                                        @endforeach
+                                    </div>
+
+                                </div>
+                                @else
+                                <div class="f-16 mt-1" style="opacity:.5">Оценок пока нет</div>
+                                @endif
+                            </div>
+                        </div>
+
+                        {{-- ПЛЯЖ --}}
+                        <div class="col-md-6">
+                            <div class="card">
+                                <p class="b-600 mb-1">🏖 Пляжный волейбол</p>
+
+                                @if(auth()->check() && !$isSelf)
+                                <form method="POST" action="{{ route('user.vote', $user->id) }}" class="mb-2">
+                                    @csrf
+                                    <input type="hidden" name="direction" value="beach">
+                                    <div class="d-flex flex-wrap gap-1 mb-1">
+                                        @foreach($levelEmojis as $lvl => $emoji)
+                                        <button type="submit" name="level" value="{{ $lvl }}"
+                                            class="btn btn-small {{ $myBeachVote == $lvl ? '' : 'btn-secondary' }}"
+                                            title="{{ $lvl }} — {{ level_name($lvl) }}"
+                                            style="font-size:2rem; padding: 0.2rem 0.6rem; {{ $myBeachVote == $lvl ? 'outline: 2px solid var(--cd)' : '' }}">
+                                            {{ $emoji }}
+                                        </button>
+                                        @endforeach
+                                    </div>
+                                    <div class="f-14" style="opacity:.6">
+                                        @if($myBeachVote) Ваша оценка: <strong>{{ $myBeachVote }}</strong> {{ $levelEmojis[$myBeachVote] }}
+                                        @else Выберите уровень @endif
+                                    </div>
+                                </form>
+                                @elseif($isSelf)
+                                <div class="f-16 mb-2" style="opacity:.6">Нельзя оценивать себя</div>
+                                @else
+                                <div class="f-16 mb-2" style="opacity:.6"><a href="{{ route('login') }}">Войдите</a> чтобы оценить</div>
+                                @endif
+
+                                @if($beachAvg !== null)
+                                @php
+                                    $pctB = (($beachAvg - 1) / 6) * 100;
+                                @endphp
+                                <div class="mt-2">
+                                    <div class="d-flex between f-14 mb-05">
+                                        <span style="opacity:.6">{{ $beachVotes->count() }} {{ trans_choice('оценка|оценки|оценок', $beachVotes->count()) }}</span>
+                                        <span class="b-600 cd">Средняя: {{ $beachAvg }}</span>
+                                    </div>
+                                    <div style="position:relative; padding-bottom: 0.4rem;">
+                                        <div style="position:absolute; left:{{ $pctB }}%; transform:translateX(-50%); font-size:1.2rem; bottom:0.2rem; line-height:1">✔️</div>
+                                    </div>
+                                    <div style="display:flex; border-radius:0.6rem; overflow:hidden; height:1.2rem;">
+                                        @foreach($levelColors as $lvl => $color)
+                                        <div style="flex:1; background:{{ $color }};"></div>
+                                        @endforeach
+                                    </div>
+
+                                </div>
+                                @else
+                                <div class="f-16 mt-1" style="opacity:.5">Оценок пока нет</div>
+                                @endif
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                {{-- ===== С ВАМИ УДОБНО ИГРАТЬ ===== --}}
+                <div class="ramka">
+                    <div class="d-flex between fvc mb-2">
+                        <h2 class="-mt-05">🤝 С ним(ней) удобно играть</h2>
+                        <span class="f-16 b-600 cd">{{ $likes->count() }}</span>
+                    </div>
+
+                    {{-- Аватары лайкнувших --}}
+                    @if($likes->isNotEmpty())
+                    <div class="d-flex flex-wrap gap-1 mb-2">
+                        @foreach($likes as $like)
+                        @php
+                            $lk = $like->liker;
+                            $lkUrl = $lk ? route('users.show', $lk->id) : null;
+                            $lkPhoto = $lk?->profile_photo_url;
+                            $lkName = trim(($lk->first_name ?? '') . ' ' . ($lk->last_name ?? '')) ?: 'Игрок';
+                        @endphp
+                        @if($lk)
+                        <a href="{{ $lkUrl }}" title="{{ $lkName }}">
+                            <img src="{{ $lkPhoto }}" alt="{{ $lkName }}"
+                                 style="width:4rem;height:4rem;border-radius:50%;object-fit:cover;border:2px solid var(--bg2)">
+                        </a>
+                        @endif
+                        @endforeach
+                    </div>
+                    @else
+                    <div class="f-16 mb-2" style="opacity:.5">Пока никто не отметил</div>
+                    @endif
+
+                    {{-- Кнопка лайка --}}
+                    @if(auth()->check() && !$isSelf)
+                    <form method="POST" action="{{ route('user.like', $user->id) }}">
+                        @csrf
+                        <button type="submit" class="btn {{ $iLiked ? '' : 'btn-secondary' }}">
+                            {{ $iLiked ? '💔 Не нравится играть вместе' : '🤍 Нравится играть вместе' }}
+                        </button>
+                    </form>
+                    @elseif(!auth()->check())
+                    <a href="{{ route('login') }}" class="btn btn-secondary">Войдите чтобы отметить</a>
+                    @endif
+                </div>
+
                 {{-- Contacts --}}
                 <div class="ramka">
                     <div class="card-body">
@@ -346,7 +516,7 @@ $birth = $user->birth_date
 						<div class="d-flex flex-wrap gap-1 fc">
 							
 							@auth
-							@if((auth()->user()->isAdmin() || auth()->user()->isOrganizer()) && $user->phone)
+							@if(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isOrganizer()) && $user->phone)
 							<a class="btn" href="tel:{{ $user->phone }}">
 								{{ $user->formatted_phone }}
 							</a>

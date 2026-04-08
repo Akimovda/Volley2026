@@ -30,6 +30,10 @@
     {{ __('Локации') }}
 </x-nav-link>
 
+<x-nav-link href="{{ route('volleyball_school.index') }}" :active="request()->routeIs('volleyball_school.*')">
+    {{ __('Школы волейбола') }}
+</x-nav-link>
+
                     @auth
                         <x-nav-link href="{{ route('events.index') }}" :active="request()->routeIs('events.index')">
                             {{ __('Dashboard') }}

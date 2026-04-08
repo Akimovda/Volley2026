@@ -597,3 +597,40 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
         'session' => session()->all(),
 		]);
 	})->middleware('auth');	
+/*
+|--------------------------------------------------------------------------
+| User Social (votes + likes)
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified'])->group(function () {
+    Route::post('/user/{user}/vote', [\App\Http\Controllers\UserSocialController::class, 'vote'])
+        ->whereNumber('user')
+        ->name('user.vote');
+    Route::post('/user/{user}/like', [\App\Http\Controllers\UserSocialController::class, 'like'])
+        ->whereNumber('user')
+        ->name('user.like');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Volleyball Schools
+|--------------------------------------------------------------------------
+*/
+// Статичные роуты ПЕРЕД динамическим {slug}
+Route::get('/volleyball_school', [\App\Http\Controllers\VolleyballSchoolController::class, 'index'])
+    ->name('volleyball_school.index');
+
+Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified'])->group(function () {
+    Route::get('/volleyball_school/create', [\App\Http\Controllers\VolleyballSchoolController::class, 'create'])
+        ->name('volleyball_school.create');
+    Route::post('/volleyball_school', [\App\Http\Controllers\VolleyballSchoolController::class, 'store'])
+        ->name('volleyball_school.store');
+    Route::get('/volleyball_school/my/edit', [\App\Http\Controllers\VolleyballSchoolController::class, 'edit'])
+        ->name('volleyball_school.edit');
+    Route::put('/volleyball_school/my/edit', [\App\Http\Controllers\VolleyballSchoolController::class, 'update'])
+        ->name('volleyball_school.update');
+});
+
+// Динамический {slug} — ПОСЛЕ статичных
+Route::get('/volleyball_school/{slug}', [\App\Http\Controllers\VolleyballSchoolController::class, 'show'])
+    ->name('volleyball_school.show');
