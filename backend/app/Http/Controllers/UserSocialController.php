@@ -4,10 +4,15 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\UserLevelVote;
 use App\Models\UserPlayLike;
+use App\Services\UserNotificationService;
 use Illuminate\Http\Request;
 
 class UserSocialController extends Controller
 {
+    public function __construct(
+        private UserNotificationService $notificationService
+    ) {}
+
     // Голосование за уровень
     public function vote(Request $request, User $user)
     {
@@ -29,6 +34,12 @@ class UserSocialController extends Controller
                 'direction' => $request->direction,
             ],
             ['level' => $request->level]
+        );
+
+        // Уведомление
+        $this->notificationService->createUserLevelVotedNotification(
+            userId: $user->id,
+            profileUrl: route('users.show', $user->id),
         );
 
         return back()->with('status', 'Оценка сохранена!');
@@ -56,6 +67,12 @@ class UserSocialController extends Controller
             'liker_id'  => $liker->id,
             'target_id' => $user->id,
         ]);
+
+        // Уведомление
+        $this->notificationService->createUserPlayLikedNotification(
+            userId: $user->id,
+            profileUrl: route('users.show', $user->id),
+        );
 
         return back()->with('status', 'Лайк добавлен!');
     }

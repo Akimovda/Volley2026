@@ -598,4 +598,36 @@ final class UserNotificationService
 
         return $q->latest('id')->first();
     }
+
+    public function createUserLevelVotedNotification(int $userId, string $profileUrl): void
+    {
+        try {
+            $this->create(
+                userId: $userId,
+                type: 'user_level_voted',
+                title: 'Вам поставили оценку уровня!',
+                body: null,
+                payload: ['profile_url' => $profileUrl],
+                channels: ['in_app', 'telegram', 'vk', 'max'],
+            );
+        } catch (\Throwable $e) {
+            \Log::warning('user_level_voted notification failed: ' . $e->getMessage());
+        }
+    }
+
+    public function createUserPlayLikedNotification(int $userId, string $profileUrl): void
+    {
+        try {
+            $this->create(
+                userId: $userId,
+                type: 'user_play_liked',
+                title: 'Кому-то нравится с вами играть!',
+                body: null,
+                payload: ['profile_url' => $profileUrl],
+                channels: ['in_app', 'telegram', 'vk', 'max'],
+            );
+        } catch (\Throwable $e) {
+            \Log::warning('user_play_liked notification failed: ' . $e->getMessage());
+        }
+    }
 }
