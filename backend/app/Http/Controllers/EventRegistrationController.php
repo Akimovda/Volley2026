@@ -16,6 +16,8 @@ use App\Services\UserNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use App\Services\PaymentService;
+use App\Models\Payment;
 use Illuminate\Support\Facades\Schema;
 
 class EventRegistrationController extends Controller
@@ -246,6 +248,29 @@ class EventRegistrationController extends Controller
             }
 
             $reg->save();
+
+            // Платёжная логика
+            $event = $occurrence->event;
+            if ($event && $event->is_paid && $event->price_minor > 0) {
+                $paymentService = app(PaymentService::class);
+                $payment = $paymentService->createForRegistration($reg, $event, $occurrence);
+
+                // Для ЮМани — статус резерв
+                if ($event->payment_method === 'yoomoney') {
+                    $reg->payment_status = 'pending';
+                    $reg->payment_id = $payment->id;
+                    $reg->payment_expires_at = $payment->expires_at;
+                    $reg->save();
+                } elseif (in_array($event->payment_method, ['tbank_link', 'sber_link'])) {
+                    $reg->payment_status = 'link_pending';
+                    $reg->payment_id = $payment->id;
+                    $reg->save();
+                } else {
+                    // cash — сразу подтверждаем
+                    $reg->payment_status = 'free';
+                    $reg->save();
+                }
+            }
         });
 
         app(EventOccurrenceStatsService::class)->increment($occurrence->id);
@@ -267,6 +292,31 @@ class EventRegistrationController extends Controller
             );
         }
         $this->dispatchAnnounceUpdate($occurrence);
+
+        // Редирект для платных мероприятий
+        $eventModel = $occurrence->event;
+        if ($eventModel && $eventModel->is_paid && $eventModel->payment_method === 'yoomoney') {
+            $payment = Payment::where('user_id', $user->id)
+                ->where('occurrence_id', $occurrence->id)
+                ->where('status', 'pending')
+                ->latest()
+                ->first();
+
+            if ($payment) {
+                return redirect()->route('events.show', [
+                    'event' => (int) $occurrence->event_id,
+                    'occurrence' => (int) $occurrence->id,
+                ])->with('payment_pending', $payment->id)
+                  ->with('status', '⏳ Место зарезервировано! Оплатите в течение ' . ($eventModel->payment_hold_minutes ?? 15) . ' минут.');
+            }
+        }
+
+        if ($eventModel && $eventModel->is_paid && in_array($eventModel->payment_method, ['tbank_link', 'sber_link'])) {
+            return redirect()->route('events.show', [
+                'event' => (int) $occurrence->event_id,
+                'occurrence' => (int) $occurrence->id,
+            ])->with('status', '✅ Записались! Переведите оплату и нажмите «Я оплатил».');
+        }
         
         return redirect()->route('events.show', [
             'event' => (int) $occurrence->event_id,

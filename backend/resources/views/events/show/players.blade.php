@@ -134,6 +134,42 @@
 		@endif
 	</div>
 	
+	{{-- ======= БЛОК ОПЛАТЫ ======= --}}
+	@php
+	    $myPayment = null;
+	    if (auth()->check() && isset($occurrence)) {
+	        $myPayment = \App\Models\Payment::where('user_id', auth()->id())
+	            ->where('occurrence_id', $occurrence->id)
+	            ->whereIn('status', ['pending', 'paid'])
+	            ->latest()
+	            ->first();
+	    }
+	@endphp
+	@if($myPayment && $myPayment->status === 'pending')
+	    @if(in_array($myPayment->method, ['tbank_link', 'sber_link']))
+	        <div class="alert alert-warning mt-2">
+	            ⏳ Ожидаем оплату — <strong>{{ number_format($myPayment->amount_minor/100, 2) }} ₽</strong>
+	        </div>
+	        @if($event->payment_link)
+	        <a href="{{ $event->payment_link }}" target="_blank" class="btn w-100 mt-1">💳 Перейти к оплате</a>
+	        @endif
+	        @if(!$myPayment->user_confirmed)
+	        <form method="POST" action="{{ route('payments.user_confirm', $myPayment->id) }}">
+	            @csrf
+	            <button type="submit" class="btn btn-secondary w-100 mt-1">✅ Я оплатил</button>
+	        </form>
+	        @else
+	        <div class="alert alert-info mt-1">👀 Ждём подтверждения от организатора</div>
+	        @endif
+	    @elseif($myPayment->method === 'yoomoney' && $myPayment->yoomoney_confirmation_url)
+	        <div class="alert alert-warning mt-2">⏳ Место зарезервировано до {{ $myPayment->expires_at?->format('H:i') }}</div>
+	        <a href="{{ $myPayment->yoomoney_confirmation_url }}" target="_blank" class="btn w-100 mt-1">🟡 Оплатить через ЮМани</a>
+	    @endif
+	@elseif($myPayment && $myPayment->status === 'paid')
+	    <div class="alert alert-success mt-2">✅ Оплачено — {{ number_format($myPayment->amount_minor/100, 2) }} ₽</div>
+	@endif
+	{{-- ======= КОНЕЦ БЛОКА ОПЛАТЫ ======= --}}
+
 	@if ($cancel->allowed)
 	<form method="POST" action="{{ $leaveAction }}">
 		@csrf

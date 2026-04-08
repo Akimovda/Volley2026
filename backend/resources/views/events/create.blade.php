@@ -1643,6 +1643,67 @@ if ($initialStep < 1 || $initialStep > 3) {
 											</div>
 										</div>
 									</div>
+
+                                        {{-- СПОСОБ ОПЛАТЫ --}}
+                                        <div id="payment_method_wrap" class="mt-2">
+                                            <label>Способ оплаты</label>
+                                            @php
+                                                $pm = old('payment_method', $prefill['payment_method'] ?? 'cash');
+                                                $orgPaySettings = auth()->check()
+                                                    ? \App\Models\PaymentSetting::where('organizer_id', auth()->id())->first()
+                                                    : null;
+                                            @endphp
+                                            <select name="payment_method" id="payment_method">
+                                                <option value="cash" @selected($pm === 'cash')>💵 Наличные (на месте)</option>
+                                                <option value="tbank_link" @selected($pm === 'tbank_link')>🏦 Перевод Т-Банк (по ссылке)</option>
+                                                <option value="sber_link" @selected($pm === 'sber_link')>💚 Перевод Сбер (по ссылке)</option>
+                                                @if($orgPaySettings?->yoomoney_verified)
+                                                <option value="yoomoney" @selected($pm === 'yoomoney')>🟡 ЮМани (автооплата)</option>
+                                                @endif
+                                            </select>
+
+                                            {{-- Ссылка для перевода --}}
+                                            <div id="payment_link_wrap" class="mt-1" style="display:none">
+                                                <label>Ссылка для перевода</label>
+                                                <input type="url" name="payment_link"
+                                                    value="{{ old('payment_link', $prefill['payment_link'] ?? ($pm === 'tbank_link' ? $orgPaySettings?->tbank_link : ($pm === 'sber_link' ? $orgPaySettings?->sber_link : ''))) }}"
+                                                    placeholder="https://...">
+                                                <ul class="list f-14 mt-1">
+                                                    <li>Из настроек профиля подставится автоматически</li>
+                                                </ul>
+                                            </div>
+
+                                            <ul class="list f-14 mt-1" id="payment_method_hint">
+                                                <li id="hint_cash">Игроки платят на месте, запись без ограничений</li>
+                                                <li id="hint_link" style="display:none">Игрок нажимает "Я оплатил", вы подтверждаете вручную</li>
+                                                <li id="hint_yoomoney" style="display:none">Место резервируется на {{ $orgPaySettings?->payment_hold_minutes ?? 15 }} мин. Запись подтверждается после оплаты автоматически</li>
+                                            </ul>
+                                        </div>
+
+                                        {{-- ПОЛИТИКА ВОЗВРАТА (только для платных) --}}
+                                        <div class="mt-2">
+                                            <label>Политика возврата</label>
+                                            <div class="row row2">
+                                                <div class="col-4">
+                                                    <label class="f-14">100% за (часов)</label>
+                                                    <input type="number" name="refund_hours_full" min="0" max="720"
+                                                        value="{{ old('refund_hours_full', $prefill['refund_hours_full'] ?? $orgPaySettings?->refund_hours_full ?? 48) }}">
+                                                </div>
+                                                <div class="col-4">
+                                                    <label class="f-14">Частично за (часов)</label>
+                                                    <input type="number" name="refund_hours_partial" min="0" max="720"
+                                                        value="{{ old('refund_hours_partial', $prefill['refund_hours_partial'] ?? $orgPaySettings?->refund_hours_partial ?? 24) }}">
+                                                </div>
+                                                <div class="col-4">
+                                                    <label class="f-14">Частичный %</label>
+                                                    <input type="number" name="refund_partial_pct" min="0" max="100"
+                                                        value="{{ old('refund_partial_pct', $prefill['refund_partial_pct'] ?? $orgPaySettings?->refund_partial_pct ?? 50) }}">
+                                                </div>
+                                            </div>
+                                            <ul class="list f-14 mt-1">
+                                                <li>При отмене по кворуму — всегда 100% на виртуальный счёт</li>
+                                            </ul>
+                                        </div>
 								</div>
 								<div class="col-md-4">
 									<div class="card">
@@ -2130,6 +2191,50 @@ if ($initialStep < 1 || $initialStep > 3) {
 			if (!$select.length) {
 				//console.log('Селект не найден:', selector);
 				return;
+// Переключение способа оплаты
+(function() {
+    const sel = document.getElementById('payment_method');
+    const linkWrap = document.getElementById('payment_link_wrap');
+    const hintCash = document.getElementById('hint_cash');
+    const hintLink = document.getElementById('hint_link');
+    const hintYoo  = document.getElementById('hint_yoomoney');
+    const methodWrap = document.getElementById('payment_method_wrap');
+    const isPaid = document.getElementById('is_paid');
+
+    const orgSettings = {
+        tbank: '{{ $orgPaySettings?->tbank_link ?? "" }}',
+        sber:  '{{ $orgPaySettings?->sber_link ?? "" }}',
+    };
+
+    function syncPaymentMethod() {
+        if (!sel) return;
+        const v = sel.value;
+        const isLink = v === 'tbank_link' || v === 'sber_link';
+
+        if (linkWrap) linkWrap.style.display = isLink ? '' : 'none';
+        if (hintCash) hintCash.style.display = v === 'cash' ? '' : 'none';
+        if (hintLink) hintLink.style.display = isLink ? '' : 'none';
+        if (hintYoo)  hintYoo.style.display  = v === 'yoomoney' ? '' : 'none';
+
+        // Автозаполнение ссылки из настроек
+        const linkInput = linkWrap?.querySelector('[name="payment_link"]');
+        if (linkInput && !linkInput.value) {
+            if (v === 'tbank_link') linkInput.value = orgSettings.tbank;
+            if (v === 'sber_link')  linkInput.value = orgSettings.sber;
+        }
+    }
+
+    function syncIsPaid() {
+        if (!methodWrap || !isPaid) return;
+        methodWrap.style.display = isPaid.checked ? '' : 'none';
+    }
+
+    sel?.addEventListener('change', syncPaymentMethod);
+    isPaid?.addEventListener('change', syncIsPaid);
+
+    syncPaymentMethod();
+    syncIsPaid();
+})();
 			}
 			
 			const $wrapper = $select.prev('.form-select-wrapper');

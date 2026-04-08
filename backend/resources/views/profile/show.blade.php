@@ -235,6 +235,15 @@
 										</span>
 										@endif										
 									</a>									
+
+<a href="{{ route('wallet.index') }}" class="menu-item">
+<span class="menu-text">👛 Мой кошелёк</span>
+</a>
+@if(auth()->check() && (auth()->user()->isOrganizer() || auth()->user()->isAdmin()))
+<a href="{{ route('profile.transactions') }}" class="menu-item">
+<span class="menu-text">💳 Транзакции</span>
+</a>
+@endif
 									
 									<form method="POST" action="{{ route('logout') }}" class="logout-form" x-data>
 										@csrf
@@ -833,6 +842,26 @@
                 </div>
             @endif
 				
+
+<div class="ramka">
+@if(auth()->check() && (auth()->user()->isOrganizer() || auth()->user()->isAdmin()))
+@php $paymentSettings = \App\Models\PaymentSetting::where('organizer_id', auth()->id())->first(); @endphp
+<h2 class="-mt-05">💳 Платёжная система</h2>
+<div class="card">
+    @if($paymentSettings?->yoomoney_verified)
+        <div class="f-18 cs b-600">✅ Платежи настроены (ЮМани)</div>
+        <div class="f-16 mt-05" style="opacity:.6">Shop ID: {{ $paymentSettings->yoomoney_shop_id }}</div>
+    @elseif($paymentSettings && ($paymentSettings->tbank_link || $paymentSettings->sber_link))
+        <div class="f-18 cd b-600">🔗 Настроены платежи по ссылке</div>
+    @else
+        <div class="f-16" style="opacity:.6">Настройте приём оплаты за мероприятия</div>
+    @endif
+    <div class="mt-2">
+        <a href="{{ route('profile.payment_settings') }}" class="btn btn-secondary">⚙️ Настроить оплату</a>
+    </div>
+</div>
+@endif
+</div>
 <div class="ramka">
 @if(auth()->check() && (auth()->user()->isOrganizer() || auth()->user()->isAdmin()))
 @php

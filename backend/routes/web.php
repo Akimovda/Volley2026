@@ -634,3 +634,39 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
 // Динамический {slug} — ПОСЛЕ статичных
 Route::get('/volleyball_school/{slug}', [\App\Http\Controllers\VolleyballSchoolController::class, 'show'])
     ->name('volleyball_school.show');
+
+/*
+|--------------------------------------------------------------------------
+| Payment Settings
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified'])->group(function () {
+    Route::get('/profile/payment-settings', [\App\Http\Controllers\PaymentSettingsController::class, 'show'])
+        ->name('profile.payment_settings');
+    Route::post('/profile/payment-settings', [\App\Http\Controllers\PaymentSettingsController::class, 'update'])
+        ->name('profile.payment_settings.update');
+
+    Route::post('/payments/{payment}/user-confirm', [\App\Http\Controllers\PaymentController::class, 'userConfirm'])
+        ->name('payments.user_confirm');
+    Route::post('/payments/{payment}/org-confirm', [\App\Http\Controllers\PaymentController::class, 'orgConfirm'])
+        ->name('payments.org_confirm');
+});
+
+// Дополнительные роуты платежей
+Route::post('/payments/yoomoney/webhook', [\App\Http\Controllers\PaymentController::class, 'yoomoneyWebhook'])
+    ->name('payments.yoomoney.webhook')
+    ->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
+
+Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified'])->group(function () {
+    Route::post('/payments/{payment}/org-reject', [\App\Http\Controllers\PaymentController::class, 'orgReject'])
+        ->name('payments.org_reject');
+    Route::get('/profile/transactions', [\App\Http\Controllers\PaymentController::class, 'transactions'])
+        ->name('profile.transactions');
+    Route::get('/wallet', [\App\Http\Controllers\PaymentController::class, 'wallet'])
+        ->name('wallet.index');
+});
+
+Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified'])->group(function () {
+    Route::post('/payments/{payment}/refund', [\App\Http\Controllers\PaymentController::class, 'refund'])
+        ->name('payments.refund');
+});

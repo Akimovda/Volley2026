@@ -15,3 +15,8 @@ Schedule::command('events:cancel-by-quorum')
 Schedule::command('events:expand-recurring --horizon=90 --chunk=200 --maxCreates=500')
     ->dailyAt('03:10')
     ->withoutOverlapping();
+
+// Освобождение просроченных резервов оплаты
+Schedule::job(new \App\Jobs\ReleaseExpiredPaymentsJob())
+    ->everyFiveMinutes()
+    ->withoutOverlapping();

@@ -313,6 +313,12 @@
                 'in:RUB,USD,EUR,KZT,KGS,BYN,UZS,AMD,AZN,TJS,TMT,GEL,MDL',
             ],
 			
+
+            'payment_method'      => ['nullable', 'string', 'in:cash,tbank_link,sber_link,yoomoney'],
+            'payment_link'        => ['nullable', 'url', 'max:500'],
+            'refund_hours_full'   => ['nullable', 'integer', 'min:0', 'max:720'],
+            'refund_hours_partial'=> ['nullable', 'integer', 'min:0', 'max:720'],
+            'refund_partial_pct'  => ['nullable', 'integer', 'min:0', 'max:100'],
             'requires_personal_data' => ['nullable','boolean'],
 			
             'organizer_id' => [
