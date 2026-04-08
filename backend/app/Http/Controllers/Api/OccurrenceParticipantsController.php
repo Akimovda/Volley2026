@@ -42,6 +42,7 @@ class OccurrenceParticipantsController extends Controller
                 'users.classic_level',
                 'users.profile_photo_path',
                 'event_registrations.position',
+                'event_registrations.group_key',
                 DB::raw('COALESCE(m_avatar.id, m_photo.id) as media_id'),
                 DB::raw('COALESCE(m_avatar.file_name, m_photo.file_name) as media_file')
             )
@@ -64,11 +65,12 @@ class OccurrenceParticipantsController extends Controller
                 }
 
                 return [
-                    'id'       => $u->id,
-                    'name'     => $displayName,
-                    'position' => $u->position,
-                    'avatar'   => $avatar,
-                    'level'    => $u->classic_level ?? 0,
+                    'id'        => $u->id,
+                    'name'      => $displayName,
+                    'position'  => $u->position,
+                    'avatar'    => $avatar,
+                    'level'     => $u->classic_level ?? 0,
+                    'group_key' => $u->group_key ?? null,
                 ];
             })
             ->values();

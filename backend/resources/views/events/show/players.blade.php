@@ -386,114 +386,76 @@
 </div>
 @endif
 {{-- ===============================
-ПРИГЛАСИТЬ ИГРОКА
+ПРИГЛАСИТЬ ИГРОКА (объединённый блок)
 =============================== --}}
 @if ($isRegistered && auth()->check())
 @php
     $inviteSearchUrl = route('api.users.search');
     $inviteAction    = route('events.invite', ['event' => $event->id]);
+    $hasGroupUi      = !empty($groupUi['enabled']);
+    $gs              = $event->gameSettings ?? null;
+    $subtype         = (string)($gs->subtype ?? '');
+    $isPair          = $subtype === '2x2';
+    $inviteLabel     = $isPair ? 'в пару' : 'в команду';
 @endphp
+
 <div class="ramka" style="z-index:5">
     <h2 class="-mt-05">Пригласить игрока</h2>
-    <div class="text-muted small mb-2">
-        Игрок получит уведомление с информацией о мероприятии и ссылкой для записи.
-    </div>
 
     @if(session('status') && str_contains(session('status'), 'Приглашение'))
         <div class="alert alert-success">{{ session('status') }}</div>
     @endif
 
-<form class="form" method="POST" action="{{ $inviteAction }}" id="invite-player-form">
-    @csrf
-    <input type="hidden" name="occurrence_id" value="{{ $occurrence->id }}">
-
-    <div class="ac-box">
-        {{-- chips --}}
-        <div id="invite-selected-list" class="mb-2"></div>
-        
-        <div style="position: relative" class="mb-2" id="invite-ac-wrap">
-            <input type="text"
-                id="invite-ac-input"
-                autocomplete="off"
-                class="form-control"
-                placeholder="Введите имя или email игрока…"
-            >
-            <div id="invite-ac-dd" class="form-select-dropdown trainer_dd"></div>
-        </div>
-        
-        <button type="submit" id="invite-submit-btn" class="btn btn-primary w-100" disabled>
-            Отправить приглашения
-        </button>
+    {{-- Радио-переключатель типа приглашения --}}
+    @if($hasGroupUi && !empty($groupUi['registration']))
+    <div class="d-flex gap-3 mb-3">
+        <label class="d-flex align-items-center gap-2" style="cursor:pointer">
+            <input type="radio" name="invite_mode" value="game" id="invite-mode-game" checked>
+            <span>На игру</span>
+        </label>
+        <label class="d-flex align-items-center gap-2" style="cursor:pointer">
+            <input type="radio" name="invite_mode" value="group" id="invite-mode-group">
+            <span>{{ $isPair ? 'В пару' : 'В команду' }}</span>
+        </label>
     </div>
-</form>
-</div>
+    @endif
 
-{{-- ===============================
-ГРУППА НА ПЛЯЖКУ / КОМАНДА / ПАРА
-=============================== --}}
-@endif
-
-@if((!empty($groupUi['enabled'])) && ($isRegistered))
-@php
-    $gs        = $event->gameSettings ?? null;
-    $subtype   = (string)($gs->subtype ?? '');
-    $isPair    = $subtype === '2x2';
-    $isTeam    = in_array($subtype, ['3x3','4x4'], true);
-
-    $blockTitle   = $isPair ? '👥 Пара на пляжку'   : '🧑‍🧑‍🧒‍🧒 Команда на пляжку';
-    $inviteLabel  = $isPair ? 'Пригласить игрока в пару' : 'Пригласить игрока в команду';
-    $groupLabel   = $isPair ? 'Состав пары'          : 'Состав команды';
-    $leaveLabel   = $isPair ? 'Выйти из пары'        : 'Выйти из команды';
-@endphp
-
-<div class="ramka">
-    <h2 class="-mt-05">{{ $blockTitle }}</h2>
-
-    {{-- Пользователь ещё не в группе --}}
-    @if(empty($groupUi['registration']))
-        @if(!empty($groupUi['pending_invites']) && $groupUi['pending_invites']->count())
-        <div class="alert alert-info mt-2">
-            У вас есть приглашения в {{ $isPair ? 'пару' : 'команду' }} для этого мероприятия.
+    {{-- === БЛОК: Пригласить на игру === --}}
+    <div id="invite-game-block">
+        <div class="text-muted small mb-2">
+            Игрок получит уведомление с информацией о мероприятии и ссылкой для записи.
         </div>
-
-        @foreach($groupUi['pending_invites'] as $invite)
-        <div class="border rounded p-3 mt-2">
-            <div class="text-sm">
-                Приглашение от
-                <strong>{{ $invite->from_user_name ?: $invite->from_user_email ?: ('#'.$invite->from_user_id) }}</strong>
-            </div>
-            <div class="mt-2">
-                <div class="alert alert-secondary mb-2">
-                    Чтобы принять приглашение, сначала запишитесь на мероприятие.
-                    После этого вы сможете вернуться и принять приглашение.
-                </div>
-                <form method="POST" action="{{ route('events.group.decline', ['event' => $event->id, 'invite' => $invite->id]) }}">
-                    @csrf
-                    <button type="submit" class="btn btn-outline-secondary">Отклонить</button>
-                </form>
-            </div>
-        </div>
-        @endforeach
-        @endif
-
-    {{-- Пользователь записан --}}
-    @else
-
-        {{-- Нет группы — кнопка объединиться --}}
-        @if(empty($groupUi['group_key']))
-        <form method="POST" action="{{ route('events.group.create', ['event' => $event->id]) }}" class="mt-2">
+        <form class="form" method="POST" action="{{ $inviteAction }}" id="invite-player-form">
             @csrf
-            <button type="submit" class="btn btn-outline-primary">Объединиться</button>
+            <input type="hidden" name="occurrence_id" value="{{ $occurrence->id }}">
+            <div class="ac-box">
+                <div id="invite-selected-list" class="mb-2"></div>
+                <div style="position:relative" class="mb-2" id="invite-ac-wrap">
+                    <input type="text" id="invite-ac-input" autocomplete="off" class="form-control"
+                        placeholder="Введите имя или email игрока…">
+                    <div id="invite-ac-dd" class="form-select-dropdown trainer_dd"></div>
+                </div>
+                <button type="submit" id="invite-submit-btn" class="btn btn-primary w-100" disabled>
+                    Отправить приглашения
+                </button>
+            </div>
         </form>
-        @endif
+    </div>
 
-        {{-- Есть группа --}}
+    {{-- === БЛОК: Пригласить в пару/команду === --}}
+    @if($hasGroupUi && !empty($groupUi['registration']))
+    <div id="invite-group-block" style="display:none">
+
+        {{-- Состав текущей группы --}}
         @if(!empty($groupUi['group_key']))
-        <div class="mt-3">
-            <div class="fw-bold">{{ $groupLabel }}</div>
-
+        <div class="mb-3">
+            @php
+                $groupLabel = $isPair ? 'Состав пары' : 'Состав команды';
+                $leaveLabel = $isPair ? 'Выйти из пары' : 'Выйти из команды';
+            @endphp
+            <div class="fw-bold mb-2">{{ $groupLabel }}</div>
             @if(!empty($groupUi['group_members']) && $groupUi['group_members']->count())
-            <ul class="mt-2 mb-2">
+            <ul class="mb-2">
                 @foreach($groupUi['group_members'] as $member)
                 <li>
                     {{ $member->name ?: $member->email ?: ('#'.$member->user_id) }}
@@ -504,70 +466,86 @@
                 @endforeach
             </ul>
             @else
-            <div class="text-muted small mt-2">
-                Пока {{ $isPair ? 'в паре только вы' : 'в команде только вы' }}.
-            </div>
+            <div class="text-muted small mb-2">Пока {{ $isPair ? 'в паре только вы' : 'в команде только вы' }}.</div>
             @endif
-
-            <form method="POST" action="{{ route('events.group.leave', ['event' => $event->id]) }}" class="mt-2">
+            <form method="POST" action="{{ route('events.group.leave', ['event' => $event->id]) }}" class="mb-3">
                 @csrf
-                <button type="submit" class="btn btn-outline-danger">{{ $leaveLabel }}</button>
+                <button type="submit" class="btn btn-sm btn-outline-danger">{{ $leaveLabel }}</button>
             </form>
         </div>
+        @else
+        {{-- Нет группы — кнопка объединиться --}}
+        <form method="POST" action="{{ route('events.group.create', ['event' => $event->id]) }}" class="mb-3">
+            @csrf
+            <button type="submit" class="btn btn-outline-primary">Объединиться</button>
+        </form>
         @endif
 
-       {{-- Приглашение игроков --}}
-        <div class="mt-4">
-            <label class="form-label">{{ $inviteLabel }}</label>
-            <form method="POST" action="{{ route('events.group.invite', ['event' => $event->id]) }}" id="group-invite-form">
-                @csrf
-                <input type="hidden" name="to_user_id" id="group-invite-user-id" value="">
-        
-                <div style="position:relative" class="mb-2" id="group-invite-ac-wrap">
-                    <input
-                        type="text"
-                        id="group-invite-ac-input"
-                        autocomplete="off"
-                        class="form-control"
-                        placeholder="Введите имя, фамилию, ник или телефон…"
-                    >
-                    <div id="group-invite-ac-dd" class="form-select-dropdown trainer_dd"></div>
-                </div>
-        
-                <div id="group-invite-selected" class="mb-2 text-muted small"></div>
-        
-                <button type="submit" id="group-invite-btn" class="btn btn-outline-primary" disabled>
-                    {{ $isPair ? 'Пригласить в пару' : 'Пригласить в команду' }}
-                </button>
-            </form>
-        </div>
+        {{-- Форма поиска и приглашения --}}
+        <div class="text-muted small mb-2">{{ $isPair ? 'Пригласить игрока в пару' : 'Пригласить игрока в команду' }}</div>
+        <form method="POST" action="{{ route('events.group.invite', ['event' => $event->id]) }}" id="group-invite-form">
+            @csrf
+            <input type="hidden" name="to_user_id" id="group-invite-user-id" value="">
+            <div style="position:relative" class="mb-2" id="group-invite-ac-wrap">
+                <input type="text" id="group-invite-ac-input" autocomplete="off" class="form-control"
+                    placeholder="Введите имя, фамилию или ник…">
+                <div id="group-invite-ac-dd" class="form-select-dropdown trainer_dd"></div>
+            </div>
+            <div id="group-invite-selected" class="mb-2 text-muted small"></div>
+            <button type="submit" id="group-invite-btn" class="btn btn-outline-primary" disabled>
+                {{ $isPair ? 'Пригласить в пару' : 'Пригласить в команду' }}
+            </button>
+        </form>
 
         {{-- Входящие приглашения --}}
         @if(!empty($groupUi['pending_invites']) && $groupUi['pending_invites']->count())
-        <div class="mt-4">
-            <div class="fw-bold">Входящие приглашения</div>
+        <div class="mt-3">
+            <div class="fw-bold mb-2">Входящие приглашения</div>
             @foreach($groupUi['pending_invites'] as $invite)
-            <div class="border rounded p-3 mt-2">
-                <div class="text-sm">
-                    Приглашение от
-                    <strong>{{ $invite->from_user_name ?: $invite->from_user_email ?: ('#'.$invite->from_user_id) }}</strong>
+            <div class="border rounded p-3 mb-2">
+                <div class="text-sm mb-2">
+                    Приглашение от <strong>{{ $invite->from_user_name ?: $invite->from_user_email ?: ('#'.$invite->from_user_id) }}</strong>
                 </div>
-                <div class="mt-2 d-flex gap-2 flex-wrap">
+                <div class="d-flex gap-2 flex-wrap">
                     <form method="POST" action="{{ route('events.group.accept', ['event' => $event->id, 'invite' => $invite->id]) }}">
                         @csrf
-                        <button type="submit" class="btn btn-primary">Принять</button>
+                        <button type="submit" class="btn btn-primary btn-sm">Принять</button>
                     </form>
                     <form method="POST" action="{{ route('events.group.decline', ['event' => $event->id, 'invite' => $invite->id]) }}">
                         @csrf
-                        <button type="submit" class="btn btn-outline-secondary">Отклонить</button>
+                        <button type="submit" class="btn btn-outline-secondary btn-sm">Отклонить</button>
                     </form>
                 </div>
             </div>
             @endforeach
         </div>
         @endif
+    </div>
     @endif
+
 </div>
+
+<script>
+(function(){
+    // Переключатель режима приглашения
+    var modeGame  = document.getElementById('invite-mode-game');
+    var modeGroup = document.getElementById('invite-mode-group');
+    var blockGame  = document.getElementById('invite-game-block');
+    var blockGroup = document.getElementById('invite-group-block');
+
+    if (modeGame && modeGroup) {
+        modeGame.addEventListener('change', function() {
+            blockGame.style.display  = '';
+            blockGroup.style.display = 'none';
+        });
+        modeGroup.addEventListener('change', function() {
+            blockGame.style.display  = 'none';
+            blockGroup.style.display = '';
+        });
+    }
+})();
+</script>
+
 @endif
 {{-- ===============================
 СПИСОК ИГРОКОВ
