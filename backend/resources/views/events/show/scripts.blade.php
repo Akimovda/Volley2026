@@ -319,6 +319,113 @@
 		
 		/*
 			|--------------------------------------------------------------------------
+
+/*
+|--------------------------------------------------------------------------
+| AJAX JOIN — перехват форм записи на позицию
+|--------------------------------------------------------------------------
+*/
+function initJoinForms() {
+    const joinBlock = document.getElementById('join-registration-block');
+    if (!joinBlock) return;
+
+    joinBlock.addEventListener('submit', async function(e) {
+        const form = e.target;
+        if (!form.matches('form[data-ajax-join]')) return;
+        e.preventDefault();
+
+        const btn = form.querySelector('button[type="submit"]');
+        if (btn) { btn.disabled = true; btn.textContent = '⏳...'; }
+
+        try {
+            const res = await fetch(form.action, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: new FormData(form),
+            });
+
+            const data = await res.json();
+
+            if (!data.ok) {
+                showJoinError(data.message || 'Ошибка записи');
+                if (btn) { btn.disabled = false; btn.textContent = btn.dataset.label || 'Записаться'; }
+                return;
+            }
+
+            // Обновляем блок записи
+            updateJoinBlock(data);
+
+            // Обновляем список участников
+            loadParticipants();
+
+        } catch (err) {
+            console.error('Join error', err);
+            showJoinError('Ошибка соединения');
+            if (btn) { btn.disabled = false; }
+        }
+    });
+}
+
+function updateJoinBlock(data) {
+    const block = document.getElementById('join-registration-block');
+    if (!block) return;
+
+    // Строим новый HTML блока записи
+    let html = '';
+
+    // Статус записи
+    html += '<div class="alert alert-success">Вы уже записаны</div>';
+
+    // Блок оплаты
+    if (data.payment_status === 'link_pending') {
+        html += `<div class="alert alert-warning mt-2">⏳ Ожидаем оплату — <strong>${data.amount} ₽</strong></div>`;
+        if (data.payment_link) {
+            html += `<a href="${data.payment_link}" target="_blank" class="btn w-100 mt-1">💳 Перейти к оплате</a>`;
+        }
+        if (data.payment_id) {
+            html += `<form method="POST" action="/payments/${data.payment_id}/user-confirm">
+                <input type="hidden" name="_token" value="${document.querySelector('meta[name="csrf-token"]')?.content}">
+                <button type="submit" class="btn btn-secondary w-100 mt-1">✅ Я оплатил</button>
+            </form>`;
+        }
+    } else if (data.payment_status === 'yoomoney_pending') {
+        html += `<div class="alert alert-warning mt-2">⏳ Место зарезервировано до ${data.payment_expires_at}</div>`;
+        if (data.yoomoney_url) {
+            html += `<a href="${data.yoomoney_url}" target="_blank" class="btn w-100 mt-1">🟡 Оплатить через ЮМани</a>`;
+        }
+    } else if (data.payment_status === 'paid') {
+        html += `<div class="alert alert-success mt-2">✅ Оплачено — ${data.amount} ₽</div>`;
+    }
+
+    // Сообщение
+    if (data.message) {
+        html += `<div class="alert alert-info mt-2">${data.message}</div>`;
+    }
+
+    // Кнопка отмены (оставляем как есть — страница обновится при отмене)
+    const cancelForm = block.querySelector('form[data-cancel-form]');
+    if (cancelForm) {
+        html += cancelForm.outerHTML;
+    }
+
+    block.innerHTML = html;
+}
+
+function showJoinError(msg) {
+    const block = document.getElementById('join-registration-block');
+    if (!block) return;
+    const existing = block.querySelector('.alert-danger');
+    if (existing) existing.remove();
+    const div = document.createElement('div');
+    div.className = 'alert alert-danger mt-2';
+    div.textContent = msg;
+    block.prepend(div);
+}
+
 			| INIT
 			|--------------------------------------------------------------------------
 		*/
@@ -329,6 +436,7 @@
 			}
 			
 			initTournamentUx();
+    initJoinForms();
 		});
 	})();
 </script>

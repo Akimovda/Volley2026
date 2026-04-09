@@ -236,6 +236,14 @@
 										@endif										
 									</a>									
 
+<a href="{{ route('player.dashboard') }}" class="menu-item">
+<span class="menu-text">📊 Моя статистика</span>
+</a>
+@if(auth()->check() && (auth()->user()->isOrganizer() || auth()->user()->isAdmin()))
+<a href="{{ route('org.dashboard') }}" class="menu-item">
+<span class="menu-text">📈 Панель организатора</span>
+</a>
+@endif
 <a href="{{ route('wallet.index') }}" class="menu-item">
 <span class="menu-text">👛 Мой кошелёк</span>
 </a>

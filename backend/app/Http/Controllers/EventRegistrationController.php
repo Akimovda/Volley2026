@@ -311,13 +311,55 @@ class EventRegistrationController extends Controller
             }
         }
 
+        // Определяем платёжный статус
+        $payment = null;
+        $paymentStatus = null;
+        $paymentLink = null;
+        $paymentExpiresAt = null;
+
+        if ($eventModel && $eventModel->is_paid) {
+            $payment = Payment::where('user_id', $user->id)
+                ->where('occurrence_id', $occurrence->id)
+                ->whereIn('status', ['pending', 'paid'])
+                ->latest()->first();
+
+            if ($payment) {
+                $paymentStatus = $payment->status === 'paid' ? 'paid'
+                    : ($payment->method === 'yoomoney' ? 'yoomoney_pending'
+                    : (in_array($payment->method, ['tbank_link', 'sber_link']) ? 'link_pending' : null));
+                $paymentLink = $eventModel->payment_link ?? null;
+                $paymentExpiresAt = $payment->expires_at?->format('H:i') ?? null;
+            }
+        }
+
+        // AJAX-ответ
+        if (request()->ajax() || request()->wantsJson()) {
+            return response()->json([
+                'ok'               => true,
+                'message'          => $eventModel?->is_paid
+                    ? (in_array($eventModel->payment_method, ['tbank_link', 'sber_link'])
+                        ? '✅ Записались! Переведите оплату и нажмите «Я оплатил».'
+                        : ($eventModel->payment_method === 'yoomoney'
+                            ? '⏳ Место зарезервировано! Оплатите в течение ' . ($eventModel->payment_hold_minutes ?? 15) . ' минут.'
+                            : 'Записались ✅'))
+                    : 'Записались ✅',
+                'payment_status'   => $paymentStatus,
+                'payment_id'       => $payment?->id,
+                'payment_link'     => $paymentLink,
+                'payment_expires_at' => $paymentExpiresAt,
+                'yoomoney_url'     => $payment?->yoomoney_confirmation_url,
+                'user_confirmed'   => $payment?->user_confirmed ?? false,
+                'amount'           => $payment ? number_format($payment->amount_minor / 100, 2) : null,
+            ]);
+        }
+
         if ($eventModel && $eventModel->is_paid && in_array($eventModel->payment_method, ['tbank_link', 'sber_link'])) {
             return redirect()->route('events.show', [
                 'event' => (int) $occurrence->event_id,
                 'occurrence' => (int) $occurrence->id,
             ])->with('status', '✅ Записались! Переведите оплату и нажмите «Я оплатил».');
         }
-        
+
         return redirect()->route('events.show', [
             'event' => (int) $occurrence->event_id,
             'occurrence' => (int) $occurrence->id,
@@ -374,6 +416,30 @@ class EventRegistrationController extends Controller
             if (Schema::hasColumn('event_registrations', 'cancelled_at')) {
                 $reg->cancelled_at = now();
             }
+
+            // Сбрасываем платёж при отмене брони
+            if (!empty($reg->payment_id)) {
+                $existingPayment = \App\Models\Payment::find($reg->payment_id);
+                if ($existingPayment) {
+                    if ($existingPayment->status === 'paid') {
+                        // Оплачено — возврат на виртуальный кошелёк
+                        $refundAmount = app(\App\Services\PaymentService::class)
+                            ->calculateRefundAmount($existingPayment, $event);
+                        if ($refundAmount > 0) {
+                            app(\App\Services\PaymentService::class)
+                                ->refund($existingPayment, 'registration_cancelled', $refundAmount);
+                        } else {
+                            $existingPayment->update(['status' => 'cancelled', 'refund_reason' => 'registration_cancelled']);
+                        }
+                    } else {
+                        // Ещё не оплачено — просто отменяем
+                        $existingPayment->update(['status' => 'cancelled', 'refund_reason' => 'registration_cancelled']);
+                    }
+                }
+            }
+            $reg->payment_status    = null;
+            $reg->payment_id        = null;
+            $reg->payment_expires_at = null;
 
             $reg->save();
 

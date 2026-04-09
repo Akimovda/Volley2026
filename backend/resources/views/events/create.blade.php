@@ -1084,10 +1084,7 @@ if ($initialStep < 1 || $initialStep > 3) {
 												</div>
 											</div>
 										</div>										
-										
-										
-										
-										
+
 									</div>									
 								</div>								
 							</div>
@@ -1642,9 +1639,7 @@ if ($initialStep < 1 || $initialStep > 3) {
                                                 @enderror
 											</div>
 										</div>
-									</div>
-
-                                        {{-- СПОСОБ ОПЛАТЫ --}}
+										 {{-- СПОСОБ ОПЛАТЫ --}}
                                         <div id="payment_method_wrap" class="mt-2">
                                             <label>Способ оплаты</label>
                                             @php
@@ -1681,7 +1676,7 @@ if ($initialStep < 1 || $initialStep > 3) {
                                         </div>
 
                                         {{-- ПОЛИТИКА ВОЗВРАТА (только для платных) --}}
-                                        <div class="mt-2">
+                                        <div class="mt-2" id="refund_wrap" style="display:none">
                                             <label>Политика возврата</label>
                                             <div class="row row2">
                                                 <div class="col-4">
@@ -1704,6 +1699,9 @@ if ($initialStep < 1 || $initialStep > 3) {
                                                 <li>При отмене по кворуму — всегда 100% на виртуальный счёт</li>
                                             </ul>
                                         </div>
+									</div>
+
+                                       
 								</div>
 								<div class="col-md-4">
 									<div class="card">
@@ -2206,6 +2204,8 @@ if ($initialStep < 1 || $initialStep > 3) {
         sber:  '{{ $orgPaySettings?->sber_link ?? "" }}',
     };
 
+    const refundWrap = document.getElementById('refund_wrap');
+
     function syncPaymentMethod() {
         if (!sel) return;
         const v = sel.value;
@@ -2215,6 +2215,9 @@ if ($initialStep < 1 || $initialStep > 3) {
         if (hintCash) hintCash.style.display = v === 'cash' ? '' : 'none';
         if (hintLink) hintLink.style.display = isLink ? '' : 'none';
         if (hintYoo)  hintYoo.style.display  = v === 'yoomoney' ? '' : 'none';
+
+        // Политика возврата — только для ЮМани
+        if (refundWrap) refundWrap.style.display = v === 'yoomoney' ? '' : 'none';
 
         // Автозаполнение ссылки из настроек
         const linkInput = linkWrap?.querySelector('[name="payment_link"]');
@@ -2226,7 +2229,10 @@ if ($initialStep < 1 || $initialStep > 3) {
 
     function syncIsPaid() {
         if (!methodWrap || !isPaid) return;
-        methodWrap.style.display = isPaid.checked ? '' : 'none';
+        const paid = isPaid.checked;
+        methodWrap.style.display = paid ? '' : 'none';
+        if (!paid && refundWrap) refundWrap.style.display = 'none';
+        if (paid) syncPaymentMethod();
     }
 
     sel?.addEventListener('change', syncPaymentMethod);

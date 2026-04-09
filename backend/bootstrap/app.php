@@ -17,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
             'user.restricted' => \App\Http\Middleware\EnsureUserNotRestricted::class,
+            'track.view'      => \App\Http\Middleware\TrackPageView::class,
         ]);
     })
     ->withSchedule(function (Schedule $schedule) {

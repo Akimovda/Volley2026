@@ -18,12 +18,10 @@
 	</x-slot> 
 	
 	<x-slot name="d_description">
-		<div class="d-inline-block mr-1 mt-2" data-aos-delay="250" data-aos="fade-up">
-			<a href="{{ url('/') }}" class="btn">На главную</a>
-		</div>
-		<div class="d-inline-block mt-2" data-aos-delay="350" data-aos="fade-up">
-			<a href="javascript:history.back()" class="btn">Назад</a>
-		</div>			
+	 <div class="d-flex flex-wrap gap-1 mt-2">
+			<a href="{{ url('/') }}" class="btn" data-aos-delay="250" data-aos="fade-up">На главную</a>
+			<a href="javascript:history.back()" class="btn" data-aos-delay="350" data-aos="fade-up">Назад</a>
+	</div>	
 	</x-slot>	
 	
     {{-- Крошки --}}
@@ -37,10 +35,6 @@
     {{-- =========================
 	ОСНОВНОЙ КОНТЕНТ
     ========================== --}}
-    <div class="container">
-        <div class="ramka">
-			123
-		</div>
-	</div>
+
 	
 </x-voll-layout>	

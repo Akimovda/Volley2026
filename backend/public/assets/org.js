@@ -10,6 +10,7 @@ Copyright © 2023 37signals, LLC
 
 // Функция добавления эмодзи
 function addEmojiPanel(editor) {
+    if (!editor || !editor.parentElement) return;
     if (editor.parentElement.querySelector('.emoji-panel')) return;
 
     var categories = [

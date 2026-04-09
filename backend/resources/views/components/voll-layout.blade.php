@@ -1,6 +1,6 @@
 @props([
-    'body_class' => '',
-    'isErrorPage' => false  // 👈 добавить
+'body_class' => '',
+'isErrorPage' => false  // 👈 добавить
 ])
 <!DOCTYPE html>
 <html lang="ru">
@@ -43,10 +43,10 @@
 						</a>
 					</div>
 					<div class="fix-header-nav">
-
-
-
-
+						
+						
+						
+						
 					</div>
 					<div class="fix-header-btn">
 						@if(!$isErrorPage)
@@ -170,17 +170,23 @@
 									<span class="menu-text">Уведомления</span>
 								</a>
 								<a href="/" class="menu-item">
-									<span class="menu-text">Ваши мероприятия</span>
+									<span class="menu-text">Мои мероприятия</span>
 								</a>
 								<a href="/user/profile" class="menu-item">
-									<span class="menu-text">Профиль</span>
+									<span class="menu-text">Мои профиль</span>
 								</a>
 								<a href="/profile/complete" class="menu-item">
 									<span class="menu-text">Редактировать профиль</span>
 								</a>
 								<a href="/user/photos" class="menu-item">
-									<span class="menu-text">Ваши фотографии</span>
-								</a>								
+									<span class="menu-text">Мои фотографии</span>
+								</a>	
+								<a href="/wallet" class="menu-item">
+									<span class="menu-text">Мой кошелёк</span>
+								</a>	
+								<a href="/profile/transactions" class="menu-item">
+									<span class="menu-text">Транзакции</span>
+								</a>									
 								<form method="POST" action="{{ route('logout') }}" class="logout-form" x-data>
 									@csrf
 									<button type="submit" class="menu-item">Выйти</button>
@@ -300,36 +306,36 @@
 					
 					@if($isAuth)
 					
-<div class="menu-nav mb-1">
-    @if($unreadNotifications->isNotEmpty())
-        @foreach($unreadNotifications as $notification)
-           <a href="{{ route('notifications.index', ['#notification-' . $notification->id]) }}" class="menu-item">
-                <div class="d-flex between w-100">
-				
-                    <span class="menu-text f-18 d-flex -ml-1">
-					<span class="emo">🔴</span>
-                         {{ Str::limit($notification->title, 35) }}
-                    </span>
-                    <span class="menu-date f-15 pl-2" style="padding-top: 0.3rem; flex: 0 0 11rem">
-                        {{ $notification->created_at?->format('d.m H:i') }}
-                    </span>
-                </div>
-            </a>
-        @endforeach
-        
-        {{-- Если есть еще непрочитанные сверх 5 --}}
-        @if($notificationsUnread > 5)
-			
-                <div class="text-right menu-text f-18 pr-2">
-                    и еще <strong class="cd">{{ $notificationsUnread - 5 }}</strong> непрочитанных...
-                </div>
-        @endif
-    @else
-        <div class="menu-item" style="cursor: default;">
-            <div class="menu-text text-muted">Новых уведомлений нет</div>
-        </div>
-    @endif
-</div>			
+					<div class="menu-nav mb-1">
+						@if($unreadNotifications->isNotEmpty())
+						@foreach($unreadNotifications as $notification)
+						<a href="{{ route('notifications.index', ['#notification-' . $notification->id]) }}" class="menu-item">
+							<div class="d-flex between w-100">
+								
+								<span class="menu-text f-18 d-flex -ml-1">
+									<span class="emo f-13" style="padding-top: 0.3rem;">🔴</span>
+									{{ Str::limit($notification->title, 35) }}
+								</span>
+								<span class="menu-date f-15 pl-2" style="padding-top: 0.3rem; flex: 0 0 11rem">
+									{{ $notification->created_at?->format('d.m H:i') }}
+								</span>
+							</div>
+						</a>
+						@endforeach
+						
+						{{-- Если есть еще непрочитанные сверх 5 --}}
+						@if($notificationsUnread > 5)
+						
+						<div class="text-right menu-text f-18 pr-2">
+							и еще <strong class="cd">{{ $notificationsUnread - 5 }}</strong> непрочитанных...
+						</div>
+						@endif
+						@else
+						<div class="menu-item" style="cursor: default;">
+							<div class="menu-text text-muted">Новых уведомлений нет</div>
+						</div>
+						@endif
+					</div>			
 					<hr>
 					
 					<nav class="menu-nav mt-1">
@@ -359,6 +365,17 @@
 								<a href="/locations" class="menu-item">
 									<span class="menu-text">Локации</span>
 								</a>
+								<a href="/volleyball_school" class="menu-item">
+									<span class="menu-text">Школы волейбола</span>
+								</a>
+								<a href="/users" class="menu-item">
+									<span class="menu-text">Игроки</span>
+								</a>								
+							</nav>
+						</div>
+						<!-- Колонка 2: -->
+						<div class="menu-column column-two">
+							<nav class="menu-nav">
 								<a href="#" class="menu-item">
 									<span class="menu-text">Правила сервиса</span>
 								</a>								
@@ -370,21 +387,7 @@
 								</a>	
 								<a href="#" class="menu-item">
 									<span class="menu-text">О сервисе</span>
-								</a>									
-							</nav>
-						</div>
-						<!-- Колонка 2: -->
-						<div class="menu-column column-two">
-							<nav class="menu-nav">
-								<a href="/users" class="menu-item">
-									<span class="menu-text">Игроки</span>
-								</a>
-								<a href="#" class="menu-item">
-									<span class="menu-text">Новости</span>
-								</a>
-								<a href="#" class="menu-item">
-									<span class="menu-text">Группы</span>
-								</a>															
+								</a>																						
 							</nav>
 						</div>
 					</div>

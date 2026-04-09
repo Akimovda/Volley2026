@@ -32,7 +32,7 @@
 
     <x-slot name="script">
         <script src="/assets/city.js"></script>
-        <script src="/assets/org.js"></script>
+        <script src="/assets/org.js?v=2"></script>
         <script>
         document.addEventListener('DOMContentLoaded', function () {
             // Запрет вложений в trix

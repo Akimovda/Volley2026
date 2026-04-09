@@ -79,6 +79,7 @@
 	Route::get('/events', [EventsController::class, 'index'])->name('events.index');
 	
 	Route::get('/events/{event}', [EventsController::class, 'show'])
+    ->middleware('track.view:event,event')
     ->name('events.show');
 	
 	/*
@@ -109,6 +110,7 @@
 	
 	Route::get('/locations/{location}-{slug}', [PublicLocationController::class, 'show'])
     ->whereNumber('location')
+    ->middleware('track.view:location,location')
     ->name('locations.show');
 	
 	/*
@@ -572,6 +574,7 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
 	
 	Route::get('/user/{user}', [UserPublicController::class, 'show'])
     ->whereNumber('user')
+    ->middleware('track.view:user,user')
     ->name('users.show');
 	
 	/*
@@ -669,4 +672,16 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
 Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified'])->group(function () {
     Route::post('/payments/{payment}/refund', [\App\Http\Controllers\PaymentController::class, 'refund'])
         ->name('payments.refund');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Dashboards
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified'])->group(function () {
+    Route::get('/org/dashboard', [\App\Http\Controllers\OrgDashboardController::class, 'index'])
+        ->name('org.dashboard');
+    Route::get('/player/dashboard', [\App\Http\Controllers\PlayerDashboardController::class, 'index'])
+        ->name('player.dashboard');
 });

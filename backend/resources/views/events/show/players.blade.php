@@ -122,6 +122,7 @@
 	</div>
 	
     @else
+<div id="join-registration-block">
 	
 	{{-- ===============================
 	УЖЕ ЗАПИСАН
@@ -261,7 +262,7 @@
 	$free = (int)($pos['free'] ?? 0);
 	@endphp
 	
-	<form method="POST" action="{{ $joinAction }}">
+	<form method="POST" action="{{ $joinAction }}" data-ajax-join>
 		@csrf
 		<input type="hidden" name="position" value="{{ $key }}">
 		<button
@@ -425,6 +426,7 @@
     </div>
     @endif
 </div>
+</div>{{-- /join-registration-block --}}
 @endif
 {{-- ===============================
 ПРИГЛАСИТЬ ИГРОКА (объединённый блок)

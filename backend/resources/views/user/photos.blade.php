@@ -308,14 +308,14 @@ $canUploadEventPhotos = auth()->user()?->isAdmin() || auth()->user()?->isOrganiz
     <x-slot name="breadcrumbs">
         <li itemprop="itemListElement" itemscope="" itemtype="http://schema.org/ListItem">
             <a href="{{ route('profile.show') }}" itemprop="item">
-                <span itemprop="name">Ваши профиль</span>
+                <span itemprop="name">Мой профиль</span>
 			</a>
             <meta itemprop="position" content="2">
 		</li>
 		
 		@if(!$isEditingOther)
         <li itemprop="itemListElement" itemscope="" itemtype="http://schema.org/ListItem">
-            <span itemprop="name">Ваши фотографии</span>
+            <span itemprop="name">Мои фотографии</span>
             <meta itemprop="position" content="3">
 		</li>
 		@else
