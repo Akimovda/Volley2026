@@ -137,29 +137,75 @@
 
                 <div class="ramka">
                     <h2 class="-mt-05">Фото</h2>
+                    @php
+                        $schoolLogos  = auth()->user()->getMedia('school_logo')->sortByDesc('created_at');
+                        $schoolCovers = auth()->user()->getMedia('school_cover')->sortByDesc('created_at');
+                        $currentLogo  = $school->getFirstMediaUrl('logo', 'thumb') ?: $school->getFirstMediaUrl('logo');
+                        $currentCover = $school->getFirstMediaUrl('cover', 'thumb') ?: $school->getFirstMediaUrl('cover');
+                    @endphp
                     <div class="row">
                         <div class="col-md-6">
                             <div class="card">
-                                <label>Логотип</label>
-                                @php $logo = $school->getFirstMediaUrl('logo', 'thumb') ?: $school->getFirstMediaUrl('logo'); @endphp
-                                @if($logo)
-                                    <img src="{{ $logo }}" alt="logo"
-                                         style="width:8rem;height:8rem;border-radius:50%;object-fit:cover;display:block;margin-bottom:1rem">
+                                <label>Логотип школы (1:1)</label>
+                                @if($currentLogo)
+                                    <div class="mb-2">
+                                        <div class="f-13 mb-1" style="opacity:.6">Текущий логотип:</div>
+                                        <img src="{{ $currentLogo }}" alt="logo"
+                                             style="width:6rem;height:6rem;border-radius:50%;object-fit:cover">
+                                    </div>
                                 @endif
-                                <input type="file" name="logo" accept="image/*">
-                                <ul class="list f-14 mt-1"><li>JPG/PNG/WebP, до 2MB</li></ul>
+                                @if($schoolLogos->count())
+                                    <div class="f-14 mb-1">Выберите новый логотип:</div>
+                                    <div class="d-flex flex-wrap gap-1 mb-2" id="logo_picker">
+                                        @foreach($schoolLogos as $photo)
+                                            <label style="cursor:pointer;position:relative">
+                                                <input type="radio" name="logo_media_id"
+                                                       value="{{ $photo->id }}"
+                                                       @checked(old('logo_media_id') == $photo->id)
+                                                       style="position:absolute;opacity:0">
+                                                <img src="{{ $photo->hasGeneratedConversion('school_logo_thumb') ? $photo->getUrl('school_logo_thumb') : $photo->getUrl() }}"
+                                                     alt="" class="logo-pick-img"
+                                                     style="width:6rem;height:6rem;object-fit:cover;border-radius:50%;border:3px solid transparent;transition:.15s"
+                                                     onclick="this.closest('label').querySelector('input').checked=true; document.querySelectorAll('.logo-pick-img').forEach(i=>i.style.borderColor='transparent'); this.style.borderColor='var(--cd)'">
+                                            </label>
+                                        @endforeach
+                                    </div>
+                                @endif
+                                <ul class="list f-14 mt-1">
+                                    <li>Загрузите логотип в <a href="{{ route('user.photos') }}" target="_blank">Ваши фотографии</a> → «🏫 Логотип школы»</li>
+                                </ul>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="card">
-                                <label>Обложка</label>
-                                @php $cover = $school->getFirstMediaUrl('cover', 'thumb') ?: $school->getFirstMediaUrl('cover'); @endphp
-                                @if($cover)
-                                    <img src="{{ $cover }}" alt="cover"
-                                         style="width:100%;max-height:16rem;object-fit:cover;border-radius:0.8rem;display:block;margin-bottom:1rem">
+                                <label>Обложка страницы (16:9)</label>
+                                @if($currentCover)
+                                    <div class="mb-2">
+                                        <div class="f-13 mb-1" style="opacity:.6">Текущая обложка:</div>
+                                        <img src="{{ $currentCover }}" alt="cover"
+                                             style="width:100%;max-height:10rem;object-fit:cover;border-radius:0.6rem">
+                                    </div>
                                 @endif
-                                <input type="file" name="cover" accept="image/*">
-                                <ul class="list f-14 mt-1"><li>JPG/PNG/WebP, до 5MB. Формат 16:9</li></ul>
+                                @if($schoolCovers->count())
+                                    <div class="f-14 mb-1">Выберите новую обложку:</div>
+                                    <div class="d-flex flex-wrap gap-1 mb-2" id="cover_picker">
+                                        @foreach($schoolCovers as $photo)
+                                            <label style="cursor:pointer;position:relative">
+                                                <input type="radio" name="cover_media_id"
+                                                       value="{{ $photo->id }}"
+                                                       @checked(old('cover_media_id') == $photo->id)
+                                                       style="position:absolute;opacity:0">
+                                                <img src="{{ $photo->hasGeneratedConversion('school_cover_thumb') ? $photo->getUrl('school_cover_thumb') : $photo->getUrl() }}"
+                                                     alt="" class="cover-pick-img"
+                                                     style="width:8rem;height:5rem;object-fit:cover;border-radius:0.6rem;border:3px solid transparent;transition:.15s"
+                                                     onclick="this.closest('label').querySelector('input').checked=true; document.querySelectorAll('.cover-pick-img').forEach(i=>i.style.borderColor='transparent'); this.style.borderColor='var(--cd)'">
+                                            </label>
+                                        @endforeach
+                                    </div>
+                                @endif
+                                <ul class="list f-14 mt-1">
+                                    <li>Загрузите обложку в <a href="{{ route('user.photos') }}" target="_blank">Ваши фотографии</a> → «🖼 Обложка школы»</li>
+                                </ul>
                             </div>
                         </div>
                     </div>

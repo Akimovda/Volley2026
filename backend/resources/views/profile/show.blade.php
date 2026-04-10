@@ -236,6 +236,23 @@
 										@endif										
 									</a>									
 
+<a href="{{ route('subscriptions.my') }}" class="menu-item">
+<span class="menu-text">🎫 Мои абонементы</span>
+</a>
+<a href="{{ route('coupons.my') }}" class="menu-item">
+<span class="menu-text">🎟 Мои купоны</span>
+</a>
+@if(auth()->check() && (auth()->user()->isOrganizer() || auth()->user()->isAdmin()))
+<a href="{{ route('subscriptions.index') }}" class="menu-item">
+<span class="menu-text">📋 Абонементы (орг.)</span>
+</a>
+<a href="{{ route('subscription_templates.index') }}" class="menu-item">
+<span class="menu-text">📝 Шаблоны абонементов</span>
+</a>
+<a href="{{ route('coupon_templates.index') }}" class="menu-item">
+<span class="menu-text">🏷 Шаблоны купонов</span>
+</a>
+@endif
 <a href="{{ route('player.dashboard') }}" class="menu-item">
 <span class="menu-text">📊 Моя статистика</span>
 </a>

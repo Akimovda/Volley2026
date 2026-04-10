@@ -136,85 +136,19 @@ $groupedByDate[$dateKey] = ['date' => $date, 'occurrences' => []];
 		</x-slot>
 		
 		<x-slot name="d_description">
-			<div data-aos-delay="250" data-aos="fade-up">
-				<button class="btn ufilter-btn mt-2">Фильтр</button>
+			<div class="d-flex flex-wrap gap-1 m-center">
+				<div class="mt-2" data-aos-delay="250" data-aos="fade-up">
+					<button class="btn ufilter-btn">Фильтр</button>
+				</div>
+				<div class="mt-2" data-aos-delay="350" data-aos="fade-up">
+					<button type="button" id="btn-toggle-all-imgs" class="btn btn-secondary" onclick="toggleAllImgs(this)">Скрыть фото</button>
+				</div>						
 			</div>
 		</x-slot>
 		
 		<x-slot name="style">
             <style>
-                .hidden { display:none !important; } /* ✅ нужно для activateTab(): добавляешь/снимаешь hidden */
-				
-				
-                .day-chip { padding: 1rem 1.8rem; min-width: 5rem; scroll-snap-align: start; text-align:center; cursor:pointer; user-select:none; line-height: 1.15; }
-                .day-chip .dc-date { font-weight: 600; }
-                .day-chip .dc-dow  { font-size: 12px; opacity: .85; margin-top: 2px; }
-				
-                .join-backdrop.hidden { display:none; }
-                .join-backdrop { position:fixed; inset:0; z-index:1050; background:rgba(0,0,0,.55); }
-                .join-modal { max-width: 720px; width: 100%; background:#fff; border-radius:16px; overflow:hidden; box-shadow: 0 20px 60px rgba(0,0,0,.25); }
-				
-				
-				.event-dates-ramka .tabs {
-				display: flex;
-				flex-wrap: nowrap;
-				width: max-content;  
-				min-width: 100%; 
-				gap: 0.4rem;
-				padding: 0.4rem 0;
-				margin: 0;
-				}				
-				.event-dates-ramka .tab {
-				flex: 0 0 auto;
-				padding: 1rem 1.8rem;
-				white-space: nowrap;
-				}								
-				
-				.event-dates-ramka {
-				padding: 0.8rem 1.4rem;
-				backdrop-filter: blur(8px);
-				overflow-x:auto; 
-				-webkit-overflow-scrolling: touch; 
-				scroll-snap-type: x mandatory;		
-				scroll-padding: 0 1rem;			
-				}
-				.event-dates-ramka .tabs {
-				display: flex;
-				flex-wrap: nowrap;
-				background: none!important;
-				box-shadow: none;
-				}
-				.event-dates-ramka a.last-tab {			
-				margin-left: auto;
-				flex: 0 0 auto;
-				}
-				.mob-sticky {
-				position: sticky;
-				top: 9.4rem;
-				z-index: 2;
-				margin-bottom: 2rem;
-				}	
-				#days {
-				position: absolute; 
-				top: -9rem;
-				}				
-				@media (max-width: 480px) {
-				.mob-sticky {
-				top: 8.5rem;
-				}
-				#days {
-				top: -8.4rem;
-				}
-				.event-dates-ramka {
-				padding: 0.6rem 1rem;
-				}				
-				}	
-				html {
-				scroll-behavior: smooth;
-				}	
-				.tabs-content {
-				position: relative;
-				}
+
 			</style>
 		</x-slot>
 		
@@ -237,17 +171,17 @@ $groupedByDate[$dateKey] = ['date' => $date, 'occurrences' => []];
 						$fFormat   = request('format', '');
 						$fLevel    = request('level', '');
 						$fLocation = request('location', '');
-
+						
 						$formatLabels = [
-							'game'               => 'Игра',
-							'training'           => 'Тренировка',
-							'training_game'      => 'Тренировка + игра',
-							'training_pro_am'    => 'Про-ам тренировка',
-							'coach_student'      => 'Тренер + ученик',
-							'tournament'         => 'Турнир',
-							'tournament_classic' => 'Турнир (классика)',
-							'tournament_beach'   => 'Турнир (пляж)',
-							'camp'               => 'Кемп',
+						'game'               => 'Игра',
+						'training'           => 'Тренировка',
+						'training_game'      => 'Тренировка + игра',
+						'training_pro_am'    => 'Про-ам тренировка',
+						'coach_student'      => 'Тренер + ученик',
+						'tournament'         => 'Турнир',
+						'tournament_classic' => 'Турнир (классика)',
+						'tournament_beach'   => 'Турнир (пляж)',
+						'camp'               => 'Кемп',
 						];
 						@endphp
 						<form method="GET" action="{{ route('events.index') }}">
@@ -260,7 +194,7 @@ $groupedByDate[$dateKey] = ['date' => $date, 'occurrences' => []];
 										<option value="beach" {{ $fDir==='beach' ? 'selected' : '' }}>🏖 Пляжка</option>
 									</select>
 								</div>
-
+								
 								<div class="col-12 col-md-3">
 									<label class="form-label mb-1">Тип мероприятия</label>
 									<select name="format" class="form-select">
@@ -270,7 +204,7 @@ $groupedByDate[$dateKey] = ['date' => $date, 'occurrences' => []];
 										@endforeach
 									</select>
 								</div>
-
+								
 								<div class="col-12 col-md-2">
 									<label class="form-label mb-1">Уровень</label>
 									<select name="level" class="form-select">
@@ -280,27 +214,24 @@ $groupedByDate[$dateKey] = ['date' => $date, 'occurrences' => []];
 										@endforeach
 									</select>
 								</div>
-
+								
                                 <div class="col-12 col-md-4">
                                     <label class="form-label mb-1">Локация</label>
                                     <input type="text"
-                                        name="location"
-                                        class="form-control"
-                                        placeholder="Название или адрес…"
-                                        value="{{ e($fLocation) }}"
-                                        id="filter-location-input"
-                                        autocomplete="off"
-                                        list="location-datalist"
+									name="location"
+									class="form-control"
+									placeholder="Название или адрес…"
+									value="{{ e($fLocation) }}"
+									id="filter-location-input"
+									autocomplete="off"
+									list="location-datalist"
                                     >
                                     <datalist id="location-datalist"></datalist>
-                                </div>
-
+								</div>
+								
 								<div class="col-12 d-flex flex-wrap gap-2 align-items-center">
 									<button type="submit" class="btn">Применить</button>
 									<a href="{{ route('events.index') }}" class="btn btn-secondary">Сброс</a>
-									<button type="button" id="btn-toggle-all-imgs" class="btn btn-outline-secondary ms-auto" onclick="toggleAllImgs(this)">
-										🙈 Скрыть фото
-									</button>
 								</div>
 							</div>
 						</form>
@@ -345,53 +276,53 @@ $groupedByDate[$dateKey] = ['date' => $date, 'occurrences' => []];
                             {{-- Чипы дат --}}
                             @foreach($groupedByDate as $dateKey => $dayData)
                             @php
-                                $d       = $dayData['date'];
-                                $day     = (int)$d->format('j');
-                                $month   = (int)$d->format('n');
-                                $weekday = (int)$d->format('N');
-                                $labelDate = $day . ' ' . ($months[$month] ?? '');
-                                $dow = $daysOfWeek[$weekday] ?? '';
+							$d       = $dayData['date'];
+							$day     = (int)$d->format('j');
+							$month   = (int)$d->format('n');
+							$weekday = (int)$d->format('N');
+							$labelDate = $day . ' ' . ($months[$month] ?? '');
+							$dow = $daysOfWeek[$weekday] ?? '';
                             @endphp
                             <a href="#days" class="tab day-chip {{ $loop->first ? 'active' : '' }}"
-                                data-tab="day-{{ $loop->iteration }}"
-                                data-date="{{ $dateKey }}">
+							data-tab="day-{{ $loop->iteration }}"
+							data-date="{{ $dateKey }}">
                                 <div class="dc-date">{{ $labelDate }}</div>
                                 <div class="dc-dow">{{ $dow }}</div>
-                            </a>
+							</a>
                             @endforeach
-                        
+							
                             {{-- Навигация prev/next --}}
                             @if(count($groupedByDate) >= 10 || request('offset', 0) > 0)
                             @php
-                                $currentOffset = (int) request('offset', 0);
-                                $nextOffset    = $currentOffset + 10;
-                                $prevOffset    = max(0, $currentOffset - 10);
-                                $baseParams    = array_filter([
-                                    'direction' => request('direction'),
-                                    'format'    => request('format'),
-                                    'level'     => request('level'),
-                                    'location'  => request('location'),
-                                ], fn($v) => $v !== '' && $v !== null);
+							$currentOffset = (int) request('offset', 0);
+							$nextOffset    = $currentOffset + 10;
+							$prevOffset    = max(0, $currentOffset - 10);
+							$baseParams    = array_filter([
+							'direction' => request('direction'),
+							'format'    => request('format'),
+							'level'     => request('level'),
+							'location'  => request('location'),
+							], fn($v) => $v !== '' && $v !== null);
                             @endphp
-                        
+							
                             @if($currentOffset > 0)
                             <a href="{{ route('events.index', array_merge($baseParams, ['offset' => $prevOffset])) }}"
-                               class="no-highlight day-chip last-tab tab">
-                                <div class="dc-dow">◀ Пред.</div>
+							class="no-highlight day-chip last-tab tab">
+                                <div class="dc-dow">Предыдущие</div>
                                 <div class="dc-date">10 дней</div>
-                            </a>
+							</a>
                             @endif
-                        
+							
                             @if(count($groupedByDate) >= 10)
                             <a href="{{ route('events.index', array_merge($baseParams, ['offset' => $nextOffset])) }}"
-                               class="no-highlight day-chip last-tab tab">
+							class="no-highlight day-chip last-tab tab">
                                 <div class="dc-dow">Следующие</div>
-                                <div class="dc-date">10 дней ▶</div>
-                            </a>
+                                <div class="dc-date">10 дней</div>
+							</a>
                             @endif
                             @endif
                             <div class="tab-highlight"></div>
-                        </div>
+						</div>
 					</div>
 				</div>
 				
@@ -401,15 +332,15 @@ $groupedByDate[$dateKey] = ['date' => $date, 'occurrences' => []];
                     <div class="tab-pane {{ $loop->first ? 'active' : '' }}" id="day-{{ $loop->iteration }}">
                         <div class="row mb-0">
                             @foreach ($dayData['occurrences'] as $occ)
-                                @include('events._card')
+							@include('events._card')
                             @endforeach
-                        </div>
-                    </div>
+						</div>
+					</div>
                     @endforeach
-                </div>
-
+				</div>
+				
 			</div>{{-- .tabs-content --}}
-
+			
 			@else
 			<div class="ramka">
 				<div class="alert alert-info">
@@ -417,7 +348,7 @@ $groupedByDate[$dateKey] = ['date' => $date, 'occurrences' => []];
 				</div>
 			</div>
 			@endif
-
+			
 			{{-- JOIN MODAL --}}
 			<div id="joinModalBackdrop" class="join-backdrop hidden">
 				<div class="h-100 d-flex align-items-center justify-content-center p-3">
@@ -440,274 +371,273 @@ $groupedByDate[$dateKey] = ['date' => $date, 'occurrences' => []];
 					</div>
 				</div>
 			</div>
-
+			
 			<form id="joinForm" method="POST" action="" class="d-none">
 				@csrf
 				<input type="hidden" name="position" id="joinPosition" value="">
 			</form>
-
+			
 		</div>{{-- .container --}}
+		
+		
+		<x-slot name="script">
+			<script>
+				(function () {
+					// ===== Join Modal =====
+					const backdrop  = document.getElementById('joinModalBackdrop');
+					const titleEl   = document.getElementById('jmTitle');
+					const metaEl    = document.getElementById('jmMeta');
+					const addrEl    = document.getElementById('jmAddr');
+					const posWrap   = document.getElementById('jmPositions');
+					const errBox    = document.getElementById('jmError');
+					const loadingEl = document.getElementById('jmLoading');
+					const joinForm  = document.getElementById('joinForm');
+					const joinPos   = document.getElementById('joinPosition');
 					
+					function showError(message) {
+						if (!errBox) { alert(message); return; }
+						errBox.textContent = message;
+						errBox.classList.remove('d-none');
+					}
+					function clearError() {
+						if (!errBox) return;
+						errBox.textContent = '';
+						errBox.classList.add('d-none');
+					}
+					function setLoading(isLoading) {
+						if (!loadingEl) return;
+						loadingEl.classList.toggle('d-none', !isLoading);
+					}
+					function openModalShell(payload) {
+						clearError();
+						setLoading(true);
+						titleEl.textContent = payload.title || 'Запись';
+						metaEl.textContent  = [payload.date, payload.time, payload.tz ? '('+payload.tz+')' : ''].filter(Boolean).join(' ');
+						addrEl.textContent  = payload.address || '';
+						posWrap.innerHTML = '';
+						backdrop.classList.remove('hidden');
+					}
+					function closeModal() {
+						backdrop.classList.add('hidden');
+						posWrap.innerHTML = '';
+						clearError();
+						setLoading(false);
+					}
+					function renderPositions(occurrenceId, freePositions) {
+						posWrap.innerHTML = '';
+						if (!Array.isArray(freePositions) || freePositions.length === 0) {
+							showError('Свободных мест больше нет (или нет доступных позиций по ограничениям).');
+							return;
+						}
+						freePositions.forEach(p => {
+							const col = document.createElement('div');
+							col.className = 'col-12';
+							const btn = document.createElement('button');
+							btn.type = 'button';
+							btn.className = 'btn btn-primary w-100';
+							btn.innerHTML = `${p.label || p.key} <span class="ms-2 small opacity-75">(${p.free ?? 0})</span>`;
+							btn.addEventListener('click', () => {
+								joinForm.action = `/occurrences/${occurrenceId}/join`;
+								joinPos.value = p.key;
+								joinForm.submit();
+							});
+							col.appendChild(btn);
+							posWrap.appendChild(col);
+						});
+					}
+					async function fetchAvailability(occurrenceId) {
+						const res = await fetch(`/occurrences/${occurrenceId}/availability`, {
+							method: 'GET',
+							headers: { 'Accept': 'application/json' },
+							credentials: 'same-origin',
+						});
+						let data = null;
+						try { data = await res.json(); } catch (e) {}
+						if (data && data.redirect_url) { window.location = data.redirect_url; return null; }
+						if (!res.ok || !data || data.ok === false) {
+							showError((data && data.message) ? data.message : 'Не удалось получить доступность мероприятия.');
+							return null;
+						}
+						return data;
+					}
 					
-					<x-slot name="script">
-						<script>
-							(function () {
-                                // ===== Join Modal =====
-                                const backdrop  = document.getElementById('joinModalBackdrop');
-                                const titleEl   = document.getElementById('jmTitle');
-                                const metaEl    = document.getElementById('jmMeta');
-                                const addrEl    = document.getElementById('jmAddr');
-                                const posWrap   = document.getElementById('jmPositions');
-                                const errBox    = document.getElementById('jmError');
-                                const loadingEl = document.getElementById('jmLoading');
-                                const joinForm  = document.getElementById('joinForm');
-                                const joinPos   = document.getElementById('joinPosition');
+					document.querySelectorAll('.js-open-join').forEach(btn => {
+						btn.addEventListener('click', async () => {
+							const occurrenceId = btn.dataset.occurrenceId;
+							openModalShell({
+								title: btn.dataset.title,
+								date: btn.dataset.date,
+								time: btn.dataset.time,
+								tz: btn.dataset.tz,
+								address: btn.dataset.address,
+							});
+							const data = await fetchAvailability(occurrenceId);
+							setLoading(false);
+							if (!data) return;
+							renderPositions(occurrenceId, data.free_positions || data.data?.free_positions || []);
+						});
+					});
+					
+					document.querySelectorAll('.js-close-join').forEach(btn => btn.addEventListener('click', closeModal));
+					if (backdrop) {
+						backdrop.addEventListener('click', (e) => { if (e.target === backdrop) closeModal(); });
+					}
+					document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+					
+					// ===== Seats line =====
+					const seatLines = Array.from(document.querySelectorAll('[data-seatline]'));
+					
+					async function loadSeatLine(el) {
+						const occId        = el.dataset.occurrenceId;
+						const regEnabled   = el.dataset.registrationEnabled === '1';
+						const regNotStarted = el.dataset.regNotStarted === '1';
+						const regClosed    = el.dataset.regClosed === '1';
+						const maxCard      = Number(el.dataset.maxPlayers ?? 0) || 0;
+						if (maxCard <= 0) return;
+						
+						const leftEl  = el.querySelector('[data-left]');
+						const totalEl = el.querySelector('[data-total]');
+						if (totalEl) totalEl.textContent = String(maxCard);
+						
+						if (regNotStarted || regClosed || !regEnabled) {
+							if (leftEl) leftEl.textContent = String(maxCard);
+							return;
+						}
+						
+						try {
+							const res = await fetch(`/occurrences/${occId}/availability`, {
+								method: 'GET',
+								headers: { 'Accept': 'application/json' },
+								credentials: 'same-origin',
+							});
+							let data = null;
+							try { data = await res.json(); } catch (e) {}
                             
-                                function showError(message) {
-                                    if (!errBox) { alert(message); return; }
-                                    errBox.textContent = message;
-                                    errBox.classList.remove('d-none');
-                                }
-                                function clearError() {
-                                    if (!errBox) return;
-                                    errBox.textContent = '';
-                                    errBox.classList.add('d-none');
-                                }
-                                function setLoading(isLoading) {
-                                    if (!loadingEl) return;
-                                    loadingEl.classList.toggle('d-none', !isLoading);
-                                }
-                                function openModalShell(payload) {
-                                    clearError();
-                                    setLoading(true);
-                                    titleEl.textContent = payload.title || 'Запись';
-                                    metaEl.textContent  = [payload.date, payload.time, payload.tz ? '('+payload.tz+')' : ''].filter(Boolean).join(' ');
-                                    addrEl.textContent  = payload.address || '';
-                                    posWrap.innerHTML = '';
-                                    backdrop.classList.remove('hidden');
-                                }
-                                function closeModal() {
-                                    backdrop.classList.add('hidden');
-                                    posWrap.innerHTML = '';
-                                    clearError();
-                                    setLoading(false);
-                                }
-                                function renderPositions(occurrenceId, freePositions) {
-                                    posWrap.innerHTML = '';
-                                    if (!Array.isArray(freePositions) || freePositions.length === 0) {
-                                        showError('Свободных мест больше нет (или нет доступных позиций по ограничениям).');
-                                        return;
-                                    }
-                                    freePositions.forEach(p => {
-                                        const col = document.createElement('div');
-                                        col.className = 'col-12';
-                                        const btn = document.createElement('button');
-                                        btn.type = 'button';
-                                        btn.className = 'btn btn-primary w-100';
-                                        btn.innerHTML = `${p.label || p.key} <span class="ms-2 small opacity-75">(${p.free ?? 0})</span>`;
-                                        btn.addEventListener('click', () => {
-                                            joinForm.action = `/occurrences/${occurrenceId}/join`;
-                                            joinPos.value = p.key;
-                                            joinForm.submit();
-                                        });
-                                        col.appendChild(btn);
-                                        posWrap.appendChild(col);
-                                    });
-                                }
-                                async function fetchAvailability(occurrenceId) {
-                                    const res = await fetch(`/occurrences/${occurrenceId}/availability`, {
-                                        method: 'GET',
-                                        headers: { 'Accept': 'application/json' },
-                                        credentials: 'same-origin',
-                                    });
-                                    let data = null;
-                                    try { data = await res.json(); } catch (e) {}
-                                    if (data && data.redirect_url) { window.location = data.redirect_url; return null; }
-                                    if (!res.ok || !data || data.ok === false) {
-                                        showError((data && data.message) ? data.message : 'Не удалось получить доступность мероприятия.');
-                                        return null;
-                                    }
-                                    return data;
-                                }
+							const meta = data?.meta || data?.data?.meta || null;
+							if (!data || !meta) {
+								if (leftEl) leftEl.textContent = String(maxCard);
+								return;
+							}
                             
-                                document.querySelectorAll('.js-open-join').forEach(btn => {
-                                    btn.addEventListener('click', async () => {
-                                        const occurrenceId = btn.dataset.occurrenceId;
-                                        openModalShell({
-                                            title: btn.dataset.title,
-                                            date: btn.dataset.date,
-                                            time: btn.dataset.time,
-                                            tz: btn.dataset.tz,
-                                            address: btn.dataset.address,
-                                        });
-                                        const data = await fetchAvailability(occurrenceId);
-                                        setLoading(false);
-                                        if (!data) return;
-                                        renderPositions(occurrenceId, data.free_positions || data.data?.free_positions || []);
-                                    });
-                                });
+							const apiMax       = Number(meta.max_players ?? 0) || 0;
+							const effectiveMax = apiMax > 0 ? apiMax : maxCard;
+							let remainingTotal = Number(meta.remaining_total);
                             
-                                document.querySelectorAll('.js-close-join').forEach(btn => btn.addEventListener('click', closeModal));
-                                if (backdrop) {
-                                    backdrop.addEventListener('click', (e) => { if (e.target === backdrop) closeModal(); });
-                                }
-                                document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+							if (!Number.isFinite(remainingTotal)) {
+								const registeredTotal = Number(meta.registered_total ?? 0) || 0;
+								remainingTotal = Math.max(0, effectiveMax - registeredTotal);
+							}
                             
-                                // ===== Seats line =====
-                                const seatLines = Array.from(document.querySelectorAll('[data-seatline]'));
-                            
-                                async function loadSeatLine(el) {
-                                    const occId        = el.dataset.occurrenceId;
-                                    const regEnabled   = el.dataset.registrationEnabled === '1';
-                                    const regNotStarted = el.dataset.regNotStarted === '1';
-                                    const regClosed    = el.dataset.regClosed === '1';
-                                    const maxCard      = Number(el.dataset.maxPlayers ?? 0) || 0;
-                                    if (maxCard <= 0) return;
-                            
-                                    const leftEl  = el.querySelector('[data-left]');
-                                    const totalEl = el.querySelector('[data-total]');
-                                    if (totalEl) totalEl.textContent = String(maxCard);
-                            
-                                    if (regNotStarted || regClosed || !regEnabled) {
-                                        if (leftEl) leftEl.textContent = String(maxCard);
-                                        return;
-                                    }
-                            
-                                    try {
-                                        const res = await fetch(`/occurrences/${occId}/availability`, {
-                                            method: 'GET',
-                                            headers: { 'Accept': 'application/json' },
-                                            credentials: 'same-origin',
-                                        });
-                                        let data = null;
-                                        try { data = await res.json(); } catch (e) {}
-                            
-                                        const meta = data?.meta || data?.data?.meta || null;
-                                        if (!data || !meta) {
-                                            if (leftEl) leftEl.textContent = String(maxCard);
-                                            return;
-                                        }
-                            
-                                        const apiMax       = Number(meta.max_players ?? 0) || 0;
-                                        const effectiveMax = apiMax > 0 ? apiMax : maxCard;
-                                        let remainingTotal = Number(meta.remaining_total);
-                            
-                                        if (!Number.isFinite(remainingTotal)) {
-                                            const registeredTotal = Number(meta.registered_total ?? 0) || 0;
-                                            remainingTotal = Math.max(0, effectiveMax - registeredTotal);
-                                        }
-                            
-                                        if (leftEl)  leftEl.textContent  = String(remainingTotal);
-                                        if (totalEl) totalEl.textContent = String(effectiveMax);
-                                    } catch (e) {}
-                                }
-                            
-                                if (seatLines.length) {
-                                    const concurrency = 3;
-                                    let i = 0;
-                                    async function worker() {
-                                        while (i < seatLines.length) { const idx = i++; await loadSeatLine(seatLines[idx]); }
-                                    }
-                                    for (let k = 0; k < concurrency; k++) worker();
-                                }
-                            
-                                // ===== Days strip =====
-                                function activateTab(tabId) {
-                                    document.querySelectorAll('.tab-pane').forEach(p => p.classList.add('hidden'));
-                                    const pane = document.getElementById(tabId);
-                                    if (pane) pane.classList.remove('hidden');
-                                    document.querySelectorAll('.day-chip').forEach(c => c.classList.remove('active'));
-                                    const chip = document.querySelector(`.day-chip[data-tab="${tabId}"]`);
-                                    if (chip) chip.classList.add('active');
-                                }
-                            
-                                document.querySelectorAll('.day-chip').forEach(chip => {
-                                    chip.addEventListener('click', () => activateTab(chip.dataset.tab));
-                                });
-                            
-                                (function initToday() {
-                                    const chips = Array.from(document.querySelectorAll('.day-chip'));
-                                    if (!chips.length) return;
-                                    const root     = document.getElementById('eventsTabsRoot');
-                                    const todayKey = root?.dataset?.today ?? null;
-                                    const todayChip = todayKey ? chips.find(c => c.dataset.date === todayKey) : null;
-                                    if (todayChip) {
-                                        activateTab(todayChip.dataset.tab);
-                                        todayChip.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-                                    } else {
-                                        activateTab(chips[0].dataset.tab);
-                                    }
-                                })();
-                            
-                                // ===== Countdown =====
-                                function pad2(n) { n = Math.max(0, n|0); return (n < 10 ? '0' : '') + n; }
-                                function tickCountdown(el) {
-                                    var iso = el.getAttribute('data-target-utc');
-                                    if (!iso) return;
-                                    var target = Date.parse(iso);
-                                    if (isNaN(target)) return;
-                                    var diff = target - Date.now();
-                                    if (diff <= 0) { el.textContent = 'Регистрация доступна — обнови страницу'; return; }
-                                    var totalMin = Math.floor(diff / 60000);
-                                    var days = Math.floor(totalMin / (60*24));
-                                    var minsLeft = totalMin - days*60*24;
-                                    var hh = Math.floor(minsLeft / 60);
-                                    var mm = minsLeft - hh*60;
-                                    var ddEl = el.querySelector('[data-dd]');
-                                    var hhmmEl = el.querySelector('[data-hhmm]');
-                                    if (ddEl) ddEl.textContent = String(days);
-                                    if (hhmmEl) hhmmEl.textContent = pad2(hh) + ':' + pad2(mm);
-                                }
-                                function tickAllCountdowns() {
-                                    document.querySelectorAll('[data-countdown]').forEach(tickCountdown);
-                                }
-                                tickAllCountdowns();
-                                setInterval(tickAllCountdowns, 30000);
-                            
-                                // ===== Toggle ALL photos =====
-                                var _allHidden = JSON.parse(localStorage.getItem('eventImgHidden') || '{}').hidden || false;
-                            
-                                function applyImgState(hidden) {
-                                    document.querySelectorAll('.border.f-0.mb-1').forEach(function(wrap) {
-                                        wrap.style.display = hidden ? 'none' : '';
-                                    });
-                                    var btn = document.getElementById('btn-toggle-all-imgs');
-                                    if (btn) btn.textContent = hidden ? '🙉 Показать фото' : '🙈 Скрыть фото';
-                                    localStorage.setItem('eventImgHidden', JSON.stringify({ hidden: hidden }));
-                                    _allHidden = hidden;
-                                }
-                            
-                                // применяем сохранённое состояние при загрузке
-                                if (_allHidden) applyImgState(true);
-                            
-                                window.toggleAllImgs = function(btn) {
-                                    applyImgState(!_allHidden);
-                                };
-                                // ===== Location autocomplete =====
-                                (function () {
-                                    var datalist = document.getElementById('location-datalist');
-                                    var input    = document.getElementById('filter-location-input');
-                                    if (!datalist || !input) return;
-                                
-                                    fetch('/ajax/locations/with-events?active=1', {
-                                        headers: { 'Accept': 'application/json' },
-                                        credentials: 'same-origin',
-                                    })
-                                    .then(function(r) { return r.json(); })
-                                    .then(function(data) {
-                                        if (!data.ok || !Array.isArray(data.items)) return;
-                                        data.items.forEach(function(item) {
-                                            var opt = document.createElement('option');
-                                            opt.value = item.name;
-                                            datalist.appendChild(opt);
-                                        });
-                                    })
-                                    .catch(function() {});
-                                })();
-                            })();
-					</script>
-				</x-slot>	
-				
-				
-			</x-voll-layout>
-				
+							if (leftEl)  leftEl.textContent  = String(remainingTotal);
+							if (totalEl) totalEl.textContent = String(effectiveMax);
+						} catch (e) {}
+					}
+					
+					if (seatLines.length) {
+						const concurrency = 3;
+						let i = 0;
+						async function worker() {
+							while (i < seatLines.length) { const idx = i++; await loadSeatLine(seatLines[idx]); }
+						}
+						for (let k = 0; k < concurrency; k++) worker();
+					}
+					
+					// ===== Days strip =====
+					function activateTab(tabId) {
+						document.querySelectorAll('.tab-pane').forEach(p => p.classList.add('hidden'));
+						const pane = document.getElementById(tabId);
+						if (pane) pane.classList.remove('hidden');
+						document.querySelectorAll('.day-chip').forEach(c => c.classList.remove('active'));
+						const chip = document.querySelector(`.day-chip[data-tab="${tabId}"]`);
+						if (chip) chip.classList.add('active');
+					}
+					
+					document.querySelectorAll('.day-chip').forEach(chip => {
+						chip.addEventListener('click', () => activateTab(chip.dataset.tab));
+					});
+					
+					(function initToday() {
+						const chips = Array.from(document.querySelectorAll('.day-chip'));
+						if (!chips.length) return;
+						const root     = document.getElementById('eventsTabsRoot');
+						const todayKey = root?.dataset?.today ?? null;
+						const todayChip = todayKey ? chips.find(c => c.dataset.date === todayKey) : null;
+						if (todayChip) {
+							activateTab(todayChip.dataset.tab);
+							todayChip.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+							} else {
+							activateTab(chips[0].dataset.tab);
+						}
+					})();
+					
+					// ===== Countdown =====
+					function pad2(n) { n = Math.max(0, n|0); return (n < 10 ? '0' : '') + n; }
+					function tickCountdown(el) {
+						var iso = el.getAttribute('data-target-utc');
+						if (!iso) return;
+						var target = Date.parse(iso);
+						if (isNaN(target)) return;
+						var diff = target - Date.now();
+						if (diff <= 0) { el.textContent = 'Регистрация доступна — обнови страницу'; return; }
+						var totalMin = Math.floor(diff / 60000);
+						var days = Math.floor(totalMin / (60*24));
+						var minsLeft = totalMin - days*60*24;
+						var hh = Math.floor(minsLeft / 60);
+						var mm = minsLeft - hh*60;
+						var ddEl = el.querySelector('[data-dd]');
+						var hhmmEl = el.querySelector('[data-hhmm]');
+						if (ddEl) ddEl.textContent = String(days);
+						if (hhmmEl) hhmmEl.textContent = pad2(hh) + ':' + pad2(mm);
+					}
+					function tickAllCountdowns() {
+						document.querySelectorAll('[data-countdown]').forEach(tickCountdown);
+					}
+					tickAllCountdowns();
+					setInterval(tickAllCountdowns, 30000);
+					
+					// ===== Toggle ALL photos =====
+					var _allHidden = JSON.parse(localStorage.getItem('eventImgHidden') || '{}').hidden || false;
+					
+					function applyImgState(hidden) {
+						document.querySelectorAll('.card-img-top img').forEach(function(wrap) {
+							wrap.style.display = hidden ? 'none' : '';
+						});
+						var btn = document.getElementById('btn-toggle-all-imgs');
+						if (btn) btn.textContent = hidden ? 'Показать фото' : 'Скрыть фото';
+						localStorage.setItem('eventImgHidden', JSON.stringify({ hidden: hidden }));
+						_allHidden = hidden;
+					}
+					
+					// применяем сохранённое состояние при загрузке
+					if (_allHidden) applyImgState(true);
+					
+					window.toggleAllImgs = function(btn) {
+						applyImgState(!_allHidden);
+					};
+					// ===== Location autocomplete =====
+					(function () {
+						var datalist = document.getElementById('location-datalist');
+						var input    = document.getElementById('filter-location-input');
+						if (!datalist || !input) return;
+						
+						fetch('/ajax/locations/with-events?active=1', {
+							headers: { 'Accept': 'application/json' },
+							credentials: 'same-origin',
+						})
+						.then(function(r) { return r.json(); })
+						.then(function(data) {
+							if (!data.ok || !Array.isArray(data.items)) return;
+							data.items.forEach(function(item) {
+								var opt = document.createElement('option');
+								opt.value = item.name;
+								datalist.appendChild(opt);
+							});
+						})
+						.catch(function() {});
+					})();
+				})();
+			</script>
+		</x-slot>	
+		
+		
+	</x-voll-layout>

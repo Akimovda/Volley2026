@@ -234,6 +234,101 @@
             </div>
         </div>
 
+
+        {{-- АБОНЕМЕНТЫ И КУПОНЫ --}}
+        @if(isset($subStats) && $subStats->total > 0)
+        <div class="ramka">
+            <h2 class="-mt-05">🎫 Абонементы</h2>
+            <div class="row row2">
+                <div class="col-6 col-md-3">
+                    <div class="card text-center">
+                        <div class="f-13" style="opacity:.6">Всего выдано</div>
+                        <div class="f-32 b-700">{{ $subStats->total }}</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card text-center">
+                        <div class="f-13" style="opacity:.6">Активных</div>
+                        <div class="f-32 b-700 cs">{{ $subStats->active }}</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card text-center">
+                        <div class="f-13" style="opacity:.6">Посещений использовано</div>
+                        <div class="f-32 b-700 cd">{{ $subStats->total_visits_used ?? 0 }}</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card text-center">
+                        <div class="f-13" style="opacity:.6">Доход (оплаченные)</div>
+                        <div class="f-32 b-700">{{ number_format(($subRevenue ?? 0)/100, 0) }} ₽</div>
+                    </div>
+                </div>
+            </div>
+
+            @if($topSubTemplates->isNotEmpty())
+            <h3 class="mt-2">Топ шаблонов</h3>
+            <div class="table-scrollable">
+                <table class="table f-16">
+                    <thead>
+                        <tr><th>Шаблон</th><th>Продано</th><th>Посещений использовано</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach($topSubTemplates as $t)
+                        <tr>
+                            <td>{{ $t->name }}</td>
+                            <td class="b-600">{{ $t->sold }}</td>
+                            <td>{{ $t->visits_used ?? 0 }}</td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            @endif
+
+            <div class="d-flex gap-2 mt-2">
+                <a href="{{ route('subscriptions.index') }}" class="btn btn-secondary btn-small">📋 Все абонементы</a>
+                <a href="{{ route('subscription_templates.index') }}" class="btn btn-secondary btn-small">📝 Шаблоны</a>
+            </div>
+        </div>
+        @endif
+
+        @if(isset($couponStats) && $couponStats->total > 0)
+        <div class="ramka">
+            <h2 class="-mt-05">🎟 Купоны</h2>
+            <div class="row row2">
+                <div class="col-6 col-md-3">
+                    <div class="card text-center">
+                        <div class="f-13" style="opacity:.6">Всего выдано</div>
+                        <div class="f-32 b-700">{{ $couponStats->total }}</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card text-center">
+                        <div class="f-13" style="opacity:.6">Активных</div>
+                        <div class="f-32 b-700 cs">{{ $couponStats->active }}</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card text-center">
+                        <div class="f-13" style="opacity:.6">Использовано</div>
+                        <div class="f-32 b-700 cd">{{ $couponStats->used }}</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card text-center">
+                        <div class="f-13" style="opacity:.6">Всего применений</div>
+                        <div class="f-32 b-700">{{ $couponStats->total_uses ?? 0 }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="d-flex gap-2 mt-2">
+                <a href="{{ route('coupons.org_index') }}" class="btn btn-secondary btn-small">📋 Все купоны</a>
+                <a href="{{ route('coupon_templates.index') }}" class="btn btn-secondary btn-small">🏷 Шаблоны купонов</a>
+            </div>
+        </div>
+        @endif
+
     </div>
 
     <x-slot name="script">

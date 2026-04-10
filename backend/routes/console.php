@@ -20,3 +20,18 @@ Schedule::command('events:expand-recurring --horizon=90 --chunk=200 --maxCreates
 Schedule::job(new \App\Jobs\ReleaseExpiredPaymentsJob())
     ->everyFiveMinutes()
     ->withoutOverlapping();
+
+// Проверка истёкших абонементов и купонов
+Schedule::job(new \App\Jobs\CheckExpiredSubscriptions())
+    ->dailyAt('01:00')
+    ->withoutOverlapping();
+
+// Автозапись и снятие неподтверждённых
+Schedule::job(new \App\Jobs\AutoUnconfirmBookingJob())
+    ->everyFiveMinutes()
+    ->withoutOverlapping();
+
+// Автозапись по абонементам
+Schedule::command('subscriptions:auto-booking')
+    ->everyFiveMinutes()
+    ->withoutOverlapping();

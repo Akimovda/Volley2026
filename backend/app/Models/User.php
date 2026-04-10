@@ -98,6 +98,13 @@
 			$this->addMediaCollection('avatar')
 			->singleFile()
 			->useDisk('public');
+		// Логотип школы (1:1)
+		$this->addMediaCollection('school_logo')
+		->useDisk('public');
+
+		// Обложка школы (16:9)
+		$this->addMediaCollection('school_cover')
+		->useDisk('public');
 		}
 		
 		public function registerMediaConversions(Media $media = null): void
@@ -116,6 +123,20 @@
 			->fit(Fit::Crop, 640, 360)  // 👈 было '>fit', исправил на '->fit'
 			->nonQueued()
 			->performOnCollections('event_photos');
+
+			// Логотип школы (1:1)
+			$this->addMediaConversion('school_logo_thumb')
+			->format($media && $media->mime_type === 'image/webp' ? 'webp' : 'jpg')
+			->fit(Fit::Crop, 360, 360)
+			->nonQueued()
+			->performOnCollections('school_logo');
+
+			// Обложка школы (16:9)
+			$this->addMediaConversion('school_cover_thumb')
+			->format($media && $media->mime_type === 'image/webp' ? 'webp' : 'jpg')
+			->fit(Fit::Crop, 640, 360)
+			->nonQueued()
+			->performOnCollections('school_cover');
 			
 		}
 		

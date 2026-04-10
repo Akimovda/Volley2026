@@ -17,10 +17,11 @@ class PaymentService
     public function createForRegistration(
         EventRegistration $registration,
         Event $event,
-        EventOccurrence $occurrence
+        EventOccurrence $occurrence,
+        ?int $overrideAmountMinor = null
     ): Payment {
         $method      = $event->payment_method ?? 'cash';
-        $amountMinor = (int) ($event->price_minor ?? 0);
+        $amountMinor = $overrideAmountMinor ?? (int) ($event->price_minor ?? 0);
         $organizerId = (int) $event->organizer_id;
         $userId      = (int) $registration->user_id;
 

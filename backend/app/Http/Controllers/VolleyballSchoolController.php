@@ -71,7 +71,19 @@ class VolleyballSchoolController extends Controller
                 ->get();
         }
 
-        return view('volleyball_school.show', compact('school', 'occurrences'));
+        // Абонементы доступные для продажи
+        $subscriptionTemplates = collect();
+        if (class_exists(\App\Models\SubscriptionTemplate::class)) {
+            $subscriptionTemplates = \App\Models\SubscriptionTemplate::where('organizer_id', $school->organizer_id)
+                ->where('is_active', true)
+                ->where('sale_enabled', true)
+                ->where(function($q) {
+                    $q->whereNull('valid_until')->orWhere('valid_until', '>=', now()->toDateString());
+                })
+                ->get();
+        }
+
+        return view('volleyball_school.show', compact('school', 'occurrences', 'subscriptionTemplates'));
     }
 
     public function create(Request $request)
@@ -157,19 +169,29 @@ class VolleyballSchoolController extends Controller
         $organizer = User::find($organizerId);
         if ($organizer) {
             if (!empty($data['logo_media_id'])) {
-                $media = $organizer->getMedia('photos')->firstWhere('id', (int)$data['logo_media_id']);
+                $media = $organizer->getMedia('school_logo')->firstWhere('id', (int)$data['logo_media_id'])
+                    ?? $organizer->getMedia('photos')->firstWhere('id', (int)$data['logo_media_id']);
                 if ($media) {
-                    $school->addMediaFromDisk($media->getPath(), 'public')
-                        ->preservingOriginal()
-                        ->toMediaCollection('logo');
+                    $originalPath = storage_path('app/public/' . $media->id . '/' . $media->file_name);
+                    if (file_exists($originalPath)) {
+                        $school->addMediaFromDisk($originalPath, 'local')
+                            ->preservingOriginal()
+                            ->usingFileName($media->file_name)
+                            ->toMediaCollection('logo');
+                    }
                 }
             }
             if (!empty($data['cover_media_id'])) {
-                $media = $organizer->getMedia('photos')->firstWhere('id', (int)$data['cover_media_id']);
+                $media = $organizer->getMedia('school_cover')->firstWhere('id', (int)$data['cover_media_id'])
+                    ?? $organizer->getMedia('photos')->firstWhere('id', (int)$data['cover_media_id']);
                 if ($media) {
-                    $school->addMediaFromDisk($media->getPath(), 'public')
-                        ->preservingOriginal()
-                        ->toMediaCollection('cover');
+                    $originalPath = storage_path('app/public/' . $media->id . '/' . $media->file_name);
+                    if (file_exists($originalPath)) {
+                        $school->addMediaFromDisk($originalPath, 'local')
+                            ->preservingOriginal()
+                            ->usingFileName($media->file_name)
+                            ->toMediaCollection('cover');
+                    }
                 }
             }
         }
@@ -188,7 +210,9 @@ class VolleyballSchoolController extends Controller
             : VolleyballSchool::where('organizer_id', $user->id)->firstOrFail();
 
         $organizer = User::find($school->organizer_id);
-        $userPhotos = $organizer?->getMedia('photos')->sortByDesc('created_at') ?? collect();
+        $userPhotos     = $organizer?->getMedia('photos')->sortByDesc('created_at') ?? collect();
+        $schoolLogos    = $organizer?->getMedia('school_logo')->sortByDesc('created_at') ?? collect();
+        $schoolCovers   = $organizer?->getMedia('school_cover')->sortByDesc('created_at') ?? collect();
 
         $allSchools = $user->isAdmin()
             ? VolleyballSchool::with('organizer:id,first_name,last_name')->orderBy('name')->get()
@@ -250,21 +274,31 @@ class VolleyballSchoolController extends Controller
         $organizer = User::find($school->organizer_id);
         if ($organizer) {
             if (!empty($data['logo_media_id'])) {
-                $media = $organizer->getMedia('photos')->firstWhere('id', (int)$data['logo_media_id']);
+                $media = $organizer->getMedia('school_logo')->firstWhere('id', (int)$data['logo_media_id'])
+                    ?? $organizer->getMedia('photos')->firstWhere('id', (int)$data['logo_media_id']);
                 if ($media) {
-                    $school->clearMediaCollection('logo');
-                    $school->addMediaFromDisk($media->getPath(), 'public')
-                        ->preservingOriginal()
-                        ->toMediaCollection('logo');
+                    $originalPath = storage_path('app/public/' . $media->id . '/' . $media->file_name);
+                    if (file_exists($originalPath)) {
+                        $school->clearMediaCollection('logo');
+                        $school->addMediaFromDisk($originalPath, 'local')
+                            ->preservingOriginal()
+                            ->usingFileName($media->file_name)
+                            ->toMediaCollection('logo');
+                    }
                 }
             }
             if (!empty($data['cover_media_id'])) {
-                $media = $organizer->getMedia('photos')->firstWhere('id', (int)$data['cover_media_id']);
+                $media = $organizer->getMedia('school_cover')->firstWhere('id', (int)$data['cover_media_id'])
+                    ?? $organizer->getMedia('photos')->firstWhere('id', (int)$data['cover_media_id']);
                 if ($media) {
-                    $school->clearMediaCollection('cover');
-                    $school->addMediaFromDisk($media->getPath(), 'public')
-                        ->preservingOriginal()
-                        ->toMediaCollection('cover');
+                    $originalPath = storage_path('app/public/' . $media->id . '/' . $media->file_name);
+                    if (file_exists($originalPath)) {
+                        $school->clearMediaCollection('cover');
+                        $school->addMediaFromDisk($originalPath, 'local')
+                            ->preservingOriginal()
+                            ->usingFileName($media->file_name)
+                            ->toMediaCollection('cover');
+                    }
                 }
             }
         }

@@ -166,12 +166,49 @@ class OrgDashboardController extends Controller
             ->limit(10)
             ->get();
 
+        // --- СТАТИСТИКА АБОНЕМЕНТОВ ---
+        $subStats = \DB::table('subscriptions')
+            ->where('organizer_id', $orgId)
+            ->select(
+                \DB::raw('COUNT(*) as total'),
+                \DB::raw('COUNT(CASE WHEN status = \'active\' THEN 1 END) as active'),
+                \DB::raw('COUNT(CASE WHEN status = \'expired\' THEN 1 END) as expired'),
+                \DB::raw('COUNT(CASE WHEN status = \'exhausted\' THEN 1 END) as exhausted'),
+                \DB::raw('SUM(visits_used) as total_visits_used'),
+                \DB::raw('SUM(visits_remaining) as total_visits_remaining')
+            )->first();
+
+        $subRevenue = \DB::table('subscriptions as s')
+            ->join('subscription_templates as st', 'st.id', '=', 's.template_id')
+            ->where('s.organizer_id', $orgId)
+            ->where('s.payment_status', 'paid')
+            ->sum('st.price_minor');
+
+        $topSubTemplates = \DB::table('subscriptions as s')
+            ->join('subscription_templates as st', 'st.id', '=', 's.template_id')
+            ->where('s.organizer_id', $orgId)
+            ->select('st.name', \DB::raw('COUNT(s.id) as sold'), \DB::raw('SUM(s.visits_used) as visits_used'))
+            ->groupBy('st.id', 'st.name')
+            ->orderByDesc('sold')
+            ->limit(5)
+            ->get();
+
+        $couponStats = \DB::table('coupons')
+            ->where('organizer_id', $orgId)
+            ->select(
+                \DB::raw('COUNT(*) as total'),
+                \DB::raw('COUNT(CASE WHEN status = \'active\' THEN 1 END) as active'),
+                \DB::raw('COUNT(CASE WHEN status = \'used\' THEN 1 END) as used'),
+                \DB::raw('SUM(uses_used) as total_uses')
+            )->first();
+
         return view('dashboard.org', compact(
             'totalEvents', 'activeEvents', 'recurringEvents', 'oneTimeEvents',
             'playersStats', 'newPlayers',
             'monthlyStats', 'occurrenceLoad',
             'botEffect', 'pageViews', 'profileViews',
-            'topPlayers', 'topCancellers'
+            'topPlayers', 'topCancellers',
+            'subStats', 'subRevenue', 'topSubTemplates', 'couponStats'
         ));
     }
 }

@@ -18,9 +18,13 @@
 	</x-slot> 
 	
 	<x-slot name="d_description">
-	 <div class="d-flex flex-wrap gap-1 mt-2">
-			<a href="{{ url('/') }}" class="btn" data-aos-delay="250" data-aos="fade-up">На главную</a>
-			<a href="javascript:history.back()" class="btn" data-aos-delay="350" data-aos="fade-up">Назад</a>
+	 <div class="d-flex flex-wrap gap-1 m-center">
+		<div class="mt-2" data-aos-delay="250" data-aos="fade-up">
+			<a href="{{ url('/') }}" class="btn">На главную</a>
+		</div>
+		<div class="mt-2" data-aos-delay="350" data-aos="fade-up">
+			<a href="javascript:history.back()" class="btn btn-secondary">Назад</a>
+		</div>
 	</div>	
 	</x-slot>	
 	
@@ -35,6 +39,6 @@
     {{-- =========================
 	ОСНОВНОЙ КОНТЕНТ
     ========================== --}}
-
+<div class="pt-3 pb-3"></div>
 	
 </x-voll-layout>	

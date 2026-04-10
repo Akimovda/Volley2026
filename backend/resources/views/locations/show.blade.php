@@ -130,7 +130,7 @@
 			</div>
 			<div class="col-md-4">
 				<div class="sticky mb-0">
-					<div class="ramka p-1 mb-0 no-highlight">	
+					<div class="ramka mb-0">	
 						{{-- Галерея со Swiper + Fancybox --}}
 						@if($photos->isNotEmpty())
 						
@@ -160,7 +160,7 @@
 		
 		
         {{-- Яндекс.Карта с ленивой загрузкой --}}
-        <div class="ramka p-1 no-highlight">
+        <div class="ramka no-highlight">
             <div class="row">
                 <div class="col-12">
 					
@@ -289,10 +289,13 @@
 
             @if($photos->isNotEmpty())
             const swiper = new Swiper('.location-swiper', {
-                slidesPerView: 2,
+                slidesPerView: 1,
                 spaceBetween: 8,
                 pagination: { el: '.swiper-pagination', clickable: true },
-                breakpoints: { 768: { slidesPerView: 1, spaceBetween: 12 } }
+                breakpoints: { 
+				520: { slidesPerView: 2, spaceBetween: 12 },
+				768: { slidesPerView: 1, spaceBetween: 12 }
+				}
             });
             @endif
 

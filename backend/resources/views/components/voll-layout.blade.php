@@ -150,7 +150,7 @@
 									$roleText = 'Организатор';
 									$roleClass = 'role-organizer';
 									} else {
-									$roleText = 'Пользователь';
+									$roleText = '';
 									$roleClass = 'role-user';
 									}
 									@endphp
@@ -539,11 +539,46 @@
 				</div>  
 			</div>
 		</footer>	
+		
+
 		<script src="/assets/lib.js?v={{ time() }}"></script>    
 		@livewireScripts
 		<script src="/assets/script.js?v={{ time() }}"></script>     
 		@if(isset($script))
         {{ $script }}
 		@endif	
+		
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">		
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>		
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ru.js"></script>			
+<script>		
+document.addEventListener('DOMContentLoaded', function() {
+    // Для всех полей type="date"
+    const dateInputs = document.querySelectorAll('input[type="date"]');
+    dateInputs.forEach(input => {
+        flatpickr(input, {
+            dateFormat: "Y-m-d",
+            locale: "ru",
+            allowInput: true,
+            altInput: true,
+            altFormat: "d.m.Y",
+        });
+    });
+    
+    // Для всех полей type="datetime-local"
+    const datetimeInputs = document.querySelectorAll('input[type="datetime-local"]');
+    datetimeInputs.forEach(input => {
+        flatpickr(input, {
+            enableTime: true,
+            dateFormat: "Y-m-d H:i:S",
+            locale: "ru",
+            allowInput: true,
+            altInput: true,
+            altFormat: "d.m.Y H:i",
+            time_24hr: true,
+        });
+    });
+});		
+</script>
 	</body>
 </html>					

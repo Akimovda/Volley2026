@@ -685,3 +685,99 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     Route::get('/player/dashboard', [\App\Http\Controllers\PlayerDashboardController::class, 'index'])
         ->name('player.dashboard');
 });
+
+/*
+|--------------------------------------------------------------------------
+| Абонементы и купоны
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified'])->group(function () {
+
+    // Шаблоны абонементов (организатор/админ)
+    Route::get('/subscriptions/templates', [\App\Http\Controllers\SubscriptionTemplateController::class, 'index'])
+        ->name('subscription_templates.index');
+    Route::get('/subscriptions/templates/create', [\App\Http\Controllers\SubscriptionTemplateController::class, 'create'])
+        ->name('subscription_templates.create');
+    Route::post('/subscriptions/templates', [\App\Http\Controllers\SubscriptionTemplateController::class, 'store'])
+        ->name('subscription_templates.store');
+    Route::get('/subscriptions/templates/{subscriptionTemplate}/edit', [\App\Http\Controllers\SubscriptionTemplateController::class, 'edit'])
+        ->name('subscription_templates.edit');
+    Route::put('/subscriptions/templates/{subscriptionTemplate}', [\App\Http\Controllers\SubscriptionTemplateController::class, 'update'])
+        ->name('subscription_templates.update');
+    Route::delete('/subscriptions/templates/{subscriptionTemplate}', [\App\Http\Controllers\SubscriptionTemplateController::class, 'destroy'])
+        ->name('subscription_templates.destroy');
+
+    // Выданные абонементы
+    Route::get('/subscriptions', [\App\Http\Controllers\SubscriptionController::class, 'index'])
+        ->name('subscriptions.index');
+    Route::get('/subscriptions/my', [\App\Http\Controllers\SubscriptionController::class, 'my'])
+        ->name('subscriptions.my');
+    Route::post('/subscriptions/issue', [\App\Http\Controllers\SubscriptionController::class, 'issue'])
+        ->name('subscriptions.issue');
+    Route::post('/subscriptions/{subscription}/extend', [\App\Http\Controllers\SubscriptionController::class, 'extend'])
+        ->name('subscriptions.extend');
+    Route::post('/subscriptions/{subscription}/freeze', [\App\Http\Controllers\SubscriptionController::class, 'freeze'])
+        ->name('subscriptions.freeze');
+    Route::post('/subscriptions/{subscription}/unfreeze', [\App\Http\Controllers\SubscriptionController::class, 'unfreeze'])
+        ->name('subscriptions.unfreeze');
+    Route::post('/subscriptions/{subscription}/transfer', [\App\Http\Controllers\SubscriptionController::class, 'transfer'])
+        ->name('subscriptions.transfer');
+    Route::get('/subscriptions/{subscription}/usages', [\App\Http\Controllers\SubscriptionController::class, 'usages'])
+        ->name('subscriptions.usages');
+
+    // Шаблоны купонов
+    Route::get('/coupons/templates', [\App\Http\Controllers\CouponTemplateController::class, 'index'])
+        ->name('coupon_templates.index');
+    Route::get('/coupons/templates/create', [\App\Http\Controllers\CouponTemplateController::class, 'create'])
+        ->name('coupon_templates.create');
+    Route::post('/coupons/templates', [\App\Http\Controllers\CouponTemplateController::class, 'store'])
+        ->name('coupon_templates.store');
+    Route::get('/coupons/templates/{couponTemplate}/edit', [\App\Http\Controllers\CouponTemplateController::class, 'edit'])
+        ->name('coupon_templates.edit');
+    Route::put('/coupons/templates/{couponTemplate}', [\App\Http\Controllers\CouponTemplateController::class, 'update'])
+        ->name('coupon_templates.update');
+    Route::post('/coupons/templates/{couponTemplate}/issue', [\App\Http\Controllers\CouponTemplateController::class, 'issue'])
+        ->name('coupon_templates.issue');
+
+    // Купоны пользователя
+    Route::get('/coupons/my', [\App\Http\Controllers\CouponController::class, 'my'])
+        ->name('coupons.my');
+    Route::get('/coupons/activate/{code}', [\App\Http\Controllers\CouponController::class, 'activate'])
+        ->name('coupons.activate');
+    Route::post('/coupons/{coupon}/transfer', [\App\Http\Controllers\CouponController::class, 'transfer'])
+        ->name('coupons.transfer');
+    Route::get('/coupons/org', [\App\Http\Controllers\CouponController::class, 'orgIndex'])
+        ->name('coupons.org_index');
+});
+
+// Подтверждение автозаписи
+Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified'])->group(function () {
+    Route::post('/registrations/{registration}/confirm', function(\App\Models\EventRegistration $registration, \Illuminate\Http\Request $request) {
+        if ($registration->user_id !== $request->user()->id) abort(403);
+        $registration->update(['confirmed_at' => now()]);
+        return back()->with('status', '✅ Участие подтверждено!');
+    })->name('registrations.confirm');
+});
+
+// Покупка абонемента
+Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified'])->group(function () {
+    Route::post('/subscriptions/{template}/buy', [\App\Http\Controllers\SubscriptionController::class, 'buy'])
+        ->name('subscriptions.buy');
+});
+
+// Массовая выдача купонов + активация по коду
+Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified'])->group(function () {
+    Route::post('/coupons/templates/{couponTemplate}/bulk-issue', [\App\Http\Controllers\CouponTemplateController::class, 'bulkIssue'])
+        ->name('coupon_templates.bulk_issue');
+});
+
+// Активация купона по коду (публичный — но требует авторизации)
+Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified'])->group(function () {
+    Route::get('/coupon/{code}', [\App\Http\Controllers\CouponController::class, 'activate'])
+        ->name('coupons.activate.short');
+});
+
+Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified'])->group(function () {
+    Route::post('/coupons/templates/{couponTemplate}/issue-link', [\App\Http\Controllers\CouponTemplateController::class, 'issueLink'])
+        ->name('coupon_templates.issue_link');
+});

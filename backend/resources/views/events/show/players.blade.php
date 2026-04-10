@@ -1,7 +1,7 @@
 {{-- COMPONENT: event registration --}}
 
 
-<div class="ramka no-highlight p-1">	
+<div class="ramka">	
     {{-- Галерея со Swiper + Fancybox --}}
     @if(isset($event->event_photos) && count($event->event_photos) > 0)
 	@php
@@ -136,6 +136,28 @@
 	</div>
 	
 	{{-- ======= БЛОК ОПЛАТЫ ======= --}}
+@php
+    $myReg = null;
+    if (auth()->check() && isset($occurrence)) {
+        $myReg = \App\Models\EventRegistration::where('user_id', auth()->id())
+            ->where('occurrence_id', $occurrence->id)
+            ->where('is_cancelled', false)
+            ->first();
+    }
+@endphp
+@if($myReg && $myReg->subscription_id && !$myReg->confirmed_at)
+<div class="alert alert-warning mt-2">
+    ⏰ <strong>Подтвердите участие</strong> по абонементу до
+    {{ \Carbon\Carbon::parse($occurrence->starts_at)->subHours(12)->format('d.m H:i') }}
+    — иначе запись будет отменена автоматически.
+</div>
+<form method="POST" action="{{ route('registrations.confirm', $myReg->id) }}">
+    @csrf
+    <button type="submit" class="btn w-100 mt-1">✅ Подтвердить участие</button>
+</form>
+@elseif($myReg && $myReg->subscription_id && $myReg->confirmed_at)
+<div class="alert alert-success mt-2">✅ Участие подтверждено</div>
+@endif
 	@php
 	    $myPayment = null;
 	    if (auth()->check() && isset($occurrence)) {
@@ -256,6 +278,29 @@
 		Свободных мест нет.
 	</div>
 	@else
+@php
+    $activeSubscription = null;
+    $activeCoupon = null;
+    if (auth()->check() && isset($event)) {
+        $activeSubscription = app(\App\Services\SubscriptionService::class)
+            ->findActiveForEvent(auth()->id(), $event->id);
+        if (!$activeSubscription) {
+            $activeCoupon = app(\App\Services\CouponService::class)
+                ->findActiveForEvent(auth()->id(), $event->id);
+        }
+    }
+@endphp
+@if($activeSubscription)
+<div class="alert alert-success mt-2 mb-2">
+    🎫 <strong>Абонемент:</strong> {{ $activeSubscription->template->name }}
+    — осталось <strong>{{ $activeSubscription->visits_remaining }}</strong> посещений
+</div>
+@elseif($activeCoupon)
+<div class="alert alert-warning mt-2 mb-2">
+    🎟 <strong>Купон:</strong> {{ $activeCoupon->template->name }}
+    — скидка <strong>{{ $activeCoupon->getDiscountPct() }}%</strong>
+</div>
+@endif
 	@foreach ($freePositions as $pos)
 	@php
 	$key = (string)($pos['key'] ?? '');
@@ -265,6 +310,11 @@
 	<form method="POST" action="{{ $joinAction }}" data-ajax-join>
 		@csrf
 		<input type="hidden" name="position" value="{{ $key }}">
+@if(!empty($activeSubscription))
+<input type="hidden" name="subscription_id" value="{{ $activeSubscription->id }}">
+@elseif(!empty($activeCoupon))
+<input type="hidden" name="coupon_code" value="{{ $activeCoupon->code }}">
+@endif
 		<button
 		type="submit"
 		class="d-flex between btn btn-primary w-100 mb-1"

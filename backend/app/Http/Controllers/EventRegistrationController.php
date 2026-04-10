@@ -17,7 +17,11 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use App\Services\PaymentService;
+use App\Services\SubscriptionService;
+use App\Services\CouponService;
 use App\Models\Payment;
+use App\Models\Subscription;
+use App\Models\Coupon;
 use Illuminate\Support\Facades\Schema;
 
 class EventRegistrationController extends Controller
@@ -127,9 +131,11 @@ class EventRegistrationController extends Controller
                 ->with('error', implode(' ', $result->errors));
         }
 
-        $position = $request->input('position');
+        $position       = $request->input('position');
+        $subscriptionId = $request->input('subscription_id');
+        $couponCode     = $request->input('coupon_code');
 
-        return $this->persistRegistration($user, $occurrence, $position);
+        return $this->persistRegistration($user, $occurrence, $position, $subscriptionId, $couponCode);
     }
 
     /**
@@ -168,7 +174,9 @@ class EventRegistrationController extends Controller
     private function persistRegistration(
         User $user,
         EventOccurrence $occurrence,
-        ?string $position = null
+        ?string $position = null,
+        ?int $subscriptionId = null,
+        ?string $couponCode = null
     ) {
         $created = false;
 
@@ -249,24 +257,59 @@ class EventRegistrationController extends Controller
 
             $reg->save();
 
-            // Платёжная логика
+            // Абонемент / купон / оплата
             $event = $occurrence->event;
-            if ($event && $event->is_paid && $event->price_minor > 0) {
+
+            // Приоритет 1: Абонемент
+            if ($subscriptionId) {
+                $subscription = Subscription::where('id', $subscriptionId)
+                    ->where('user_id', $user->id)
+                    ->where('status', 'active')
+                    ->first();
+
+                if ($subscription && $subscription->isUsableForEvent($occurrence->event_id)) {
+                    $subService = app(SubscriptionService::class);
+                    $usage = $subService->useVisit($subscription, $occurrence, $reg->id);
+                    $reg->subscription_id       = $subscription->id;
+                    $reg->subscription_usage_id = $usage->id;
+                    $reg->payment_status        = 'subscription';
+                    $reg->save();
+                }
+            }
+            // Приоритет 2: Купон
+            elseif ($couponCode) {
+                $coupon = app(CouponService::class)->findByCode($couponCode);
+                if ($coupon && $coupon->user_id === $user->id && $coupon->isUsableForEvent($occurrence->event_id)) {
+                    $discountPct = app(CouponService::class)->apply($coupon, $occurrence, $reg->id);
+                    $reg->coupon_id           = $coupon->id;
+                    $reg->coupon_discount_pct = $discountPct;
+
+                    // Применяем скидку к оплате если мероприятие платное
+                    if ($event && $event->is_paid && $event->price_minor > 0) {
+                        $discountedPrice = (int)round($event->price_minor * (1 - $discountPct / 100));
+                        $paymentService = app(PaymentService::class);
+                        $payment = $paymentService->createForRegistration($reg, $event, $occurrence, $discountedPrice);
+                        $reg->payment_id = $payment->id;
+                        $reg->payment_status = in_array($event->payment_method, ['tbank_link', 'sber_link']) ? 'link_pending' : 'pending';
+                    }
+                    $reg->save();
+                }
+            }
+            // Приоритет 3: Обычная оплата
+            elseif ($event && $event->is_paid && $event->price_minor > 0) {
                 $paymentService = app(PaymentService::class);
                 $payment = $paymentService->createForRegistration($reg, $event, $occurrence);
 
-                // Для ЮМани — статус резерв
                 if ($event->payment_method === 'yoomoney') {
-                    $reg->payment_status = 'pending';
-                    $reg->payment_id = $payment->id;
+                    $reg->payment_status     = 'pending';
+                    $reg->payment_id         = $payment->id;
                     $reg->payment_expires_at = $payment->expires_at;
                     $reg->save();
                 } elseif (in_array($event->payment_method, ['tbank_link', 'sber_link'])) {
                     $reg->payment_status = 'link_pending';
-                    $reg->payment_id = $payment->id;
+                    $reg->payment_id     = $payment->id;
                     $reg->save();
                 } else {
-                    // cash — сразу подтверждаем
                     $reg->payment_status = 'free';
                     $reg->save();
                 }
