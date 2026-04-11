@@ -359,87 +359,17 @@
 				
 				
 				<div class="row">
-					<div class="col-lg-4 col-xl-3 order-2 d-none d-lg-block">
-						<div class="sticky">
-							<div class="card-ramka mb-2">
-								<div class="row">
-									<div class="col-3 col-lg-12">
-										<div class="profile-avatar">
-											<img
-											src="{{ $user->profile_photo_url }}"
-											alt="avatar"
-											class="avatar"
-											/>			
-										</div>
-									</div>
-									<div class="col-9 col-lg-12">
-										<nav class="menu-nav sidebar-menu">
-											@if(!$isEditingOther)
-											<a href="{{ route('users.show', ['user' => $user->id]) }}" class="menu-item">
-												<span class="menu-text">Публичный профиль</span>
-											</a>												
-											
-											<a href="{{ route('profile.show') }}" class="menu-item">
-												<span class="menu-text">Ваш профиль</span>
-											</a>
-											<a href="{{ url('/profile/complete') }}" class="menu-item active">
-												<strong class="cd menu-text">Редактировать профиль</strong>
-											</a>
-											<a href="{{ route('user.photos') }}" class="menu-item">
-												<span class="menu-text">Ваши фотографии</span>
-											</a>
-											
-									<a href="{{ route('notifications.index') }}" class="menu-item">
-										<span class="menu-text">Уведомления</span>
-										@if(!empty($notificationsUnread) && $notificationsUnread > 0)
-										<span class="notificationsUnread">
-											{{ $notificationsUnread > 99 ? '99+' : $notificationsUnread }}
-										</span>
-										@endif										
-									</a>											
-											
-											
-											{{-- logout: только logout --}}
-											<form method="POST" action="{{ route('logout') }}" class="logout-form" x-data>
-												@csrf
-												<button type="submit" class="menu-item">Выйти</button>
-											</form>											
-											@else
-											<a href="{{ route('users.show', ['user' => $user->id]) }}" class="menu-item">
-												<span class="menu-text">Публичный профиль пользователя</span>
-											</a>
-                                            
-											<a href="{{ url('/profile/complete?user_id=' . $user->id) }}" class="menu-item active">
-												<strong class="cd menu-text">
-													@if(($mode ?? 'self') === 'admin_other')
-													Редактировать пользователя
-													@else
-													Настроить уровни
-													@endif
-												</strong>
-											</a>
-                                     @if(($mode ?? 'self') === 'admin_other')       
-                                    <a href="{{ url('/user/photos?user_id=' . $user->id) }}" class="menu-item">
-                                        <span class="menu-text">
-                                            Редактировать фото пользователя
-										</span>
-									</a>											
-										@endif	
-											
-											@endif
-                                            
-											
-										</nav>
-									</div>	
-								</div>
-							</div>
-							<div class="card-ramka mb-2">
-								<div class="text-center">
-									<button type="submit" form="profile-complete-form" class="btn">Сохранить</button>
-								</div>
-							</div>
-						</div> 	
-					</div> 
+<div class="col-lg-4 col-xl-3 order-2 d-none d-lg-block">
+<div class="sticky">
+<div class="card-ramka">
+@include('profile._menu', [
+    'menuUser'       => $user,
+    'isEditingOther' => $isEditingOther ?? false,
+    'activeMenu'     => 'profile_edit',
+])
+</div>
+</div>
+</div>
 					<div class="col-lg-8 col-xl-9 order-1">
 						<div class="form">
 							<form id="profile-complete-form" method="POST" action="{{ route('profile.extra.update') }}">

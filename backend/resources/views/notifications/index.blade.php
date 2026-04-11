@@ -59,53 +59,16 @@
 		
 		
         <div class="row">
-			<div class="col-lg-4 col-xl-3 order-2 d-none d-lg-block">
-				<div class="sticky">
-					<div class="card-ramka">
-						<div class="row">
-							<div class="col-3 col-lg-12">
-								<div class="profile-avatar">
-									<img
-									src="{{ $user->profile_photo_url }}"
-									alt="avatar"
-									class="avatar"
-									/>			
-								</div>
-							</div>
-							<div class="col-9 col-lg-12">
-								<nav class="menu-nav sidebar-menu">
-									<a href="{{ route('users.show', ['user' => $user->id]) }}" class="menu-item">
-										<span class="menu-text">Публичный профиль</span>
-									</a>								
-									<a href="{{ route('profile.show') }}" class="menu-item">
-										<span class="menu-text">Ваш профиль</span>
-									</a>
-									<a href="{{ url('/profile/complete') }}" class="menu-item">
-										<span class="menu-text">Редактировать профиль</span>
-									</a>
-									<a href="{{ route('user.photos') }}" class="menu-item">
-										<span class="menu-text">Ваши фотографии</span>
-									</a>
-									
-									<a href="{{ route('notifications.index') }}" class="menu-item active">
-										<strong class="cd menu-text">Уведомления</strong>
-										@if(!empty($notificationsUnread) && $notificationsUnread > 0)
-										<span class="notificationsUnread">
-											{{ $notificationsUnread > 99 ? '99+' : $notificationsUnread }}
-										</span>
-										@endif										
-									</a>									
-									
-									<form method="POST" action="{{ route('logout') }}" class="logout-form" x-data>
-										@csrf
-										<button type="submit" class="menu-item">Выйти</button>
-									</form>							
-								</nav>	
-							</div>	
-						</div>
-					</div>
-				</div> 	
-			</div> 
+<div class="col-lg-4 col-xl-3 order-2 d-none d-lg-block">
+<div class="sticky">
+<div class="card-ramka">
+@include('profile._menu', [
+    'menuUser'   => auth()->user(),
+    'activeMenu' => 'notifications',
+])
+</div>
+</div>
+</div>
 			<div class="col-lg-8 col-xl-9 order-1">		
 				
 				

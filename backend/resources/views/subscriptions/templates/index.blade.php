@@ -9,6 +9,18 @@
     </x-slot>
 
     <div class="container">
+    <div class="row row2">
+        <div class="col-lg-4 col-xl-3 order-2 d-none d-lg-block">
+            <div class="sticky">
+                <div class="card-ramka">
+                    @include('profile._menu', [
+                        'menuUser'   => auth()->user(),
+                        'activeMenu' => 'sub_templates',
+                    ])
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-8 col-xl-9 order-1">
         @if(session('status'))
             <div class="ramka"><div class="alert alert-success">{{ session('status') }}</div></div>
         @endif
@@ -64,7 +76,7 @@
                                 <form method="POST" action="{{ route('subscription_templates.destroy', $t) }}" class="d-inline">
                                     @csrf @method('DELETE')
                                     <button class="btn btn-small" style="background:var(--red);color:#fff"
-                                        onclick="return confirm('Деактивировать шаблон?')">🗑</button>
+                                        data-title="Деактивировать шаблон?" data-confirm-text="Да" data-cancel-text="Отмена" class="btn btn-small btn-alert" style="background:var(--red);color:#fff">🗗</button>
                                 </form>
                             </td>
                         </tr>

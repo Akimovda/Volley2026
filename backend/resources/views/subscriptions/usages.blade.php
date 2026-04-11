@@ -2,6 +2,18 @@
     <x-slot name="title">История посещений</x-slot>
     <x-slot name="h1">История посещений абонемента</x-slot>
     <div class="container">
+    <div class="row row2">
+        <div class="col-lg-4 col-xl-3 order-2 d-none d-lg-block">
+            <div class="sticky">
+                <div class="card-ramka">
+                    @include('profile._menu', [
+                        'menuUser'   => auth()->user(),
+                        'activeMenu' => 'subscriptions',
+                    ])
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-8 col-xl-9 order-1">
         <div class="ramka">
             <h2 class="-mt-05">{{ $subscription->template->name }}</h2>
             <div class="f-16">Осталось: <strong>{{ $subscription->visits_remaining }}</strong> / {{ $subscription->visits_total }}</div>

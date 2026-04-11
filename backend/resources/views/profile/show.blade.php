@@ -199,87 +199,16 @@
 	
     <div class="container">
         <div class="row">
-			<div class="col-lg-4 col-xl-3 order-2 d-none d-lg-block">
-				<div class="sticky">
-					<div class="card-ramka">
-						<div class="row">
-							<div class="col-3 col-lg-12">
-								<div class="profile-avatar">
-									<img
-									src="{{ $u->profile_photo_url }}"
-									alt="avatar"
-									class="avatar"
-									/>			
-								</div>
-							</div>
-							<div class="col-9 col-lg-12">
-								<nav class="menu-nav sidebar-menu">
-											<a href="{{ route('users.show', ['user' => $user->id]) }}" class="menu-item">
-												<span class="menu-text">Публичный профиль</span>
-											</a>								
-									<a href="{{ route('profile.show') }}" class="menu-item active">
-										<strong class="cd menu-text">Ваш профиль</strong>
-									</a>
-									<a href="{{ url('/profile/complete') }}" class="menu-item">
-										<span class="menu-text">Редактировать профиль</span>
-									</a>
-									<a href="{{ route('user.photos') }}" class="menu-item">
-										<span class="menu-text">Ваши фотографии</span>
-									</a>
-									
-									<a href="{{ route('notifications.index') }}" class="menu-item">
-										<span class="menu-text">Уведомления</span>
-										@if(!empty($notificationsUnread) && $notificationsUnread > 0)
-										<span class="notificationsUnread">
-											{{ $notificationsUnread > 99 ? '99+' : $notificationsUnread }}
-										</span>
-										@endif										
-									</a>									
-
-<a href="{{ route('subscriptions.my') }}" class="menu-item">
-<span class="menu-text">🎫 Мои абонементы</span>
-</a>
-<a href="{{ route('coupons.my') }}" class="menu-item">
-<span class="menu-text">🎟 Мои купоны</span>
-</a>
-@if(auth()->check() && (auth()->user()->isOrganizer() || auth()->user()->isAdmin()))
-<a href="{{ route('subscriptions.index') }}" class="menu-item">
-<span class="menu-text">📋 Абонементы (орг.)</span>
-</a>
-<a href="{{ route('subscription_templates.index') }}" class="menu-item">
-<span class="menu-text">📝 Шаблоны абонементов</span>
-</a>
-<a href="{{ route('coupon_templates.index') }}" class="menu-item">
-<span class="menu-text">🏷 Шаблоны купонов</span>
-</a>
-@endif
-<a href="{{ route('player.dashboard') }}" class="menu-item">
-<span class="menu-text">📊 Моя статистика</span>
-</a>
-@if(auth()->check() && (auth()->user()->isOrganizer() || auth()->user()->isAdmin()))
-<a href="{{ route('org.dashboard') }}" class="menu-item">
-<span class="menu-text">📈 Панель организатора</span>
-</a>
-@endif
-<a href="{{ route('wallet.index') }}" class="menu-item">
-<span class="menu-text">👛 Мой кошелёк</span>
-</a>
-@if(auth()->check() && (auth()->user()->isOrganizer() || auth()->user()->isAdmin()))
-<a href="{{ route('profile.transactions') }}" class="menu-item">
-<span class="menu-text">💳 Транзакции</span>
-</a>
-@endif
-									
-									<form method="POST" action="{{ route('logout') }}" class="logout-form" x-data>
-										@csrf
-										<button type="submit" class="menu-item">Выйти</button>
-									</form>							
-								</nav>	
-							</div>	
-						</div>
-					</div>
-				</div> 	
-			</div> 
+<div class="col-lg-4 col-xl-3 order-2 d-none d-lg-block">
+<div class="sticky">
+<div class="card-ramka">
+@include('profile._menu', [
+    'menuUser'   => $user,
+    'activeMenu' => 'profile',
+])
+</div>
+</div>
+</div>
 			<div class="col-lg-8 col-xl-9 order-1">
 				<div class="ramka pb-2">  
 					{{-- Анкета игрока --}}

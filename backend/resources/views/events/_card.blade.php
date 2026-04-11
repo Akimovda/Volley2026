@@ -397,15 +397,43 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
                         <div class="small text-danger fw-semibold">{{ $cancel?->message ?? 'Отмена недоступна' }}</div>
                         @endif
 						
-						@elseif ($regClosed2)
-                        <div class="small fw-semibold text-danger">❗️ Для записи Вам необходима помощь организатора</div>
+						@elseif ($regNotStarted)
+                        @php
+                            $regStartsLocal = $regStartsUtc ? $regStartsUtc->setTimezone($userTz ?? 'UTC') : null;
+                        @endphp
+                        <div class="w-100">
+                            <button class="btn w-100" disabled style="opacity:.55;cursor:not-allowed;">Записаться</button>
+                            <div class="small text-muted mt-1">
+                                Регистрация откроется
+                                @if($regStartsLocal)
+                                {{ $regStartsLocal->translatedFormat('d F в H:i') }}
+                                @endif
+                            </div>
+                        </div>
+
+@elseif ($regClosed2)
+                        <div class="small fw-semibold text-danger">Регистрация закрыта</div>
 						
 						@elseif ($isGroupMode)
+                        @if ($isBeachDirection)
+                        <form method="POST" action="{{ route('occurrences.join', ['occurrence' => $occ->id]) }}">
+                            @csrf
+                            <button type="submit" class="btn w-100">Записаться</button>
+                        </form>
+                        @else
                         <a href="{{ $eventPageUrl }}" class="btn">Записаться</a>
+                        @endif
 						
 						@elseif ($join === null)
-                        {{-- occurrences не обогащены (страница локации) — ведём на страницу события --}}
+                        {{-- occurrences не обогащены --}}
+                        @if ($isBeachDirection)
+                        <form method="POST" action="{{ route('occurrences.join', ['occurrence' => $occ->id]) }}">
+                            @csrf
+                            <button type="submit" class="btn w-100">Записаться</button>
+                        </form>
+                        @else
                         <a href="{{ $eventPageUrl }}" class="btn">Записаться</a>
+                        @endif
 						
 						@elseif (!$join->allowed)
                         <button class="btn btn-primary" disabled style="opacity:.55;cursor:not-allowed;">Записаться</button>

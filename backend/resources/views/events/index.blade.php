@@ -1,4 +1,3 @@
-{{-- resources/views/events/index.blade.php --}}
 @php
 
 $nowUtc  = \Illuminate\Support\Carbon::now('UTC');
@@ -32,8 +31,6 @@ $eventTz = $occ->timezone ?: ($occ->event?->timezone ?: 'UTC');
 $sUser = $occ->starts_at
 ? \Illuminate\Support\Carbon::parse($occ->starts_at, 'UTC')->setTimezone($userTz)
 : null;
-
-
 
 if (!$sUser) {
 return ['date' => '—', 'time' => '—', 'tz' => $userTz, 'tzLabel' => $userTz, 'eventTz' => $eventTz];
@@ -363,141 +360,136 @@ body.dark .event-price {
 			</div>
 			@endif
 			
-			{{-- JOIN MODAL --}}
-			<div id="joinModalBackdrop" class="join-backdrop hidden">
-				<div class="h-100 d-flex align-items-center justify-content-center p-3">
-					<div class="join-modal">
-						<div class="p-3 border-bottom d-flex align-items-start justify-content-between gap-3">
-							<div>
-								<div id="jmTitle" class="fw-semibold fs-5">Запись</div>
-								<div id="jmMeta" class="text-muted small mt-1"></div>
-								<div id="jmAddr" class="text-muted small mt-1"></div>
-							</div>
-							<button type="button" class="btn btn-outline-secondary btn-sm js-close-join">✕</button>
-						</div>
-						<div class="p-3">
-							<div id="jmError" class="alert alert-danger d-none mb-2"></div>
-							<div class="text-muted small mb-2">Выбери позицию (показаны только свободные):</div>
-							<div id="jmLoading" class="text-muted small d-none mb-2">Загружаю доступные позиции…</div>
-							<div id="jmPositions" class="row g-2"></div>
-							<div class="mt-3 text-muted small">После выбора позиции вы сразу будете записаны.</div>
-						</div>
-					</div>
-				</div>
+			{{-- JOIN MODAL (Fancybox inline) --}}
+			<div id="joinModalContent" style="display:none;max-width:420px;width:100%;padding:1.5rem">
+				<h2 id="jmTitle" class="-mt-05 f-20 b-600">Запись на мероприятие</h2>
+				<div id="jmMeta" class="f-14 mb-05" style="opacity:.6"></div>
+				<div id="jmAddr" class="f-14 mb-2" style="opacity:.6"></div>
+				<div id="jmError" class="alert alert-danger" style="display:none"></div>
+				<div id="jmLoading" class="f-14 mb-1" style="display:none;opacity:.6">Загружаю позиции…</div>
+				<div id="jmPositions"></div>
+				<div class="f-13 mt-2" style="opacity:.5">После выбора позиции вы сразу будете записаны.</div>
 			</div>
-			
-			<form id="joinForm" method="POST" action="" class="d-none">
+
+			<form id="joinForm" method="POST" action="" style="display:none">
 				@csrf
 				<input type="hidden" name="position" id="joinPosition" value="">
 			</form>
-			
-		</div>{{-- .container --}}
-		
-		
+
+		</div>
 		<x-slot name="script">
-			<script>
-				(function () {
-					// ===== Join Modal =====
-					const backdrop  = document.getElementById('joinModalBackdrop');
-					const titleEl   = document.getElementById('jmTitle');
-					const metaEl    = document.getElementById('jmMeta');
-					const addrEl    = document.getElementById('jmAddr');
-					const posWrap   = document.getElementById('jmPositions');
-					const errBox    = document.getElementById('jmError');
-					const loadingEl = document.getElementById('jmLoading');
-					const joinForm  = document.getElementById('joinForm');
-					const joinPos   = document.getElementById('joinPosition');
-					
-					function showError(message) {
-						if (!errBox) { alert(message); return; }
-						errBox.textContent = message;
-						errBox.classList.remove('d-none');
-					}
-					function clearError() {
-						if (!errBox) return;
-						errBox.textContent = '';
-						errBox.classList.add('d-none');
-					}
-					function setLoading(isLoading) {
-						if (!loadingEl) return;
-						loadingEl.classList.toggle('d-none', !isLoading);
-					}
-					function openModalShell(payload) {
-						clearError();
-						setLoading(true);
-						titleEl.textContent = payload.title || 'Запись';
-						metaEl.textContent  = [payload.date, payload.time, payload.tz ? '('+payload.tz+')' : ''].filter(Boolean).join(' ');
-						addrEl.textContent  = payload.address || '';
-						posWrap.innerHTML = '';
-						backdrop.classList.remove('hidden');
-					}
-					function closeModal() {
-						backdrop.classList.add('hidden');
-						posWrap.innerHTML = '';
-						clearError();
-						setLoading(false);
-					}
-					function renderPositions(occurrenceId, freePositions) {
-						posWrap.innerHTML = '';
-						if (!Array.isArray(freePositions) || freePositions.length === 0) {
-							showError('Свободных мест больше нет (или нет доступных позиций по ограничениям).');
-							return;
-						}
-						freePositions.forEach(p => {
-							const col = document.createElement('div');
-							col.className = 'col-12';
-							const btn = document.createElement('button');
-							btn.type = 'button';
-							btn.className = 'btn btn-primary w-100';
-							btn.innerHTML = `${p.label || p.key} <span class="ms-2 small opacity-75">(${p.free ?? 0})</span>`;
-							btn.addEventListener('click', () => {
-								joinForm.action = `/occurrences/${occurrenceId}/join`;
-								joinPos.value = p.key;
-								joinForm.submit();
-							});
-							col.appendChild(btn);
-							posWrap.appendChild(col);
-						});
-					}
-					async function fetchAvailability(occurrenceId) {
-						const res = await fetch(`/occurrences/${occurrenceId}/availability`, {
-							method: 'GET',
-							headers: { 'Accept': 'application/json' },
-							credentials: 'same-origin',
-						});
-						let data = null;
-						try { data = await res.json(); } catch (e) {}
-						if (data && data.redirect_url) { window.location = data.redirect_url; return null; }
-						if (!res.ok || !data || data.ok === false) {
-							showError((data && data.message) ? data.message : 'Не удалось получить доступность мероприятия.');
-							return null;
-						}
-						return data;
-					}
-					
-					document.querySelectorAll('.js-open-join').forEach(btn => {
-						btn.addEventListener('click', async () => {
-							const occurrenceId = btn.dataset.occurrenceId;
-							openModalShell({
-								title: btn.dataset.title,
-								date: btn.dataset.date,
-								time: btn.dataset.time,
-								tz: btn.dataset.tz,
-								address: btn.dataset.address,
-							});
-							const data = await fetchAvailability(occurrenceId);
-							setLoading(false);
-							if (!data) return;
-							renderPositions(occurrenceId, data.free_positions || data.data?.free_positions || []);
-						});
-					});
-					
-					document.querySelectorAll('.js-close-join').forEach(btn => btn.addEventListener('click', closeModal));
-					if (backdrop) {
-						backdrop.addEventListener('click', (e) => { if (e.target === backdrop) closeModal(); });
-					}
-					document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
-					
+		<script src="/assets/fas.js"></script>
+		<script>
+
+                    const positionNames = {
+                        outside:  'Доигровщик',
+                        opposite: 'Диагональный',
+                        middle:   'ЦБ',
+                        setter:   'Связующий',
+                        libero:   'Либеро',
+                        player:   'Игрок',
+                    };
+                    
+                    const titleEl   = document.getElementById('jmTitle');
+                    const metaEl    = document.getElementById('jmMeta');
+                    const addrEl    = document.getElementById('jmAddr');
+                    const posWrap   = document.getElementById('jmPositions');
+                    const errBox    = document.getElementById('jmError');
+                    const loadingEl = document.getElementById('jmLoading');
+                    const joinForm  = document.getElementById('joinForm');
+                    const joinPos   = document.getElementById('joinPosition');
+                    
+                    function showError(message) {
+                        if (!errBox) return;
+                        errBox.textContent = message;
+                        errBox.style.display = '';
+                    }
+                    function clearError() {
+                        if (!errBox) return;
+                        errBox.textContent = '';
+                        errBox.style.display = 'none';
+                    }
+                    function setLoading(isLoading) {
+                        if (!loadingEl) return;
+                        loadingEl.style.display = isLoading ? '' : 'none';
+                    }
+                    
+                    function openJoinModal(payload) {
+                        clearError();
+                        setLoading(true);
+                        posWrap.innerHTML = '';
+                        titleEl.textContent = payload.title || 'Запись на мероприятие';
+                        metaEl.textContent  = [payload.date, payload.time, payload.tz ? '('+payload.tz+')' : ''].filter(Boolean).join(' ');
+                        addrEl.textContent  = payload.address || '';
+                    
+                        jQuery.fancybox.open({
+                            src: '#joinModalContent',
+                            type: 'inline',
+                            opts: { touch: false, animationEffect: false, toolbar: false, smallBtn: true }
+                        });
+                    }
+                    
+                    function renderPositions(occurrenceId, freePositions) {
+                        posWrap.innerHTML = '';
+                        setLoading(false);
+                        if (!Array.isArray(freePositions) || freePositions.length === 0) {
+                            showError('Свободных мест нет или нет доступных позиций.');
+                            return;
+                        }
+                        freePositions.forEach(p => {
+                            const key   = p.key || p.role || '';
+                            const free  = p.free ?? 0;
+                            const label = positionNames[key] || key;
+                            const btn   = document.createElement('button');
+                            btn.type      = 'button';
+                            btn.className = 'btn w-100 mb-1';
+                            btn.innerHTML = label + ' <span class="f-13" style="opacity:.6">(' + free + ' мест)</span>';
+                            btn.addEventListener('click', () => {
+                                joinForm.action   = '/occurrences/' + occurrenceId + '/join';
+                                joinPos.value     = key;
+                                jQuery.fancybox.close();
+                                joinForm.submit();
+                            });
+                            posWrap.appendChild(btn);
+                        });
+                    }
+                    
+                    async function fetchAvailability(occurrenceId) {
+                        try {
+                            const res  = await fetch('/occurrences/' + occurrenceId + '/availability', {
+                                headers: { 'Accept': 'application/json' },
+                                credentials: 'same-origin',
+                            });
+                            const data = await res.json();
+                            if (data && data.redirect_url) { window.location = data.redirect_url; return null; }
+                            if (!res.ok || data.ok === false) {
+                                showError((data && data.message) ? data.message : 'Ошибка загрузки.');
+                                return null;
+                            }
+                            return data;
+                        } catch (e) {
+                            showError('Ошибка сети.');
+                            return null;
+                        }
+                    }
+                    
+                    document.querySelectorAll('.js-open-join').forEach(btn => {
+                        btn.addEventListener('click', async () => {
+                            const occurrenceId = btn.dataset.occurrenceId;
+                            openJoinModal({
+                                title:   btn.dataset.title,
+                                date:    btn.dataset.date,
+                                time:    btn.dataset.time,
+                                tz:      btn.dataset.tz,
+                                address: btn.dataset.address,
+                            });
+                            const data = await fetchAvailability(occurrenceId);
+                            setLoading(false);
+                            if (!data) return;
+                            renderPositions(occurrenceId, data.free_positions || data.data?.free_positions || []);
+                        });
+                    });
+
 					// ===== Seats line =====
 					const seatLines = Array.from(document.querySelectorAll('[data-seatline]'));
 					
@@ -649,7 +641,6 @@ body.dark .event-price {
 						})
 						.catch(function() {});
 					})();
-				})();
 			</script>
 		</x-slot>	
 		

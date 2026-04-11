@@ -3,6 +3,18 @@
     <x-slot name="h1">Мои абонементы</x-slot>
 
     <div class="container">
+    <div class="row row2">
+        <div class="col-lg-4 col-xl-3 order-2 d-none d-lg-block">
+            <div class="sticky">
+                <div class="card-ramka">
+                    @include('profile._menu', [
+                        'menuUser'   => auth()->user(),
+                        'activeMenu' => 'subscriptions',
+                    ])
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-8 col-xl-9 order-1">
         @if(session('status'))
             <div class="ramka"><div class="alert alert-success">{{ session('status') }}</div></div>
         @endif
@@ -125,7 +137,7 @@
                         </div>
                         <div id="transfer_selected_{{ $sub->id }}" class="f-14 mb-1" style="opacity:.7"></div>
                         <button type="submit" id="transfer_btn_{{ $sub->id }}" class="btn btn-small" disabled
-                            onclick="return confirm('Передать абонемент? Это действие необратимо.')">
+                            data-title="Передать абонемент?" data-text="Это действие необратимо." data-confirm-text="Передать" data-cancel-text="Отмена" class="btn btn-small btn-alert">
                             🔄 Передать
                         </button>
                     </form>

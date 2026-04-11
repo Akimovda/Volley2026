@@ -188,7 +188,7 @@
 		
 		<div class="row row2 text-center numbercard">
 			@php
-			$usersCount     = \App\Models\User::where('is_bot', false)->count();
+			$usersCount     = \App\Models\User::count();
 			$eventsCount    = \DB::table('events')->count();
 			$locationsCount = \DB::table('locations')->whereNull('organizer_id')->count();
 			$citiesCount    = \DB::table('locations')->whereNull('organizer_id')->distinct('city_id')->count('city_id');
@@ -902,20 +902,23 @@
 .hw-card-desc{font-size:13px;opacity:.7;line-height:1.65}
 .hwt1{color:#C06010}.hwt2{color:#A02820}.hwt3{color:#5A2580}.hwt4{color:#1A8045}
 @media(max-width:767px){
-.hw-arrows{flex-direction:column;gap:4px}
-.hw-arrow{height:56px}
+.hw-arrows{flex-direction:column;gap:6px}
+.hw-arrow{height:auto;min-height:64px;border-radius:12px;overflow:hidden;margin-left:0!important;z-index:1!important}
 .hw-arrow svg{display:none}
-.hw-arrow::before{content:'';position:absolute;inset:0;border-radius:10px}
+.hw-arrow::before{content:'';position:absolute;inset:0;border-radius:12px}
 .hw-arrow:nth-child(1)::before{background:linear-gradient(135deg,#F5A050,#C06010)}
 .hw-arrow:nth-child(2)::before{background:linear-gradient(135deg,#E05555,#8C1A14)}
 .hw-arrow:nth-child(3)::before{background:linear-gradient(135deg,#A560CC,#4A1568)}
 .hw-arrow:nth-child(4)::before{background:linear-gradient(135deg,#50CC78,#106830)}
-.hw-inner{padding-left:1.25rem;flex-direction:row;gap:10px;justify-content:flex-start}
+.hw-inner{padding:0 1.25rem;flex-direction:row;gap:14px;justify-content:flex-start;align-items:center;width:100%}
+.hw-num{font-size:28px;min-width:36px}
 .hw-sep{display:none}
-.hw-cards{grid-template-columns:1fr 1fr;gap:.75rem}
+.hw-lbl{display:none}
+.hw-mobile-text{display:block}
+.hw-cards{display:none}
 }
-@media(max-width:480px){
-.hw-cards{grid-template-columns:1fr}
+@media(min-width:768px){
+.hw-mobile-text{display:none}
 }
 </style>
 
@@ -933,7 +936,7 @@
       <line x1="1" y1="1.5" x2="269" y2="1.5" stroke="rgba(255,255,255,0.4)" stroke-width="1.5"/>
       <line x1="1" y1="98.5" x2="269" y2="98.5" stroke="rgba(0,0,0,0.2)" stroke-width="1"/>
     </svg>
-    <div class="hw-inner"><span class="hw-num">1</span><div class="hw-sep"></div><span class="hw-lbl">Шаг</span></div>
+    <div class="hw-inner"><span class="hw-num">1</span><div class="hw-sep"></div><span class="hw-lbl">Шаг</span><div class="hw-mobile-text" style="color:#fff;padding:.75rem 0"><div style="font-size:14px;font-weight:600;text-shadow:0 1px 4px rgba(0,0,0,.3)">Регистрация без пароля</div><div style="font-size:12px;opacity:.85;margin-top:2px">Войдите через Telegram, VK или Яндекс</div></div></div>
   </div>
   <div class="hw-arrow" style="margin-left:-26px;z-index:2">
     <svg viewBox="0 0 300 100" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
@@ -948,7 +951,7 @@
       <line x1="31" y1="1.5" x2="269" y2="1.5" stroke="rgba(255,255,255,0.38)" stroke-width="1.5"/>
       <line x1="31" y1="98.5" x2="269" y2="98.5" stroke="rgba(0,0,0,0.2)" stroke-width="1"/>
     </svg>
-    <div class="hw-inner"><span class="hw-num">2</span><div class="hw-sep"></div><span class="hw-lbl">Шаг</span></div>
+    <div class="hw-inner"><span class="hw-num">2</span><div class="hw-sep"></div><span class="hw-lbl">Шаг</span><div class="hw-mobile-text" style="color:#fff;padding:.75rem 0"><div style="font-size:14px;font-weight:600;text-shadow:0 1px 4px rgba(0,0,0,.3)">Найдите игру</div><div style="font-size:12px;opacity:.85;margin-top:2px">Фильтруйте по городу, уровню и формату</div></div></div>
   </div>
   <div class="hw-arrow" style="margin-left:-26px;z-index:3">
     <svg viewBox="0 0 300 100" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
@@ -963,7 +966,7 @@
       <line x1="31" y1="1.5" x2="269" y2="1.5" stroke="rgba(255,255,255,0.38)" stroke-width="1.5"/>
       <line x1="31" y1="98.5" x2="269" y2="98.5" stroke="rgba(0,0,0,0.2)" stroke-width="1"/>
     </svg>
-    <div class="hw-inner"><span class="hw-num">3</span><div class="hw-sep"></div><span class="hw-lbl">Шаг</span></div>
+    <div class="hw-inner"><span class="hw-num">3</span><div class="hw-sep"></div><span class="hw-lbl">Шаг</span><div class="hw-mobile-text" style="color:#fff;padding:.75rem 0"><div style="font-size:14px;font-weight:600;text-shadow:0 1px 4px rgba(0,0,0,.3)">Запишитесь</div><div style="font-size:12px;opacity:.85;margin-top:2px">Выберите позицию и нажмите «Записаться»</div></div></div>
   </div>
   <div class="hw-arrow" style="margin-left:-26px;z-index:4">
     <svg viewBox="0 0 300 100" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
@@ -978,7 +981,7 @@
       <line x1="31" y1="1.5" x2="269" y2="1.5" stroke="rgba(255,255,255,0.38)" stroke-width="1.5"/>
       <line x1="31" y1="98.5" x2="269" y2="98.5" stroke="rgba(0,0,0,0.2)" stroke-width="1"/>
     </svg>
-    <div class="hw-inner"><span class="hw-num">4</span><div class="hw-sep"></div><span class="hw-lbl">Шаг</span></div>
+    <div class="hw-inner"><span class="hw-num">4</span><div class="hw-sep"></div><span class="hw-lbl">Шаг</span><div class="hw-mobile-text" style="color:#fff;padding:.75rem 0"><div style="font-size:14px;font-weight:600;text-shadow:0 1px 4px rgba(0,0,0,.3)">Играйте!</div><div style="font-size:12px;opacity:.85;margin-top:2px">Знакомьтесь с партнёрами на площадке</div></div></div>
   </div>
 </div>
 

@@ -622,55 +622,18 @@ $canUploadSchool = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
         </div>
         @endif      
         
-        <div class="row">
+        <div class="row row2">
             <div class="col-lg-4 col-xl-3 order-2 d-none d-lg-block">
                 <div class="sticky">
-                    <div class="card-ramka mb-2">
-                        <div class="row">
-                            <div class="col-3 col-lg-12">
-                                <div class="profile-avatar">
-                                    <img src="{{ $user->profile_photo_url }}" alt="avatar" class="avatar"/>          
-                                </div>
-                            </div>
-                            <div class="col-9 col-lg-12">
-                                <nav class="menu-nav sidebar-menu">
-                                    @if(!$isEditingOther)
-                                    <a href="{{ route('users.show', ['user' => $user->id]) }}" class="menu-item">
-                                        <span class="menu-text">Публичный профиль</span>
-                                    </a>										
-                                    <a href="{{ route('profile.show') }}" class="menu-item">
-                                        <span class="menu-text">Ваш профиль</span>
-                                    </a>
-                                    <a href="{{ url('/profile/complete') }}" class="menu-item">
-                                        <span class="menu-text">Редактировать профиль</span>
-                                    </a>
-                                    <a href="{{ route('user.photos') }}" class="menu-item active">
-                                        <strong class="cd menu-text">Ваши фотографии</strong>
-                                    </a>
-                                    <a href="{{ route('notifications.index') }}" class="menu-item">
-                                        <span class="menu-text">Уведомления</span>
-                                    </a>									
-                                    <form method="POST" action="{{ route('logout') }}" class="logout-form" x-data>
-                                        @csrf
-                                        <button type="submit" class="menu-item">Выйти</button>
-                                    </form>                                         
-                                    @else
-                                    <a href="{{ route('users.show', ['user' => $user->id]) }}" class="menu-item">
-                                        <span class="menu-text">Публичный профиль пользователя</span>
-                                    </a>
-                                    <a href="{{ url('/profile/complete?user_id=' . $user->id) }}" class="menu-item">
-                                        <span class="menu-text">Редактировать пользователя</span>
-                                    </a>
-                                    <a href="{{ url('/user/photos?user_id=' . $user->id) }}" class="menu-item active">
-                                        <strong class="cd menu-text">Редактировать фото пользователя</strong>
-                                    </a>
-                                    @endif
-                                </nav>
-                            </div>  
-                        </div>
+                    <div class="card-ramka">
+                        @include('profile._menu', [
+                            'menuUser'      => $user,
+                            'isEditingOther' => $isEditingOther,
+                            'activeMenu'    => 'photos',
+                        ])
                     </div>
-                </div>  
-            </div> 
+                </div>
+            </div>
             <div class="col-lg-8 col-xl-9 order-1">    
                 <div class="ramka" style="z-index:10">      
                     <h2 class="-mt-05">Загрузить фото</h2>
@@ -694,14 +657,14 @@ $canUploadSchool = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
                                 <input type="radio" name="photo_type_radio" value="photos" checked
                                     onchange="setPhotoType('photos', 0, 1)">
                                 <div class="custom-radio"></div>
-                                <span>📷 В галерею (1:1)</span>
+                                <span>В галерею (1:1)</span>
                             </label>
 
                             <label class="radio-item mb-1">
                                 <input type="radio" name="photo_type_radio" value="photos_avatar"
                                     onchange="setPhotoType('photos', 1, 1)">
                                 <div class="custom-radio"></div>
-                                <span>🧑 Сделать аватаром (1:1)</span>
+                                <span>Сделать аватаром (1:1)</span>
                             </label>
 
                             @if($canUploadEventPhotos)
@@ -709,14 +672,14 @@ $canUploadSchool = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
                                 <input type="radio" name="photo_type_radio" value="event_photos"
                                     onchange="setPhotoType('event_photos', 0, 16/9)">
                                 <div class="custom-radio"></div>
-                                <span>🏐 Фото для мероприятий (16:9)</span>
+                                <span>Фото для мероприятий (16:9)</span>
                             </label>
 
                             <label class="radio-item mb-1">
                                 <input type="radio" name="photo_type_radio" value="school_logo"
                                     onchange="setPhotoType('school_logo', 0, 1)">
                                 <div class="custom-radio"></div>
-                                <span>🏫 Логотип школы (1:1)</span>
+                                <span>Логотип школы (1:1)</span>
                             </label>
 
                             <label class="radio-item mb-1">

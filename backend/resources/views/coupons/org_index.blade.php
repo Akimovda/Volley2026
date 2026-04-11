@@ -2,6 +2,18 @@
     <x-slot name="title">Купоны</x-slot>
     <x-slot name="h1">Выданные купоны</x-slot>
     <div class="container">
+    <div class="row row2">
+        <div class="col-lg-4 col-xl-3 order-2 d-none d-lg-block">
+            <div class="sticky">
+                <div class="card-ramka">
+                    @include('profile._menu', [
+                        'menuUser'   => auth()->user(),
+                        'activeMenu' => 'coupons',
+                    ])
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-8 col-xl-9 order-1">
         @if(session('status'))
             <div class="ramka"><div class="alert alert-success">{{ session('status') }}</div></div>
         @endif

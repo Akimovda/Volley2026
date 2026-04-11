@@ -7,6 +7,18 @@
         </div>
     </x-slot>
     <div class="container">
+    <div class="row row2">
+        <div class="col-lg-4 col-xl-3 order-2 d-none d-lg-block">
+            <div class="sticky">
+                <div class="card-ramka">
+                    @include('profile._menu', [
+                        'menuUser'   => auth()->user(),
+                        'activeMenu' => 'org_subscriptions',
+                    ])
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-8 col-xl-9 order-1">
         @if(session('status'))
             <div class="ramka"><div class="alert alert-success">{{ session('status') }}</div></div>
         @endif
@@ -39,7 +51,7 @@
                                 <form method="POST" action="{{ route('subscriptions.extend', $sub) }}" class="d-inline">
                                     @csrf
                                     <input type="hidden" name="days" value="30">
-                                    <button class="btn btn-small" onclick="return confirm('Продлить на 30 дней?')">+30д</button>
+                                    <button class="btn btn-small btn-alert" data-title="Продлить на 30 дней?" data-confirm-text="Продлить" data-cancel-text="Отмена">+30д</button>
                                 </form>
                             </td>
                         </tr>

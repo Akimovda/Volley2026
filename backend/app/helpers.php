@@ -161,3 +161,105 @@ if (! function_exists('dt_local_value')) {
         }
     }
 }
+
+// =========================
+// Subscription statuses
+// =========================
+if (!function_exists('subscription_status_name')) {
+    function subscription_status_name(?string $status): string
+    {
+        $map = [
+            'active'    => 'Активен',
+            'frozen'    => 'Заморожен',
+            'expired'   => 'Истёк',
+            'exhausted' => 'Исчерпан',
+            'cancelled' => 'Отменён',
+        ];
+        return $map[(string)($status ?? '')] ?? (string)($status ?? '—');
+    }
+}
+
+// =========================
+// Coupon statuses
+// =========================
+if (!function_exists('coupon_status_name')) {
+    function coupon_status_name(?string $status): string
+    {
+        $map = [
+            'active'      => 'Активен',
+            'used'        => 'Использован',
+            'expired'     => 'Истёк',
+            'transferred' => 'Передан',
+            'cancelled'   => 'Отменён',
+        ];
+        return $map[(string)($status ?? '')] ?? (string)($status ?? '—');
+    }
+}
+
+// =========================
+// Payment statuses
+// =========================
+if (!function_exists('payment_status_name')) {
+    function payment_status_name(?string $status): string
+    {
+        $map = [
+            'free'         => 'Бесплатно',
+            'pending'      => 'Ожидает оплаты',
+            'link_pending' => 'Ожидает оплаты по ссылке',
+            'paid'         => 'Оплачено',
+            'refunded'     => 'Возвращено',
+            'expired'      => 'Истёкло',
+            'cancelled'    => 'Отменено',
+            'subscription' => 'По абонементу',
+        ];
+        return $map[(string)($status ?? '')] ?? (string)($status ?? '—');
+    }
+}
+
+// =========================
+// Event direction
+// =========================
+if (!function_exists('direction_name')) {
+    function direction_name(?string $direction): string
+    {
+        $map = [
+            'classic' => 'Классика',
+            'beach'   => 'Пляжный',
+        ];
+        return $map[(string)($direction ?? '')] ?? (string)($direction ?? '—');
+    }
+}
+
+// =========================
+// Event format
+// =========================
+if (!function_exists('format_name')) {
+    function format_name(?string $format): string
+    {
+        $map = [
+            'game'           => 'Игра',
+            'training'       => 'Тренировка',
+            'training_game'  => 'Тренировка-игра',
+            'tournament'     => 'Турнир',
+            'open'           => 'Открытая игра',
+        ];
+        return $map[(string)($format ?? '')] ?? (string)($format ?? '—');
+    }
+}
+
+// =========================
+// Registration mode
+// =========================
+if (!function_exists('reg_mode_name')) {
+    function reg_mode_name(?string $mode): string
+    {
+        $map = [
+            'single'       => 'Одиночная',
+            'mixed_group'  => 'Смешанная группа',
+            'team_beach'   => 'Пляжная пара',
+            'team_classic' => 'Команда (классика)',
+            'team'         => 'Команда',
+        ];
+        return $map[(string)($mode ?? '')] ?? (string)($mode ?? '—');
+    }
+}
