@@ -18,7 +18,11 @@ class EventRegistration extends Model
     ];
 
     protected $casts = [
-        'cancelled_at' => 'datetime',
+        'cancelled_at'      => 'datetime',
+        'confirmed_at'      => 'datetime',
+        'is_cancelled'      => 'boolean',
+        'auto_booked'       => 'boolean',
+        'payment_expires_at' => 'datetime',
     ];
 
     public function event()

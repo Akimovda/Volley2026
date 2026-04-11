@@ -180,7 +180,7 @@ class EventRegistrationController extends Controller
     ) {
         $created = false;
 
-        DB::transaction(function () use ($user, $occurrence, $position, &$created) {
+        DB::transaction(function () use ($user, $occurrence, $position, $subscriptionId, $couponCode, &$created) {
             $roleKey = $position ? (crc32($position) & 0x7fffffff) : 0;
 
             DB::select(

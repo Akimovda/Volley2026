@@ -67,7 +67,7 @@
                 <div class="mt-2 mb-2">
                     @php $pct = $sub->visits_total > 0 ? round(($sub->visits_remaining / $sub->visits_total) * 100) : 0; @endphp
                     <div style="background:#eee;border-radius:8px;height:10px">
-                        <div style="width:{{ $pct }}%;background:{{ $pct > 50 ? 'var(--cs)' : ($pct > 20 ? 'var(--cd)' : 'var(--red)') }};height:10px;border-radius:8px;transition:width .3s"></div>
+                        <div style="width:{{ $pct }}%;background:{{ $pct > 50 ? '#28a745' : ($pct > 20 ? '#fd7e14' : '#dc3545') }};height:10px;border-radius:8px;transition:width .3s"></div>
                     </div>
                     <div class="f-13 mt-05 text-right" style="opacity:.6">{{ $pct }}% осталось</div>
                 </div>
@@ -113,15 +113,21 @@
 
                 {{-- Форма передачи --}}
                 <div id="transfer_form_{{ $sub->id }}" style="display:none" class="mt-2">
-                    <form method="POST" action="{{ route('subscriptions.transfer', $sub) }}">
+                    <form method="POST" action="{{ route('subscriptions.transfer', $sub) }}" id="transfer_sub_form_{{ $sub->id }}">
                         @csrf
-                        <div class="d-flex gap-2 fvc">
-                            <input type="number" name="to_user_id" placeholder="ID игрока" style="max-width:150px">
-                            <button type="submit" class="btn btn-small"
-                                onclick="return confirm('Передать абонемент? Это действие необратимо.')">
-                                🔄 Передать
-                            </button>
+                        <input type="hidden" name="to_user_id" id="transfer_user_id_{{ $sub->id }}" value="">
+                        <div style="position:relative" class="mb-1">
+                            <input type="text" id="transfer_ac_{{ $sub->id }}"
+                                autocomplete="off"
+                                placeholder="Введите имя игрока…"
+                                class="w-100">
+                            <div id="transfer_dd_{{ $sub->id }}" class="form-select-dropdown trainer_dd"></div>
                         </div>
+                        <div id="transfer_selected_{{ $sub->id }}" class="f-14 mb-1" style="opacity:.7"></div>
+                        <button type="submit" id="transfer_btn_{{ $sub->id }}" class="btn btn-small" disabled
+                            onclick="return confirm('Передать абонемент? Это действие необратимо.')">
+                            🔄 Передать
+                        </button>
                     </form>
                 </div>
             </div>
@@ -139,6 +145,76 @@
         const el = document.getElementById('transfer_form_' + id);
         el.style.display = el.style.display === 'none' ? '' : 'none';
     }
+    </script>
+    <script>
+    (function() {
+        function initTransferAc(subId) {
+            var input    = document.getElementById('transfer_ac_' + subId);
+            var dd       = document.getElementById('transfer_dd_' + subId);
+            var hidden   = document.getElementById('transfer_user_id_' + subId);
+            var selected = document.getElementById('transfer_selected_' + subId);
+            var btn      = document.getElementById('transfer_btn_' + subId);
+            if (!input) return;
+
+            var timer = null;
+
+            function showDd() { dd.classList.add('form-select-dropdown--active'); }
+            function hideDd() { dd.classList.remove('form-select-dropdown--active'); }
+            function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
+
+            function pick(id, label) {
+                hidden.value = id;
+                input.value = label;
+                selected.textContent = '✅ Выбран: ' + label;
+                btn.disabled = false;
+                hideDd();
+            }
+
+            input.addEventListener('input', function() {
+                clearTimeout(timer);
+                hidden.value = '';
+                btn.disabled = true;
+                selected.textContent = '';
+                var q = input.value.trim();
+                if (q.length < 2) { hideDd(); return; }
+                dd.innerHTML = '<div class="city-message">Поиск…</div>';
+                showDd();
+                timer = setTimeout(function() {
+                    fetch('/api/users/search?q=' + encodeURIComponent(q), {
+                        headers: {'Accept': 'application/json'},
+                        credentials: 'same-origin'
+                    })
+                    .then(function(r) { return r.json(); })
+                    .then(function(data) {
+                        dd.innerHTML = '';
+                        var items = data.items || [];
+                        if (!items.length) {
+                            dd.innerHTML = '<div class="city-message">Ничего не найдено</div>';
+                            showDd(); return;
+                        }
+                        items.forEach(function(item) {
+                            var div = document.createElement('div');
+                            div.className = 'trainer-item form-select-option';
+                            div.innerHTML = '<div class="f-14">' + esc(item.label || item.name) + '</div>';
+                            div.addEventListener('click', function() { pick(item.id, item.label || item.name); });
+                            dd.appendChild(div);
+                        });
+                        showDd();
+                    });
+                }, 250);
+            });
+
+            document.addEventListener('click', function(e) {
+                if (!input.contains(e.target) && !dd.contains(e.target)) hideDd();
+            });
+        }
+
+        // Инициализируем для каждого абонемента
+        document.querySelectorAll('[id^="transfer_ac_"]').forEach(function(el) {
+            var subId = el.id.replace('transfer_ac_', '');
+            initTransferAc(subId);
+        });
+    })();
     </script>
     </x-slot>
 </x-voll-layout>

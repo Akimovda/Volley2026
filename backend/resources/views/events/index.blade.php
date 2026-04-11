@@ -148,7 +148,21 @@ $groupedByDate[$dateKey] = ['date' => $date, 'occurrences' => []];
 		
 		<x-slot name="style">
             <style>
-
+.event-price {
+	position: absolute;
+	top: 8px;
+	left: 8px;
+	height: 24px;
+    display: flex;
+    align-items: center;
+	padding: 0 12px;
+	background: rgba(255,255,255,0.9);
+	border-radius: 6px;
+	backdrop-filter: blur(8px);
+}
+body.dark .event-price {
+	background: rgba(0,0,0,0.4);
+}
 			</style>
 		</x-slot>
 		

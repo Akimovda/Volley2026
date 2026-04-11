@@ -29,10 +29,7 @@ class OccurrenceParticipantsController extends Controller
                 'm_photo.model_id', '=', 'users.id'
             )
             ->where('event_registrations.occurrence_id', $occurrence)
-            ->where(function ($q) {
-                $q->whereNull('event_registrations.is_cancelled')
-                  ->orWhere('event_registrations.is_cancelled', false);
-            })
+            ->whereRaw('(event_registrations.is_cancelled IS NULL OR event_registrations.is_cancelled = false)')
             ->where('event_registrations.status', 'confirmed')
             ->select(
                 'users.id',

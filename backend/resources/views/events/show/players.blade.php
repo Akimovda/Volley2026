@@ -145,7 +145,7 @@
             ->first();
     }
 @endphp
-@if($myReg && $myReg->subscription_id && !$myReg->confirmed_at)
+@if($myReg && $myReg->subscription_id && $myReg->auto_booked && !$myReg->confirmed_at)
 <div class="alert alert-warning mt-2">
     ⏰ <strong>Подтвердите участие</strong> по абонементу до
     {{ \Carbon\Carbon::parse($occurrence->starts_at)->subHours(12)->format('d.m H:i') }}
@@ -155,7 +155,7 @@
     @csrf
     <button type="submit" class="btn w-100 mt-1">✅ Подтвердить участие</button>
 </form>
-@elseif($myReg && $myReg->subscription_id && $myReg->confirmed_at)
+@elseif($myReg && $myReg->subscription_id && $myReg->auto_booked && $myReg->confirmed_at)
 <div class="alert alert-success mt-2">✅ Участие подтверждено</div>
 @endif
 	@php
@@ -421,7 +421,7 @@
 
         @if($waitlistCount > 0)
         <div class="text-muted small mb-2">
-            В резерве: <strong>{{ $waitlistCount }}</strong> {{ trans_choice('человек|человека|человек', $waitlistCount) }}
+            В резерве: <strong>{{ $waitlistCount }}</strong> {{ $waitlistCount == 1 ? 'человек' : ($waitlistCount < 5 ? 'человека' : 'человек') }}
         </div>
         @endif
 

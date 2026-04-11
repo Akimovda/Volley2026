@@ -90,6 +90,7 @@ class AutoBookingSubscriptionJob implements ShouldQueue
                         'is_cancelled'   => false,
                         'payment_status' => 'subscription',
                         'subscription_id' => $sub->id,
+                        'auto_booked'    => true,
                     ]);
 
                     $usage = $subService->useVisit($sub, $occurrence, $reg->id);

@@ -16,7 +16,13 @@
                     @foreach($usages as $u)
                     <tr>
                         <td>{{ $u->used_at->format('d.m.Y H:i') }}</td>
-                        <td>{{ $u->event->title ?? '#'.$u->event_id }}</td>
+                        <td>
+                            @if($u->event)
+                                <a href="{{ route('events.show', $u->event_id) }}?occurrence={{ $u->occurrence_id }}">{{ $u->event->title }}</a>
+                            @else
+                                #{{ $u->event_id }}
+                            @endif
+                        </td>
                         <td>
                             @if($u->action==='used') <span class="cs">✅ Использовано</span>
                             @elseif($u->action==='returned') <span class="cd">↩️ Возвращено</span>

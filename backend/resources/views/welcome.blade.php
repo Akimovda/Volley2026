@@ -312,6 +312,7 @@
                                         <li>Анонсы тренировок в Telegram и VK каналы</li>
                                         <li>Ваш профиль тренера виден всем игрокам</li>
                                         <li>Создайте страницу своей школы волейбола</li>
+                                        <li>Првайте абонементы и ведите их учет</li>
 									</ul>
                                     <div class="mt-2">
                                         <a href="{{ route('volleyball_school.index') }}" class="btn">Школы волейбола</a>
@@ -357,7 +358,8 @@
 										<li>Гендерные ограничения и уровни допуска</li>
 										<li>Управление списком участников вручную</li>
 										<li>Автоотмена при нехватке кворума</li>
-										<li>Помощник записи 🤖 — боты заполняют места</li>
+										<li>Подключите своих ботов - скоро!</li>
+										<li>Помощник записи - платформа поможет наполнить мероприятие</li>
 									</ul>
 									<div class="mt-2">
 										<a href="{{ route('events.create.event_management') }}" class="btn">Управление играми</a>
@@ -417,6 +419,7 @@
 										<li>Профиль организатора / тренера</li>
 										<li>Ваш бренд в каталоге школ волейбола</li>
 										<li>Классика и пляжный — любое направление</li>
+										<li>Абонементы и купоны</li>
 									</ul>
 									<div class="mt-2">
 										<a href="{{ route('volleyball_school.index') }}" class="btn btn-secondary">Школы волейбола</a>
@@ -433,9 +436,6 @@
 		{{-- ===== КАК ЭТО РАБОТАЕТ ===== --}}
 		<div class="ramka" data-aos="fade-up">
 			<h2 class="-mt-05 text-center">Как это работает</h2>
-			
-			
-			
 
 <style>
 
@@ -881,59 +881,114 @@
 			
 			
 			
-			<div class="row row2 mt-2">
-				
-				<div class="col-md-6 col-lg-3">
-					<div class="card">
-						<div class="d-flex fvc gap-2 mb-1">
-							<div class="step-num">1</div>
-							<div class="b-600 f-18">Регистрация</div>
-						</div>
-						<div class="f-16" style="opacity:.7">
-							Войдите через Telegram, VK или Яндекс. Заполните профиль — укажите уровень, амплуа и город.
-						</div>
-					</div>
-				</div>
-				
-				<div class="col-md-6 col-lg-3">
-					<div class="card">
-						<div class="d-flex fvc gap-2 mb-1">
-							<div class="step-num">2</div>
-							<div class="b-600 f-18">Найдите игру</div>
-						</div>
-						<div class="f-16" style="opacity:.7">
-							Откройте каталог мероприятий. Фильтруйте по городу, уровню, дате и формату — классика или пляж.
-						</div>
-					</div>
-				</div>
-				
-				<div class="col-md-6 col-lg-3">
-					<div class="card">
-						<div class="d-flex fvc gap-2 mb-1">
-							<div class="step-num">3</div>
-							<div class="b-600 f-18">Запишитесь</div>
-						</div>
-						<div class="f-16" style="opacity:.7">
-							Выберите позицию и нажмите «Записаться». Получите подтверждение и напоминание в мессенджер.
-						</div>
-					</div>
-				</div>
-				
-				<div class="col-md-6 col-lg-3">
-					<div class="card">
-						<div class="d-flex fvc gap-2 mb-1">
-							<div class="step-num">4</div>
-							<div class="b-600 f-18">Играйте!</div>
-						</div>
-						<div class="f-16" style="opacity:.7">
-							Приходите на игру, знакомьтесь с новыми партнёрами и оценивайте уровень друг друга.
-						</div>
-					</div>
-				</div>
-				
-			</div>
-		</div>
-		
+<div class="hw-steps-wrap">
+<style>
+.hw-steps-wrap{padding:1rem 0 2rem}
+.hw-arrows{display:flex;width:100%;margin-bottom:2rem}
+.hw-arrow{flex:1;position:relative;height:96px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:default;z-index:1;transition:z-index 0s}
+.hw-arrow:hover{z-index:10}
+.hw-arrow svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible;transition:filter .25s ease}
+.hw-arrow:hover svg{filter:brightness(1.12)}
+.hw-poly-main{transition:transform .25s ease;transform-origin:center center}
+.hw-arrow:hover .hw-poly-main{transform:scaleY(1.06)}
+.hw-inner{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:5px;padding-left:14px;transition:transform .25s ease}
+.hw-arrow:first-child .hw-inner{padding-left:4px}
+.hw-arrow:hover .hw-inner{transform:scale(1.05)}
+.hw-num{font-size:30px;font-weight:500;color:#fff;line-height:1;text-shadow:0 2px 8px rgba(0,0,0,.35)}
+.hw-sep{width:30px;height:1.5px;background:rgba(255,255,255,.5);border-radius:1px}
+.hw-lbl{font-size:10px;font-weight:500;letter-spacing:.13em;color:rgba(255,255,255,.85);text-transform:uppercase}
+.hw-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:1.25rem}
+.hw-card-title{font-size:14px;font-weight:600;margin-bottom:.4rem;line-height:1.3}
+.hw-card-desc{font-size:13px;opacity:.7;line-height:1.65}
+.hwt1{color:#C06010}.hwt2{color:#A02820}.hwt3{color:#5A2580}.hwt4{color:#1A8045}
+@media(max-width:767px){
+.hw-arrows{flex-direction:column;gap:4px}
+.hw-arrow{height:56px}
+.hw-arrow svg{display:none}
+.hw-arrow::before{content:'';position:absolute;inset:0;border-radius:10px}
+.hw-arrow:nth-child(1)::before{background:linear-gradient(135deg,#F5A050,#C06010)}
+.hw-arrow:nth-child(2)::before{background:linear-gradient(135deg,#E05555,#8C1A14)}
+.hw-arrow:nth-child(3)::before{background:linear-gradient(135deg,#A560CC,#4A1568)}
+.hw-arrow:nth-child(4)::before{background:linear-gradient(135deg,#50CC78,#106830)}
+.hw-inner{padding-left:1.25rem;flex-direction:row;gap:10px;justify-content:flex-start}
+.hw-sep{display:none}
+.hw-cards{grid-template-columns:1fr 1fr;gap:.75rem}
+}
+@media(max-width:480px){
+.hw-cards{grid-template-columns:1fr}
+}
+</style>
+
+<div class="hw-arrows">
+  <div class="hw-arrow">
+    <svg viewBox="0 0 300 100" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="hwg1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#F5A050"/><stop offset="50%" stop-color="#E8811C"/><stop offset="100%" stop-color="#A85408"/></linearGradient>
+        <linearGradient id="hwgi1" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="rgba(0,0,0,0.18)"/><stop offset="40%" stop-color="rgba(0,0,0,0)"/><stop offset="100%" stop-color="rgba(0,0,0,0.22)"/></linearGradient>
+        <filter id="hwf1"><feDropShadow dx="7" dy="0" stdDeviation="5" flood-color="rgba(0,0,0,.5)"/></filter>
+      </defs>
+      <polygon class="hw-poly-main" points="0,0 270,0 300,50 270,100 0,100" fill="url(#hwg1)" filter="url(#hwf1)"/>
+      <polygon points="0,0 270,0 300,50 270,100 0,100" fill="url(#hwgi1)"/>
+      <polygon points="0,0 270,0 300,50 270,100 0,100" fill="rgba(255,255,255,0.06)"/>
+      <line x1="1" y1="1.5" x2="269" y2="1.5" stroke="rgba(255,255,255,0.4)" stroke-width="1.5"/>
+      <line x1="1" y1="98.5" x2="269" y2="98.5" stroke="rgba(0,0,0,0.2)" stroke-width="1"/>
+    </svg>
+    <div class="hw-inner"><span class="hw-num">1</span><div class="hw-sep"></div><span class="hw-lbl">Шаг</span></div>
+  </div>
+  <div class="hw-arrow" style="margin-left:-26px;z-index:2">
+    <svg viewBox="0 0 300 100" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="hwg2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#E05555"/><stop offset="50%" stop-color="#C73228"/><stop offset="100%" stop-color="#841810"/></linearGradient>
+        <linearGradient id="hwgi2" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="rgba(0,0,0,0.2)"/><stop offset="35%" stop-color="rgba(0,0,0,0)"/><stop offset="100%" stop-color="rgba(0,0,0,0.22)"/></linearGradient>
+        <filter id="hwf2"><feDropShadow dx="7" dy="0" stdDeviation="5" flood-color="rgba(0,0,0,.5)"/></filter>
+      </defs>
+      <polygon class="hw-poly-main" points="0,0 270,0 300,50 270,100 0,100 30,50" fill="url(#hwg2)" filter="url(#hwf2)"/>
+      <polygon points="0,0 270,0 300,50 270,100 0,100 30,50" fill="url(#hwgi2)"/>
+      <polygon points="0,0 270,0 300,50 270,100 0,100 30,50" fill="rgba(255,255,255,0.05)"/>
+      <line x1="31" y1="1.5" x2="269" y2="1.5" stroke="rgba(255,255,255,0.38)" stroke-width="1.5"/>
+      <line x1="31" y1="98.5" x2="269" y2="98.5" stroke="rgba(0,0,0,0.2)" stroke-width="1"/>
+    </svg>
+    <div class="hw-inner"><span class="hw-num">2</span><div class="hw-sep"></div><span class="hw-lbl">Шаг</span></div>
+  </div>
+  <div class="hw-arrow" style="margin-left:-26px;z-index:3">
+    <svg viewBox="0 0 300 100" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="hwg3" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#A560CC"/><stop offset="50%" stop-color="#7B35A0"/><stop offset="100%" stop-color="#4A1568"/></linearGradient>
+        <linearGradient id="hwgi3" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="rgba(0,0,0,0.2)"/><stop offset="35%" stop-color="rgba(0,0,0,0)"/><stop offset="100%" stop-color="rgba(0,0,0,0.22)"/></linearGradient>
+        <filter id="hwf3"><feDropShadow dx="7" dy="0" stdDeviation="5" flood-color="rgba(0,0,0,.5)"/></filter>
+      </defs>
+      <polygon class="hw-poly-main" points="0,0 270,0 300,50 270,100 0,100 30,50" fill="url(#hwg3)" filter="url(#hwf3)"/>
+      <polygon points="0,0 270,0 300,50 270,100 0,100 30,50" fill="url(#hwgi3)"/>
+      <polygon points="0,0 270,0 300,50 270,100 0,100 30,50" fill="rgba(255,255,255,0.05)"/>
+      <line x1="31" y1="1.5" x2="269" y2="1.5" stroke="rgba(255,255,255,0.38)" stroke-width="1.5"/>
+      <line x1="31" y1="98.5" x2="269" y2="98.5" stroke="rgba(0,0,0,0.2)" stroke-width="1"/>
+    </svg>
+    <div class="hw-inner"><span class="hw-num">3</span><div class="hw-sep"></div><span class="hw-lbl">Шаг</span></div>
+  </div>
+  <div class="hw-arrow" style="margin-left:-26px;z-index:4">
+    <svg viewBox="0 0 300 100" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="hwg4" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#50CC78"/><stop offset="50%" stop-color="#28A85C"/><stop offset="100%" stop-color="#106830"/></linearGradient>
+        <linearGradient id="hwgi4" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="rgba(0,0,0,0.2)"/><stop offset="35%" stop-color="rgba(0,0,0,0)"/><stop offset="100%" stop-color="rgba(0,0,0,0.15)"/></linearGradient>
+        <filter id="hwf4"><feDropShadow dx="7" dy="0" stdDeviation="5" flood-color="rgba(0,0,0,.5)"/></filter>
+      </defs>
+      <polygon class="hw-poly-main" points="0,0 270,0 300,50 270,100 0,100 30,50" fill="url(#hwg4)" filter="url(#hwf4)"/>
+      <polygon points="0,0 270,0 300,50 270,100 0,100 30,50" fill="url(#hwgi4)"/>
+      <polygon points="0,0 270,0 300,50 270,100 0,100 30,50" fill="rgba(255,255,255,0.05)"/>
+      <line x1="31" y1="1.5" x2="269" y2="1.5" stroke="rgba(255,255,255,0.38)" stroke-width="1.5"/>
+      <line x1="31" y1="98.5" x2="269" y2="98.5" stroke="rgba(0,0,0,0.2)" stroke-width="1"/>
+    </svg>
+    <div class="hw-inner"><span class="hw-num">4</span><div class="hw-sep"></div><span class="hw-lbl">Шаг</span></div>
+  </div>
+</div>
+
+<div class="hw-cards">
+  <div class="hw-card"><div class="hw-card-title hwt1">Регистрация без пароля</div><div class="hw-card-desc">Войдите через Telegram, VK или Яндекс. Заполните профиль — укажите уровень, амплуа и город.</div></div>
+  <div class="hw-card"><div class="hw-card-title hwt2">Найдите игру</div><div class="hw-card-desc">Откройте каталог мероприятий. Фильтруйте по городу, уровню, дате и формату — классика или пляж.</div></div>
+  <div class="hw-card"><div class="hw-card-title hwt3">Запишитесь</div><div class="hw-card-desc">Выберите позицию и нажмите «Записаться». Получите подтверждение и напоминание в мессенджер.</div></div>
+  <div class="hw-card"><div class="hw-card-title hwt4">Играйте!</div><div class="hw-card-desc">Приходите на игру, знакомьтесь с новыми партнёрами и оценивайте уровень друг друга.</div></div>
+</div>
+</div>
 		{{-- ===== ЛОКАЦИИ ===== --}}
 		<div class="ramka" data-aos="fade-up">
 			<div class="d-flex between fvc mb-2">

@@ -192,6 +192,20 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 					{{-- Фото --}}
 					
 					<div class="event-card-body">
+					<div class="mb-1 -mt-05">
+                        <a href="{{ url('/events/' . (int)$event->id) . '?occurrence=' . (int)$occ->id }}" class="blink cd b-600 card-title ">
+                            @if(!empty($event?->is_private))
+                            <span class="emo" title="Приватное мероприятие">🙈</span>
+                            @endif						
+                            {{ $event?->title ?? '—' }}
+						</a>
+						</div>	
+						<div class="d-flex mb-1">
+							<div class="emo f-16">📍</div>
+							<div class="f-16">{{ $address }}</div>						
+						</div>					
+					
+					
 						<div class="border f-0 mb-1 card-img-top">
 							<a href="{{ url('/events/' . (int)$event->id) . '?occurrence=' . (int)$occ->id }}">
 								@if(!empty($event->event_photos) && count($event->event_photos) > 0)
@@ -208,22 +222,11 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 								@endif
 								
 								<div class="event-direction {{ $event->direction === 'beach' ? 'beach-direction' : 'classic-direction' }}">{{ $dirLabel }}</div>
-								{{--
-								<div class="event-date">{{ $dateLong }} <span>{{ $timeRange }}</span></div>
-								--}}
+								<div class="event-price f-18 b-600">{{ $priceLabel }}</div>		
 							</a>
 						</div>
 						
-                        <a href="{{ url('/events/' . (int)$event->id) . '?occurrence=' . (int)$occ->id }}" class="blink cd b-600 card-title mb-1 mt-05">
-                            @if(!empty($event?->is_private))
-                            <span class="emo" title="Приватное мероприятие">🙈</span>
-                            @endif						
-                            {{ $event?->title ?? '—' }}
-						</a>
-						<div class="d-flex">
-							<div class="emo f-16">📍</div>
-							<div class="f-16">{{ $address }}</div>						
-						</div>
+
 						
 						
 						<div class="event-column">
@@ -283,7 +286,7 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 						</div>
 						--}}
 						
-						
+						{{--
                         @if($isTrainingFmt && !empty($trainerLabel))
                         <div class="text-muted small mt-1 d-flex align-items-center gap-2 flex-wrap">
                             <img src="{{ $trainerIconUrl }}" alt="trainer" style="width:18px;height:18px;opacity:.85;">
@@ -295,6 +298,7 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
                             @endif
 						</div>
                         @endif
+						--}}
 						
                         @if(!empty($event?->organizer_id))
                         @php
@@ -314,7 +318,7 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
                         @endphp
                         @if($organizerLabel)
 							
-						<div class="d-flex">
+						<div class="d-flex mb-05">
 							<div class="emo f-16">🎪</div>
 							<div class="f-16">Организатор:  <a href="{{ $organizerUrl }}">{{ $organizerLabel }}</a></div>						
 						</div>
@@ -334,10 +338,8 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 						
                         @if($priceLabel)
 							
-						<div class="d-flex fvc">
-							<div class="emo f-16">💸</div>
-							<div class="f-22 b-600 cd">{{ $priceLabel }}</div>						
-						</div>						
+											
+					
                         @endif
 						{{--
                         @if($showSeatLine)
@@ -384,10 +386,12 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 						
 						@elseif ($isJoined)
                         @if ($cancel?->allowed)
-                        <form method="POST" action="{{ route('occurrences.leave', ['occurrence' => $occ->id]) }}">
+                        <form class="w-100" method="POST" action="{{ route('occurrences.leave', ['occurrence' => $occ->id]) }}">
                             @csrf
                             @method('DELETE')
-                            <button type="submit" class="btn btn-outline-secondary">Отменить запись</button>
+
+                            <button data-title="Отменить запись?" data-text="Вы уверены?" data-confirm-text="Да, отменить" data-cancel-text="Отмена" type="submit" class="btn-alert btn btn-danger w-100">Отменить запись</button>
+							
 						</form>
                         @else
                         <div class="small text-danger fw-semibold">{{ $cancel?->message ?? 'Отмена недоступна' }}</div>

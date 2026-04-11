@@ -106,6 +106,7 @@
 				});
 				} catch (err) {
 				console.warn('WebSocket disabled', err);
+				loadParticipants();
 			}
 		}
 		
@@ -425,19 +426,19 @@ function showJoinError(msg) {
     div.textContent = msg;
     block.prepend(div);
 }
-
-			| INIT
-			|--------------------------------------------------------------------------
-		*/
-		document.addEventListener('DOMContentLoaded', function () {
-			if (hasOccurrence) {
-				loadParticipants();
-				updatePlayers();
-			}
-			
-			initTournamentUx();
-    initJoinForms();
-		});
+         /*
+	    | INIT
+		|--------------------------------------------------------------------------
+	    */
+		if (document.readyState === "loading") {
+			document.addEventListener("DOMContentLoaded", function() {
+				if (hasOccurrence) { loadParticipants(); updatePlayers(); }
+				initTournamentUx(); initJoinForms();
+			});
+		} else {
+			if (hasOccurrence) { loadParticipants(); updatePlayers(); }
+			initTournamentUx(); initJoinForms();
+		}
 	})();
 </script>
 
