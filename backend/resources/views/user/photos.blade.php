@@ -675,6 +675,7 @@ $canUploadSchool = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
                                 <span>Фото для мероприятий (16:9)</span>
                             </label>
 
+                            @if($hasSchool ?? false)
                             <label class="radio-item mb-1">
                                 <input type="radio" name="photo_type_radio" value="school_logo"
                                     onchange="setPhotoType('school_logo', 0, 1)">
@@ -688,6 +689,7 @@ $canUploadSchool = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
                                 <div class="custom-radio"></div>
                                 <span>🖼 Обложка школы (16:9)</span>
                             </label>
+                            @endif {{-- hasSchool --}}
                             @endif
                             
                             <div class="file-wrap mt-2">
@@ -794,6 +796,7 @@ $canUploadSchool = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
                     </div>
                 </div>
 
+                @if($hasSchool ?? false)
                 {{-- Логотипы школы --}}
                 <div class="ramka">
                     <h2 class="-mt-05">🏫 Логотипы школы</h2>
@@ -865,7 +868,8 @@ $canUploadSchool = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
                         @endif
                     </div>
                 </div>
-                @endif        
+                @endif
+                @endif {{-- /hasSchool --}}
                 
             </div>  
         </div>          

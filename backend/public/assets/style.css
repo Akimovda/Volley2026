@@ -1682,6 +1682,11 @@ body.dark .breadcrumbs li:last-child a {
 	text-transform: uppercase;
 	margin: 0;
 }
+.sidebar-menu .tab {
+	font-size: 1.4rem;
+	padding: 0.8rem 1.6rem;
+	min-width: 6rem;
+}
 .tab-highlight {
     position: absolute;
     top: 0;
@@ -4112,7 +4117,16 @@ body.dark .card-img-top {
 	padding: 6px 12px;
 	font-size: 11px;
 	border-radius: 6px;
-	box-shadow: 0 1rem 2.2rem rgba(0, 0, 0, 0.1), 0 0.5rem 1.2rem rgba(0, 0, 0, 0.05);
+	/*box-shadow: 0 1rem 2.2rem rgba(0, 0, 0, 0.1), 0 0.5rem 1.2rem rgba(0, 0, 0, 0.05);*/
+}
+.event-card .alert {
+	padding-top: 0.6rem;
+	padding-bottom: 0.6rem;
+	font-size: 1.6rem;
+	padding-left: 5rem;
+}
+.event-address {
+	margin-bottom: 1rem;
 }
 .event-date {
 	right: auto;
@@ -4136,6 +4150,23 @@ body.dark .card-img-top {
 }
 .event-card-body {
 	
+}
+.event-price {
+	position: absolute;
+	top: 8px;
+	left: 8px;
+	height: 24px;
+	font-size: 1.6rem;
+	font-weight: 600;
+    display: flex;
+    align-items: center;
+	padding: 0 12px;
+	background: rgba(255,255,255,0.9);
+	border-radius: 6px;
+	backdrop-filter: blur(8px);
+}
+body.dark .event-price {
+	background: rgba(0,0,0,0.4);
 }
 .event-card:hover .card-img-top img {
 	transform: scale(1.05);
@@ -4174,4 +4205,38 @@ body.dark .event-col {
 }
 body.dark .event-col-icon svg {
 	fill: #E7612F;
+}
+
+/* ===== PREMIUM AVATAR GLOW ===== */
+.avatar.avatar-premium {
+    position: relative;
+}
+.avatar.avatar-premium img,
+.avatar-premium > img {
+    box-shadow:
+        0 0 0 0.2rem #f5c842,
+        0 0 1rem 0.3rem rgba(245, 200, 66, 0.55),
+        0 0 2rem 0.6rem rgba(245, 180, 30, 0.25);
+    border-radius: 50%;
+}
+.avatar.avatar-premium::after {
+    content: '👑';
+    position: absolute;
+    bottom: -0.4rem;
+    right: -0.4rem;
+    font-size: 1.3rem;
+    line-height: 1;
+    filter: drop-shadow(0 0.1rem 0.2rem rgba(0,0,0,0.4));
+    pointer-events: none;
+}
+
+/* Бейдж-корона (опционально) */
+.avatar-premium::after {
+    content: '👑';
+    position: absolute;
+    bottom: -4px;
+    right: -4px;
+    font-size: 13px;
+    line-height: 1;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.4));
 }

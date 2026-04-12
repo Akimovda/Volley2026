@@ -88,11 +88,14 @@
                 <div class="row row2">
                     @foreach($schools as $school)
                         @php
-                            $cover = $school->getFirstMediaUrl('cover', 'thumb') ?: $school->getFirstMediaUrl('cover');
-                            $logo  = $school->getFirstMediaUrl('logo', 'thumb') ?: $school->getFirstMediaUrl('logo');
+                            $organizer = $school->organizer;
+                            $logoMedia = $organizer?->getMedia('school_logo')->sortByDesc('created_at')->first();
+                            $logo = $logoMedia
+                                ? ($logoMedia->hasGeneratedConversion('school_logo_thumb') ? $logoMedia->getUrl('school_logo_thumb') : $logoMedia->getUrl())
+                                : ($school->getFirstMediaUrl('logo', 'thumb') ?: $school->getFirstMediaUrl('logo'));
                             $dirLabel = match($school->direction) {
-                                'classic' => '🏐 Классика',
-                                'beach'   => '🏖 Пляж',
+                                'classic' => '🏐 Классический волейбол',
+                                'beach'   => '🏖 Пляжный волейбол',
                                 'both'    => '🏐🏖 Классика + Пляж',
                                 default   => ''
                             };
@@ -100,31 +103,35 @@
                         <div class="col-sm-6 col-lg-4">
                             <a href="{{ route('volleyball_school.show', $school->slug) }}" class="school-card-link">
                                 <div class="card">
-                                    @if($cover)
-                                        <img src="{{ $cover }}" alt="{{ $school->name }}" class="school-thumb">
-                                    @else
-                                        <div class="school-nophoto">🏐</div>
-                                    @endif
-
                                     <div class="school-card-body">
-                                        <div class="d-flex fvc gap-2 mb-1">
+                                        {{-- Логотип --}}
+                                        <div class="text-center mb-2">
                                             @if($logo)
-                                                <img src="{{ $logo }}" alt="logo" class="school-logo">
+                                            <img src="{{ $logo }}" alt="logo"
+                                                 style="width:8rem;height:8rem;border-radius:50%;object-fit:cover;border:0.2rem solid var(--border-color,#eee);">
+                                            @else
+                                            <div style="width:8rem;height:8rem;border-radius:50%;background:var(--bg2,#f0f0f0);display:flex;align-items:center;justify-content:center;font-size:3rem;margin:0 auto;">🏐</div>
                                             @endif
-                                            <div>
-                                                <div class="b-600 f-18">{{ $school->name }}</div>
-                                                @if($school->city)
-                                                    <div class="f-14" style="opacity:.6">📍 {{ $school->city }}</div>
-                                                @endif
-                                            </div>
                                         </div>
+
+                                        {{-- Название --}}
+                                        <div class="b-600 f-18 text-center mb-1">{{ $school->name }}</div>
+
+                                        {{-- Направление --}}
                                         @if($dirLabel)
-                                            <div class="f-14 mt-05">{{ $dirLabel }}</div>
+                                        <div class="f-15 text-center mb-05">{{ $dirLabel }}</div>
                                         @endif
-                                        @if($school->description)
-                                            <div class="f-16 mt-1" style="overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;opacity:.7">
-                                                {{ $school->description }}
-                                            </div>
+
+                                        {{-- Город --}}
+                                        @if($school->city)
+                                        <div class="f-14 text-center mb-05" style="opacity:.6;">📍 {{ $school->city }}</div>
+                                        @endif
+
+                                        {{-- Организатор --}}
+                                        @if($organizer)
+                                        <div class="f-14 text-center mt-1" style="opacity:.6;">
+                                            👤 {{ trim($organizer->first_name . ' ' . $organizer->last_name) }}
+                                        </div>
                                         @endif
                                     </div>
                                 </div>

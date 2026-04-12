@@ -145,21 +145,7 @@ $groupedByDate[$dateKey] = ['date' => $date, 'occurrences' => []];
 		
 		<x-slot name="style">
             <style>
-.event-price {
-	position: absolute;
-	top: 8px;
-	left: 8px;
-	height: 24px;
-    display: flex;
-    align-items: center;
-	padding: 0 12px;
-	background: rgba(255,255,255,0.9);
-	border-radius: 6px;
-	backdrop-filter: blur(8px);
-}
-body.dark .event-price {
-	background: rgba(0,0,0,0.4);
-}
+				
 			</style>
 		</x-slot>
 		
@@ -370,277 +356,301 @@ body.dark .event-price {
 				<div id="jmPositions"></div>
 				<div class="f-13 mt-2" style="opacity:.5">После выбора позиции вы сразу будете записаны.</div>
 			</div>
-
+			
 			<form id="joinForm" method="POST" action="" style="display:none">
 				@csrf
 				<input type="hidden" name="position" id="joinPosition" value="">
 			</form>
-
+			
 		</div>
 		<x-slot name="script">
-		<script src="/assets/fas.js"></script>
-		<script>
-
-                    const positionNames = {
-                        outside:  'Доигровщик',
-                        opposite: 'Диагональный',
-                        middle:   'ЦБ',
-                        setter:   'Связующий',
-                        libero:   'Либеро',
-                        player:   'Игрок',
-                    };
+			<script src="/assets/fas.js"></script>
+			<script>
+				
+				const positionNames = {
+					outside:  'Доигровщик',
+					opposite: 'Диагональный',
+					middle:   'ЦБ',
+					setter:   'Связующий',
+					libero:   'Либеро',
+					player:   'Игрок',
+				};
+				
+				const titleEl   = document.getElementById('jmTitle');
+				const metaEl    = document.getElementById('jmMeta');
+				const addrEl    = document.getElementById('jmAddr');
+				const posWrap   = document.getElementById('jmPositions');
+				const errBox    = document.getElementById('jmError');
+				const loadingEl = document.getElementById('jmLoading');
+				const joinForm  = document.getElementById('joinForm');
+				const joinPos   = document.getElementById('joinPosition');
+				
+				function showError(message) {
+					if (!errBox) return;
+					errBox.textContent = message;
+					errBox.style.display = '';
+				}
+				function clearError() {
+					if (!errBox) return;
+					errBox.textContent = '';
+					errBox.style.display = 'none';
+				}
+				function setLoading(isLoading) {
+					if (!loadingEl) return;
+					loadingEl.style.display = isLoading ? '' : 'none';
+				}
+				
+				function openJoinModal(payload) {
+					clearError();
+					setLoading(true);
+					posWrap.innerHTML = '';
+					titleEl.textContent = payload.title || 'Запись на мероприятие';
+					metaEl.textContent  = [payload.date, payload.time, payload.tz ? '('+payload.tz+')' : ''].filter(Boolean).join(' ');
+					addrEl.textContent  = payload.address || '';
                     
-                    const titleEl   = document.getElementById('jmTitle');
-                    const metaEl    = document.getElementById('jmMeta');
-                    const addrEl    = document.getElementById('jmAddr');
-                    const posWrap   = document.getElementById('jmPositions');
-                    const errBox    = document.getElementById('jmError');
-                    const loadingEl = document.getElementById('jmLoading');
-                    const joinForm  = document.getElementById('joinForm');
-                    const joinPos   = document.getElementById('joinPosition');
-                    
-                    function showError(message) {
-                        if (!errBox) return;
-                        errBox.textContent = message;
-                        errBox.style.display = '';
-                    }
-                    function clearError() {
-                        if (!errBox) return;
-                        errBox.textContent = '';
-                        errBox.style.display = 'none';
-                    }
-                    function setLoading(isLoading) {
-                        if (!loadingEl) return;
-                        loadingEl.style.display = isLoading ? '' : 'none';
-                    }
-                    
-                    function openJoinModal(payload) {
-                        clearError();
-                        setLoading(true);
-                        posWrap.innerHTML = '';
-                        titleEl.textContent = payload.title || 'Запись на мероприятие';
-                        metaEl.textContent  = [payload.date, payload.time, payload.tz ? '('+payload.tz+')' : ''].filter(Boolean).join(' ');
-                        addrEl.textContent  = payload.address || '';
-                    
-                        jQuery.fancybox.open({
-                            src: '#joinModalContent',
-                            type: 'inline',
-                            opts: { touch: false, animationEffect: false, toolbar: false, smallBtn: true }
-                        });
-                    }
-                    
-                    function renderPositions(occurrenceId, freePositions) {
-                        posWrap.innerHTML = '';
-                        setLoading(false);
-                        if (!Array.isArray(freePositions) || freePositions.length === 0) {
-                            showError('Свободных мест нет или нет доступных позиций.');
-                            return;
-                        }
-                        freePositions.forEach(p => {
-                            const key   = p.key || p.role || '';
-                            const free  = p.free ?? 0;
-                            const label = positionNames[key] || key;
-                            const btn   = document.createElement('button');
-                            btn.type      = 'button';
-                            btn.className = 'btn w-100 mb-1';
-                            btn.innerHTML = label + ' <span class="f-13" style="opacity:.6">(' + free + ' мест)</span>';
-                            btn.addEventListener('click', () => {
-                                joinForm.action   = '/occurrences/' + occurrenceId + '/join';
-                                joinPos.value     = key;
-                                jQuery.fancybox.close();
-                                joinForm.submit();
-                            });
-                            posWrap.appendChild(btn);
-                        });
-                    }
-                    
-                    async function fetchAvailability(occurrenceId) {
-                        try {
-                            const res  = await fetch('/occurrences/' + occurrenceId + '/availability', {
-                                headers: { 'Accept': 'application/json' },
-                                credentials: 'same-origin',
-                            });
-                            const data = await res.json();
-                            if (data && data.redirect_url) { window.location = data.redirect_url; return null; }
-                            if (!res.ok || data.ok === false) {
-                                showError((data && data.message) ? data.message : 'Ошибка загрузки.');
-                                return null;
-                            }
-                            return data;
+					jQuery.fancybox.open({
+						src: '#joinModalContent',
+						type: 'inline',
+						opts: { touch: false, animationEffect: false, toolbar: false, smallBtn: true }
+					});
+				}
+				
+				function renderPositions(occurrenceId, freePositions) {
+					posWrap.innerHTML = '';
+					setLoading(false);
+					if (!Array.isArray(freePositions) || freePositions.length === 0) {
+						showError('Свободных мест нет или нет доступных позиций.');
+						return;
+					}
+					freePositions.forEach(p => {
+						const key   = p.key || p.role || '';
+						const free  = p.free ?? 0;
+						const label = positionNames[key] || key;
+						const btn   = document.createElement('button');
+						btn.type      = 'button';
+						btn.className = 'btn w-100 mb-1';
+						btn.innerHTML = label + ' <span class="f-13" style="opacity:.6">(' + free + ' мест)</span>';
+						btn.addEventListener('click', () => {
+							joinForm.action   = '/occurrences/' + occurrenceId + '/join';
+							joinPos.value     = key;
+							jQuery.fancybox.close();
+							joinForm.submit();
+						});
+						posWrap.appendChild(btn);
+					});
+				}
+				
+				async function fetchAvailability(occurrenceId) {
+					try {
+						const res  = await fetch('/occurrences/' + occurrenceId + '/availability', {
+							headers: { 'Accept': 'application/json' },
+							credentials: 'same-origin',
+						});
+						const data = await res.json();
+						if (data && data.redirect_url) { window.location = data.redirect_url; return null; }
+						if (!res.ok || data.ok === false) {
+							showError((data && data.message) ? data.message : 'Ошибка загрузки.');
+							return null;
+						}
+						return data;
                         } catch (e) {
-                            showError('Ошибка сети.');
-                            return null;
-                        }
-                    }
-                    
-                    document.querySelectorAll('.js-open-join').forEach(btn => {
-                        btn.addEventListener('click', async () => {
-                            const occurrenceId = btn.dataset.occurrenceId;
-                            openJoinModal({
-                                title:   btn.dataset.title,
-                                date:    btn.dataset.date,
-                                time:    btn.dataset.time,
-                                tz:      btn.dataset.tz,
-                                address: btn.dataset.address,
-                            });
-                            const data = await fetchAvailability(occurrenceId);
-                            setLoading(false);
-                            if (!data) return;
-                            renderPositions(occurrenceId, data.free_positions || data.data?.free_positions || []);
-                        });
-                    });
-
-					// ===== Seats line =====
-					const seatLines = Array.from(document.querySelectorAll('[data-seatline]'));
+						showError('Ошибка сети.');
+						return null;
+					}
+				}
+				
+				document.querySelectorAll('.js-open-join').forEach(btn => {
+					btn.addEventListener('click', async () => {
+						const occurrenceId = btn.dataset.occurrenceId;
+						openJoinModal({
+							title:   btn.dataset.title,
+							date:    btn.dataset.date,
+							time:    btn.dataset.time,
+							tz:      btn.dataset.tz,
+							address: btn.dataset.address,
+						});
+						const data = await fetchAvailability(occurrenceId);
+						setLoading(false);
+						if (!data) return;
+						renderPositions(occurrenceId, data.free_positions || data.data?.free_positions || []);
+					});
+				});
+				
+				// ===== Seats line =====
+				const seatLines = Array.from(document.querySelectorAll('[data-seatline]'));
+				
+				async function loadSeatLine(el) {
+					const occId        = el.dataset.occurrenceId;
+					const regEnabled   = el.dataset.registrationEnabled === '1';
+					const regNotStarted = el.dataset.regNotStarted === '1';
+					const regClosed    = el.dataset.regClosed === '1';
+					const maxCard      = Number(el.dataset.maxPlayers ?? 0) || 0;
+					if (maxCard <= 0) return;
 					
-					async function loadSeatLine(el) {
-						const occId        = el.dataset.occurrenceId;
-						const regEnabled   = el.dataset.registrationEnabled === '1';
-						const regNotStarted = el.dataset.regNotStarted === '1';
-						const regClosed    = el.dataset.regClosed === '1';
-						const maxCard      = Number(el.dataset.maxPlayers ?? 0) || 0;
-						if (maxCard <= 0) return;
+					const leftEl  = el.querySelector('[data-left]');
+					const totalEl = el.querySelector('[data-total]');
+					if (totalEl) totalEl.textContent = String(maxCard);
+					
+					if (regNotStarted || regClosed || !regEnabled) {
+						if (leftEl) leftEl.textContent = String(maxCard);
+						return;
+					}
+					
+					try {
+						const res = await fetch(`/occurrences/${occId}/availability`, {
+							method: 'GET',
+							headers: { 'Accept': 'application/json' },
+							credentials: 'same-origin',
+						});
+						let data = null;
+						try { data = await res.json(); } catch (e) {}
 						
-						const leftEl  = el.querySelector('[data-left]');
-						const totalEl = el.querySelector('[data-total]');
-						if (totalEl) totalEl.textContent = String(maxCard);
-						
-						if (regNotStarted || regClosed || !regEnabled) {
+						const meta = data?.meta || data?.data?.meta || null;
+						if (!data || !meta) {
 							if (leftEl) leftEl.textContent = String(maxCard);
 							return;
 						}
 						
-						try {
-							const res = await fetch(`/occurrences/${occId}/availability`, {
-								method: 'GET',
-								headers: { 'Accept': 'application/json' },
-								credentials: 'same-origin',
-							});
-							let data = null;
-							try { data = await res.json(); } catch (e) {}
-                            
-							const meta = data?.meta || data?.data?.meta || null;
-							if (!data || !meta) {
-								if (leftEl) leftEl.textContent = String(maxCard);
-								return;
-							}
-                            
-							const apiMax       = Number(meta.max_players ?? 0) || 0;
-							const effectiveMax = apiMax > 0 ? apiMax : maxCard;
-							let remainingTotal = Number(meta.remaining_total);
-                            
-							if (!Number.isFinite(remainingTotal)) {
-								const registeredTotal = Number(meta.registered_total ?? 0) || 0;
-								remainingTotal = Math.max(0, effectiveMax - registeredTotal);
-							}
-                            
-							if (leftEl)  leftEl.textContent  = String(remainingTotal);
-							if (totalEl) totalEl.textContent = String(effectiveMax);
-						} catch (e) {}
-					}
-					
-					if (seatLines.length) {
-						const concurrency = 3;
-						let i = 0;
-						async function worker() {
-							while (i < seatLines.length) { const idx = i++; await loadSeatLine(seatLines[idx]); }
+						const apiMax       = Number(meta.max_players ?? 0) || 0;
+						const effectiveMax = apiMax > 0 ? apiMax : maxCard;
+						let remainingTotal = Number(meta.remaining_total);
+						
+						if (!Number.isFinite(remainingTotal)) {
+							const registeredTotal = Number(meta.registered_total ?? 0) || 0;
+							remainingTotal = Math.max(0, effectiveMax - registeredTotal);
 						}
-						for (let k = 0; k < concurrency; k++) worker();
+						
+						if (leftEl)  leftEl.textContent  = String(remainingTotal);
+						if (totalEl) totalEl.textContent = String(effectiveMax);
+					} catch (e) {}
+				}
+				
+				if (seatLines.length) {
+					const concurrency = 3;
+					let i = 0;
+					async function worker() {
+						while (i < seatLines.length) { const idx = i++; await loadSeatLine(seatLines[idx]); }
 					}
-					
-					// ===== Days strip =====
-					function activateTab(tabId) {
-						document.querySelectorAll('.tab-pane').forEach(p => p.classList.add('hidden'));
-						const pane = document.getElementById(tabId);
-						if (pane) pane.classList.remove('hidden');
-						document.querySelectorAll('.day-chip').forEach(c => c.classList.remove('active'));
-						const chip = document.querySelector(`.day-chip[data-tab="${tabId}"]`);
-						if (chip) chip.classList.add('active');
+					for (let k = 0; k < concurrency; k++) worker();
+				}
+				
+				// ===== Days strip =====
+				function activateTab(tabId) {
+					document.querySelectorAll('.tab-pane').forEach(p => p.classList.add('hidden'));
+					const pane = document.getElementById(tabId);
+					if (pane) pane.classList.remove('hidden');
+					document.querySelectorAll('.day-chip').forEach(c => c.classList.remove('active'));
+					const chip = document.querySelector(`.day-chip[data-tab="${tabId}"]`);
+					if (chip) chip.classList.add('active');
+				}
+				
+				document.querySelectorAll('.day-chip').forEach(chip => {
+					chip.addEventListener('click', () => activateTab(chip.dataset.tab));
+				});
+				
+				(function initToday() {
+					const chips = Array.from(document.querySelectorAll('.day-chip'));
+					if (!chips.length) return;
+					const root     = document.getElementById('eventsTabsRoot');
+					const todayKey = root?.dataset?.today ?? null;
+					const todayChip = todayKey ? chips.find(c => c.dataset.date === todayKey) : null;
+					if (todayChip) {
+						activateTab(todayChip.dataset.tab);
+						todayChip.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+						} else {
+						activateTab(chips[0].dataset.tab);
 					}
-					
-					document.querySelectorAll('.day-chip').forEach(chip => {
-						chip.addEventListener('click', () => activateTab(chip.dataset.tab));
+				})();
+				
+				// ===== Countdown =====
+				function pad2(n) { n = Math.max(0, n|0); return (n < 10 ? '0' : '') + n; }
+				function tickCountdown(el) {
+					var iso = el.getAttribute('data-target-utc');
+					if (!iso) return;
+					var target = Date.parse(iso);
+					if (isNaN(target)) return;
+					var diff = target - Date.now();
+					if (diff <= 0) { el.textContent = 'Регистрация доступна — обнови страницу'; return; }
+					var totalMin = Math.floor(diff / 60000);
+					var days = Math.floor(totalMin / (60*24));
+					var minsLeft = totalMin - days*60*24;
+					var hh = Math.floor(minsLeft / 60);
+					var mm = minsLeft - hh*60;
+					var ddEl = el.querySelector('[data-dd]');
+					var hhmmEl = el.querySelector('[data-hhmm]');
+					if (ddEl) ddEl.textContent = String(days);
+					if (hhmmEl) hhmmEl.textContent = pad2(hh) + ':' + pad2(mm);
+				}
+				function tickAllCountdowns() {
+					document.querySelectorAll('[data-countdown]').forEach(tickCountdown);
+				}
+				tickAllCountdowns();
+				setInterval(tickAllCountdowns, 30000);
+				
+				// ===== Toggle ALL photos =====
+				var _allHidden = JSON.parse(localStorage.getItem('eventImgHidden') || '{}').hidden || false;
+				
+				function applyImgState(hidden) {
+					document.querySelectorAll('.card-img-top img').forEach(function(img) {
+						if (hidden) {
+							// Скрываем
+							img.style.display = 'none';
+							} else {
+							// Показываем и подменяем data-src на src
+							img.style.display = '';
+							
+							// Если есть атрибут data-src, переносим его значение в src
+							if (img.hasAttribute('data-src')) {
+								var dataSrcValue = img.getAttribute('data-src');
+								img.setAttribute('src', dataSrcValue);
+								// Опционально: удаляем data-src, чтобы не делать это повторно
+								img.removeAttribute('data-src');
+							}
+						}
 					});
 					
-					(function initToday() {
-						const chips = Array.from(document.querySelectorAll('.day-chip'));
-						if (!chips.length) return;
-						const root     = document.getElementById('eventsTabsRoot');
-						const todayKey = root?.dataset?.today ?? null;
-						const todayChip = todayKey ? chips.find(c => c.dataset.date === todayKey) : null;
-						if (todayChip) {
-							activateTab(todayChip.dataset.tab);
-							todayChip.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-							} else {
-							activateTab(chips[0].dataset.tab);
+					var btn = document.getElementById('btn-toggle-all-imgs');
+					if (btn) btn.textContent = hidden ? 'Показать фото' : 'Скрыть фото';
+					localStorage.setItem('eventImgHidden', JSON.stringify({ hidden: hidden }));
+					_allHidden = hidden;
+				}
+				
+				// применяем сохранённое состояние при загрузке
+				if (_allHidden) {
+					applyImgState(true);
+					} else {
+					// если не скрыты, заменяем data-src на src
+					document.querySelectorAll('.card-img-top img').forEach(function(img) {
+						if (img.hasAttribute('data-src')) {
+							img.src = img.getAttribute('data-src');
 						}
-					})();
+					});
+				}
+				
+				window.toggleAllImgs = function(btn) {
+					applyImgState(!_allHidden);
+				};
+				// ===== Location autocomplete =====
+				(function () {
+					var datalist = document.getElementById('location-datalist');
+					var input    = document.getElementById('filter-location-input');
+					if (!datalist || !input) return;
 					
-					// ===== Countdown =====
-					function pad2(n) { n = Math.max(0, n|0); return (n < 10 ? '0' : '') + n; }
-					function tickCountdown(el) {
-						var iso = el.getAttribute('data-target-utc');
-						if (!iso) return;
-						var target = Date.parse(iso);
-						if (isNaN(target)) return;
-						var diff = target - Date.now();
-						if (diff <= 0) { el.textContent = 'Регистрация доступна — обнови страницу'; return; }
-						var totalMin = Math.floor(diff / 60000);
-						var days = Math.floor(totalMin / (60*24));
-						var minsLeft = totalMin - days*60*24;
-						var hh = Math.floor(minsLeft / 60);
-						var mm = minsLeft - hh*60;
-						var ddEl = el.querySelector('[data-dd]');
-						var hhmmEl = el.querySelector('[data-hhmm]');
-						if (ddEl) ddEl.textContent = String(days);
-						if (hhmmEl) hhmmEl.textContent = pad2(hh) + ':' + pad2(mm);
-					}
-					function tickAllCountdowns() {
-						document.querySelectorAll('[data-countdown]').forEach(tickCountdown);
-					}
-					tickAllCountdowns();
-					setInterval(tickAllCountdowns, 30000);
-					
-					// ===== Toggle ALL photos =====
-					var _allHidden = JSON.parse(localStorage.getItem('eventImgHidden') || '{}').hidden || false;
-					
-					function applyImgState(hidden) {
-						document.querySelectorAll('.card-img-top img').forEach(function(wrap) {
-							wrap.style.display = hidden ? 'none' : '';
+					fetch('/ajax/locations/with-events?active=1', {
+						headers: { 'Accept': 'application/json' },
+						credentials: 'same-origin',
+					})
+					.then(function(r) { return r.json(); })
+					.then(function(data) {
+						if (!data.ok || !Array.isArray(data.items)) return;
+						data.items.forEach(function(item) {
+							var opt = document.createElement('option');
+							opt.value = item.name;
+							datalist.appendChild(opt);
 						});
-						var btn = document.getElementById('btn-toggle-all-imgs');
-						if (btn) btn.textContent = hidden ? 'Показать фото' : 'Скрыть фото';
-						localStorage.setItem('eventImgHidden', JSON.stringify({ hidden: hidden }));
-						_allHidden = hidden;
-					}
-					
-					// применяем сохранённое состояние при загрузке
-					if (_allHidden) applyImgState(true);
-					
-					window.toggleAllImgs = function(btn) {
-						applyImgState(!_allHidden);
-					};
-					// ===== Location autocomplete =====
-					(function () {
-						var datalist = document.getElementById('location-datalist');
-						var input    = document.getElementById('filter-location-input');
-						if (!datalist || !input) return;
-						
-						fetch('/ajax/locations/with-events?active=1', {
-							headers: { 'Accept': 'application/json' },
-							credentials: 'same-origin',
-						})
-						.then(function(r) { return r.json(); })
-						.then(function(data) {
-							if (!data.ok || !Array.isArray(data.items)) return;
-							data.items.forEach(function(item) {
-								var opt = document.createElement('option');
-								opt.value = item.name;
-								datalist.appendChild(opt);
-							});
-						})
-						.catch(function() {});
-					})();
+					})
+					.catch(function() {});
+				})();
 			</script>
 		</x-slot>	
 		

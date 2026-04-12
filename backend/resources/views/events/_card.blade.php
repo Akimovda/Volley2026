@@ -192,41 +192,41 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 					{{-- Фото --}}
 					
 					<div class="event-card-body">
-					<div class="mb-1 -mt-05">
-                        <a href="{{ url('/events/' . (int)$event->id) . '?occurrence=' . (int)$occ->id }}" class="blink cd b-600 card-title ">
-                            @if(!empty($event?->is_private))
-                            <span class="emo" title="Приватное мероприятие">🙈</span>
-                            @endif						
-                            {{ $event?->title ?? '—' }}
-						</a>
+						<div class="mb-1 -mt-05">
+							<a href="{{ url('/events/' . (int)$event->id) . '?occurrence=' . (int)$occ->id }}" class="blink cd b-600 card-title ">
+								@if(!empty($event?->is_private))
+								<span class="emo" title="Приватное мероприятие">🙈</span>
+								@endif						
+								{{ $event?->title ?? '—' }}
+							</a>
 						</div>	
-						<div class="d-flex mb-1">
+						<div class="d-flex event-address">
 							<div class="emo f-16">📍</div>
 							<div class="f-16">{{ $address }}</div>						
 						</div>					
-					
-					
+						
+						
 						<div class="border f-0 mb-1 card-img-top">
 							<a href="{{ url('/events/' . (int)$event->id) . '?occurrence=' . (int)$occ->id }}">
 								@if(!empty($event->event_photos) && count($event->event_photos) > 0)
 								@php $firstPhoto = \Spatie\MediaLibrary\MediaCollections\Models\Media::find($event->event_photos[0]); @endphp
 								@if($firstPhoto)
-								<img src="{{ $firstPhoto->getUrl('event_thumb') }}" alt="{{ $event?->title ?? '—' }}">
+								<img src="/img/pixel.png" data-src="{{ $firstPhoto->getUrl('event_thumb') }}" alt="{{ $event?->title ?? '—' }}">
 								@else
-								<img src="/img/{{ $event->direction === 'beach' ? 'beach.webp' : 'classic.webp' }}" alt="{{ $event?->title ?? '—' }}">
+								<img src="/img/pixel.png" data-src="/img/{{ $event->direction === 'beach' ? 'beach.webp' : 'classic.webp' }}" alt="{{ $event?->title ?? '—' }}">
 								@endif
 								@elseif(!empty($coverUrl))
-								<img src="{{ $coverUrl }}" alt="{{ $event?->title ?? '—' }}">
+								<img src="/img/pixel.png" data-src="{{ $coverUrl }}" alt="{{ $event?->title ?? '—' }}">
 								@else
-								<img src="/img/{{ $event->direction === 'beach' ? 'beach.webp' : 'classic.webp' }}" alt="{{ $event?->title ?? '—' }}">
+								<img src="/img/pixel.png" data-src="/img/{{ $event->direction === 'beach' ? 'beach.webp' : 'classic.webp' }}" alt="{{ $event?->title ?? '—' }}">
 								@endif
 								
 								<div class="event-direction {{ $event->direction === 'beach' ? 'beach-direction' : 'classic-direction' }}">{{ $dirLabel }}</div>
-								<div class="event-price f-18 b-600">{{ $priceLabel }}</div>		
+								<div class="event-price">{{ $priceLabel }}</div>		
 							</a>
 						</div>
 						
-
+						
 						
 						
 						<div class="event-column">
@@ -317,7 +317,7 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 						$organizerUrl = $orgId > 0 ? url('/user/' . $orgId) : null;
                         @endphp
                         @if($organizerLabel)
-							
+						
 						<div class="d-flex mb-05">
 							<div class="emo f-16">🎪</div>
 							<div class="f-16">Организатор:  <a href="{{ $organizerUrl }}">{{ $organizerLabel }}</a></div>						
@@ -333,13 +333,13 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
                         @endif
 						--}}
 						
-
+						
 						
 						
                         @if($priceLabel)
-							
-											
-					
+						
+						
+						
                         @endif
 						{{--
                         @if($showSeatLine)
@@ -370,82 +370,83 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 					<div class="mt-1 d-flex flex-wrap gap-2 align-items-center">
 						
 						@if ($eventStarted2)
-                        <div class="small fw-semibold text-warning">🎉 Мероприятие уже началось</div>
+                        <div class="alert alert-info">Мероприятие уже началось</div>
 						
 						@elseif (!auth()->check())
-                        <div class="small fw-semibold text-muted">🔐 Вам нужно войти на сайт!</div>
+                        <div class="alert alert-info">Вам нужно войти на сайт!</div>
 						
 						@elseif ($joinCode === 'age_blocked')
-                        <div class="small fw-semibold text-danger">{{ $join->message }}</div>
+                        <div class="alert alert-info">{{ $join->message }}</div>
 						
 						@elseif ($joinCode === 'level_too_high')
-                        <div class="small fw-semibold text-info">{{ $join->message }}</div>
+                        <div class="alert alert-info">{{ $join->message }}</div>
 						
 						@elseif ($joinCode === 'level_too_low')
-                        <div class="small fw-semibold text-warning">{{ $join->message }}</div>
+                        <div class="alert alert-info">{{ $join->message }}</div>
 						
 						@elseif ($isJoined)
                         @if ($cancel?->allowed)
                         <form class="w-100" method="POST" action="{{ route('occurrences.leave', ['occurrence' => $occ->id]) }}">
                             @csrf
                             @method('DELETE')
-
+							
                             <button data-title="Отменить запись?" data-text="Вы уверены?" data-confirm-text="Да, отменить" data-cancel-text="Отмена" type="submit" class="btn-alert btn btn-danger w-100">Отменить запись</button>
 							
 						</form>
                         @else
-                        <div class="small text-danger fw-semibold">{{ $cancel?->message ?? 'Отмена недоступна' }}</div>
+                        <div class="alert alert-info">{{ $cancel?->message ?? 'Отмена недоступна' }}</div>
                         @endif
 						
 						@elseif ($regNotStarted)
                         @php
-                            $regStartsLocal = $regStartsUtc ? $regStartsUtc->setTimezone($userTz ?? 'UTC') : null;
+						$regStartsLocal = $regStartsUtc ? $regStartsUtc->setTimezone($userTz ?? 'UTC') : null;
                         @endphp
+						
                         <div class="w-100">
-                            <button class="btn w-100" disabled style="opacity:.55;cursor:not-allowed;">Записаться</button>
-                            <div class="small text-muted mt-1">
+                           {{-- <button class="btn w-100" disabled style="opacity:.55;cursor:not-allowed;">Записаться</button> --}}
+                            <div class="alert alert-info">
                                 Регистрация откроется
                                 @if($regStartsLocal)
                                 {{ $regStartsLocal->translatedFormat('d F в H:i') }}
                                 @endif
-                            </div>
-                        </div>
-
-@elseif ($regClosed2)
-                        <div class="small fw-semibold text-danger">Регистрация закрыта</div>
+							</div>
+						</div>
+						
+						@elseif ($regClosed2)
+                        <div class="alert alert-info">Регистрация закрыта</div>
 						
 						@elseif ($isGroupMode)
                         @if ($isBeachDirection)
-                        <form method="POST" action="{{ route('occurrences.join', ['occurrence' => $occ->id]) }}">
+                        <form class="w-100" method="POST" action="{{ route('occurrences.join', ['occurrence' => $occ->id]) }}">
                             @csrf
                             <button type="submit" class="btn w-100">Записаться</button>
-                        </form>
+						</form>
                         @else
-                        <a href="{{ $eventPageUrl }}" class="btn">Записаться</a>
+                        <a href="{{ $eventPageUrl }}" class="btn w-100">Записаться</a>
                         @endif
 						
 						@elseif ($join === null)
                         {{-- occurrences не обогащены --}}
                         @if ($isBeachDirection)
-                        <form method="POST" action="{{ route('occurrences.join', ['occurrence' => $occ->id]) }}">
+                        <form class="w-100" method="POST" action="{{ route('occurrences.join', ['occurrence' => $occ->id]) }}">
                             @csrf
                             <button type="submit" class="btn w-100">Записаться</button>
-                        </form>
+						</form>
                         @else
-                        <a href="{{ $eventPageUrl }}" class="btn">Записаться</a>
+                        <a href="{{ $eventPageUrl }}" class="btn w-100">Записаться</a>
                         @endif
 						
 						@elseif (!$join->allowed)
-                        <button class="btn btn-primary" disabled style="opacity:.55;cursor:not-allowed;">Записаться</button>
+                        {{-- <button class="btn btn-primary" disabled style="opacity:.55;cursor:not-allowed;">Записаться</button> --}}
                         @if ($join->message)
-                        <div class="w-100 small text-muted mt-1">{{ $join->message }}</div>
+                        <div class="alert alert-info">{{ $join->message }}</div>
                         @endif
 						
 						@else
                         @if (!$requiresPositionChoice)
-                        <form method="POST" action="{{ route('occurrences.join', ['occurrence' => $occ->id]) }}">
+                        <form class="w-100" method="POST" action="{{ route('occurrences.join', ['occurrence' => $occ->id]) }}">
                             @csrf
-                            <button type="submit" class="btn">Записаться</button>
+                            <button type="submit" class="btn w-100">Записаться</button>
 						</form>
                         @else
                         <button
@@ -460,7 +461,7 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
                         >Записаться</button>
                         @endif
                         @if ($join->message)
-                        <div class="w-100 small text-muted mt-1">{{ $join->message }}</div>
+                        <div class="alert alert-info">{{ $join->message }}</div>
                         @endif
 						
 						@endif
@@ -472,4 +473,4 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 			
 			
 			@endif
-		{{-- end _card.blade.php --}}								
+		{{-- end _card.blade.php --}}										

@@ -12,7 +12,10 @@ class VolleyballSchool extends Model implements HasMedia
 
     protected $fillable = [
         'organizer_id', 'slug', 'name', 'direction',
-        'description', 'city', 'phone', 'email', 'website', 'is_published',
+        'description', 'city', 'city_id', 'phone', 'email', 'website',
+        'vk_url', 'tg_url', 'max_url',
+        'logo_media_id', 'cover_media_id',
+        'is_published',
     ];
 
     protected $casts = ['is_published' => 'boolean'];

@@ -123,6 +123,27 @@ class EventRegistrationController extends Controller
         );
 
         if (!$result->allowed) {
+            // Уведомляем пользователя об ошибке записи (inApp + мессенджеры)
+            if ($user) {
+                $eventTitle = (string)($occurrence->event->title ?? ('#' . $occurrence->event_id));
+                $reason = implode(' ', $result->errors);
+                try {
+                    $this->userNotificationService->createRegistrationFailedNotification(
+                        userId: (int)$user->id,
+                        eventId: (int)$occurrence->event_id,
+                        occurrenceId: (int)$occurrence->id,
+                        eventTitle: $eventTitle,
+                        reason: $reason
+                    );
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning('registration_failed notification error: ' . $e->getMessage());
+                }
+            }
+
+            if (request()->ajax() || request()->wantsJson()) {
+                return response()->json(['ok' => false, 'message' => implode(' ', $result->errors)], 422);
+            }
+
             return redirect()
                 ->route('events.show', [
                     'event' => (int) $event->id,
@@ -162,7 +183,7 @@ class EventRegistrationController extends Controller
         if (!$result->allowed) {
             return redirect()
                 ->route('events.show', [
-                    'event' => (int) $event->id,
+                    'event'      => (int) $event->id,
                     'occurrence' => (int) $occurrence->id,
                 ])
                 ->with('error', implode(' ', $result->errors));
@@ -335,6 +356,27 @@ class EventRegistrationController extends Controller
             );
         }
         $this->dispatchAnnounceUpdate($occurrence);
+
+        // Уведомляем друзей пользователя о его записи
+        if ($created) {
+            try {
+                $friends = \App\Models\Friendship::where('friend_id', $user->id)
+                    ->pluck('user_id');
+
+                foreach ($friends as $friendUserId) {
+                    $this->userNotificationService->createFriendJoinedNotification(
+                        userId: (int)$friendUserId,
+                        friendId: (int)$user->id,
+                        friendName: $user->name,
+                        eventId: (int)$occurrence->event_id,
+                        occurrenceId: (int)$occurrence->id,
+                        eventTitle: $eventTitle ?? ('#' . $occurrence->event_id)
+                    );
+                }
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('friend_joined notification error: ' . $e->getMessage());
+            }
+        }
 
         // Редирект для платных мероприятий
         $eventModel = $occurrence->event;

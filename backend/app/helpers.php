@@ -263,3 +263,19 @@ if (!function_exists('reg_mode_name')) {
         return $map[(string)($mode ?? '')] ?? (string)($mode ?? '—');
     }
 }
+
+if (! function_exists('level_color')) {
+    function level_color(int $level): string
+    {
+        return match($level) {
+            1 => '#9e9e9e', // ⚪️ серый
+            2 => '#f5c842', // 🟡 жёлтый
+            3 => '#ff9800', // 🟠 оранжевый
+            4 => '#2196f3', // 🔵 синий
+            5 => '#9c27b0', // 🟣 фиолетовый
+            6 => '#f44336', // 🔴 красный
+            7 => '#212121', // ⚫️ чёрный
+            default => '#888',
+        };
+    }
+}

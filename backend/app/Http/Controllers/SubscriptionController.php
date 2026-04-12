@@ -61,6 +61,40 @@ class SubscriptionController extends Controller
         return back()->with('status', "✅ Абонемент #{$sub->id} выдан пользователю #{$data['user_id']}");
     }
 
+    // Покупка абонемента пользователем (с публичной страницы школы)
+    public function buy(Request $request, \App\Models\SubscriptionTemplate $template)
+    {
+        $user = $request->user();
+
+        // Проверяем что шаблон активен и доступен для продажи
+        if (!$template->is_active || !$template->sale_enabled) {
+            return back()->with('error', 'Абонемент недоступен для покупки.');
+        }
+
+        // Проверяем лимит продаж
+        if ($template->sale_limit && $template->sold_count >= $template->sale_limit) {
+            return back()->with('error', 'Абонемент распродан.');
+        }
+
+        // Проверяем срок действия
+        if ($template->valid_until && $template->valid_until->isPast()) {
+            return back()->with('error', 'Срок действия абонемента истёк.');
+        }
+
+        // Выдаём абонемент пользователю
+        $sub = $this->service->issue(
+            $template,
+            $user->id,
+            $template->organizer_id,
+            'self_purchase'
+        );
+
+        // Увеличиваем счётчик продаж
+        $template->increment('sold_count');
+
+        return back()->with('status', '✅ Абонемент успешно получен! Он доступен в разделе «Мои абонементы».');
+    }
+
     // Продлить срок
     public function extend(Request $request, Subscription $subscription)
     {

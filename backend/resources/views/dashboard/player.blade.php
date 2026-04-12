@@ -161,7 +161,7 @@
             </div>
         </div>
 
-    </div>
+
 
     <x-slot name="script">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -194,5 +194,198 @@
     });
     </script>
     </x-slot>
+
+    {{-- PREMIUM РАЗДЕЛ --}}
+    @if($isPremium)
+    <div class="ramka">
+        <h2 class="-mt-05">👑 Premium</h2>
+        <div class="f-15 mb-2" style="opacity:.6">
+            Подписка активна до <strong>{{ $activePremium->expires_at->format('d.m.Y') }}</strong>
+        </div>
+
+        {{-- Табы --}}
+        <div class="tabs-content">
+            <div class="tabs">
+                <div class="tab active" data-tab="premium-friends">👥 Друзья ({{ $friendsCount }})</div>
+                <div class="tab" data-tab="premium-visitors">👀 Гости профиля</div>
+                <div class="tab" data-tab="premium-history">📊 История игр</div>
+                <div class="tab-highlight"></div>
+            </div>
+            <div class="tab-panes">
+
+                {{-- Друзья --}}
+                <div class="tab-pane active" id="premium-friends">
+                    @if($friends->isEmpty())
+                    <div class="text-center py-3" style="opacity:.5;">
+                        <div class="f-24 mb-1">👥</div>
+                        <div class="f-16">Друзей пока нет</div>
+                        <a href="{{ route('users.index') }}" class="btn btn-secondary mt-1">Найти игроков</a>
+                    </div>
+                    @else
+                    <div class="row row2 mt-1">
+                        @foreach($friends as $friend)
+                        <div class="col-6 col-md-4" style="margin-bottom:1.5rem;">
+                            <div class="card">
+                                <div style="display:flex;align-items:center;gap:1.2rem;padding:1.2rem;">
+                                    <a href="{{ route('users.show', $friend->id) }}">
+                                        <span class="{{ $friend->isPremium() ? 'avatar-premium' : '' }}" style="display:inline-block;position:relative;">
+                                            <img src="{{ $friend->profile_photo_url ?? asset('img/no-avatar.png') }}"
+                                                 style="width:4rem;height:4rem;border-radius:50%;object-fit:cover;">
+                                        </span>
+                                    </a>
+                                    <div>
+                                        <div class="f-15 b-600">
+                                            <a href="{{ route('users.show', $friend->id) }}">
+                                                {{ $friend->first_name }} {{ $friend->last_name }}
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        @endforeach
+                    </div>
+                    @if($friendsCount > 6)
+                    <div class="text-center mt-1">
+                        <a href="{{ route('friends.index') }}" class="btn btn-secondary">
+                            Все друзья ({{ $friendsCount }})
+                        </a>
+                    </div>
+                    @endif
+                    @endif
+                </div>
+
+                {{-- Гости --}}
+                <div class="tab-pane" id="premium-visitors">
+                    @if($recentVisitors->isEmpty())
+                    <div class="text-center py-3" style="opacity:.5;">
+                        <div class="f-24 mb-1">👀</div>
+                        <div class="f-16">За последние 7 дней никто не заходил</div>
+                    </div>
+                    @else
+                    <div class="row row2 mt-1">
+                        @foreach($recentVisitors as $visit)
+                        @php $visitor = $visit->visitor; @endphp
+                        @if(!$visitor) @continue @endif
+                        <div class="col-6 col-md-4" style="margin-bottom:1.5rem;">
+                            <div class="card">
+                                <div style="display:flex;align-items:center;gap:1.2rem;padding:1.2rem;">
+                                    <a href="{{ route('users.show', $visitor->id) }}">
+                                        <span class="{{ $visitor->isPremium() ? 'avatar-premium' : '' }}" style="display:inline-block;position:relative;">
+                                            <img src="{{ $visitor->profile_photo_url ?? asset('img/no-avatar.png') }}"
+                                                 style="width:4rem;height:4rem;border-radius:50%;object-fit:cover;">
+                                        </span>
+                                    </a>
+                                    <div>
+                                        <div class="f-15 b-600">
+                                            <a href="{{ route('users.show', $visitor->id) }}">
+                                                {{ $visitor->first_name }} {{ $visitor->last_name }}
+                                            </a>
+                                        </div>
+                                        <div class="f-13" style="opacity:.5;">
+                                            {{ $visit->visited_at->diffForHumans() }}
+                                        </div>
+                                    </div>
+                                </div>
+                                @if(!auth()->user()->isFriendWith($visitor->id))
+                                <div style="padding:0 1.2rem 1.2rem;">
+                                    <form method="POST" action="{{ route('friends.store', $visitor->id) }}">
+                                        @csrf
+                                        <button class="btn btn-secondary" style="width:100%;font-size:1.4rem;">+ Друг</button>
+                                    </form>
+                                </div>
+                                @endif
+                            </div>
+                        </div>
+                        @endforeach
+                    </div>
+                    <div class="text-center mt-1">
+                        <a href="{{ route('profile.visitors') }}" class="btn btn-secondary">Все гости</a>
+                    </div>
+                    @endif
+                </div>
+
+                {{-- История игр --}}
+                <div class="tab-pane" id="premium-history">
+                    {{-- Фильтры --}}
+                    <form method="GET" action="{{ route('player.dashboard') }}#premium-history" class="form mb-2">
+                        <div class="row row2">
+                            <div class="col-md-4">
+                                <select name="filter[position]">
+                                    <option value="">Все позиции</option>
+                                    @foreach(['setter','outside','opposite','middle','libero','player'] as $pos)
+                                    <option value="{{ $pos }}" {{ ($historyFilter['position'] ?? '') === $pos ? 'selected' : '' }}>
+                                        {{ position_name($pos) }}
+                                    </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <select name="filter[location_id]">
+                                    <option value="">Все площадки</option>
+                                    @foreach($topLocations as $loc)
+                                    <option value="{{ $loc->id }}" {{ ($historyFilter['location_id'] ?? '') == $loc->id ? 'selected' : '' }}>
+                                        {{ $loc->name }}
+                                    </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <button class="btn btn-secondary" style="width:100%;">Применить</button>
+                            </div>
+                        </div>
+                    </form>
+
+                    @if($gameHistory->isEmpty())
+                    <div class="text-center py-3" style="opacity:.5;">
+                        <div class="f-16">Нет игр по выбранным фильтрам</div>
+                    </div>
+                    @else
+                    <div class="card">
+                        @foreach($gameHistory as $i => $game)
+                        <div class="d-flex between fvc py-1 {{ $i > 0 ? 'border-top' : '' }}">
+                            <div>
+                                <div class="f-16 b-600">
+                                    <a href="{{ route('events.show', $game->event_id) }}">{{ $game->title }}</a>
+                                </div>
+                                <div class="f-13" style="opacity:.5;">
+                                    {{ \Carbon\Carbon::parse($game->starts_at)->format('d.m.Y H:i') }}
+                                    @if($game->location_name) · {{ $game->location_name }} @endif
+                                    @if($game->position) · {{ position_name($game->position) }} @endif
+                                </div>
+                            </div>
+                            @if($game->organizer_name)
+                            <div class="f-14" style="opacity:.6;white-space:nowrap;">
+                                {{ $game->organizer_name }}
+                            </div>
+                            @endif
+                        </div>
+                        @endforeach
+                    </div>
+                    <div class="mt-2">
+                        {{ $gameHistory->appends(['filter' => $historyFilter])->links() }}
+                    </div>
+                    @endif
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    @else
+    {{-- Не Premium --}}
+    <div class="ramka">
+        <div class="card text-center" style="padding:3rem 2rem;">
+            <div style="font-size:3.6rem;margin-bottom:1.5rem;">👑</div>
+            <div class="f-22 b-700 mb-1">Premium возможности</div>
+            <div class="f-16 mb-2" style="opacity:.6;">
+                Друзья, гости профиля и детальная история игр доступны в Premium
+            </div>
+            <a href="{{ route('premium.index') }}" class="btn">Подключить Premium</a>
+        </div>
+    </div>
+    @endif
+
+    </div>{{-- /container --}}
 
 </x-voll-layout>

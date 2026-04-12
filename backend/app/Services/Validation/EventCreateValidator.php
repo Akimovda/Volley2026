@@ -90,7 +90,7 @@
 			
             'starts_at_local' => [
 			'required',
-			'date_format:Y-m-d\TH:i'
+			'date_format:Y-m-d H:i:s,Y-m-d H:i,Y-m-d\TH:i,Y-m-d\TH:i:s'
             ],
 			
             'duration_sec' => [

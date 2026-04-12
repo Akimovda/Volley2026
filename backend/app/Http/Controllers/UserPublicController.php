@@ -50,6 +50,11 @@ class UserPublicController extends Controller
             ? UserPlayLike::where('liker_id', $authId)->where('target_id', $user->id)->exists()
             : false;
 
+                // Записываем визит (для Premium-функции "Гости профиля")
+        if (auth()->check() && isset($profileUser)) {
+            $profileUser->recordVisit(auth()->id());
+        }
+
         return view('user.public', [
             'user'          => $user,
             'isSelf'        => $isSelf,

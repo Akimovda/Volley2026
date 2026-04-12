@@ -48,6 +48,7 @@
 	// AJAX (city-first)
 	use App\Http\Controllers\Ajax\CityMetaController;
 	use App\Http\Controllers\Ajax\LocationsByCityController;
+	use App\Http\Controllers\PremiumController;
 	
 	/*
 		|--------------------------------------------------------------------------
@@ -69,6 +70,7 @@
 	*/
 	
 	Route::get('/', fn () => view('welcome'))->name('home');
+	Route::get('/premium', [PremiumController::class, 'index'])->name('premium.index');
 	
 	/*
 		|--------------------------------------------------------------------------
@@ -555,6 +557,12 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
         Route::get('/locations/create', [AdminLocationController::class, 'create'])->name('locations.create');
         Route::post('/locations', [AdminLocationController::class, 'store'])->name('locations.store');
         Route::get('/locations/{location}/edit', [AdminLocationController::class, 'edit'])->name('locations.edit');
+
+        // Platform payment settings (Premium + ads)
+        Route::get('/platform-payment', [\App\Http\Controllers\Admin\AdminPlatformPaymentController::class, 'edit'])
+            ->name('platform_payment_settings');
+        Route::post('/platform-payment', [\App\Http\Controllers\Admin\AdminPlatformPaymentController::class, 'update'])
+            ->name('platform_payment_settings.update');
         Route::put('/locations/{location}', [AdminLocationController::class, 'update'])->name('locations.update');
         Route::delete('/locations/{location}', [AdminLocationController::class, 'destroy'])->name('locations.destroy');
 		
@@ -612,6 +620,14 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     Route::post('/user/{user}/like', [\App\Http\Controllers\UserSocialController::class, 'like'])
         ->whereNumber('user')
         ->name('user.like');
+    Route::post('/premium/trial', [PremiumController::class, 'activateTrial'])
+        ->name('premium.trial');
+    Route::post('/premium/pay', [PremiumController::class, 'pay'])
+        ->name('premium.pay');
+    Route::post('/premium/confirm/{payment}', [PremiumController::class, 'confirmPayment'])
+        ->name('premium.confirm');
+    Route::post('/premium/renew', [PremiumController::class, 'renew'])
+        ->name('premium.renew');
 });
 
 /*
@@ -780,4 +796,41 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
 Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified'])->group(function () {
     Route::post('/coupons/templates/{couponTemplate}/issue-link', [\App\Http\Controllers\CouponTemplateController::class, 'issueLink'])
         ->name('coupon_templates.issue_link');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Friends + Profile visitors (auth + verified)
+|--------------------------------------------------------------------------
+*/
+Route::middleware([
+    'auth:sanctum',
+    config('jetstream.auth_session'),
+    'verified',
+])->group(function () {
+    Route::get('/friends', [\App\Http\Controllers\FriendshipController::class, 'index'])
+        ->name('friends.index');
+    Route::post('/friends/{user}', [\App\Http\Controllers\FriendshipController::class, 'store'])
+        ->name('friends.store');
+    Route::delete('/friends/{user}', [\App\Http\Controllers\FriendshipController::class, 'destroy'])
+        ->name('friends.destroy');
+
+    Route::get('/profile/visitors', [\App\Http\Controllers\ProfileVisitController::class, 'index'])
+        ->name('profile.visitors');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Premium settings (auth + verified)
+|--------------------------------------------------------------------------
+*/
+Route::middleware([
+    'auth:sanctum',
+    config('jetstream.auth_session'),
+    'verified',
+])->group(function () {
+    Route::get('/premium/settings', [\App\Http\Controllers\PremiumSettingsController::class, 'edit'])
+        ->name('premium.settings');
+    Route::post('/premium/settings', [\App\Http\Controllers\PremiumSettingsController::class, 'update'])
+        ->name('premium.settings.update');
 });

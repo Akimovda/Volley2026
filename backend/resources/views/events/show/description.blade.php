@@ -130,13 +130,17 @@
 						
 						@endphp
 						
-						@if($levelMin && $levelMax)
-						<div class="event-row">
+						@if($levelMin || $levelMax)
+						<div class="event-row" style="flex-direction:column;gap:.5rem;">
 							<span class="b-600">📈 Уровень:</span>
 							<span>
-								{{ $levelMin }} {{ $levels[$levelMin] ?? '' }}
-								–
-								{{ $levelMax }} {{ $levels[$levelMax] ?? '' }}
+								@if($levelMin)
+								<span style="color:{{ level_color((int)$levelMin) }};font-weight:700;">{{ level_name($levelMin) }}</span>
+								@endif
+								@if($levelMin && $levelMax && $levelMin != $levelMax)
+								<span style="opacity:.5;"> – </span>
+								<span style="color:{{ level_color((int)$levelMax) }};font-weight:700;">{{ level_name($levelMax) }}</span>
+								@endif
 							</span>
 						</div>
 						@endif

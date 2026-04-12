@@ -267,6 +267,52 @@ final class UserNotificationService
         );
     }
 
+
+    public function createRegistrationFailedNotification(
+        int $userId,
+        int $eventId,
+        ?int $occurrenceId,
+        string $eventTitle,
+        string $reason
+    ): UserNotification {
+        return $this->create(
+            userId: $userId,
+            type: 'registration_failed',
+            title: 'Запись на мероприятие не состоялась',
+            body: "Не удалось записаться на «{$eventTitle}». Причина: {$reason}",
+            payload: [
+                'event_id'      => $eventId,
+                'occurrence_id' => $occurrenceId,
+                'event_title'   => $eventTitle,
+                'reason'        => $reason,
+            ],
+            channels: ['in_app', 'telegram', 'vk', 'max']
+        );
+    }
+
+    public function createFriendJoinedNotification(
+        int $userId,
+        int $friendId,
+        string $friendName,
+        int $eventId,
+        ?int $occurrenceId,
+        string $eventTitle
+    ): UserNotification {
+        return $this->create(
+            userId: $userId,
+            type: 'friend_joined_event',
+            title: 'Друг записался на мероприятие',
+            body: "«{$friendName}» записался(ась) на «{$eventTitle}».",
+            payload: [
+                'friend_id'     => $friendId,
+                'friend_name'   => $friendName,
+                'event_id'      => $eventId,
+                'occurrence_id' => $occurrenceId,
+                'event_title'   => $eventTitle,
+            ],
+            channels: ['in_app', 'telegram', 'vk', 'max']
+        );
+    }
     public function createRegistrationCancelledNotification(
         int $userId,
         int $eventId,

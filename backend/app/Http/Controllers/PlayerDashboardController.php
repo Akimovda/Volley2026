@@ -42,7 +42,7 @@ class PlayerDashboardController extends Controller
 
         // --- ОЦЕНКИ УРОВНЯ ---
         $levelVotes = DB::table('user_level_votes')
-            ->where('target_user_id', $userId)
+            ->where('target_id', $userId)
             ->select(
                 DB::raw('COUNT(*) as total_votes'),
                 DB::raw('AVG(level) as avg_level'),
@@ -59,7 +59,7 @@ class PlayerDashboardController extends Controller
 
         // --- ЛАЙКИ ---
         $likesCount = DB::table('user_play_likes')
-            ->where('target_user_id', $userId)
+            ->where('target_id', $userId)
             ->count();
 
         // --- ДИНАМИКА ПО МЕСЯЦАМ ---
@@ -131,12 +131,61 @@ class PlayerDashboardController extends Controller
             ? round((1 - $usersWithMoreVisits / $totalUsersCount) * 100)
             : 0;
 
+        // --- PREMIUM ---
+        $isPremium    = $user->isPremium();
+        $activePremium = $user->activePremium();
+
+        // Друзья
+        $friends = $isPremium
+            ? $user->friends()->select('users.id', 'users.first_name', 'users.last_name', 'users.profile_photo_path')->limit(6)->get()
+            : collect();
+        $friendsCount = $isPremium
+            ? \App\Models\Friendship::where('user_id', $userId)->count()
+            : 0;
+
+        // Гости за 7 дней
+        $recentVisitors = $isPremium
+            ? $user->recentVisitors(7)
+            : collect();
+
+        // История игр с фильтром
+        $historyFilter = $request->input('filter', []);
+        $historyQuery  = DB::table('event_registrations as er')
+            ->join('event_occurrences as eo', 'eo.id', '=', 'er.occurrence_id')
+            ->join('events as e', 'e.id', '=', 'er.event_id')
+            ->leftJoin('locations as l', 'l.id', '=', 'e.location_id')
+            ->leftJoin('users as org', 'org.id', '=', 'e.organizer_id')
+            ->where('er.user_id', $userId)
+            ->where('er.is_cancelled', false)
+            ->select(
+                'e.id as event_id', 'e.title',
+                'eo.starts_at', 'er.position',
+                'l.name as location_name', 'l.id as location_id',
+                DB::raw("TRIM(CONCAT(org.first_name, ' ', org.last_name)) as organizer_name"),
+                'org.id as organizer_id'
+            )
+            ->orderByDesc('eo.starts_at');
+
+        if (!empty($historyFilter['position'])) {
+            $historyQuery->where('er.position', $historyFilter['position']);
+        }
+        if (!empty($historyFilter['location_id'])) {
+            $historyQuery->where('l.id', $historyFilter['location_id']);
+        }
+        if (!empty($historyFilter['organizer_id'])) {
+            $historyQuery->where('org.id', $historyFilter['organizer_id']);
+        }
+
+        $gameHistory = $isPremium ? $historyQuery->paginate(10) : collect();
+
         return view('dashboard.player', compact(
             'totalVisits', 'totalCancellations', 'visitsThisMonth',
             'profileViews', 'profileViews30d',
             'totalVotes', 'avgLevel', 'topLevel', 'levelVotes',
             'likesCount', 'monthlyVisits', 'positions',
-            'topLocations', 'topOrganizers', 'streak', 'percentile'
+            'topLocations', 'topOrganizers', 'streak', 'percentile',
+            'isPremium', 'activePremium', 'friends', 'friendsCount',
+            'recentVisitors', 'gameHistory', 'historyFilter'
         ));
     }
 

@@ -2,6 +2,8 @@
 
 use Illuminate\Support\Facades\Schedule;
 
+Schedule::command('premium:expire')->hourly();
+
 Schedule::command('bot:assist')
     ->everyThirtyMinutes()
     ->withoutOverlapping()
@@ -34,4 +36,9 @@ Schedule::job(new \App\Jobs\AutoUnconfirmBookingJob())
 // Автозапись по абонементам
 Schedule::command('subscriptions:auto-booking')
     ->everyFiveMinutes()
+    ->withoutOverlapping();
+
+// Недельная сводка для Premium (каждый понедельник в 09:00)
+Schedule::command('premium:weekly-digest')
+    ->weeklyOn(1, '09:00')
     ->withoutOverlapping();

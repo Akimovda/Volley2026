@@ -14,6 +14,7 @@
 	use Laravel\Fortify\TwoFactorAuthenticatable;
 	use Laravel\Jetstream\HasProfilePhoto;
 	use Laravel\Sanctum\HasApiTokens;
+	use App\Traits\HasPremium;
 	
 	// Spatie Media Library
 	use Spatie\Image\Enums\Fit;
@@ -30,6 +31,7 @@
 		use TwoFactorAuthenticatable;
 		use SoftDeletes;
 		use InteractsWithMedia;
+		use HasPremium;
 		
 		// --------------------------------------------------
 		// Mass assignment

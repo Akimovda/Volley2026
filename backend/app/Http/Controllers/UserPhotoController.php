@@ -28,12 +28,16 @@ class UserPhotoController extends Controller
         $schoolLogos = $user->getMedia('school_logo')->sortByDesc('created_at')->values();
         $schoolCovers = $user->getMedia('school_cover')->sortByDesc('created_at')->values();
 
+        // Есть ли у пользователя школа
+        $hasSchool = \App\Models\VolleyballSchool::where('organizer_id', $user->id)->exists();
+
         return view('user.photos', [
             'user'         => $user,
             'photos'       => $photos,
             'eventPhotos'  => $eventPhotos,
             'schoolLogos'  => $schoolLogos,
             'schoolCovers' => $schoolCovers,
+            'hasSchool'    => $hasSchool,
         ]);
     }
 

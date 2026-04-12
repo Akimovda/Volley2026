@@ -493,6 +493,24 @@ $birth = $user->birth_date
                     @elseif(!auth()->check())
                     <a href="{{ route('login') }}" class="btn btn-secondary">Войдите чтобы отметить</a>
                     @endif
+
+                    {{-- Кнопка друга --}}
+                    @if(auth()->check() && !$isSelf)
+                    <div style="margin-top:1rem;">
+                        @if(auth()->user()->isFriendWith($user->id))
+                        <form method="POST" action="{{ route('friends.destroy', $user->id) }}">
+                            @csrf
+                            @method('DELETE')
+                            <button class="btn btn-secondary">✅ В друзьях</button>
+                        </form>
+                        @else
+                        <form method="POST" action="{{ route('friends.store', $user->id) }}">
+                            @csrf
+                            <button class="btn">👥 Добавить в друзья</button>
+                        </form>
+                        @endif
+                    </div>
+                    @endif
                 </div>
 
                 {{-- Contacts --}}

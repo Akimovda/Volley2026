@@ -28,6 +28,17 @@
 
     <x-slot name="style">
         <link href="/assets/org.css" rel="stylesheet">
+        <style>
+            .icon-vk, .icon-tg, .icon-max {
+                width: 2rem !important;
+                height: 2rem !important;
+                flex-shrink: 0;
+            }
+            .icon-vk svg, .icon-tg svg, .icon-max svg {
+                width: 2rem !important;
+                height: 2rem !important;
+            }
+        </style>
     </x-slot>
 
     <x-slot name="script">
@@ -102,6 +113,22 @@
     </x-slot>
 
     <div class="container">
+        <div class="row row2">
+
+            {{-- Sidebar меню --}}
+            <div class="col-lg-4 col-xl-3 order-2 d-none d-lg-block">
+                <div class="sticky">
+                    <div class="card-ramka">
+                        @include('profile._menu', [
+                            'menuUser'       => auth()->user(),
+                            'isEditingOther' => false,
+                            'activeMenu'     => 'school',
+                        ])
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-8 col-xl-9" style="order:1;">
 
         @if ($errors->any())
             <div class="ramka">
@@ -133,7 +160,7 @@
                                 </option>
                             @endforeach
                         </select>
-                        <ul class="list f-14 mt-1">
+                        <ul class="list f-16 mt-1">
                             <li>Если не выбрать — страница будет создана от вашего имени</li>
                         </ul>
                     </div>
@@ -144,20 +171,20 @@
                     <h2 class="-mt-05">Основная информация</h2>
                     <div class="row">
 
-                        <div class="col-md-8">
+                        <div class="col-md-7">
                             <div class="card">
                                 <label>Название школы / сообщества <span class="red">*</span></label>
                                 <input type="text" name="name" value="{{ old('name') }}"
                                        placeholder="Напр. SunVolley, Beach Crew Moscow" required
                                        maxlength="100">
-                                <ul class="list f-14 mt-1">
+                                <ul class="list f-16 mt-1">
                                     <li>Допустимы буквы, цифры, пробелы. Нецензурные слова запрещены.</li>
                                 </ul>
                                 @error('name')<div class="text-xs text-red-600 mt-1">{{ $message }}</div>@enderror
                             </div>
                         </div>
 
-                        <div class="col-md-4">
+                        <div class="col-md-5">
                             <div class="card">
                                 <label>Направление <span class="red">*</span></label>
                                 <select name="direction">
@@ -169,12 +196,12 @@
                             </div>
                         </div>
 
-                        <div class="col-md-4">
+                        <div class="col-md-7">
                             <div class="card">
                                 <label>URL страницы (slug) <span class="red">*</span></label>
                                 <input type="text" name="slug" value="{{ old('slug') }}"
                                        placeholder="sunvolley" required maxlength="60">
-                                <ul class="list f-14 mt-1">
+                                <ul class="list f-16 mt-1">
                                     <li>Только латиница, цифры, дефис</li>
                                     <li>Генерируется автоматически из названия</li>
                                     <li>/volleyball_school/<strong>sunvolley</strong></li>
@@ -184,7 +211,7 @@
                         </div>
 
                         {{-- ГОРОД --}}
-                        <div class="col-md-8">
+                        <div class="col-md-5">
                             <div class="card">
                                 <label>Город</label>
                                 <input type="hidden" name="city_id" id="city_id" value="{{ old('city_id') }}">
@@ -208,7 +235,7 @@
                                 <label>Описание школы</label>
                                 <input id="school_description" type="hidden" name="description" value="{{ old('description') }}">
                                 <trix-editor input="school_description" class="trix-content"></trix-editor>
-                                <ul class="list f-14 mt-1">
+                                <ul class="list f-16 mt-1">
                                     <li>Расскажите о школе, тренерах, программах. Нецензурные слова запрещены.</li>
                                 </ul>
                                 @error('description')<div class="text-xs text-red-600 mt-1">{{ $message }}</div>@enderror
@@ -230,7 +257,7 @@
                                        inputmode="tel">
                                 <input type="hidden" name="phone" id="phone_e164_school"
                                        value="{{ old('phone') }}">
-                                <ul class="list f-14 mt-1"><li>Формат: +7 (999) 000-00-00</li></ul>
+                                <ul class="list f-16 mt-1"><li>Формат: +7 (999) 000-00-00</li></ul>
                                 @error('phone')<div class="text-xs text-red-600 mt-1">{{ $message }}</div>@enderror
                             </div>
                         </div>
@@ -252,81 +279,43 @@
                         </div>
                     </div>
                 </div>
+               
 
                 <div class="ramka">
-                    <h2 class="-mt-05">Фото из вашей медиатеки</h2>
+                    <h2 class="-mt-05">Социальные сети</h2>
                     <div class="row">
-                        @php
-                            $userPhotos = auth()->user()->getMedia('photos')->sortByDesc('created_at');
-                        @endphp
-
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <div class="card">
-                                <label>Логотип школы</label>
-                                @if($userPhotos->count())
-                                    <div class="d-flex flex-wrap gap-1 mb-2" id="logo_picker">
-                                        @foreach($userPhotos as $photo)
-                                            <label style="cursor:pointer;position:relative">
-                                                <input type="radio" name="logo_media_id"
-                                                       value="{{ $photo->id }}"
-                                                       @checked(old('logo_media_id') == $photo->id)
-                                                       style="position:absolute;opacity:0">
-                                                <img src="{{ asset('storage/'.$photo->id.'/conversions/'.pathinfo($photo->file_name, PATHINFO_FILENAME).'-thumb.jpg') }}"
-                                                     alt=""
-                                                     class="logo-pick-img"
-                                                     style="width:6rem;height:6rem;object-fit:cover;border-radius:50%;border:3px solid transparent;transition:.15s"
-                                                     onclick="this.closest('label').querySelector('input').checked=true; document.querySelectorAll('.logo-pick-img').forEach(i=>i.style.borderColor='transparent'); this.style.borderColor='var(--cd)'">
-                                            </label>
-                                        @endforeach
-                                    </div>
-                                    <ul class="list f-14 mt-1">
-                                        <li>Выберите фото из вашей медиатеки</li>
-                                        <li>Добавить фото можно в разделе <a href="{{ route('user.photos') }}" target="_blank">Ваши фотографии</a></li>
-                                    </ul>
-                                @else
-                                    <div class="alert alert-info f-16">
-                                        У вас нет фото. <a href="{{ route('user.photos') }}">Загрузите фотографии</a> в профиле.
-                                    </div>
-                                @endif
+                                <label class="d-flex fvc gap-1"><span class="icon-vk" style="width:2rem;height:2rem;flex-shrink:0;color:#0077FF;"></span><span style="color:#0077FF;font-weight:600;">ВКонтакте</span></label>
+                                <input type="url" name="vk_url" value="{{ old('vk_url') }}"
+                                       placeholder="https://vk.com/sunvolley">
                             </div>
                         </div>
-
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <div class="card">
-                                <label>Обложка страницы (16:9)</label>
-                                @if($userPhotos->count())
-                                    <div class="d-flex flex-wrap gap-1 mb-2" id="cover_picker">
-                                        @foreach($userPhotos as $photo)
-                                            <label style="cursor:pointer;position:relative">
-                                                <input type="radio" name="cover_media_id"
-                                                       value="{{ $photo->id }}"
-                                                       @checked(old('cover_media_id') == $photo->id)
-                                                       style="position:absolute;opacity:0">
-                                                <img src="{{ asset('storage/'.$photo->id.'/conversions/'.pathinfo($photo->file_name, PATHINFO_FILENAME).'-thumb.jpg') }}"
-                                                     alt=""
-                                                     class="cover-pick-img"
-                                                     style="width:8rem;height:5rem;object-fit:cover;border-radius:0.6rem;border:3px solid transparent;transition:.15s"
-                                                     onclick="this.closest('label').querySelector('input').checked=true; document.querySelectorAll('.cover-pick-img').forEach(i=>i.style.borderColor='transparent'); this.style.borderColor='var(--cd)'">
-                                            </label>
-                                        @endforeach
-                                    </div>
-                                @else
-                                    <div class="alert alert-info f-16">
-                                        <a href="{{ route('user.photos') }}">Загрузите фотографии</a> в профиле.
-                                    </div>
-                                @endif
+                                <label class="d-flex fvc gap-1"><span class="icon-tg" style="width:2rem;height:2rem;flex-shrink:0;color:#26A5E4;"></span><span style="color:#26A5E4;font-weight:600;">Telegram</span></label>
+                                <input type="url" name="tg_url" value="{{ old('tg_url') }}"
+                                       placeholder="https://t.me/sunvolley">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card">
+                                <label class="d-flex fvc gap-1"><span class="icon-max" style="width:2rem;height:2rem;flex-shrink:0;color:#8B5CF6;"></span><span style="color:#8B5CF6;font-weight:600;">Max</span></label>
+                                <input type="url" name="max_url" value="{{ old('max_url') }}"
+                                       placeholder="https://max.ru/sunvolley">
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <div class="ramka text-center">
-                    <a href="{{ route('volleyball_school.index') }}" class="btn btn-secondary mr-2">Отмена</a>
                     <button type="submit" class="btn">Создать страницу школы</button>
                 </div>
-
+ </div>
             </form>
         </div>
+            </div>{{-- /col-lg-8 --}}
+        </div>{{-- /row --}}
     </div>
 
 </x-voll-layout>

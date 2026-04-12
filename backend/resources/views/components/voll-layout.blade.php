@@ -122,7 +122,7 @@
 						<!-- Колонка 1: Аватар и имя -->
 						<div class="menu-column column-avatar">
 							<div class="avatar-container">
-								<div class="avatar">
+								<div class="avatar {{ ($isAuth && $user?->isPremium()) ? 'avatar-premium' : '' }}">
 									@if($isAuth && $user->profile_photo_url)
 									<img src="{{ $user->profile_photo_url }}" alt="avatar">
 									@else
@@ -547,6 +547,7 @@
 		@if(isset($script))
         {{ $script }}
 		@endif	
+	<!--	
 		
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">		
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>		
@@ -580,5 +581,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });		
 </script>
+-->
 	</body>
 </html>					

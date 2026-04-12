@@ -106,13 +106,22 @@ class WaitlistService
         }
 
         // Находим первого подходящего в очереди у кого нет активного окна
+        // Premium-пользователи идут первыми в очереди
+        $now = now();
         $entry = OccurrenceWaitlist::query()
             ->where('occurrence_id', $occurrenceId)
             ->where(function ($q) {
                 $q->whereNull('notification_expires_at')
                   ->orWhere('notification_expires_at', '<', now());
             })
-            ->orderBy('created_at')
+            ->leftJoin('premium_subscriptions', function ($join) use ($now) {
+                $join->on('premium_subscriptions.user_id', '=', 'occurrence_waitlist.user_id')
+                     ->where('premium_subscriptions.status', 'active')
+                     ->where('premium_subscriptions.expires_at', '>', $now);
+            })
+            ->orderByRaw('CASE WHEN premium_subscriptions.id IS NOT NULL THEN 0 ELSE 1 END')
+            ->orderBy('occurrence_waitlist.created_at')
+            ->select('occurrence_waitlist.*')
             ->get()
             ->first(function ($entry) use ($position) {
                 return $entry->subscribedToPosition($position);

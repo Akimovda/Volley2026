@@ -119,10 +119,11 @@ class VolleyballSchoolController extends Controller
             'city_name'      => ['nullable', 'string', 'max:100'],
             'phone'          => ['nullable', 'string', 'max:20', 'regex:/^\+7\d{10}$/'],
             'email'          => ['nullable', 'email', 'max:100'],
-            'website'        => ['nullable', 'url', 'max:200'],
-            'logo_media_id'  => ['nullable', 'integer'],
-            'cover_media_id' => ['nullable', 'integer'],
-            'organizer_id'   => ['nullable', 'integer', 'exists:users,id'],
+            'website'    => ['nullable', 'url', 'max:200'],
+            'vk_url'     => ['nullable', 'url', 'max:200'],
+            'tg_url'     => ['nullable', 'url', 'max:200'],
+            'max_url'    => ['nullable', 'url', 'max:200'],
+            'organizer_id' => ['nullable', 'integer', 'exists:users,id'],
         ], [
             'phone.regex' => 'Телефон должен быть в формате +7XXXXXXXXXX.',
             'slug.alpha_dash' => 'Slug может содержать только латиницу, цифры и дефис.',
@@ -159,45 +160,18 @@ class VolleyballSchoolController extends Controller
             'direction'    => $data['direction'],
             'description'  => $data['description'] ?? null,
             'city'         => $cityName,
+            'city_id'      => $data['city_id'] ?? null,
             'phone'        => $data['phone'] ?? null,
             'email'        => $data['email'] ?? null,
             'website'      => $data['website'] ?? null,
+            'vk_url'       => $data['vk_url'] ?? null,
+            'tg_url'       => $data['tg_url'] ?? null,
+            'max_url'      => $data['max_url'] ?? null,
             'is_published' => true,
         ]);
 
-        // Медиа из медиатеки пользователя
-        $organizer = User::find($organizerId);
-        if ($organizer) {
-            if (!empty($data['logo_media_id'])) {
-                $media = $organizer->getMedia('school_logo')->firstWhere('id', (int)$data['logo_media_id'])
-                    ?? $organizer->getMedia('photos')->firstWhere('id', (int)$data['logo_media_id']);
-                if ($media) {
-                    $originalPath = storage_path('app/public/' . $media->id . '/' . $media->file_name);
-                    if (file_exists($originalPath)) {
-                        $school->addMediaFromDisk($originalPath, 'local')
-                            ->preservingOriginal()
-                            ->usingFileName($media->file_name)
-                            ->toMediaCollection('logo');
-                    }
-                }
-            }
-            if (!empty($data['cover_media_id'])) {
-                $media = $organizer->getMedia('school_cover')->firstWhere('id', (int)$data['cover_media_id'])
-                    ?? $organizer->getMedia('photos')->firstWhere('id', (int)$data['cover_media_id']);
-                if ($media) {
-                    $originalPath = storage_path('app/public/' . $media->id . '/' . $media->file_name);
-                    if (file_exists($originalPath)) {
-                        $school->addMediaFromDisk($originalPath, 'local')
-                            ->preservingOriginal()
-                            ->usingFileName($media->file_name)
-                            ->toMediaCollection('cover');
-                    }
-                }
-            }
-        }
-
-        return redirect()->route('volleyball_school.show', $school->slug)
-            ->with('status', 'Страница школы создана!');
+        return redirect()->route('user.photos')
+            ->with('status', '✅ Страница школы создана! Теперь добавьте логотип и фото школы в галерею.');
     }
 
     public function edit(Request $request)
@@ -237,7 +211,10 @@ class VolleyballSchoolController extends Controller
             'city_name'      => ['nullable', 'string', 'max:100'],
             'phone'          => ['nullable', 'string', 'max:20', 'regex:/^\+7\d{10}$/'],
             'email'          => ['nullable', 'email', 'max:100'],
-            'website'        => ['nullable', 'url', 'max:200'],
+            'website'    => ['nullable', 'url', 'max:200'],
+            'vk_url'     => ['nullable', 'url', 'max:200'],
+            'tg_url'     => ['nullable', 'url', 'max:200'],
+            'max_url'    => ['nullable', 'url', 'max:200'],
             'logo_media_id'  => ['nullable', 'integer'],
             'cover_media_id' => ['nullable', 'integer'],
             'is_published'   => ['sometimes', 'boolean'],
@@ -268,6 +245,9 @@ class VolleyballSchoolController extends Controller
             'phone'        => $data['phone'] ?? null,
             'email'        => $data['email'] ?? null,
             'website'      => $data['website'] ?? null,
+            'vk_url'       => $data['vk_url'] ?? null,
+            'tg_url'       => $data['tg_url'] ?? null,
+            'max_url'      => $data['max_url'] ?? null,
             'is_published' => (bool)($data['is_published'] ?? false),
         ]);
 

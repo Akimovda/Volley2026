@@ -801,17 +801,70 @@
 @if(auth()->check() && (auth()->user()->isOrganizer() || auth()->user()->isAdmin()))
 @php $paymentSettings = \App\Models\PaymentSetting::where('organizer_id', auth()->id())->first(); @endphp
 <h2 class="-mt-05">💳 Платёжная система</h2>
-<div class="card">
-    @if($paymentSettings?->yoomoney_verified)
-        <div class="f-18 cs b-600">✅ Платежи настроены (ЮМани)</div>
-        <div class="f-16 mt-05" style="opacity:.6">Shop ID: {{ $paymentSettings->yoomoney_shop_id }}</div>
-    @elseif($paymentSettings && ($paymentSettings->tbank_link || $paymentSettings->sber_link))
-        <div class="f-18 cd b-600">🔗 Настроены платежи по ссылке</div>
-    @else
-        <div class="f-16" style="opacity:.6">Настройте приём оплаты за мероприятия</div>
-    @endif
-    <div class="mt-2">
-        <a href="{{ route('profile.payment_settings') }}" class="btn btn-secondary">⚙️ Настроить оплату</a>
+
+{{-- Выбор назначения --}}
+<div class="card mb-2">
+    <div class="f-15 b-600 mb-1">Настройте приём оплаты</div>
+    <div class="tabs-content">
+        <div class="tabs">
+            <div class="tab active" data-tab="pay-events">🏐 Для мероприятий</div>
+            @if(auth()->user()->isAdmin())
+            <div class="tab" data-tab="pay-premium">👑 Premium и реклама</div>
+            @endif
+            <div class="tab-highlight"></div>
+        </div>
+        <div class="tab-panes">
+
+            {{-- Вкладка: Мероприятия --}}
+            <div class="tab-pane active" id="pay-events">
+                <div class="mt-1">
+                    @if($paymentSettings?->yoomoney_verified)
+                        <div class="f-16 cs b-600">✅ Платежи настроены (ЮМани)</div>
+                        <div class="f-15 mt-05" style="opacity:.6">Shop ID: {{ $paymentSettings->yoomoney_shop_id }}</div>
+                    @elseif($paymentSettings && ($paymentSettings->tbank_link || $paymentSettings->sber_link))
+                        <div class="f-16 cd b-600">🔗 Настроены платежи по ссылке</div>
+                        @if($paymentSettings->tbank_link)
+                        <div class="f-15 mt-05" style="opacity:.6">Т-Банк: {{ $paymentSettings->tbank_link }}</div>
+                        @endif
+                        @if($paymentSettings->sber_link)
+                        <div class="f-15 mt-05" style="opacity:.6">Сбер: {{ $paymentSettings->sber_link }}</div>
+                        @endif
+                    @else
+                        <div class="f-15" style="opacity:.5">⚙️ Платежи не настроены</div>
+                    @endif
+                    <div class="mt-2">
+                        <a href="{{ route('profile.payment_settings') }}" class="btn btn-secondary">⚙️ Настроить оплату</a>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Вкладка: Premium и реклама (только Admin) --}}
+            @if(auth()->user()->isAdmin())
+            <div class="tab-pane" id="pay-premium">
+                <div class="mt-1">
+                    @php
+                        $premiumPayment = \App\Models\PlatformPaymentSetting::first();
+                    @endphp
+                    @if($premiumPayment)
+                        <div class="f-16 b-600 mb-1">Текущий метод:
+                            <span class="cd">{{ match($premiumPayment->method) {
+                                'tbank_link' => '🏦 Т-Банк (по ссылке)',
+                                'sber_link'  => '💚 Сбер (по ссылке)',
+                                'yoomoney'   => '🟡 ЮМани',
+                                default       => $premiumPayment->method,
+                            } }}</span>
+                        </div>
+                    @else
+                        <div class="f-15" style="opacity:.5">⚙️ Платежи за Premium не настроены</div>
+                    @endif
+                    <div class="mt-2">
+                        <a href="{{ route('admin.platform_payment_settings') }}" class="btn btn-secondary">⚙️ Настроить оплату Premium</a>
+                    </div>
+                </div>
+            </div>
+            @endif
+
+        </div>
     </div>
 </div>
 @endif
@@ -875,6 +928,50 @@
 @endif
 @endif
 </div>
+<div class="ramka">
+@php $activePremium = auth()->user()->activePremium(); @endphp
+<h2 class="-mt-05">👑 Premium подписка</h2>
+<div class="card">
+    @if($activePremium)
+        <div class="d-flex between fvc">
+            <div>
+                <div class="f-18 b-600" style="color:#f5c842;">👑 Premium активен</div>
+                <div class="f-15 mt-05" style="opacity:.6;">
+                    До {{ $activePremium->expires_at->format('d.m.Y') }}
+                    · {{ match($activePremium->plan) {
+                        'trial'   => 'Пробный период',
+                        'month'   => '1 месяц',
+                        'quarter' => '3 месяца',
+                        'year'    => 'Год',
+                    } }}
+                </div>
+            </div>
+            <div class="d-flex gap-1">
+                <a href="{{ route('premium.settings') }}" class="btn btn-secondary">⚙️ Настройки</a>
+                <a href="{{ route('premium.index') }}" class="btn btn-secondary">Продлить</a>
+            </div>
+        </div>
+    @else
+        <div class="row row2">
+            <div class="col-md-8">
+                <div class="f-17 b-600 mb-1">Откройте возможности Premium</div>
+                <ul class="list f-15">
+                    <li>👑 Золотой аватар — выделяйтесь среди игроков</li>
+                    <li>🥇 Приоритет в очереди резерва</li>
+                    <li>👥 Друзья и гости профиля</li>
+                    <li>📊 Детальная история игр и аналитика</li>
+                    <li>🔔 Недельная сводка игр в вашем городе</li>
+                </ul>
+            </div>
+            <div class="col-md-4 text-center" style="display:flex;flex-direction:column;justify-content:center;gap:1rem;">
+                <a href="{{ route('premium.index') }}" class="btn">👑 Подключить Premium</a>
+                <div class="f-14" style="opacity:.5;">от 199₽ / месяц</div>
+            </div>
+        </div>
+    @endif
+</div>
+</div>
+
 				<div class="ramka">  	
 					
 					{{-- ✅ Приватность --}}
