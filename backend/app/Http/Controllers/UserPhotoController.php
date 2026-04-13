@@ -29,7 +29,9 @@ class UserPhotoController extends Controller
         $schoolCovers = $user->getMedia('school_cover')->sortByDesc('created_at')->values();
 
         // Есть ли у пользователя школа
-        $hasSchool = \App\Models\VolleyballSchool::where('organizer_id', $user->id)->exists();
+        $school    = \App\Models\VolleyballSchool::where('organizer_id', $user->id)->first();
+        $hasSchool = $school !== null;
+        $mainCoverMediaId = $school?->cover_media_id;
 
         return view('user.photos', [
             'user'         => $user,
@@ -38,6 +40,7 @@ class UserPhotoController extends Controller
             'schoolLogos'  => $schoolLogos,
             'schoolCovers' => $schoolCovers,
             'hasSchool'    => $hasSchool,
+            'mainCoverMediaId' => $mainCoverMediaId ?? null,
         ]);
     }
 
@@ -105,6 +108,17 @@ class UserPhotoController extends Controller
 
             $collection = $photoType;
 
+            // Логотип школы — только 1 фото
+            if ($collection === 'school_logo') {
+                $existingLogos = $user->getMedia('school_logo');
+                if ($existingLogos->count() >= 1) {
+                    return response()->json([
+                        'success' => false,
+                        'error'   => 'Логотип уже загружен. Удалите текущий перед загрузкой нового.',
+                    ], 422);
+                }
+            }
+
             // 6. Сохраняем оригинал
             $media = $user->addMedia($originalFile)
                 ->preservingOriginal()
@@ -155,6 +169,25 @@ class UserPhotoController extends Controller
                 'error'   => 'Ошибка: ' . $e->getMessage(),
             ], 500);
         }
+    }
+
+    public function setMainCover(Request $request, Media $media)
+    {
+        $isOwner = (int) $media->model_id === (int) $request->user()->id;
+        $isAdmin = auth()->user()?->isAdmin();
+
+        if (!$isOwner && !$isAdmin) abort(403);
+
+        if ($media->collection_name !== 'school_cover') {
+            return back()->with('error', 'Только фотографии школы можно сделать основными ❌');
+        }
+
+        $school = \App\Models\VolleyballSchool::where('organizer_id', $media->model_id)->first();
+        if (!$school) return back()->with('error', 'Школа не найдена');
+
+        $school->update(['cover_media_id' => $media->id]);
+
+        return back()->with('status', 'Основная фотография обновлена ✅');
     }
 
     public function setAvatar(Request $request, Media $media)

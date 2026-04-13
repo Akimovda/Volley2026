@@ -230,6 +230,24 @@ if ($initialStep < 1 || $initialStep > 3) {
 		
 		
 		<div class="container">
+    {{-- Детект встроенного браузера MAX/Telegram/VK --}}
+    <div id="inapp-browser-warning" style="display:none;background:#fff3cd;border:1px solid #ffc107;border-radius:.75rem;padding:1rem 1.25rem;margin-bottom:1rem;">
+        ⚠️ <b>Вы используете встроенный браузер</b> — некоторые функции могут не работать.<br>
+        Для создания мероприятия откройте страницу в <b>обычном браузере</b> (Safari, Chrome).
+        <br><br>
+        <a href="{{ url()->current() }}" target="_blank" class="btn btn-secondary btn-small">🌐 Открыть в браузере</a>
+    </div>
+    <script>
+    (function(){
+        var ua = navigator.userAgent || '';
+        var isInApp = /MAX/i.test(ua) || /VKWebApp/i.test(ua) || /FB_IAB/i.test(ua) || /Instagram/i.test(ua);
+        if (isInApp) {
+            var el = document.getElementById('inapp-browser-warning');
+            if (el) el.style.display = '';
+        }
+    })();
+    </script>
+
 			
 			{{-- FLASH --}}
 			@if (session('private_link'))
@@ -1230,35 +1248,24 @@ if ($initialStep < 1 || $initialStep > 3) {
 										<hr class="mb-1">
 										<div class="row">
 											<div class="col-4">
-												<label>Дни:</label>										
-												<input type="number"
-												min="0"
-												name="duration_days"
-												value="{{ old('duration_days', 0) }}"
-												class="w-full rounded-lg border-gray-200"
-												placeholder="Дни (0‑30)">
+												<label>Дни:</label>
+												<select name="duration_days" class="w-full rounded-lg border-gray-200">
+												<option value="0" {{ old('duration_days', 0) == 0 ? 'selected' : '' }}>0 дн.</option><option value="1" {{ old('duration_days', 0) == 1 ? 'selected' : '' }}>1 дн.</option><option value="2" {{ old('duration_days', 0) == 2 ? 'selected' : '' }}>2 дн.</option><option value="3" {{ old('duration_days', 0) == 3 ? 'selected' : '' }}>3 дн.</option><option value="4" {{ old('duration_days', 0) == 4 ? 'selected' : '' }}>4 дн.</option><option value="5" {{ old('duration_days', 0) == 5 ? 'selected' : '' }}>5 дн.</option><option value="6" {{ old('duration_days', 0) == 6 ? 'selected' : '' }}>6 дн.</option><option value="7" {{ old('duration_days', 0) == 7 ? 'selected' : '' }}>7 дн.</option><option value="8" {{ old('duration_days', 0) == 8 ? 'selected' : '' }}>8 дн.</option><option value="9" {{ old('duration_days', 0) == 9 ? 'selected' : '' }}>9 дн.</option><option value="10" {{ old('duration_days', 0) == 10 ? 'selected' : '' }}>10 дн.</option><option value="11" {{ old('duration_days', 0) == 11 ? 'selected' : '' }}>11 дн.</option><option value="12" {{ old('duration_days', 0) == 12 ? 'selected' : '' }}>12 дн.</option><option value="13" {{ old('duration_days', 0) == 13 ? 'selected' : '' }}>13 дн.</option><option value="14" {{ old('duration_days', 0) == 14 ? 'selected' : '' }}>14 дн.</option><option value="15" {{ old('duration_days', 0) == 15 ? 'selected' : '' }}>15 дн.</option><option value="16" {{ old('duration_days', 0) == 16 ? 'selected' : '' }}>16 дн.</option><option value="17" {{ old('duration_days', 0) == 17 ? 'selected' : '' }}>17 дн.</option><option value="18" {{ old('duration_days', 0) == 18 ? 'selected' : '' }}>18 дн.</option><option value="19" {{ old('duration_days', 0) == 19 ? 'selected' : '' }}>19 дн.</option><option value="20" {{ old('duration_days', 0) == 20 ? 'selected' : '' }}>20 дн.</option><option value="21" {{ old('duration_days', 0) == 21 ? 'selected' : '' }}>21 дн.</option><option value="22" {{ old('duration_days', 0) == 22 ? 'selected' : '' }}>22 дн.</option><option value="23" {{ old('duration_days', 0) == 23 ? 'selected' : '' }}>23 дн.</option><option value="24" {{ old('duration_days', 0) == 24 ? 'selected' : '' }}>24 дн.</option><option value="25" {{ old('duration_days', 0) == 25 ? 'selected' : '' }}>25 дн.</option><option value="26" {{ old('duration_days', 0) == 26 ? 'selected' : '' }}>26 дн.</option><option value="27" {{ old('duration_days', 0) == 27 ? 'selected' : '' }}>27 дн.</option><option value="28" {{ old('duration_days', 0) == 28 ? 'selected' : '' }}>28 дн.</option><option value="29" {{ old('duration_days', 0) == 29 ? 'selected' : '' }}>29 дн.</option><option value="30" {{ old('duration_days', 0) == 30 ? 'selected' : '' }}>30 дн.</option>
+												</select>
 											</div>
-											
+
 											<div class="col-4">
-												<label>Часы:</label>					
-												<input type="number"
-												min="0"
-												max="23"
-												name="duration_hours"
-												value="{{ old('duration_hours', 0) }}"
-												class="w-full rounded-lg border-gray-200"
-												placeholder="Часы (0‑23)">
+												<label>Часы:</label>
+												<select name="duration_hours" class="w-full rounded-lg border-gray-200">
+												<option value="0" {{ old('duration_hours', 0) == 0 ? 'selected' : '' }}>0 ч.</option><option value="1" {{ old('duration_hours', 0) == 1 ? 'selected' : '' }}>1 ч.</option><option value="2" {{ old('duration_hours', 0) == 2 ? 'selected' : '' }}>2 ч.</option><option value="3" {{ old('duration_hours', 0) == 3 ? 'selected' : '' }}>3 ч.</option><option value="4" {{ old('duration_hours', 0) == 4 ? 'selected' : '' }}>4 ч.</option><option value="5" {{ old('duration_hours', 0) == 5 ? 'selected' : '' }}>5 ч.</option><option value="6" {{ old('duration_hours', 0) == 6 ? 'selected' : '' }}>6 ч.</option><option value="7" {{ old('duration_hours', 0) == 7 ? 'selected' : '' }}>7 ч.</option><option value="8" {{ old('duration_hours', 0) == 8 ? 'selected' : '' }}>8 ч.</option><option value="9" {{ old('duration_hours', 0) == 9 ? 'selected' : '' }}>9 ч.</option><option value="10" {{ old('duration_hours', 0) == 10 ? 'selected' : '' }}>10 ч.</option><option value="11" {{ old('duration_hours', 0) == 11 ? 'selected' : '' }}>11 ч.</option><option value="12" {{ old('duration_hours', 0) == 12 ? 'selected' : '' }}>12 ч.</option><option value="13" {{ old('duration_hours', 0) == 13 ? 'selected' : '' }}>13 ч.</option><option value="14" {{ old('duration_hours', 0) == 14 ? 'selected' : '' }}>14 ч.</option><option value="15" {{ old('duration_hours', 0) == 15 ? 'selected' : '' }}>15 ч.</option><option value="16" {{ old('duration_hours', 0) == 16 ? 'selected' : '' }}>16 ч.</option><option value="17" {{ old('duration_hours', 0) == 17 ? 'selected' : '' }}>17 ч.</option><option value="18" {{ old('duration_hours', 0) == 18 ? 'selected' : '' }}>18 ч.</option><option value="19" {{ old('duration_hours', 0) == 19 ? 'selected' : '' }}>19 ч.</option><option value="20" {{ old('duration_hours', 0) == 20 ? 'selected' : '' }}>20 ч.</option><option value="21" {{ old('duration_hours', 0) == 21 ? 'selected' : '' }}>21 ч.</option><option value="22" {{ old('duration_hours', 0) == 22 ? 'selected' : '' }}>22 ч.</option><option value="23" {{ old('duration_hours', 0) == 23 ? 'selected' : '' }}>23 ч.</option>
+												</select>
 											</div>
-											
+
 											<div class="col-4">
-												<label>Минуты:</label>			
-												<input type="number"
-												min="0"
-												max="59"
-												name="duration_minutes"
-												value="{{ old('duration_minutes', 0) }}"
-												class="w-full rounded-lg border-gray-200"
-												placeholder="Минуты (0‑59)">
+												<label>Минуты:</label>
+												<select name="duration_minutes" class="w-full rounded-lg border-gray-200">
+												<option value="0" {{ old('duration_minutes', 0) == 0 ? 'selected' : '' }}>0 мин.</option><option value="5" {{ old('duration_minutes', 0) == 5 ? 'selected' : '' }}>5 мин.</option><option value="10" {{ old('duration_minutes', 0) == 10 ? 'selected' : '' }}>10 мин.</option><option value="15" {{ old('duration_minutes', 0) == 15 ? 'selected' : '' }}>15 мин.</option><option value="20" {{ old('duration_minutes', 0) == 20 ? 'selected' : '' }}>20 мин.</option><option value="25" {{ old('duration_minutes', 0) == 25 ? 'selected' : '' }}>25 мин.</option><option value="30" {{ old('duration_minutes', 0) == 30 ? 'selected' : '' }}>30 мин.</option><option value="35" {{ old('duration_minutes', 0) == 35 ? 'selected' : '' }}>35 мин.</option><option value="40" {{ old('duration_minutes', 0) == 40 ? 'selected' : '' }}>40 мин.</option><option value="45" {{ old('duration_minutes', 0) == 45 ? 'selected' : '' }}>45 мин.</option><option value="50" {{ old('duration_minutes', 0) == 50 ? 'selected' : '' }}>50 мин.</option><option value="55" {{ old('duration_minutes', 0) == 55 ? 'selected' : '' }}>55 мин.</option>
+												</select>
 											</div>
 											<input type="hidden" name="duration_sec" id="duration_sec" value="0">
 											@error('duration_sec')

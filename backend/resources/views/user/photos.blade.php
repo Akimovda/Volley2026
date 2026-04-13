@@ -245,7 +245,7 @@ $canUploadSchool = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
             flex-shrink: 0;
             margin-top: 1rem;
             }
-
+			
             .cropper-modal-overlay .fancybox-loading {
             position: absolute;
             top: calc(50% - 75px);
@@ -325,10 +325,10 @@ $canUploadSchool = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
                 try {
                     const canvas = document.createElement('canvas');
                     return canvas.toDataURL('image/webp').indexOf('data:image/webp') === 0;
-                } catch (e) {
+					} catch (e) {
                     return false;
-                }
-            }       
+				}
+			}       
             
             function processImage(file, callback) {
                 const url = URL.createObjectURL(file);
@@ -341,7 +341,7 @@ $canUploadSchool = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
                         const ratio = Math.min(maxSize / width, maxSize / height);
                         width = Math.round(width * ratio);
                         height = Math.round(height * ratio);
-                    }
+					}
                     const canvas = document.createElement('canvas');
                     canvas.width = width;
                     canvas.height = height;
@@ -349,9 +349,9 @@ $canUploadSchool = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
                     ctx.drawImage(img, 0, 0, width, height);
                     const format = supportsWebP() ? 'image/webp' : 'image/jpeg';
                     canvas.toBlob((blob) => { callback(blob, format); }, format, 0.85);
-                };
+				};
                 img.src = url;
-            }
+			}
             
             const pond = FilePond.create(document.querySelector('#photo'), {
                 allowMultiple: false,
@@ -366,20 +366,20 @@ $canUploadSchool = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
                 imagePreviewMinHeight: 300,
                 name: 'photo',
                 server: null,
-            });
-
+			});
+			
             // Текущий тип фото и соотношение сторон
             let currentPhotoType = 'photos';
             let currentAspectRatio = 1;
             let currentMakeAvatar = 0;
-
+			
             function setPhotoType(type, makeAvatar, aspect) {
                 currentPhotoType = type;
                 currentMakeAvatar = makeAvatar;
                 currentAspectRatio = aspect;
                 document.getElementById('photo_type_input').value = type;
                 document.getElementById('make_avatar_hidden').value = makeAvatar;
-            }
+			}
             
             let cropper = null;
             let currentFile = null;
@@ -391,12 +391,12 @@ $canUploadSchool = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
                     swal({
                         icon: 'error',
                         title: 'Неподдерживаемый формат',
-                        text: 'Можно загружать только изображения (JPEG, PNG, WEBP, AVIF)',
+                        text: 'Можно загружать только изображения\n(JPEG, PNG, WEBP, AVIF)',
                         confirmButtonText: 'Понятно'
-                    });
+					});
                     pond.removeFile(file.id);
                     return;
-                }
+				}
                 
                 const maxSize = 15 * 1024 * 1024;
                 if (file.file.size > maxSize) {
@@ -405,10 +405,10 @@ $canUploadSchool = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
                         title: 'Файл слишком большой',
                         text: 'Максимальный размер: 15 МБ',
                         confirmButtonText: 'Понятно'
-                    });
+					});
                     pond.removeFile(file.id);
                     return;
-                }
+				}
                 
                 processImage(file.file, (blob, format) => {
                     currentFile = { file: blob, format: format };
@@ -416,9 +416,9 @@ $canUploadSchool = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
                     showCropperModal(url, (croppedBlob, cropFormat) => {
                         pond.removeFile(file.id);
                         sendFiles(blob, croppedBlob, cropFormat);
-                    });
-                });
-            });
+					});
+				});
+			});
             
             function sendFiles(originalFile, croppedBlob, format) {
                 const formData = new FormData();
@@ -438,33 +438,33 @@ $canUploadSchool = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
                 fetch('/user/photos', {
                     method: 'POST',
                     body: formData,
-                }).then(async (response) => {
+					}).then(async (response) => {
                     const data = await response.json();
                     if (response.ok && data.success) {
                         const urlParams = new URLSearchParams(window.location.search);
                         const userId = urlParams.get('user_id');
                         const redirectUrl = userId 
-                            ? window.location.pathname + '?upload=success&user_id=' + userId
-                            : window.location.pathname + '?upload=success';
+						? window.location.pathname + '?upload=success&user_id=' + userId
+						: window.location.pathname + '?upload=success';
                         window.location.href = redirectUrl;
-                    } else {
+						} else {
                         const modal = document.querySelector('.cropper-modal-overlay');
                         if (modal) modal.remove();
                         swal({ title: "Ошибка", text: data.error || 'Ошибка загрузки', icon: "error", button: "Понятно" });
-                    }
-                }).catch(() => {
+					}
+					}).catch(() => {
                     const modal = document.querySelector('.cropper-modal-overlay');
                     if (modal) modal.remove();
                     swal({ title: "Ошибка", text: "Проблема с соединением", icon: "error", button: "Понятно" });
-                });
-            }
+				});
+			}
             
             function showCropperModal(imageUrl, onCropComplete) {
                 const modal = document.createElement('div');
                 modal.className = 'cropper-modal-overlay';
                 const aspectRatio = currentAspectRatio;
                 const isWide = aspectRatio > 1;
-                const titleText = isWide ? 'Выберите область (16:9)' : 'Выберите область (1:1)';
+                const titleText = isWide ? 'Выберите область' : 'Выберите область';
                 
                 const container = document.createElement('div');
                 container.className = 'cropper-modal-container';
@@ -516,8 +516,8 @@ $canUploadSchool = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
                         highlight: true,
                         responsive: true,
                         restore: false,
-                    });
-                };
+					});
+				};
                 
                 saveBtn.onclick = () => {
                     if (!cropper) return;
@@ -527,19 +527,19 @@ $canUploadSchool = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
                     const canvas = cropper.getCroppedCanvas({
                         width: currentAspectRatio > 1 ? 640 : 360,
                         height: 360,
-                    });
+					});
                     const format = supportsWebP() ? 'image/webp' : 'image/jpeg';
                     canvas.toBlob((blob) => { onCropComplete(blob, format); }, format, 0.90);
-                };
+				};
                 
                 cancelBtn.onclick = () => {
                     modal.remove();
                     if (cropper) { cropper.destroy(); cropper = null; }
                     pond.removeFile(currentFile?.id);
-                };
+				};
                 
                 modal.onclick = (e) => { if (e.target === modal) cancelBtn.onclick(); };
-            }
+			}
 		</script>
         
         <script>
@@ -553,8 +553,8 @@ $canUploadSchool = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
                     992: { slidesPerView: 3 },
                     1024: { slidesPerView: 3 },
                     1280: { slidesPerView: 4 }
-                }
-            });
+				}
+			});
 		</script>
 		
 		@if($canUploadEventPhotos)
@@ -568,23 +568,22 @@ $canUploadSchool = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
                     768: { slidesPerView: 2 },
                     1024: { slidesPerView: 2 },
                     1280: { slidesPerView: 3 }
-                }
-            });
-
-            const schoolLogoSwiper = new Swiper('.school-logo-swiper', {
-                slidesPerView: 1,
-                spaceBetween: 20,
-                pagination: { el: '.swiper-pagination', clickable: true },
-                breakpoints: { 640: { slidesPerView: 2 }, 1024: { slidesPerView: 3 } }
-            });
-
+				}
+			});
+			
+			
             const schoolCoverSwiper = new Swiper('.school-cover-swiper', {
                 slidesPerView: 1,
                 spaceBetween: 20,
                 pagination: { el: '.swiper-pagination', clickable: true },
-                breakpoints: { 640: { slidesPerView: 2 }, 1024: { slidesPerView: 2 } }
-            });
-        </script>
+                breakpoints: {
+                    640: { slidesPerView: 2 },
+                    768: { slidesPerView: 2 },
+                    1024: { slidesPerView: 2 },
+                    1280: { slidesPerView: 3 }
+				}
+			});
+		</script>
         @endif  
 	</x-slot>
     
@@ -593,20 +592,20 @@ $canUploadSchool = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
         @if(request()->get('upload') == 'success')
         <div class="ramka">    
             <div class="alert alert-success">Фото добавлено ✅</div>
-        </div>
+		</div>
         <script>window.history.replaceState({}, document.title, window.location.pathname);</script>       
         @endif      
         
         @if (session('status'))
         <div class="ramka">    
             <div class="alert alert-success">{{ session('status') }}</div>
-        </div>
+		</div>
         @endif
         
         @if (session('error'))
         <div class="ramka">        
             <div class="alert alert-danger">{{ session('error') }}</div>
-        </div>
+		</div>
         @endif
         
         @if ($errors->any())
@@ -617,9 +616,9 @@ $canUploadSchool = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
                     @foreach ($errors->all() as $e)
                     <li>{{ $e }}</li>
                     @endforeach
-                </ul>
-            </div>
-        </div>
+				</ul>
+			</div>
+		</div>
         @endif      
         
         <div class="row row2">
@@ -627,78 +626,85 @@ $canUploadSchool = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
                 <div class="sticky">
                     <div class="card-ramka">
                         @include('profile._menu', [
-                            'menuUser'      => $user,
-                            'isEditingOther' => $isEditingOther,
-                            'activeMenu'    => 'photos',
+						'menuUser'      => $user,
+						'isEditingOther' => $isEditingOther,
+						'activeMenu'    => 'photos',
                         ])
-                    </div>
-                </div>
-            </div>
+					</div>
+				</div>
+			</div>
             <div class="col-lg-8 col-xl-9 order-1">    
                 <div class="ramka" style="z-index:10">      
                     <h2 class="-mt-05">Загрузить фото</h2>
                     <div class="form">
                         <form id="photoUploadForm"
-                            action="{{ route('user.photos.store') }}"
-                            method="POST"
-                            enctype="multipart/form-data"
-                            class="mt-2">
+						action="{{ route('user.photos.store') }}"
+						method="POST"
+						enctype="multipart/form-data"
+						class="mt-2">
                             @csrf
                             
                             @if($isEditingOther)
                             <input type="hidden" name="user_id" value="{{ $user->id }}">
                             @endif
-
+							
                             {{-- Тип фото — радио-группа (взаимоисключающие) --}}
                             <input type="hidden" name="photo_type" id="photo_type_input" value="photos">
                             <input type="hidden" id="make_avatar_hidden" name="make_avatar" value="0">
-
+							
                             <label class="radio-item mb-1">
                                 <input type="radio" name="photo_type_radio" value="photos" checked
-                                    onchange="setPhotoType('photos', 0, 1)">
+								onchange="setPhotoType('photos', 0, 1)">
                                 <div class="custom-radio"></div>
-                                <span>В галерею (1:1)</span>
-                            </label>
-
+                                <span>В галерею</span>
+							</label>
+							
                             <label class="radio-item mb-1">
                                 <input type="radio" name="photo_type_radio" value="photos_avatar"
-                                    onchange="setPhotoType('photos', 1, 1)">
+								onchange="setPhotoType('photos', 1, 1)">
                                 <div class="custom-radio"></div>
-                                <span>Сделать аватаром (1:1)</span>
-                            </label>
-
+                                <span>Сделать аватаром</span>
+							</label>
+							
                             @if($canUploadEventPhotos)
                             <label class="radio-item mb-1">
                                 <input type="radio" name="photo_type_radio" value="event_photos"
-                                    onchange="setPhotoType('event_photos', 0, 16/9)">
+								onchange="setPhotoType('event_photos', 0, 16/9)">
                                 <div class="custom-radio"></div>
-                                <span>Фото для мероприятий (16:9)</span>
-                            </label>
-
+                                <span>Фото для мероприятий</span>
+							</label>
+							
                             @if($hasSchool ?? false)
+							@if(isset($schoolLogos) && $schoolLogos->count() >= 1)	
+                            <label class="radio-item mb-1">
+                                <input type="radio" name="" value="" disabled>
+                                <div class="custom-radio"></div>
+                                <span>Логотип школы уже загружен, сначала удали старый</span>
+							</label>
+							@else
                             <label class="radio-item mb-1">
                                 <input type="radio" name="photo_type_radio" value="school_logo"
-                                    onchange="setPhotoType('school_logo', 0, 1)">
+								onchange="setPhotoType('school_logo', 0, 1)">
                                 <div class="custom-radio"></div>
-                                <span>Логотип школы (1:1)</span>
-                            </label>
-
+                                <span>Логотип школы</span>
+							</label>							
+							@endif
                             <label class="radio-item mb-1">
                                 <input type="radio" name="photo_type_radio" value="school_cover"
-                                    onchange="setPhotoType('school_cover', 0, 16/9)">
+								onchange="setPhotoType('school_cover', 0, 16/9)">
                                 <div class="custom-radio"></div>
-                                <span>🖼 Обложка школы (16:9)</span>
-                            </label>
+                                <span>Фотографии школы</span>
+							</label>
                             @endif {{-- hasSchool --}}
                             @endif
                             
                             <div class="file-wrap mt-2">
                                 <input type="file" name="photo" id="photo" accept="image/*" />
-                            </div>
-                        </form>
-                    </div>
-                </div>
-
+							</div>
+						</form>
+					</div>
+				</div>
+				
                 <div class="ramka">        
                     <h2 class="-mt-05">Галерея</h2>
                     <p>Всего: <strong class="cd">{{ $photos->count() }}</strong> фото</p>
@@ -706,15 +712,15 @@ $canUploadSchool = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
                         @if($photos->isEmpty())
                         <div class="alert alert-info">
                             Фотографий нет, загрузите первое — и оно станет аватаром автоматически.
-                        </div>
+						</div>
                         @else
                         <div class="swiper photo-swiper">
                             <div class="swiper-wrapper">
                                 @foreach($photos as $m)
                                 @php
                                 $thumbUrl = method_exists($m, 'hasGeneratedConversion') && $m->hasGeneratedConversion('thumb')
-                                    ? $m->getUrl('thumb')
-                                    : $m->getUrl();
+								? $m->getUrl('thumb')
+								: $m->getUrl();
                                 $isAvatar = $user->avatar_media_id && $user->avatar_media_id == $m->id;
                                 @endphp
                                 <div class="swiper-slide">
@@ -723,8 +729,8 @@ $canUploadSchool = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
                                             <img src="{{ $thumbUrl }}" alt="photo" loading="lazy"/>
                                             <span></span>
                                             <div class="hover-image-circle"></div>
-                                        </a>
-                                    </div>                              
+										</a>
+									</div>                              
                                     <div class="mt-1 d-flex between fvc">
                                         @if($isAvatar)
                                         <span class="cd f-16 l-11 b-600">Аватар</span>
@@ -733,36 +739,36 @@ $canUploadSchool = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
                                             @csrf
                                             <span onclick="event.preventDefault(); this.closest('form').submit();" class="blink f-16 l-11">
                                                 Сделать фото<br>аватаром
-                                            </span>
-                                        </form>
+											</span>
+										</form>
                                         @endif          
                                         <form method="POST" action="{{ route('user.photos.destroy', ['media' => $m->id]) }}"
-                                            onsubmit="return confirm('Удалить фото?')">
+										onsubmit="return confirm('Удалить фото?')">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="icon-delete btn-alert btn btn-danger btn-svg"
-                                                data-title="Удалить фото?" data-icon="warning"
-                                                data-confirm-text="Да, удалить" data-cancel-text="Отмена">
-                                            </button>                               
-                                        </form>
-                                    </div>                              
-                                </div>
+											data-title="Удалить фото?" data-icon="warning"
+											data-confirm-text="Да, удалить" data-cancel-text="Отмена">
+											</button>                               
+										</form>
+									</div>                              
+								</div>
                                 @endforeach
-                            </div>
+							</div>
                             <div class="swiper-pagination"></div>
-                        </div>
+						</div>
                         @endif
-                    </div>
-                </div>  
+					</div>
+				</div>  
                 
                 {{-- Фото для мероприятий --}}
                 @if($canUploadEventPhotos && (!$isEditingOther || auth()->user()?->isAdmin()))
                 <div class="ramka">        
-                    <h2 class="-mt-05">🏐 Фото для мероприятий</h2>
+                    <h2 class="-mt-05">Фото для мероприятий</h2>
                     <p>Всего: <strong class="cd">{{ isset($eventPhotos) ? $eventPhotos->count() : 0 }}</strong> фото</p>
                     <div class="form mt-2">
                         @if(!isset($eventPhotos) || $eventPhotos->isEmpty())
-                        <div class="alert alert-info">Нет фото для мероприятий. Загрузите фото с выбором «🏐 Фото для мероприятий».</div>
+                        <div class="alert alert-info">Нет фото для мероприятий. Загрузите фото с выбором «Фото для мероприятий».</div>
                         @else
                         <div class="swiper event-photo-swiper">
                             <div class="swiper-wrapper">
@@ -773,106 +779,138 @@ $canUploadSchool = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
                                             <img src="{{ $m->getUrl('event_thumb') ?? $m->getUrl() }}" alt="event photo" loading="lazy"/>
                                             <span></span>
                                             <div class="hover-image-circle"></div>
-                                        </a>
-                                    </div>
+										</a>
+									</div>
                                     <div class="mt-1 d-flex between fvc">
                                         <div></div>
                                         <form method="POST" action="{{ route('user.photos.destroyEventPhoto', ['media' => $m->id]) }}"
-                                            onsubmit="return confirm('Удалить фото?')">
+										onsubmit="return confirm('Удалить фото?')">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="icon-delete btn-alert btn btn-danger btn-svg"
-                                                data-title="Удалить фото?" data-icon="warning"
-                                                data-confirm-text="Да, удалить" data-cancel-text="Отмена">
-                                            </button>
-                                        </form>
-                                    </div>
-                                </div>
+											data-title="Удалить фото?" data-icon="warning"
+											data-confirm-text="Да, удалить" data-cancel-text="Отмена">
+											</button>
+										</form>
+									</div>
+								</div>
                                 @endforeach
-                            </div>
+							</div>
                             <div class="swiper-pagination"></div>
-                        </div>
+						</div>
                         @endif
-                    </div>
-                </div>
-
+					</div>
+				</div>
+				
                 @if($hasSchool ?? false)
                 {{-- Логотипы школы --}}
                 <div class="ramka">
-                    <h2 class="-mt-05">🏫 Логотипы школы</h2>
-                    <p>Всего: <strong class="cd">{{ isset($schoolLogos) ? $schoolLogos->count() : 0 }}</strong> фото</p>
+                    <h2 class="-mt-05">Логотип школы</h2>
                     <div class="form mt-2">
                         @if(!isset($schoolLogos) || $schoolLogos->isEmpty())
-                        <div class="alert alert-info">Нет логотипов. Загрузите фото с выбором «🏫 Логотип школы».</div>
+                        <div class="alert alert-info">Нет логотипов. Загрузите фото с выбором «Логотип школы».</div>
                         @else
-                        <div class="swiper school-logo-swiper">
-                            <div class="swiper-wrapper">
-                                @foreach($schoolLogos as $m)
-                                <div class="swiper-slide">
-                                    <div class="hover-image">
-                                        <a href="{{ $m->getUrl() }}" class="fancybox" data-fancybox="school-logo-gallery">
-                                            <img src="{{ $m->hasGeneratedConversion('school_logo_thumb') ? $m->getUrl('school_logo_thumb') : $m->getUrl() }}"
-                                                alt="school logo" loading="lazy"/>
-                                            <span></span>
-                                            <div class="hover-image-circle"></div>
-                                        </a>
-                                    </div>
-                                    @if(!$isEditingOther || auth()->user()?->isAdmin())
-                                    <form method="POST" action="{{ route('user.photos.destroy', $m->id) }}" class="mt-1"
-                                        onsubmit="return confirm('Удалить логотип?')">
-                                        @csrf @method('DELETE')
-                                        <button type="submit" class="btn btn-danger btn-small w-100">🗑 Удалить</button>
-                                    </form>
-                                    @endif
-                                </div>
-                                @endforeach
-                            </div>
-                            <div class="swiper-pagination"></div>
-                        </div>
+						<div class="row row2">
+							@foreach($schoolLogos as $m)
+							<div class="col-5 col-sm-4 col-md-3">
+								<div class="hover-image">
+									<a href="{{ $m->getUrl() }}" class="fancybox" data-fancybox="school-logo-gallery">
+										<img src="{{ $m->hasGeneratedConversion('school_logo_thumb') ? $m->getUrl('school_logo_thumb') : $m->getUrl() }}"
+										alt="school logo" loading="lazy"/>
+										<span></span>
+										<div class="hover-image-circle"></div>
+									</a>
+								</div>
+							</div>
+							@if(!$isEditingOther || auth()->user()?->isAdmin())
+							<div class="col-7 col-sm-8 col-md-9">
+								
+								@if(isset($schoolLogos) && $schoolLogos->count() >= 1)
+								<div class="alert alert-info">
+									Логотип уже загружен. Чтобы заменить — удалите текущий и загрузите новый.
+									<div class="text-right">
+										<form method="POST" action="{{ route('user.photos.destroy', $m->id) }}"
+										onsubmit="return confirm('Удалить логотип?')">
+											@csrf @method('DELETE')
+                                            <button type="submit" class="icon-delete btn-alert btn btn-danger btn-svg"
+											data-title="Удалить логотип?" data-icon="warning"
+											data-confirm-text="Да, удалить" data-cancel-text="Отмена">
+											</button>
+										</form>					
+									</div>
+								</div>
+								@endif								
+								
+								
+								
+							</div>									
+							@endif
+							@endforeach
+						</div>
                         @endif
-                    </div>
-                </div>
-
+					</div>
+				</div>
+				
                 {{-- Обложки школы --}}
                 <div class="ramka">
-                    <h2 class="-mt-05">🖼 Обложки школы</h2>
+                    <h2 class="-mt-05">Фотографии школы</h2>
                     <p>Всего: <strong class="cd">{{ isset($schoolCovers) ? $schoolCovers->count() : 0 }}</strong> фото</p>
                     <div class="form mt-2">
                         @if(!isset($schoolCovers) || $schoolCovers->isEmpty())
-                        <div class="alert alert-info">Нет обложек. Загрузите фото с выбором «🖼 Обложка школы».</div>
+                        <div class="alert alert-info">Нет фото. Загрузите фото с выбором «Фотографии школы».</div>
                         @else
                         <div class="swiper school-cover-swiper">
                             <div class="swiper-wrapper">
                                 @foreach($schoolCovers as $m)
                                 <div class="swiper-slide">
-                                    <div class="hover-image">
+                                    <div class="hover-image" style="position:relative;">
                                         <a href="{{ $m->getUrl() }}" class="fancybox" data-fancybox="school-cover-gallery">
                                             <img src="{{ $m->hasGeneratedConversion('school_cover_thumb') ? $m->getUrl('school_cover_thumb') : $m->getUrl() }}"
-                                                alt="school cover" loading="lazy"/>
+											alt="school cover" loading="lazy"/>
                                             <span></span>
                                             <div class="hover-image-circle"></div>
-                                        </a>
-                                    </div>
-                                    @if(!$isEditingOther || auth()->user()?->isAdmin())
-                                    <form method="POST" action="{{ route('user.photos.destroy', $m->id) }}" class="mt-1"
-                                        onsubmit="return confirm('Удалить обложку?')">
-                                        @csrf @method('DELETE')
-                                        <button type="submit" class="btn btn-danger btn-small w-100">🗑 Удалить</button>
-                                    </form>
+										</a>
+									</div>
+									
+									
+                                    <div class="mt-1 d-flex between fvc">
+										@if(!$isEditingOther || auth()->user()?->isAdmin())
+										@if(($mainCoverMediaId ?? null) != $m->id)
+										
+										<form method="POST" action="{{ route('user.photos.setMainCover', $m->id) }}">
+                                            @csrf
+                                            <span onclick="event.preventDefault(); this.closest('form').submit();" class="blink f-16 l-11">
+                                                Сделать фото<br>основным
+											</span>
+										</form>							
+										
+                                        @else
+										<span class="cd f-16 l-11 b-600">Основное фото</span>
+                                        @endif          
+										<form method="POST" action="{{ route('user.photos.destroy', $m->id) }}"
+										onsubmit="return confirm('Удалить фото?')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="icon-delete btn-alert btn btn-danger btn-svg"
+											data-title="Удалить фото?" data-icon="warning"
+											data-confirm-text="Да, удалить" data-cancel-text="Отмена">
+											</button>                               
+										</form>
+									</div> 										
                                     @endif
-                                </div>
+								</div>
                                 @endforeach
-                            </div>
+							</div>
                             <div class="swiper-pagination"></div>
-                        </div>
+						</div>
                         @endif
-                    </div>
-                </div>
+					</div>
+				</div>
                 @endif
                 @endif {{-- /hasSchool --}}
                 
-            </div>  
-        </div>          
-    </div>
+			</div>  
+		</div>          
+	</div>
     
 </x-voll-layout>

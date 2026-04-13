@@ -367,7 +367,7 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 					</div>
 					
 					{{-- Кнопки записи --}}
-					<div class="mt-1 d-flex flex-wrap gap-2 align-items-center">
+					<div class="mt-1">
 						
 						@if ($eventStarted2)
                         <div class="alert alert-info">Мероприятие уже началось</div>

@@ -329,6 +329,11 @@
         </div>
         @endif
 
+    <div class="ramka text-center">
+        <a href="{{ route('staff.index') }}" class="btn btn-secondary mr-2">🧑‍💻 Мои помощники</a>
+        <a href="{{ route('staff.logs') }}" class="btn btn-secondary">📋 Логи действий Staff</a>
+    </div>
+
     </div>
 
     <x-slot name="script">

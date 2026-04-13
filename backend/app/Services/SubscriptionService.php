@@ -26,7 +26,16 @@ class SubscriptionService
             $startsAt = now()->toDateString();
             $expiresAt = null;
 
-            if ($template->valid_until) {
+            // Приоритет: duration_months/duration_days -> valid_until
+            $durationMonths = (int) ($template->duration_months ?? 0);
+            $durationDays   = (int) ($template->duration_days ?? 0);
+
+            if ($durationMonths > 0 || $durationDays > 0) {
+                $expires = now();
+                if ($durationMonths > 0) $expires = $expires->addMonths($durationMonths);
+                if ($durationDays > 0)   $expires = $expires->addDays($durationDays);
+                $expiresAt = $expires->toDateString();
+            } elseif ($template->valid_until) {
                 $expiresAt = $template->valid_until->toDateString();
             }
 

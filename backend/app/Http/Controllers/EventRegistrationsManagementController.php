@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use App\Services\StaffLogService;
 
 class EventRegistrationsManagementController extends Controller
 {
@@ -256,6 +257,12 @@ class EventRegistrationsManagementController extends Controller
             eventTitle: (string) ($event->title ?? ('Мероприятие #' . $event->id))
         );
 
+        // Лог Staff
+        if ($authUser->isStaff()) {
+            $orgId = $authUser->getOrganizerIdForStaff();
+            if ($orgId) app(StaffLogService::class)->log($authUser, $orgId, 'add_participant', 'event', $event->id, "Добавил участника # в мероприятие: {$event->title}");
+        }
+
         return back()->with('status', 'Игрок добавлен ✅');
     }
 
@@ -360,6 +367,12 @@ class EventRegistrationsManagementController extends Controller
             cancelledByUserId: (int) $authUser->id
         );
 
+        // Лог Staff
+        if ($authUser->isStaff()) {
+            $orgId = $authUser->getOrganizerIdForStaff();
+            if ($orgId) app(StaffLogService::class)->log($authUser, $orgId, 'cancel_registration', 'event', $event->id, "Отменил запись в мероприятие: {$event->title}");
+        }
+
         return back()->with('status', 'Бронь отменена ✅');
     }
 
@@ -407,6 +420,12 @@ class EventRegistrationsManagementController extends Controller
             eventTitle: (string) ($event->title ?? ('Мероприятие #' . $event->id)),
             cancelledByUserId: (int) $authUser->id
         );
+
+        // Лог Staff
+        if ($authUser->isStaff()) {
+            $orgId = $authUser->getOrganizerIdForStaff();
+            if ($orgId) app(StaffLogService::class)->log($authUser, $orgId, 'remove_participant', 'event', $event->id, "Удалил участника из мероприятия: {$event->title}");
+        }
 
         return back()->with('status', 'Регистрация удалена ✅');
     }

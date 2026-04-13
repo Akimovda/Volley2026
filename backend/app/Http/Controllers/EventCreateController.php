@@ -6,6 +6,7 @@
 	
 	use App\Services\EventStoreService;
     use App\Services\EventAccessService;
+use App\Services\StaffLogService;
     use App\Services\EventRegistrationRules;
     use Illuminate\Http\Request;
     use Illuminate\Support\Arr;
@@ -112,6 +113,18 @@
 
                    $result = $this->storeService->store($request, $user);
                    $event = $result['event'];
+
+                   // Лог для Staff
+                   if ($user->isStaff()) {
+                       $orgId = $user->getOrganizerIdForStaff();
+                       if ($orgId) {
+                           app(StaffLogService::class)->log(
+                               $user, $orgId,
+                               'create_event', 'event', $event->id,
+                               "Создал мероприятие: {$event->title}"
+                           );
+                       }
+                   }
 
                     $privateLink = null;
                     if ((bool)($event->is_private ?? false) && !empty($event->public_token)) {

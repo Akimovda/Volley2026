@@ -89,11 +89,11 @@
     <x-slot name="breadcrumbs">
         <li itemprop="itemListElement" itemscope="" itemtype="http://schema.org/ListItem">
             <a href="{{ route('locations.index') }}" itemprop="item"><span itemprop="name">Локации</span></a>
-            <meta itemprop="position" content="1">
+            <meta itemprop="position" content="2">
 		</li>
         <li itemprop="itemListElement" itemscope="" itemtype="http://schema.org/ListItem">
             <span itemprop="name">{{ $location->name }}</span>
-            <meta itemprop="position" content="2">
+            <meta itemprop="position" content="3">
 		</li>
 	</x-slot>
 	
@@ -101,7 +101,7 @@
     <div class="container">
         {{-- Основная информация --}}
 		<div class="row mb-0">
-			<div class="col-md-8">
+			<div class="col-md-7">
 				<div class="ramka mb-0">
                     <div class="mb-2">
                         @if(!empty($location->address))
@@ -128,7 +128,7 @@
 					--}}
 				</div>
 			</div>
-			<div class="col-md-4">
+			<div class="col-md-5">
 				<div class="sticky mb-0">
 					<div class="ramka mb-0">	
 						{{-- Галерея со Swiper + Fancybox --}}

@@ -13,12 +13,13 @@
             'both'    => '🏐🏖 Классика и пляж',
             default   => ''
         };
-        $organizer  = $school->organizer;
-        $coverMedia = $organizer?->getMedia('school_cover')->sortByDesc('created_at')->first();
-        $logoMedia  = $organizer?->getMedia('school_logo')->sortByDesc('created_at')->first();
-        $cover = $coverMedia
-            ? ($coverMedia->hasGeneratedConversion('school_cover_thumb') ? $coverMedia->getUrl('school_cover_thumb') : $coverMedia->getUrl())
-            : ($school->getFirstMediaUrl('cover', 'thumb') ?: $school->getFirstMediaUrl('cover'));
+        $organizer    = $school->organizer;
+        $allCovers    = $organizer?->getMedia('school_cover')->sortBy(function($m) use ($school) {
+            return $m->id == $school->cover_media_id ? 0 : 1;
+        }) ?? collect();
+        $coverMedia   = $allCovers->first();
+        $logoMedia    = $organizer?->getMedia('school_logo')->sortByDesc('created_at')->first();
+
         $logo = $logoMedia
             ? ($logoMedia->hasGeneratedConversion('school_logo_thumb') ? $logoMedia->getUrl('school_logo_thumb') : $logoMedia->getUrl())
             : ($school->getFirstMediaUrl('logo', 'thumb') ?: $school->getFirstMediaUrl('logo'));
@@ -61,10 +62,33 @@
         <div class="ramka"><div class="alert alert-success">{{ session('status') }}</div></div>
         @endif
 
-        {{-- ОБЛОЖКА --}}
+        {{-- ОБЛОЖКА / СЛАЙДЕР --}}
         <div class="ramka">
-            @if($cover)
-            <img src="{{ $cover }}" alt="{{ $school->name }}" class="school-cover">
+            @if($allCovers->count() > 1)
+            <div class="swiper school-show-swiper" style="border-radius:1rem;overflow:hidden;">
+                <div class="swiper-wrapper">
+                    @foreach($allCovers as $cm)
+                    @php
+                        $cmUrl = $cm->hasGeneratedConversion('school_cover_thumb')
+                            ? $cm->getUrl('school_cover_thumb')
+                            : $cm->getUrl();
+                    @endphp
+                    <div class="swiper-slide">
+                        <img src="{{ $cmUrl }}" alt="{{ $school->name }}" class="school-cover">
+                    </div>
+                    @endforeach
+                </div>
+                <div class="swiper-pagination"></div>
+                <div class="swiper-button-prev"></div>
+                <div class="swiper-button-next"></div>
+            </div>
+            @elseif($coverMedia)
+            @php
+                $coverUrl = $coverMedia->hasGeneratedConversion('school_cover_thumb')
+                    ? $coverMedia->getUrl('school_cover_thumb')
+                    : $coverMedia->getUrl();
+            @endphp
+            <img src="{{ $coverUrl }}" alt="{{ $school->name }}" class="school-cover">
             @else
             <div class="school-cover-placeholder">
                 <div style="font-size:5rem;">🏐</div>
@@ -133,35 +157,117 @@
             <h2 class="-mt-05">🎫 Абонементы</h2>
             <div class="row row2">
                 @foreach($subscriptionTemplates as $t)
+                @php
+                    $durationLabel = null;
+                    $dm = (int)($t->duration_months ?? 0);
+                    $dd = (int)($t->duration_days ?? 0);
+                    if ($dm > 0 || $dd > 0) {
+                        $parts = [];
+                        if ($dm > 0) $parts[] = $dm . ' ' . trans_choice('мес.|мес.|мес.', $dm);
+                        if ($dd > 0) $parts[] = $dd . ' ' . trans_choice('день|дня|дней', $dd);
+                        $durationLabel = implode(' ', $parts);
+                    }
+                @endphp
                 <div class="col-md-4">
-                    <div class="card">
-                        <div class="b-600 f-18 mb-1">{{ $t->name }}</div>
-                        @if($t->description)<div class="f-14 mb-2" style="opacity:.7;">{{ $t->description }}</div>@endif
-                        <div class="d-flex between fvc mb-2">
-                            <div>
-                                <span class="f-24 b-700 cd">{{ $t->visits_total }}</span>
-                                <span class="f-14" style="opacity:.6;"> посещений</span>
+                    <div class="sub-gold-card" style="border-radius:1.6rem;overflow:hidden;position:relative;color:#1a1100;box-shadow:0 0.8rem 3rem rgba(180,140,0,.35);">
+                        <style>
+                        .sub-gold-card {
+                            background: linear-gradient(135deg, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c);
+                            background-size: 300% 300%;
+                            animation: goldShimmer 4s ease infinite;
+                        }
+                        @keyframes goldShimmer {
+                            0%   { background-position: 0% 50%; }
+                            50%  { background-position: 100% 50%; }
+                            100% { background-position: 0% 50%; }
+                        }
+                        .sub-gold-card .sub-buy-btn {
+                            background: linear-gradient(135deg,#1a1a2e,#0f3460);
+                            color: #f5d78e;
+                            width: 100%;
+                            padding: 1.2rem;
+                            border: none;
+                            border-radius: 1rem;
+                            font-size: 1.6rem;
+                            font-weight: 700;
+                            cursor: pointer;
+                            letter-spacing: .02em;
+                            transition: opacity .2s;
+                        }
+                        .sub-gold-card .sub-buy-btn:hover { opacity: .85; }
+                        .sub-gold-card .sub-badge {
+                            background: rgba(0,0,0,.12);
+                            border-radius: 2rem;
+                            padding: .3rem .9rem;
+                            font-size: 1.3rem;
+                            color: #1a1100;
+                        }
+                        </style>
+                        {{-- Блик --}}
+                        <div style="position:absolute;top:-3rem;right:-3rem;width:12rem;height:12rem;border-radius:50%;background:rgba(255,255,255,.2);pointer-events:none;"></div>
+                        <div style="position:absolute;bottom:-2rem;left:-2rem;width:8rem;height:8rem;border-radius:50%;background:rgba(255,255,255,.1);pointer-events:none;"></div>
+
+                        <div style="padding:2rem 2rem 1.5rem;">
+                            {{-- Название --}}
+                            <div style="font-size:2rem;font-weight:700;margin-bottom:.5rem;letter-spacing:.02em;color:#1a1100;">{{ $t->name }}</div>
+
+                            {{-- Посещения --}}
+                            <div style="font-size:3.6rem;font-weight:800;line-height:1;margin-bottom:.3rem;color:#1a1100;">
+                                {{ $t->visits_total }}
+                                <span style="font-size:1.6rem;font-weight:400;opacity:.7;">посещений</span>
                             </div>
-                            <div class="f-24 b-700">{{ $t->price_minor > 0 ? number_format($t->price_minor/100, 0).' ₽' : 'Бесплатно' }}</div>
+
+                            {{-- Срок --}}
+                            <div style="font-size:1.4rem;opacity:.7;margin-bottom:1.5rem;color:#3a2800;">
+                                @if($durationLabel)
+                                    ⏱ Действует {{ $durationLabel }} с момента покупки
+                                @else
+                                    ♾ Бессрочный абонемент
+                                @endif
+                            </div>
+
+                            {{-- Фичи --}}
+                            <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1.5rem;">
+                                @if($t->freeze_enabled)
+                                <span class="sub-badge">❄️ Заморозка</span>
+                                @endif
+                                @if($t->transfer_enabled)
+                                <span class="sub-badge">🔄 Передача</span>
+                                @endif
+                                @if($t->sale_limit)
+                                <span class="sub-badge">
+                                    🎟 Осталось: {{ max(0, $t->sale_limit - $t->sold_count) }}
+                                </span>
+                                @endif
+                            </div>
+
+                            {{-- Цена --}}
+                            <div style="font-size:2.8rem;font-weight:800;color:#1a1100;">
+                                {{ $t->price_minor > 0 ? number_format($t->price_minor/100, 0, '.'  , ' ').' ₽' : 'Бесплатно' }}
+                            </div>
                         </div>
-                        <ul class="list f-14 mb-2">
-                            @if($t->valid_until)<li>До: {{ $t->valid_until->format('d.m.Y') }}</li>@else<li>Бессрочный</li>@endif
-                            @if($t->freeze_enabled)<li>❄️ Заморозка разрешена</li>@endif
-                            @if($t->transfer_enabled)<li>🔄 Передача разрешена</li>@endif
-                            @if($t->sale_limit)<li>Осталось: {{ max(0, $t->sale_limit - $t->sold_count) }} из {{ $t->sale_limit }}</li>@endif
-                        </ul>
-                        @auth
-                            @if(!$t->isSoldOut())
-                            <form method="POST" action="{{ route('subscriptions.buy', $t->id) }}">
-                                @csrf
-                                <button type="submit" class="btn w-100">{{ $t->price_minor > 0 ? '💳 Купить абонемент' : '🎫 Получить абонемент' }}</button>
-                            </form>
+
+                        {{-- Кнопка --}}
+                        <div style="padding:0 2rem 2rem;">
+                            @auth
+                                @if(!$t->isSoldOut())
+                                <form method="POST" action="{{ route('subscriptions.buy', $t->id) }}">
+                                    @csrf
+                                    <button type="submit" class="sub-buy-btn">
+                                        {{ $t->price_minor > 0 ? '💳 Купить абонемент' : '🎫 Получить абонемент' }}
+                                    </button>
+                                </form>
+                                @else
+                                <button disabled style="width:100%;padding:1.2rem;border:none;border-radius:1rem;background:rgba(255,255,255,.1);color:rgba(255,255,255,.4);font-size:1.6rem;font-weight:700;cursor:not-allowed;">
+                                    Продано
+                                </button>
+                                @endif
                             @else
-                            <button class="btn w-100" disabled>Продано</button>
-                            @endif
-                        @else
-                        <a href="{{ route('login') }}" class="btn w-100">Войти для покупки</a>
-                        @endauth
+                            <a href="{{ route('login') }}" style="display:block;width:100%;padding:1.2rem;border:none;border-radius:1rem;background:linear-gradient(135deg,#e2b96f,#f5d78e);color:#1a1a2e;font-size:1.6rem;font-weight:700;text-align:center;text-decoration:none;">
+                                Войти для покупки
+                            </a>
+                            @endauth
+                        </div>
                     </div>
                 </div>
                 @endforeach
@@ -228,6 +334,17 @@
 
     <x-slot name="script">
     <script src="/assets/fas.js"></script>
+    <script>
+    // Swiper для обложек школы
+    if (document.querySelector('.school-show-swiper')) {
+        new Swiper('.school-show-swiper', {
+            loop: true,
+            autoplay: { delay: 4000, disableOnInteraction: false },
+            pagination: { el: '.swiper-pagination', clickable: true },
+            navigation: { nextEl: '.swiper-button-next', prevEl: '.swiper-button-prev' },
+        });
+    }
+    </script>
     <script>
     const positionNames = {
         outside: 'Доигровщик', opposite: 'Диагональный',

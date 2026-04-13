@@ -266,6 +266,95 @@
 					</div>
 				</div>
 				
+{{-- Привязка Staff к организатору --}}
+@if(true) {{-- всегда показываем для Админа --}}
+<div class="ramka">
+<h2 class="-mt-05">🧑‍💻 Привязка Staff</h2>
+<div class="card-body">
+@php
+    $staffAssignment = \App\Models\StaffAssignment::where('staff_user_id', $user->id)->with('organizer')->first();
+@endphp
+@if($staffAssignment)
+<div class="alert alert-info mb-2">
+    Привязан к: <strong>{{ trim($staffAssignment->organizer->first_name . ' ' . $staffAssignment->organizer->last_name) }}</strong>
+    (#{{ $staffAssignment->organizer_id }})
+</div>
+<form method="POST" action="{{ route('staff.destroy', $staffAssignment->id) }}">
+    @csrf @method('DELETE')
+    <button type="submit" class="btn btn-danger btn-small w-100"
+            onclick="return confirm('Снять с должности?')">Снять Staff</button>
+</form>
+@else
+<div class="alert alert-info mb-2">Не привязан ни к одному организатору.</div>
+<form method="POST" action="{{ route('staff.store') }}" id="adminStaffForm">
+    @csrf
+    <input type="hidden" name="staff_user_id" value="{{ $user->id }}">
+    <input type="hidden" name="organizer_id_override" id="admin_org_id_input">
+    <label class="f-14 b-600">Выбрать организатора</label>
+    <input type="text" id="admin_org_search"
+           placeholder="Введите имя или email организатора..."
+           autocomplete="off" class="w-100 mt-1">
+    <div id="admin_org_results" style="display:none;border:0.1rem solid var(--border-color,#eee);border-radius:0.8rem;overflow:hidden;max-height:20rem;overflow-y:auto;"></div>
+    <div id="admin_org_selected" class="f-14 mt-1" style="display:none;"></div>
+    <button type="submit" class="btn btn-small w-100 mt-1" id="admin_org_submit" disabled>Привязать</button>
+</form>
+<script>
+(function() {
+    const search  = document.getElementById('admin_org_search');
+    const results = document.getElementById('admin_org_results');
+    const hidden  = document.getElementById('admin_org_id_input');
+    const selected= document.getElementById('admin_org_selected');
+    const submit  = document.getElementById('admin_org_submit');
+    let timer = null;
+
+    function pick(id, name) {
+        hidden.value = id;
+        search.value = name;
+        results.style.display = 'none';
+        selected.style.display = '';
+        selected.innerHTML = '<span style="color:var(--cd)">✅</span> <strong>' + name + '</strong> <span style="opacity:.5;">#' + id + '</span>';
+        submit.disabled = false;
+    }
+
+    search.addEventListener('input', function() {
+        hidden.value = ''; submit.disabled = true; selected.style.display = 'none';
+        clearTimeout(timer);
+        const q = this.value.trim();
+        if (q.length < 2) { results.style.display = 'none'; return; }
+        timer = setTimeout(async function() {
+            const res  = await fetch('/api/users/search?q=' + encodeURIComponent(q) + '&roles=organizer,admin');
+            const data = await res.json();
+            if (!data.ok || !data.items.length) {
+                results.innerHTML = '<div class="p-2 f-14" style="opacity:.6;">Ничего не найдено</div>';
+                results.style.display = ''; return;
+            }
+            results.innerHTML = data.items.slice(0, 8).map(u => {
+                const name = u.full_name || u.label || u.name || ('#' + u.id);
+                return '<div class="org-pick-item" data-id="' + u.id + '" data-name="' + name + '"'
+                    + ' style="padding:.8rem 1.2rem;cursor:pointer;border-bottom:.1rem solid var(--border-color,#eee);">'
+                    + '<div class="b-600">' + name + '</div>'
+                    + '<div class="f-13" style="opacity:.6;">#' + u.id + ' · ' + u.role + '</div>'
+                    + '</div>';
+            }).join('');
+            results.style.display = '';
+            results.querySelectorAll('.org-pick-item').forEach(el => {
+                el.addEventListener('mouseenter', () => el.style.background = 'var(--bg2,#f5f5f5)');
+                el.addEventListener('mouseleave', () => el.style.background = '');
+                el.addEventListener('click', () => pick(el.dataset.id, el.dataset.name));
+            });
+        }, 300);
+    });
+
+    document.addEventListener('click', e => {
+        if (!results.contains(e.target) && e.target !== search) results.style.display = 'none';
+    });
+})();
+</script>
+@endif
+</div>
+</div>
+@endif
+
 				{{-- Ограничения на мероприятия --}}
 				<div class="ramka">
 					<h2 class="-mt-05">Ограничения (events)</h2>

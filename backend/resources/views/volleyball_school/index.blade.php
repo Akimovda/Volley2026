@@ -133,6 +133,23 @@
                                             👤 {{ trim($organizer->first_name . ' ' . $organizer->last_name) }}
                                         </div>
                                         @endif
+
+                                        {{-- Кнопки для Админа --}}
+                                        @if(auth()->check() && auth()->user()->isAdmin())
+                                        <div class="d-flex gap-1 mt-2">
+                                            <a href="{{ route('volleyball_school.edit') }}?id={{ $school->id }}"
+                                               class="btn btn-secondary btn-small w-100">✏️ Редактировать</a>
+                                            <form method="POST" action="{{ route('volleyball_school.destroy', $school->id) }}">
+                                                @csrf @method('DELETE')
+                                                <button type="submit"
+                                                    class="btn-alert btn btn-danger btn-small"
+                                                    data-title="Удалить школу?"
+                                                    data-text="{{ $school->name }}"
+                                                    data-confirm-text="Да, удалить"
+                                                    data-cancel-text="Отмена">🗑</button>
+                                            </form>
+                                        </div>
+                                        @endif
                                     </div>
                                 </div>
                             </a>

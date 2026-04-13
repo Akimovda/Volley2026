@@ -37,6 +37,10 @@ class UserSearchController extends Controller
             return response()->json(['ok' => true, 'items' => $items]);
         }
  
+        // Фильтр по ролям (опционально)
+        $rolesParam  = trim((string) $request->query('roles', ''));
+        $rolesFilter = $rolesParam ? array_filter(array_map('trim', explode(',', $rolesParam))) : null;
+
         $variants = $this->buildSearchVariants($q);
         $likes = $this->buildLikePatterns($variants);
 
@@ -48,7 +52,10 @@ class UserSearchController extends Controller
                 'name',
                 'telegram_username',
                 'is_bot',
+                'role',
+                'email',
             ])
+            ->when($rolesFilter, fn($q2) => $q2->whereIn('role', $rolesFilter))
             ->where(function ($w) use ($likes, $q) {
                 if (ctype_digit($q) && (int) $q > 0) {
                     $w->orWhere('id', (int) $q);
@@ -155,6 +162,8 @@ class UserSearchController extends Controller
             'meta'             => implode(' • ', array_filter($meta)),
             'sub'              => implode(' • ', array_filter($meta)),
             'is_bot'           => $isBot,
+            'role'             => (string) ($u->role ?? 'user'),
+            'email'            => (string) ($u->email ?? ''),
         ];
     }
     private function buildSearchVariants(string $q): array

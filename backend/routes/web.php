@@ -344,6 +344,7 @@ Route::post('/events/{event}/invite', [EventRegistrationInviteController::class,
 Route::get('/user/photos', [UserPhotoController::class, 'index'])->name('user.photos');
 Route::post('/user/photos', [UserPhotoController::class, 'store'])->name('user.photos.store');
 Route::post('/user/photos/{media}/set-avatar', [UserPhotoController::class, 'setAvatar'])->name('user.photos.setAvatar');
+    Route::post('/user/photos/{media}/set-main-cover', [UserPhotoController::class, 'setMainCover'])->name('user.photos.setMainCover');
 Route::delete('/user/photos/event/{media}', [UserPhotoController::class, 'destroyEventPhoto'])->name('user.photos.destroyEventPhoto');
 Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->name('user.photos.destroy');
 		
@@ -648,6 +649,8 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         ->name('volleyball_school.edit');
     Route::put('/volleyball_school/my/edit', [\App\Http\Controllers\VolleyballSchoolController::class, 'update'])
         ->name('volleyball_school.update');
+    Route::delete('/volleyball_school/{school}', [\App\Http\Controllers\VolleyballSchoolController::class, 'destroy'])
+        ->name('volleyball_school.destroy');
 });
 
 // Динамический {slug} — ПОСЛЕ статичных
@@ -722,6 +725,8 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         ->name('subscription_templates.update');
     Route::delete('/subscriptions/templates/{subscriptionTemplate}', [\App\Http\Controllers\SubscriptionTemplateController::class, 'destroy'])
         ->name('subscription_templates.destroy');
+    Route::delete('/subscriptions/templates/{subscriptionTemplate}/force', [\App\Http\Controllers\SubscriptionTemplateController::class, 'forceDelete'])
+        ->name('subscription_templates.force_delete');
 
     // Выданные абонементы
     Route::get('/subscriptions', [\App\Http\Controllers\SubscriptionController::class, 'index'])
@@ -834,3 +839,16 @@ Route::middleware([
     Route::post('/premium/settings', [\App\Http\Controllers\PremiumSettingsController::class, 'update'])
         ->name('premium.settings.update');
 });
+
+/*
+|--------------------------------------------------------------------------
+| Staff (помощники организатора)
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified'])
+    ->group(function () {
+        Route::get('/staff', [\App\Http\Controllers\StaffController::class, 'index'])->name('staff.index');
+        Route::post('/staff', [\App\Http\Controllers\StaffController::class, 'store'])->name('staff.store');
+        Route::delete('/staff/{assignment}', [\App\Http\Controllers\StaffController::class, 'destroy'])->name('staff.destroy');
+        Route::get('/staff/logs', [\App\Http\Controllers\StaffController::class, 'logs'])->name('staff.logs');
+    });

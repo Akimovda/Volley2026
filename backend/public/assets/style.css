@@ -1419,13 +1419,13 @@ body.dark .btn-outline:hover {
     border-radius: 1rem;
     border: 0.2rem solid;
     position: relative;
-    box-shadow: 0 0.3rem 1.4rem rgba(0, 0, 0, 0.1);
+    box-shadow: 0 0.3rem 1.4rem rgba(0, 0, 0, 0.05);
 }
 .alert-title {
 	font-weight: 600;
 }
 body.dark .alert {
-    box-shadow: 0 0.3rem 1.4rem rgba(0, 0, 0, 0.2);
+    box-shadow: 0 0.3rem 1.4rem rgba(0, 0, 0, 0.1);
 }
 
 .alert:before {
@@ -1560,6 +1560,7 @@ body.dark .alert-volleyball {
     flex-wrap: wrap;
     align-items: center;
     font-size: 1.3rem;
+	margin-top: 1rem;
 	/*font-weight: 600;*/
 }
 
@@ -2755,6 +2756,11 @@ body.dark .menu-user-login .user-name {
 	position: relative;
 	width: 100%;
 }
+.sidebar-menu .menu-item {
+	padding: 0.4rem 1.2rem 1rem;
+	border-radius: 1rem;
+
+}
 body.dark .menu-item,
 body.dark .menu-item-title {
 	color: #D0D0E0;
@@ -3122,7 +3128,7 @@ body.dark .top-section h2 {
 .top-section .title-description {
 	color: #333;
 	font-size: 2rem;
-	padding: 1.2rem 0.2rem;
+	margin: 1.2rem 0.2rem;
 }
 body.dark .top-section .title-description {
 	color: #cacaca;
@@ -3925,7 +3931,7 @@ body.dark .hover-image .hover-image-circle {
 }	
 .swiper-pagination {
 	position: static;
-	margin-top: 1rem;
+	margin-top: 1.4rem;
 	font-size: 0;
 }
 .swiper-pagination-bullet {
@@ -4119,12 +4125,14 @@ body.dark .card-img-top {
 	border-radius: 6px;
 	/*box-shadow: 0 1rem 2.2rem rgba(0, 0, 0, 0.1), 0 0.5rem 1.2rem rgba(0, 0, 0, 0.05);*/
 }
+
 .event-card .alert {
-	padding-top: 0.6rem;
-	padding-bottom: 0.6rem;
-	font-size: 1.6rem;
+	padding-top: 0.8rem;
+	padding-bottom: 0.8rem;
+	/*font-size: 1.6rem;*/
 	padding-left: 5rem;
 }
+
 .event-address {
 	margin-bottom: 1rem;
 }

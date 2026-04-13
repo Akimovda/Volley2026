@@ -54,15 +54,23 @@
 
             <div class="ramka">
                 <h2 class="-mt-05">Срок действия</h2>
+                <div class="card mb-2 f-14" style="opacity:.7;">
+                    Срок считается с момента покупки или выдачи абонемента. Оставьте оба поля пустыми — абонемент будет бессрочным.
+                </div>
                 <div class="row row2">
                     <div class="col-md-6">
-                        <label>Действует с</label>
-                        <input type="date" name="valid_from" value="{{ old('valid_from') }}">
+                        <div class="card">
+                            <label>Месяцев</label>
+                            <input type="number" name="duration_months" value="{{ old('duration_months', 0) }}" min="0" max="36" placeholder="0">
+                            <ul class="list f-13 mt-1"><li>Например: 1 = 1 месяц с момента покупки</li></ul>
+                        </div>
                     </div>
                     <div class="col-md-6">
-                        <label>Действует до</label>
-                        <input type="date" name="valid_until" value="{{ old('valid_until') }}">
-                        <ul class="list f-13 mt-1"><li>Оставьте пустым — бессрочно</li></ul>
+                        <div class="card">
+                            <label>Дней (дополнительно)</label>
+                            <input type="number" name="duration_days" value="{{ old('duration_days', 0) }}" min="0" max="365" placeholder="0">
+                            <ul class="list f-13 mt-1"><li>Например: 30 = 30 дней с момента покупки</li></ul>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -71,8 +79,9 @@
                 <h2 class="-mt-05">Стоимость и продажа</h2>
                 <div class="row row2">
                     <div class="col-md-4">
-                        <label>Цена (копейки) *</label>
-                        <input type="number" name="price_minor" value="{{ old('price_minor', 0) }}" min="0" required>
+                        <label>Цена (рубли) *</label>
+                        <input type="number" name="price_rub" value="{{ old('price_rub', 0) }}" min="0" step="1" required>
+                        <ul class="list f-13 mt-1"><li>Например: 1500 = 1500 ₽, 0 = бесплатно</li></ul>
                         <ul class="list f-13 mt-1"><li>Например: 150000 = 1500 ₽, 0 = бесплатно</li></ul>
                     </div>
                     <div class="col-md-4">

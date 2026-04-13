@@ -213,7 +213,25 @@
 		{
 			return ProfileUpdateGuard::isStaff($this);
 		}
-		
+
+		public function staffAssignment(): \Illuminate\Database\Eloquent\Relations\HasOne
+		{
+			return $this->hasOne(\App\Models\StaffAssignment::class, 'staff_user_id');
+		}
+
+		public function getOrganizerIdForStaff(): ?int
+		{
+			if ($this->isStaff()) {
+				return $this->staffAssignment?->organizer_id;
+			}
+			return ($this->isOrganizer() || $this->isAdmin()) ? $this->id : null;
+		}
+
+		public function staffMembers(): \Illuminate\Database\Eloquent\Relations\HasMany
+		{
+			return $this->hasMany(\App\Models\StaffAssignment::class, 'organizer_id');
+		}
+
 		// --------------------------------------------------
 		// Helpers
 		// --------------------------------------------------

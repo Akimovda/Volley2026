@@ -52,16 +52,21 @@
                                 @endif
                             </td>
                             <td>{{ $t->visits_total }}</td>
-                            <td>{{ $t->price_minor > 0 ? number_format($t->price_minor/100, 0).' ₽' : 'Бесплатно' }}</td>
+                            <td>{{ $t->price_minor > 0 ? number_format($t->price_minor/100, 0, '.', ' ').' ₽' : 'Бесплатно' }}</td>
                             <td>
                                 {{ $t->sold_count }}
                                 @if($t->sale_limit) / {{ $t->sale_limit }} @endif
                             </td>
                             <td class="f-14">
-                                @if($t->valid_from || $t->valid_until)
-                                    {{ $t->valid_from?->format('d.m.Y') ?? '∞' }} — {{ $t->valid_until?->format('d.m.Y') ?? '∞' }}
+                                @php
+                                    $dm = (int)($t->duration_months ?? 0);
+                                    $dd = (int)($t->duration_days ?? 0);
+                                @endphp
+                                @if($dm > 0 || $dd > 0)
+                                    @if($dm > 0){{ $dm }} мес. @endif
+                                    @if($dd > 0){{ $dd }} дн. @endif
                                 @else
-                                    Бессрочно
+                                    ♾ Бессрочно
                                 @endif
                             </td>
                             <td>
@@ -73,10 +78,26 @@
                             </td>
                             <td class="nowrap">
                                 <a href="{{ route('subscription_templates.edit', $t) }}" class="btn btn-secondary btn-small">✏️</a>
+                                {{-- Деактивировать --}}
                                 <form method="POST" action="{{ route('subscription_templates.destroy', $t) }}" class="d-inline">
                                     @csrf @method('DELETE')
-                                    <button class="btn btn-small" style="background:var(--red);color:#fff"
-                                        data-title="Деактивировать шаблон?" data-confirm-text="Да" data-cancel-text="Отмена" class="btn btn-small btn-alert" style="background:var(--red);color:#fff">🗗</button>
+                                    <button type="submit"
+                                        class="btn-alert btn btn-secondary btn-small"
+                                        data-title="Деактивировать шаблон?"
+                                        data-text="{{ $t->name }}"
+                                        data-confirm-text="Да"
+                                        data-cancel-text="Отмена"
+                                        title="Деактивировать">🚫</button>
+                                </form>
+                                {{-- Удалить --}}
+                                <form method="POST" action="{{ route('subscription_templates.force_delete', $t) }}" class="d-inline force-delete-form" id="force-delete-{{ $t->id }}">
+                                    @csrf @method('DELETE')
+                                    <input type="hidden" name="force_code" class="force-code-input" value="">
+                                    <button type="button"
+                                        class="btn btn-danger btn-small js-force-delete"
+                                        data-form="force-delete-{{ $t->id }}"
+                                        data-name="{{ $t->name }}"
+                                        title="Удалить навсегда">✖️</button>
                                 </form>
                             </td>
                         </tr>
@@ -88,4 +109,21 @@
             @endif
         </div>
     </div>
+    <x-slot name="script">
+    <script src="/assets/fas.js"></script>
+    <script>
+    document.querySelectorAll('.js-force-delete').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var formId = btn.dataset.form;
+            var code = window.prompt('Удалить шаблон "' + btn.dataset.name + '"?\nВведите код подтверждения:');
+            if (code !== null && code !== '') {
+                var form = document.getElementById(formId);
+                form.querySelector('.force-code-input').value = code;
+                form.submit();
+            }
+        });
+    });
+    </script>
+    </x-slot>
+
 </x-voll-layout>

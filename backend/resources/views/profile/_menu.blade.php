@@ -112,23 +112,23 @@
                 <a href="{{ route('friends.index') }}"
                    class="menu-item {{ $activeMenu === 'friends' ? 'active' : '' }}">
                     @if($activeMenu === 'friends')
-                        <strong class="cd menu-text">👥 Мои друзья</strong>
+                        <strong class="cd menu-text">Мои друзья</strong>
                     @else
-                        <span class="menu-text">👥 Мои друзья</span>
+                        <span class="menu-text">Мои друзья</span>
                     @endif
                 </a>
                 @if($menuUser->isPremium())
                 <a href="{{ route('profile.visitors') }}"
                    class="menu-item {{ $activeMenu === 'visitors' ? 'active' : '' }}">
                     @if($activeMenu === 'visitors')
-                        <strong class="cd menu-text">👀 Мои гости</strong>
+                        <strong class="cd menu-text">Мои гости</strong>
                     @else
-                        <span class="menu-text">👀 Мои гости</span>
+                        <span class="menu-text">Мои гости</span>
                     @endif
                 </a>
                 @else
                 <a href="{{ route('premium.index') }}" class="menu-item" style="opacity:.6;">
-                    <span class="menu-text">👀 Мои гости 👑</span>
+                    <span class="menu-text">Мои гости 👑</span>
                 </a>
                 @endif
                 <form method="POST" action="{{ route('logout') }}" class="logout-form" x-data>
@@ -187,6 +187,23 @@
                         <span class="menu-text">Шаблоны купонов</span>
                     @endif
                 </a>
+                <a href="{{ route('staff.index') }}"
+                   class="menu-item {{ $activeMenu === 'staff' ? 'active' : '' }}">
+                    @if($activeMenu === 'staff')
+                        <strong class="cd menu-text">Мои помощники</strong>
+                    @else
+                        <span class="menu-text">Мои помощники</span>
+                    @endif
+                </a>
+                <a href="{{ route('staff.logs') }}"
+                   class="menu-item {{ $activeMenu === 'staff_logs' ? 'active' : '' }}">
+                    @if($activeMenu === 'staff_logs')
+                        <strong class="cd menu-text">📋 Логи Staff</strong>
+                    @else
+                        <span class="menu-text">📋 Логи Staff</span>
+                    @endif
+                </a>
+
                 @php
                     $mySchool = \App\Models\VolleyballSchool::where('organizer_id', $menuUser->id)->first();
                 @endphp
@@ -194,22 +211,22 @@
                 <a href="{{ route('volleyball_school.edit') }}"
                    class="menu-item {{ $activeMenu === 'school' ? 'active' : '' }}">
                     @if($activeMenu === 'school')
-                        <strong class="cd menu-text">🏫 Редактировать школу</strong>
+                        <strong class="cd menu-text">Редактировать школу</strong>
                     @else
-                        <span class="menu-text">🏫 Редактировать школу</span>
+                        <span class="menu-text">Редактировать школу</span>
                     @endif
                 </a>
                 <a href="{{ route('volleyball_school.show', $mySchool->slug) }}"
                    class="menu-item">
-                    <span class="menu-text">👁 Страница школы</span>
+                    <span class="menu-text">Страница школы</span>
                 </a>
                 @else
                 <a href="{{ route('volleyball_school.create') }}"
                    class="menu-item {{ $activeMenu === 'school' ? 'active' : '' }}">
                     @if($activeMenu === 'school')
-                        <strong class="cd menu-text">🏫 Создать школу</strong>
+                        <strong class="cd menu-text">Создать школу</strong>
                     @else
-                        <span class="menu-text">🏫 Создать школу</span>
+                        <span class="menu-text">Создать школу</span>
                     @endif
                 </a>
                 @endif
@@ -293,23 +310,23 @@
     <a href="{{ route('friends.index') }}"
        class="menu-item {{ $activeMenu === 'friends' ? 'active' : '' }}">
         @if($activeMenu === 'friends')
-            <strong class="cd menu-text">👥 Мои друзья</strong>
+            <strong class="cd menu-text">Мои друзья</strong>
         @else
-            <span class="menu-text">👥 Мои друзья</span>
+            <span class="menu-text">Мои друзья</span>
         @endif
     </a>
     @if($menuUser->isPremium())
     <a href="{{ route('profile.visitors') }}"
        class="menu-item {{ $activeMenu === 'visitors' ? 'active' : '' }}">
         @if($activeMenu === 'visitors')
-            <strong class="cd menu-text">👀 Мои гости</strong>
+            <strong class="cd menu-text">Мои гости</strong>
         @else
-            <span class="menu-text">👀 Мои гости</span>
+            <span class="menu-text">Мои гости</span>
         @endif
     </a>
     @else
     <a href="{{ route('premium.index') }}" class="menu-item" style="opacity:.6;">
-        <span class="menu-text">👀 Мои гости 👑</span>
+        <span class="menu-text">Мои гости 👑</span>
     </a>
     @endif
     <form method="POST" action="{{ route('logout') }}" class="logout-form" x-data>

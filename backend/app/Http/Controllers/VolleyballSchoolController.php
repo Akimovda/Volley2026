@@ -177,11 +177,11 @@ class VolleyballSchoolController extends Controller
     public function edit(Request $request)
     {
         $user = $request->user();
-        $school = $user->isAdmin()
-            ? VolleyballSchool::where('id', $request->query('id', 0))
-                ->orWhere('organizer_id', $user->id)
-                ->firstOrFail()
-            : VolleyballSchool::where('organizer_id', $user->id)->firstOrFail();
+        if ($user->isAdmin() && $request->query('id')) {
+            $school = VolleyballSchool::findOrFail($request->query('id'));
+        } else {
+            $school = VolleyballSchool::where('organizer_id', $user->id)->firstOrFail();
+        }
 
         $organizer = User::find($school->organizer_id);
         $userPhotos     = $organizer?->getMedia('photos')->sortByDesc('created_at') ?? collect();
@@ -285,5 +285,17 @@ class VolleyballSchoolController extends Controller
 
         return redirect()->route('volleyball_school.show', $school->slug)
             ->with('status', 'Страница обновлена!');
+    }
+
+    public function destroy(Request $request, VolleyballSchool $school)
+    {
+        if (!$request->user()->isAdmin()) {
+            abort(403);
+        }
+        $school->clearMediaCollection('logo');
+        $school->clearMediaCollection('cover');
+        $school->delete();
+        return redirect()->route('volleyball_school.index')
+            ->with('status', 'Школа «'.$school->name.'» удалена.');
     }
 }

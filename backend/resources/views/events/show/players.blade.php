@@ -173,8 +173,16 @@
 	        <div class="alert alert-warning mt-2">
 	            ⏳ Ожидаем оплату — <strong>{{ number_format($myPayment->amount_minor/100, 2) }} ₽</strong>
 	        </div>
-	        @if($event->payment_link)
-	        <a href="{{ $event->payment_link }}" target="_blank" class="btn w-100 mt-1">💳 Перейти к оплате</a>
+	        @php
+	            $payLinkUrl = null;
+	            $ps = \Illuminate\Support\Facades\DB::table('payment_settings')
+	                ->where('organizer_id', $event->organizer_id)->first();
+	            if ($ps) {
+	                $payLinkUrl = $myPayment->method === 'tbank_link' ? ($ps->tbank_link ?? null) : ($ps->sber_link ?? null);
+	            }
+	        @endphp
+	        @if($payLinkUrl)
+	        <a href="{{ $payLinkUrl }}" target="_blank" class="btn w-100 mt-1">💳 Перейти к оплате</a>
 	        @endif
 	        @if(!$myPayment->user_confirmed)
 	        <form method="POST" action="{{ route('payments.user_confirm', $myPayment->id) }}">

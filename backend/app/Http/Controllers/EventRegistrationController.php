@@ -232,8 +232,28 @@ class EventRegistrationController extends Controller
                     $existing->position = $position ?: null;
                 }
 
+                // Сбрасываем payment_status чтобы пересоздать платёж
+                $existing->payment_status = null;
+                $existing->payment_id = null;
+                $existing->payment_expires_at = null;
                 $existing->save();
                 $created = true;
+
+                // Создаём новый платёж если мероприятие платное
+                $event = $occurrence->event;
+                if ($event && $event->is_paid && $event->price_minor > 0) {
+                    $paymentService = app(\App\Services\PaymentService::class);
+                    $payment = $paymentService->createForRegistration($existing, $event, $occurrence);
+                    if (in_array($event->payment_method, ['tbank_link', 'sber_link'])) {
+                        $existing->payment_status = 'link_pending';
+                        $existing->payment_id = $payment->id;
+                    } elseif ($event->payment_method === 'yoomoney') {
+                        $existing->payment_status = 'pending';
+                        $existing->payment_id = $payment->id;
+                        $existing->payment_expires_at = $payment->expires_at;
+                    }
+                    $existing->save();
+                }
 
                 return;
             }
@@ -412,7 +432,18 @@ class EventRegistrationController extends Controller
                 $paymentStatus = $payment->status === 'paid' ? 'paid'
                     : ($payment->method === 'yoomoney' ? 'yoomoney_pending'
                     : (in_array($payment->method, ['tbank_link', 'sber_link']) ? 'link_pending' : null));
-                $paymentLink = $eventModel->payment_link ?? null;
+                // Берём ссылку из payment_settings организатора
+                $paymentLink = null;
+                $ps = \Illuminate\Support\Facades\DB::table('payment_settings')
+                    ->where('organizer_id', $eventModel->organizer_id)
+                    ->first();
+                if ($ps) {
+                    if ($payment->method === 'tbank_link') {
+                        $paymentLink = $ps->tbank_link ?? null;
+                    } elseif ($payment->method === 'sber_link') {
+                        $paymentLink = $ps->sber_link ?? null;
+                    }
+                }
                 $paymentExpiresAt = $payment->expires_at?->format('H:i') ?? null;
             }
         }

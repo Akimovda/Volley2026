@@ -37,6 +37,8 @@ class SubscriptionTemplateController extends Controller
             'event_ids.*'           => ['integer'],
             'valid_from'            => ['nullable', 'date'],
             'valid_until'           => ['nullable', 'date', 'after_or_equal:valid_from'],
+            'duration_months'       => ['nullable', 'integer', 'min:0', 'max:36'],
+            'duration_days'         => ['nullable', 'integer', 'min:0', 'max:365'],
             'visits_total'          => ['required', 'integer', 'min:1', 'max:1000'],
             'cancel_hours_before'   => ['required', 'integer', 'min:0'],
             'freeze_enabled'        => ['sometimes', 'boolean'],
@@ -44,7 +46,7 @@ class SubscriptionTemplateController extends Controller
             'freeze_max_months'     => ['required_if:freeze_enabled,true', 'integer', 'min:0'],
             'transfer_enabled'      => ['sometimes', 'boolean'],
             'auto_booking_enabled'  => ['sometimes', 'boolean'],
-            'price_minor'           => ['required', 'integer', 'min:0'],
+            'price_rub'             => ['required', 'numeric', 'min:0'],
             'currency'              => ['required', 'string', 'size:3'],
             'sale_limit'            => ['nullable', 'integer', 'min:1'],
             'sale_enabled'          => ['sometimes', 'boolean'],
@@ -53,6 +55,9 @@ class SubscriptionTemplateController extends Controller
         $organizerId = $user->isAdmin()
             ? ($request->input('organizer_id') ?? $user->id)
             : $user->id;
+
+        $data['price_minor'] = (int) round(($data['price_rub'] ?? 0) * 100);
+        unset($data['price_rub']);
 
         SubscriptionTemplate::create(array_merge($data, [
             'organizer_id'     => $organizerId,
@@ -74,8 +79,9 @@ class SubscriptionTemplateController extends Controller
             ->orderByDesc('id')->limit(100)->get();
 
         return view('subscriptions.templates.edit', [
-            'template' => $subscriptionTemplate,
-            'events'   => $events,
+            'subscriptionTemplate' => $subscriptionTemplate,
+            'template'             => $subscriptionTemplate,
+            'events'               => $events,
         ]);
     }
 
@@ -89,6 +95,8 @@ class SubscriptionTemplateController extends Controller
             'event_ids.*'           => ['integer'],
             'valid_from'            => ['nullable', 'date'],
             'valid_until'           => ['nullable', 'date'],
+            'duration_months'       => ['nullable', 'integer', 'min:0', 'max:36'],
+            'duration_days'         => ['nullable', 'integer', 'min:0', 'max:365'],
             'visits_total'          => ['required', 'integer', 'min:1'],
             'cancel_hours_before'   => ['required', 'integer', 'min:0'],
             'freeze_enabled'        => ['sometimes', 'boolean'],
@@ -96,12 +104,15 @@ class SubscriptionTemplateController extends Controller
             'freeze_max_months'     => ['integer', 'min:0'],
             'transfer_enabled'      => ['sometimes', 'boolean'],
             'auto_booking_enabled'  => ['sometimes', 'boolean'],
-            'price_minor'           => ['required', 'integer', 'min:0'],
+            'price_rub'             => ['required', 'numeric', 'min:0'],
             'currency'              => ['required', 'string', 'size:3'],
             'sale_limit'            => ['nullable', 'integer', 'min:1'],
             'sale_enabled'          => ['sometimes', 'boolean'],
             'is_active'             => ['sometimes', 'boolean'],
         ]);
+
+        $data['price_minor'] = (int) round(($data['price_rub'] ?? 0) * 100);
+        unset($data['price_rub']);
 
         $subscriptionTemplate->update(array_merge($data, [
             'freeze_enabled'       => (bool)($data['freeze_enabled'] ?? false),
@@ -120,6 +131,24 @@ class SubscriptionTemplateController extends Controller
         $this->authorizeTemplate($subscriptionTemplate);
         $subscriptionTemplate->update(['is_active' => false]);
         return back()->with('status', 'Шаблон деактивирован');
+    }
+
+    public function forceDelete(\Illuminate\Http\Request $request, SubscriptionTemplate $subscriptionTemplate)
+    {
+        $this->authorizeTemplate($subscriptionTemplate);
+
+        $forceCode = $request->input('force_code');
+        if ($forceCode !== '973124') {
+            return back()->with('error', '❌ Неверный код подтверждения.');
+        }
+
+        // Удаляем связанные абонементы
+        \Illuminate\Support\Facades\DB::table('subscriptions')
+            ->where('template_id', $subscriptionTemplate->id)
+            ->delete();
+
+        $subscriptionTemplate->delete();
+        return back()->with('status', '✅ Шаблон и связанные абонементы удалены');
     }
 
     private function authorizeTemplate(SubscriptionTemplate $template): void

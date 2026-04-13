@@ -5,6 +5,7 @@ use App\Models\Subscription;
 use App\Models\SubscriptionTemplate;
 use App\Models\User;
 use App\Services\SubscriptionService;
+use App\Services\StaffLogService;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
@@ -58,6 +59,12 @@ class SubscriptionController extends Controller
             $data['reason'] ?? 'manual'
         );
 
+        // Лог Staff
+        if ($user->isStaff()) {
+            $orgId = $user->getOrganizerIdForStaff();
+            if ($orgId) app(\App\Services\StaffLogService::class)->log($user, $orgId, 'issue_subscription', 'subscription', $sub->id, "Выдал абонемент #{$sub->id} пользователю #{$data['user_id']}");
+        }
+
         return back()->with('status', "✅ Абонемент #{$sub->id} выдан пользователю #{$data['user_id']}");
     }
 
@@ -104,6 +111,14 @@ class SubscriptionController extends Controller
         ]);
 
         $this->service->extend($subscription, $data['days']);
+
+        // Лог Staff
+        $authUser = $request->user();
+        if ($authUser->isStaff()) {
+            $orgId = $authUser->getOrganizerIdForStaff();
+            if ($orgId) app(StaffLogService::class)->log($authUser, $orgId, 'extend_subscription', 'subscription', $subscription->id, "Продлил абонемент # на {$data['days']} дней");
+        }
+
         return back()->with('status', "✅ Срок продлён на {$data['days']} дней");
     }
 
