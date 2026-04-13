@@ -79,11 +79,9 @@
 	</x-slot>
 	
     <x-slot name="h2">
-		{{ $cityName }}
+		г. {{ $cityName }}@if($regionName), {{ $regionName }}@endif
 	</x-slot>
-    <x-slot name="t_description">
-       тут будет область
-	</x-slot>	
+    <x-slot name="t_description">@if($location->address && $location->address !== $cityName){{ $location->address }}@endif</x-slot>	
 
 
     <x-slot name="breadcrumbs">

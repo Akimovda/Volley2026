@@ -184,7 +184,7 @@ $birth = $user->birth_date
                         <div class="card-body">
                             <div class="row row2">
                                 <div class="col-12 text-center">
-									<div class="profile-avatar">
+									<div class="profile-avatar {{ $user->isPremium() ? 'avatar-premium' : '' }}">
 										<img
 										src="{{ $user->profile_photo_url }}"
 										alt="avatar"

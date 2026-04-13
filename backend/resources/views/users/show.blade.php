@@ -72,6 +72,7 @@
                     {{-- Header --}}
                     <div class="flex flex-col md:flex-row items-start gap-5">
                         <div class="shrink-0">
+                            <span class="{{ $u->isPremium() ? 'avatar-premium' : '' }}" style="display:inline-block;position:relative;">
                             <img
                                 src="{{ $u->profile_photo_url }}"
                                 alt="avatar"
@@ -79,6 +80,7 @@
                                 style="width:92px;height:92px;object-fit:cover;"
                                 loading="lazy"
                             />
+                            </span>
                         </div>
 
                         <div class="min-w-0 flex-1">

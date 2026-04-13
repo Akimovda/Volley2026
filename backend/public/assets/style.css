@@ -2701,9 +2701,12 @@ body.dark .menu-site .menu-column:not(:last-child){
 	width: 12rem;
 	height: 12rem;
 	border-radius: 50%;
-	overflow: hidden;
+	/*overflow: hidden;*/
 	border: 0.4rem solid rgba(255, 255, 255, 0);
 	box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.1);
+}
+.menu-user-login .avatar img {
+	border-radius: 50%;
 }
 body.dark .menu-user-login .avatar {
 	box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.2);
@@ -3725,11 +3728,18 @@ body.dark .provider-text {
 	max-width: 100%;
 	aspect-ratio: 1/1;
 	border-radius: 50%;
-	overflow: hidden;
 	border: 0.4rem solid rgba(255, 255, 255, 0);
 	box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.1);
 	margin: 0 auto;
-}		
+	font-size: 0;
+	line-height: 0;
+}	
+
+.profile-avatar img,
+.avatar-small img {
+	border-radius: 50%;
+}
+
 .user-public-page .profile-avatar {
 	width: 18rem;
 }
@@ -3761,6 +3771,10 @@ body.dark .provider-text {
 	height: 4rem;
 	border-radius: 50%;
 	flex-shrink: 0;
+	background-color: #2967BA;
+}
+body.dark .provider-card__icon {
+	background-color: #E7612F;
 }
 .provider-card__icon svg  {
 	width: 2rem;
@@ -3773,16 +3787,16 @@ body.dark .provider-text {
 	transform: scale(1.1);
 }
 .provider-card__icon.icon-tg {
-	background-color: #2aabee;
+	background-color: #2aabee!important;
 }
 .provider-card__icon.icon-vk {
-	background-color: #0077ff;
+	background-color: #0077ff!important;
 }
 .provider-card__icon.icon-yandex {
-	background-color: #fc3f1d;
+	background-color: #fc3f1d!important;
 }
 .provider-card__icon.icon-max {
-	background: linear-gradient(135deg, #007aff, #8a2be2); /* градиент как на лого */
+	background: linear-gradient(135deg, #007aff, #8a2be2)!important; /* градиент как на лого */
 }
 .provider-card__title {
 	font-weight: 600;
@@ -4164,7 +4178,7 @@ body.dark .card-img-top {
 	top: 8px;
 	left: 8px;
 	height: 24px;
-	font-size: 1.6rem;
+	font-size: 1.5rem;
 	font-weight: 600;
     display: flex;
     align-items: center;
@@ -4197,11 +4211,29 @@ body.dark .event-col {
 }
 .event-col-icon {
 	text-align: center;
+	background: #2967BA;
+	width: 4rem;
+	height: 4rem;
+	margin: auto;
+	border-radius: 50%;
+	font-size: 0;
+	line-height: 0;
+	transform: translateZ(0);
+}
+body.dark .event-col-icon {
+	background: #E7612F;
 }
 .event-col-icon svg {
 	width: 4rem;
 	height: 4rem;
-	fill: #2967BA;
+	transform: scale(1.15);
+	fill: #edeff2;	
+	position: relative;
+	z-index: 1;
+	border-radius: 50%;
+}
+body.dark .event-col-icon svg {
+	fill: #292a37;	
 }
 .event-col-data {
 	text-align: center;
@@ -4211,9 +4243,7 @@ body.dark .event-col {
     align-items: center;
     justify-content: center;	
 }
-body.dark .event-col-icon svg {
-	fill: #E7612F;
-}
+
 
 /* ===== PREMIUM AVATAR GLOW ===== */
 .avatar.avatar-premium {
@@ -4247,4 +4277,106 @@ body.dark .event-col-icon svg {
     font-size: 13px;
     line-height: 1;
     filter: drop-shadow(0 1px 2px rgba(0,0,0,0.4));
+    pointer-events: none;
+}
+}
+/* Premium аватар в публичном профиле */
+div.avatar-premium img,
+div.profile-avatar.avatar-premium img {
+    box-shadow:
+        0 0 0 3px #f5c842,
+        0 0 14px 4px rgba(245, 200, 66, 0.65),
+        0 0 30px 8px rgba(245, 180, 30, 0.3) !important;
+    border-radius: 50% !important;
+    outline: 3px solid #f5c842 !important;
+}
+
+div.avatar-premium::after,
+div.profile-avatar.avatar-premium::after {
+    content: '👑';
+    position: absolute;
+    bottom: -4px;
+    right: -4px;
+    font-size: 1.6rem;
+    line-height: 1;
+    filter: drop-shadow(0 1px 3px rgba(0,0,0,0.6));
+    pointer-events: none;
+}
+
+/* Premium аватар - максимальная специфичность */
+div.profile-avatar.avatar-premium > img.avatar {
+    box-shadow:
+        0 0 0 4px #f5c842,
+        0 0 16px 6px rgba(245, 200, 66, 0.7),
+        0 0 32px 10px rgba(245, 180, 30, 0.35) !important;
+    border-radius: 50% !important;
+}
+
+div.profile-avatar.avatar-premium::after {
+    content: '👑';
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    font-size: 2rem;
+    line-height: 1;
+    filter: drop-shadow(0 1px 3px rgba(0,0,0,0.7));
+    pointer-events: none;
+}
+
+/* Premium аватар - через псевдоэлемент ::before */
+div.profile-avatar.avatar-premium {
+    position: relative;
+    display: inline-block;
+}
+div.profile-avatar.avatar-premium::before {
+    content: '';
+    position: absolute;
+    inset: -5px;
+    border-radius: 50%;
+    border: 4px solid #f5c842;
+    box-shadow:
+        0 0 12px 4px rgba(245,200,66,0.8),
+        0 0 25px 8px rgba(245,180,30,0.4),
+        inset 0 0 12px 4px rgba(245,200,66,0.2);
+    z-index: 2;
+    pointer-events: none;
+    animation: premiumPulse 2.5s ease-in-out infinite;
+}
+div.profile-avatar.avatar-premium::after {
+    content: '👑';
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    font-size: 2rem;
+    line-height: 1;
+    z-index: 3;
+    filter: drop-shadow(0 1px 3px rgba(0,0,0,0.8));
+    pointer-events: none;
+}
+@keyframes premiumPulse {
+    0%, 100% { box-shadow: 0 0 12px 4px rgba(245,200,66,0.8), 0 0 25px 8px rgba(245,180,30,0.4); }
+    50% { box-shadow: 0 0 20px 8px rgba(245,200,66,1), 0 0 40px 15px rgba(245,180,30,0.6); }
+}
+/* Premium бейдж на карточке пользователя */
+.premium-badge-card {
+    display: inline-block;
+    font-size: .85rem;
+    font-weight: 600;
+    padding: .15rem .7rem;
+    border-radius: 2rem;
+    background: linear-gradient(90deg, #f5c842, #ff9500, #f5c842, #ff9500) !important;
+    background-size: 200% auto !important;
+    color: #000 !important;
+    animation: premiumCardShimmer 2.5s linear infinite !important;
+    -webkit-animation: premiumCardShimmer 2.5s linear infinite !important;
+    letter-spacing: .03em;
+    box-shadow: 0 2px 8px rgba(245,180,30,0.4);
+}
+@keyframes premiumCardShimmer {
+    0% { background-position: 0% center; }
+    100% { background-position: 200% center; }
+}
+@-webkit-keyframes premiumCardShimmer {
+    0% { background-position: 0% center; }
+    100% { background-position: 200% center; }
 }

@@ -52,8 +52,43 @@
 	
 	
     <x-slot name="script">
-		
-	</x-slot>	
+<script>
+(function(){
+    var inp = document.getElementById('admin-users-search-q');
+    var dd = document.getElementById('admin-users-search-dd');
+    var timer = null;
+    if (!inp || !dd) return;
+    function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    function showDd() { dd.classList.add('form-select-dropdown--active'); }
+    function hideDd() { dd.classList.remove('form-select-dropdown--active'); }
+    function render(items) {
+        dd.innerHTML = '';
+        if (!items.length) { dd.innerHTML = '<div class="city-message">Ничего не найдено</div>'; showDd(); return; }
+        items.slice(0,8).forEach(function(u) {
+            var div = document.createElement('div');
+            div.className = 'trainer-item form-select-option';
+            div.setAttribute('data-name', u.label || '');
+            div.innerHTML = '<div class="text-sm text-gray-900">' + esc(u.label || '') + '</div>';
+            div.addEventListener('click', function() { inp.value = div.getAttribute('data-name'); hideDd(); inp.closest('form').submit(); });
+            dd.appendChild(div);
+        });
+        showDd();
+    }
+    inp.addEventListener('input', function() {
+        clearTimeout(timer);
+        var q = inp.value.trim();
+        if (q.length < 2) { hideDd(); return; }
+        dd.innerHTML = '<div class="city-message">Поиск…</div>'; showDd();
+        timer = setTimeout(function() {
+            fetch('/api/users/search?q=' + encodeURIComponent(q))
+                .then(function(r){ return r.json(); })
+                .then(function(data){ render(Array.isArray(data) ? data : (data.items||[])); });
+        }, 250);
+    });
+    document.addEventListener('click', function(e) { if (!inp.contains(e.target) && !dd.contains(e.target)) hideDd(); });
+})();
+</script>
+</x-slot>	
 	
     <div class="container">
 		<div class="users-filter">
@@ -65,10 +100,15 @@
 						<div class="row">
 							<div class="col-12 col-md-6">
 								
-								<input 
-								name="q"
-								value="{{ $q ?? '' }}"
-								placeholder="Поиск: имя/фамилия/email/tg/vk/yandex" />
+								<div style="position:relative;">
+								<input
+									name="q"
+									id="admin-users-search-q"
+									value="{{ $q ?? '' }}"
+									placeholder="Акимов Дмитрий / email / telegram"
+									autocomplete="off"/>
+								<div id="admin-users-search-dd" class="form-select-dropdown trainer_dd"></div>
+							</div>
 								
 							</div>
 							<div class="col-12 col-md-2">
@@ -146,8 +186,9 @@
 				</tbody>
 			</table>
 		</div>
-		{{ $users->links() }}
+
 		</div>	
+				{{ $users->links() }}
 	</div>		
 </x-voll-layout>
 

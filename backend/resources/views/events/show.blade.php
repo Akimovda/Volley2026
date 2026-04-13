@@ -234,7 +234,84 @@ $hasCoords =
 				</div>
 				
 				<div class="col-lg-4">
-					@include('events.show.players')
+					@if($event->allow_registration ?? true)
+@include('events.show.players')
+@else
+@php
+    $isOwner = auth()->check() && auth()->id() === (int)($event->organizer_id ?? 0);
+    $adStatus = $event->ad_payment_status ?? null;
+    $adMethod = $platPaySettings?->method ?? null;
+    $adPrice  = $event->ad_price_rub ?? 0;
+    $adExpires = $event->ad_payment_expires_at;
+@endphp
+
+{{-- Блок оплаты для организатора --}}
+@if($isOwner && $adStatus === 'pending' && $adPrice > 0)
+<div class="ramka" style="border: 2px solid #f5c842;">
+    <h2 class="-mt-05">💰 Оплата размещения</h2>
+    <p class="f-15">Для публикации рекламного мероприятия необходимо оплатить размещение.</p>
+    <div class="alert alert-warning">
+        Стоимость: <strong>{{ $adPrice }} ₽</strong><br>
+        @if($adExpires)
+        ⏰ Оплатите до: <strong>{{ \Carbon\Carbon::parse($adExpires)->format('d.m.Y H:i') }}</strong>
+        @endif
+    </div>
+
+    @if($adMethod === 'tbank_link' && $platPaySettings?->tbank_link)
+    <a href="{{ $platPaySettings->tbank_link }}" target="_blank" class="btn w-100 mb-1">
+        💳 Оплатить через Т-Банк
+    </a>
+    @elseif($adMethod === 'sber_link' && $platPaySettings?->sber_link)
+    <a href="{{ $platPaySettings->sber_link }}" target="_blank" class="btn w-100 mb-1">
+        💳 Оплатить через Сбербанк
+    </a>
+    @elseif($adMethod === 'yoomoney')
+    @if($event->ad_yookassa_payment_url)
+    <a href="{{ $event->ad_yookassa_payment_url }}" target="_blank" class="btn w-100 mb-1">
+        💳 Оплатить через ЮKassa
+    </a>
+    <p class="f-13 mt-1" style="opacity:.6">После оплаты мероприятие будет опубликовано автоматически.</p>
+    @else
+    <div class="alert alert-danger f-14">Ошибка создания платежа. Обратитесь к администратору.</div>
+    @endif
+    @endif
+
+    @if(in_array($adMethod, ['tbank_link', 'sber_link']))
+    <form method="POST" action="{{ route('events.ad.paid', $event) }}">
+        @csrf
+        <button type="submit" class="btn btn-secondary w-100 mt-1">✅ Я оплатил — уведомить администратора</button>
+    </form>
+    @endif
+</div>
+@elseif($adStatus === 'pending')
+<div class="ramka">
+    <div class="alert alert-warning">⏳ Мероприятие ожидает подтверждения оплаты.</div>
+</div>
+@endif
+
+{{-- Блок организатора --}}
+<div class="ramka">
+    <h2 class="-mt-05">📣 Рекламное мероприятие</h2>
+    <p class="f-15">Запись осуществляется напрямую через организатора.</p>
+    @if($event->organizer)
+    @php $org = $event->organizer; @endphp
+    <div class="d-flex fvc gap-1 mt-2">
+        <img src="{{ $org->profile_photo_url }}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;">
+        <div>
+            <div class="f-13" style="opacity:.6">Организатор</div>
+            <a class="blink b-600" href="{{ route('users.show', $org->id) }}">
+                {{ trim(($org->last_name ?? '') . ' ' . ($org->first_name ?? $org->name)) }}
+            </a>
+        </div>
+    </div>
+    @if($org->phone)
+    <div class="mt-2">
+        <a href="tel:{{ $org->phone }}" class="btn btn-secondary w-100">📞 Позвонить организатору</a>
+    </div>
+    @endif
+    @endif
+</div>
+@endif
 				</div>
 			</div>
 		</div>

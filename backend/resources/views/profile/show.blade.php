@@ -877,7 +877,7 @@
         ? \App\Models\VolleyballSchool::with('organizer:id,first_name,last_name')->orderBy('name')->get()
         : collect();
 @endphp
-<h2 class="-mt-05">🏐 Школы волейбола</h2>
+<h2 class="-mt-05">Школы волейбола</h2>
 
 @if(auth()->user()->isAdmin() && $allSchools->isNotEmpty())
 <div class="b-600 mb-1 f-16">Все школы на платформе:</div>
@@ -902,29 +902,22 @@
 </div>
 
 @elseif($mySchools->isNotEmpty())
-@foreach($mySchools as $s)
-<div class="card mb-1">
-    <div class="d-flex fvc gap-2 mb-1">
-        @php $sLogo = $s->getFirstMediaUrl('logo', 'thumb'); @endphp
-        @if($sLogo)<img src="{{ $sLogo }}" alt="logo" style="width:4rem;height:4rem;border-radius:50%;object-fit:cover">@endif
-        <div>
-            <div class="b-600">{{ $s->name }}</div>
-            <div class="f-14 mt-05" style="opacity:.6">{{ $s->is_published ? '✅ Опубликовано' : '⏸ Скрыто' }}</div>
-        </div>
-    </div>
-    <div class="d-flex gap-2">
-        <a href="{{ route('volleyball_school.show', $s->slug) }}" class="btn btn-secondary">👁 Открыть</a>
-        <a href="{{ route('volleyball_school.edit') }}?id={{ $s->id }}" class="btn btn-secondary">✏️ Редактировать</a>
+@php $s = $mySchools->first(); $sLogo = $s->getFirstMediaUrl('logo', 'thumb'); @endphp
+<div class="d-flex fvc gap-2 mb-2">
+    @if($sLogo)<img src="{{ $sLogo }}" alt="logo" style="width:4rem;height:4rem;border-radius:50%;object-fit:cover">@endif
+    <div>
+        <div class="b-600">{{ $s->name }}</div>
+        <div class="f-14 mt-05" style="opacity:.6">{{ $s->is_published ? '✅ Опубликовано' : '⏸ Скрыто' }}</div>
     </div>
 </div>
-@endforeach
-<div class="mt-2">
-    <a href="{{ route('volleyball_school.create') }}" class="btn btn-secondary">+ Создать ещё</a>
+<div class="d-flex gap-1">
+    <a href="{{ route('volleyball_school.show', $s->slug) }}" class="btn btn-secondary">Открыть</a>
+    <a href="{{ route('volleyball_school.edit') }}?id={{ $s->id }}" class="btn btn-secondary">Редактировать</a>
 </div>
 
 @else
 <p>Создайте публичную страницу вашей школы или волейбольного сообщества — там будут отображаться ваши мероприятия, описание и контакты.</p>
-<a href="{{ route('volleyball_school.create') }}" class="btn">+ Создать страницу школы</a>
+<a href="{{ route('volleyball_school.create') }}" class="btn">Создать страницу школы</a>
 @endif
 @endif
 </div>

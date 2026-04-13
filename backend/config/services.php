@@ -1,12 +1,6 @@
 <?php
 
 return [
-    /*
-    |--------------------------------------------------------------------------
-    | Third Party Services
-    |--------------------------------------------------------------------------
-    */
-
     'postmark' => [
         'key' => env('POSTMARK_API_KEY'),
     ],
@@ -27,57 +21,46 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
-    
-     'bind' => [
+
+    'bind' => [
         'secret' => env('BIND_WEBHOOK_SECRET'),
     ],
-     'vk' => [
-            'token' => env('VK_TOKEN'),
-            'version' => env('VK_API_VERSION', '5.199'),
-            'bot_link' => env('VK_BOT_LINK'),
-            'bot_api_url' => env('VK_BOT_API_URL'),
+
+    'vk' => [
+        'token'       => env('VK_TOKEN'),
+        'version'     => env('VK_API_VERSION', '5.199'),
+        'bot_link'    => env('VK_BOT_LINK'),
+        'bot_api_url' => env('VK_BOT_API_URL'),
     ],
+
     'max' => [
         'bot_api_url' => env('MAX_BOT_API_URL'),
-        'bot_link' => env('MAX_BOT_LINK'),
-        'bot_id' => env('MAX_BOT_ID'),
-        'bot_token' => env('MAX_BOT_TOKEN'),
+        'bot_link'    => env('MAX_BOT_LINK'),
+        'bot_id'      => env('MAX_BOT_ID'),
+        'bot_token'   => env('MAX_BOT_TOKEN'),
     ],
-    /*
-    |--------------------------------------------------------------------------
-    | OAuth / Socialite providers
-    |--------------------------------------------------------------------------
-    */
 
-    // Telegram Login Widget (не Socialite)
     'telegram' => [
-        'bot_token' => env('TELEGRAM_BOT_TOKEN'),
-        'bot_username' => env('TELEGRAM_BOT_USERNAME'), // именно username бота для виджета
-
-        // ✅ NEW: куда слать уведомление админу
-        'admin_chat_id' => env('TELEGRAM_ADMIN_CHAT_ID'),
+        'bot_token'      => env('TELEGRAM_BOT_TOKEN'),
+        'bot_username'   => env('TELEGRAM_BOT_USERNAME'),
+        'admin_chat_id'  => env('TELEGRAM_ADMIN_CHAT_ID'),
     ],
 
-    // VK ID via SocialiteProviders (driver: vkid)
-    // Socialite::driver('vkid')
     'vkid' => [
-        'client_id' => env('VKID_CLIENT_ID'),
-        'client_secret' => env('VKID_CLIENT_SECRET'),
-        'redirect' => env('VKID_REDIRECT_URI'),
-
-        // ✅ NEW: уведомление админу через VK API messages.send
-        'admin_token' => env('VK_ADMIN_TOKEN'),
-        'admin_peer_id' => env('VK_ADMIN_PEER_ID'),
+        'client_id'      => env('VKID_CLIENT_ID'),
+        'client_secret'  => env('VKID_CLIENT_SECRET'),
+        'redirect'       => env('VKID_REDIRECT_URI'),
+        'admin_token'    => env('VK_ADMIN_TOKEN'),
+        'admin_peer_id'  => env('VK_ADMIN_PEER_ID'),
     ],
-    // Yandex maps
+
     'yandex_maps' => [
         'key' => env('YANDEX_MAPS_API_KEY'),
     ],
 
-    // Yandex via SocialiteProviders (driver: yandex)
     'yandex' => [
-        'client_id' => env('YANDEX_CLIENT_ID'),
+        'client_id'     => env('YANDEX_CLIENT_ID'),
         'client_secret' => env('YANDEX_CLIENT_SECRET'),
-        'redirect' => env('YANDEX_REDIRECT_URI'),
+        'redirect'      => env('YANDEX_REDIRECT_URI'),
     ],
 ];

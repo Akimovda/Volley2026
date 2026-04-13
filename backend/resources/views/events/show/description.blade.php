@@ -33,16 +33,27 @@
 			<div class="col-md-6 mb-2">
 				
 				@if($event->organizer)
-				
-				<div class="d-flex">
-					<span class="emo">🧑‍💼</span>
-					<div>
-						<div class="b-600"> Организатор</div>
-						<a class="blink" href="{{ route('users.show', $event->organizer->id) }}">
-							{{ $event->organizer->name ?? '—' }}
-						</a>
-					</div>
-				</div>	
+@php
+    $org = $event->organizer;
+    $orgAvatar = $org->profile_photo_url;
+    $orgSchool = \App\Models\VolleyballSchool::where('organizer_id', $org->id)->first();
+@endphp
+<div class="d-flex fvc gap-1 mb-1">
+    <a href="{{ route('users.show', $org->id) }}">
+        <img src="{{ $orgAvatar }}" alt="{{ $org->name }}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;flex-shrink:0;">
+    </a>
+    <div>
+        <div class="f-13" style="opacity:.6">Организатор</div>
+        <a class="blink b-600" href="{{ route('users.show', $org->id) }}">
+            {{ trim(($org->last_name ?? '') . ' ' . ($org->first_name ?? $org->name)) }}
+        </a>
+        @if($orgSchool)
+        <div class="f-13 mt-05">
+            <a class="blink" href="{{ route('volleyball_school.show', $orgSchool->slug) }}">🏐 {{ $orgSchool->name }}</a>
+        </div>
+        @endif
+    </div>
+</div>	
 				@if($event->organizer && $event->organizer->phone)
 				<div class="d-flex mt-1">	
 					<span class="emo">📞</span>

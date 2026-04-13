@@ -22,7 +22,9 @@ class UserDirectoryController extends Controller
             ->with('city')
             ->when($q !== '', function ($query) use ($q) {
                 $query->where(function ($qq) use ($q) {
-                    $qq->where('first_name', 'ilike', "%{$q}%")
+                    $qq->whereRaw("CONCAT(last_name, ' ', first_name) ILIKE ?", ["%{$q}%"])
+                       ->orWhereRaw("CONCAT(first_name, ' ', last_name) ILIKE ?", ["%{$q}%"])
+                       ->orWhere('first_name', 'ilike', "%{$q}%")
                        ->orWhere('last_name', 'ilike', "%{$q}%")
                        ->orWhere('telegram_username', 'ilike', "%{$q}%");
                 });
@@ -41,11 +43,12 @@ class UserDirectoryController extends Controller
                 $query->whereNotNull('birth_date')
                     ->where('birth_date', '>=', now()->subYears((int)$ageMax)->toDateString());
             })
-            ->orderByDesc('id')
+            ->orderBy('last_name')->orderBy('first_name')
             ->paginate(24)
             ->withQueryString();
 
         $cities = City::query()
+            ->whereIn('id', \App\Models\User::whereNotNull('city_id')->pluck('city_id')->unique())
             ->orderBy('name')
             ->limit(300)
             ->get();

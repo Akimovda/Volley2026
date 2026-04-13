@@ -158,7 +158,7 @@
                 </div>
             </div>
 
-            <div class="ramka">{{ $schools->links() }}</div>
+          {{ $schools->links() }}
         @endif
 
     </div>

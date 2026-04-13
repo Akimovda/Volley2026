@@ -60,6 +60,13 @@ class Event extends Model implements HasMedia
         'bot_assistant_max_fill_pct',
         'is_template',
 		'event_photos',
+
+        // Рекламные мероприятия
+        'ad_payment_status',
+        'ad_payment_expires_at',
+        'ad_price_rub',
+        'ad_yookassa_payment_id',
+        'ad_yookassa_payment_url',
     ];
 
     protected $casts = [

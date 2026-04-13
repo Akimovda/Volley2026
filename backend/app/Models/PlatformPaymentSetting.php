@@ -13,6 +13,7 @@ class PlatformPaymentSetting extends Model
         'yoomoney_shop_id',
         'yoomoney_secret_key',
         'yoomoney_verified',
+        'ad_event_price_rub',
     ];
 
     protected $casts = [

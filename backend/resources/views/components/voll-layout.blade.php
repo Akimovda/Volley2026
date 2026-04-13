@@ -470,9 +470,10 @@
 							<p>Сервис для игроков в волейбол и организаторов волейбольных мероприятий</p>
 							<div class="footer-social-icon">
 								<a target="_blank" href="https://vk.com/volleyplay.club"><span class="icon-vk"></span></a>
-								<a target="_blank" href="https://t.me/volleyplay"><span class="icon-tg"></span></a>
+								<a target="_blank" href="https://t.me/+YAwpAjUdXR0zY2Ji"><span class="icon-tg"></span></a>
 							</div>  
 							<p><a href="/personal_data_agreement">Согласие на обработку персональных данных</a></p>
+<p><a href="/user_agreement">Пользовательское соглашение</a></p>
 						</div>
 						
 						<div class="col-3">

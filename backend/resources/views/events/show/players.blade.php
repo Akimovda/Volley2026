@@ -146,7 +146,7 @@
     }
 @endphp
 @if($myReg && $myReg->subscription_id && $myReg->auto_booked && !$myReg->confirmed_at)
-<div class="alert alert-warning mt-2">
+<div class="alert alert-warning mt-1">
     ⏰ <strong>Подтвердите участие</strong> по абонементу до
     {{ \Carbon\Carbon::parse($occurrence->starts_at)->subHours(12)->format('d.m H:i') }}
     — иначе запись будет отменена автоматически.
@@ -156,7 +156,7 @@
     <button type="submit" class="btn w-100 mt-1">✅ Подтвердить участие</button>
 </form>
 @elseif($myReg && $myReg->subscription_id && $myReg->auto_booked && $myReg->confirmed_at)
-<div class="alert alert-success mt-2">✅ Участие подтверждено</div>
+<div class="alert alert-success mt-1">✅ Участие подтверждено</div>
 @endif
 	@php
 	    $myPayment = null;
@@ -170,7 +170,7 @@
 	@endphp
 	@if($myPayment && $myPayment->status === 'pending')
 	    @if(in_array($myPayment->method, ['tbank_link', 'sber_link']))
-	        <div class="alert alert-warning mt-2">
+	        <div class="alert alert-warning mt-1">
 	            ⏳ Ожидаем оплату — <strong>{{ number_format($myPayment->amount_minor/100, 2) }} ₽</strong>
 	        </div>
 	        @php
@@ -193,11 +193,11 @@
 	        <div class="alert alert-info mt-1">👀 Ждём подтверждения от организатора</div>
 	        @endif
 	    @elseif($myPayment->method === 'yoomoney' && $myPayment->yoomoney_confirmation_url)
-	        <div class="alert alert-warning mt-2">⏳ Место зарезервировано до {{ $myPayment->expires_at?->format('H:i') }}</div>
+	        <div class="alert alert-warning mt-1">⏳ Место зарезервировано до {{ $myPayment->expires_at?->format('H:i') }}</div>
 	        <a href="{{ $myPayment->yoomoney_confirmation_url }}" target="_blank" class="btn w-100 mt-1">🟡 Оплатить через ЮМани</a>
 	    @endif
 	@elseif($myPayment && $myPayment->status === 'paid')
-	    <div class="alert alert-success mt-2">✅ Оплачено — {{ number_format($myPayment->amount_minor/100, 2) }} ₽</div>
+	    <div class="alert alert-success mt-1">✅ Оплачено — {{ number_format($myPayment->amount_minor/100, 2) }} ₽</div>
 	@endif
 	{{-- ======= КОНЕЦ БЛОКА ОПЛАТЫ ======= --}}
 
@@ -205,12 +205,12 @@
 	<form method="POST" action="{{ $leaveAction }}">
 		@csrf
 		@method('DELETE')
-		<button type="submit" class="mt-2 btn btn-danger w-100">
+		<button type="submit" class="mt-1 btn btn-danger w-100">
 			Отменить запись
 		</button>
 	</form>
 	@else
-	<div class="alert alert-warning mt-2">
+	<div class="alert alert-warning mt-1">
 		{{ $cancel->message ?? $cancel->errors[0] ?? 'Отмена записи недоступна.' }}
 	</div>
 	@endif
@@ -225,7 +225,7 @@
 	</button>
 	--}}
 	@if (!empty($join->errors))
-	<div class="alert alert-info mt-2">
+	<div class="alert alert-info mt-1">
 		{{ $join->errors[0] }}
 	</div>
 	@endif
@@ -260,7 +260,7 @@
         @endforeach
     @endif
     @if(auth()->check())
-    <form method="POST" action="{{ route('tournamentTeams.store', $event) }}" class="mt-2">
+    <form method="POST" action="{{ route('tournamentTeams.store', $event) }}" class="mt-1">
         @csrf
         <input type="text" name="name" class="form-control mb-2" placeholder="Название команды" required>
         <input type="hidden" name="occurrence_id" value="{{ $occurrence->id }}">
@@ -299,12 +299,12 @@
     }
 @endphp
 @if($activeSubscription)
-<div class="alert alert-success mt-2 mb-2">
+<div class="alert alert-success mt-1 mb-2">
     🎫 <strong>Абонемент:</strong> {{ $activeSubscription->template->name }}
     — осталось <strong>{{ $activeSubscription->visits_remaining }}</strong> посещений
 </div>
 @elseif($activeCoupon)
-<div class="alert alert-warning mt-2 mb-2">
+<div class="alert alert-warning mt-1 mb-2">
     🎟 <strong>Купон:</strong> {{ $activeCoupon->template->name }}
     — скидка <strong>{{ $activeCoupon->getDiscountPct() }}%</strong>
 </div>
@@ -415,7 +415,7 @@
             @endif
         </div>
 
-        <form method="POST" action="{{ route('occurrences.waitlist.leave', $occurrence) }}" class="mt-2">
+        <form method="POST" action="{{ route('occurrences.waitlist.leave', $occurrence) }}" class="mt-1">
             @csrf
             @method('DELETE')
             <button type="submit" class="btn btn-outline-secondary">Покинуть резерв</button>
@@ -486,6 +486,7 @@
 </div>
 </div>{{-- /join-registration-block --}}
 @endif
+</div>{{-- /ramka Запись на мероприятие --}}
 {{-- ===============================
 ПРИГЛАСИТЬ ИГРОКА (объединённый блок)
 =============================== --}}
@@ -509,13 +510,15 @@
 
     {{-- Радио-переключатель типа приглашения --}}
     @if($hasGroupUi && !empty($groupUi['registration']))
-    <div class="d-flex gap-3 mb-3">
-        <label class="d-flex align-items-center gap-2" style="cursor:pointer">
+    <div class="d-flex gap-3 mb-2 form">
+                <label class="radio-item">
             <input type="radio" name="invite_mode" value="game" id="invite-mode-game" checked>
+			 <div class="custom-radio"></div>
             <span>На игру</span>
         </label>
-        <label class="d-flex align-items-center gap-2" style="cursor:pointer">
+        <label class="radio-item">
             <input type="radio" name="invite_mode" value="group" id="invite-mode-group">
+			 <div class="custom-radio"></div>
             <span>{{ $isPair ? 'В пару' : 'В команду' }}</span>
         </label>
     </div>
@@ -526,7 +529,7 @@
         <div class="text-muted small mb-2">
             Игрок получит уведомление с информацией о мероприятии и ссылкой для записи.
         </div>
-        <form class="form" method="POST" action="{{ $inviteAction }}" id="invite-player-form">
+        <form class="form w-100" method="POST" action="{{ $inviteAction }}" id="invite-player-form">
             @csrf
             <input type="hidden" name="occurrence_id" value="{{ $occurrence->id }}">
             <div class="ac-box">
@@ -549,7 +552,7 @@
 
         {{-- Состав текущей группы --}}
         @if(!empty($groupUi['group_key']))
-        <div class="mb-3">
+        <div class="mb-2">
             @php
                 $groupLabel = $isPair ? 'Состав пары' : 'Состав команды';
                 $leaveLabel = $isPair ? 'Выйти из пары' : 'Выйти из команды';
@@ -569,22 +572,22 @@
             @else
             <div class="text-muted small mb-2">Пока {{ $isPair ? 'в паре только вы' : 'в команде только вы' }}.</div>
             @endif
-            <form method="POST" action="{{ route('events.group.leave', ['event' => $event->id]) }}" class="mb-3">
+            <form method="POST" action="{{ route('events.group.leave', ['event' => $event->id]) }}" class="mb-2">
                 @csrf
                 <button type="submit" class="btn btn-sm btn-outline-danger">{{ $leaveLabel }}</button>
             </form>
         </div>
         @else
         {{-- Нет группы — кнопка объединиться --}}
-        <form method="POST" action="{{ route('events.group.create', ['event' => $event->id]) }}" class="mb-3">
+        <form method="POST" action="{{ route('events.group.create', ['event' => $event->id]) }}" class="mb-2 w-100">
             @csrf
-            <button type="submit" class="btn btn-outline-primary">Объединиться</button>
+            <button type="submit" class="btn btn-outline-primary w-100">Объединиться</button>
         </form>
         @endif
 
         {{-- Форма поиска и приглашения --}}
         <div class="text-muted small mb-2">{{ $isPair ? 'Пригласить игрока в пару' : 'Пригласить игрока в команду' }}</div>
-        <form method="POST" action="{{ route('events.group.invite', ['event' => $event->id]) }}" id="group-invite-form">
+        <form class="w-100 form" method="POST" action="{{ route('events.group.invite', ['event' => $event->id]) }}" id="group-invite-form">
             @csrf
             <input type="hidden" name="to_user_id" id="group-invite-user-id" value="">
             <div style="position:relative" class="mb-2" id="group-invite-ac-wrap">
@@ -593,7 +596,7 @@
                 <div id="group-invite-ac-dd" class="form-select-dropdown trainer_dd"></div>
             </div>
             <div id="group-invite-selected" class="mb-2 text-muted small"></div>
-            <button type="submit" id="group-invite-btn" class="btn btn-outline-primary" disabled>
+            <button type="submit" id="group-invite-btn" class="btn btn-outline-primary w-100" disabled>
                 {{ $isPair ? 'Пригласить в пару' : 'Пригласить в команду' }}
             </button>
         </form>

@@ -40,7 +40,7 @@
             
             <span class="user-card-name">
                 @if(!empty($u->first_name) && !empty($u->last_name))
-                    {{ $u->first_name }}<br>{{ $u->last_name }}
+                    {{ $u->last_name }}<br>{{ $u->first_name }}
                 @else
                     Пользователь<br>#{{ $u->id }}
                 @endif
@@ -89,6 +89,14 @@
         @endif
     </div>
 @endif
+@if($u->isPremium())
+	    <div class="user-meta-list">
+    <div class="user-meta-item mt-05">
+        <span class="premium-badge-card"><span class="user-meta-icon">👑</span>  <span class="user-meta-text f-16">Premium</span></span>
+    </div>
+	 </div>
+@endif
+
 
 {{-- Чувствительные поля закомментированы
 @can('view-sensitive-profile', $u)

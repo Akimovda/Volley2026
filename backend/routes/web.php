@@ -9,6 +9,7 @@
 	use App\Http\Controllers\MaxBindingController;
 	use App\Http\Controllers\NotificationController;
 	use App\Http\Controllers\EventsController;
+use App\Http\Controllers\YookassaWebhookController;
 	use App\Http\Controllers\EventCreateController;
 	use App\Http\Controllers\EventRegistrationController;
     use App\Http\Controllers\EventRegistrationInviteController;
@@ -278,6 +279,8 @@
 		
 		Route::delete('/events/{event}/leave', [EventRegistrationController::class, 'destroy'])
         ->name('events.leave');
+
+    Route::post('/events/{event}/ad-paid', [\App\Http\Controllers\AdEventPaymentController::class, 'notify'])->name('events.ad.paid');
 		
 		// NEW join/leave by Occurrence
 		Route::post('/occurrences/{occurrence}/join', [EventRegistrationController::class, 'storeOccurrence'])
@@ -537,6 +540,10 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
         Route::get('/users/{user}', [AdminUserController::class, 'show'])->name('users.show');
         Route::post('/users/{user}/role', [AdminRoleController::class, 'updateUserRole'])->name('users.role.update');
         Route::delete('/users/{user}/purge', [AdminUserController::class, 'purge'])->name('users.purge');
+
+        // Рекламные мероприятия
+        Route::post('/events/{event}/ad/confirm', [\App\Http\Controllers\Admin\AdminAdEventController::class, 'confirm'])->name('events.ad.confirm');
+        Route::post('/events/{event}/ad/reject',  [\App\Http\Controllers\Admin\AdminAdEventController::class, 'reject'])->name('events.ad.reject');
 		
         Route::post('/users/{user}/restrictions/events', [AdminUserRestrictionController::class, 'banEvents'])
 		->name('users.restrictions.events');
@@ -596,6 +603,7 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
 	
 	Route::view('/personal_data_agreement', 'pages.personal_data_agreement')
     ->name('personal_data_agreement');
+Route::view('/user_agreement', 'pages.user_agreement')->name('user_agreement');
 	
 	/*
 		|--------------------------------------------------------------------------
@@ -852,3 +860,15 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         Route::delete('/staff/{assignment}', [\App\Http\Controllers\StaffController::class, 'destroy'])->name('staff.destroy');
         Route::get('/staff/logs', [\App\Http\Controllers\StaffController::class, 'logs'])->name('staff.logs');
     });
+
+// ЮKassa webhook (без auth, без CSRF — исключён в bootstrap/app.php)
+Route::post('/yookassa/webhook', [YookassaWebhookController::class, 'handle'])
+    ->name('yookassa.webhook');
+
+/*
+|--------------------------------------------------------------------------
+| ЮKassa webhook (без auth, без CSRF)
+|--------------------------------------------------------------------------
+*/
+Route::post('/yookassa/webhook', [YookassaWebhookController::class, 'handle'])
+    ->name('yookassa.webhook');

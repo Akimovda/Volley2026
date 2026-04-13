@@ -273,8 +273,12 @@ class EventShowService
         */
         $registrationMode = (string) ($event->registration_mode ?? 'single');
 
+        // Настройки оплаты рекламных мероприятий
+        $platPaySettings = \App\Models\PlatformPaymentSetting::first();
+
         return [
             'event' => $event,
+            'platPaySettings' => $platPaySettings,
             'occurrence' => $occurrence,
             'registered_total' => $registeredCount,
             'participants' => collect(),

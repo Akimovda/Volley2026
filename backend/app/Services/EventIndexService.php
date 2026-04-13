@@ -107,6 +107,13 @@ class EventIndexService
                 $q->where(function ($w) use ($userId) {
 
                     $w->where('allow_registration', true);
+                    // Скрываем неоплаченные рекламные мероприятия
+                })->orWhere(function($w) {
+                    $w->where('allow_registration', false)
+                      ->where(function($ww) {
+                          $ww->where('ad_payment_status', 'paid')
+                             ->orWhereNull('ad_payment_status');
+                      });
 
                     if ($userId > 0 && Schema::hasColumn('events','organizer_id')) {
                         $w->orWhere('organizer_id', $userId);
@@ -308,7 +315,16 @@ class EventIndexService
         $eventsQ = Event::query();
 
         if (!$isAdmin) {
-            $eventsQ->where('allow_registration',true);
+            $eventsQ->where(function($q) {
+                $q->where('allow_registration', true)
+                  ->orWhere(function($w) {
+                      $w->where('allow_registration', false)
+                        ->where(function($ww) {
+                            $ww->where('ad_payment_status', 'paid')
+                               ->orWhereNull('ad_payment_status');
+                        });
+                  });
+            });
         }
 
         if ($direction !== '') {

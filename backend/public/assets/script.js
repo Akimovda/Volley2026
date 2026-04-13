@@ -1,6 +1,6 @@
 
 //$('input, select, textarea').attr('autocomplete', 'off');
-
+$("input.phone").mask("+7 (999) 999 - 9999",{placeholder: "_", completed:function(){}});
 $('.anima').each(function() {
 	// Получаем текст (без тегов)
 	$(this).css('opacity','1');

@@ -1,4 +1,7 @@
 {{-- resources/views/volleyball_school/edit.blade.php --}}
+
+
+
 <x-voll-layout body_class="volleyball-school-edit-page">
 	
     <x-slot name="title">Редактировать — {{ $school->name }}</x-slot>

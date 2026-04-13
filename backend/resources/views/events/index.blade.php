@@ -411,7 +411,7 @@ $groupedByDate[$dateKey] = ['date' => $date, 'occurrences' => []];
 					jQuery.fancybox.open({
 						src: '#joinModalContent',
 						type: 'inline',
-						opts: { touch: false, animationEffect: false, toolbar: false, smallBtn: true }
+						opts: { hideScrollbar: false, touch: false, toolbar: false, smallBtn: true, animationEffect: 'zoom-in-out', transitionEffect: 'zoom-in-out', preventCaptionOverlap: false,}
 					});
 				}
 				
@@ -428,8 +428,8 @@ $groupedByDate[$dateKey] = ['date' => $date, 'occurrences' => []];
 						const label = positionNames[key] || key;
 						const btn   = document.createElement('button');
 						btn.type      = 'button';
-						btn.className = 'btn w-100 mb-1';
-						btn.innerHTML = label + ' <span class="f-13" style="opacity:.6">(' + free + ' мест)</span>';
+						btn.className = 'd-flex between btn btn-primary w-100 mb-1';
+						btn.innerHTML = label + '<span><span class="pl-1 pr-1 f-11">Свободно:</span>' + free + '</span>';
 						btn.addEventListener('click', () => {
 							joinForm.action   = '/occurrences/' + occurrenceId + '/join';
 							joinPos.value     = key;
@@ -439,6 +439,8 @@ $groupedByDate[$dateKey] = ['date' => $date, 'occurrences' => []];
 						posWrap.appendChild(btn);
 					});
 				}
+				
+				
 				
 				async function fetchAvailability(occurrenceId) {
 					try {

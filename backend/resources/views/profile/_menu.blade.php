@@ -5,14 +5,12 @@
     $isOrgOrAdmin = $menuUser->isOrganizer() || $menuUser->isAdmin();
 @endphp
 
-<div class="profile-avatar mb-2 text-center">
+<div class="profile-avatar mb-1 f-0 text-center">
     <img src="{{ $menuUser->profile_photo_url }}" alt="avatar" class="avatar"/>
-    <div class="b-600 mt-1">{{ $menuUser->name }}</div>
-    @if($menuUser->classic_level)
-    <div class="f-14" style="opacity:.6">{{ level_name($menuUser->classic_level) }}</div>
-    @endif
 </div>
-
+<div class="text-center mb-1">
+    <div class="b-600 mt-1">{{ $menuUser->name }}</div>
+</div>	
 {{-- Чужая страница (редактирование) --}}
 @if($isEditingOther)
 <nav class="menu-nav sidebar-menu">

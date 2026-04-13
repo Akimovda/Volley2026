@@ -1078,28 +1078,40 @@ if ($initialStep < 1 || $initialStep > 3) {
 										{{-- allow_registration --}}
 										<div class="col-md-6">
 											<div class="card">
-												<label>Регистрация игроков через сервис?</label>
+																								<label>Тип мероприятия
+													<button type="button" class="btn btn-small btn-secondary" style="font-size:.8rem;padding:.1rem .5rem;margin-left:.5rem;" id="hint-location-btn">❓</button>
+												</label>
 												@php
 												$allowRegVal = old('allow_registration', $prefill['allow_registration'] ?? 1);
 												@endphp
-												
+
 												<label class="radio-item">
 													<input type="radio" name="allow_registration" value="1" @checked((string)$allowRegVal==='1')>
 													<div class="custom-radio"></div>
-													<span>Да (Доступно создание повторяющихся мероприятий)</span>
+													<span>Да — с регистрацией игроков (доступно повторение)</span>
 												</label>
 												<label class="radio-item">
 													<input type="radio" name="allow_registration" value="0" @checked((string)$allowRegVal==='0')>
 													<div class="custom-radio"></div>
-													<span>Нет (Только одноразовое + заглушка оплаты)</span>
+													<span>Нет — рекламное мероприятие (без регистрации)</span>
 												</label>
 												
-												<div id="no_registration_stub" class="m">
-													<div class="font-semibold">Платное размещение (заглушка)</div>
-													<div class="mt-1 text-xs text-gray-500">
-														Здесь позже появится “Оплатить” и логика платного размещения, если регистрация выключена.
-													</div>
-												</div>
+												<div id="no_registration_stub" class="mt-2" style="display:none;">
+@php
+    $adminPaySettings = \App\Models\PlatformPaymentSetting::first();
+    $adPrice = $adminPaySettings?->ad_event_price_rub ?? 0;
+@endphp
+@if($adPrice > 0)
+<div class="alert alert-info mt-1">
+    💰 Стоимость размещения рекламного мероприятия: <strong>{{ $adPrice }} ₽</strong><br>
+    <span class="f-13" style="opacity:.7">Оплата потребуется после создания мероприятия.</span>
+</div>
+@else
+<div class="alert alert-info mt-1">
+    📣 Рекламное мероприятие — свяжитесь с администратором для уточнения стоимости размещения.
+</div>
+@endif
+</div>
 											</div>
 										</div>										
 
@@ -1111,13 +1123,39 @@ if ($initialStep < 1 || $initialStep > 3) {
 							<button type="button" class="btn" data-next>
 								Дальше
 							</button>
-						</div>							
-						
-						
+						</div>
+
+{{-- Модальная подсказка про локации --}}
+<div id="hint-location-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center;">
+    <div class="ramka" style="max-width:480px;margin:2rem auto;position:relative;">
+        <button type="button" id="hint-location-close" style="position:absolute;top:.75rem;right:.75rem;background:none;border:none;font-size:1.5rem;cursor:pointer;line-height:1;">×</button>
+        <h2 class="-mt-05">📍 Важно про локации</h2>
+        <p>Убедитесь, что на сайте в разделе <a href="{{ route('locations.index') }}" target="_blank" class="blink">Локации</a> есть необходимый адрес — без него создать мероприятие не получится.</p>
+        <p>Если локации нет — свяжитесь с администратором, он всё подготовит на платформе!</p>
+        <div class="text-center mt-2">
+            <button type="button" id="hint-location-close2" class="btn">Понятно</button>
+        </div>
+    </div>
+</div>
+<script>
+(function(){
+    var btn = document.getElementById('hint-location-btn');
+    var modal = document.getElementById('hint-location-modal');
+    var close1 = document.getElementById('hint-location-close');
+    var close2 = document.getElementById('hint-location-close2');
+    if (!btn || !modal) return;
+    function show(){ modal.style.display = 'flex'; }
+    function hide(){ modal.style.display = 'none'; }
+    btn.addEventListener('click', show);
+    close1.addEventListener('click', hide);
+    close2.addEventListener('click', hide);
+    modal.addEventListener('click', function(e){ if(e.target === modal) hide(); });
+})();
+</script>							
 					</div>
 					{{-- STEP 2 --}}
 					<div data-step="2" class="wizard-step hidden step-shell">
-						<div class="ramka">
+						<div class="ramka" style="z-index:5">
 							<h2 class="-mt-05">Выбор локации,времени и ограничений записи</h2>		
 							<div class="row">
 								
@@ -1315,7 +1353,7 @@ if ($initialStep < 1 || $initialStep > 3) {
 								
 								
 								{{-- ✅ Registration timings (Step 2) --}}
-								<div class="col-lg-8" id="reg_timing_box">
+								<div class="col-lg-8" id="reg_timing_box" data-show-if="allow_registration=1">
 									<div class="card">
 										<label>Окно регистрации</label>
 										<hr class="mb-1">
@@ -1376,7 +1414,7 @@ if ($initialStep < 1 || $initialStep > 3) {
 								
 							</div>
 						</div>
-						<div class="ramka">
+						<div class="ramka" data-show-if="allow_registration=1">
 							<h2 class="-mt-05">Повторение мероприятия</h2>		
 							
 							{{-- ✅ Повторение перенесено сюда (Step 2) --}}
@@ -1540,10 +1578,42 @@ if ($initialStep < 1 || $initialStep > 3) {
 										isRecurring.addEventListener('change', syncRecurrenceUI);
 										typeSelect.addEventListener('change', syncRecurrenceUI);
 										allowRegRadios.forEach(r => r.addEventListener('change', syncRecurrenceUI));
-										
+
 										syncRecurrenceUI();
 									});
-								</script>	
+								</script>
+<script>
+(function(){
+    var allowRegRadios = document.querySelectorAll('input[name="allow_registration"]');
+    var adModal = document.getElementById('hint-location-modal');
+    var adModalShown = false;
+
+    function applyAllowRegShowIf() {
+        var isReg = Array.from(allowRegRadios).some(function(r){ return r.checked && r.value === '1'; });
+        // Показать/скрыть data-show-if блоки
+        document.querySelectorAll('[data-show-if]').forEach(function(el) {
+            var cond = el.getAttribute('data-show-if');
+            if (cond && cond.indexOf('allow_registration=') !== -1) {
+                var match = cond.match(/allow_registration=([01])/);
+                if (match) {
+                    el.style.display = (isReg === (match[1] === '1')) ? '' : 'none';
+                }
+            }
+        });
+        // Показать/скрыть блок стоимости
+        var stub = document.getElementById('no_registration_stub');
+        if (stub) stub.style.display = isReg ? 'none' : '';
+        // Показать модальное окно при выборе "Нет"
+        if (!isReg && !adModalShown && adModal) {
+            adModal.style.display = 'flex';
+            adModalShown = true;
+        }
+        if (isReg) adModalShown = false;
+    }
+    allowRegRadios.forEach(function(r){ r.addEventListener('change', applyAllowRegShowIf); });
+    applyAllowRegShowIf();
+})();
+</script>	
 								
 								
 							</div>
@@ -1562,7 +1632,7 @@ if ($initialStep < 1 || $initialStep > 3) {
 					
 					{{-- STEP 3 --}}
 					<div data-step="3" class="wizard-step hidden step-shell">
-						<div class="ramka" style="z-index: 5">
+						<div class="ramka" style="z-index: 5" data-show-if="allow_registration=1">
 							<h2 class="-mt-05">Доступность</h2>		
 							<div class="row">
 								<div class="col-md-4">
@@ -1808,7 +1878,7 @@ if ($initialStep < 1 || $initialStep > 3) {
 								</div>
 							</div>
 						</div>
-						<div class="ramka">
+						<div class="ramka" data-show-if="allow_registration=1">
 							<h2 class="-mt-05">Уведомления и видимость</h2>		
 							<div class="row">
 								

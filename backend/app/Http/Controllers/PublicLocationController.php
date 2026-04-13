@@ -133,7 +133,7 @@ $q = Event::query()
     {
         $loc = Location::query()
             ->whereNull('organizer_id')
-            ->with(['city:id,name,timezone', 'media'])
+            ->with(['city:id,name,region,timezone', 'media'])
             ->whereKey($location)
             ->firstOrFail();
 

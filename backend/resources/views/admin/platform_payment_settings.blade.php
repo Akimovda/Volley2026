@@ -84,6 +84,21 @@
                 </div>
             </div>
 
+            <div class="ramka">
+                <h2 class="-mt-05">📣 Рекламные мероприятия</h2>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card">
+                            <label>Стоимость размещения (₽)</label>
+                            <input type="number" name="ad_event_price_rub"
+                                value="{{ old('ad_event_price_rub', $settings->ad_event_price_rub ?? 0) }}"
+                                min="0" step="1" placeholder="0">
+                            <div class="f-14 mt-05" style="opacity:.6">0 = бесплатно / не задано</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="ramka text-center">
                 <a href="{{ route('profile.show') }}" class="btn btn-secondary mr-2">← Назад</a>
                 <button type="submit" class="btn">Сохранить</button>

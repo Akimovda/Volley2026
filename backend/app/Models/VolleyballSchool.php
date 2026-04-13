@@ -25,6 +25,11 @@ class VolleyballSchool extends Model implements HasMedia
         return $this->belongsTo(User::class, 'organizer_id');
     }
 
+    public function cityModel()
+    {
+        return $this->belongsTo(\App\Models\City::class, 'city_id');
+    }
+
     public function registerMediaCollections(): void
     {
         $this->addMediaCollection('logo')

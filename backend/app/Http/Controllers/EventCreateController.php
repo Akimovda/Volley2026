@@ -114,6 +114,40 @@ use App\Services\StaffLogService;
                    $result = $this->storeService->store($request, $user);
                    $event = $result['event'];
 
+                   // Рекламное мероприятие — оплата через ЮKassa
+                   if (!(bool)($event->allow_registration ?? true)) {
+                       $platSettings = \App\Models\PlatformPaymentSetting::first();
+                       $adPrice = (int)($platSettings?->ad_event_price_rub ?? 0);
+                       if ($adPrice > 0) {
+                           $event->ad_payment_status     = 'pending';
+                           $event->ad_payment_expires_at = now()->addHours(2);
+                           $event->ad_price_rub          = $adPrice;
+                           $event->save();
+                           \App\Jobs\ExpireAdEventJob::dispatch($event->id)->delay(now()->addHours(2));
+
+                           try {
+                               $payment = app(\App\Services\YookassaService::class)->createAdPayment($event);
+                               $event->update([
+                                   'ad_yookassa_payment_id'  => $payment['payment_id'],
+                                   'ad_yookassa_payment_url' => $payment['payment_url'],
+                               ]);
+                               return redirect()->away($payment['payment_url']);
+                           } catch (\Throwable $e) {
+                               \Illuminate\Support\Facades\Log::error('YooKassa createPayment failed', [
+                                   'event_id' => $event->id,
+                                   'error'    => $e->getMessage(),
+                               ]);
+                               // Fallback — показываем страницу события с ошибкой
+                               return redirect()->route('events.show', $event)
+                                   ->with('error', 'Мероприятие создано, но платёж не удалось создать. Обратитесь к администратору.');
+                           }
+                       } else {
+                           // Бесплатно — сразу публикуем
+                           $event->ad_payment_status = 'paid';
+                           $event->save();
+                       }
+                   }
+
                    // Лог для Staff
                    if ($user->isStaff()) {
                        $orgId = $user->getOrganizerIdForStaff();

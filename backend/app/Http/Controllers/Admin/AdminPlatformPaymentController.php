@@ -35,6 +35,8 @@ class AdminPlatformPaymentController extends Controller
             $settings->yoomoney_secret_key = encrypt($request->yoomoney_secret_key);
         }
 
+        $settings->ad_event_price_rub = (int) $request->input('ad_event_price_rub', 0);
+
         $settings->save();
 
         return back()->with('status', '✅ Настройки платёжной системы сохранены.');

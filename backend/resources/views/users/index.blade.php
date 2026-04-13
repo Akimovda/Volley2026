@@ -63,13 +63,15 @@
                 <form method="GET" action="{{ route('users.index') }}" class="form">
                     <div class="row">
                         <div class="col-md-4 col-sm-6">
-                            <label>Имя / фамилия</label>
-                            <input
-							name="q"
-							value="{{ $filters['q'] ?? '' }}"
-							placeholder="Иван Иванов"
-                            />
-						</div>
+                            <label>Фамилия / имя</label>
+                            <div style="position:relative;">
+                                <input name="q" id="users-search-q"
+                                    value="{{ $filters['q'] ?? '' }}"
+                                    placeholder="Акимов Дмитрий"
+                                    autocomplete="off"/>
+                                <div id="users-search-dd" class="form-select-dropdown trainer_dd"></div>
+                            </div>
+                        </div>
 						
                         <div class="col-md-4 col-sm-6">
                             <label>Город</label>
@@ -94,23 +96,23 @@
 						
 						<div class="col-md-4 col-sm-6">
                             <label>Уровень (классика)</label>
-                            <input
-							name="classic_level"
-							value="{{ $filters['classic_level'] ?? '' }}"
-							placeholder="1..7"
-							inputmode="numeric"
-                            />
-						</div>
+                            <select name="classic_level">
+                                <option value="">— любой —</option>
+                                @foreach(range(1,7) as $lvl)
+                                <option value="{{ $lvl }}" @selected((string)($filters['classic_level'] ?? '') === (string)$lvl)>{{ $lvl }} — {{ level_name($lvl) }}</option>
+                                @endforeach
+                            </select>
+                        </div>
 						
 						<div class="col-md-4 col-sm-6">
                             <label>Уровень (пляж)</label>
-                            <input
-							name="beach_level"
-							value="{{ $filters['beach_level'] ?? '' }}"
-							placeholder="1..7"
-							inputmode="numeric"
-                            />
-						</div>
+                            <select name="beach_level">
+                                <option value="">— любой —</option>
+                                @foreach(range(1,7) as $lvl)
+                                <option value="{{ $lvl }}" @selected((string)($filters['beach_level'] ?? '') === (string)$lvl)>{{ $lvl }} — {{ level_name($lvl) }}</option>
+                                @endforeach
+                            </select>
+                        </div>
 						
                         <div class="col-md-4 col-sm-6">
                             <label>Возраст</label>
@@ -171,4 +173,100 @@
 		{{ $users->links() }}
 	</div>
 	
+    <x-slot name="script">
+    <script>
+
+(function(){
+    var inp = document.getElementById('users-search-q');
+    var dd = document.getElementById('users-search-dd');
+    var timer = null;
+    var url = '/api/users/search';
+    
+    if (!inp || !dd) return;
+    
+    function esc(s) { 
+        return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); 
+    }
+    
+    function showDd() { 
+        dd.classList.add('form-select-dropdown--active'); 
+    }
+    
+    function hideDd() { 
+        dd.classList.remove('form-select-dropdown--active'); 
+    }
+    
+    function render(items) {
+        dd.innerHTML = '';
+        
+        if (!items.length) {
+            dd.innerHTML = '<div class="city-message">Ничего не найдено</div>';
+            showDd();
+            return;
+        }
+        
+        items.slice(0, 8).forEach(function(u) {
+            var div = document.createElement('div');
+            div.className = 'trainer-item form-select-option';
+            div.setAttribute('data-name', u.label || '');
+            div.innerHTML = '<div class="text-sm text-gray-900">' + esc(u.label || '') + '</div>';
+            
+            div.addEventListener('click', function() {
+                inp.value = div.getAttribute('data-name');
+                hideDd();
+                inp.closest('form').submit();
+            });
+            
+            dd.appendChild(div);
+        });
+        
+        showDd();
+    }
+    
+    inp.addEventListener('input', function() {
+        clearTimeout(timer);
+        var q = inp.value.trim();
+        
+        if (q.length < 2) { 
+            hideDd(); 
+            return; 
+        }
+        
+        dd.innerHTML = '<div class="city-message">Поиск…</div>';
+        showDd();
+        
+        timer = setTimeout(function() {
+            fetch(url + '?q=' + encodeURIComponent(q), {
+                headers: { 'Accept': 'application/json' },
+                credentials: 'same-origin'
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                var items = Array.isArray(data) ? data : (data.items || []);
+                render(items);
+            })
+            .catch(function() {
+                dd.innerHTML = '<div class="city-message">Ошибка загрузки</div>';
+                showDd();
+            });
+        }, 250);
+    });
+    
+    document.addEventListener('click', function(e) {
+        var wrap = inp.closest('div');
+        if (wrap && !wrap.contains(e.target) && !dd.contains(e.target)) {
+            hideDd();
+        } else if (!inp.contains(e.target) && !dd.contains(e.target)) {
+            hideDd();
+        }
+    });
+    
+    inp.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') hideDd();
+    });
+})();
+
+    </script>
+    </x-slot>
+
 </x-voll-layout>

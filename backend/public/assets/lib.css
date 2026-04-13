@@ -39,7 +39,6 @@ html,body,p,ol,ul,li,dl,dt,dd,blockquote,figure,fieldset,legend,textarea,pre,ifr
 *::-moz-focus-inner, *:-moz-focusring {
 	outline: none !important;
 	outline-offset: 0 !important;
-	box-shadow: none !important;
 	border-color: transparent !important;
 	-webkit-appearance: none !important;
 	-moz-appearance: none !important;
@@ -1443,6 +1442,11 @@ body.dark .swal-overlay:after{
     position: relative;
     text-align: left;
     vertical-align: middle;
+	box-shadow: 0 1rem 2.2rem rgba(0, 0, 0, 0.15), 0 0.5rem 1.2rem rgba(0, 0, 0, 0.13);
+	border-radius: 1rem;
+}
+body.dark .fancybox-content {
+background: #222333;
 }
 .fancybox-slide--html .fancybox-content {
 	opacity: 0;

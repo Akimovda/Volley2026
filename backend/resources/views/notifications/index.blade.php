@@ -172,7 +172,7 @@
 					
 					@empty
 					
-					<div class="alert alert-secondary">
+					<div class="alert alert-info">
 						Уведомлений пока нет.
 					</div>
 					

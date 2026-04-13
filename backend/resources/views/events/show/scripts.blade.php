@@ -158,8 +158,8 @@
 						el.style.cssText = 'display:flex;align-items:center;gap:0.75rem;margin-bottom:0.5rem;';
 						el.innerHTML = `
 							<div class="f-13" style="width:20px;text-align:right;color:#aaa">${displayIndex++}.</div>
-							<img src="${p.avatar || 'https://ui-avatars.com/api/?name=Player'}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;">
-							<div class="f-16" style="flex:1">${levelIcon(p.level)} ${p.name}</div>
+							<a href="${p.url || '/user/'+p.id}"><img src="${p.avatar || 'https://ui-avatars.com/api/?name=Player'}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;"></a>
+							<div class="f-16" style="flex:1"><a href="${p.url || '/user/'+p.id}" class="blink">${levelIcon(p.level)} ${p.name}</a></div>
 							<div class="f-13 text-muted">${p.position && p.position !== 'player' ? positionLabel(p.position) : ''}</div>
 						`;
 						playersList.appendChild(el);
@@ -173,11 +173,11 @@
 								? `<div class="f-13" style="width:20px;text-align:right;color:#aaa">${num}.</div>`
 								: `<div class="f-13" style="width:20px;text-align:right;color:#aaa;padding-left:16px">╰ ${num}.</div>`;
 							el.innerHTML = `
-								${prefix}
-								<img src="${p.avatar || 'https://ui-avatars.com/api/?name=Player'}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;${mi > 0 ? 'margin-left:4px;' : ''}">
-								<div class="f-16" style="flex:1">${levelIcon(p.level)} ${p.name}</div>
-								<div class="f-13 text-muted">${p.position && p.position !== 'player' ? positionLabel(p.position) : ''}</div>
-							`;
+						${prefix}
+						<a href="${p.url || '/user/'+p.id}"><img src="${p.avatar || 'https://ui-avatars.com/api/?name=Player'}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;${mi > 0 ? 'margin-left:4px;' : ''}"></a>
+						<div class="f-16" style="flex:1"><a href="${p.url || '/user/'+p.id}" class="blink">${levelIcon(p.level)} ${p.name}</a></div>
+						<div class="f-13 text-muted">${p.position && p.position !== 'player' ? positionLabel(p.position) : ''}</div>
+					`;
 							playersList.appendChild(el);
 						});
 					}
