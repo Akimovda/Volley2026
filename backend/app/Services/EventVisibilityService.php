@@ -121,6 +121,18 @@ class EventVisibilityService
                 $role = strtolower(trim((string) ($user->role ?? 'user')));
                 $uid  = (int) $user->id;
 
+                // Приватные события к которым был доступ по токену
+                if (Schema::hasTable('event_private_accesses')) {
+                    $accessIds = DB::table('event_private_accesses')
+                        ->where('user_id', $uid)
+                        ->pluck('event_id')
+                        ->map(fn($v) => (int)$v)
+                        ->all();
+                    if (!empty($accessIds)) {
+                        $w->orWhereIn($prefix.'id', $accessIds);
+                    }
+                }
+
                 if (Schema::hasColumn('events', 'organizer_id')) {
 
                     $w->orWhere($prefix.'organizer_id', $uid);

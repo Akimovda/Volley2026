@@ -9,28 +9,24 @@ use Illuminate\Support\Facades\Log;
 
 class TelegramChannelPublisher implements ChannelPublisher
 {
-    /**
-     * Максимальная длина caption для photo сообщения в Telegram
-     */
     private const MAX_CAPTION_LENGTH = 1024;
-
-    /**
-     * Типы сообщений
-     */
-    private const MESSAGE_KIND_TEXT = 'text';
+    private const MESSAGE_KIND_TEXT  = 'text';
     private const MESSAGE_KIND_PHOTO = 'photo';
 
-    /**
-     * Получить токен бота из конфига
-     */
+    public function __construct(private readonly ?string $customToken = null) {}
+
     private function getToken(): string
     {
+        if ($this->customToken !== null && $this->customToken !== '') {
+            return $this->customToken;
+        }
+
         $token = (string) config('services.telegram.bot_token');
-    
+
         if ($token === '') {
             throw new \LogicException('Telegram bot token is not configured.');
         }
-    
+
         return $token;
     }
 

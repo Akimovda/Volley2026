@@ -554,8 +554,6 @@ document.addEventListener("trix-file-accept", function (event) {
 		var format = fmtEl ? fmtEl.value : '';
 		var isGame = (format === 'game');
 		
-		if (!isGame) return;
-		
 		cacheGameState();
 		
 		var current = trim(gameSubtype.value || '') ||

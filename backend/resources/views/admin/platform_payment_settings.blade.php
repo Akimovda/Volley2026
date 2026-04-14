@@ -97,6 +97,62 @@
                         </div>
                     </div>
                 </div>
+                <div class="row mt-2">
+                    <div class="col-md-4">
+                        <div class="card">
+                            <label>Ответственный за оплату (получает уведомления)</label>
+                            <select name="payment_admin_id" class="form-control">
+                                @foreach(\App\Models\User::where('role','admin')->orderBy('id')->get() as $admin)
+                                <option value="{{ $admin->id }}"
+                                    {{ (int)old('payment_admin_id', $settings->payment_admin_id ?? 1) === (int)$admin->id ? 'selected' : '' }}>
+                                    #{{ $admin->id }} {{ $admin->first_name }} {{ $admin->last_name }}
+                                </option>
+                                @endforeach
+                            </select>
+                            <div class="f-14 mt-05" style="opacity:.6">По умолчанию — главный администратор</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ramka">
+                <h2 class="-mt-05">⭐ Организатор Pro — Тарифы</h2>
+                <p class="f-14 text-muted mb-1">Цены отображаются на странице <a href="/organizer-pro" target="_blank">/organizer-pro</a>. 0 = бесплатно.</p>
+                <div class="row row2">
+                    <div class="col-md-3 col-sm-6">
+                        <div class="card">
+                            <label class="f-15 b-600 mb-05">Пробный период (дней)</label>
+                            <input type="number" name="organizer_pro_trial_days"
+                                   value="{{ old('organizer_pro_trial_days', $settings->organizer_pro_trial_days ?? 7) }}"
+                                   min="1" max="90" step="1">
+                            <div class="f-13 mt-05" style="opacity:.6">Дней бесплатного доступа</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6">
+                        <div class="card">
+                            <label class="f-15 b-600 mb-05">1 месяц (₽)</label>
+                            <input type="number" name="organizer_pro_month_rub"
+                                   value="{{ old('organizer_pro_month_rub', $settings->organizer_pro_month_rub ?? 499) }}"
+                                   min="0" step="1">
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6">
+                        <div class="card">
+                            <label class="f-15 b-600 mb-05">3 месяца (₽)</label>
+                            <input type="number" name="organizer_pro_quarter_rub"
+                                   value="{{ old('organizer_pro_quarter_rub', $settings->organizer_pro_quarter_rub ?? 1199) }}"
+                                   min="0" step="1">
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6">
+                        <div class="card">
+                            <label class="f-15 b-600 mb-05">1 год (₽)</label>
+                            <input type="number" name="organizer_pro_year_rub"
+                                   value="{{ old('organizer_pro_year_rub', $settings->organizer_pro_year_rub ?? 3999) }}"
+                                   min="0" step="1">
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="ramka text-center">

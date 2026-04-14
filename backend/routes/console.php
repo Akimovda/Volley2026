@@ -18,6 +18,11 @@ Schedule::command('events:expand-recurring --horizon=90 --chunk=200 --maxCreates
     ->dailyAt('03:10')
     ->withoutOverlapping();
 
+Schedule::command('channels:verify-bots')
+    ->dailyAt('06:00')
+    ->withoutOverlapping()
+    ->runInBackground();
+
 // Освобождение просроченных резервов оплаты
 Schedule::job(new \App\Jobs\ReleaseExpiredPaymentsJob())
     ->everyFiveMinutes()

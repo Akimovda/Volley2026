@@ -103,7 +103,7 @@
     $hasTg = !empty($u?->telegram_id);
     $hasVk = !empty($u?->vk_id);
     $hasYa = !empty($u?->yandex_id);
-        // персональные уведомления
+	// персональные уведомления
     $hasMaxNotify = !empty($u?->max_chat_id);
     $hasTelegramNotify = !empty($u?->telegram_notify_chat_id);
     $hasVkNotify = !empty($u?->vk_notify_user_id);
@@ -113,31 +113,31 @@
     $providerId = (string) session('auth_provider_id', '');
     
     if (!$provider && $providerId !== '') {
-        if ($hasTg && (string) $u->telegram_id === $providerId) {
-            $provider = 'telegram';
-        } elseif ($hasVk && (string) $u->vk_id === $providerId) {
-            $provider = 'vk';
-        } elseif ($hasYa && (string) $u->yandex_id === $providerId) {
-            $provider = 'yandex';
-        }
+	if ($hasTg && (string) $u->telegram_id === $providerId) {
+	$provider = 'telegram';
+	} elseif ($hasVk && (string) $u->vk_id === $providerId) {
+	$provider = 'vk';
+	} elseif ($hasYa && (string) $u->yandex_id === $providerId) {
+	$provider = 'yandex';
+	}
     }
     
     // fallback 1: если в сессии ничего нет, но привязан только один вход
     if (!$provider) {
-        $linkedProviders = array_filter([
-            'telegram' => $hasTg,
-            'vk' => $hasVk,
-            'yandex' => $hasYa,
-        ]);
+	$linkedProviders = array_filter([
+	'telegram' => $hasTg,
+	'vk' => $hasVk,
+	'yandex' => $hasYa,
+	]);
     
-        if (count($linkedProviders) === 1) {
-            $provider = array_key_first($linkedProviders);
-        }
+	if (count($linkedProviders) === 1) {
+	$provider = array_key_first($linkedProviders);
+	}
     }
     
     // fallback 2: если определить нельзя, но входы есть
     if (!$provider && ($hasTg || $hasVk || $hasYa)) {
-        $provider = 'unknown';
+	$provider = 'unknown';
     }
     
     $linkedCount = (int)$hasTg + (int)$hasVk + (int)$hasYa;
@@ -160,23 +160,25 @@
     // can unlink only if more than one provider linked (чтобы не потерять доступ)
     $canUnlink = $linkedCount > 1;
     
+	$hasPendingOrganizerRequest = (bool)($hasPendingOrganizerRequest ?? ($hasPendingRequest ?? false));
+	
     // UI helpers
     $providerIcon = function (?string $p) {
     $p = $p ?: 'unknown';
     $base = 'provider-icon';
     $dot  = 'provider-dot';
     $txt  = 'provider-text';
-
-        if ($p === 'vk') {
-            return '<span class="'.$base.'"><span class="'.$dot.'" style="background:#2787F5;"></span><span class="'.$txt.'">VK</span></span>';
-        }
-        if ($p === 'telegram') {
-            return '<span class="'.$base.'"><span class="'.$dot.'" style="background:#2AABEE;"></span><span class="'.$txt.'">Telegram</span></span>';
-        }
-        if ($p === 'yandex') {
-            return '<span class="'.$base.'"><span class="'.$dot.'" style="background:#FF0000;"></span><span class="'.$txt.'">Yandex</span></span>';
-        }
-        return '<span class="'.$base.'"><span class="'.$dot.'" style="background:#9CA3AF;"></span><span class="'.$txt.'">Не определён</span></span>';
+	
+	if ($p === 'vk') {
+	return '<span class="'.$base.'"><span class="'.$dot.'" style="background:#2787F5;"></span><span class="'.$txt.'">VK</span></span>';
+	}
+	if ($p === 'telegram') {
+	return '<span class="'.$base.'"><span class="'.$dot.'" style="background:#2AABEE;"></span><span class="'.$txt.'">Telegram</span></span>';
+	}
+	if ($p === 'yandex') {
+	return '<span class="'.$base.'"><span class="'.$dot.'" style="background:#FF0000;"></span><span class="'.$txt.'">Yandex</span></span>';
+	}
+	return '<span class="'.$base.'"><span class="'.$dot.'" style="background:#9CA3AF;"></span><span class="'.$txt.'">Не определён</span></span>';
     };
     
     $badge = function (bool $ok) {
@@ -199,16 +201,16 @@
 	
     <div class="container">
         <div class="row">
-<div class="col-lg-4 col-xl-3 order-2 d-none d-lg-block">
-<div class="sticky">
-<div class="card-ramka">
-@include('profile._menu', [
-    'menuUser'   => $user,
-    'activeMenu' => 'profile',
-])
-</div>
-</div>
-</div>
+			<div class="col-lg-4 col-xl-3 order-2 d-none d-lg-block">
+				<div class="sticky">
+					<div class="card-ramka">
+						@include('profile._menu', [
+						'menuUser'   => $user,
+						'activeMenu' => 'profile',
+						])
+					</div>
+				</div>
+			</div>
 			<div class="col-lg-8 col-xl-9 order-1">
 				<div class="ramka pb-2">  
 					{{-- Анкета игрока --}}
@@ -339,7 +341,7 @@
 					<p>
                         <span class="text-muted">Текущий вход:</span>
                         {!! $providerIcon($provider) !!}
-                    </p>
+					</p>
 					
 					@if($allLinked)
 					<p>Все способы входа уже привязаны !</p>
@@ -534,12 +536,12 @@
 				
 				<div class="ramka">
                     <h2 class="-mt-05">Уведомления и рассылки</h2>
-                
+					
                     <p class="mb-15">
                         Не пропустите ни одного важного события — подпишитесь на уведомления, и вы всегда будете в курсе
                         новостей, анонсов мероприятий и своевременных напоминаний о начале.
-                    </p>
-                
+					</p>
+					
                     <div class="row provider-cards">
                         {{-- Telegram --}}
                         <div class="col-md-4">
@@ -547,121 +549,121 @@
                                 <div class="provider-card__header">
                                     <span class="provider-card__icon icon-tg"></span>
                                     <span class="provider-card__title">Уведомления в Telegram</span>
-                                </div>
-                        
+								</div>
+								
                                 @if($hasTelegramNotify)
-                                    <div class="provider-card__status">
-                                        <span class="badge badge-success"></span>
-                                    </div>
-                        
-                                    <ul class="list">
-                                        <li>Личные уведомления в <b>Telegram</b> включены.</li>
-                                    </ul>
-                        
-                                    <form method="POST" action="{{ route('profile.telegram.disconnect') }}" class="mt-3">
-                                        @csrf
-                                        <button
-                                            type="submit"
-                                            class="w-100 btn btn-small btn-secondary btn-alert"
-                                            data-title="Отключить уведомления в Telegram?"
-                                            data-icon="warning"
-                                            data-confirm-text="Да, отключить"
-                                            data-cancel-text="Отмена"
-                                        >
-                                            Отключить
-                                        </button>
-                                    </form>
+								<div class="provider-card__status">
+									<span class="badge badge-success"></span>
+								</div>
+								
+								<ul class="list">
+									<li>Личные уведомления в <b>Telegram</b> включены.</li>
+								</ul>
+								
+								<form method="POST" action="{{ route('profile.telegram.disconnect') }}" class="mt-3">
+									@csrf
+									<button
+									type="submit"
+									class="w-100 btn btn-small btn-secondary btn-alert"
+									data-title="Отключить уведомления в Telegram?"
+									data-icon="warning"
+									data-confirm-text="Да, отключить"
+									data-cancel-text="Отмена"
+									>
+										Отключить
+									</button>
+								</form>
                                 @else
-                                    <div class="provider-card__status">
-                                        <span class="badge badge-muted"></span>
-                                    </div>
-                        
-                                    <ul class="list f-16">
-                                        <li>Хотите получать уведомления в <b>Telegram</b>?</li>
-                                    </ul>
-                        
-                                    <button type="button" id="connect-telegram-btn" class="w-100 btn btn-small">
-                                        Подключить Telegram
-                                    </button>
-                        
-                                    <div id="connect-telegram-result" class="mt-1 hidden">
-                                        <ul class="list f-16">
-                                            <li>Нажмите на ссылку ниже</li>
-                                            <li>Откройте личный чат с Telegram-ботом</li>
-                                            <li>Нажмите <b>Start</b></li>
-                                            <li>После этого личные уведомления подключатся автоматически</li>
-                                        </ul>
-                        
-                                        <a
-                                            style="word-break: break-all"
-                                            id="connect-telegram-link"
-                                            href="#"
-                                            target="_blank"
-                                            rel="noopener"
-                                            class="f-16 b-600"
-                                        ></a>
-                                    </div>
+								<div class="provider-card__status">
+									<span class="badge badge-muted"></span>
+								</div>
+								
+								<ul class="list f-16">
+									<li>Хотите получать уведомления в <b>Telegram</b>?</li>
+								</ul>
+								
+								<button type="button" id="connect-telegram-btn" class="w-100 btn btn-small">
+									Подключить Telegram
+								</button>
+								
+								<div id="connect-telegram-result" class="mt-1 hidden">
+									<ul class="list f-16">
+										<li>Нажмите на ссылку ниже</li>
+										<li>Откройте личный чат с Telegram-ботом</li>
+										<li>Нажмите <b>Start</b></li>
+										<li>После этого личные уведомления подключатся автоматически</li>
+									</ul>
+									
+									<a
+									style="word-break: break-all"
+									id="connect-telegram-link"
+									href="#"
+									target="_blank"
+									rel="noopener"
+									class="f-16 b-600"
+									></a>
+								</div>
                                 @endif
-                            </div>
-                        </div>
-                
-
+							</div>
+						</div>
+						
+						
                         {{-- MAX --}}
                         <div class="col-md-4">
                             <div class="card">
                                 <div class="provider-card__header">
                                     <span class="provider-card__icon icon-max"></span>
                                     <span class="provider-card__title">Уведомления в MAX</span>
-                                </div>
-                
+								</div>
+								
                                 @if($hasMaxNotify)
-                                    <div class="provider-card__status">
-                                        <span class="badge badge-success"></span>
-                                    </div>
-                
-                                    <ul class="list">
-                                        <li>Личные уведомления в <b>MAX</b> включены.</li>
-                                    </ul>
-                
-                                    <form method="POST" action="{{ route('profile.max.disconnect') }}" class="mt-3">
-                                        @csrf
-                                        <button type="submit" class="w-100 btn btn-small btn-secondary btn-alert" data-title="Отключить MAX-уведомления?" data-icon="warning" data-confirm-text="Да, отключить" data-cancel-text="Отмена">
-                                            Отключить
-                                        </button>
-                                    </form>
+								<div class="provider-card__status">
+									<span class="badge badge-success"></span>
+								</div>
+								
+								<ul class="list">
+									<li>Личные уведомления в <b>MAX</b> включены.</li>
+								</ul>
+								
+								<form method="POST" action="{{ route('profile.max.disconnect') }}" class="mt-3">
+									@csrf
+									<button type="submit" class="w-100 btn btn-small btn-secondary btn-alert" data-title="Отключить MAX-уведомления?" data-icon="warning" data-confirm-text="Да, отключить" data-cancel-text="Отмена">
+										Отключить
+									</button>
+								</form>
                                 @else
-                                    <div class="provider-card__status">
-                                        <span class="badge badge-muted"></span>
-                                    </div>
-                
-                                    <ul class="list f-16">
-                                        <li>Хотите получать уведомления в <b>MAX</b>?</li>
-                                    </ul>
-                
-                                    <button type="button" id="connect-max-btn" class="w-100 btn btn-small">
-                                        Подключить MAX
-                                    </button>
-                
-                                    <div id="connect-max-result" class="mt-1 hidden">
-                                        <ul class="list f-16">
-                                        	<li>Нажмите на ссылку ниже</li>
-                                        	<li>Откройте личный чат с ботом MAX</li>
-                                        	<li>Нажмите <b>«Начать»</b></li>
-                                        	<li>После этого личные уведомления подключатся автоматически</li>
-                                        </ul>
-                
-                                        <a
-                                            style="word-break: break-all"
-                                            id="connect-max-link"
-                                            href="#"
-                                            target="_blank"
-                                            rel="noopener"
-                                            class="f-16 b-600"
-                                        ></a>
-                                    </div>
+								<div class="provider-card__status">
+									<span class="badge badge-muted"></span>
+								</div>
+								
+								<ul class="list f-16">
+									<li>Хотите получать уведомления в <b>MAX</b>?</li>
+								</ul>
+								
+								<button type="button" id="connect-max-btn" class="w-100 btn btn-small">
+									Подключить MAX
+								</button>
+								
+								<div id="connect-max-result" class="mt-1 hidden">
+									<ul class="list f-16">
+										<li>Нажмите на ссылку ниже</li>
+										<li>Откройте личный чат с ботом MAX</li>
+										<li>Нажмите <b>«Начать»</b></li>
+										<li>После этого личные уведомления подключатся автоматически</li>
+									</ul>
+									
+									<a
+									style="word-break: break-all"
+									id="connect-max-link"
+									href="#"
+									target="_blank"
+									rel="noopener"
+									class="f-16 b-600"
+									></a>
+								</div>
                                 @endif
-                            </div>
-                        </div>
+							</div>
+						</div>
 						
                         {{-- VK --}}
                         <div class="col-md-4">
@@ -669,302 +671,306 @@
                                 <div class="provider-card__header">
                                     <span class="provider-card__icon icon-vk"></span>
                                     <span class="provider-card__title">Уведомления в VK</span>
-                                </div>
-                        
-                                @if($hasVkNotify)
-                                    <div class="provider-card__status">
-                                        <span class="badge badge-success"></span>
-                                    </div>
-                        
-                                    <ul class="list">
-                                        <li>Личные уведомления во <b>VK</b> включены.</li>
-                                    </ul>
-                        
-                                    <form method="POST" action="{{ route('profile.vk.disconnect') }}" class="mt-3">
-                                        @csrf
-                                        <button
-                                            type="submit"
-                                            class="w-100 btn btn-small btn-secondary btn-alert"
-                                            data-title="Отключить уведомления во VK?"
-                                            data-icon="warning"
-                                            data-confirm-text="Да, отключить"
-                                            data-cancel-text="Отмена"
-                                        >
-                                            Отключить
-                                        </button>
-                                    </form>
-                                @else
-                                    <div class="provider-card__status">
-                                        <span class="badge badge-muted"></span>
-                                    </div>
-                                
-                                    <ul class="list f-16">
-                                        <li>Хотите получать уведомления во <b>VK</b>?</li>
-                                    </ul>
-                              
-                                    <button type="button" id="connect-vk-btn" class="w-100 btn btn-small">
-                                         Подключить VK
-                                    </button>					
-                                
-                                    <div id="connect-vk-result" class="mt-1 hidden">
-                                        <ul class="list f-16">
-                                            <li>Нажмите на ссылку ниже</li>
-                                            <li>Откройте личный диалог с VK-ботом</li>
-                                            <li>Команда уже скопирована в буфер обмена</li>
-                                            <li>Просто вставьте её в чат и отправьте</li>
-                                            <li>После этого личные уведомления подключатся автоматически</li>
-                                        </ul>
-                                
-							
+								</div>
 								
-                                        <a
-                                            style="word-break: break-all"
-                                            id="connect-vk-link"
-                                            href="#"
-                                            target="_blank"
-                                            rel="noopener"
-                                            class="f-16 b-600"
-                                        ></a>
+                                @if($hasVkNotify)
+								<div class="provider-card__status">
+									<span class="badge badge-success"></span>
+								</div>
+								
+								<ul class="list">
+									<li>Личные уведомления во <b>VK</b> включены.</li>
+								</ul>
+								
+								<form method="POST" action="{{ route('profile.vk.disconnect') }}" class="mt-3">
+									@csrf
+									<button
+									type="submit"
+									class="w-100 btn btn-small btn-secondary btn-alert"
+									data-title="Отключить уведомления во VK?"
+									data-icon="warning"
+									data-confirm-text="Да, отключить"
+									data-cancel-text="Отмена"
+									>
+										Отключить
+									</button>
+								</form>
+                                @else
+								<div class="provider-card__status">
+									<span class="badge badge-muted"></span>
+								</div>
                                 
-                                        <div id="connect-vk-command-box" class="mt-1 hidden">
-                                            <div class="f-16 text-muted">Команда для бота (скопирована в буфер):</div>
-                                            <div style="overflow-wrap:break-word" id="connect-vk-command" class="f-16 b-600"></div>
-                                            <div id="connect-vk-copy-hint" class="f-14 text-muted mt-05 hidden"></div>
-                                        </div>
-                                    </div>
+								<ul class="list f-16">
+									<li>Хотите получать уведомления во <b>VK</b>?</li>
+								</ul>
+								
+								<button type="button" id="connect-vk-btn" class="w-100 btn btn-small">
+									Подключить VK
+								</button>					
+                                
+								<div id="connect-vk-result" class="mt-1 hidden">
+									<ul class="list f-16">
+										<li>Нажмите на ссылку ниже</li>
+										<li>Откройте личный диалог с VK-ботом</li>
+										<li>Команда уже скопирована в буфер обмена</li>
+										<li>Просто вставьте её в чат и отправьте</li>
+										<li>После этого личные уведомления подключатся автоматически</li>
+									</ul>
+									
+									
+									
+									<a
+									style="word-break: break-all"
+									id="connect-vk-link"
+									href="#"
+									target="_blank"
+									rel="noopener"
+									class="f-16 b-600"
+									></a>
+									
+									<div id="connect-vk-command-box" class="mt-1 hidden">
+										<div class="f-16 text-muted">Команда для бота (скопирована в буфер):</div>
+										<div style="overflow-wrap:break-word" id="connect-vk-command" class="f-16 b-600"></div>
+										<div id="connect-vk-copy-hint" class="f-14 text-muted mt-05 hidden"></div>
+									</div>
+								</div>
                                 @endif
-                            </div>
-                        </div>
-                						
+							</div>
+						</div>
 						
 						
-                    </div>
-                </div>
+						
+					</div>
+				</div>
 				
-               @php
+				@php
                 $canManageNotificationChannels = in_array((string)($u->role ?? 'user'), ['admin', 'organizer', 'staff'], true);
                 
                 $notificationChannels = collect();
                 
                 if (
-                    $canManageNotificationChannels &&
-                    \Illuminate\Support\Facades\Schema::hasTable('user_notification_channels')
+				$canManageNotificationChannels &&
+				\Illuminate\Support\Facades\Schema::hasTable('user_notification_channels')
                 ) {
-                    $notificationChannels = \Illuminate\Support\Facades\DB::table('user_notification_channels')
-                        ->where('user_id', (int) $u->id)
-                        ->orderBy('created_at')
-                        ->get([
-                            'id',
-                            'title',
-                            'platform',
-                            'chat_id',
-                            'is_verified',
-                        ]);
+				$notificationChannels = \Illuminate\Support\Facades\DB::table('user_notification_channels')
+				->where('user_id', (int) $u->id)
+				->orderBy('created_at')
+				->get([
+				'id',
+				'title',
+				'platform',
+				'chat_id',
+				'is_verified',
+				]);
                 }
                 @endphp
-              @if($canManageNotificationChannels)
+				@if($canManageNotificationChannels)
                 <div class="ramka">
                     <h2 class="-mt-05">Каналы уведомлений</h2>
-            
+					
                     @if($notificationChannels->isNotEmpty())
-                        <p><b>Список подключенных 📣:</b></p>
-                        <ol class="list">
-                            @foreach($notificationChannels as $channel)
-                                <li>
-                                    {{ $channel->title ?: ('Канал #' . $channel->id) }}
-                                    @if(!empty($channel->platform))
-                                        <span class="text-muted">({{ strtoupper($channel->platform) }})</span>
-                                    @endif
-                                    @if(!(bool) $channel->is_verified)
-                                        <span class="text-muted">— не подтверждён</span>
-                                    @endif
-                                </li>
-                            @endforeach
-                        </ol>
+					<p><b>Список подключенных 📣:</b></p>
+					<ol class="list">
+						@foreach($notificationChannels as $channel)
+						<li>
+							{{ $channel->title ?: ('Канал #' . $channel->id) }}
+							@if(!empty($channel->platform))
+							<span class="text-muted">({{ strtoupper($channel->platform) }})</span>
+							@endif
+							@if(!(bool) $channel->is_verified)
+							<span class="text-muted">— не подтверждён</span>
+							@endif
+						</li>
+						@endforeach
+					</ol>
                     @endif
-            
+					
                     <p>
                         Подключайте Telegram / VK / MAX каналы для анонсов мероприятий,
                         открытия регистрации и обновления списков участников.
-                    </p>
-            
+					</p>
+					
                     <div class="mt-2 m-center">
                         <a href="{{ route('profile.notification_channels') }}" class="btn">
                             Управление каналами уведомлений
-                        </a>
-                    </div>
-                </div>
-            @endif
+						</a>
+					</div>
+				</div>
+				@endif
 				
-
-<div class="ramka">
-@if(auth()->check() && (auth()->user()->isOrganizer() || auth()->user()->isAdmin()))
-@php $paymentSettings = \App\Models\PaymentSetting::where('organizer_id', auth()->id())->first(); @endphp
-<h2 class="-mt-05">💳 Платёжная система</h2>
-
-{{-- Выбор назначения --}}
-<div class="card mb-2">
-    <div class="f-15 b-600 mb-1">Настройте приём оплаты</div>
-    <div class="tabs-content">
-        <div class="tabs">
-            <div class="tab active" data-tab="pay-events">🏐 Для мероприятий</div>
-            @if(auth()->user()->isAdmin())
-            <div class="tab" data-tab="pay-premium">👑 Premium и реклама</div>
-            @endif
-            <div class="tab-highlight"></div>
-        </div>
-        <div class="tab-panes">
-
-            {{-- Вкладка: Мероприятия --}}
-            <div class="tab-pane active" id="pay-events">
-                <div class="mt-1">
-                    @if($paymentSettings?->yoomoney_verified)
-                        <div class="f-16 cs b-600">✅ Платежи настроены (ЮМани)</div>
-                        <div class="f-15 mt-05" style="opacity:.6">Shop ID: {{ $paymentSettings->yoomoney_shop_id }}</div>
-                    @elseif($paymentSettings && ($paymentSettings->tbank_link || $paymentSettings->sber_link))
-                        <div class="f-16 cd b-600">🔗 Настроены платежи по ссылке</div>
-                        @if($paymentSettings->tbank_link)
-                        <div class="f-15 mt-05" style="opacity:.6">Т-Банк: {{ $paymentSettings->tbank_link }}</div>
-                        @endif
-                        @if($paymentSettings->sber_link)
-                        <div class="f-15 mt-05" style="opacity:.6">Сбер: {{ $paymentSettings->sber_link }}</div>
-                        @endif
-                    @else
-                        <div class="f-15" style="opacity:.5">⚙️ Платежи не настроены</div>
-                    @endif
-                    <div class="mt-2">
-                        <a href="{{ route('profile.payment_settings') }}" class="btn btn-secondary">⚙️ Настроить оплату</a>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Вкладка: Premium и реклама (только Admin) --}}
-            @if(auth()->user()->isAdmin())
-            <div class="tab-pane" id="pay-premium">
-                <div class="mt-1">
-                    @php
-                        $premiumPayment = \App\Models\PlatformPaymentSetting::first();
-                    @endphp
-                    @if($premiumPayment)
-                        <div class="f-16 b-600 mb-1">Текущий метод:
-                            <span class="cd">{{ match($premiumPayment->method) {
-                                'tbank_link' => '🏦 Т-Банк (по ссылке)',
-                                'sber_link'  => '💚 Сбер (по ссылке)',
-                                'yoomoney'   => '🟡 ЮМани',
-                                default       => $premiumPayment->method,
-                            } }}</span>
-                        </div>
-                    @else
-                        <div class="f-15" style="opacity:.5">⚙️ Платежи за Premium не настроены</div>
-                    @endif
-                    <div class="mt-2">
-                        <a href="{{ route('admin.platform_payment_settings') }}" class="btn btn-secondary">⚙️ Настроить оплату Premium</a>
-                    </div>
-                </div>
-            </div>
-            @endif
-
-        </div>
-    </div>
-</div>
-@endif
-</div>
-<div class="ramka">
-@if(auth()->check() && (auth()->user()->isOrganizer() || auth()->user()->isAdmin()))
-@php
-    $mySchools = \App\Models\VolleyballSchool::where('organizer_id', auth()->id())->get();
-    $allSchools = auth()->user()->isAdmin()
-        ? \App\Models\VolleyballSchool::with('organizer:id,first_name,last_name')->orderBy('name')->get()
-        : collect();
-@endphp
-<h2 class="-mt-05">Школы волейбола</h2>
-
-@if(auth()->user()->isAdmin() && $allSchools->isNotEmpty())
-<div class="b-600 mb-1 f-16">Все школы на платформе:</div>
-@foreach($allSchools as $s)
-<div class="d-flex between fvc mb-1 card">
-    <div class="d-flex fvc gap-2">
-        @php $sLogo = $s->getFirstMediaUrl('logo', 'thumb'); @endphp
-        @if($sLogo)<img src="{{ $sLogo }}" alt="" style="width:3.2rem;height:3.2rem;border-radius:50%;object-fit:cover">@endif
-        <div>
-            <div class="b-600">{{ $s->name }}</div>
-            <div class="f-14" style="opacity:.6">{{ trim($s->organizer?->first_name . ' ' . $s->organizer?->last_name) }} · {{ $s->is_published ? '✅' : '⏸' }}</div>
-        </div>
-    </div>
-    <div class="d-flex gap-1">
-        <a href="{{ route('volleyball_school.show', $s->slug) }}" class="btn btn-small btn-secondary">👁</a>
-        <a href="{{ route('volleyball_school.edit') }}?id={{ $s->id }}" class="btn btn-small btn-secondary">✏️</a>
-    </div>
-</div>
-@endforeach
-<div class="mt-2">
-    <a href="{{ route('volleyball_school.create') }}" class="btn btn-secondary">+ Создать для организатора</a>
-</div>
-
-@elseif($mySchools->isNotEmpty())
-@php $s = $mySchools->first(); $sLogo = $s->getFirstMediaUrl('logo', 'thumb'); @endphp
-<div class="d-flex fvc gap-2 mb-2">
-    @if($sLogo)<img src="{{ $sLogo }}" alt="logo" style="width:4rem;height:4rem;border-radius:50%;object-fit:cover">@endif
-    <div>
-        <div class="b-600">{{ $s->name }}</div>
-        <div class="f-14 mt-05" style="opacity:.6">{{ $s->is_published ? '✅ Опубликовано' : '⏸ Скрыто' }}</div>
-    </div>
-</div>
-<div class="d-flex gap-1">
-    <a href="{{ route('volleyball_school.show', $s->slug) }}" class="btn btn-secondary">Открыть</a>
-    <a href="{{ route('volleyball_school.edit') }}?id={{ $s->id }}" class="btn btn-secondary">Редактировать</a>
-</div>
-
-@else
-<p>Создайте публичную страницу вашей школы или волейбольного сообщества — там будут отображаться ваши мероприятия, описание и контакты.</p>
-<a href="{{ route('volleyball_school.create') }}" class="btn">Создать страницу школы</a>
-@endif
-@endif
-</div>
-<div class="ramka">
-@php $activePremium = auth()->user()->activePremium(); @endphp
-<h2 class="-mt-05">👑 Premium подписка</h2>
-<div class="card">
-    @if($activePremium)
-        <div class="d-flex between fvc">
-            <div>
-                <div class="f-18 b-600" style="color:#f5c842;">👑 Premium активен</div>
-                <div class="f-15 mt-05" style="opacity:.6;">
-                    До {{ $activePremium->expires_at->format('d.m.Y') }}
-                    · {{ match($activePremium->plan) {
-                        'trial'   => 'Пробный период',
-                        'month'   => '1 месяц',
-                        'quarter' => '3 месяца',
-                        'year'    => 'Год',
-                    } }}
-                </div>
-            </div>
-            <div class="d-flex gap-1">
-                <a href="{{ route('premium.settings') }}" class="btn btn-secondary">⚙️ Настройки</a>
-                <a href="{{ route('premium.index') }}" class="btn btn-secondary">Продлить</a>
-            </div>
-        </div>
-    @else
-        <div class="row row2">
-            <div class="col-md-8">
-                <div class="f-17 b-600 mb-1">Откройте возможности Premium</div>
-                <ul class="list f-15">
-                    <li>👑 Золотой аватар — выделяйтесь среди игроков</li>
-                    <li>🥇 Приоритет в очереди резерва</li>
-                    <li>👥 Друзья и гости профиля</li>
-                    <li>📊 Детальная история игр и аналитика</li>
-                    <li>🔔 Недельная сводка игр в вашем городе</li>
-                </ul>
-            </div>
-            <div class="col-md-4 text-center" style="display:flex;flex-direction:column;justify-content:center;gap:1rem;">
-                <a href="{{ route('premium.index') }}" class="btn">👑 Подключить Premium</a>
-                <div class="f-14" style="opacity:.5;">от 199₽ / месяц</div>
-            </div>
-        </div>
-    @endif
-</div>
-</div>
-
+				
+				
+				@if(auth()->check() && (auth()->user()->isOrganizer() || auth()->user()->isAdmin()))
+				@php $paymentSettings = \App\Models\PaymentSetting::where('organizer_id', auth()->id())->first(); @endphp
+				<div class="ramka">
+					<h2 class="-mt-05">💳 Платёжная система</h2>
+					
+					{{-- Выбор назначения --}}
+					<div class="card mb-2">
+						<div class="f-15 b-600 mb-1">Настройте приём оплаты</div>
+						<div class="tabs-content">
+							<div class="tabs">
+								<div class="tab active" data-tab="pay-events">🏐 Для мероприятий</div>
+								@if(auth()->user()->isAdmin())
+								<div class="tab" data-tab="pay-premium">👑 Premium и реклама</div>
+								@endif
+								<div class="tab-highlight"></div>
+							</div>
+							<div class="tab-panes">
+								
+								{{-- Вкладка: Мероприятия --}}
+								<div class="tab-pane active" id="pay-events">
+									<div class="mt-1">
+										@if($paymentSettings?->yoomoney_verified)
+										<div class="f-16 cs b-600">✅ Платежи настроены (ЮМани)</div>
+										<div class="f-15 mt-05" style="opacity:.6">Shop ID: {{ $paymentSettings->yoomoney_shop_id }}</div>
+										@elseif($paymentSettings && ($paymentSettings->tbank_link || $paymentSettings->sber_link))
+										<div class="f-16 cd b-600">🔗 Настроены платежи по ссылке</div>
+										@if($paymentSettings->tbank_link)
+										<div class="f-15 mt-05" style="opacity:.6">Т-Банк: {{ $paymentSettings->tbank_link }}</div>
+										@endif
+										@if($paymentSettings->sber_link)
+										<div class="f-15 mt-05" style="opacity:.6">Сбер: {{ $paymentSettings->sber_link }}</div>
+										@endif
+										@else
+										<div class="f-15" style="opacity:.5">⚙️ Платежи не настроены</div>
+										@endif
+										<div class="mt-2">
+											<a href="{{ route('profile.payment_settings') }}" class="btn btn-secondary">⚙️ Настроить оплату</a>
+										</div>
+									</div>
+								</div>
+								
+								{{-- Вкладка: Premium и реклама (только Admin) --}}
+								@if(auth()->user()->isAdmin())
+								<div class="tab-pane" id="pay-premium">
+									<div class="mt-1">
+										@php
+										$premiumPayment = \App\Models\PlatformPaymentSetting::first();
+										@endphp
+										@if($premiumPayment)
+										<div class="f-16 b-600 mb-1">Текущий метод:
+											<span class="cd">{{ match($premiumPayment->method) {
+												'tbank_link' => '🏦 Т-Банк (по ссылке)',
+												'sber_link'  => '💚 Сбер (по ссылке)',
+												'yoomoney'   => '🟡 ЮМани',
+												default       => $premiumPayment->method,
+											} }}</span>
+										</div>
+										@else
+										<div class="f-15" style="opacity:.5">⚙️ Платежи за Premium не настроены</div>
+										@endif
+										<div class="mt-2">
+											<a href="{{ route('admin.platform_payment_settings') }}" class="btn btn-secondary">⚙️ Настроить оплату Premium</a>
+										</div>
+									</div>
+								</div>
+								@endif
+								
+							</div>
+						</div>
+					</div>
+				</div>
+				@endif
+				
+				
+				@if(auth()->check() && (auth()->user()->isOrganizer() || auth()->user()->isAdmin()))
+				@php
+				$mySchools = \App\Models\VolleyballSchool::where('organizer_id', auth()->id())->get();
+				$allSchools = auth()->user()->isAdmin()
+				? \App\Models\VolleyballSchool::with('organizer:id,first_name,last_name')->orderBy('name')->get()
+				: collect();
+				@endphp
+				<div class="ramka">
+					<h2 class="-mt-05">Школы волейбола</h2>
+					
+					@if(auth()->user()->isAdmin() && $allSchools->isNotEmpty())
+					<div class="b-600 mb-1 f-16">Все школы на платформе:</div>
+					@foreach($allSchools as $s)
+					<div class="d-flex between fvc mb-1 card">
+						<div class="d-flex fvc gap-2">
+							@php $sLogo = $s->getFirstMediaUrl('logo', 'thumb'); @endphp
+							@if($sLogo)<img src="{{ $sLogo }}" alt="" style="width:3.2rem;height:3.2rem;border-radius:50%;object-fit:cover">@endif
+							<div>
+								<div class="b-600">{{ $s->name }}</div>
+								<div class="f-14" style="opacity:.6">{{ trim($s->organizer?->first_name . ' ' . $s->organizer?->last_name) }} · {{ $s->is_published ? '✅' : '⏸' }}</div>
+							</div>
+						</div>
+						<div class="d-flex gap-1">
+							<a href="{{ route('volleyball_school.show', $s->slug) }}" class="btn btn-small btn-secondary">👁</a>
+							<a href="{{ route('volleyball_school.edit') }}?id={{ $s->id }}" class="btn btn-small btn-secondary">✏️</a>
+						</div>
+					</div>
+					@endforeach
+					<div class="mt-2">
+						<a href="{{ route('volleyball_school.create') }}" class="btn btn-secondary">+ Создать для организатора</a>
+					</div>
+					
+					@elseif($mySchools->isNotEmpty())
+					@php $s = $mySchools->first(); $sLogo = $s->getFirstMediaUrl('logo', 'thumb'); @endphp
+					<div class="d-flex fvc gap-2 mb-2">
+						@if($sLogo)<img src="{{ $sLogo }}" alt="logo" style="width:4rem;height:4rem;border-radius:50%;object-fit:cover">@endif
+						<div>
+							<div class="b-600">{{ $s->name }}</div>
+							<div class="f-14 mt-05" style="opacity:.6">{{ $s->is_published ? '✅ Опубликовано' : '⏸ Скрыто' }}</div>
+						</div>
+					</div>
+					<div class="d-flex gap-1">
+						<a href="{{ route('volleyball_school.show', $s->slug) }}" class="btn btn-secondary">Открыть</a>
+						<a href="{{ route('volleyball_school.edit') }}?id={{ $s->id }}" class="btn btn-secondary">Редактировать</a>
+					</div>
+					
+					@else
+					<p>Создайте публичную страницу вашей школы или волейбольного сообщества — там будут отображаться ваши мероприятия, описание и контакты.</p>
+					<a href="{{ route('volleyball_school.create') }}" class="btn">Создать страницу школы</a>
+					@endif
+				</div>
+				@endif
+				
+				<div class="ramka">
+					@php $activePremium = auth()->user()->activePremium(); @endphp
+					<h2 class="-mt-05">👑 Premium подписка</h2>
+					<div class="card">
+						@if($activePremium)
+						<div class="d-flex between fvc">
+							<div>
+								<div class="f-18 b-600" style="color:#f5c842;">👑 Premium активен</div>
+								<div class="f-15 mt-05" style="opacity:.6;">
+									До {{ $activePremium->expires_at->format('d.m.Y') }}
+									· {{ match($activePremium->plan) {
+									'trial'   => 'Пробный период',
+									'month'   => '1 месяц',
+									'quarter' => '3 месяца',
+									'year'    => 'Год',
+									} }}
+								</div>
+							</div>
+							<div class="d-flex gap-1">
+								<a href="{{ route('premium.settings') }}" class="btn btn-secondary">⚙️ Настройки</a>
+								<a href="{{ route('premium.index') }}" class="btn btn-secondary">Продлить</a>
+							</div>
+						</div>
+						@else
+						<div class="row row2">
+							<div class="col-md-8">
+								<div class="f-17 b-600 mb-1">Откройте возможности Premium</div>
+								<ul class="list f-15">
+									<li>👑 Золотой аватар — выделяйтесь среди игроков</li>
+									<li>🥇 Приоритет в очереди резерва</li>
+									<li>👥 Друзья и гости профиля</li>
+									<li>📊 Детальная история игр и аналитика</li>
+									<li>🔔 Недельная сводка игр в вашем городе</li>
+								</ul>
+							</div>
+							<div class="col-md-4 text-center" style="display:flex;flex-direction:column;justify-content:center;gap:1rem;">
+								<a href="{{ route('premium.index') }}" class="btn">👑 Подключить Premium</a>
+								<div class="f-14" style="opacity:.5;">от 199₽ / месяц</div>
+							</div>
+						</div>
+						@endif
+					</div>
+				</div>
+				
 				<div class="ramka">  	
 					
 					{{-- ✅ Приватность --}}
@@ -1005,6 +1011,30 @@
 				
 				
 				
+				{{-- ========================= ORGANIZER REQUEST ========================= --}}
+				@auth
+				@if (($user->role ?? 'user') === 'user')
+				<div class="ramka form">  	
+					<h2 class="-mt-05">Хочу стать организатором мероприятий</h2>
+					
+					<p>Организатор может создавать мероприятия, управлять участниками и назначать помощников.</p>
+					
+					@if (!empty($hasPendingOrganizerRequest))
+					<div class="alert alert-info">Ваша заявка уже отправлена и ожидает рассмотрения.</div>
+					@else
+					<form method="POST" action="{{ route('organizer.request') }}">
+						@csrf
+						<div class="mb-1">
+							<label>Комментарий (необязательно)</label>
+							<textarea name="message" rows="3" placeholder="Например: регулярно организую игры и хочу делать это через Volley"></textarea>
+						</div>
+						<button type="submit" class="btn">Отправить заявку</button>
+					</form>
+					@endif
+				</div>
+				@endif
+				@endauth				
+				
 				
 				
 				<div class="ramka">  	
@@ -1032,146 +1062,146 @@
 			</div>
 		</div>
 	</div>	
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    async function copyToClipboard(text) {
-        if (!text) return false;
-
-        if (navigator.clipboard && window.isSecureContext) {
-            try {
-                await navigator.clipboard.writeText(text);
-                return true;
-            } catch (e) {
-                console.warn('Clipboard API copy failed', e);
-            }
-        }
-
-        try {
-            const textarea = document.createElement('textarea');
-            textarea.value = text;
-            textarea.setAttribute('readonly', '');
-            textarea.style.position = 'fixed';
-            textarea.style.left = '-9999px';
-            textarea.style.top = '0';
-            document.body.appendChild(textarea);
-            textarea.focus();
-            textarea.select();
-
-            const ok = document.execCommand('copy');
-            document.body.removeChild(textarea);
-            return ok;
-        } catch (e) {
-            console.warn('Fallback copy failed', e);
-            return false;
-        }
-    }
-
-    function setupBindButton(buttonId, resultId, linkId, url, payload = {}, options = {}) {
-        const button = document.getElementById(buttonId);
-        if (!button) {
-            console.warn('Bind button not found:', buttonId);
-            return;
-        }
-
-        button.addEventListener('click', async function () {
-            button.disabled = true;
-
-            try {
-                const res = await fetch(url, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(payload),
-                });
-
-                let data = null;
-                try {
-                    data = await res.json();
-                } catch (e) {
-                    console.error('Invalid JSON response', e);
-                    alert('Сервер вернул некорректный ответ');
-                    return;
-                }
-
-                if (!res.ok || !data?.ok) {
-                    alert(data?.message || 'Не удалось создать ссылку');
-                    return;
-                }
-
-                const box = document.getElementById(resultId);
-                const link = document.getElementById(linkId);
-
-                if (link && data.link) {
-                    link.href = data.link;
-                    link.textContent = data.link;
-                }
-
-                if (options.commandBoxId && options.commandId) {
-                    const commandBox = document.getElementById(options.commandBoxId);
-                    const commandEl = document.getElementById(options.commandId);
-                    const copyHint = options.copyHintId
-                        ? document.getElementById(options.copyHintId)
-                        : null;
-
-                    if (commandBox && commandEl && data.command) {
-                        commandEl.textContent = data.command;
-                        commandBox.classList.remove('hidden');
-
-                        const copied = await copyToClipboard(data.command);
-                        if (copied && copyHint) {
-                            copyHint.classList.remove('hidden');
-                        }
-                    }
-                }
-
-                if (box) {
-                    box.classList.remove('hidden');
-                }
-
-                if (options.autoOpenLink && data.link) {
-                    window.open(data.link, '_blank', 'noopener');
-                }
-            } catch (e) {
-                console.error(e);
-                alert('Ошибка запроса при создании ссылки');
-            } finally {
-                button.disabled = false;
-            }
-        });
-    }
-
-    setupBindButton(
-        'connect-max-btn',
-        'connect-max-result',
-        'connect-max-link',
-        '{{ route('profile.max.generate_link') }}',
-        { kind: 'personal' }
-    );
-
-    setupBindButton(
-        'connect-telegram-btn',
-        'connect-telegram-result',
-        'connect-telegram-link',
-        '{{ route('profile.telegram.generate_link') }}',
-        { kind: 'personal' }
-    );
-
-    setupBindButton(
-        'connect-vk-btn',
-        'connect-vk-result',
-        'connect-vk-link',
-        '{{ route('profile.vk.generate_link') }}',
-        { kind: 'personal' },
-        {
-            commandBoxId: 'connect-vk-command-box',
-            commandId: 'connect-vk-command',
-            copyHintId: 'connect-vk-copy-hint',
-            autoOpenLink: false,
-        }
-    );
-});
-</script>
+	<script>
+		document.addEventListener('DOMContentLoaded', function () {
+			async function copyToClipboard(text) {
+				if (!text) return false;
+				
+				if (navigator.clipboard && window.isSecureContext) {
+					try {
+						await navigator.clipboard.writeText(text);
+						return true;
+						} catch (e) {
+						console.warn('Clipboard API copy failed', e);
+					}
+				}
+				
+				try {
+					const textarea = document.createElement('textarea');
+					textarea.value = text;
+					textarea.setAttribute('readonly', '');
+					textarea.style.position = 'fixed';
+					textarea.style.left = '-9999px';
+					textarea.style.top = '0';
+					document.body.appendChild(textarea);
+					textarea.focus();
+					textarea.select();
+					
+					const ok = document.execCommand('copy');
+					document.body.removeChild(textarea);
+					return ok;
+					} catch (e) {
+					console.warn('Fallback copy failed', e);
+					return false;
+				}
+			}
+			
+			function setupBindButton(buttonId, resultId, linkId, url, payload = {}, options = {}) {
+				const button = document.getElementById(buttonId);
+				if (!button) {
+					console.warn('Bind button not found:', buttonId);
+					return;
+				}
+				
+				button.addEventListener('click', async function () {
+					button.disabled = true;
+					
+					try {
+						const res = await fetch(url, {
+							method: 'POST',
+							headers: {
+								'X-CSRF-TOKEN': '{{ csrf_token() }}',
+								'Accept': 'application/json',
+								'Content-Type': 'application/json',
+							},
+							body: JSON.stringify(payload),
+						});
+						
+						let data = null;
+						try {
+							data = await res.json();
+							} catch (e) {
+							console.error('Invalid JSON response', e);
+							alert('Сервер вернул некорректный ответ');
+							return;
+						}
+						
+						if (!res.ok || !data?.ok) {
+							alert(data?.message || 'Не удалось создать ссылку');
+							return;
+						}
+						
+						const box = document.getElementById(resultId);
+						const link = document.getElementById(linkId);
+						
+						if (link && data.link) {
+							link.href = data.link;
+							link.textContent = data.link;
+						}
+						
+						if (options.commandBoxId && options.commandId) {
+							const commandBox = document.getElementById(options.commandBoxId);
+							const commandEl = document.getElementById(options.commandId);
+							const copyHint = options.copyHintId
+							? document.getElementById(options.copyHintId)
+							: null;
+							
+							if (commandBox && commandEl && data.command) {
+								commandEl.textContent = data.command;
+								commandBox.classList.remove('hidden');
+								
+								const copied = await copyToClipboard(data.command);
+								if (copied && copyHint) {
+									copyHint.classList.remove('hidden');
+								}
+							}
+						}
+						
+						if (box) {
+							box.classList.remove('hidden');
+						}
+						
+						if (options.autoOpenLink && data.link) {
+							window.open(data.link, '_blank', 'noopener');
+						}
+						} catch (e) {
+						console.error(e);
+						alert('Ошибка запроса при создании ссылки');
+						} finally {
+						button.disabled = false;
+					}
+				});
+			}
+			
+			setupBindButton(
+			'connect-max-btn',
+			'connect-max-result',
+			'connect-max-link',
+			'{{ route('profile.max.generate_link') }}',
+			{ kind: 'personal' }
+			);
+			
+			setupBindButton(
+			'connect-telegram-btn',
+			'connect-telegram-result',
+			'connect-telegram-link',
+			'{{ route('profile.telegram.generate_link') }}',
+			{ kind: 'personal' }
+			);
+			
+			setupBindButton(
+			'connect-vk-btn',
+			'connect-vk-result',
+			'connect-vk-link',
+			'{{ route('profile.vk.generate_link') }}',
+			{ kind: 'personal' },
+			{
+				commandBoxId: 'connect-vk-command-box',
+				commandId: 'connect-vk-command',
+				copyHintId: 'connect-vk-copy-hint',
+				autoOpenLink: false,
+			}
+			);
+		});
+	</script>
 </x-voll-layout>

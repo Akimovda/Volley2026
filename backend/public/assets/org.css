@@ -435,3 +435,115 @@ trix-editor .attachment__metadata .attachment__size { margin-left: 0.2em; white-
 .trix-content .attachment-gallery { display: flex; flex-wrap: wrap; position: relative; }
 .trix-content .attachment-gallery .attachment { flex: 1 0 33%; padding: 0 0.5em; max-width: 33%; }
 .trix-content .attachment-gallery.attachment-gallery--2 .attachment, .trix-content .attachment-gallery.attachment-gallery--4 .attachment { flex-basis: 50%; max-width: 50%; }
+
+/* ===== ЭМОДЗИ ПАНЕЛЬ ===== */
+.emoji-panel {
+    margin-top: 0.8rem;
+    border-radius: 1rem;
+    overflow: hidden;
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    /*box-shadow: 0 0.4rem 1.2rem rgba(0, 0, 0, 0.08);*/
+}
+
+.emoji-panel__tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.2rem;
+    padding: 0.8rem;
+    background: #f8f9fa;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.emoji-panel__tab {
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 0.8rem;
+    cursor: pointer;
+    font-size: 1.4rem;
+    padding: 0.5rem 1rem;
+    white-space: nowrap;
+    transition: all 0.15s ease;
+    color: #222333;
+    font-family: inherit;
+}
+
+.emoji-panel__tab:hover {
+    background: rgba(0, 0, 0, 0.05);
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+.emoji-panel__tab--active {
+    background: #ffffff;
+    /*font-weight: 600;*/
+    border-color: rgba(0, 0, 0, 0.1);
+    box-shadow: 0 0.1rem 0.2rem rgba(0, 0, 0, 0.04);
+}
+
+.emoji-panel__container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    padding: 1rem;
+    max-height: 22rem;
+    overflow-y: auto;
+}
+
+.emoji-panel__emoji {
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 0.8rem;
+    cursor: pointer;
+    font-size: 1.8rem;
+    padding: 0.5rem 0.4rem;
+    line-height: 1;
+    transition: all 0.1s ease;
+    font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
+}
+
+.emoji-panel__emoji:hover {
+    background: rgba(0, 0, 0, 0.05);
+    border-color: rgba(0, 0, 0, 0.1);
+    transform: scale(1.15);
+}
+
+.emoji-panel__empty {
+    padding: 0.5rem;
+    text-align: center;
+    color: #999;
+    width: 100%;
+    font-size: 1.4rem;
+}
+
+/* ===== ТЁМНАЯ ТЕМА ===== */
+body.dark .emoji-panel {
+    background: #2a2a3a;
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+body.dark .emoji-panel__tabs {
+    background: #1e1e2a;
+    border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+body.dark .emoji-panel__tab {
+    color: #e0e0e0;
+}
+
+body.dark .emoji-panel__tab:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+body.dark .emoji-panel__tab--active {
+    background: #2a2a3a;
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+body.dark .emoji-panel__emoji:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+body.dark .emoji-panel__empty {
+    color: #6c6c7a;
+}

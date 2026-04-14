@@ -26,13 +26,15 @@ class AdEventPaymentController extends Controller
         $event->update(['ad_organizer_notified' => true]);
         self::recordTransaction($event, $user);
 
-        // Отправляем уведомления (ошибки не блокируют основной флоу)
+        // Отправляем уведомление ответственному админу
         try {
-            $admins  = User::where('role', 'admin')->get();
-            $service = app(UserNotificationService::class);
+            $platSettings  = \App\Models\PlatformPaymentSetting::first();
+            $paymentAdminId = (int)($platSettings?->payment_admin_id ?? 1);
+            $admin = User::find($paymentAdminId) ?? User::where('role', 'admin')->first();
 
-            foreach ($admins as $admin) {
-                $service->createAdPaymentPendingNotification($admin, $event, $user);
+            if ($admin) {
+                app(UserNotificationService::class)
+                    ->createAdPaymentPendingNotification($admin, $event, $user);
             }
         } catch (\Throwable $e) {
             Log::warning('AdEventPaymentController notify failed: ' . $e->getMessage());

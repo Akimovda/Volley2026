@@ -209,6 +209,15 @@
 								<a href="/events/create" class="menu-item">
 									<span class="menu-text">Создать мероприятие</span>
 								</a>
+								<a href="/user/profile/notification-channels" class="menu-item">
+									<span class="menu-text">Каналы уведомлений</span>
+								</a>
+								<a href="/profile/widget" class="menu-item">
+									<span class="menu-text">🌐 Виджет на сайт</span>
+								</a>
+								<a href="/organizer-pro" class="menu-item">
+									<span class="menu-text">⭐ Организатор Pro</span>
+								</a>
 							</nav>
 						</div>	
 						@if(auth()->user()->role == 'admin')

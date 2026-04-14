@@ -88,7 +88,7 @@ body.dark  {
 	color: #cacaca;
 }
 *[id] {
-    scroll-margin-top: 11rem;
+    scroll-margin-top: 10.4rem;
 }
 p {
 	margin-bottom: 1rem;
@@ -1410,7 +1410,8 @@ body.dark .btn-outline:hover {
 .align-top {
 	vertical-align: top!important;
 }
-.whitespace-nowrap {
+.whitespace-nowrap,
+.nowrap {
 	white-space: nowrap!important;
 }
 .alert {
@@ -1771,7 +1772,7 @@ body.dark .tab-highlight {
 	-webkit-overflow-scrolling: touch;
 	border-radius: 1rem;
 	position: relative;
-	margin-bottom: 3rem;
+	margin-bottom: 2rem;
 }
 @media (max-width: 767px) {	
 	.table-scrollable {
@@ -4176,6 +4177,11 @@ body.dark .card-img-top {
 
 .event-address {
 	margin-bottom: 1rem;
+}
+@media screen and (min-width:576px) {
+.event-address {
+	min-height: 4.5rem;
+}
 }
 .event-date {
 	right: auto;

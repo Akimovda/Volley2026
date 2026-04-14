@@ -533,7 +533,7 @@ if ($initialStep < 1 || $initialStep > 3) {
 														<input type="number"
 														name="game_max_players"
 														id="game_max_players"
-														min="1" max="99"
+														max="99"
 														value="{{ old('game_max_players', $prefill['game_max_players'] ?? '') }}"
 														class="w-full rounded-lg border-gray-200"
 														placeholder="например 12">

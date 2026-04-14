@@ -9,7 +9,7 @@
     <img src="{{ $menuUser->profile_photo_url }}" alt="avatar" class="avatar"/>
 </div>
 <div class="text-center mb-1">
-    <div class="b-600 cd mt-1">{{ $menuUser->name }}</div>
+    <div class="b-600 cd mt-2">{{ $menuUser->name }}</div>
 </div>	
 {{-- Чужая страница (редактирование) --}}
 @if($isEditingOther)

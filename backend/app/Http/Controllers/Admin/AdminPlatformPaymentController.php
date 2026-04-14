@@ -35,7 +35,12 @@ class AdminPlatformPaymentController extends Controller
             $settings->yoomoney_secret_key = encrypt($request->yoomoney_secret_key);
         }
 
-        $settings->ad_event_price_rub = (int) $request->input('ad_event_price_rub', 0);
+        $settings->ad_event_price_rub        = (int) $request->input('ad_event_price_rub', 0);
+        $settings->payment_admin_id            = (int) $request->input('payment_admin_id', 1);
+        $settings->organizer_pro_trial_days    = max(1, (int) $request->input('organizer_pro_trial_days', 7));
+        $settings->organizer_pro_month_rub     = max(0, (int) $request->input('organizer_pro_month_rub', 499));
+        $settings->organizer_pro_quarter_rub   = max(0, (int) $request->input('organizer_pro_quarter_rub', 1199));
+        $settings->organizer_pro_year_rub      = max(0, (int) $request->input('organizer_pro_year_rub', 3999));
 
         $settings->save();
 

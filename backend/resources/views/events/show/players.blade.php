@@ -490,7 +490,7 @@
 {{-- ===============================
 ПРИГЛАСИТЬ ИГРОКА (объединённый блок)
 =============================== --}}
-@if ($isRegistered && auth()->check())
+@if (auth()->check())
 @php
     $inviteSearchUrl = route('api.users.search');
     $inviteAction    = route('events.invite', ['event' => $event->id]);
@@ -501,7 +501,7 @@
     $inviteLabel     = $isPair ? 'в пару' : 'в команду';
 @endphp
 
-<div class="ramka" style="z-index:5">
+<div class="ramka" id="invite-players-block" style="z-index:5;display:{{ $isRegistered ? '' : 'none' }}">
     <h2 class="-mt-05">Пригласить игрока</h2>
 
     @if(session('status') && str_contains(session('status'), 'Приглашение'))

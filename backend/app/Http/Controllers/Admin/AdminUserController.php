@@ -152,18 +152,88 @@ class AdminUserController extends Controller
         $userId = (int) $user->id;
         $email  = (string) ($user->email ?? '');
 
-        DB::transaction(function () use ($request, $user, $userId, $email, $data) {
+        // === ШАГ 1: Всё вне транзакции — FK чистка ===
+        $uid = $user->id;
 
-            // 1) Удаляем файл профиля (если есть)
-            $path = $user->profile_photo_path ?? null;
-            if (!empty($path)) {
-                $disk = config('jetstream.profile_photo_disk', 'public');
-                try {
-                    Storage::disk($disk)->delete($path);
-                } catch (\Throwable $e) {
-                    // не роняем purge из-за файла
-                }
+        // Удаляем медиа через Spatie (до удаления юзера)
+        try {
+            $user->clearMediaCollection();
+        } catch (\Throwable $e) {}
+
+        // Удаляем файл профиля
+        $path = $user->profile_photo_path ?? null;
+        if (!empty($path)) {
+            try {
+                Storage::disk(config('jetstream.profile_photo_disk', 'public'))->delete($path);
+            } catch (\Throwable $e) {}
+        }
+
+        // Полное удаление связанных записей
+        $deleteByUserId = [
+            'account_delete_requests', 'broadcast_recipients',
+            'channel_bind_requests', 'event_registrations',
+            'event_team_applications', 'event_team_member_audits',
+            'event_team_members', 'max_bindings', 'occurrence_waitlist',
+            'organizer_requests', 'payment_settings',
+            'user_beach_zones', 'user_classic_positions',
+            'user_notification_channels', 'user_notifications',
+            'user_restrictions', 'virtual_wallets',
+            'event_private_accesses',
+        ];
+        foreach ($deleteByUserId as $table) {
+            try { \DB::table($table)->where('user_id', $uid)->delete(); } catch (\Throwable $e) {}
+        }
+
+        // Удаляем с разными колонками
+        foreach ([
+            ['account_link_audits',  ['user_id', 'linked_from_user_id']],
+            ['account_link_codes',   ['user_id', 'consumed_by_user_id']],
+            ['account_links',        ['user_id']],
+            ['event_team_invites',   ['invited_by_user_id', 'invited_user_id']],
+            ['friendships',          ['user_id', 'friend_id']],
+            ['organizer_requests',   ['user_id']],
+            ['payments',             ['user_id']],
+            ['premium_subscriptions',['user_id']],
+            ['profile_visits',       ['profile_user_id', 'visitor_user_id']],
+            ['subscriptions',        ['user_id']],
+            ['user_level_votes',     ['target_id', 'voter_id']],
+            ['user_play_likes',      ['liker_id', 'target_id']],
+        ] as [$table, $cols]) {
+            foreach ($cols as $col) {
+                try { \DB::table($table)->where($col, $uid)->delete(); } catch (\Throwable $e) {}
             }
+        }
+
+        // Обнуляем (не удаляем)
+        foreach ([
+            ['admin_audits',          'actor_user_id'],
+            ['broadcasts',            'created_by'],
+            ['coupon_templates',      'organizer_id'],
+            ['coupons',               'organizer_id'],
+            ['event_templates',       'organizer_id'],
+            ['event_templates',       'owner_user_id'],
+            ['event_templates',       'user_id'],
+            ['events',                'organizer_id'],
+            ['events',                'trainer_user_id'],
+            ['locations',             'organizer_id'],
+            ['organizer_requests',    'reviewed_by'],
+            ['organizer_staff',       'organizer_id'],
+            ['organizer_staff',       'staff_user_id'],
+            ['payments',              'organizer_id'],
+            ['staff_logs',            'organizer_id'],
+            ['staff_logs',            'staff_user_id'],
+            ['subscription_templates','organizer_id'],
+            ['volleyball_schools',    'organizer_id'],
+        ] as [$table, $col]) {
+            try {
+                if (\DB::getSchemaBuilder()->hasColumn($table, $col)) {
+                    \DB::table($table)->where($col, $uid)->update([$col => null]);
+                }
+            } catch (\Throwable $e) {}
+        }
+
+        // === ШАГ 2: Минимальная транзакция — только удаление юзера ===
+        DB::transaction(function () use ($request, $user, $userId, $email, $data) {
 
             // 2) Удаляем пользователя
             if (method_exists($user, 'forceDelete')) {

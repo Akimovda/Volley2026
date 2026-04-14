@@ -8,12 +8,6 @@ use Illuminate\Support\Facades\DB;
 
 class OrganizerRequestAdminController extends Controller
 {
-    public function __construct()
-    {
-        // Дублируем защиту на уровне контроллера (на случай, если роуты когда-то поменяются)
-        $this->middleware(['auth', 'can:approve-organizer-request']);
-    }
-
     public function index()
     {
         $requests = DB::table('organizer_requests')

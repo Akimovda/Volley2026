@@ -25,7 +25,7 @@
 		$isEditingOther = (int)($actor?->id ?? 0) !== (int)($user?->id ?? 0);
 		$organizerLimitedView = ($mode === 'organizer_other');
 		
-		$hasPendingOrganizerRequest = (bool)($hasPendingOrganizerRequest ?? ($hasPendingRequest ?? false));
+
 		
 		// ВАЖНО: права считаем по actor, а не по user (target)
 		$canEditProtected = (bool)($canEditProtected ?? ($actor && $actor->can('edit-protected-profile-fields')));
@@ -297,6 +297,15 @@
 				
 				
 				{{-- ========================= FLASH / ERRORS ========================= --}}
+				@if (session('welcome'))
+				<div class="ramka">
+					<div class="text-center">
+						<h3 class="mt-0">Добро пожаловать на VolleyPlay.Club!</h3>
+						<p>Надеемся, Вам понравится наш сервис.<br>Для Вашего удобства заполните данные профиля — это займёт меньше минуты.</p>
+						<p class="cd b-600 f-20">Удачных игр и тренировок! 💪</p>
+					</div>
+				</div>
+				@endif
 				@if (session('status'))
 				<div class="ramka">	
 					<div class="alert alert-success">
@@ -928,37 +937,6 @@
 									</div>
 								</form>
 								
-								{{-- ========================= ORGANIZER REQUEST ========================= --}}
-								@auth
-								@if(!$isEditingOther)
-								@if (($user->role ?? 'user') === 'user')
-								<div class="v-card mt-8">
-									<div class="v-card__body">
-										<div class="font-semibold text-lg mb-2">Хочу стать организатором мероприятий</div>
-										<div class="text-sm text-gray-600 mb-4">
-											Организатор может создавать мероприятия, управлять участниками и назначать помощников.
-										</div>
-										
-										@if (!empty($hasPendingOrganizerRequest))
-										<div class="v-alert v-alert--info">
-											<div class="v-alert__text">Ваша заявка уже отправлена и ожидает рассмотрения.</div>
-										</div>
-										@else
-										<form method="POST" action="{{ route('organizer.request') }}">
-											@csrf
-											<div class="mb-3">
-												<label class="block text-sm font-medium mb-1">Комментарий (необязательно)</label>
-												<textarea name="message" rows="3" class="v-input w-full"
-												placeholder="Например: регулярно организую игры и хочу делать это через Volley"></textarea>
-											</div>
-											<button type="submit" class="v-btn v-btn--primary">Отправить заявку</button>
-										</form>
-										@endif
-									</div>
-								</div>
-								@endif
-								@endif
-								@endauth
 							</div>
 						</div>
 						{{-- ========================= SIDEBAR (desktop) ========================= --}}

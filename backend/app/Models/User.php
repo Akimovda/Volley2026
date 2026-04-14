@@ -247,7 +247,9 @@
 			
 			return 'Пользователь #' . $this->id;
 		}
-		
+
+
+
 		public function displayName(): string
 		{
 			return $this->name;

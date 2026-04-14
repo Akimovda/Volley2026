@@ -59,16 +59,16 @@
 		
 		
         <div class="row">
-<div class="col-lg-4 col-xl-3 order-2 d-none d-lg-block">
-<div class="sticky">
-<div class="card-ramka">
-@include('profile._menu', [
-    'menuUser'   => auth()->user(),
-    'activeMenu' => 'notifications',
-])
-</div>
-</div>
-</div>
+			<div class="col-lg-4 col-xl-3 order-2 d-none d-lg-block">
+				<div class="sticky">
+					<div class="card-ramka">
+						@include('profile._menu', [
+						'menuUser'   => auth()->user(),
+						'activeMenu' => 'notifications',
+						])
+					</div>
+				</div>
+			</div>
 			<div class="col-lg-8 col-xl-9 order-1">		
 				
 				
@@ -105,7 +105,18 @@
 						<div class="row">
 							<div class="col-sm-10">		
 								@if(!empty($notification->body))
-								{{ $notification->body }}
+								
+								@php
+								$message = $notification->body; // или откуда берётся текст
+								$message = preg_replace(
+								'/(https?:\/\/[^\s]+)/',
+								'<a href="$1" target="_blank" rel="nofollow">перейти по ссылке</a>',
+								e($message) // экранируем для безопасности
+								);
+								@endphp
+								
+								{!! $message !!}								
+																
 								@endif	
 								
 								

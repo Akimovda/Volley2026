@@ -10,8 +10,14 @@ use RuntimeException;
 
 class MaxChannelPublisher implements ChannelPublisher
 {
+    public function __construct(private readonly ?string $customToken = null) {}
+
     private function endpoint(): string
     {
+        // Для персонального бота — прямой API MAX, иначе внутренний сервис
+        if ($this->customToken !== null) {
+            return 'https://platform-api.max.ru';
+        }
         $url = rtrim((string) config('services.max.bot_api_url'), '/');
         if ($url === '') throw new LogicException('MAX bot_api_url is not configured.');
         return $url;
@@ -24,8 +30,58 @@ class MaxChannelPublisher implements ChannelPublisher
         return $s;
     }
 
+    private function getToken(): string
+    {
+        if ($this->customToken !== null && $this->customToken !== '') {
+            return $this->customToken;
+        }
+        $token = (string) config('services.max.bot_token');
+        if ($token === '') throw new LogicException('MAX bot_token is not configured.');
+        return $token;
+    }
+
+    /** Для персонального бота — прямой вызов MAX API */
+    private function sendDirect(string $chatId, ChannelMessageData $message): array
+    {
+        $token = $this->getToken();
+        $body  = ['text' => $message->text];
+
+        $attachments = [];
+        if ($message->buttonUrl) {
+            $attachments[] = [
+                'type'    => 'inline_keyboard',
+                'payload' => [
+                    'buttons' => [[
+                        ['type' => 'link', 'text' => $message->buttonText ?: 'Записаться!', 'url' => $message->buttonUrl],
+                    ]],
+                ],
+            ];
+        }
+        if (!empty($attachments)) {
+            $body['attachments'] = $attachments;
+        }
+
+        $response = Http::timeout(20)
+            ->withHeaders(['Authorization' => $token, 'Content-Type' => 'application/json'])
+            ->post("https://platform-api.max.ru/messages?chat_id=" . urlencode($chatId), $body)
+            ->throw()
+            ->json();
+
+        return [
+            'external_chat_id'    => $chatId,
+            'external_message_id' => isset($response['message']['id']) ? (string) $response['message']['id'] : null,
+            'raw'                 => $response ?? [],
+            'meta'                => ['message_kind' => 'text'],
+        ];
+    }
+
     public function send(string $chatId, ChannelMessageData $message): array
     {
+        // Персональный бот — прямой вызов MAX API
+        if ($this->customToken !== null) {
+            return $this->sendDirect($chatId, $message);
+        }
+
         $response = Http::timeout(20)
             ->withHeaders([
                 'X-Bind-Secret' => $this->secret(),

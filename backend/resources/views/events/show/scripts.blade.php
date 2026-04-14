@@ -209,7 +209,7 @@
 			const map = {
 				setter: 'Связующий',
 				outside: 'Доигровщик',
-				middle: 'Центральный блокирующий',
+				middle: 'ЦБ',
 				opposite: 'Диагональный',
 				libero: 'Либеро',
 				player: ''
@@ -256,6 +256,15 @@
 				
 				if (data.registered_total !== undefined && playersCount) {
 					playersCount.textContent = data.registered_total;
+				}
+				if (data.registered_total !== undefined && progress && maxPlayers > 0) {
+					const percent = Math.min(100, (data.registered_total / maxPlayers) * 100);
+					progress.style.transition = 'width 0.4s ease';
+					progress.style.width = percent + '%';
+					progress.classList.remove('bg-danger', 'bg-warning', 'bg-success');
+					if (percent >= 75) progress.classList.add('bg-success');
+					else if (percent >= 40) progress.classList.add('bg-warning');
+					else progress.classList.add('bg-danger');
 				}
 				} catch (e) {
 				console.error('stats update error', e);
@@ -414,6 +423,13 @@ function updateJoinBlock(data) {
     }
 
     block.innerHTML = html;
+
+    // Показываем блок приглашений
+    const inviteBlock = document.getElementById('invite-players-block');
+    if (inviteBlock) inviteBlock.style.display = '';
+
+    // Обновляем статус-бар
+    updatePlayers();
 }
 
 function showJoinError(msg) {

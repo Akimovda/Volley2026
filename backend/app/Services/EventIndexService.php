@@ -100,31 +100,73 @@ class EventIndexService
         
         $occQ->orderBy('starts_at', 'asc');
 
-        $occQ->whereHas('event', function ($q) use ($user,$userId,$isAdmin,$direction,$format,$level,$location) {
+        // Staff: получаем organizer_id своего организатора
+        $staffOrganizerIds = [];
+        if ($userId > 0 && $user && in_array($user->role ?? '', ['staff'], true)) {
+            $staffOrgId = \DB::table('staff_assignments')
+                ->where('staff_user_id', $userId)
+                ->value('organizer_id');
+            if ($staffOrgId) {
+                $staffOrganizerIds = [$staffOrgId];
+            }
+        }
+
+        // Приватные события к которым у пользователя есть доступ по токену
+        $privateAccessEventIds = [];
+        if ($userId > 0) {
+            $privateAccessEventIds = \DB::table('event_private_accesses')
+                ->where('user_id', $userId)
+                ->pluck('event_id')
+                ->map(fn($v) => (int)$v)
+                ->all();
+        }
+
+        $occQ->whereHas('event', function ($q) use ($user,$userId,$isAdmin,$direction,$format,$level,$location,$staffOrganizerIds,$privateAccessEventIds) {
 
             if (!$isAdmin) {
+                $q->where(function ($outer) use ($userId, $staffOrganizerIds, $privateAccessEventIds) {
 
-                $q->where(function ($w) use ($userId) {
+                    // 1. Обычные публичные мероприятия с записью
+                    $outer->where(function ($w) {
+                        $w->where('allow_registration', true)
+                          ->where('is_private', false);
+                    });
 
-                    $w->where('allow_registration', true);
-                    // Скрываем неоплаченные рекламные мероприятия
-                })->orWhere(function($w) {
-                    $w->where('allow_registration', false)
-                      ->where(function($ww) {
-                          $ww->where('ad_payment_status', 'paid')
-                             ->orWhereNull('ad_payment_status');
-                      });
+                    // 2. Оплаченные рекламные (публичные)
+                    $outer->orWhere(function ($w) {
+                        $w->where('allow_registration', false)
+                          ->where('is_private', false)
+                          ->where(function ($ww) {
+                              $ww->where('ad_payment_status', 'paid')
+                                 ->orWhere(function ($old) {
+                                     // Старые события до введения системы оплаты
+                                     $old->whereNull('ad_payment_status')
+                                         ->where('created_at', '<', '2026-04-13 00:00:00');
+                                 });
+                          });
+                    });
 
-                    if ($userId > 0 && Schema::hasColumn('events','organizer_id')) {
-                        $w->orWhere('organizer_id', $userId);
+                    // 3. Приватные события по которым был доступ по токену
+                    if (!empty($privateAccessEventIds)) {
+                        $outer->orWhereIn('id', $privateAccessEventIds);
                     }
 
-                    foreach (['created_by','creator_user_id','created_user_id'] as $col) {
-                        if ($userId > 0 && Schema::hasColumn('events',$col)) {
-                            $w->orWhere($col, $userId);
+                    // 4. Свои события (Organizer/Staff) — все включая приватные и неоплаченные
+                    if ($userId > 0) {
+                        if (\Schema::hasColumn('events', 'organizer_id')) {
+                            $outer->orWhere('organizer_id', $userId);
+                        }
+                        foreach (['created_by', 'creator_user_id', 'created_user_id'] as $col) {
+                            if (\Schema::hasColumn('events', $col)) {
+                                $outer->orWhere($col, $userId);
+                            }
                         }
                     }
 
+                    // 5. Staff видит все события своего Organizer
+                    if (!empty($staffOrganizerIds) && \Schema::hasColumn('events', 'organizer_id')) {
+                        $outer->orWhereIn('organizer_id', $staffOrganizerIds);
+                    }
                 });
             }
 

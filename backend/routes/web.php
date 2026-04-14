@@ -192,6 +192,11 @@ use App\Http\Controllers\YookassaWebhookController;
 	});
 	
 	Route::get('/Dashboard', fn () => redirect()->to('/dashboard'))->name('Dashboard');
+
+// Переопределяем Jetstream profile.show — добавляем hasPendingOrganizerRequest
+Route::get('/user/profile', [\App\Http\Controllers\UserProfileController::class, 'show'])
+    ->middleware(['auth', config('jetstream.auth_session'), 'verified'])
+    ->name('profile.show');
 	
 	/*
 		|--------------------------------------------------------------------------
@@ -478,6 +483,88 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
         ->middleware('can:edit-user-profile-extra,user');
 	});
 	
+	/*
+	|--------------------------------------------------------------------------
+	| Organizer Pro (монетизация)
+	|--------------------------------------------------------------------------
+	*/
+	Route::get('/organizer-pro',
+	    [\App\Http\Controllers\OrganizerProController::class, 'index'])
+	    ->name('organizer_pro.index');
+
+	Route::middleware([
+	    'auth:sanctum',
+	    config('jetstream.auth_session'),
+	    'verified',
+	])->group(function () {
+	    Route::post('/organizer-pro/activate',
+	        [\App\Http\Controllers\OrganizerProController::class, 'activate'])
+	        ->name('organizer_pro.activate');
+	});
+
+	/*
+	|--------------------------------------------------------------------------
+	| Organizer Widget (Виджет на сайт)
+	|--------------------------------------------------------------------------
+	*/
+	Route::middleware([
+	    'auth:sanctum',
+	    config('jetstream.auth_session'),
+	    'verified',
+	])->group(function () {
+	    Route::get('/profile/widget',
+	        [\App\Http\Controllers\OrganizerWidgetController::class, 'index'])
+	        ->name('profile.widget');
+
+	    Route::post('/profile/widget',
+	        [\App\Http\Controllers\OrganizerWidgetController::class, 'store'])
+	        ->name('profile.widget.store');
+
+	    Route::post('/profile/widget/regenerate-key',
+	        [\App\Http\Controllers\OrganizerWidgetController::class, 'regenerateKey'])
+	        ->name('profile.widget.regenerate_key');
+
+	    Route::post('/profile/widget/toggle',
+	        [\App\Http\Controllers\OrganizerWidgetController::class, 'toggle'])
+	        ->name('profile.widget.toggle');
+	});
+
+	// Публичные роуты виджета (без auth, без CSRF)
+	Route::get('/embed/org/{userId}',
+	    [\App\Http\Controllers\WidgetPublicController::class, 'iframe'])
+	    ->name('widget.iframe');
+
+	Route::get('/api/widget/events',
+	    [\App\Http\Controllers\WidgetPublicController::class, 'json'])
+	    ->name('widget.json');
+
+	Route::get('/widget/events.js',
+	    [\App\Http\Controllers\WidgetPublicController::class, 'script'])
+	    ->name('widget.script');
+
+	/*
+	|--------------------------------------------------------------------------
+	| Personal Bot (Организатор Pro — свой бот)
+	|--------------------------------------------------------------------------
+	*/
+	Route::middleware([
+	    'auth:sanctum',
+	    config('jetstream.auth_session'),
+	    'verified',
+	])->group(function () {
+	    Route::post('/profile/channels/personal-bot/telegram',
+	        [\App\Http\Controllers\PersonalBotController::class, 'storeTelegram'])
+	        ->name('profile.personal_bot.telegram');
+
+	    Route::post('/profile/channels/personal-bot/max',
+	        [\App\Http\Controllers\PersonalBotController::class, 'storeMax'])
+	        ->name('profile.personal_bot.max');
+
+	    Route::patch('/profile/channels/{channel}/update-token',
+	        [\App\Http\Controllers\PersonalBotController::class, 'updateToken'])
+	        ->name('profile.personal_bot.update_token');
+	});
+
 	/*
 		|--------------------------------------------------------------------------
 		| Organizer request (public)

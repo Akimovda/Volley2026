@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
+use App\Services\UserNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class OrganizerRequestController extends Controller
 {
@@ -12,7 +15,6 @@ class OrganizerRequestController extends Controller
     {
         $user = Auth::user();
 
-        // Если уже organizer/admin — заявка не нужна
         $role = $user->role ?? 'user';
         if (in_array($role, ['admin', 'organizer'], true)) {
             return back()->with('status', 'У вас уже есть права организатора.');
@@ -22,7 +24,6 @@ class OrganizerRequestController extends Controller
             'message' => ['nullable', 'string', 'max:2000'],
         ]);
 
-        // Не даём создать второй pending (у тебя есть unique(user_id,status), но это даёт UX)
         $hasPending = DB::table('organizer_requests')
             ->where('user_id', $user->id)
             ->where('status', 'pending')
@@ -33,13 +34,39 @@ class OrganizerRequestController extends Controller
         }
 
         DB::table('organizer_requests')->insert([
-            'user_id' => $user->id,
-            'status' => 'pending',
-            'message' => $data['message'] ?? null,
+            'user_id'    => $user->id,
+            'status'     => 'pending',
+            'message'    => $data['message'] ?? null,
             'created_at' => now(),
             'updated_at' => now(),
         ]);
 
-        return back()->with('status', 'Заявка отправлена администратору.');
+        // Уведомляем администратора (ID=1 по умолчанию)
+        try {
+            $admin     = User::find(1);
+            $adminUrl  = route('admin.organizer_requests.index');
+            $userName  = trim("{$user->last_name} {$user->first_name}");
+            $msgBody   = "👤 {$userName}\n"
+                       . ($data['message'] ? "💬 {$data['message']}\n" : '')
+                       . "🔗 {$adminUrl}";
+
+            if ($admin) {
+                app(UserNotificationService::class)->create(
+                    userId:   $admin->id,
+                    type:     'organizer_request',
+                    title:    '📋 Новая заявка на организатора',
+                    body:     $msgBody,
+                    payload:  [
+                        'button_text' => 'Просмотреть заявки',
+                        'button_url'  => $adminUrl,
+                    ],
+                    channels: ['in_app', 'telegram', 'vk', 'max'],
+                );
+            }
+        } catch (\Throwable $e) {
+            Log::warning('OrganizerRequestController notify failed: ' . $e->getMessage());
+        }
+
+        return back()->with('status', '✅ Заявка отправлена администратору.');
     }
 }

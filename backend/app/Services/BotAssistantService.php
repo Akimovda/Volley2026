@@ -253,9 +253,10 @@ final class BotAssistantService
         $free = [];
         foreach ($slots as $slot) {
             $takenCount = (int)($taken[$slot->role] ?? 0);
-            if ($takenCount < $slot->max_slots) {
+            $maxSlots = (int)$slot->max_slots;
+            if ($takenCount < $maxSlots) {
                 // Добавляем с весом — чем больше мест, тем чаще выбирается
-                for ($i = 0; $i < ($slot->max_slots - $takenCount); $i++) {
+                for ($i = 0; $i < ($maxSlots - $takenCount); $i++) {
                     $free[] = $slot->role;
                 }
             }

@@ -1,114 +1,122 @@
-<x-app-layout>
-    <div class="v-container">
-        <h1 class="text-2xl font-bold mb-4">Заявки на организатора</h1>
-
-        @if (session('status'))
-            <div class="v-alert v-alert--info mb-4">
-                <div class="v-alert__text">{{ session('status') }}</div>
-            </div>
-        @endif
-
-        @if ($requests->isEmpty())
-            <div class="v-alert v-alert--info">
-                <div class="v-alert__text">Заявок пока нет.</div>
-            </div>
-        @else
-            <div class="v-card">
-                <div class="v-card__body">
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full text-sm">
-                            <thead>
-                            <tr class="text-left">
-                                <th class="py-2 pr-4">ID</th>
-                                <th class="py-2 pr-4">Пользователь</th>
-                                <th class="py-2 pr-4">Роль</th>
-                                <th class="py-2 pr-4">Статус</th>
-                                <th class="py-2 pr-4">Сообщение</th>
-                                <th class="py-2 pr-4">Создана</th>
-                                <th class="py-2 pr-4">Ревью</th>
-                                <th class="py-2 pr-4">Действия</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            @foreach ($requests as $r)
-                                @php
-                                    $fio = trim(($r->last_name ?? '') . ' ' . ($r->first_name ?? ''));
-                                    $label = $fio !== '' ? $fio : (($r->telegram_username ?? '') !== '' ? ('@' . $r->telegram_username) : $r->email);
-                                @endphp
-
-                                <tr class="border-t align-top">
-                                    <td class="py-2 pr-4">{{ $r->id }}</td>
-
-                                    <td class="py-2 pr-4">
-                                        <div class="font-medium">{{ $label }}</div>
-                                        <div class="text-gray-500">{{ $r->email }}</div>
-                                    </td>
-
-                                    <td class="py-2 pr-4">{{ $r->role }}</td>
-
-                                    <td class="py-2 pr-4">
-                                        @if ($r->status === 'pending')
-                                            <span class="v-badge v-badge--warn">pending</span>
-                                        @elseif ($r->status === 'approved')
-                                            <span class="v-badge v-badge--success">approved</span>
-                                        @elseif ($r->status === 'rejected')
-                                            <span class="v-badge v-badge--secondary">rejected</span>
-                                        @else
-                                            <span class="v-badge">{{ $r->status }}</span>
-                                        @endif
-                                    </td>
-
-                                    <td class="py-2 pr-4">
-                                        @if (!empty($r->message))
-                                            <div class="max-w-md whitespace-pre-wrap">{{ $r->message }}</div>
-                                        @else
-                                            <span class="text-gray-500">—</span>
-                                        @endif
-                                    </td>
-
-                                    <td class="py-2 pr-4">
-                                        {{ $r->created_at }}
-                                    </td>
-
-                                    <td class="py-2 pr-4">
-                                        @if (!empty($r->reviewed_at))
-                                            <div class="text-gray-700">{{ $r->reviewed_at }}</div>
-                                             <div class="text-gray-500 text-xs">
-                                                 reviewed_by: {{ $r->reviewer_email ?? $r->reviewed_by }}
-                                     </div>
-
-                                        @else
-                                            <span class="text-gray-500">—</span>
-                                        @endif
-                                    </td>
-
-                                    <td class="py-2 pr-4">
-                                        @if ($r->status === 'pending')
-                                            <form method="POST" action="{{ route('admin.organizer_requests.approve', $r->id) }}" class="inline">
-                                                @csrf
-                                                <button class="v-btn v-btn--primary" type="submit">Approve</button>
-                                            </form>
-
-                                            <form method="POST" action="{{ route('admin.organizer_requests.reject', $r->id) }}" class="inline ml-2">
-                                                @csrf
-                                                <button class="v-btn v-btn--secondary" type="submit">Reject</button>
-                                            </form>
-                                        @else
-                                            <span class="text-gray-500">—</span>
-                                        @endif
-                                    </td>
-                                </tr>
-                            @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div class="v-hint mt-4">
-                        Одобрение переводит пользователя в роль <b>organizer</b>.
-                        Отклонение оставляет роль как есть.
-                    </div>
-                </div>
-            </div>
-        @endif
-    </div>
-</x-app-layout>
+<x-voll-layout body_class="admin-organizer-requests-page">
+	
+    <x-slot name="title">Заявки на организатора</x-slot>
+    <x-slot name="description">Управление заявками пользователей на роль организатора</x-slot>
+    <x-slot name="canonical">{{ route('admin.organizer_requests.index') }}</x-slot>
+    <x-slot name="h1">Заявки на организатора</x-slot>
+    <x-slot name="t_description">Управление заявками пользователей на роль организатора</x-slot>
+	
+    <x-slot name="breadcrumbs">
+        <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
+            <a href="{{ route('admin.dashboard') }}" itemprop="item"><span itemprop="name">Админ-панель</span></a>
+            <meta itemprop="position" content="2">
+		</li>
+        <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
+            <a href="{{ route('admin.organizer_requests.index') }}" itemprop="item"><span itemprop="name">Заявки на организатора</span></a>
+            <meta itemprop="position" content="3">
+		</li>
+	</x-slot>
+	<div class="container">
+		@if (session('status'))
+		<div class="ramka">
+			<div class="alert alert-info">{{ session('status') }}</div>
+		</div>
+		@endif
+		
+		@if ($requests->isEmpty())
+		<div class="ramka">
+			<div class="alert alert-info">📭 Заявок пока нет.</div>
+		</div>
+		@else
+		<div class="ramka">
+			
+			<div class="table-scrollable">
+				<div class="table-drag-indicator"></div>
+				<table class="table">
+					<thead>
+						<tr>
+							<th>#</th>
+							<th>Пользователь</th>
+							<th>Роль</th>
+							<th>Статус</th>
+							<th>Комментарий</th>
+							<th>Дата</th>
+							<th>Рассмотрел</th>
+							<th>Действия</th>
+						</tr>
+					</thead>
+					<tbody>
+						@foreach ($requests as $r)
+						@php
+						$fio = trim(($r->last_name ?? '') . ' ' . ($r->first_name ?? ''));
+						$label = $fio !== '' ? $fio : (($r->telegram_username ?? '') !== '' ? ('@'.$r->telegram_username) : $r->email);
+						@endphp
+						<tr>
+							<td class="f-15">{{ $r->id }}</td>
+							<td>
+								<div class="b-600">{{ $label }}</div>
+							</td>
+							<td>
+								<span class="f-15">{{ $r->role }}</span>
+							</td>
+							<td>
+								@if ($r->status === 'pending')
+								<span class="cs nowrap" style="color:#f5a623">⏳ Ожидает</span>
+								@elseif ($r->status === 'approved')
+								<span class="cs nowrap">✅ Одобрена</span>
+								@elseif ($r->status === 'rejected')
+								<span class="cd nowrap">❌ Отклонена</span>
+								@else
+								<span>{{ $r->status }}</span>
+								@endif
+							</td>
+							<td class="f-15">
+								@if (!empty($r->message))
+								<div style="max-width:250px;white-space:pre-wrap">{{ $r->message }}</div>
+								@else
+								<span>—</span>
+								@endif
+							</td>
+							<td class="f-15 nowrap">
+								{{ \Carbon\Carbon::parse($r->created_at)->setTimezone('Europe/Moscow')->format('d.m.Y H:i') }}
+							</td>
+							<td class="f-15">
+								@if (!empty($r->reviewed_at))
+								<div>{{ \Carbon\Carbon::parse($r->reviewed_at)->setTimezone('Europe/Moscow')->format('d.m.Y H:i') }}</div>
+								<div>{{ $r->reviewer_email ?? ('ID '.$r->reviewed_by) }}</div>
+								@else
+								<span>—</span>
+								@endif
+							</td>
+							<td class="nowrap">
+								@if ($r->status === 'pending')
+								<form class="w-100" method="POST" action="{{ route('admin.organizer_requests.approve', $r->id) }}" class="d-inline">
+									@csrf
+									<button class="btn btn-small w-100 mb-1" type="submit">Одобрить</button>
+								</form>
+								<form class="w-100" method="POST" action="{{ route('admin.organizer_requests.reject', $r->id) }}" class="d-inline ml-1">
+									@csrf
+									<button class="btn-alert btn btn-small btn-danger" 
+										data-title="Отменить заявку?"
+										data-icon="warning"
+										data-confirm-text="Да, отменить"
+										data-cancel-text="Отмена"									
+									type="submit">Отклонить</button>
+								</form>
+								@else
+								<span>—</span>
+								@endif
+							</td>
+						</tr>
+						@endforeach
+					</tbody>
+				</table>
+			</div>
+			<p>
+				Одобрение переводит пользователя в роль <b>organizer</b>. Отклонение оставляет роль без изменений.
+			</p>	
+		</div>
+	</div>
+    @endif
+	
+</x-voll-layout>

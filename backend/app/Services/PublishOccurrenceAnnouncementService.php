@@ -74,7 +74,7 @@ class PublishOccurrenceAnnouncementService
                 'notification_type' => 'registration_open',
             ]);
 
-            $publisher = $this->factory->for((string) $channel->platform);
+            $publisher = $this->factory->forChannel($channel);
 
             // ── Запись уже существует → пробуем обновить ─────────────────
             if ($record->exists) {
