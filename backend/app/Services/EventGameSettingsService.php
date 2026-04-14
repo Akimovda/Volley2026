@@ -187,7 +187,7 @@ class EventGameSettingsService
 
         $isGameClassic = ($direction === 'classic' && $format === 'game');
         $isGameBeach = ($direction === 'beach' && $format === 'game');
-        $isTrainingLike = in_array($format, ['training','training_game','training_pro_am','camp'], true);
+        $isTrainingLike = in_array($format, ['training','training_game','training_pro_am','camp','coach_student'], true);
 
         $needGameSettings = ($isGameClassic || $isGameBeach || $isTrainingLike);
 

@@ -133,38 +133,89 @@ JS;
             $occurrences = \App\Models\EventOccurrence::query()
                 ->join('events', 'events.id', '=', 'event_occurrences.event_id')
                 ->leftJoin('locations', 'locations.id', '=', 'events.location_id')
+                ->leftJoin('cities', 'cities.id', '=', 'locations.city_id')
+                ->leftJoin('event_occurrence_stats', 'event_occurrence_stats.occurrence_id', '=', 'event_occurrences.id')
                 ->where('events.organizer_id', $userId)
                 ->where('events.allow_registration', true)
-                ->whereNull('events.deleted_at')
-                ->whereNull('event_occurrences.deleted_at')
+                ->whereRaw('(event_occurrences.is_cancelled IS NULL OR event_occurrences.is_cancelled = false)')
                 ->where('event_occurrences.starts_at', '>', now())
                 ->orderBy('event_occurrences.starts_at')
                 ->limit($limit)
                 ->select([
                     'event_occurrences.id as occ_id',
                     'event_occurrences.starts_at',
-                    'event_occurrences.slots_total',
-                    'event_occurrences.slots_taken',
+                    'event_occurrences.max_players',
+                    'event_occurrences.duration_sec',
+                    'event_occurrence_stats.registered_count',
                     'events.id as event_id',
                     'events.title',
+                    'events.direction',
+                    'events.format',
                     'events.is_private',
+                    'events.is_paid',
+                    'events.price_minor',
+                    'events.price_currency',
+                    'events.price_text',
+                    'events.classic_level_min',
+                    'events.classic_level_max',
+                    'events.beach_level_min',
+                    'events.beach_level_max',
                     'locations.name as location_name',
+                    'locations.address as location_address',
+                    'cities.name as city_name',
                 ])
                 ->get();
 
             return $occurrences->map(function ($occ) use ($showSlots, $showLoc) {
+                $taken     = (int) ($occ->registered_count ?? 0);
+                $maxP      = (int) ($occ->max_players ?? 0);
                 $slotsInfo = null;
-                if ($showSlots && $occ->slots_total) {
-                    $free      = max(0, $occ->slots_total - ($occ->slots_taken ?? 0));
-                    $slotsInfo = "Свободно мест: {$free} из {$occ->slots_total}";
+                if ($showSlots && $maxP > 0) {
+                    $free      = max(0, $maxP - $taken);
+                    $slotsInfo = ['taken' => $taken, 'max' => $maxP, 'free' => $free];
+                }
+
+                // Адрес
+                $addressParts = array_filter([
+                    $occ->location_name,
+                    $occ->city_name,
+                    $occ->location_address,
+                ]);
+                $address = $showLoc ? implode(', ', $addressParts) : null;
+
+                // Дата/время
+                $startsAt = \Carbon\Carbon::parse($occ->starts_at, 'UTC');
+                $endsAt   = $occ->duration_sec
+                    ? $startsAt->copy()->addSeconds((int)$occ->duration_sec)
+                    : null;
+
+                // Уровень
+                $dir = $occ->direction ?? 'classic';
+                $lvMin = $dir === 'beach' ? $occ->beach_level_min : $occ->classic_level_min;
+                $lvMax = $dir === 'beach' ? $occ->beach_level_max : $occ->classic_level_max;
+
+                // Цена
+                $priceLabel = null;
+                if ($occ->is_paid) {
+                    if (!is_null($occ->price_minor)) {
+                        $priceLabel = number_format($occ->price_minor / 100, 0, '.', ' ') . ' ₽';
+                    } elseif (!empty($occ->price_text)) {
+                        $priceLabel = $occ->price_text;
+                    }
                 }
 
                 return [
-                    'title'     => $occ->title,
-                    'starts_at' => \Carbon\Carbon::parse($occ->starts_at)->format('d.m.Y H:i'),
-                    'location'  => $showLoc ? $occ->location_name : null,
-                    'slots_info'=> $slotsInfo,
-                    'url'       => route('events.show', [
+                    'title'      => $occ->title,
+                    'date_long'  => $startsAt->locale('ru')->translatedFormat('d F'),
+                    'time_range' => $startsAt->format('H:i') . ($endsAt ? '–' . $endsAt->format('H:i') : ''),
+                    'direction'  => $dir,
+                    'address'    => $address,
+                    'slots_info' => $slotsInfo,
+                    'level_min'  => $lvMin,
+                    'level_max'  => $lvMax,
+                    'price'      => $priceLabel,
+                    'is_private' => (bool) $occ->is_private,
+                    'url'        => route('events.show', [
                         'event'      => $occ->event_id,
                         'occurrence' => $occ->occ_id,
                     ]),

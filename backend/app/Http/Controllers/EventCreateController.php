@@ -29,6 +29,7 @@ use App\Services\StaffLogService;
         public function store(Request $request)
             {
                 $user = $request->user();
+            file_put_contents(storage_path("logs/bot_debug.txt"), json_encode(["user"=>$request->user()?->id,"bot"=>$request->input("bot_assistant_enabled","NOT_SET")]).PHP_EOL, FILE_APPEND);
             
                 if (!$user) {
                     return redirect()->route('login');
@@ -110,6 +111,7 @@ use App\Services\StaffLogService;
                     */
             
                    $request->merge($data);
+                    \Illuminate\Support\Facades\Log::info("bot_raw", ["v" => $request->input("bot_assistant_enabled", "NOT_SET"), "all" => $request->only(["bot_assistant_enabled"])]);
 
                    $result = $this->storeService->store($request, $user);
                    $event = $result['event'];

@@ -22,7 +22,9 @@
 				<a href="{{ route('events.index') }}" class="btn">Найти игру</a>
 			</div>
 			<div class="mt-2" data-aos-delay="350" data-aos="fade-up">
+			{{--	
 				<a href="{{ route('dashboard') }}" class="btn btn-secondary">Мой профиль</a>
+			--}}	
 			</div>					
             @endguest
 		</div>

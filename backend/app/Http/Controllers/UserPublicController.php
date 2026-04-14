@@ -51,8 +51,8 @@ class UserPublicController extends Controller
             : false;
 
                 // Записываем визит (для Premium-функции "Гости профиля")
-        if (auth()->check() && isset($profileUser)) {
-            $profileUser->recordVisit(auth()->id());
+        if (auth()->check() && !$isSelf) {
+            $user->recordVisit((int) auth()->id());
         }
 
         return view('user.public', [

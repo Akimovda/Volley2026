@@ -2955,6 +2955,7 @@ body.dark .role-organizer .role-badge {
     background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 100%);
 	box-shadow: 0 1rem 2.2rem rgba(0, 0, 0, 0.05);	
 	z-index: 3;
+	transition': width 0.3s ease-in-out;
 }
 .card-ramka {
 	padding: 2.5rem;
@@ -2964,6 +2965,7 @@ body.dark .role-organizer .role-badge {
 	.ramka, 
 	.card-ramka {
 		backdrop-filter: blur(8px);	
+		transition: width 0.3s ease-in-out;
 	}
 }
 @media (max-width: 767px) {	
@@ -4179,9 +4181,9 @@ body.dark .card-img-top {
 	margin-bottom: 1rem;
 }
 @media screen and (min-width:576px) {
-.event-address {
-	min-height: 4.5rem;
-}
+	.event-address {
+		min-height: 4.5rem;
+	}
 }
 .event-date {
 	right: auto;
@@ -4413,3 +4415,68 @@ div.profile-avatar.avatar-premium::after {
     0% { background-position: 0% center; }
     100% { background-position: 200% center; }
 	}	
+	
+/* Родитель для меню — relative */
+.card-ramka {
+    position: relative;
+}
+
+/* Контейнер кнопок — абсолютно сверху */
+.menu-move {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    left: 1rem;
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+    z-index: 20;
+    pointer-events: none; /* Чтобы клики проходили сквозь контейнер */
+}
+
+/* Кнопки — pointer-events auto чтобы были кликабельны */
+.menu-move-btn {
+    pointer-events: auto;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 0.8rem;
+    cursor: pointer;
+    padding: 0.6rem 1rem;
+    font-size: 1.4rem;
+    line-height: 1;
+    transition: all 0.2s ease;
+    box-shadow: 0 0.2rem 0.6rem rgba(0, 0, 0, 0.08);
+    backdrop-filter: blur(4px);
+}
+
+.menu-move-btn:hover {
+    background: #ffffff;
+    border-color: rgba(0, 0, 0, 0.2);
+    transform: scale(1.02);
+}
+
+.menu-move-btn:active {
+    transform: scale(0.98);
+}
+
+/* Левая кнопка — всегда слева */
+.menu-move-left {
+    margin-right: auto;
+}
+
+/* Правая кнопка — всегда справа */
+.menu-move-right {
+    margin-left: auto;
+}
+
+/* Тёмная тема */
+body.dark .menu-move-btn {
+    background: rgba(30, 30, 42, 0.95);
+    border-color: rgba(255, 255, 255, 0.12);
+    color: #e0e0e0;
+}
+
+body.dark .menu-move-btn:hover {
+    background: #2a2a3a;
+    border-color: rgba(255, 255, 255, 0.2);
+}

@@ -1040,3 +1040,69 @@ document.addEventListener('DOMContentLoaded', function() {
 window.addEventListener('load', function() {
     document.body.classList.add('img-loaded');
 });
+$(document).ready(function() {
+    var $menuCol = $('.col-lg-4.col-xl-3');
+    var $menuSticky = $menuCol.find('.sticky');
+    var $contentCol = $('.col-lg-8.col-xl-9');
+    var $contentRamka = $contentCol.find('.ramka');
+    var $moveLeft = $('.menu-move-left');
+    var $moveRight = $('.menu-move-right');
+    
+    var STORAGE_KEY = 'menu_shifted_state';
+    
+    function getShiftAmount() {
+        var menuWidth = $menuCol.outerWidth();
+        var visiblePart = 100;
+        return menuWidth - visiblePart;
+    }
+    
+    function setMenuShifted(shifted, saveState = true) {
+        if (shifted) {
+            var shift = getShiftAmount();
+            $menuSticky.css({
+                'transform': 'translateX(' + shift + 'px)',
+                'transition': 'transform 0.3s ease-in-out'
+            });
+            // Анимируем margin-right вместо width
+            $contentRamka.css({
+                'margin-right': '-' + shift + 'px',
+                'transition': 'margin-right 0.3s ease-in-out'
+            });
+            $moveRight.hide();
+            $moveLeft.show();
+        } else {
+            $menuSticky.css('transform', 'translateX(0)');
+            $contentRamka.css({
+                'margin-right': '',
+                'transition': 'margin-right 0.3s ease-in-out'
+            });
+            $moveLeft.hide();
+            $moveRight.show();
+        }
+        
+        if (saveState) {
+            localStorage.setItem(STORAGE_KEY, shifted ? '1' : '0');
+        }
+    }
+    
+    var savedState = localStorage.getItem(STORAGE_KEY);
+    var isShifted = savedState === '1';
+    
+    $moveRight.on('click', function() { setMenuShifted(true); });
+    $moveLeft.on('click', function() { setMenuShifted(false); });
+    
+    var resizeTimer;
+    $(window).on('resize', function() {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(function() {
+            var currentState = localStorage.getItem(STORAGE_KEY) === '1';
+            if (currentState) {
+                var shift = getShiftAmount();
+                $menuSticky.css('transform', 'translateX(' + shift + 'px)');
+                $contentRamka.css('margin-right', '-' + shift + 'px');
+            }
+        }, 150);
+    });
+    
+    setMenuShifted(isShifted, false);
+});

@@ -187,9 +187,9 @@
 								<a href="/profile/transactions" class="menu-item">
 									<span class="menu-text">Транзакции</span>
 								</a>									
-								<form method="POST" action="{{ route('logout') }}" class="logout-form" x-data>
+								<form method="POST" action="{{ route('logout') }}" class="logout-form" id="logout-form">
 									@csrf
-									<button type="submit" class="menu-item">Выйти</button>
+									<button type="button" class="menu-item" onclick="document.getElementById('logout-form').submit()">Выйти</button>
 								</form>
 							</nav>
 						</div>

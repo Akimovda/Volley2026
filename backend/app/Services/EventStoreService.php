@@ -381,7 +381,7 @@ class EventStoreService
             $event->is_recurring = (bool)$rec['isRecurring'];
             $event->recurrence_rule = $rec['recRule'];
             
-            $event->bot_assistant_enabled      = (bool) ($data['bot_assistant_enabled'] ?? false);
+            $event->bot_assistant_enabled      = in_array($data['bot_assistant_enabled'] ?? '0', [1, '1', true, 'true', 'on'], true);
             $event->bot_assistant_threshold    = max(5, min(30, (int) ($data['bot_assistant_threshold'] ?? 10)));
             $event->bot_assistant_max_fill_pct = max(10, min(60, (int) ($data['bot_assistant_max_fill_pct'] ?? 40)));
             

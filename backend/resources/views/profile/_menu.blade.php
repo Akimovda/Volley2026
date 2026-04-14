@@ -5,6 +5,12 @@
     $isOrgOrAdmin = $menuUser->isOrganizer() || $menuUser->isAdmin();
 @endphp
 
+                    <div class="menu-move">
+                        <button class="menu-move-btn menu-move-left">◀</button>
+                        <button class="menu-move-btn menu-move-right">▶</button>
+                    </div>
+
+
 <div class="profile-avatar mb-1 f-0 text-center">
     <img src="{{ $menuUser->profile_photo_url }}" alt="avatar" class="avatar"/>
 </div>

@@ -44,6 +44,9 @@
             ],
 			
             'allow_registration' => ['required','boolean'],
+            'bot_assistant_enabled'      => ['sometimes', 'boolean'],
+            'bot_assistant_threshold'    => ['sometimes', 'integer', 'min:5', 'max:30'],
+            'bot_assistant_max_fill_pct' => ['sometimes', 'integer', 'min:10', 'max:60'],
 			
             'age_policy' => [
 			'nullable',

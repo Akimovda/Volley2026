@@ -17,6 +17,19 @@
 
     <div class="container">
 
+        <div class="row row2">
+            <div class="col-lg-4 col-xl-3 order-2 d-none d-lg-block">
+                <div class="sticky">
+                    <div class="card-ramka">
+                        @include('profile._menu', [
+						'activeMenu'    => 'player_dashboard',
+                        ])
+					</div>
+				</div>
+			</div>
+            <div class="col-lg-8 col-xl-9 order-1">    
+
+
         {{-- СВОДКА --}}
         <div class="ramka">
             <h2 class="-mt-05">🏐 Активность</h2>
@@ -111,7 +124,7 @@
         <div class="ramka">
             <div class="row row2">
                 {{-- Позиции --}}
-                <div class="col-md-4">
+                <div class="col-sm-4">
                     <h2 class="-mt-05">🏃 Позиции</h2>
                     <div class="card">
                         @forelse($positions as $pos)
@@ -126,7 +139,7 @@
                 </div>
 
                 {{-- Локации --}}
-                <div class="col-md-4">
+                <div class="col-sm-4">
                     <h2 class="-mt-05">📍 Любимые площадки</h2>
                     <div class="card">
                         @forelse($topLocations as $i => $loc)
@@ -143,7 +156,7 @@
                 </div>
 
                 {{-- Организаторы --}}
-                <div class="col-md-4">
+                <div class="col-sm-4">
                     <h2 class="-mt-05">🧑‍💼 Любимые организаторы</h2>
                     <div class="card">
                         @forelse($topOrganizers as $i => $org)
@@ -385,7 +398,8 @@
         </div>
     </div>
     @endif
-
+ </div>
+  </div>
     </div>{{-- /container --}}
 
 </x-voll-layout>

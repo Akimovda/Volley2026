@@ -282,7 +282,84 @@
 			return $this->hasMany(\App\Models\EventTeamApplication::class, 'reviewed_by_user_id');
 		}
 		
-		public function getFormattedPhoneAttribute(): string
+		// ──────────────────────────────────────────────────────
+    // Premium
+    // ──────────────────────────────────────────────────────
+
+    public function activePremium(): ?\App\Models\PremiumSubscription
+    {
+        return \App\Models\PremiumSubscription::where('user_id', $this->id)
+            ->where('status', 'active')
+            ->where('expires_at', '>', now())
+            ->latest('expires_at')
+            ->first();
+    }
+
+    public function isPremium(): bool
+    {
+        return \App\Models\PremiumSubscription::where('user_id', $this->id)
+            ->where('status', 'active')
+            ->where('expires_at', '>', now())
+            ->exists();
+    }
+
+    // ──────────────────────────────────────────────────────
+    // Друзья (для всех)
+    // ──────────────────────────────────────────────────────
+
+    public function friends()
+    {
+        return $this->belongsToMany(
+            User::class, 'friendships', 'user_id', 'friend_id'
+        );
+    }
+
+    public function isFriendWith(int $userId): bool
+    {
+        return \App\Models\Friendship::where('user_id', $this->id)
+            ->where('friend_id', $userId)
+            ->exists();
+    }
+
+    // ──────────────────────────────────────────────────────
+    // Гости профиля (просмотр — только Premium)
+    // ──────────────────────────────────────────────────────
+
+    /** Записать визит (всегда, в фоне) */
+    public function recordVisit(int $visitorUserId): void
+    {
+        if ($visitorUserId === $this->id) return;
+
+        \App\Models\ProfileVisit::updateOrCreate(
+            ['profile_user_id' => $this->id, 'visitor_user_id' => $visitorUserId],
+            ['visited_at' => now()]
+        );
+    }
+
+    /** Получить гостей за N дней (только для Premium) */
+    public function recentVisitors(int $days = 7)
+    {
+        return \App\Models\ProfileVisit::where('profile_user_id', $this->id)
+            ->where('visited_at', '>=', now()->subDays($days))
+            ->orderByDesc('visited_at')
+            ->with('visitor')
+            ->get()
+            ->unique('visitor_user_id');
+    }
+
+    // ──────────────────────────────────────────────────────
+    // Organizer Pro
+    // ──────────────────────────────────────────────────────
+
+    public function isOrganizerPro(): bool
+    {
+        return \App\Models\OrganizerSubscription::where('user_id', $this->id)
+            ->where('status', 'active')
+            ->where('expires_at', '>', now())
+            ->exists();
+    }
+
+    public function getFormattedPhoneAttribute(): string
 		{
 			if (!$this->phone) return '';
 			

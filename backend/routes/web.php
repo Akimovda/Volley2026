@@ -71,6 +71,9 @@ use App\Http\Controllers\YookassaWebhookController;
 	*/
 	
 	Route::get('/', fn () => view('welcome'))->name('home');
+
+// Редирект если кто-то зашёл на /logout напрямую через GET
+Route::get('/logout', fn () => redirect('/'));
 	Route::get('/premium', [PremiumController::class, 'index'])->name('premium.index');
 	
 	/*
@@ -183,7 +186,7 @@ use App\Http\Controllers\YookassaWebhookController;
 		| Dashboard (user)
 		|--------------------------------------------------------------------------
 	*/
-	
+	/*
 	Route::middleware([
     'auth:sanctum',
     config('jetstream.auth_session'),
@@ -192,7 +195,7 @@ use App\Http\Controllers\YookassaWebhookController;
 	});
 	
 	Route::get('/Dashboard', fn () => redirect()->to('/dashboard'))->name('Dashboard');
-
+*/
 // Переопределяем Jetstream profile.show — добавляем hasPendingOrganizerRequest
 Route::get('/user/profile', [\App\Http\Controllers\UserProfileController::class, 'show'])
     ->middleware(['auth', config('jetstream.auth_session'), 'verified'])
