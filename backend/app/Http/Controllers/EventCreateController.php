@@ -125,22 +125,27 @@ use App\Services\StaffLogService;
                            $event->save();
                            \App\Jobs\ExpireAdEventJob::dispatch($event->id)->delay(now()->addHours(2));
 
-                           try {
-                               $payment = app(\App\Services\YookassaService::class)->createAdPayment($event);
-                               $event->update([
-                                   'ad_yookassa_payment_id'  => $payment['payment_id'],
-                                   'ad_yookassa_payment_url' => $payment['payment_url'],
-                               ]);
-                               return redirect()->away($payment['payment_url']);
-                           } catch (\Throwable $e) {
-                               \Illuminate\Support\Facades\Log::error('YooKassa createPayment failed', [
-                                   'event_id' => $event->id,
-                                   'error'    => $e->getMessage(),
-                               ]);
-                               // Fallback — показываем страницу события с ошибкой
-                               return redirect()->route('events.show', $event)
-                                   ->with('error', 'Мероприятие создано, но платёж не удалось создать. Обратитесь к администратору.');
+                           $platMethod = $platSettings?->method ?? 'tbank_link';
+
+                           if ($platMethod === 'yoomoney') {
+                               try {
+                                   $payment = app(\App\Services\YookassaService::class)->createAdPayment($event);
+                                   $event->update([
+                                       'ad_yookassa_payment_id'  => $payment['payment_id'],
+                                       'ad_yookassa_payment_url' => $payment['payment_url'],
+                                   ]);
+                                   return redirect()->away($payment['payment_url']);
+                               } catch (\Throwable $e) {
+                                   \Illuminate\Support\Facades\Log::error('YooKassa createPayment failed', [
+                                       'event_id' => $event->id,
+                                       'error'    => $e->getMessage(),
+                                   ]);
+                               }
                            }
+
+                           // tbank/sber или fallback — редирект на страницу с инструкцией
+                           return redirect()->route('events.show', $event)
+                               ->with('success', '🎉 Ваше рекламное мероприятие создано! Просьба произвести оплату и нажать кнопку «Я оплатил». Удачного дня! 😉');
                        } else {
                            // Бесплатно — сразу публикуем
                            $event->ad_payment_status = 'paid';
@@ -165,9 +170,13 @@ use App\Services\StaffLogService;
                         $privateLink = route('events.public', ['token' => $event->public_token]);
                     }
                     
-                    return redirect()
+                    $successMsg = !(bool)($event->allow_registration ?? true) && ($event->ad_price_rub ?? 0) > 0
+                        ? '🎉 Ваше рекламное мероприятие создано! Просьба произвести оплату и нажать кнопку «Я оплатил». Удачного дня! 😉'
+                        : 'Мероприятие создано.';
+
+                   return redirect()
                         ->route('events.show', $event)
-                        ->with('success', 'Мероприятие создано.')
+                        ->with('success', $successMsg)
                         ->with('clear_event_draft', true)
                         ->with('private_link', $privateLink);
                   
@@ -181,9 +190,13 @@ use App\Services\StaffLogService;
                         ]);
                     }
                     
-                    return redirect()
+                    $successMsg = !(bool)($event->allow_registration ?? true) && ($event->ad_price_rub ?? 0) > 0
+                        ? '🎉 Ваше рекламное мероприятие создано! Просьба произвести оплату и нажать кнопку «Я оплатил». Удачного дня! 😉'
+                        : 'Мероприятие создано.';
+
+                   return redirect()
                         ->route('events.show', $event)
-                        ->with('success', 'Мероприятие создано.')
+                        ->with('success', $successMsg)
                         ->with('clear_event_draft', true)
                         ->with('private_link', $privateLink);
                         

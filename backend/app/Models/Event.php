@@ -67,6 +67,8 @@ class Event extends Model implements HasMedia
         'ad_price_rub',
         'ad_yookassa_payment_id',
         'ad_yookassa_payment_url',
+        'ad_organizer_notified',
+        'ad_organizer_notified',
     ];
 
     protected $casts = [

@@ -676,4 +676,35 @@ final class UserNotificationService
             \Log::warning('user_play_liked notification failed: ' . $e->getMessage());
         }
     }
+
+    // -------------------------------------------------------------------------
+    // Рекламные мероприятия: уведомление администратору
+    // -------------------------------------------------------------------------
+    public function createAdPaymentPendingNotification(User $admin, Event $event, User $organizer): void
+    {
+        $eventUrl   = route('events.show', $event);
+        $confirmUrl = route('admin.events.ad.confirm', $event);
+        $rejectUrl  = route('admin.events.ad.reject', $event);
+
+        $title = '💰 Запрос на подтверждение оплаты';
+        $body  = "📌 «{$event->title}»\n"
+               . "👤 {$organizer->last_name} {$organizer->first_name}\n"
+               . "💵 {$event->ad_price_rub} ₽\n"
+               . "✅ Подтвердить: {$confirmUrl}\n"
+               . "❌ Отклонить: {$rejectUrl}";
+
+        $this->create(
+            userId:   $admin->id,
+            type:     'ad_event_payment_pending',
+            title:    $title,
+            body:     $body,
+            payload:  [
+                'event_id'    => $event->id,
+                'button_text' => 'Открыть мероприятие',
+                'button_url'  => $eventUrl,
+            ],
+            channels: ['in_app', 'telegram', 'vk', 'max'],
+        );
+    }
+
 }

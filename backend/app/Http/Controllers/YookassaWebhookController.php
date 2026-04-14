@@ -35,6 +35,11 @@ class YookassaWebhookController extends Controller
 
         Log::info('YookassaWebhook: ad event paid', ['event_id' => $eventId]);
 
+        // Записываем транзакцию
+        if ($event->user) {
+            AdEventPaymentController::recordTransaction($event, $event->user);
+        }
+
         $this->notifyOrganizer($event);
 
         return response('ok', 200);

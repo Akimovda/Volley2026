@@ -277,10 +277,14 @@ $hasCoords =
     @endif
 
     @if(in_array($adMethod, ['tbank_link', 'sber_link']))
+    @if($event->ad_organizer_notified ?? false)
+    <div class="alert alert-info mt-2">⏳ Ожидаем подтверждения от администратора.</div>
+    @else
     <form method="POST" action="{{ route('events.ad.paid', $event) }}">
         @csrf
         <button type="submit" class="btn btn-secondary w-100 mt-1">✅ Я оплатил — уведомить администратора</button>
     </form>
+    @endif
     @endif
 </div>
 @elseif($adStatus === 'pending')

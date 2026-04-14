@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Event;
 use App\Models\User;
+use App\Services\UserNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -13,7 +14,6 @@ class AdEventPaymentController extends Controller
     {
         $user = $request->user();
 
-        // Только организатор может уведомить
         if (!$user || (int)$user->id !== (int)$event->organizer_id) {
             abort(403);
         }
@@ -22,30 +22,44 @@ class AdEventPaymentController extends Controller
             return back()->with('error', 'Мероприятие не ожидает оплаты.');
         }
 
-        // Уведомляем администратора
-        try {
-            $admins = User::whereHas('roles', fn($q) => $q->where('name', 'admin'))->get();
-            $eventUrl = route('events.show', $event);
-            $msg = "💰 Организатор сообщает об оплате рекламного мероприятия!\n\n"
-                 . "📌 «{$event->title}»\n"
-                 . "👤 {$user->last_name} {$user->first_name}\n"
-                 . "💵 {$event->ad_price_rub} ₽\n"
-                 . "🔗 {$eventUrl}\n\n"
-                 . "Подтвердите оплату в панели администратора.";
+        // Сохраняем флаг и транзакцию ДО отправки уведомлений
+        $event->update(['ad_organizer_notified' => true]);
+        self::recordTransaction($event, $user);
 
-            $buttons = [
-                [['text' => '✅ Подтвердить', 'url' => route('admin.events.ad.confirm', $event)]],
-                [['text' => '❌ Отклонить',   'url' => route('admin.events.ad.reject', $event)]],
-            ];
+        // Отправляем уведомления (ошибки не блокируют основной флоу)
+        try {
+            $admins  = User::where('role', 'admin')->get();
+            $service = app(UserNotificationService::class);
 
             foreach ($admins as $admin) {
-                app(\App\Services\NotificationDeliverySender::class)
-                    ->sendToUser($admin, $msg, $buttons);
+                $service->createAdPaymentPendingNotification($admin, $event, $user);
             }
         } catch (\Throwable $e) {
             Log::warning('AdEventPaymentController notify failed: ' . $e->getMessage());
         }
 
         return back()->with('success', '✅ Администратор уведомлён. Ожидайте подтверждения.');
+    }
+
+    public static function recordTransaction(Event $event, User $organizer): void
+    {
+        try {
+            $platMethod = \App\Models\PlatformPaymentSetting::first()?->method ?? 'yoomoney';
+
+            \App\Models\Payment::create([
+                'user_id'            => $organizer->id,
+                'organizer_id'       => $organizer->id,
+                'event_id'           => $event->id,
+                'method'             => $platMethod,
+                'status'             => 'pending',
+                'amount_minor'       => (int)$event->ad_price_rub * 100,
+                'currency'           => 'RUB',
+                'org_confirmed'      => false,
+                'user_confirmed'     => true,
+                'user_confirmed_at'  => now(),
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('AdEventPaymentController::recordTransaction failed', ['error' => $e->getMessage()]);
+        }
     }
 }

@@ -115,7 +115,7 @@
                                         {{ $p->status }}
                                     @endif
                                 </td>
-                                <td class="nowrap">{{ $p->created_at->format('d.m.Y H:i') }}</td>
+                                <td class="nowrap">{{ $p->created_at->setTimezone('Europe/Moscow')->format('d.m.Y H:i') }}</td>
                                 <td class="nowrap">
                                     @if($p->status === 'pending' && $p->user_confirmed && !$p->org_confirmed)
                                         <form method="POST" action="{{ route('payments.org_confirm', $p->id) }}" class="d-inline">

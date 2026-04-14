@@ -87,8 +87,8 @@ body.dark  {
 	color-scheme: dark;
 	color: #cacaca;
 }
-[id^="notification-"] {
-    scroll-margin-top: 10rem; 
+*[id] {
+    scroll-margin-top: 11rem;
 }
 p {
 	margin-bottom: 1rem;
