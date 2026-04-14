@@ -369,6 +369,9 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 					{{-- Кнопки записи --}}
 					<div class="mt-1">
 						
+						@if (!$regEnabled)
+						<a href="{{ $eventPageUrl }}" class="btn w-100">Подробнее</a>
+						@else
 						@if ($eventStarted2)
                         <div class="alert alert-info">Мероприятие уже началось</div>
 						
@@ -465,6 +468,7 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
                         @endif
 						
 						@endif
+					@endif{{-- /regEnabled --}}
 					</div>{{-- /кнопки --}}
 					
 					

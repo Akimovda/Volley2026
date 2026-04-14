@@ -9,7 +9,7 @@
     <img src="{{ $menuUser->profile_photo_url }}" alt="avatar" class="avatar"/>
 </div>
 <div class="text-center mb-1">
-    <div class="b-600 mt-1">{{ $menuUser->name }}</div>
+    <div class="b-600 cd mt-1">{{ $menuUser->name }}</div>
 </div>	
 {{-- Чужая страница (редактирование) --}}
 @if($isEditingOther)
@@ -54,9 +54,9 @@
                 <a href="{{ route('profile.show') }}"
                    class="menu-item {{ $activeMenu === 'profile' ? 'active' : '' }}">
                     @if($activeMenu === 'profile')
-                        <strong class="cd menu-text">Ваш профиль</strong>
+                        <strong class="cd menu-text">Мой профиль</strong>
                     @else
-                        <span class="menu-text">Ваш профиль</span>
+                        <span class="menu-text">Мой профиль</span>
                     @endif
                 </a>
                 <a href="{{ url('/profile/complete') }}"
@@ -70,9 +70,9 @@
                 <a href="{{ route('user.photos') }}"
                    class="menu-item {{ $activeMenu === 'photos' ? 'active' : '' }}">
                     @if($activeMenu === 'photos')
-                        <strong class="cd menu-text">Ваши фотографии</strong>
+                        <strong class="cd menu-text">Мои фотографии</strong>
                     @else
-                        <span class="menu-text">Ваши фотографии</span>
+                        <span class="menu-text">Мои фотографии</span>
                     @endif
                 </a>
                 <a href="{{ route('notifications.index') }}"
@@ -252,9 +252,9 @@
     <a href="{{ route('profile.show') }}"
        class="menu-item {{ $activeMenu === 'profile' ? 'active' : '' }}">
         @if($activeMenu === 'profile')
-            <strong class="cd menu-text">Ваш профиль</strong>
+            <strong class="cd menu-text">Мой профиль</strong>
         @else
-            <span class="menu-text">Ваш профиль</span>
+            <span class="menu-text">Мой профиль</span>
         @endif
     </a>
     <a href="{{ url('/profile/complete') }}"
@@ -268,9 +268,9 @@
     <a href="{{ route('user.photos') }}"
        class="menu-item {{ $activeMenu === 'photos' ? 'active' : '' }}">
         @if($activeMenu === 'photos')
-            <strong class="cd menu-text">Ваши фотографии</strong>
+            <strong class="cd menu-text">Мои фотографии</strong>
         @else
-            <span class="menu-text">Ваши фотографии</span>
+            <span class="menu-text">Мои фотографии</span>
         @endif
     </a>
     <a href="{{ route('notifications.index') }}"

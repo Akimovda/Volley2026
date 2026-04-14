@@ -2762,7 +2762,7 @@ body.dark .menu-user-login .user-name {
 .sidebar-menu .menu-item {
 	padding: 0.4rem 1.2rem 1rem;
 	border-radius: 1rem;
-
+	
 }
 body.dark .menu-item,
 body.dark .menu-item-title {
@@ -3740,8 +3740,9 @@ body.dark .provider-text {
 	border-radius: 50%;
 }
 
-.user-public-page .profile-avatar {
-	width: 18rem;
+.user-public-page .profile-avatar,
+.volleyball-school-show-page .profile-avatar {
+	width: 16rem;
 }
 .avatar-small {
 	margin: 1rem;
@@ -3773,15 +3774,36 @@ body.dark .provider-text {
 	flex-shrink: 0;
 	background-color: #2967BA;
 }
-body.dark .provider-card__icon {
-	background-color: #E7612F;
-}
 .provider-card__icon svg  {
 	width: 2rem;
 	height: 2rem;
 	fill: #fff;
 	will-change: transform;
 	transition: transform 0.3s ease;
+}
+.icon-light .provider-card__icon {
+	background-color: transparent;
+}
+.icon-light .provider-card__icon svg {
+	fill: #2967BA;	
+}
+.icon-light.provider-card__header {
+	margin-bottom: 0;
+}
+.icon-light .provider-card__title a {
+	color: #222333;
+}
+.icon-light .provider-card__title a:hover {
+	color: #000;
+}
+body.dark .icon-light .provider-card__title a {
+	color: #cacaca;
+}
+body.dark .icon-light .provider-card__title a:hover {
+	color: #fff;
+}
+body.dark .icon-light .provider-card__icon svg {
+	fill: #E7612F;
 }
 .provider-cards .card:hover .provider-card__icon svg {
 	transform: scale(1.1);
@@ -3801,7 +3823,12 @@ body.dark .provider-card__icon {
 .provider-card__title {
 	font-weight: 600;
 }
-
+.social-btns {
+	display: flex;
+	gap: 1rem;
+	justify-content: center;
+	margin-top:1rem;
+}
 /* Статус */
 .provider-card__status {
 	position: absolute;
@@ -4252,9 +4279,9 @@ body.dark .event-col-icon svg {
 .avatar.avatar-premium img,
 .avatar-premium > img {
     box-shadow:
-        0 0 0 0.2rem #f5c842,
-        0 0 1rem 0.3rem rgba(245, 200, 66, 0.55),
-        0 0 2rem 0.6rem rgba(245, 180, 30, 0.25);
+	0 0 0 0.2rem #f5c842,
+	0 0 1rem 0.3rem rgba(245, 200, 66, 0.55),
+	0 0 2rem 0.6rem rgba(245, 180, 30, 0.25);
     border-radius: 50%;
 }
 .avatar.avatar-premium::after {
@@ -4284,9 +4311,9 @@ body.dark .event-col-icon svg {
 div.avatar-premium img,
 div.profile-avatar.avatar-premium img {
     box-shadow:
-        0 0 0 3px #f5c842,
-        0 0 14px 4px rgba(245, 200, 66, 0.65),
-        0 0 30px 8px rgba(245, 180, 30, 0.3) !important;
+	0 0 0 3px #f5c842,
+	0 0 14px 4px rgba(245, 200, 66, 0.65),
+	0 0 30px 8px rgba(245, 180, 30, 0.3) !important;
     border-radius: 50% !important;
     outline: 3px solid #f5c842 !important;
 }
@@ -4306,9 +4333,9 @@ div.profile-avatar.avatar-premium::after {
 /* Premium аватар - максимальная специфичность */
 div.profile-avatar.avatar-premium > img.avatar {
     box-shadow:
-        0 0 0 4px #f5c842,
-        0 0 16px 6px rgba(245, 200, 66, 0.7),
-        0 0 32px 10px rgba(245, 180, 30, 0.35) !important;
+	0 0 0 4px #f5c842,
+	0 0 16px 6px rgba(245, 200, 66, 0.7),
+	0 0 32px 10px rgba(245, 180, 30, 0.35) !important;
     border-radius: 50% !important;
 }
 
@@ -4335,9 +4362,9 @@ div.profile-avatar.avatar-premium::before {
     border-radius: 50%;
     border: 4px solid #f5c842;
     box-shadow:
-        0 0 12px 4px rgba(245,200,66,0.8),
-        0 0 25px 8px rgba(245,180,30,0.4),
-        inset 0 0 12px 4px rgba(245,200,66,0.2);
+	0 0 12px 4px rgba(245,200,66,0.8),
+	0 0 25px 8px rgba(245,180,30,0.4),
+	inset 0 0 12px 4px rgba(245,200,66,0.2);
     z-index: 2;
     pointer-events: none;
     animation: premiumPulse 2.5s ease-in-out infinite;
@@ -4379,4 +4406,4 @@ div.profile-avatar.avatar-premium::after {
 @-webkit-keyframes premiumCardShimmer {
     0% { background-position: 0% center; }
     100% { background-position: 200% center; }
-}
+	}	

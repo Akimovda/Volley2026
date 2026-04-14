@@ -65,19 +65,20 @@
 		
 		
 		<div class="row row2">
-			<div class="col-lg-4 col-xl-4 order-1 order-lg-1">
+			<div class="col-lg-4 col-xl-3 order-1 order-lg-1">
 				<div class="sticky">
 					<div class="ramka">
 						<div class="text-center">
 							@if($logo)
-							<div class="profile-avatar">
+							<div class="profile-avatar mb-3">
 								<img src="{{ $logo }}" alt="logo">
 							</div>        
 							@endif
 						</div>
 						
-						<div class="row">
-							<div class="col-sm-12">
+						<div class="row row2">
+							<div class="col-sm-6 col-md-6 col-lg-12">
+								<h2 class="-mt-05">Контакты</h2>
 								@if($school->phone)    
 								<div class="provider-card__header icon-light">
 									<span class="provider-card__icon icon-tel"></span>
@@ -85,54 +86,54 @@
 								</div>        
 								@endif                        
 								@if($school->email)    
-								<div class="provider-card__header">
+								<div class="provider-card__header icon-light">
 									<span class="provider-card__icon icon-mail"></span>
 									<span class="provider-card__title"><a href="mailto:{{ $school->email }}">{{ $school->email }}</a></span>
 								</div>        
 								@endif        
 								
 								@if($school->website)    
-								<div class="provider-card__header">
+								<div class="provider-card__header icon-light">
 									<span class="provider-card__icon icon-site"></span>
 									<span class="provider-card__title"><a href="{{ $school->website }}" target="_blank" rel="nofollow">{{ preg_replace('#^https?://(www\.)?|/.*$#', '', $school->website) }}</a></span>
 								</div>        
 								@endif    
 							</div>
 							
-							<div class="col-sm-12 text-center">
-							<div class="d-flex fvc">
-								@if($school->vk_url)    
-								<a href="{{ $school->vk_url }}" target="_blank">
-									<span class="provider-card__header">
-										<span class="provider-card__icon icon-vk"></span>
-									</span>  
-								</a>
-								@endif            
-								
-								@if($school->tg_url)  
-								<a href="{{ $school->tg_url }}" target="_blank">
-									<span class="provider-card__header">
-										<span class="provider-card__icon icon-tg"></span>
-									</span> 
-								</a>	
-								@endif        
-								
-								@if($school->max_url)  
-								<a href="{{ $school->max_url }}" target="_blank">
-									<span class="provider-card__header">
-										<span class="provider-card__icon icon-max"></span>
-									</span>  
-								</a>    
-								@endif            
-								
-								@if(!$school->phone && !$school->email && !$school->website && !$school->vk_url && !$school->tg_url && !$school->max_url)
-								<div class="alert alert-error">Не указаны</div>
-								@endif    
-							</div>	
+							<div class="col-sm-6 col-md-6 col-lg-12 text-center">
+								<div class="social-btns">
+									@if($school->vk_url)    
+									<a href="{{ $school->vk_url }}" target="_blank">
+										<span class="provider-card__header">
+											<span class="provider-card__icon icon-vk"></span>
+										</span>  
+									</a>
+									@endif            
+									
+									@if($school->tg_url)  
+									<a href="{{ $school->tg_url }}" target="_blank">
+										<span class="provider-card__header">
+											<span class="provider-card__icon icon-tg"></span>
+										</span> 
+									</a>	
+									@endif        
+									
+									@if($school->max_url)  
+									<a href="{{ $school->max_url }}" target="_blank">
+										<span class="provider-card__header">
+											<span class="provider-card__icon icon-max"></span>
+										</span>  
+									</a>    
+									@endif            
+									
+									@if(!$school->phone && !$school->email && !$school->website && !$school->vk_url && !$school->tg_url && !$school->max_url)
+									<div class="alert alert-error">Не указаны</div>
+									@endif    
+								</div>	
 							</div>
 							@if($organizer)
 							<div class="col-12">
-								<h2 class="-mt-05">Организатор</h2>
+								<h2 class="mt-1">Организатор</h2>
 								
 								<div class="provider-card__header">
 									<span class="provider-card__icon"><img src="{{ $organizer->profile_photo_url }}" alt="{{ $organizer->first_name }}" class="organizer-avatar"></span>
@@ -140,12 +141,12 @@
 								</div>                                        
 							</div>
 							@endif
-						</div>  <!-- ЗАКРЫВАЕМ row -->
-					</div>  <!-- ЗАКРЫВАЕМ ramka -->
-				</div>  <!-- ЗАКРЫВАЕМ sticky -->
-			</div>  <!-- ЗАКРЫВАЕМ col-lg-4 -->
+						</div> 
+					</div>
+				</div> 
+			</div> 
 			
-			<div class="col-lg-8 col-xl-8 order-2 order-lg-2">
+			<div class="col-lg-8 col-xl-9 order-2 order-lg-2">
 				@if($school->description)
 				<div class="ramka">
 					{!! $school->description !!}
@@ -164,7 +165,15 @@
 							: $cm->getUrl();
 							@endphp
 							<div class="swiper-slide">
-								<img src="{{ $cmUrl }}" alt="{{ $school->name }}" class="school-cover">
+								
+								<div class="hover-image">
+									<a href="{{ $cm->getUrl() }}" class="fancybox" data-fancybox="school-cover-gallery">
+										<img src="{{ $cmUrl }}" alt="{{ $school->name }}" loading="lazy">
+										<span></span>
+										<div class="hover-image-circle"></div>
+									</a>
+								</div>							
+								
 							</div>
 							@endforeach
 						</div>
@@ -182,13 +191,15 @@
 				</div>
 				@else
 				<div class="ramka">
-					<div class="school-cover-placeholder">
-						<div style="font-size:5rem;">🏐</div>
-						<div class="f-16" style="opacity:.4;">Обложка не добавлена</div>
+						<div class="alert alert-info">
+						Фотографий нет
 						@if(auth()->check() && auth()->id() === $school->organizer_id)
-						<a href="{{ route('user.photos') }}" class="btn btn-secondary">+ Добавить обложку</a>
-						@endif
-					</div>
+							<div class="text-center mt-1">
+						<a href="{{ route('user.photos') }}" class="btn">Добавить фото</a>
+						</div>
+						@endif						
+						</div>
+
 				</div>    
 				@endif
 			</div>  <!-- ЗАКРЫВАЕМ col-lg-8 -->
@@ -392,8 +403,14 @@
 			if (document.querySelector('.school-show-swiper')) {
 				new Swiper('.school-show-swiper', {
 					loop: true,
+					slidesPerView: 1,
+					spaceBetween: 20,
 					autoplay: false,
 					pagination: { el: '.swiper-pagination', clickable: true },
+					breakpoints: {
+						540: { slidesPerView: 2 },
+						
+					}					
 				});
 			}
 		</script>

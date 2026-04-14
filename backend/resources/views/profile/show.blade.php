@@ -3,10 +3,10 @@
 <x-voll-layout body_class="profile-page">
     
     <x-slot name="title">
-        Ваш профиль
+        Мой профиль
 	</x-slot>
     
-    <x-slot name="description">Ваш профиль: 
+    <x-slot name="description">Мой профиль: 
         @php
 		$user = auth()->user();
         @endphp
@@ -26,13 +26,13 @@
     <x-slot name="breadcrumbs">
         <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
             <a href="{{ route('profile.show') }}" itemprop="item">
-                <span itemprop="name">Ваш профиль</span>
+                <span itemprop="name">Мой профиль</span>
 			</a>
             <meta itemprop="position" content="2">
 		</li>
 	</x-slot>
     
-    <x-slot name="h1">Ваш профиль</x-slot>
+    <x-slot name="h1">Мой профиль</x-slot>
     
     <x-slot name="h2">
         @php

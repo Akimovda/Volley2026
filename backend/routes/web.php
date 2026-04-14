@@ -605,6 +605,11 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
     ->name('personal_data_agreement');
 Route::view('/user_agreement', 'pages.user_agreement')->name('user_agreement');
 	
+	
+Route::view('/rules', 'pages.rules')->name('rules');
+Route::view('/help', 'pages.help')->name('help');
+Route::view('/about', 'pages.about')->name('about');
+	
 	/*
 		|--------------------------------------------------------------------------
 		| Debug (optional)

@@ -17,7 +17,7 @@ $canUploadSchool = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
     
     <x-slot name="title">
 		@if(!$isEditingOther)
-        Ваши фотографии
+        Мои фотографии
 		@else
 		Редактирование фотографий профиля
 		@endif	
@@ -276,7 +276,7 @@ $canUploadSchool = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
     
     <x-slot name="h1">
 		@if(!$isEditingOther)
-        Ваши фотографии
+        Мои фотографии
 		@else
 		Редактирование фотографий
 		@endif		

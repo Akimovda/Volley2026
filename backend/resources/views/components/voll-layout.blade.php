@@ -376,16 +376,16 @@
 						<!-- Колонка 2: -->
 						<div class="menu-column column-two">
 							<nav class="menu-nav">
-								<a href="#" class="menu-item">
+								<a href="/help" class="menu-item">
+									<span class="menu-text">Помощь</span>
+								</a>							
+								<a href="/rules" class="menu-item">
 									<span class="menu-text">Правила сервиса</span>
 								</a>								
-								<a href="#" class="menu-item">
-									<span class="menu-text">Инструкция</span>
-								</a>
 								<a href="/level_players" class="menu-item">
 									<span class="menu-text">Уровни игроков</span>
 								</a>	
-								<a href="#" class="menu-item">
+								<a href="/about" class="menu-item">
 									<span class="menu-text">О сервисе</span>
 								</a>																						
 							</nav>
