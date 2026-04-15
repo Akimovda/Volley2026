@@ -39,6 +39,8 @@
 		
 		protected $fillable = [
         'first_name',
+        'name',
+        'email',
         'last_name',
         'patronymic',
         'phone',
