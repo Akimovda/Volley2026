@@ -631,6 +631,11 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
         Route::post('/users/{user}/role', [AdminRoleController::class, 'updateUserRole'])->name('users.role.update');
         Route::delete('/users/{user}/purge', [AdminUserController::class, 'purge'])->name('users.purge');
 
+        Route::get('/users/duplicates', [\App\Http\Controllers\Admin\AdminUserDuplicatesController::class, 'index'])
+            ->name('users.duplicates');
+        Route::post('/users/duplicates/merge', [\App\Http\Controllers\Admin\AdminUserDuplicatesController::class, 'merge'])
+            ->name('users.duplicates.merge');
+
         // Рекламные мероприятия
         Route::get('/events/{event}/ad/confirm', [\App\Http\Controllers\Admin\AdminAdEventController::class, 'confirm'])->name('events.ad.confirm');
         Route::get('/events/{event}/ad/reject',  [\App\Http\Controllers\Admin\AdminAdEventController::class, 'reject'])->name('events.ad.reject');
