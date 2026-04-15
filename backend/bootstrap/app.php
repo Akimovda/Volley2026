@@ -24,12 +24,6 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withSchedule(function (Schedule $schedule) {
-        // Expand recurring events: раз в день, на 90 дней вперёд
-        $schedule->command('events:expand-recurring --days=90 --chunk=200 --maxCreates=500')
-            ->dailyAt('03:10')
-            ->withoutOverlapping()
-            ->appendOutputTo(storage_path('logs/cron-events-expand.log'));
-
         // Reminders: каждую минуту
         $schedule->command('events:send-registration-reminders')
             ->everyMinute()

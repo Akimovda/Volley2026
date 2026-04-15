@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Карта регионов России — Volley 2026</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#0d1117;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;overflow:hidden}
+#app{display:flex;height:100vh}
+#map-wrap{flex:1;position:relative;overflow:hidden}
+#map-svg{width:100%;height:100%;display:block}
+.region{cursor:pointer;transition:opacity .15s}
+.region:hover{opacity:1!important}
+.city-lbl{pointer-events:none;user-select:none;dominant-baseline:middle}
+.pulse{animation:pa 2s ease-out infinite}
+.pulse2{animation:pa 2s ease-out infinite .7s}
+@keyframes pa{0%{r:6;opacity:.6}100%{r:22;opacity:0}}
+#tip{position:absolute;background:#161b22;border:1px solid #30363d;border-radius:10px;padding:12px 16px;pointer-events:none;opacity:0;transform:translateY(4px);transition:opacity .15s,transform .15s;min-width:200px;z-index:50;max-width:270px}
+#tip.show{opacity:1;transform:translateY(0)}
+.tip-name{font-size:15px;font-weight:600;color:#f0f6fc;margin-bottom:5px}
+.tip-cap{font-size:13px;color:#58a6ff;margin-bottom:3px}
+.tip-fd{font-size:12px;color:#7d8590}
+.tip-spec{color:#ffa657;font-size:13px;margin-bottom:3px}
+.tip-link{display:inline-block;margin-top:8px;background:#1f4068;color:#79c0ff;border:1px solid #388bfd;padding:4px 14px;border-radius:6px;font-size:12px;text-decoration:none;cursor:pointer}
+.tip-link:hover{background:#2d5a9e}
+.tip-badge{display:inline-block;background:#8e44ad;color:#fff;font-size:10px;padding:2px 6px;border-radius:4px;margin-left:5px;vertical-align:middle}
+#panel{width:300px;flex-shrink:0;background:#161b22;color:#c9d1d9;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;border-left:1px solid #30363d}
+.ph1{font-size:15px;font-weight:600;color:#f0f6fc;padding-bottom:10px;border-bottom:1px solid #30363d}
+.stitle{font-size:10px;font-weight:600;color:#6e7681;text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px}
+.crow{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.crow label{font-size:12px;color:#8b949e;flex:1;cursor:pointer}
+.crow .val{font-size:12px;font-weight:600;color:#c9d1d9;min-width:38px;text-align:right}
+input[type=range]{flex:2;accent-color:#388bfd;cursor:pointer;height:4px}
+input[type=color]{width:34px;height:26px;border:1px solid #30363d;border-radius:4px;background:none;cursor:pointer;padding:1px}
+input[type=text]{background:#21262d;border:1px solid #30363d;color:#c9d1d9;padding:5px 8px;border-radius:6px;font-size:12px;width:100%;margin-bottom:4px}
+.bwrap{display:flex;flex-wrap:wrap;gap:5px}
+.tbtn{background:#21262d;border:1px solid #30363d;color:#8b949e;padding:4px 10px;border-radius:6px;cursor:pointer;font-size:12px;transition:all .15s;white-space:nowrap}
+.tbtn:hover{background:#30363d;color:#c9d1d9}
+.tbtn.on{background:#1f4068;border-color:#388bfd;color:#79c0ff}
+#info{background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:12px;min-height:72px;font-size:13px}
+.iname{font-size:14px;font-weight:600;color:#f0f6fc;margin-bottom:4px}
+.icap{color:#388bfd;margin-bottom:2px}
+.ifd{font-size:11px;color:#7d8590}
+.leg{display:flex;flex-direction:column;gap:4px}
+.lrow{display:flex;align-items:center;gap:7px;font-size:12px;cursor:pointer;padding:3px 6px;border-radius:5px;transition:background .1s}
+.lrow:hover{background:#21262d}
+.lrow.off{opacity:.3}
+.ldot{width:12px;height:12px;border-radius:3px;flex-shrink:0}
+.lname{flex:1;color:#c9d1d9}
+.lcnt{font-size:11px;color:#6e7681}
+#ld{position:fixed;inset:0;background:rgba(13,17,23,.93);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;z-index:999;color:#c9d1d9;font-size:14px}
+#ld-bar{width:260px;height:4px;background:#21262d;border-radius:2px;overflow:hidden}
+#ld-fill{height:100%;background:#388bfd;border-radius:2px;width:0;transition:width .3s}
+#ld-msg{font-size:12px;color:#6e7681}
+select{background:#21262d;border:1px solid #30363d;color:#c9d1d9;padding:5px 8px;border-radius:6px;font-size:12px;width:100%;cursor:pointer}
+@media(max-width:768px){#app{flex-direction:column}#panel{width:100%;height:220px;overflow-y:scroll;border-left:none;border-top:1px solid #30363d}}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="map-wrap">
+    <svg id="map-svg"></svg>
+    <div id="tip"></div>
+  </div>
+  <div id="panel">
+    <div class="ph1">🏐 Карта регионов России</div>
+    <div id="info"><span style="color:#444d56;font-size:12px">Наведите на регион или город</span></div>
+
+    <div>
+      <div class="stitle">Фон</div>
+      <div class="crow"><label>Фон страницы</label><input type="color" id="p-bg" value="#0d1117"></div>
+      <div class="crow"><label>Цвет океана</label><input type="color" id="p-ocean" value="#111827"></div>
+    </div>
+
+    <div>
+      <div class="stitle">Регионы</div>
+      <div class="crow"><label>Прозрачность</label><input type="range" id="p-op" min="10" max="100" value="75"><span class="val" id="v-op">75%</span></div>
+      <div class="crow"><label>Граница (px)</label><input type="range" id="p-bw" min="0" max="5" step=".5" value="0.5"><span class="val" id="v-bw">0.5</span></div>
+      <div class="crow"><label>Цвет границы</label><input type="color" id="p-bc" value="#0d1117"></div>
+    </div>
+
+    <div>
+      <div class="stitle">Маркеры</div>
+      <div class="crow"><label>Центры регионов</label><input type="color" id="m-cap" value="#58a6ff"></div>
+      <div class="crow"><label>Размер маркера</label><input type="range" id="m-sz" min="2" max="10" value="4"><span class="val" id="v-sz">4px</span></div>
+      <div class="crow"><label>Сочи / Сириус / КП</label><input type="color" id="m-sp" value="#ffa657"></div>
+      <div class="crow"><label>ДНР · ЛНР · НТ</label><input type="color" id="m-nt" value="#c0392b"></div>
+      <div class="crow"><label>Крым · Севастополь</label><input type="color" id="m-cr" value="#f1c40f"></div>
+    </div>
+
+    <div>
+      <div class="stitle">Подписи</div>
+      <div class="crow"><label>Размер текста</label><input type="range" id="l-sz" min="6" max="16" value="9"><span class="val" id="v-lsz">9px</span></div>
+      <div class="crow"><label>Цвет подписей</label><input type="color" id="l-col" value="#8b949e"></div>
+    </div>
+
+    <div>
+      <div class="stitle">Ссылки</div>
+      <input type="text" id="base-url" value="https://volley-bot.store" placeholder="https://ваш-сайт.ru">
+      <div style="font-size:11px;color:#6e7681">Клик по городу → /events?city_id={id}</div>
+    </div>
+
+    <div>
+      <div class="stitle">Слои</div>
+      <div class="bwrap">
+        <button class="tbtn on" id="btn-cap" onclick="toggle('cap')">Центры</button>
+        <button class="tbtn on" id="btn-sp" onclick="toggle('sp')">Сочи/Сириус/КП</button>
+        <button class="tbtn on" id="btn-nt" onclick="toggle('nt')">ДНР/ЛНР/НТ</button>
+        <button class="tbtn on" id="btn-cr" onclick="toggle('cr')">Крым</button>
+        <button class="tbtn on" id="btn-lbl" onclick="toggle('lbl')">Подписи</button>
+      </div>
+    </div>
+
+    <div>
+      <div class="stitle">Федеральные округа (клик = фильтр)</div>
+      <div class="leg" id="leg"></div>
+    </div>
+
+    <div style="margin-top:auto;padding-top:10px;border-top:1px solid #30363d;font-size:11px;color:#444d56">
+      89 субъектов РФ · ДНР · ЛНР · Запорожская · Херсонская<br>Крым · Севастополь · Сочи · Сириус · Красная Поляна<br>
+      SVG-карта на D3.js · Volley 2026
+    </div>
+  </div>
+</div>
+<div id="ld">
+  <div>⏳ Загрузка карты регионов…</div>
+  <div id="ld-bar"><div id="ld-fill"></div></div>
+  <div id="ld-msg">Получение GeoJSON…</div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script>
+const FD={
+  'ЦФО': {n:'Центральный',       c:'#4A90E2', cnt:18},
+  'СЗФО':{n:'Северо-Западный',   c:'#27AE60', cnt:11},
+  'ЮФО': {n:'Южный',             c:'#E67E22', cnt:8},
+  'СКФО':{n:'Северо-Кавказский', c:'#E74C3C', cnt:7},
+  'ПФО': {n:'Приволжский',       c:'#9B59B6', cnt:14},
+  'УФО': {n:'Уральский',         c:'#1ABC9C', cnt:6},
+  'СФО': {n:'Сибирский',         c:'#3498DB', cnt:10},
+  'ДФО': {n:'Дальневосточный',   c:'#D35400', cnt:11},
+  '?':   {n:'Неизвестно',        c:'#4a4a4a', cnt:0},
+};
+const NM=[
+  ['Moscow City','Москва','ЦФО','Москва',403],
+  ['Moscow Obl','Московская область','ЦФО','Красногорск',0],
+  ['Moskovskaya','Московская область','ЦФО','Красногорск',0],
+  ['Belgorod','Белгородская область','ЦФО','Белгород',0],
+  ['Bryansk','Брянская область','ЦФО','Брянск',0],
+  ['Vladimir','Владимирская область','ЦФО','Владимир',0],
+  ['Voronezh','Воронежская область','ЦФО','Воронеж',128],
+  ['Ivanovo','Ивановская область','ЦФО','Иваново',0],
+  ['Kaluga','Калужская область','ЦФО','Калуга',0],
+  ['Kostroma','Костромская область','ЦФО','Кострома',0],
+  ['Kursk','Курская область','ЦФО','Курск',0],
+  ['Lipetsk','Липецкая область','ЦФО','Липецк',441],
+  ['Orel','Орловская область','ЦФО','Орёл',0],
+  ['Ryazan','Рязанская область','ЦФО','Рязань',0],
+  ['Smolensk','Смоленская область','ЦФО','Смоленск',0],
+  ['Tambov','Тамбовская область','ЦФО','Тамбов',0],
+  ['Tver','Тверская область','ЦФО','Тверь',0],
+  ['Tula','Тульская область','ЦФО','Тула',0],
+  ['Yaroslavl','Ярославская область','ЦФО','Ярославль',0],
+  ['Sankt-Peterburg','Санкт-Петербург','СЗФО','Санкт-Петербург',0],
+  ['Saint Petersburg','Санкт-Петербург','СЗФО','Санкт-Петербург',0],
+  ['Kareliya','Республика Карелия','СЗФО','Петрозаводск',0],
+  ['Karelia','Республика Карелия','СЗФО','Петрозаводск',0],
+  ['Komi','Республика Коми','СЗФО','Сыктывкар',0],
+  ['Arkhangel','Архангельская область','СЗФО','Архангельск',0],
+  ['Vologda','Вологодская область','СЗФО','Вологда',0],
+  ['Kaliningrad','Калининградская область','СЗФО','Калининград',0],
+  ['Leningrad','Ленинградская область','СЗФО','Гатчина',0],
+  ['Murmansk','Мурманская область','СЗФО','Мурманск',0],
+  ['Novgorod Obl','Новгородская область','СЗФО','Великий Новгород',0],
+  ['Novgorodskaya','Новгородская область','СЗФО','Великий Новгород',0],
+  ['Novgorodskiy','Новгородская область','СЗФО','Великий Новгород',0],
+  ['Pskov','Псковская область','СЗФО','Псков',0],
+  ['Nenets','Ненецкий АО','СЗФО','Нарьян-Мар',0],
+  ['Adygeya','Республика Адыгея','ЮФО','Майкоп',0],
+  ['Kalmyk','Республика Калмыкия','ЮФО','Элиста',0],
+  ['Krasnodar','Краснодарский край','ЮФО','Краснодар',0],
+  ['Astrakhan','Астраханская область','ЮФО','Астрахань',0],
+  ['Volgograd','Волгоградская область','ЮФО','Волгоград',0],
+  ['Rostov','Ростовская область','ЮФО','Ростов-на-Дону',0],
+  ['Dagestan','Республика Дагестан','СКФО','Махачкала',0],
+  ['Ingush','Республика Ингушетия','СКФО','Магас',0],
+  ['Kabardino','Кабардино-Балкарская Республика','СКФО','Нальчик',0],
+  ['Karachayevo','Карачаево-Черкесская Республика','СКФО','Черкесск',0],
+  ['Karachay','Карачаево-Черкесская Республика','СКФО','Черкесск',0],
+  ['North Ossetiya','Республика Северная Осетия','СКФО','Владикавказ',0],
+  ['Severnaya Osetiya','Республика Северная Осетия','СКФО','Владикавказ',0],
+  ['Chechenskaya','Чеченская Республика','СКФО','Грозный',0],
+  ['Chechnya','Чеченская Республика','СКФО','Грозный',0],
+  ['Stavropol','Ставропольский край','СКФО','Ставрополь',0],
+  ['Bashkortostan','Республика Башкортостан','ПФО','Уфа',0],
+  ['Mariy-El','Республика Марий Эл','ПФО','Йошкар-Ола',0],
+  ['Mariyskaya','Республика Марий Эл','ПФО','Йошкар-Ола',0],
+  ['Mordoviya','Республика Мордовия','ПФО','Саранск',0],
+  ['Tatarstan','Республика Татарстан','ПФО','Казань',0],
+  ['Udmurt','Удмуртская Республика','ПФО','Ижевск',0],
+  ['Chuvash','Чувашская Республика','ПФО','Чебоксары',0],
+  ['Perm','Пермский край','ПФО','Пермь',0],
+  ['Kirov','Кировская область','ПФО','Киров',0],
+  ['Nizhegorod','Нижегородская область','ПФО','Нижний Новгород',0],
+  ['Orenburg','Оренбургская область','ПФО','Оренбург',0],
+  ['Penza','Пензенская область','ПФО','Пенза',0],
+  ['Samara','Самарская область','ПФО','Самара',0],
+  ['Saratov','Саратовская область','ПФО','Саратов',0],
+  ['Ulyanovsk','Ульяновская область','ПФО','Ульяновск',0],
+  ['Kurgan','Курганская область','УФО','Курган',0],
+  ['Sverdlovsk','Свердловская область','УФО','Екатеринбург',0],
+  ['Tyumen','Тюменская область','УФО','Тюмень',0],
+  ['Chelyabinsk','Челябинская область','УФО','Челябинск',0],
+  ['Khanty-Mansiy','ХМАО — Югра','УФО','Ханты-Мансийск',0],
+  ['Yamalo-Nenets','Ямало-Ненецкий АО','УФО','Салехард',0],
+  ['Yamalo','Ямало-Ненецкий АО','УФО','Салехард',0],
+  ['Altay Rep','Республика Алтай','СФО','Горно-Алтайск',0],
+  ['Altayskaya Resp','Республика Алтай','СФО','Горно-Алтайск',0],
+  ['Khakass','Республика Хакасия','СФО','Абакан',0],
+  ['Tuva','Республика Тыва','СФО','Кызыл',0],
+  ['Tuvinskaya','Республика Тыва','СФО','Кызыл',0],
+  ['Altayskiy Kray','Алтайский край','СФО','Барнаул',0],
+  ['Altay Kray','Алтайский край','СФО','Барнаул',0],
+  ['Krasnoyarsk','Красноярский край','СФО','Красноярск',0],
+  ['Irkutsk','Иркутская область','СФО','Иркутск',0],
+  ['Kemerovo','Кемеровская область — Кузбасс','СФО','Кемерово',0],
+  ['Novosibirsk','Новосибирская область','СФО','Новосибирск',782],
+  ['Omsk','Омская область','СФО','Омск',0],
+  ['Tomsk','Томская область','СФО','Томск',0],
+  ['Sakha','Республика Саха (Якутия)','ДФО','Якутск',0],
+  ['Buryatiya','Республика Бурятия','ДФО','Улан-Удэ',0],
+  ['Buryatia','Республика Бурятия','ДФО','Улан-Удэ',0],
+  ['Zabaykal','Забайкальский край','ДФО','Чита',0],
+  ['Trans-Baikal','Забайкальский край','ДФО','Чита',0],
+  ['Kamchatka','Камчатский край','ДФО','Петропавловск-Камч.',0],
+  ['Primorskiy','Приморский край','ДФО','Владивосток',0],
+  ['Primorsky','Приморский край','ДФО','Владивосток',0],
+  ['Khabarovsk','Хабаровский край','ДФО','Хабаровск',0],
+  ['Amur','Амурская область','ДФО','Благовещенск',0],
+  ['Magadan','Магаданская область','ДФО','Магадан',0],
+  ['Sakhalin','Сахалинская область','ДФО','Южно-Сахалинск',0],
+  ['Jewish','Еврейская автономная область','ДФО','Биробиджан',0],
+  ['Chukot','Чукотский АО','ДФО','Анадырь',0],
+];
+const CAPS=[
+  {n:'Москва',lat:55.751,lng:37.617,fd:'ЦФО',id:403},
+  {n:'Белгород',lat:50.597,lng:36.588,fd:'ЦФО',id:0},
+  {n:'Брянск',lat:53.244,lng:34.363,fd:'ЦФО',id:0},
+  {n:'Владимир',lat:56.130,lng:40.400,fd:'ЦФО',id:0},
+  {n:'Воронеж',lat:51.670,lng:39.210,fd:'ЦФО',id:128},
+  {n:'Иваново',lat:56.990,lng:40.970,fd:'ЦФО',id:0},
+  {n:'Калуга',lat:54.513,lng:36.261,fd:'ЦФО',id:0},
+  {n:'Кострома',lat:57.767,lng:40.930,fd:'ЦФО',id:0},
+  {n:'Курск',lat:51.740,lng:36.190,fd:'ЦФО',id:0},
+  {n:'Липецк',lat:52.610,lng:39.600,fd:'ЦФО',id:441},
+  {n:'Красногорск',lat:55.822,lng:37.380,fd:'ЦФО',id:0},
+  {n:'Орёл',lat:52.970,lng:36.070,fd:'ЦФО',id:0},
+  {n:'Рязань',lat:54.610,lng:39.720,fd:'ЦФО',id:0},
+  {n:'Смоленск',lat:54.780,lng:32.040,fd:'ЦФО',id:0},
+  {n:'Тамбов',lat:52.730,lng:41.430,fd:'ЦФО',id:0},
+  {n:'Тверь',lat:56.860,lng:35.900,fd:'ЦФО',id:0},
+  {n:'Тула',lat:54.210,lng:37.620,fd:'ЦФО',id:0},
+  {n:'Ярославль',lat:57.630,lng:39.870,fd:'ЦФО',id:0},
+  {n:'Санкт-Петербург',lat:59.940,lng:30.310,fd:'СЗФО',id:0},
+  {n:'Петрозаводск',lat:61.790,lng:34.360,fd:'СЗФО',id:0},
+  {n:'Сыктывкар',lat:61.670,lng:50.820,fd:'СЗФО',id:0},
+  {n:'Архангельск',lat:64.540,lng:40.550,fd:'СЗФО',id:0},
+  {n:'Вологда',lat:59.220,lng:39.880,fd:'СЗФО',id:0},
+  {n:'Калининград',lat:54.710,lng:20.510,fd:'СЗФО',id:0},
+  {n:'Гатчина',lat:59.562,lng:30.120,fd:'СЗФО',id:0},
+  {n:'Мурманск',lat:68.970,lng:33.080,fd:'СЗФО',id:0},
+  {n:'Великий Новгород',lat:58.520,lng:31.270,fd:'СЗФО',id:0},
+  {n:'Псков',lat:57.820,lng:28.330,fd:'СЗФО',id:0},
+  {n:'Нарьян-Мар',lat:67.640,lng:53.000,fd:'СЗФО',id:0},
+  {n:'Майкоп',lat:44.610,lng:40.100,fd:'ЮФО',id:0},
+  {n:'Элиста',lat:46.310,lng:44.260,fd:'ЮФО',id:0},
+  {n:'Краснодар',lat:45.040,lng:38.980,fd:'ЮФО',id:0},
+  {n:'Астрахань',lat:46.350,lng:48.030,fd:'ЮФО',id:0},
+  {n:'Волгоград',lat:48.710,lng:44.510,fd:'ЮФО',id:0},
+  {n:'Ростов-на-Дону',lat:47.222,lng:39.712,fd:'ЮФО',id:0},
+  {n:'Махачкала',lat:42.970,lng:47.500,fd:'СКФО',id:0},
+  {n:'Магас',lat:43.170,lng:44.820,fd:'СКФО',id:0},
+  {n:'Нальчик',lat:43.490,lng:43.620,fd:'СКФО',id:0},
+  {n:'Черкесск',lat:44.230,lng:42.070,fd:'СКФО',id:0},
+  {n:'Владикавказ',lat:43.030,lng:44.680,fd:'СКФО',id:0},
+  {n:'Грозный',lat:43.320,lng:45.700,fd:'СКФО',id:0},
+  {n:'Ставрополь',lat:45.040,lng:41.970,fd:'СКФО',id:0},
+  {n:'Уфа',lat:54.740,lng:55.970,fd:'ПФО',id:0},
+  {n:'Йошкар-Ола',lat:56.630,lng:47.900,fd:'ПФО',id:0},
+  {n:'Саранск',lat:54.190,lng:45.190,fd:'ПФО',id:0},
+  {n:'Казань',lat:55.790,lng:49.120,fd:'ПФО',id:0},
+  {n:'Ижевск',lat:56.850,lng:53.210,fd:'ПФО',id:0},
+  {n:'Чебоксары',lat:56.140,lng:47.250,fd:'ПФО',id:0},
+  {n:'Пермь',lat:58.010,lng:56.250,fd:'ПФО',id:0},
+  {n:'Киров',lat:58.600,lng:49.650,fd:'ПФО',id:0},
+  {n:'Нижний Новгород',lat:56.330,lng:44.000,fd:'ПФО',id:0},
+  {n:'Оренбург',lat:51.770,lng:55.100,fd:'ПФО',id:0},
+  {n:'Пенза',lat:53.200,lng:45.000,fd:'ПФО',id:0},
+  {n:'Самара',lat:53.200,lng:50.150,fd:'ПФО',id:0},
+  {n:'Саратов',lat:51.540,lng:46.030,fd:'ПФО',id:0},
+  {n:'Ульяновск',lat:54.320,lng:48.400,fd:'ПФО',id:0},
+  {n:'Курган',lat:55.440,lng:65.340,fd:'УФО',id:0},
+  {n:'Екатеринбург',lat:56.840,lng:60.610,fd:'УФО',id:0},
+  {n:'Тюмень',lat:57.150,lng:68.990,fd:'УФО',id:0},
+  {n:'Челябинск',lat:55.160,lng:61.400,fd:'УФО',id:0},
+  {n:'Ханты-Мансийск',lat:61.000,lng:69.010,fd:'УФО',id:0},
+  {n:'Салехард',lat:66.530,lng:66.610,fd:'УФО',id:0},
+  {n:'Горно-Алтайск',lat:51.960,lng:85.960,fd:'СФО',id:0},
+  {n:'Кызыл',lat:51.720,lng:94.440,fd:'СФО',id:0},
+  {n:'Абакан',lat:53.720,lng:91.430,fd:'СФО',id:0},
+  {n:'Барнаул',lat:53.350,lng:83.750,fd:'СФО',id:0},
+  {n:'Красноярск',lat:56.010,lng:92.850,fd:'СФО',id:0},
+  {n:'Иркутск',lat:52.300,lng:104.300,fd:'СФО',id:0},
+  {n:'Кемерово',lat:55.370,lng:86.090,fd:'СФО',id:0},
+  {n:'Новосибирск',lat:54.990,lng:82.900,fd:'СФО',id:782},
+  {n:'Омск',lat:54.990,lng:73.370,fd:'СФО',id:0},
+  {n:'Томск',lat:56.500,lng:84.970,fd:'СФО',id:0},
+  {n:'Улан-Удэ',lat:51.830,lng:107.600,fd:'ДФО',id:0},
+  {n:'Чита',lat:52.040,lng:113.500,fd:'ДФО',id:0},
+  {n:'Якутск',lat:62.030,lng:129.730,fd:'ДФО',id:0},
+  {n:'Петропавловск-К.',lat:53.020,lng:158.650,fd:'ДФО',id:0},
+  {n:'Владивосток',lat:43.120,lng:131.900,fd:'ДФО',id:0},
+  {n:'Хабаровск',lat:48.480,lng:135.080,fd:'ДФО',id:0},
+  {n:'Благовещенск',lat:50.270,lng:127.530,fd:'ДФО',id:0},
+  {n:'Магадан',lat:59.570,lng:150.790,fd:'ДФО',id:0},
+  {n:'Южно-Сахалинск',lat:46.960,lng:142.740,fd:'ДФО',id:0},
+  {n:'Биробиджан',lat:48.800,lng:132.930,fd:'ДФО',id:0},
+  {n:'Анадырь',lat:64.730,lng:177.510,fd:'ДФО',id:0},
+];
+const CRIMEA=[
+  {n:'Симферополь',lat:44.952,lng:34.102,reg:'Республика Крым',id:0},
+  {n:'Севастополь',lat:44.608,lng:33.531,reg:'Город федерального значения',id:0},
+];
+const NT=[
+  {n:'Донецк',lat:48.000,lng:37.830,reg:'ДНР',id:0},
+  {n:'Луганск',lat:48.570,lng:39.330,reg:'ЛНР',id:0},
+  {n:'Мелитополь',lat:46.850,lng:35.370,reg:'Запорожская обл.',id:0},
+  {n:'Геническ',lat:46.170,lng:34.820,reg:'Херсонская обл.',id:0},
+];
+const SPECIAL=[
+  {n:'Сочи',lat:43.585,lng:39.723,desc:'Курортный город, Олимпийская столица 2014',id:0},
+  {n:'Сириус',lat:43.400,lng:39.960,desc:'Федеральная территория, центр спорта и науки',id:0},
+  {n:'Красная Поляна',lat:43.680,lng:40.210,desc:'Горнолыжный курорт, Краснодарский край',id:0},
+];
+
+let S={op:.75,bw:.5,bc:'#0d1117',bg:'#0d1117',ocean:'#111827',
+  capColor:'#58a6ff',capSz:4,spColor:'#ffa657',ntColor:'#c0392b',crColor:'#f1c40f',
+  lblSz:9,lblCol:'#8b949e',
+  showCap:true,showSp:true,showNt:true,showCr:true,showLbl:true,activeFd:'all'};
+let proj=null,pathGen=null,svg=null,gR=null,gC=null;
+
+function matchName(props){
+  const raw=(props.name||props.NAME_1||props.region||props.NAME||'').toString();
+  const lo=raw.toLowerCase();
+  for(const [key,ru,fd,cap,id] of NM){
+    if(lo.includes(key.toLowerCase()))return{ru,fd,cap,id,raw};
+  }
+  return{ru:raw,fd:'?',cap:'',id:0,raw};
+}
+
+function initSVG(){
+  const W=document.getElementById('map-wrap').clientWidth;
+  const H=document.getElementById('map-wrap').clientHeight;
+  svg=d3.select('#map-svg').attr('width',W).attr('height',H);
+  svg.append('rect').attr('id','ocean-rect').attr('width',W).attr('height',H).attr('fill',S.ocean);
+  proj=d3.geoConicEqualArea().rotate([-105,0]).center([0,60]).parallels([50,72])
+    .scale(Math.min(W,H)*0.75).translate([W*0.42,H*0.5]);
+  pathGen=d3.geoPath().projection(proj);
+  gR=svg.append('g').attr('id','g-regions');
+  gC=svg.append('g').attr('id','g-cities');
+}
+
+function drawRegions(gj){
+  const wrap=document.getElementById('map-wrap');
+  gR.selectAll('path').data(gj.features||[]).join('path')
+    .attr('class','region')
+    .attr('d',pathGen)
+    .each(function(d){
+      const info=matchName(d.properties);
+      const fd=FD[info.fd]||FD['?'];
+      d3.select(this).attr('fill',fd.c).attr('fill-opacity',S.op)
+        .attr('stroke',S.bc).attr('stroke-width',S.bw)
+        .attr('data-fd',info.fd).attr('data-ru',info.ru).attr('data-cap',info.cap).attr('data-id',info.id);
+    })
+    .on('mouseover',function(e,d){
+      const info=matchName(d.properties);
+      const fd=FD[info.fd]||{n:'—',c:'#999'};
+      d3.select(this).attr('fill-opacity',Math.min(S.op+0.2,1)).attr('stroke','#fff').attr('stroke-width',Math.max(S.bw,1));
+      document.getElementById('info').innerHTML=`<div class="iname">${info.ru||info.raw}</div><div class="icap">🏛 ${info.cap||'—'}</div><div class="ifd" style="color:${fd.c}">● ${fd.n} ФО</div>`;
+      showTip(e,wrap,`<div class="tip-name">${info.ru||info.raw}</div><div class="tip-cap">🏛 ${info.cap||'—'}</div><div class="tip-fd" style="color:${fd.c}">● ${fd.n} ФО</div>`);
+    })
+    .on('mousemove',(e)=>moveTip(e,wrap))
+    .on('mouseout',function(e,d){
+      const info=matchName(d.properties);
+      const dimmed=S.activeFd!=='all'&&info.fd!==S.activeFd;
+      d3.select(this).attr('fill-opacity',dimmed?0.06:S.op).attr('stroke',S.bc).attr('stroke-width',S.bw);
+      hideTip();
+    })
+    .on('click',function(e,d){
+      const info=matchName(d.properties);
+      const fd=FD[info.fd]||{n:'—'};
+      const base=document.getElementById('base-url').value.trim().replace(/\/$/,'');
+      let link=info.id>0?`<a class="tip-link" href="${base}/events?city_id=${info.id}" target="_blank">Мероприятия →</a>`
+        :info.cap?`<a class="tip-link" href="${base}/events?city=${encodeURIComponent(info.cap)}" target="_blank">Мероприятия →</a>`:'';
+      showTip(e,wrap,`<div class="tip-name">${info.ru||info.raw}</div><div class="tip-cap">🏛 ${info.cap||'—'}</div><div class="tip-fd" style="color:${fd.c}">● ${fd.n} ФО</div>${link}`);
+      e.stopPropagation();
+    });
+}
+
+function drawCities(){
+  gC.selectAll('*').remove();
+  const wrap=document.getElementById('map-wrap');
+  const base=()=>document.getElementById('base-url').value.trim().replace(/\/$/,'');
+  function addM(lat,lng,color,sz,lbl,popFn,grp,pulse){
+    const pt=proj([lng,lat]);
+    if(!pt||isNaN(pt[0])||isNaN(pt[1]))return;
+    const[x,y]=pt;
+    const g=gC.append('g').attr('class',`cg cg-${grp}`);
+    if(!({'cap':S.showCap,'sp':S.showSp,'nt':S.showNt,'cr':S.showCr}[grp]??true))g.style('display','none');
+    if(pulse){
+      g.append('circle').attr('cx',x).attr('cy',y).attr('r',sz+2).attr('fill',color).attr('opacity',0).attr('class','pulse');
+      g.append('circle').attr('cx',x).attr('cy',y).attr('r',sz+2).attr('fill',color).attr('opacity',0).attr('class','pulse2');
+    }
+    g.append('circle').attr('cx',x).attr('cy',y).attr('r',sz)
+      .attr('fill',color).attr('stroke','rgba(255,255,255,0.5)').attr('stroke-width',.8)
+      .style('cursor','pointer')
+      .on('mouseover',e=>{d3.select(e.target).attr('r',sz*1.7);showTip(e,wrap,popFn())})
+      .on('mousemove',e=>moveTip(e,wrap))
+      .on('mouseout',e=>{d3.select(e.target).attr('r',sz);hideTip()})
+      .on('click',e=>{showTip(e,wrap,popFn());e.stopPropagation()});
+    if(S.showLbl&&lbl){
+      g.append('text').attr('class','city-lbl')
+        .attr('x',x+sz+3).attr('y',y).attr('fill',S.lblCol)
+        .attr('font-size',S.lblSz+'px').attr('dominant-baseline','middle')
+        .style('pointer-events','none')
+        .text(lbl);
+    }
+  }
+  CAPS.forEach(c=>{
+    const fd=FD[c.fd]||{n:'—',c:'#999'};
+    const b=base();
+    const lnk=c.id>0?`<a class="tip-link" href="${b}/events?city_id=${c.id}" target="_blank">Мероприятия →</a>`
+      :`<a class="tip-link" href="${b}/events?city=${encodeURIComponent(c.n)}" target="_blank">Мероприятия →</a>`;
+    addM(c.lat,c.lng,S.capColor,S.capSz,c.n,()=>
+      `<div class="tip-name">${c.n}</div><div class="tip-cap" style="color:${fd.c}">● ${fd.n} ФО</div><div class="tip-fd">Административный центр</div>${lnk}`,'cap',false);
+  });
+  CRIMEA.forEach(c=>{
+    const b=base();
+    const lnk=`<a class="tip-link" href="${b}/events?city=${encodeURIComponent(c.n)}" target="_blank">Мероприятия →</a>`;
+    addM(c.lat,c.lng,S.crColor,S.capSz+2,c.n,()=>
+      `<div class="tip-name">${c.n} <span class="tip-badge">🇷🇺 Крым</span></div><div class="tip-fd">${c.reg}</div>${lnk}`,'cr',true);
+  });
+  NT.forEach(t=>{
+    const b=base();
+    const lnk=`<a class="tip-link" href="${b}/events?city=${encodeURIComponent(t.n)}" target="_blank">Мероприятия →</a>`;
+    addM(t.lat,t.lng,S.ntColor,S.capSz+2,t.n,()=>
+      `<div class="tip-name">${t.n} <span class="tip-badge">${t.reg}</span></div><div class="tip-fd">Новые территории РФ</div>${lnk}`,'nt',true);
+  });
+  SPECIAL.forEach(s=>{
+    const b=base();
+    const lnk=`<a class="tip-link" href="${b}/events?city=${encodeURIComponent(s.n)}" target="_blank">Мероприятия →</a>`;
+    addM(s.lat,s.lng,S.spColor,S.capSz+3,s.n,()=>
+      `<div class="tip-name">${s.n} ⭐</div><div class="tip-spec">${s.desc}</div>${lnk}`,'sp',true);
+  });
+}
+
+function showTip(e,wrap,html){
+  const t=document.getElementById('tip');
+  t.innerHTML=html;t.classList.add('show');moveTip(e,wrap);
+}
+function moveTip(e,wrap){
+  const t=document.getElementById('tip'),r=wrap.getBoundingClientRect();
+  let x=e.clientX-r.left+14,y=e.clientY-r.top-40;
+  if(x+270>r.width)x=e.clientX-r.left-280;
+  if(y<0)y=e.clientY-r.top+10;
+  t.style.left=x+'px';t.style.top=y+'px';
+}
+function hideTip(){document.getElementById('tip').classList.remove('show')}
+document.getElementById('map-wrap').addEventListener('click',hideTip);
+
+function buildLegend(){
+  const leg=document.getElementById('leg');leg.innerHTML='';
+  Object.entries(FD).forEach(([k,d])=>{
+    if(k==='?')return;
+    const row=document.createElement('div');
+    row.className='lrow'+(S.activeFd!=='all'&&S.activeFd!==k?' off':'');
+    row.innerHTML=`<div class="ldot" style="background:${d.c}"></div><span class="lname">${d.n}</span><span class="lcnt">${d.cnt}</span>`;
+    row.onclick=()=>{S.activeFd=S.activeFd===k?'all':k;buildLegend();applyFilter()};
+    leg.appendChild(row);
+  });
+}
+function applyFilter(){
+  gR&&gR.selectAll('path').each(function(){
+    const el=d3.select(this);
+    el.attr('fill-opacity',S.activeFd!=='all'&&el.attr('data-fd')!==S.activeFd?0.06:S.op);
+  });
+}
+function toggle(layer){
+  const key='show'+layer.charAt(0).toUpperCase()+layer.slice(1);
+  S[key]=!S[key];
+  document.getElementById('btn-'+layer).classList.toggle('on',S[key]);
+  if(layer==='lbl'){document.querySelectorAll('.city-lbl').forEach(el=>el.style.display=S.showLbl?'':'none')}
+  else{document.querySelectorAll(`.cg-${layer}`).forEach(el=>el.style.display=S[key]?'':'none')}
+}
+
+function bindControls(){
+  const B=(id,key,valId,suffix,cb)=>{
+    const el=document.getElementById(id);if(!el)return;
+    el.addEventListener('input',()=>{
+      const v=el.type==='range'?parseFloat(el.value):el.value;
+      S[key]=key==='op'?v/100:v;
+      if(valId)document.getElementById(valId).textContent=v+(suffix||'');
+      if(cb)cb(v);
+    });
+  };
+  B('p-op','op','v-op','%',()=>applyFilter());
+  B('p-bw','bw','v-bw','px',()=>{gR&&gR.selectAll('path').attr('stroke-width',S.bw)});
+  B('p-bc','bc',null,null,()=>{gR&&gR.selectAll('path').attr('stroke',S.bc)});
+  B('p-bg','bg',null,null,v=>{document.body.style.background=v;document.getElementById('panel').style.background=v==='#ffffff'?'#f6f8fa':v});
+  B('p-ocean','ocean',null,null,v=>{d3.select('#map-svg').style('background',v);d3.select('#ocean-rect').attr('fill',v)});
+  B('m-cap','capColor',null,null,()=>drawCities());
+  B('m-sz','capSz','v-sz','px',()=>drawCities());
+  B('m-sp','spColor',null,null,()=>drawCities());
+  B('m-nt','ntColor',null,null,()=>drawCities());
+  B('m-cr','crColor',null,null,()=>drawCities());
+  B('l-sz','lblSz','v-lsz','px',()=>drawCities());
+  B('l-col','lblCol',null,null,()=>drawCities());
+}
+
+function setP(pct,msg){
+  document.getElementById('ld-fill').style.width=pct+'%';
+  if(msg)document.getElementById('ld-msg').textContent=msg;
+}
+
+async function main(){
+  initSVG();buildLegend();bindControls();
+  const URLS=[
+    'https://raw.githubusercontent.com/codeforgermany/click_that_hood/master/public/data/russia.geojson',
+    'https://raw.githubusercontent.com/codeforgermany/click_that_hood/main/public/data/russia.geojson',
+  ];
+  setP(20,'Загрузка GeoJSON…');
+  let gj=null;
+  for(const url of URLS){
+    try{const r=await fetch(url);if(!r.ok)continue;setP(65,'Обработка…');gj=await r.json();break}
+    catch(e){console.warn('fail',url)}
+  }
+  if(gj){setP(80,'Отрисовка регионов…');drawRegions(gj);}
+  else{document.getElementById('ld-msg').textContent='⚠️ Не удалось загрузить контуры. Только маркеры.';}
+  setP(95,'Добавление городов…');drawCities();
+  setP(100,'Готово!');
+  setTimeout(()=>document.getElementById('ld').style.display='none',500);
+}
+main();
+</script>
+</body>
+</html>

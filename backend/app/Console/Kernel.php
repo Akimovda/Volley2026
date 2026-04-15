@@ -24,11 +24,6 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        $schedule->command('events:expand-recurring --days=90 --chunk=200 --maxCreates=500')
-            ->dailyAt('03:10')
-            ->withoutOverlapping()
-            ->appendOutputTo(storage_path('logs/cron-events-expand.log'));
-
         $schedule->command('events:send-registration-reminders')
             ->everyMinute()
             ->withoutOverlapping()

@@ -163,6 +163,7 @@ final class BotAssistantService
     ): void {
         $bots = $this->selectBots(
             event: $event,
+            occurrence: $occurrence,
             count: $count,
             excludeUserIds: $currentBotUserIds
         );
@@ -269,7 +270,7 @@ final class BotAssistantService
         return $free[array_rand($free)];
     }
 
-    private function selectBots(Event $event, int $count, array $excludeUserIds): Collection
+    private function selectBots(Event $event, EventOccurrence $occurrence, int $count, array $excludeUserIds): Collection
     {
         $query = User::query()
             ->where('is_bot', true)
@@ -284,12 +285,17 @@ final class BotAssistantService
         }
         // mixed_open и mixed_balanced — любые боты
 
-        // Уровень: берём ботов подходящего уровня для мероприятия
+        // Уровень: occurrence переопределяет event (как в Guard)
         $direction = $event->direction ?? 'classic';
         $levelField = $direction === 'beach' ? 'beach_level' : 'classic_level';
 
-        $levelMin = $direction === 'beach' ? $event->beach_level_min : $event->classic_level_min;
-        $levelMax = $direction === 'beach' ? $event->beach_level_max : $event->classic_level_max;
+        if ($direction === 'beach') {
+            $levelMin = $occurrence->beach_level_min ?? $event->beach_level_min;
+            $levelMax = $occurrence->beach_level_max ?? $event->beach_level_max;
+        } else {
+            $levelMin = $occurrence->classic_level_min ?? $event->classic_level_min;
+            $levelMax = $occurrence->classic_level_max ?? $event->classic_level_max;
+        }
 
         if ($levelMin) {
             $query->where($levelField, '>=', $levelMin);

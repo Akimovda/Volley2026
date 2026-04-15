@@ -209,6 +209,12 @@
 								<a href="/events/create" class="menu-item">
 									<span class="menu-text">Создать мероприятие</span>
 								</a>
+								<a href="/subscriptions/templates" class="menu-item">
+									<span class="menu-text">Абонементы</span>
+								</a>
+								<a href="/coupons/templates" class="menu-item">
+									<span class="menu-text">Купоны</span>
+								</a>
 								<a href="/user/profile/notification-channels" class="menu-item">
 									<span class="menu-text">Каналы уведомлений</span>
 								</a>
