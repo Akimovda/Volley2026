@@ -147,6 +147,17 @@
                         <div class="f-28 b-700 red">{{ $usersDeletedToday }}</div>
                     </div>
                 </div>
+                <div class="col-6 col-md">
+                    <a href="{{ route('admin.users.duplicates') }}" class="card text-center" style="text-decoration:none;display:block;{{ $dupCount > 0 ? 'border-color:#e74c3c' : '' }}">
+                        <div class="f-14">👥 Дубли</div>
+                        <div class="f-28 b-700 {{ $dupCount > 0 ? 'red' : 'cs' }}">{{ $dupCount }}</div>
+                        @if($dupCount > 0)
+                        <div class="f-12 red mt-05">Требуют внимания</div>
+                        @else
+                        <div class="f-12 mt-05" style="opacity:.5">Не найдено</div>
+                        @endif
+                    </a>
+                </div>
             </div>
         </div>
 
