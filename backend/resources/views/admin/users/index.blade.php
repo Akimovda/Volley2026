@@ -171,9 +171,16 @@
 						<td>{{ $u->id }}</td>
 						
 						<td>
-							<a class="blink b-600" href="{{ route('admin.users.show', $u) }}">
-								{{ $u->name }}
-							</a>
+<a class="blink b-600" href="{{ route('admin.users.show', $u) }}">
+@if($u->last_name || $u->first_name)
+    {{ trim(($u->last_name ?? '') . ' ' . ($u->first_name ?? '')) }}
+@else
+    {{ $u->name }}
+@endif
+</a>
+@if($u->name && ($u->last_name || $u->first_name))
+<div class="f-13" style="opacity:.4">{{ $u->name }}</div>
+@endif
 						</td>
 						
 						<td>{{ $u->role ?? 'user' }}</td>

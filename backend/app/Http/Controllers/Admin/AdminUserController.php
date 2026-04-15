@@ -42,6 +42,8 @@ class AdminUserController extends Controller
                 $w->where('name', 'like', "%{$q}%")
                     ->orWhere('first_name', 'like', "%{$q}%")
                     ->orWhere('last_name', 'like', "%{$q}%")
+                    ->orWhereRaw("CONCAT(last_name, ' ', first_name) ILIKE ?", ["%{$q}%"])
+                    ->orWhereRaw("CONCAT(first_name, ' ', last_name) ILIKE ?", ["%{$q}%"])
                     ->orWhere('email', 'like', "%{$q}%")
                     ->orWhere('telegram_username', 'like', "%{$q}%")
                     ->orWhere('telegram_id', 'like', "%{$q}%")

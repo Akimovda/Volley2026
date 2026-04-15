@@ -32,7 +32,39 @@
                 <div class="d-flex between fvc mb-2">
                     <div>
                         <h2 class="-mt-05">{{ $sub->template->name }}</h2>
-                        <div class="f-14" style="opacity:.6">{{ $sub->organizer->name ?? 'Организатор' }}</div>
+                        @php
+                            $org = $sub->organizer;
+                            $orgName = $org
+                                ? (($org->last_name || $org->first_name)
+                                    ? trim(($org->last_name ?? '') . ' ' . ($org->first_name ?? ''))
+                                    : $org->name)
+                                : 'Организатор';
+                            // Мероприятия из event_ids шаблона
+                            $tmplEventIds = $sub->template->event_ids ?? [];
+                            $tmplEvents = !empty($tmplEventIds)
+                                ? \App\Models\Event::whereIn('id', $tmplEventIds)->get(['id','title'])
+                                : collect();
+                        @endphp
+                        <div class="f-14 mb-05" style="opacity:.7">
+                            Организатор:
+                            @if($org)
+                                <a href="{{ route('users.show', $org->id) }}" class="cd b-600">{{ $orgName }}</a>
+                            @else
+                                <span class="b-600">{{ $orgName }}</span>
+                            @endif
+                        </div>
+                        @if($tmplEvents->isNotEmpty())
+                        <div class="f-13" style="opacity:.6">
+                            Мероприятия:
+                            @foreach($tmplEvents as $ev)
+                                <a href="{{ route('events.show', $ev->id) }}" class="cd">{{ $ev->title }}</a>@if(!$loop->last), @endif
+                            @endforeach
+                        </div>
+                        @elseif($org)
+                        <div class="f-13" style="opacity:.5">
+                            Действует на все мероприятия организатора
+                        </div>
+                        @endif
                     </div>
                     <div class="text-right">
                         @if($sub->status === 'active')

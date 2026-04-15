@@ -32,6 +32,12 @@ class CouponTemplate extends Model
 
     public function appliesToEvent(int $eventId): bool
     {
+        // Мероприятие должно принадлежать организатору этого купона
+        $event = \App\Models\Event::find($eventId);
+        if (!$event || (int)$event->organizer_id !== (int)$this->organizer_id) {
+            return false;
+        }
+        // Если event_ids не задан — действует на все мероприятия этого организатора
         if (empty($this->event_ids)) return true;
         return in_array($eventId, $this->event_ids);
     }
