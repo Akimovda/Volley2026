@@ -245,6 +245,10 @@
 				return trim($first . ' ' . $last);
 			}
 			
+
+if (!empty($value)) {
+return $value;
+}
 			return 'Пользователь #' . $this->id;
 		}
 
