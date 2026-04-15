@@ -33,9 +33,14 @@ class ProfileInformationTest extends TestCase
             ->set('state', ['name' => 'Test Name', 'email' => 'test@example.com'])
             ->call('updateProfileInformation');
 
-        // name field is stored directly in DB; accessor returns it when first/last name are empty
         $fresh = $user->fresh();
-        $this->assertEquals('test@example.com', $fresh->email);
-        $this->assertEquals('Test Name', $fresh->getRawOriginal('name'));
+        // Debug: dump what is in DB
+        $rawName = $fresh->getRawOriginal('name');
+        $firstName = $fresh->first_name;
+        $lastName = $fresh->last_name;
+        $this->assertEquals('test@example.com', $fresh->email,
+            "Email mismatch");
+        $this->assertEquals('Test Name', $rawName,
+            "Raw name mismatch. first_name={$firstName}, last_name={$lastName}");
     }
 }
