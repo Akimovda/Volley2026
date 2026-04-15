@@ -238,21 +238,19 @@
 		// Helpers
 		// --------------------------------------------------
 		
-		public function getNameAttribute($value): string
-		{
-			$first = trim((string) $this->first_name);
-			$last  = trim((string) $this->last_name);
-			
-			if ($first !== '' || $last !== '') {
-				return trim($first . ' ' . $last);
-			}
-			
-
-if (!empty($value)) {
-return $value;
+public function getNameAttribute($value): string
+{
+    // raw name field takes priority
+    if (!empty($value)) {
+        return $value;
+    }
+    $first = trim((string) $this->first_name);
+    $last  = trim((string) $this->last_name);
+    if ($first !== '' || $last !== '') {
+        return trim($first . ' ' . $last);
+    }
+    return 'Пользователь #' . $this->id;
 }
-			return 'Пользователь #' . $this->id;
-		}
 
 
 
