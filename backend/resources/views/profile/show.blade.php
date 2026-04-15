@@ -331,7 +331,33 @@
 					
 					
 				</div>	
-				<div class="ramka" id="providers">  	
+				@php
+    $providerCount = (int)!empty($u?->telegram_id) + (int)!empty($u?->vk_id) + (int)!empty($u?->yandex_id);
+@endphp
+
+@if(session('show_providers_hint') || $providerCount < 3)
+<div class="ramka" id="providers-hint" style="background:rgba(41,103,186,.07);border:1px solid rgba(41,103,186,.2)">
+    <div class="d-flex fvc gap-2">
+        <span style="font-size:2.4rem">🔐</span>
+        <div>
+            <div class="b-600 f-16 mb-05">
+                @if($providerCount === 1)
+                    Привязан только 1 способ входа
+                @elseif($providerCount === 2)
+                    Привязано 2 из 3 способов входа
+                @endif
+            </div>
+            <div class="f-14" style="opacity:.7">
+                Привяжите все три провайдера (Telegram, VK, Яндекс) — это защитит аккаунт от потери доступа
+                и поможет системе не создавать дубли.
+                <a href="#providers" class="cd b-600">Привязать →</a>
+            </div>
+        </div>
+    </div>
+</div>
+@endif
+
+<div class="ramka" id="providers">  	
 					
                     {{-- Привязка провайдеров --}}
 					

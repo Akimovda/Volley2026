@@ -278,6 +278,13 @@ class ProfileExtraController extends Controller
             }
         });
 
+        // Если пришли со страницы завершения профиля — редиректим на профиль с якорем провайдеров
+        if ($request->boolean('from_complete')) {
+            return redirect()->route('profile.show')
+                ->with('status', 'Профиль обновлён.')
+                ->with('show_providers_hint', true);
+        }
+
         return back()->with('status', 'Профиль обновлён.');
     }
 

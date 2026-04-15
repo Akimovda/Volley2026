@@ -240,8 +240,8 @@
 		
 public function getNameAttribute($value): string
 {
-    // raw name field takes priority
-    if (!empty($value)) {
+    // raw name field takes priority (ignore placeholder values)
+    if (!empty($value) && $value !== 'Пользователь') {
         return $value;
     }
     $first = trim((string) $this->first_name);
@@ -249,7 +249,7 @@ public function getNameAttribute($value): string
     if ($first !== '' || $last !== '') {
         return trim($first . ' ' . $last);
     }
-    return 'Пользователь #' . $this->id;
+    return 'Игрок_#' . $this->id;
 }
 
 

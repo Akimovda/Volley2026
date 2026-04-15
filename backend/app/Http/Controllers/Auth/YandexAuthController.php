@@ -127,7 +127,6 @@ class YandexAuthController extends Controller
             }
 
             $user = new User();
-            $user->name      = 'Пользователь';
             $user->email     = $safeEmail;
             $user->password  = Hash::make(Str::random(32));
             $user->yandex_id = $yandexId;
