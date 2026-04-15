@@ -36,8 +36,9 @@ class ProfileNotificationChannelController extends Controller
             ->get();
 
         return view('profile.notification-channels', [
-            'channels' => $channels,
+            'channels'     => $channels,
             'bindRequests' => $bindRequests,
+            'isPro'        => $user->isOrganizerPro(),
         ]);
     }
 

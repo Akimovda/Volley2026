@@ -22,6 +22,34 @@
         @if(session('status'))
             <div class="ramka"><div class="alert alert-success">{{ session('status') }}</div></div>
         @endif
+        @if(session('error'))
+            <div class="ramka"><div class="alert alert-danger">{{ session('error') }}</div></div>
+        @endif
+
+        @if(!($isPro ?? false))
+        {{-- ===== ЗАБЛОКИРОВАНО — НЕТ ПОДПИСКИ ===== --}}
+        <div class="ramka text-center" style="padding:4rem 2rem">
+            <div style="font-size:5rem;margin-bottom:1.5rem">🔒</div>
+            <h2 class="-mt-05">Доступно в Организатор Pro</h2>
+            <div class="f-16 mb-3" style="opacity:.7;max-width:48rem;margin:0 auto 2rem">
+                Виджет для встройки мероприятий на внешний сайт — часть подписки <strong>Организатор Pro</strong>.
+                Активируйте подписку чтобы получить API-ключ и код для вставки.
+            </div>
+            <a href="{{ route('organizer_pro.index') }}" class="btn">
+                ⭐ Подключить Организатор Pro
+            </a>
+        </div>
+        @else
+        {{-- ===== ДОСТУПНО — ПОДПИСКА АКТИВНА ===== --}}
+        <div class="ramka" style="background:rgba(41,103,186,.07);padding:1.2rem 2rem;margin-bottom:2rem">
+            <div class="d-flex fvc gap-1">
+                <span style="font-size:2rem">⭐</span>
+                <div>
+                    <div class="b-600 f-15">Организатор Pro активен</div>
+                    <div class="f-13" style="opacity:.6">Виджет и персональный бот доступны</div>
+                </div>
+            </div>
+        </div>
 
         <div class="row row2">
 
@@ -151,6 +179,8 @@
             </div>
 
         </div>
+        </div>
+        @endif {{-- isPro --}}
     </div>
 
 </x-voll-layout>

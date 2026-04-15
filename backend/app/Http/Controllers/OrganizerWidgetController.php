@@ -16,14 +16,20 @@ class OrganizerWidgetController extends Controller
     {
         $user   = $request->user();
         $widget = OrganizerWidget::where('user_id', $user->id)->first();
+        $isPro  = $user->isOrganizerPro();
 
-        return view('profile.widget', compact('widget'));
+        return view('profile.widget', compact('widget', 'isPro'));
     }
 
     /** Создать или пересоздать виджет */
     public function store(Request $request): RedirectResponse
     {
         $user = $request->user();
+
+        if (!$user->isOrganizerPro()) {
+            return redirect()->route('profile.widget')
+                ->with('error', 'Требуется подписка Организатор Pro.');
+        }
 
         $data = $request->validate([
             'allowed_domains' => ['nullable', 'string'],

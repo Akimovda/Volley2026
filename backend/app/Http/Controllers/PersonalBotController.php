@@ -18,6 +18,11 @@ class PersonalBotController extends Controller
      */
     public function storeTelegram(Request $request): RedirectResponse
     {
+        if (!$request->user()->isOrganizerPro()) {
+            return redirect()->back()
+                ->with('error', 'Требуется подписка Организатор Pro.');
+        }
+
         $data = $request->validate([
             'bot_token' => ['required', 'string', 'min:30'],
             'chat_id'   => ['required', 'string', 'min:3'],
@@ -114,6 +119,11 @@ class PersonalBotController extends Controller
      */
     public function storeMax(Request $request): RedirectResponse
     {
+        if (!$request->user()->isOrganizerPro()) {
+            return redirect()->back()
+                ->with('error', 'Требуется подписка Организатор Pro.');
+        }
+
         $data = $request->validate([
             'bot_token' => ['required', 'string', 'min:10'],
             'chat_id'   => ['required', 'string', 'min:1'],

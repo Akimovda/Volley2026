@@ -161,6 +161,14 @@
             <h3 class="mt-0">🤖 Организатор Pro — Свой бот</h3>
             <p class="f-15 text-muted">Анонсы от вашего персонального бота — брендинг и независимость от системного бота.</p>
 
+            @if(!($isPro ?? false))
+            <div class="card text-center" style="padding:2.5rem 2rem">
+                <div style="font-size:4rem;margin-bottom:1rem">🔒</div>
+                <div class="b-600 f-16 mb-1">Доступно в Организатор Pro</div>
+                <div class="f-15 mb-2" style="opacity:.7">Подключите подписку чтобы использовать персонального бота для анонсов.</div>
+                <a href="{{ route('organizer_pro.index') }}" class="btn">⭐ Подключить Организатор Pro</a>
+            </div>
+            @else
             <div class="row row2" id="personal-bot-tabs-wrap">
                 {{-- Вкладки --}}
                 <div class="col-12 mb-1">
@@ -240,6 +248,7 @@
                     </form>
                 </div>
             </div>
+            @endif
         </div>
 
         {{-- Последние запросы привязки --}}

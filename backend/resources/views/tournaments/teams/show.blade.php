@@ -1,592 +1,273 @@
-<x-app-layout>
-    <div class="max-w-6xl mx-auto px-4 py-6">
-        <div class="mb-4">
-            <a
-                href="{{ route('events.show', $event) }}"
-                class="inline-flex items-center rounded-xl bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-200"
-            >
-                ← Назад к турниру
-            </a>
+<x-voll-layout body_class="tournament-team-page">
+<x-slot name="title">{{ $team->name }} — команда</x-slot>
+<x-slot name="h1">{{ $team->name }}</x-slot>
+
+<x-slot name="breadcrumbs">
+    <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
+        <a href="{{ route('events.show', $event) }}" itemprop="item"><span itemprop="name">{{ $event->title }}</span></a>
+        <meta itemprop="position" content="2">
+    </li>
+    <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
+        <span itemprop="name">Команда</span>
+        <meta itemprop="position" content="3">
+    </li>
+</x-slot>
+
+<x-slot name="d_description">
+    <div class="d-flex between fvc mt-1" style="flex-wrap:wrap;gap:1rem">
+        <div class="f-15" style="opacity:.6">
+            {{ $team->team_kind === 'classic_team' ? '🏐 Классическая команда' : '🏖 Пляжная команда' }}
+        </div>
+        <a href="{{ route('events.show', $event) }}" class="btn btn-secondary">← К турниру</a>
+    </div>
+</x-slot>
+
+@php
+$settings       = $team->event->tournamentSetting ?? null;
+$confirmedCount = $team->members->where('confirmation_status','confirmed')->count();
+$pendingCount   = ($team->invites ?? collect())->where('status','pending')->count();
+$isCaptain      = (int)$team->captain_user_id === (int)auth()->id();
+$posLabels = ['setter'=>'Связующий','outside'=>'Доигровщик','opposite'=>'Диагональный','middle'=>'Центральный','libero'=>'Либеро'];
+$roleLabels = ['captain'=>'Капитан','player'=>'Основной игрок','reserve'=>'Запасной'];
+$stLabels = ['confirmed'=>'Подтверждён','joined'=>'Ожидает подтверждения','invited'=>'Приглашён','declined'=>'Отклонён'];
+$stColors = ['confirmed'=>'#4caf50','joined'=>'#ff9800','invited'=>'#2967BA','declined'=>'#f44336'];
+$invStColors = ['accepted'=>'#4caf50','declined'=>'#f44336','revoked'=>'#999','expired'=>'#999','pending'=>'#ff9800'];
+$invStLabels = ['pending'=>'Ожидает','accepted'=>'Принято','declined'=>'Отклонено','revoked'=>'Отозвано','expired'=>'Истекло'];
+@endphp
+
+<div class="container">
+
+@if(session('success'))
+<div class="alert alert-success">✅ {{ session('success') }}</div>
+@endif
+@if(session('error'))
+<div class="alert alert-danger">❌ {{ session('error') }}</div>
+@endif
+@if($errors->any())
+<div class="alert alert-danger">
+    @foreach($errors->all() as $e)<div>{{ $e }}</div>@endforeach
+</div>
+@endif
+
+<div class="row row2">
+<div class="col-lg-8">
+
+    {{-- Состав --}}
+    <div class="ramka">
+        <h2 class="-mt-05">👥 Состав команды</h2>
+        <div class="f-15 mb-2" style="opacity:.6">
+            Капитан: <strong>{{ $team->captain->name ?? ('#'.$team->captain_user_id) }}</strong>
+            @if($team->occurrence)
+                · {{ \Carbon\Carbon::parse($team->occurrence->starts_at)->format('d.m H:i') }}
+            @endif
         </div>
 
-        <div class="rounded-2xl border border-gray-100 bg-white p-6">
-            <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                <div>
-                    <h1 class="text-2xl font-bold text-gray-900">{{ $team->name }}</h1>
-
-                    <div class="mt-2 flex flex-wrap gap-2">
-                        <span class="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
-                            {{ $team->team_kind === 'classic_team' ? 'Классическая команда' : 'Пляжная команда' }}
-                        </span>
-
-                        <span class="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700">
-                            Статус: {{ $team->status }}
-                        </span>
-
-                        @if($team->is_complete)
-                            <span class="inline-flex items-center rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700">
-                                Состав готов
-                            </span>
-                        @else
-                            <span class="inline-flex items-center rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700">
-                                Состав не готов
-                            </span>
-                        @endif
-                    </div>
-
-                    <div class="mt-4 text-sm text-gray-600">
-                        Капитан:
-                        <span class="font-medium text-gray-900">
-                            {{ $team->captain->name ?? ('#' . $team->captain_user_id) }}
-                        </span>
-                    </div>
-
-                    @if($team->occurrence)
-                        <div class="mt-1 text-sm text-gray-600">
-                            Игровой слот:
-                            <span class="font-medium text-gray-900">
-                                {{ $team->occurrence->starts_at ?? ('#' . $team->occurrence->id) }}
-                            </span>
-                        </div>
+        @forelse($team->members as $member)
+        <div class="card d-flex between fvc mb-1" style="flex-wrap:wrap;gap:1rem">
+            <div>
+                <div class="b-600 f-16">{{ $member->user->name ?? ('#'.$member->user_id) }}</div>
+                <div class="f-13" style="opacity:.6">
+                    {{ $roleLabels[$member->team_role] ?? $member->team_role }}
+                    @if($team->team_kind==='classic_team' && $member->position_code)
+                        · {{ $posLabels[$member->position_code] ?? $member->position_code }}
                     @endif
                 </div>
-
-                <div class="w-full max-w-md rounded-2xl border border-gray-200 bg-gray-50 p-4">
-                    <div class="text-sm font-semibold text-gray-800">Приглашение по ссылке</div>
-                    <div class="mt-2 text-sm text-gray-600">
-                        Капитан создаёт персональную ссылку для игрока на нужную роль и позицию.
-                    </div>
-                    <div class="mt-2 text-xs text-gray-500">
-                        Если игрок принимает одну ссылку, остальные активные приглашения для него автоматически деактивируются.
-                    </div>
-                </div>
+            </div>
+            <div class="d-flex gap-1 fvc">
+                <span class="f-13 b-600" style="color:{{ $stColors[$member->confirmation_status] ?? '#999' }}">
+                    {{ $stLabels[$member->confirmation_status] ?? $member->confirmation_status }}
+                </span>
+                @if($isCaptain && (int)$member->user_id !== (int)$team->captain_user_id)
+                    @if($member->confirmation_status !== 'confirmed')
+                    <form method="POST" action="{{ route('tournamentTeams.members.confirm',[$event,$team,$member]) }}">
+                        @csrf
+                        <button class="btn btn-small">✅</button>
+                    </form>
+                    @endif
+                    @if($member->confirmation_status !== 'declined')
+                    <form method="POST" action="{{ route('tournamentTeams.members.decline',[$event,$team,$member]) }}">
+                        @csrf
+                        <button class="btn btn-small btn-secondary">✗</button>
+                    </form>
+                    @endif
+                    <form method="POST" action="{{ route('tournamentTeams.members.destroy',[$event,$team,$member]) }}"
+                          onsubmit="return confirm('Удалить из команды?')">
+                        @csrf @method('DELETE')
+                        <button class="btn btn-small btn-secondary">🗑</button>
+                    </form>
+                @endif
             </div>
         </div>
+        @empty
+        <div class="card text-center" style="padding:2rem;opacity:.5">Состав пока пуст</div>
+        @endforelse
+    </div>
 
-        @if(session('success'))
-            <div class="mt-6 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
-                {{ session('success') }}
-            </div>
-        @endif
-
-        @if(session('error'))
-            <div class="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-                {{ session('error') }}
-            </div>
-        @endif
-
-        @if($errors->any())
-            <div class="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-                <div class="mb-2 font-semibold">Есть ошибки:</div>
-                <ul class="list-disc space-y-1 pl-5">
-                    @foreach($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
-            </div>
-        @endif
-
+    {{-- Созданные приглашения --}}
+    @if($isCaptain)
+    <div class="ramka">
+        <h2 class="-mt-05">📨 Созданные приглашения</h2>
+        @forelse(($team->invites ?? collect())->sortByDesc('id') as $inv)
         @php
-            $settings = $team->event->tournamentSetting;
-            $confirmedCount = $team->members->where('confirmation_status', 'confirmed')->count();
-            $pendingCount = ($team->invites ?? collect())->where('status', 'pending')->count();
+            $invMeta = is_array($inv->meta) ? $inv->meta : [];
+            $invUrl  = $invMeta['invite_url'] ?? route('tournamentTeamInvites.show',['token'=>$inv->token]);
+            $channels = collect($invMeta['sent_channels'] ?? [])->filter()->values();
         @endphp
-
-        <div class="mt-6 grid gap-6 lg:grid-cols-3">
-            <div class="space-y-6 lg:col-span-2">
-                <div class="rounded-2xl border border-gray-100 bg-white p-6">
-                    <div class="flex items-center justify-between">
-                        <h2 class="text-lg font-semibold text-gray-900">Состав команды</h2>
-                        <div class="text-sm text-gray-500">
-                            Всего: {{ $team->members->count() }}
-                        </div>
-                    </div>
-
-                    <div class="mt-4 space-y-3">
-                        @forelse($team->members as $member)
-                            <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4">
-                                <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                                    <div>
-                                        <div class="font-semibold text-gray-900">
-                                            {{ $member->user->name ?? ('#' . $member->user_id) }}
-                                        </div>
-
-                                        <div class="mt-1 flex flex-wrap gap-2">
-                                            <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">
-                                                {{ match($member->team_role) {
-                                                    'captain' => 'Капитан',
-                                                    'player' => 'Основной',
-                                                    'reserve' => 'Запасной',
-                                                    default => $member->team_role ?? $member->role_code,
-                                                } }}
-                                            </span>
-
-                                            @if($team->team_kind === 'classic_team' && $member->position_code)
-                                                <span class="inline-flex items-center rounded-full bg-purple-100 px-2.5 py-1 text-xs font-medium text-purple-700">
-                                                    {{ match($member->position_code) {
-                                                        'setter' => 'Связующий',
-                                                        'outside' => 'Доигровщик',
-                                                        'opposite' => 'Диагональный',
-                                                        'middle' => 'Центральный блокирующий',
-                                                        'libero' => 'Либеро',
-                                                        default => $member->position_code,
-                                                    } }}
-                                                </span>
-                                            @endif
-
-                                            <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium
-                                                @if($member->confirmation_status === 'confirmed') bg-emerald-100 text-emerald-700
-                                                @elseif($member->confirmation_status === 'joined') bg-amber-100 text-amber-700
-                                                @elseif($member->confirmation_status === 'invited') bg-sky-100 text-sky-700
-                                                @elseif($member->confirmation_status === 'declined') bg-rose-100 text-rose-700
-                                                @else bg-slate-100 text-slate-700 @endif
-                                            ">
-                                                {{ match($member->confirmation_status) {
-                                                    'confirmed' => 'Подтверждён',
-                                                    'joined' => 'Ожидает подтверждения',
-                                                    'invited' => 'Приглашён',
-                                                    'declined' => 'Отклонён',
-                                                    default => $member->confirmation_status,
-                                                } }}
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    @if((int) $team->captain_user_id === (int) auth()->id() && (int) $member->user_id !== (int) $team->captain_user_id)
-                                        <div class="flex flex-wrap gap-2">
-                                            @if($member->confirmation_status !== 'confirmed')
-                                                <form method="POST" action="{{ route('tournamentTeams.members.confirm', [$event, $team, $member]) }}">
-                                                    @csrf
-                                                    <button
-                                                        type="submit"
-                                                        class="inline-flex items-center rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700"
-                                                    >
-                                                        Подтвердить
-                                                    </button>
-                                                </form>
-                                            @endif
-
-                                            @if($member->confirmation_status !== 'declined')
-                                                <form method="POST" action="{{ route('tournamentTeams.members.decline', [$event, $team, $member]) }}">
-                                                    @csrf
-                                                    <button
-                                                        type="submit"
-                                                        class="inline-flex items-center rounded-xl bg-amber-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-700"
-                                                    >
-                                                        Отклонить
-                                                    </button>
-                                                </form>
-                                            @endif
-
-                                            <form
-                                                method="POST"
-                                                action="{{ route('tournamentTeams.members.destroy', [$event, $team, $member]) }}"
-                                                data-confirm-remove-member
-                                            >
-                                                @csrf
-                                                @method('DELETE')
-                                                <button
-                                                    type="submit"
-                                                    class="inline-flex items-center rounded-xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-700"
-                                                >
-                                                    Удалить
-                                                </button>
-                                            </form>
-                                        </div>
-                                    @endif
-                                </div>
-                            </div>
-                        @empty
-                            <div class="text-sm text-gray-500">Состав пока пуст.</div>
-                        @endforelse
-                    </div>
+        <div class="card mb-1">
+            <div class="d-flex between fvc mb-05" style="flex-wrap:wrap;gap:.5rem">
+                <div>
+                    <span class="b-600">{{ $inv->invitedUser->name ?? $inv->invitedUser->email ?? ('#'.$inv->invited_user_id) }}</span>
+                    <span class="f-13 ml-1" style="opacity:.6">
+                        {{ $roleLabels[$inv->team_role] ?? $inv->team_role }}
+                        @if($inv->position_code) · {{ $posLabels[$inv->position_code] ?? $inv->position_code }} @endif
+                    </span>
                 </div>
-                @if((int) $team->captain_user_id === (int) auth()->id())
-                    <div class="rounded-2xl border border-gray-100 bg-white p-6">
-                        <h2 class="text-lg font-semibold text-gray-900">Созданные приглашения</h2>
-                
-                        <div class="mt-4 space-y-3">
-                            @forelse(($team->invites ?? collect())->sortByDesc('id') as $invite)
-                                @php
-                                    $inviteUser = $invite->invitedUser;
-                                    $inviteMeta = is_array($invite->meta) ? $invite->meta : [];
-                
-                                    $roleLabel = match($invite->team_role) {
-                                        'player' => 'Основной игрок',
-                                        'reserve' => 'Запасной',
-                                        default => $invite->team_role,
-                                    };
-                
-                                    $positionLabel = match($invite->position_code) {
-                                        'setter' => 'Связующий',
-                                        'outside' => 'Доигровщик',
-                                        'opposite' => 'Диагональный',
-                                        'middle' => 'Центральный блокирующий',
-                                        'libero' => 'Либеро',
-                                        default => $invite->position_code ?: '—',
-                                    };
-                
-                                    $statusLabel = match($invite->status) {
-                                        'pending' => 'Ожидает',
-                                        'accepted' => 'Принято',
-                                        'declined' => 'Отклонено',
-                                        'revoked' => 'Отозвано',
-                                        'expired' => 'Истекло',
-                                        default => $invite->status,
-                                    };
-                
-                                    $statusClass = match($invite->status) {
-                                        'accepted' => 'bg-emerald-100 text-emerald-700',
-                                        'declined' => 'bg-rose-100 text-rose-700',
-                                        'revoked', 'expired' => 'bg-slate-100 text-slate-700',
-                                        default => 'bg-amber-100 text-amber-700',
-                                    };
-                
-                                    $inviteUrl = $inviteMeta['invite_url'] ?? route('tournamentTeamInvites.show', ['token' => $invite->token]);
-                                    $channels = collect($inviteMeta['sent_channels'] ?? [])->filter()->values();
-                                @endphp
-                
-                                <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4">
-                                    <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                                        <div class="min-w-0">
-                                            <div class="font-semibold text-gray-900">
-                                                {{ $inviteUser->name ?? $inviteUser->email ?? ('#' . $invite->invited_user_id) }}
-                                            </div>
-                
-                                            <div class="mt-1 flex flex-wrap gap-2">
-                                                <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">
-                                                    {{ $roleLabel }}
-                                                </span>
-                
-                                                <span class="inline-flex items-center rounded-full bg-purple-100 px-2.5 py-1 text-xs font-medium text-purple-700">
-                                                    {{ $positionLabel }}
-                                                </span>
-                
-                                                <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium {{ $statusClass }}">
-                                                    {{ $statusLabel }}
-                                                </span>
-                                            </div>
-                
-                                            <div class="mt-2 text-xs text-gray-500">
-                                                Отправлено:
-                                                @if($channels->isNotEmpty())
-                                                    {{ $channels->join(', ') }}
-                                                @else
-                                                    ссылка создана
-                                                @endif
-                                            </div>
-                                            <div class="mt-1 text-xs text-gray-500">
-                                                Создано: {{ $invite->created_at?->format('d.m.Y H:i') ?? '—' }}
-                                            </div>
-                                            <div class="mt-2 text-xs text-gray-500 break-all">
-                                                <span class="font-medium">Ссылка:</span>
-                                                <a href="{{ $inviteUrl }}" target="_blank" class="text-blue-600 underline">
-                                                    {{ $inviteUrl }}
-                                                </a>
-                                            </div>
-                                        </div>
-                
-                                        <div class="shrink-0">
-                                            <a
-                                                href="{{ $inviteUrl }}"
-                                                target="_blank"
-                                                class="inline-flex items-center rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
-                                            >
-                                                Приглашение 🔗
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-                            @empty
-                                <div class="text-sm text-gray-500">
-                                    Приглашений пока нет.
-                                </div>
-                            @endforelse
-                        </div>
-                    </div>
-                @endif
-                <div class="rounded-2xl border border-gray-100 bg-white p-6">
-                    <h2 class="text-lg font-semibold text-gray-900">Подача заявки</h2>
-
-                    <div class="mt-3 text-sm text-gray-600">
-                        @if($team->application)
-                            Заявка уже существует.
-                            <span class="font-medium text-gray-900">Статус: {{ $team->application->status }}</span>
-                        @else
-                            Если состав готов, капитан может подать заявку на турнир.
-                        @endif
-                    </div>
-
-                    @if((int) $team->captain_user_id === (int) auth()->id() && !$team->application)
-                        <form
-                            method="POST"
-                            action="{{ route('tournamentTeams.submit', [$event, $team]) }}"
-                            class="mt-4"
-                            data-confirm-submit-team
-                        >
-                            @csrf
-                            <button
-                                type="submit"
-                                class="inline-flex items-center rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
-                            >
-                                Подать заявку
-                            </button>
-                        </form>
-                    @endif
-                </div>
+                <span class="f-13 b-600" style="color:{{ $invStColors[$inv->status] ?? '#ff9800' }}">
+                    {{ $invStLabels[$inv->status] ?? $inv->status }}
+                </span>
             </div>
-
-            <div class="space-y-6">
-                @if((int) $team->captain_user_id === (int) auth()->id())
-                    <div class="rounded-2xl border border-gray-100 bg-white p-6">
-                        <h2 class="text-lg font-semibold text-gray-900">Создать ссылку-приглашение</h2>
-
-                        <form
-                            method="POST"
-                            action="{{ route('tournamentTeamInvites.store', [$event, $team]) }}"
-                            class="mt-4 space-y-3"
-                        >
-                            @csrf
-
-                            <div>
-                                <label class="mb-2 block text-sm font-medium">Поиск игрока</label>
-                                <input
-                                    type="text"
-                                    id="team-invite-user-search"
-                                    class="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm"
-                                    placeholder="Введите имя, email или username"
-                                    autocomplete="off"
-                                    data-search-url="{{ route('api.users.search') }}"
-                                >
-                                <input type="hidden" name="invited_user_id" id="team-invite-user-id">
-                                <div
-                                    id="team-invite-search-results"
-                                    class="mt-2 hidden overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm"
-                                ></div>
-                            </div>
-
-                            <div>
-                                <label class="mb-2 block text-sm font-medium">Роль в команде</label>
-                                <select
-                                    name="team_role"
-                                    id="team_role"
-                                    class="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm"
-                                    required
-                                >
-                                    <option value="player">Основной игрок</option>
-                                    <option value="reserve">Запасной</option>
-                                </select>
-                            </div>
-
-                            @if($team->team_kind === 'classic_team')
-                                <div id="position_code_wrap">
-                                    <label class="mb-2 block text-sm font-medium">Амплуа (позиция)</label>
-                                    <select
-                                        name="position_code"
-                                        id="position_code"
-                                        class="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm"
-                                    >
-                                        <option value="">Не выбрано</option>
-                                        @foreach(($positionOptions ?? []) as $code => $label)
-                                            <option value="{{ $code }}">{{ $label }}</option>
-                                        @endforeach
-                                    </select>
-                                    <small class="text-xs text-gray-500">
-                                        Для основного игрока классической команды позиция обязательна.
-                                    </small>
-                                </div>
-                            @endif
-
-                            <div id="team-invite-selected-user" class="text-sm text-gray-600">
-                                Игрок не выбран
-                            </div>
-
-                            <button
-                                type="submit"
-                                class="inline-flex items-center rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
-                            >
-                                Создать ссылку
-                            </button>
-                        </form>
-                    </div>
-                @endif
-
-                <div class="rounded-2xl border border-gray-100 bg-white p-6">
-                    <h2 class="text-lg font-semibold text-gray-900">Проверка готовности</h2>
-                    <div class="mt-4 space-y-2 text-sm text-gray-700">
-                        <div>Подтверждённых игроков: <span class="font-semibold">{{ $confirmedCount }}</span></div>
-                        <div>Ожидают решения: <span class="font-semibold">{{ $pendingCount }}</span></div>
-
-                        @if($settings)
-                            <div>Схема игры: <span class="font-semibold">{{ $settings->game_scheme ?? '—' }}</span></div>
-                            <div>Минимум игроков: <span class="font-semibold">{{ $settings->team_size_min ?? '—' }}</span></div>
-                            <div>Макс. запасных: <span class="font-semibold">{{ $settings->reserve_players_max ?? '—' }}</span></div>
-                            <div>Макс. всего: <span class="font-semibold">{{ $settings->total_players_max ?? $settings->team_size_max ?? '—' }}</span></div>
-                            <div>Либеро обязателен: <span class="font-semibold">{{ $settings->require_libero ? 'Да' : 'Нет' }}</span></div>
-                            <div>Лимит суммы рейтингов: <span class="font-semibold">{{ $settings->max_rating_sum ?? '—' }}</span></div>
-                        @endif
-                    </div>
-                </div>
+            <div class="f-13 mb-1" style="opacity:.5">
+                {{ $channels->isNotEmpty() ? 'Отправлено: '.$channels->join(', ') : 'Ссылка создана' }}
+                · {{ $inv->created_at?->format('d.m.Y H:i') }}
             </div>
+            <a href="{{ $invUrl }}" target="_blank" class="btn btn-small btn-secondary">🔗 Открыть ссылку</a>
+        </div>
+        @empty
+        <div class="f-15" style="opacity:.5">Приглашений пока нет</div>
+        @endforelse
+    </div>
+
+    {{-- Создать приглашение --}}
+    <div class="ramka">
+        <h2 class="-mt-05">➕ Создать ссылку-приглашение</h2>
+        <div class="f-15 mb-2" style="opacity:.6">
+            Игрок получит персональную ссылку с ролью и позицией.
+        </div>
+        <form method="POST" action="{{ route('tournamentTeamInvites.store',[$event,$team]) }}" class="form">
+            @csrf
+            <div class="row row2">
+                <div class="col-md-5">
+                    <label>Игрок</label>
+                    <div style="position:relative" id="ti-wrap">
+                        <input type="text" id="ti-input" autocomplete="off" placeholder="Имя или email…">
+                        <input type="hidden" name="invited_user_id" id="ti-userid">
+                        <div id="ti-dd" style="display:none;position:absolute;left:0;right:0;top:100%;margin-top:.4rem;z-index:50;background:var(--bg-card,#fff);border:.1rem solid var(--border-color,#eee);border-radius:1.2rem;box-shadow:0 1rem 3rem rgba(0,0,0,.1);max-height:22rem;overflow-y:auto"></div>
+                    </div>
+                    <div id="ti-selected" class="f-13 mt-05" style="color:#4caf50;display:none"></div>
+                </div>
+                <div class="col-md-3">
+                    <label>Роль</label>
+                    <select name="team_role" id="ti-role">
+                        <option value="player">Основной</option>
+                        <option value="reserve">Запасной</option>
+                    </select>
+                </div>
+                @if($team->team_kind==='classic_team')
+                <div class="col-md-4" id="ti-pos-wrap">
+                    <label>Позиция</label>
+                    <select name="position_code" id="ti-position">
+                        <option value="">— без —</option>
+                        @foreach($positionOptions ?? [] as $code => $label)
+                        <option value="{{ $code }}">{{ $label }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                @endif
+            </div>
+            <button type="submit" class="btn mt-1">Создать ссылку</button>
+        </form>
+    </div>
+    @endif
+
+    {{-- Заявка --}}
+    <div class="ramka">
+        <h2 class="-mt-05">📋 Подача заявки</h2>
+        @if($team->application)
+            <div class="alert alert-info">Заявка подана · Статус: <strong>{{ $team->application->status }}</strong></div>
+        @elseif($isCaptain)
+            <div class="f-15 mb-2" style="opacity:.6">Если состав готов — подайте заявку на турнир.</div>
+            <form method="POST" action="{{ route('tournamentTeams.submit',[$event,$team]) }}"
+                  onsubmit="return confirm('Подать заявку команды на турнир?')">
+                @csrf
+                <button type="submit" class="btn">Подать заявку</button>
+            </form>
+        @else
+            <div class="f-15" style="opacity:.5">Заявка ещё не подана</div>
+        @endif
+    </div>
+
+</div>
+<div class="col-lg-4">
+
+    {{-- Статус --}}
+    <div class="ramka">
+        <h2 class="-mt-05">📊 Состав</h2>
+        <div class="card">
+            <div class="f-15 mb-05">Подтверждено: <strong>{{ $confirmedCount }}</strong></div>
+            <div class="f-15 mb-05">Ожидают: <strong>{{ $pendingCount }}</strong></div>
+            <div class="f-15 mb-1">Всего: <strong>{{ $team->members->count() }}</strong></div>
+            @if($settings)
+            <div class="f-13" style="opacity:.6;line-height:1.8">
+                Схема: <strong>{{ $settings->game_scheme ?? '—' }}</strong><br>
+                Мин.: <strong>{{ $settings->team_size_min ?? '—' }}</strong> ·
+                Макс.: <strong>{{ $settings->total_players_max ?? $settings->team_size_max ?? '—' }}</strong><br>
+                Запасных: <strong>{{ $settings->reserve_players_max ?? '—' }}</strong><br>
+                Либеро: <strong>{{ $settings->require_libero ? 'Да' : 'Нет' }}</strong>
+                @if($settings->max_rating_sum)<br>Лимит рейтинга: <strong>{{ $settings->max_rating_sum }}</strong>@endif
+            </div>
+            @endif
+        </div>
+        <div class="mt-1">
+            @if($team->is_complete)
+            <div class="alert alert-success">✅ Состав готов</div>
+            @else
+            <div class="alert alert-warning">⚠️ Состав не готов</div>
+            @endif
         </div>
     </div>
 
-    <script>
-        (function () {
-            const removeForms = document.querySelectorAll('[data-confirm-remove-member]');
-            const submitForms = document.querySelectorAll('[data-confirm-submit-team]');
-            const searchInput = document.getElementById('team-invite-user-search');
-            const userIdInput = document.getElementById('team-invite-user-id');
-            const resultsBox = document.getElementById('team-invite-search-results');
-            const selectedUserBox = document.getElementById('team-invite-selected-user');
-            const teamRoleSelect = document.getElementById('team_role');
-            const positionWrap = document.getElementById('position_code_wrap');
-            const positionSelect = document.getElementById('position_code');
+</div>
+</div>
+</div>
 
-            let searchTimer = null;
-
-            function escapeHtml(value) {
-                return String(value ?? '')
-                    .replace(/&/g, '&amp;')
-                    .replace(/</g, '&lt;')
-                    .replace(/>/g, '&gt;')
-                    .replace(/"/g, '&quot;')
-                    .replace(/'/g, '&#039;');
-            }
-
-            removeForms.forEach((form) => {
-                form.addEventListener('submit', function (e) {
-                    if (!window.confirm('Удалить игрока из команды?')) {
-                        e.preventDefault();
-                    }
+<x-slot name="script">
+<script>
+(function(){
+    var input=document.getElementById('ti-input'),dd=document.getElementById('ti-dd'),
+        hid=document.getElementById('ti-userid'),sel=document.getElementById('ti-selected'),
+        role=document.getElementById('ti-role'),posW=document.getElementById('ti-pos-wrap'),
+        timer=null;
+    if(!input)return;
+    function syncPos(){if(posW)posW.style.display=(role&&role.value==='reserve')?'none':'';}
+    if(role){role.addEventListener('change',syncPos);syncPos();}
+    function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+    input.addEventListener('input',function(){
+        clearTimeout(timer);hid.value='';sel.style.display='none';
+        var q=input.value.trim();
+        if(q.length<2){dd.style.display='none';return;}
+        dd.innerHTML='<div style="padding:1rem 1.6rem;opacity:.5;font-size:1.5rem">Поиск…</div>';dd.style.display='block';
+        timer=setTimeout(function(){
+            fetch('/api/users/search?q='+encodeURIComponent(q),{headers:{'Accept':'application/json'},credentials:'same-origin'})
+            .then(function(r){return r.json();}).then(function(data){
+                var items=data.items||[];dd.innerHTML='';
+                if(!items.length){dd.innerHTML='<div style="padding:1rem 1.6rem;opacity:.5;font-size:1.5rem">Ничего не найдено</div>';return;}
+                items.forEach(function(item){
+                    var div=document.createElement('div');
+                    div.style='padding:1rem 1.6rem;cursor:pointer;font-size:1.5rem;border-bottom:.1rem solid var(--border-color,#eee)';
+                    div.innerHTML='<span class="b-600">'+esc(item.label||item.name)+'</span>';
+                    div.addEventListener('mouseover',function(){this.style.background='var(--bg2,#f5f5f5)';});
+                    div.addEventListener('mouseout',function(){this.style.background='';});
+                    div.addEventListener('click',function(){
+                        hid.value=item.id;input.value=item.label||item.name;
+                        sel.textContent='✅ '+input.value;sel.style.display='block';dd.style.display='none';
+                    });
+                    dd.appendChild(div);
                 });
             });
-
-            submitForms.forEach((form) => {
-                form.addEventListener('submit', function (e) {
-                    if (!window.confirm('Подать заявку команды на турнир?')) {
-                        e.preventDefault();
-                    }
-                });
-            });
-
-            function syncPositionVisibility() {
-                if (!teamRoleSelect || !positionWrap || !positionSelect) return;
-
-                const role = teamRoleSelect.value;
-                const show = role === 'player';
-
-                positionWrap.style.display = show ? '' : 'none';
-
-                if (!show) {
-                    positionSelect.value = '';
-                }
-            }
-
-            if (teamRoleSelect) {
-                teamRoleSelect.addEventListener('change', syncPositionVisibility);
-                syncPositionVisibility();
-            }
-
-            if (!searchInput || !userIdInput || !resultsBox || !selectedUserBox) {
-                return;
-            }
-
-            const searchUrl = searchInput.getAttribute('data-search-url') || '';
-
-            searchInput.addEventListener('input', function () {
-                const q = searchInput.value.trim();
-
-                userIdInput.value = '';
-                selectedUserBox.textContent = 'Игрок не выбран';
-
-                clearTimeout(searchTimer);
-
-                if (q.length < 2) {
-                    resultsBox.innerHTML = '';
-                    resultsBox.classList.add('hidden');
-                    return;
-                }
-
-                searchTimer = setTimeout(async () => {
-                    try {
-                        const url = new URL(searchUrl, window.location.origin);
-                        url.searchParams.set('q', q);
-
-                        const res = await fetch(url.toString(), {
-                            headers: {
-                                'X-Requested-With': 'XMLHttpRequest',
-                                'Accept': 'application/json',
-                            }
-                        });
-
-                        const payload = await res.json();
-                        const users = Array.isArray(payload) ? payload : (payload.items || []);
-
-                        if (!Array.isArray(users) || users.length === 0) {
-                            resultsBox.innerHTML = '<div class="px-3 py-2 text-sm text-gray-500">Ничего не найдено</div>';
-                            resultsBox.classList.remove('hidden');
-                            return;
-                        }
-
-                        resultsBox.innerHTML = users.map((u) => {
-                            const primary =
-                                u.full_name ||
-                                u.name ||
-                                u.fio ||
-                                u.telegram_username ||
-                                u.username ||
-                                ('ID ' + u.id);
-
-                          const secondary =
-                                u.meta ||
-                                u.telegram_username ||
-                                u.username ||
-                                  '';
-
-                            const label = secondary ? `${primary} — ${secondary}` : primary;
-
-                            return `
-                                <button
-                                    type="button"
-                                    class="block w-full border-0 border-b border-gray-100 px-3 py-2 text-left text-sm hover:bg-gray-50 last:border-b-0"
-                                    data-user-id="${escapeHtml(u.id)}"
-                                    data-user-label="${escapeHtml(label)}"
-                                >
-                                    <div class="font-medium text-gray-900">${escapeHtml(primary)}</div>
-                                    ${secondary ? `<div class="text-xs text-gray-500">${escapeHtml(secondary)}</div>` : ''}
-                                </button>
-                            `;
-                        }).join('');
-
-                        resultsBox.classList.remove('hidden');
-
-                        resultsBox.querySelectorAll('[data-user-id]').forEach((btn) => {
-                            btn.addEventListener('click', function () {
-                                const userId = btn.getAttribute('data-user-id') || '';
-                                const label = btn.getAttribute('data-user-label') || '';
-
-                                userIdInput.value = userId;
-                                searchInput.value = label;
-                                selectedUserBox.textContent = 'Выбран игрок: ' + label;
-
-                                resultsBox.innerHTML = '';
-                                resultsBox.classList.add('hidden');
-                            });
-                        });
-                    } catch (e) {
-                        console.error(e);
-                        resultsBox.innerHTML = '<div class="px-3 py-2 text-sm text-red-600">Ошибка поиска</div>';
-                        resultsBox.classList.remove('hidden');
-                    }
-                }, 250);
-            });
-
-            document.addEventListener('click', function (e) {
-                if (!resultsBox.contains(e.target) && e.target !== searchInput) {
-                    resultsBox.classList.add('hidden');
-                }
-            });
-        })();
-    </script>
-</x-app-layout>
+        },250);
+    });
+    document.addEventListener('click',function(e){if(!document.getElementById('ti-wrap').contains(e.target))dd.style.display='none';});
+})();
+</script>
+</x-slot>
+</x-voll-layout>

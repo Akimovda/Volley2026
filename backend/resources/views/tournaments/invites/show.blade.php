@@ -1,378 +1,174 @@
-<x-app-layout>
-    @php
-        $team = $invite->team ?? $team ?? null;
-        $event = $invite->event ?? $event ?? ($team?->event);
-        $captain = $team?->captain;
-        $settings = $event?->tournamentSetting;
-        $members = $team?->members ?? collect();
-        $confirmedMembers = $members->where('confirmation_status', 'confirmed');
-        $pendingMembers = $members->whereIn('confirmation_status', ['invited', 'joined']);
+<x-voll-layout body_class="tournament-invite-page">
+<x-slot name="title">Приглашение в команду</x-slot>
+<x-slot name="h1">Приглашение в команду</x-slot>
 
-        $positionLabels = [
-            'setter' => 'Связующий',
-            'outside' => 'Доигровщик',
-            'opposite' => 'Диагональный',
-            'middle' => 'Центральный блокирующий',
-            'libero' => 'Либеро',
-        ];
+<x-slot name="breadcrumbs">
+    @if(isset($event))
+    <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
+        <a href="{{ route('events.show', $event) }}" itemprop="item"><span itemprop="name">{{ $event->title ?? 'Турнир' }}</span></a>
+        <meta itemprop="position" content="2">
+    </li>
+    @endif
+    <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
+        <span itemprop="name">Приглашение</span>
+        <meta itemprop="position" content="3">
+    </li>
+</x-slot>
 
-        $teamRoleLabels = [
-            'captain' => 'Капитан',
-            'player' => 'Основной игрок',
-            'reserve' => 'Запасной',
-        ];
+@php
+$team     = $invite->team ?? $team ?? null;
+$event    = $invite->event ?? $event ?? ($team?->event);
+$captain  = $team?->captain;
+$settings = $event?->tournamentSetting;
+$members  = $team?->members ?? collect();
+$confirmedMembers = $members->where('confirmation_status','confirmed');
+$pendingMembers   = $members->whereIn('confirmation_status',['invited','joined']);
+$posLabels  = ['setter'=>'Связующий','outside'=>'Доигровщик','opposite'=>'Диагональный','middle'=>'Центральный','libero'=>'Либеро'];
+$roleLabels = ['captain'=>'Капитан','player'=>'Основной игрок','reserve'=>'Запасной'];
+$stLabels   = ['confirmed'=>'Подтверждён','joined'=>'Ожидает подтверждения','invited'=>'Приглашён','declined'=>'Отклонён'];
+$stColors   = ['confirmed'=>'#4caf50','joined'=>'#ff9800','invited'=>'#2967BA','declined'=>'#f44336'];
+$inviteRole     = $invite->team_role ?? null;
+$invitePosition = $invite->position_code ?? null;
+$canRespond     = in_array((string)($invite->status ?? 'pending'), ['pending'], true);
+$st = (string)($invite->status ?? 'pending');
+$stAllColors = ['accepted'=>'#4caf50','declined'=>'#f44336','revoked'=>'#999','expired'=>'#999','pending'=>'#ff9800'];
+$stAllLabels = ['accepted'=>'Принято','declined'=>'Отклонено','cancelled'=>'Отменено','revoked'=>'Отозвано','expired'=>'Истекло','pending'=>'Ожидает ответа'];
+$locationLine = collect([$event?->location?->city?->name,$event?->location?->name,$event?->location?->address])->filter()->implode(', ');
+@endphp
 
-        $inviteRole = $invite->team_role ?? null;
-        $invitePosition = $invite->position_code ?? null;
-        $eventTitle = $event->title ?? 'Турнир';
+<div class="container">
 
-        $locationLine = collect([
-            $event?->location?->city?->name,
-            $event?->location?->name,
-            $event?->location?->address,
-        ])->filter()->implode(', ');
+@if(session('success'))<div class="alert alert-success">✅ {{ session('success') }}</div>@endif
+@if(session('error'))<div class="alert alert-danger">❌ {{ session('error') }}</div>@endif
+@if($errors->any())
+<div class="alert alert-danger">@foreach($errors->all() as $e)<div>{{ $e }}</div>@endforeach</div>
+@endif
 
-        $scheme = $settings?->game_scheme ?? $settings?->getGameScheme() ?? '—';
+<div class="row row2">
+<div class="col-lg-8">
 
-        $statusBadgeClass = match ((string) ($invite->status ?? 'pending')) {
-            'accepted' => 'bg-emerald-100 text-emerald-700',
-            'declined' => 'bg-rose-100 text-rose-700',
-            'cancelled', 'revoked', 'expired' => 'bg-slate-200 text-slate-700',
-            default => 'bg-amber-100 text-amber-700',
-        };
+    {{-- Инфо о приглашении --}}
+    <div class="ramka">
+        <div class="d-flex between fvc mb-1" style="flex-wrap:wrap;gap:.5rem">
+            <h2 class="-mt-05">{{ $team?->name ?? 'Команда' }}</h2>
+            <span class="f-13 b-600" style="color:{{ $stAllColors[$st] ?? '#999' }}">
+                {{ $stAllLabels[$st] ?? $st }}
+            </span>
+        </div>
 
-        $statusLabel = match ((string) ($invite->status ?? 'pending')) {
-            'accepted' => 'Принято',
-            'declined' => 'Отклонено',
-            'cancelled' => 'Отменено',
-            'revoked' => 'Отозвано',
-            'expired' => 'Истекло',
-            default => 'Ожидает ответа',
-        };
-
-        $canRespond = in_array((string) ($invite->status ?? 'pending'), ['pending'], true);
-    @endphp
-
-    <div class="max-w-6xl mx-auto px-4 py-6">
         @if($event)
-            <div class="mb-4">
-                <a
-                    href="{{ route('events.show', $event) }}"
-                    class="inline-flex items-center rounded-xl bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-200"
-                >
-                    ← Назад к турниру
-                </a>
-            </div>
+        <div class="f-15 mb-05">🏆 <strong>{{ $event->title }}</strong></div>
+        @endif
+        @if($locationLine)
+        <div class="f-14 mb-05" style="opacity:.6">📍 {{ $locationLine }}</div>
+        @endif
+        @if(!empty($event?->starts_at))
+        <div class="f-14 mb-2" style="opacity:.6">
+            📅 {{ \Carbon\Carbon::parse($event->starts_at)->timezone($event->timezone ?? config('app.timezone'))->format('d.m.Y H:i') }}
+        </div>
         @endif
 
-        @if(session('success'))
-            <div class="mb-6 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
-                {{ session('success') }}
+        <div class="card">
+            <div class="b-600 f-15 mb-05">Вас приглашают на роль:</div>
+            <div class="f-16">
+                @if($inviteRole) <span class="b-600">{{ $roleLabels[$inviteRole] ?? $inviteRole }}</span> @endif
+                @if($invitePosition) · {{ $posLabels[$invitePosition] ?? $invitePosition }} @endif
             </div>
-        @endif
+            <div class="f-13 mt-1" style="opacity:.6">После принятия вас добавят в состав команды.</div>
+        </div>
+    </div>
 
-        @if(session('error'))
-            <div class="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-                {{ session('error') }}
+    {{-- Кто приглашает --}}
+    <div class="ramka">
+        <h2 class="-mt-05">👤 Кто приглашает</h2>
+        <div class="card d-flex fvc gap-2">
+            <div style="width:4.8rem;height:4.8rem;border-radius:50%;background:rgba(41,103,186,.12);display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:700;color:#2967BA;flex-shrink:0">
+                {{ mb_strtoupper(mb_substr($captain->name ?? $captain->email ?? 'C', 0, 1)) }}
             </div>
-        @endif
-
-        @if($errors->any())
-            <div class="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-                <div class="mb-2 font-semibold">Есть ошибки:</div>
-                <ul class="list-disc pl-5 space-y-1">
-                    @foreach($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
-            </div>
-        @endif
-
-        <div class="grid gap-6 lg:grid-cols-3">
-            <div class="space-y-6 lg:col-span-2">
-                <div class="rounded-2xl border border-gray-100 bg-white p-6">
-                    <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                        <div>
-                            <div class="mb-2 flex flex-wrap gap-2">
-                                <span class="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700">
-                                    Приглашение в команду
-                                </span>
-                                <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium {{ $statusBadgeClass }}">
-                                    {{ $statusLabel }}
-                                </span>
-                            </div>
-
-                            <h1 class="text-2xl font-bold text-gray-900">
-                                {{ $team?->name ?? 'Команда' }}
-                            </h1>
-
-                            <div class="mt-2 text-sm text-gray-600">
-                                Турнир:
-                                <span class="font-medium text-gray-900">{{ $eventTitle }}</span>
-                            </div>
-
-                            @if($locationLine)
-                                <div class="mt-1 text-sm text-gray-600">
-                                    Локация:
-                                    <span class="font-medium text-gray-900">{{ $locationLine }}</span>
-                                </div>
-                            @endif
-
-                            @if(!empty($event?->starts_at))
-                                <div class="mt-1 text-sm text-gray-600">
-                                    Дата:
-                                    <span class="font-medium text-gray-900">
-                                        {{ \Illuminate\Support\Carbon::parse($event->starts_at)->timezone($event->timezone ?? config('app.timezone'))->format('d.m.Y H:i') }}
-                                    </span>
-                                </div>
-                            @endif
-
-                            @if(!empty($event?->description))
-                                <div class="mt-3 text-sm text-gray-600">
-                                    <div class="font-medium text-gray-900">Описание:</div>
-                                    <div class="mt-1 whitespace-pre-wrap">{{ $event->description }}</div>
-                                </div>
-                            @endif
-                        </div>
-
-                        <div class="w-full max-w-sm rounded-2xl border border-gray-200 bg-gray-50 p-4">
-                            <div class="text-sm font-semibold text-gray-800">Вас приглашают на роль</div>
-                            <div class="mt-3 flex flex-wrap gap-2">
-                                @if($inviteRole)
-                                    <span class="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
-                                        {{ $teamRoleLabels[$inviteRole] ?? $inviteRole }}
-                                    </span>
-                                @endif
-
-                                @if($invitePosition)
-                                    <span class="inline-flex items-center rounded-full bg-purple-100 px-3 py-1 text-xs font-medium text-purple-700">
-                                        {{ $positionLabels[$invitePosition] ?? $invitePosition }}
-                                    </span>
-                                @endif
-                            </div>
-                            <div class="mt-3 text-xs text-gray-500">
-                                Если вы примете приглашение, вас добавят в состав этой команды.
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="rounded-2xl border border-gray-100 bg-white p-6">
-                    <h2 class="text-lg font-semibold text-gray-900">Информация о турнире</h2>
-                    <div class="mt-4 grid gap-3 md:grid-cols-2 text-sm text-gray-700">
-                        <div class="rounded-xl bg-gray-50 px-4 py-3">
-                            <div class="text-xs text-gray-500">Формат регистрации</div>
-                            <div class="mt-1 font-semibold text-gray-900">
-                                {{ match($settings?->registration_mode) {
-                                    'team_classic' => 'Классическая команда',
-                                    'team_beach' => 'Пляжная команда / пара',
-                                    default => '—',
-                                } }}
-                            </div>
-                        </div>
-
-                        <div class="rounded-xl bg-gray-50 px-4 py-3">
-                            <div class="text-xs text-gray-500">Схема игры</div>
-                            <div class="mt-1 font-semibold text-gray-900">
-                                {{ $scheme }}
-                            </div>
-                        </div>
-
-                        <div class="rounded-xl bg-gray-50 px-4 py-3">
-                            <div class="text-xs text-gray-500">Минимум игроков</div>
-                            <div class="mt-1 font-semibold text-gray-900">
-                                {{ $settings?->team_size_min ?? '—' }}
-                            </div>
-                        </div>
-
-                        <div class="rounded-xl bg-gray-50 px-4 py-3">
-                            <div class="text-xs text-gray-500">Максимум игроков</div>
-                            <div class="mt-1 font-semibold text-gray-900">
-                                {{ $settings?->total_players_max ?? $settings?->team_size_max ?? '—' }}
-                            </div>
-                        </div>
-
-                        <div class="rounded-xl bg-gray-50 px-4 py-3">
-                            <div class="text-xs text-gray-500">Макс. запасных</div>
-                            <div class="mt-1 font-semibold text-gray-900">
-                                {{ $settings?->reserve_players_max ?? '—' }}
-                            </div>
-                        </div>
-
-                        <div class="rounded-xl bg-gray-50 px-4 py-3">
-                            <div class="text-xs text-gray-500">Либеро обязателен</div>
-                            <div class="mt-1 font-semibold text-gray-900">
-                                {{ !empty($settings?->require_libero) ? 'Да' : 'Нет' }}
-                            </div>
-                        </div>
-
-                        @if(!is_null($settings?->max_rating_sum))
-                            <div class="rounded-xl bg-gray-50 px-4 py-3 md:col-span-2">
-                                <div class="text-xs text-gray-500">Лимит суммы рейтинга</div>
-                                <div class="mt-1 font-semibold text-gray-900">
-                                    {{ $settings->max_rating_sum }}
-                                </div>
-                            </div>
-                        @endif
-
-                        @if(!empty($event?->location?->map_link))
-                            <div class="rounded-xl bg-gray-50 px-4 py-3 md:col-span-2">
-                                <div class="text-xs text-gray-500">Местоположение</div>
-                                <div class="mt-1">
-                                    <a 
-                                        href="{{ $event->location->map_link }}" 
-                                        target="_blank"
-                                        class="text-blue-600 hover:text-blue-800 underline text-sm"
-                                    >
-                                        Открыть на карте
-                                    </a>
-                                </div>
-                            </div>
-                        @endif
-                    </div>
-                </div>
-
-                <div class="rounded-2xl border border-gray-100 bg-white p-6">
-                    <h2 class="text-lg font-semibold text-gray-900">Кто приглашает</h2>
-                    <div class="mt-4 flex items-center gap-4 rounded-2xl border border-gray-200 bg-gray-50 p-4">
-                        <div class="flex h-14 w-14 items-center justify-center rounded-full bg-slate-200 text-lg font-bold text-slate-700">
-                            {{ mb_substr($captain->name ?? $captain->email ?? 'C', 0, 1) }}
-                        </div>
-                        <div>
-                            <div class="font-semibold text-gray-900">
-                                {{ $captain->name ?? $captain->email ?? ('#' . ($team?->captain_user_id ?? '—')) }}
-                            </div>
-                            @if(!empty($captain?->email))
-                                <div class="mt-1 text-sm text-gray-500">
-                                    {{ $captain->email }}
-                                </div>
-                            @endif
-                            <div class="mt-1 text-sm text-gray-600">
-                                Капитан команды
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="rounded-2xl border border-gray-100 bg-white p-6">
-                    <div class="flex items-center justify-between">
-                        <h2 class="text-lg font-semibold text-gray-900">Текущий состав команды</h2>
-                        <div class="text-sm text-gray-500">
-                            В команде: {{ $members->count() }}
-                        </div>
-                    </div>
-
-                    <div class="mt-4 space-y-3">
-                        @forelse($members as $member)
-                            <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4">
-                                <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                                    <div>
-                                        <div class="font-semibold text-gray-900">
-                                            {{ $member->user->name ?? $member->user->email ?? ('#' . $member->user_id) }}
-                                        </div>
-                                        <div class="mt-1 flex flex-wrap gap-2">
-                                            <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">
-                                                {{ $teamRoleLabels[$member->team_role] ?? $member->team_role }}
-                                            </span>
-
-                                            @if(!empty($member->position_code))
-                                                <span class="inline-flex items-center rounded-full bg-purple-100 px-2.5 py-1 text-xs font-medium text-purple-700">
-                                                    {{ $positionLabels[$member->position_code] ?? $member->position_code }}
-                                                </span>
-                                            @endif
-
-                                            <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium
-                                                @if($member->confirmation_status === 'confirmed') bg-emerald-100 text-emerald-700
-                                                @elseif($member->confirmation_status === 'joined') bg-amber-100 text-amber-700
-                                                @elseif($member->confirmation_status === 'invited') bg-sky-100 text-sky-700
-                                                @elseif($member->confirmation_status === 'declined') bg-rose-100 text-rose-700
-                                                @else bg-slate-100 text-slate-700 @endif
-                                            ">
-                                                {{ match($member->confirmation_status) {
-                                                    'confirmed' => 'Подтверждён',
-                                                    'joined' => 'Ожидает подтверждения',
-                                                    'invited' => 'Приглашён',
-                                                    'declined' => 'Отклонён',
-                                                    default => $member->confirmation_status,
-                                                } }}
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    @if((int) $member->user_id === (int) ($team?->captain_user_id))
-                                        <span class="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">
-                                            Капитан
-                                        </span>
-                                    @endif
-                                </div>
-                            </div>
-                        @empty
-                            <div class="text-sm text-gray-500">
-                                Состав пока пуст.
-                            </div>
-                        @endforelse
-                    </div>
-                </div>
-            </div>
-
-            <div class="space-y-6">
-                <div class="rounded-2xl border border-gray-100 bg-white p-6">
-                    <h2 class="text-lg font-semibold text-gray-900">Ваше решение</h2>
-                    <div class="mt-3 text-sm text-gray-600">
-                        @if($canRespond)
-                            Вы можете принять приглашение или отказаться.
-                        @else
-                            По этому приглашению уже принято решение.
-                        @endif
-                    </div>
-
-                    @if($canRespond)
-                        <div class="mt-4 space-y-3">
-                            <form method="POST" action="{{ route('tournamentTeamInvites.accept', $invite->token) }}">
-                                @csrf
-                                <button
-                                    type="submit"
-                                    class="w-full inline-flex items-center justify-center rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700"
-                                >
-                                    Принять приглашение
-                                </button>
-                            </form>
-
-                            <form method="POST" action="{{ route('tournamentTeamInvites.decline', $invite->token) }}">
-                                @csrf
-                                <button
-                                    type="submit"
-                                    class="w-full inline-flex items-center justify-center rounded-xl bg-rose-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-rose-700"
-                                >
-                                    Отклонить приглашение
-                                </button>
-                            </form>
-                        </div>
-                    @else
-                        <div class="mt-4 rounded-xl bg-gray-50 px-4 py-3 text-sm text-gray-600">
-                            Статус приглашения: <span class="font-semibold text-gray-900">{{ $statusLabel }}</span>
-                        </div>
-                    @endif
-                </div>
-
-                <div class="rounded-2xl border border-gray-100 bg-white p-6">
-                    <h2 class="text-lg font-semibold text-gray-900">Сводка по составу</h2>
-                    <div class="mt-4 space-y-2 text-sm text-gray-700">
-                        <div>
-                            Подтверждено:
-                            <span class="font-semibold">{{ $confirmedMembers->count() }}</span>
-                        </div>
-                        <div>
-                            Ожидают ответа:
-                            <span class="font-semibold">{{ $pendingMembers->count() }}</span>
-                        </div>
-                        <div>
-                            Всего в составе:
-                            <span class="font-semibold">{{ $members->count() }}</span>
-                        </div>
-                    </div>
-                </div>
+            <div>
+                <div class="b-600 f-16">{{ $captain->name ?? $captain->email ?? ('#'.($team?->captain_user_id ?? '—')) }}</div>
+                <div class="f-13" style="opacity:.6">Капитан команды</div>
             </div>
         </div>
     </div>
-</x-app-layout>
+
+    {{-- Состав --}}
+    <div class="ramka">
+        <h2 class="-mt-05">👥 Текущий состав ({{ $members->count() }})</h2>
+        @forelse($members as $member)
+        <div class="card d-flex between fvc mb-1" style="flex-wrap:wrap;gap:.5rem;padding:1rem 1.5rem">
+            <div>
+                <div class="b-600">{{ $member->user->name ?? $member->user->email ?? ('#'.$member->user_id) }}</div>
+                <div class="f-13" style="opacity:.6">
+                    {{ $roleLabels[$member->team_role] ?? $member->team_role }}
+                    @if(!empty($member->position_code)) · {{ $posLabels[$member->position_code] ?? $member->position_code }} @endif
+                </div>
+            </div>
+            <span class="f-13 b-600" style="color:{{ $stColors[$member->confirmation_status] ?? '#999' }}">
+                {{ $stLabels[$member->confirmation_status] ?? $member->confirmation_status }}
+            </span>
+        </div>
+        @empty
+        <div class="f-15" style="opacity:.5">Состав пока пуст</div>
+        @endforelse
+    </div>
+
+    {{-- Инфо о турнире --}}
+    @if($settings)
+    <div class="ramka">
+        <h2 class="-mt-05">📋 О турнире</h2>
+        <div class="card f-14" style="line-height:2">
+            <div>Формат: <strong>{{ match($settings->registration_mode ?? '') {'team_classic'=>'Классическая команда','team_beach'=>'Пляжная команда / пара',default=>'—'} }}</strong></div>
+            <div>Схема: <strong>{{ $settings->game_scheme ?? ($settings->getGameScheme() ?? '—') }}</strong></div>
+            <div>Мин. игроков: <strong>{{ $settings->team_size_min ?? '—' }}</strong></div>
+            <div>Макс. игроков: <strong>{{ $settings->total_players_max ?? $settings->team_size_max ?? '—' }}</strong></div>
+            <div>Макс. запасных: <strong>{{ $settings->reserve_players_max ?? '—' }}</strong></div>
+            <div>Либеро обязателен: <strong>{{ !empty($settings->require_libero) ? 'Да' : 'Нет' }}</strong></div>
+            @if(!is_null($settings->max_rating_sum))
+            <div>Лимит суммы рейтинга: <strong>{{ $settings->max_rating_sum }}</strong></div>
+            @endif
+        </div>
+    </div>
+    @endif
+
+</div>
+<div class="col-lg-4">
+
+    {{-- Ответ --}}
+    <div class="ramka">
+        <h2 class="-mt-05">✉️ Ваше решение</h2>
+        @if($canRespond)
+        <div class="f-15 mb-2" style="opacity:.6">Примите приглашение или откажитесь.</div>
+        <form method="POST" action="{{ route('tournamentTeamInvites.accept', $invite->token) }}" class="mb-1">
+            @csrf
+            <button type="submit" class="btn w-100">✅ Принять приглашение</button>
+        </form>
+        <form method="POST" action="{{ route('tournamentTeamInvites.decline', $invite->token) }}">
+            @csrf
+            <button type="submit" class="btn btn-secondary w-100">❌ Отклонить</button>
+        </form>
+        @else
+        <div class="card">
+            <div class="f-15">Статус:
+                <span class="b-600" style="color:{{ $stAllColors[$st] ?? '#999' }}">
+                    {{ $stAllLabels[$st] ?? $st }}
+                </span>
+            </div>
+        </div>
+        @endif
+    </div>
+
+    {{-- Сводка --}}
+    <div class="ramka">
+        <h2 class="-mt-05">📊 Сводка</h2>
+        <div class="card f-15" style="line-height:2">
+            <div>Подтверждено: <strong>{{ $confirmedMembers->count() }}</strong></div>
+            <div>Ожидают ответа: <strong>{{ $pendingMembers->count() }}</strong></div>
+            <div>Всего в составе: <strong>{{ $members->count() }}</strong></div>
+        </div>
+    </div>
+
+</div>
+</div>
+</div>
+</x-voll-layout>
