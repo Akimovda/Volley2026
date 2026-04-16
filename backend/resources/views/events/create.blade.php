@@ -178,7 +178,16 @@ if ($initialStep < 1 || $initialStep > 3) {
 	
 	<x-voll-layout body_class="create-blade"> 
 		
-		
+    <x-slot name="image">
+					<div class="top-section-img" data-aos="fade" data-aos-duration="1000">
+						<div class="top-section-light-img">
+							<img src="/img/arh/create_events.png" alt="img">
+						</div>	
+						<div class="top-section-dark-img">
+							<img src="/img/arh/create_events.png" alt="img">
+						</div>
+					</div>	
+	</x-slot>		
 		
 		<x-slot name="title">
 			Создание мероприятия
@@ -1360,11 +1369,14 @@ if ($initialStep < 1 || $initialStep > 3) {
 										<div class="row">
 											<div class="col-sm-4">
 												<label>Начало регистрации</label>
-												<input type="number"
-												name="reg_starts_days_before"
-												id="reg_starts_days_before"
-												min="0" max="365"
-												value="{{ $oldRegStartsDaysBefore }}">
+												<select name="reg_starts_days_before" id="reg_starts_days_before">
+													@for ($d = 0; $d <= 90; $d++)
+														<option value="{{ $d }}" 
+															@selected($oldRegStartsDaysBefore == $d)>
+															{{ $d }}
+														</option>
+													@endfor
+												</select>
 												
 												<ul class="list f-16 mt-1">
 													<li class="b-600">Дней до</li>
@@ -1375,11 +1387,14 @@ if ($initialStep < 1 || $initialStep > 3) {
 											
 											<div class="col-sm-4">
 												<label>Окончание регистрации</label>
-												<input type="number"
-												name="reg_ends_minutes_before"
-												id="reg_ends_minutes_before"
-												min="0" max="10080"
-												value="{{ $oldRegEndsMinutesBefore }}">
+												<select name="reg_ends_minutes_before" id="reg_ends_minutes_before">
+													@foreach ([1,5,10,15,20,25,30,35,40,45,50,55,60] as $m)
+														<option value="{{ $m }}" 
+															@selected($oldRegEndsMinutesBefore == $m)>
+															{{ $m }}
+														</option>
+													@endforeach
+												</select>
 												
 												<ul class="list f-16 mt-1">
 													<li class="b-600">Минут до</li>
@@ -1390,11 +1405,14 @@ if ($initialStep < 1 || $initialStep > 3) {
 											
 											<div class="col-sm-4">
 												<label>Запрет отмены записи</label>
-												<input type="number"
-												name="cancel_lock_minutes_before"
-												id="cancel_lock_minutes_before"
-												min="0" max="10080"
-												value="{{ $oldCancelLockMinutesBefore }}">
+												<select name="cancel_lock_minutes_before" id="cancel_lock_minutes_before">
+													@foreach ([1,5,10,15,20,25,30,35,40,45,50,55,60] as $m)
+														<option value="{{ $m }}" 
+															@selected($oldCancelLockMinutesBefore == $m)>
+															{{ $m }}
+														</option>
+													@endforeach
+												</select>
 												<ul class="list f-16 mt-1">
 													<li class="b-600">Минут до</li>
 													<li>По умолчанию: 60 минут.</li>
@@ -1409,6 +1427,32 @@ if ($initialStep < 1 || $initialStep > 3) {
 											<li>Время считается от <span class="f-600">начала мероприятия</span>.</li>
 											<li>Пример: “Запрет отмены 60 минут” → за час до начала кнопка отмены станет недоступной.</li>
 										</ul>									
+
+										{{-- Отдельное начало регистрации для ограничиваемого пола --}}
+										<div id="gender_limited_reg_box" class="mt-2" style="display:none">
+											<hr class="mb-1">
+											<div class="row">
+												<div class="col-sm-6">
+													<label>
+														<span id="gender_limited_reg_label">Ограничиваемый пол</span>: начало регистрации
+													</label>
+													<select name="game_gender_limited_reg_starts_days_before" id="game_gender_limited_reg_starts_days_before">
+														<option value="">— не задано —</option>
+														@for ($d = 0; $d <= 90; $d++)
+															<option value="{{ $d }}" 
+																@selected(old('game_gender_limited_reg_starts_days_before', $prefill['game_gender_limited_reg_starts_days_before'] ?? '') == $d)>
+																{{ $d }}
+															</option>
+														@endfor
+													</select>
+													<ul class="list f-16 mt-1">
+														<li class="b-600">Дней до</li>
+														<li>Если пусто — действует общее «Начало регистрации».</li>
+														<li>Значение должно быть меньше или равно общему.</li>
+													</ul>
+												</div>
+											</div>
+										</div>
 									</div>
 								</div>
 								
@@ -1907,29 +1951,31 @@ if ($initialStep < 1 || $initialStep > 3) {
                                             <div class="row row2">
                                                 <div class="col-6">
                                                     <label>Часы</label>
-                                                    <input
-                                                        type="number"
-                                                        min="0"
-                                                        max="168"
-                                                        step="1"
+                                                    <select
                                                         id="remind_hours_input"
-                                                        value="{{ (int) floor($remMin / 60) }}"
                                                         class="w-full rounded-lg border-gray-200"
-                                                        placeholder="0"
                                                     >
+                                                        @for ($h = 0; $h <= 2; $h++)
+                                                            <option value="{{ $h }}" 
+                                                                @selected((int) floor($remMin / 60) == $h)>
+                                                                {{ $h }}
+                                                            </option>
+                                                        @endfor
+                                                    </select>
                                                 </div>
                                                 <div class="col-6">
                                                     <label>Минуты</label>
-                                                    <input
-                                                        type="number"
-                                                        min="0"
-                                                        max="59"
-                                                        step="1"
+                                                    <select
                                                         id="remind_minutes_input"
-                                                        value="{{ $remMin % 60 }}"
                                                         class="w-full rounded-lg border-gray-200"
-                                                        placeholder="0"
                                                     >
+                                                        @foreach ([0,5,10,15,20,25,30,35,40,45,50,55,60] as $m)
+                                                            <option value="{{ $m }}" 
+                                                                @selected(($remMin % 60) == $m)>
+                                                                {{ $m }}
+                                                            </option>
+                                                        @endforeach
+                                                    </select>
                                                 </div>
                                             </div>
                                 
@@ -2364,6 +2410,25 @@ if ($initialStep < 1 || $initialStep > 3) {
 		
 		// Вешаем на все значимые события
 		$('form').on('change', '#direction, #format, #game_subtype, #game_libero_mode, #game_gender_policy', safeRerenderAll);
+		// Показ/скрытие блока "Начало регистрации для ограничиваемого пола"
+		function toggleGenderLimitedReg() {
+			var policy = $('#game_gender_policy').val();
+			var side = $('input[name="game_gender_limited_side"]:checked').val();
+			var $box = $('#gender_limited_reg_box');
+			var $label = $('#gender_limited_reg_label');
+			if (policy === 'mixed_limited') {
+				$box.show();
+				if (side === 'male') $label.text('Мужчины');
+				else if (side === 'female') $label.text('Девушки');
+				else $label.text('Ограничиваемый пол');
+			} else {
+				$box.hide();
+				$('#game_gender_limited_reg_starts_days_before').val('');
+			}
+		}
+		$(document).on('change', '#game_gender_policy, input[name="game_gender_limited_side"]', toggleGenderLimitedReg);
+		$(function(){ toggleGenderLimitedReg(); });
+
 		
 		// На клик по городу
 		$('body').on('click', '.city-item', function() {

@@ -402,6 +402,11 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
 		Route::get('/events/create/event_management', [EventManagementController::class, 'index'])
         ->name('events.create.event_management');
 		
+		// GET без /edit — редирект на edit-форму (чтобы не ловить 405 на PUT-роуте)
+		Route::get('/events/create/event_management/{event}', function ($event) {
+			return redirect()->route('events.event_management.edit', $event);
+		})->whereNumber('event');
+
 		Route::get('/events/create/event_management/{event}/edit', [EventManagementController::class, 'edit'])
         ->name('events.event_management.edit');
 		

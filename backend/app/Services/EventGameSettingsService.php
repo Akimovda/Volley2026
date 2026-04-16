@@ -670,6 +670,12 @@ class EventGameSettingsService
                 $gender['genderLimitedPositions']
                 ?? ($data['game_gender_limited_positions'] ?? null);
         }
+
+        if (Schema::hasColumn('event_game_settings', 'gender_limited_reg_starts_days_before')) {
+            $rawDays = $data['game_gender_limited_reg_starts_days_before'] ?? null;
+            $egsPayload['gender_limited_reg_starts_days_before'] =
+                ($rawDays === null || $rawDays === '') ? null : (int) $rawDays;
+        }
     
         EventGameSetting::updateOrCreate(
             ['event_id' => $event->id],

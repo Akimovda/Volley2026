@@ -279,6 +279,13 @@
 			'in:male,female'
             ],
 			
+            'game_gender_limited_reg_starts_days_before' => [
+                'nullable',
+                'integer',
+                'min:0',
+                'max:365',
+            ],
+
             'game_gender_limited_max' => [
 			'nullable',
 			'integer',
@@ -455,6 +462,20 @@
             $format = (string) ($data['format'] ?? '');
             $direction = (string) ($data['direction'] ?? 'classic');
             $policy = (string) ($data['game_gender_policy'] ?? '');
+
+            // restricted reg start не может быть раньше общего (days_before_restricted <= days_before_general)
+            if ($policy === 'mixed_limited') {
+                $restrDays = $data['game_gender_limited_reg_starts_days_before'] ?? null;
+                $generalDays = $data['reg_starts_days_before'] ?? null;
+                if ($restrDays !== null && $restrDays !== '' &&
+                    $generalDays !== null && $generalDays !== '' &&
+                    (int) $restrDays > (int) $generalDays
+                ) {
+                    $v->errors()->add('game_gender_limited_reg_starts_days_before',
+                        'Начало регистрации для ограничиваемого пола не может быть раньше общего (значение в днях должно быть меньше или равно общему).');
+                }
+            }
+
             $agePolicy = (string)($data['age_policy'] ?? 'adult');
             $childAgeMin = $data['child_age_min'] ?? null;
             $childAgeMax = $data['child_age_max'] ?? null;

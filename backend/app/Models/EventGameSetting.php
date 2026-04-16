@@ -22,6 +22,7 @@ class EventGameSetting extends Model
         'gender_limited_side',
         'gender_limited_max',
         'gender_limited_positions',
+        'gender_limited_reg_starts_days_before',
 
         'allow_girls',
         'girls_max',
@@ -36,6 +37,7 @@ class EventGameSetting extends Model
         'max_players' => 'integer',
 
         'gender_limited_max' => 'integer',
+        'gender_limited_reg_starts_days_before' => 'integer',
 
         'allow_girls' => 'boolean',
         'girls_max' => 'integer',

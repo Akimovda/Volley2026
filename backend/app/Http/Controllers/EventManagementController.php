@@ -302,6 +302,7 @@ if ($role === 'admin') {
             'game_gender_limited_max'  => ['nullable', 'integer', 'min:0'],
             'game_gender_limited_positions'   => ['nullable', 'array'],
             'game_gender_limited_positions.*' => ['string', 'max:32'],
+            'game_gender_limited_reg_starts_days_before' => ['nullable', 'integer', 'min:0', 'max:365'],
             'game_allow_girls'         => ['nullable', 'boolean'],
             'game_girls_max'           => ['nullable', 'integer', 'min:0'],
             'is_private'               => ['sometimes', 'boolean'],
@@ -406,6 +407,10 @@ if ($role === 'admin') {
                 'gender_limited_side' => $data['game_gender_limited_side'] ?? null,
                 'gender_limited_max' => $data['game_gender_limited_max'] ?? null,
                 'gender_limited_positions' => $glp,
+                'gender_limited_reg_starts_days_before' =>
+                    (isset($data['game_gender_limited_reg_starts_days_before']) && $data['game_gender_limited_reg_starts_days_before'] !== '')
+                        ? (int) $data['game_gender_limited_reg_starts_days_before']
+                        : null,
                 'allow_girls' => array_key_exists('game_allow_girls', $data)
                     ? (bool) $data['game_allow_girls']
                     : null,

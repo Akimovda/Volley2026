@@ -19,6 +19,115 @@
 
     <div class="container">
 
+        {{-- ======= ИНСТРУКЦИЯ ======= --}}
+        <div class="ramka">
+            <div class="alert alert-info mb-2">
+                <div class="alert-title b-700 f-17">❓ Что такое каналы уведомлений и зачем они нужны?</div>
+                <p class="mt-1 mb-0">
+                    <strong>Канал уведомлений</strong> — это ваш чат, группа или канал
+                    в <strong>Telegram</strong>, <strong>VK</strong> или <strong>MAX</strong>,
+                    куда наш бот будет автоматически отправлять анонсы ваших мероприятий:
+                    когда вы создаёте игру, когда появляются свободные места, напоминания и т.&nbsp;д.
+                </p>
+            </div>
+
+            <h3 class="mt-0">📋 Как это работает — 3 шага</h3>
+
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="card h-100">
+                        <div class="f-30 text-center mb-05">1️⃣</div>
+                        <div class="b-700 f-16 text-center mb-05">Создаёте ссылку привязки</div>
+                        <p class="f-14 mb-0">
+                            Ниже в блоке <strong>«Подключить канал»</strong> выбираете платформу
+                            (Telegram / VK / MAX), придумываете название — и жмёте кнопку.
+                            Сервис сгенерирует уникальную ссылку-приглашение для бота.
+                        </p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100">
+                        <div class="f-30 text-center mb-05">2️⃣</div>
+                        <div class="b-700 f-16 text-center mb-05">Добавляете бота в чат</div>
+                        <p class="f-14 mb-0">
+                            Нажимаете на кнопку из инструкции — открывается мессенджер.
+                            Выбираете свою группу или канал и добавляете туда бота
+                            <strong>с правами администратора</strong>
+                            (чтобы он мог писать сообщения).
+                        </p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100">
+                        <div class="f-30 text-center mb-05">3️⃣</div>
+                        <div class="b-700 f-16 text-center mb-05">Канал подтверждён</div>
+                        <p class="f-14 mb-0">
+                            Бот автоматически отметит канал как подтверждённый.
+                            Обновите страницу — увидите его в списке справа с зелёным бейджем
+                            <span class="badge badge-green">подтверждён</span>.
+                            Теперь можно использовать его для анонсов.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Пошаговки для каждой платформы --}}
+            <h3>🧭 Подробные инструкции по платформам</h3>
+
+            <div class="tabs-content">
+                <div class="tabs">
+                    <div class="tab active" data-tab="howto-tg">✈️ Telegram</div>
+                    <div class="tab" data-tab="howto-vk">🔵 VK</div>
+                    <div class="tab" data-tab="howto-max">💬 MAX</div>
+                    <div class="tab-highlight"></div>
+                </div>
+                <div class="tab-panes">
+
+                    <div class="tab-pane active" id="howto-tg">
+                        <ol class="list">
+                            <li>Создайте или откройте свою <strong>группу / супергруппу / канал</strong> в Telegram, куда будут приходить анонсы.</li>
+                            <li>В блоке ниже выберите <strong>Telegram</strong>, укажите название (для себя) и нажмите <strong>«Создать ссылку привязки»</strong>.</li>
+                            <li>Появится кнопка <strong>«Подключить Telegram»</strong> — нажмите её.</li>
+                            <li>Telegram предложит выбрать чат — выберите нужный. Бот автоматически добавится в чат.</li>
+                            <li>⚠️ <strong>Важно:</strong> дайте боту права <strong>администратора</strong>, иначе он не сможет публиковать сообщения.</li>
+                            <li>Бот пришлёт подтверждение в чат — канал готов. Обновите эту страницу.</li>
+                        </ol>
+                    </div>
+
+                    <div class="tab-pane" id="howto-vk">
+                        <ol class="list">
+                            <li>Создайте или откройте свою <strong>группу ВКонтакте</strong> (именно сообщество, не личную страницу).</li>
+                            <li>Включите в сообществе <strong>сообщения сообщества</strong>: <em>Управление → Сообщения → Включено</em>.</li>
+                            <li>Здесь выберите <strong>VK</strong> и нажмите <strong>«Создать ссылку привязки»</strong> — скопируйте появившийся код вида <code>bind_xxxxx</code>.</li>
+                            <li>Нажмите <strong>«Открыть VK»</strong> — откроется диалог с нашим ботом.</li>
+                            <li>Добавьте бота в свою группу как <strong>администратора</strong> или напишите ему в личку из своей группы.</li>
+                            <li>Отправьте боту сообщение с кодом <code>bind_xxxxx</code> — привязка завершится автоматически.</li>
+                            <li>Обновите эту страницу — канал появится в списке подтверждённых.</li>
+                        </ol>
+                    </div>
+
+                    <div class="tab-pane" id="howto-max">
+                        <ol class="list">
+                            <li>Создайте или откройте свой <strong>чат в MAX</strong>, куда будут приходить анонсы.</li>
+                            <li>Добавьте в чат нашего MAX-бота <strong>с правами администратора</strong>.</li>
+                            <li>Здесь выберите <strong>MAX</strong> и нажмите <strong>«Создать ссылку привязки»</strong>.</li>
+                            <li>Нажмите кнопку <strong>«Открыть MAX»</strong> — откроется бот с уже переданным токеном.</li>
+                            <li>Бот покажет список чатов, где он состоит — выберите нужный.</li>
+                            <li>Готово! Обновите страницу — канал отметится как подтверждённый.</li>
+                        </ol>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="alert alert-warning mt-2 mb-0">
+                <strong>💡 Совет:</strong> можно подключить <strong>несколько каналов</strong> на разных платформах —
+                анонсы будут дублироваться во все подтверждённые каналы одновременно.
+                Если ссылка привязки не сработала — она действительна <strong>30 минут</strong>,
+                после чего нужно создать новую.
+            </div>
+        </div>
+
         {{-- Flash --}}
         @if(session('status'))
             <div class="ramka"><div class="alert alert-success">{{ session('status') }}</div></div>
