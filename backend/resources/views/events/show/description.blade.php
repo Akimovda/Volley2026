@@ -304,6 +304,17 @@
 									{{ $label }}:
 									<strong>до {{ $limit }}</strong>
 								</li>
+
+								@if($event->gameSettings?->gender_limited_reg_starts_days_before !== null)
+									@php
+										$regDays = (int) $event->gameSettings->gender_limited_reg_starts_days_before;
+										$regLabel = $side === 'female' ? '🙎‍♀️ Девушки' : '🙎‍♂️ Мужчины';
+									@endphp
+									<li>
+										{{ $regLabel }}: начало регистрации —
+										<strong>за {{ $regDays }} {{ trans_choice('день|дня|дней', $regDays) }} до начала</strong>
+									</li>
+								@endif
 								
 								@endif
 								

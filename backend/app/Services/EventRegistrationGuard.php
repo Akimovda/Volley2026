@@ -387,6 +387,33 @@
 			) {
 				$result->errors[] = 'Регистрация ещё не началась.';
 			}
+
+			// ОГРАНИЧИВАЕМЫЙ ПОЛ: отдельное окно регистрации
+			$gs = $occurrence->event?->gameSettings ?? null;
+			if (
+				$gs &&
+				$gs->gender_policy === 'mixed_limited' &&
+				$gs->gender_limited_side &&
+				$gs->gender_limited_reg_starts_days_before !== null &&
+				$user &&
+				$occurrence->starts_at
+			) {
+				$viewerGender = strtolower((string) $user->gender);
+				$side = $gs->gender_limited_side;
+				$targetGender = $side === 'male' ? 'm' : ($side === 'female' ? 'f' : null);
+
+				if ($targetGender && $viewerGender !== '' && $viewerGender[0] === $targetGender) {
+					$restrictedOpensAt = Carbon::parse($occurrence->starts_at, 'UTC')
+						->subDays((int) $gs->gender_limited_reg_starts_days_before);
+
+					if ($nowUtc->lessThan($restrictedOpensAt)) {
+						$label = $side === 'female' ? 'девушек' : 'мужчин';
+						$result->errors[] = 'Регистрация для ' . $label . ' ещё не началась — откроется ' .
+							$restrictedOpensAt->copy()->setTimezone($occurrence->event?->timezone ?? 'Europe/Moscow')
+								->format('d.m.Y H:i') . '.';
+					}
+				}
+			}
 			
 			if (
 				$occurrence->registration_ends_at &&

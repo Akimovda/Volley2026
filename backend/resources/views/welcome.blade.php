@@ -437,448 +437,9 @@
 		
 		{{-- ===== КАК ЭТО РАБОТАЕТ ===== --}}
 		<div class="ramka" data-aos="fade-up">
-			<h2 class="-mt-05 text-center">Как это работает</h2>
+			<h2 class="-mt-05">Как это работает</h2>
 
-<style>
 
-.process-roadmap {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 36px;
-    width: 100%;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 40px 20px;
-    border-radius: 24px;
-    box-sizing: border-box;
-    overflow: hidden;
-}
-
-.roadmap-left {
-    position: relative;
-    width: 460px;
-    min-width: 460px;
-    height: 520px;
-}
-
-.center-disc {
-    position: absolute;
-    left: 18px;
-    top: 78px;
-    width: 270px;
-    height: 270px;
-    border-radius: 50%;
-    background: radial-gradient(circle at 35% 30%, #ffffff 0%, #f4f4f4 55%, #e6e6e6 100%);
-    box-shadow:
-        0 18px 30px rgba(0, 0, 0, 0.12),
-        inset 0 2px 6px rgba(255, 255, 255, 0.9),
-        inset 0 -3px 10px rgba(0, 0, 0, 0.06);
-    z-index: 3;
-}
-
-.disc-ring {
-    position: absolute;
-    border-radius: 50%;
-    inset: 0;
-}
-
-.disc-ring-1 {
-    transform: scale(1.16);
-    background: rgba(255,255,255,0.32);
-    z-index: -2;
-    filter: blur(1px);
-}
-
-.disc-ring-2 {
-    transform: scale(1.28);
-    background: rgba(255,255,255,0.15);
-    z-index: -3;
-}
-
-.disc-core {
-    position: absolute;
-    inset: 22px;
-    border-radius: 50%;
-    background: linear-gradient(145deg, #fafafa, #ececec);
-    box-shadow: inset 0 2px 8px rgba(255,255,255,0.9);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 28px 18px 16px;
-    text-align: center;
-    box-sizing: border-box;
-}
-
-.disc-title {
-    font-size: 14px;
-    font-weight: 700;
-    color: #7b7b7b;
-    letter-spacing: 1px;
-    margin-bottom: 8px;
-}
-
-.disc-text {
-    font-size: 11px;
-    line-height: 1.45;
-    color: #9a9a9a;
-    max-width: 180px;
-    margin-bottom: 18px;
-}
-
-.disc-chart {
-    position: relative;
-    width: 160px;
-    height: 160px;
-    border-radius: 50%;
-    background:
-        conic-gradient(
-            #ff9800 0deg 40deg,
-            #e91e63 40deg 80deg,
-            #9c27b0 80deg 120deg,
-            #673ab7 120deg 160deg,
-            #3f51b5 160deg 200deg,
-            #2196f3 200deg 240deg,
-            #00bcd4 240deg 280deg,
-            #8bc34a 280deg 320deg,
-            #cddc39 320deg 360deg
-        );
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: inset 0 2px 6px rgba(255,255,255,0.6);
-    margin-bottom: 10px;
-}
-
-.disc-chart::before {
-    content: "";
-    width: 92px;
-    height: 92px;
-    background: #f7f7f7;
-    border-radius: 50%;
-    box-shadow: inset 0 2px 5px rgba(0,0,0,0.06);
-    position: absolute;
-}
-
-.chart-segment {
-    position: absolute;
-    font-size: 11px;
-    font-weight: 700;
-    color: rgba(0,0,0,0.5);
-}
-
-.seg-a { left: 10px; top: 96px; }
-.seg-b { left: 25px; top: 58px; }
-.seg-c { left: 62px; top: 24px; }
-.seg-d { left: 106px; top: 24px; }
-.seg-e { left: 138px; top: 56px; }
-.seg-f { left: 132px; top: 100px; }
-
-.disc-mini {
-    width: 92px;
-    height: 92px;
-    margin-top: -76px;
-    border-radius: 50%;
-    background: linear-gradient(145deg, #ffffff, #eeeeee);
-    box-shadow:
-        0 6px 12px rgba(0,0,0,0.12),
-        inset 0 2px 4px rgba(255,255,255,0.9);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    z-index: 2;
-}
-
-.mini-title {
-    font-size: 9px;
-    font-weight: 700;
-    color: #8a8a8a;
-    margin-bottom: 6px;
-}
-
-.mini-map {
-    font-size: 10px;
-    color: #4aa3df;
-    letter-spacing: 2px;
-}
-
-.curve-svg {
-    position: absolute;
-    inset: 0;
-    z-index: 2;
-    overflow: visible;
-}
-
-.roadmap-right {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 22px;
-    min-width: 0;
-}
-
-.roadmap-item {
-    position: relative;
-    display: flex;
-    align-items: center;
-    min-height: 78px;
-    border-radius: 40px;
-    padding: 12px 24px 12px 72px;
-    box-shadow: 0 12px 24px rgba(0,0,0,0.10);
-    color: #fff;
-    overflow: visible;
-}
-
-.roadmap-item .item-icon {
-    position: absolute;
-    left: -12px;
-    width: 64px;
-    height: 64px;
-    border-radius: 50%;
-    background: linear-gradient(145deg, #ffffff, #ececec);
-    box-shadow:
-        0 8px 14px rgba(0,0,0,0.18),
-        inset 0 2px 4px rgba(255,255,255,0.8);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 28px;
-    z-index: 2;
-}
-
-.item-content {
-    flex: 1;
-}
-
-.item-title {
-    font-size: 14px;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    margin-bottom: 6px;
-    text-transform: uppercase;
-}
-
-.item-text {
-    font-size: 11px;
-    line-height: 1.45;
-    opacity: 0.95;
-    max-width: 82%;
-}
-
-.item-side-dots {
-    display: flex;
-    gap: 5px;
-    align-items: center;
-    margin-left: auto;
-}
-
-.item-side-dots span {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.9);
-    display: inline-block;
-}
-
-.item-line {
-    position: absolute;
-    left: -56px;
-    top: 50%;
-    width: 42px;
-    height: 1px;
-    background: #909090;
-}
-
-.item-line::after {
-    content: "";
-    position: absolute;
-    right: -2px;
-    top: -2px;
-    width: 5px;
-    height: 5px;
-    background: #909090;
-    border-radius: 50%;
-}
-
-.yellow {
-    background: linear-gradient(90deg, #d7a600 0%, #f2bc19 100%);
-}
-
-.orange {
-    background: linear-gradient(90deg, #ea6500 0%, #ff7b1f 100%);
-}
-
-.magenta {
-    background: linear-gradient(90deg, #b81c8e 0%, #cf37a5 100%);
-}
-
-.purple {
-    background: linear-gradient(90deg, #6d49b6 0%, #5a41b2 100%);
-}
-
-.cyan {
-    background: linear-gradient(90deg, #05a9c1 0%, #16bfd1 100%);
-}
-
-.green {
-    background: linear-gradient(90deg, #77bf2f 0%, #7fd443 100%);
-}
-
-@media (max-width: 1100px) {
-    .process-roadmap {
-        flex-direction: column;
-        align-items: center;
-    }
-
-    .roadmap-left {
-        width: 100%;
-        max-width: 460px;
-        min-width: 0;
-    }
-
-    .roadmap-right {
-        width: 100%;
-    }
-
-    .roadmap-item .item-text {
-        max-width: 100%;
-    }
-}
-
-@media (max-width: 768px) {
-    .process-roadmap {
-        padding: 24px 14px;
-        border-radius: 18px;
-    }
-
-    .roadmap-left {
-        height: 420px;
-        transform: scale(0.86);
-        transform-origin: top center;
-        margin-bottom: -40px;
-    }
-
-    .roadmap-item {
-        padding: 14px 18px 14px 68px;
-    }
-
-    .item-text {
-        font-size: 10px;
-    }
-
-    .item-title {
-        font-size: 13px;
-    }
-}
-</style>
-
-<div class="process-roadmap">
-    <div class="roadmap-left">
-        <div class="center-disc">
-            <div class="disc-ring disc-ring-1"></div>
-            <div class="disc-ring disc-ring-2"></div>
-
-            <div class="disc-core">
-                <div class="disc-title">LOREM IPSUM</div>
-                <div class="disc-text">
-                    Short description text for your project block.
-                    You can replace this with real content.
-                </div>
-
-                <div class="disc-chart">
-                    <div class="chart-segment seg-a">A</div>
-                    <div class="chart-segment seg-b">B</div>
-                    <div class="chart-segment seg-c">C</div>
-                    <div class="chart-segment seg-d">D</div>
-                    <div class="chart-segment seg-e">E</div>
-                    <div class="chart-segment seg-f">F</div>
-                </div>
-
-                <div class="disc-mini">
-                    <div class="mini-title">CORE PLAN</div>
-                    <div class="mini-map">● ● ●</div>
-                </div>
-            </div>
-        </div>
-
-        <svg class="curve-svg" viewBox="0 0 460 520" preserveAspectRatio="none">
-            <defs>
-                <linearGradient id="roadGradient" x1="0%" y1="100%" x2="100%" y2="0%">
-                    <stop offset="0%" stop-color="#4CAF50"/>
-                    <stop offset="20%" stop-color="#8BC34A"/>
-                    <stop offset="40%" stop-color="#00BCD4"/>
-                    <stop offset="60%" stop-color="#2196F3"/>
-                    <stop offset="75%" stop-color="#9C27B0"/>
-                    <stop offset="88%" stop-color="#FF9800"/>
-                    <stop offset="100%" stop-color="#FDD835"/>
-                </linearGradient>
-
-                <filter id="softShadow" x="-50%" y="-50%" width="200%" height="200%">
-                    <feDropShadow dx="0" dy="8" stdDeviation="8" flood-opacity="0.18"/>
-                </filter>
-            </defs>
-
-            <path
-                d="M90,450
-                   C130,420 155,390 180,350
-                   C205,310 215,265 235,225
-                   C255,185 275,145 315,110
-                   C345,82 375,65 405,55"
-                fill="none"
-                stroke="url(#roadGradient)"
-                stroke-width="8"
-                stroke-linecap="round"
-                filter="url(#softShadow)"
-            />
-
-            <circle cx="90" cy="450" r="13" fill="#4CAF50"/>
-            <circle cx="160" cy="372" r="9" fill="#8BC34A"/>
-            <circle cx="220" cy="285" r="10" fill="#00ACC1"/>
-            <circle cx="245" cy="220" r="10" fill="#1E88E5"/>
-            <circle cx="285" cy="165" r="9" fill="#D81B60"/>
-            <circle cx="330" cy="118" r="9" fill="#FB8C00"/>
-            <circle cx="405" cy="55" r="8" fill="#FDD835"/>
-
-            <circle cx="160" cy="372" r="15" fill="rgba(255,255,255,0.12)"/>
-            <circle cx="220" cy="285" r="15" fill="rgba(255,255,255,0.12)"/>
-            <circle cx="245" cy="220" r="15" fill="rgba(255,255,255,0.12)"/>
-            <circle cx="285" cy="165" r="15" fill="rgba(255,255,255,0.12)"/>
-            <circle cx="330" cy="118" r="15" fill="rgba(255,255,255,0.12)"/>
-        </svg>
-    </div>
-
-    <div class="roadmap-right">
-        @php
-            $items = [
-                ['title' => 'Strategy Planning', 'text' => 'Define project goals, direction and baseline architecture for the launch stage.', 'color' => 'yellow', 'icon' => '👥'],
-                ['title' => 'Analytics & Metrics', 'text' => 'Collect indicators, build reports and prepare measurable performance targets.', 'color' => 'orange', 'icon' => '📊'],
-                ['title' => 'User Experience', 'text' => 'Improve interaction flow, accessibility and overall usability of the product.', 'color' => 'magenta', 'icon' => '📈'],
-                ['title' => 'Target Results', 'text' => 'Align business objectives with actual deliverables and execution priorities.', 'color' => 'purple', 'icon' => '🎯'],
-                ['title' => 'Mobile Access', 'text' => 'Adapt the solution for smartphone usage and cross-device consistency.', 'color' => 'cyan', 'icon' => '📱'],
-                ['title' => 'Automation Layer', 'text' => 'Implement process automation, integrations and scalable support operations.', 'color' => 'green', 'icon' => '⚙️'],
-            ];
-        @endphp
-
-        @foreach($items as $index => $item)
-            <div class="roadmap-item {{ $item['color'] }}" style="--i: {{ $index }}">
-                <div class="item-line"></div>
-                <div class="item-icon">{{ $item['icon'] }}</div>
-                <div class="item-content">
-                    <div class="item-title">{{ $item['title'] }}</div>
-                    <div class="item-text">{{ $item['text'] }}</div>
-                </div>
-                <div class="item-side-dots">
-                    <span></span><span></span><span></span>
-                </div>
-            </div>
-        @endforeach
-    </div>
-</div>			
-			
-			
-			
-			
 			
 			
 			
@@ -994,23 +555,304 @@
   <div class="hw-card"><div class="hw-card-title hwt4">Играйте!</div><div class="hw-card-desc">Приходите на игру, знакомьтесь с новыми партнёрами и оценивайте уровень друг друга.</div></div>
 </div>
 </div>
-		{{-- ===== ЛОКАЦИИ ===== --}}
-		<div class="ramka" data-aos="fade-up">
+</div>
+
+
+<style>
+.rf-map {
+	display: flex;
+	align-items: center;
+}	
+.district-links {
+	flex: 0 0 340px;
+	overflow: hidden;
+}
+.district-links a {
+	display: block;
+	font-size: 18px;
+	padding: 6px 6px 6px 0;
+	color: #2e3f7f;
+	position: relative;
+    text-decoration: none;
+	font-weight: 500;	
+	transition: 0.3s;
+}
+.district-links a:before,
+.district-links a:after {
+    content: "";
+    border-bottom: 2px solid #2967BA;
+    position: absolute;
+    width: 100%;
+    left: -50px;
+    bottom: 3px;
+    opacity: 0;
+    transition: 0.3s;
+    display: inline-block;
+    pointer-events: none;    
+}
+.district-links a:before {
+    border-bottom: 2px solid rgba(0,0,0,0.2);
+    opacity: 1;
+    bottom: 3px;
+	left: 0;
+	width: 100%;
+}
+body.dark .district-links a:before,
+body.dark .district-links a:after {
+    border-bottom: 2px solid #E7612F;
+}
+body.dark .district-links a:before {
+    border-bottom: 2px solid rgba(255,255,255,0.2);
+}
+.map-name {
+	transition: 0.3s;
+}
+.map-region {
+	color: #000;
+}
+body.dark .map-region {
+	color: #cacaca;
+}
+.district-links a.hover .map-name, 
+.district-links a:hover .map-name {
+    color: #000;
+	padding-left: 6px;
+}
+body.dark .district-links a.hover .map-name, 
+body.dark .district-links a:hover .map-name {
+    color: #fff;
+}
+.district-links a.hover:after,
+.district-links a:hover:after {
+    opacity: 1;  
+	left: 0;
+	width: 100%;
+}
+.rusmap {
+	padding-left: 60px; 
+	width: 100%;
+}
+.rusmap svg {
+	width: 100%;
+	height: auto;
+	filter: drop-shadow(0 5px 12px rgba(0, 0, 0, 0.1));    
+}
+.rusmap path {
+    stroke: #FFFFFF;
+    stroke-width: 2;
+    stroke-linejoin: round; 
+	fill: rgba(0,0,0,0.1);
+}
+body.dark .rusmap path {
+       stroke: #222333;
+	   fill: rgba(255,255,255,0.1);
+}
+.rusmap [data-code] {
+    transition: fill 0.2s;
+}
+.rusmap path[data-color] {
+    fill: #2967BA;
+	transition: 0.3s;
+}
+.rusmap path[data-color].hover, 
+.rusmap path[data-color]:hover{
+	fill: #183e6f;
+}
+body.dark .rusmap path[data-color] {
+    fill: #E7612F;
+}
+body.dark .rusmap path[data-color].hover, 
+body.dark .rusmap path[data-color]:hover{
+	fill: #FFB171;
+}
+@media screen and (max-width:767px) {
+.rf-map {
+	display: flex;
+	flex-wrap: wrap;
+}	
+.district-links {
+	display: flex;
+	flex: 0 0 100%;
+	flex-wrap: wrap;
+	order: 2;
+}
+.district-links a {
+	width: calc(50% - 18px);
+	font-size: 16px;
+	margin: 0 6px;
+}
+.rusmap {
+	order: 1;
+	padding: 0;
+}
+}
+@media screen and (max-width:575px) {
+.district-links a {
+	width: 100%;
+}
+}
+</style>
+<script src="/assets/map.js"></script>	
+
+   @php
+    $isoCodes = [
+        'Алтайский край' => 'RU-ALT',
+        'Амурская область' => 'RU-AMU',
+        'Архангельская область' => 'RU-ARK',
+        'Астраханская область' => 'RU-AST',
+        'Белгородская область' => 'RU-BEL',
+        'Брянская область' => 'RU-BRY',
+        'Владимирская область' => 'RU-VLA',
+        'Волгоградская область' => 'RU-VGG',
+        'Вологодская область' => 'RU-VLG',
+        'Воронежская область' => 'RU-VOR',
+        'Еврейская автономная область' => 'RU-YEV',
+        'Забайкальский край' => 'RU-ZAB',
+        'Ивановская область' => 'RU-IVA',
+        'Иркутская область' => 'RU-IRK',
+        'Кабардино-Балкарская Республика' => 'RU-KB',
+        'Калининградская область' => 'RU-KGD',
+        'Калужская область' => 'RU-KLU',
+        'Камчатский край' => 'RU-KAM',
+        'Карачаево-Черкесская Республика' => 'RU-KC',
+        'Кемеровская область' => 'RU-KEM',
+        'Кировская область' => 'RU-KIR',
+        'Костромская область' => 'RU-KOS',
+        'Краснодарский край' => 'RU-KDA',
+        'Красноярский край' => 'RU-KYA',
+        'Курганская область' => 'RU-KGN',
+        'Курская область' => 'RU-KRS',
+        'Ленинградская область' => 'RU-LEN',
+        'Липецкая область' => 'RU-LIP',
+        'Магаданская область' => 'RU-MAG',
+        'Москва' => 'RU-MOW',
+        'Московская область' => 'RU-MOS',
+        'Мурманская область' => 'RU-MUR',
+        'Нижегородская область' => 'RU-NIZ',
+        'Новгородская область' => 'RU-NGR',
+        'Новосибирская область' => 'RU-NVS',
+        'Омская область' => 'RU-OMS',
+        'Оренбургская область' => 'RU-ORE',
+        'Орловская область' => 'RU-ORL',
+        'Пензенская область' => 'RU-PNZ',
+        'Пермский край' => 'RU-PER',
+        'Приморский край' => 'RU-PRI',
+        'Псковская область' => 'RU-PSK',
+        'Республика Адыгея' => 'RU-AD',
+        'Республика Алтай' => 'RU-AL',
+        'Республика Башкортостан' => 'RU-BA',
+        'Республика Бурятия' => 'RU-BU',
+        'Республика Дагестан' => 'RU-DA',
+        'Республика Ингушетия' => 'RU-IN',
+        'Республика Калмыкия' => 'RU-KL',
+        'Республика Карелия' => 'RU-KR',
+        'Республика Коми' => 'RU-KO',
+        'Республика Марий Эл' => 'RU-ME',
+        'Республика Мордовия' => 'RU-MO',
+        'Республика Саха (Якутия)' => 'RU-SA',
+        'Республика Северная Осетия-Алания' => 'RU-SE',
+        'Республика Татарстан' => 'RU-TA',
+        'Республика Тыва' => 'RU-TY',
+        'Республика Хакасия' => 'RU-KK',
+        'Ростовская область' => 'RU-ROS',
+        'Рязанская область' => 'RU-RYA',
+        'Самарская область' => 'RU-SAM',
+        'Санкт-Петербург' => 'RU-SPE',
+        'Саратовская область' => 'RU-SAR',
+        'Сахалинская область' => 'RU-SAK',
+        'Свердловская область' => 'RU-SVE',
+        'Смоленская область' => 'RU-SMO',
+        'Ставропольский край' => 'RU-STA',
+        'Тамбовская область' => 'RU-TAM',
+        'Тверская область' => 'RU-TVE',
+        'Томская область' => 'RU-TOM',
+        'Тульская область' => 'RU-TUL',
+        'Тюменская область' => 'RU-TYU',
+        'Удмуртская Республика' => 'RU-UD',
+        'Ульяновская область' => 'RU-ULY',
+        'Хабаровский край' => 'RU-KHA',
+        'Ханты-Мансийский автономный округ' => 'RU-KHM',
+        'Челябинская область' => 'RU-CHE',
+        'Чеченская Республика' => 'RU-CE',
+        'Чувашская Республика' => 'RU-CU',
+        'Ямало-Ненецкий автономный округ' => 'RU-YAN',
+        'Ярославская область' => 'RU-YAR',
+        // Казахстан
+        'Абайская область' => 'KZ-10',
+        'Акмолинская область' => 'KZ-11',
+        'Актюбинская область' => 'KZ-15',
+        'Алматинская область' => 'KZ-19',
+        'Алматы' => 'KZ-75',
+        'Астана' => 'KZ-71',
+        'Атырауская область' => 'KZ-23',
+        'Байконур' => 'KZ-89',
+        'Восточно-Казахстанская область' => 'KZ-63',
+        'Жамбылская область' => 'KZ-31',
+        'Жетысуская область' => 'KZ-33',
+        'Западно-Казахстанская область' => 'KZ-27',
+        'Карагандинская область' => 'KZ-35',
+        'Костанайская область' => 'KZ-39',
+        'Кызылординская область' => 'KZ-43',
+        'Мангистауская область' => 'KZ-47',
+        'Павлодарская область' => 'KZ-55',
+        'Северо-Казахстанская область' => 'KZ-59',
+        'Туркестанская область' => 'KZ-61',
+        'Улытауская область' => 'KZ-65',
+        'Шымкент' => 'KZ-79',
+        // Узбекистан
+        'Андижанская область' => 'UZ-AN',
+        'Бухарская область' => 'UZ-BU',
+        'Джизакская область' => 'UZ-JI',
+        'Кашкадарьинская область' => 'UZ-QA',
+        'Навоийская область' => 'UZ-NG',
+        'Наманганская область' => 'UZ-NM',
+        'Республика Каракалпакстан' => 'UZ-QR',
+        'Самаркандская область' => 'UZ-SA',
+        'Сурхандарьинская область' => 'UZ-SU',
+        'Сырдарьинская область' => 'UZ-SI',
+        'Ташкент' => 'UZ-TK',
+        'Ташкентская область' => 'UZ-TO',
+        'Ферганская область' => 'UZ-FA',
+        'Хорезмская область' => 'UZ-XR',
+    ];
+    @endphp
+
+		<div class="ramka">
 			<div class="d-flex between fvc mb-2">
-				<h2 class="-mt-05">📍 Площадки и корты</h2>
+				<h2 class="-mt-05">Площадки и корты</h2>
 				<a href="{{ route('locations.index') }}" class="btn btn-secondary">Все локации</a>
 			</div>
-			<div class="f-17 mb-2" style="opacity:.7">
+			
+			<div class="rf-map">
+				<div class="district-links mb-1">
+    @foreach(\DB::table('cities')
+        ->join('locations','cities.id','=','locations.city_id')
+        ->whereNull('locations.organizer_id')
+        ->select('cities.id','cities.name', 'cities.region', \DB::raw('count(locations.id) as cnt'))
+        ->groupBy('cities.id','cities.name', 'cities.region')
+        ->orderByDesc('cnt')
+        ->limit(20)
+        ->get() as $city)
+        <a 
+            data-code="{{ $isoCodes[$city->region] ?? '' }}" 
+            href="{{ route('locations.index', ['city_id' => $city->id]) }}"
+        >
+            <span class="d-flex between">
+                <span class="d-block">
+                     <span class="map-name b-600">{{ $city->name }}</span><span class="map-region f-13 pl-05">({{ $city->region }})</span>
+                </span>
+                <span class="f-13 b-600">{{ $city->cnt }}</span>
+            </span>
+        </a>
+    @endforeach	
+				</div>
+				<div class="rusmap" data-aos="fade-up"></div>
+			</div>				
+				
+			
+			<div class="text-right">
 				{{ \DB::table('locations')->whereNull('organizer_id')->count() }} площадок
 				в {{ \DB::table('locations')->whereNull('organizer_id')->distinct('city_id')->count('city_id') }} городах России
-			</div>
-			<div class="d-flex flex-wrap gap-2">
-				@foreach(\DB::table('cities')->join('locations','cities.id','=','locations.city_id')->whereNull('locations.organizer_id')->select('cities.id','cities.name',\DB::raw('count(locations.id) as cnt'))->groupBy('cities.id','cities.name')->orderByDesc('cnt')->limit(8)->get() as $city)
-				<a href="{{ route('locations.index', ['city_id' => $city->id]) }}"
-				class="btn btn-secondary">
-					{{ $city->name }} <span class="f-14" style="opacity:.6">({{ $city->cnt }})</span>
-				</a>
-				@endforeach
 			</div>
 		</div>
 		

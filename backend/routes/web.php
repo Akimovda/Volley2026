@@ -402,6 +402,11 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
 		Route::get('/events/create/event_management', [EventManagementController::class, 'index'])
         ->name('events.create.event_management');
 		
+		// GET без /edit — редирект на edit-форму (чтобы не ловить 405 на PUT-роуте)
+		Route::get('/events/create/event_management/{event}', function ($event) {
+			return redirect()->route('events.event_management.edit', $event);
+		})->whereNumber('event');
+
 		Route::get('/events/create/event_management/{event}/edit', [EventManagementController::class, 'edit'])
         ->name('events.event_management.edit');
 		
@@ -630,6 +635,11 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
         Route::get('/users/{user}', [AdminUserController::class, 'show'])->name('users.show');
         Route::post('/users/{user}/role', [AdminRoleController::class, 'updateUserRole'])->name('users.role.update');
         Route::delete('/users/{user}/purge', [AdminUserController::class, 'purge'])->name('users.purge');
+
+        Route::get('/users/duplicates', [\App\Http\Controllers\Admin\AdminUserDuplicatesController::class, 'index'])
+            ->name('users.duplicates');
+        Route::post('/users/duplicates/merge', [\App\Http\Controllers\Admin\AdminUserDuplicatesController::class, 'merge'])
+            ->name('users.duplicates.merge');
 
         // Рекламные мероприятия
         Route::get('/events/{event}/ad/confirm', [\App\Http\Controllers\Admin\AdminAdEventController::class, 'confirm'])->name('events.ad.confirm');

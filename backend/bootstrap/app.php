@@ -31,6 +31,9 @@ return Application::configure(basePath: dirname(__DIR__))
             ->appendOutputTo(storage_path('logs/cron-events-reminders.log'));
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        // 405 Method Not Allowed -> 404 (чтобы не палить внутренние роуты)
+        $exceptions->render(function (\Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException $e, \Illuminate\Http\Request $request) {
+            abort(404);
+        });
     })
     ->create();

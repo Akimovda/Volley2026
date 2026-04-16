@@ -116,6 +116,7 @@ class AdminDashboardController extends Controller
         // Events widget (новое)
         // -----------------------------
         $eventsCount = (int) Event::query()->count();
+        $dupCount = count(app(\App\Services\UserMergeService::class)->findDuplicates());
 
         return view('admin.dashboard.index', compact(
             'totalUsers',
@@ -129,6 +130,7 @@ class AdminDashboardController extends Controller
             'eventAllRestrictions',
             'restrictionByEvent',
             'eventsCount',
+            'dupCount',
         ));
     }
 }

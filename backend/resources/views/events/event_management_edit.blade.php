@@ -303,6 +303,20 @@
 
                         <div class="col-md-6">
                             <div class="card">
+                                <label>Ограничиваемый пол: начало регистрации (дней до)</label>
+                                <input type="number"
+                                    name="game_gender_limited_reg_starts_days_before"
+                                    min="0" max="365"
+                                    value="{{ old('game_gender_limited_reg_starts_days_before', $event->gameSettings?->gender_limited_reg_starts_days_before) }}"
+                                    placeholder="например, 1">
+                                <ul class="list f-14 mt-1">
+                                    <li>Только при «М/Ж (с ограничениями)». Если пусто — действует общее «Начало регистрации».</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="card">
                                 <label>Уровень допуска (классика)</label>
                                 <div class="row row2">
                                     <div class="col-6">

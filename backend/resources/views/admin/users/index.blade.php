@@ -141,6 +141,12 @@
 							
 							<div class="col-12 text-right m-center">
 								<button class="btn" type="submit">Найти</button>
+                <a href="{{ route('admin.users.duplicates') }}" class="btn btn-secondary" style="position:relative">
+                    Дубли игроков
+                    @if($dupCount > 0)
+                    <span style="position:absolute;top:-6px;right:-6px;background:#e74c3c;color:#fff;border-radius:50%;width:18px;height:18px;font-size:11px;display:flex;align-items:center;justify-content:center;font-weight:700">{{ $dupCount }}</span>
+                    @endif
+                </a>
 								<a href="{{ route('admin.users.index') }}" class="btn btn-secondary">Сброс</a>
 							</div>
 						</div>

@@ -670,6 +670,7 @@ use App\Services\StaffLogService;
 				$prefill['game_gender_limited_side'] = $gs->gender_limited_side;
 				$prefill['game_gender_limited_max'] = $gs->gender_limited_max;
 				$prefill['game_gender_limited_positions'] = is_array($gs->gender_limited_positions) ? $gs->gender_limited_positions : null;
+				$prefill['game_gender_limited_reg_starts_days_before'] = $gs->gender_limited_reg_starts_days_before;
 				$prefill['game_allow_girls'] = (bool)($gs->allow_girls ?? true);
 				$prefill['game_girls_max'] = $gs->girls_max;
 			}
@@ -738,6 +739,7 @@ use App\Services\StaffLogService;
             'game_gender_limited_side',
             'game_gender_limited_max',
             'game_gender_limited_positions',
+            'game_gender_limited_reg_starts_days_before',
             'classic_level_min',
             'classic_level_max',
             'beach_level_min',

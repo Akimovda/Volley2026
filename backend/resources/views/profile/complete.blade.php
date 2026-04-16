@@ -382,6 +382,7 @@
 					<div class="col-lg-8 col-xl-9 order-1">
 						<div class="form">
 							<form id="profile-complete-form" method="POST" action="{{ route('profile.extra.update') }}">
+        <input type="hidden" name="from_complete" value="1">
 								@csrf
 								
 									@if($organizerLimitedView)

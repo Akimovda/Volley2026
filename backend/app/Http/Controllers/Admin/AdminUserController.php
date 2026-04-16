@@ -83,6 +83,7 @@ class AdminUserController extends Controller
 
         $users = $query->orderByDesc('id')->paginate(25)->withQueryString();
         $roles = ['user', 'admin', 'organizer', 'staff'];
+        $dupCount = count(app(\App\Services\UserMergeService::class)->findDuplicates());
 
         return view('admin.users.index', compact(
             'users',
@@ -90,7 +91,8 @@ class AdminUserController extends Controller
             'q',
             'role',
             'restricted',
-            'restrictedOptions'
+            'restrictedOptions',
+            'dupCount'
         ));
     }
 

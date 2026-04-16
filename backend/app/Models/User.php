@@ -240,16 +240,17 @@
 		
 public function getNameAttribute($value): string
 {
-    // raw name field takes priority
-    if (!empty($value)) {
-        return $value;
-    }
+    // Приоритет: first_name + last_name
     $first = trim((string) $this->first_name);
     $last  = trim((string) $this->last_name);
     if ($first !== '' || $last !== '') {
         return trim($first . ' ' . $last);
     }
-    return 'Пользователь #' . $this->id;
+    // Фолбэк: сырое поле name (если задано и не плейсхолдер)
+    if (!empty($value) && $value !== 'Пользователь') {
+        return $value;
+    }
+    return 'Игрок_#' . $this->id;
 }
 
 

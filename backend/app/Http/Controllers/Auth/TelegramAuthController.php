@@ -159,7 +159,6 @@ class TelegramAuthController extends Controller
             }
 
             $user = new User();
-            $user->name       = 'Пользователь';
             $user->email      = $email;
             $user->password   = Hash::make(Str::random(32));
             $user->telegram_id = $tgId;
