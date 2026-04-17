@@ -436,9 +436,245 @@
 		
 		
 		{{-- ===== КАК ЭТО РАБОТАЕТ ===== --}}
-		<div class="ramka" data-aos="fade-up">
+		<div class="ramka">
 			<h2 class="-mt-05">Как это работает</h2>
+			
+  <style>
+.steps ul {
+	list-style: none;
+	margin: 2rem 0 0 0;
+	padding: 0;	
+	position: relative;
+	width: 100%;
+	display: flex;
+	filter: drop-shadow(10px 10px 24px rgba(0, 0, 0, 0.1)); 
+	border-radius: 1rem;
+	overflow: hidden;
+}
+.steps ul li {	
+	top: 0;
+	position: absolute;
+	width: calc(25% + 4rem);
+	height: 100%;
+	left: calc(75% - 2rem);
+	background: #fff;
+	clip-path: polygon(calc(100% - 6rem) 0%, 100% 50%, calc(100% - 6rem) 100%, 0% 100%, 6rem 50%, 0% 0%);
+	padding: 2rem 5rem 2rem 8rem;
+	transition: background 0.3s, color 0.1s;
+	will-change: transform;
+}
 
+.steps ul li:hover,
+.steps ul li.active {	
+	background: #2967BA;
+	color: #fff;
+}
+body.dark .steps ul li {	
+	background: #222333;
+}
+body.dark .steps ul li:hover,
+body.dark .steps ul li.active {	
+	background: #E7612F;
+}
+.steps ul li:first-child {	
+	left: 0%;
+	width: calc(25% + 2rem);
+	clip-path: polygon(calc(100% - 6rem) 0%,100% 50%,calc(100% - 6rem) 100%,0% 100%,0% 0%);
+	padding: 2rem 5rem 2rem 2rem;
+}
+.steps ul li:nth-child(2) {	
+	left: calc(25% - 2rem);
+}	
+.steps ul li:nth-child(3) {	
+	left: calc(50% - 2rem);
+	position: relative;
+}	
+.steps ul li:last-child {	
+	left:  calc(75% - 2rem);
+	width: calc(25% + 2rem);
+	clip-path: polygon(100% 0%,100% 100%,0% 100%, 6rem 50%,0% 0%);
+	padding: 2rem 2rem 2rem 8rem;
+}	
+/* стили текста */
+.step-title {
+	font-size: 2rem;
+	font-weight: 600;
+	margin-bottom: 0.4rem;
+	line-height: 1.2;
+}
+.step-desc {
+	font-size: 1.6rem;
+	opacity: 0.8;
+}
+.steps ul li:hover .step-desc,
+.steps ul li.active .step-desc {
+	opacity: 1;
+}
+
+.desc-top {
+	display: flex;
+	margin-bottom: 1.2rem;
+	align-items: center;
+}
+/* ===== SVG ЦИФРЫ С АНИМАЦИЕЙ ===== */
+.step-number {
+	flex: 0 0 6.2rem;
+}
+.step-number svg {
+	width: 5rem;
+	height: 5rem;
+}
+.step-number svg circle {
+	stroke: #2967BA;
+	stroke-width: 3;
+	fill: none;
+	stroke-dasharray: 180;
+	stroke-dashoffset: 180;
+	transition: stroke-dashoffset 0.6s ease-out, stroke 0.2s;
+}
+.step-number svg text {
+	fill: #2967BA;
+	font-size: 22px;
+	font-weight: 700;
+	font-family: 'Inter', monospace;
+	dominant-baseline: middle;
+	text-anchor: middle;
+	transition: fill 0.2s;
+	transform: scale(1.4);
+	transform-origin: center;
+	transition: transform 0.2s;
+}
+.steps ul li:hover .step-number svg text,
+.steps ul li.active .step-number svg text {	
+	transform: scale(1);
+}
+body.dark .step-number svg circle {
+	stroke: #E7612F;
+}
+body.dark .step-number svg text {
+	fill: #E7612F;
+}
+
+
+/* при активации или ховере — рисуем круг */
+.steps ul li.active .step-number svg circle,
+.steps ul li:hover .step-number svg circle {
+	stroke-dashoffset: 0;
+}
+.steps ul li.active .step-number svg text,
+.steps ul li:hover .step-number svg text {
+	fill: #ffffff;
+}
+.steps ul li.active .step-number svg circle,
+.steps ul li:hover .step-number svg circle {
+	stroke: #ffffff;
+}	
+@media screen and (max-width: 1199px) {
+      .steps ul {
+       flex-wrap: wrap;
+      }
+	.steps ul li {
+	position: static!important;
+	width: 100%!important;
+		padding: 4rem 2rem 5rem 2rem;
+		margin-top: -1rem;
+	}
+	.steps ul li:first-child {
+        clip-path: polygon(50% 0%, 100% 0%, 100% calc(100% - 3rem), 50% 100%, 0% calc(100% - 3rem), 0% 0%);
+		padding: 2rem 2rem 5rem 2rem;
+		margin-top: 0;
+	}
+	.steps ul li:nth-child(2),
+	.steps ul li:nth-child(3) {
+		clip-path: polygon(0% calc(100% - 3rem), 50% 100%, 100% calc(100% - 3rem), 100% 0%, 50% 3rem, 0% 0%);
+	}	  
+	.steps ul li:last-child {
+       clip-path: polygon(0% 100%, 100% 100%, 100% 0%, 50% 3rem, 0% 0%);
+        margin-bottom: 0;
+		padding: 4rem 2rem 2rem 2rem;
+	}
+}	
+	
+  </style>			
+	
+  <div class="steps">
+    <ul>
+      <li class="active" data-aos="fade-right" data-aos-delay="0">
+	  <div class="desc-top">
+            <div class="step-number"><svg viewBox="0 0 60 60">
+          <circle cx="30" cy="30" r="26" stroke="currentColor" fill="none"/>
+          <text x="30" y="32" fill="currentColor" font-size="22" font-weight="700" text-anchor="middle" dominant-baseline="middle">01</text>
+        </svg></div>
+            <div class="step-title">Регистрация <span class="d-inline-block">без пароля</span></div>
+		</div>	
+            <div class="step-desc">Войдите через Telegram, VK или Яндекс. Заполните профиль — укажите уровень, амплуа и город.</div>
+      </li>
+      <li data-aos="fade-right" data-aos-delay="100">
+	  <div class="desc-top">
+            <div class="step-number"><svg viewBox="0 0 60 60">
+          <circle cx="30" cy="30" r="26" stroke="currentColor" fill="none"/>
+          <text x="30" y="32" fill="currentColor" font-size="22" font-weight="700" text-anchor="middle" dominant-baseline="middle">02</text>
+        </svg></div>
+            <div class="step-title">Найдите игру</div>
+			</div>
+            <div class="step-desc">Откройте каталог мероприятий. Фильтруйте по городу, уровню, дате и формату — классика или пляж.</div>
+			
+      </li>
+      <li data-aos="fade-right" data-aos-delay="200">
+	  <div class="desc-top">
+            <div class="step-number"><svg viewBox="0 0 60 60">
+          <circle cx="30" cy="30" r="26" stroke="currentColor" fill="none"/>
+          <text x="30" y="32" fill="currentColor" font-size="22" font-weight="700" text-anchor="middle" dominant-baseline="middle">03</text>
+        </svg></div>
+            <div class="step-title">Запишитесь</div>
+			</div>
+            <div class="step-desc">Выберите позицию и нажмите «Записаться». Получите подтверждение и напоминание в мессенджер.</div>
+      </li>
+      <li data-aos="fade-right" data-aos-delay="300">
+	  <div class="desc-top">
+          <div class="step-number"><svg viewBox="0 0 60 60">
+          <circle cx="30" cy="30" r="26" stroke="currentColor" fill="none"/>
+          <text x="30" y="32" fill="currentColor" font-size="22" font-weight="700" text-anchor="middle" dominant-baseline="middle">04</text>
+        </svg></div>
+            <div class="step-title">Играйте!</div>
+			</div>
+            <div class="step-desc">Приходите на игру, знакомьтесь с новыми партнёрами и оценивайте уровень друг друга.</div>
+      </li>
+    </ul>
+  </div>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+	let siteInterval,
+	count = 0;
+	function Inter() {
+		if(count===4){count=0}
+		$('.steps ul li').removeClass('active');
+		$('.steps ul li:eq('+count+')').addClass('active');
+		count++	
+	}
+	Inter();
+	siteInterval = setInterval(Inter, 4000);		
+	$('.steps ul li').mouseenter(function(e) {
+		clearInterval(siteInterval);
+		$('.steps ul li').removeClass('active aos-init aos-animate');
+		$('.steps ul li').removeAttr('data-aos data-aos-delay');
+		$(this).addClass('active');
+		
+				
+	});
+	$('.steps ul li').mouseleave(function(e) {
+		count = $(this).index('.steps ul li');
+		count = count+1;
+		//Inter();
+		siteInterval = setInterval(Inter, 4000);		
+	});	
+});		
+
+
+
+</script>	
+			
+{{--
 
 			
 			
@@ -555,6 +791,9 @@
   <div class="hw-card"><div class="hw-card-title hwt4">Играйте!</div><div class="hw-card-desc">Приходите на игру, знакомьтесь с новыми партнёрами и оценивайте уровень друг друга.</div></div>
 </div>
 </div>
+--}}
+
+
 </div>
 
 
@@ -820,7 +1059,7 @@ body.dark .rusmap path[data-color]:hover{
 		<div class="ramka">
 			<div class="d-flex between fvc mb-2">
 				<h2 class="-mt-05">Площадки и корты</h2>
-				<a href="{{ route('locations.index') }}" class="btn btn-secondary">Все локации</a>
+				<a href="{{ route('locations.index') }}" class="d-none d-sm-inline-block btn btn-secondary">Все локации</a>
 			</div>
 			
 			<div class="rf-map">
@@ -847,13 +1086,14 @@ body.dark .rusmap path[data-color]:hover{
     @endforeach	
 				</div>
 				<div class="rusmap" data-aos="fade-up"></div>
-			</div>				
-				
-			
-			<div class="text-right">
+			</div>							
+			<div class="text-right m-center">
 				{{ \DB::table('locations')->whereNull('organizer_id')->count() }} площадок
 				в {{ \DB::table('locations')->whereNull('organizer_id')->distinct('city_id')->count('city_id') }} городах России
 			</div>
+				<div class="mt-1 d-sm-none text-center">
+					<a href="{{ route('locations.index') }}" class="btn btn-secondary">Все локации</a>
+				</div>				
 		</div>
 		
 		{{-- ===== CTA ===== --}}

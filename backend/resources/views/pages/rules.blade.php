@@ -27,6 +27,18 @@
 		Правила пользования сервисом
 	</x-slot>
 
+    <x-slot name="image">
+					<div class="top-section-img" data-aos="fade" data-aos-duration="1000">
+						<div class="top-section-light-img">
+							<img src="/img/top/rules.png" alt="img">
+						</div>	
+						<div class="top-section-dark-img">
+							<img src="/img/top/rules-dark.png" alt="img">
+						</div>
+					</div>	
+	</x-slot>
+
+
 	<div class="container">
 		<div class="ramka">
 
@@ -110,7 +122,7 @@
 			<p><strong>9.2.</strong> Решение о&nbsp;разблокировке принимается администратором площадки индивидуально в&nbsp;зависимости от&nbsp;тяжести нарушения.</p>
 
 			{{-- ======= ОРГАНИЗАТОРЫ ======= --}}
-			<div class="title-h h2 mt-5">Правила для администраторов (Организаторов, Школ волейбола)</div>
+			<h2>Правила для администраторов (Организаторов, Школ волейбола)</h2>
 
 			<div class="row">
 				<div class="col-md-6">

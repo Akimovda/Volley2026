@@ -51,6 +51,11 @@ final class BotAssistantService
             return;
         }
 
+        // Боты не работают при командной записи
+        if (($event->registration_type ?? 'individual') === 'team') {
+            return;
+        }
+
         // Регистрация должна быть открыта
         $registrationStartsAt = $occurrence->registration_starts_at
             ?? $event->registration_starts_at;
@@ -250,14 +255,16 @@ final class BotAssistantService
             ->pluck('cnt', 'position')
             ->toArray();
     
-        // Собираем свободные позиции
+        // Собираем свободные позиции (НО оставляем последний слот каждой позиции людям)
         $free = [];
         foreach ($slots as $slot) {
             $takenCount = (int)($taken[$slot->role] ?? 0);
             $maxSlots = (int)$slot->max_slots;
-            if ($takenCount < $maxSlots) {
+            // Боты могут занимать только если остается минимум 1 свободное место
+            $availableForBots = max(0, $maxSlots - $takenCount - 1);
+            if ($availableForBots > 0) {
                 // Добавляем с весом — чем больше мест, тем чаще выбирается
-                for ($i = 0; $i < ($maxSlots - $takenCount); $i++) {
+                for ($i = 0; $i < $availableForBots; $i++) {
                     $free[] = $slot->role;
                 }
             }

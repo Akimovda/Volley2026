@@ -141,13 +141,21 @@
                                 <div class="row row2">
                                     <div class="col-4">
                                         <label>Часы</label>
-                                        <input type="number" min="0" max="23" name="duration_hours"
-                                            value="{{ old('duration_hours', $event->duration_sec ? (int)floor($event->duration_sec / 3600) : 0) }}">
+                                        <select name="duration_hours">
+                                            @for($h = 0; $h <= 23; $h++)
+                                                <option value="{{ $h }}" @selected((old('duration_hours', $event->duration_sec ? (int)floor($event->duration_sec / 3600) : 0)) == $h)>{{ $h }}</option>
+                                            @endfor
+                                        </select>
+                                            
                                     </div>
                                     <div class="col-4">
                                         <label>Мин</label>
-                                        <input type="number" min="0" max="59" name="duration_minutes"
-                                            value="{{ old('duration_minutes', $event->duration_sec ? (int)(($event->duration_sec % 3600) / 60) : 0) }}">
+                                        <select name="duration_minutes">
+                                            @foreach([0,15,30,45] as $m)
+                                                <option value="{{ $m }}" @selected((old('duration_minutes', $event->duration_sec ? (int)(($event->duration_sec % 3600) / 60) : 0)) == $m)>{{ $m }}</option>
+                                            @endforeach
+                                        </select>
+                                            
                                     </div>
                                 </div>
                                 <input type="hidden" name="duration_sec" id="duration_sec_edit"
@@ -219,13 +227,13 @@
                                             <img id="lpe_img" src="" alt="" class="border hidden">
                                             <div id="lpe_noimg" class="icon-nophoto"></div>
                                         </div>
-                                        <div class="col-9">
+                                        <div class="col-5">
                                             <p class="cd b-600" id="lpe_name"></p>
                                             <p class="mt-1 f-16" id="lpe_meta"></p>
                                         </div>
-                                        <div class="col-12">
+                                        <div class="col-4">
                                             <div class="border" id="lpe_map_wrap" style="display:none;">
-                                                <iframe id="lpe_map" src="" class="w-100" style="height:200px;" loading="lazy"></iframe>
+                                                <iframe id="lpe_map" src="" class="w-100" style="height:120px;" loading="lazy"></iframe>
                                             </div>
                                         </div>
                                     </div>
@@ -315,6 +323,7 @@
                             </div>
                         </div>
 
+@if(($event->direction ?? 'classic') === 'classic')
                         <div class="col-md-6">
                             <div class="card">
                                 <label>Уровень допуска (классика)</label>
@@ -334,7 +343,9 @@
                                 </div>
                             </div>
                         </div>
+                        @endif
 
+                        @if(($event->direction ?? 'classic') === 'beach')
                         <div class="col-md-6">
                             <div class="card">
                                 <label>Уровень допуска (пляж)</label>
@@ -354,6 +365,7 @@
                                 </div>
                             </div>
                         </div>
+                        @endif
 
                         <div class="col-md-6">
                             <div class="card">
@@ -405,24 +417,33 @@
                         <div class="col-md-4">
                             <div class="card">
                                 <label>Начало регистрации (дней до)</label>
-                                <input type="number" name="reg_starts_days_before" min="0" max="365"
-                                    value="{{ old('reg_starts_days_before', 3) }}">
+                                <select name="reg_starts_days_before">
+                                    @for($d = 0; $d <= 90; $d++)
+                                        <option value="{{ $d }}" @selected((old('reg_starts_days_before', 3)) == $d)>{{ $d }}</option>
+                                    @endfor
+                                </select>
                             </div>
                         </div>
 
                         <div class="col-md-4">
                             <div class="card">
                                 <label>Окончание регистрации (минут до)</label>
-                                <input type="number" name="reg_ends_minutes_before" min="0" max="10080"
-                                    value="{{ old('reg_ends_minutes_before', 15) }}">
+                                <select name="reg_ends_minutes_before">
+                                    @foreach([1,5,10,15,20,25,30,35,40,45,50,55,60] as $m)
+                                        <option value="{{ $m }}" @selected((old('reg_ends_minutes_before', 15)) == $m)>{{ $m }}</option>
+                                    @endforeach
+                                </select>
                             </div>
                         </div>
 
                         <div class="col-md-4">
                             <div class="card">
                                 <label>Запрет отмены записи (минут до)</label>
-                                <input type="number" name="cancel_lock_minutes_before" min="0" max="10080"
-                                    value="{{ old('cancel_lock_minutes_before', 60) }}">
+                                <select name="cancel_lock_minutes_before">
+                                    @foreach([1,5,10,15,20,25,30,35,40,45,50,55,60] as $m)
+                                        <option value="{{ $m }}" @selected((old('cancel_lock_minutes_before', 60)) == $m)>{{ $m }}</option>
+                                    @endforeach
+                                </select>
                             </div>
                         </div>
 
@@ -476,7 +497,31 @@
                                                 </option>
                                             @endforeach
                                         </select>
-                                    </div>
+
+                                </div>
+                                
+                                <div class="mt-2">
+                                    <label>Способ оплаты</label>
+                                    <select name="payment_method">
+                                        @foreach([
+                                            'cash' => '💵 Наличные (на месте)',
+                                            'tbank_link' => '🏦 Перевод Т-Банк (по ссылке)',
+                                            'sber_link' => '💚 Перевод Сбер (по ссылке)',
+                                            'yoomoney' => '🟡 ЮКасса (автоматическая оплата)'
+                                        ] as $method => $label)
+                                            <option value="{{ $method }}" 
+                                                @selected(old('payment_method', $event->payment_method ?? 'cash') === $method)>
+                                                {{ $label }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                <div class="mt-2" id="payment-link-block" style="display:none">
+                                    <label>Ссылка на оплату</label>
+                                    <input type="text" name="payment_link" class="form-control"
+                                        placeholder="https://..."
+                                        value="{{ old('payment_link', $event->payment_link ?? '') }}">
                                 </div>
                             </div>
                         </div>
@@ -521,17 +566,19 @@
                                     <div class="row row2">
                                         <div class="col-6">
                                             <label>Часы</label>
-                                            <input type="number" min="0" max="168" step="1"
-                                                id="remind_hours_edit"
-                                                value="{{ (int) floor($remMin / 60) }}"
-                                                placeholder="0">
+                                            <select id="remind_hours_edit">
+                                                @for($h = 0; $h <= 12; $h++)
+                                                    <option value="{{ $h }}" @selected((int) floor($remMin / 60) == $h)>{{ $h }}</option>
+                                                @endfor
+                                            </select>
                                         </div>
                                         <div class="col-6">
                                             <label>Минуты</label>
-                                            <input type="number" min="0" max="59" step="1"
-                                                id="remind_minutes_edit"
-                                                value="{{ $remMin % 60 }}"
-                                                placeholder="0">
+                                            <select id="remind_minutes_edit">
+                                                @foreach([0,5,10,15,20,25,30,35,40,45,50,55,60] as $m)
+                                                    <option value="{{ $m }}" @selected(($remMin % 60) == $m)>{{ $m }}</option>
+                                                @endforeach
+                                            </select>
                                         </div>
                                     </div>
                                     <input type="hidden" name="remind_registration_minutes_before"
@@ -546,6 +593,7 @@
                     </div>
                 </div>
 
+                @if(($event->registration_type ?? 'individual') !== 'team' && ($event->format ?? 'game') !== 'tournament')
                 {{-- ===== БЛОК 7: Помощник записи 🤖 ===== --}}
                 <div class="ramka">
                     <h2 class="-mt-05">Помощник записи 🤖</h2>
@@ -600,6 +648,8 @@
                         </div>
                     </div>
                 </div>
+
+                @endif
 
                 {{-- ===== БЛОК 8: Описание ===== --}}
                 <div class="ramka">
@@ -700,7 +750,7 @@
                 const lng = (opt.getAttribute('data-lng') || '').trim();
                 if (mapWrap && mapEl && lat && lng && !isNaN(lat) && !isNaN(lng)) {
                     mapWrap.style.display = '';
-                    mapEl.src = `https://www.openstreetmap.org/export/embed.html?layer=mapnik&marker=${encodeURIComponent(lat)},${encodeURIComponent(lng)}&zoom=16`;
+                    mapEl.src = `https://yandex.ru/map-widget/v1/?ll=${lng},${lat}&z=15&l=map&pt=${lng},${lat},pm2rdm`;
                 } else if (mapWrap) {
                     mapWrap.style.display = 'none';
                 }
@@ -708,7 +758,55 @@
             sel?.addEventListener('change', updatePreview);
             updatePreview();
 
+
+
+            // Автоматический расчёт макс. игроков (только для НЕ-турниров)
+            function updateMaxPlayers() {
+                const display = document.getElementById('max_players_display');
+                const hidden = document.getElementById('game_max_players_hidden');
+                
+                // Работаем только если есть элементы автоматического расчёта  
+                if (!display || !hidden) {
+                    console.log('Автоматический расчёт отключён (турнир)');
+                    return;
+                }
+                
+                const teamsInput = document.querySelector('input[name="teams_count"]');
+                if (teamsInput) {
+                    const teams = parseInt(teamsInput.value) || 2;
+                    const maxPlayers = teams * 6;
+                    
+                    display.textContent = maxPlayers;
+                    hidden.value = maxPlayers;
+                    
+                    console.log(`Автоматический расчёт: ${teams} команд = ${maxPlayers} игроков`);
+                }
+            }
+            
+            // Привязываем обработчики только если есть автоматический расчёт
+            const display = document.getElementById('max_players_display');
+            if (display) {
+                const teamsInput = document.querySelector('input[name="teams_count"]');
+                if (teamsInput) {
+                    teamsInput.addEventListener('input', updateMaxPlayers);
+                    teamsInput.addEventListener('change', updateMaxPlayers);
+                    console.log('Автоматический расчёт подключён');
+                }
+                updateMaxPlayers(); // Инициализация
+            }
         });
+
+            // === Payment link toggle ===
+            const payMethodSel = document.querySelector('select[name="payment_method"]');
+            const payLinkBlock = document.getElementById('payment-link-block');
+            function syncPayLink() {
+                if (!payMethodSel || !payLinkBlock) return;
+                const needsLink = ['tbank_link','sber_link'].includes(payMethodSel.value);
+                payLinkBlock.style.display = needsLink ? '' : 'none';
+            }
+            syncPayLink();
+            payMethodSel?.addEventListener('change', syncPayLink);
+
         </script>
     </x-slot>
 

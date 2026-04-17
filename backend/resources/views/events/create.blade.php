@@ -1644,6 +1644,19 @@ if ($initialStep < 1 || $initialStep > 3) {
                 }
             }
         });
+        
+        // Обработка data-hide-if для registration_type
+        document.querySelectorAll('[data-hide-if]').forEach(function(el) {
+            var hideCondition = el.getAttribute('data-hide-if');
+            if (hideCondition && hideCondition.indexOf('registration_type=') !== -1) {
+                var match = hideCondition.match(/registration_type=([a-zA-Z_]+)/);
+                if (match) {
+                    var regTypeRadio = document.querySelector('input[name="registration_type"]:checked');
+                    var currentType = regTypeRadio ? regTypeRadio.value : 'individual';
+                    el.style.display = (currentType === match[1]) ? 'none' : '';
+                }
+            }
+        });
         // Показать/скрыть блок стоимости
         var stub = document.getElementById('no_registration_stub');
         if (stub) stub.style.display = isReg ? 'none' : '';
@@ -1841,7 +1854,7 @@ if ($initialStep < 1 || $initialStep > 3) {
 						</div>
 						{{-- ===== Помощник записи 🤖 =====--}}
 						
-                        <div class="ramka" data-show-if="allow_registration=1" id="bot_assistant_block">
+                        <div class="ramka" data-show-if="allow_registration=1" data-hide-if="registration_type=team" id="bot_assistant_block">
                             <h2 class="-mt-05">Помощник записи 🤖</h2>
                             <div class="row">
                                 <div class="col-md-12">
@@ -2410,6 +2423,11 @@ if ($initialStep < 1 || $initialStep > 3) {
 		
 		// Вешаем на все значимые события
 		$('form').on('change', '#direction, #format, #game_subtype, #game_libero_mode, #game_gender_policy', safeRerenderAll);
+		
+		// Обработчик для registration_type (скрытие блока бота при командной записи)
+		$('form').on('change', 'input[name="registration_type"]', function() {
+			applyAllowRegShowIf(); // Вызываем функцию которая обработает data-hide-if
+		});
 		// Показ/скрытие блока "Начало регистрации для ограничиваемого пола"
 		function toggleGenderLimitedReg() {
 			var policy = $('#game_gender_policy').val();

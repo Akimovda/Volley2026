@@ -345,14 +345,17 @@ body.dark .ramka h2:not(.tab)::after {
 	background: #2967BA;
 }
 
-.politic .ramka .title-h {
+.politic .ramka .title-h,
+.rules  .ramka .title-h{
 	padding-left: 2.4rem;
 }
-.politic .ramka .title-h span {
+.politic .ramka .title-h span,
+.rules .ramka .title-h span{
 	position: absolute;
 	left: 0;
 }
-.politic .ramka .title-h::after {
+.politic .ramka .title-h::after,
+.rules .ramka .title-h::after{
 	left: 2.4rem;
 }
 .list {
