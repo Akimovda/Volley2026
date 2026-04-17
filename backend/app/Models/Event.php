@@ -54,6 +54,8 @@ class Event extends Model implements HasMedia
         'is_paid',
         'price_minor',
         'price_currency',
+        'payment_method',
+        'payment_link',
         'price_text',
         'bot_assistant_enabled',
         'bot_assistant_threshold',

@@ -309,6 +309,9 @@ if ($role === 'admin') {
             'is_paid'                  => ['sometimes', 'boolean'],
             'price_amount'             => ['nullable', 'numeric', 'min:0', 'max:500000'],
             'price_currency'           => ['nullable', 'string', 'max:3'],
+            'payment_method'           => ['nullable', 'string', 'in:cash,tbank_link,sber_link,yoomoney'],
+            'payment_link'             => ['nullable', 'string', 'max:500'],
+            'teams_count'              => ['nullable', 'integer', 'min:2', 'max:200'],
             'show_participants'        => ['sometimes', 'boolean'],
             'remind_registration_enabled'         => ['sometimes', 'boolean'],
             'remind_registration_minutes_before'  => ['nullable', 'integer', 'min:0'],
@@ -368,6 +371,12 @@ if ($role === 'admin') {
             $event->price_currency    = $event->is_paid
                 ? ($data['price_currency'] ?? 'RUB')
                 : null;
+            $event->payment_method    = $event->is_paid
+                ? ($data['payment_method'] ?? 'cash')
+                : null;
+            $event->payment_link      = $event->is_paid
+                ? ($data['payment_link'] ?? null)
+                : null;
             $event->show_participants = (bool) ($data['show_participants'] ?? false);
             $event->remind_registration_enabled        = (bool) ($data['remind_registration_enabled'] ?? false);
             $event->remind_registration_minutes_before = $data['remind_registration_minutes_before'] ?? null;
@@ -415,6 +424,7 @@ if ($role === 'admin') {
                     ? (bool) $data['game_allow_girls']
                     : null,
                 'girls_max' => $data['game_girls_max'] ?? null,
+                'teams_count' => $data['teams_count'] ?? null,
             ], static fn ($v) => $v !== null);
     
             if (!isset($gsPayload['subtype']) && !$event->gameSettings) {
