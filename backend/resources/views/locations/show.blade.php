@@ -191,7 +191,48 @@
 		</div>
 		
         {{-- Мероприятия в этой локации --}}
+        
+        {{-- ТУРНИРЫ В ЛОКАЦИИ --}}
+        @php
+            $locationTournaments = \App\Models\Event::where('location_id', $location->id)
+                ->where('format', 'tournament')
+                ->whereHas('tournamentStages')
+                ->with(['tournamentStages' => fn($q) => $q->withCount('matches')])
+                ->orderByDesc('starts_at')
+                ->limit(5)
+                ->get();
+        @endphp
+
+        @if($locationTournaments->isNotEmpty())
         <div class="ramka">
+            <h2 class="-mt-05">Турниры</h2>
+            @foreach($locationTournaments as $tourn)
+                @php
+                    $matchesCount = $tourn->tournamentStages->sum('matches_count');
+                    $isActive = $tourn->tournamentStages->where('status', 'in_progress')->isNotEmpty();
+                @endphp
+                <div class="d-flex f-14" style="padding:8px 0;border-bottom:1px solid rgba(128,128,128,.08);gap:10px;align-items:center;flex-wrap:wrap">
+                    <div style="flex:1;min-width:150px">
+                        <a href="{{ route('tournament.public.show', $tourn->id) }}" class="blink b-600">
+                            {{ $tourn->title }}
+                        </a>
+                        <div class="f-12" style="opacity:.5">
+                            {{ $tourn->starts_at ? $tourn->starts_at->format('d.m.Y') : '' }}
+                            · {{ $tourn->direction === 'beach' ? 'Пляж' : 'Классика' }}
+                        </div>
+                    </div>
+                    <span class="f-12 p-1 px-2 b-600" style="background:rgba(41,103,186,.15);border-radius:6px">
+                        {{ $matchesCount }} матчей
+                    </span>
+                    @if($isActive)
+                        <span class="f-12 p-1 px-2 b-600" style="background:rgba(16,185,129,.15);border-radius:6px;color:#10b981">LIVE</span>
+                    @endif
+                </div>
+            @endforeach
+        </div>
+        @endif
+
+<div class="ramka">
             <h2 class="-mt-05">Мероприятия в этой локации</h2>
         
         @php

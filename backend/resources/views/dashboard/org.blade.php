@@ -138,7 +138,70 @@
 
         {{-- БОТЫ --}}
         @if($botEffect)
+        
+        {{-- ТУРНИРЫ --}}
+        @php
+            $orgId = auth()->user()->isAdmin() ? ($organizerFilter ?: auth()->id()) : auth()->id();
+            $orgTournaments = \App\Models\Event::where('organizer_id', $orgId)
+                ->where('format', 'tournament')
+                ->whereHas('tournamentStages')
+                ->with(['tournamentStages' => fn($q) => $q->withCount('matches'), 'location:id,name'])
+                ->orderByDesc('starts_at')
+                ->limit(10)
+                ->get();
+        @endphp
+
+        @if($orgTournaments->isNotEmpty())
         <div class="ramka">
+            <h2 class="-mt-05">🏆 Турниры</h2>
+            <div class="row row2 mb-2">
+                <div class="col-md-4">
+                    <div class="card text-center">
+                        <div class="f-24 b-800" style="color:#E7612F">{{ $orgTournaments->count() }}</div>
+                        <div class="f-12" style="opacity:.5">Турниров</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card text-center">
+                        <div class="f-24 b-800">{{ $orgTournaments->sum(fn($t) => $t->tournamentStages->sum('matches_count')) }}</div>
+                        <div class="f-12" style="opacity:.5">Матчей</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card text-center">
+                        <div class="f-24 b-800">{{ $orgTournaments->filter(fn($t) => $t->tournamentStages->where('status','in_progress')->isNotEmpty())->count() }}</div>
+                        <div class="f-12" style="opacity:.5">Активных</div>
+                    </div>
+                </div>
+            </div>
+            @foreach($orgTournaments as $tourn)
+                @php
+                    $matchesCount = $tourn->tournamentStages->sum('matches_count');
+                    $isActive = $tourn->tournamentStages->where('status', 'in_progress')->isNotEmpty();
+                    $isComplete = $tourn->tournamentStages->every(fn($s) => $s->status === 'completed');
+                @endphp
+                <div class="d-flex f-14" style="padding:8px 0;border-bottom:1px solid rgba(128,128,128,.08);gap:10px;align-items:center;flex-wrap:wrap">
+                    <div style="flex:1;min-width:150px">
+                        <a href="{{ route('tournament.setup', $tourn->id) }}" class="blink b-600">{{ $tourn->title }}</a>
+                        <div class="f-12" style="opacity:.5">
+                            {{ $tourn->starts_at ? $tourn->starts_at->format('d.m.Y') : '' }}
+                            @if($tourn->location) · {{ $tourn->location->name }} @endif
+                        </div>
+                    </div>
+                    <a href="{{ route('tournament.public.show', $tourn->id) }}" class="f-12" style="opacity:.6">Публичная →</a>
+                    @if($isActive)
+                        <span class="f-12 p-1 px-2 b-600" style="background:rgba(16,185,129,.15);border-radius:6px;color:#10b981">LIVE</span>
+                    @elseif($isComplete)
+                        <span class="f-12 p-1 px-2 b-600" style="background:rgba(128,128,128,.1);border-radius:6px">Завершён</span>
+                    @else
+                        <span class="f-12 p-1 px-2 b-600" style="background:rgba(255,193,7,.15);border-radius:6px;color:#ca8a04">Настройка</span>
+                    @endif
+                </div>
+            @endforeach
+        </div>
+        @endif
+
+<div class="ramka">
             <h2 class="-mt-05">🤖 Эффективность ботов</h2>
             <div class="row row2">
                 <div class="col-6 col-md-3">

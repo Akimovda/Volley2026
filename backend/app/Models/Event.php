@@ -40,6 +40,7 @@ class Event extends Model implements HasMedia
         'allow_registration',
         'registration_mode',
         'tournament_teams_count',
+        'tournament_mvp_user_id',
 
         // registration windows
         'registration_starts_at',
@@ -107,6 +108,12 @@ class Event extends Model implements HasMedia
 
     public function registerMediaCollections(): void
     {
+        $this->addMediaCollection('tournament_photos')
+            ->registerMediaConversions(function (\Spatie\MediaLibrary\MediaCollections\Models\Media $media) {
+                $this->addMediaConversion('thumb')
+                    ->width(400)->height(300)->sharpen(5);
+            });
+
         $this->addMediaCollection('cover')->singleFile();
     }
 
@@ -194,6 +201,24 @@ class Event extends Model implements HasMedia
         $tz = $this->timezone ?: 'UTC';
 
         return $endsUtc->setTimezone($tz);
+    }
+
+
+    /* ── Tournament ── */
+
+    public function tournamentStages(): HasMany
+    {
+        return $this->hasMany(TournamentStage::class)->orderBy('sort_order');
+    }
+
+    public function tournamentMatches(): \Illuminate\Database\Eloquent\Relations\HasManyThrough
+    {
+        return $this->hasManyThrough(TournamentMatch::class, TournamentStage::class, 'event_id', 'stage_id');
+    }
+
+    public function playerTournamentStats(): HasMany
+    {
+        return $this->hasMany(PlayerTournamentStats::class);
     }
 
 }

@@ -44,6 +44,18 @@
         {{-- FLASH / ERRORS --}}
         @if (session('status'))
             <div class="ramka">
+
+@if(($event->format ?? '') === 'tournament')
+<div class="alert alert-info mb-4 d-flex justify-content-between align-items-center">
+    <div>
+        <strong>Турнирная система</strong> — настройка стадий, жеребьёвка, ввод счёта
+    </div>
+    <a href="{{ route('tournament.setup', $event) }}" class="btn btn-primary btn-sm">
+        Управление турниром →
+    </a>
+</div>
+@endif
+
                 <div class="alert alert-success">{{ session('status') }}</div>
             </div>
         @endif

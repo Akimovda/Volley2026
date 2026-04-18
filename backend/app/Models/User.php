@@ -383,4 +383,27 @@ public function getNameAttribute($value): string
 			return $this->phone;
 		}	
 		
-	}	
+	
+    /* ── Tournament stats ── */
+
+    public function tournamentStats(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(PlayerTournamentStats::class);
+    }
+
+    public function careerStats(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(PlayerCareerStats::class);
+    }
+
+    public function careerStatsClassic(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(PlayerCareerStats::class)->where('direction', 'classic');
+    }
+
+    public function careerStatsBeach(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(PlayerCareerStats::class)->where('direction', 'beach');
+    }
+
+}

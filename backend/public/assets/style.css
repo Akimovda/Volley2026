@@ -1916,6 +1916,80 @@ body.dark .level-banned td {
 body.dark .level-pro td {
 	background-color: #1f3a2a !important;
 }
+
+/* Мобильная версия - блочное отображение без прокрутки */
+@media (max-width: 575px) {
+  /* Отключаем скролл-контейнер */
+  .table-scrollable {
+    overflow-x: visible;
+    -webkit-overflow-scrolling: auto;
+    cursor: default !important;
+  }
+  
+  /* Убираем индикатор перетаскивания на мобильных */
+  .table-scrollable .table-drag-indicator {
+    display: none !important;
+  }
+  
+  /* Превращаем таблицу в блочную структуру */
+  .table,
+  .table thead,
+  .table tbody,
+  .table tr,
+  .table th,
+  .table td {
+    display: block;
+  }
+  
+  /* Скрываем заголовки в стандартном виде */
+  .table thead {
+    display: none;
+  }
+  
+  /* Каждая строка становится карточкой */
+  .table tbody tr {
+    display: block;
+    margin-bottom: 1.5rem;
+    border-radius: 1rem;
+    box-shadow: 0 0.2rem 0.8rem rgba(0, 0, 0, 0.05);
+    padding: 1rem 0;
+  }
+   
+  /* Каждая ячейка как отдельный элемент с подписью */
+  .table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 0.8rem 1.2rem;
+    border-right: none;
+    text-align: left;
+  }
+  
+  .table td:last-child {
+    border-bottom: none;
+  }
+  
+  /* Добавляем подпись из заголовка таблицы */
+  .table td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    text-align: left;
+    flex: 1;
+    color: #666;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  
+  /* Содержимое ячейки выравниваем вправо */
+  .table td > * {
+    text-align: right;
+    flex: 1;
+  }
+}
+
+
 /* Уровни с особым оформлением */
 .level-banned td {
 	background-color: #fff5f5 !important;
@@ -1926,11 +2000,7 @@ body.dark .level-pro td {
 .level .table td:nth-child(2) {
 	min-width: 36rem;
 }	
-.level .table td:last-child {
-	text-align: center;
-	font-weight: 600;
-	vertical-align: middle;
-}
+
 .level .table td:first-child {
 	vertical-align: middle;
 }

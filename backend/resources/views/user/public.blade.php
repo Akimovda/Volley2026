@@ -453,6 +453,105 @@
 					</div>
 				</div>
 				
+                {{-- Турнирная статистика --}}
+                @php
+                    $tStats = \App\Models\PlayerTournamentStats::where('user_id', $user->id)
+                        ->where('matches_played', '>', 0)
+                        ->with(['event', 'team'])
+                        ->get();
+                    $careerClassic = \App\Models\PlayerCareerStats::where('user_id', $user->id)->where('direction', 'classic')->first();
+                    $careerBeach = \App\Models\PlayerCareerStats::where('user_id', $user->id)->where('direction', 'beach')->first();
+                    $hasTournaments = $tStats->isNotEmpty() || $careerClassic || $careerBeach;
+                @endphp
+
+                @if($hasTournaments)
+                <div class="ramka">
+                    <h2 class="-mt-05">Турнирная статистика</h2>
+
+                    <div class="d-flex mb-3" style="flex-wrap:wrap;gap:12px">
+                        @if($careerClassic && $careerClassic->total_matches > 0)
+                            <div class="card p-3" style="flex:1;min-width:200px">
+                                <div class="f-13 b-600 mb-1" style="opacity:.6">🏐 Классика</div>
+                                <div class="d-flex" style="gap:16px;flex-wrap:wrap">
+                                    <div style="text-align:center">
+                                        <div class="f-24 b-800" style="color:#E7612F">{{ $careerClassic->match_win_rate }}%</div>
+                                        <div class="f-11" style="opacity:.5">WinRate</div>
+                                    </div>
+                                    <div style="text-align:center">
+                                        <div class="f-18 b-700">{{ $careerClassic->total_wins }}/{{ $careerClassic->total_matches }}</div>
+                                        <div class="f-11" style="opacity:.5">Побед/Матчей</div>
+                                    </div>
+                                    <div style="text-align:center">
+                                        <div class="f-18 b-700">{{ $careerClassic->total_tournaments }}</div>
+                                        <div class="f-11" style="opacity:.5">Турниров</div>
+                                    </div>
+                                    @if($careerClassic->best_placement)
+                                    <div style="text-align:center">
+                                        <div class="f-18 b-700">🏆 {{ $careerClassic->best_placement }}</div>
+                                        <div class="f-11" style="opacity:.5">Лучшее место</div>
+                                    </div>
+                                    @endif
+                                    @if($careerClassic->elo_rating && $careerClassic->elo_rating != 1500)
+                                    <div style="text-align:center">
+                                        <div class="f-18 b-700">{{ $careerClassic->elo_rating }}</div>
+                                        <div class="f-11" style="opacity:.5">Elo</div>
+                                    </div>
+                                    @endif
+                                </div>
+                            </div>
+                        @endif
+
+                        @if($careerBeach && $careerBeach->total_matches > 0)
+                            <div class="card p-3" style="flex:1;min-width:200px">
+                                <div class="f-13 b-600 mb-1" style="opacity:.6">🏖 Пляж</div>
+                                <div class="d-flex" style="gap:16px;flex-wrap:wrap">
+                                    <div style="text-align:center">
+                                        <div class="f-24 b-800" style="color:#E7612F">{{ $careerBeach->match_win_rate }}%</div>
+                                        <div class="f-11" style="opacity:.5">WinRate</div>
+                                    </div>
+                                    <div style="text-align:center">
+                                        <div class="f-18 b-700">{{ $careerBeach->total_wins }}/{{ $careerBeach->total_matches }}</div>
+                                        <div class="f-11" style="opacity:.5">Побед/Матчей</div>
+                                    </div>
+                                    <div style="text-align:center">
+                                        <div class="f-18 b-700">{{ $careerBeach->total_tournaments }}</div>
+                                        <div class="f-11" style="opacity:.5">Турниров</div>
+                                    </div>
+                                    @if($careerBeach->best_placement)
+                                    <div style="text-align:center">
+                                        <div class="f-18 b-700">🏆 {{ $careerBeach->best_placement }}</div>
+                                        <div class="f-11" style="opacity:.5">Лучшее место</div>
+                                    </div>
+                                    @endif
+                                    @if($careerBeach->elo_rating && $careerBeach->elo_rating != 1500)
+                                    <div style="text-align:center">
+                                        <div class="f-18 b-700">{{ $careerBeach->elo_rating }}</div>
+                                        <div class="f-11" style="opacity:.5">Elo</div>
+                                    </div>
+                                    @endif
+                                </div>
+                            </div>
+                        @endif
+                    </div>
+
+                    @if($tStats->isNotEmpty())
+                        <div class="b-600 f-14 mb-2">История турниров</div>
+                        @foreach($tStats->groupBy('event_id') as $eventId => $stats)
+                            @php $firstStat = $stats->first(); @endphp
+                            <div class="d-flex f-13" style="padding:6px 0;border-bottom:1px solid rgba(128,128,128,.08);gap:8px;align-items:center;flex-wrap:wrap">
+                                <a href="{{ route('tournament.public.show', $eventId) }}" class="blink b-600" style="flex:1;min-width:120px">
+                                    {{ $firstStat->event->title ?? 'Турнир' }}
+                                </a>
+                                <span style="opacity:.5">{{ $firstStat->team->name ?? '—' }}</span>
+                                <span class="b-700" style="color:#E7612F">{{ $firstStat->match_win_rate }}%</span>
+                                <span>{{ $firstStat->matches_won }}В {{ $firstStat->matches_played - $firstStat->matches_won }}П</span>
+                                <span style="opacity:.4">сеты {{ $firstStat->sets_won }}:{{ $firstStat->sets_lost }}</span>
+                            </div>
+                        @endforeach
+                    @endif
+                </div>
+                @endif
+
                 {{-- ===== С ВАМИ УДОБНО ИГРАТЬ ===== --}}
                 <div class="ramka">
                     <div class="d-flex between fvc">

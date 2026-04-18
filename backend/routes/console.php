@@ -47,3 +47,8 @@ Schedule::command('subscriptions:auto-booking')
 Schedule::command('premium:weekly-digest')
     ->weeklyOn(1, '09:00')
     ->withoutOverlapping();
+
+// Уведомления о предстоящих матчах турнира (каждые 5 минут)
+Schedule::command('tournament:notify-upcoming --minutes=15')
+    ->everyFiveMinutes()
+    ->withoutOverlapping();

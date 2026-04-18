@@ -1,3 +1,26 @@
+
+// === Скрытие запасных при 2x2 ===
+function toggleReserveFields() {
+    var schemeEl = document.getElementById('tournament_game_scheme');
+    var reserveWrap = document.getElementById('reserve_players_wrap');
+    var totalWrap = document.getElementById('total_players_wrap');
+
+    if (!schemeEl || !reserveWrap || !totalWrap) return;
+
+    var scheme = schemeEl.value;
+    var hide = (scheme === '2x2');
+
+    reserveWrap.style.display = hide ? 'none' : '';
+    totalWrap.style.display = hide ? 'none' : '';
+
+    if (hide) {
+        var reserveInput = document.getElementById('tournament_reserve_players_max');
+        var totalInput = document.getElementById('tournament_total_players_max');
+        if (reserveInput) reserveInput.value = '0';
+        if (totalInput) totalInput.value = '';
+    }
+}
+
 // public/js/events-create.js
 // Trix: запрет загрузки файлов/картинок
 document.addEventListener("trix-file-accept", function (event) {
@@ -2499,4 +2522,12 @@ function recalcPlayers() {
 
     toggleBotSettings();
 })();
+})();
+// Инициализация toggle reserve при загрузке и смене схемы
+(function() {
+    var schemeEl = document.getElementById('tournament_game_scheme');
+    if (schemeEl) {
+        schemeEl.addEventListener('change', toggleReserveFields);
+        toggleReserveFields();
+    }
 })();

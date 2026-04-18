@@ -684,7 +684,7 @@ if ($initialStep < 1 || $initialStep > 3) {
                                                         @enderror
 													</div>
 													
-                                                    <div class="col-sm-4">
+                                                    <div class="col-sm-4" id="reserve_players_wrap">
 														<label class="b-500">Макс. запасных игроков</label>
                                                         <input
 														type="number"
@@ -703,7 +703,7 @@ if ($initialStep < 1 || $initialStep > 3) {
                                                         @enderror
 													</div>
 													
-													<div class="col-sm-4">
+													<div class="col-sm-4" id="total_players_wrap">
                                                         <label class="b-500">Макс. всего игроков</label>
                                                         <input
 														type="number"
@@ -740,6 +740,7 @@ if ($initialStep < 1 || $initialStep > 3) {
 													class="w-full rounded-lg border-gray-200"
 													placeholder="Например 12"
                                                     >
+<ul class="list f-16 mt-1"><li>Максимальная сумма рейтингов всех игроков команды. Ограничивает сильные составы для честной игры. Оставьте пустым если не нужно.</li></ul>
                                                     @error('tournament_max_rating_sum')
 													<div class="text-xs text-red-600 mt-1">{{ $message }}</div>
                                                     @enderror

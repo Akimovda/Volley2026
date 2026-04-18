@@ -80,54 +80,77 @@
 										<div class="table-scrollable">
 											<div class="table-drag-indicator"></div>
 											<table class="table table-levels">
-												
 												<thead>
 													<tr>
-														<th style="min-width:22rem">Уровень</th>
+														<th style="min-width:26rem">Уровень</th>
 														<th>Описание</th>
-														<th style="min-width:14rem" class="text-center">Баллы</th>
 													</tr>
 												</thead>
 												<tbody>
 													<tr>
-														<td><strong class="levelmark level-1 w-100">Начальный</strong></td>
+														<td>
+															<div class="text-center">
+																<strong class="levelmark level-1">1 - Начальный</strong>
+															</div>
+														</td>
 														<td>Перебрасываем мяч через сетку в свое удовольствие, двумя руками или как получится. Кто умеет — подает сверху и атакует выше троса. Понятия амплуа отсутствуют — играют кто как может!</td>
-														<td class="text-center"><span class="levelmark level-1">1</span></td>
 													</tr>
 													<tr>
-														<td><strong class="levelmark level-2 w-100">Начальный +</strong></td>
+														<td>
+															<div class="text-center">
+																<strong class="levelmark level-2">2 - Начальный +</strong>
+															</div>
+														</td>
 														<td>Играем со всеми основными элементами: подача, прием, передача, атака, блок. Выделенные пасующие (обычно двое). Иногда получается «гасить», «ставить блок в тапки» и т.д. Понятия амплуа — только в части связующего. Техника паса у связующего отсутствует — пасует, как получится.</td>
-														<td class="text-center"><span class="levelmark level-2">2</span></td>
 													</tr>
 													<tr>
-														<td><strong class="levelmark level-3 w-100">Средний −</strong></td>
+														<td>
+															<div class="text-center">
+																<strong class="levelmark level-3">3 - Средний −</strong>
+															</div>
+														</td>
 														<td>Стабильная и уверенная подача, прием, передача, атака, блок. Активная игра на первой линии и в защите. Выделенные пасующие (обычно двое). Знание расстановки игроков на площадке в каждой зоне. Понятия амплуа — только в части связующего. Техника паса есть, но не всегда получается — есть к чему стремиться.</td>
-														<td class="text-center"><span class="levelmark level-3">3</span></td>
 													</tr>
 													<tr>
-														<td><strong class="levelmark level-4 w-100">Средний</strong></td>
+														<td>
+															<div class="text-center">
+																<strong class="levelmark level-4">4 - Средний</strong>
+															</div>
+														</td>
 														<td>Стабильная атака, двойной блок. Как правило игра с одним пасующим (5-1) и с игроками первого темпа. Примерно на этом уровне играют средние и лидирующие команды 3–4 лиги ЛВЛ. Присутствуют понятия амплуа. У связующего хорошая техника передач, но не всегда получается играть с первым темпом и диагональными. Либеро: прием 70% и нормальная доводка до связующего.</td>
-														<td class="text-center"><span class="levelmark level-4">4</span></td>
 													</tr>
 													<tr>
-														<td><strong class="levelmark level-5 w-100">Средний +</strong></td>
+														<td>
+															<div class="text-center">
+																<strong class="levelmark level-5">5 - Средний +</strong>
+															</div>
+														</td>
 														<td>Темповая и комбинационная игра (взлеты-волны-прострелы). Связка 5-1, может довести мяч до любой зоны и поддержать любую комбинацию. Уровень примерно 2 лиги ЛВЛ или перворазрядники-выпускники спортшкол. Либеро: 80% приема и доводка до связующего.</td>
-														<td class="text-center"><span class="levelmark level-5">5</span></td>
 													</tr>
 													<tr class="level-pro">
-														<td><strong class="levelmark level-6 w-100">Полупрофи (К.М.С)</strong></td>
+														<td>
+															<div class="text-center">
+																<strong class="levelmark level-6">6 - Полупрофи (К.М.С)</strong>
+															</div>
+														</td>
 														<td>Игроки уровня перворазрядников и КМС, бывшие профессионалы, текущие профессиональные пляжники. Команды уровня 1 и Высшей лиги ЛВЛ, КФК, высшей лиги МО.</td>
-														<td class="text-center"><span class="levelmark level-6">6</span></td>
 													</tr>
 													<tr class="level-pro">
-														<td><strong class="levelmark level-7 w-100">Профи (М.С.)</strong></td>
+														<td>
+															<div class="text-center">
+																<strong class="levelmark level-7">7 - Профи (М.С.)</strong>
+															</div>
+														</td>
 														<td>Игрок состоит в проф. команде, его работа — тренироваться и играть за клуб.</td>
-														<td class="text-center"><span class="levelmark level-7">7</span></td>
 													</tr>
 													<tr class="level-banned">
-														<td class="text-center"><strong>Уровень «БОГ»</strong></td>
+														<td>
+															<div class="text-center">
+																<strong class="text-center">Уровень&nbsp;«БОГ»</strong>
+																<strong class="text-center">БАН&nbsp;!</strong>
+															</div>
+														</td>
 														<td>«Бог» — самоуверенный средний любитель, неадекватно оценивающий свой уровень.</td>
-														<td class="text-center">БАН</td>
 													</tr>
 												</tbody>
 											</table>
@@ -183,46 +206,66 @@
 											<table class="table table-levels">
 												<thead>
 													<tr>
-														<th style="min-width:22rem">Уровень</th>
+														<th style="min-width:26rem">Уровень</th>
 														<th>Описание</th>
-														<th style="min-width:14rem" class="text-center">Баллы</th>
 													</tr>
 												</thead>
 												<tbody>
 													<tr>
-														<td><strong class="levelmark level-1 w-100">Начальный</strong></td>
+														<td>
+															<div class="text-center">
+																<strong class="levelmark level-1">1 - Начальный</strong>
+															</div>
+														</td>
 														<td>Игрок только учится делать элементы: пас сверху/снизу, удар, подача, перемещения и стойки, базовые расстановки. Игра ещё не вырисовывается, элементы нестабильны. Цель — правильная техника в простых условиях.</td>
-														<td class="text-center"><span class="levelmark level-1">1</span></td>
 													</tr>
 													<tr>
-														<td><strong class="levelmark level-2 w-100">Начальный +</strong></td>
+														<td>
+															<div class="text-center">
+																<strong class="levelmark level-2">2 - Начальный +</strong>
+															</div>
+														</td>
 														<td>Умеет базовые элементы: стабильно подаёт, умеет напрыжку и удар в прыжке, пас в зону атаки, приём простых подач и несильных ударов. Цель — применять технику в сложных условиях (приём ударов/отскоков, точные пасы, усиление подачи).</td>
-														<td class="text-center"><span class="levelmark level-2">2</span></td>
 													</tr>
 													<tr>
-														<td><strong class="levelmark level-3 w-100">Средний −</strong></td>
+														<td>
+															<div class="text-center">
+																<strong class="levelmark level-3">3 - Средний −</strong>
+															</div>
+														</td>
 														<td>Умеет атаковать/защищаться/пасовать/принимать, но есть ошибки в точности и качестве + не хватает физики (прыжок, сила удара, «дотянуться» в защите, подача в прыжке). Есть знания зон и расстановки; понимает знаки партнера, но не всегда может подсказать зону атаки напарнику.</td>
-														<td class="text-center"><span class="levelmark level-3">3</span></td>
 													</tr>
 													<tr>
-														<td><strong class="levelmark level-4 w-100">Средний</strong></td>
+														<td>
+															<div class="text-center">
+																<strong class="levelmark level-4">4 - Средний</strong>
+															</div>
+														</td>
 														<td>Стабильная атака/защита, точные пасы и приёмы. Ошибка чаще возникает при сильной подаче/атаке соперника или при риске на подаче/атаке. Цель — тактика: защита от ударов/скидок, обвод блока, игра «на подачах».</td>
-														<td class="text-center"><span class="levelmark level-4">4</span></td>
 													</tr>
 													<tr>
-														<td><strong class="levelmark level-5 w-100">Средний +</strong></td>
+														<td>
+															<div class="text-center">
+																<strong class="levelmark level-5">5 - Средний +</strong>
+															</div>
+														</td>
 														<td>Хорошая техника, упор на тактику: подачи вразрез, удары мимо блока, блок-аут, скидки, блокирование (если позволяет высота), грамотный выбор позиции в защите. Часто специализация по амплуа или универсал. Уровень 1–2 разряда; по ЛВЛ — выше 2 лиги.</td>
-														<td class="text-center"><span class="levelmark level-5">5</span></td>
 													</tr>
 													<tr class="level-pro">
-														<td><strong class="levelmark level-6 w-100">Полупрофи (К.М.С)</strong></td>
+														<td>
+															<div class="text-center">
+																<strong class="levelmark level-6">6 - Полупрофи (К.М.С)</strong>
+															</div>
+														</td>
 														<td>1 разряд или КМС. Играет на крупных турнирах, высокий уровень техники и тактики, но не состоит на постоянке в проф. клубе.</td>
-														<td class="text-center"><span class="levelmark level-6">6</span></td>
 													</tr>
 													<tr class="level-pro">
-														<td><strong class="levelmark level-7 w-100">Профи (М.С.)</strong></td>
+														<td>
+															<div class="text-center">
+																<strong class="levelmark level-7">7 - Профи (М.С.)</strong>
+															</div>
+														</td>
 														<td>Игрок состоит в проф. команде, его работа — тренироваться и играть за клуб.</td>
-														<td class="text-center"><span class="levelmark level-7">7</span></td>
 													</tr>
 												</tbody>
 											</table>

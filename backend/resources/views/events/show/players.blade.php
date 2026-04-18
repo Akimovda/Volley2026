@@ -259,7 +259,7 @@
         </div>
         @endforeach
     @endif
-    @if(auth()->check())
+    @if(auth()->check() && $myTeams->count() === 0)
     <form method="POST" action="{{ route('tournamentTeams.store', $event) }}" class="mt-1">
         @csrf
         <input type="text" name="name" class="form-control mb-2" placeholder="Название команды" required>
@@ -486,7 +486,7 @@
 </div>
 </div>{{-- /join-registration-block --}}
 @endif
-</div>{{-- /ramka Запись на мероприятие --}}
+
 {{-- ===============================
 ПРИГЛАСИТЬ ИГРОКА (объединённый блок)
 =============================== --}}
@@ -655,6 +655,7 @@
 СПИСОК ИГРОКОВ
 =============================== --}}
 @if($showParticipants)
+
 <div class="ramka">
     <h2 class="-mt-05">Записанные игроки</h2>	
 	

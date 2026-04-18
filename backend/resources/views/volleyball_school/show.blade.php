@@ -209,7 +209,90 @@
 		
 		
 		
-		{{-- АБОНЕМЕНТЫ --}}
+		
+{{-- ТУРНИРЫ ШКОЛЫ --}}
+@php
+    $schoolTournaments = \App\Models\Event::where('organizer_id', $school->organizer_id)
+        ->where('format', 'tournament')
+        ->whereHas('tournamentStages')
+        ->with(['location:id,name', 'tournamentStages' => fn($q) => $q->withCount('matches')])
+        ->orderByDesc('starts_at')
+        ->limit(10)
+        ->get();
+
+    $schoolTopPlayers = collect();
+    if ($schoolTournaments->isNotEmpty()) {
+        $tournamentEventIds = $schoolTournaments->pluck('id');
+        $schoolTopPlayers = \App\Models\PlayerTournamentStats::whereIn('event_id', $tournamentEventIds)
+            ->where('matches_played', '>', 0)
+            ->with('user')
+            ->selectRaw('user_id, SUM(matches_played) as total_played, SUM(matches_won) as total_won, SUM(sets_won) as total_sets_won, SUM(sets_lost) as total_sets_lost')
+            ->groupBy('user_id')
+            ->orderByRaw('SUM(matches_won)::float / GREATEST(SUM(matches_played), 1) DESC')
+            ->limit(5)
+            ->get();
+    }
+@endphp
+
+@if($schoolTournaments->isNotEmpty())
+<div class="ramka">
+    <h2 class="-mt-05">Турниры</h2>
+
+    {{-- Топ-5 игроков --}}
+    @if($schoolTopPlayers->isNotEmpty())
+        <div class="card p-3 mb-3">
+            <div class="b-600 f-14 mb-2">🏆 Лучшие игроки</div>
+            @foreach($schoolTopPlayers as $i => $tp)
+                @php
+                    $wr = $tp->total_played > 0 ? round($tp->total_won / $tp->total_played * 100, 1) : 0;
+                @endphp
+                <div class="d-flex f-13" style="padding:5px 0;border-bottom:1px solid rgba(128,128,128,.08);gap:8px;align-items:center">
+                    <span class="b-700" style="width:20px">{{ $i + 1 }}</span>
+                    <a href="{{ route('users.show', $tp->user_id) }}" class="blink" style="flex:1">
+                        {{ $tp->user->displayName() }}
+                    </a>
+                    <span class="b-700" style="color:#E7612F">{{ $wr }}%</span>
+                    <span style="opacity:.5">{{ $tp->total_won }}В/{{ $tp->total_played }}М</span>
+                </div>
+            @endforeach
+        </div>
+    @endif
+
+    {{-- Список турниров --}}
+    @foreach($schoolTournaments as $tourn)
+        @php
+            $matchesCount = $tourn->tournamentStages->sum('matches_count');
+            $stagesCount = $tourn->tournamentStages->count();
+            $isActive = $tourn->tournamentStages->where('status', 'in_progress')->isNotEmpty();
+        @endphp
+        <div class="d-flex f-14" style="padding:8px 0;border-bottom:1px solid rgba(128,128,128,.08);gap:10px;align-items:center;flex-wrap:wrap">
+            <div style="flex:1;min-width:150px">
+                <a href="{{ route('tournament.public.show', $tourn->id) }}" class="blink b-600">
+                    {{ $tourn->title }}
+                </a>
+                <div class="f-12" style="opacity:.5">
+                    {{ $tourn->starts_at ? $tourn->starts_at->format('d.m.Y') : '' }}
+                    @if($tourn->location) · {{ $tourn->location->name }} @endif
+                </div>
+            </div>
+            <span class="f-12 p-1 px-2 b-600" style="background:rgba(41,103,186,.15);border-radius:6px">
+                {{ $tourn->direction === 'beach' ? '🏖' : '🏐' }} {{ $matchesCount }} матчей
+            </span>
+            @if($isActive)
+                <span class="f-12 p-1 px-2 b-600" style="background:rgba(16,185,129,.15);border-radius:6px;color:#10b981">LIVE</span>
+            @endif
+        </div>
+    @endforeach
+
+    @if($schoolTournaments->count() >= 10)
+        <div class="mt-2" style="text-align:center">
+            <span class="f-13" style="opacity:.5">Показаны последние 10 турниров</span>
+        </div>
+    @endif
+</div>
+@endif
+
+{{-- АБОНЕМЕНТЫ --}}
 		@if(isset($subscriptionTemplates) && $subscriptionTemplates->isNotEmpty())
 		<div class="ramka">
 			<h2 class="-mt-05">Абонементы</h2>

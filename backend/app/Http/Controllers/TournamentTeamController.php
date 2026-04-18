@@ -9,6 +9,7 @@ use App\Services\TournamentTeamService;
 use DomainException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class TournamentTeamController extends Controller
@@ -38,7 +39,7 @@ class TournamentTeamController extends Controller
     public function store(Request $request, Event $event, TournamentTeamService $service): RedirectResponse
     {
         $data = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255', \Illuminate\Validation\Rule::unique('event_teams')->where('event_id', $event->id)],
             'occurrence_id' => ['nullable', 'integer', 'exists:event_occurrences,id'],
             'team_kind' => ['nullable', 'string', 'in:classic_team,beach_pair'],
             'captain_position_code' => ['nullable', 'string', 'in:setter,outside,opposite,middle,libero'],

@@ -29,6 +29,9 @@ use App\Http\Controllers\YookassaWebhookController;
 	use App\Http\Controllers\PublicLocationController;
 	use App\Http\Controllers\TournamentTeamController;
 	use App\Http\Controllers\TournamentTeamInviteController;
+use App\Http\Controllers\TournamentController;
+use App\Http\Controllers\TournamentPublicController;
+use App\Http\Controllers\TournamentTvController;
 	use App\Http\Controllers\ProfileNotificationChannelController;
 	use App\Http\Controllers\TelegramNotifyBindingController;
 	use App\Http\Controllers\VkNotifyBindingController;
@@ -680,6 +683,90 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
         Route::delete('/locations/{location}/photos/{media}', [AdminLocationPhotoController::class, 'destroy'])
 		->name('locations.photos.destroy');
 	});
+
+
+/*
+|--------------------------------------------------------------------------
+| Tournament PUBLIC pages
+|--------------------------------------------------------------------------
+*/
+Route::get('/events/{event}/tournament', [TournamentPublicController::class, 'show'])
+    ->name('tournament.public.show');
+
+Route::get('/events/{event}/tournament/live', [TournamentPublicController::class, 'liveData'])
+    ->name('tournament.public.live');
+
+Route::get('/events/{event}/tournament/bracket/{stage}', [TournamentPublicController::class, 'bracket'])
+    ->name('tournament.public.bracket');
+
+Route::get('/organizer/{organizer}/tournaments', [TournamentPublicController::class, 'organizerTournaments'])
+    ->name('tournament.organizer');
+
+
+Route::get('/events/{event}/tournament/tv', [TournamentTvController::class, 'tv'])
+    ->name('tournament.tv');
+
+Route::get('/events/{event}/tournament/pdf/schedule', [TournamentTvController::class, 'pdfSchedule'])
+    ->name('tournament.pdf.schedule');
+
+Route::get('/events/{event}/tournament/pdf/results', [TournamentTvController::class, 'pdfResults'])
+    ->name('tournament.pdf.results');
+
+
+
+/*
+|--------------------------------------------------------------------------
+| Tournament management (AUTH + VERIFIED + RESTRICTED + organizer/admin)
+|--------------------------------------------------------------------------
+*/
+Route::middleware([
+    'auth:sanctum',
+    config('jetstream.auth_session'),
+    'verified',
+    'user.restricted',
+])->group(function () {
+    Route::get('/events/{event}/tournament/setup', [TournamentController::class, 'setup'])
+        ->name('tournament.setup');
+
+    Route::post('/events/{event}/tournament/stages', [TournamentController::class, 'createStage'])
+        ->name('tournament.stages.store');
+
+    Route::post('/events/{event}/tournament/draw', [TournamentController::class, 'draw'])
+        ->name('tournament.draw');
+
+    Route::get('/tournament-matches/{match}/score', [TournamentController::class, 'scoreForm'])
+        ->name('tournament.matches.score.form');
+
+    Route::patch('/tournament-matches/{match}/score', [TournamentController::class, 'score'])
+        ->name('tournament.matches.score');
+
+    Route::post('/tournament-stages/{stage}/advance', [TournamentController::class, 'advance'])
+        ->name('tournament.stages.advance');
+
+
+    Route::post('/tournament-stages/{stage}/schedule', [TournamentController::class, 'generateSchedule'])
+        ->name('tournament.stages.schedule');
+
+    Route::post('/tournament-stages/{stage}/next-round', [TournamentController::class, 'nextRound'])
+        ->name('tournament.stages.nextRound');
+
+
+    Route::post('/events/{event}/tournament/mvp', [TournamentController::class, 'setMvp'])
+        ->name('tournament.mvp');
+
+    Route::post('/events/{event}/tournament/photos', [TournamentController::class, 'uploadPhotos'])
+        ->name('tournament.photos.store');
+
+    Route::delete('/events/{event}/tournament/photos/{mediaId}', [TournamentController::class, 'deletePhoto'])
+        ->name('tournament.photos.destroy');
+
+    Route::post('/tournament-stages/{stage}/revert', [TournamentController::class, 'revertStage'])
+        ->name('tournament.stages.revert');
+
+    Route::delete('/tournament-stages/{stage}', [TournamentController::class, 'destroyStage'])
+        ->name('tournament.stages.destroy');
+});
+
 	/*
 		|--------------------------------------------------------------------------
 		| Public users

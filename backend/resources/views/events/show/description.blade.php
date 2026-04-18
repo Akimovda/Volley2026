@@ -174,7 +174,74 @@
 						
 					</div>
 					
-					@endif	
+					@elseif($event->format === 'tournament' && $event->tournamentSetting)
+					@php $tSetting = $event->tournamentSetting; @endphp
+
+					<div class="event-summary">
+
+					<div class="event-row">
+					<span class="b-600">⚔️ Направление:</span>
+					<span>{{ $dirLabel }}</span>
+					</div>
+
+					@if($tSetting->game_scheme)
+					<div class="event-row">
+					<span class="b-600">🏐 Формат:</span>
+					<span>{{ $tSetting->game_scheme }}</span>
+					</div>
+					@endif
+
+					@if($tSetting->team_size_min || $tSetting->team_size_max)
+					<div class="event-row">
+					<span class="b-600">👥 Состав:</span>
+					<span>{{ $tSetting->team_size_min ?? '?' }} – {{ $tSetting->team_size_max ?? '?' }}</span>
+					</div>
+					@endif
+
+					@if($tSetting->teams_count)
+					<div class="event-row">
+					<span class="b-600">🏆 Команд:</span>
+					<span>{{ $tSetting->teams_count }}</span>
+					</div>
+					@endif
+
+					@if($event->classic_level_min || $event->classic_level_max || $event->beach_level_min || $event->beach_level_max)
+					@php
+					$levelMin = $event->classic_level_min ?? $event->beach_level_min;
+					$levelMax = $event->classic_level_max ?? $event->beach_level_max;
+					@endphp
+					@if($levelMin || $levelMax)
+					<div class="event-row" style="flex-direction:column;gap:.5rem;">
+					<span class="b-600">📈 Уровень:</span>
+					<span>
+					@if($levelMin)
+					<span style="color:{{ level_color((int)$levelMin) }};font-weight:700;">{{ level_name($levelMin) }}</span>
+					@endif
+					@if($levelMin && $levelMax && $levelMin != $levelMax)
+					<span style="opacity:.5;"> – </span>
+					<span style="color:{{ level_color((int)$levelMax) }};font-weight:700;">{{ level_name($levelMax) }}</span>
+					@endif
+					</span>
+					</div>
+					@endif
+					@endif
+
+					@if(!is_null($event->price_minor))
+					<div class="event-row">
+					<span class="b-600">💵 Оплата:</span>
+					<span>{{ money_human($event->price_minor, $event->price_currency) }}</span>
+					</div>
+					@elseif(!empty($event->price_text))
+					<div class="event-row">
+					<span class="b-600">💵 Оплата:</span>
+					<span>{{ $event->price_text }}</span>
+					</div>
+					@endif
+
+					</div>
+
+					@endif
+
 					
 				</div>
 			</div>

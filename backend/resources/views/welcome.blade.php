@@ -113,8 +113,6 @@
 	
 	<x-slot name="style">
         <style>
-            .home-section { margin-bottom: 0; }
-			
             /* Цифры-достижения */
             .stat-number {
 			font-size: 4.8rem;
@@ -132,29 +130,6 @@
 			.numbercard .ramka {
 			height: calc(100% - 2rem);
 			}
-			.audience-card {
-			justify-content: space-between;
-			display: flex;
-			flex-flow: column;
-			}
-			.audience-top {
-			display: flex;
-			margin-bottom: 1rem; 
-			justify-content: space-between;
-			}
-            .audience-icon { 
-			flex: 0 0 6rem;
-			line-height: 1; 
-			height: 6rem;
-			width: 6rem;
-			font-size: 5rem; 
-			text-align: right;			
-			}
-			
-			
-            /* Таб-переключатель аудиторий */
-            .audience-tabs .tab { font-size: 1.6rem; }
-			
             /* Как это работает */
             .step-num {
 			width: 4.8rem;
@@ -182,6 +157,210 @@
 			.stat-number { font-size: 3.6rem; }
 			.cta-block { padding: 3rem 1.6rem; }
             }
+			
+/* Карточка */
+.atuinCard {
+	position: relative;
+}
+.atuinCard-txt {
+	position: relative;
+	z-index: 1;
+	padding: 1rem 1rem 14.8rem;
+    border: 0.2rem solid rgba(0, 0, 0, 0.1);
+    border-radius: 1rem;
+	background: #fff;
+	box-shadow: 0 0.2rem 0.4rem rgba(0, 0, 0, 0.03);
+	transition: all 0.4s ease;
+}
+.atuinCard-txt strong {  
+	text-transform: uppercase;
+	font-weight: 600;
+	font-size: 1.8rem; 
+	display: block;
+	margin: .6rem 0 1.2rem 0;	
+	line-height: 1.3;
+	text-align: center;
+}
+.atuinCard-txt p { 
+	font-size: 1.8rem;
+	line-height: 1.3;
+	margin: 1rem 0 1rem 0;
+}
+.atuinCard-txt ul {
+	margin: 0;
+	padding: 0 0 0 2.4rem;
+	position: relative;
+	list-style: none;
+}
+.atuinCard-txt li { 
+	font-size: 1.6rem;
+	line-height: 1.3;
+	margin: .6rem 0;
+}
+.atuinCard-txt li:before {
+	font-weight: bold;
+	line-height: 1.3;
+	color: #2967BA;
+	content: "\27A0";
+	transition: 0.5s;
+	position: absolute;	
+	left: 0;
+}
+.atuinCard-txt li:hover:before {
+	color: #2967BA;
+	left: .4rem;
+}	
+.atuinCard-image-wrap {
+	height: 14.8rem;
+	position: absolute;
+	left: 50%;
+	transform: translateX(-50%);
+	bottom: 0;
+	z-index: 3;
+}
+.atuinCard-image {
+	display: flex;
+}
+.atuinCard-front,
+.atuinCard-back {
+	background-size: cover;
+	background-position: center;
+	background-color: #2967BA;
+	transition: transform .7s cubic-bezier(0.4, 0.2, 0.2, 1);
+	backface-visibility: hidden;
+	text-align: center;
+	border-radius: 50%;
+	height: 12.8rem;
+	width: 12.8rem;	
+	border: .6rem solid #2967BA;	
+	margin: 0 .6rem;
+}
+.atuinCard-inner {
+	height: 100%;
+}
+.atuinCard-inner a {
+	font-weight: 600;
+	text-transform: uppercase;
+	text-decoration: none;
+	color: #2967BA;
+	text-align: center;
+	margin: auto;
+    display: flex;
+    flex-flow: column;
+    align-items: center;
+    justify-content: center;
+	font-size: 1.4rem; 
+	height: 100%;
+	width: 100%;
+}
+@media (min-width: 576px) {
+	.atuinCard {
+		height: 100%;	
+	}
+	.atuinCard-txt {
+		padding: 1rem 2rem;
+		margin-right: 10rem;
+		min-height: 24rem;
+		height: 100%;
+	}
+	.atuinCard-txt strong {  
+		font-size: 2rem; 
+		margin: .6rem 6rem 1.2rem 0;	
+		text-align: left;
+	}
+	.atuinCard-txt p { 
+		font-size: 1.8rem;
+		margin: 1rem 6rem 1rem 0;
+	}
+	.atuinCard-txt ul {
+		padding: 0 6rem 0 3rem;
+	}
+	.atuinCard-txt li { 
+		font-size: 1.6rem;
+		margin: .6rem 1rem .6rem 0;
+	}	
+	.atuinCard-image-wrap {
+		border-left: 0.2rem solid rgba(0, 0, 0, 0.1);
+		border-top: 0.2rem solid rgba(0, 0, 0, 0.1);
+		transition: all 0.4s ease;
+		border-radius: 50%;
+		width: 20rem;
+		height: 20rem;
+		top: 2rem;
+		left: auto;
+		right: 0;
+		transform: unset;
+	}
+	.atuinCard-image-lay {
+		width: 10rem;
+		height: 20rem;
+		position: absolute;
+		top: -.2rem;
+		z-index: 2;
+		right: -.2rem;
+	}
+	.atuinCard-image {
+		transform-style: preserve-3d;
+		perspective: 100rem;
+		border-radius: 50%;
+		position: absolute;
+		z-index: 3;
+		height: 17.6rem;
+		width: 17.6rem;
+		top: .2rem;
+		right: .2rem;
+	}
+	.atuinCard-front,
+	.atuinCard-back {
+		background-color: transparent;
+		height: 17.6rem;
+		width: 17.6rem;	
+		position: absolute;
+		margin: 0;
+	}
+	.atuinCard-back {
+		transform: rotateY(180deg);
+		transform-style: preserve-3d;
+	}
+	.atuinCard:hover .atuinCard-back {
+		transform: rotateY(0deg);
+		transform-style: preserve-3d;
+	}
+	.atuinCard:hover .atuinCard-front {
+		transform: rotateY(-180deg);
+		transform-style: preserve-3d;
+	}
+	.atuinCard-inner {
+		transform: translateY(-50%) translateZ(6rem);
+		top: 50%;
+		position: absolute;
+		margin: auto;
+		z-index: 4;
+		width: 100%;
+		height: auto;
+	}
+	.atuinCard-inner a {
+		height: 14.2rem;
+		width: 14.2rem;
+		border: .6rem solid #2967BA;
+		border-radius: 50%;
+		transition: 0.5s ease-in-out;
+		overflow: hidden;	
+	}
+	.atuinCard-inner a:hover {
+		color: #fff;
+		box-shadow: inset 0 0 0 15rem #2967BA;
+	}	
+}			
+	
+.atuinCard:hover .atuinCard-txt {
+    box-shadow: 0 0.4rem 1.2rem rgba(0, 0, 0, 0.08);
+    border: 0.2rem solid rgba(0, 0, 0, 0.2)	
+}
+.atuinCard:hover .atuinCard-image-wrap {
+    border: 0.2rem solid rgba(0, 0, 0, 0.2)	
+}
+	
 		</style>
 	</x-slot>	
 	
@@ -241,19 +420,13 @@
                     <div class="tab-pane active" id="tab-players">
                         <div class="row row2">
                             <div class="col-md-6">
-                                <div class="card audience-card">
-									<div>
-										<div class="audience-top">
-											<div class="audience-title">
-												<div class="f-20 b-600 cd">Для игроков</div>
-												Играйте больше, находите партнёров, развивайтесь.
-											</div>
-											<div class="audience-icon">
-												🏐										
-											</div>											
-										</div>	
-										
-										<ul class="list">
+							
+							
+<div class="atuinCard">
+	<div class="atuinCard-txt">
+		<strong class="f-20 b-600 cd">Для игроков</strong>
+		<p>Играйте больше, находите партнёров, развивайтесь.</p>
+		<ul>
 											<li>Находите игры и тренировки рядом с домом</li>
 											<li>Записывайтесь онлайн в один клик</li>
 											<li>Классика и пляжный волейбол — любой формат</li>
@@ -262,37 +435,52 @@
 											<li>Профиль с вашим уровнем, амплуа и статистикой</li>
 											<li>Получайте уведомления в Telegram, VK и MAX</li>
 											<li>Резервный список — займёте место, если кто-то отменит</li>
-										</ul>
-									</div>
-                                    <div class="mt-2">
-                                        <a href="{{ route('events.index') }}" class="btn">Найти игру</a>
-									</div>
-								</div>
+		</ul>
+	</div>	
+	<div class="atuinCard-image-wrap">
+		<div class="atuinCard-image-lay"></div>
+		<div class="atuinCard-image">
+			<div class="atuinCard-front" style="background-image: url(https://atuin.ru/demo/cards/hotel-1.jpg)"></div>
+			<div class="atuinCard-back">
+				<div class="atuinCard-inner">					
+					<a href="{{ route('events.index') }}">Найти игру</a>
+				</div>
+			</div>
+		</div>	
+	</div>	
+</div>							
+							
 							</div>
                             <div class="col-md-6">
-                                <div class="card audience-card">
-									<div>
-										<div class="audience-top">
-											<div class="audience-title">
-												<div class="f-20 b-600 cd">Найдите своих</div>
-												Сообщество игроков вашего уровня.
-											</div>
-											<div class="audience-icon">
-												👪
-											</div>											
-										</div>
-										<ul class="list">
+							
+							
+<div class="atuinCard">
+	<div class="atuinCard-txt">
+		<strong class="f-20 b-600 cd">Найдите своих</strong>
+		<p>Сообщество игроков вашего уровня.</p>
+		<ul>
 											<li>Каталог игроков с уровнем и амплуа</li>
 											<li>Фильтр по городу, уровню, направлению</li>
 											<li>Пляжные пары и командная запись</li>
 											<li>Приглашайте партнёров на мероприятия</li>
 											<li>Авторизация через Telegram, VK или Яндекс</li>
-										</ul>
-									</div>
-                                    <div class="mt-2">
-                                        <a href="{{ route('users.index') }}" class="btn">Каталог игроков</a>
-									</div>
-								</div>
+		</ul>
+	</div>	
+	<div class="atuinCard-image-wrap">
+		<div class="atuinCard-image-lay"></div>
+		<div class="atuinCard-image">
+			<div class="atuinCard-front" style="background-image: url(https://atuin.ru/demo/cards/hotel-1.jpg)"></div>
+			<div class="atuinCard-back">
+				<div class="atuinCard-inner">					
+					<a href="{{ route('users.index') }}">Каталог игроков</a>
+				</div>
+			</div>
+		</div>	
+	</div>	
+</div>								
+							
+							
+							
 							</div>
 						</div>
 					</div>
@@ -460,7 +648,7 @@
 	background: #fff;
 	clip-path: polygon(calc(100% - 6rem) 0%, 100% 50%, calc(100% - 6rem) 100%, 0% 100%, 6rem 50%, 0% 0%);
 	padding: 2rem 5rem 2rem 8rem;
-	transition: background 0.3s, color 0.1s;
+	transition: all 1s, background 0.3s, color 0.1s!important;
 	will-change: transform;
 }
 
@@ -484,16 +672,19 @@ body.dark .steps ul li.active {
 }
 .steps ul li:nth-child(2) {	
 	left: calc(25% - 2rem);
+	transition-delay: 0.1s, 0s, 0s!important;
 }	
 .steps ul li:nth-child(3) {	
 	left: calc(50% - 2rem);
 	position: relative;
+	transition-delay: 0.2s, 0s, 0s!important;
 }	
 .steps ul li:last-child {	
 	left:  calc(75% - 2rem);
 	width: calc(25% + 2rem);
 	clip-path: polygon(100% 0%,100% 100%,0% 100%, 6rem 50%,0% 0%);
 	padding: 2rem 2rem 2rem 8rem;
+	transition-delay: 0.3s, 0s, 0s!important;
 }	
 /* стили текста */
 .step-title {
@@ -646,21 +837,20 @@ body.dark .step-number svg text {
 document.addEventListener("DOMContentLoaded", () => {
 	let siteInterval,
 	count = 0;
-	function Inter() {
-		if(count===4){count=0}
-		$('.steps ul li').removeClass('active');
-		$('.steps ul li:eq('+count+')').addClass('active');
-		count++	
-	}
+function Inter() {
+	if (window.innerWidth < 768) return;	
+	if ($('.steps ul li:not(.aos-animate)').length > 0) return;
+	if(count === 4) { count = 0; }
+	$('.steps ul li').removeClass('active');
+	$('.steps ul li:eq(' + count + ')').addClass('active');
+	count++;
+}
 	Inter();
 	siteInterval = setInterval(Inter, 4000);		
 	$('.steps ul li').mouseenter(function(e) {
 		clearInterval(siteInterval);
-		$('.steps ul li').removeClass('active aos-init aos-animate');
-		$('.steps ul li').removeAttr('data-aos data-aos-delay');
-		$(this).addClass('active');
-		
-				
+		$('.steps ul li').removeClass('active');
+		$(this).addClass('active');		
 	});
 	$('.steps ul li').mouseleave(function(e) {
 		count = $(this).index('.steps ul li');
@@ -673,127 +863,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 </script>	
-			
-{{--
-
-			
-			
-			
-			
-<div class="hw-steps-wrap">
-<style>
-.hw-steps-wrap{padding:1rem 0 2rem}
-.hw-arrows{display:flex;width:100%;margin-bottom:2rem}
-.hw-arrow{flex:1;position:relative;height:96px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:default;z-index:1;transition:z-index 0s}
-.hw-arrow:hover{z-index:10}
-.hw-arrow svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible;transition:filter .25s ease}
-.hw-arrow:hover svg{filter:brightness(1.12)}
-.hw-poly-main{transition:transform .25s ease;transform-origin:center center}
-.hw-arrow:hover .hw-poly-main{transform:scaleY(1.06)}
-.hw-inner{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:5px;padding-left:14px;transition:transform .25s ease}
-.hw-arrow:first-child .hw-inner{padding-left:4px}
-.hw-arrow:hover .hw-inner{transform:scale(1.05)}
-.hw-num{font-size:30px;font-weight:500;color:#fff;line-height:1;text-shadow:0 2px 8px rgba(0,0,0,.35)}
-.hw-sep{width:30px;height:1.5px;background:rgba(255,255,255,.5);border-radius:1px}
-.hw-lbl{font-size:10px;font-weight:500;letter-spacing:.13em;color:rgba(255,255,255,.85);text-transform:uppercase}
-.hw-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:1.25rem}
-.hw-card-title{font-size:14px;font-weight:600;margin-bottom:.4rem;line-height:1.3}
-.hw-card-desc{font-size:13px;opacity:.7;line-height:1.65}
-.hwt1{color:#C06010}.hwt2{color:#A02820}.hwt3{color:#5A2580}.hwt4{color:#1A8045}
-@media(max-width:767px){
-.hw-arrows{flex-direction:column;gap:6px}
-.hw-arrow{height:auto;min-height:64px;border-radius:12px;overflow:hidden;margin-left:0!important;z-index:1!important}
-.hw-arrow svg{display:none}
-.hw-arrow::before{content:'';position:absolute;inset:0;border-radius:12px}
-.hw-arrow:nth-child(1)::before{background:linear-gradient(135deg,#F5A050,#C06010)}
-.hw-arrow:nth-child(2)::before{background:linear-gradient(135deg,#E05555,#8C1A14)}
-.hw-arrow:nth-child(3)::before{background:linear-gradient(135deg,#A560CC,#4A1568)}
-.hw-arrow:nth-child(4)::before{background:linear-gradient(135deg,#50CC78,#106830)}
-.hw-inner{padding:0 1.25rem;flex-direction:row;gap:14px;justify-content:flex-start;align-items:center;width:100%}
-.hw-num{font-size:28px;min-width:36px}
-.hw-sep{display:none}
-.hw-lbl{display:none}
-.hw-mobile-text{display:block}
-.hw-cards{display:none}
-}
-@media(min-width:768px){
-.hw-mobile-text{display:none}
-}
-</style>
-
-<div class="hw-arrows">
-  <div class="hw-arrow">
-    <svg viewBox="0 0 300 100" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="hwg1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#F5A050"/><stop offset="50%" stop-color="#E8811C"/><stop offset="100%" stop-color="#A85408"/></linearGradient>
-        <linearGradient id="hwgi1" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="rgba(0,0,0,0.18)"/><stop offset="40%" stop-color="rgba(0,0,0,0)"/><stop offset="100%" stop-color="rgba(0,0,0,0.22)"/></linearGradient>
-        <filter id="hwf1"><feDropShadow dx="7" dy="0" stdDeviation="5" flood-color="rgba(0,0,0,.5)"/></filter>
-      </defs>
-      <polygon class="hw-poly-main" points="0,0 270,0 300,50 270,100 0,100" fill="url(#hwg1)" filter="url(#hwf1)"/>
-      <polygon points="0,0 270,0 300,50 270,100 0,100" fill="url(#hwgi1)"/>
-      <polygon points="0,0 270,0 300,50 270,100 0,100" fill="rgba(255,255,255,0.06)"/>
-      <line x1="1" y1="1.5" x2="269" y2="1.5" stroke="rgba(255,255,255,0.4)" stroke-width="1.5"/>
-      <line x1="1" y1="98.5" x2="269" y2="98.5" stroke="rgba(0,0,0,0.2)" stroke-width="1"/>
-    </svg>
-    <div class="hw-inner"><span class="hw-num">1</span><div class="hw-sep"></div><span class="hw-lbl">Шаг</span><div class="hw-mobile-text" style="color:#fff;padding:.75rem 0"><div style="font-size:14px;font-weight:600;text-shadow:0 1px 4px rgba(0,0,0,.3)">Регистрация без пароля</div><div style="font-size:12px;opacity:.85;margin-top:2px">Войдите через Telegram, VK или Яндекс</div></div></div>
-  </div>
-  <div class="hw-arrow" style="margin-left:-26px;z-index:2">
-    <svg viewBox="0 0 300 100" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="hwg2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#E05555"/><stop offset="50%" stop-color="#C73228"/><stop offset="100%" stop-color="#841810"/></linearGradient>
-        <linearGradient id="hwgi2" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="rgba(0,0,0,0.2)"/><stop offset="35%" stop-color="rgba(0,0,0,0)"/><stop offset="100%" stop-color="rgba(0,0,0,0.22)"/></linearGradient>
-        <filter id="hwf2"><feDropShadow dx="7" dy="0" stdDeviation="5" flood-color="rgba(0,0,0,.5)"/></filter>
-      </defs>
-      <polygon class="hw-poly-main" points="0,0 270,0 300,50 270,100 0,100 30,50" fill="url(#hwg2)" filter="url(#hwf2)"/>
-      <polygon points="0,0 270,0 300,50 270,100 0,100 30,50" fill="url(#hwgi2)"/>
-      <polygon points="0,0 270,0 300,50 270,100 0,100 30,50" fill="rgba(255,255,255,0.05)"/>
-      <line x1="31" y1="1.5" x2="269" y2="1.5" stroke="rgba(255,255,255,0.38)" stroke-width="1.5"/>
-      <line x1="31" y1="98.5" x2="269" y2="98.5" stroke="rgba(0,0,0,0.2)" stroke-width="1"/>
-    </svg>
-    <div class="hw-inner"><span class="hw-num">2</span><div class="hw-sep"></div><span class="hw-lbl">Шаг</span><div class="hw-mobile-text" style="color:#fff;padding:.75rem 0"><div style="font-size:14px;font-weight:600;text-shadow:0 1px 4px rgba(0,0,0,.3)">Найдите игру</div><div style="font-size:12px;opacity:.85;margin-top:2px">Фильтруйте по городу, уровню и формату</div></div></div>
-  </div>
-  <div class="hw-arrow" style="margin-left:-26px;z-index:3">
-    <svg viewBox="0 0 300 100" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="hwg3" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#A560CC"/><stop offset="50%" stop-color="#7B35A0"/><stop offset="100%" stop-color="#4A1568"/></linearGradient>
-        <linearGradient id="hwgi3" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="rgba(0,0,0,0.2)"/><stop offset="35%" stop-color="rgba(0,0,0,0)"/><stop offset="100%" stop-color="rgba(0,0,0,0.22)"/></linearGradient>
-        <filter id="hwf3"><feDropShadow dx="7" dy="0" stdDeviation="5" flood-color="rgba(0,0,0,.5)"/></filter>
-      </defs>
-      <polygon class="hw-poly-main" points="0,0 270,0 300,50 270,100 0,100 30,50" fill="url(#hwg3)" filter="url(#hwf3)"/>
-      <polygon points="0,0 270,0 300,50 270,100 0,100 30,50" fill="url(#hwgi3)"/>
-      <polygon points="0,0 270,0 300,50 270,100 0,100 30,50" fill="rgba(255,255,255,0.05)"/>
-      <line x1="31" y1="1.5" x2="269" y2="1.5" stroke="rgba(255,255,255,0.38)" stroke-width="1.5"/>
-      <line x1="31" y1="98.5" x2="269" y2="98.5" stroke="rgba(0,0,0,0.2)" stroke-width="1"/>
-    </svg>
-    <div class="hw-inner"><span class="hw-num">3</span><div class="hw-sep"></div><span class="hw-lbl">Шаг</span><div class="hw-mobile-text" style="color:#fff;padding:.75rem 0"><div style="font-size:14px;font-weight:600;text-shadow:0 1px 4px rgba(0,0,0,.3)">Запишитесь</div><div style="font-size:12px;opacity:.85;margin-top:2px">Выберите позицию и нажмите «Записаться»</div></div></div>
-  </div>
-  <div class="hw-arrow" style="margin-left:-26px;z-index:4">
-    <svg viewBox="0 0 300 100" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="hwg4" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#50CC78"/><stop offset="50%" stop-color="#28A85C"/><stop offset="100%" stop-color="#106830"/></linearGradient>
-        <linearGradient id="hwgi4" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="rgba(0,0,0,0.2)"/><stop offset="35%" stop-color="rgba(0,0,0,0)"/><stop offset="100%" stop-color="rgba(0,0,0,0.15)"/></linearGradient>
-        <filter id="hwf4"><feDropShadow dx="7" dy="0" stdDeviation="5" flood-color="rgba(0,0,0,.5)"/></filter>
-      </defs>
-      <polygon class="hw-poly-main" points="0,0 270,0 300,50 270,100 0,100 30,50" fill="url(#hwg4)" filter="url(#hwf4)"/>
-      <polygon points="0,0 270,0 300,50 270,100 0,100 30,50" fill="url(#hwgi4)"/>
-      <polygon points="0,0 270,0 300,50 270,100 0,100 30,50" fill="rgba(255,255,255,0.05)"/>
-      <line x1="31" y1="1.5" x2="269" y2="1.5" stroke="rgba(255,255,255,0.38)" stroke-width="1.5"/>
-      <line x1="31" y1="98.5" x2="269" y2="98.5" stroke="rgba(0,0,0,0.2)" stroke-width="1"/>
-    </svg>
-    <div class="hw-inner"><span class="hw-num">4</span><div class="hw-sep"></div><span class="hw-lbl">Шаг</span><div class="hw-mobile-text" style="color:#fff;padding:.75rem 0"><div style="font-size:14px;font-weight:600;text-shadow:0 1px 4px rgba(0,0,0,.3)">Играйте!</div><div style="font-size:12px;opacity:.85;margin-top:2px">Знакомьтесь с партнёрами на площадке</div></div></div>
-  </div>
-</div>
-
-<div class="hw-cards">
-  <div class="hw-card"><div class="hw-card-title hwt1">Регистрация без пароля</div><div class="hw-card-desc">Войдите через Telegram, VK или Яндекс. Заполните профиль — укажите уровень, амплуа и город.</div></div>
-  <div class="hw-card"><div class="hw-card-title hwt2">Найдите игру</div><div class="hw-card-desc">Откройте каталог мероприятий. Фильтруйте по городу, уровню, дате и формату — классика или пляж.</div></div>
-  <div class="hw-card"><div class="hw-card-title hwt3">Запишитесь</div><div class="hw-card-desc">Выберите позицию и нажмите «Записаться». Получите подтверждение и напоминание в мессенджер.</div></div>
-  <div class="hw-card"><div class="hw-card-title hwt4">Играйте!</div><div class="hw-card-desc">Приходите на игру, знакомьтесь с новыми партнёрами и оценивайте уровень друг друга.</div></div>
-</div>
-</div>
---}}
-
-
 </div>
 
 
