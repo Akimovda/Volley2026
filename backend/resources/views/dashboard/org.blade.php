@@ -141,7 +141,7 @@
         
         {{-- ТУРНИРЫ --}}
         @php
-            $orgId = auth()->user()->isAdmin() ? ($organizerFilter ?: auth()->id()) : auth()->id();
+            $orgId = auth()->id();
             $orgTournaments = \App\Models\Event::where('organizer_id', $orgId)
                 ->where('format', 'tournament')
                 ->whereHas('tournamentStages')
