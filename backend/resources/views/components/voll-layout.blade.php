@@ -299,7 +299,7 @@
 								<span class="auth-icon-circle">
 									<span class="icon-tg"></span>
 								</span>
-								<span class="auth-text">ÐÐ¾Ð¹ÑÐ¸ ÑÐµÑÐµÐ· Telegram</span>
+								<span class="auth-text">Войти через Telegram</span>
 							</div>
 						</div>
 						{{--
