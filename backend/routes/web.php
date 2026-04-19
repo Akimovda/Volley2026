@@ -32,6 +32,9 @@ use App\Http\Controllers\YookassaWebhookController;
 use App\Http\Controllers\TournamentController;
 use App\Http\Controllers\TournamentPublicController;
 use App\Http\Controllers\TournamentTvController;
+use App\Http\Controllers\TournamentSeasonController;
+use App\Http\Controllers\PlayerRatingController;
+use App\Http\Controllers\TeamStatsController;
 	use App\Http\Controllers\ProfileNotificationChannelController;
 	use App\Http\Controllers\TelegramNotifyBindingController;
 	use App\Http\Controllers\VkNotifyBindingController;
@@ -767,6 +770,90 @@ Route::middleware([
         ->name('tournament.stages.destroy');
 });
 
+
+/*
+|--------------------------------------------------------------------------
+| Seasons & Leagues management (AUTH + VERIFIED + RESTRICTED)
+|--------------------------------------------------------------------------
+*/
+Route::middleware([
+    'auth:sanctum',
+    config('jetstream.auth_session'),
+    'verified',
+    'user.restricted',
+])->group(function () {
+    // Сезоны — CRUD
+    Route::get('/seasons', [TournamentSeasonController::class, 'index'])
+        ->name('seasons.index');
+    Route::get('/seasons/create', [TournamentSeasonController::class, 'create'])
+        ->name('seasons.create');
+    Route::post('/seasons', [TournamentSeasonController::class, 'store'])
+        ->name('seasons.store');
+    Route::get('/seasons/{season}/edit', [TournamentSeasonController::class, 'edit'])
+        ->name('seasons.edit');
+    Route::put('/seasons/{season}', [TournamentSeasonController::class, 'update'])
+        ->name('seasons.update');
+    Route::delete('/seasons/{season}', [TournamentSeasonController::class, 'destroy'])
+        ->name('seasons.destroy');
+
+    // Сезон — статус
+    Route::post('/seasons/{season}/activate', [TournamentSeasonController::class, 'activate'])
+        ->name('seasons.activate');
+    Route::post('/seasons/{season}/complete', [TournamentSeasonController::class, 'complete'])
+        ->name('seasons.complete');
+
+    // Лиги — CRUD
+    Route::post('/seasons/{season}/leagues', [TournamentSeasonController::class, 'storeLeague'])
+        ->name('seasons.leagues.store');
+    Route::put('/leagues/{league}', [TournamentSeasonController::class, 'updateLeague'])
+        ->name('leagues.update');
+    Route::delete('/leagues/{league}', [TournamentSeasonController::class, 'destroyLeague'])
+        ->name('leagues.destroy');
+
+    // Команды в лиге
+    Route::post('/leagues/{league}/teams', [TournamentSeasonController::class, 'addTeamToLeague'])
+        ->name('leagues.teams.store');
+    Route::delete('/league-teams/{leagueTeam}', [TournamentSeasonController::class, 'removeTeamFromLeague'])
+        ->name('leagues.teams.destroy');
+
+    // Привязка турниров к сезону
+    Route::post('/seasons/{season}/events', [TournamentSeasonController::class, 'attachEvent'])
+        ->name('seasons.events.attach');
+    Route::delete('/seasons/{season}/events/{event}', [TournamentSeasonController::class, 'detachEvent'])
+        ->name('seasons.events.detach');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Seasons PUBLIC pages
+|--------------------------------------------------------------------------
+*/
+Route::get('/seasons/{season}', [TournamentSeasonController::class, 'show'])
+    ->name('seasons.show');
+Route::get('/s/{slug}', [TournamentSeasonController::class, 'showBySlug'])
+    ->name('seasons.show.slug');
+
+
+/*
+|--------------------------------------------------------------------------
+| Players rating (PUBLIC)
+|--------------------------------------------------------------------------
+*/
+Route::get('/players/rating', [PlayerRatingController::class, 'index'])
+    ->name('players.rating');
+
+/*
+|--------------------------------------------------------------------------
+| Team stats + Excel export (PUBLIC)
+|--------------------------------------------------------------------------
+*/
+Route::get('/teams/{team}/stats', [TeamStatsController::class, 'show'])
+    ->name('teams.stats');
+Route::get('/events/{event}/tournament/excel/results', [TeamStatsController::class, 'exportResults'])
+    ->name('tournament.excel.results');
+Route::get('/seasons/{season}/excel', [TeamStatsController::class, 'exportSeasonStats'])
+    ->name('seasons.excel');
+
 	/*
 		|--------------------------------------------------------------------------
 		| Public users
@@ -901,6 +988,8 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
 Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified'])->group(function () {
     Route::get('/org/dashboard', [\App\Http\Controllers\OrgDashboardController::class, 'index'])
         ->name('org.dashboard');
+    Route::get('/org/tournament-analytics', [\App\Http\Controllers\OrgTournamentAnalyticsController::class, 'index'])
+        ->name('org.tournament-analytics');
     Route::get('/player/dashboard', [\App\Http\Controllers\PlayerDashboardController::class, 'index'])
         ->name('player.dashboard');
 });

@@ -20,13 +20,12 @@ return new class extends Migration
             $table->unsignedSmallInteger('total_sets_lost')->default(0);
             $table->unsignedInteger('total_points_scored')->default(0);
             $table->unsignedInteger('total_points_conceded')->default(0);
-
             $table->decimal('match_win_rate', 5, 2)->default(0);
             $table->decimal('set_win_rate', 5, 2)->default(0);
             $table->unsignedSmallInteger('best_placement')->nullable();
             $table->unsignedSmallInteger('elo_rating')->default(1500);
 
-            $table->timestamps();
+            $table->timestamp('updated_at')->nullable();
 
             $table->unique(['user_id', 'direction']);
         });

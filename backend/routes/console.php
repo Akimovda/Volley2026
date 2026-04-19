@@ -52,3 +52,8 @@ Schedule::command('premium:weekly-digest')
 Schedule::command('tournament:notify-upcoming --minutes=15')
     ->everyFiveMinutes()
     ->withoutOverlapping();
+
+// Ежемесячная турнирная сводка (1-е число в 02:00)
+Schedule::command('tournament:monthly-summary')
+    ->monthlyOn(1, '02:00')
+    ->withoutOverlapping();

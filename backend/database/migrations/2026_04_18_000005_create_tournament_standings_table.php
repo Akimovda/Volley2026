@@ -18,12 +18,10 @@ return new class extends Migration
             $table->unsignedSmallInteger('wins')->default(0);
             $table->unsignedSmallInteger('losses')->default(0);
             $table->unsignedSmallInteger('draws')->default(0);
-
             $table->unsignedSmallInteger('sets_won')->default(0);
             $table->unsignedSmallInteger('sets_lost')->default(0);
             $table->unsignedInteger('points_scored')->default(0);
             $table->unsignedInteger('points_conceded')->default(0);
-
             $table->unsignedSmallInteger('rating_points')->default(0);
             $table->unsignedSmallInteger('rank')->default(0);
 

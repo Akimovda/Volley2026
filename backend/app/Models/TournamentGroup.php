@@ -9,26 +9,27 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class TournamentGroup extends Model
 {
-    protected $fillable = ['stage_id', 'name', 'sort_order'];
-
-    protected $casts = ['sort_order' => 'integer'];
+    protected $fillable = [
+        'stage_id',
+        'name',
+        'sort_order',
+    ];
 
     public function stage(): BelongsTo
     {
         return $this->belongsTo(TournamentStage::class, 'stage_id');
     }
 
+    public function groupTeams(): HasMany
+    {
+        return $this->hasMany(TournamentGroupTeam::class, 'group_id')->orderBy('seed');
+    }
+
     public function teams(): BelongsToMany
     {
         return $this->belongsToMany(EventTeam::class, 'tournament_group_teams', 'group_id', 'team_id')
                     ->withPivot('seed')
-                    ->withTimestamps()
                     ->orderByPivot('seed');
-    }
-
-    public function groupTeams(): HasMany
-    {
-        return $this->hasMany(TournamentGroupTeam::class, 'group_id')->orderBy('seed');
     }
 
     public function matches(): HasMany

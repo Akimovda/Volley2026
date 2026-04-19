@@ -201,6 +201,73 @@ class TournamentNotificationService
 
     /* ── Private ── */
 
+
+    /**
+     * Уведомление о повышении в лигу.
+     */
+    public function notifyPromotion(EventTeam $team, Event $event, string $fromLeague, string $toLeague): void
+    {
+        $title = "Повышение!";
+        $body = "Команда {$team->name} переходит из «{$fromLeague}» в «{$toLeague}» · {$event->title}";
+
+        $payload = [
+            'type'     => 'season_promotion',
+            'event_id' => $event->id,
+            'url'      => route('tournament.public.show', $event),
+        ];
+
+        $this->notifyTeamMembers($team, 'season_promotion', $title, $body, $payload);
+    }
+
+    /**
+     * Уведомление о выбывании в резерв.
+     */
+    public function notifyElimination(EventTeam $team, Event $event, string $leagueName, int $reservePosition): void
+    {
+        $title = "Резерв";
+        $body = "Команда {$team->name} переходит в резерв лиги «{$leagueName}» (позиция #{$reservePosition}) · {$event->title}";
+
+        $payload = [
+            'type'     => 'season_elimination',
+            'event_id' => $event->id,
+            'url'      => route('tournament.public.show', $event),
+        ];
+
+        $this->notifyTeamMembers($team, 'season_elimination', $title, $body, $payload);
+    }
+
+    /**
+     * Уведомление о переходе из резерва в основной состав.
+     */
+    public function notifyActivatedFromReserve(EventTeam $team, string $leagueName): void
+    {
+        $title = "Вы в основном составе!";
+        $body = "Команда {$team->name} переведена из резерва в лигу «{$leagueName}»";
+
+        $payload = [
+            'type' => 'season_reserve_activated',
+        ];
+
+        $this->notifyTeamMembers($team, 'season_reserve_activated', $title, $body, $payload);
+    }
+
+    /**
+     * Уведомление: подтвердите участие в следующем туре.
+     */
+    public function notifyConfirmParticipation(EventTeam $team, Event $event, string $leagueName): void
+    {
+        $title = "Подтвердите участие";
+        $body = "Вы автоматически записаны на следующий тур лиги «{$leagueName}». Подтвердите участие до начала.";
+
+        $payload = [
+            'type'     => 'season_confirm_participation',
+            'event_id' => $event->id,
+            'url'      => route('events.show', $event),
+        ];
+
+        $this->notifyTeamMembers($team, 'season_confirm_participation', $title, $body, $payload);
+    }
+
     private function notifyTeamMembers(EventTeam $team, string $type, string $title, string $body, array $payload): void
     {
         $userIds = DB::table('event_team_members')

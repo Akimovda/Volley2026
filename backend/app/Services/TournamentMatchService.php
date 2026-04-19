@@ -11,158 +11,289 @@ use InvalidArgumentException;
 class TournamentMatchService
 {
     public function __construct(
-        private TournamentStandingsService $standingsService,
-        private TournamentStatsService $statsService,
-        private TournamentNotificationService $notificationService,
+        protected TournamentStandingsService $standingsService,
     ) {}
 
+
     /**
-     * Записать счёт матча.
+     * Записать счёт матча (API контроллера).
      *
-     * @param  int[][] $sets  [[25,23],[21,25],[15,11]]
+     * @param  array  $sets  [[25,23], [21,25], [15,11]]
      */
-    public function recordScore(TournamentMatch $match, array $sets, ?User $scoredBy = null): TournamentMatch
-    {
-        if (! $match->hasTeams()) {
-            throw new InvalidArgumentException('Невозможно ввести счёт: команды не определены.');
+    public function recordScore(
+        TournamentMatch $match,
+        array $sets,
+        ?User $scorer = null,
+    ): TournamentMatch {
+        $scoreHome = array_map(fn($s) => (int) $s[0], $sets);
+        $scoreAway = array_map(fn($s) => (int) $s[1], $sets);
+
+        return $this->submitScore($match, $scoreHome, $scoreAway, $scorer);
+    }
+
+    /**
+     * Ввести счёт матча (внутренний).
+     *
+     * @param  array  $scoreHome  [25, 21, 15] — очки по сетам
+     * @param  array  $scoreAway  [23, 25, 11]
+     */
+    public function submitScore(
+        TournamentMatch $match,
+        array $scoreHome,
+        array $scoreAway,
+        ?User $scorer = null,
+    ): TournamentMatch {
+        if (!$match->hasTeams()) {
+            throw new InvalidArgumentException('Матч не имеет обеих команд.');
         }
 
         if ($match->isCompleted()) {
-            throw new InvalidArgumentException('Матч уже завершён. Используйте correctScore().');
+            throw new InvalidArgumentException('Матч уже завершён.');
         }
 
         $stage  = $match->stage;
         $format = $stage->matchFormat();
 
-        $this->validateSets($sets, $format, $stage);
+        $this->validateScore($scoreHome, $scoreAway, $format, $stage);
 
-        $scoreHome = array_column($sets, 0);
-        $scoreAway = array_column($sets, 1);
-
-        $setsHome = $setsAway = $totalHome = $totalAway = 0;
-
-        foreach ($sets as [$h, $a]) {
-            $totalHome += $h;
-            $totalAway += $a;
-            if ($h > $a) { $setsHome++; } else { $setsAway++; }
+        $setsHome = 0;
+        $setsAway = 0;
+        foreach ($scoreHome as $i => $pts) {
+            $awayPts = $scoreAway[$i] ?? 0;
+            if ($pts > $awayPts) {
+                $setsHome++;
+            } else {
+                $setsAway++;
+            }
         }
 
-        $winnerId = $setsHome > $setsAway ? $match->team_home_id : $match->team_away_id;
+        $winnerId = $setsHome > $setsAway
+            ? $match->team_home_id
+            : $match->team_away_id;
 
-        return DB::transaction(function () use ($match, $scoreHome, $scoreAway, $setsHome, $setsAway, $totalHome, $totalAway, $winnerId, $scoredBy) {
+        DB::transaction(function () use ($match, $scoreHome, $scoreAway, $setsHome, $setsAway, $winnerId, $scorer) {
             $match->update([
                 'score_home'        => $scoreHome,
                 'score_away'        => $scoreAway,
                 'sets_home'         => $setsHome,
                 'sets_away'         => $setsAway,
-                'total_points_home' => $totalHome,
-                'total_points_away' => $totalAway,
+                'total_points_home' => array_sum($scoreHome),
+                'total_points_away' => array_sum($scoreAway),
                 'winner_team_id'    => $winnerId,
                 'status'            => TournamentMatch::STATUS_COMPLETED,
-                'scored_by_user_id' => $scoredBy?->id,
+                'scored_by_user_id' => $scorer?->id,
                 'scored_at'         => now(),
             ]);
 
-            $this->standingsService->updateAfterMatch($match);
-            $this->statsService->updateAfterMatch($match);
-            $this->propagateWinner($match);
-
-            // Уведомляем участников
-            try {
-                $this->notificationService->notifyMatchResult($match);
-            } catch (\Throwable $e) {
-                \Log::warning('Tournament notification failed: ' . $e->getMessage());
+            if ($match->group_id) {
+                $this->standingsService->recalculateGroup(
+                    $match->stage,
+                    $match->group,
+                );
             }
 
-            // King of the Court: обновляем king и очередь
-            if ($match->stage->type === 'king_of_court') {
-                try {
-                    app(\App\Services\TournamentKingService::class)->afterMatch($match->stage, $match);
-                } catch (\Throwable $e) {
-                    \Log::warning('King afterMatch failed: ' . $e->getMessage());
-                }
+            $this->advanceWinner($match, $winnerId);
+            $this->advanceLoser($match);
+        });
+
+        return $match->fresh();
+    }
+
+    /**
+     * Отменить счёт (откат результата матча).
+     */
+    public function resetScore(TournamentMatch $match): TournamentMatch
+    {
+        DB::transaction(function () use ($match) {
+            $winnerId = $match->winner_team_id;
+
+            if ($match->next_match_id && $winnerId) {
+                $slot = $match->next_match_slot;
+                TournamentMatch::where('id', $match->next_match_id)->update([
+                    "team_{$slot}_id" => null,
+                ]);
             }
 
-            return $match->fresh();
+            if ($match->loser_next_match_id) {
+                $slot = $match->loser_next_match_slot;
+                TournamentMatch::where('id', $match->loser_next_match_id)->update([
+                    "team_{$slot}_id" => null,
+                ]);
+            }
+
+            $match->update([
+                'score_home'        => null,
+                'score_away'        => null,
+                'sets_home'         => 0,
+                'sets_away'         => 0,
+                'total_points_home' => 0,
+                'total_points_away' => 0,
+                'winner_team_id'    => null,
+                'status'            => TournamentMatch::STATUS_SCHEDULED,
+                'scored_by_user_id' => null,
+                'scored_at'         => null,
+            ]);
+
+            if ($match->group_id) {
+                $this->standingsService->recalculateGroup(
+                    $match->stage,
+                    $match->group,
+                );
+            }
         });
+
+        return $match->fresh();
     }
 
-    /** Исправление счёта уже завершённого матча. */
-    public function correctScore(TournamentMatch $match, array $sets, ?User $scoredBy = null): TournamentMatch
+    /**
+     * Записать forfeit (техническое поражение).
+     */
+    public function forfeit(TournamentMatch $match, int $loserTeamId, ?User $scorer = null): TournamentMatch
     {
-        if (! $match->isCompleted()) {
-            throw new InvalidArgumentException('Матч ещё не завершён.');
+        if (!$match->hasTeams()) {
+            throw new InvalidArgumentException('Матч не имеет обеих команд.');
         }
 
-        return DB::transaction(function () use ($match, $sets, $scoredBy) {
-            $this->standingsService->revertMatch($match);
-            $this->statsService->revertMatch($match);
-            $match->update(['status' => TournamentMatch::STATUS_SCHEDULED, 'winner_team_id' => null]);
-            return $this->recordScore($match, $sets, $scoredBy);
+        $winnerId = ($loserTeamId === $match->team_home_id)
+            ? $match->team_away_id
+            : $match->team_home_id;
+
+        DB::transaction(function () use ($match, $winnerId, $scorer) {
+            $match->update([
+                'winner_team_id'    => $winnerId,
+                'status'            => TournamentMatch::STATUS_FORFEIT,
+                'scored_by_user_id' => $scorer?->id,
+                'scored_at'         => now(),
+            ]);
+
+            if ($match->group_id) {
+                $this->standingsService->recalculateGroup(
+                    $match->stage,
+                    $match->group,
+                );
+            }
+
+            $this->advanceWinner($match, $winnerId);
+            $this->advanceLoser($match);
         });
+
+        return $match->fresh();
     }
 
-    /** Bracket propagation: победитель → next_match, проигравший → loser_next (double elim). */
-    private function propagateWinner(TournamentMatch $match): void
+    protected function advanceWinner(TournamentMatch $match, int $winnerId): void
     {
-        if (! $match->winner_team_id) return;
-
-        if ($match->next_match_id && $match->next_match_slot) {
-            $field = $match->next_match_slot === 'home' ? 'team_home_id' : 'team_away_id';
-            TournamentMatch::where('id', $match->next_match_id)->update([$field => $match->winner_team_id]);
+        if (!$match->next_match_id) {
+            return;
         }
 
-        if ($match->loser_next_match_id && $match->loser_next_match_slot) {
-            $loserId = $match->loserId();
-            $field   = $match->loser_next_match_slot === 'home' ? 'team_home_id' : 'team_away_id';
-            TournamentMatch::where('id', $match->loser_next_match_id)->update([$field => $loserId]);
-        }
+        $slot = $match->next_match_slot;
+        TournamentMatch::where('id', $match->next_match_id)->update([
+            "team_{$slot}_id" => $winnerId,
+        ]);
     }
 
-    /** Валидация сетов. */
-    private function validateSets(array $sets, string $format, TournamentStage $stage): void
+    protected function advanceLoser(TournamentMatch $match): void
     {
-        $setsToWin = match ($format) {
-            'bo1' => 1, 'bo3' => 2, 'bo5' => 3, default => 2,
+        if (!$match->loser_next_match_id || !$match->winner_team_id) {
+            return;
+        }
+
+        $loserId = $match->loserId();
+        if (!$loserId) {
+            return;
+        }
+
+        $slot = $match->loser_next_match_slot;
+        TournamentMatch::where('id', $match->loser_next_match_id)->update([
+            "team_{$slot}_id" => $loserId,
+        ]);
+    }
+
+    /**
+     * Валидация введённого счёта.
+     */
+    protected function validateScore(
+        array $scoreHome,
+        array $scoreAway,
+        string $format,
+        TournamentStage $stage,
+    ): void {
+        $setCount = count($scoreHome);
+
+        if ($setCount !== count($scoreAway)) {
+            throw new InvalidArgumentException('Количество сетов home и away должно совпадать.');
+        }
+
+        $maxSets = match ($format) {
+            'bo1' => 1,
+            'bo3' => 3,
+            'bo5' => 5,
+            default => 3,
         };
-        $maxSets = $setsToWin * 2 - 1;
 
-        if (count($sets) < 1 || count($sets) > $maxSets) {
-            throw new InvalidArgumentException("Сетов должно быть от 1 до {$maxSets} для {$format}.");
+        $setsToWin = match ($format) {
+            'bo1' => 1,
+            'bo3' => 2,
+            'bo5' => 3,
+            default => 2,
+        };
+
+        if ($setCount < 1 || $setCount > $maxSets) {
+            throw new InvalidArgumentException("Для формата {$format} допустимо от 1 до {$maxSets} сетов.");
         }
 
         $setPoints      = $stage->setPoints();
-        $decidingPoints = $stage->decidingSetPoints();
-        $homeWon = $awayWon = 0;
+        $decidingSetPts = $stage->decidingSetPoints();
 
-        foreach ($sets as $i => [$h, $a]) {
-            if (! is_int($h) || ! is_int($a) || $h < 0 || $a < 0) {
-                throw new InvalidArgumentException('Некорректный счёт в сете ' . ($i + 1));
-            }
+        $homeWins = 0;
+        $awayWins = 0;
 
-            $isDeciding = ($i + 1) === $maxSets;
-            $target     = $isDeciding ? $decidingPoints : $setPoints;
-            $winner     = max($h, $a);
-            $loser      = min($h, $a);
+        foreach ($scoreHome as $i => $h) {
+            $a = $scoreAway[$i];
+            $isDecidingSet = ($i + 1 === $maxSets) || ($homeWins === $setsToWin - 1 && $awayWins === $setsToWin - 1);
+            $target = $isDecidingSet ? $decidingSetPts : $setPoints;
 
-            if ($winner < $target) {
-                throw new InvalidArgumentException("Сет " . ($i + 1) . ": никто не набрал {$target}.");
-            }
-            if ($winner - $loser < 2) {
-                throw new InvalidArgumentException("Сет " . ($i + 1) . ": разница должна быть >= 2.");
-            }
-            if ($winner > $target && $loser < $target - 1) {
-                throw new InvalidArgumentException("Сет " . ($i + 1) . ": некорректный счёт (при > {$target} проигравший >= " . ($target - 1) . ").");
-            }
+            $this->validateSet($h, $a, $target, $i + 1);
 
-            if ($h > $a) { $homeWon++; } else { $awayWon++; }
+            if ($h > $a) {
+                $homeWins++;
+            } else {
+                $awayWins++;
+            }
         }
 
-        if ($homeWon !== $setsToWin && $awayWon !== $setsToWin) {
-            throw new InvalidArgumentException("Матч не завершён: нужно выиграть {$setsToWin} сетов.");
+        if ($homeWins !== $setsToWin && $awayWins !== $setsToWin) {
+            throw new InvalidArgumentException("Матч не завершён: ни одна команда не набрала {$setsToWin} сета(-ов).");
         }
-        if ($homeWon > $setsToWin || $awayWon > $setsToWin) {
-            throw new InvalidArgumentException("Лишние сеты: одна сторона уже выиграла матч.");
+
+        if ($homeWins > $setsToWin || $awayWins > $setsToWin) {
+            throw new InvalidArgumentException('Слишком много сетов — матч уже должен был завершиться.');
+        }
+    }
+
+    protected function validateSet(int $home, int $away, int $targetPoints, int $setNumber): void
+    {
+        if ($home < 0 || $away < 0) {
+            throw new InvalidArgumentException("Сет {$setNumber}: очки не могут быть отрицательными.");
+        }
+
+        $winner = max($home, $away);
+        $loser  = min($home, $away);
+
+        if ($winner < $targetPoints) {
+            throw new InvalidArgumentException("Сет {$setNumber}: победитель должен набрать минимум {$targetPoints} очков (сейчас {$winner}).");
+        }
+
+        if ($winner - $loser < 2) {
+            throw new InvalidArgumentException("Сет {$setNumber}: разница должна быть минимум 2 очка ({$home}:{$away}).");
+        }
+
+        if ($loser >= $targetPoints - 1 && $winner - $loser !== 2) {
+            throw new InvalidArgumentException("Сет {$setNumber}: при тай-брейке разница должна быть ровно 2 ({$home}:{$away}).");
+        }
+
+        if ($loser < $targetPoints - 1 && $winner !== $targetPoints) {
+            throw new InvalidArgumentException("Сет {$setNumber}: победитель должен набрать ровно {$targetPoints} (не {$winner}), если проигравший набрал {$loser}.");
         }
     }
 }

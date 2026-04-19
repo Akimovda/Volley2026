@@ -8,12 +8,13 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('player_tournament_stats', function (Blueprint $table) {
+        Schema::create('tournament_season_stats', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('event_id')->constrained('events')->cascadeOnDelete();
+            $table->foreignId('season_id')->constrained('tournament_seasons')->cascadeOnDelete();
+            $table->foreignId('league_id')->constrained('tournament_leagues')->cascadeOnDelete();
             $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
-            $table->foreignId('team_id')->constrained('event_teams')->cascadeOnDelete();
 
+            $table->unsignedSmallInteger('rounds_played')->default(0);
             $table->unsignedSmallInteger('matches_played')->default(0);
             $table->unsignedSmallInteger('matches_won')->default(0);
             $table->unsignedSmallInteger('sets_won')->default(0);
@@ -22,17 +23,19 @@ return new class extends Migration
             $table->unsignedInteger('points_conceded')->default(0);
             $table->decimal('match_win_rate', 5, 2)->default(0);
             $table->decimal('set_win_rate', 5, 2)->default(0);
-            $table->integer('point_diff')->default(0);
+            $table->unsignedSmallInteger('best_placement')->nullable();
+            $table->smallInteger('current_streak')->default(0);
+            $table->unsignedSmallInteger('elo_season')->default(1500);
 
             $table->timestamps();
 
-            $table->unique(['event_id', 'user_id', 'team_id']);
-            $table->index('user_id');
+            $table->unique(['season_id', 'league_id', 'user_id']);
+            $table->index(['season_id', 'league_id', 'match_win_rate']);
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('player_tournament_stats');
+        Schema::dropIfExists('tournament_season_stats');
     }
 };

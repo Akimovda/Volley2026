@@ -7,9 +7,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class TournamentGroupTeam extends Model
 {
-    protected $fillable = ['group_id', 'team_id', 'seed'];
-
-    protected $casts = ['seed' => 'integer'];
+    protected $fillable = [
+        'group_id',
+        'team_id',
+        'seed',
+    ];
 
     public function group(): BelongsTo
     {

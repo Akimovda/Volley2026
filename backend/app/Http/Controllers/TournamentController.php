@@ -564,6 +564,10 @@ class TournamentController extends Controller
                     // Обновляем Elo
                     app(\App\Services\TournamentEloService::class)
                         ->recalculateForEvent($event);
+
+                    // Авто-продвижение в сезоне (promote/relegate/reserve)
+                    app(\App\Services\TournamentPromotionService::class)
+                        ->process($event);
                 } catch (\Throwable $e) {
                     \Log::warning('Tournament completion notification failed: ' . $e->getMessage());
                 }

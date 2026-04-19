@@ -221,4 +221,10 @@ class Event extends Model implements HasMedia
         return $this->hasMany(PlayerTournamentStats::class);
     }
 
+
+    public function seasonEvent(): ?\Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(\App\Models\TournamentSeasonEvent::class);
+    }
+
 }

@@ -153,7 +153,10 @@
 
         @if($orgTournaments->isNotEmpty())
         <div class="ramka">
-            <h2 class="-mt-05">🏆 Турниры</h2>
+            <div class="d-flex justify-content-between align-items-center">
+                <h2 class="-mt-05">🏆 Турниры</h2>
+                <a href="{{ route('org.tournament-analytics') }}" class="btn btn-outline-primary btn-sm">📊 Аналитика турниров</a>
+            </div>
             <div class="row row2 mb-2">
                 <div class="col-md-4">
                     <div class="card text-center">

@@ -406,4 +406,15 @@ public function getNameAttribute($value): string
         return $this->hasOne(PlayerCareerStats::class)->where('direction', 'beach');
     }
 
+
+    public function tournamentSeasons(): HasMany
+    {
+        return $this->hasMany(\App\Models\TournamentSeason::class, 'organizer_id');
+    }
+
+    public function tournamentSeasonStats(): HasMany
+    {
+        return $this->hasMany(\App\Models\TournamentSeasonStats::class);
+    }
+
 }
