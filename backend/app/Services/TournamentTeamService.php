@@ -392,21 +392,28 @@ final class TournamentTeamService
                 throw new DomainException('Заявка уже существует.');
             }
 
+            // Определяем режим одобрения
+            $settings = \App\Models\EventTournamentSetting::where('event_id', $team->event_id)->first();
+            $isAutoApproval = ($settings->application_mode ?? 'manual') === 'auto';
+
+            $applicationStatus = $isAutoApproval ? 'approved' : 'pending';
+            $teamStatus = $isAutoApproval ? 'submitted' : 'pending';
+
             $application = EventTeamApplication::query()->create([
                 'event_id' => $team->event_id,
                 'event_team_id' => $team->id,
-                'status' => 'pending',
+                'status' => $applicationStatus,
                 'submitted_by_user_id' => $submittedBy->id,
                 'applied_at' => now(),
-                'reviewed_by_user_id' => null,
-                'reviewed_at' => null,
+                'reviewed_by_user_id' => $isAutoApproval ? null : null,
+                'reviewed_at' => $isAutoApproval ? now() : null,
                 'rejection_reason' => null,
-                'decision_comment' => null,
+                'decision_comment' => $isAutoApproval ? 'Автоматическое одобрение' : null,
                 'meta' => null,
             ]);
 
             $team->update([
-                'status' => 'pending',
+                'status' => $teamStatus,
             ]);
 
             $this->audit(

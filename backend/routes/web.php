@@ -743,6 +743,12 @@ Route::middleware([
     Route::post('/events/{event}/tournament/stages', [TournamentController::class, 'createStage'])
         ->name('tournament.stages.store');
 
+    Route::post('/events/{event}/tournament/applications/{application}/approve', [TournamentController::class, 'approveApplication'])
+        ->name('tournament.application.approve');
+
+    Route::post('/events/{event}/tournament/applications/{application}/reject', [TournamentController::class, 'rejectApplication'])
+        ->name('tournament.application.reject');
+
     Route::post('/events/{event}/tournament/draw', [TournamentController::class, 'draw'])
         ->name('tournament.draw');
 

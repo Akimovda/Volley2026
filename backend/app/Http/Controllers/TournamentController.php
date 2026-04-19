@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Event;
 use App\Models\EventTeam;
 use App\Models\TournamentStage;
+use App\Models\EventTeamApplication;
 use App\Models\TournamentGroup;
 use App\Models\TournamentMatch;
 use App\Models\TournamentStanding;
@@ -14,6 +15,7 @@ use App\Services\TournamentStandingsService;
 use App\Services\TournamentBracketService;
 use App\Services\TournamentKingService;
 use App\Services\TournamentSwissService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -47,7 +49,15 @@ class TournamentController extends Controller
             ->with('captain')
             ->get();
 
-        return view('tournaments.setup', compact('event', 'stages', 'teams'));
+        $pendingApplications = EventTeamApplication::where('event_id', $event->id)
+            ->where('status', 'pending')
+            ->with(['team.captain', 'team.members.user', 'submittedBy'])
+            ->get();
+
+        $settings = $event->tournamentSetting;
+        $applicationMode = $settings->application_mode ?? 'manual';
+
+        return view('tournaments.setup', compact('event', 'stages', 'teams', 'pendingApplications', 'applicationMode'));
     }
 
     /* ================================================================
@@ -529,7 +539,47 @@ class TournamentController extends Controller
         return redirect()->route('tournament.setup', $event)->with('success', 'Фото удалено.');
     }
 
-        private function authorizeOrganizer(Request $request, Event $event): void
+    public function approveApplication(Request $request, Event $event, EventTeamApplication $application): RedirectResponse
+    {
+        $this->authorizeOrganizer($request, $event);
+        abort_unless((int) $application->event_id === (int) $event->id, 404);
+        abort_unless($application->status === 'pending', 422, 'Заявка уже обработана.');
+
+        $application->update([
+            'status' => 'approved',
+            'reviewed_by_user_id' => $request->user()->id,
+            'reviewed_at' => now(),
+            'decision_comment' => 'Одобрено организатором',
+        ]);
+
+        $application->team?->update(['status' => 'submitted']);
+
+        return back()->with('success', "Заявка команды «{$application->team->name}» одобрена ✅");
+    }
+
+    public function rejectApplication(Request $request, Event $event, EventTeamApplication $application): RedirectResponse
+    {
+        $this->authorizeOrganizer($request, $event);
+        abort_unless((int) $application->event_id === (int) $event->id, 404);
+        abort_unless($application->status === 'pending', 422, 'Заявка уже обработана.');
+
+        $validated = $request->validate([
+            'rejection_reason' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $application->update([
+            'status' => 'rejected',
+            'reviewed_by_user_id' => $request->user()->id,
+            'reviewed_at' => now(),
+            'rejection_reason' => $validated['rejection_reason'] ?? null,
+        ]);
+
+        $application->team?->update(['status' => 'rejected']);
+
+        return back()->with('success', "Заявка команды «{$application->team->name}» отклонена.");
+    }
+
+            private function authorizeOrganizer(Request $request, Event $event): void
     {
         $user = $request->user();
         if (! $user) abort(403);

@@ -14,6 +14,59 @@
 </x-slot>
 
 <div class="container">
+
+{{-- ========================= ЗАЯВКИ ========================= --}}
+@if(($applicationMode ?? 'manual') === 'manual' && isset($pendingApplications) && $pendingApplications->count())
+<div class="ramka">
+    <h2 class="-mt-05">📋 Заявки на участие ({{ $pendingApplications->count() }})</h2>
+    
+    <div class="alert alert-info mb-2">
+        Режим: <b>ручное одобрение</b>. Одобрите или отклоните заявки команд.
+    </div>
+
+    @foreach($pendingApplications as $app)
+    <div class="card mb-1">
+        <div class="d-flex fvc" style="justify-content:space-between;flex-wrap:wrap;gap:.5rem">
+            <div>
+                <div class="b-700 f-17">{{ $app->team->name ?? '?' }}</div>
+                <div class="f-13" style="opacity:.6">
+                    Капитан: 
+                    <a class="blink" href="{{ route('users.show', $app->team->captain_user_id) }}">
+                        {{ trim(($app->team->captain->last_name ?? '') . ' ' . ($app->team->captain->first_name ?? '')) ?: $app->team->captain->name ?? '?' }}
+                    </a>
+                    &middot; Подана: {{ $app->applied_at?->format('d.m.Y H:i') }}
+                </div>
+                @if($app->team->members->count())
+                <div class="f-13 mt-05">
+                    Состав: 
+                    @foreach($app->team->members as $m)
+                        <a class="blink" href="{{ route('users.show', $m->user_id) }}">{{ trim(($m->user->last_name ?? '') . ' ' . ($m->user->first_name ?? '')) ?: $m->user->name ?? '?' }}</a>@if(!$loop->last), @endif
+                    @endforeach
+                </div>
+                @endif
+            </div>
+            <div class="d-flex" style="gap:.5rem">
+                <form method="POST" action="{{ route('tournament.application.approve', [$event, $app]) }}">
+                    @csrf
+                    <button type="submit" class="btn btn-small btn-primary btn-alert" data-title="Одобрить заявку?" data-icon="question" data-confirm-text="Да, одобрить" data-cancel-text="Отмена">✅ Одобрить</button>
+                </form>
+                <form method="POST" action="{{ route('tournament.application.reject', [$event, $app]) }}">
+                    @csrf
+                    <button type="submit" class="btn btn-small btn-secondary btn-alert" data-title="Отклонить заявку?" data-icon="warning" data-confirm-text="Да, отклонить" data-cancel-text="Отмена">❌ Отклонить</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    @endforeach
+</div>
+@elseif(($applicationMode ?? 'manual') === 'auto')
+<div class="ramka">
+    <div class="alert alert-success mb-0">
+        ✅ Режим: <b>автоматическое одобрение</b>. Заявки одобряются автоматически при подаче.
+    </div>
+</div>
+@endif
+
 <div class="ramka">
 
     @if(session('success'))

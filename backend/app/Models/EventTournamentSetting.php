@@ -24,6 +24,7 @@ class EventTournamentSetting extends Model
         'captain_confirms_members',
         'auto_submit_when_ready',
         'seeding_mode',
+        'application_mode',
 
         // JSON
         'meta',
@@ -40,6 +41,7 @@ class EventTournamentSetting extends Model
         'allow_reserves' => 'boolean',
         'captain_confirms_members' => 'boolean',
         'auto_submit_when_ready' => 'boolean',
+        'application_mode' => 'string',
 
         'team_size_min' => 'integer',
         'team_size_max' => 'integer',
