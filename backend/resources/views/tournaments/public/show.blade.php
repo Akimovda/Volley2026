@@ -113,7 +113,7 @@
                                 <span class="{{ $m->winner_team_id === $m->team_home_id ? 'b-700' : '' }}">{{ $m->teamHome->name ?? '?' }}</span>
                                 <span style="opacity:.4">vs</span>
                                 <span class="{{ $m->winner_team_id === $m->team_away_id ? 'b-700' : '' }}">{{ $m->teamAway->name ?? '?' }}</span>
-                                <span style="margin-left:auto;opacity:.7">{{ $m->scoreFormatted() }}</span>
+                                <span style="margin-left:auto;opacity:.7">{{ $m->setsScore() }}</span>
                             </div>
                         @endforeach
                     </div>
@@ -186,7 +186,7 @@
                                             {{ $m->teamHome->name ?? 'TBD' }}
                                         </span>
                                         <span class="px-2 b-700" style="min-width:80px;text-align:center;{{ $m->isCompleted() ? '' : 'opacity:.4' }}">
-                                            {{ $m->scoreFormatted() ?? 'vs' }}
+                                            {{ $m->setsScore() ?? 'vs' }}
                                         </span>
                                         <span style="flex:1" class="{{ $m->winner_team_id === $m->team_away_id ? 'b-700' : '' }}">
                                             {{ $m->teamAway->name ?? 'TBD' }}
@@ -262,7 +262,7 @@
                             {{ $m->teamHome->name ?? '?' }}
                         </span>
                         <span class="px-2 b-700" style="min-width:100px;text-align:center">
-                            {{ $m->scoreFormatted() }}
+                            {{ $m->setsScore() }}
                         </span>
                         <span style="flex:1" class="{{ $m->winner_team_id === $m->team_away_id ? 'b-700' : '' }}">
                             {{ $m->teamAway->name ?? '?' }}

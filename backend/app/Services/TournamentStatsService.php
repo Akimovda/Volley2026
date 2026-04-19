@@ -6,6 +6,7 @@ use App\Models\Event;
 use App\Models\EventTeam;
 use App\Models\TournamentMatch;
 use App\Models\TournamentStage;
+use App\Models\TournamentStanding;
 use App\Models\PlayerTournamentStats;
 use App\Models\PlayerCareerStats;
 use Illuminate\Support\Facades\DB;
