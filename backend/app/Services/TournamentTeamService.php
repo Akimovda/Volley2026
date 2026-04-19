@@ -381,6 +381,9 @@ final class TournamentTeamService
                 throw new DomainException('Команда ещё не готова к подаче заявки.');
             }
 
+            // === Проверка уровня всех членов команды ===
+            $this->validateTeamMembersLevel($team);
+
             $existing = EventTeamApplication::query()
                 ->where('event_team_id', $team->id)
                 ->first();
@@ -618,4 +621,68 @@ final class TournamentTeamService
             'created_at' => now(),
         ]);
     }
+
+    /**
+     * Проверяет, что все члены команды соответствуют требованиям по уровню турнира.
+     */
+    private function validateTeamMembersLevel(EventTeam $team): void
+    {
+        $event = $team->event;
+        if (!$event) return;
+
+        $direction = $event->direction ?? 'classic';
+
+        if ($direction === 'beach') {
+            $lvMin = $event->beach_level_min;
+            $lvMax = $event->beach_level_max;
+            $levelField = 'beach_level';
+        } else {
+            $lvMin = $event->classic_level_min;
+            $lvMax = $event->classic_level_max;
+            $levelField = 'classic_level';
+        }
+
+        // Если ограничений нет — пропускаем
+        if (is_null($lvMin) && is_null($lvMax)) return;
+
+        $members = $team->members()
+            ->whereIn('confirmation_status', ['confirmed', 'self'])
+            ->with('user')
+            ->get();
+
+        $violations = [];
+
+        foreach ($members as $member) {
+            $user = $member->user;
+            if (!$user) continue;
+
+            $userLevel = $user->{$levelField};
+
+            // Если у игрока не указан уровень — пропускаем (или можно блокировать)
+            if (is_null($userLevel)) continue;
+
+            $tooLow  = !is_null($lvMin) && $userLevel < $lvMin;
+            $tooHigh = !is_null($lvMax) && $userLevel > $lvMax;
+
+            if ($tooLow || $tooHigh) {
+                $name = trim(($user->last_name ?? '') . ' ' . ($user->first_name ?? ''));
+                if ($name === '') $name = $user->name ?: "Игрок #{$user->id}";
+                $violations[] = $name;
+            }
+        }
+
+        if (!empty($violations)) {
+            $captain = $team->captain;
+            $captainName = trim(($captain->last_name ?? '') . ' ' . ($captain->first_name ?? ''));
+            if ($captainName === '') $captainName = $captain->name ?? 'Капитан';
+
+            $playersList = implode(', ', $violations);
+
+            throw new DomainException(
+                "Уважаемый {$captainName}, участник(и): {$playersList} не соответствуют требованиям по уровню! "
+                . "Свяжитесь с организатором или замените игроков."
+            );
+        }
+    }
+
 }
