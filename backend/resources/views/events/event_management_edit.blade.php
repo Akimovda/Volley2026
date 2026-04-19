@@ -535,6 +535,24 @@
                                         placeholder="https://..."
                                         value="{{ old('payment_link', $event->payment_link ?? '') }}">
                                 </div>
+
+                                {{-- Режим оплаты турнира --}}
+                                @if($event->format === 'tournament')
+                                <div class="mt-2" id="tournament_payment_mode_edit_wrap">
+                                    <label>Кто оплачивает участие</label>
+                                    @php
+                                        $tpmEdit = old('tournament_payment_mode', $event->tournament_settings->payment_mode ?? 'team');
+                                    @endphp
+                                    <select name="tournament_payment_mode" id="tournament_payment_mode_edit">
+                                        <option value="team" @selected($tpmEdit === 'team')>👑 Капитан за всю команду</option>
+                                        <option value="per_player" @selected($tpmEdit === 'per_player')>👤 Каждый игрок сам за себя</option>
+                                    </select>
+                                    <ul class="list f-14 mt-1">
+                                        <li id="hint_team_edit" style="{{ $tpmEdit === 'team' ? '' : 'display:none' }}">Капитан оплачивает участие команды целиком</li>
+                                        <li id="hint_pp_edit" style="{{ $tpmEdit === 'per_player' ? '' : 'display:none' }}">Каждый участник платит отдельно</li>
+                                    </ul>
+                                </div>
+                                @endif
                             </div>
                         </div>
 
@@ -819,7 +837,27 @@
             syncPayLink();
             payMethodSel?.addEventListener('change', syncPayLink);
 
-        </script>
+        
+    // Переключение хинтов режима оплаты турнира
+    (function() {
+        var sel = document.getElementById('tournament_payment_mode_edit');
+        var hTeam = document.getElementById('hint_team_edit');
+        var hPp = document.getElementById('hint_pp_edit');
+        var isPaid = document.getElementById('is_paid_edit');
+        var wrap = document.getElementById('tournament_payment_mode_edit_wrap');
+
+        function syncTpmEdit() {
+            if (!sel) return;
+            if (hTeam) hTeam.style.display = sel.value === 'team' ? '' : 'none';
+            if (hPp) hPp.style.display = sel.value === 'per_player' ? '' : 'none';
+            if (wrap && isPaid) wrap.style.display = isPaid.checked ? '' : 'none';
+        }
+
+        if (sel) sel.addEventListener('change', syncTpmEdit);
+        if (isPaid) isPaid.addEventListener('change', syncTpmEdit);
+        syncTpmEdit();
+    })();
+</script>
     </x-slot>
 
 </x-voll-layout>

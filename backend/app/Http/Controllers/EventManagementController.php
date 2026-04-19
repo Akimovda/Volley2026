@@ -311,6 +311,7 @@ if ($role === 'admin') {
             'price_currency'           => ['nullable', 'string', 'max:3'],
             'payment_method'           => ['nullable', 'string', 'in:cash,tbank_link,sber_link,yoomoney'],
             'payment_link'             => ['nullable', 'string', 'max:500'],
+            'tournament_payment_mode'  => ['nullable', 'string', 'in:team,per_player'],
             'teams_count'              => ['nullable', 'integer', 'min:2', 'max:200'],
             'show_participants'        => ['sometimes', 'boolean'],
             'remind_registration_enabled'         => ['sometimes', 'boolean'],
@@ -440,6 +441,13 @@ if ($role === 'admin') {
             }
     
             $event->load('gameSettings');
+
+            // Обновляем payment_mode в tournament settings (если турнир)
+            if ($event->format === 'tournament') {
+                $payMode = $event->is_paid ? ($data['tournament_payment_mode'] ?? 'team') : 'free';
+                \App\Models\EventTournamentSetting::where('event_id', $event->id)
+                    ->update(['payment_mode' => $payMode]);
+            }
     
             if (Schema::hasTable('event_occurrences') && $event->starts_at) {
                 $startUtc = Carbon::parse($event->starts_at, 'UTC');

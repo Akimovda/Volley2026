@@ -11,6 +11,7 @@ use App\Models\EventTournamentSetting;
 use App\Models\User;
 use DomainException;
 use Illuminate\Support\Facades\DB;
+use App\Services\TournamentPaymentService;
 use Illuminate\Support\Str;
 
 final class TournamentTeamService

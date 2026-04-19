@@ -123,8 +123,19 @@ class TournamentController extends Controller
             ->where('status', 'submitted')
             ->get();
 
+        // Фильтруем неоплаченные команды (если турнир платный)
+        $payService = app(\App\Services\TournamentPaymentService::class);
+        $eligibleTeams = $teams->filter(fn($t) => $payService->isTeamEligible($t));
+
+        $unpaidCount = $teams->count() - $eligibleTeams->count();
+        if ($unpaidCount > 0) {
+            \Illuminate\Support\Facades\Log::info("Draw: {$unpaidCount} teams skipped (unpaid)");
+        }
+
+        $teams = $eligibleTeams->values();
+
         if ($teams->count() < 2) {
-            return back()->with('error', 'Нужно минимум 2 подтверждённых команды.');
+            return back()->with('error', 'Нужно минимум 2 подтверждённых команды.' . ($unpaidCount > 0 ? " ({$unpaidCount} команд не оплатили участие)" : ''));
         }
 
         $groups = $stage->groups;

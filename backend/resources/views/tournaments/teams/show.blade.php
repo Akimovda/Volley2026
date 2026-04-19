@@ -184,6 +184,100 @@ $invStLabels = ['pending'=>'Ожидает','accepted'=>'Принято','declin
         <h2 class="-mt-05">📋 Подача заявки</h2>
         @if($team->application)
             <div class="alert alert-info">Заявка подана · Статус: <strong>{{ $team->application->status }}</strong></div>
+
+            {{-- Блок оплаты (после подачи заявки) --}}
+            @php
+                $payService = app(\App\Services\TournamentPaymentService::class);
+                $payInfo = $payService->getPaymentInfo($team);
+            @endphp
+
+            @if($payInfo['required'])
+                <div class="card mt-2" id="payment-block">
+                    <h4 class="f-16 fw-bold mb-2">💳 Оплата участия</h4>
+
+                    @if($payInfo['mode'] === 'team')
+                        {{-- Режим: капитан за всю команду --}}
+                        <div class="f-14 mb-2">
+                            Стоимость: <strong>{{ number_format($payInfo['amount'] / 100, 0, ',', ' ') }} {{ $payInfo['currency'] }}</strong>
+                            · Оплачивает капитан за всю команду
+                        </div>
+
+                        @if($payInfo['team_status'] === 'paid' || $payInfo['team_status'] === 'subscription')
+                            <div class="alert alert-success f-14">✅ Оплата подтверждена</div>
+                        @elseif($payInfo['team_status'] === 'link_pending')
+                            <div class="alert alert-warning f-14">⏳ Ожидает подтверждения организатором</div>
+                        @elseif($isCaptain)
+                            @if($payInfo['method'] === 'cash')
+                                <div class="alert alert-info f-14">💵 Оплата наличными на месте</div>
+                            @else
+                                @if($team->payment_id)
+                                    <form method="POST" action="{{ route('payments.user_confirm', $team->payment_id) }}">
+                                        @csrf
+                                        <button type="submit" class="btn btn-warning"
+                                                onclick="return confirm('Подтверждаете что перевод выполнен?')">
+                                            Я оплатил
+                                        </button>
+                                    </form>
+                                    @if($event->payment_link)
+                                        <a href="{{ $event->payment_link }}" target="_blank" class="btn btn-outline-primary mt-1">
+                                            Перейти к оплате →
+                                        </a>
+                                    @endif
+                                @endif
+                            @endif
+                        @else
+                            <div class="f-14" style="opacity:.6">Ожидаем оплату от капитана</div>
+                        @endif
+
+                    @elseif($payInfo['mode'] === 'per_player')
+                        {{-- Режим: каждый сам --}}
+                        <div class="f-14 mb-2">
+                            Стоимость: <strong>{{ number_format($payInfo['amount'] / 100, 0, ',', ' ') }} {{ $payInfo['currency'] }}</strong> с каждого игрока
+                        </div>
+
+                        @if($payInfo['team_paid'])
+                            <div class="alert alert-success f-14">✅ Все участники оплатили</div>
+                        @endif
+
+                        @if(!empty($payInfo['members']))
+                            <table class="table table-sm f-14 mt-1">
+                                <tbody>
+                                @foreach($payInfo['members'] as $pm)
+                                    <tr>
+                                        <td>{{ $pm['name'] ?: 'Игрок #'.$pm['user_id'] }}</td>
+                                        <td class="text-end">
+                                            @if($pm['paid'])
+                                                <span class="badge bg-success">Оплачено</span>
+                                            @elseif($pm['payment_status'] === 'link_pending')
+                                                <span class="badge bg-warning">Ожидает</span>
+                                            @elseif($pm['user_id'] === auth()->id())
+                                                @php
+                                                    $memberModel = \App\Models\EventTeamMember::find($pm['id']);
+                                                @endphp
+                                                @if($memberModel && $memberModel->payment_id)
+                                                    <form method="POST" action="{{ route('payments.user_confirm', $memberModel->payment_id) }}" class="d-inline">
+                                                        @csrf
+                                                        <button type="submit" class="btn btn-warning btn-sm py-0"
+                                                                onclick="return confirm('Подтверждаете что перевод выполнен?')">
+                                                            Я оплатил
+                                                        </button>
+                                                    </form>
+                                                @else
+                                                    <span class="badge bg-danger">Не оплачено</span>
+                                                @endif
+                                            @else
+                                                <span class="badge bg-danger">Не оплачено</span>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @endforeach
+                                </tbody>
+                            </table>
+                        @endif
+                    @endif
+                </div>
+            @endif
+
         @elseif($isCaptain)
             <div class="f-15 mb-2" style="opacity:.6">Если состав готов — подайте заявку на турнир.</div>
             <form method="POST" action="{{ route('tournamentTeams.submit',[$event,$team]) }}"
