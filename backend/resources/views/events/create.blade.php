@@ -173,6 +173,11 @@ if ($initialStep < 1 || $initialStep > 3) {
     if ($oldRegStartsDaysBefore < 0) $oldRegStartsDaysBefore = 3;
     if ($oldRegEndsMinutesBefore < 0) $oldRegEndsMinutesBefore = 15;
     if ($oldCancelLockMinutesBefore < 0) $oldCancelLockMinutesBefore = 60;
+
+    $regEndsHours = intdiv($oldRegEndsMinutesBefore, 60);
+    $regEndsMinutes = $oldRegEndsMinutesBefore % 60;
+    $cancelLockHours = intdiv($oldCancelLockMinutesBefore, 60);
+    $cancelLockMinutes = $oldCancelLockMinutesBefore % 60;
 	@endphp
 	
 	

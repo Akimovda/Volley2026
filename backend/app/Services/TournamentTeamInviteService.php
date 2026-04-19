@@ -75,14 +75,17 @@ final class TournamentTeamInviteService
                 'meta' => null,
             ]);
             
-            try {
-                $this->sendInviteNotifications($invite);
-            } catch (\Throwable $e) {
-                report($e);
-            }
-            
             return $invite;
         });
+
+        // Уведомления отправляем ПОСЛЕ коммита транзакции
+        try {
+            $this->sendInviteNotifications($invite);
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
+        return $invite;
     }
 
     public function getByTokenOrFail(string $token): EventTeamInvite
@@ -211,13 +214,7 @@ final class TournamentTeamInviteService
             positionCode: $invite->position_code
         );
     
-        $channels = DB::table('notification_deliveries')
-            ->where('user_notification_id', $notification->id)
-            ->pluck('channel')
-            ->filter()
-            ->unique()
-            ->values()
-            ->all();
+        $channels = ['in_app', 'telegram', 'vk', 'max'];
     
         $meta = $invite->meta ?? [];
         $meta['sent_channels'] = $channels;
