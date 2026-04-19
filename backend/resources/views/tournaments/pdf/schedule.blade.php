@@ -63,7 +63,7 @@
                             <td class="{{ $m->winner_team_id === $m->team_away_id ? 'bold' : '' }}">{{ $m->teamAway->name ?? 'TBD' }}</td>
                             <td class="tc">{{ $m->court ?? '—' }}</td>
                             <td class="tc">{{ $m->scheduled_at ? $m->scheduled_at->format('H:i') : '—' }}</td>
-                            <td class="tc bold">{{ $m->scoreFormatted() ?? '—' }}</td>
+                            <td class="tc bold">{{ $m->setsScore() ?? '—' }}</td>
                         </tr>
                     @endforeach
                 </tbody>

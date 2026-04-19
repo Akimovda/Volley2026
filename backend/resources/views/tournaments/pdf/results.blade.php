@@ -109,7 +109,7 @@
                             <td class="tc">R{{ $m->round }}</td>
                             <td class="{{ $m->winner_team_id === $m->team_home_id ? 'bold' : '' }}">{{ $m->teamHome->name ?? 'TBD' }}</td>
                             <td class="{{ $m->winner_team_id === $m->team_away_id ? 'bold' : '' }}">{{ $m->teamAway->name ?? 'TBD' }}</td>
-                            <td class="tc bold">{{ $m->scoreFormatted() ?? '—' }}</td>
+                            <td class="tc bold">{{ $m->setsScore() ?? '—' }}</td>
                         </tr>
                     @endforeach
                 </tbody>
@@ -148,7 +148,7 @@
                                 <td class="{{ $m->winner_team_id === $m->team_home_id ? 'bold' : '' }}">
                                     {{ $m->teamHome->name ?? 'TBD' }}
                                 </td>
-                                <td class="tc bold">{{ $m->scoreFormatted() ?? '—' }}</td>
+                                <td class="tc bold">{{ $m->setsScore() ?? '—' }}</td>
                                 <td class="{{ $m->winner_team_id === $m->team_away_id ? 'bold' : '' }}">
                                     {{ $m->teamAway->name ?? 'TBD' }}
                                 </td>

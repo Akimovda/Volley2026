@@ -318,7 +318,7 @@
                                         <td class="p-1 {{ $match->winner_team_id === $match->team_away_id ? 'b-700' : '' }}">
                                             {{ $match->teamAway->name ?? 'TBD' }}
                                         </td>
-                                        <td class="p-1" style="text-align:center">{{ $match->scoreFormatted() ?? '—' }}</td>
+                                        <td class="p-1" style="text-align:center">{{ $match->setsScore() ?? '—' }}</td>
                                         <td class="p-1" style="text-align:center">
                                             @if($match->isCompleted())
                                                 <span class="f-11 b-600 p-1 px-2" style="background:rgba(16,185,129,.15);border-radius:6px;color:#10b981">✓</span>
