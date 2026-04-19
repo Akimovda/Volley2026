@@ -15,7 +15,105 @@
     
     <x-slot name="style">
         <style>
-            /* Дополнительные стили при необходимости */
+            .broadcasts-create-page .ramka { margin-bottom: 20px; }
+            .broadcasts-create-page .ramka h2 { font-size: 18px; font-weight: 700; margin-bottom: 15px; }
+
+            .broadcasts-create-page .card {
+                background: var(--card-bg, rgba(255,255,255,0.05));
+                border: 1px solid var(--border-color, rgba(255,255,255,0.1));
+                border-radius: 8px;
+                padding: 12px 15px;
+                margin-bottom: 10px;
+            }
+
+            .broadcasts-create-page label:not(.checkbox-item) {
+                display: block;
+                font-size: 13px;
+                font-weight: 600;
+                margin-bottom: 6px;
+                opacity: 0.7;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+
+            .broadcasts-create-page input[type="text"],
+            .broadcasts-create-page input[type="datetime-local"],
+            .broadcasts-create-page textarea,
+            .broadcasts-create-page select {
+                width: 100%;
+                padding: 10px 12px;
+                border: 1px solid var(--border-color, rgba(255,255,255,0.15));
+                border-radius: 6px;
+                background: var(--input-bg, rgba(255,255,255,0.08));
+                color: var(--text-color, #fff);
+                font-size: 15px;
+                transition: border-color 0.2s;
+            }
+
+            .broadcasts-create-page input[type="text"]:focus,
+            .broadcasts-create-page input[type="datetime-local"]:focus,
+            .broadcasts-create-page textarea:focus,
+            .broadcasts-create-page select:focus {
+                outline: none;
+                border-color: var(--accent, #f57c00);
+                box-shadow: 0 0 0 2px rgba(245, 124, 0, 0.15);
+            }
+
+            .broadcasts-create-page textarea { resize: vertical; min-height: 120px; }
+
+            .broadcasts-create-page select option {
+                background: #2a2a2a;
+                color: #fff;
+            }
+
+            /* Preview */
+            .broadcasts-create-page #preview-title { color: #333 !important; font-weight: 700; }
+            .broadcasts-create-page #preview-body { color: #555 !important; }
+            .broadcasts-create-page .bg-light {
+                background: #fff !important;
+                border-radius: 10px;
+                overflow: hidden;
+            }
+
+            /* Buttons */
+            .broadcasts-create-page .btn-secondary {
+                background: rgba(255,255,255,0.1);
+                border: 1px solid rgba(255,255,255,0.2);
+                color: #fff;
+            }
+            .broadcasts-create-page .btn-secondary:hover { background: rgba(255,255,255,0.15); }
+
+            .broadcasts-create-page .btn-warning {
+                background: #f57c00;
+                border-color: #f57c00;
+                color: #fff;
+            }
+
+            .broadcasts-create-page .btn-purple {
+                background: #7c3aed !important;
+                border-color: #7c3aed !important;
+                color: #fff;
+            }
+
+            /* Action result & dry run */
+            .broadcasts-create-page #action-result { font-size: 14px; }
+            .broadcasts-create-page #dry-run-list .card {
+                background: rgba(255,255,255,0.05) !important;
+                border: 1px solid rgba(255,255,255,0.1);
+            }
+            .broadcasts-create-page #dry-run-list .card-body { padding: 12px 15px; }
+            .broadcasts-create-page #dry-run-list .fw-bold { color: var(--text-color, #fff); }
+            .broadcasts-create-page #dry-run-list .text-secondary { color: rgba(255,255,255,0.5) !important; }
+
+            /* Submit buttons */
+            .broadcasts-create-page .text-center .btn {
+                padding: 10px 30px;
+                font-weight: 600;
+                font-size: 15px;
+            }
+
+            /* Checkbox alignment */
+            .broadcasts-create-page .checkbox-item { display: flex; align-items: center; gap: 8px; cursor: pointer; }
         </style>
     </x-slot>
     
