@@ -416,6 +416,11 @@ class EventStoreService
 
                 $data = $tournamentNormalized['data'];
 
+                // Режим оплаты турнира: если не платное → free
+                if (!(bool)($data['is_paid'] ?? false)) {
+                    $data['tournament_payment_mode'] = 'free';
+                }
+
                 // Создаём или обновляем турнирные настройки
                 $this->gameSettingsService->createOrUpdateTournamentSettings(
                     $event,

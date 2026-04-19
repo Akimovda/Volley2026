@@ -21,6 +21,8 @@ class EventTeam extends Model
         'is_complete',
         'last_checked_at',
         'confirmed_at',
+        'payment_status',
+        'payment_id',
         'meta',
     ];
 
@@ -92,6 +94,17 @@ class EventTeam extends Model
     public function tournamentStandings(): HasMany
     {
         return $this->hasMany(TournamentStanding::class, 'team_id');
+    }
+
+
+    public function payment(): BelongsTo
+    {
+        return $this->belongsTo(Payment::class);
+    }
+
+    public function isPaid(): bool
+    {
+        return in_array($this->payment_status, ['paid', 'subscription', null]);
     }
 
 }

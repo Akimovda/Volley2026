@@ -32,6 +32,7 @@ class EventTournamentSetting extends Model
         'game_scheme',
         'reserve_players_max',
         'total_players_max',
+        'payment_mode',
     ];
 
     protected $casts = [
@@ -105,4 +106,29 @@ class EventTournamentSetting extends Model
     {
         return !$this->isBeach();
     }
+
+    public const PAYMENT_FREE       = 'free';
+    public const PAYMENT_TEAM       = 'team';
+    public const PAYMENT_PER_PLAYER = 'per_player';
+
+    public function paymentMode(): string
+    {
+        return $this->payment_mode ?? self::PAYMENT_FREE;
+    }
+
+    public function isPaymentRequired(): bool
+    {
+        return $this->paymentMode() !== self::PAYMENT_FREE;
+    }
+
+    public function isTeamPayment(): bool
+    {
+        return $this->paymentMode() === self::PAYMENT_TEAM;
+    }
+
+    public function isPerPlayerPayment(): bool
+    {
+        return $this->paymentMode() === self::PAYMENT_PER_PLAYER;
+    }
+
 }

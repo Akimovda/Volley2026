@@ -19,6 +19,8 @@ class EventTeamMember extends Model
         'joined_at',
         'responded_at',
         'confirmed_at',
+        'payment_status',
+        'payment_id',
         'meta',
     ];
 
