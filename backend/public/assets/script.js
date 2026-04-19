@@ -35,8 +35,6 @@ const $mailMenu   = $('.fix-header-menu-1');
 const $userMenu   = $('.fix-header-menu-2');
 const $hammMenu   = $('.fix-header-menu-3');
 
-
-
 const allMenus    = $('.fix-header-menu');
 const allButtons  = $('.fix-header-btn-user, .fix-header-btn-hamm, .fix-header-user, .fix-header-btn-mail');
 

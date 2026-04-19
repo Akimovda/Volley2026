@@ -81,8 +81,10 @@ class EventStoreService
                 $reserve = 0;
             }
 
-            if (empty($data['tournament_teams_count'])) {
+            if (empty($data['tournament_teams_count']) || (int)$data['tournament_teams_count'] < 3) {
                 $data['tournament_teams_count'] = 4;
+            } else {
+                $data['tournament_teams_count'] = (int)$data['tournament_teams_count'];
             }
 
             $basePlayers = match ($scheme) {
@@ -394,6 +396,10 @@ class EventStoreService
                 $event->trainer_user_id = $firstTrainerId;
             }
 			$event->event_photos = $data['event_photos'] ?? [];
+            // Турнирные поля
+            if ($isTournament) {
+                $event->tournament_teams_count = (int)($data['tournament_teams_count'] ?? 4);
+            }
             $event->save();
 
             /*
@@ -416,10 +422,20 @@ class EventStoreService
 
                 $data = $tournamentNormalized['data'];
 
-                // Режим оплаты турнира: если не платное → free
-                if (!(bool)($data['is_paid'] ?? false)) {
+                // Режим оплаты турнира — используем уже установленный $event->is_paid
+                if (!$event->is_paid) {
                     $data['tournament_payment_mode'] = 'free';
+                } elseif (empty($data['tournament_payment_mode'])) {
+                    $data['tournament_payment_mode'] = 'team';
                 }
+
+                // DEBUG: что приходит для турнира
+                \Illuminate\Support\Facades\Log::info('TOURNAMENT_CREATE_DEBUG', [
+                    'tournament_teams_count' => $data['tournament_teams_count'] ?? 'NOT_SET',
+                    'tournament_payment_mode' => $data['tournament_payment_mode'] ?? 'NOT_SET',
+                    'is_paid' => $data['is_paid'] ?? 'NOT_SET',
+                    'game_gender_policy' => $data['game_gender_policy'] ?? 'NOT_SET',
+                ]);
 
                 // Создаём или обновляем турнирные настройки
                 $this->gameSettingsService->createOrUpdateTournamentSettings(
@@ -461,7 +477,7 @@ class EventStoreService
                 'isGameClassic' => false,
                 'isGameBeach' => false,
                 'isTrainingLike' => false,
-                'needGameSettings' => false,
+                'needGameSettings' => true, // для турниров тоже нужен (gender_policy)
                 'minPlayers' => null,
                 'maxPlayers' => null,
             ];
@@ -528,15 +544,14 @@ class EventStoreService
             |--------------------------------------------------------------------------
             */
 
-            if (!$isTournament) {
-                $this->gameSettingsService->createGameSettings(
-                    $event,
-                    $data,
-                    $game,
-                    $gender,
-                    $data['direction']
-                );
-            }
+            // Создаём gameSettings для всех форматов (включая турниры — для gender_policy)
+            $this->gameSettingsService->createGameSettings(
+                $event,
+                $data,
+                $game,
+                $gender,
+                $data['direction']
+            );
 
             /*
                 |--------------------------------------------------------------------------

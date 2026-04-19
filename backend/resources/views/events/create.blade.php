@@ -2396,38 +2396,7 @@ if ($initialStep < 1 || $initialStep > 3) {
     syncIsPaid();
 })();
 
-// Переключение режима оплаты турнира
-(function() {
-    const fmtEl = document.getElementById('format');
-    const isPaid = document.getElementById('is_paid');
-    const tpmWrap = document.getElementById('tournament_payment_mode_wrap');
-    const tpmSelect = document.getElementById('tournament_payment_mode');
-    const hintTeam = document.getElementById('hint_team_pay');
-    const hintPerPlayer = document.getElementById('hint_per_player_pay');
-
-    function syncTournamentPaymentMode() {
-        if (!tpmWrap || !fmtEl || !isPaid) return;
-
-        const isTournament = fmtEl.value === 'tournament';
-        const paid = isPaid.checked;
-
-        // Показываем только для платных турниров
-        tpmWrap.style.display = (isTournament && paid) ? '' : 'none';
-
-        // Хинты
-        if (tpmSelect && hintTeam && hintPerPlayer) {
-            const mode = tpmSelect.value;
-            hintTeam.style.display = mode === 'team' ? '' : 'none';
-            hintPerPlayer.style.display = mode === 'per_player' ? '' : 'none';
-        }
-    }
-
-    fmtEl?.addEventListener('change', syncTournamentPaymentMode);
-    isPaid?.addEventListener('change', syncTournamentPaymentMode);
-    tpmSelect?.addEventListener('change', syncTournamentPaymentMode);
-
-    syncTournamentPaymentMode();
-})();
+// Логика tournament_payment_mode перенесена в events-create.js
 			}
 			
 			const $wrapper = $select.prev('.form-select-wrapper');

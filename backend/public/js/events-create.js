@@ -347,6 +347,7 @@ document.addEventListener("trix-file-accept", function (event) {
 		setActivePills(step);
 		setBarColor(step);
 		try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) { window.scrollTo(0, 0); }
+	if (typeof window.syncTournamentPayment === 'function') window.syncTournamentPayment();
 	}
 	
 	function getCurrentStep() {
@@ -1073,9 +1074,7 @@ document.addEventListener("trix-file-accept", function (event) {
 				
             	if (isNaN(tTotal) || tTotal !== expectedTotal) {
             		if (tournamentTotalEl) tournamentTotalEl.value = String(expectedTotal);
-            		alert('Максимальный размер команды пересчитан автоматически.');
-            		focusEl(tournamentTotalEl);
-            		return false;
+            		// пересчитано автоматически
 				}
 				
             	return true;
@@ -2299,6 +2298,40 @@ function recalcPlayers() {
     try { updatePreview(); } catch (e) { }
 	
 	
+
+    // ========== 20. TOURNAMENT PAYMENT MODE ==========
+    (function() {
+        var tpmWrap = document.getElementById('tournament_payment_mode_wrap');
+        var tpmSelect = document.getElementById('tournament_payment_mode');
+        var hintTeam = document.getElementById('hint_team_pay');
+        var hintPerPlayer = document.getElementById('hint_per_player_pay');
+        var isPaidEl = document.getElementById('is_paid');
+
+        function syncTournamentPaymentMode() {
+            if (!tpmWrap) return;
+
+            var format = fmtEl ? String(fmtEl.value || '') : '';
+            var paid = isPaidEl ? isPaidEl.checked : false;
+            var isTournament = (format === 'tournament');
+
+            tpmWrap.style.display = (isTournament && paid) ? '' : 'none';
+
+            if (tpmSelect && hintTeam && hintPerPlayer) {
+                var mode = tpmSelect.value;
+                hintTeam.style.display = (mode === 'team') ? '' : 'none';
+                hintPerPlayer.style.display = (mode === 'per_player') ? '' : 'none';
+            }
+        }
+
+        window.syncTournamentPayment = syncTournamentPaymentMode;
+
+        if (fmtEl) fmtEl.addEventListener('change', syncTournamentPaymentMode);
+        if (isPaidEl) isPaidEl.addEventListener('change', syncTournamentPaymentMode);
+        if (tpmSelect) tpmSelect.addEventListener('change', syncTournamentPaymentMode);
+
+        syncTournamentPaymentMode();
+    })();
+
 // ========== 19. AGE POLICY HANDLER ==========
 (function() {
     var agePolicyRadios = document.querySelectorAll('input[name="age_policy"]');

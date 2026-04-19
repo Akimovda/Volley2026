@@ -64,7 +64,25 @@
     {{-- ===============================
     СТАТИСТИКА ИГРОКОВ
     =============================== --}}
-    @if(!is_null($registeredTotal))
+    @if($event->format === 'tournament')
+		@php
+			$teamsMax = $event->tournament_teams_count ?: ($event->tournamentSettings->teams_count ?? 0);
+			$teamSize = $event->tournamentSettings->team_size_min ?? 2;
+			$teamsRegistered = \App\Models\EventTeam::where('event_id', $event->id)
+				->whereIn('status', ['ready','pending','submitted','confirmed'])
+				->count();
+			$playersRegistered = \App\Models\EventTeamMember::whereHas('team', fn($q) => $q->where('event_id', $event->id))
+				->where('confirmation_status', 'confirmed')
+				->count();
+			$playersMax = $teamsMax * $teamSize;
+		@endphp
+		<div class="text-muted small mb-1">
+			👥 Команд: <strong>{{ $teamsRegistered }}</strong> / {{ $teamsMax }}
+		</div>
+		<div class="text-muted small mb-1">
+			👤 Участников: <strong>{{ $playersRegistered }}</strong> / {{ $playersMax }}
+		</div>
+    @elseif(!is_null($registeredTotal))
 	<div class="text-muted small mb-1">
 		Участников:
 		<span id="players-count">{{ $registeredTotal }}</span>

@@ -28,6 +28,7 @@ use App\Services\StaffLogService;
         ) {}
         public function store(Request $request)
             {
+            \Illuminate\Support\Facades\Log::info('EVENT_STORE_CALLED', ['format' => request('format'), 'teams' => request('tournament_teams_count'), 'paid' => request('is_paid')]);
                 $user = $request->user();
             file_put_contents(storage_path("logs/bot_debug.txt"), json_encode(["user"=>$request->user()?->id,"bot"=>$request->input("bot_assistant_enabled","NOT_SET")]).PHP_EOL, FILE_APPEND);
             

@@ -122,6 +122,7 @@ class VkAuthController extends Controller
             $user = new User();
             $user->email    = $safeEmail;
             $user->password = Hash::make(Str::random(32));
+            $user->name     = trim(($vkUser->getName() ?: '') ?: 'Пользователь');
             $user->vk_id    = $vkId;
             $user->save();
         }

@@ -259,6 +259,7 @@
 
             'tournament_auto_submit_when_ready' => ['nullable', 'boolean'],
 
+            'tournament_payment_mode' => ['nullable', 'string', 'in:team,per_player'],
             'tournament_seeding_mode' => [
                 'nullable',
                 'in:manual,random,rating'
