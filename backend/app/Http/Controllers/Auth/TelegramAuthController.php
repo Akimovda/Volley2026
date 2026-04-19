@@ -77,6 +77,12 @@ class TelegramAuthController extends Controller
             static fn ($v) => !is_null($v) && $v !== ''
         );
 
+        \Illuminate\Support\Facades\Log::info('TG_AUTH_DEBUG', [
+            'tgData_keys' => array_keys($tgData),
+            'tgData' => $tgData,
+            'all_query' => $request->query(),
+            'bot_token_len' => strlen((string) config('services.telegram.bot_token')),
+        ]);
         if (!$this->isTelegramLoginValid($tgData)) {
             return redirect()->to($returnTo)->with('error', 'Telegram auth: invalid signature');
         }

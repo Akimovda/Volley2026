@@ -282,20 +282,8 @@
 							<span class="auth-text">Войти с Яндекс ID</span>
 						</div>
 						
-						<div class="auth-btn auth-btn-telegram">
-							<div class="auth-btn-telegram-widget">						
-								<script async 
-								src="https://telegram.org/js/telegram-widget.js?22"
-								data-telegram-login="VolleyEvent_bot"
-								data-size="large"
-								data-userpic="false"
-								data-radius="6"
-								data-request-access="write"
-								data-auth-url="{{ route('auth.telegram.callback', ['return' => url()->full()]) }}"
-								data-lang="ru">
-								</script>								
-							</div>			
-							<div class="auth-btn-telegram-widget-up">					
+						<div data-href="{{ route('auth.telegram.callback', ['return' => url()->full()]) }}" class="auth-btn auth-btn-telegram" style="cursor:pointer;">
+<div class="auth-btn-telegram-widget-up" style="pointer-events:auto;">					
 								<span class="auth-icon-circle">
 									<span class="icon-tg"></span>
 								</span>

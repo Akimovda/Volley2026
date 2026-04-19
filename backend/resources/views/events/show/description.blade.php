@@ -127,6 +127,13 @@
 							</span>
 						</div>
 						@endif
+
+						@if($event->format === 'tournament' && $event->tournament_teams_count)
+						<div class="event-row">
+							<span class="b-600">🏆 Команд:</span>
+							<span>{{ $event->tournament_teams_count }}</span>
+						</div>
+						@endif
 						
 						{{-- УРОВЕНЬ --}}
 						@if(

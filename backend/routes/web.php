@@ -140,6 +140,27 @@ Route::get('/logout', fn () => redirect('/'));
 		Route::delete('/user/profile/notification-channels/{channel}', [ProfileNotificationChannelController::class, 'destroy'])
         ->name('profile.notification_channels.destroy');
 	});
+
+	/*
+		|--------------------------------------------------------------------------
+		| Notify Bindings (Telegram / VK / MAX) — auth only, no verified
+		|--------------------------------------------------------------------------
+	*/
+	Route::middleware(['auth'])->group(function () {
+		Route::post('/profile/telegram/generate-link', [TelegramNotifyBindingController::class, 'generate'])
+			->name('profile.telegram.generate_link');
+		Route::post('/profile/telegram/disconnect', [TelegramNotifyBindingController::class, 'disconnect'])
+			->name('profile.telegram.disconnect');
+		Route::post('/profile/vk/generate-link', [VkNotifyBindingController::class, 'generate'])
+			->name('profile.vk.generate_link');
+		Route::post('/profile/vk/disconnect', [VkNotifyBindingController::class, 'disconnect'])
+			->name('profile.vk.disconnect');
+		Route::post('/profile/max/generate-link', [\App\Http\Controllers\MaxBindingController::class, 'generate'])
+			->name('profile.max.generate_link');
+		Route::post('/profile/max/disconnect', [\App\Http\Controllers\MaxBindingController::class, 'disconnect'])
+			->name('profile.max.disconnect');
+	});
+
 	/*
 		|--------------------------------------------------------------------------
 		| Notification
@@ -162,17 +183,9 @@ Route::get('/logout', fn () => redirect('/'));
 		
 		Route::delete('/notifications/{notification}', [NotificationController::class, 'destroy'])->name('notifications.destroy');		
 		
-		Route::post('/profile/telegram/generate-link', [TelegramNotifyBindingController::class, 'generate'])
-		->name('profile.telegram.generate_link');
 		
-		Route::post('/profile/telegram/disconnect', [TelegramNotifyBindingController::class, 'disconnect'])
-        ->name('profile.telegram.disconnect');
 		
-		Route::post('/profile/vk/generate-link', [VkNotifyBindingController::class, 'generate'])
-        ->name('profile.vk.generate_link');
 		
-		Route::post('/profile/vk/disconnect', [VkNotifyBindingController::class, 'disconnect'])
-        ->name('profile.vk.disconnect');
 	});
 	
 	/*
@@ -309,11 +322,7 @@ Route::get('/user/profile', [\App\Http\Controllers\UserProfileController::class,
 Route::post('/events/{event}/invite', [EventRegistrationInviteController::class, 'store'])
     ->name('events.invite');
 		
-		Route::post('/profile/max/generate-link', [MaxBindingController::class, 'generate'])
-        ->name('profile.max.generate_link');
 		
-		Route::post('/profile/max/disconnect', [MaxBindingController::class, 'disconnect'])
-        ->name('profile.max.disconnect');
 	});
 	
 	/*

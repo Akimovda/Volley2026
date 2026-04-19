@@ -60,8 +60,8 @@
 						</div>
 						
 						<div class="auth-btn auth-btn-telegram">
-							<div class="auth-btn-telegram-widget">						
-								<script async 
+							<div class="auth-btn-telegram-widget">
+								<script async
 								src="https://telegram.org/js/telegram-widget.js?22"
 								data-telegram-login="VolleyEvent_bot"
 								data-size="large"
@@ -70,14 +70,14 @@
 								data-request-access="write"
 								data-auth-url="{{ route('auth.telegram.callback', ['return' => url()->full()]) }}"
 								data-lang="ru">
-								</script>								
-							</div>			
-							<div class="auth-btn-telegram-widget-up">					
+								</script>
+							</div>
+							<div class="auth-btn-telegram-widget-up">
 								<span class="auth-icon-circle">
 									<span class="icon-tg"></span>
 								</span>
 								<span class="auth-text">Войти через Telegram</span>
-							</div>				
+							</div>
 						</div>
 						{{--
 						<div data-href="#max" class="auth-btn auth-btn-max">
@@ -94,4 +94,6 @@
                     
                 </div>
     </div>
+
+
 </x-voll-layout>
