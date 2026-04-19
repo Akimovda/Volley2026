@@ -1390,36 +1390,44 @@ if ($initialStep < 1 || $initialStep > 3) {
 											
 											<div class="col-sm-4">
 												<label>Окончание регистрации</label>
-												<select name="reg_ends_minutes_before" id="reg_ends_minutes_before">
-													@foreach ([1,5,10,15,20,25,30,35,40,45,50,55,60] as $m)
-														<option value="{{ $m }}" 
-															@selected($oldRegEndsMinutesBefore == $m)>
-															{{ $m }}
-														</option>
-													@endforeach
+												<input type="hidden" name="reg_ends_minutes_before" id="reg_ends_minutes_before" value="{{ $oldRegEndsMinutesBefore }}">
+												<div class="d-flex" style="gap:.5rem;align-items:center">
+												<select id="reg_ends_hours" style="width:auto">
+												@for ($h = 0; $h <= 24; $h++)
+													<option value="{{ $h }}" @selected($regEndsHours == $h)>{{ $h }} ч</option>
+												@endfor
 												</select>
-												
+												<select id="reg_ends_mins" style="width:auto">
+												@foreach ([0,10,20,30,40,50] as $m)
+													<option value="{{ $m }}" @selected($regEndsMinutes == $m)>{{ $m }} мин</option>
+												@endforeach
+												</select>
+												</div>
 												<ul class="list f-16 mt-1">
-													<li class="b-600">Минут до</li>
+													<li>До начала мероприятия.</li>
 													<li>По умолчанию: 15 минут.</li>
-												</ul>													
-												
+												</ul>
 											</div>
 											
 											<div class="col-sm-4">
 												<label>Запрет отмены записи</label>
-												<select name="cancel_lock_minutes_before" id="cancel_lock_minutes_before">
-													@foreach ([1,5,10,15,20,25,30,35,40,45,50,55,60] as $m)
-														<option value="{{ $m }}" 
-															@selected($oldCancelLockMinutesBefore == $m)>
-															{{ $m }}
-														</option>
-													@endforeach
+												<input type="hidden" name="cancel_lock_minutes_before" id="cancel_lock_minutes_before" value="{{ $oldCancelLockMinutesBefore }}">
+												<div class="d-flex" style="gap:.5rem;align-items:center">
+												<select id="cancel_lock_hours" style="width:auto">
+												@for ($h = 0; $h <= 24; $h++)
+													<option value="{{ $h }}" @selected($cancelLockHours == $h)>{{ $h }} ч</option>
+												@endfor
 												</select>
+												<select id="cancel_lock_mins" style="width:auto">
+												@foreach ([0,10,20,30,40,50] as $m)
+													<option value="{{ $m }}" @selected($cancelLockMinutes == $m)>{{ $m }} мин</option>
+												@endforeach
+												</select>
+												</div>
 												<ul class="list f-16 mt-1">
-													<li class="b-600">Минут до</li>
-													<li>По умолчанию: 60 минут.</li>
-												</ul>													
+													<li>До начала мероприятия.</li>
+													<li>По умолчанию: 1 час.</li>
+												</ul>
 											</div>
 										</div>
 										
@@ -2485,5 +2493,30 @@ if ($initialStep < 1 || $initialStep > 3) {
 	</script>			
 	
 </x-slot>			
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    function syncMinutes(hoursId, minsId, hiddenId) {
+        var hSel = document.getElementById(hoursId);
+        var mSel = document.getElementById(minsId);
+        var hidden = document.getElementById(hiddenId);
+        if (!hSel || !mSel || !hidden) return;
+
+        function sync() {
+            var total = parseInt(hSel.value) * 60 + parseInt(mSel.value);
+            if (total < 1) total = 1;
+            hidden.value = total;
+        }
+
+        hSel.addEventListener('change', sync);
+        mSel.addEventListener('change', sync);
+        sync();
+    }
+
+    syncMinutes('reg_ends_hours', 'reg_ends_mins', 'reg_ends_minutes_before');
+    syncMinutes('cancel_lock_hours', 'cancel_lock_mins', 'cancel_lock_minutes_before');
+});
+</script>
 
 </x-voll-layout>
