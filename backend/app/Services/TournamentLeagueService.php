@@ -9,6 +9,7 @@ use App\Models\EventTeam;
 use App\Models\User;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use App\Services\UserNotificationService;
 use InvalidArgumentException;
 
 class TournamentLeagueService
@@ -66,6 +67,11 @@ class TournamentLeagueService
             throw new InvalidArgumentException('Команда/игрок уже в этой лиге.');
         }
 
+        // Проверка уровня членов команды
+        if ($team) {
+            $this->validateTeamLevel($team, $league);
+        }
+
         // Есть ли место?
         if ($league->hasCapacity()) {
             return TournamentLeagueTeam::create([
@@ -103,32 +109,126 @@ class TournamentLeagueService
     /**
      * Подтянуть из резерва в основной состав.
      */
-    public function fillFromReserve(TournamentLeague $league, int $slots = 1): Collection
+    public function fillFromReserve(TournamentLeague $league, int $slots = 1, bool $requireConfirmation = true): Collection
     {
-        $promoted = collect();
+        $offered = collect();
 
         if (!$league->hasCapacity()) {
-            return $promoted;
+            return $offered;
+        }
+
+        // Не считаем pending_confirmation как свободные слоты
+        $pendingCount = TournamentLeagueTeam::where('league_id', $league->id)
+            ->where('status', TournamentLeagueTeam::STATUS_PENDING_CONFIRMATION)
+            ->count();
+
+        $activeCount = TournamentLeagueTeam::where('league_id', $league->id)
+            ->where('status', TournamentLeagueTeam::STATUS_ACTIVE)
+            ->count();
+
+        $available = ($league->max_teams ?? PHP_INT_MAX) - $activeCount - $pendingCount;
+        if ($available <= 0) {
+            return $offered;
         }
 
         $reserves = $league->reserveTeams()
             ->orderBy('reserve_position')
-            ->limit($slots)
+            ->limit(min($slots, $available))
             ->get();
 
         foreach ($reserves as $reserve) {
-            if (!$league->hasCapacity()) {
-                break;
+            if ($requireConfirmation) {
+                $reserve->offerSpot();
+
+                // Отправляем уведомление капитану
+                try {
+                    $this->notifyReserveOffer($reserve);
+                } catch (\Throwable $e) {
+                    report($e);
+                }
+
+                // Создаём job для таймаута
+                \App\Jobs\ExpireReserveConfirmationJob::dispatch($reserve->id)
+                    ->delay(now()->addHours(2));
+            } else {
+                $reserve->activateFromReserve();
             }
 
-            $reserve->activateFromReserve();
-            $promoted->push($reserve->fresh());
+            $offered->push($reserve->fresh());
         }
 
-        // Пересчитываем позиции оставшихся в резерве
         $this->reindexReserve($league);
 
-        return $promoted;
+        return $offered;
+    }
+
+    /**
+     * Подтвердить место из резерва (капитан подтверждает + оплата).
+     */
+    public function confirmReserveSpot(TournamentLeagueTeam $leagueTeam): void
+    {
+        if (!$leagueTeam->isPendingConfirmation()) {
+            throw new InvalidArgumentException('Команда не ожидает подтверждения.');
+        }
+
+        if ($leagueTeam->confirmation_expires_at && $leagueTeam->confirmation_expires_at->isPast()) {
+            throw new InvalidArgumentException('Время подтверждения истекло.');
+        }
+
+        $leagueTeam->confirmSpot();
+    }
+
+    /**
+     * Таймаут подтверждения — возврат в конец резерва.
+     */
+    public function expireReserveOffer(TournamentLeagueTeam $leagueTeam): void
+    {
+        if (!$leagueTeam->isPendingConfirmation()) {
+            return; // Уже подтвердили или отменили
+        }
+
+        $league = $leagueTeam->league;
+        $newPosition = $league->nextReservePosition();
+        $leagueTeam->expireConfirmation($newPosition);
+
+        // Предлагаем место следующей команде
+        $this->fillFromReserve($league, 1);
+    }
+
+    /**
+     * Уведомление капитану о предложении места.
+     */
+    private function notifyReserveOffer(TournamentLeagueTeam $leagueTeam): void
+    {
+        $team = $leagueTeam->team;
+        if (!$team || !$team->captain_user_id) return;
+
+        $league = $leagueTeam->league;
+        $season = $league->season ?? null;
+        $confirmUrl = route('league.reserve.confirm', ['token' => $leagueTeam->confirmation_token]);
+        $expiresAt = $leagueTeam->confirmation_expires_at?->format('d.m.Y H:i');
+
+        $title = 'Освободилось место в лиге!';
+        $body = "В лиге «{$league->name}» освободилось место для вашей команды «{$team->name}». "
+            . "Подтвердите участие и оплатите до {$expiresAt}. "
+            . "Если не подтвердите — место перейдёт следующей команде.";
+
+        app(UserNotificationService::class)->create(
+            userId: (int) $team->captain_user_id,
+            type: 'reserve_spot_offered',
+            title: $title,
+            body: $body,
+            payload: [
+                'league_id' => $league->id,
+                'league_team_id' => $leagueTeam->id,
+                'team_id' => $team->id,
+                'confirm_url' => $confirmUrl,
+                'expires_at' => $expiresAt,
+                'button_text' => 'Подтвердить участие',
+                'button_url' => $confirmUrl,
+            ],
+            channels: ['in_app', 'telegram', 'vk', 'max']
+        );
     }
 
     /**
@@ -227,4 +327,57 @@ class TournamentLeagueService
 
         $league->delete();
     }
+
+    /**
+     * Проверка уровня всех игроков команды для лиги.
+     */
+    private function validateTeamLevel(EventTeam $team, TournamentLeague $league): void
+    {
+        $season = $league->season;
+        if (!$season) return;
+
+        // Берём event из сезона для определения уровня
+        $event = $season->events()->latest()->first();
+        if (!$event) return;
+
+        $direction = $event->direction ?? 'classic';
+
+        if ($direction === 'beach') {
+            $lvMin = $event->beach_level_min;
+            $lvMax = $event->beach_level_max;
+            $levelField = 'beach_level';
+        } else {
+            $lvMin = $event->classic_level_min;
+            $lvMax = $event->classic_level_max;
+            $levelField = 'classic_level';
+        }
+
+        if (is_null($lvMin) && is_null($lvMax)) return;
+
+        $members = $team->members()
+            ->whereIn('confirmation_status', ['confirmed', 'self'])
+            ->with('user')
+            ->get();
+
+        $violations = [];
+        foreach ($members as $member) {
+            $user = $member->user;
+            if (!$user) continue;
+
+            $userLevel = $user->{$levelField};
+            if (is_null($userLevel)) continue;
+
+            if ((!is_null($lvMin) && $userLevel < $lvMin) || (!is_null($lvMax) && $userLevel > $lvMax)) {
+                $name = trim(($user->last_name ?? '') . ' ' . ($user->first_name ?? ''));
+                $violations[] = $name ?: "Игрок #{$user->id}";
+            }
+        }
+
+        if (!empty($violations)) {
+            throw new InvalidArgumentException(
+                'Игрок(и) ' . implode(', ', $violations) . ' не соответствуют требованиям по уровню лиги.'
+            );
+        }
+    }
+
 }

@@ -226,7 +226,11 @@ Route::get('/user/profile', [\App\Http\Controllers\UserProfileController::class,
 		|--------------------------------------------------------------------------
 	*/
 	
-	Route::get('/auth/telegram/callback', [TelegramAuthController::class, 'callback'])->name('auth.telegram.callback');
+	Route::get('/league/reserve/confirm/{token}', [\App\Http\Controllers\LeagueReserveController::class, 'confirm'])
+    ->middleware(['auth'])
+    ->name('league.reserve.confirm');
+
+Route::get('/auth/telegram/callback', [TelegramAuthController::class, 'callback'])->name('auth.telegram.callback');
 	Route::get('/auth/vk/redirect', [VkAuthController::class, 'redirect'])->name('auth.vk.redirect');
 	Route::get('/auth/vk/callback', [VkAuthController::class, 'callback'])->name('auth.vk.callback');
 	Route::get('/auth/yandex/redirect', [YandexAuthController::class, 'redirect'])->name('auth.yandex.redirect');
