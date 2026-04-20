@@ -254,6 +254,9 @@
 	text-transform: uppercase;
 	z-index: 1;
 	line-height: 1;
+	padding: 0.8rem 1.4rem;
+	background: rgba(255,255,255,0.8);
+	border-radius: 1rem;
 }
 .sgroup-1 .title-box { 
 	right: 0;
@@ -280,12 +283,12 @@
 		left: 50%;
 		transform: translateX(-50%);
 		z-index: 1;
-		bottom: -1rem;
+		bottom: -0.4rem;
 		transition: width 0.6s;
 	}
 	.sgroup-3 .title-box:after,
 	.sgroup-4 .title-box:after { 
-		top: -1rem;
+		top: -0.4rem;
 		bottom: auto;
 	}
 	.sgroup:hover .title-box:after {
@@ -345,7 +348,7 @@
 	object-position: left bottom;
 }
 .sgroup.sgroup-4 .img-box { 
-	transform-origin: right top; 
+	transform-origin: right bottom; 
 }
 .sgroup.sgroup-4 .img-box img { 
 	object-position: right center;
@@ -450,6 +453,11 @@
 	padding-left: 1.4rem;
 }
 @media screen and (max-width: 991px) {
+.sgroup {
+border:1rem solid #fff;
+}	
+	
+	
 	.sgroup.sgroup-1 .img-box { 
 		transform-origin: center center; 
 	}
@@ -488,6 +496,7 @@
 		padding: 1rem;
 		justify-content: center;
 		background: rgba(255,255,255,0.8);
+		border-radius: 0;
 	}
 }	
 		</style>
@@ -735,7 +744,7 @@
 	</div>
 	<div class="sgroup sgroup-4">
 		<div class="close-sgroup">&times;</div>
-		<div class="img-box"><img data-light="/img/main/bg-2.webp" data-dark="/img/main/bg-2-d.webp" alt="Спортцентрам" src="/img/pixel.png"></div>
+		<div class="img-box"><img data-light="/img/main/bg-4.png" data-dark="/img/main/bg-2-d.webp" alt="Спортцентрам" src="/img/pixel.png"></div>
 		<div class="title-box">Спортцентрам</div>
 		<div class="info-box">
 			<div class="row row2">
@@ -928,7 +937,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	background: #fff;
 	clip-path: polygon(calc(100% - 6rem) 0%, 100% 50%, calc(100% - 6rem) 100%, 0% 100%, 6rem 50%, 0% 0%);
 	padding: 2rem 5rem 2rem 8rem;
-	transition: all 1s, background 0.3s, color 0.1s!important;
+	transition: transform 1s, opacity 1s, background 0.3s, color 0.1s!important;
 	will-change: transform;
 }
 
@@ -952,19 +961,19 @@ body.dark .steps ul li.active {
 }
 .steps ul li:nth-child(2) {	
 	left: calc(25% - 2rem);
-	transition-delay: 0.1s, 0s, 0s!important;
+	transition-delay: 0.1s, 0.1s, 0s, 0s!important;
 }	
 .steps ul li:nth-child(3) {	
 	left: calc(50% - 2rem);
 	position: relative;
-	transition-delay: 0.2s, 0s, 0s!important;
+	transition-delay: 0.2s, 0.2s, 0s, 0s!important;
 }	
 .steps ul li:last-child {	
 	left:  calc(75% - 2rem);
 	width: calc(25% + 2rem);
 	clip-path: polygon(100% 0%,100% 100%,0% 100%, 6rem 50%,0% 0%);
 	padding: 2rem 2rem 2rem 8rem;
-	transition-delay: 0.3s, 0s, 0s!important;
+	transition-delay: 0.3s, 0.3s, 0s, 0s!important;
 }	
 /* стили текста */
 .step-title {

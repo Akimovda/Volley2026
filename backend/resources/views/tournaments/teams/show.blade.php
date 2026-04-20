@@ -208,7 +208,7 @@ $invStLabels = ['pending'=>'Ожидает','accepted'=>'Принято','declin
                             <div class="alert alert-warning f-14">⏳ Ожидает подтверждения организатором</div>
                         @elseif($isCaptain)
                             @if($payInfo['method'] === 'cash')
-                                <div class="alert alert-info f-14">💵 Оплата наличными на месте</div>
+                                <div class="alert alert-info f-14">💵 Оплата наличными</div>
                             @else
                                 @if($team->payment_id)
                                     <form method="POST" action="{{ route('payments.user_confirm', $team->payment_id) }}">
