@@ -81,6 +81,17 @@
 
     {{-- FLASH --}}
     <div class="max-w-6xl mx-auto sm:px-6 lg:px-8 mt-6">
+
+        @if($event->format === 'tournament')
+        <div class="mb-4 p-4 rounded-lg bg-blue-50 text-blue-800 border border-blue-100" id="tournament-redirect-notice">
+            <div class="font-bold text-lg mb-1">🏆 Это турнирное мероприятие</div>
+            <p class="mb-2">Управление командами и составами турнира осуществляется на странице настройки турнира.</p>
+            <a href="{{ route('tournament.setup', $event) }}" class="inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                Перейти к управлению турниром →
+            </a>
+        </div>
+        @endif
+
         @if (session('status'))
             <div class="mb-4 p-3 rounded-lg bg-green-50 text-green-800 border border-green-100">{{ session('status') }}</div>
         @endif

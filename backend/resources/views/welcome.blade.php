@@ -170,8 +170,8 @@
 .sgroup {
 	position: absolute;
 	z-index: 0;
-	width: 50%;
-	height: 50%;
+	width: calc(50% - 1rem);
+	height: calc(50% - 1rem);
 	overflow: hidden;
 	cursor: pointer;
 	transform: scale(1);
@@ -199,15 +199,15 @@
 }
 .sgroup-2 {
 	top: 0;
-	left: 50%;
+	left: calc(50% + 2rem);
 }
 .sgroup-3 {
-	top: 50%;
+	top: calc(50% + 2rem);
 	left: 0;
 }
 .sgroup-4 {
-	top: 50%;
-	left: 50%;
+	top: calc(50% + 2rem);
+	left: calc(50% + 2rem);
 }
 .sgroup.is-expanded {
 	top: 0;
@@ -453,10 +453,11 @@
 	padding-left: 1.4rem;
 }
 @media screen and (max-width: 991px) {
+	/*
 .sgroup {
 border:1rem solid #fff;
 }	
-	
+*/	
 	
 	.sgroup.sgroup-1 .img-box { 
 		transform-origin: center center; 
