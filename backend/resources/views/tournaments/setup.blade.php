@@ -310,7 +310,10 @@
     <div class="card p-3 mb-3">
         <h3 class="mb-2">Фото турнира</h3>
 
-        @php $tournamentPhotos = $event->getMedia('tournament_photos'); @endphp
+        @php
+            $tournamentPhotos = $event->getMedia('tournament_photos');
+            $currentPhotoIds = $tournamentPhotos->pluck('id')->toArray();
+        @endphp
 
         @if($tournamentPhotos->isNotEmpty())
             <div class="d-flex mb-2" style="flex-wrap:wrap;gap:8px">
@@ -326,11 +329,50 @@
             </div>
         @endif
 
-        <form method="POST" action="{{ route('tournament.photos.store', $event) }}" enctype="multipart/form-data" class="d-flex fvc" style="gap:10px;flex-wrap:wrap">
-            @csrf
-            <input type="file" name="photos[]" multiple accept="image/*" required>
-            <button type="submit" class="btn btn-primary f-13">Загрузить</button>
-        </form>
+        @if(($userEventPhotos ?? collect())->count() > 0)
+        <div class="card">
+            <label>Выберите фото из вашей галереи</label>
+
+            <div class="event-photos-selector" id="tournament-photos-selector"
+                 data-selected='{{ json_encode($currentPhotoIds) }}'>
+                <div class="swiper tournamentPhotosSwiper">
+                    <div class="swiper-wrapper">
+                        @foreach($userEventPhotos as $photo)
+                        <div class="swiper-slide">
+                            <div class="hover-image mb-1">
+                                <img src="{{ $photo->getUrl('event_thumb') }}" alt="photo" loading="lazy"/>
+                            </div>
+                            <div class="mt-1 d-flex between fvc">
+                                <label class="checkbox-item mb-0">
+                                    <input type="checkbox" class="t-photo-select" value="{{ $photo->id }}">
+                                    <div class="custom-checkbox"></div>
+                                    <span>Выбрать</span>
+                                </label>
+                                <div class="photo-order-badge f-16 b-600 cd"></div>
+                            </div>
+                        </div>
+                        @endforeach
+                    </div>
+                    <div class="swiper-pagination"></div>
+                </div>
+
+                <ul class="list f-16 mt-1">
+                    <li>Выберите фото для турнира. Первое отмеченное фото будет главным.</li>
+                    <li>Фотографии можно добавить в разделе <a target="_blank" href="{{ route('user.photos') }}">Ваши фотографии</a> (с галочкой «Для мероприятий»)</li>
+                </ul>
+            </div>
+
+            <form method="POST" action="{{ route('tournament.photos.store', $event) }}" id="tournament-photos-form" class="mt-1">
+                @csrf
+                <input type="hidden" name="photo_ids" id="tournament_photos_input" value="">
+                <button type="submit" class="btn btn-primary" id="tournament-photos-submit" style="display:none">Сохранить фото</button>
+            </form>
+        </div>
+        @else
+            <div class="alert alert-info f-14">
+                Нет фото в галерее. <a href="{{ route('user.photos') }}" target="_blank">Загрузите фото</a> с пометкой «Для мероприятий».
+            </div>
+        @endif
     </div>
 
     @foreach($stages as $stage)
@@ -671,6 +713,64 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!dd.contains(e.target) && e.target !== inp) dd.style.display = 'none';
     });
 })();
+</script>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Tournament Photos Swiper
+    if (document.querySelector('.tournamentPhotosSwiper')) {
+        new Swiper('.tournamentPhotosSwiper', {
+            slidesPerView: 3,
+            spaceBetween: 10,
+            pagination: { el: '.tournamentPhotosSwiper .swiper-pagination', clickable: true },
+            breakpoints: {
+                320: { slidesPerView: 2 },
+                640: { slidesPerView: 3 },
+                1024: { slidesPerView: 4 }
+            }
+        });
+
+        var container = document.getElementById('tournament-photos-selector');
+        if (container) {
+            var savedPhotos = JSON.parse(container.dataset.selected || '[]');
+            var selectedPhotos = savedPhotos.slice();
+
+            function updateTournamentUI() {
+                document.querySelectorAll('.t-photo-select').forEach(function(cb) {
+                    var id = parseInt(cb.value);
+                    var isSelected = selectedPhotos.indexOf(id) !== -1;
+                    cb.checked = isSelected;
+                    var badge = cb.closest('.swiper-slide').querySelector('.photo-order-badge');
+                    if (isSelected) {
+                        var order = selectedPhotos.indexOf(id) + 1;
+                        badge.textContent = order === 1 ? '★ Главное' : 'Фото: ' + order;
+                    } else {
+                        badge.textContent = '';
+                    }
+                });
+                document.getElementById('tournament_photos_input').value = JSON.stringify(selectedPhotos);
+                var btn = document.getElementById('tournament-photos-submit');
+                btn.style.display = selectedPhotos.length > 0 ? '' : 'none';
+            }
+
+            document.querySelectorAll('.t-photo-select').forEach(function(cb) {
+                cb.addEventListener('change', function() {
+                    var id = parseInt(this.value);
+                    if (this.checked) {
+                        selectedPhotos.push(id);
+                    } else {
+                        var idx = selectedPhotos.indexOf(id);
+                        if (idx !== -1) selectedPhotos.splice(idx, 1);
+                    }
+                    updateTournamentUI();
+                });
+            });
+
+            updateTournamentUI();
+        }
+    }
+});
 </script>
 
 </x-voll-layout>

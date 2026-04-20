@@ -57,7 +57,9 @@ class TournamentController extends Controller
         $settings = $event->tournamentSetting;
         $applicationMode = $settings->application_mode ?? 'manual';
 
-        return view('tournaments.setup', compact('event', 'stages', 'teams', 'pendingApplications', 'applicationMode'));
+        $userEventPhotos = $request->user()->getMedia('event_photos')->sortByDesc('created_at');
+
+        return view('tournaments.setup', compact('event', 'stages', 'teams', 'pendingApplications', 'applicationMode', 'userEventPhotos'));
     }
 
     /* ================================================================
@@ -504,6 +506,39 @@ class TournamentController extends Controller
     {
         $this->authorizeOrganizer($request, $event);
 
+        // Режим 1: выбор из галереи пользователя
+        if ($request->has('photo_ids')) {
+            $photoIds = json_decode($request->input('photo_ids', '[]'), true);
+            if (!is_array($photoIds) || empty($photoIds)) {
+                return back()->with('error', 'Выберите хотя бы одно фото.');
+            }
+
+            // Удаляем старые tournament_photos
+            $event->clearMediaCollection('tournament_photos');
+
+            // Копируем выбранные фото
+            $count = 0;
+            foreach ($photoIds as $mediaId) {
+                $source = \Spatie\MediaLibrary\MediaCollections\Models\Media::find($mediaId);
+                if ($source && file_exists($source->getPath())) {
+                    $event->addMedia($source->getPath())
+                        ->preservingOriginal()
+                        ->toMediaCollection('tournament_photos');
+                    $count++;
+                }
+            }
+
+            try {
+                app(\App\Services\TournamentNotificationService::class)->notifyPhotosAdded($event);
+            } catch (\Throwable $e) {
+                \Log::warning('Photo notification failed: ' . $e->getMessage());
+            }
+
+            return redirect()->route('tournament.setup', $event)
+                ->with('success', "Фото обновлены ({$count} шт.)");
+        }
+
+        // Режим 2: прямая загрузка файлов
         $request->validate([
             'photos'   => 'required|array|min:1|max:20',
             'photos.*' => 'image|mimes:jpg,jpeg,png,webp|max:10240',
