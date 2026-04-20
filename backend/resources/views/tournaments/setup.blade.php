@@ -166,10 +166,18 @@
                             <a href="{{ route('tournamentTeams.show', [$event, $team]) }}" class="blink b-600 f-14 d-block mb-05">
                                 {{ $team->name }}
                             </a>
-                            @if($team->captain)
-                                <div class="f-12" style="opacity:.5">{{ $team->captain->displayName() }}</div>
+                            @php $members = $team->members->load('user'); @endphp
+                            @if($members->count() <= 2)
+                                @foreach($members as $m)
+                                    <div class="f-12" style="opacity:.6">{{ trim(($m->user->last_name ?? '') . ' ' . ($m->user->first_name ?? '')) ?: $m->user->name ?? '?' }}</div>
+                                @endforeach
+                            @else
+                                @foreach($members->take(2) as $m)
+                                    <div class="f-12" style="opacity:.6">{{ trim(($m->user->last_name ?? '') . ' ' . ($m->user->first_name ?? '')) ?: $m->user->name ?? '?' }}</div>
+                                @endforeach
+                                <div class="f-12" style="opacity:.4;font-style:italic">и другие...</div>
                             @endif
-                            <div class="f-12 mt-05" style="opacity:.4">{{ $team->members_count ?? $team->members->count() }} чел.</div>
+                            <div class="f-12 mt-05" style="opacity:.4">{{ $members->count() }} чел.</div>
                             <form method="POST" action="{{ route('tournamentTeams.destroy', [$event, $team]) }}" class="mt-1">
                                 @csrf @method('DELETE')
                                 <button type="submit" class="btn-alert f-12" data-title="Удалить команду {{ $team->name }}?" data-icon="warning" data-confirm-text="Да, удалить" data-cancel-text="Отмена" style="background:none;border:1px solid rgba(220,38,38,.3);border-radius:6px;cursor:pointer;padding:3px 8px;color:#dc2626">
