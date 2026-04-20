@@ -202,7 +202,7 @@
                                     <div style="position:relative">
                                         <input type="text" id="org-captain-search" placeholder="Имя или ID..." autocomplete="off">
                                         <input type="hidden" name="captain_user_id" id="org-captain-id">
-                                        <div id="org-captain-dd" class="form-select-dropdown" style="position:absolute;z-index:10;width:100%;display:none"></div>
+                                        <div id="org-captain-dd" class="form-select-dropdown trainer_dd" style="position:absolute;z-index:10;width:100%"></div>
                                     </div>
                                 </div>
                             </div>
@@ -706,36 +706,49 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!inp || !dd || !hidden) return;
     var timer = null;
 
+    function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    function showDd() { dd.classList.add('form-select-dropdown--active'); }
+    function hideDd() { dd.classList.remove('form-select-dropdown--active'); }
+
     inp.addEventListener('input', function() {
         clearTimeout(timer);
         var q = inp.value.trim();
-        if (q.length < 2) { dd.innerHTML = ''; dd.style.display = 'none'; return; }
+        if (q.length < 2) { hideDd(); dd.innerHTML = ''; return; }
         timer = setTimeout(function() {
             fetch('/api/users/search?q=' + encodeURIComponent(q))
                 .then(function(r) { return r.json(); })
                 .then(function(data) {
                     dd.innerHTML = '';
                     var items = data.items || data || [];
-                    if (!items.length) { dd.innerHTML = '<div style="padding:8px 12px;font-size:13px;opacity:.5">Не найдено</div>'; dd.style.display = 'block'; return; }
-                    items.slice(0,6).forEach(function(u) {
+                    if (!items.length) {
+                        dd.innerHTML = '<div class="city-message">Ничего не найдено</div>';
+                        showDd();
+                        return;
+                    }
+                    items.slice(0,8).forEach(function(u) {
                         var div = document.createElement('div');
-                        div.className = 'form-select-option';
-                        div.style.cssText = 'padding:8px 12px;cursor:pointer';
-                        div.textContent = u.label || u.name || '#' + u.id;
+                        div.className = 'trainer-item form-select-option';
+                        div.setAttribute('data-id', u.id);
+                        div.setAttribute('data-name', u.label || u.name || '');
+                        div.innerHTML = '<div class="text-sm">' + esc(u.label || u.name || '#'+u.id) + '</div>';
                         div.addEventListener('click', function() {
-                            inp.value = div.textContent;
-                            hidden.value = u.id;
-                            dd.style.display = 'none';
+                            inp.value = div.getAttribute('data-name');
+                            hidden.value = div.getAttribute('data-id');
+                            hideDd();
                         });
                         dd.appendChild(div);
                     });
-                    dd.style.display = 'block';
+                    showDd();
                 });
         }, 300);
     });
 
+    inp.addEventListener('focus', function() {
+        if (dd.children.length > 0) showDd();
+    });
+
     document.addEventListener('click', function(e) {
-        if (!dd.contains(e.target) && e.target !== inp) dd.style.display = 'none';
+        if (!dd.contains(e.target) && e.target !== inp) hideDd();
     });
 })();
 </script>
