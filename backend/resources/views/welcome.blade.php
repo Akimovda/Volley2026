@@ -465,7 +465,7 @@ border:1rem solid #fff;
 		transform-origin: center center; 
 	}
 	.sgroup.sgroup-2 .img-box img { 
-		object-position: right center;
+		object-position: 90% center;
 	}
 	.sgroup.sgroup-3 .img-box { 
 		transform-origin: center center; 

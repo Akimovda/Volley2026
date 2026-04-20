@@ -425,12 +425,42 @@ final class TournamentTeamService
                 performedByUserId: $submittedBy->id,
                 newValue: [
                     'application_id' => $application->id,
-                    'status' => 'pending',
+                    'status' => $applicationStatus,
                 ],
             );
 
             return $application;
         });
+
+        // Уведомляем организатора о новой заявке (после коммита транзакции)
+        if ($application->status === 'pending') {
+            try {
+                $event = $team->event;
+                $organizerId = (int) $event->organizer_id;
+                $setupUrl = route('tournament.setup', $event);
+
+                app(\App\Services\UserNotificationService::class)->create(
+                    userId: $organizerId,
+                    type: 'tournament_application_received',
+                    title: 'Новая заявка на турнир',
+                    body: "Команда «{$team->name}» подала заявку на турнир «{$event->title}». Одобрите или отклоните заявку.",
+                    payload: [
+                        'event_id' => $event->id,
+                        'team_id' => $team->id,
+                        'application_id' => $application->id,
+                        'team_name' => $team->name,
+                        'event_title' => $event->title,
+                        'button_text' => 'Управление турниром',
+                        'button_url' => $setupUrl,
+                    ],
+                    channels: ['in_app', 'telegram', 'vk', 'max']
+                );
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
+
+        return $application;
     }
 
     public function refreshTeamState(EventTeam $team): EventTeam
