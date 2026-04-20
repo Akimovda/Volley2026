@@ -45,7 +45,7 @@ class TournamentController extends Controller
         ])->get();
 
         $teams = EventTeam::where('event_id', $event->id)
-            ->where('status', 'submitted')
+            ->whereIn('status', ['submitted', 'approved', 'ready'])
             ->with('captain')
             ->get();
 
@@ -132,7 +132,7 @@ class TournamentController extends Controller
             ->firstOrFail();
 
         $teams = EventTeam::where('event_id', $event->id)
-            ->where('status', 'submitted')
+            ->whereIn('status', ['submitted', 'approved', 'ready'])
             ->get();
 
         // Фильтруем неоплаченные команды (если турнир платный)
