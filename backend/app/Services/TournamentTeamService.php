@@ -384,6 +384,9 @@ final class TournamentTeamService
             // === Проверка уровня всех членов команды ===
             $this->validateTeamMembersLevel($team);
 
+            // === Проверка гендерных ограничений ===
+            $this->validateTeamGender($team);
+
             $existing = EventTeamApplication::query()
                 ->where('event_team_id', $team->id)
                 ->first();
@@ -841,6 +844,71 @@ final class TournamentTeamService
         $team->update([
             'is_complete' => $confirmedCount >= $minPlayers,
         ]);
+    }
+
+
+    /**
+     * Проверка гендерных ограничений команды.
+     */
+    private function validateTeamGender(EventTeam $team): void
+    {
+        $event = $team->event;
+        $gameSettings = \App\Models\EventGameSetting::where('event_id', $event->id)->first();
+        if (!$gameSettings) return;
+
+        $policy = $gameSettings->gender_policy ?? 'mixed_open';
+        if ($policy === 'mixed_open') return;
+
+        $members = $team->members()
+            ->whereIn('confirmation_status', ['confirmed', 'self'])
+            ->with('user')
+            ->get();
+
+        $males = $members->filter(fn($m) => ($m->user->gender ?? null) === 'm')->count();
+        $females = $members->filter(fn($m) => ($m->user->gender ?? null) === 'f')->count();
+        $unknown = $members->filter(fn($m) => !in_array($m->user->gender ?? null, ['m', 'f']))->count();
+        $total = $members->count();
+
+        if ($unknown > 0) {
+            $noGender = $members->filter(fn($m) => !in_array($m->user->gender ?? null, ['m', 'f']))
+                ->map(fn($m) => trim(($m->user->last_name ?? '') . ' ' . ($m->user->first_name ?? '')) ?: "Игрок #{$m->user_id}")
+                ->implode(', ');
+            throw new DomainException("У следующих игроков не указан пол: {$noGender}. Укажите пол в профиле.");
+        }
+
+        switch ($policy) {
+            case 'only_male':
+                if ($females > 0) {
+                    throw new DomainException('Этот турнир только для мужчин. В команде есть женщины.');
+                }
+                break;
+
+            case 'only_female':
+                if ($males > 0) {
+                    throw new DomainException('Этот турнир только для женщин. В команде есть мужчины.');
+                }
+                break;
+
+            case 'mixed_5050':
+                $expectedPerGender = (int) floor($total / 2);
+                if ($males !== $expectedPerGender || $females !== $expectedPerGender) {
+                    throw new DomainException(
+                        "Микс 50/50: нужно {$expectedPerGender}М + {$expectedPerGender}Ж. " .
+                        "Сейчас: {$males}М + {$females}Ж."
+                    );
+                }
+                break;
+
+            case 'mixed_limited':
+                $limitedSide = $gameSettings->gender_limited_side ?? 'f';
+                $limitedMax = $gameSettings->gender_limited_max ?? 1;
+                $count = $limitedSide === 'f' ? $females : $males;
+                $label = $limitedSide === 'f' ? 'женщин' : 'мужчин';
+                if ($count > $limitedMax) {
+                    throw new DomainException("Ограничение: максимум {$limitedMax} {$label} в команде. Сейчас: {$count}.");
+                }
+                break;
+        }
     }
 
 }
