@@ -119,12 +119,12 @@
                 <div class="col-md-4 mb-2">
                     <label class="f-13 b-600 mb-1 d-block">Тип</label>
                     <select name="type" id="stage_type_select">
-                        <option value="round_robin">Round Robin</option>
+                        <option value="round_robin">Круговая система (Round Robin)</option>
                         <option value="groups_playoff">Группы + плей-офф</option>
                         <option value="single_elim">Олимпийка</option>
                         <option value="swiss">Швейцарская</option>
-                        <option value="double_elim">Double Elimination</option>
-                        <option value="king_of_court">King of the Court</option>
+                        <option value="double_elim">Двойное выбывание (Double Elimination)</option>
+                        <option value="king_of_court">Король площадки (King of the Court)</option>
                         <option value="thai">Тайский формат</option>
                     </select>
                 </div>
@@ -134,11 +134,26 @@
                 </div>
                 <div class="col-md-4 mb-2">
                     <label class="f-13 b-600 mb-1 d-block">Формат матча</label>
-                    <select name="match_format">
-                        <option value="bo3">Bo3</option>
-                        <option value="bo1">Bo1</option>
-                        <option value="bo5">Bo5</option>
+                    <select name="match_format" id="match_format_select">
+                        <option value="bo3">Best of 3 (Bo3)</option>
+                        <option value="bo1">Best of 1 (Bo1)</option>
+                        <option value="bo5">Best of 5 (Bo5)</option>
                     </select>
+                    <div id="match_format_hint" class="f-13 mt-05" style="opacity:.6"></div>
+                    <script>
+                    (function(){
+                        var hints = {
+                            bo1: 'Играют 1 сет. Кто выиграл сет — выиграл матч. Быстрый формат для пулов.',
+                            bo3: 'Играют до 2 побед в сетах. Максимум 3 сета (2:0 или 2:1). Стандарт для пляжки и групповых этапов.',
+                            bo5: 'Играют до 3 побед в сетах. Максимум 5 сетов. Обычно только для финалов классики 6×6.'
+                        };
+                        var sel = document.getElementById('match_format_select');
+                        var hint = document.getElementById('match_format_hint');
+                        function upd() { hint.textContent = hints[sel.value] || ''; }
+                        sel.addEventListener('change', upd);
+                        upd();
+                    })();
+                    </script>
                 </div>
             </div>
             <div class="row">
@@ -234,7 +249,19 @@
                         @endif
                     </h3>
                     <div class="f-13" style="opacity:.5">
-                        {{ $stage->type }} · {{ strtoupper($stage->matchFormat()) }} · до {{ $stage->setPoints() }} очков
+                        @php
+$stageTypeLabels = [
+    'round_robin' => 'Круговая система',
+    'groups_playoff' => 'Группы + плей-офф',
+    'single_elim' => 'Олимпийка',
+    'swiss' => 'Швейцарская',
+    'double_elim' => 'Двойное выбывание',
+    'king_of_court' => 'Король площадки',
+    'thai' => 'Тайский формат',
+];
+$matchFormatLabels = ['bo1' => 'Best of 1', 'bo3' => 'Best of 3', 'bo5' => 'Best of 5'];
+@endphp
+{{ $stageTypeLabels[$stage->type] ?? $stage->type }} · {{ $matchFormatLabels[$stage->matchFormat()] ?? strtoupper($stage->matchFormat()) }} · до {{ $stage->setPoints() }} очков
                     </div>
                 </div>
                 <div class="d-flex" style="gap:6px">
