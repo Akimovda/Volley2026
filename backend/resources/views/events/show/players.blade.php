@@ -677,7 +677,33 @@
 <div class="ramka">
     <h2 class="-mt-05">Записанные игроки</h2>	
 	
-    <div id="players-list"></div>
+    @if($event->format === 'tournament')
+        @php
+            $tournamentTeams = \App\Models\EventTeam::where('event_id', $event->id)
+                ->whereIn('status', ['ready','pending','submitted','confirmed','approved'])
+                ->with(['captain', 'members.user'])
+                ->get();
+        @endphp
+        @if($tournamentTeams->isEmpty())
+            <div class="f-14" style="opacity:.5">Пока нет команд</div>
+        @else
+            @foreach($tournamentTeams as $tTeam)
+                <div class="card mb-1" style="padding:.75rem">
+                    <div class="d-flex between fvc mb-05">
+                        <a href="{{ route('tournamentTeams.show', [$event, $tTeam]) }}" class="blink b-600 f-15">{{ $tTeam->name }}</a>
+                        <span class="f-12" style="opacity:.4">{{ $tTeam->members->count() }} чел.</span>
+                    </div>
+                    <div class="f-13" style="opacity:.6">
+                        @foreach($tTeam->members as $m)
+                            {{ trim(($m->user->last_name ?? '') . ' ' . ($m->user->first_name ?? '')) ?: $m->user->name ?? '?' }}@if(!$loop->last), @endif
+                        @endforeach
+                    </div>
+                </div>
+            @endforeach
+        @endif
+    @else
+        <div id="players-list"></div>
+    @endif
 </div>
 @endif
 <script>
