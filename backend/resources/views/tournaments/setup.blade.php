@@ -226,6 +226,7 @@
                         <option value="21">21 (пляж)</option>
                         <option value="15">15 (мини)</option>
                     </select>
+                    </div>
                 </div>
                 <div class="col-md-4 mb-2">
                     <div class="card"><label>Решающий сет</label>
@@ -233,6 +234,7 @@
                         <option value="15">15</option>
                         <option value="25">25</option>
                     </select>
+                    </div>
                 </div>
             </div>
 
@@ -240,10 +242,12 @@
                 <div class="col-md-3 mb-2">
                     <div class="card"><label>Кол-во групп</label>
                     <input name="groups_count" type="number" value="2" min="1" max="16">
+                    </div>
                 </div>
                 <div class="col-md-3 mb-2">
                     <div class="card"><label>Выходят из группы</label>
                     <input name="advance_count" type="number" value="2" min="1" max="8">
+                    </div>
                 </div>
                 <div class="col-md-3 mb-2">
                     <div class="card"><label>Матч за 3-е место</label>
@@ -251,10 +255,12 @@
                         <option value="0">Нет</option>
                         <option value="1">Да</option>
                     </select>
+                    </div>
                 </div>
                 <div class="col-md-3 mb-2">
                     <div class="card"><label>Площадки</label>
                     <input name="courts" placeholder="Корт 1, Корт 2">
+                    </div>
                 </div>
             </div>
 
