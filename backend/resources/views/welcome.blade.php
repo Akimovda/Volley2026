@@ -346,7 +346,7 @@
 	transform-origin: left top; 
 }
 .sgroup.sgroup-3 .img-box img { 
-	object-position: left bottom;
+	object-position: left 20%;
 }
 .sgroup.sgroup-4 .img-box { 
 	transform-origin: right bottom; 

@@ -741,6 +741,8 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 
+<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Tournament Photos Swiper
@@ -798,5 +800,4 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-<script src="/assets/fas.js"></script>
 </x-voll-layout>
