@@ -26,6 +26,35 @@
                 </div>
             </div>
         @else
+            {{-- Общий баланс --}}
+            @php $totalBalance = $wallets->sum('balance_minor'); @endphp
+            <div class="ramka">
+                <div class="d-flex between fvc">
+                    <div>
+                        <h2 class="-mt-05">💰 Общий баланс</h2>
+                        <div class="f-14" style="opacity:.5">Сумма по всем организаторам ({{ $wallets->count() }})</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="f-32 b-700 cs">{{ number_format($totalBalance / 100, 0, ',', ' ') }} ₽</div>
+                    </div>
+                </div>
+
+                {{-- Разбивка по организаторам --}}
+                <div class="mt-2">
+                    @foreach($wallets as $w)
+                        <div class="d-flex between fvc f-15 mb-05">
+                            <span>{{ trim($w->organizer?->last_name . ' ' . $w->organizer?->first_name) ?: 'Организатор #'.$w->organizer_id }}</span>
+                            <span class="b-600">{{ number_format($w->balance_minor / 100, 0, ',', ' ') }} ₽</span>
+                        </div>
+                    @endforeach
+                </div>
+
+                <ul class="list f-14 mt-2" style="opacity:.5">
+                    <li>Средства можно потратить только на мероприятия соответствующего организатора</li>
+                    <li>Вывод средств недоступен</li>
+                </ul>
+            </div>
+
             @foreach($wallets as $wallet)
             <div class="ramka">
                 <div class="d-flex between fvc mb-2">
@@ -33,7 +62,7 @@
                         👛 {{ trim($wallet->organizer?->first_name . ' ' . $wallet->organizer?->last_name) ?: 'Организатор #'.$wallet->organizer_id }}
                     </h2>
                     <div class="text-right">
-                        <div class="f-32 b-700 cs">{{ number_format($wallet->balance_minor/100, 2) }} ₽</div>
+                        <div class="f-32 b-700 cs">{{ number_format($wallet->balance_minor / 100, 0, ',', ' ') }} ₽</div>
                         <div class="f-14" style="opacity:.6">доступно</div>
                     </div>
                 </div>
@@ -67,14 +96,18 @@
                                     @endif
                                 </td>
                                 <td class="b-600">
-                                    {{ $tx->type === 'credit' ? '+' : '-' }}{{ number_format($tx->amount_minor/100, 2) }} ₽
+                                    {{ $tx->type === 'credit' ? '+' : '-' }}{{ number_format($tx->amount_minor / 100, 0, ',', ' ') }} ₽
                                 </td>
                                 <td>
                                     @php $reasonLabels = [
-                                        'refund_quorum'    => '↩️ Отмена по кворуму',
-                                        'refund_organizer' => '↩️ Возврат от организатора',
-                                        'payment'          => '💳 Оплата мероприятия',
-                                        'manual'           => '✏️ Ручная операция',
+                                        'refund_quorum'           => '↩️ Отмена по кворуму',
+                                        'refund_organizer'        => '↩️ Возврат от организатора',
+                                        'registration_cancelled'  => '↩️ Отмена записи',
+                                        'player_left_team'        => '↩️ Выход из команды',
+                                        'team_disbanded'          => '↩️ Расформирование команды',
+                                        'payment'                 => '💳 Оплата мероприятия',
+                                        'wallet_payment'          => '💳 Оплата из кошелька',
+                                        'manual'                  => '✏️ Ручная операция',
                                     ]; @endphp
                                     {{ $reasonLabels[$tx->reason] ?? $tx->reason }}
                                     @if($tx->event_id)
