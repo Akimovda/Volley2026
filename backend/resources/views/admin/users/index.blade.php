@@ -174,9 +174,9 @@
 				<tbody>
 					@foreach ($users as $u)
 					<tr>
-						<td>{{ $u->id }}</td>
+						<td data-label="ID">{{ $u->id }}</td>
 						
-						<td>
+						<td data-label="Пользователь">
 <a class="blink b-600" href="{{ route('admin.users.show', $u) }}">
 @if($u->last_name || $u->first_name)
     {{ trim(($u->last_name ?? '') . ' ' . ($u->first_name ?? '')) }}
@@ -189,11 +189,11 @@
 @endif
 						</td>
 						
-						<td>{{ $u->role ?? 'user' }}</td>
-						<td class="text-center">{{ $u->telegram_id ? '✅' : '—' }}</td>
-						<td class="text-center">{{ $u->vk_id ? '✅' : '—' }}</td>
-						<td class="text-center">{{ $u->yandex_id ? '✅' : '—' }}</td>
-						<td class="text-center">{{ $u->created_at?->format('Y-m-d') }}</td>
+						<td data-label="Роль">{{ $u->role ?? 'user' }}</td>
+						<td data-label="Telegram" class="text-center">{{ $u->telegram_id ? '✅' : '—' }}</td>
+						<td data-label="VK" class="text-center">{{ $u->vk_id ? '✅' : '—' }}</td>
+						<td data-label="Яндекс" class="text-center">{{ $u->yandex_id ? '✅' : '—' }}</td>
+						<td data-label="Регистрация" class="text-center">{{ $u->created_at?->format('Y-m-d') }}</td>
 					</tr>
 					@endforeach
 				</tbody>
