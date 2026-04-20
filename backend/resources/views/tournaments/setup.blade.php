@@ -1,6 +1,18 @@
 <x-voll-layout body_class="tournament-setup-page">
 <x-slot name="title">Управление турниром — {{ $event->title }}</x-slot>
-<x-slot name="h1">Турнир: {{ $event->title }}</x-slot>
+
+    <x-slot name="style">
+        <style>
+        .tournament-setup-page .card label {
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: .25rem;
+            display: block;
+        }
+        </style>
+    </x-slot>
+
+    <x-slot name="h1">Турнир: {{ $event->title }}</x-slot>
 
 <x-slot name="breadcrumbs">
     <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
@@ -95,19 +107,24 @@
         @if($teams->isEmpty())
             <p style="opacity:.6">Нет подтверждённых команд.</p>
         @else
-            <div class="d-flex" style="flex-wrap:wrap;gap:8px">
+            <div class="row row2">
                 @foreach($teams as $team)
-                    <div class="d-flex fvc" style="gap:4px">
-                        <a href="{{ route('tournamentTeams.show', [$event, $team]) }}" class="p-2 blink" style="background:rgba(41,103,186,.15);border-radius:8px;font-size:13px;font-weight:600">
-                            {{ $team->name }}
+                    <div class="col-6 col-md-3 mb-1">
+                        <div class="card h-100" style="padding:.75rem">
+                            <a href="{{ route('tournamentTeams.show', [$event, $team]) }}" class="blink b-600 f-14 d-block mb-05">
+                                {{ $team->name }}
+                            </a>
                             @if($team->captain)
-                                <span style="opacity:.6">({{ $team->captain->displayName() }})</span>
+                                <div class="f-12" style="opacity:.5">{{ $team->captain->displayName() }}</div>
                             @endif
-                        </a>
-                        <form method="POST" action="{{ route('tournamentTeams.destroy', [$event, $team]) }}" class="d-inline">
-                            @csrf @method('DELETE')
-                            <button type="submit" class="btn-alert" data-title="Удалить команду {{ $team->name }}?" data-icon="warning" data-confirm-text="Да, удалить" data-cancel-text="Отмена" style="background:none;border:none;cursor:pointer;font-size:13px;opacity:.4;padding:2px">✕</button>
-                        </form>
+                            <div class="f-12 mt-05" style="opacity:.4">{{ $team->members_count ?? $team->members->count() }} чел.</div>
+                            <form method="POST" action="{{ route('tournamentTeams.destroy', [$event, $team]) }}" class="mt-1">
+                                @csrf @method('DELETE')
+                                <button type="submit" class="btn-alert f-12" data-title="Удалить команду {{ $team->name }}?" data-icon="warning" data-confirm-text="Да, удалить" data-cancel-text="Отмена" style="background:none;border:1px solid rgba(220,38,38,.3);border-radius:6px;cursor:pointer;padding:3px 8px;color:#dc2626">
+                                    🗑 Удалить
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 @endforeach
             </div>
@@ -117,26 +134,32 @@
         <div class="mt-2">
             <details>
                 <summary class="btn btn-small btn-secondary" style="cursor:pointer">➕ Создать команду</summary>
-                <form method="POST" action="{{ route('tournamentTeams.store', $event) }}" class="mt-1">
-                    @csrf
-                    <div class="row row2">
-                        <div class="col-md-4">
-                            <label class="f-13 b-600">Название команды</label>
-                            <input type="text" name="name" required placeholder="Название">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="f-13 b-600">Капитан (поиск)</label>
-                            <div style="position:relative">
-                                <input type="text" id="org-captain-search" placeholder="Имя или ID..." autocomplete="off">
-                                <input type="hidden" name="captain_user_id" id="org-captain-id">
-                                <div id="org-captain-dd" class="form-select-dropdown" style="position:absolute;z-index:10;width:100%;display:none"></div>
+                <div class="card mt-1" style="padding:1rem">
+                    <form method="POST" action="{{ route('tournamentTeams.store', $event) }}">
+                        @csrf
+                        <div class="row row2">
+                            <div class="col-md-4 mb-1">
+                                <div class="card">
+                                    <label>Название команды</label>
+                                    <input type="text" name="name" required placeholder="Название">
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-1">
+                                <div class="card">
+                                    <label>Капитан (поиск)</label>
+                                    <div style="position:relative">
+                                        <input type="text" id="org-captain-search" placeholder="Имя или ID..." autocomplete="off">
+                                        <input type="hidden" name="captain_user_id" id="org-captain-id">
+                                        <div id="org-captain-dd" class="form-select-dropdown" style="position:absolute;z-index:10;width:100%;display:none"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 d-flex mb-1" style="align-items:flex-end">
+                                <button type="submit" class="btn btn-primary">Создать</button>
                             </div>
                         </div>
-                        <div class="col-md-4 d-flex" style="align-items:flex-end">
-                            <button type="submit" class="btn btn-primary btn-small">Создать</button>
-                        </div>
-                    </div>
-                </form>
+                    </form>
+                </div>
             </details>
         </div>
     </div>
@@ -150,7 +173,8 @@
             @csrf
             <div class="row">
                 <div class="col-md-4 mb-2">
-                    <label class="f-13 b-600 mb-1 d-block">Тип</label>
+                    <div class="card">
+                    <label>Тип</label>
                     <select name="type" id="stage_type_select">
                         <option value="round_robin">Круговая система (Round Robin)</option>
                         <option value="groups_playoff">Группы + плей-офф</option>
@@ -162,11 +186,13 @@
                     </select>
                 </div>
                 <div class="col-md-4 mb-2">
-                    <label class="f-13 b-600 mb-1 d-block">Название</label>
+                    <div class="card">
+                    <label>Название</label>
                     <input name="name" value="{{ old('name', 'Групповой этап') }}" required>
                 </div>
                 <div class="col-md-4 mb-2">
-                    <label class="f-13 b-600 mb-1 d-block">Формат матча</label>
+                    <div class="card">
+                    <label>Формат матча</label>
                     <select name="match_format" id="match_format_select">
                         <option value="bo3">Best of 3 (Bo3)</option>
                         <option value="bo1">Best of 1 (Bo1)</option>
