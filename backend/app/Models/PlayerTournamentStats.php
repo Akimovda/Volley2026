@@ -43,4 +43,21 @@ class PlayerTournamentStats extends Model
     {
         return $this->belongsTo(EventTeam::class, 'team_id');
     }
+
+    public function recalcRates(): self
+    {
+        $this->match_win_rate = $this->matches_played > 0
+            ? round(($this->matches_won / $this->matches_played) * 100, 2)
+            : 0;
+
+        $totalSets = $this->sets_won + $this->sets_lost;
+        $this->set_win_rate = $totalSets > 0
+            ? round(($this->sets_won / $totalSets) * 100, 2)
+            : 0;
+
+        $this->point_diff = $this->points_scored - $this->points_conceded;
+
+        return $this;
+    }
+
 }

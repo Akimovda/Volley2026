@@ -51,4 +51,19 @@ class PlayerCareerStats extends Model
     {
         return $this->total_sets_won - $this->total_sets_lost;
     }
+
+    public function recalcRates(): self
+    {
+        $this->match_win_rate = $this->total_matches > 0
+            ? round(($this->total_wins / $this->total_matches) * 100, 2)
+            : 0;
+
+        $totalSets = $this->total_sets_won + $this->total_sets_lost;
+        $this->set_win_rate = $totalSets > 0
+            ? round(($this->total_sets_won / $totalSets) * 100, 2)
+            : 0;
+
+        return $this;
+    }
+
 }
