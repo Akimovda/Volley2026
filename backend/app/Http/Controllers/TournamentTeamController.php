@@ -39,7 +39,7 @@ class TournamentTeamController extends Controller
     public function store(Request $request, Event $event, TournamentTeamService $service): RedirectResponse
     {
         $data = $request->validate([
-            'name' => ['required', 'string', 'max:255', \Illuminate\Validation\Rule::unique('event_teams')->where('event_id', $event->id)],
+            'name' => ['nullable', 'string', 'max:255', \Illuminate\Validation\Rule::unique('event_teams')->where('event_id', $event->id)],
             'occurrence_id' => ['nullable', 'integer', 'exists:event_occurrences,id'],
             'team_kind' => ['nullable', 'string', 'in:classic_team,beach_pair'],
             'captain_position_code' => ['nullable', 'string', 'in:setter,outside,opposite,middle,libero'],
@@ -51,10 +51,17 @@ class TournamentTeamController extends Controller
                 ? \App\Models\User::findOrFail($data['captain_user_id'])
                 : $request->user();
 
+            // Авто-название по фамилии капитана если пустое
+            $teamName = trim($data['name'] ?? '');
+            if (empty($teamName)) {
+                $capName = $captainUser->last_name ?: ($captainUser->first_name ?: $captainUser->name);
+                $teamName = 'Команда ' . $capName;
+            }
+
             $team = $service->createTeam(
                 event: $event,
                 captain: $captainUser,
-                name: $data['name'],
+                name: $teamName,
                 occurrenceId: !empty($data['occurrence_id']) ? (int) $data['occurrence_id'] : null,
                 teamKind: $data['team_kind'] ?? null,
                 captainPositionCode: $data['captain_position_code'] ?? null,

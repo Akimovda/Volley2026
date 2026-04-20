@@ -189,7 +189,7 @@
                             <div class="col-md-4 mb-1">
                                 <div class="card">
                                     <label>Название команды</label>
-                                    <input type="text" name="name" required placeholder="Название">
+                                    <input type="text" name="name" placeholder="Название (авто по фамилии капитана)">
                                 </div>
                             </div>
                             <div class="col-md-4 mb-1">
@@ -246,7 +246,9 @@
                         <select name="match_format" id="match_format_select">
                             <option value="bo3">Best of 3 (Bo3)</option>
                             <option value="bo1">Best of 1 (Bo1)</option>
+                            @if(!$isBeach)
                             <option value="bo5">Best of 5 (Bo5)</option>
+                            @endif
                         </select>
                         <div id="match_format_hint" class="f-13 mt-05" style="opacity:.6"></div>
                         <script>
@@ -270,8 +272,10 @@
                 <div class="col-md-4 mb-2">
                     <div class="card"><label>Очки в сете</label>
                     <select name="set_points">
-                        <option value="25">25 (классика)</option>
-                        <option value="21">21 (пляж)</option>
+                        @if(!$isBeach)
+                        <option value="25" selected>25 (классика)</option>
+                        @endif
+                        <option value="21" @if($isBeach) selected @endif>21 (пляж)</option>
                         <option value="15">15 (мини)</option>
                     </select>
                     </div>
@@ -279,8 +283,10 @@
                 <div class="col-md-4 mb-2">
                     <div class="card"><label>Решающий сет</label>
                     <select name="deciding_set_points">
-                        <option value="15">15</option>
+                        <option value="15" selected>15</option>
+                        @if(!$isBeach)
                         <option value="25">25</option>
+                        @endif
                     </select>
                     </div>
                 </div>
@@ -325,6 +331,8 @@
         <h3 class="mb-2">Фото турнира</h3>
 
         @php
+            $direction = $event->direction ?? 'classic';
+            $isBeach = $direction === 'beach';
             $tournamentPhotos = $event->getMedia('tournament_photos');
             $currentPhotoIds = $tournamentPhotos->pluck('id')->toArray();
         @endphp
