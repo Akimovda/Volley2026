@@ -43,12 +43,17 @@ class TournamentTeamController extends Controller
             'occurrence_id' => ['nullable', 'integer', 'exists:event_occurrences,id'],
             'team_kind' => ['nullable', 'string', 'in:classic_team,beach_pair'],
             'captain_position_code' => ['nullable', 'string', 'in:setter,outside,opposite,middle,libero'],
+            'captain_user_id' => ['nullable', 'integer', 'exists:users,id'],
         ]);
 
         try {
+            $captainUser = !empty($data['captain_user_id'])
+                ? \App\Models\User::findOrFail($data['captain_user_id'])
+                : $request->user();
+
             $team = $service->createTeam(
                 event: $event,
-                captain: $request->user(),
+                captain: $captainUser,
                 name: $data['name'],
                 occurrenceId: !empty($data['occurrence_id']) ? (int) $data['occurrence_id'] : null,
                 teamKind: $data['team_kind'] ?? null,
@@ -150,4 +155,33 @@ class TournamentTeamController extends Controller
             ]);
         }
     }
+
+    public function destroy(
+        Request $request,
+        Event $event,
+        EventTeam $team
+    ): RedirectResponse {
+        abort_unless((int) $team->event_id === (int) $event->id, 404);
+
+        $user = $request->user();
+        $isOrganizer = (int) $event->organizer_id === (int) $user->id || $user->isAdmin();
+        abort_unless($isOrganizer, 403, 'Только организатор может удалить команду.');
+
+        // Удаляем заявку
+        \App\Models\EventTeamApplication::where('event_team_id', $team->id)->delete();
+
+        // Удаляем приглашения
+        \App\Models\EventTeamInvite::where('event_team_id', $team->id)->delete();
+
+        // Удаляем членов
+        $team->members()->delete();
+
+        // Удаляем команду
+        $team->delete();
+
+        return redirect()
+            ->route('tournament.setup', $event)
+            ->with('success', "Команда удалена.");
+    }
+
 }

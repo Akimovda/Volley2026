@@ -93,19 +93,52 @@
     <div class="card p-3 mb-3">
         <h3 class="mb-2">Команды ({{ $teams->count() }})</h3>
         @if($teams->isEmpty())
-            <p style="opacity:.6">Нет подтверждённых команд. Команды создаются на странице события.</p>
+            <p style="opacity:.6">Нет подтверждённых команд.</p>
         @else
             <div class="d-flex" style="flex-wrap:wrap;gap:8px">
                 @foreach($teams as $team)
-                    <span class="p-2" style="background:rgba(41,103,186,.15);border-radius:8px;font-size:13px;font-weight:600">
-                        {{ $team->name }}
-                        @if($team->captain)
-                            <span style="opacity:.6">({{ $team->captain->displayName() }})</span>
-                        @endif
-                    </span>
+                    <div class="d-flex fvc" style="gap:4px">
+                        <a href="{{ route('tournamentTeams.show', [$event, $team]) }}" class="p-2 blink" style="background:rgba(41,103,186,.15);border-radius:8px;font-size:13px;font-weight:600">
+                            {{ $team->name }}
+                            @if($team->captain)
+                                <span style="opacity:.6">({{ $team->captain->displayName() }})</span>
+                            @endif
+                        </a>
+                        <form method="POST" action="{{ route('tournamentTeams.destroy', [$event, $team]) }}" class="d-inline">
+                            @csrf @method('DELETE')
+                            <button type="submit" class="btn-alert" data-title="Удалить команду {{ $team->name }}?" data-icon="warning" data-confirm-text="Да, удалить" data-cancel-text="Отмена" style="background:none;border:none;cursor:pointer;font-size:13px;opacity:.4;padding:2px">✕</button>
+                        </form>
+                    </div>
                 @endforeach
             </div>
         @endif
+
+        {{-- Создать команду организатором --}}
+        <div class="mt-2">
+            <details>
+                <summary class="btn btn-small btn-secondary" style="cursor:pointer">➕ Создать команду</summary>
+                <form method="POST" action="{{ route('tournamentTeams.store', $event) }}" class="mt-1">
+                    @csrf
+                    <div class="row row2">
+                        <div class="col-md-4">
+                            <label class="f-13 b-600">Название команды</label>
+                            <input type="text" name="name" required placeholder="Название">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="f-13 b-600">Капитан (поиск)</label>
+                            <div style="position:relative">
+                                <input type="text" id="org-captain-search" placeholder="Имя или ID..." autocomplete="off">
+                                <input type="hidden" name="captain_user_id" id="org-captain-id">
+                                <div id="org-captain-dd" class="form-select-dropdown" style="position:absolute;z-index:10;width:100%;display:none"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 d-flex" style="align-items:flex-end">
+                            <button type="submit" class="btn btn-primary btn-small">Создать</button>
+                        </div>
+                    </div>
+                </form>
+            </details>
+        </div>
     </div>
 
     {{-- ============================================================
@@ -527,6 +560,48 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
+</script>
+
+
+<script>
+(function(){
+    var inp = document.getElementById('org-captain-search');
+    var hidden = document.getElementById('org-captain-id');
+    var dd = document.getElementById('org-captain-dd');
+    if (!inp || !dd || !hidden) return;
+    var timer = null;
+
+    inp.addEventListener('input', function() {
+        clearTimeout(timer);
+        var q = inp.value.trim();
+        if (q.length < 2) { dd.innerHTML = ''; dd.style.display = 'none'; return; }
+        timer = setTimeout(function() {
+            fetch('/api/users/search?q=' + encodeURIComponent(q))
+                .then(function(r) { return r.json(); })
+                .then(function(items) {
+                    dd.innerHTML = '';
+                    if (!items.length) { dd.innerHTML = '<div style="padding:8px 12px;font-size:13px;opacity:.5">Не найдено</div>'; dd.style.display = 'block'; return; }
+                    items.slice(0,6).forEach(function(u) {
+                        var div = document.createElement('div');
+                        div.className = 'form-select-option';
+                        div.style.cssText = 'padding:8px 12px;cursor:pointer';
+                        div.textContent = u.label || u.name || '#' + u.id;
+                        div.addEventListener('click', function() {
+                            inp.value = div.textContent;
+                            hidden.value = u.id;
+                            dd.style.display = 'none';
+                        });
+                        dd.appendChild(div);
+                    });
+                    dd.style.display = 'block';
+                });
+        }, 300);
+    });
+
+    document.addEventListener('click', function(e) {
+        if (!dd.contains(e.target) && e.target !== inp) dd.style.display = 'none';
+    });
+})();
 </script>
 
 </x-voll-layout>

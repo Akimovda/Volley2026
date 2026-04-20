@@ -284,6 +284,9 @@ Route::get('/auth/telegram/callback', [TelegramAuthController::class, 'callback'
 		// Подача заявки команды на турнир
 		Route::post('/events/{event}/teams/{team}/submit', [TournamentTeamController::class, 'submitApplication'])
         ->name('tournamentTeams.submit');
+
+    Route::delete('/events/{event}/teams/{team}', [TournamentTeamController::class, 'destroy'])
+        ->name('tournamentTeams.destroy');
 	});
 	
 	/*

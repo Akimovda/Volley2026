@@ -27,6 +27,8 @@ $settings       = $team->event->tournamentSetting ?? null;
 $confirmedCount = $team->members->where('confirmation_status','confirmed')->count();
 $pendingCount   = ($team->invites ?? collect())->where('status','pending')->count();
 $isCaptain      = (int)$team->captain_user_id === (int)auth()->id();
+$isOrganizer    = auth()->check() && ((int)$event->organizer_id === (int)auth()->id() || (auth()->user()->isAdmin()));
+$canManage      = $isCaptain || $isOrganizer;
 $posLabels = ['setter'=>'Связующий','outside'=>'Доигровщик','opposite'=>'Диагональный','middle'=>'Центральный','libero'=>'Либеро'];
 $roleLabels = ['captain'=>'Капитан','player'=>'Основной игрок','reserve'=>'Запасной'];
 $stLabels = ['confirmed'=>'Подтверждён','joined'=>'Ожидает подтверждения','invited'=>'Приглашён','declined'=>'Отклонён'];
@@ -104,7 +106,7 @@ $invStLabels = ['pending'=>'Ожидает','accepted'=>'Принято','declin
     </div>
 
     {{-- Созданные приглашения --}}
-    @if($isCaptain)
+    @if($canManage)
     <div class="ramka">
         <h2 class="-mt-05">📨 Созданные приглашения</h2>
         @forelse(($team->invites ?? collect())->sortByDesc('id') as $inv)
@@ -206,7 +208,7 @@ $invStLabels = ['pending'=>'Ожидает','accepted'=>'Принято','declin
                             <div class="alert alert-success f-14">✅ Оплата подтверждена</div>
                         @elseif($payInfo['team_status'] === 'link_pending')
                             <div class="alert alert-warning f-14">⏳ Ожидает подтверждения организатором</div>
-                        @elseif($isCaptain)
+                        @elseif($canManage)
                             @if($payInfo['method'] === 'cash')
                                 <div class="alert alert-info f-14">💵 Оплата наличными</div>
                             @else
@@ -278,7 +280,7 @@ $invStLabels = ['pending'=>'Ожидает','accepted'=>'Принято','declin
                 </div>
             @endif
 
-        @elseif($isCaptain)
+        @elseif($canManage)
             <div class="f-15 mb-2" style="opacity:.6">Если состав готов — подайте заявку на турнир.</div>
             <form method="POST" action="{{ route('tournamentTeams.submit',[$event,$team]) }}"
                   onsubmit="return confirm('Подать заявку команды на турнир?')">
