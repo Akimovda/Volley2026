@@ -69,7 +69,7 @@
 			$teamsMax = $event->tournament_teams_count ?: ($event->tournamentSettings->teams_count ?? 0);
 			$teamSize = $event->tournamentSettings->team_size_min ?? 2;
 			$teamsRegistered = \App\Models\EventTeam::where('event_id', $event->id)
-				->whereIn('status', ['ready','pending','submitted','confirmed'])
+				->whereIn('status', ['ready','pending','submitted','confirmed','approved'])
 				->count();
 			$playersRegistered = \App\Models\EventTeamMember::whereHas('team', fn($q) => $q->where('event_id', $event->id))
 				->where('confirmation_status', 'confirmed')

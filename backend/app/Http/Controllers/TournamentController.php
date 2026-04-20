@@ -587,7 +587,7 @@ class TournamentController extends Controller
             'decision_comment' => 'Одобрено организатором',
         ]);
 
-        $application->team?->update(['status' => 'submitted']);
+        $application->team?->update(['status' => 'approved']);
 
         return back()->with('success', "Заявка команды «{$application->team->name}» одобрена ✅");
     }
