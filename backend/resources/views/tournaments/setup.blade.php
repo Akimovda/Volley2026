@@ -9,6 +9,40 @@
             margin-bottom: .25rem;
             display: block;
         }
+        .tournament-setup-page input:not([type="radio"]):not([type="checkbox"]):not([type="hidden"]):not([type="file"]),
+        .tournament-setup-page select {
+            display: block;
+            width: 100%;
+            padding: .55rem .75rem;
+            font-size: 15px;
+            line-height: 1.5;
+            border: 1px solid rgba(128,128,128,.2);
+            border-radius: 8px;
+            background-color: var(--bg-card, #fff);
+            color: var(--text, #1a1a1a);
+            transition: border-color .15s, box-shadow .15s;
+            -webkit-appearance: none;
+        }
+        .tournament-setup-page input:not([type="radio"]):not([type="checkbox"]):not([type="hidden"]):not([type="file"]):hover,
+        .tournament-setup-page select:hover {
+            border-color: rgba(41,103,186,.4);
+        }
+        .tournament-setup-page input:not([type="radio"]):not([type="checkbox"]):not([type="hidden"]):not([type="file"]):focus,
+        .tournament-setup-page select:focus {
+            outline: none;
+            border-color: #2967BA;
+            box-shadow: 0 0 0 3px rgba(41,103,186,.15);
+        }
+        body.dark .tournament-setup-page input:not([type="radio"]):not([type="checkbox"]):not([type="hidden"]):not([type="file"]),
+        body.dark .tournament-setup-page select {
+            background-color: var(--bg-card, #1e1e1e);
+            color: var(--text, #e0e0e0);
+            border-color: rgba(255,255,255,.12);
+        }
+        body.dark .tournament-setup-page input:not([type="radio"]):not([type="checkbox"]):not([type="hidden"]):not([type="file"]):hover,
+        body.dark .tournament-setup-page select:hover {
+            border-color: rgba(41,103,186,.5);
+        }
         </style>
     </x-slot>
 
