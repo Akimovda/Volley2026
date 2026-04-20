@@ -174,50 +174,53 @@
             <div class="row">
                 <div class="col-md-4 mb-2">
                     <div class="card">
-                    <label>Тип</label>
-                    <select name="type" id="stage_type_select">
-                        <option value="round_robin">Круговая система (Round Robin)</option>
-                        <option value="groups_playoff">Группы + плей-офф</option>
-                        <option value="single_elim">Олимпийка</option>
-                        <option value="swiss">Швейцарская</option>
-                        <option value="double_elim">Двойное выбывание (Double Elimination)</option>
-                        <option value="king_of_court">Король площадки (King of the Court)</option>
-                        <option value="thai">Тайский формат</option>
-                    </select>
+                        <label>Тип</label>
+                        <select name="type" id="stage_type_select">
+                            <option value="round_robin">Круговая система (Round Robin)</option>
+                            <option value="groups_playoff">Группы + плей-офф</option>
+                            <option value="single_elim">Олимпийка</option>
+                            <option value="swiss">Швейцарская</option>
+                            <option value="double_elim">Двойное выбывание (Double Elimination)</option>
+                            <option value="king_of_court">Король площадки (King of the Court)</option>
+                            <option value="thai">Тайский формат</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="col-md-4 mb-2">
                     <div class="card">
-                    <label>Название</label>
-                    <input name="name" value="{{ old('name', 'Групповой этап') }}" required>
+                        <label>Название</label>
+                        <input name="name" value="{{ old('name', 'Групповой этап') }}" required>
+                    </div>
                 </div>
                 <div class="col-md-4 mb-2">
                     <div class="card">
-                    <label>Формат матча</label>
-                    <select name="match_format" id="match_format_select">
-                        <option value="bo3">Best of 3 (Bo3)</option>
-                        <option value="bo1">Best of 1 (Bo1)</option>
-                        <option value="bo5">Best of 5 (Bo5)</option>
-                    </select>
-                    <div id="match_format_hint" class="f-13 mt-05" style="opacity:.6"></div>
-                    <script>
-                    (function(){
-                        var hints = {
-                            bo1: 'Играют 1 сет. Кто выиграл сет — выиграл матч. Быстрый формат для пулов.',
-                            bo3: 'Играют до 2 побед в сетах. Максимум 3 сета (2:0 или 2:1). Стандарт для пляжки и групповых этапов.',
-                            bo5: 'Играют до 3 побед в сетах. Максимум 5 сетов. Обычно только для финалов классики 6×6.'
-                        };
-                        var sel = document.getElementById('match_format_select');
-                        var hint = document.getElementById('match_format_hint');
-                        function upd() { hint.textContent = hints[sel.value] || ''; }
-                        sel.addEventListener('change', upd);
-                        upd();
-                    })();
-                    </script>
+                        <label>Формат матча</label>
+                        <select name="match_format" id="match_format_select">
+                            <option value="bo3">Best of 3 (Bo3)</option>
+                            <option value="bo1">Best of 1 (Bo1)</option>
+                            <option value="bo5">Best of 5 (Bo5)</option>
+                        </select>
+                        <div id="match_format_hint" class="f-13 mt-05" style="opacity:.6"></div>
+                        <script>
+                        (function(){
+                            var hints = {
+                                bo1: 'Играют 1 сет. Кто выиграл сет — выиграл матч. Быстрый формат для пулов.',
+                                bo3: 'Играют до 2 побед в сетах. Максимум 3 сета (2:0 или 2:1). Стандарт для пляжки и групповых этапов.',
+                                bo5: 'Играют до 3 побед в сетах. Максимум 5 сетов. Обычно только для финалов классики 6×6.'
+                            };
+                            var sel = document.getElementById('match_format_select');
+                            var hint = document.getElementById('match_format_hint');
+                            function upd() { hint.textContent = hints[sel.value] || ''; }
+                            sel.addEventListener('change', upd);
+                            upd();
+                        })();
+                        </script>
+                    </div>
                 </div>
             </div>
             <div class="row">
                 <div class="col-md-4 mb-2">
-                    <label class="f-13 b-600 mb-1 d-block">Очки в сете</label>
+                    <div class="card"><label>Очки в сете</label>
                     <select name="set_points">
                         <option value="25">25 (классика)</option>
                         <option value="21">21 (пляж)</option>
@@ -225,7 +228,7 @@
                     </select>
                 </div>
                 <div class="col-md-4 mb-2">
-                    <label class="f-13 b-600 mb-1 d-block">Решающий сет</label>
+                    <div class="card"><label>Решающий сет</label>
                     <select name="deciding_set_points">
                         <option value="15">15</option>
                         <option value="25">25</option>
@@ -235,22 +238,22 @@
 
             <div class="row" id="group_fields">
                 <div class="col-md-3 mb-2">
-                    <label class="f-13 b-600 mb-1 d-block">Кол-во групп</label>
+                    <div class="card"><label>Кол-во групп</label>
                     <input name="groups_count" type="number" value="2" min="1" max="16">
                 </div>
                 <div class="col-md-3 mb-2">
-                    <label class="f-13 b-600 mb-1 d-block">Выходят из группы</label>
+                    <div class="card"><label>Выходят из группы</label>
                     <input name="advance_count" type="number" value="2" min="1" max="8">
                 </div>
                 <div class="col-md-3 mb-2">
-                    <label class="f-13 b-600 mb-1 d-block">Матч за 3-е место</label>
+                    <div class="card"><label>Матч за 3-е место</label>
                     <select name="third_place_match">
                         <option value="0">Нет</option>
                         <option value="1">Да</option>
                     </select>
                 </div>
                 <div class="col-md-3 mb-2">
-                    <label class="f-13 b-600 mb-1 d-block">Площадки</label>
+                    <div class="card"><label>Площадки</label>
                     <input name="courts" placeholder="Корт 1, Корт 2">
                 </div>
             </div>
