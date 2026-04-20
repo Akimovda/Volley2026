@@ -713,8 +713,9 @@ document.addEventListener('DOMContentLoaded', function() {
         timer = setTimeout(function() {
             fetch('/api/users/search?q=' + encodeURIComponent(q))
                 .then(function(r) { return r.json(); })
-                .then(function(items) {
+                .then(function(data) {
                     dd.innerHTML = '';
+                    var items = data.items || data || [];
                     if (!items.length) { dd.innerHTML = '<div style="padding:8px 12px;font-size:13px;opacity:.5">Не найдено</div>'; dd.style.display = 'block'; return; }
                     items.slice(0,6).forEach(function(u) {
                         var div = document.createElement('div');
