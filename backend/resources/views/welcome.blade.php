@@ -320,7 +320,7 @@
 	object-fit: cover;
 }
 .sgroup:hover .img-box  {
-	transform: scale(1.2);
+	transform: scale(1.15);
 }
 .has-expanded-item .sgroup:hover .img-box  {
 	transform: scale(1);

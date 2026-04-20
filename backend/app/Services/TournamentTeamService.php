@@ -375,7 +375,9 @@ final class TournamentTeamService
     public function submitApplication(EventTeam $team, User $submittedBy): EventTeamApplication
     {
         return DB::transaction(function () use ($team, $submittedBy) {
-            $team = $this->refreshTeamState($team->fresh());
+            // НЕ вызываем refreshTeamState() здесь — он уже вызван в refreshTeamState->submitApplication
+            // Иначе бесконечная рекурсия: refreshTeamState → submitApplication → refreshTeamState → ...
+            $team = $team->fresh(['members.user', 'event.tournamentSetting']);
 
             if (!$team->is_complete || $team->status !== 'ready') {
                 throw new DomainException('Команда ещё не готова к подаче заявки.');

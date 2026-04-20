@@ -28,7 +28,12 @@ class TournamentScheduleService
         array $courts = [],
     ): int {
         if (empty($courts)) {
-            $courts = $stage->cfg('courts', ['Корт 1']);
+            $courts = $stage->cfg('courts', []);
+        }
+
+        // Гарантируем минимум 1 корт
+        if (empty($courts)) {
+            $courts = ['Корт 1'];
         }
 
         $courtsCount = count($courts);

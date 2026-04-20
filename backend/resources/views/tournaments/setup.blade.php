@@ -7,11 +7,9 @@
 	
     <x-slot name="style">
         <style>
+			
 
-			.tournamentPhotosSwiper .swiper-slide {
-            max-width: 200px;
-			}
-
+			
 		</style>
 	</x-slot>
 	
@@ -112,84 +110,90 @@
 		Команды
 		============================================================ --}}
 		<div class="ramka">
-        <h2 class="-mt-05">Команды ({{ $teams->count() }})</h2>
-        @if($teams->isEmpty())
-		<div class="alert alert-info">Нет подтверждённых команд.</div>
-        @else
-		<div class="row row2">
-			@foreach($teams as $team)
-			<div class="col-6 col-md-3 mb-1">
-				<div class="card h-100" style="padding:.75rem">
-					<a href="{{ route('tournamentTeams.show', [$event, $team]) }}" class="blink b-600 f-14 d-block mb-05">
-						{{ $team->name }}
-					</a>
-					@php $members = $team->members->load('user'); @endphp
-					@if($members->count() <= 2)
-					@foreach($members as $m)
-					<div class="f-12" style="opacity:.6">{{ trim(($m->user->last_name ?? '') . ' ' . ($m->user->first_name ?? '')) ?: $m->user->name ?? '?' }}</div>
-					@endforeach
-					@else
-					@foreach($members->take(2) as $m)
-					<div class="f-12" style="opacity:.6">{{ trim(($m->user->last_name ?? '') . ' ' . ($m->user->first_name ?? '')) ?: $m->user->name ?? '?' }}</div>
-					@endforeach
-					<div class="f-12" style="opacity:.4;font-style:italic">и другие...</div>
-					@endif
-					<div class="f-12 mt-05" style="opacity:.4">{{ $members->count() }} чел.</div>
-					<form method="POST" action="{{ route('tournamentTeams.destroy', [$event, $team]) }}" class="mt-1">
-						@csrf @method('DELETE')
-						<button type="submit" class="btn-alert f-12" data-title="Удалить команду {{ $team->name }}?" data-icon="warning" data-confirm-text="Да, удалить" data-cancel-text="Отмена" style="background:none;border:1px solid rgba(220,38,38,.3);border-radius:6px;cursor:pointer;padding:3px 8px;color:#dc2626">
-							🗑 Удалить
-						</button>
-					</form>
+			<h2 class="-mt-05">Команды ({{ $teams->count() }})</h2>
+			@if($teams->isEmpty())
+			<div class="alert alert-info">Нет подтверждённых команд.</div>
+			@else
+			<div class="row row2">
+				@foreach($teams as $team)
+				<div class="col-6 col-md-3 mb-1">
+					<div class="card">
+						<a href="{{ route('tournamentTeams.show', [$event, $team]) }}" class="blink b-600 d-block mb-1">
+							{{ $team->name }}
+						</a>
+						@php $members = $team->members->load('user'); @endphp
+						@if($members->count() <= 2)
+						@foreach($members as $m)
+						<div>{{ trim(($m->user->last_name ?? '') . ' ' . ($m->user->first_name ?? '')) ?: $m->user->name ?? '?' }}</div>
+						@endforeach
+						@else
+						@foreach($members->take(2) as $m)
+						<div>{{ trim(($m->user->last_name ?? '') . ' ' . ($m->user->first_name ?? '')) ?: $m->user->name ?? '?' }}</div>
+						@endforeach
+						<div style="font-style:italic">и другие...</div>
+						@endif
+						<div class="mt-1 d-flex between fvc">
+						<div class="mt-05 cd b-600">{{ $members->count() }} чел.</div>
+						<form method="POST" action="{{ route('tournamentTeams.destroy', [$event, $team]) }}" class="mt-1">
+							@csrf @method('DELETE')
+							<button type="submit" class="icon-delete btn-alert btn btn-danger btn-svg" data-title="Удалить команду {{ $team->name }}?" data-icon="warning" data-confirm-text="Да, удалить" data-cancel-text="Отмена">
+							</button>
+						</form>
+						</div>
+					</div>
 				</div>
+				@endforeach
 			</div>
-			@endforeach
-		</div>
-        @endif
-		
-        {{-- Создать команду организатором --}}
-        <div class="mt-2">
-            <details>
-                <summary class="btn btn-secondary">➕ Создать команду</summary>
+			@endif
+			
+			{{-- Создать команду организатором --}}
+			<div class="mt-1">
+				<details>
+					<summary class="btn btn-secondary">➕ Создать команду</summary>
                     <form method="POST" action="{{ route('tournamentTeams.store', $event) }}">
                         @csrf
 						<div class="mt-2">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="card">
-                                    <label>Название команды</label>
-                                    <input type="text" name="name" placeholder="Название (авто по фамилии капитана)">
-								</div>
-							</div>
-                            <div class="col-md-6">
-                                <div class="card">
-                                    <label>Капитан (поиск)</label>
-                                    <div style="position:relative">
-                                        <input type="text" id="org-captain-search" placeholder="Имя или ID..." autocomplete="off">
-                                        <input type="hidden" name="captain_user_id" id="org-captain-id">
-                                        <div id="org-captain-dd" class="form-select-dropdown trainer_dd" style="position:absolute;z-index:10;width:100%"></div>
+							<div class="row">
+								<div class="col-md-6">
+									<div class="card">
+										<label>Название команды</label>
+										<input type="text" name="name" placeholder="Название (авто по фамилии капитана)">
 									</div>
 								</div>
+								<div class="col-md-6">
+									<div class="card">
+										<label>Капитан (поиск)</label>
+										<div style="position:relative">
+											<input type="text" id="org-captain-search" placeholder="Имя или ID..." autocomplete="off">
+											<input type="hidden" name="captain_user_id" id="org-captain-id">
+											<div id="org-captain-dd" class="form-select-dropdown trainer_dd" style="position:absolute;z-index:10;width:100%"></div>
+										</div>
+									</div>
+								</div>
+								<div class="col-md-12 text-center">
+									<button type="submit" class="btn">Создать</button>
+								</div>
 							</div>
-                            <div class="col-md-12 text-center">
-                                <button type="submit" class="btn">Создать</button>
-							</div>
-						</div>
 						</div>
 					</form>
-			</details>
-		</div>		
-		
-		
+				</details>
+			</div>		
+			
+			
 		</div>
-
+		
 		
 		
 		{{-- ============================================================
-		Создание стадии
+		Создание стадии (сворачивается если стадии уже есть)
 		============================================================ --}}
+		@php $hasStages = $event->tournamentStages->isNotEmpty(); @endphp
 		<div class="ramka">
-			<h2 class="-mt-05">Добавить стадию</h2>
+			<div class="d-flex between fvc" style="cursor:pointer" onclick="var b=this.nextElementSibling;b.style.display=b.style.display==='none'?'':'none';this.querySelector('.toggle-icon').textContent=b.style.display==='none'?'+':'-'">
+				<h2 class="-mt-05 mb-0">Добавить стадию</h2>
+				<span class="toggle-icon b-700 f-20">{{ $hasStages ? '+' : '-' }}</span>
+			</div>
+			<div style="{{ $hasStages ? 'display:none' : '' }}">
 			<form method="POST" action="{{ route('tournament.stages.store', $event) }}">
 				@csrf
 				<div class="row">
@@ -205,15 +209,12 @@
 								<option value="king_of_court">Король площадки (King of the Court)</option>
 								<option value="thai">Тайский формат</option>
 							</select>
-						</div>
-					</div>
-					<div class="col-md-6">
-						<div class="card">
-							<label>Название</label>
+							
+							<label class="mt-2">Название</label>
 							<input name="name" value="{{ old('name', 'Групповой этап') }}" required>
 						</div>
 					</div>
-					<div class="col-md-4">
+					<div class="col-md-6">
 						<div class="card">
 							<label>Формат матча</label>
 							<select name="match_format" id="match_format_select">
@@ -238,61 +239,64 @@
 									upd();
 								})();
 							</script>
+							
+							<div class="row row2">
+								<div class="col-md-6">
+									<label class="mt-2">Очки в сете</label>
+									<select name="set_points">
+										@if(!$isBeach)
+										<option value="25" selected>25 (классика)</option>
+										@endif
+										<option value="21" @if($isBeach) selected @endif>21 (пляж)</option>
+										<option value="15">15 (мини)</option>
+									</select>
+								</div>
+								<div class="col-md-6">
+									<label class="mt-2">Решающий сет</label>
+									<select name="deciding_set_points">
+										<option value="15" selected>15</option>
+										@if(!$isBeach)
+										<option value="25">25</option>
+										@endif
+									</select>
+								</div>
+							</div>								
 						</div>
 					</div>
-					<div class="col-md-4">
-						<div class="card"><label>Очки в сете</label>
-							<select name="set_points">
-								@if(!$isBeach)
-								<option value="25" selected>25 (классика)</option>
-								@endif
-								<option value="21" @if($isBeach) selected @endif>21 (пляж)</option>
-								<option value="15">15 (мини)</option>
-							</select>
-						</div>
-					</div>
-					<div class="col-md-4">
-						<div class="card"><label>Решающий сет</label>
-							<select name="deciding_set_points">
-								<option value="15" selected>15</option>
-								@if(!$isBeach)
-								<option value="25">25</option>
-								@endif
-							</select>
-						</div>
-					</div>
+					
 				</div>
 				<div class="mt-2" id="group_fields">
-				<div class="row">
-					<div class="col-md-3">
-						<div class="card"><label>Кол-во групп</label>
-							<input name="groups_count" type="number" value="2" min="1" max="16">
+					<div class="row">
+						<div class="col-md-3">
+							<div class="card"><label>Кол-во групп</label>
+								<input name="groups_count" type="number" value="2" min="1" max="16">
+							</div>
+						</div>
+						<div class="col-md-3">
+							<div class="card"><label>Выходят из группы</label>
+								<input name="advance_count" type="number" value="2" min="1" max="8">
+							</div>
+						</div>
+						<div class="col-md-3">
+							<div class="card"><label>Матч за 3-е место</label>
+								<select name="third_place_match">
+									<option value="0">Нет</option>
+									<option value="1">Да</option>
+								</select>
+							</div>
+						</div>
+						<div class="col-md-3">
+							<div class="card"><label>Площадки</label>
+								<input name="courts" placeholder="Корт 1, Корт 2">
+							</div>
 						</div>
 					</div>
-					<div class="col-md-3">
-						<div class="card"><label>Выходят из группы</label>
-							<input name="advance_count" type="number" value="2" min="1" max="8">
-						</div>
-					</div>
-					<div class="col-md-3">
-						<div class="card"><label>Матч за 3-е место</label>
-							<select name="third_place_match">
-								<option value="0">Нет</option>
-								<option value="1">Да</option>
-							</select>
-						</div>
-					</div>
-					<div class="col-md-3">
-						<div class="card"><label>Площадки</label>
-							<input name="courts" placeholder="Корт 1, Корт 2">
-						</div>
-					</div>
-				</div>
 				</div>
 				<div class="text-center">
-				<button type="submit" class="btn btn-primary mt-2">Создать стадию</button>
+					<button type="submit" class="btn btn-primary mt-2">Создать стадию</button>
 				</div>
 			</form>
+			</div>
 		</div>
 		
 		{{-- ============================================================
@@ -309,13 +313,19 @@
 			@endphp
 			
 			@if($tournamentPhotos->isNotEmpty())
-            <div class="d-flex mb-2" style="flex-wrap:wrap;gap:8px">
+            <div class="d-flex mb-2" style="flex-wrap:wrap;gap:2rem">
                 @foreach($tournamentPhotos as $media)
-				<div style="position:relative">
-					<img src="{{ $media->getUrl('thumb') }}" style="width:100px;height:75px;object-fit:cover;border-radius:8px">
-					<form method="POST" action="{{ route('tournament.photos.destroy', [$event, $media->id]) }}" style="position:absolute;top:2px;right:2px" onsubmit="return confirm('Удалить?')">
+				<div style="position:relative;width:20%;">
+					<img src="{{ $media->getUrl('thumb') }}" style="width:100%; aspect-ratio: 16/9;object-fit:cover;border-radius:8px">
+					<form method="POST" action="{{ route('tournament.photos.destroy', [$event, $media->id]) }}" style="position:absolute; bottom:1rem; right:1rem" onsubmit="return confirm('Удалить?')">
 						@csrf @method('DELETE')
-						<button style="background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:11px;cursor:pointer">✕</button>
+										<button type="submit" 
+										class="icon-delete btn-alert btn btn-danger btn-svg"
+										data-title="Удалить фотографию?"
+										data-icon="warning"
+										data-confirm-text="Да, удалить"
+										data-cancel-text="Отмена">
+										</button>										
 					</form>
 				</div>
                 @endforeach
@@ -354,15 +364,16 @@
 						<li>Фотографии можно добавить в разделе <a target="_blank" href="{{ route('user.photos') }}">Ваши фотографии</a> (с галочкой «Для мероприятий»)</li>
 					</ul>
 				</div>
-				
-				<form method="POST" action="{{ route('tournament.photos.store', $event) }}" id="tournament-photos-form" class="mt-1">
+			</div>	
+			<div class="text-center">
+				<form method="POST" action="{{ route('tournament.photos.store', $event) }}" id="tournament-photos-form" class="mt-2">
 					@csrf
 					<input type="hidden" name="photo_ids" id="tournament_photos_input" value="">
 					<button type="submit" class="btn btn-primary" id="tournament-photos-submit" style="display:none">Сохранить фото</button>
 				</form>
 			</div>
 			@else
-            <div class="alert alert-info f-14">
+            <div class="alert alert-info">
                 Нет фото в галерее. <a href="{{ route('user.photos') }}" target="_blank">Загрузите фото</a> с пометкой «Для мероприятий».
 			</div>
 			@endif
@@ -372,7 +383,7 @@
         @php
 		$borderColor = $stage->isCompleted() ? '#10b981' : ($stage->isInProgress() ? '#2967BA' : '#555');
         @endphp
-        <div class="card p-3 mb-3" style="border-left:4px solid {{ $borderColor }}">
+        <div class="ramka" style="border-left:4px solid {{ $borderColor }}">
             <div class="d-flex between fvc mb-2" style="flex-wrap:wrap;gap:8px">
                 <div>
                     <h3 class="mb-1" style="font-size:1.3rem">
@@ -507,6 +518,37 @@
 			</div>
             @endif
 			
+			{{-- Расписание --}}
+			@if($stage->isInProgress() && $stage->matches->whereNotNull('team_home_id')->isNotEmpty())
+			@php
+				$nextOcc = $event->occurrences()->where('starts_at', '>=', now())->orderBy('starts_at')->first();
+				$defaultStart = $nextOcc
+					? $nextOcc->starts_at->setTimezone($event->timezone ?? 'Europe/Moscow')->format('Y-m-d\\TH:i')
+					: now()->setTimezone($event->timezone ?? 'Europe/Moscow')->format('Y-m-d\\TH:i');
+			@endphp
+			<div class="card p-2">
+				<div class="b-700 f-14 mb-2">📅 Расписание</div>
+				<form method="POST" action="{{ route('tournament.stages.schedule', $stage) }}">
+					@csrf
+					<div class="d-flex" style="gap:12px;flex-wrap:wrap;align-items:flex-end">
+						<div>
+							<label class="f-12 b-600 mb-1 d-block">Начало</label>
+							<input type="datetime-local" name="start_time" value="{{ $defaultStart }}" required style="font-size:13px;padding:6px 8px">
+						</div>
+						<div>
+							<label class="f-12 b-600 mb-1 d-block">Матч (мин)</label>
+							<input type="number" name="match_duration" value="30" min="15" max="180" style="width:65px;font-size:13px;padding:6px 4px;text-align:center">
+						</div>
+						<div>
+							<label class="f-12 b-600 mb-1 d-block">Перерыв (мин)</label>
+							<input type="number" name="break_duration" value="5" min="0" max="60" style="width:65px;font-size:13px;padding:6px 4px;text-align:center">
+						</div>
+						<button type="submit" class="btn btn-primary f-13" style="padding:7px 16px">Сгенерировать</button>
+					</div>
+				</form>
+			</div>
+			@endif
+
             {{-- Матчи --}}
             @if($stage->matches->isNotEmpty())
 			<div class="card p-2">
@@ -519,6 +561,8 @@
 								<th class="p-1" style="text-align:left">Тур</th>
 								<th class="p-1" style="text-align:left">Дома</th>
 								<th class="p-1" style="text-align:left">Гости</th>
+								<th class="p-1" style="text-align:center">Время</th>
+								<th class="p-1" style="text-align:center">Корт</th>
 								<th class="p-1" style="text-align:center">Счёт</th>
 								<th class="p-1" style="text-align:center">Статус</th>
 								<th class="p-1"></th>
@@ -535,6 +579,8 @@
 								<td class="p-1 {{ $match->winner_team_id === $match->team_away_id ? 'b-700' : '' }}">
 									{{ $match->teamAway->name ?? 'TBD' }}
 								</td>
+								<td class="p-1" style="text-align:center">{{ $match->scheduled_at ? $match->scheduled_at->setTimezone($event->timezone ?? 'Europe/Moscow')->format('H:i') : '—' }}</td>
+								<td class="p-1" style="text-align:center">{{ $match->court ?? '—' }}</td>
 								<td class="p-1" style="text-align:center">{{ $match->setsScore() ?? '—' }}</td>
 								<td class="p-1" style="text-align:center">
 									@if($match->isCompleted())
@@ -551,6 +597,11 @@
 										Счёт
 									</a>
 									@endif
+									@if($match->isCompleted())
+									<a href="{{ route('tournament.matches.player_stats.form', $match) }}" class="btn btn-secondary f-12" style="padding:4px 8px" title="Статистика игроков">
+										📊
+									</a>
+									@endif
 								</td>
 							</tr>
 							@endforeach
@@ -558,6 +609,17 @@
 					</table>
 				</div>
 			</div>
+				@php
+					$hasUnplayed = $stage->matches->where('status', 'scheduled')
+						->filter(fn($m) => $m->team_home_id && $m->team_away_id)->isNotEmpty();
+				@endphp
+				@if($hasUnplayed)
+				<div class="mt-2 mb-3" style="text-align:center">
+					<a href="{{ route('tournament.start_scoring', $event) }}" class="btn btn-primary p-3 f-16" style="display:inline-block">
+						▶ Приступить к заполнению результатов
+					</a>
+				</div>
+				@endif
 			
 			
 			{{-- Следующий тур (Swiss/King) --}}
@@ -574,28 +636,6 @@
 			@endif
 			
 			
-			{{-- Расписание --}}
-			@if($stage->isInProgress() && $stage->matches->whereNotNull('team_home_id')->isNotEmpty())
-			<div class="p-3 mt-2" style="background:rgba(41,103,186,.08);border-radius:10px">
-				<div class="b-600 mb-2">Расписание</div>
-				<form method="POST" action="{{ route('tournament.stages.schedule', $stage) }}" class="d-flex fvc" style="gap:10px;flex-wrap:wrap">
-					@csrf
-					<div>
-						<label class="f-12 b-600 mb-1 d-block">Начало</label>
-						<input type="datetime-local" name="start_time" required style="font-size:13px">
-					</div>
-					<div>
-						<label class="f-12 b-600 mb-1 d-block">Матч (мин)</label>
-						<input type="number" name="match_duration" value="60" min="15" max="180" style="width:70px;font-size:13px">
-					</div>
-					<div>
-						<label class="f-12 b-600 mb-1 d-block">Перерыв (мин)</label>
-						<input type="number" name="break_duration" value="10" min="0" max="60" style="width:70px;font-size:13px">
-					</div>
-					<button type="submit" class="btn btn-primary f-13">Сгенерировать</button>
-				</form>
-			</div>
-			@endif
 			
 			{{-- Продвижение --}}
 			@if($stage->isCompleted() && in_array($stage->type, ['round_robin', 'groups_playoff']))
@@ -723,15 +763,14 @@
 	</script>
 	
 	
-	<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
-	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
+	<script src="/assets/fas.js"></script>  
 	<script>
 		document.addEventListener('DOMContentLoaded', function() {
 			// Tournament Photos Swiper
 			if (document.querySelector('.tournamentPhotosSwiper')) {
 				new Swiper('.tournamentPhotosSwiper', {
 					slidesPerView: 3,
-					spaceBetween: 10,
+					spaceBetween: 20,
 					pagination: { el: '.tournamentPhotosSwiper .swiper-pagination', clickable: true },
 					breakpoints: {
 						320: { slidesPerView: 2 },

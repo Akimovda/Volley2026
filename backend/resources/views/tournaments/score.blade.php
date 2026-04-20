@@ -97,6 +97,12 @@
         <a href="{{ route('tournament.setup', $event) }}" class="btn btn-secondary w-100 p-2 f-14 mt-2" style="text-align:center;display:block">
             ← Назад
         </a>
+
+        @if($match->isCompleted())
+        <a href="{{ route('tournament.matches.player_stats.form', $match) }}" class="btn btn-secondary w-100 p-2 f-14 mt-2" style="text-align:center;display:block;border:1px solid rgba(37,99,235,.3)">
+            📊 Заполнить статистику игроков
+        </a>
+        @endif
     </form>
 
 </div>
@@ -106,9 +112,44 @@
 document.addEventListener('DOMContentLoaded', function() {
     var maxSets = {{ $maxSets }};
     var setsToWin = {{ $setsToWin }};
+    var setPoints = {{ $setPoints }};
+    var decidingPts = {{ $stage->decidingSetPoints() }};
     var selects = document.querySelectorAll('.score-select');
     var submitBtn = document.getElementById('submitBtn');
     var summary = document.getElementById('score_summary');
+
+    // Определяем очки для конкретного сета
+    // Решающий сет (3-й в Bo3, 5-й в Bo5) играется до decidingPts
+    // Bo1 — всегда до setPoints (нет решающего)
+    function getSetTarget(setIndex) {
+        if (maxSets === 1) return setPoints;
+        // Решающий = последний возможный сет в Bo3/Bo5
+        if (setIndex === maxSets - 1) return decidingPts;
+        return setPoints;
+    }
+
+    // Авто-заполнение: если проигравший ≤ target-2, победитель = target
+    function autoFill(changedSel) {
+        var setIdx = parseInt(changedSel.dataset.set);
+        var side = changedSel.dataset.side;
+        var row = document.querySelector('.set-row[data-set="' + setIdx + '"]');
+        var otherSide = (side === 'home') ? 'away' : 'home';
+        var otherSel = row.querySelector('[data-side="' + otherSide + '"]');
+
+        var val = changedSel.value;
+        if (val === '') return;
+        var num = parseInt(val);
+
+        var target = getSetTarget(setIdx);
+        var threshold = target - 2; // 23 для 25, 19 для 21, 13 для 15
+
+        // Если другая ячейка пуста и введённое значение ≤ threshold → другая = target
+        if (otherSel.value === '' && num <= threshold && num >= 0) {
+            otherSel.value = target;
+        }
+        // Если введено ровно target → проигравший заполняется вручную
+        // Если введено ≥ threshold+1 → обе вручную (overtime)
+    }
 
     function recalc() {
         var homeWon = 0, awayWon = 0;
@@ -150,7 +191,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     selects.forEach(function(sel) {
-        sel.addEventListener('change', recalc);
+        sel.addEventListener('change', function() {
+            autoFill(this);
+            recalc();
+        });
     });
 
     recalc();

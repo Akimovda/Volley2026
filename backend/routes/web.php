@@ -771,6 +771,15 @@ Route::middleware([
     Route::patch('/tournament-matches/{match}/score', [TournamentController::class, 'score'])
         ->name('tournament.matches.score');
 
+    // Player match stats (detailed)
+    Route::get('/events/{event}/tournament/start-scoring', [TournamentController::class, 'startScoring'])
+        ->name('tournament.start_scoring');
+
+    Route::get('/tournament-matches/{match}/player-stats', [TournamentController::class, 'playerStatsForm'])
+        ->name('tournament.matches.player_stats.form');
+    Route::post('/tournament-matches/{match}/player-stats', [TournamentController::class, 'playerStatsSave'])
+        ->name('tournament.matches.player_stats.save');
+
     Route::post('/tournament-stages/{stage}/advance', [TournamentController::class, 'advance'])
         ->name('tournament.stages.advance');
 

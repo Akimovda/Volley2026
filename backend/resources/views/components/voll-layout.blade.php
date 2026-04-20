@@ -332,7 +332,7 @@
 								
 								<span class="menu-text f-18 d-flex -ml-1">
 									<span class="emo f-13" style="padding-top: 0.3rem;">🔴</span>
-									{{ Str::limit($notification->title, 35) }}
+									<span>{{ Str::limit($notification->title, 35) }}</span>
 								</span>
 								<span class="menu-date f-15 pl-2" style="padding-top: 0.3rem; flex: 0 0 11rem">
 									{{ $notification->created_at?->format('d.m H:i') }}

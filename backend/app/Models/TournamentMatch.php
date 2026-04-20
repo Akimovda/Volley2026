@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class TournamentMatch extends Model
 {
@@ -137,5 +138,15 @@ class TournamentMatch extends Model
         }
 
         return implode(', ', $parts);
+    }
+
+    public function playerStats(): HasMany
+    {
+        return $this->hasMany(MatchPlayerStats::class, 'match_id');
+    }
+
+    public function hasPlayerStats(): bool
+    {
+        return $this->playerStats()->exists();
     }
 }

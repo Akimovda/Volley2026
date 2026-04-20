@@ -367,10 +367,14 @@ class TournamentSetupService
     public function drawManual(array $assignment): void
     {
         foreach ($assignment as $groupId => $teamIds) {
-            foreach (array_values($teamIds) as $seed => $teamId) {
+            foreach (array_values($teamIds) as $seed => $item) {
+                // Поддерживаем и plain int, и ['team_id' => int]
+                $teamId = is_array($item) ? (int) ($item['team_id'] ?? $item[0] ?? 0) : (int) $item;
+                if ($teamId <= 0) continue;
+
                 TournamentGroupTeam::create([
                     'group_id' => (int) $groupId,
-                    'team_id'  => (int) $teamId,
+                    'team_id'  => $teamId,
                     'seed'     => $seed + 1,
                 ]);
             }

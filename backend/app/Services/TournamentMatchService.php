@@ -250,7 +250,8 @@ class TournamentMatchService
 
         foreach ($scoreHome as $i => $h) {
             $a = $scoreAway[$i];
-            $isDecidingSet = ($i + 1 === $maxSets) || ($homeWins === $setsToWin - 1 && $awayWins === $setsToWin - 1);
+            // Решающий сет только для Bo3/Bo5 (не Bo1)
+            $isDecidingSet = $maxSets > 1 && (($i + 1 === $maxSets) || ($homeWins === $setsToWin - 1 && $awayWins === $setsToWin - 1));
             $target = $isDecidingSet ? $decidingSetPts : $setPoints;
 
             $this->validateSet($h, $a, $target, $i + 1);

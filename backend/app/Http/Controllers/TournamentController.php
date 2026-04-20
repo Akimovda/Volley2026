@@ -18,6 +18,8 @@ use App\Services\TournamentSwissService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Services\PlayerMatchStatsService;
+use App\Models\MatchPlayerStats;
 
 class TournamentController extends Controller
 {
@@ -166,7 +168,7 @@ class TournamentController extends Controller
                 // Ручная: assignments[group_id] = [team_id, team_id, ...]
                 $manualData = [];
                 foreach ($validated['assignments'] as $groupId => $teamIds) {
-                    $manualData[(int) $groupId] = array_map(fn($tid) => ['team_id' => (int) $tid], (array) $teamIds);
+                    $manualData[(int) $groupId] = array_map(fn($tid) => (int) $tid, (array) $teamIds);
                 }
                 $this->setupService->drawManual($manualData);
             } elseif ($validated['mode'] === 'random') {
@@ -278,9 +280,37 @@ class TournamentController extends Controller
                 return response()->json(['success' => true, 'match' => $match->fresh()]);
             }
 
+            // Ищем следующий незавершённый матч этой стадии
+            $nextMatch = TournamentMatch::where('stage_id', $stage->id)
+                ->where('status', TournamentMatch::STATUS_SCHEDULED)
+                ->whereNotNull('team_home_id')
+                ->whereNotNull('team_away_id')
+                ->orderBy('round')
+                ->orderBy('match_number')
+                ->first();
+
+            if ($nextMatch) {
+                return redirect()
+                    ->route('tournament.matches.score.form', $nextMatch)
+                    ->with('success', 'Счёт записан. Следующий матч:');
+            }
+
+            // Все матчи стадии сыграны — проверяем все стадии турнира
+            $allDone = !TournamentMatch::whereHas('stage', fn($q) => $q->where('event_id', $event->id))
+                ->where('status', TournamentMatch::STATUS_SCHEDULED)
+                ->whereNotNull('team_home_id')
+                ->whereNotNull('team_away_id')
+                ->exists();
+
+            if ($allDone) {
+                return redirect()
+                    ->route('tournament.public.show', $event)
+                    ->with('success', 'Все матчи завершены! Итоги турнира.');
+            }
+
             return redirect()
                 ->route('tournament.setup', $event)
-                ->with('success', 'Счёт записан.');
+                ->with('success', 'Счёт записан. Этап завершён.');
 
         } catch (\InvalidArgumentException $e) {
             if ($request->expectsJson()) {
@@ -688,5 +718,118 @@ class TournamentController extends Controller
                 }
             }
         }
+    }
+
+    /* ================================================================
+     *  Детальная статистика игроков
+     * ================================================================ */
+
+    /**
+     * Начать заполнение результатов — редирект к первому незаполненному матчу.
+     */
+    public function startScoring(Request $request, Event $event)
+    {
+        $this->authorizeOrganizer($request, $event);
+
+        $nextMatch = TournamentMatch::whereHas('stage', fn($q) => $q->where('event_id', $event->id))
+            ->where('status', TournamentMatch::STATUS_SCHEDULED)
+            ->whereNotNull('team_home_id')
+            ->whereNotNull('team_away_id')
+            ->orderBy('stage_id')
+            ->orderBy('round')
+            ->orderBy('match_number')
+            ->first();
+
+        if (!$nextMatch) {
+            return redirect()
+                ->route('tournament.public.show', $event)
+                ->with('success', 'Все матчи уже завершены.');
+        }
+
+        return redirect()->route('tournament.matches.score.form', $nextMatch);
+    }
+
+    /**
+     * Форма ввода детальной статистики матча.
+     */
+    public function playerStatsForm(Request $request, TournamentMatch $match)
+    {
+        $stage = $match->stage;
+        $event = $stage->event;
+        $this->authorizeOrganizer($request, $event);
+
+        if (!$match->isCompleted()) {
+            return redirect()
+                ->route('tournament.setup', $event)
+                ->with('error', 'Сначала введите счёт матча.');
+        }
+
+        $match->load(['teamHome', 'teamAway', 'stage']);
+
+        $playerStatsService = app(PlayerMatchStatsService::class);
+        $players = $playerStatsService->getMatchPlayers($match);
+        $existingStats = $playerStatsService->getMatchStatsTable($match);
+
+        $setsCount = is_array($match->score_home) ? count($match->score_home) : 0;
+        $statFields = PlayerMatchStatsService::STAT_FIELDS;
+
+        return view('tournaments.player-stats', compact(
+            'event', 'match', 'stage', 'players',
+            'existingStats', 'setsCount', 'statFields'
+        ));
+    }
+
+    /**
+     * Сохранение детальной статистики матча.
+     */
+    public function playerStatsSave(Request $request, TournamentMatch $match)
+    {
+        $stage = $match->stage;
+        $event = $stage->event;
+        $this->authorizeOrganizer($request, $event);
+
+        if (!$match->isCompleted()) {
+            return back()->with('error', 'Сначала введите счёт матча.');
+        }
+
+        $playerStatsService = app(PlayerMatchStatsService::class);
+
+        // Формат: stats[teamId][userId][setNumber][field] = value
+        $allStats = $request->input('stats', []);
+
+        DB::transaction(function () use ($allStats, $match, $playerStatsService) {
+            foreach ($allStats as $teamId => $players) {
+                foreach ($players as $userId => $sets) {
+                    foreach ($sets as $setNumber => $data) {
+                        $playerStatsService->saveSetStats(
+                            $match,
+                            (int) $setNumber,
+                            (int) $userId,
+                            (int) $teamId,
+                            $data
+                        );
+                    }
+                }
+            }
+        });
+
+        // Агрегируем в tournament stats и career stats
+        try {
+            $playerStatsService->aggregateToTournament($event);
+
+            $allUserIds = collect($allStats)->flatMap(function ($players) {
+                return array_keys($players);
+            })->unique();
+
+            foreach ($allUserIds as $userId) {
+                $playerStatsService->aggregateToCareer((int) $userId);
+            }
+        } catch (\Throwable $e) {
+            \Log::warning('Stats aggregation failed: ' . $e->getMessage());
+        }
+
+        return redirect()
+            ->route('tournament.setup', $event)
+            ->with('success', 'Статистика игроков сохранена.');
     }
 }
