@@ -299,16 +299,16 @@
 		display: none;
 	}
 .sgroup-1 .title-box { 
-	top: 30%;
+	top: 25%;
 }
 .sgroup-2 .title-box { 
-	top: 30%;
+	top: 25%;
 }
 .sgroup-3 .title-box { 
-	bottom: 30%;
+	bottom: 25%;
 }
 .sgroup-4 .title-box { 
-	bottom: 30%;
+	bottom: 25%;
 }	
 }
 .sgroup .img-box { 

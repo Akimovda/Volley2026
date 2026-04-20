@@ -798,4 +798,5 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
+<script src="/assets/fas.js"></script>
 </x-voll-layout>
