@@ -611,7 +611,7 @@ border:1rem solid #fff;
 	</div>
 	<div class="sgroup sgroup-2">
 		<div class="close-sgroup">&times;</div>
-		<div class="img-box"><img data-light="/img/main/bg-2.webp" data-dark="/img/main/bg-2-d.webp" alt="Тренерам" src="/img/pixel.png"></div>
+		<div class="img-box"><img data-light="/img/main/bg-2.png" data-dark="/img/main/bg-2-d.webp" alt="Тренерам" src="/img/pixel.png"></div>
 		<div class="title-box">Тренерам</div>
 		<div class="info-box">
 			<div class="row row2">

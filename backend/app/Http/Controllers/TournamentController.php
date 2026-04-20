@@ -252,6 +252,14 @@ class TournamentController extends Controller
                 $request->user(),
             );
 
+            // Обновляем статистику игроков после матча
+            try {
+                app(\App\Services\TournamentStatsService::class)
+                    ->updateAfterMatch($match->fresh());
+            } catch (\Throwable $e) {
+                \Log::warning('Stats update failed: ' . $e->getMessage());
+            }
+
             // Проверяем, завершена ли стадия
             $this->checkStageCompletion($stage);
 
