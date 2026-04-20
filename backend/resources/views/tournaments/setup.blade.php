@@ -1,4 +1,8 @@
 <x-voll-layout body_class="tournament-setup-page">
+@php
+    $direction = $event->direction ?? 'classic';
+    $isBeach = $direction === 'beach';
+@endphp
 <x-slot name="title">Управление турниром — {{ $event->title }}</x-slot>
 
     <x-slot name="style">
@@ -331,8 +335,6 @@
         <h3 class="mb-2">Фото турнира</h3>
 
         @php
-            $direction = $event->direction ?? 'classic';
-            $isBeach = $direction === 'beach';
             $tournamentPhotos = $event->getMedia('tournament_photos');
             $currentPhotoIds = $tournamentPhotos->pluck('id')->toArray();
         @endphp
