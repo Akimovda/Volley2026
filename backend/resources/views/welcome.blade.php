@@ -464,7 +464,7 @@ border:1rem solid #fff;
 		transform-origin: center center; 
 	}
 	.sgroup.sgroup-1 .img-box img { 
-		object-position: left center;
+		object-position: 20% center;
 	}
 	.sgroup.sgroup-2 .img-box { 
 		transform-origin: center center; 
@@ -553,7 +553,7 @@ border:1rem solid #fff;
 	</div> 	
 	<div class="sgroup sgroup-1">
 		<div class="close-sgroup">&times;</div>
-		<div class="img-box"><img data-light="/img/main/bg-1.webp" data-dark="/img/main/bg-1-d.webp" alt="Игрокам" src="/img/pixel.png"></div>
+		<div class="img-box"><img data-light="/img/main/bg-1-1.png" data-dark="/img/main/bg-1-d.webp" alt="Игрокам" src="/img/pixel.png"></div>
 		<div class="title-box">Игрокам</div>
 		<div class="info-box">
 			<div class="row row2">

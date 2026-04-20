@@ -43,6 +43,20 @@
         body.dark .tournament-setup-page select:hover {
             border-color: rgba(41,103,186,.5);
         }
+        .tournamentPhotosSwiper .swiper-slide {
+            max-width: 200px;
+        }
+        .tournamentPhotosSwiper .hover-image {
+            width: 100%;
+            height: 150px;
+            overflow: hidden;
+            border-radius: 8px;
+        }
+        .tournamentPhotosSwiper .hover-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
         </style>
     </x-slot>
 
