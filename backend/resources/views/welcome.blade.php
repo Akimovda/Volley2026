@@ -164,8 +164,7 @@
 	position: relative;
 	height: 55rem;
 	border-radius: 1.6rem;
-	overflow: hidden;
-	box-shadow: rgba(0, 0, 0, 0.05) 0px 0.2rem 1rem;
+
 }	
 .sgroup {
 	position: absolute;
@@ -178,6 +177,8 @@
 	transition: all 500ms cubic-bezier(0.4, 0, 0.2, 1);
 	background-size: cover;
 	background-position: 50% 50%;
+	box-shadow: 0 1rem 2.2rem rgba(0, 0, 0, 0.04), 0 0.5rem 1.2rem rgba(0, 0, 0, 0.02);	
+	border-radius: 1.6rem;
 }
 .sgroup:after {
 	content: "";
@@ -199,15 +200,15 @@
 }
 .sgroup-2 {
 	top: 0;
-	left: calc(50% + 2rem);
+	left: calc(50% + 1rem);
 }
 .sgroup-3 {
-	top: calc(50% + 2rem);
+	top: calc(50% + 1rem);
 	left: 0;
 }
 .sgroup-4 {
-	top: calc(50% + 2rem);
-	left: calc(50% + 2rem);
+	top: calc(50% + 1rem);
+	left: calc(50% + 1rem);
 }
 .sgroup.is-expanded {
 	top: 0;

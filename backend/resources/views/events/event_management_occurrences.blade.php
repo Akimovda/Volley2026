@@ -169,11 +169,19 @@
 
                                     <td class="align-top nowrap f-0">
                                         <div class="d-flex">
+                                            @if($event->format === 'tournament')
+                                            <a href="{{ route('tournament.setup', $event) }}"
+                                               class="btn btn-small btn-secondary mr-1"
+                                               title="Управление турниром">
+                                                🏆
+                                            </a>
+                                        @else
                                             <a href="{{ route('events.registrations.index', ['event' => (int)$event->id, 'occurrence' => (int)$occ->id]) }}"
                                                class="btn btn-small btn-secondary mr-1"
                                                title="Список участников">
                                                 🧑‍🧑‍🧒‍🧒
                                             </a>
+                                        @endif
                                             <form method="POST"
                                                   action="{{ route('occurrences.destroy', ['occurrence' => (int)$occ->id]) }}"
                                                   class="d-inline-block">
