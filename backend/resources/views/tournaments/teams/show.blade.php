@@ -321,6 +321,45 @@ $invStLabels = ['pending'=>'Ожидает','accepted'=>'Принято','declin
             @else
             <div class="alert alert-warning">⚠️ Состав не готов</div>
             @endif
+
+            {{-- Кнопки выхода --}}
+            @auth
+                @php
+                    $isMember = $team->members->contains('user_id', auth()->id());
+                    $isCaptainSelf = (int)$team->captain_user_id === (int)auth()->id();
+                @endphp
+
+                @if($isMember && !$isCaptainSelf)
+                    <form method="POST" action="{{ route('tournamentTeams.leave', [$event, $team]) }}" class="mt-1">
+                        @csrf
+                        <button type="submit" class="btn btn-secondary btn-alert w-100"
+                                data-title="Покинуть команду {{ $team->name }}?"
+                                data-text="Вы будете удалены из состава. Если оплата была произведена — средства вернутся на ваш внутренний счёт."
+                                data-icon="warning"
+                                data-confirm-text="Да, покинуть"
+                                data-cancel-text="Отмена"
+                                style="color:#dc2626">
+                            🚪 Покинуть команду
+                        </button>
+                    </form>
+                @endif
+
+                @if($isCaptainSelf)
+                    <form method="POST" action="{{ route('tournamentTeams.disband', [$event, $team]) }}" class="mt-1">
+                        @csrf
+                        <button type="submit" class="btn btn-secondary btn-alert w-100"
+                                data-title="Расформировать команду {{ $team->name }}?"
+                                data-text="Команда будет удалена. Все участники получат уведомление. Оплата будет возвращена на внутренний счёт."
+                                data-icon="warning"
+                                data-confirm-text="Да, расформировать"
+                                data-cancel-text="Отмена"
+                                style="color:#dc2626">
+                            💥 Расформировать команду
+                        </button>
+                    </form>
+                @endif
+            @endauth
+
         </div>
     </div>
 

@@ -11,9 +11,6 @@
     <x-slot name="d_description">
         <div class="d-flex flex-wrap gap-1 m-center">
             @guest			
-			<div class="mt-2" data-aos-delay="250" data-aos="fade-up">
-				<a href="{{ route('register') }}" class="btn">Начать бесплатно</a>
-			</div>
 			<div class="mt-2" data-aos-delay="350" data-aos="fade-up">
 				<a href="{{ route('events.index') }}" class="btn btn-secondary">Смотреть игры</a>
 			</div>			
@@ -147,8 +144,6 @@
 			
             /* Блок CTA */
             .cta-block {
-			border-radius: 2rem;
-			padding: 4rem 3rem;
 			text-align: center;
             }
             .cta-block .f-32 { font-size: 3.2rem; font-weight: 700; }
@@ -1459,14 +1454,13 @@ body.dark .rusmap path[data-color]:hover{
 		{{-- ===== CTA ===== --}}
 		@guest
 		<div class="ramka" data-aos="fade-up">
-			<div class="cta-block card">
+			<div class="cta-block">
 				<div class="f-32 mb-1">🏐 Готовы играть?</div>
-				<div class="f-18 mb-3" style="opacity:.7">
+				<div class="f-18 mb-3">
 					Присоединяйтесь к сообществу волейболистов — бесплатно и без лишних шагов.
 				</div>
 				<div class="d-flex flex-wrap gap-2" style="justify-content:center">
-					<a href="{{ route('register') }}" class="btn">Зарегистрироваться</a>
-					<a href="{{ route('events.index') }}" class="btn btn-secondary">Смотреть игры</a>
+					<a href="{{ route('events.index') }}" class="btn">Смотреть игры</a>
 				</div>
 			</div>
 		</div>

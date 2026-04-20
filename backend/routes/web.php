@@ -287,6 +287,12 @@ Route::get('/auth/telegram/callback', [TelegramAuthController::class, 'callback'
 
     Route::delete('/events/{event}/teams/{team}', [TournamentTeamController::class, 'destroy'])
         ->name('tournamentTeams.destroy');
+
+    Route::post('/events/{event}/teams/{team}/leave', [TournamentTeamController::class, 'leaveTeam'])
+        ->name('tournamentTeams.leave');
+
+    Route::post('/events/{event}/teams/{team}/disband', [TournamentTeamController::class, 'disbandTeam'])
+        ->name('tournamentTeams.disband');
 	});
 	
 	/*

@@ -692,4 +692,155 @@ final class TournamentTeamService
         }
     }
 
+
+    /**
+     * Игрок покидает команду (сам). Рефанд если per_player.
+     */
+    public function leaveTeam(EventTeam $team, int $userId): void
+    {
+        $member = $team->members()->where('user_id', $userId)->first();
+        if (!$member) {
+            throw new DomainException('Вы не состоите в этой команде.');
+        }
+
+        if ((int) $team->captain_user_id === $userId) {
+            throw new DomainException('Капитан не может покинуть команду. Используйте «Расформировать команду».');
+        }
+
+        $event = $team->event;
+
+        // Рефанд если per_player и есть оплата
+        $this->refundForMember($member, $event);
+
+        $member->delete();
+
+        // Обновляем статус команды
+        $this->recheckTeamCompleteness($team);
+
+        // Уведомляем капитана
+        try {
+            app(\App\Services\UserNotificationService::class)->create(
+                userId: (int) $team->captain_user_id,
+                type: 'team_member_left',
+                title: 'Игрок покинул команду',
+                body: "Игрок покинул команду «{$team->name}».",
+                payload: ['team_id' => $team->id, 'event_id' => $event->id],
+                channels: ['in_app', 'telegram', 'vk', 'max']
+            );
+        } catch (\Throwable $e) {
+            report($e);
+        }
+    }
+
+    /**
+     * Капитан расформировывает команду. Рефанд всем.
+     */
+    public function disbandTeam(EventTeam $team, int $captainUserId): void
+    {
+        if ((int) $team->captain_user_id !== $captainUserId) {
+            throw new DomainException('Только капитан может расформировать команду.');
+        }
+
+        $event = $team->event;
+        $members = $team->members()->with('user')->get();
+        $teamName = $team->name;
+
+        // Рефанд
+        $this->refundForTeam($team, $event);
+
+        // Удаляем заявку
+        \App\Models\EventTeamApplication::where('event_team_id', $team->id)->delete();
+        // Удаляем приглашения
+        \App\Models\EventTeamInvite::where('event_team_id', $team->id)->delete();
+        // Удаляем членов
+        $team->members()->delete();
+        // Удаляем команду
+        $team->delete();
+
+        // Уведомляем всех участников
+        foreach ($members as $m) {
+            if ((int) $m->user_id === $captainUserId) continue;
+            try {
+                app(\App\Services\UserNotificationService::class)->create(
+                    userId: (int) $m->user_id,
+                    type: 'team_disbanded',
+                    title: 'Команда расформирована',
+                    body: "Команда «{$teamName}» была расформирована капитаном.",
+                    payload: ['event_id' => $event->id],
+                    channels: ['in_app', 'telegram', 'vk', 'max']
+                );
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
+    }
+
+    /**
+     * Рефанд для одного участника (per_player mode).
+     */
+    private function refundForMember(\App\Models\EventTeamMember $member, \App\Models\Event $event): void
+    {
+        $payment = \App\Models\Payment::where('team_member_id', $member->id)
+            ->whereIn('status', ['paid', 'confirmed'])
+            ->first();
+
+        if (!$payment) return;
+
+        $paymentService = app(\App\Services\PaymentService::class);
+        $refundAmount = $paymentService->calculateRefundAmount($payment, $event);
+
+        if ($refundAmount > 0) {
+            $paymentService->refund($payment, 'player_left_team', $refundAmount);
+        }
+    }
+
+    /**
+     * Рефанд для всей команды (team mode → капитану, per_player → каждому).
+     */
+    private function refundForTeam(EventTeam $team, \App\Models\Event $event): void
+    {
+        $settings = $event->tournamentSetting;
+        $mode = $settings?->paymentMode() ?? 'team';
+
+        if ($mode === 'per_player') {
+            // Каждому участнику
+            $members = $team->members()->get();
+            foreach ($members as $m) {
+                $this->refundForMember($m, $event);
+            }
+        } else {
+            // Капитану за всю команду
+            $payment = \App\Models\Payment::where('team_id', $team->id)
+                ->whereIn('status', ['paid', 'confirmed'])
+                ->first();
+
+            if (!$payment) return;
+
+            $paymentService = app(\App\Services\PaymentService::class);
+            $refundAmount = $paymentService->calculateRefundAmount($payment, $event);
+
+            if ($refundAmount > 0) {
+                $paymentService->refund($payment, 'team_disbanded', $refundAmount);
+            }
+        }
+    }
+
+    /**
+     * Пересчитать готовность команды после ухода игрока.
+     */
+    private function recheckTeamCompleteness(EventTeam $team): void
+    {
+        $team->refresh();
+        $confirmedCount = $team->members()
+            ->where('confirmation_status', 'confirmed')
+            ->count();
+
+        $settings = $team->event->tournamentSetting;
+        $minPlayers = $settings?->team_size_min ?? 2;
+
+        $team->update([
+            'is_complete' => $confirmedCount >= $minPlayers,
+        ]);
+    }
+
 }

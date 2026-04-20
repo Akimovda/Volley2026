@@ -191,4 +191,55 @@ class TournamentTeamController extends Controller
             ->with('success', "Команда удалена.");
     }
 
+
+    /**
+     * Игрок покидает команду.
+     */
+    public function leaveTeam(
+        Request $request,
+        Event $event,
+        EventTeam $team,
+        TournamentTeamService $service
+    ): RedirectResponse {
+        abort_unless((int) $team->event_id === (int) $event->id, 404);
+
+        $user = $request->user();
+        abort_unless($user, 403);
+
+        try {
+            $service->leaveTeam($team, (int) $user->id);
+
+            return redirect()
+                ->route('events.show', $event)
+                ->with('success', 'Вы покинули команду.');
+        } catch (DomainException $e) {
+            return back()->withErrors(['leave' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Капитан расформировывает команду.
+     */
+    public function disbandTeam(
+        Request $request,
+        Event $event,
+        EventTeam $team,
+        TournamentTeamService $service
+    ): RedirectResponse {
+        abort_unless((int) $team->event_id === (int) $event->id, 404);
+
+        $user = $request->user();
+        abort_unless($user, 403);
+
+        try {
+            $service->disbandTeam($team, (int) $user->id);
+
+            return redirect()
+                ->route('events.show', $event)
+                ->with('success', 'Команда расформирована.');
+        } catch (DomainException $e) {
+            return back()->withErrors(['disband' => $e->getMessage()]);
+        }
+    }
+
 }
