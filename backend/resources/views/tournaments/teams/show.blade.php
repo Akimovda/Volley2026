@@ -304,11 +304,13 @@ $invStLabels = ['pending'=>'Ожидает','accepted'=>'Принято','declin
             <div class="f-15 mb-1">Всего: <strong>{{ $team->members->count() }}</strong></div>
             @if($settings)
             <div class="f-13" style="opacity:.6;line-height:1.8">
-                Схема: <strong>{{ $settings->game_scheme ?? '—' }}</strong><br>
-                Мин.: <strong>{{ $settings->team_size_min ?? '—' }}</strong> ·
-                Макс.: <strong>{{ $settings->total_players_max ?? $settings->team_size_max ?? '—' }}</strong><br>
-                Запасных: <strong>{{ $settings->reserve_players_max ?? '—' }}</strong><br>
-                Либеро: <strong>{{ $settings->require_libero ? 'Да' : 'Нет' }}</strong>
+                Схема: <strong>{{ $settings->game_scheme ?? '—' }}</strong>
+                @if($team->team_kind === 'classic_team')
+                <br>Мин.: <strong>{{ $settings->team_size_min ?? '—' }}</strong> ·
+                Макс.: <strong>{{ $settings->total_players_max ?? $settings->team_size_max ?? '—' }}</strong>
+                <br>Запасных: <strong>{{ $settings->reserve_players_max ?? '—' }}</strong>
+                <br>Либеро: <strong>{{ $settings->require_libero ? 'Да' : 'Нет' }}</strong>
+                @endif
                 @if($settings->max_rating_sum)<br>Лимит рейтинга: <strong>{{ $settings->max_rating_sum }}</strong>@endif
             </div>
             @endif
