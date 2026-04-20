@@ -283,8 +283,16 @@
 						</div>
 						
 						<div class="auth-btn auth-btn-telegram">
+							<div class="auth-btn-telegram-widget-up">
+								<span class="auth-icon-circle">
+									<span class="icon-tg"></span>
+								</span>
+								<span id="TGload" class="auth-text">Загрузка Telegram...</span>
+							</div>						
 							<div class="auth-btn-telegram-widget">
 								<script async
+    onload="document.getElementById('TGload').textContent = 'Войти через Telegram'"
+    onerror="document.getElementById('TGload').textContent = 'Ошибка Telegram'"								
 								src="https://telegram.org/js/telegram-widget.js?22"
 								data-telegram-login="VolleyEvent_bot"
 								data-size="large"
@@ -295,12 +303,7 @@
 								data-lang="ru">
 								</script>
 							</div>
-							<div class="auth-btn-telegram-widget-up">
-								<span class="auth-icon-circle">
-									<span class="icon-tg"></span>
-								</span>
-								<span class="auth-text">Войти через Telegram</span>
-							</div>
+
 						</div>
 						{{--
 						<div data-href="#max" class="auth-btn auth-btn-max">

@@ -383,12 +383,7 @@ if ($role === 'admin') {
             $event->remind_registration_minutes_before = $data['remind_registration_minutes_before'] ?? null;
 
             if (array_key_exists('description_html', $data) && $data['description_html'] !== null) {
-                // описание хранится в отдельной таблице через EventDescriptionService
-                // сохраняем напрямую через модель description
-                $event->description()->updateOrCreate(
-                    ['event_id' => $event->id],
-                    ['html' => $data['description_html']]
-                );
+                $event->description_html = $data['description_html'];
             }
 
             if ($allowReg) {

@@ -336,22 +336,22 @@
 @endphp
 
 @if(session('show_providers_hint') || $providerCount < 3)
-<div class="ramka" id="providers-hint" style="background:rgba(41,103,186,.07);border:1px solid rgba(41,103,186,.2)">
+<div class="ramka" id="providers-hint">
     <div class="d-flex fvc gap-2">
         <span style="font-size:2.4rem">🔐</span>
         <div>
-            <div class="b-600 f-16 mb-05">
+            <div class="b-600 mb-05">
                 @if($providerCount === 1)
                     Привязан только 1 способ входа
                 @elseif($providerCount === 2)
                     Привязано 2 из 3 способов входа
                 @endif
             </div>
-            <div class="f-14" style="opacity:.7">
+            <p>
                 Привяжите все три провайдера (Telegram, VK, Яндекс) — это защитит аккаунт от потери доступа
                 и поможет системе не создавать дубли.
                 <a href="#providers" class="cd b-600">Привязать →</a>
-            </div>
+            </p>
         </div>
     </div>
 </div>
@@ -509,9 +509,14 @@
 										</button>
 										@else
 										<div class="provider-telegram">
+											<div id="TGloads" class="w-100 provider-telegram-btn btn btn-small">
+												Загрузка ...
+											</div>									
 											{{-- Виджет Telegram --}}
 											<script
 											async
+    onload="document.getElementById('TGloads').textContent = 'Привязать'"
+    onerror="document.getElementById('TGloads').textContent = 'Ошибка'"						
 											src="https://telegram.org/js/telegram-widget.js?22"
 											data-telegram-login="{{ $tgBotUsername }}"
 											data-size="large"
@@ -520,10 +525,7 @@
 											data-request-access="write"
 											data-auth-url="{{ $tgAuthUrl }}"
 											></script>
-											
-											<div class="w-100 provider-telegram-btn btn btn-small">
-												Привязать
-											</div>
+
 										</div>
 										@endif
 										@endif
