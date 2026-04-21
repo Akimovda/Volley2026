@@ -224,22 +224,22 @@ function applyThemeToMap(theme) {
         mapContainer.style.filter = 'invert(0.9) hue-rotate(180deg)';
         if (currentObjectManager) {
             currentObjectManager.clusters.options.set({
-                preset: 'islands#grayClusterIcons'
+                preset: 'islands#orangeClusterIcons'
             });
             // Оранжевые маркеры для тёмной темы
             currentObjectManager.objects.options.set({
-                preset: 'islands#orangeDotIcon'
+                preset: 'islands#orangeIcon'
             });
         }
     } else {
         mapContainer.style.filter = 'none';
         if (currentObjectManager) {
             currentObjectManager.clusters.options.set({
-                preset: 'islands#blueClusterIcons'
+                preset: 'islands#darkBlueClusterIcons'
             });
             // Синие маркеры для светлой темы
             currentObjectManager.objects.options.set({
-                preset: 'islands#blueDotIcon'
+                preset: 'islands#blueIcon'
             });
         }
     }

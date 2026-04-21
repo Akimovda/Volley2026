@@ -725,7 +725,7 @@ class TournamentController extends Controller
         $setupService = app(\App\Services\TournamentSetupService::class);
 
         \Illuminate\Support\Facades\DB::transaction(function () use (
-            $event, $setupService, $divisionNames, $hardTeamIds, $liteTeamIds, $mediumTeamIds, $stage, $occurrenceId, $divFormats
+            $event, $setupService, $divisionNames, $hardTeamIds, $liteTeamIds, $mediumTeamIds, $stage, $occurrenceId, $divFormats, $request
         ) {
             $divisions = [
                 'Hard' => $hardTeamIds,
