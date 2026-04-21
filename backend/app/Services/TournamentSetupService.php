@@ -48,12 +48,13 @@ class TournamentSetupService
         $maxOrder = $event->tournamentStages()->max('sort_order') ?? 0;
 
         return TournamentStage::create([
-            'event_id'   => $event->id,
-            'type'       => $data['type'],
-            'name'       => $data['name'],
-            'sort_order' => $data['sort_order'] ?? ($maxOrder + 1),
-            'config'     => $data['config'] ?? [],
-            'status'     => TournamentStage::STATUS_PENDING,
+            'event_id'      => $event->id,
+            'occurrence_id' => $data['occurrence_id'] ?? null,
+            'type'          => $data['type'],
+            'name'          => $data['name'],
+            'sort_order'    => $data['sort_order'] ?? ($maxOrder + 1),
+            'config'        => $data['config'] ?? [],
+            'status'        => TournamentStage::STATUS_PENDING,
         ]);
     }
 

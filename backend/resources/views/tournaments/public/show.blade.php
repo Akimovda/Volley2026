@@ -227,17 +227,71 @@
             $classification = app(\App\Services\TournamentStatsService::class)->calculateFinalClassification($event);
         @endphp
         @if(!empty($classification))
+            @php
+                // Группируем по дивизионам
+                $hasDivisions = isset($classification[0]['division']);
+                $divisions = $hasDivisions
+                    ? collect($classification)->groupBy('division')
+                    : collect(['all' => collect($classification)]);
+            @endphp
+
+            @if($hasDivisions)
+            <div class="row mb-3" id="division_results">
+                @foreach($divisions as $divName => $divTeams)
+                <div class="col-md-{{ (int)(12 / $divisions->count()) }}" style="margin-bottom:16px">
+                    <div class="card p-3">
+                        <div class="b-700 f-16 mb-2">🏆 Итоги дивизиона {{ $divName }}</div>
+                        @foreach($divTeams as $i => $c)
+                            @php
+                                $localPlace = $i + 1;
+                                $team = \App\Models\EventTeam::with('members.user')->find($c['team_id']);
+                                $members = $team ? $team->members->map(function($m) {
+                                    $u = $m->user;
+                                    return $u ? '<a href="' . route('users.show', $u) . '" class="blink" style="color:#6b7280">' . $u->last_name . ' ' . $u->first_name . '</a>' : '?';
+                                })->implode(' / ') : '';
+                            @endphp
+                            <div style="padding:6px 0;border-bottom:1px solid rgba(128,128,128,.08)">
+                                <div class="d-flex f-14" style="gap:8px;align-items:center">
+                                    <span class="b-700" style="width:26px;{{ $localPlace <= 3 ? 'font-size:18px' : '' }}">
+                                        {{ $localPlace === 1 ? '🥇' : ($localPlace === 2 ? '🥈' : ($localPlace === 3 ? '🥉' : $localPlace . '.')) }}
+                                    </span>
+                                    <span class="{{ $localPlace <= 3 ? 'b-700' : '' }}">{{ $c['team_name'] }}</span>
+                                </div>
+                                @if($members)
+                                    <div class="f-12" style="margin-left:34px;color:#6b7280">{!! $members !!}</div>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+                @endforeach
+            </div>
+            @else
+            {{-- Обычный турнир без дивизионов --}}
             <div class="card p-3 mb-3">
                 <div class="b-700 f-16 mb-2">🏆 Итоговая классификация</div>
                 @foreach($classification as $c)
-                    <div class="d-flex f-14" style="padding:5px 0;border-bottom:1px solid rgba(128,128,128,.08);gap:8px;align-items:center">
-                        <span class="b-700" style="width:30px;{{ $c['place'] <= 3 ? 'color:#E7612F;font-size:18px' : '' }}">
-                            {{ $c['place'] === 1 ? '🥇' : ($c['place'] === 2 ? '🥈' : ($c['place'] === 3 ? '🥉' : $c['place'] . '.')) }}
-                        </span>
-                        <span class="{{ $c['place'] <= 3 ? 'b-700' : '' }}">{{ $c['team_name'] }}</span>
+                    @php
+                        $team = \App\Models\EventTeam::with('members.user')->find($c['team_id']);
+                        $members = $team ? $team->members->map(function($m) {
+                            $u = $m->user;
+                            return $u ? '<a href="' . route('users.show', $u) . '" class="blink" style="color:#6b7280">' . $u->last_name . ' ' . $u->first_name . '</a>' : '?';
+                        })->implode(' / ') : '';
+                    @endphp
+                    <div style="padding:6px 0;border-bottom:1px solid rgba(128,128,128,.08)">
+                        <div class="d-flex f-14" style="gap:8px;align-items:center">
+                            <span class="b-700" style="width:26px;{{ $c['place'] <= 3 ? 'font-size:18px' : '' }}">
+                                {{ $c['place'] === 1 ? '🥇' : ($c['place'] === 2 ? '🥈' : ($c['place'] === 3 ? '🥉' : $c['place'] . '.')) }}
+                            </span>
+                            <span class="{{ $c['place'] <= 3 ? 'b-700' : '' }}">{{ $c['team_name'] }}</span>
+                        </div>
+                        @if($members)
+                            <div class="f-12" style="margin-left:34px;color:#6b7280">{!! $members !!}</div>
+                        @endif
                     </div>
                 @endforeach
             </div>
+            @endif
 
             {{-- MVP --}}
             @if($event->tournament_mvp_user_id)

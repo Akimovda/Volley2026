@@ -1693,6 +1693,162 @@ if ($initialStep < 1 || $initialStep > 3) {
 							
 							
 						</div>	
+
+						{{-- ══════════════════════════════════════════════════ --}}
+						{{-- СЕРИЯ ТУРНИРОВ (Season / League) --}}
+						{{-- ══════════════════════════════════════════════════ --}}
+						<div class="ramka" id="season_league_box" style="display:none;">
+							<h2 class="-mt-05">Серия турниров</h2>
+
+							<label class="checkbox-item">
+								<input type="hidden" name="create_season" value="0">
+								<input type="checkbox" name="create_season" value="1" id="create_season" checked>
+								<div class="custom-checkbox"></div>
+								<span>Создать как серию турниров (Сезон)</span>
+							</label>
+
+							<ul class="list f-16 mt-1 mb-2" id="season_hint">
+								<li>Команды переносятся между турами, накопительный рейтинг и статистика.</li>
+								<li>Каждая дата повторения = отдельный тур серии.</li>
+							</ul>
+
+							<div id="season_fields" class="mt-2">
+
+								{{-- Выбор: новая лига или существующая --}}
+								<div class="row">
+									<div class="col-md-6">
+										<div class="card">
+											<label>Лига</label>
+											<select name="season_league_mode" id="season_league_mode">
+												<option value="new">Создать новую лигу</option>
+												@if(isset($organizerSeasons) && $organizerSeasons->count())
+													<option value="existing">Выбрать существующую</option>
+												@endif
+											</select>
+										</div>
+									</div>
+								</div>
+
+								{{-- Новая лига --}}
+								<div class="row mt-2" id="new_league_fields">
+									<div class="col-md-6">
+										<div class="card">
+											<label for="new_league_name">Название лиги</label>
+											<input type="text"
+												id="new_league_name"
+												name="new_league_name"
+												value="{{ old('new_league_name', 'Основная лига') }}"
+												placeholder="Например: Лига Hard"
+												class="w-full rounded-lg border-gray-200">
+										</div>
+									</div>
+								</div>
+
+								{{-- Существующая лига --}}
+								<div class="row mt-2" id="existing_league_fields" style="display:none;">
+									<div class="col-md-6">
+										<div class="card">
+											<label>Сезон</label>
+											<select name="existing_season_id" id="existing_season_id">
+												<option value="">— выбрать сезон —</option>
+												@if(isset($organizerSeasons))
+													@foreach($organizerSeasons as $s)
+														<option value="{{ $s->id }}">{{ $s->name }}</option>
+													@endforeach
+												@endif
+											</select>
+										</div>
+									</div>
+									<div class="col-md-6">
+										<div class="card">
+											<label>Лига</label>
+											<select name="existing_league_id" id="existing_league_id">
+												<option value="">— сначала выберите сезон —</option>
+											</select>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+
+						<script>
+						document.addEventListener('DOMContentLoaded', () => {
+							const formatSelect   = document.querySelector('select[name="format"], input[name="format"]');
+							const isRecurring    = document.getElementById('is_recurring');
+							const seasonBox      = document.getElementById('season_league_box');
+							const createSeason   = document.getElementById('create_season');
+							const seasonFields   = document.getElementById('season_fields');
+							const leagueMode     = document.getElementById('season_league_mode');
+							const newFields      = document.getElementById('new_league_fields');
+							const existingFields = document.getElementById('existing_league_fields');
+							const seasonSelect   = document.getElementById('existing_season_id');
+							const leagueSelect   = document.getElementById('existing_league_id');
+
+							const seasonsData = @php
+							$seasonsJs = isset($organizerSeasons) ? $organizerSeasons->map(function($s) {
+								return [
+									'id' => $s->id,
+									'name' => $s->name,
+									'leagues' => $s->leagues->map(function($l) {
+										return ['id' => $l->id, 'name' => $l->name];
+									})->values()->toArray(),
+								];
+							})->values()->toArray() : [];
+							echo json_encode($seasonsJs);
+						@endphp;
+
+							function getFormat() {
+								if (!formatSelect) return '';
+								if (formatSelect.tagName === 'SELECT') return formatSelect.value;
+								const checked = document.querySelector('input[name="format"]:checked');
+								return checked ? checked.value : '';
+							}
+
+							function syncSeasonBox() {
+								const isTournament = getFormat() === 'tournament';
+								const isRec = isRecurring && isRecurring.checked;
+								seasonBox.style.display = (isTournament && isRec) ? '' : 'none';
+							}
+
+							function syncSeasonFields() {
+								seasonFields.style.display = createSeason.checked ? '' : 'none';
+							}
+
+							function syncLeagueMode() {
+								const mode = leagueMode.value;
+								newFields.style.display      = (mode === 'new') ? '' : 'none';
+								existingFields.style.display = (mode === 'existing') ? '' : 'none';
+							}
+
+							function populateLeagues() {
+								const sid = parseInt(seasonSelect.value);
+								leagueSelect.innerHTML = '<option value="">— выбрать лигу —</option>';
+								const season = seasonsData.find(s => s.id === sid);
+								if (season) {
+									season.leagues.forEach(l => {
+										const opt = document.createElement('option');
+										opt.value = l.id;
+										opt.textContent = l.name;
+										leagueSelect.appendChild(opt);
+									});
+								}
+							}
+
+							if (formatSelect) {
+								formatSelect.addEventListener('change', syncSeasonBox);
+								document.querySelectorAll('input[name="format"]').forEach(r => r.addEventListener('change', syncSeasonBox));
+							}
+							if (isRecurring)   isRecurring.addEventListener('change', syncSeasonBox);
+							if (createSeason)  createSeason.addEventListener('change', syncSeasonFields);
+							if (leagueMode)    leagueMode.addEventListener('change', syncLeagueMode);
+							if (seasonSelect)  seasonSelect.addEventListener('change', populateLeagues);
+
+							syncSeasonBox();
+							syncSeasonFields();
+							syncLeagueMode();
+						});
+						</script>
+
 						<div class="ramka text-center">
 							<button type="button" class="btn btn-secondary" data-back>
 								Назад

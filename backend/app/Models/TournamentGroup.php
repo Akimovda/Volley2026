@@ -13,6 +13,11 @@ class TournamentGroup extends Model
         'stage_id',
         'name',
         'sort_order',
+        'courts',
+    ];
+
+    protected $casts = [
+        'courts' => 'array',
     ];
 
     public function stage(): BelongsTo

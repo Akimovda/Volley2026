@@ -15,6 +15,7 @@ use App\Services\StaffLogService;
     use App\Models\Event;
     use App\Models\User;
     use App\Models\Location;
+    use App\Models\TournamentSeason;
     use App\Models\City;
     use Spatie\MediaLibrary\MediaCollections\Models\Media;
     use Carbon\Carbon;
@@ -401,6 +402,13 @@ use App\Services\StaffLogService;
             $tzGroups = (array)config('event_timezones.groups', []);
             $tzDefault = (string)config('event_timezones.default', 'Europe/Moscow');
 			
+            // Сезоны и лиги организатора — для блока «Серия турниров»
+            $organizerSeasons = TournamentSeason::where('organizer_id', $organizerId ?: $user->id)
+                ->whereIn('status', ['active', 'draft'])
+                ->with('leagues')
+                ->orderByDesc('created_at')
+                ->get();
+
             return view('events.create', [
 			'cityId' => $cityId,
 			'userCityId' => $user->city_id ?? null,
@@ -419,6 +427,7 @@ use App\Services\StaffLogService;
 			
 			'tzGroups' => $tzGroups,
 			'tzDefault' => $tzDefault,
+'organizerSeasons' => $organizerSeasons,
             ]);
 		}
 		// GET /events/create/locations?city_id=123

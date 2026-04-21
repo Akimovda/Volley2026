@@ -4,7 +4,7 @@
 
 <x-slot name="breadcrumbs">
     <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
-        <a href="{{ route('tournament.setup', $event) }}" itemprop="item"><span itemprop="name">{{ $event->title }}</span></a>
+        <a href="{{ route('tournament.setup', $event) }}{{ $match->stage->occurrence_id ? '?occurrence_id=' . $match->stage->occurrence_id : '' }}" itemprop="item"><span itemprop="name">{{ $event->title }}</span></a>
         <meta itemprop="position" content="2">
     </li>
     <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
@@ -37,10 +37,24 @@
         <div class="d-flex between fvc">
             <div style="flex:1;text-align:center">
                 <div class="b-700 f-18">{{ $match->teamHome->name ?? 'TBD' }}</div>
+                @if($match->teamHome && $match->teamHome->members->count())
+                <div class="f-12 team-members" style="margin-top:4px;color:#6b7280">
+                    @foreach($match->teamHome->members as $mi => $m)
+                        @if($m->user)<a href="{{ route('users.show', $m->user) }}" class="blink" style="color:#6b7280">{{ $m->user->last_name }} {{ $m->user->first_name }}</a>{{ $mi < $match->teamHome->members->count() - 1 ? ' / ' : '' }}@endif
+                    @endforeach
+                </div>
+                @endif
             </div>
             <div class="px-2 f-20 b-700" style="opacity:.4">VS</div>
             <div style="flex:1;text-align:center">
                 <div class="b-700 f-18">{{ $match->teamAway->name ?? 'TBD' }}</div>
+                @if($match->teamAway && $match->teamAway->members->count())
+                <div class="f-12 team-members" style="margin-top:4px;color:#6b7280">
+                    @foreach($match->teamAway->members as $mi => $m)
+                        @if($m->user)<a href="{{ route('users.show', $m->user) }}" class="blink" style="color:#6b7280">{{ $m->user->last_name }} {{ $m->user->first_name }}</a>{{ $mi < $match->teamAway->members->count() - 1 ? ' / ' : '' }}@endif
+                    @endforeach
+                </div>
+                @endif
             </div>
         </div>
     </div>
@@ -94,7 +108,10 @@
             Записать счёт
         </button>
 
-        <a href="{{ route('tournament.setup', $event) }}" class="btn btn-secondary w-100 p-2 f-14 mt-2" style="text-align:center;display:block">
+        @php
+            $backOccId = $match->stage->occurrence_id;
+        @endphp
+        <a href="{{ route('tournament.setup', $event) }}{{ $backOccId ? '?occurrence_id=' . $backOccId : '' }}" class="btn btn-secondary w-100 p-2 f-14 mt-2" style="text-align:center;display:block">
             ← Назад
         </a>
 

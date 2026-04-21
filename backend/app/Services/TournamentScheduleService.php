@@ -58,11 +58,32 @@ class TournamentScheduleService
         // Группируем по раундам — все матчи одного раунда идут параллельно
         $byRound = $matches->groupBy('round');
 
+        // Собираем корты по группам
+        $groupCourts = [];
+        foreach ($stage->groups as $group) {
+            if (!empty($group->courts)) {
+                $groupCourts[$group->id] = $group->courts;
+            }
+        }
+
         foreach ($byRound as $round => $roundMatches) {
             $courtIdx = 0;
+            $groupCourtIdx = []; // отдельный счётчик для каждой группы
 
             foreach ($roundMatches as $match) {
-                $court = $courts[$courtIdx % $courtsCount];
+                // Если матч привязан к группе и у группы есть свои корты
+                $matchCourts = $courts;
+                $matchCourtsCount = $courtsCount;
+                $gid = $match->group_id;
+
+                if ($gid && isset($groupCourts[$gid]) && count($groupCourts[$gid]) > 0) {
+                    $matchCourts = $groupCourts[$gid];
+                    $matchCourtsCount = count($matchCourts);
+                    if (!isset($groupCourtIdx[$gid])) $groupCourtIdx[$gid] = 0;
+                    $courtIdx = $groupCourtIdx[$gid];
+                }
+
+                $court = $matchCourts[$courtIdx % $matchCourtsCount];
 
                 // Проверяем пересечения
                 $conflict = $this->checkConflict($match, $currentTime, $slotDuration);
@@ -79,12 +100,29 @@ class TournamentScheduleService
                 ]);
 
                 $courtIdx++;
+                if ($gid && isset($groupCourts[$gid])) {
+                    $groupCourtIdx[$gid] = $courtIdx;
+                }
                 $scheduled++;
 
                 // Если все корты заняты — переходим к следующему слоту
-                if ($courtIdx >= $courtsCount) {
+                $allFull = true;
+                if (!empty($groupCourts)) {
+                    // Проверяем все группы
+                    foreach ($groupCourts as $gcId => $gcList) {
+                        if (($groupCourtIdx[$gcId] ?? 0) < count($gcList)) {
+                            $allFull = false;
+                            break;
+                        }
+                    }
+                } else {
+                    $allFull = ($courtIdx >= $courtsCount);
+                }
+
+                if ($allFull) {
                     $currentTime = $currentTime->copy()->addMinutes($slotDuration);
                     $courtIdx = 0;
+                    $groupCourtIdx = [];
                 }
             }
 

@@ -212,6 +212,37 @@ class TournamentStatsService
         $place = 1;
         $assignedTeams = [];
 
+        // Если есть дивизионы — классификация по дивизионам (Hard первый, потом Lite)
+        $divisionStages = $stages->filter(fn($s) => str_starts_with($s->name, 'Дивизион'));
+        if ($divisionStages->isNotEmpty()) {
+            // Сортируем: Hard первый, Medium потом, Lite последний
+            $sorted = $divisionStages->sortBy(function($s) {
+                if (str_contains($s->name, 'Hard')) return 0;
+                if (str_contains($s->name, 'Medium')) return 1;
+                return 2; // Lite
+            });
+
+            foreach ($sorted as $divStage) {
+                $divStandings = TournamentStanding::where('stage_id', $divStage->id)
+                    ->with('team')
+                    ->orderBy('rank')
+                    ->get();
+
+                foreach ($divStandings as $s) {
+                    if (in_array($s->team_id, $assignedTeams)) continue;
+                    $classification[] = [
+                        'place' => $place++,
+                        'team_id' => $s->team_id,
+                        'team_name' => $s->team->name ?? '?',
+                        'division' => str_replace('Дивизион ', '', $divStage->name),
+                    ];
+                    $assignedTeams[] = $s->team_id;
+                }
+            }
+
+            return $classification;
+        }
+
         // 1. Bracket стадия (single/double elim) — финал определяет 1-2 место
         $bracketStage = $stages->whereIn('type', ['single_elim', 'double_elim'])->last();
         if ($bracketStage) {

@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\DB;
 use App\Services\Validation\EventCreateValidator;
+use App\Services\TournamentSeasonAutoCreateService;
 
 class EventStoreService
 {
@@ -22,7 +23,8 @@ class EventStoreService
         private EventCoverService $coverService,
         private EventGameSettingsService $gameSettingsService,
         private EventRoleSlotService $roleSlotService,
-        private EventNotificationChannelService $channelService  // <-- ДОБАВЛЕНА НОВАЯ ЗАВИСИМОСТЬ
+        private EventNotificationChannelService $channelService,
+        private TournamentSeasonAutoCreateService $seasonAutoService,
     ) {}
 
     /*
@@ -445,6 +447,15 @@ class EventStoreService
                     $format,
                     $tournamentNormalized['registrationMode']
                 );
+
+                /*
+                |--------------------------------------------------------------------------
+                | SEASON AUTO-CREATE (for recurring tournaments)
+                |--------------------------------------------------------------------------
+                */
+                if ($event->is_recurring) {
+                    $this->seasonAutoService->createIfNeeded($event, $data);
+                }
             }
 
             /*

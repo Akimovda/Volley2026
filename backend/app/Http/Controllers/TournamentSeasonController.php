@@ -227,6 +227,33 @@ class TournamentSeasonController extends Controller
     }
 
     /* ================================================================
+     *  УПРАВЛЕНИЕ СТАТУСОМ КОМАНДЫ В ЛИГЕ
+     * ================================================================ */
+
+    public function toReserve(Request $request, TournamentLeagueTeam $leagueTeam)
+    {
+        $this->authorizeSeason($request, $leagueTeam->league->season);
+
+        $nextPos = $leagueTeam->league->nextReservePosition();
+        $leagueTeam->update([
+            'status'           => TournamentLeagueTeam::STATUS_RESERVE,
+            'left_at'          => now(),
+            'reserve_position' => $nextPos,
+        ]);
+
+        return back()->with('success', 'Команда переведена в резерв.');
+    }
+
+    public function activateLeagueTeam(Request $request, TournamentLeagueTeam $leagueTeam)
+    {
+        $this->authorizeSeason($request, $leagueTeam->league->season);
+
+        $leagueTeam->activateFromReserve();
+
+        return back()->with('success', 'Команда активирована.');
+    }
+
+    /* ================================================================
      *  ПРИВЯЗКА ТУРНИРОВ К СЕЗОНУ
      * ================================================================ */
 
@@ -268,14 +295,26 @@ class TournamentSeasonController extends Controller
         $season->load([
             'organizer',
             'leagues.activeTeams.team.captain',
+            'leagues.activeTeams.team.members.user',
             'leagues.activeTeams.user',
-            'leagues.reserveTeams',
+            'leagues.reserveTeams.team.captain',
+            'leagues.reserveTeams.team.members.user',
             'seasonEvents.event',
             'seasonEvents.league',
             'stats' => fn($q) => $q->orderByDesc('match_win_rate'),
         ]);
 
-        return view('seasons.show', compact('season'));
+        // Загружаем occurrences основного event
+        $sourceEvent = $season->seasonEvents->first()?->event;
+        $occurrences = collect();
+        if ($sourceEvent) {
+            $occurrences = $sourceEvent->occurrences()
+                ->whereNull('cancelled_at')
+                ->orderBy('starts_at')
+                ->get();
+        }
+
+        return view('seasons.show', compact('season', 'occurrences', 'sourceEvent'));
     }
 
     /**

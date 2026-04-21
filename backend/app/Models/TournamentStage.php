@@ -10,6 +10,7 @@ class TournamentStage extends Model
 {
     protected $fillable = [
         'event_id',
+        'occurrence_id',
         'type',
         'name',
         'sort_order',

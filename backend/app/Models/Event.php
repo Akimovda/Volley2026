@@ -28,6 +28,7 @@ class Event extends Model implements HasMedia
         'beach_level_max',
         'trainer_user_id',
         'organizer_id',
+        'season_id',
         'location_id',
         'timezone',
         'starts_at',
@@ -139,6 +140,11 @@ class Event extends Model implements HasMedia
     {
         return $this->belongsTo(User::class, 'organizer_id')
             ->withTrashed();
+    }
+
+    public function season(): BelongsTo
+    {
+        return $this->belongsTo(TournamentSeason::class, 'season_id');
     }
 
     public function location(): BelongsTo

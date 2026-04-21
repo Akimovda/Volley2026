@@ -159,7 +159,6 @@
 	position: relative;
 	height: 55rem;
 	border-radius: 1.6rem;
-
 }	
 .sgroup {
 	position: absolute;
@@ -188,6 +187,12 @@
 .sgroup:hover:after {
 	content: "";
 	background-color: rgba(255,255,255,0.1);
+}
+body.dark .sgroup:after {
+	background-color: rgba(0,0,0,0.3);
+}
+body.dark .sgroup:hover:after {
+	background-color: rgba(0,0,0,0.1);
 }
 .sgroup-1 {
 	top: 0;
@@ -236,6 +241,9 @@
 	transition: opacity 150ms linear;
 	will-change: opacity;
 }
+body.dark .close-sgroup {
+	color: #cacaca;
+}
 .sgroup.is-expanded .close-sgroup {
 	opacity: 1;
 	transition-delay: 500ms;
@@ -251,8 +259,11 @@
 	z-index: 1;
 	line-height: 1;
 	padding: 0.8rem 1.4rem;
-	background: rgba(255,255,255,0.8);
+	text-shadow: 0 0 0.5rem rgba(255,255,255,1), 0 0 1rem rgba(255,255,255,0.9);
 	border-radius: 1rem;
+}
+body.dark .title-box {
+	text-shadow: 0 0 0.5rem rgba(34, 35, 51, 1),  0 0 1rem rgba(34, 35, 51,0.9);
 }
 .sgroup-1 .title-box { 
 	right: 0;
@@ -282,6 +293,9 @@
 		bottom: -0.4rem;
 		transition: width 0.6s;
 	}
+	body.dark .title-box:after {
+		background: #E7612F;
+	}	
 	.sgroup-3 .title-box:after,
 	.sgroup-4 .title-box:after { 
 		top: -0.4rem;
@@ -352,6 +366,9 @@
 .sgroup.is-expanded:after {
 	background-color: rgba(255,255,255,0.95);
 }
+body.dark .sgroup.is-expanded:after {
+	background-color: rgba(30,31,45,0.95);
+}
 .sgroup.is-expanded .title-box {
 	top: 2.3rem;
 	left: 8rem;
@@ -395,6 +412,9 @@
 	z-index: 12;
 	padding: 1.8rem;
 }
+body.dark .sgroup-circle {
+	background-color: rgba(30,31,45,0.9);
+}
 .has-expanded-item .sgroup-circle,
 .has-expanded-item .sgroup-logo {
 	border-radius: 50%;
@@ -416,6 +436,9 @@
 	box-shadow: inset 0 .2rem .2rem #fff;
 	border-radius: 50%;
 }
+body.dark .sgroup-circle::before {
+	box-shadow: inset 0 .2rem .2rem #2a2c3f;
+}
 .sgroup-logo {
 	display: flex;
 	align-items: center;
@@ -423,6 +446,10 @@
 	box-shadow: inset 0 .3rem .6rem rgba(0, 0, 0, .1);
 	background-color: rgba(255,255,255,0.9);
 	transition: all .3s ease-in-out;	
+}
+body.dark .sgroup-logo {
+	box-shadow: inset 0 .3rem .6rem rgba(0, 0, 0, .35);
+	background-color: rgba(34, 35, 51,1);
 }
 .sgroup-logo svg {
 	width: 72%;
@@ -495,6 +522,9 @@ border:1rem solid #fff;
 		background: rgba(255,255,255,0.8);
 		border-radius: 0;
 	}
+	body.dark .sgroup:not(.is-expanded) .title-box {
+		background: rgba(34, 35, 51,0.8);
+	}	
 }	
 		</style>
 	</x-slot>	
@@ -548,7 +578,7 @@ border:1rem solid #fff;
 	</div> 	
 	<div class="sgroup sgroup-1">
 		<div class="close-sgroup">&times;</div>
-		<div class="img-box"><img data-light="/img/main/bg-1-1.png" data-dark="/img/main/bg-1-d.webp" alt="Игрокам" src="/img/pixel.png"></div>
+		<div class="img-box"><img data-light="/img/main/bg-1-1.png" data-dark="/img/main/bg-1-1-d.png" alt="Игрокам" src="/img/pixel.png"></div>
 		<div class="title-box">Игрокам</div>
 		<div class="info-box">
 			<div class="row row2">
@@ -611,7 +641,7 @@ border:1rem solid #fff;
 	</div>
 	<div class="sgroup sgroup-2">
 		<div class="close-sgroup">&times;</div>
-		<div class="img-box"><img data-light="/img/main/bg-2.png" data-dark="/img/main/bg-2-d.webp" alt="Тренерам" src="/img/pixel.png"></div>
+		<div class="img-box"><img data-light="/img/main/bg-2.png" data-dark="/img/main/bg-2-d.png" alt="Тренерам" src="/img/pixel.png"></div>
 		<div class="title-box">Тренерам</div>
 		<div class="info-box">
 			<div class="row row2">
@@ -677,7 +707,7 @@ border:1rem solid #fff;
 	</div>  
 	<div class="sgroup sgroup-3">
 		<div class="close-sgroup">&times;</div>
-		<div class="img-box"><img data-light="/img/main/bg-3.webp" data-dark="/img/main/bg-3-d.webp" alt="Организаторам" src="/img/pixel.png"></div>
+		<div class="img-box"><img data-light="/img/main/bg-3.png" data-dark="/img/main/bg-3-d.webp" alt="Организаторам" src="/img/pixel.png"></div>
 		<div class="title-box">Организаторам</div>
 		<div class="info-box">
 			<div class="row row2">

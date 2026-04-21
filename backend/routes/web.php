@@ -780,12 +780,21 @@ Route::middleware([
     Route::post('/tournament-matches/{match}/player-stats', [TournamentController::class, 'playerStatsSave'])
         ->name('tournament.matches.player_stats.save');
 
+    Route::post('/events/{event}/tournament/apply-promotion', [TournamentController::class, 'applyDivisionPromotion'])
+        ->name('tournament.applyPromotion');
+
+    Route::post('/tournament-stages/{stage}/form-divisions', [TournamentController::class, 'formDivisions'])
+        ->name('tournament.stages.formDivisions');
+
     Route::post('/tournament-stages/{stage}/advance', [TournamentController::class, 'advance'])
         ->name('tournament.stages.advance');
 
 
     Route::post('/tournament-stages/{stage}/schedule', [TournamentController::class, 'generateSchedule'])
         ->name('tournament.stages.schedule');
+
+    Route::post('/tournament-stages/{stage}/assign-courts', [TournamentController::class, 'assignCourts'])
+        ->name('tournament.stages.assignCourts');
 
     Route::post('/tournament-stages/{stage}/next-round', [TournamentController::class, 'nextRound'])
         ->name('tournament.stages.nextRound');
@@ -852,6 +861,12 @@ Route::middleware([
         ->name('leagues.teams.store');
     Route::delete('/league-teams/{leagueTeam}', [TournamentSeasonController::class, 'removeTeamFromLeague'])
         ->name('leagues.teams.destroy');
+
+    // Управление статусом команды в лиге
+    Route::post('/league-teams/{leagueTeam}/to-reserve', [TournamentSeasonController::class, 'toReserve'])
+        ->name('league.teams.toReserve');
+    Route::post('/league-teams/{leagueTeam}/activate', [TournamentSeasonController::class, 'activateLeagueTeam'])
+        ->name('league.teams.activate');
 
     // Привязка турниров к сезону
     Route::post('/seasons/{season}/events', [TournamentSeasonController::class, 'attachEvent'])
