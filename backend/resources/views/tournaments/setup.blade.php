@@ -8,7 +8,7 @@
     <x-slot name="style">
         <style>
 			
-
+			
 			
 		</style>
 	</x-slot>
@@ -82,23 +82,23 @@
 		
 		
 		
-@if(session('success') || session('error'))
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-	if (typeof Swal !== 'undefined') {
-		Swal.fire({
-			icon: '{{ session("success") ? "success" : "error" }}',
-			title: '{{ session("success") ? "Готово" : "Ошибка" }}',
-			text: {!! json_encode(session('success') ?: session('error')) !!},
-			timer: 3000,
-			showConfirmButton: false,
-			toast: true,
-			position: 'top-end',
-		});
-	}
-});
-</script>
-@endif
+		@if(session('success') || session('error'))
+		<script>
+			document.addEventListener('DOMContentLoaded', function() {
+				if (typeof Swal !== 'undefined') {
+					Swal.fire({
+						icon: '{{ session("success") ? "success" : "error" }}',
+						title: '{{ session("success") ? "Готово" : "Ошибка" }}',
+						text: {!! json_encode(session('success') ?: session('error')) !!},
+						timer: 3000,
+						showConfirmButton: false,
+						toast: true,
+						position: 'top-end',
+					});
+				}
+			});
+		</script>
+		@endif
 		@if($errors->any())
 		<div class="ramka">
 			<div class="alert alert-error">
@@ -109,156 +109,156 @@ document.addEventListener('DOMContentLoaded', function() {
 		</div>
 		@endif
 		
-
-
-{{-- ============================================================
-	Серия турниров — управление составом лиги
-============================================================ --}}
-@if($seasonData)
-<div class="ramka" id="season_league_management">
-	<style>
-		.league-table { width:100%; border-collapse:collapse; }
-		.league-table th { text-align:left; padding:8px 6px; border-bottom:2px solid #e5e7eb; font-size:13px; color:#6b7280; }
-		.league-table td { padding:10px 6px; border-bottom:1px solid #f3f4f6; vertical-align:middle; }
-		.league-table tr:last-child td { border-bottom:none; }
-		.league-table .team-name { font-weight:600; font-size:15px; }
-		.league-table .team-members { font-size:13px; color:#6b7280; margin-top:2px; }
-		.league-badge { display:inline-block; padding:3px 10px; border-radius:12px; font-size:12px; font-weight:600; }
-		.league-badge-active { background:#dcfce7; color:#166534; }
-		.league-badge-reserve { background:#fef3c7; color:#92400e; }
-		.league-badge-pending { background:#dbeafe; color:#1e40af; }
-		.league-btn { padding:5px 12px; border-radius:8px; font-size:12px; border:1px solid #d1d5db; background:#fff; cursor:pointer; font-weight:500; }
-		.league-btn:hover { background:#f9fafb; }
-		.league-btn-danger { color:#dc2626; border-color:#fca5a5; }
-		.league-btn-danger:hover { background:#fef2f2; }
-		.league-btn-success { color:#16a34a; border-color:#86efac; }
-		.league-btn-success:hover { background:#f0fdf4; }
-		.tour-btn { display:inline-block; padding:6px 14px; border-radius:8px; font-size:13px; border:1px solid #d1d5db; background:#fff; color:#374151; text-decoration:none; font-weight:500; }
-		.tour-btn:hover { background:#f3f4f6; text-decoration:none; }
-		.tour-btn-active { background:#4f46e5; color:#fff; border-color:#4f46e5; }
-		.tour-btn-active:hover { background:#4338ca; }
-		@media (max-width:640px) {
-			.league-table th:nth-child(1), .league-table td:nth-child(1) { display:none; }
-			.league-table th:nth-child(3) { width:70px; }
-			.league-table th:nth-child(4) { width:90px; }
-			.league-table .team-name { font-size:14px; }
-			.league-table .team-members { font-size:12px; }
-			.league-badge { padding:2px 8px; font-size:11px; }
-			.league-btn { padding:4px 8px; font-size:11px; }
-			.tour-btn { padding:5px 10px; font-size:12px; }
-		}
-	</style>
-
-	<h2 class="-mt-05">
-		🏆 {{ $seasonData['season']->name }}
-		<span class="f-14" style="opacity:.6">/ {{ $seasonData['league']->name ?? 'Лига' }}</span>
-	</h2>
-
-	{{-- Выбор тура --}}
-	@if($seasonData['occurrences']->count() > 1)
-	<div class="mb-2">
-		<label class="b-600">Тур:</label>
-		<div class="d-flex" style="gap:6px;flex-wrap:wrap;margin-top:6px">
-			@foreach($seasonData['occurrences'] as $occ)
-				@php
+		
+		
+		{{-- ============================================================
+		Серия турниров — управление составом лиги
+		============================================================ --}}
+		@if($seasonData)
+		<div class="ramka" id="season_league_management">
+			<style>
+				.league-table { width:100%; border-collapse:collapse; }
+				.league-table th { text-align:left; padding:8px 6px; border-bottom:2px solid #e5e7eb; font-size:13px; color:#6b7280; }
+				.league-table td { padding:10px 6px; border-bottom:1px solid #f3f4f6; vertical-align:middle; }
+				.league-table tr:last-child td { border-bottom:none; }
+				.league-table .team-name { font-weight:600; font-size:15px; }
+				.league-table .team-members { font-size:13px; color:#6b7280; margin-top:2px; }
+				.league-badge { display:inline-block; padding:3px 10px; border-radius:12px; font-size:12px; font-weight:600; }
+				.league-badge-active { background:#dcfce7; color:#166534; }
+				.league-badge-reserve { background:#fef3c7; color:#92400e; }
+				.league-badge-pending { background:#dbeafe; color:#1e40af; }
+				.league-btn { padding:5px 12px; border-radius:8px; font-size:12px; border:1px solid #d1d5db; background:#fff; cursor:pointer; font-weight:500; }
+				.league-btn:hover { background:#f9fafb; }
+				.league-btn-danger { color:#dc2626; border-color:#fca5a5; }
+				.league-btn-danger:hover { background:#fef2f2; }
+				.league-btn-success { color:#16a34a; border-color:#86efac; }
+				.league-btn-success:hover { background:#f0fdf4; }
+				.tour-btn { display:inline-block; padding:6px 14px; border-radius:8px; font-size:13px; border:1px solid #d1d5db; background:#fff; color:#374151; text-decoration:none; font-weight:500; }
+				.tour-btn:hover { background:#f3f4f6; text-decoration:none; }
+				.tour-btn-active { background:#4f46e5; color:#fff; border-color:#4f46e5; }
+				.tour-btn-active:hover { background:#4338ca; }
+				@media (max-width:640px) {
+				.league-table th:nth-child(1), .league-table td:nth-child(1) { display:none; }
+				.league-table th:nth-child(3) { width:70px; }
+				.league-table th:nth-child(4) { width:90px; }
+				.league-table .team-name { font-size:14px; }
+				.league-table .team-members { font-size:12px; }
+				.league-badge { padding:2px 8px; font-size:11px; }
+				.league-btn { padding:4px 8px; font-size:11px; }
+				.tour-btn { padding:5px 10px; font-size:12px; }
+				}
+			</style>
+			
+			<h2 class="-mt-05">
+				🏆 {{ $seasonData['season']->name }}
+				<span class="f-14" style="opacity:.6">/ {{ $seasonData['league']->name ?? 'Лига' }}</span>
+			</h2>
+			
+			{{-- Выбор тура --}}
+			@if($seasonData['occurrences']->count() > 1)
+			<div class="mb-2">
+				<label class="b-600">Тур:</label>
+				<div class="d-flex" style="gap:6px;flex-wrap:wrap;margin-top:6px">
+					@foreach($seasonData['occurrences'] as $occ)
+					@php
 					$isSelected = $selectedOccurrence && $selectedOccurrence->id === $occ->id;
 					$occDate = \Carbon\Carbon::parse($occ->starts_at)->setTimezone($event->timezone ?? 'Europe/Moscow');
-				@endphp
-				<a href="{{ route('tournament.setup', $event) }}?occurrence_id={{ $occ->id }}"
-				   class="tour-btn {{ $isSelected ? 'tour-btn-active' : '' }}">
-					{{ $loop->iteration }} ({{ $occDate->format('d.m') }})
-				</a>
-			@endforeach
-		</div>
-	</div>
-	@endif
-
-	{{-- Состав лиги --}}
-	@if($leagueTeams->count())
-	<div class="mt-2">
-		<h3 style="font-size:16px;margin-bottom:10px">
-			Состав лиги
-			<span style="font-weight:400;color:#6b7280">
-				— {{ $leagueTeams->where('status', 'active')->count() }} акт.
-				@if($leagueTeams->where('status', 'reserve')->count())
-					/ {{ $leagueTeams->where('status', 'reserve')->count() }} рез.
-				@endif
-			</span>
-		</h3>
-
-		<table class="league-table">
-			<thead>
-				<tr>
-					<th style="width:30px">#</th>
-					<th>Команда</th>
-					<th>Статус</th>
-					<th>Действие</th>
-				</tr>
-			</thead>
-			<tbody>
-				@foreach($leagueTeams as $lt)
-				<tr style="{{ $lt->status === 'reserve' ? 'opacity:.55' : '' }}">
-					<td>{{ $loop->iteration }}</td>
-					<td>
-						@if($lt->team)
-							<div class="team-name">{{ $lt->team->name }}</div>
-							<div class="team-members">
-								@php
+					@endphp
+					<a href="{{ route('tournament.setup', $event) }}?occurrence_id={{ $occ->id }}"
+					class="tour-btn {{ $isSelected ? 'tour-btn-active' : '' }}">
+						{{ $loop->iteration }} ({{ $occDate->format('d.m') }})
+					</a>
+					@endforeach
+				</div>
+			</div>
+			@endif
+			
+			{{-- Состав лиги --}}
+			@if($leagueTeams->count())
+			<div class="mt-2">
+				<h3 style="font-size:16px;margin-bottom:10px">
+					Состав лиги
+					<span style="font-weight:400;color:#6b7280">
+						— {{ $leagueTeams->where('status', 'active')->count() }} акт.
+						@if($leagueTeams->where('status', 'reserve')->count())
+						/ {{ $leagueTeams->where('status', 'reserve')->count() }} рез.
+						@endif
+					</span>
+				</h3>
+				
+				<table class="league-table">
+					<thead>
+						<tr>
+							<th style="width:30px">#</th>
+							<th>Команда</th>
+							<th>Статус</th>
+							<th>Действие</th>
+						</tr>
+					</thead>
+					<tbody>
+						@foreach($leagueTeams as $lt)
+						<tr style="{{ $lt->status === 'reserve' ? 'opacity:.55' : '' }}">
+							<td>{{ $loop->iteration }}</td>
+							<td>
+								@if($lt->team)
+								<div class="team-name">{{ $lt->team->name }}</div>
+								<div class="team-members">
+									@php
 									$members = $lt->team->members->map(function($m) {
-										$u = $m->user;
-										return $u ? ($u->first_name . ' ' . $u->last_name) : '?';
+									$u = $m->user;
+									return $u ? ($u->first_name . ' ' . $u->last_name) : '?';
 									})->implode(' / ');
-								@endphp
-								{{ $members }}
-							</div>
-						@elseif($lt->user)
-							<div class="team-name">{{ $lt->user->first_name }} {{ $lt->user->last_name }}</div>
-						@else
-							—
-						@endif
-					</td>
-					<td>
-						@if($lt->status === 'active')
-							<span class="league-badge league-badge-active">Активен</span>
-						@elseif($lt->status === 'reserve')
-							<span class="league-badge league-badge-reserve">Резерв #{{ $lt->reserve_position }}</span>
-						@elseif($lt->status === 'pending_confirmation')
-							<span class="league-badge league-badge-pending">Ожидает</span>
-						@else
-							<span class="league-badge">{{ $lt->status }}</span>
-						@endif
-					</td>
-					<td>
-						@if($lt->status === 'active')
-							<form method="POST" action="{{ route('league.teams.toReserve', $lt) }}"
-								  onsubmit="return confirm('Перевести в резерв?')" style="display:inline">
-								@csrf
-								<button type="submit" class="league-btn league-btn-danger">В резерв</button>
-							</form>
-						@elseif($lt->status === 'reserve')
-							<form method="POST" action="{{ route('league.teams.activate', $lt) }}"
-								  onsubmit="return confirm('Активировать?')" style="display:inline">
-								@csrf
-								<button type="submit" class="league-btn league-btn-success">Активировать</button>
-							</form>
-						@endif
-					</td>
-				</tr>
-				@endforeach
-			</tbody>
-		</table>
-	</div>
-	@else
-		<div class="alert alert-info">В лиге пока нет команд. Команды добавятся после регистрации на турнир.</div>
-	@endif
-
-	<div class="mt-2 f-13" style="opacity:.5">
-		<a href="{{ route('seasons.show', $seasonData['season']) }}" class="blink">Страница сезона →</a>
-	</div>
-</div>
-@endif
-
-
+									@endphp
+									{{ $members }}
+								</div>
+								@elseif($lt->user)
+								<div class="team-name">{{ $lt->user->first_name }} {{ $lt->user->last_name }}</div>
+								@else
+								—
+								@endif
+							</td>
+							<td>
+								@if($lt->status === 'active')
+								<span class="league-badge league-badge-active">Активен</span>
+								@elseif($lt->status === 'reserve')
+								<span class="league-badge league-badge-reserve">Резерв #{{ $lt->reserve_position }}</span>
+								@elseif($lt->status === 'pending_confirmation')
+								<span class="league-badge league-badge-pending">Ожидает</span>
+								@else
+								<span class="league-badge">{{ $lt->status }}</span>
+								@endif
+							</td>
+							<td>
+								@if($lt->status === 'active')
+								<form method="POST" action="{{ route('league.teams.toReserve', $lt) }}"
+								onsubmit="return confirm('Перевести в резерв?')" style="display:inline">
+									@csrf
+									<button type="submit" class="league-btn league-btn-danger">В резерв</button>
+								</form>
+								@elseif($lt->status === 'reserve')
+								<form method="POST" action="{{ route('league.teams.activate', $lt) }}"
+								onsubmit="return confirm('Активировать?')" style="display:inline">
+									@csrf
+									<button type="submit" class="league-btn league-btn-success">Активировать</button>
+								</form>
+								@endif
+							</td>
+						</tr>
+						@endforeach
+					</tbody>
+				</table>
+			</div>
+			@else
+			<div class="alert alert-info">В лиге пока нет команд. Команды добавятся после регистрации на турнир.</div>
+			@endif
+			
+			<div class="mt-2 f-13" style="opacity:.5">
+				<a href="{{ route('seasons.show', $seasonData['season']) }}" class="blink">Страница сезона →</a>
+			</div>
+		</div>
+		@endif
+		
+		
 		{{-- ============================================================
 		Команды
 		============================================================ --}}
@@ -286,12 +286,12 @@ document.addEventListener('DOMContentLoaded', function() {
 						<div style="font-style:italic">и другие...</div>
 						@endif
 						<div class="mt-1 d-flex between fvc">
-						<div class="mt-05 cd b-600">{{ $members->count() }} чел.</div>
-						<form method="POST" action="{{ route('tournamentTeams.destroy', [$event, $team]) }}" class="mt-1">
-							@csrf @method('DELETE')
-							<button type="submit" class="icon-delete btn-alert btn btn-danger btn-svg" data-title="Удалить команду {{ $team->name }}?" data-icon="warning" data-confirm-text="Да, удалить" data-cancel-text="Отмена">
-							</button>
-						</form>
+							<div class="mt-05 cd b-600">{{ $members->count() }} чел.</div>
+							<form method="POST" action="{{ route('tournamentTeams.destroy', [$event, $team]) }}" class="mt-1">
+								@csrf @method('DELETE')
+								<button type="submit" class="icon-delete btn-alert btn btn-danger btn-svg" data-title="Удалить команду {{ $team->name }}?" data-icon="warning" data-confirm-text="Да, удалить" data-cancel-text="Отмена">
+								</button>
+							</form>
 						</div>
 					</div>
 				</div>
@@ -347,218 +347,251 @@ document.addEventListener('DOMContentLoaded', function() {
 				<span class="toggle-icon b-700 f-20">{{ $hasStages ? '+' : '-' }}</span>
 			</div>
 			<div style="{{ $hasStages ? 'display:none' : '' }}">
-			<form method="POST" action="{{ route('tournament.stages.store', $event) }}">
-				@csrf
-				@if($selectedOccurrence)
-				<input type="hidden" name="occurrence_id" value="{{ $selectedOccurrence->id }}">
-				@endif
-				<div class="row">
-					<div class="col-md-6">
-						<div class="card">
-							<label>Тип</label>
-							<select name="type" id="stage_type_select">
-								<option value="round_robin">Круговая система (Round Robin)</option>
-								<option value="groups_playoff">Группы + плей-офф</option>
-								<option value="single_elim">Олимпийка</option>
-								<option value="swiss">Швейцарская</option>
-								<option value="double_elim">Двойное выбывание (Double Elimination)</option>
-								<option value="king_of_court">Король площадки (King of the Court)</option>
-								<option value="thai">Тайский формат</option>
-							</select>
-							<a href="{{ route('tournament_formats') }}" target="_blank" class="f-12 d-block mt-1" style="opacity:.5">📋 Шпаргалка по форматам →</a>
-							
-							<label class="mt-2">Название</label>
-							<input name="name" value="{{ old('name', 'Групповой этап') }}" required>
-						</div>
-					</div>
-					<div class="col-md-6">
-						<div class="card">
-							<label>Формат матча</label>
-							<select name="match_format" id="match_format_select">
-								<option value="bo3">Best of 3 (Bo3)</option>
-								<option value="bo1">Best of 1 (Bo1)</option>
-								@if(!$isBeach)
-								<option value="bo5">Best of 5 (Bo5)</option>
-								@endif
-							</select>
-							<div id="match_format_hint" class="f-16 mt-1"></div>
-							<script>
-								(function(){
-									var hints = {
-										bo1: 'Играют 1 сет. Кто выиграл сет — выиграл матч. Быстрый формат для пулов.',
-										bo3: 'Играют до 2 побед в сетах. Максимум 3 сета (2:0 или 2:1). Стандарт для пляжки и групповых этапов.',
-										bo5: 'Играют до 3 побед в сетах. Максимум 5 сетов. Обычно только для финалов классики 6×6.'
-									};
-									var sel = document.getElementById('match_format_select');
-									var hint = document.getElementById('match_format_hint');
-									function upd() { hint.textContent = hints[sel.value] || ''; }
-									sel.addEventListener('change', upd);
-									sel.addEventListener('change', function() {
-										var wrap = document.getElementById('deciding_set_wrap');
-										if (wrap) wrap.style.display = (sel.value === 'bo1') ? 'none' : '';
-									});
-									upd();
-									var _dsw = document.getElementById('deciding_set_wrap'); if (_dsw && sel.value === 'bo1') _dsw.style.display = 'none';
-								})();
-							</script>
-							
-							<div class="row row2">
-								<div class="col-md-6">
-									<label class="mt-2">Очки в сете</label>
-									<select name="set_points">
-										@if(!$isBeach)
-										<option value="25" selected>25 (классика)</option>
-										@endif
-										<option value="21" @if($isBeach) selected @endif>21 (пляж)</option>
-										<option value="15">15 (мини)</option>
-									</select>
-								</div>
-								<div class="col-md-6" id="deciding_set_wrap">
-									<label class="mt-2">Решающий сет</label>
-									<select name="deciding_set_points">
-										<option value="15" selected>15</option>
-										@if(!$isBeach)
-										<option value="25">25</option>
-										@endif
-									</select>
-								</div>
-							</div>								
-						</div>
-					</div>
-					
-				</div>
-				<div class="mt-2" id="group_fields">
+				<form method="POST" action="{{ route('tournament.stages.store', $event) }}">
+					@csrf
+					@if($selectedOccurrence)
+					<input type="hidden" name="occurrence_id" value="{{ $selectedOccurrence->id }}">
+					@endif
 					<div class="row">
-						<div class="col-md-3">
-							<div class="card"><label>Кол-во групп</label>
-								<input name="groups_count" type="number" value="2" min="1" max="16">
-							</div>
-						</div>
-						<div class="col-md-3">
-							<div class="card"><label>Выходят из группы</label>
-								<input name="advance_count" type="number" value="2" min="1" max="8">
-							</div>
-						</div>
-						<div class="col-md-3">
-							<div class="card"><label>Матч за 3-е место</label>
-								<select name="third_place_match">
-									<option value="0">Нет</option>
-									<option value="1">Да</option>
-								</select>
-							</div>
-						</div>
-						<div class="col-md-3">
+						<div class="col-md-6">
 							<div class="card">
-								<label>Кол-во площадок</label>
-								<select name="courts_count" id="courts_count_select">
-									<option value="0">—</option>
-									<option value="1">1</option>
-									<option value="2">2</option>
-									<option value="3">3</option>
-									<option value="4">4</option>
-									<option value="5">5</option>
-									<option value="6">6</option>
-									<option value="7">7</option>
-									<option value="8">8</option>
-									<option value="9">9</option>
-									<option value="10">10</option>
-									<option value="11">11</option>
-									<option value="12">12</option>
-									<option value="13">13</option>
-									<option value="14">14</option>
-									<option value="15">15</option>
-									<option value="16">16</option>
-									<option value="17">17</option>
-									<option value="18">18</option>
-									<option value="19">19</option>
-									<option value="20">20</option>
+								<label>Тип</label>
+								<select name="type" id="stage_type_select">
+									<option value="round_robin">Круговая система (Round Robin)</option>
+									<option value="groups_playoff">Группы + плей-офф</option>
+									<option value="single_elim">Олимпийка</option>
+									<option value="swiss">Швейцарская</option>
+									<option value="double_elim">Двойное выбывание (Double Elimination)</option>
+									<option value="king_of_court">Король площадки (King of the Court)</option>
+									<option value="thai">Тайский формат</option>
 								</select>
-								<input type="hidden" name="courts" id="courts_hidden" value="">
+								<a href="{{ route('tournament_formats') }}" target="_blank" class="f-12 d-block mt-1" style="opacity:.5">📋 Шпаргалка по форматам →</a>
+								
+								<label class="mt-2">Название</label>
+								<input name="name" value="{{ old('name', 'Групповой этап') }}" required>
 							</div>
 						</div>
-					</div>
-
-					{{-- Назначение кортов группам (динамическое) --}}
-					<div id="courts_group_assign" style="display:none" class="mb-2">
-						<label class="f-13 b-600 mb-1 d-block">Площадки для групп</label>
-						<div id="courts_group_boxes" class="row"></div>
-					</div>
-{{-- Жеребьёвка --}}
-    				<div class="row mt-2 mb-2">
-    					<div class="col-md-4">
-    						<div class="card">
-    							<label>Жеребьёвка</label>
-    							<select name="draw_mode">
-    								<option value="random">Случайная</option>
-    								<option value="seeded">По рейтингу (seed)</option>
-    							</select>
-    						</div>
-    					</div>
-    				</div>
-    
-    				<button type="submit" class="btn btn-primary mt-2">Создать стадию и провести жеребьёвку</button>
-					<script>
-					(function(){
-						var courtsSel = document.getElementById("courts_count_select");
-						var groupsSel = document.querySelector('input[name="groups_count"]');
-						var hidden = document.getElementById("courts_hidden");
-						var assignBlock = document.getElementById("courts_group_assign");
-						var boxesDiv = document.getElementById("courts_group_boxes");
-
-						function rebuild() {
-							var n = parseInt(courtsSel.value) || 0;
-							var g = parseInt(groupsSel ? groupsSel.value : 0) || 0;
-
-							var names = [];
-							for (var i = 1; i <= n; i++) names.push("Корт " + i);
-							hidden.value = names.join(", ");
-
-							if (n === 0 || g === 0) {
-								assignBlock.style.display = "none";
-								boxesDiv.innerHTML = "";
-								return;
-							}
-
-							assignBlock.style.display = "";
-							var groupLabels = [];
-							for (var gi = 0; gi < g; gi++) {
-								groupLabels.push(String.fromCharCode(65 + gi)); // A, B, C...
-							}
-
-							var colSize = Math.floor(12 / g);
-							if (colSize < 3) colSize = 3;
-							var html = "";
-							groupLabels.forEach(function(label) {
-								html += '<div class="col-md-' + colSize + ' mb-2">';
-								html += '<div class="f-13 b-600 mb-1">Группа ' + label + ':</div>';
-								html += '<div class="d-flex" style="flex-wrap:wrap;gap:6px">';
-								names.forEach(function(court) {
-									html += '<label class="checkbox-item f-13" style="margin:0">';
-									html += '<input type="checkbox" name="group_courts[' + label + '][]" value="' + court + '">';
-									html += '<div class="custom-checkbox"></div>';
-									html += '<span>' + court + '</span>';
-									html += '</label>';
-								});
-								html += '</div></div>';
-							});
-							boxesDiv.innerHTML = html;
-						}
-
-						courtsSel.addEventListener("change", rebuild);
-						if (groupsSel) groupsSel.addEventListener("input", rebuild);
-						rebuild();
-					})();
-					</script>
-							</div>
+						<div class="col-md-6">
+							<div class="card">
+								<label>Формат матча</label>
+								<select name="match_format" id="match_format_select">
+									<option value="bo3">Best of 3 (Bo3)</option>
+									<option value="bo1">Best of 1 (Bo1)</option>
+									@if(!$isBeach)
+									<option value="bo5">Best of 5 (Bo5)</option>
+									@endif
+								</select>
+								<div id="match_format_hint" class="f-16 mt-1"></div>
+								<script>
+									(function(){
+										var hints = {
+											bo1: 'Играют 1 сет. Кто выиграл сет — выиграл матч. Быстрый формат для пулов.',
+											bo3: 'Играют до 2 побед в сетах. Максимум 3 сета (2:0 или 2:1). Стандарт для пляжки и групповых этапов.',
+											bo5: 'Играют до 3 побед в сетах. Максимум 5 сетов. Обычно только для финалов классики 6×6.'
+										};
+										var sel = document.getElementById('match_format_select');
+										var hint = document.getElementById('match_format_hint');
+										function upd() { hint.textContent = hints[sel.value] || ''; }
+										sel.addEventListener('change', upd);
+										sel.addEventListener('change', function() {
+											var wrap = document.getElementById('deciding_set_wrap');
+											if (wrap) wrap.style.display = (sel.value === 'bo1') ? 'none' : '';
+										});
+										upd();
+										var _dsw = document.getElementById('deciding_set_wrap'); if (_dsw && sel.value === 'bo1') _dsw.style.display = 'none';
+									})();
+								</script>
+								
+								<div class="row row2">
+									<div class="col-md-6">
+										<label class="mt-2">Очки в сете</label>
+										<select name="set_points">
+											@if(!$isBeach)
+											<option value="25" selected>25 (классика)</option>
+											@endif
+											<option value="21" @if($isBeach) selected @endif>21 (пляж)</option>
+											<option value="15">15 (мини)</option>
+										</select>
+									</div>
+									<div class="col-md-6" id="deciding_set_wrap">
+										<label class="mt-2">Решающий сет</label>
+										<select name="deciding_set_points">
+											<option value="15" selected>15</option>
+											@if(!$isBeach)
+											<option value="25">25</option>
+											@endif
+										</select>
+									</div>
+								</div>								
 							</div>
 						</div>
+						
 					</div>
-				</div>
-				
-				<div class="text-center">
+					<div class="mt-2" id="group_fields">
+						<div class="row">
+							<div class="col-md-3">
+								<div class="card"><label>Кол-во групп</label>
+									<input name="groups_count" type="number" value="2" min="1" max="16">
+								</div>
+							</div>
+							<div class="col-md-3">
+								<div class="card"><label>Выходят из группы</label>
+									<input name="advance_count" type="number" value="2" min="1" max="8">
+								</div>
+							</div>
+							<div class="col-md-3">
+								<div class="card"><label>Матч за 3-е место</label>
+									<select name="third_place_match">
+										<option value="0">Нет</option>
+										<option value="1">Да</option>
+									</select>
+								</div>
+							</div>
+							<div class="col-md-3">
+								<div class="card">
+									<label>Кол-во площадок</label>
+									<select name="courts_count" id="courts_count_select">
+										<option value="0">—</option>
+										<option value="1">1</option>
+										<option value="2">2</option>
+										<option value="3">3</option>
+										<option value="4">4</option>
+										<option value="5">5</option>
+										<option value="6">6</option>
+										<option value="7">7</option>
+										<option value="8">8</option>
+										<option value="9">9</option>
+										<option value="10">10</option>
+										<option value="11">11</option>
+										<option value="12">12</option>
+										<option value="13">13</option>
+										<option value="14">14</option>
+										<option value="15">15</option>
+										<option value="16">16</option>
+										<option value="17">17</option>
+										<option value="18">18</option>
+										<option value="19">19</option>
+										<option value="20">20</option>
+									</select>
+									<input type="hidden" name="courts" id="courts_hidden" value="">
+								</div>
+							</div>
+						</div>
+						
+						{{-- Назначение кортов группам (динамическое) --}}
+						<div id="courts_group_assign" style="display:none" class="mb-2">
+							<label class="f-13 b-600 mb-1 d-block">Площадки для групп</label>
+							<div id="courts_group_boxes" class="row"></div>
+						</div>
+						{{-- Жеребьёвка --}}
+						<div class="row mt-2 mb-2">
+							<div class="col-md-4">
+								<div class="card">
+									<label>Жеребьёвка</label>
+									<select name="draw_mode" id="draw_mode_select">
+										<option value="random">Случайная</option>
+										<option value="seeded">По рейтингу (seed)</option>
+										<option value="manual">Ручная</option>
+									</select>
+								</div>
+							</div>
+						</div>
+						
+						{{-- Ручное распределение --}}
+						<div id="manual_draw_block" style="display:none" class="mt-2 mb-2">
+							<div class="card p-3">
+								<div class="b-700 f-14 mb-2">Ручное распределение по группам</div>
+								<div class="f-13 mb-2" style="color:#9ca3af">Выберите группу для каждой команды.</div>
+								@if($teams->isNotEmpty())
+								<table style="width:100%;border-collapse:collapse;font-size:14px">
+									<thead>
+										<tr style="border-bottom:2px solid rgba(128,128,128,.2)">
+											<th class="p-1" style="text-align:left">Команда</th>
+											<th class="p-1" style="text-align:center;width:150px">Группа</th>
+										</tr>
+									</thead>
+									<tbody>
+										@foreach($teams as $team)
+										<tr style="border-bottom:1px solid rgba(128,128,128,.1)">
+											<td class="p-1">
+												<div class="b-600">{{ $team->name }}</div>
+												@if($team->members->count())
+												<div class="f-12" style="color:#6b7280">{{ $team->members->map(fn($m) => trim(($m->user->last_name ?? '') . ' ' . ($m->user->first_name ?? '')))->implode(' / ') }}</div>
+												@endif
+											</td>
+											<td class="p-1" style="text-align:center">
+												<select name="manual_teams[{{ $team->id }}]" class="f-13 manual-group-select" style="width:100%">
+													<option value="">—</option>
+													<option value="A">Группа A</option>
+													<option value="B">Группа B</option>
+												</select>
+											</td>
+										</tr>
+										@endforeach
+									</tbody>
+								</table>
+								@else
+								<div class="f-13" style="opacity:.5">Нет команд для распределения</div>
+								@endif
+							</div>
+						</div>
+						
+						<button type="submit" class="btn btn-primary mt-2">Создать стадию и провести жеребьёвку</button>
+						<script>
+							(function(){
+								var courtsSel = document.getElementById("courts_count_select");
+								var groupsSel = document.querySelector('input[name="groups_count"]');
+								var hidden = document.getElementById("courts_hidden");
+								var assignBlock = document.getElementById("courts_group_assign");
+								var boxesDiv = document.getElementById("courts_group_boxes");
+								
+								function rebuild() {
+									var n = parseInt(courtsSel.value) || 0;
+									var g = parseInt(groupsSel ? groupsSel.value : 0) || 0;
+									
+									var names = [];
+									for (var i = 1; i <= n; i++) names.push("Корт " + i);
+									hidden.value = names.join(", ");
+									
+									if (n === 0 || g === 0) {
+										assignBlock.style.display = "none";
+										boxesDiv.innerHTML = "";
+										return;
+									}
+									
+									assignBlock.style.display = "";
+									var groupLabels = [];
+									for (var gi = 0; gi < g; gi++) {
+										groupLabels.push(String.fromCharCode(65 + gi)); // A, B, C...
+									}
+									
+									var colSize = Math.floor(12 / g);
+									if (colSize < 3) colSize = 3;
+									var html = "";
+									groupLabels.forEach(function(label) {
+										html += '<div class="col-md-' + colSize + ' mb-2">';
+										html += '<div class="f-13 b-600 mb-1">Группа ' + label + ':</div>';
+										html += '<div class="d-flex" style="flex-wrap:wrap;gap:6px">';
+										names.forEach(function(court) {
+											html += '<label class="checkbox-item f-13" style="margin:0">';
+											html += '<input type="checkbox" name="group_courts[' + label + '][]" value="' + court + '">';
+											html += '<div class="custom-checkbox"></div>';
+											html += '<span>' + court + '</span>';
+											html += '</label>';
+										});
+										html += '</div></div>';
+									});
+									boxesDiv.innerHTML = html;
+								}
+								
+								courtsSel.addEventListener("change", rebuild);
+								if (groupsSel) groupsSel.addEventListener("input", rebuild);
+								rebuild();
+							})();
+						</script>
+					</div>
 				</div>
 			</form>
-			</div>
 		</div>
 		
 		{{-- ============================================================
@@ -570,27 +603,27 @@ document.addEventListener('DOMContentLoaded', function() {
 			<h2 class="-mt-05">Фото турнира</h2>
 			
 			@php
-            $tournamentPhotos = $event->getMedia('tournament_photos');
-            $currentPhotoIds = $tournamentPhotos->pluck('id')->toArray();
+			$tournamentPhotos = $event->getMedia('tournament_photos');
+			$currentPhotoIds = $tournamentPhotos->pluck('id')->toArray();
 			@endphp
 			
 			@if($tournamentPhotos->isNotEmpty())
-            <div class="d-flex mb-2" style="flex-wrap:wrap;gap:2rem">
-                @foreach($tournamentPhotos as $media)
+			<div class="d-flex mb-2" style="flex-wrap:wrap;gap:2rem">
+				@foreach($tournamentPhotos as $media)
 				<div style="position:relative;width:20%;">
 					<img src="{{ $media->getUrl('thumb') }}" style="width:100%; aspect-ratio: 16/9;object-fit:cover;border-radius:8px">
 					<form method="POST" action="{{ route('tournament.photos.destroy', [$event, $media->id]) }}" style="position:absolute; bottom:1rem; right:1rem" onsubmit="return confirm('Удалить?')">
 						@csrf @method('DELETE')
-										<button type="submit" 
-										class="icon-delete btn-alert btn btn-danger btn-svg"
-										data-title="Удалить фотографию?"
-										data-icon="warning"
-										data-confirm-text="Да, удалить"
-										data-cancel-text="Отмена">
-										</button>										
+						<button type="submit" 
+						class="icon-delete btn-alert btn btn-danger btn-svg"
+						data-title="Удалить фотографию?"
+						data-icon="warning"
+						data-confirm-text="Да, удалить"
+						data-cancel-text="Отмена">
+						</button>										
 					</form>
 				</div>
-                @endforeach
+				@endforeach
 			</div>
 			@endif
 			
@@ -635,31 +668,31 @@ document.addEventListener('DOMContentLoaded', function() {
 				</form>
 			</div>
 			@else
-            <div class="alert alert-info">
-                Нет фото в галерее. <a href="{{ route('user.photos') }}" target="_blank">Загрузите фото</a> с пометкой «Для мероприятий».
+			<div class="alert alert-info">
+				Нет фото в галерее. <a href="{{ route('user.photos') }}" target="_blank">Загрузите фото</a> с пометкой «Для мероприятий».
 			</div>
 			@endif
 		</div>
 		
 		@foreach($stages as $stage)
-        @php
+		@php
 		$borderColor = $stage->isCompleted() ? '#10b981' : ($stage->isInProgress() ? '#2967BA' : '#555');
-        @endphp
-        <div class="ramka" id="stage_{{ $stage->id }}" style="border-left:4px solid {{ $borderColor }}">
-            <div class="d-flex between fvc mb-2" style="flex-wrap:wrap;gap:8px">
-                <div>
-                    <h3 class="mb-1" style="font-size:1.3rem">
-                        {{ $stage->name }}
-                        @if($stage->isCompleted())
+		@endphp
+		<div class="ramka" id="stage_{{ $stage->id }}" style="border-left:4px solid {{ $borderColor }}">
+			<div class="d-flex between fvc mb-2" style="flex-wrap:wrap;gap:8px">
+				<div>
+					<h3 class="mb-1" style="font-size:1.3rem">
+						{{ $stage->name }}
+						@if($stage->isCompleted())
 						<span class="f-12 b-600 p-1 px-2 ml-1" style="background:rgba(16,185,129,.15);border-radius:6px;color:#10b981">Завершена</span>
-                        @elseif($stage->isInProgress())
+						@elseif($stage->isInProgress())
 						<span class="f-12 b-600 p-1 px-2 ml-1" style="background:rgba(41,103,186,.15);border-radius:6px;color:#5b9ef0">В процессе</span>
-                        @else
+						@else
 						<span class="f-12 b-600 p-1 px-2 ml-1" style="opacity:.5">Ожидание</span>
-                        @endif
+						@endif
 					</h3>
-                    <div class="f-13" style="opacity:.5">
-                        @php
+					<div class="f-13" style="opacity:.5">
+						@php
 						$stageTypeLabels = [
 						'round_robin' => 'Круговая система',
 						'groups_playoff' => 'Группы + плей-офф',
@@ -674,22 +707,22 @@ document.addEventListener('DOMContentLoaded', function() {
 						{{ $stageTypeLabels[$stage->type] ?? $stage->type }} · {{ $matchFormatLabels[$stage->matchFormat()] ?? strtoupper($stage->matchFormat()) }} · до {{ $stage->setPoints() }} очков
 					</div>
 				</div>
-                <div class="d-flex" style="gap:6px">
-                    @if($stage->isInProgress() || $stage->isCompleted())
-                    <form method="POST" action="{{ route('tournament.stages.revert', $stage) }}" onsubmit="return confirm('Откатить стадию? Все счета будут сброшены!')">
-                        @csrf
-                        <button class="btn btn-secondary f-12" style="color:#ca8a04">Откатить</button>
+				<div class="d-flex" style="gap:6px">
+					@if($stage->isInProgress() || $stage->isCompleted())
+					<form method="POST" action="{{ route('tournament.stages.revert', $stage) }}" onsubmit="return confirm('Откатить стадию? Все счета будут сброшены!')">
+						@csrf
+						<button class="btn btn-secondary f-12" style="color:#ca8a04">Откатить</button>
 					</form>
-                    @endif
-                    <form method="POST" action="{{ route('tournament.stages.destroy', $stage) }}" onsubmit="return confirm('Удалить стадию и все её матчи?')">
-                        @csrf @method('DELETE')
-                        <button class="btn btn-secondary f-12" style="color:#dc2626">Удалить</button>
+					@endif
+					<form method="POST" action="{{ route('tournament.stages.destroy', $stage) }}" onsubmit="return confirm('Удалить стадию и все её матчи?')">
+						@csrf @method('DELETE')
+						<button class="btn btn-secondary f-12" style="color:#dc2626">Удалить</button>
 					</form>
 				</div>
 			</div>
 			
-            {{-- Группы --}}
-            @if($stage->groups->isNotEmpty())
+			{{-- Группы --}}
+			@if($stage->groups->isNotEmpty())
 			<div class="row mb-3">
 				@foreach($stage->groups as $group)
 				<div class="col-md-6 mb-2">
@@ -734,17 +767,17 @@ document.addEventListener('DOMContentLoaded', function() {
 				</div>
 				@endforeach
 			</div>
-            @endif
+			@endif
 			
-
-
+			
+			
 			{{-- Расписание --}}
 			@if($stage->isInProgress() && $stage->matches->whereNotNull('team_home_id')->isNotEmpty())
 			@php
-				$nextOcc = $event->occurrences()->where('starts_at', '>=', now())->orderBy('starts_at')->first();
-				$defaultStart = $nextOcc
-					? $nextOcc->starts_at->setTimezone($event->timezone ?? 'Europe/Moscow')->format('Y-m-d\\TH:i')
-					: now()->setTimezone($event->timezone ?? 'Europe/Moscow')->format('Y-m-d\\TH:i');
+			$nextOcc = $event->occurrences()->where('starts_at', '>=', now())->orderBy('starts_at')->first();
+			$defaultStart = $nextOcc
+			? $nextOcc->starts_at->setTimezone($event->timezone ?? 'Europe/Moscow')->format('Y-m-d\\TH:i')
+			: now()->setTimezone($event->timezone ?? 'Europe/Moscow')->format('Y-m-d\\TH:i');
 			@endphp
 			<div class="card p-2">
 				<div class="b-700 f-14 mb-2">📅 Расписание</div>
@@ -768,85 +801,85 @@ document.addEventListener('DOMContentLoaded', function() {
 				</form>
 			</div>
 			@endif
-
-            {{-- Матчи --}}
-            @if($stage->matches->isNotEmpty())
-                @php
-                	$matchesByGroup = $stage->matches->sortBy(["round", "match_number"])->groupBy('group_id');
-                	$hasGroups = $stage->groups->count() > 1;
-                @endphp
-                @foreach($matchesByGroup as $groupId => $groupMatches)
-                @php $groupName = $stage->groups->firstWhere('id', $groupId)?->name ?? ''; @endphp
-                			<div class="card p-2">
-                				<div class="b-700 f-14 mb-2">{{ $groupName ? 'Матчи ' . $groupName : 'Матчи' }}</div>
-                				<div style="overflow-x:auto">
-                					<table style="width:100%;border-collapse:collapse;font-size:13px">
-                						<thead>
-                							<tr style="border-bottom:2px solid rgba(128,128,128,.2)">
-                								<th class="p-1" style="text-align:left">#</th>
-                								<th class="p-1" style="text-align:left">Тур</th>
-                								<th class="p-1" style="text-align:left">Дома</th>
-                								<th class="p-1" style="text-align:left">Гости</th>
-                								<th class="p-1" style="text-align:center">Время</th>
-                								<th class="p-1" style="text-align:center">Корт</th>
-                								<th class="p-1" style="text-align:center">Счёт</th>
-                								<th class="p-1" style="text-align:center">Статус</th>
-                								<th class="p-1"></th>
-                							</tr>
-                						</thead>
-                						<tbody>
-                							@foreach($groupMatches as $match)
-                							<tr style="border-bottom:1px solid rgba(128,128,128,.1);{{ $match->isCompleted() ? 'background:rgba(16,185,129,.06)' : '' }}">
-                								<td class="p-1">{{ $match->match_number }}</td>
-                								<td class="p-1">R{{ $match->round }}</td>
-                								<td class="p-1 {{ $match->winner_team_id === $match->team_home_id ? 'b-700' : '' }}">
-                									{{ $match->teamHome->name ?? 'TBD' }}
-                								</td>
-                								<td class="p-1 {{ $match->winner_team_id === $match->team_away_id ? 'b-700' : '' }}">
-                									{{ $match->teamAway->name ?? 'TBD' }}
-                								</td>
-                								<td class="p-1" style="text-align:center">{{ $match->scheduled_at ? $match->scheduled_at->setTimezone($event->timezone ?? 'Europe/Moscow')->format('H:i') : '—' }}</td>
-                								<td class="p-1" style="text-align:center">{{ $match->court ?? '—' }}</td>
-                								<td class="p-1" style="text-align:center">{{ $match->setsScore() ?? '—' }}</td>
-                								<td class="p-1" style="text-align:center">
-                									@if($match->isCompleted())
-                									<span class="f-11 b-600 p-1 px-2" style="background:rgba(16,185,129,.15);border-radius:6px;color:#10b981">✓</span>
-                									@elseif($match->status === 'live')
-                									<span class="f-11 b-600 p-1 px-2" style="background:rgba(220,38,38,.15);border-radius:6px;color:#dc2626">LIVE</span>
-                									@else
-                									<span class="f-11" style="opacity:.5">ожидание</span>
-                									@endif
-                								</td>
-                								<td class="p-1">
-                									@if($match->isScheduled() && $match->hasTeams())
-                									<a href="{{ route('tournament.matches.score.form', $match) }}" class="btn btn-primary f-12" style="padding:4px 10px">
-                										Счёт
-                									</a>
-                									@endif
-                									@if($match->isCompleted())
-                									<a href="{{ route('tournament.matches.player_stats.form', $match) }}" class="btn btn-secondary f-12" style="padding:4px 8px" title="Статистика игроков">
-                										📊
-                									</a>
-                									@endif
-                								</td>
-                							</tr>
-                							@endforeach
-                						</tbody>
-                					</table>
-                				</div>
-                			</div>
-                @endforeach
-				@php
-					$hasUnplayed = $stage->matches->where('status', 'scheduled')
-						->filter(fn($m) => $m->team_home_id && $m->team_away_id)->isNotEmpty();
-				@endphp
-				@if($hasUnplayed)
-				<div class="mt-2 mb-3" style="text-align:center">
-					<a href="{{ route('tournament.start_scoring', $event) }}" class="btn btn-primary p-3 f-16" style="display:inline-block">
-						▶ Приступить к заполнению результатов
-					</a>
+			
+			{{-- Матчи --}}
+			@if($stage->matches->isNotEmpty())
+			@php
+			$matchesByGroup = $stage->matches->sortBy(["round", "match_number"])->groupBy('group_id');
+			$hasGroups = $stage->groups->count() > 1;
+			@endphp
+			@foreach($matchesByGroup as $groupId => $groupMatches)
+			@php $groupName = $stage->groups->firstWhere('id', $groupId)?->name ?? ''; @endphp
+			<div class="card p-2">
+				<div class="b-700 f-14 mb-2">{{ $groupName ? 'Матчи ' . $groupName : 'Матчи' }}</div>
+				<div style="overflow-x:auto">
+					<table style="width:100%;border-collapse:collapse;font-size:13px">
+						<thead>
+							<tr style="border-bottom:2px solid rgba(128,128,128,.2)">
+								<th class="p-1" style="text-align:left">#</th>
+								<th class="p-1" style="text-align:left">Тур</th>
+								<th class="p-1" style="text-align:left">Дома</th>
+								<th class="p-1" style="text-align:left">Гости</th>
+								<th class="p-1" style="text-align:center">Время</th>
+								<th class="p-1" style="text-align:center">Корт</th>
+								<th class="p-1" style="text-align:center">Счёт</th>
+								<th class="p-1" style="text-align:center">Статус</th>
+								<th class="p-1"></th>
+							</tr>
+						</thead>
+						<tbody>
+							@foreach($groupMatches as $match)
+							<tr style="border-bottom:1px solid rgba(128,128,128,.1);{{ $match->isCompleted() ? 'background:rgba(16,185,129,.06)' : '' }}">
+								<td class="p-1">{{ $match->match_number }}</td>
+								<td class="p-1">R{{ $match->round }}</td>
+								<td class="p-1 {{ $match->winner_team_id === $match->team_home_id ? 'b-700' : '' }}">
+									{{ $match->teamHome->name ?? 'TBD' }}
+								</td>
+								<td class="p-1 {{ $match->winner_team_id === $match->team_away_id ? 'b-700' : '' }}">
+									{{ $match->teamAway->name ?? 'TBD' }}
+								</td>
+								<td class="p-1" style="text-align:center">{{ $match->scheduled_at ? $match->scheduled_at->setTimezone($event->timezone ?? 'Europe/Moscow')->format('H:i') : '—' }}</td>
+								<td class="p-1" style="text-align:center">{{ $match->court ?? '—' }}</td>
+								<td class="p-1" style="text-align:center">{{ $match->setsScore() ?? '—' }}</td>
+								<td class="p-1" style="text-align:center">
+									@if($match->isCompleted())
+									<span class="f-11 b-600 p-1 px-2" style="background:rgba(16,185,129,.15);border-radius:6px;color:#10b981">✓</span>
+									@elseif($match->status === 'live')
+									<span class="f-11 b-600 p-1 px-2" style="background:rgba(220,38,38,.15);border-radius:6px;color:#dc2626">LIVE</span>
+									@else
+									<span class="f-11" style="opacity:.5">ожидание</span>
+									@endif
+								</td>
+								<td class="p-1">
+									@if($match->isScheduled() && $match->hasTeams())
+									<a href="{{ route('tournament.matches.score.form', $match) }}" class="btn btn-primary f-12" style="padding:4px 10px">
+										Счёт
+									</a>
+									@endif
+									@if($match->isCompleted())
+									<a href="{{ route('tournament.matches.player_stats.form', $match) }}" class="btn btn-secondary f-12" style="padding:4px 8px" title="Статистика игроков">
+										📊
+									</a>
+									@endif
+								</td>
+							</tr>
+							@endforeach
+						</tbody>
+					</table>
 				</div>
-				@endif
+			</div>
+			@endforeach
+			@php
+			$hasUnplayed = $stage->matches->where('status', 'scheduled')
+			->filter(fn($m) => $m->team_home_id && $m->team_away_id)->isNotEmpty();
+			@endphp
+			@if($hasUnplayed)
+			<div class="mt-2 mb-3" style="text-align:center">
+				<a href="{{ route('tournament.start_scoring', $event) }}" class="btn btn-primary p-3 f-16" style="display:inline-block">
+					▶ Приступить к заполнению результатов
+				</a>
+			</div>
+			@endif
 			
 			
 			{{-- Следующий тур (Swiss/King) --}}
@@ -867,93 +900,93 @@ document.addEventListener('DOMContentLoaded', function() {
 			@endif
 			{{-- Продвижение / Дивизионы --}}
 			@if($stage->isCompleted() && in_array($stage->type, ['round_robin', 'groups_playoff']))
-
-{{-- Сезонный турнир → дивизионы --}}
-@if($event->season_id && $stage->groups->count() >= 2)
-@php $hasDivStages = $stages->filter(fn($s) => str_starts_with($s->name, 'Дивизион'))->isNotEmpty(); @endphp
-<div class="ramka" style="background:rgba(41,103,186,.04);border:1px solid rgba(41,103,186,.15)">
-	<div class="d-flex between fvc" style="cursor:pointer" onclick="var b=this.nextElementSibling;b.style.display=b.style.display==='none'?'':'none';this.querySelector('.toggle-icon').textContent=b.style.display==='none'?'+':'-'">
-		<h3 class="-mt-05 mb-0">🏆 Формирование дивизионов</h3>
-		<span class="toggle-icon b-700 f-20">{{ $hasDivStages ? '+' : '-' }}</span>
-	</div>
-	<div style="{{ $hasDivStages ? 'display:none' : '' }}">
-	@php
-		$groupsCount = $stage->groups->count();
-		$divisionNames = match($groupsCount) {
-			2 => ['Hard', 'Lite'],
-			3 => ['Hard', 'Medium', 'Lite'],
-			default => array_merge(['Hard'], array_map(fn($i) => 'Medium-' . $i, range(1, max(1, $groupsCount - 2))), ['Lite']),
-		};
-		$advanceCount = (int) $stage->cfg('advance_count', 2);
-		$availCourts = $stage->cfg('courts', []);
-	@endphp
-
-	<div class="f-13 mb-3" style="color:#6b7280">
-		По результатам группового этапа команды распределяются в {{ count($divisionNames) }} дивизион{{ count($divisionNames) > 2 ? 'а' : '' }}:
-		<strong>{{ implode(', ', $divisionNames) }}</strong>
-	</div>
-
-	<form method="POST" action="{{ route('tournament.stages.formDivisions', $stage) }}" onsubmit="return confirm('Сформировать дивизионы? Будут созданы стадии, проведена жеребьёвка и назначены матчи.')">
-		@csrf
-
-		{{-- Ряд 1: Кол-во + форматы --}}
-		<div class="row mb-3">
-			<div class="col-md-3 mb-2">
-				<label class="f-13 b-600 mb-1 d-block">Выходят в Hard</label>
-				<input name="advance_per_group" type="number" value="{{ $advanceCount }}" min="1" max="8" style="width:70px">
-				<div class="f-12 mt-1" style="color:#9ca3af">из каждой группы</div>
-			</div>
-			@foreach($divisionNames as $dn)
-			<div class="col-md-3 mb-2">
-				<label class="f-13 b-600 mb-1 d-block">Формат {{ $dn }}</label>
-				<select name="div_format_{{ strtolower($dn) }}" class="f-13" style="width:100%">
-					<option value="">как в группах</option>
-					<option value="bo1">Bo1</option>
-					<option value="bo3">Bo3</option>
-				</select>
-			</div>
-			@endforeach
-		</div>
-
-		{{-- Ряд 2: Жеребьёвка --}}
-		<div class="row mb-3">
-			<div class="col-md-4 mb-2">
-				<label class="f-13 b-600 mb-1 d-block">Жеребьёвка дивизионов</label>
-				<select name="div_draw_mode" class="f-13" style="width:100%">
-					<option value="seeded">По рейтингу (seed)</option>
-					<option value="random">Случайная</option>
-				</select>
-			</div>
-		</div>
-
-		{{-- Ряд 3: Площадки --}}
-		@if(count($availCourts) > 0)
-		<div class="mb-3">
-			<label class="f-13 b-600 mb-2 d-block">Площадки для дивизионов</label>
-			<div class="row">
-				@foreach($divisionNames as $dn)
-				<div class="col-md-{{ (int)(12 / count($divisionNames)) }} mb-2">
-					<div class="f-13 b-600 mb-1">{{ $dn }}:</div>
-					<div class="d-flex" style="flex-wrap:wrap;gap:6px">
-						@foreach($availCourts as $court)
-						<label class="checkbox-item f-13" style="margin:0">
-							<input type="checkbox" name="div_courts_{{ strtolower($dn) }}[]" value="{{ $court }}">
-							<div class="custom-checkbox"></div>
-							<span>{{ $court }}</span>
-						</label>
-						@endforeach
-					</div>
+			
+			{{-- Сезонный турнир → дивизионы --}}
+			@if($event->season_id && $stage->groups->count() >= 2)
+			@php $hasDivStages = $stages->filter(fn($s) => str_starts_with($s->name, 'Дивизион'))->isNotEmpty(); @endphp
+			<div class="ramka" style="background:rgba(41,103,186,.04);border:1px solid rgba(41,103,186,.15)">
+				<div class="d-flex between fvc" style="cursor:pointer" onclick="var b=this.nextElementSibling;b.style.display=b.style.display==='none'?'':'none';this.querySelector('.toggle-icon').textContent=b.style.display==='none'?'+':'-'">
+					<h3 class="-mt-05 mb-0">🏆 Формирование дивизионов</h3>
+					<span class="toggle-icon b-700 f-20">{{ $hasDivStages ? '+' : '-' }}</span>
 				</div>
-				@endforeach
+				<div style="{{ $hasDivStages ? 'display:none' : '' }}">
+					@php
+					$groupsCount = $stage->groups->count();
+					$divisionNames = match($groupsCount) {
+					2 => ['Hard', 'Lite'],
+					3 => ['Hard', 'Medium', 'Lite'],
+					default => array_merge(['Hard'], array_map(fn($i) => 'Medium-' . $i, range(1, max(1, $groupsCount - 2))), ['Lite']),
+					};
+					$advanceCount = (int) $stage->cfg('advance_count', 2);
+					$availCourts = $stage->cfg('courts', []);
+					@endphp
+					
+					<div class="f-13 mb-3" style="color:#6b7280">
+						По результатам группового этапа команды распределяются в {{ count($divisionNames) }} дивизион{{ count($divisionNames) > 2 ? 'а' : '' }}:
+						<strong>{{ implode(', ', $divisionNames) }}</strong>
+					</div>
+					
+					<form method="POST" action="{{ route('tournament.stages.formDivisions', $stage) }}" onsubmit="return confirm('Сформировать дивизионы? Будут созданы стадии, проведена жеребьёвка и назначены матчи.')">
+						@csrf
+						
+						{{-- Ряд 1: Кол-во + форматы --}}
+						<div class="row mb-3">
+							<div class="col-md-3 mb-2">
+								<label class="f-13 b-600 mb-1 d-block">Выходят в Hard</label>
+								<input name="advance_per_group" type="number" value="{{ $advanceCount }}" min="1" max="8" style="width:70px">
+								<div class="f-12 mt-1" style="color:#9ca3af">из каждой группы</div>
+							</div>
+							@foreach($divisionNames as $dn)
+							<div class="col-md-3 mb-2">
+								<label class="f-13 b-600 mb-1 d-block">Формат {{ $dn }}</label>
+								<select name="div_format_{{ strtolower($dn) }}" class="f-13" style="width:100%">
+									<option value="">как в группах</option>
+									<option value="bo1">Bo1</option>
+									<option value="bo3">Bo3</option>
+								</select>
+							</div>
+							@endforeach
+						</div>
+						
+						{{-- Ряд 2: Жеребьёвка --}}
+						<div class="row mb-3">
+							<div class="col-md-4 mb-2">
+								<label class="f-13 b-600 mb-1 d-block">Жеребьёвка дивизионов</label>
+								<select name="div_draw_mode" class="f-13" style="width:100%">
+									<option value="seeded">По рейтингу (seed)</option>
+									<option value="random">Случайная</option>
+								</select>
+							</div>
+						</div>
+						
+						{{-- Ряд 3: Площадки --}}
+						@if(count($availCourts) > 0)
+						<div class="mb-3">
+							<label class="f-13 b-600 mb-2 d-block">Площадки для дивизионов</label>
+							<div class="row">
+								@foreach($divisionNames as $dn)
+								<div class="col-md-{{ (int)(12 / count($divisionNames)) }} mb-2">
+									<div class="f-13 b-600 mb-1">{{ $dn }}:</div>
+									<div class="d-flex" style="flex-wrap:wrap;gap:6px">
+										@foreach($availCourts as $court)
+										<label class="checkbox-item f-13" style="margin:0">
+											<input type="checkbox" name="div_courts_{{ strtolower($dn) }}[]" value="{{ $court }}">
+											<div class="custom-checkbox"></div>
+											<span>{{ $court }}</span>
+										</label>
+										@endforeach
+									</div>
+								</div>
+								@endforeach
+							</div>
+						</div>
+						@endif
+						
+						<button type="submit" class="btn btn-primary">Сформировать дивизионы</button>
+					</form>
+				</div>
 			</div>
-		</div>
-		@endif
-
-		<button type="submit" class="btn btn-primary">Сформировать дивизионы</button>
-	</form>
-	</div>
-</div>
-@else
+			@else
 			{{-- Обычный → плей-офф --}}
 			@php $nextStages = $stages->where('type', 'single_elim')->where('status', 'pending'); @endphp
 			@if($nextStages->isNotEmpty())
@@ -964,9 +997,9 @@ document.addEventListener('DOMContentLoaded', function() {
 					<div>
 						<label class="f-13 b-600 mb-1 d-block">Стадия</label>
 						<select name="playoff_stage_id">
-						@foreach($nextStages as $ns)
+							@foreach($nextStages as $ns)
 							<option value="{{ $ns->id }}">{{ $ns->name }}</option>
-						@endforeach
+							@endforeach
 						</select>
 					</div>
 					<div>
@@ -981,48 +1014,48 @@ document.addEventListener('DOMContentLoaded', function() {
 			@endif
 		</div>
 		@endforeach
-
-{{-- Промоушен после дивизионов --}}
-@if($event->season_id && $stages->isNotEmpty())
-@php
-	$divStages = $stages->filter(fn($s) => str_starts_with($s->name, 'Дивизион'));
-	$allDivsCompleted = $divStages->isNotEmpty() && $divStages->every(fn($s) => $s->status === 'completed');
-@endphp
-@if($allDivsCompleted)
-<div class="ramka" style="background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.2)">
-	<h3 style="margin:0 0 8px">✅ Все дивизионы завершены</h3>
-	<p class="f-14" style="color:#6b7280;margin-bottom:12px">
-		По правилам сезона: все команды Hard остаются, из Lite — top-2 остаются, остальные уходят в резерв.
-		Освободившиеся места заполняются из резерва.
-	</p>
-	<form method="POST" action="{{ route('tournament.applyPromotion', $event) }}" onsubmit="return confirm('Применить промоушен? Команды будут перемещены между active и reserve.')">
-		@csrf
-		<button type="submit" class="btn btn-primary">Применить промоушен</button>
-	</form>
-</div>
-@endif
-
-{{-- Кнопка результатов тура --}}
-@if($divStages->isNotEmpty())
-<div class="ramka" style="text-align:center">
-	<a href="{{ route('tournament.public.show', $event) }}{{ $selectedOccurrence ? '?occurrence_id=' . $selectedOccurrence->id : '' }}" class="btn btn-primary p-3 f-16" style="display:inline-block">
-		📊 Посмотреть результаты тура
-	</a>
-</div>
-@endif
-@endif
-
+		
+		{{-- Промоушен после дивизионов --}}
+		@if($event->season_id && $stages->isNotEmpty())
+		@php
+		$divStages = $stages->filter(fn($s) => str_starts_with($s->name, 'Дивизион'));
+		$allDivsCompleted = $divStages->isNotEmpty() && $divStages->every(fn($s) => $s->status === 'completed');
+		@endphp
+		@if($allDivsCompleted)
+		<div class="ramka" style="background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.2)">
+			<h3 style="margin:0 0 8px">✅ Все дивизионы завершены</h3>
+			<p class="f-14" style="color:#6b7280;margin-bottom:12px">
+				По правилам сезона: все команды Hard остаются, из Lite — top-2 остаются, остальные уходят в резерв.
+				Освободившиеся места заполняются из резерва.
+			</p>
+			<form method="POST" action="{{ route('tournament.applyPromotion', $event) }}" onsubmit="return confirm('Применить промоушен? Команды будут перемещены между active и reserve.')">
+				@csrf
+				<button type="submit" class="btn btn-primary">Применить промоушен</button>
+			</form>
+		</div>
+		@endif
+		
+		{{-- Кнопка результатов тура --}}
+		@if($divStages->isNotEmpty())
+		<div class="ramka" style="text-align:center">
+			<a href="{{ route('tournament.public.show', $event) }}{{ $selectedOccurrence ? '?occurrence_id=' . $selectedOccurrence->id : '' }}" class="btn btn-primary p-3 f-16" style="display:inline-block">
+				📊 Посмотреть результаты тура
+			</a>
+		</div>
+		@endif
+		@endif
+		
 		
 		@if($stages->isEmpty())
-        <div style="text-align:center;opacity:.5;padding:40px 0">
-            <p class="f-18 b-600">Турнир пока не настроен</p>
-            <p>Создайте первую стадию выше, затем проведите жеребьёвку.</p>
+		<div style="text-align:center;opacity:.5;padding:40px 0">
+			<p class="f-18 b-600">Турнир пока не настроен</p>
+			<p>Создайте первую стадию выше, затем проведите жеребьёвку.</p>
 		</div>
 		@endif
 		
 		
 	</div>
-	
+
 	<script>
 		document.addEventListener('DOMContentLoaded', function() {
 			var typeSelect = document.getElementById('stage_type_select');
@@ -1168,45 +1201,82 @@ document.addEventListener('DOMContentLoaded', function() {
 		});
 	</script>
 	
-<script>
-// Инжектируем occurrence_id во все формы на странице
-(function() {
-    var params = new URLSearchParams(window.location.search);
-    var occId = params.get('occurrence_id');
-    if (!occId) return;
-    document.querySelectorAll('form[method="POST"]').forEach(function(form) {
-        if (form.querySelector('input[name="occurrence_id"]')) return;
-        var input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = 'occurrence_id';
-        input.value = occId;
-        form.appendChild(input);
-    });
-    // Сохраняем позицию прокрутки перед отправкой формы
-    document.querySelectorAll('form[method="POST"]').forEach(function(form) {
-        form.addEventListener('submit', function() {
-            try { window.name = 'scrollY:' + window.scrollY; } catch(e) {}
-        });
-    });
-
-    // Восстанавливаем после перезагрузки
-    try {
-        if (window.name && window.name.indexOf('scrollY:') === 0) {
-            var y = parseInt(window.name.split(':')[1]);
-            window.name = '';
-            if (y > 0) {
-                setTimeout(function() { window.scrollTo(0, y); }, 100);
-            }
-        }
-    } catch(e) {}
-
-    // Прокрутка к якорю (если есть hash)
-    if (window.location.hash) {
-        setTimeout(function() {
-            var el = document.querySelector(window.location.hash);
-            if (el) el.scrollIntoView({behavior: 'smooth', block: 'start'});
-        }, 300);
-    }
-})(); // inject_occurrence_id
-</script>
+	<script>
+		// Инжектируем occurrence_id во все формы на странице
+		(function() {
+			var params = new URLSearchParams(window.location.search);
+			var occId = params.get('occurrence_id');
+			if (!occId) return;
+			document.querySelectorAll('form[method="POST"]').forEach(function(form) {
+				if (form.querySelector('input[name="occurrence_id"]')) return;
+				var input = document.createElement('input');
+				input.type = 'hidden';
+				input.name = 'occurrence_id';
+				input.value = occId;
+				form.appendChild(input);
+			});
+			// Сохраняем позицию прокрутки перед отправкой формы
+			document.querySelectorAll('form[method="POST"]').forEach(function(form) {
+				form.addEventListener('submit', function() {
+					try { window.name = 'scrollY:' + window.scrollY; } catch(e) {}
+				});
+			});
+			
+			// Восстанавливаем после перезагрузки
+			try {
+				if (window.name && window.name.indexOf('scrollY:') === 0) {
+					var y = parseInt(window.name.split(':')[1]);
+					window.name = '';
+					if (y > 0) {
+						setTimeout(function() { window.scrollTo(0, y); }, 100);
+					}
+				}
+			} catch(e) {}
+			
+			// Прокрутка к якорю (если есть hash)
+			if (window.location.hash) {
+				setTimeout(function() {
+					var el = document.querySelector(window.location.hash);
+					if (el) el.scrollIntoView({behavior: 'smooth', block: 'start'});
+				}, 300);
+			}
+		})(); // inject_occurrence_id
+	</script>
+	<script>
+		// Manual draw — show/hide + update group options
+		(function(){
+			var drawSel = document.getElementById('draw_mode_select');
+			var manualBlock = document.getElementById('manual_draw_block');
+			var groupsInput = document.querySelector('input[name="groups_count"]');
+			if (!drawSel || !manualBlock) return;
+			
+			function updateManual() {
+				manualBlock.style.display = (drawSel.value === 'manual') ? '' : 'none';
+			}
+			
+			function updateGroupOptions() {
+				var g = parseInt(groupsInput ? groupsInput.value : 2) || 2;
+				var selects = manualBlock.querySelectorAll('.manual-group-select');
+				selects.forEach(function(sel) {
+					var current = sel.value;
+					// Remove all except first option
+					while (sel.options.length > 1) sel.remove(1);
+					for (var i = 0; i < g; i++) {
+						var label = String.fromCharCode(65 + i);
+						var opt = document.createElement('option');
+						opt.value = label;
+						opt.textContent = '\u0413\u0440\u0443\u043f\u043f\u0430 ' + label;
+						sel.appendChild(opt);
+					}
+					// Restore selection if still valid
+					if (current && current.charCodeAt(0) - 65 < g) sel.value = current;
+				});
+			}
+			
+			drawSel.addEventListener('change', updateManual);
+			if (groupsInput) groupsInput.addEventListener('input', updateGroupOptions);
+			updateManual();
+			updateGroupOptions();
+		})();
+	</script>
 </x-voll-layout>

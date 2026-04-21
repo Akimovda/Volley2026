@@ -195,21 +195,44 @@ class TournamentController extends Controller
             if ($teams->count() >= 2) {
                 $groups = $stage->groups;
 
-                if ($drawMode === 'seeded') {
+                if ($drawMode === 'manual') {
+                    // Ручное распределение: manual_teams[team_id] = 'A'|'B'|...
+                    $manualTeams = $request->input('manual_teams', []);
+                    $groupLabels = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P'];
+                    $groupsByLabel = [];
+                    foreach ($groups as $idx => $group) {
+                        $label = $groupLabels[$idx] ?? (string)($idx + 1);
+                        $groupsByLabel[$label] = $group;
+                    }
+                    $seedCounters = [];
+                    foreach ($manualTeams as $teamId => $label) {
+                        if (empty($label) || !isset($groupsByLabel[$label])) continue;
+                        $group = $groupsByLabel[$label];
+                        if (!isset($seedCounters[$label])) $seedCounters[$label] = 0;
+                        $seedCounters[$label]++;
+                        \App\Models\TournamentGroupTeam::create([
+                            'group_id' => $group->id,
+                            'team_id'  => (int) $teamId,
+                            'seed'     => $seedCounters[$label],
+                        ]);
+                    }
+                } elseif ($drawMode === 'seeded') {
                     $sorted = $teams->sortByDesc(fn($t) => $this->setupService->getTeamRating($t, $event->id))->values();
                 } else {
                     $sorted = $teams->shuffle();
                 }
 
-                $groupIdx = 0;
-                $groupCount = $groups->count();
-                foreach ($sorted as $i => $team) {
-                    \App\Models\TournamentGroupTeam::create([
-                        'group_id' => $groups[$groupIdx % $groupCount]->id,
-                        'team_id'  => $team->id,
-                        'seed'     => intdiv($i, $groupCount) + 1,
-                    ]);
-                    $groupIdx++;
+                if ($drawMode !== 'manual') {
+                    $groupIdx = 0;
+                    $groupCount = $groups->count();
+                    foreach ($sorted as $i => $team) {
+                        \App\Models\TournamentGroupTeam::create([
+                            'group_id' => $groups[$groupIdx % $groupCount]->id,
+                            'team_id'  => $team->id,
+                            'seed'     => intdiv($i, $groupCount) + 1,
+                        ]);
+                        $groupIdx++;
+                    }
                 }
 
                 // Генерация матчей
@@ -931,9 +954,32 @@ class TournamentController extends Controller
         $this->authorizeOrganizer($request, $event);
 
         $name = $stage->name;
+
+        // Если удаляем групповой этап — удалить и связанные дивизионы
+        if (in_array($stage->type, ['round_robin', 'groups_playoff'])) {
+            $divStages = $event->tournamentStages()
+                ->where('id', '!=', $stage->id)
+                ->where(function($q) {
+                    $q->where('name', 'like', 'Дивизион %');
+                });
+            if ($stage->occurrence_id) {
+                $divStages->where('occurrence_id', $stage->occurrence_id);
+            }
+            $deleted = $divStages->get();
+            foreach ($deleted as $ds) {
+                $ds->delete();
+            }
+            $divNames = $deleted->pluck('name')->implode(', ');
+        }
+
         $stage->delete(); // cascadeOnDelete очистит groups, matches, standings
 
-        return $this->redirectToSetup($event, "Стадия \"{$name}\" удалена.");
+        $msg = "Стадия \"{$name}\" удалена.";
+        if (!empty($divNames)) {
+            $msg .= " Также удалены: {$divNames}.";
+        }
+
+        return $this->redirectToSetup($event, $msg);
     }
 
     /* ================================================================
