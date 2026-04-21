@@ -30,7 +30,7 @@ class TournamentSeasonController extends Controller
             abort(403, 'Доступно только организаторам.');
         }
 
-        if ($user->is_admin) {
+        if ($user->isAdmin()) {
             $seasons = \App\Models\TournamentSeason::with('leagues', 'seasonEvents')
                 ->orderByDesc('starts_at')->get();
         } else {
@@ -363,7 +363,7 @@ class TournamentSeasonController extends Controller
     private function authorizeSeason(Request $request, TournamentSeason $season): void
     {
         $user = $request->user();
-        if ($season->organizer_id !== $user->id && !$user->is_admin) {
+        if ($season->organizer_id !== $user->id && !$user->isAdmin()) {
             abort(403, 'Вы не являетесь организатором этого сезона.');
         }
     }

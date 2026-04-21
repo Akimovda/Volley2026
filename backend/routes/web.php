@@ -926,6 +926,7 @@ Route::get('/seasons/{season}/excel', [TeamStatsController::class, 'exportSeason
 	*/
 	
 	Route::get('/level_players', fn () => view('pages.level_players'))->name('level_players');
+Route::get('/tournament-formats', fn () => view('pages.tournament_formats'))->name('tournament_formats');
 	
 	Route::view('/personal_data_agreement', 'pages.personal_data_agreement')
     ->name('personal_data_agreement');

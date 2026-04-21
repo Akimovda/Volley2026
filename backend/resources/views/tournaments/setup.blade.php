@@ -365,6 +365,7 @@ document.addEventListener('DOMContentLoaded', function() {
 								<option value="king_of_court">Король площадки (King of the Court)</option>
 								<option value="thai">Тайский формат</option>
 							</select>
+							<a href="{{ route('tournament_formats') }}" target="_blank" class="f-12 d-block mt-1" style="opacity:.5">📋 Шпаргалка по форматам →</a>
 							
 							<label class="mt-2">Название</label>
 							<input name="name" value="{{ old('name', 'Групповой этап') }}" required>
