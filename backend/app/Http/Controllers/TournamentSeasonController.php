@@ -26,7 +26,17 @@ class TournamentSeasonController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
-        $seasons = $this->seasonService->getByOrganizer($user);
+        if (!in_array($user->role, ['organizer', 'admin'])) {
+            abort(403, 'Доступно только организаторам.');
+        }
+
+        if ($user->is_admin) {
+            $seasons = \App\Models\TournamentSeason::with('leagues', 'seasonEvents')
+                ->orderByDesc('starts_at')->get();
+        } else {
+            $seasons = $this->seasonService->getByOrganizer($user);
+            $seasons->load('seasonEvents');
+        }
 
         return view('seasons.index', compact('seasons'));
     }
@@ -35,8 +45,12 @@ class TournamentSeasonController extends Controller
      *  Создание сезона — форма
      * ================================================================ */
 
-    public function create()
+    public function create(Request $request)
     {
+        $user = $request->user();
+        if (!in_array($user->role, ['organizer', 'admin'])) {
+            abort(403, 'Доступно только организаторам.');
+        }
         return view('seasons.create');
     }
 

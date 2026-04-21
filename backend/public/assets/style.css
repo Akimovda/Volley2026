@@ -3552,6 +3552,34 @@ body.dark .footer-copyright {
 	height: 100%;
 	background: #fff;
 }
+.card-image {
+	display: flex;
+    flex-flow: column;
+    align-items: center;
+    justify-content: center;
+	aspect-ratio: 16/9;
+	margin: -1.5rem -2rem 1rem;
+	border-radius: 1rem 1rem 0 0;
+	overflow: hidden;
+}
+.card-image img {
+	transition: transform 0.5s;
+	object-fit: cover;
+	width: 100%;
+	height: 100%;
+	will-change: transform;
+}
+.card:hover .card-image img  {
+	transform: scale(1.1);
+}
+.card-image svg {
+    fill: #2967BA;
+    width: 10rem;
+    height: 10rem;
+}
+body.dark .card-image svg {
+    fill: #E7612F;
+}
 /*
 	.card * {
 	will-change: transform;
@@ -4038,8 +4066,8 @@ body.dark .hover-image .hover-image-circle {
 	transition: all 0.8s linear;
 	will-change: transform;
 }
-.hover-image a:hover img {
-	transform: scale(1.05);
+.hover-image:hover img {
+	transform: scale(1.1);
 }
 @keyframes ripple {
 	0% {

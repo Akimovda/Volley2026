@@ -1,5 +1,5 @@
 <x-voll-layout body_class="seasons-page">
-<x-slot name="title">Создать сезон</x-slot>
+<x-slot name="title">Создать сезон и лигу</x-slot>
 <x-slot name="h1">Новый сезон</x-slot>
 
 <x-slot name="breadcrumbs">
@@ -16,40 +16,53 @@
 <div class="container">
 <div class="ramka">
 
-    <div class="row justify-content-center">
-        <div class="col-lg-6">
+    <div style="max-width:560px;margin:0 auto">
+
+            <div class="card p-3 mb-3" style="background:rgba(41,103,186,.04);border:1px solid rgba(41,103,186,.15)">
+                <div class="f-14" style="color:#6b7280">
+                    <strong>Сезон</strong> — это серия регулярных турниров с накопительной статистикой, рейтингом игроков и системой промоушена между лигами.
+                </div>
+            </div>
+
             <form action="{{ route('seasons.store') }}" method="POST">
                 @csrf
 
-                <div class="mb-3">
-                    <label for="name" class="form-label">Название сезона</label>
-                    <input type="text" name="name" id="name" class="form-control @error('name') is-invalid @enderror"
-                           value="{{ old('name') }}" placeholder="Лига Среда — Апрель 2026" required>
-                    @error('name') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                </div>
+                <div class="card p-3 mb-3">
+                    <h3 class="f-16 mb-2" style="margin-top:0">Основные настройки</h3>
 
-                <div class="mb-3">
-                    <label for="direction" class="form-label">Направление</label>
-                    <select name="direction" id="direction" class="form-select">
-                        <option value="classic" {{ old('direction') === 'classic' ? 'selected' : '' }}>Классический (6x6)</option>
-                        <option value="beach" {{ old('direction') === 'beach' ? 'selected' : '' }}>Пляжный (2x2 / 3x3 / 4x4)</option>
+                    <label class="b-600 f-14 mb-1 d-block">Название сезона</label>
+                    <input type="text" name="name" id="name"
+                           value="{{ old('name') }}"
+                           placeholder="Например: Лига Среда — Весна 2026"
+                           required>
+                    @error('name') <div class="f-12" style="color:#dc2626;margin-top:4px">{{ $message }}</div> @enderror
+
+                    <label class="b-600 f-14 mb-1 mt-2 d-block">Направление</label>
+                    <select name="direction" id="direction">
+                        <option value="classic" {{ old('direction') === 'classic' ? 'selected' : '' }}>🏐 Классический (6x6)</option>
+                        <option value="beach" {{ old('direction') === 'beach' ? 'selected' : '' }}>🏖 Пляжный (2x2 / 3x3 / 4x4)</option>
                     </select>
                 </div>
 
-                <div class="row mb-3">
-                    <div class="col-6">
-                        <label for="starts_at" class="form-label">Начало</label>
-                        <input type="date" name="starts_at" id="starts_at" class="form-control" value="{{ old('starts_at') }}">
+                <div class="card p-3 mb-3">
+                    <h3 class="f-16 mb-2" style="margin-top:0">Даты проведения</h3>
+                    <div class="row">
+                        <div class="col-6">
+                            <label class="b-600 f-14 mb-1 d-block">Начало</label>
+                            <input type="date" name="starts_at" value="{{ old('starts_at', now()->format('Y-m-d')) }}">
+                        </div>
+                        <div class="col-6">
+                            <label class="b-600 f-14 mb-1 d-block">Окончание</label>
+                            <input type="date" name="ends_at" value="{{ old('ends_at') }}" placeholder="Оставьте пустым для бессрочного">
+                        </div>
                     </div>
-                    <div class="col-6">
-                        <label for="ends_at" class="form-label">Окончание</label>
-                        <input type="date" name="ends_at" id="ends_at" class="form-control" value="{{ old('ends_at') }}">
-                    </div>
+                    <div class="f-12 mt-1" style="color:#9ca3af">Окончание можно не указывать — сезон будет бессрочным</div>
                 </div>
 
-                <button type="submit" class="btn btn-primary w-100">Создать сезон</button>
+                <div class="text-center">
+                    <button type="submit" class="btn btn-primary p-3 f-16">Создать сезон</button>
+                </div>
             </form>
-        </div>
     </div>
 
 </div>

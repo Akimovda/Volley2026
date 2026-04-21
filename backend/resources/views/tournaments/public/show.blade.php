@@ -365,7 +365,12 @@
             <div class="b-700 f-16 mb-2">Рейтинг игроков</div>
 
             @if($topPlayers->isNotEmpty())
-                <table style="width:100%;border-collapse:collapse;font-size:13px">
+                <div class="d-none-desktop f-12 mb-1" style="opacity:.4;display:none">👆 Свайпайте таблицу влево</div>
+                <style>
+                    @media (max-width:768px) { .d-none-desktop { display:block !important; } }
+                </style>
+                <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+                <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:560px">
                     <thead>
                         <tr style="border-bottom:2px solid rgba(128,128,128,.2)">
                             <th class="p-1" style="text-align:left">#</th>
@@ -397,6 +402,7 @@
                         @endforeach
                     </tbody>
                 </table>
+                </div>
             @else
                 <div class="f-13" style="opacity:.5">Нет данных. Статистика появится после первых сыгранных матчей.</div>
             @endif

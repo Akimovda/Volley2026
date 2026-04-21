@@ -53,40 +53,6 @@
 	
     <x-slot name="style">
         <style>
-            .location-thumb {
-			width: 100%;
-			aspect-ratio: 16/10;
-			object-fit: cover;
-			border-radius: 0.8rem 0.8rem 0 0;
-			display: block;
-            }
-            .location-nophoto {
-			width: 100%;
-			aspect-ratio: 16/10;
-			background: var(--bg2, #f3f4f6);
-			border-radius: 0.8rem 0.8rem 0 0;
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			color: var(--t3, #9ca3af);
-			font-size: 1.4rem;
-            }
-            .location-card-link {
-			display: block;
-			text-decoration: none;
-			color: inherit;
-			transition: transform .15s;
-            }
-            .location-card-link:hover {
-			transform: translateY(-2px);
-            }
-            .location-card-link .card {
-			padding: 0;
-			overflow: hidden;
-            }
-            .location-card-body {
-			padding: 1.2rem 1.4rem 1.4rem;
-            }
 			.loclist {
 			display: flex;
 			flex-wrap: wrap;
@@ -98,11 +64,27 @@
 			.loclist  li {
 			width: 100%;
 			}
-			}		
-			.ymaps-2-1-79-balloon__content {
-			font: unset!important;
+			}
+			.location-card {
+			justify-content: space-between;
+			display: flex;
+			flex-flow: column;
 			}
 			
+			.location-card-footer {
+			padding: 1rem 1.6rem;
+			margin: 1rem -2rem -1.5rem;
+			border-radius: 0 0 1rem 1rem;
+			overflow: hidden;
+			font-size: 1.6rem;
+			background: rgba(0,0,0,0.03);
+			}			
+			body.dark .location-card-footer {
+			background: rgba(255,255,255,0.03);
+			}				
+			.ymaps-2-1-79-balloon__content {
+			font: unset!important;
+			}		
 		</style>
 	</x-slot>
 	
@@ -149,10 +131,10 @@
 					<span class="pl-05 f-16 b-500">({{ $city->region }})</span>
 					@endif
 				</h2>
-				<span><span class="cd b-600">{{ $items->count() }}</span>{{ trans_choice('локация|локации|локаций', $items->count()) }}</span>
+				<span><span class="cd b-600 pr-05">{{ $items->count() }}</span>{{ trans_choice('локация|локации|локаций', $items->count()) }}</span>
 			</div>
 			
-			<div class="row row2">
+			<div class="row">
 				@foreach($items as $loc)
 				<div class="col-sm-6 col-lg-4">
 					<x-location-card :location="$loc" />
@@ -178,7 +160,7 @@
 					<span class="pl-05 f-16 b-500">({{ $city->region }})</span>
 					@endif
 				</h2>
-				<span><span class="cd b-600">{{ $items->count() }}</span>{{ trans_choice('локация|локации|локаций', $items->count()) }}</span>
+				<span><span class="cd b-600 pr-05">{{ $items->count() }}</span>{{ trans_choice('локация|локации|локаций', $items->count()) }}</span>
 			</div>
 			
 			
@@ -206,191 +188,191 @@
 		<h2 class="-mt-05">Карта локаций</h2>
 		<div class="mb-2">Отображаются локации текущей страницы.</div>
 		
-<div id="ymap" style="height: 56rem; width: 100%; border-radius: 1rem; overflow: hidden; opacity: 0; transition: opacity 0.5s;"></div>
-
-<script>window.__LOC_POINTS__ = @json($points);</script>
-<script src="https://api-maps.yandex.ru/2.1/?apikey={{ config('services.yandex_maps.key') }}&lang=ru_RU"></script>
-
-<script>
-(function () {
-    let currentMap = null;
-    let currentObjectManager = null;
-    
-function applyThemeToMap(theme) {
-    const mapContainer = document.getElementById('ymap');
-    if (!mapContainer) return;
-    
-    if (theme === 'dark') {
-        mapContainer.style.filter = 'invert(0.9) hue-rotate(180deg)';
-        if (currentObjectManager) {
-            currentObjectManager.clusters.options.set({
-                preset: 'islands#orangeClusterIcons'
-            });
-            // Оранжевые маркеры для тёмной темы
-            currentObjectManager.objects.options.set({
-                preset: 'islands#orangeIcon'
-            });
-        }
-    } else {
-        mapContainer.style.filter = 'none';
-        if (currentObjectManager) {
-            currentObjectManager.clusters.options.set({
-                preset: 'islands#darkBlueClusterIcons'
-            });
-            // Синие маркеры для светлой темы
-            currentObjectManager.objects.options.set({
-                preset: 'islands#blueIcon'
-            });
-        }
-    }
-}
-    
-    window.updateLocationsMapTheme = function() {
-        const theme = localStorage.getItem('theme') === 'dark' ? 'dark' : 'light';
-        applyThemeToMap(theme);
-    };
-    
-    function showMap() {
-        var mapDiv = document.getElementById('ymap');
-        if (mapDiv && mapDiv.style.opacity !== '1') {
-            mapDiv.style.opacity = '1';
-        }
-    }
-    
-    function init() {
-        var pts = Array.isArray(window.__LOC_POINTS__) ? window.__LOC_POINTS__ : [];
-        var hasPts = pts.length > 0;
-        
-        if (!hasPts) {
-            var map = new ymaps.Map("ymap", {
-                center: [55.751244, 37.618423],
-                zoom: 4,
-                controls: ['zoomControl', 'fullscreenControl']
-            });
-            currentMap = map;
-            showMap();
-            return;
-        }
-        
-        // Вычисляем границы
-        var lats = pts.map(function(p) { return p.lat; });
-        var lngs = pts.map(function(p) { return p.lng; });
-        
-        var minLat = Math.min.apply(null, lats);
-        var maxLat = Math.max.apply(null, lats);
-        var minLng = Math.min.apply(null, lngs);
-        var maxLng = Math.max.apply(null, lngs);
-        
-        var centerLat = (minLat + maxLat) / 2;
-        var centerLng = (minLng + maxLng) / 2;
-        
-        // Создаём карту (невидимую)
-        var map = new ymaps.Map("ymap", {
-            center: [centerLat, centerLng],
-            zoom: 10,
-            controls: ['zoomControl', 'fullscreenControl']
-        });
-        
-        currentMap = map;
-        
-        // Применяем границы и после этого показываем карту
-        map.setBounds([[minLat, minLng], [maxLat, maxLng]], {
-            checkZoomRange: true,
-            zoomMargin: 50
-        }).then(showMap).catch(showMap);
-        
-        // Запасной вариант
-        setTimeout(showMap, 500);
-        
-        // Применяем тему
-        var currentTheme = localStorage.getItem('theme') === 'dark' ? 'dark' : 'light';
-        applyThemeToMap(currentTheme);
-        
-        // Создаём ObjectManager
-        var objectManager = new ymaps.ObjectManager({
-            clusterize: true,
-            gridSize: 64,
-            clusterDisableClickZoom: false,
-            geoObjectSeparatePanning: true
-        });
-        
-        currentObjectManager = objectManager;
-        
-        var features = pts.map(function(p, index) {
-            function esc(s) {
-                return String(s ?? '').replace(/[&<>"']/g, function(c) {
-                    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c];
-                });
-            }
-            
-            var balloon = '<div style="max-width: 25rem">'
-                + '<a href="' + esc(p.url) + '" class="f-16 b-600 blink">' + esc(p.name) + '</a>'
-                + (p.city ? '<div class="f-13 mt-1">' + esc(p.city) + '</div>' : '')
-                + (p.address ? '<div class="f-15 mt-05">' + esc(p.address) + '</div>' : '')
-                + '</div>';
-            
-            return {
-                type: "Feature",
-                id: index,
-                geometry: {
-                    type: "Point",
-                    coordinates: [p.lat, p.lng]
-                },
-                properties: {
-                    hintContent: (p.city ? p.city + ': ' : '') + p.name,
-                    balloonContent: balloon,
-                    clusterCaption: p.city || p.name
-                },
-                options: {
-                    preset: "islands#redDotIcon"
-                }
-            };
-        });
-        
-        objectManager.add({
-            type: "FeatureCollection",
-            features: features
-        });
-        
-        objectManager.objects.options.set('preset', 'islands#redDotIcon');
-        
-        if (currentTheme === 'dark') {
-            objectManager.clusters.options.set({ preset: 'islands#grayClusterIcons' });
-        } else {
-            objectManager.clusters.options.set({ preset: 'islands#blueClusterIcons' });
-        }
-        
-        map.geoObjects.add(objectManager);
-    }
-    
-    ymaps.ready(init);
-})();
-</script>
-
-<script>
-(function() {
-    function updateMapTheme() {
-        if (window.updateLocationsMapTheme) {
-            window.updateLocationsMapTheme();
-        }
-    }
-    
-    document.addEventListener('click', function(e) {
-        const btn = e.target.closest('.fix-header-btn-theme');
-        if (btn) {
-            setTimeout(function() {
-                updateMapTheme();
-            }, 150);
-        }
-    });
-})();
-</script>
+		<div id="ymap" style="height: 56rem; width: 100%; border-radius: 1rem; overflow: hidden; opacity: 0; transition: opacity 0.5s;"></div>
 		
-
+		<script>window.__LOC_POINTS__ = @json($points);</script>
+		<script src="https://api-maps.yandex.ru/2.1/?apikey={{ config('services.yandex_maps.key') }}&lang=ru_RU"></script>
+		
+		<script>
+			(function () {
+				let currentMap = null;
+				let currentObjectManager = null;
+				
+				function applyThemeToMap(theme) {
+					const mapContainer = document.getElementById('ymap');
+					if (!mapContainer) return;
+					
+					if (theme === 'dark') {
+						mapContainer.style.filter = 'invert(0.9) hue-rotate(180deg)';
+						if (currentObjectManager) {
+							currentObjectManager.clusters.options.set({
+								preset: 'islands#orangeClusterIcons'
+							});
+							// Оранжевые маркеры для тёмной темы
+							currentObjectManager.objects.options.set({
+								preset: 'islands#orangeIcon'
+							});
+						}
+						} else {
+						mapContainer.style.filter = 'none';
+						if (currentObjectManager) {
+							currentObjectManager.clusters.options.set({
+								preset: 'islands#darkBlueClusterIcons'
+							});
+							// Синие маркеры для светлой темы
+							currentObjectManager.objects.options.set({
+								preset: 'islands#blueIcon'
+							});
+						}
+					}
+				}
+				
+				window.updateLocationsMapTheme = function() {
+					const theme = localStorage.getItem('theme') === 'dark' ? 'dark' : 'light';
+					applyThemeToMap(theme);
+				};
+				
+				function showMap() {
+					var mapDiv = document.getElementById('ymap');
+					if (mapDiv && mapDiv.style.opacity !== '1') {
+						mapDiv.style.opacity = '1';
+					}
+				}
+				
+				function init() {
+					var pts = Array.isArray(window.__LOC_POINTS__) ? window.__LOC_POINTS__ : [];
+					var hasPts = pts.length > 0;
+					
+					if (!hasPts) {
+						var map = new ymaps.Map("ymap", {
+							center: [55.751244, 37.618423],
+							zoom: 4,
+							controls: ['zoomControl', 'fullscreenControl']
+						});
+						currentMap = map;
+						showMap();
+						return;
+					}
+					
+					// Вычисляем границы
+					var lats = pts.map(function(p) { return p.lat; });
+					var lngs = pts.map(function(p) { return p.lng; });
+					
+					var minLat = Math.min.apply(null, lats);
+					var maxLat = Math.max.apply(null, lats);
+					var minLng = Math.min.apply(null, lngs);
+					var maxLng = Math.max.apply(null, lngs);
+					
+					var centerLat = (minLat + maxLat) / 2;
+					var centerLng = (minLng + maxLng) / 2;
+					
+					// Создаём карту (невидимую)
+					var map = new ymaps.Map("ymap", {
+						center: [centerLat, centerLng],
+						zoom: 10,
+						controls: ['zoomControl', 'fullscreenControl']
+					});
+					
+					currentMap = map;
+					
+					// Применяем границы и после этого показываем карту
+					map.setBounds([[minLat, minLng], [maxLat, maxLng]], {
+						checkZoomRange: true,
+						zoomMargin: 50
+					}).then(showMap).catch(showMap);
+					
+					// Запасной вариант
+					setTimeout(showMap, 500);
+					
+					// Применяем тему
+					var currentTheme = localStorage.getItem('theme') === 'dark' ? 'dark' : 'light';
+					applyThemeToMap(currentTheme);
+					
+					// Создаём ObjectManager
+					var objectManager = new ymaps.ObjectManager({
+						clusterize: true,
+						gridSize: 64,
+						clusterDisableClickZoom: false,
+						geoObjectSeparatePanning: true
+					});
+					
+					currentObjectManager = objectManager;
+					
+					var features = pts.map(function(p, index) {
+						function esc(s) {
+							return String(s ?? '').replace(/[&<>"']/g, function(c) {
+								return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c];
+							});
+						}
+						
+						var balloon = '<div style="max-width: 25rem">'
+						+ '<a href="' + esc(p.url) + '" class="f-16 b-600 blink">' + esc(p.name) + '</a>'
+						+ (p.city ? '<div class="f-13 mt-1">' + esc(p.city) + '</div>' : '')
+						+ (p.address ? '<div class="f-15 mt-05">' + esc(p.address) + '</div>' : '')
+						+ '</div>';
+						
+						return {
+							type: "Feature",
+							id: index,
+							geometry: {
+								type: "Point",
+								coordinates: [p.lat, p.lng]
+							},
+							properties: {
+								hintContent: (p.city ? p.city + ': ' : '') + p.name,
+								balloonContent: balloon,
+								clusterCaption: p.city || p.name
+							},
+							options: {
+								preset: "islands#redDotIcon"
+							}
+						};
+					});
+					
+					objectManager.add({
+						type: "FeatureCollection",
+						features: features
+					});
+					
+					objectManager.objects.options.set('preset', 'islands#redDotIcon');
+					
+					if (currentTheme === 'dark') {
+						objectManager.clusters.options.set({ preset: 'islands#grayClusterIcons' });
+						} else {
+						objectManager.clusters.options.set({ preset: 'islands#blueClusterIcons' });
+					}
+					
+					map.geoObjects.add(objectManager);
+				}
+				
+				ymaps.ready(init);
+			})();
+		</script>
+		
+		<script>
+			(function() {
+				function updateMapTheme() {
+					if (window.updateLocationsMapTheme) {
+						window.updateLocationsMapTheme();
+					}
+				}
+				
+				document.addEventListener('click', function(e) {
+					const btn = e.target.closest('.fix-header-btn-theme');
+					if (btn) {
+						setTimeout(function() {
+							updateMapTheme();
+						}, 150);
+					}
+				});
+			})();
+		</script>
+		
+		
 	</div>
-		@if($cities)
-		{{ $cities->links() }}
-		@endif	
+	@if($cities)
+	{{ $cities->links() }}
+	@endif	
 	@endif
 	
 </div>
