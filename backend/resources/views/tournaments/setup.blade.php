@@ -770,71 +770,71 @@ document.addEventListener('DOMContentLoaded', function() {
 
             {{-- Матчи --}}
             @if($stage->matches->isNotEmpty())
-@php
-	$matchesByGroup = $stage->matches->sortBy(["round", "match_number"])->groupBy('group_id');
-	$hasGroups = $stage->groups->count() > 1;
-@endphp
-@foreach($matchesByGroup as $groupId => $groupMatches)
-@php $groupName = $stage->groups->firstWhere('id', $groupId)?->name ?? ''; @endphp
-			<div class="card p-2">
-				<div class="b-700 f-14 mb-2">{{ $hasGroups && $groupName ? $groupName : 'Матчи' }}</div>
-				<div style="overflow-x:auto">
-					<table style="width:100%;border-collapse:collapse;font-size:13px">
-						<thead>
-							<tr style="border-bottom:2px solid rgba(128,128,128,.2)">
-								<th class="p-1" style="text-align:left">#</th>
-								<th class="p-1" style="text-align:left">Тур</th>
-								<th class="p-1" style="text-align:left">Дома</th>
-								<th class="p-1" style="text-align:left">Гости</th>
-								<th class="p-1" style="text-align:center">Время</th>
-								<th class="p-1" style="text-align:center">Корт</th>
-								<th class="p-1" style="text-align:center">Счёт</th>
-								<th class="p-1" style="text-align:center">Статус</th>
-								<th class="p-1"></th>
-							</tr>
-						</thead>
-						<tbody>
-							@foreach($groupMatches as $match)
-							<tr style="border-bottom:1px solid rgba(128,128,128,.1);{{ $match->isCompleted() ? 'background:rgba(16,185,129,.06)' : '' }}">
-								<td class="p-1">{{ $match->match_number }}</td>
-								<td class="p-1">R{{ $match->round }}</td>
-								<td class="p-1 {{ $match->winner_team_id === $match->team_home_id ? 'b-700' : '' }}">
-									{{ $match->teamHome->name ?? 'TBD' }}
-								</td>
-								<td class="p-1 {{ $match->winner_team_id === $match->team_away_id ? 'b-700' : '' }}">
-									{{ $match->teamAway->name ?? 'TBD' }}
-								</td>
-								<td class="p-1" style="text-align:center">{{ $match->scheduled_at ? $match->scheduled_at->setTimezone($event->timezone ?? 'Europe/Moscow')->format('H:i') : '—' }}</td>
-								<td class="p-1" style="text-align:center">{{ $match->court ?? '—' }}</td>
-								<td class="p-1" style="text-align:center">{{ $match->setsScore() ?? '—' }}</td>
-								<td class="p-1" style="text-align:center">
-									@if($match->isCompleted())
-									<span class="f-11 b-600 p-1 px-2" style="background:rgba(16,185,129,.15);border-radius:6px;color:#10b981">✓</span>
-									@elseif($match->status === 'live')
-									<span class="f-11 b-600 p-1 px-2" style="background:rgba(220,38,38,.15);border-radius:6px;color:#dc2626">LIVE</span>
-									@else
-									<span class="f-11" style="opacity:.5">ожидание</span>
-									@endif
-								</td>
-								<td class="p-1">
-									@if($match->isScheduled() && $match->hasTeams())
-									<a href="{{ route('tournament.matches.score.form', $match) }}" class="btn btn-primary f-12" style="padding:4px 10px">
-										Счёт
-									</a>
-									@endif
-									@if($match->isCompleted())
-									<a href="{{ route('tournament.matches.player_stats.form', $match) }}" class="btn btn-secondary f-12" style="padding:4px 8px" title="Статистика игроков">
-										📊
-									</a>
-									@endif
-								</td>
-							</tr>
-							@endforeach
-						</tbody>
-					</table>
-				</div>
-			</div>
-@endforeach
+                @php
+                	$matchesByGroup = $stage->matches->sortBy(["round", "match_number"])->groupBy('group_id');
+                	$hasGroups = $stage->groups->count() > 1;
+                @endphp
+                @foreach($matchesByGroup as $groupId => $groupMatches)
+                @php $groupName = $stage->groups->firstWhere('id', $groupId)?->name ?? ''; @endphp
+                			<div class="card p-2">
+                				<div class="b-700 f-14 mb-2">{{ $groupName ? 'Матчи ' . $groupName : 'Матчи' }}</div>
+                				<div style="overflow-x:auto">
+                					<table style="width:100%;border-collapse:collapse;font-size:13px">
+                						<thead>
+                							<tr style="border-bottom:2px solid rgba(128,128,128,.2)">
+                								<th class="p-1" style="text-align:left">#</th>
+                								<th class="p-1" style="text-align:left">Тур</th>
+                								<th class="p-1" style="text-align:left">Дома</th>
+                								<th class="p-1" style="text-align:left">Гости</th>
+                								<th class="p-1" style="text-align:center">Время</th>
+                								<th class="p-1" style="text-align:center">Корт</th>
+                								<th class="p-1" style="text-align:center">Счёт</th>
+                								<th class="p-1" style="text-align:center">Статус</th>
+                								<th class="p-1"></th>
+                							</tr>
+                						</thead>
+                						<tbody>
+                							@foreach($groupMatches as $match)
+                							<tr style="border-bottom:1px solid rgba(128,128,128,.1);{{ $match->isCompleted() ? 'background:rgba(16,185,129,.06)' : '' }}">
+                								<td class="p-1">{{ $match->match_number }}</td>
+                								<td class="p-1">R{{ $match->round }}</td>
+                								<td class="p-1 {{ $match->winner_team_id === $match->team_home_id ? 'b-700' : '' }}">
+                									{{ $match->teamHome->name ?? 'TBD' }}
+                								</td>
+                								<td class="p-1 {{ $match->winner_team_id === $match->team_away_id ? 'b-700' : '' }}">
+                									{{ $match->teamAway->name ?? 'TBD' }}
+                								</td>
+                								<td class="p-1" style="text-align:center">{{ $match->scheduled_at ? $match->scheduled_at->setTimezone($event->timezone ?? 'Europe/Moscow')->format('H:i') : '—' }}</td>
+                								<td class="p-1" style="text-align:center">{{ $match->court ?? '—' }}</td>
+                								<td class="p-1" style="text-align:center">{{ $match->setsScore() ?? '—' }}</td>
+                								<td class="p-1" style="text-align:center">
+                									@if($match->isCompleted())
+                									<span class="f-11 b-600 p-1 px-2" style="background:rgba(16,185,129,.15);border-radius:6px;color:#10b981">✓</span>
+                									@elseif($match->status === 'live')
+                									<span class="f-11 b-600 p-1 px-2" style="background:rgba(220,38,38,.15);border-radius:6px;color:#dc2626">LIVE</span>
+                									@else
+                									<span class="f-11" style="opacity:.5">ожидание</span>
+                									@endif
+                								</td>
+                								<td class="p-1">
+                									@if($match->isScheduled() && $match->hasTeams())
+                									<a href="{{ route('tournament.matches.score.form', $match) }}" class="btn btn-primary f-12" style="padding:4px 10px">
+                										Счёт
+                									</a>
+                									@endif
+                									@if($match->isCompleted())
+                									<a href="{{ route('tournament.matches.player_stats.form', $match) }}" class="btn btn-secondary f-12" style="padding:4px 8px" title="Статистика игроков">
+                										📊
+                									</a>
+                									@endif
+                								</td>
+                							</tr>
+                							@endforeach
+                						</tbody>
+                					</table>
+                				</div>
+                			</div>
+                @endforeach
 				@php
 					$hasUnplayed = $stage->matches->where('status', 'scheduled')
 						->filter(fn($m) => $m->team_home_id && $m->team_away_id)->isNotEmpty();
@@ -869,8 +869,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
 {{-- Сезонный турнир → дивизионы --}}
 @if($event->season_id && $stage->groups->count() >= 2)
+@php $hasDivStages = $stages->filter(fn($s) => str_starts_with($s->name, 'Дивизион'))->isNotEmpty(); @endphp
 <div class="ramka" style="background:rgba(41,103,186,.04);border:1px solid rgba(41,103,186,.15)">
-	<h3 class="-mt-05">🏆 Формирование дивизионов</h3>
+	<div class="d-flex between fvc" style="cursor:pointer" onclick="var b=this.nextElementSibling;b.style.display=b.style.display==='none'?'':'none';this.querySelector('.toggle-icon').textContent=b.style.display==='none'?'+':'-'">
+		<h3 class="-mt-05 mb-0">🏆 Формирование дивизионов</h3>
+		<span class="toggle-icon b-700 f-20">{{ $hasDivStages ? '+' : '-' }}</span>
+	</div>
+	<div style="{{ $hasDivStages ? 'display:none' : '' }}">
 	@php
 		$groupsCount = $stage->groups->count();
 		$divisionNames = match($groupsCount) {
@@ -945,6 +950,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 		<button type="submit" class="btn btn-primary">Сформировать дивизионы</button>
 	</form>
+	</div>
 </div>
 @else
 			{{-- Обычный → плей-офф --}}
@@ -992,6 +998,15 @@ document.addEventListener('DOMContentLoaded', function() {
 		@csrf
 		<button type="submit" class="btn btn-primary">Применить промоушен</button>
 	</form>
+</div>
+@endif
+
+{{-- Кнопка результатов тура --}}
+@if($divStages->isNotEmpty())
+<div class="ramka" style="text-align:center">
+	<a href="{{ route('tournament.public.show', $event) }}{{ $selectedOccurrence ? '?occurrence_id=' . $selectedOccurrence->id : '' }}" class="btn btn-primary p-3 f-16" style="display:inline-block">
+		📊 Посмотреть результаты тура
+	</a>
 </div>
 @endif
 @endif

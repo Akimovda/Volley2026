@@ -205,9 +205,11 @@ class TournamentStatsService
      *
      * @return array<int, array{place: int, team_id: int, team_name: string}>
      */
-    public function calculateFinalClassification(Event $event): array
+    public function calculateFinalClassification(Event $event, ?int $occurrenceId = null): array
     {
-        $stages = $event->tournamentStages()->orderBy('sort_order')->get();
+        $stages = $event->tournamentStages()
+            ->when($occurrenceId, fn($q) => $q->where('occurrence_id', $occurrenceId))
+            ->orderBy('sort_order')->get();
         $classification = [];
         $place = 1;
         $assignedTeams = [];

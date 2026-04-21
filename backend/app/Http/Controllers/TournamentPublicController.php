@@ -18,7 +18,22 @@ class TournamentPublicController extends Controller
     {
         $tab = $request->query('tab', 'overview');
 
+        // Occurrence selector для сезонных турниров
+        $occurrences = collect();
+        $selectedOccurrence = null;
+        if ($event->season_id) {
+            $occurrences = $event->occurrences()->orderBy('starts_at')->get();
+            $occId = $request->query('occurrence_id');
+            if ($occId) {
+                $selectedOccurrence = $occurrences->firstWhere('id', $occId);
+            }
+            if (!$selectedOccurrence && $occurrences->isNotEmpty()) {
+                $selectedOccurrence = $occurrences->first();
+            }
+        }
+
         $stages = $event->tournamentStages()
+            ->when($selectedOccurrence, fn($q) => $q->where('occurrence_id', $selectedOccurrence->id))
             ->with([
                 'groups.teams',
                 'groups.standings' => fn($q) => $q->with('team')->orderBy('rank'),
@@ -37,10 +52,19 @@ class TournamentPublicController extends Controller
 
         $totalTeams = \DB::table('event_teams')
             ->where('event_id', $event->id)
-            ->where('status', 'submitted')->count();
+            ->whereIn('status', ['approved', 'submitted'])->count();
+
+        // Season stats
+        $seasonStats = collect();
+        if ($event->season_id) {
+            $seasonStats = \App\Models\TournamentSeasonStats::where('season_id', $event->season_id)
+                ->with('user')
+                ->orderByDesc('match_win_rate')
+                ->get();
+        }
 
         return view('tournaments.public.show', compact(
-            'event', 'stages', 'tab', 'setting', 'totalMatches', 'totalTeams'
+            'event', 'stages', 'tab', 'setting', 'totalMatches', 'totalTeams', 'occurrences', 'selectedOccurrence', 'seasonStats'
         ));
     }
 

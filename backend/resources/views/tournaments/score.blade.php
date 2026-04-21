@@ -32,7 +32,7 @@
     {{-- Шапка матча --}}
     <div class="card p-3 mb-3" style="text-align:center">
         <div class="f-13 mb-2" style="opacity:.6">
-            Матч #{{ $match->match_number }} · Тур {{ $match->round }} · {{ strtoupper($stage->matchFormat()) }} · до {{ $stage->setPoints() }}
+            Матч #{{ $match->match_number }} · Тур {{ $match->round }} · {{ strtoupper($stage->matchFormat()) }} · до {{ $stage->setPoints() }}@if($match->group) · {{ $match->group->name }}@endif
         </div>
         <div class="d-flex between fvc">
             <div style="flex:1;text-align:center">

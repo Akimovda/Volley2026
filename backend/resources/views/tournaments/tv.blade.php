@@ -86,6 +86,20 @@
     <div class="tv-header">
         <div>
             <div class="tv-title"><span>▶</span> {{ $event->title }}</div>
+            @if(isset($occurrences) && $occurrences->count() > 1)
+            <div style="display:flex;gap:6px;margin-top:8px">
+                @foreach($occurrences as $occ)
+                    @php
+                        $isSelected = isset($selectedOccurrence) && $selectedOccurrence && $selectedOccurrence->id === $occ->id;
+                        $occDate = \Carbon\Carbon::parse($occ->starts_at)->setTimezone($event->timezone ?? 'Europe/Moscow');
+                    @endphp
+                    <a href="{{ route('tournament.tv', $event) }}?occurrence_id={{ $occ->id }}"
+                       style="padding:4px 12px;border-radius:6px;font-size:13px;font-weight:600;text-decoration:none;{{ $isSelected ? 'background:#E7612F;color:#fff' : 'background:rgba(255,255,255,.1);color:#9ca3af' }}">
+                        Тур {{ $loop->iteration }} ({{ $occDate->format('d.m') }})
+                    </a>
+                @endforeach
+            </div>
+            @endif
         </div>
         <div style="display:flex;align-items:center;gap:20px">
             @if($stages->where('status','in_progress')->isNotEmpty())

@@ -15,7 +15,22 @@ class TournamentTvController extends Controller
      */
     public function tv(Request $request, Event $event)
     {
+        // Occurrence selector
+        $occurrences = collect();
+        $selectedOccurrence = null;
+        if ($event->season_id) {
+            $occurrences = $event->occurrences()->orderBy('starts_at')->get();
+            $occId = $request->query('occurrence_id');
+            if ($occId) {
+                $selectedOccurrence = $occurrences->firstWhere('id', $occId);
+            }
+            if (!$selectedOccurrence && $occurrences->isNotEmpty()) {
+                $selectedOccurrence = $occurrences->first();
+            }
+        }
+
         $stages = $event->tournamentStages()
+            ->when($selectedOccurrence, fn($q) => $q->where('occurrence_id', $selectedOccurrence->id))
             ->with([
                 'groups.standings' => fn($q) => $q->with('team')->orderBy('rank'),
                 'matches' => fn($q) => $q->with(['teamHome', 'teamAway', 'winner'])
@@ -26,7 +41,7 @@ class TournamentTvController extends Controller
 
         $liveUrl = route('tournament.public.live', $event);
 
-        return view('tournaments.tv', compact('event', 'stages', 'liveUrl'));
+        return view('tournaments.tv', compact('event', 'stages', 'liveUrl', 'occurrences', 'selectedOccurrence'));
     }
 
     /**

@@ -28,6 +28,25 @@
     </div>
 
 
+    {{-- Выбор тура (сезонный турнир) --}}
+    @if($occurrences->count() > 1)
+    <div class="mb-3">
+        <div class="d-flex" style="gap:6px;flex-wrap:wrap">
+            @foreach($occurrences as $occ)
+                @php
+                    $isSelected = $selectedOccurrence && $selectedOccurrence->id === $occ->id;
+                    $occDate = \Carbon\Carbon::parse($occ->starts_at)->setTimezone($event->timezone ?? 'Europe/Moscow');
+                @endphp
+                <a href="{{ route('tournament.public.show', [$event, 'tab' => $tab, 'occurrence_id' => $occ->id]) }}"
+                   class="p-2 px-3 f-13 b-600"
+                   style="border-radius:8px;text-decoration:none;{{ $isSelected ? 'background:#4f46e5;color:#fff' : 'background:rgba(128,128,128,.1)' }}">
+                    Тур {{ $loop->iteration }} ({{ $occDate->format('d.m') }})
+                </a>
+            @endforeach
+        </div>
+    </div>
+    @endif
+
     {{-- TV Mode + PDF --}}
     <div class="d-flex mb-3" style="gap:8px;flex-wrap:wrap">
         <a href="{{ route('tournament.tv', $event) }}" target="_blank" class="btn btn-secondary f-13" style="padding:6px 12px">
@@ -50,12 +69,13 @@
             'results'  => 'Результаты',
             'stats'    => 'Статистика',
             'photos'   => 'Фото',
+            'season'   => 'Итоги сезона',
         ];
     @endphp
 
     <div class="d-flex mb-3" style="gap:4px;flex-wrap:wrap;border-bottom:2px solid rgba(128,128,128,.15);padding-bottom:0">
         @foreach($tabs as $key => $label)
-            <a href="{{ route('tournament.public.show', [$event, 'tab' => $key]) }}"
+            <a href="{{ route('tournament.public.show', [$event, 'tab' => $key, 'occurrence_id' => $selectedOccurrence?->id]) }}"
                class="p-2 px-3 f-14 b-600"
                style="text-decoration:none;border-bottom:3px solid {{ $tab === $key ? '#E7612F' : 'transparent' }};{{ $tab === $key ? 'color:#E7612F' : 'opacity:.6' }}">
                 {{ $label }}
@@ -176,11 +196,13 @@
                     {{-- Матчи групповой стадии --}}
                     @php $groupMatches = $stage->matches->whereNotNull('group_id'); @endphp
                     @if($groupMatches->isNotEmpty())
+                        @foreach($groupMatches->groupBy('group_id') as $gId => $gMatches)
+                        @php $gName = $stage->groups->firstWhere('id', $gId)?->name ?? ''; @endphp
                         <div class="card p-3 mt-2">
-                            <div class="b-600 f-14 mb-2">Матчи</div>
-                            @foreach($groupMatches->groupBy('round') as $round => $matches)
+                            <div class="b-600 f-14 mb-2">{{ $gName ? 'Матчи ' . $gName : 'Матчи' }}</div>
+                            @foreach($gMatches->sortBy('round')->groupBy('round') as $round => $matches)
                                 <div class="b-600 f-13 mb-1 mt-2" style="opacity:.5">Тур {{ $round }}</div>
-                                @foreach($matches as $m)
+                                @foreach($matches->sortBy('match_number') as $m)
                                     <div class="d-flex f-14" style="padding:5px 0;border-bottom:1px solid rgba(128,128,128,.08);gap:8px;align-items:center">
                                         <span style="flex:1;text-align:right" class="{{ $m->winner_team_id === $m->team_home_id ? 'b-700' : '' }}">
                                             {{ $m->teamHome->name ?? 'TBD' }}
@@ -195,6 +217,7 @@
                                 @endforeach
                             @endforeach
                         </div>
+                        @endforeach
                     @endif
                 </div>
             @endif
@@ -224,7 +247,7 @@
     @elseif($tab === 'results')
         {{-- Итоговая классификация --}}
         @php
-            $classification = app(\App\Services\TournamentStatsService::class)->calculateFinalClassification($event);
+            $classification = app(\App\Services\TournamentStatsService::class)->calculateFinalClassification($event, $selectedOccurrence?->id);
         @endphp
         @if(!empty($classification))
             @php
@@ -395,6 +418,82 @@
             </div>
         @else
             <div style="text-align:center;opacity:.5;padding:30px 0">Фотографии пока не добавлены.</div>
+        @endif
+
+    @elseif($tab === 'season')
+        @if($event->season_id && $seasonStats->isNotEmpty())
+            @php
+                $season = \App\Models\TournamentSeason::find($event->season_id);
+                $playedRounds = $seasonStats->max('rounds_played');
+            @endphp
+            <div class="card p-3 mb-3">
+                <div class="b-700 f-16 mb-1">🏆 {{ $season->name ?? 'Сезон' }}</div>
+                <div class="f-13 mb-3" style="opacity:.5">
+                    Сыграно туров: {{ $playedRounds }}
+                    · Игроков: {{ $seasonStats->count() }}
+                </div>
+
+                <div style="overflow-x:auto">
+                <table style="width:100%;border-collapse:collapse;font-size:13px">
+                    <thead>
+                        <tr style="border-bottom:2px solid rgba(128,128,128,.2)">
+                            <th class="p-1" style="text-align:left">#</th>
+                            <th class="p-1" style="text-align:left">Игрок</th>
+                            <th class="p-1" style="text-align:center">Туров</th>
+                            <th class="p-1" style="text-align:center">Матчей</th>
+                            <th class="p-1" style="text-align:center">Побед</th>
+                            <th class="p-1" style="text-align:center">WinRate</th>
+                            <th class="p-1" style="text-align:center">Сеты</th>
+                            <th class="p-1" style="text-align:center">Разн. оч.</th>
+                            <th class="p-1" style="text-align:center">Серия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($seasonStats as $i => $ss)
+                            <tr style="border-bottom:1px solid rgba(128,128,128,.1)">
+                                <td class="p-1 b-700">{{ $i + 1 }}</td>
+                                <td class="p-1">
+                                    @if($ss->user)
+                                        <a href="{{ route('users.show', $ss->user_id) }}" class="blink">
+                                            {{ $ss->user->last_name }} {{ $ss->user->first_name }}
+                                        </a>
+                                    @else
+                                        ?
+                                    @endif
+                                </td>
+                                <td class="p-1" style="text-align:center">{{ $ss->rounds_played }}</td>
+                                <td class="p-1" style="text-align:center">{{ $ss->matches_played }}</td>
+                                <td class="p-1" style="text-align:center;color:#10b981">{{ $ss->matches_won }}</td>
+                                <td class="p-1 b-700" style="text-align:center;color:#E7612F">{{ number_format($ss->match_win_rate, 1) }}%</td>
+                                <td class="p-1" style="text-align:center">{{ $ss->sets_won }}:{{ $ss->sets_lost }}</td>
+                                <td class="p-1" style="text-align:center">{{ ($ss->points_scored - $ss->points_conceded) > 0 ? '+' : '' }}{{ $ss->points_scored - $ss->points_conceded }}</td>
+                                <td class="p-1" style="text-align:center">
+                                    @if($ss->current_streak > 0)
+                                        <span style="color:#10b981">W{{ $ss->current_streak }}</span>
+                                    @elseif($ss->current_streak < 0)
+                                        <span style="color:#dc2626">L{{ abs($ss->current_streak) }}</span>
+                                    @else
+                                        —
+                                    @endif
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+                </div>
+            </div>
+
+            @if($season)
+            <div class="mt-2" style="text-align:center">
+                <a href="{{ route('seasons.show.slug', $season->slug) }}" class="btn btn-secondary f-13">
+                    Страница сезона →
+                </a>
+            </div>
+            @endif
+        @else
+            <div style="text-align:center;opacity:.5;padding:30px 0">
+                {{ $event->season_id ? 'Нет данных по сезону.' : 'Этот турнир не привязан к сезону.' }}
+            </div>
         @endif
 
     @endif
