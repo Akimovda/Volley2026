@@ -58,17 +58,17 @@
 
         @php
             $fieldLabels = [
-                'serves_total'    => ['label' => 'Подачи', 'short' => 'Пдч'],
+                'serves_total'    => ['label' => 'Подачи', 'short' => 'Подачи'],
                 'aces'            => ['label' => 'Эйсы', 'short' => 'Эйс'],
-                'serve_errors'    => ['label' => 'Ош. подачи', 'short' => 'Ош.П'],
+                'serve_errors'    => ['label' => 'Ош. подачи', 'short' => 'Ош.Под.'],
                 'attacks_total'   => ['label' => 'Атаки', 'short' => 'Атк'],
                 'kills'           => ['label' => 'Результ.', 'short' => 'Рез'],
-                'attack_errors'   => ['label' => 'Ош. атаки', 'short' => 'Ош.А'],
+                'attack_errors'   => ['label' => 'Ош. атаки', 'short' => 'Ош.Атаки'],
                 'blocks'          => ['label' => 'Блоки', 'short' => 'Блк'],
-                'block_errors'    => ['label' => 'Ош. блока', 'short' => 'Ош.Б'],
-                'digs'            => ['label' => 'Приём', 'short' => 'Прм'],
-                'reception_errors'=> ['label' => 'Ош. приёма', 'short' => 'Ош.Р'],
-                'assists'         => ['label' => 'Передачи', 'short' => 'Пер'],
+                'block_errors'    => ['label' => 'Ош. блока', 'short' => 'Ош.Блока'],
+                'digs'            => ['label' => 'Приём/Защита', 'short' => 'Прием/защита'],
+                'reception_errors'=> ['label' => 'Ош. приёма/защиты', 'short' => 'Ош.Пр/Защита'],
+                'assists'         => ['label' => 'Передачи', 'short' => 'Передачи'],
             ];
             $teams = [
                 ['id' => $match->team_home_id, 'name' => $match->teamHome->name ?? 'Home', 'players' => $players['home']],

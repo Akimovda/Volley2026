@@ -598,7 +598,73 @@
 		Стадии
 		============================================================ --}}
 		
+		{{-- MVP турнира --}}
+		@php
+			$allCompleted = $stages->isNotEmpty() && $stages->every(fn($s) => $s->status === 'completed');
+			$participants = collect();
+			if ($allCompleted) {
+				$participants = \App\Models\PlayerTournamentStats::where('event_id', $event->id)
+					->with('user')
+					->orderByDesc('match_win_rate')
+					->get();
+			}
+		@endphp
+		@if($allCompleted && $participants->isNotEmpty())
+		<div class="ramka">
+			<h2 class="-mt-05">⭐ MVP турнира</h2>
+			@if($event->tournament_mvp_user_id)
+				@php $currentMvp = \App\Models\User::find($event->tournament_mvp_user_id); @endphp
+				<div class="card p-3 mb-2" style="text-align:center;background:rgba(231,97,47,.06);border:1px solid rgba(231,97,47,.2)">
+					<div class="f-13 b-600 mb-1" style="opacity:.5">Текущий MVP</div>
+					<div class="f-20 b-800">⭐
+						<a href="{{ route('users.show', $currentMvp) }}" class="blink">
+							{{ trim(($currentMvp->last_name ?? '') . ' ' . ($currentMvp->first_name ?? '')) ?: $currentMvp->name ?? '?' }}
+						</a>
+					</div>
+				</div>
+			@endif
+			<form method="POST" action="{{ route('tournament.mvp', $event) }}">
+				@csrf
+				<div class="card p-3">
+					<label class="f-13 b-600 mb-2 d-block">Выберите MVP</label>
+					<table style="width:100%;border-collapse:collapse;font-size:14px">
+						<thead>
+							<tr style="border-bottom:2px solid rgba(128,128,128,.2)">
+								<th class="p-1" style="width:30px"></th>
+								<th class="p-1" style="text-align:left">Игрок</th>
+								<th class="p-1" style="text-align:center">WinRate</th>
+								<th class="p-1" style="text-align:center">Матчи</th>
+								<th class="p-1" style="text-align:center">Сеты</th>
+							</tr>
+						</thead>
+						<tbody>
+							@foreach($participants as $ps)
+							<tr style="border-bottom:1px solid rgba(128,128,128,.1);{{ $event->tournament_mvp_user_id == $ps->user_id ? 'background:rgba(231,97,47,.06)' : '' }}">
+								<td class="p-1" style="text-align:center">
+									<input type="radio" name="mvp_user_id" value="{{ $ps->user_id }}" {{ $event->tournament_mvp_user_id == $ps->user_id ? 'checked' : '' }}>
+								</td>
+								<td class="p-1">
+									<a href="{{ route('users.show', $ps->user_id) }}" class="blink b-600">
+										{{ trim(($ps->user->last_name ?? '') . ' ' . ($ps->user->first_name ?? '')) ?: $ps->user->name ?? '?' }}
+									</a>
+								</td>
+								<td class="p-1 b-700" style="text-align:center;color:#E7612F">{{ $ps->match_win_rate }}%</td>
+								<td class="p-1" style="text-align:center">{{ $ps->matches_won }}/{{ $ps->matches_played }}</td>
+								<td class="p-1" style="text-align:center">{{ $ps->sets_won }}:{{ $ps->sets_lost }}</td>
+							</tr>
+							@endforeach
+						</tbody>
+					</table>
+					<div class="text-center mt-2">
+						<button type="submit" class="btn btn-primary">Назначить MVP</button>
+					</div>
+				</div>
+			</form>
+		</div>
+		@endif
+
 		{{-- Фото турнира --}}
+		@if($allCompleted)
 		<div class="ramka">
 			<h2 class="-mt-05">Фото турнира</h2>
 			
@@ -673,6 +739,7 @@
 			</div>
 			@endif
 		</div>
+		@endif
 		
 		@foreach($stages as $stage)
 		@php
@@ -730,32 +797,39 @@
 						<div class="b-700 f-14 mb-2">{{ $group->name }}</div>
 						
 						@if($group->standings->isNotEmpty())
+						<div style="overflow-x:auto">
 						<table style="width:100%;border-collapse:collapse;font-size:13px">
 							<thead>
 								<tr style="border-bottom:2px solid rgba(128,128,128,.2)">
-									<th class="p-1" style="text-align:left">#</th>
+									<th class="p-1" style="text-align:center;width:30px">Место</th>
 									<th class="p-1" style="text-align:left">Команда</th>
 									<th class="p-1" style="text-align:center">И</th>
 									<th class="p-1" style="text-align:center">В</th>
 									<th class="p-1" style="text-align:center">П</th>
-									<th class="p-1" style="text-align:center">Сеты</th>
-									<th class="p-1" style="text-align:center">Оч.</th>
+									<th class="p-1" style="text-align:center">Очки</th>
+<th class="p-1" style="text-align:center">Разн.</th>
 								</tr>
 							</thead>
 							<tbody>
 								@foreach($group->standings->sortBy('rank') as $standing)
 								<tr style="border-bottom:1px solid rgba(128,128,128,.1)">
-									<td class="p-1 b-700">{{ $standing->rank }}</td>
-									<td class="p-1">{{ $standing->team->name ?? '—' }}</td>
+									<td class="p-1 b-700" style="text-align:center">{{ $standing->rank }}</td>
+									<td class="p-1">
+										<div class="b-600">{{ $standing->team->name ?? '—' }}</div>
+										@if($standing->team && $standing->team->members->count())
+										<div class="f-11" style="color:#6b7280">{{ $standing->team->members->map(fn($m) => $m->user->last_name ?? '?')->implode(' / ') }}</div>
+										@endif
+									</td>
 									<td class="p-1" style="text-align:center">{{ $standing->played }}</td>
 									<td class="p-1" style="text-align:center;color:#10b981">{{ $standing->wins }}</td>
 									<td class="p-1" style="text-align:center;color:#dc2626">{{ $standing->losses }}</td>
-									<td class="p-1" style="text-align:center">{{ $standing->sets_won }}:{{ $standing->sets_lost }}</td>
-									<td class="p-1" style="text-align:center" class="b-700">{{ $standing->rating_points }}</td>
+									<td class="p-1 b-700" style="text-align:center">{{ $standing->rating_points }}</td>
+<td class="p-1" style="text-align:center">{{ $standing->points_scored - $standing->points_conceded > 0 ? '+' : '' }}{{ $standing->points_scored - $standing->points_conceded }}</td>
 								</tr>
 								@endforeach
 							</tbody>
 						</table>
+						</div>
 						@elseif($group->teams->isNotEmpty())
 						<div class="d-flex" style="flex-wrap:wrap;gap:6px">
 							@foreach($group->teams as $team)
@@ -815,56 +889,62 @@
 				<div style="overflow-x:auto">
 					<table style="width:100%;border-collapse:collapse;font-size:13px">
 						<thead>
-							<tr style="border-bottom:2px solid rgba(128,128,128,.2)">
-								<th class="p-1" style="text-align:left">#</th>
-								<th class="p-1" style="text-align:left">Тур</th>
-								<th class="p-1" style="text-align:left">Дома</th>
-								<th class="p-1" style="text-align:left">Гости</th>
-								<th class="p-1" style="text-align:center">Время</th>
-								<th class="p-1" style="text-align:center">Корт</th>
-								<th class="p-1" style="text-align:center">Счёт</th>
-								<th class="p-1" style="text-align:center">Статус</th>
-								<th class="p-1"></th>
-							</tr>
-						</thead>
+<tr style="border-bottom:2px solid rgba(128,128,128,.2)">
+<th class="p-1" style="text-align:left">#</th>
+<th class="p-1" style="text-align:left">Тур</th>
+<th class="p-1" style="text-align:left">Дома</th>
+<th class="p-1" style="text-align:left">Гости</th>
+<th class="p-1" style="text-align:center">Сеты</th>
+<th class="p-1" style="text-align:center">Счёт</th>
+<th class="p-1" style="text-align:center">Корт</th>
+<th class="p-1" style="text-align:center">Статус</th>
+<th class="p-1"></th>
+</tr>
+</thead>
 						<tbody>
-							@foreach($groupMatches as $match)
-							<tr style="border-bottom:1px solid rgba(128,128,128,.1);{{ $match->isCompleted() ? 'background:rgba(16,185,129,.06)' : '' }}">
-								<td class="p-1">{{ $match->match_number }}</td>
-								<td class="p-1">R{{ $match->round }}</td>
-								<td class="p-1 {{ $match->winner_team_id === $match->team_home_id ? 'b-700' : '' }}">
-									{{ $match->teamHome->name ?? 'TBD' }}
-								</td>
-								<td class="p-1 {{ $match->winner_team_id === $match->team_away_id ? 'b-700' : '' }}">
-									{{ $match->teamAway->name ?? 'TBD' }}
-								</td>
-								<td class="p-1" style="text-align:center">{{ $match->scheduled_at ? $match->scheduled_at->setTimezone($event->timezone ?? 'Europe/Moscow')->format('H:i') : '—' }}</td>
-								<td class="p-1" style="text-align:center">{{ $match->court ?? '—' }}</td>
-								<td class="p-1" style="text-align:center">{{ $match->setsScore() ?? '—' }}</td>
-								<td class="p-1" style="text-align:center">
-									@if($match->isCompleted())
-									<span class="f-11 b-600 p-1 px-2" style="background:rgba(16,185,129,.15);border-radius:6px;color:#10b981">✓</span>
-									@elseif($match->status === 'live')
-									<span class="f-11 b-600 p-1 px-2" style="background:rgba(220,38,38,.15);border-radius:6px;color:#dc2626">LIVE</span>
-									@else
-									<span class="f-11" style="opacity:.5">ожидание</span>
-									@endif
-								</td>
-								<td class="p-1">
-									@if($match->isScheduled() && $match->hasTeams())
-									<a href="{{ route('tournament.matches.score.form', $match) }}" class="btn btn-primary f-12" style="padding:4px 10px">
-										Счёт
-									</a>
-									@endif
-									@if($match->isCompleted())
-									<a href="{{ route('tournament.matches.player_stats.form', $match) }}" class="btn btn-secondary f-12" style="padding:4px 8px" title="Статистика игроков">
-										📊
-									</a>
-									@endif
-								</td>
-							</tr>
-							@endforeach
-						</tbody>
+@foreach($groupMatches as $match)
+<tr style="border-bottom:1px solid rgba(128,128,128,.1);{{ $match->isCompleted() ? 'background:rgba(16,185,129,.06)' : '' }}">
+<td class="p-1">{{ $match->match_number }}</td>
+<td class="p-1">R{{ $match->round }}</td>
+<td class="p-1 {{ $match->winner_team_id === $match->team_home_id ? 'b-700' : '' }}">
+<div>{{ $match->teamHome->name ?? 'TBD' }}</div>
+@if($match->teamHome && $match->teamHome->members->count())
+<div class="f-11" style="color:#6b7280">{{ $match->teamHome->members->map(fn($m) => $m->user->last_name ?? '?')->implode(' / ') }}</div>
+@endif
+</td>
+<td class="p-1 {{ $match->winner_team_id === $match->team_away_id ? 'b-700' : '' }}">
+<div>{{ $match->teamAway->name ?? 'TBD' }}</div>
+@if($match->teamAway && $match->teamAway->members->count())
+<div class="f-11" style="color:#6b7280">{{ $match->teamAway->members->map(fn($m) => $m->user->last_name ?? '?')->implode(' / ') }}</div>
+@endif
+</td>
+<td class="p-1" style="text-align:center">{{ $match->setsScore() ?? '—' }}</td>
+<td class="p-1" style="text-align:center">{{ $match->detailedScore() ?: '—' }}</td>
+<td class="p-1" style="text-align:center">{{ $match->court ?? '—' }}</td>
+<td class="p-1" style="text-align:center">
+@if($match->isCompleted())
+<span class="f-11 b-600 p-1 px-2" style="background:rgba(16,185,129,.15);border-radius:6px;color:#10b981">✓</span>
+@elseif($match->status === 'live')
+<span class="f-11 b-600 p-1 px-2" style="background:rgba(220,38,38,.15);border-radius:6px;color:#dc2626">LIVE</span>
+@else
+<span class="f-11" style="opacity:.5">ожидание</span>
+@endif
+</td>
+<td class="p-1">
+@if($match->isScheduled() && $match->hasTeams())
+<a href="{{ route('tournament.matches.score.form', $match) }}" class="btn btn-primary f-12" style="padding:4px 10px">
+Счёт
+</a>
+@endif
+@if($match->isCompleted())
+<a href="{{ route('tournament.matches.player_stats.form', $match) }}" class="btn btn-secondary f-12" style="padding:4px 8px" title="Статистика игроков">
+📊
+</a>
+@endif
+</td>
+</tr>
+@endforeach
+</tbody>
 					</table>
 				</div>
 			</div>
