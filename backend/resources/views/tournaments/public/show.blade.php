@@ -109,7 +109,12 @@
                                     @foreach($group->standings->sortBy('rank')->take(3) as $s)
                                         <div class="f-13 d-flex" style="gap:8px">
                                             <span class="b-700" style="width:18px">{{ $s->rank }}.</span>
-                                            <span>{{ $s->team->name ?? '—' }}</span>
+                                            <span>
+    <div>{{ $s->team->name ?? '—' }}</div>
+    @if($s->team && $s->team->members->count())
+    <div class="f-11" style="color:#6b7280">{{ $s->team->members->map(fn($m) => $m->user->last_name ?? '?')->implode(' / ') }}</div>
+    @endif
+</span>
                                             <span style="opacity:.5;margin-left:auto">{{ $s->wins }}В {{ $s->losses }}П</span>
                                         </div>
                                     @endforeach
@@ -176,7 +181,12 @@
                                                 @foreach($group->standings->sortBy('rank') as $s)
                                                     <tr style="border-bottom:1px solid rgba(128,128,128,.1)">
                                                         <td class="p-1 b-700">{{ $s->rank }}</td>
-                                                        <td class="p-1">{{ $s->team->name ?? '—' }}</td>
+                                                        <td class="p-1">
+    <div class="b-600">{{ $s->team->name ?? '—' }}</div>
+    @if($s->team && $s->team->members->count())
+    <div class="f-11" style="color:#6b7280">{{ $s->team->members->map(fn($m) => $m->user->last_name ?? '?')->implode(' / ') }}</div>
+    @endif
+</td>
                                                         <td class="p-1" style="text-align:center">{{ $s->played }}</td>
                                                         <td class="p-1" style="text-align:center;color:#10b981">{{ $s->wins }}</td>
                                                         <td class="p-1" style="text-align:center;color:#dc2626">{{ $s->losses }}</td>
@@ -206,12 +216,18 @@
                                     <div class="d-flex f-14" style="padding:5px 0;border-bottom:1px solid rgba(128,128,128,.08);gap:8px;align-items:center">
                                         <span style="flex:1;text-align:right" class="{{ $m->winner_team_id === $m->team_home_id ? 'b-700' : '' }}">
                                             {{ $m->teamHome->name ?? 'TBD' }}
+                                        @if($m->teamHome && $m->teamHome->members->count())
+                                        <div class="f-11" style="color:#6b7280">{{ $m->teamHome->members->map(fn($mm) => $mm->user->last_name ?? '?')->implode(' / ') }}</div>
+                                        @endif
                                         </span>
                                         <span class="px-2 b-700" style="min-width:80px;text-align:center;{{ $m->isCompleted() ? '' : 'opacity:.4' }}">
                                             {{ $m->setsScore() ?? 'vs' }}
                                         </span>
                                         <span style="flex:1" class="{{ $m->winner_team_id === $m->team_away_id ? 'b-700' : '' }}">
                                             {{ $m->teamAway->name ?? 'TBD' }}
+                                        @if($m->teamAway && $m->teamAway->members->count())
+                                        <div class="f-11" style="color:#6b7280">{{ $m->teamAway->members->map(fn($mm) => $mm->user->last_name ?? '?')->implode(' / ') }}</div>
+                                        @endif
                                         </span>
                                     </div>
                                 @endforeach
@@ -337,12 +353,18 @@
                         <span class="f-12" style="opacity:.4;width:30px">R{{ $m->round }}</span>
                         <span style="flex:1;text-align:right" class="{{ $m->winner_team_id === $m->team_home_id ? 'b-700' : '' }}">
                             {{ $m->teamHome->name ?? '?' }}
+                                @if($m->teamHome && $m->teamHome->members->count())
+                                <div class="f-11" style="color:#6b7280">{{ $m->teamHome->members->map(fn($mm) => $mm->user->last_name ?? '?')->implode(' / ') }}</div>
+                                @endif
                         </span>
                         <span class="px-2 b-700" style="min-width:100px;text-align:center">
                             {{ $m->setsScore() }}
                         </span>
                         <span style="flex:1" class="{{ $m->winner_team_id === $m->team_away_id ? 'b-700' : '' }}">
                             {{ $m->teamAway->name ?? '?' }}
+                                @if($m->teamAway && $m->teamAway->members->count())
+                                <div class="f-11" style="color:#6b7280">{{ $m->teamAway->members->map(fn($mm) => $mm->user->last_name ?? '?')->implode(' / ') }}</div>
+                                @endif
                         </span>
                     </div>
                 @endforeach

@@ -36,8 +36,8 @@ class TournamentPublicController extends Controller
             ->when($selectedOccurrence, fn($q) => $q->where('occurrence_id', $selectedOccurrence->id))
             ->with([
                 'groups.teams',
-                'groups.standings' => fn($q) => $q->with('team')->orderBy('rank'),
-                'matches' => fn($q) => $q->with(['teamHome', 'teamAway', 'winner'])
+                'groups.standings' => fn($q) => $q->with('team.members.user')->orderBy('rank'),
+                'matches' => fn($q) => $q->with(['teamHome.members.user', 'teamAway.members.user', 'winner'])
                     ->orderBy('round')->orderBy('match_number'),
             ])
             ->orderBy('sort_order')
@@ -75,8 +75,8 @@ class TournamentPublicController extends Controller
     {
         $stages = $event->tournamentStages()
             ->with([
-                'groups.standings' => fn($q) => $q->with('team')->orderBy('rank'),
-                'matches' => fn($q) => $q->with(['teamHome', 'teamAway', 'winner'])
+                'groups.standings' => fn($q) => $q->with('team.members.user')->orderBy('rank'),
+                'matches' => fn($q) => $q->with(['teamHome.members.user', 'teamAway.members.user', 'winner'])
                     ->orderBy('round')->orderBy('match_number'),
             ])
             ->orderBy('sort_order')

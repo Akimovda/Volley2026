@@ -113,12 +113,83 @@
     </div>
 
     <div class="tv-body" id="tvBody">
-        @foreach($stages as $stage)
-            @if($stage->groups->isNotEmpty())
-                {{-- Группы --}}
-                @foreach($stage->groups as $group)
+        @php
+            $inProgress = $stages->firstWhere('status', 'in_progress');
+            $allCompleted = $stages->isNotEmpty() && $stages->every(fn($s) => $s->status === 'completed');
+            $lastCompleted = $stages->where('status', 'completed')->last();
+            $activeStage = $inProgress ?? ($allCompleted ? null : $lastCompleted);
+        @endphp
+
+        @if($allCompleted)
+            {{-- Итоги турнира --}}
+            @php
+                $classification = app(\App\Services\TournamentStatsService::class)
+                    ->calculateFinalClassification($event, $selectedOccurrence?->id ?? null);
+                $hasDivisions = isset($classification[0]['division']);
+                $divisions = $hasDivisions
+                    ? collect($classification)->groupBy('division')
+                    : collect(['all' => collect($classification)]);
+            @endphp
+
+            @if($hasDivisions)
+                @foreach($divisions as $divName => $divTeams)
+                <div class="tv-panel">
+                    <h3>🏆 {{ $divName }}</h3>
+                    @foreach($divTeams as $i => $c)
+                        @php
+                            $place = $i + 1;
+                            $team = \App\Models\EventTeam::with('members.user')->find($c['team_id']);
+                            $members = $team ? $team->members->map(fn($m) => $m->user->last_name ?? '?')->implode(' / ') : '';
+                        @endphp
+                        <div class="tv-match" style="border-bottom:1px solid rgba(255,255,255,.05);padding:12px 0">
+                            <div style="width:40px;font-size:22px;text-align:center">
+                                {{ $place === 1 ? '🥇' : ($place === 2 ? '🥈' : ($place === 3 ? '🥉' : $place . '.')) }}
+                            </div>
+                            <div style="flex:1">
+                                <div style="font-weight:700;font-size:18px;{{ $place <= 3 ? 'color:#E7612F' : '' }}">{{ $c['team_name'] }}</div>
+                                <div style="font-size:13px;opacity:.5">{{ $members }}</div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+                @endforeach
+            @else
+                <div class="tv-panel" style="flex:2">
+                    <h3>🏆 Итоги турнира</h3>
+                    @foreach($classification as $c)
+                        @php
+                            $team = \App\Models\EventTeam::with('members.user')->find($c['team_id']);
+                            $members = $team ? $team->members->map(fn($m) => $m->user->last_name ?? '?')->implode(' / ') : '';
+                        @endphp
+                        <div class="tv-match" style="border-bottom:1px solid rgba(255,255,255,.05);padding:12px 0">
+                            <div style="width:40px;font-size:22px;text-align:center">
+                                {{ $c['place'] === 1 ? '🥇' : ($c['place'] === 2 ? '🥈' : ($c['place'] === 3 ? '🥉' : $c['place'] . '.')) }}
+                            </div>
+                            <div style="flex:1">
+                                <div style="font-weight:700;font-size:18px;{{ $c['place'] <= 3 ? 'color:#E7612F' : '' }}">{{ $c['team_name'] }}</div>
+                                <div style="font-size:13px;opacity:.5">{{ $members }}</div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
+
+            {{-- MVP --}}
+            @if($event->tournament_mvp_user_id)
+                @php $mvp = \App\Models\User::find($event->tournament_mvp_user_id); @endphp
+                <div class="tv-panel" style="flex:0.5;text-align:center;display:flex;flex-direction:column;justify-content:center">
+                    <div style="font-size:14px;opacity:.5;margin-bottom:8px">MVP турнира</div>
+                    <div style="font-size:48px;margin-bottom:8px">⭐</div>
+                    <div style="font-size:22px;font-weight:800;color:#E7612F">{{ $mvp?->last_name }} {{ $mvp?->first_name }}</div>
+                </div>
+            @endif
+
+        @elseif($activeStage)
+            {{-- Текущий этап --}}
+            @if($activeStage->groups->isNotEmpty())
+                @foreach($activeStage->groups as $group)
                     <div class="tv-panel" data-group-id="{{ $group->id }}">
-                        <h3>{{ $group->name }}</h3>
+                        <h3>{{ $activeStage->name }}: {{ $group->name }}</h3>
                         @if($group->standings->isNotEmpty())
                             <table class="tv-table">
                                 <thead>
@@ -128,36 +199,44 @@
                                         <th class="tc">И</th>
                                         <th class="tc">В</th>
                                         <th class="tc">П</th>
-                                        <th class="tc">Сеты</th>
                                         <th class="tc">Оч.</th>
+                                        <th class="tc">Разн.</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @foreach($group->standings->sortBy('rank') as $s)
                                         <tr>
                                             <td class="rank">{{ $s->rank }}</td>
-                                            <td>{{ $s->team->name ?? '—' }}</td>
+                                            <td>
+                                                <div>{{ $s->team->name ?? '—' }}</div>
+                                                @if($s->team && $s->team->members->count())
+                                                <div style="font-size:12px;opacity:.5">{{ $s->team->members->map(fn($mm) => $mm->user->last_name ?? '?')->implode(' / ') }}</div>
+                                                @endif
+                                            </td>
                                             <td class="tc">{{ $s->played }}</td>
                                             <td class="tc win">{{ $s->wins }}</td>
                                             <td class="tc loss">{{ $s->losses }}</td>
-                                            <td class="tc">{{ $s->sets_won }}:{{ $s->sets_lost }}</td>
                                             <td class="tc pts">{{ $s->rating_points }}</td>
+                                            <td class="tc">{{ $s->points_scored - $s->points_conceded > 0 ? '+' : '' }}{{ $s->points_scored - $s->points_conceded }}</td>
                                         </tr>
                                     @endforeach
                                 </tbody>
                             </table>
                         @endif
 
-                        {{-- Матчи группы --}}
                         <div style="margin-top:16px">
-                            @foreach($stage->matches->where('group_id', $group->id)->sortBy(['round','match_number']) as $m)
+                            @foreach($activeStage->matches->where('group_id', $group->id)->sortBy(['round','match_number']) as $m)
                                 <div class="tv-match" data-match-id="{{ $m->id }}">
                                     <div class="team right {{ $m->winner_team_id === $m->team_home_id ? 'winner' : '' }}">
                                         {{ $m->teamHome->name ?? 'TBD' }}
+                                        @if($m->teamHome && $m->teamHome->members->count())
+                                        <div style="font-size:11px;opacity:.4">{{ $m->teamHome->members->map(fn($mm) => $mm->user->last_name ?? '?')->implode(' / ') }}</div>
+                                        @endif
                                     </div>
                                     <div class="score">
                                         @if($m->isCompleted())
-                                            {{ $m->sets_home }}:{{ $m->sets_away }}
+                                            {{ $m->setsScore() }}
+                                            <div style="font-size:11px;opacity:.5">{{ $m->detailedScore() }}</div>
                                         @elseif($m->status === 'live')
                                             <span class="status-badge live-badge">LIVE</span>
                                         @else
@@ -166,6 +245,9 @@
                                     </div>
                                     <div class="team {{ $m->winner_team_id === $m->team_away_id ? 'winner' : '' }}">
                                         {{ $m->teamAway->name ?? 'TBD' }}
+                                        @if($m->teamAway && $m->teamAway->members->count())
+                                        <div style="font-size:11px;opacity:.4">{{ $m->teamAway->members->map(fn($mm) => $mm->user->last_name ?? '?')->implode(' / ') }}</div>
+                                        @endif
                                     </div>
                                 </div>
                             @endforeach
@@ -173,17 +255,20 @@
                     </div>
                 @endforeach
             @else
-                {{-- Bracket / матчи без групп --}}
                 <div class="tv-panel" style="flex:2">
-                    <h3>{{ $stage->name }}</h3>
-                    @foreach($stage->matches->sortBy(['round','match_number']) as $m)
+                    <h3>{{ $activeStage->name }}</h3>
+                    @foreach($activeStage->matches->sortBy(['round','match_number']) as $m)
                         <div class="tv-match">
                             <div class="team right {{ $m->winner_team_id === $m->team_home_id ? 'winner' : '' }}">
                                 {{ $m->teamHome->name ?? 'TBD' }}
+                                @if($m->teamHome && $m->teamHome->members->count())
+                                <div style="font-size:11px;opacity:.4">{{ $m->teamHome->members->map(fn($mm) => $mm->user->last_name ?? '?')->implode(' / ') }}</div>
+                                @endif
                             </div>
                             <div class="score">
                                 @if($m->isCompleted())
-                                    {{ $m->sets_home }}:{{ $m->sets_away }}
+                                    {{ $m->setsScore() }}
+                                    <div style="font-size:11px;opacity:.5">{{ $m->detailedScore() }}</div>
                                 @elseif($m->status === 'live')
                                     <span class="status-badge live-badge">LIVE</span>
                                 @else
@@ -192,12 +277,22 @@
                             </div>
                             <div class="team {{ $m->winner_team_id === $m->team_away_id ? 'winner' : '' }}">
                                 {{ $m->teamAway->name ?? 'TBD' }}
+                                @if($m->teamAway && $m->teamAway->members->count())
+                                <div style="font-size:11px;opacity:.4">{{ $m->teamAway->members->map(fn($mm) => $mm->user->last_name ?? '?')->implode(' / ') }}</div>
+                                @endif
                             </div>
                         </div>
                     @endforeach
                 </div>
             @endif
-        @endforeach
+        @else
+            <div class="tv-panel" style="flex:1;text-align:center;display:flex;align-items:center;justify-content:center">
+                <div>
+                    <div style="font-size:48px;margin-bottom:16px">🏐</div>
+                    <div style="font-size:22px;font-weight:700">Турнир скоро начнётся</div>
+                </div>
+            </div>
+        @endif
     </div>
 
     <script>
