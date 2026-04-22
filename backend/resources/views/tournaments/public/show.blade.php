@@ -62,15 +62,22 @@
 
     {{-- Табы --}}
     @php
+        $hasBracketStages = $stages->whereIn('type', ['single_elim', 'double_elim'])->isNotEmpty();
         $tabs = [
             'overview' => 'Обзор',
             'groups'   => 'Группы',
-            'bracket'  => 'Сетка',
+        ];
+        if ($hasBracketStages) {
+            $tabs['bracket'] = 'Сетка';
+        }
+        $tabs += [
             'results'  => 'Результаты',
             'stats'    => 'Статистика',
             'photos'   => 'Фото',
-            'season'   => 'Итоги сезона',
         ];
+        if ($event->season_id) {
+            $tabs['season'] = 'Итоги сезона';
+        }
     @endphp
 
     <div class="d-flex mb-3" style="gap:4px;flex-wrap:wrap;border-bottom:2px solid rgba(128,128,128,.15);padding-bottom:0">
