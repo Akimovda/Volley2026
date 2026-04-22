@@ -237,6 +237,11 @@ class TournamentStatsService
                         'team_id' => $s->team_id,
                         'team_name' => $s->team->name ?? '?',
                         'division' => str_replace('Дивизион ', '', $divStage->name),
+                        'wins' => $s->wins,
+                        'losses' => $s->losses,
+                        'rating_points' => $s->rating_points,
+                        'points_scored' => $s->points_scored,
+                        'points_conceded' => $s->points_conceded,
                     ];
                     $assignedTeams[] = $s->team_id;
                 }

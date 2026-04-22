@@ -149,6 +149,10 @@
                                 <div style="font-weight:700;font-size:18px;{{ $place <= 3 ? 'color:#E7612F' : '' }}">{{ $c['team_name'] }}</div>
                                 <div style="font-size:13px;opacity:.5">{{ $members }}</div>
                             </div>
+                            <div style="text-align:right;font-size:14px">
+                                <div class="b-700" style="color:#E7612F">{{ $c['rating_points'] ?? 0 }} оч.</div>
+                                <div style="opacity:.5;font-size:12px">{{ $c['wins'] ?? 0 }}В {{ $c['losses'] ?? 0 }}П &middot; {{ $c['points_scored'] ?? 0 }}:{{ $c['points_conceded'] ?? 0 }}</div>
+                            </div>
                         </div>
                     @endforeach
                 </div>
@@ -168,6 +172,10 @@
                             <div style="flex:1">
                                 <div style="font-weight:700;font-size:18px;{{ $c['place'] <= 3 ? 'color:#E7612F' : '' }}">{{ $c['team_name'] }}</div>
                                 <div style="font-size:13px;opacity:.5">{{ $members }}</div>
+                            </div>
+                            <div style="text-align:right;font-size:14px">
+                                <div class="b-700" style="color:#E7612F">{{ $c['rating_points'] ?? 0 }} оч.</div>
+                                <div style="opacity:.5;font-size:12px">{{ $c['wins'] ?? 0 }}В {{ $c['losses'] ?? 0 }}П &middot; {{ $c['points_scored'] ?? 0 }}:{{ $c['points_conceded'] ?? 0 }}</div>
                             </div>
                         </div>
                     @endforeach
