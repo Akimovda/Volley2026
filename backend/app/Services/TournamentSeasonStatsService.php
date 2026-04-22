@@ -165,7 +165,7 @@ class TournamentSeasonStatsService
         TournamentSeasonStats::where('season_id', $season->id)->delete();
 
         // Находим все events сезона
-        $eventIds = $season->seasonEvents()->pluck('event_id');
+        $eventIds = $season->seasonEvents()->pluck('event_id')->unique()->values();
 
         foreach ($eventIds as $eventId) {
             $event = Event::find($eventId);
@@ -178,6 +178,25 @@ class TournamentSeasonStatsService
             foreach ($matches as $match) {
                 $this->updateForMatch($match, $event);
             }
+        }
+
+        // Подсчёт rounds_played: кол-во уникальных occurrence, в которых игрок участвовал
+        $stats = TournamentSeasonStats::where('season_id', $season->id)->get();
+        foreach ($stats as $stat) {
+            $roundsPlayed = TournamentMatch::where('tournament_matches.status', 'completed')
+                ->whereHas('stage', fn($q) => $q->whereIn('event_id', $eventIds))
+                ->where(function($q) use ($stat) {
+                    $teamIds = \DB::table('event_team_members')
+                        ->where('user_id', $stat->user_id)
+                        ->pluck('event_team_id');
+                    $q->whereIn('team_home_id', $teamIds)
+                      ->orWhereIn('team_away_id', $teamIds);
+                })
+                ->join('tournament_stages', 'tournament_matches.stage_id', '=', 'tournament_stages.id')
+                ->distinct('tournament_stages.occurrence_id')
+                ->count('tournament_stages.occurrence_id');
+            
+            $stat->update(['rounds_played' => $roundsPlayed]);
         }
     }
 }
