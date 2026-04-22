@@ -601,6 +601,16 @@
 		{{-- MVP турнира --}}
 		@php
 			$allCompleted = $stages->isNotEmpty() && $stages->every(fn($s) => $s->status === 'completed');
+			// Если сезонный турнир с 2+ группами, но дивизионов ещё нет — турнир не завершён
+			if ($allCompleted && $event->season_id) {
+				$groupStage = $stages->firstWhere('type', 'round_robin');
+				if ($groupStage && $groupStage->groups->count() >= 2) {
+					$hasDivisions = $stages->contains(fn($s) => str_starts_with($s->name, 'Дивизион'));
+					if (!$hasDivisions) {
+						$allCompleted = false;
+					}
+				}
+			}
 			$participants = collect();
 			if ($allCompleted) {
 				$participants = \App\Models\PlayerTournamentStats::where('event_id', $event->id)

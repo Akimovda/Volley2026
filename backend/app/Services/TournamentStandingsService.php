@@ -134,6 +134,13 @@ class TournamentStandingsService
      * остальных команд между собой матчи с аутсайдером исключаются
      * из расчёта разницы очков и сетов.
      */
+    /**
+     * Ранжирование с тай-брейками:
+     * 1. rating_points (desc)
+     * 2. Head-to-head (только если не круговая зависимость)
+     * 3. Clean set diff (без аутсайдеров)
+     * 4. Clean point diff (без аутсайдеров)
+     */
     protected function rankGroup(TournamentStage $stage, TournamentGroup $group, $matches): void
     {
         $standings = TournamentStanding::where('stage_id', $stage->id)
@@ -142,25 +149,38 @@ class TournamentStandingsService
 
         $h2h = $this->buildHeadToHead($matches);
 
-        // Определяем аутсайдеров: команды с 0 побед и played > 0
+        // Аутсайдеры: 0 побед при played > 0
         $outsiderTeamIds = $standings
             ->filter(fn($s) => $s->played > 0 && $s->wins === 0)
             ->pluck('team_id')
             ->toArray();
 
-        // Построим "чистую" статистику без матчей с аутсайдерами
         $cleanStats = $this->buildCleanStats($matches, $outsiderTeamIds);
 
-        $sorted = $standings->sort(function ($a, $b) use ($h2h, $cleanStats) {
+        // Проверяем круговой h2h среди команд с одинаковыми очками
+        $byRating = $standings->groupBy('rating_points');
+        $circularTeamIds = [];
+        foreach ($byRating as $rp => $groupStandings) {
+            if ($groupStandings->count() >= 3) {
+                $teamIds = $groupStandings->pluck('team_id')->toArray();
+                if ($this->isCircularH2H($teamIds, $h2h)) {
+                    $circularTeamIds = array_merge($circularTeamIds, $teamIds);
+                }
+            }
+        }
+
+        $sorted = $standings->sort(function ($a, $b) use ($h2h, $cleanStats, $circularTeamIds) {
             // 1. Rating points (desc)
             if ($a->rating_points !== $b->rating_points) {
                 return $b->rating_points <=> $a->rating_points;
             }
 
-            // 2. Head-to-head
-            $h2hResult = $this->headToHeadCompare($a->team_id, $b->team_id, $h2h);
-            if ($h2hResult !== 0) {
-                return $h2hResult;
+            // 2. Head-to-head (пропускаем при круговой зависимости)
+            if (!in_array($a->team_id, $circularTeamIds) || !in_array($b->team_id, $circularTeamIds)) {
+                $h2hResult = $this->headToHeadCompare($a->team_id, $b->team_id, $h2h);
+                if ($h2hResult !== 0) {
+                    return $h2hResult;
+                }
             }
 
             // 3. Set diff без аутсайдеров (desc)
@@ -173,21 +193,7 @@ class TournamentStandingsService
             // 4. Point diff без аутсайдеров (desc)
             $aPointDiff = ($cleanStats[$a->team_id]['points_scored'] ?? 0) - ($cleanStats[$a->team_id]['points_conceded'] ?? 0);
             $bPointDiff = ($cleanStats[$b->team_id]['points_scored'] ?? 0) - ($cleanStats[$b->team_id]['points_conceded'] ?? 0);
-            if ($aPointDiff !== $bPointDiff) {
-                return $bPointDiff <=> $aPointDiff;
-            }
-
-            // 5. Fallback: set diff со ВСЕМИ матчами (включая аутсайдеров)
-            $aSetDiffAll = $a->sets_won - $a->sets_lost;
-            $bSetDiffAll = $b->sets_won - $b->sets_lost;
-            if ($aSetDiffAll !== $bSetDiffAll) {
-                return $bSetDiffAll <=> $aSetDiffAll;
-            }
-
-            // 6. Fallback: point diff со ВСЕМИ матчами (включая аутсайдеров)
-            $aPointDiffAll = $a->points_scored - $a->points_conceded;
-            $bPointDiffAll = $b->points_scored - $b->points_conceded;
-            return $bPointDiffAll <=> $aPointDiffAll;
+            return $bPointDiff <=> $aPointDiff;
         });
 
         $rank = 1;
@@ -197,10 +203,29 @@ class TournamentStandingsService
     }
 
     /**
-     * Статистика без матчей с аутсайдерами.
-     * Возвращает [team_id => [sets_won, sets_lost, points_scored, points_conceded]]
+     * Проверяет круговую зависимость h2h среди команд.
      */
-    protected function buildCleanStats($matches, array $outsiderTeamIds): array
+    protected function isCircularH2H(array $teamIds, array $h2h): bool
+    {
+        foreach ($teamIds as $tid) {
+            $winsInGroup = 0;
+            $lossesInGroup = 0;
+            foreach ($teamIds as $other) {
+                if ($tid === $other) continue;
+                if (($h2h[$tid][$other] ?? 0) > ($h2h[$other][$tid] ?? 0)) {
+                    $winsInGroup++;
+                } elseif (($h2h[$other][$tid] ?? 0) > ($h2h[$tid][$other] ?? 0)) {
+                    $lossesInGroup++;
+                }
+            }
+            if ($winsInGroup === 0 || $lossesInGroup === 0) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+protected function buildCleanStats($matches, array $outsiderTeamIds): array
     {
         $stats = [];
 
