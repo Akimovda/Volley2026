@@ -1,5 +1,7 @@
 <x-voll-layout body_class="tournament-public-page">
 <x-slot name="title">{{ $event->title }} — Турнир</x-slot>
+<x-slot name="description">{{ $event->title }} — турнирная сетка, результаты матчей, статистика команд и игроков</x-slot>
+<x-slot name="canonical">{{ route('tournament.public.show', $event) }}</x-slot>
 <x-slot name="h1">{{ $event->title }}</x-slot>
 
 <x-slot name="breadcrumbs">

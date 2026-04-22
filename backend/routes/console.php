@@ -57,3 +57,8 @@ Schedule::command('tournament:notify-upcoming --minutes=15')
 Schedule::command('tournament:monthly-summary')
     ->monthlyOn(1, '02:00')
     ->withoutOverlapping();
+
+// Генерация sitemap.xml (ежедневно в 04:00)
+Schedule::command('sitemap:generate')
+    ->dailyAt('04:00')
+    ->withoutOverlapping();

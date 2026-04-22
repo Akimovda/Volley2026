@@ -1,5 +1,9 @@
 {{-- resources/views/users/show.blade.php --}}
-<x-app-layout>
+<x-voll-layout body_class="user-show-page">
+<x-slot name="title">{{ ($u ?? $user)?->name ?? 'Игрок' }} — профиль игрока</x-slot>
+<x-slot name="description">Профиль игрока {{ ($u ?? $user)?->name ?? '' }} на VolleyPlay.Club — статистика, позиции, турниры</x-slot>
+<x-slot name="canonical">{{ route('users.show', ($u ?? $user)?->id) }}</x-slot>
+
     <div class="v-container py-6">
         <div class="v-card">
             <div class="v-card__body">
@@ -284,4 +288,4 @@
             </div>
         </div>
     </div>
-</x-app-layout>
+</x-voll-layout>
