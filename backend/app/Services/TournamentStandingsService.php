@@ -173,7 +173,21 @@ class TournamentStandingsService
             // 4. Point diff без аутсайдеров (desc)
             $aPointDiff = ($cleanStats[$a->team_id]['points_scored'] ?? 0) - ($cleanStats[$a->team_id]['points_conceded'] ?? 0);
             $bPointDiff = ($cleanStats[$b->team_id]['points_scored'] ?? 0) - ($cleanStats[$b->team_id]['points_conceded'] ?? 0);
-            return $bPointDiff <=> $aPointDiff;
+            if ($aPointDiff !== $bPointDiff) {
+                return $bPointDiff <=> $aPointDiff;
+            }
+
+            // 5. Fallback: set diff со ВСЕМИ матчами (включая аутсайдеров)
+            $aSetDiffAll = $a->sets_won - $a->sets_lost;
+            $bSetDiffAll = $b->sets_won - $b->sets_lost;
+            if ($aSetDiffAll !== $bSetDiffAll) {
+                return $bSetDiffAll <=> $aSetDiffAll;
+            }
+
+            // 6. Fallback: point diff со ВСЕМИ матчами (включая аутсайдеров)
+            $aPointDiffAll = $a->points_scored - $a->points_conceded;
+            $bPointDiffAll = $b->points_scored - $b->points_conceded;
+            return $bPointDiffAll <=> $aPointDiffAll;
         });
 
         $rank = 1;

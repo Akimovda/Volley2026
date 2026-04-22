@@ -900,6 +900,17 @@ class TournamentController extends Controller
         $this->authorizeOrganizer($request, $event);
 
         DB::transaction(function () use ($stage) {
+            // Удаляем связанные дивизионы (если это групповой этап)
+            if (in_array($stage->type, ['round_robin', 'groups_playoff'])) {
+                $divQuery = $stage->event->tournamentStages()
+                    ->where('id', '!=', $stage->id)
+                    ->where('name', 'like', 'Дивизион %');
+                if ($stage->occurrence_id) {
+                    $divQuery->where('occurrence_id', $stage->occurrence_id);
+                }
+                $divQuery->get()->each(fn($ds) => $ds->delete());
+            }
+
             // Сбрасываем все матчи
             $stage->matches()->update([
                 'status'            => TournamentMatch::STATUS_SCHEDULED,
@@ -1334,7 +1345,14 @@ class TournamentController extends Controller
     {
         $this->authorizeOrganizer($request, $event);
 
-        $nextMatch = TournamentMatch::whereHas('stage', fn($q) => $q->where('event_id', $event->id))
+        $occurrenceId = $request->query('occurrence_id');
+        $stageQuery = $event->tournamentStages();
+        if ($occurrenceId) {
+            $stageQuery->where('occurrence_id', $occurrenceId);
+        }
+        $stageIds = $stageQuery->pluck('id');
+
+        $nextMatch = TournamentMatch::whereIn('stage_id', $stageIds)
             ->where('status', TournamentMatch::STATUS_SCHEDULED)
             ->whereNotNull('team_home_id')
             ->whereNotNull('team_away_id')
