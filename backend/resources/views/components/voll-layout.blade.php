@@ -216,7 +216,7 @@
 									<span class="menu-text">Купоны</span>
 								</a>
 									<a href="/seasons" class="menu-item">
-									<span class="menu-text">ð Мои сезоны и лиги</span>
+									<span class="menu-text">🏆 Мои сезоны и лиги</span>
 									</a>
 								<a href="/user/profile/notification-channels" class="menu-item">
 									<span class="menu-text">Каналы уведомлений</span>

@@ -54,7 +54,11 @@
                         </div>
 
                         <div class="d-flex mt-auto" style="gap:8px;margin-top:auto">
-                            <a href="{{ route('seasons.edit', $season) }}" class="btn btn-primary f-13" style="padding:6px 14px">Управление</a>
+                            <a href="{{ route('seasons.edit', $season) }}" class="btn btn-primary f-13" style="padding:6px 14px">⚙️</a>
+                            @php $seasonEvent = $season->seasonEvents->unique('event_id')->first(); @endphp
+                            @if($seasonEvent && $seasonEvent->event)
+                            <a href="{{ route('tournament.setup', $seasonEvent->event) }}" class="btn btn-primary f-13" style="padding:6px 14px;background:#E7612F;border-color:#E7612F">🏐 ⚔️</a>
+                            @endif
                             <a href="{{ route('seasons.show', $season) }}" class="btn btn-secondary f-13" style="padding:6px 14px">Публичная</a>
                             @if($season->slug)
                                 <a href="{{ route('seasons.show.slug', $season->slug) }}" class="btn btn-secondary f-13" style="padding:6px 14px" title="Публичная ссылка">🔗</a>

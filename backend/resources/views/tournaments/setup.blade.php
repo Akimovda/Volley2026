@@ -536,7 +536,29 @@
 							</div>
 						</div>
 						
-						<button type="submit" class="btn btn-primary mt-2">Создать стадию и провести жеребьёвку</button>
+						{{-- Расписание (опционально) --}}
+<div id="schedule_fields" class="mt-2 mb-2">
+<div class="card p-3">
+<div class="b-700 f-14 mb-2">📅 Расписание (опционально)</div>
+<div class="f-13 mb-2" style="color:#9ca3af">Если указать время начала — матчи автоматически получат расписание.</div>
+<div class="d-flex" style="gap:12px;flex-wrap:wrap;align-items:flex-end">
+<div>
+<label class="f-12 b-600 mb-1 d-block">Начало</label>
+<input type="datetime-local" name="schedule_start" value="" style="font-size:13px;padding:6px 8px">
+</div>
+<div>
+<label class="f-12 b-600 mb-1 d-block">Матч (мин)</label>
+<input type="number" name="schedule_match_duration" value="30" min="15" max="180" style="width:65px;font-size:13px;padding:6px 4px;text-align:center">
+</div>
+<div>
+<label class="f-12 b-600 mb-1 d-block">Перерыв (мин)</label>
+<input type="number" name="schedule_break_duration" value="5" min="0" max="60" style="width:65px;font-size:13px;padding:6px 4px;text-align:center">
+</div>
+</div>
+</div>
+</div>
+
+<button type="submit" class="btn btn-primary mt-2">Создать стадию и провести жеребьёвку</button>
 						<script>
 							(function(){
 								var courtsSel = document.getElementById("courts_count_select");
@@ -853,38 +875,7 @@
 			</div>
 			@endif
 			
-			
-			
-			{{-- Расписание --}}
-			@if($stage->isInProgress() && $stage->matches->whereNotNull('team_home_id')->isNotEmpty())
-			@php
-			$nextOcc = $event->occurrences()->where('starts_at', '>=', now())->orderBy('starts_at')->first();
-			$defaultStart = $nextOcc
-			? $nextOcc->starts_at->setTimezone($event->timezone ?? 'Europe/Moscow')->format('Y-m-d\\TH:i')
-			: now()->setTimezone($event->timezone ?? 'Europe/Moscow')->format('Y-m-d\\TH:i');
-			@endphp
-			<div class="card p-2">
-				<div class="b-700 f-14 mb-2">📅 Расписание</div>
-				<form method="POST" action="{{ route('tournament.stages.schedule', $stage) }}">
-					@csrf
-					<div class="d-flex" style="gap:12px;flex-wrap:wrap;align-items:flex-end">
-						<div>
-							<label class="f-12 b-600 mb-1 d-block">Начало</label>
-							<input type="datetime-local" name="start_time" value="{{ $defaultStart }}" required style="font-size:13px;padding:6px 8px">
-						</div>
-						<div>
-							<label class="f-12 b-600 mb-1 d-block">Матч (мин)</label>
-							<input type="number" name="match_duration" value="30" min="15" max="180" style="width:65px;font-size:13px;padding:6px 4px;text-align:center">
-						</div>
-						<div>
-							<label class="f-12 b-600 mb-1 d-block">Перерыв (мин)</label>
-							<input type="number" name="break_duration" value="5" min="0" max="60" style="width:65px;font-size:13px;padding:6px 4px;text-align:center">
-						</div>
-						<button type="submit" class="btn btn-primary f-13" style="padding:7px 16px">Сгенерировать</button>
-					</div>
-				</form>
-			</div>
-			@endif
+
 			
 			{{-- Матчи --}}
 			@if($stage->matches->isNotEmpty())
@@ -906,6 +897,7 @@
 <th class="p-1" style="text-align:left">Гости</th>
 <th class="p-1" style="text-align:center">Сеты</th>
 <th class="p-1" style="text-align:center">Счёт</th>
+<th class="p-1" style="text-align:center">Время</th>
 <th class="p-1" style="text-align:center">Корт</th>
 <th class="p-1" style="text-align:center">Статус</th>
 <th class="p-1"></th>
@@ -930,6 +922,7 @@
 </td>
 <td class="p-1" style="text-align:center">{{ $match->setsScore() ?? '—' }}</td>
 <td class="p-1" style="text-align:center">{{ $match->detailedScore() ?: '—' }}</td>
+<td class="p-1" style="text-align:center">{{ $match->scheduled_at ? $match->scheduled_at->setTimezone($event->timezone ?? 'Europe/Moscow')->format('H:i') : '—' }}</td>
 <td class="p-1" style="text-align:center">{{ $match->court ?? '—' }}</td>
 <td class="p-1" style="text-align:center">
 @if($match->isCompleted())

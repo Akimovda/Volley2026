@@ -252,6 +252,20 @@ class TournamentController extends Controller
                         $group->update(['courts' => array_values($courts)]);
                     }
                 }
+
+                // Автогенерация расписания (если указано время начала)
+                $scheduleStart = $request->input('schedule_start');
+                if ($scheduleStart) {
+                    $scheduleService = app(\App\Services\TournamentScheduleService::class);
+                    $courts = array_values(array_filter($config['courts'] ?? ['Корт 1']));
+                    $scheduleService->generateSchedule(
+                        $stage,
+                        \Carbon\Carbon::parse($scheduleStart),
+                        (int) $request->input('schedule_match_duration', 30),
+                        (int) $request->input('schedule_break_duration', 5),
+                        $courts,
+                    );
+                }
             }
         }
 
