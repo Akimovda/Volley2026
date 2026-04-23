@@ -236,7 +236,7 @@
 						</div>
 						<div class="d-flex fvc" style="gap:1rem">
 							<span style="padding: 0.5rem 1rem;border-radius: 1rem;" class="f-15 b-600 {{ $se->isCompleted() ? 'alert-success' : 'alert-info' }}">
-								{{ $se->isCompleted() ? '✓ Завершён' : 'Ожидает' }}
+								{!! $se->isCompleted() ? '&#10003; Завершён' : 'Ожидает' !!}
 							</span>
 							<form action="{{ route('seasons.events.detach', [$season, $se->event]) }}" method="POST"
 							onsubmit="return confirm('Отвязать турнир?')">
