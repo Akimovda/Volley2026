@@ -77,7 +77,7 @@
 									<div class="tab-pane" id="classic-old">		
 										
 										
-										<div class="table-scrollable">
+										<div class="table-scrollable flex-table">
 											<div class="table-drag-indicator"></div>
 											<table class="table table-levels">
 												<thead>
@@ -197,7 +197,7 @@
 									</div>
 									<div class="tab-pane" id="beach-old">						
 										
-										<div class="table-scrollable">
+										<div class="table-scrollable flex-table">
 											<!-- Индикатор drag-скролла -->
 											<div class="table-drag-indicator"></div>
 											

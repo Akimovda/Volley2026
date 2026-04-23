@@ -261,30 +261,30 @@
 		@if ($isTeamClassic || $isTeamBeach)
 		{{-- ===== КОМАНДНАЯ ЗАПИСЬ ===== --}}
 		<div class="alert alert-info">
-			🏐 Для этого мероприятия используется командная запись.
+			Для этого мероприятия используется командная запись.
 		</div>
 		@php
         $myTeams = $myTournamentTeams ?? collect();
 		@endphp
 		@if($myTeams->count() > 0)
         @foreach($myTeams as $myTeam)
-        <div class="border rounded p-2 mb-2" style="font-size:14px">
-            <div class="fw-bold">{{ $myTeam->name }}</div>
-            <div class="text-muted small">Статус: {{ $myTeam->status }} · Игроков: {{ $myTeam->members->count() }}</div>
-            <a href="{{ route('tournamentTeams.show', [$event, $myTeam]) }}" class="btn btn-sm btn-outline-primary mt-1">
+        <div class="card mt-1">
+            <div class="b-600 cd">{{ $myTeam->name }}</div>
+            <div class="f-16">Статус: {{ $myTeam->status }} · Игроков: {{ $myTeam->members->count() }}</div>
+            <a href="{{ route('tournamentTeams.show', [$event, $myTeam]) }}" class="btn btn-small btn-secondary mt-1">
                 Открыть команду
 			</a>
 		</div>
         @endforeach
 		@endif
 		@if(auth()->check() && $myTeams->count() === 0)
-		<form method="POST" action="{{ route('tournamentTeams.store', $event) }}" class="mt-1">
+		<form method="POST" action="{{ route('tournamentTeams.store', $event) }}" class="form mt-1">
 			@csrf
-			<input type="text" name="name" class="form-control mb-2" placeholder="Название команды" required>
+			<input type="text" name="name" class="form-control mb-1" placeholder="Название команды" required>
 			<input type="hidden" name="occurrence_id" value="{{ $occurrence->id }}">
 			<input type="hidden" name="team_kind" value="{{ $isTeamBeach ? 'beach_pair' : 'classic_team' }}">
 			@if($isTeamClassic)
-			<select name="captain_position_code" class="form-select mb-2" required>
+			<select name="captain_position_code" class="form-select mb-1" required>
 				<option value="">— ваша позиция в команде —</option>
 				<option value="setter">Связующий</option>
 				<option value="outside">Доигровщик</option>
@@ -358,8 +358,8 @@
 		</div>
 		@endif
 		@endif
+	</div>{{-- /join-registration-block --}}		
 		@endif
-	</div>{{-- /join-registration-block --}}
 </div>
 {{-- ===============================
 РЕЗЕРВ
@@ -509,7 +509,7 @@ $showWaitlist = !$isTournament && !$eventStarted && $isFull && auth()->check();
 		{{-- ===============================
 		ПРИГЛАСИТЬ ИГРОКА (объединённый блок)
 		=============================== --}}
-		@if (auth()->check())
+		@if (auth()->check() && !$eventStarted && !$isTournament)
 		@php
 		$inviteSearchUrl = route('api.users.search');
 		$inviteAction    = route('events.invite', ['event' => $event->id]);
@@ -519,7 +519,7 @@ $showWaitlist = !$isTournament && !$eventStarted && $isFull && auth()->check();
 		$isPair          = $subtype === '2x2';
 		$inviteLabel     = $isPair ? 'в пару' : 'в команду';
 		@endphp
-		
+	
 		<div class="ramka" id="invite-players-block" style="z-index:5;display:{{ $isRegistered ? '' : 'none' }}">
 			<h2 class="-mt-05">Пригласить игрока</h2>
 			
@@ -686,15 +686,15 @@ $showWaitlist = !$isTournament && !$eventStarted && $isFull && auth()->check();
 			->get();
 			@endphp
 			@if($tournamentTeams->isEmpty())
-            <div class="f-14" style="opacity:.5">Пока нет команд</div>
+            <div class="alert alert-info">Пока нет команд</div>
 			@else
             @foreach($tournamentTeams as $tTeam)
-			<div class="card mb-1" style="padding:.75rem">
-				<div class="d-flex between fvc mb-05">
-					<a href="{{ route('tournamentTeams.show', [$event, $tTeam]) }}" class="blink b-600 f-15">{{ $tTeam->name }}</a>
-					<span class="f-12" style="opacity:.4">{{ $tTeam->members->count() }} чел.</span>
+			<div class="card mb-1" style="padding: 0.5rem 0.8rem">
+				<div class="d-flex between fvc mb-1">
+					<a href="{{ route('tournamentTeams.show', [$event, $tTeam]) }}" class="blink f-16 b-600">{{ $tTeam->name }}</a>
+					<span class="f-16"><strong class="cd">{{ $tTeam->members->count() }}</strong> чел.</span>
 				</div>
-				<div class="f-13" style="opacity:.6">
+				<div class="f-15">
 					@foreach($tTeam->members as $m)
 					{{ trim(($m->user->last_name ?? '') . ' ' . ($m->user->first_name ?? '')) ?: $m->user->name ?? '?' }}@if(!$loop->last), @endif
 					@endforeach

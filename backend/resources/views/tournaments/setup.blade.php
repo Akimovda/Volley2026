@@ -14,6 +14,9 @@
 	</x-slot>
 	
     <x-slot name="h1">Турнир: {{ $event->title }}</x-slot>
+	 <x-slot name="h2">Управление турниром</x-slot>
+	
+	
 	
 	<x-slot name="breadcrumbs">
 		<li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
@@ -31,7 +34,7 @@
 		{{-- ========================= ЗАЯВКИ ========================= --}}
 		@if(($applicationMode ?? 'manual') === 'manual' && isset($pendingApplications) && $pendingApplications->count())
 		<div class="ramka">
-			<h2 class="-mt-05">📋 Заявки на участие ({{ $pendingApplications->count() }})</h2>
+			<h2 class="-mt-05">Заявки на участие ({{ $pendingApplications->count() }})</h2>
 			
 			<div class="alert alert-info mb-2">
 				Режим: <b>ручное одобрение</b>. Одобрите или отклоните заявки команд.
@@ -150,22 +153,22 @@
 			</style>
 			
 			<h2 class="-mt-05">
-				🏆 {{ $seasonData['season']->name }}
-				<span class="f-14" style="opacity:.6">/ {{ $seasonData['league']->name ?? 'Лига' }}</span>
+				{{ $seasonData['season']->name }}
+				<span class="f-16">/ {{ $seasonData['league']->name ?? 'Лига' }}</span>
 			</h2>
 			
 			{{-- Выбор тура --}}
 			@if($seasonData['occurrences']->count() > 1)
 			<div class="mb-2">
-				<label class="b-600">Тур:</label>
-				<div class="d-flex" style="gap:6px;flex-wrap:wrap;margin-top:6px">
+				<label>Тур:</label>
+				<div class="d-flex" style="gap:1rem;flex-wrap:wrap;">
 					@foreach($seasonData['occurrences'] as $occ)
 					@php
 					$isSelected = $selectedOccurrence && $selectedOccurrence->id === $occ->id;
 					$occDate = \Carbon\Carbon::parse($occ->starts_at)->setTimezone($event->timezone ?? 'Europe/Moscow');
 					@endphp
 					<a href="{{ route('tournament.setup', $event) }}?occurrence_id={{ $occ->id }}"
-					class="tour-btn {{ $isSelected ? 'tour-btn-active' : '' }}">
+					class="btn btn-small {{ !$isSelected ? 'btn-secondary' : '' }}">
 						{{ $loop->iteration }} ({{ $occDate->format('d.m') }})
 					</a>
 					@endforeach
@@ -252,8 +255,8 @@
 			<div class="alert alert-info">В лиге пока нет команд. Команды добавятся после регистрации на турнир.</div>
 			@endif
 			
-			<div class="mt-2 f-13" style="opacity:.5">
-				<a href="{{ route('seasons.show', $seasonData['season']) }}" class="blink">Страница сезона →</a>
+			<div class="mt-2">
+				<a class="blink" href="{{ route('seasons.show', $seasonData['season']) }}" class="blink">Страница сезона →</a>
 			</div>
 		</div>
 		@endif
@@ -343,7 +346,7 @@
 		@php $hasStages = $event->tournamentStages->isNotEmpty(); @endphp
 		<div class="ramka">
 			<div class="d-flex between fvc" style="cursor:pointer" onclick="var b=this.nextElementSibling;b.style.display=b.style.display==='none'?'':'none';this.querySelector('.toggle-icon').textContent=b.style.display==='none'?'+':'-'">
-				<h2 class="-mt-05 mb-0">Добавить стадию</h2>
+				<h2 class="-mt-05">Добавить стадию</h2>
 				<span class="toggle-icon b-700 f-20">{{ $hasStages ? '+' : '-' }}</span>
 			</div>
 			<div style="{{ $hasStages ? 'display:none' : '' }}">
@@ -365,7 +368,7 @@
 									<option value="king_of_court">Король площадки (King of the Court)</option>
 									<option value="thai">Тайский формат</option>
 								</select>
-								<a href="{{ route('tournament_formats') }}" target="_blank" class="f-12 d-block mt-1" style="opacity:.5">📋 Шпаргалка по форматам →</a>
+								<a href="{{ route('tournament_formats') }}" target="_blank" class="f-16 blink mt-1">Шпаргалка по форматам →</a>
 								
 								<label class="mt-2">Название</label>
 								<input name="name" value="{{ old('name', 'Групповой этап') }}" required>
@@ -479,9 +482,12 @@
 						</div>
 						
 						{{-- Назначение кортов группам (динамическое) --}}
-						<div id="courts_group_assign" style="display:none" class="mb-2">
-							<label class="f-13 b-600 mb-1 d-block">Площадки для групп</label>
+						<div class="mt-2" id="courts_group_assign" style="display:none">
+						<div class="card">
+							<label>Площадки для групп</label>
+							<hr class="mb-1">
 							<div id="courts_group_boxes" class="row"></div>
+						</div>	
 						</div>
 						{{-- Жеребьёвка --}}
 						<div class="row mt-2 mb-2">
@@ -539,26 +545,27 @@
 						{{-- Расписание (опционально) --}}
 <div id="schedule_fields" class="mt-2 mb-2">
 <div class="card p-3">
-<div class="b-700 f-14 mb-2">📅 Расписание (опционально)</div>
-<div class="f-13 mb-2" style="color:#9ca3af">Если указать время начала — матчи автоматически получат расписание.</div>
+<div class="b-700 f-14 mb-2">Расписание (опционально)</div>
+<div class="f-13 mb-2">Если указать время начала — матчи автоматически получат расписание.</div>
 <div class="d-flex" style="gap:12px;flex-wrap:wrap;align-items:flex-end">
 <div>
-<label class="f-12 b-600 mb-1 d-block">Начало</label>
-<input type="datetime-local" name="schedule_start" value="" style="font-size:13px;padding:6px 8px">
+<label>Начало</label>
+<input type="datetime-local" name="schedule_start" value="">
 </div>
 <div>
-<label class="f-12 b-600 mb-1 d-block">Матч (мин)</label>
-<input type="number" name="schedule_match_duration" value="30" min="15" max="180" style="width:65px;font-size:13px;padding:6px 4px;text-align:center">
+<label>Матч (мин)</label>
+<input type="number" name="schedule_match_duration" value="30" min="15" max="180">
 </div>
 <div>
-<label class="f-12 b-600 mb-1 d-block">Перерыв (мин)</label>
-<input type="number" name="schedule_break_duration" value="5" min="0" max="60" style="width:65px;font-size:13px;padding:6px 4px;text-align:center">
+<label>Перерыв (мин)</label>
+<input type="number" name="schedule_break_duration" value="5" min="0" max="60">
 </div>
 </div>
 </div>
 </div>
-
-<button type="submit" class="btn btn-primary mt-2">Создать стадию и провести жеребьёвку</button>
+<div class="text-center">
+<button type="submit" class="btn btn-primary mt-1">Создать стадию и провести жеребьёвку</button>
+</div>
 						<script>
 							(function(){
 								var courtsSel = document.getElementById("courts_count_select");
@@ -592,10 +599,10 @@
 									var html = "";
 									groupLabels.forEach(function(label) {
 										html += '<div class="col-md-' + colSize + ' mb-2">';
-										html += '<div class="f-13 b-600 mb-1">Группа ' + label + ':</div>';
-										html += '<div class="d-flex" style="flex-wrap:wrap;gap:6px">';
+										html += '<label>Группа ' + label + ':</label>';
+										html += '<div class="d-flex" style="flex-wrap:wrap;gap:1rem">';
 										names.forEach(function(court) {
-											html += '<label class="checkbox-item f-13" style="margin:0">';
+											html += '<label class="checkbox-item f-13" style="min-width: 12rem; margin:0">';
 											html += '<input type="checkbox" name="group_courts[' + label + '][]" value="' + court + '">';
 											html += '<div class="custom-checkbox"></div>';
 											html += '<span>' + court + '</span>';

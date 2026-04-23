@@ -7,7 +7,7 @@
 		<x-slot name="breadcrumbs">
 			<li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
 				<a href="{{ route('seasons.index') }}" itemprop="item">
-					<span itemprop="name">Мои сезоны и лиги</span>
+					<span itemprop="name">Мои сезоны</span>
 				</a>
 				<meta itemprop="position" content="2">
 			</li>
