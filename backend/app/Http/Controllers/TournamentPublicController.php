@@ -115,7 +115,7 @@ class TournamentPublicController extends Controller
                     'match_number' => $match->match_number,
                     'home'        => $match->teamHome->name ?? 'TBD',
                     'away'        => $match->teamAway->name ?? 'TBD',
-                    'score'       => $match->scoreFormatted(),
+                    'score'       => $match->setsScore(),
                     'status'      => $match->status,
                     'winner_home' => $match->winner_team_id === $match->team_home_id,
                     'winner_away' => $match->winner_team_id === $match->team_away_id,
