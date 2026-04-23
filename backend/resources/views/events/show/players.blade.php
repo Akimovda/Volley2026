@@ -71,7 +71,7 @@
 	$teamsRegistered = \App\Models\EventTeam::where('event_id', $event->id)
 	->whereIn('status', ['ready','pending','submitted','confirmed','approved'])
 	->count();
-	$playersRegistered = \App\Models\EventTeamMember::whereHas('team', fn($q) => $q->where('event_id', $event->id))
+	$playersRegistered = \App\Models\EventTeamMember::whereHas('team', fn($q) => $q->where('event_id', $event->id)->whereIn('status', ['ready','pending','submitted','confirmed','approved']))
 	->where('confirmation_status', 'confirmed')
 	->count();
 	$playersMax = $teamsMax * $teamSize;
@@ -93,9 +93,9 @@
     @endif
 	
     @php
-	$percent = ($maxPlayers && $registeredTotal !== null)
-	? min(100, ($registeredTotal / $maxPlayers) * 100)
-	: 0;
+    $pCount = ($event->format === 'tournament') ? ($playersRegistered ?? 0) : ($registeredTotal ?? 0);
+    $pMax   = ($event->format === 'tournament') ? ($playersMax ?? 0) : ($maxPlayers ?? 0);
+    $percent = ($pMax > 0) ? min(100, ($pCount / $pMax) * 100) : 0;
 	
 	$barClass = 'bg-danger';
 	if ($percent >= 75) {
@@ -107,7 +107,7 @@
 	
 	
 	
-    @if($maxPlayers)
+    @if($pMax > 0)
 	<div class="progress mb-2">
 		<div
 		id="players-progress"

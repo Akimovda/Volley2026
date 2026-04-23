@@ -4592,3 +4592,10 @@ body.dark .menu-move-btn:hover {
     background: #2a2a3a;
     border-color: rgba(255, 255, 255, 0.2);
 }
+/* Progress bar */
+.progress { display: block !important; width: 100% !important; height: 10px !important; background: rgba(17,24,39,0.10); border-radius: 6px; overflow: hidden; margin-bottom: 0.5rem; box-sizing: border-box !important; }
+.progress .progress-bar { display: block !important; height: 100% !important; border-radius: 6px; transition: width 0.4s ease; min-width: 1px; }
+.progress .progress-bar.bg-success { background: #10b981 !important; }
+.progress .progress-bar.bg-warning { background: #f59e0b !important; }
+.progress .progress-bar.bg-danger { background: #ef4444 !important; }
+body.dark .progress { background: rgba(255,255,255,0.12); }
