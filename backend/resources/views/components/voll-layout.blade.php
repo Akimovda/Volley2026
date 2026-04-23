@@ -285,14 +285,14 @@
 							<span class="auth-text">Войти с Яндекс ID</span>
 						</div>
 						
-<a href="{{ route('auth.telegram.redirect', ['return' => url()->full()]) }}" class="auth-btn auth-btn-telegram">
+<div data-href="{{ route('auth.telegram.redirect', ['return' => url()->full()]) }}" class="auth-btn auth-btn-telegram">
 <span class="auth-icon-circle">
 <span class="icon-tg"></span>
 </span>
 <span class="auth-text">Войти через Telegram</span>
-</a>
+</div>
 							
-						</div>
+					
 						{{--
 						<div data-href="#max" class="auth-btn auth-btn-max">
 							<span class="auth-icon-circle">

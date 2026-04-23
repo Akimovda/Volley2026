@@ -2611,8 +2611,10 @@ body.dark .theme-icon {
     color: #2aabee;
     background-color: #f2faff; /* rgba(42, 171, 238, 0.05) на белом */
 	position: relative;
+	/*
 	display: block;
 	padding: 0;	
+	*/
 }
 .auth-btn-telegram:hover {
     border-color: #2aabee;
