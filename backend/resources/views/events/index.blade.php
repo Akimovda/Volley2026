@@ -347,14 +347,14 @@ $groupedByDate[$dateKey] = ['date' => $date, 'occurrences' => []];
 			@endif
 			
 			{{-- JOIN MODAL (Fancybox inline) --}}
-			<div id="joinModalContent" style="display:none;max-width:420px;width:100%;padding:1.5rem">
-				<h2 id="jmTitle" class="-mt-05 f-20 b-600">Запись на мероприятие</h2>
-				<div id="jmMeta" class="f-14 mb-05" style="opacity:.6"></div>
-				<div id="jmAddr" class="f-14 mb-2" style="opacity:.6"></div>
+			<div id="joinModalContent" style="display:none; max-width: 56rem">
+				<h2 id="jmTitle" class="title-h -mt-05">Запись на мероприятие</h2>
+				<div id="jmMeta" class="mb-05"></div>
+				<div id="jmAddr" class="mb-2"></div>
 				<div id="jmError" class="alert alert-danger" style="display:none"></div>
-				<div id="jmLoading" class="f-14 mb-1" style="display:none;opacity:.6">Загружаю позиции…</div>
+				<div id="jmLoading" class="mb-1" style="display:none;">Загружаю позиции…</div>
 				<div id="jmPositions"></div>
-				<div class="f-13 mt-2" style="opacity:.5">После выбора позиции вы сразу будете записаны.</div>
+				<div class="f-16 mt-2">После выбора позиции вы сразу будете записаны.</div>
 			</div>
 			
 			<form id="joinForm" method="POST" action="" style="display:none">

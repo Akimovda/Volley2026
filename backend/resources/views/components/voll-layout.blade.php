@@ -215,9 +215,9 @@
 								<a href="/coupons/templates" class="menu-item">
 									<span class="menu-text">Купоны</span>
 								</a>
-									<a href="/seasons" class="menu-item">
+								<a href="/seasons" class="menu-item">
 									<span class="menu-text">🏆 Мои сезоны и лиги</span>
-									</a>
+								</a>
 								<a href="/user/profile/notification-channels" class="menu-item">
 									<span class="menu-text">Каналы уведомлений</span>
 								</a>
@@ -285,28 +285,13 @@
 							<span class="auth-text">Войти с Яндекс ID</span>
 						</div>
 						
-						<div class="auth-btn auth-btn-telegram">
-							<div class="auth-btn-telegram-widget-up">
-								<span class="auth-icon-circle">
-									<span class="icon-tg"></span>
-								</span>
-								<span id="TGload" class="auth-text">Загрузка Telegram...</span>
-							</div>						
-							<div class="auth-btn-telegram-widget">
-								<script async
-    onload="document.getElementById('TGload').textContent = 'Войти через Telegram'"
-    onerror="document.getElementById('TGload').textContent = 'Ошибка Telegram'"								
-								src="https://telegram.org/js/telegram-widget.js?22"
-								data-telegram-login="VolleyEvent_bot"
-								data-size="large"
-								data-userpic="false"
-								data-radius="6"
-								data-request-access="write"
-								data-auth-url="{{ route('auth.telegram.callback', ['return' => url()->full()]) }}"
-								data-lang="ru">
-								</script>
-							</div>
-
+<a href="{{ route('auth.telegram.redirect', ['return' => url()->full()]) }}" class="auth-btn auth-btn-telegram">
+<span class="auth-icon-circle">
+<span class="icon-tg"></span>
+</span>
+<span class="auth-text">Войти через Telegram</span>
+</a>
+							
 						</div>
 						{{--
 						<div data-href="#max" class="auth-btn auth-btn-max">
@@ -332,8 +317,7 @@
 						@foreach($unreadNotifications as $notification)
 						<a href="{{ route('notifications.index', ['#notification-' . $notification->id]) }}" class="menu-item">
 							<div class="d-flex between w-100">
-								
-								<span class="menu-text f-18 d-flex -ml-1">
+								<span class="notification-text menu-text f-18 d-flex -ml-1">
 									<span class="emo f-13" style="padding-top: 0.3rem;">🔴</span>
 									<span>{{ Str::limit($notification->title, 35) }}</span>
 								</span>
@@ -494,7 +478,7 @@
 								<a target="_blank" href="https://t.me/+YAwpAjUdXR0zY2Ji"><span class="icon-tg"></span></a>
 							</div>  
 							<p><a href="/personal_data_agreement">Согласие на обработку персональных данных</a></p>
-<p><a href="/user_agreement">Пользовательское соглашение</a></p>
+							<p><a href="/user_agreement">Пользовательское соглашение</a></p>
 						</div>
 						
 						<div class="col-3">
@@ -562,36 +546,36 @@
 			</div>
 		</footer>	
 		
-
+		
 		<script src="/assets/lib.js?v={{ time() }}"></script>    
 		@livewireScripts
 		<script src="/assets/script.js?v={{ time() }}"></script>     
 		@if(isset($script))
         {{ $script }}
 		@endif	
-	<!--	
-		
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">		
-<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>		
-<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ru.js"></script>			
-<script>		
-document.addEventListener('DOMContentLoaded', function() {
-    // Для всех полей type="date"
-    const dateInputs = document.querySelectorAll('input[type="date"]');
-    dateInputs.forEach(input => {
-        flatpickr(input, {
+		<!--	
+			
+			<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">		
+			<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>		
+			<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ru.js"></script>			
+			<script>		
+			document.addEventListener('DOMContentLoaded', function() {
+			// Для всех полей type="date"
+			const dateInputs = document.querySelectorAll('input[type="date"]');
+			dateInputs.forEach(input => {
+			flatpickr(input, {
             dateFormat: "Y-m-d",
             locale: "ru",
             allowInput: true,
             altInput: true,
             altFormat: "d.m.Y",
-        });
-    });
-    
-    // Для всех полей type="datetime-local"
-    const datetimeInputs = document.querySelectorAll('input[type="datetime-local"]');
-    datetimeInputs.forEach(input => {
-        flatpickr(input, {
+			});
+			});
+			
+			// Для всех полей type="datetime-local"
+			const datetimeInputs = document.querySelectorAll('input[type="datetime-local"]');
+			datetimeInputs.forEach(input => {
+			flatpickr(input, {
             enableTime: true,
             dateFormat: "Y-m-d H:i:S",
             locale: "ru",
@@ -599,10 +583,10 @@ document.addEventListener('DOMContentLoaded', function() {
             altInput: true,
             altFormat: "d.m.Y H:i",
             time_24hr: true,
-        });
-    });
-});		
-</script>
--->
+			});
+			});
+			});		
+			</script>
+		-->
 	</body>
 </html>					

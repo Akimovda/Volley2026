@@ -334,7 +334,7 @@ body.dark .title-box {
 	object-fit: cover;
 }
 .sgroup:hover .img-box  {
-	transform: scale(1.15);
+	transform: scale(1.12);
 }
 .has-expanded-item .sgroup:hover .img-box  {
 	transform: scale(1);
@@ -349,7 +349,7 @@ body.dark .title-box {
 	transform-origin: right top; 
 }
 .sgroup.sgroup-2 .img-box img { 
-	object-position: right center;
+	object-position: right 44%;
 }
 .sgroup.sgroup-3 .img-box { 
 	transform-origin: left top; 
@@ -361,7 +361,7 @@ body.dark .title-box {
 	transform-origin: right bottom; 
 }
 .sgroup.sgroup-4 .img-box img { 
-	object-position: right center;
+	object-position: right 64%;
 }
 .sgroup.is-expanded:after {
 	background-color: rgba(255,255,255,0.95);
@@ -578,7 +578,7 @@ border:1rem solid #fff;
 	</div> 	
 	<div class="sgroup sgroup-1">
 		<div class="close-sgroup">&times;</div>
-		<div class="img-box"><img data-light="/img/main/bg-1-1.png" data-dark="/img/main/bg-1-1-d.png" alt="Игрокам" src="/img/pixel.png"></div>
+		<div class="img-box"><img data-light="/img/main/bg-1.png" data-dark="/img/main/bg-1-d.png" alt="Игрокам" src="/img/pixel.png"></div>
 		<div class="title-box">Игрокам</div>
 		<div class="info-box">
 			<div class="row row2">
@@ -707,7 +707,7 @@ border:1rem solid #fff;
 	</div>  
 	<div class="sgroup sgroup-3">
 		<div class="close-sgroup">&times;</div>
-		<div class="img-box"><img data-light="/img/main/bg-3.png" data-dark="/img/main/bg-3-d.webp" alt="Организаторам" src="/img/pixel.png"></div>
+		<div class="img-box"><img data-light="/img/main/bg-3.png" data-dark="/img/main/bg-3-d.png" alt="Организаторам" src="/img/pixel.png"></div>
 		<div class="title-box">Организаторам</div>
 		<div class="info-box">
 			<div class="row row2">
@@ -771,7 +771,7 @@ border:1rem solid #fff;
 	</div>
 	<div class="sgroup sgroup-4">
 		<div class="close-sgroup">&times;</div>
-		<div class="img-box"><img data-light="/img/main/bg-4.png" data-dark="/img/main/bg-2-d.webp" alt="Спортцентрам" src="/img/pixel.png"></div>
+		<div class="img-box"><img data-light="/img/main/bg-4.png" data-dark="/img/main/bg-4-d.png" alt="Спортцентрам" src="/img/pixel.png"></div>
 		<div class="title-box">Спортцентрам</div>
 		<div class="info-box">
 			<div class="row row2">

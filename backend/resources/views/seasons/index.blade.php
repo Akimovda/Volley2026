@@ -2,26 +2,46 @@
 <x-slot name="title">Мои сезоны и лиги</x-slot>
 <x-slot name="h1">Мои сезоны и лиги</x-slot>
 
+		<x-slot name="canonical">{{ route('seasons.index') }}</x-slot>
+		
+		<x-slot name="breadcrumbs">
+			<li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
+				<a href="{{ route('seasons.index') }}" itemprop="item">
+					<span itemprop="name">Мои сезоны и лиги</span>
+				</a>
+				<meta itemprop="position" content="2">
+			</li>
+		</x-slot>
+		<x-slot name="t_description">
+			Серия турниров с лигами, промоушеном и накопительным рейтингом игроков.
+		</x-slot>
+		
+		<x-slot name="d_description">
+				<div class="mt-2" data-aos-delay="250" data-aos="fade-up">
+					<a href="{{ route('seasons.create') }}" class="btn btn-primary">Создать сезон</a>
+				</div>					
+		</x-slot>
+
 <div class="container">
 <div class="ramka">
 
     <div class="d-flex between fvc mb-3">
-        <h2 class="-mt-05 mb-0">🏆 Сезоны и лиги</h2>
-        <a href="{{ route('seasons.create') }}" class="btn btn-primary">+ Создать сезон</a>
+        <h2 class="-mt-05 mb-0">Сезоны и лиги</h2>
+        
     </div>
 
     @if($seasons->isEmpty())
-        <div class="card p-3" style="text-align:center;opacity:.6">
-            <p class="f-16 b-600 mb-1">У вас пока нет сезонов</p>
-            <p class="f-14">Сезон — это серия турниров с лигами, промоушеном и накопительным рейтингом игроков.</p>
+        <div class="alert alert-info">
+            <p><strong>У вас пока нет сезонов</strong></p>
+            <p>Сезон — это серия турниров с лигами, промоушеном и накопительным рейтингом игроков.</p>
         </div>
     @else
-        <div class="row row2">
+        <div class="row">
             @foreach($seasons as $season)
-                <div class="col-md-6 col-lg-4 mb-2">
-                    <div class="card p-3" style="height:100%">
-                        <div class="d-flex between fvc mb-2">
-                            <div class="b-700 f-17">{{ $season->name }}</div>
+                <div class="col-md-6 col-lg-4">
+                    <div class="card">
+                        <div class="d-flex between fvc mb-1">
+                            <div class="b-600">{{ $season->name }}</div>
                             @php
                                 $statusColors = [
                                     'active' => ['bg' => 'rgba(16,185,129,.15)', 'color' => '#10b981', 'label' => 'Активен'],
@@ -30,12 +50,12 @@
                                 ];
                                 $st = $statusColors[$season->status] ?? $statusColors['draft'];
                             @endphp
-                            <span class="f-12 b-600 p-1 px-2" style="background:{{ $st['bg'] }};border-radius:6px;color:{{ $st['color'] }}">
+                            <span class="f-13 b-600" style="background:{{ $st['bg'] }}; padding: 0.4rem 1rem; border-radius:1rem;color:{{ $st['color'] }}">
                                 {{ $st['label'] }}
                             </span>
                         </div>
 
-                        <div class="f-13 mb-2" style="color:#6b7280">
+                        <div class="f-16 mb-1">
                             {{ $season->direction === 'beach' ? '🏖 Пляжный' : '🏐 Классический' }}
                             @if($season->starts_at)
                                 · {{ $season->starts_at->format('d.m.Y') }}
@@ -44,12 +64,12 @@
                         </div>
 
                         @if($season->leagues->isNotEmpty())
-                            <div class="f-13 mb-1">
+                            <div class="f-16 mb-1">
                                 <span class="b-600">Лиги:</span> {{ $season->leagues->pluck('name')->implode(', ') }}
                             </div>
                         @endif
 
-                        <div class="f-13 mb-2" style="color:#9ca3af">
+                        <div class="f-16 mb-1" style="color:#9ca3af">
                             Туров: {{ $season->seasonEvents->count() ?? 0 }}
                         </div>
 

@@ -230,6 +230,7 @@ Route::get('/user/profile', [\App\Http\Controllers\UserProfileController::class,
     ->middleware(['auth'])
     ->name('league.reserve.confirm');
 
+Route::get('/auth/telegram/redirect', [TelegramAuthController::class, 'redirect'])->name('auth.telegram.redirect');
 Route::get('/auth/telegram/callback', [TelegramAuthController::class, 'callback'])->name('auth.telegram.callback');
 	Route::get('/auth/vk/redirect', [VkAuthController::class, 'redirect'])->name('auth.vk.redirect');
 	Route::get('/auth/vk/callback', [VkAuthController::class, 'callback'])->name('auth.vk.callback');

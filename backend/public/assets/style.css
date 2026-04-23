@@ -2470,6 +2470,9 @@ body.dark .theme-icon {
 	.fix-header-menu-3::before {
 		right: 9.8rem; /* гамбургер */
 	}	
+	.notification-text {
+	white-space: nowrap
+	}	
 }
 /* Общие стили для всех кнопок */
 .social-auth {

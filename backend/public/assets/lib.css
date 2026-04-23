@@ -1336,7 +1336,7 @@ body.compensate-for-scrollbar {
 .swal-overlay:after{    
     clip-path: polygon(100% 0%,100% 80%,0% 20%,0% 0%);
     top: -100vh;
-    opacity: 0.5;
+    opacity: 0.6;
 }
 body.dark .fancybox-bg:before,
 body.dark .fancybox-bg:after,
@@ -1435,15 +1435,16 @@ body.dark .swal-overlay:after{
     background: #fff;
     display: inline-block;
     margin: 0;
-    max-width: 100%;
+    max-width: 94%;
     overflow: auto;
     -webkit-overflow-scrolling: touch;
-    padding: 30px;
+    padding: 2.3rem 2.6rem;
     position: relative;
     text-align: left;
-    vertical-align: middle;
-	box-shadow: 0 1rem 2.2rem rgba(0, 0, 0, 0.15), 0 0.5rem 1.2rem rgba(0, 0, 0, 0.13);
-	border-radius: 1rem;
+    vertical-align: middle;	
+    border-radius: 1.6rem;
+    box-shadow: rgba(0, 0, 0, 0.1) 0px 1rem 2.2rem, rgba(0, 0, 0, 0.05) 0px 0.5rem 1.2rem;
+    will-change: transform;		
 }
 body.dark .fancybox-content {
 background: #222333;
@@ -1925,10 +1926,7 @@ background: #222333;
     }
     */
     /* Контент */
-    .fancybox-content {
-        padding: 16px 14px;
-    }
-    
+
     
     /* Стрелки для мобилок - В ВЕРХНИЙ ЛЕВЫЙ УГОЛ */
     .fancybox-navigation .fancybox-button {

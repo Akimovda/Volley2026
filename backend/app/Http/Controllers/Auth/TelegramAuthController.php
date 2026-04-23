@@ -5,13 +5,24 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Support\UserPhotoFromProviderService;
+use Firebase\JWT\JWK;
+use Firebase\JWT\JWT;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class TelegramAuthController extends Controller
 {
+    private const AUTH_URL  = 'https://oauth.telegram.org/auth';
+    private const TOKEN_URL = 'https://oauth.telegram.org/token';
+    private const JWKS_URL  = 'https://oauth.telegram.org/.well-known/jwks.json';
+
+    /* ── helpers: return URL ── */
+
     private function storeReturnTo(Request $request): void
     {
         $returnTo = (string) (
@@ -60,53 +71,161 @@ class TelegramAuthController extends Controller
         return $url;
     }
 
+    /* ── PKCE helpers ── */
+
+    private function generateCodeVerifier(): string
+    {
+        return Str::random(64);
+    }
+
+    private function generateCodeChallenge(string $verifier): string
+    {
+        return rtrim(strtr(base64_encode(hash('sha256', $verifier, true)), '+/', '-_'), '=');
+    }
+
+    /* ── STEP 1: redirect to Telegram ── */
+
     public function redirect(Request $request)
     {
         $this->storeReturnTo($request);
-        $request->session()->put('oauth_provider', 'telegram');
-        $request->session()->put('oauth_intent', Auth::check() ? 'link' : 'login');
-        return redirect()->back();
+
+        $intent = Auth::check() ? 'link' : 'login';
+        $state = Str::random(40);
+        $codeVerifier = $this->generateCodeVerifier();
+
+        $request->session()->put('telegram_oidc_state', $state);
+        $request->session()->put('telegram_oidc_verifier', $codeVerifier);
+        $request->session()->put('oauth_intent', $intent);
+
+        $params = [
+            'client_id'             => config('services.telegram.oidc_client_id'),
+            'redirect_uri'          => route('auth.telegram.callback'),
+            'response_type'         => 'code',
+            'scope'                 => 'openid profile telegram:bot_access',
+            'state'                 => $state,
+            'code_challenge'        => $this->generateCodeChallenge($codeVerifier),
+            'code_challenge_method' => 'S256',
+        ];
+
+        return redirect(self::AUTH_URL . '?' . http_build_query($params));
     }
+
+    /* ── STEP 2: callback from Telegram ── */
 
     public function callback(Request $request)
     {
         $returnTo = $this->popReturnTo($request);
 
-        $tgData = array_filter(
-            $request->only(['id', 'first_name', 'last_name', 'username', 'photo_url', 'auth_date', 'hash']),
-            static fn ($v) => !is_null($v) && $v !== ''
-        );
-
-        \Illuminate\Support\Facades\Log::info('TG_AUTH_DEBUG', [
-            'tgData_keys' => array_keys($tgData),
-            'tgData' => $tgData,
-            'all_query' => $request->query(),
-            'bot_token_len' => strlen((string) config('services.telegram.bot_token')),
-        ]);
-        if (!$this->isTelegramLoginValid($tgData)) {
-            return redirect()->to($returnTo)->with('error', 'Telegram auth: invalid signature');
+        // ── Legacy widget support (fallback) ──
+        if ($request->has('hash') && $request->has('id')) {
+            return $this->handleLegacyCallback($request, $returnTo);
         }
 
-        $authDate = (int) ($tgData['auth_date'] ?? 0);
-        if ($authDate <= 0 || (time() - $authDate) > 86400) {
-            return redirect()->to($returnTo)->with('error', 'Telegram auth: expired data');
+        // ── OIDC flow ──
+        if ($request->has('error')) {
+            Log::warning('Telegram OIDC error', ['error' => $request->query('error')]);
+            return redirect()->to($returnTo)->with('error', 'Telegram: ошибка авторизации');
         }
 
-        $tgId = (string) ($tgData['id'] ?? '');
+        $code  = $request->query('code');
+        $state = $request->query('state');
+
+        if (!$code || !$state) {
+            return redirect()->to($returnTo)->with('error', 'Telegram: некорректный ответ');
+        }
+
+        // Verify state
+        $savedState = $request->session()->pull('telegram_oidc_state');
+        if (!$savedState || !hash_equals($savedState, $state)) {
+            return redirect()->to($returnTo)->with('error', 'Telegram: неверный state');
+        }
+
+        $codeVerifier = $request->session()->pull('telegram_oidc_verifier');
+        $intent = (string) $request->session()->pull('oauth_intent', Auth::check() ? 'link' : 'login');
+
+        // Exchange code for tokens
+        $clientId     = config('services.telegram.oidc_client_id');
+        $clientSecret = config('services.telegram.oidc_client_secret');
+
+        $tokenResponse = Http::asForm()
+            ->withBasicAuth($clientId, $clientSecret)
+            ->post(self::TOKEN_URL, [
+                'grant_type'    => 'authorization_code',
+                'code'          => $code,
+                'redirect_uri'  => route('auth.telegram.callback'),
+                'client_id'     => $clientId,
+                'code_verifier' => $codeVerifier,
+            ]);
+
+        if (!$tokenResponse->successful()) {
+            Log::error('Telegram OIDC token exchange failed', [
+                'status' => $tokenResponse->status(),
+                'body'   => $tokenResponse->body(),
+            ]);
+            return redirect()->to($returnTo)->with('error', 'Telegram: ошибка получения токена');
+        }
+
+        $tokens  = $tokenResponse->json();
+        $idToken = $tokens['id_token'] ?? null;
+
+        if (!$idToken) {
+            return redirect()->to($returnTo)->with('error', 'Telegram: отсутствует id_token');
+        }
+
+        // Validate JWT
+        try {
+            $claims = $this->validateIdToken($idToken, $clientId);
+        } catch (\Exception $e) {
+            Log::error('Telegram OIDC JWT validation failed', ['error' => $e->getMessage()]);
+            return redirect()->to($returnTo)->with('error', 'Telegram: ошибка валидации токена');
+        }
+
+        $tgId     = (string) ($claims->id ?? $claims->sub ?? '');
+        $name     = $claims->name ?? '';
+        $username = $claims->preferred_username ?? null;
+        $photoUrl = $claims->picture ?? null;
+
         if ($tgId === '') {
-            return redirect()->to($returnTo)->with('error', 'Telegram auth: missing id');
+            return redirect()->to($returnTo)->with('error', 'Telegram: отсутствует ID пользователя');
         }
 
-        $username = $tgData['username'] ?? null;
-        $photoUrl = $tgData['photo_url'] ?? null;
+        Log::info('TG_OIDC_AUTH', [
+            'tg_id'    => $tgId,
+            'name'     => $name,
+            'username' => $username,
+            'intent'   => $intent,
+        ]);
 
-        $intentFromQuery = (string) $request->query('intent', '');
-        $intentFromQuery = in_array($intentFromQuery, ['login', 'link'], true) ? $intentFromQuery : '';
+        return $this->processAuth($request, $tgId, $name, $username, $photoUrl, $intent, $returnTo);
+    }
 
-        $intent = $intentFromQuery !== ''
-            ? $intentFromQuery
-            : (string) $request->session()->pull('oauth_intent', Auth::check() ? 'link' : 'login');
+    /* ── JWT validation ── */
 
+    private function validateIdToken(string $idToken, string $clientId): object
+    {
+        $jwks = Cache::remember('telegram_oidc_jwks', 3600, function () {
+            $response = Http::get(self::JWKS_URL);
+            return $response->json();
+        });
+
+        $keys = JWK::parseKeySet($jwks);
+        $decoded = JWT::decode($idToken, $keys);
+
+        // Verify claims
+        if (($decoded->iss ?? '') !== 'https://oauth.telegram.org') {
+            throw new \RuntimeException('Invalid issuer');
+        }
+        if ((string)($decoded->aud ?? '') !== (string)$clientId) {
+            throw new \RuntimeException('Invalid audience');
+        }
+
+        return $decoded;
+    }
+
+    /* ── Common auth logic (shared between OIDC and legacy) ── */
+
+    private function processAuth(Request $request, string $tgId, string $name, ?string $username, ?string $photoUrl, string $intent, string $returnTo)
+    {
         $request->session()->forget('oauth_provider');
 
         /* LINK */
@@ -164,10 +283,13 @@ class TelegramAuthController extends Controller
                 $email = "tg_{$tgId}_" . now()->timestamp . "@telegram.local";
             }
 
+            $nameParts = explode(' ', trim($name), 2);
+
             $user = new User();
             $user->email      = $email;
             $user->password   = Hash::make(Str::random(32));
-            $user->name        = trim(($tgData['first_name'] ?? '') . ' ' . ($tgData['last_name'] ?? '')) ?: 'Пользователь';
+            $user->first_name = $nameParts[0] ?? '';
+            $user->last_name  = $nameParts[1] ?? '';
             $user->telegram_id = $tgId;
 
             if (!empty($username)) {
@@ -193,7 +315,34 @@ class TelegramAuthController extends Controller
         return redirect()->to($returnTo);
     }
 
-    private function isTelegramLoginValid(array $data): bool
+    /* ── Legacy widget fallback ── */
+
+    private function handleLegacyCallback(Request $request, string $returnTo)
+    {
+        $tgData = array_filter(
+            $request->only(['id', 'first_name', 'last_name', 'username', 'photo_url', 'auth_date', 'hash']),
+            static fn ($v) => !is_null($v) && $v !== ''
+        );
+
+        if (!$this->isLegacyHashValid($tgData)) {
+            return redirect()->to($returnTo)->with('error', 'Telegram auth: invalid signature');
+        }
+
+        $authDate = (int) ($tgData['auth_date'] ?? 0);
+        if ($authDate <= 0 || (time() - $authDate) > 86400) {
+            return redirect()->to($returnTo)->with('error', 'Telegram auth: expired data');
+        }
+
+        $tgId     = (string) ($tgData['id'] ?? '');
+        $name     = trim(($tgData['first_name'] ?? '') . ' ' . ($tgData['last_name'] ?? ''));
+        $username = $tgData['username'] ?? null;
+        $photoUrl = $tgData['photo_url'] ?? null;
+        $intent   = Auth::check() ? 'link' : 'login';
+
+        return $this->processAuth($request, $tgId, $name, $username, $photoUrl, $intent, $returnTo);
+    }
+
+    private function isLegacyHashValid(array $data): bool
     {
         if (empty($data['hash'])) return false;
 
