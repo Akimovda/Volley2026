@@ -20,12 +20,18 @@
 		{{ $season->starts_at?->format('d.m.Y') ?? '—' }} — {{ $season->ends_at?->format('d.m.Y') ?? '...' }}
 		
 	</x-slot>
+
 	<x-slot name="d_description">
+	
 		<div class="mt-2" data-aos-delay="250" data-aos="fade-up">
-			<span class="b-600" style="padding: 0.6rem 1.2rem; border-radius: 1rem;{{ $season->status === 'active' ? 'background:rgba(16,185,129,.15);color:#10b981' : ($season->status === 'completed' ? 'background:rgba(128,128,128,.15);color:#666' : 'background:rgba(255,152,0,.15);color:#ff9800') }}">
+			<span class="d-inline-block pt-1 pb-1 alert alert-{{
+			substr($season->status, 0, 1) === 'a' ? 'success' : 
+			(substr($season->status, 0, 1) === 'c' ? 'danger' : 'warning')
+			}}">
 				{{ $season->status === 'active' ? 'Активен' : ($season->status === 'completed' ? 'Завершён' : 'Черновик') }}
 			</span>
 		</div>		
+	
 	</x-slot>
 	
 	
@@ -159,7 +165,7 @@
 							@if($lt->team)
 							<span class="b-600">{{ $lt->team->name }}</span>
 							@if($lt->team->captain)
-                            <span class="f-13" style="opacity:.5">({{ $lt->team->captain->name }})</span>
+                            <span class="f-16">({{ $lt->team->captain->name }})</span>
 							@endif
 							@elseif($lt->user)
 							<span class="b-600">{{ $lt->user->name }}</span>
@@ -168,7 +174,11 @@
 						<form action="{{ route('leagues.teams.destroy', $lt) }}" method="POST"
 						onsubmit="return confirm('Убрать из лиги?')">
 							@csrf @method('DELETE')
-							<button class="btn btn-secondary f-12" style="padding:2px 8px;color:#dc2626">✕</button>
+							<button class="icon-delete btn btn-danger btn-alert btn-svg"
+							data-title="Убрать из лиги?"
+							data-icon="warning"
+							data-confirm-text="Да, убрать"
+							data-cancel-text="Отмена"></button>
 						</form>
 					</div>
 					@endforeach
@@ -220,18 +230,22 @@
 					@foreach($season->seasonEvents->sortBy('round_number') as $se)
 					<div class="card d-flex between fvc mb-1" style="padding:8px 12px;flex-wrap:wrap;gap:8px">
 						<div>
-							<span class="b-600 f-14">Тур {{ $se->round_number }}</span>
-							<a href="{{ route('events.show', $se->event) }}" class="ml-1">{{ $se->event->title }}</a>
-							<span class="f-13 ml-1" style="opacity:.5">· {{ $se->league->name }}</span>
+							<span class="b-600">Тур {{ $se->round_number }}</span>
+							<a href="{{ route('events.show', $se->event) }}" class="blink ml-1">{{ $se->event->title }}</a>
+							<span class="f-16 ml-1">· {{ $se->league->name }}</span>
 						</div>
-						<div class="d-flex fvc" style="gap:8px">
-							<span class="f-12 b-600 px-2 py-1" style="border-radius:6px;{{ $se->isCompleted() ? 'background:rgba(16,185,129,.15);color:#10b981' : 'background:rgba(255,152,0,.15);color:#ff9800' }}">
+						<div class="d-flex fvc" style="gap:1rem">
+							<span style="padding: 0.5rem 1rem;border-radius: 1rem;" class="f-15 b-600 {{ $se->isCompleted() ? 'alert-success' : 'alert-info' }}">
 								{{ $se->isCompleted() ? '✓ Завершён' : 'Ожидает' }}
 							</span>
 							<form action="{{ route('seasons.events.detach', [$season, $se->event]) }}" method="POST"
 							onsubmit="return confirm('Отвязать турнир?')">
 								@csrf @method('DELETE')
-								<button class="btn btn-secondary f-12" style="padding:2px 8px;color:#dc2626">✕</button>
+							<button class="icon-delete btn btn-danger btn-alert btn-svg"
+							data-title="Отвязать турнир?"
+							data-icon="warning"
+							data-confirm-text="Да, отвязать"
+							data-cancel-text="Отмена"></button>
 							</form>
 						</div>
 					</div>

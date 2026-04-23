@@ -156,7 +156,6 @@ class CancelEventsByQuorum extends Command
                     $row->location_address ?? null,
                 ]));
 
-                $startsLocalText = $startsUtc->copy()->setTimezone($timezone)->format('d.m.Y в H:i') . ' (' . $timezone . ')';
 
                 foreach ($userIds as $userId) {
                     $user = \App\Models\User::find((int) $userId);

@@ -26,7 +26,7 @@
 			.sb-d { background:#fef3c7; color:#92400e; }
 			.lc { border:1px solid #e5e7eb; border-radius:12px; overflow:hidden; margin-bottom:20px; }
 			.lch { padding:14px 16px; background:#f9fafb; border-bottom:1px solid #e5e7eb; }
-			.ts { display:inline-block; padding: 0.4rem 1rem; border-radius:1rem; font-size: 1.5rem; font-weight: 600 }
+			.ts { display:inline-block; padding: 0.5rem 1rem; border-radius:1rem; font-size: 1.5rem; font-weight: 600 }
 			.tm { font-size:13px; color:#6b7280; margin-top:2px; }
 			.tm a { color:#6b7280; }
 			.tm a:hover { color:#4f46e5; }
@@ -55,7 +55,7 @@
 		<div class="mt-2" data-aos-delay="250" data-aos="fade-up">
 			<span class="d-inline-block pt-1 pb-1 alert alert-{{
 			substr($season->status, 0, 1) === 'a' ? 'success' : 
-			(substr($season->status, 0, 1) === 'c' ? 'warning' : 'info')
+			(substr($season->status, 0, 1) === 'c' ? 'danger' : 'warning')
 			}}">
 				{{ $season->status === 'active' ? 'Активен' : ($season->status === 'completed' ? 'Завершён' : 'Черновик') }}
 			</span>
@@ -204,7 +204,7 @@
 								<td class="text-center">{{ $stat->sets_won }}:{{ $stat->sets_lost }}</td>
 								<td class="text-center">
 									@php $pd = $stat->points_scored - $stat->points_conceded; @endphp
-									<span style="padding:0.2rem 1rem; border-radius: 0.6rem;" class="{{ $pd >= 0 ? 'alert-danger' : 'alert-success' }}">{{ $pd >= 0 ? '+' : '' }}{{ $pd }}</span>
+									<span style="padding:0.2rem 1rem; border-radius: 0.6rem;" class="{{ $pd >= 0 ? 'alert-success' : 'alert-danger' }}">{{ $pd >= 0 ? '+' : '' }}{{ $pd }}</span>
 								</td>
 							</tr>
 							@endforeach

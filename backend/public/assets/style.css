@@ -1418,7 +1418,7 @@ body.dark .btn-outline:hover {
 	white-space: nowrap!important;
 }
 .alert {
-    padding: 1.25rem;
+    padding: 1.25rem 2rem;
     padding-left: 5.5rem;
     border-radius: 1rem;
     border: 0.2rem solid;

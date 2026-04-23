@@ -363,7 +363,8 @@
         {{-- Последние запросы привязки --}}
         <div class="ramka">
             <h3 class="mt-0">🔗 Последние запросы привязки</h3>
-            <div class="table-wrap">
+<div class="table-scrollable">
+	<div class="table-drag-indicator"></div>
                 <table class="table">
                     <thead>
                         <tr>
