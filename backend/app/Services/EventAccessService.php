@@ -66,7 +66,7 @@ class EventAccessService
             }
 
             $exists = User::whereKey($organizerId)
-                ->where('role', 'organizer')
+                ->whereIn('role', ['organizer', 'admin'])
                 ->exists();
 
             if (!$exists) {
