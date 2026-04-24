@@ -289,9 +289,16 @@ if ($role === 'admin') {
         // Эффективные игровые настройки (override ?? event ?? defaults)
         $gs = $occurrence->effectiveGameSettings();
 
+        // Эффективные тренеры: override (записи в event_occurrence_trainers)
+        // или, если override пуст — наследуем от event->trainers.
+        $occurrence->loadMissing('trainers');
+        $event->loadMissing('trainers');
+        $trainerInherited = $occurrence->trainers->isEmpty();
+        $trainers = $trainerInherited ? $event->trainers : $occurrence->trainers;
+
         return view('events.occurrence_edit', compact(
             'event', 'occurrence', 'startsLocal', 'tz', 'locations',
-            'subtypes', 'gs'
+            'subtypes', 'gs', 'trainers', 'trainerInherited'
         ));
     }
 
@@ -343,10 +350,10 @@ if ($role === 'admin') {
             'min_players'                      => 'nullable|integer|min:0|max:100',
 
             // ===== Гендер =====
-            'gender_policy'                    => 'nullable|string|in:any,men_only,women_only,women_limited',
+            'gender_policy'                    => 'nullable|string|in:mixed_open,mixed_5050,only_male,only_female,mixed_limited',
             'girls_max'                        => 'nullable|integer|min:0|max:20',
             'gender_limited_max'               => 'nullable|integer|min:0|max:10',
-            'gender_limited_side'              => 'nullable|string|in:women,men',
+            'gender_limited_side'              => 'nullable|string|in:female,male',
 
             // ===== Оплата =====
             'is_paid'                          => 'sometimes|boolean',
@@ -361,6 +368,8 @@ if ($role === 'admin') {
             'refund_partial_pct'               => 'nullable|integer|min:0|max:100',
 
             'trainer_user_id'                  => 'nullable|integer|exists:users,id',
+            'trainer_user_ids'                 => 'nullable|array',
+            'trainer_user_ids.*'               => 'integer|exists:users,id',
             'requires_personal_data'           => 'sometimes|boolean',
         ]);
 
@@ -428,32 +437,40 @@ if ($role === 'admin') {
         $occurrence->refund_partial_pct = $override($data['refund_partial_pct'] ?? null, $event->refund_partial_pct ?? null);
 
         // ===== Тренер (override) =====
-        $occurrence->trainer_user_id = $override(
-            !empty($data['trainer_user_id']) ? (int) $data['trainer_user_id'] : null,
-            $event->trainer_user_id ?? null
-        );
+        // Тренеры-override через pivot event_occurrence_trainers
+        $trainerIds = $data['trainer_user_ids'] ?? [];
+        if (is_string($trainerIds)) $trainerIds = [$trainerIds];
+        if (!is_array($trainerIds)) $trainerIds = [];
+        $trainerIds = array_values(array_unique(array_map('intval', $trainerIds)));
+        $trainerIds = array_values(array_filter($trainerIds, fn($id) => $id > 0));
 
-        // ===== Персональные данные (override) =====
-        $occurrence->requires_personal_data = $override(
-            (bool) ($data['requires_personal_data'] ?? false),
-            (bool) ($event->requires_personal_data ?? false)
-        );
+        // Sync override. Пустой массив = override "нет тренеров" (явно).
+        // Чтобы вернуться к наследованию — нужна отдельная кнопка (TODO).
+        // Сейчас: если массив отличается от event->trainers — пишем override,
+        // иначе очищаем override (наследуем).
+        $eventTrainerIds = $event->trainers()->pluck('users.id')->map(fn($v) => (int)$v)->sort()->values()->all();
+        $submitted = collect($trainerIds)->sort()->values()->all();
 
-        // ===== Регистрация =====
-        $allowReg = (bool) ($data['allow_registration'] ?? false);
-        $daysBefore = (int) ($data['reg_starts_days_before'] ?? 3);
-        $endsMinBefore = (int) ($data['reg_ends_minutes_before'] ?? 15);
-        $cancelMinBefore = (int) ($data['cancel_lock_minutes_before'] ?? 60);
-
-        $occurrence->allow_registration = $allowReg;
-        $occurrence->remind_registration_enabled = (bool) ($data['remind_registration_enabled'] ?? false);
-        $occurrence->remind_registration_minutes_before = $data['remind_registration_minutes_before'] ?? null;
-
-        if ($allowReg) {
-            $occurrence->registration_starts_at = $startsUtc->copy()->subDays($daysBefore);
-            $occurrence->registration_ends_at = $startsUtc->copy()->subMinutes($endsMinBefore);
-            $occurrence->cancel_self_until = $startsUtc->copy()->subMinutes($cancelMinBefore);
+        if ($submitted === $eventTrainerIds) {
+            // Совпадает с серией → наследуем (чистим override)
+            $occurrence->trainers()->sync([]);
+        } else {
+            $occurrence->trainers()->sync($trainerIds);
         }
+
+        // Legacy single trainer_user_id — первый из эффективного списка
+        $effectiveFirst = !empty($trainerIds)
+            ? $trainerIds[0]
+            : ($eventTrainerIds[0] ?? null);
+        $occurrence->trainer_user_id = $effectiveFirst;
+
+        // ===== Персональные данные / Регистрация / Напоминания =====
+        // Эти поля серийные (управляются на уровне event), UI occurrence_edit их
+        // больше не редактирует. Не трогаем их при сохранении — значения
+        // остаются как есть в БД (null = наследование от event).
+        //
+        // Если нужен override по конкретному из этих полей — добавить обратно
+        // блок в blade и здесь.
 
         $occurrence->save();
 

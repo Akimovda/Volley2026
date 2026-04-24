@@ -309,4 +309,18 @@ class EventOccurrence extends Model
         return $this->isStarted() && !$this->isFinished();
     }
 
+
+    /**
+     * Тренеры (multi) именно на этом occurrence (override).
+     * Если коллекция пуста → считается, что тренеры наследуются от event->trainers.
+     */
+    public function trainers()
+    {
+        return $this->belongsToMany(
+            \App\Models\User::class,
+            'event_occurrence_trainers',
+            'occurrence_id',
+            'user_id'
+        )->withTimestamps();
+    }
 }

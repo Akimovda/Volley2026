@@ -1242,3 +1242,8 @@ Route::post('/yookassa/webhook', [YookassaWebhookController::class, 'handle'])
 */
 Route::post('/yookassa/webhook', [YookassaWebhookController::class, 'handle'])
     ->name('yookassa.webhook');
+
+Route::get('/ajax/users/search', [UserSearchController::class, 'search'])
+    ->middleware(['web', 'auth'])
+    ->name('ajax.users.search');
+
