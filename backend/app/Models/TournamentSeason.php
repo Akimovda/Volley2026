@@ -11,6 +11,7 @@ class TournamentSeason extends Model
 {
     protected $fillable = [
         'organizer_id',
+        'league_id',
         'name',
         'slug',
         'direction',
@@ -38,6 +39,11 @@ class TournamentSeason extends Model
     public function organizer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'organizer_id');
+    }
+
+    public function league(): BelongsTo
+    {
+        return $this->belongsTo(League::class, 'league_id');
     }
 
     public function leagues(): HasMany

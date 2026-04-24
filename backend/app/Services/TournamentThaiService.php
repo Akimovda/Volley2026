@@ -15,9 +15,9 @@ class TournamentThaiService
     /**
      * Инициализация тайского формата.
      *
-     * 2 параллельные игры на 1 корте → группы → дивизионы (золото/серебро).
+     * 2 параллельные игры на 1 корте → группы → группы (золото/серебро).
      * Фаза 1: Round Robin в мини-группах.
-     * Фаза 2: Лучшие → Gold Division, остальные → Silver Division.
+     * Фаза 2: Лучшие → Gold Group, остальные → Silver Division.
      *
      * @param  int[] $teamIds
      * @param  int   $groupsCount  Кол-во начальных групп
@@ -66,9 +66,9 @@ class TournamentThaiService
     }
 
     /**
-     * Создать дивизионы после групповой фазы.
+     * Создать группы после групповой фазы.
      *
-     * @param  int $advanceToGold  Сколько лучших из каждой группы → золотой дивизион
+     * @param  int $advanceToGold  Сколько лучших из каждой группы → золотую группу
      */
     public function createDivisions(
         TournamentStage $groupStage,
@@ -94,11 +94,11 @@ class TournamentThaiService
             }
         }
 
-        // Золотой дивизион
+        // Золотая группа
         if (count($goldTeams) >= 2) {
             $goldGroup = TournamentGroup::create([
                 'stage_id'   => $goldStage->id,
-                'name'       => 'Золотой дивизион',
+                'name'       => 'Золотая группа',
                 'sort_order' => 1,
             ]);
             foreach ($goldTeams as $i => $tid) {
@@ -109,11 +109,11 @@ class TournamentThaiService
             $goldStage->update(['status' => TournamentStage::STATUS_IN_PROGRESS]);
         }
 
-        // Серебряный дивизион
+        // Серебряная группа
         if (count($silverTeams) >= 2) {
             $silverGroup = TournamentGroup::create([
                 'stage_id'   => $silverStage->id,
-                'name'       => 'Серебряный дивизион',
+                'name'       => 'Серебряная группа',
                 'sort_order' => 1,
             ]);
             foreach ($silverTeams as $i => $tid) {

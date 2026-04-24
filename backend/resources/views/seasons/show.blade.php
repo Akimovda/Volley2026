@@ -4,14 +4,22 @@
 	
 	<x-slot name="breadcrumbs">
 		<li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
-			<a href="{{ route('seasons.index') }}" itemprop="item">
-				<span itemprop="name">Мои сезоны</span>
+			<a href="{{ route('leagues.public') }}" itemprop="item">
+				<span itemprop="name">Лиги</span>
 			</a>
 			<meta itemprop="position" content="2">
 		</li>
+		@if($season->league)
+		<li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
+			<a href="{{ route('leagues.show.slug', $season->league->slug) }}" itemprop="item">
+				<span itemprop="name">{{ $season->league->name }}</span>
+			</a>
+			<meta itemprop="position" content="3">
+		</li>
+		@endif
 		<li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
 			<span itemprop="name">{{ $season->name }}</span>
-			<meta itemprop="position" content="3">
+			<meta itemprop="position" content="{{ $season->league ? 4 : 3 }}">
 		</li>
 	</x-slot>
 	<x-slot name="h2">

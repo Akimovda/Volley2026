@@ -214,8 +214,8 @@ class TournamentStatsService
         $place = 1;
         $assignedTeams = [];
 
-        // Если есть дивизионы — классификация по дивизионам (Hard первый, потом Lite)
-        $divisionStages = $stages->filter(fn($s) => str_starts_with($s->name, 'Дивизион'));
+        // Если есть группы Hard/Lite — классификация по ним (Hard первый, потом Lite)
+        $divisionStages = $stages->filter(fn($s) => str_starts_with($s->name, 'Группа '));
         if ($divisionStages->isNotEmpty()) {
             // Сортируем: Hard первый, Medium потом, Lite последний
             $sorted = $divisionStages->sortBy(function($s) {
@@ -236,7 +236,7 @@ class TournamentStatsService
                         'place' => $place++,
                         'team_id' => $s->team_id,
                         'team_name' => $s->team->name ?? '?',
-                        'division' => str_replace('Дивизион ', '', $divStage->name),
+                        'division' => str_replace('Группа ', '', $divStage->name),
                         'wins' => $s->wins,
                         'losses' => $s->losses,
                         'rating_points' => $s->rating_points,

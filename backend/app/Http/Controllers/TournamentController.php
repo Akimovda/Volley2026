@@ -307,18 +307,18 @@ class TournamentController extends Controller
 
         $groups = $stage->groups;
 
-        // Для дивизионов: команды уже назначены — используем их
+        // Для групп Hard/Lite: команды уже назначены — используем их
         $existingGroupTeamIds = DB::table('tournament_group_teams')
             ->whereIn('group_id', $groups->pluck('id'))
             ->pluck('team_id')
             ->unique();
 
         if ($existingGroupTeamIds->isNotEmpty()) {
-            // Дивизион — команды уже распределены, генерируем только матчи
+            // Группа Hard/Lite — команды уже распределены, генерируем только матчи
             foreach ($groups as $group) {
                 $this->setupService->generateRoundRobinMatches($stage, $group);
             }
-            return $this->redirectToSetup($event, 'Матчи сгенерированы для дивизиона.');
+            return $this->redirectToSetup($event, 'Матчи сгенерированы для группы.');
         }
 
         if ($teams->count() < 2) {
@@ -521,10 +521,10 @@ class TournamentController extends Controller
      * ================================================================ */
 
     /**
-     * Сформировать дивизионы (Hard/Lite) после группового этапа.
+     * Сформировать группы (Hard/Lite) после группового этапа.
      */
     /**
-     * Применить промоушен после завершения дивизионов.
+     * Применить промоушен после завершения групп Hard/Lite.
      * Hard → все остаются. Lite → top-N остаются, остальные → резерв.
      */
     public function applyDivisionPromotion(Request $request, Event $event)
@@ -541,10 +541,10 @@ class TournamentController extends Controller
             return back()->with('error', 'Лига не найдена.');
         }
 
-        $stages = $event->tournamentStages()->where('name', 'like', 'Дивизион%')->get();
+        $stages = $event->tournamentStages()->where('name', 'like', 'Группа %')->get();
         $allCompleted = $stages->every(fn($s) => $s->status === 'completed');
         if (!$allCompleted) {
-            return back()->with('error', 'Не все дивизионы завершены.');
+            return back()->with('error', 'Не все группы завершены.');
         }
 
         $liteStage = $stages->first(fn($s) => str_contains($s->name, 'Lite'));
@@ -639,7 +639,7 @@ class TournamentController extends Controller
         $groupsCount = $groups->count();
 
         if ($groupsCount < 2) {
-            return back()->with('error', 'Нужно минимум 2 группы для дивизионов.');
+            return back()->with('error', 'Нужно минимум 2 группы для распределения.');
         }
 
         // Определяем названия дивизионов
@@ -741,7 +741,7 @@ class TournamentController extends Controller
             
             $hardTeamIds = array_column($chunks[0] ?? [], 'team_id');
             $liteTeamIds = array_column(end($chunks) ?: [], 'team_id');
-            // Средние дивизионы
+            // Средние группы
             for ($i = 1; $i < count($chunks) - 1; $i++) {
                 foreach ($chunks[$i] as $t) {
                     $mediumTeamIds[] = $t['team_id'];
@@ -752,7 +752,7 @@ class TournamentController extends Controller
         // occurrence_id из текущей стадии или из query
         $occurrenceId = $stage->occurrence_id;
 
-        // Форматы матчей для дивизионов
+        // Форматы матчей для групп
         $divFormats = [
             'Hard'   => $request->input('div_format_hard') ?: null,
             'Medium' => $request->input('div_format_medium') ?: null,
@@ -776,18 +776,18 @@ class TournamentController extends Controller
                 $teamIds = $divisions[$divName] ?? ($divisions[explode('-', $divName)[0]] ?? []);
                 if (empty($teamIds)) continue;
 
-                // Создаём стадию-дивизион (Round Robin внутри)
+                // Создаём стадию-группу (Round Robin внутри)
                 $divStage = $setupService->createStage($event, [
                     'type'          => 'round_robin',
-                    'name'          => 'Дивизион ' . $divName,
+                    'name'          => 'Группа ' . $divName,
                     'sort_order'    => $sortOrder++,
                     'occurrence_id' => $occurrenceId,
                     'config'        => array_merge($stage->config ?? [],
                         !empty($divFormats[$divName]) ? ['match_format' => $divFormats[$divName]] : []
-                    ), // наследуем формат + override для дивизиона
+                    ), // наследуем формат + override для группы
                 ]);
 
-                // Создаём одну группу в дивизионе
+                // Создаём одну группу внутри стадии
                 $group = $setupService->createGroups($divStage, 1, [$divName])->first();
 
                 // Назначаем команды
@@ -811,7 +811,7 @@ class TournamentController extends Controller
             }
         });
 
-        return $this->redirectToSetup($event, 'Дивизионы сформированы: ' . implode(', ', $divisionNames), false, 'promotion_block');
+        return $this->redirectToSetup($event, 'Группы сформированы: ' . implode(', ', $divisionNames), false, 'promotion_block');
     }
 
     public function advance(Request $request, TournamentStage $stage)
@@ -914,11 +914,11 @@ class TournamentController extends Controller
         $this->authorizeOrganizer($request, $event);
 
         DB::transaction(function () use ($stage) {
-            // Удаляем связанные дивизионы (если это групповой этап)
+            // Удаляем связанные группы Hard/Lite (если это групповой этап)
             if (in_array($stage->type, ['round_robin', 'groups_playoff'])) {
                 $divQuery = $stage->event->tournamentStages()
                     ->where('id', '!=', $stage->id)
-                    ->where('name', 'like', 'Дивизион %');
+                    ->where('name', 'like', 'Группа %');
                 if ($stage->occurrence_id) {
                     $divQuery->where('occurrence_id', $stage->occurrence_id);
                 }
@@ -980,12 +980,12 @@ class TournamentController extends Controller
 
         $name = $stage->name;
 
-        // Если удаляем групповой этап — удалить и связанные дивизионы
+        // Если удаляем групповой этап — удалить и связанные группы Hard/Lite
         if (in_array($stage->type, ['round_robin', 'groups_playoff'])) {
             $divStages = $event->tournamentStages()
                 ->where('id', '!=', $stage->id)
                 ->where(function($q) {
-                    $q->where('name', 'like', 'Дивизион %');
+                    $q->where('name', 'like', 'Группа %');
                 });
             if ($stage->occurrence_id) {
                 $divStages->where('occurrence_id', $stage->occurrence_id);
@@ -1194,6 +1194,50 @@ class TournamentController extends Controller
     /**
      * Добавить команду в лигу сезона (если ещё не добавлена).
      */
+    public function syncAllTeamsToLeague(Request $request, Event $event)
+    {
+        $this->authorizeOrganizer($request, $event);
+
+        if (!$event->season_id) {
+            return back()->with('error', 'Событие не привязано к сезону.');
+        }
+
+        $season = $event->season;
+        $league = $season?->leagues()->first();
+        if (!$league) {
+            return back()->with('error', 'В сезоне нет дивизионов.');
+        }
+
+        $teams = EventTeam::where('event_id', $event->id)
+            ->whereIn('status', ['submitted', 'approved', 'ready'])
+            ->get();
+
+        $added = 0;
+        foreach ($teams as $team) {
+            $exists = \App\Models\TournamentLeagueTeam::where('league_id', $league->id)
+                ->where('team_id', $team->id)
+                ->exists();
+
+            if (!$exists) {
+                \App\Models\TournamentLeagueTeam::create([
+                    'league_id'  => $league->id,
+                    'team_id'    => $team->id,
+                    'user_id'    => $team->captain_user_id,
+                    'status'     => $league->hasCapacity() ? 'active' : 'reserve',
+                    'joined_at'  => now(),
+                    'reserve_position' => $league->hasCapacity() ? null : $league->nextReservePosition(),
+                ]);
+                $added++;
+            }
+        }
+
+        if ($added === 0) {
+            return back()->with('success', 'Все команды уже в дивизионе.');
+        }
+
+        return back()->with('success', "Синхронизация: добавлено {$added} команд в дивизион.");
+    }
+
     private function syncTeamToLeague(Event $event, EventTeam $team): void
     {
         $season = $event->season;
@@ -1310,7 +1354,7 @@ class TournamentController extends Controller
             // Для сезонных турниров: НЕ отправляем "турнир завершён"
             // Каждый тур — отдельный цикл, завершение управляется промоушеном
             if ($event->season_id) {
-                // Проверяем только: нужно ли формировать дивизионы?
+                // Проверяем только: нужно ли формировать группы Hard/Lite?
                 $occId = $stage->occurrence_id;
                 $occStages = $event->tournamentStages()->where('occurrence_id', $occId);
                 $allOccCompleted = $occStages->count() > 0

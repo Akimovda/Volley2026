@@ -215,8 +215,8 @@
 								<a href="/coupons/templates" class="menu-item">
 									<span class="menu-text">Купоны</span>
 								</a>
-								<a href="/seasons" class="menu-item">
-									<span class="menu-text">🏆 Мои сезоны и лиги</span>
+								<a href="/leagues" class="menu-item">
+									<span class="menu-text">🏆 Мои лиги и сезоны</span>
 								</a>
 								<a href="/user/profile/notification-channels" class="menu-item">
 									<span class="menu-text">Каналы уведомлений</span>
@@ -372,6 +372,9 @@
 								</a>
 								<a href="/volleyball_school" class="menu-item">
 									<span class="menu-text">Школы волейбола</span>
+								</a>
+								<a href="/leagues/all" class="menu-item">
+									<span class="menu-text">Лиги и сезоны</span>
 								</a>
 								<a href="/users" class="menu-item">
 									<span class="menu-text">Игроки</span>

@@ -276,7 +276,7 @@
         @endphp
         @if(!empty($classification))
             @php
-                // Группируем по дивизионам
+                // Группируем по группам
                 $hasDivisions = isset($classification[0]['division']);
                 $divisions = $hasDivisions
                     ? collect($classification)->groupBy('division')
@@ -522,7 +522,7 @@
 
             @if($season)
             <div class="mt-2" style="text-align:center">
-                <a href="{{ route('seasons.show.slug', $season->slug) }}" class="btn btn-secondary f-13">
+                <a href="{{ route('seasons.show.slug', [$season->league?->slug ?? 'league', $season->slug]) }}" class="btn btn-secondary f-13">
                     Страница сезона →
                 </a>
             </div>

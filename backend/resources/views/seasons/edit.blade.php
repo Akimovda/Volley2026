@@ -4,12 +4,18 @@
 	
 	<x-slot name="breadcrumbs">
 		<li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
-			<a href="{{ route('seasons.index') }}" itemprop="item"><span itemprop="name">Мои сезоны</span></a>
+			<a href="{{ route('leagues.index') }}" itemprop="item"><span itemprop="name">Мои лиги</span></a>
 			<meta itemprop="position" content="2">
 		</li>
+		@if($season->league)
+		<li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
+			<a href="{{ route('leagues.edit', $season->league) }}" itemprop="item"><span itemprop="name">{{ $season->league->name }}</span></a>
+			<meta itemprop="position" content="3">
+		</li>
+		@endif
 		<li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
 			<span itemprop="name">{{ $season->name }}</span>
-			<meta itemprop="position" content="3">
+			<meta itemprop="position" content="{{ $season->league ? 4 : 3 }}">
 		</li>
 	</x-slot>
 	<x-slot name="h2">
@@ -61,13 +67,7 @@
 							<input type="text" name="name" value="{{ $season->name }}" required>
 						</div>
 						
-						<div class="card mb-2">
-							<label>Направление</label>
-							<select name="direction">
-								<option value="classic" {{ $season->direction === 'classic' ? 'selected' : '' }}>Классический</option>
-								<option value="beach" {{ $season->direction === 'beach' ? 'selected' : '' }}>Пляжный</option>
-							</select>
-						</div>
+
 						
 						<div class="card mb-2">
 							<label>Начало</label>
@@ -95,7 +95,7 @@
 							@csrf @method('DELETE')
 							<button class="btn btn-danger btn-alert w-100"
 							data-title="Удалить сезон?"
-							data-text="Все лиги также будут удалены. Отменить нельзя!"
+							data-text="Все дивизионы также будут удалены. Отменить нельзя!"
 							data-icon="warning"
 							data-confirm-text="Да, удалить"
 							data-cancel-text="Отмена">Удалить</button>
@@ -110,7 +110,7 @@
 					</div>
 					
 					<div class="mt-2">
-						Публичная ссылка: <br><a class="blink" href="{{ route('seasons.show.slug', $season->slug) }}" target="_blank">/s/{{ $season->slug }}</a>
+						Публичная ссылка: <br><a class="blink" href="{{ route('seasons.show.slug', [$season->league?->slug ?? 'league', $season->slug]) }}" target="_blank">/l/{{ $season->league?->slug ?? 'league' }}/s/{{ $season->slug }}</a>
 					</div>
 				</div>
 				
@@ -119,14 +119,14 @@
 				
 				{{-- Добавить лигу --}}
 				<div class="ramka">
-					<h2 class="-mt-05">Добавить лигу</h2>
-					<form action="{{ route('seasons.leagues.store', $season) }}" method="POST">
+					<h2 class="-mt-05">Добавить дивизион</h2>
+					<form action="{{ route('seasons.divisions.store', $season) }}" method="POST">
 						@csrf
 						<div class="row">
 							<div class="col-md-8">
 								<div class="card">
-									<label>Название лиги</label>
-									<input type="text" name="name" placeholder="Hard / Lite / Open" required>
+									<label>Название дивизиона</label>
+									<input type="text" name="name" placeholder="Hard / Medium / Lite" required>
 								</div>
 							</div>
 							<div class="col-md-4">
@@ -147,7 +147,7 @@
 				@forelse($season->leagues as $league)
 				<div class="ramka">
 					<div class="d-flex between fvc mb-2">
-						<h2 class="-mt-05 mb-0">Лига: {{ $league->name }}</h2>
+						<h2 class="-mt-05 mb-0">Дивизион: {{ $league->name }}</h2>
 						<div>
 							<strong class="cd">{{ $league->activeTeams->count() }}</strong> команд {!! $league->max_teams ? ' / макс. <strong class="cd">' . $league->max_teams . '</strong>' : '' !!}
 							
@@ -171,11 +171,11 @@
 							<span class="b-600">{{ $lt->user->name }}</span>
 							@endif
 						</div>
-						<form action="{{ route('leagues.teams.destroy', $lt) }}" method="POST"
-						onsubmit="return confirm('Убрать из лиги?')">
+						<form action="{{ route('divisions.teams.destroy', $lt) }}" method="POST"
+						onsubmit="return confirm('Убрать из дивизиона?')">
 							@csrf @method('DELETE')
 							<button class="icon-delete btn btn-danger btn-alert btn-svg"
-							data-title="Убрать из лиги?"
+							data-title="Убрать из дивизиона?"
 							data-icon="warning"
 							data-confirm-text="Да, убрать"
 							data-cancel-text="Отмена"></button>
@@ -202,11 +202,11 @@
 						<span>
 							Повышение: <strong class="cd">{{ $league->promoteCount() }}</strong> · Вылет: <strong class="cd">{{ $league->eliminateCount() }}</strong>
 						</span>
-						<form action="{{ route('leagues.destroy', $league) }}" method="POST"
-						onsubmit="return confirm('Удалить лигу «{{ $league->name }}»?')">
+						<form action="{{ route('divisions.destroy', $league) }}" method="POST"
+						onsubmit="return confirm('Удалить дивизион «{{ $league->name }}»?')">
 							@csrf @method('DELETE')
 							<button class="btn btn-danger btn-alert w-100"
-							data-title="Удалить лигу?"
+							data-title="Удалить дивизион?"
 							data-icon="warning"
 							data-confirm-text="Да, удалить"
 							data-cancel-text="Отмена">Удалить</button>
@@ -215,9 +215,9 @@
 				</div>
 				@empty
 				<div class="ramka">
-					<h2 class="-mt-05">Лиги сезона</h2>					
+					<h2 class="-mt-05">Дивизионы сезона</h2>					
 					<div class="alert alert-info">
-						Добавьте лиги для сезона
+						Добавьте дивизионы для сезона
 					</div>
 				</div>
 				@endforelse

@@ -227,6 +227,7 @@ body.dark .blink:before {
 }
 .text-center {
 	text-align: center!important;
+	justify-content:  center!important;
 }
 .c1 {
 	color: #2967BA!important;
@@ -1919,74 +1920,74 @@ body.dark .level-pro td {
 
 /* Мобильная версия - блочное отображение без прокрутки */
 @media (max-width: 575px) {
-  /* Отключаем скролл-контейнер */
-  .table-scrollable.flex-table {
-    overflow-x: visible;
-    -webkit-overflow-scrolling: auto;
-    cursor: default !important;
-  }
-  
-  /* Убираем индикатор перетаскивания на мобильных */
-  .table-scrollable.flex-table .table-drag-indicator {
-    display: none !important;
-  }
-  
-  /* Превращаем таблицу в блочную структуру */
-  .flex-table .table,
-  .flex-table .table thead,
-  .flex-table .table tbody,
-  .flex-table .table tr,
-  .flex-table .table th,
-  .flex-table .table td {
-    display: block;
-  }
-  
-  /* Скрываем заголовки в стандартном виде */
-  .flex-table .table thead {
-    display: none;
-  }
-  
-  /* Каждая строка становится карточкой */
-  .flex-table .table tbody tr {
-    display: block;
-    margin-bottom: 1.5rem;
-    border-radius: 1rem;
-    box-shadow: 0 0.2rem 0.8rem rgba(0, 0, 0, 0.05);
-    padding: 1rem 0;
-  }
-   
-  /* Каждая ячейка как отдельный элемент с подписью */
-  .flex-table .table td {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 1rem;
-    padding: 0.8rem 1.2rem;
-    border-right: none;
-    text-align: left;
-  }
-  
-  .flex-table .table td:last-child {
-    border-bottom: none;
-  }
-  
-  /* Добавляем подпись из заголовка таблицы */
-  .flex-table .table td::before {
-    content: attr(data-label);
-    font-weight: 600;
-    text-align: left;
-    flex: 1;
-    color: #666;
-    font-size: 0.85rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-  
-  /* Содержимое ячейки выравниваем вправо */
-  .flex-table .table td > * {
-    text-align: right;
-    flex: 1;
-  }
+	/* Отключаем скролл-контейнер */
+	.table-scrollable.flex-table {
+		overflow-x: visible;
+		-webkit-overflow-scrolling: auto;
+		cursor: default !important;
+	}
+	
+	/* Убираем индикатор перетаскивания на мобильных */
+	.table-scrollable.flex-table .table-drag-indicator {
+		display: none !important;
+	}
+	
+	/* Превращаем таблицу в блочную структуру */
+	.flex-table .table,
+	.flex-table .table thead,
+	.flex-table .table tbody,
+	.flex-table .table tr,
+	.flex-table .table th,
+	.flex-table .table td {
+		display: block;
+	}
+	
+	/* Скрываем заголовки в стандартном виде */
+	.flex-table .table thead {
+		display: none;
+	}
+	
+	/* Каждая строка становится карточкой */
+	.flex-table .table tbody tr {
+		display: block;
+		margin-bottom: 1.5rem;
+		border-radius: 1rem;
+		box-shadow: 0 0.2rem 0.8rem rgba(0, 0, 0, 0.05);
+		padding: 1rem 0;
+	}
+	
+	/* Каждая ячейка как отдельный элемент с подписью */
+	.flex-table .table td {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-start;
+		gap: 1rem;
+		padding: 0.8rem 1.2rem;
+		border-right: none;
+		text-align: left;
+	}
+	
+	.flex-table .table td:last-child {
+		border-bottom: none;
+	}
+	
+	/* Добавляем подпись из заголовка таблицы */
+	.flex-table .table td::before {
+		content: attr(data-label);
+		font-weight: 600;
+		text-align: left;
+		flex: 1;
+		color: #666;
+		font-size: 0.85rem;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+	}
+	
+	/* Содержимое ячейки выравниваем вправо */
+	.flex-table .table td > * {
+		text-align: right;
+		flex: 1;
+	}
 }
 
 
@@ -2471,7 +2472,7 @@ body.dark .theme-icon {
 		right: 9.8rem; /* гамбургер */
 	}	
 	.notification-text {
-	white-space: nowrap
+		white-space: nowrap
 	}	
 }
 /* Общие стили для всех кнопок */
@@ -2612,8 +2613,8 @@ body.dark .theme-icon {
     background-color: #f2faff; /* rgba(42, 171, 238, 0.05) на белом */
 	position: relative;
 	/*
-	display: block;
-	padding: 0;	
+		display: block;
+		padding: 0;	
 	*/
 }
 .auth-btn-telegram:hover {
@@ -4391,119 +4392,21 @@ body.dark .event-col-icon svg {
     justify-content: center;	
 }
 
-
-/* ===== PREMIUM AVATAR GLOW ===== */
-.avatar.avatar-premium {
-    position: relative;
+.profile-avatar.avatar-premium {
+	position: relative;	
 }
-.avatar.avatar-premium img,
-.avatar-premium > img {
-    box-shadow:
-	0 0 0 0.2rem #f5c842,
-	0 0 1rem 0.3rem rgba(245, 200, 66, 0.55),
-	0 0 2rem 0.6rem rgba(245, 180, 30, 0.25);
-    border-radius: 50%;
-}
-.avatar.avatar-premium::after {
-    content: '👑';
-    position: absolute;
-    bottom: -0.4rem;
-    right: -0.4rem;
-    font-size: 1.3rem;
-    line-height: 1;
-    filter: drop-shadow(0 0.1rem 0.2rem rgba(0,0,0,0.4));
-    pointer-events: none;
+.profile-avatar.avatar-premium:after {
+	position: absolute;
+	content: "";
+	top: -4%;
+	left: -8%;
+	height: 30%;
+	width: 30%;
+background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg enable-background='new 0 0 511.956 511.956' viewBox='0 0 511.956 511.956' xmlns='http://www.w3.org/2000/svg'%3e%3cg%3e%3cg%3e%3cpath d='m122.499 302.887 17.053-136.455 104.482 89.545-66.039 66.515z' fill='%23fabe2c'/%3e%3c/g%3e%3cg%3e%3cpath d='m323.763 325.2-59.272-66.277 107.913-92.49 18.687 149.546z' fill='%23ff9100'/%3e%3c/g%3e%3cpath d='m441.446 232.819-116.635 34.834-54.902-137.241h-13.931-13.931l-54.902 137.241-116.635-34.834-17.549 21.431 74.023 136.728h128.994 128.994l74.023-136.728z' fill='%23fed843'/%3e%3cpath d='m458.995 254.25-17.549-21.431-116.635 34.834-54.902-137.241h-13.931v260.566h128.994z' fill='%23fabe2c'/%3e%3cpath d='m255.978 420.978h-165v30h165 165v-30z' fill='%23fabe2c'/%3e%3cpath d='m255.978 420.978h165v30h-165z' fill='%23ff9100'/%3e%3cpath d='m240.98 300.98h29.997v29.997h-29.997z' fill='%23ffa4ff' transform='matrix(.707 -.707 .707 .707 -148.456 273.552)'/%3e%3cpath d='m255.978 294.767v42.422l21.211-21.211z' fill='%23fa79f4'/%3e%3ccircle cx='255.978' cy='105.978' fill='%23fabe2c' r='45'/%3e%3cpath d='m300.978 105.978c0-24.814-20.186-45-45-45v90c24.814 0 45-20.186 45-45z' fill='%23ff9100'/%3e%3cg%3e%3cpath d='m435.162 257.794c-17.549-17.549-17.549-46.084 0-63.633s46.084-17.549 63.633 0 17.549 46.084 0 63.633c-17.532 17.532-46.084 17.549-63.633 0z' fill='%23ff9100'/%3e%3c/g%3e%3cg%3e%3cpath d='m13.162 257.794c-17.549-17.549-17.549-46.084 0-63.633s46.084-17.549 63.633 0 17.549 46.084 0 63.633c-17.532 17.532-46.084 17.549-63.633 0z' fill='%23fabe2c'/%3e%3c/g%3e%3c/g%3e%3c/svg%3e");background-repeat: no-repeat;
+background-size: contaim;
+filter: drop-shadow(0 0 0.5rem rgba(0,0,0,0.3));
 }
 
-/* Бейдж-корона (опционально) */
-.avatar-premium::after {
-    content: '👑';
-    position: absolute;
-    bottom: -4px;
-    right: -4px;
-    font-size: 13px;
-    line-height: 1;
-    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.4));
-    pointer-events: none;
-}
-}
-/* Premium аватар в публичном профиле */
-div.avatar-premium img,
-div.profile-avatar.avatar-premium img {
-    box-shadow:
-	0 0 0 3px #f5c842,
-	0 0 14px 4px rgba(245, 200, 66, 0.65),
-	0 0 30px 8px rgba(245, 180, 30, 0.3) !important;
-    border-radius: 50% !important;
-    outline: 3px solid #f5c842 !important;
-}
-
-div.avatar-premium::after,
-div.profile-avatar.avatar-premium::after {
-    content: '👑';
-    position: absolute;
-    bottom: -4px;
-    right: -4px;
-    font-size: 1.6rem;
-    line-height: 1;
-    filter: drop-shadow(0 1px 3px rgba(0,0,0,0.6));
-    pointer-events: none;
-}
-
-/* Premium аватар - максимальная специфичность */
-div.profile-avatar.avatar-premium > img.avatar {
-    box-shadow:
-	0 0 0 4px #f5c842,
-	0 0 16px 6px rgba(245, 200, 66, 0.7),
-	0 0 32px 10px rgba(245, 180, 30, 0.35) !important;
-    border-radius: 50% !important;
-}
-
-div.profile-avatar.avatar-premium::after {
-    content: '👑';
-    position: absolute;
-    bottom: 2px;
-    right: 2px;
-    font-size: 2rem;
-    line-height: 1;
-    filter: drop-shadow(0 1px 3px rgba(0,0,0,0.7));
-    pointer-events: none;
-}
-
-/* Premium аватар - через псевдоэлемент ::before */
-div.profile-avatar.avatar-premium {
-    position: relative;
-    display: inline-block;
-}
-div.profile-avatar.avatar-premium::before {
-    content: '';
-    position: absolute;
-    inset: -5px;
-    border-radius: 50%;
-    border: 4px solid #f5c842;
-    box-shadow:
-	0 0 12px 4px rgba(245,200,66,0.8),
-	0 0 25px 8px rgba(245,180,30,0.4),
-	inset 0 0 12px 4px rgba(245,200,66,0.2);
-    z-index: 2;
-    pointer-events: none;
-    animation: premiumPulse 2.5s ease-in-out infinite;
-}
-div.profile-avatar.avatar-premium::after {
-    content: '👑';
-    position: absolute;
-    bottom: -2px;
-    right: -2px;
-    font-size: 2rem;
-    line-height: 1;
-    z-index: 3;
-    filter: drop-shadow(0 1px 3px rgba(0,0,0,0.8));
-    pointer-events: none;
-}
-@keyframes premiumPulse {
-    0%, 100% { box-shadow: 0 0 12px 4px rgba(245,200,66,0.8), 0 0 25px 8px rgba(245,180,30,0.4); }
-    50% { box-shadow: 0 0 20px 8px rgba(245,200,66,1), 0 0 40px 15px rgba(245,180,30,0.6); }
-}
 /* Premium бейдж на карточке пользователя */
 .premium-badge-card {
     display: inline-block;
@@ -4526,8 +4429,7 @@ div.profile-avatar.avatar-premium::after {
 @-webkit-keyframes premiumCardShimmer {
     0% { background-position: 0% center; }
     100% { background-position: 200% center; }
-	}	
-	
+}	
 /* Родитель для меню — relative */
 .card-ramka {
     position: relative;

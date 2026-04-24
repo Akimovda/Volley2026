@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Event;
+use App\Models\League;
 use App\Models\TournamentSeason;
 use App\Models\TournamentLeague;
 use App\Models\TournamentLeagueTeam;
@@ -25,53 +26,42 @@ class TournamentSeasonController extends Controller
 
     public function index(Request $request)
     {
-        $user = $request->user();
-        if (!in_array($user->role, ['organizer', 'admin'])) {
-            abort(403, 'Доступно только организаторам.');
-        }
-
-        if ($user->isAdmin()) {
-            $seasons = \App\Models\TournamentSeason::with('leagues', 'seasonEvents')
-                ->orderByDesc('starts_at')->get();
-        } else {
-            $seasons = $this->seasonService->getByOrganizer($user);
-            $seasons->load('seasonEvents');
-        }
-
-        return view('seasons.index', compact('seasons'));
+        return redirect()->route('leagues.index');
     }
 
     /* ================================================================
      *  Создание сезона — форма
      * ================================================================ */
 
-    public function create(Request $request)
+    public function create(Request $request, League $league)
     {
-        $user = $request->user();
-        if (!in_array($user->role, ['organizer', 'admin'])) {
-            abort(403, 'Доступно только организаторам.');
-        }
-        return view('seasons.create');
+        $this->authorizeLeague($request, $league);
+        return view('seasons.create', compact('league'));
     }
 
     /* ================================================================
      *  Создание сезона — сохранение
      * ================================================================ */
 
-    public function store(Request $request)
+    public function store(Request $request, League $league)
     {
+        $this->authorizeLeague($request, $league);
+
         $validated = $request->validate([
             'name'      => 'required|string|max:255',
-            'direction' => 'required|in:classic,beach',
             'starts_at' => 'nullable|date',
             'ends_at'   => 'nullable|date|after_or_equal:starts_at',
         ]);
+
+        // direction берём из лиги
+        $validated['direction'] = $league->direction;
+        $validated['league_id'] = $league->id;
 
         $season = $this->seasonService->createSeason($request->user(), $validated);
 
         return redirect()
             ->route('seasons.edit', $season)
-            ->with('success', 'Сезон создан. Добавьте лиги.');
+            ->with('success', 'Сезон создан. Добавьте дивизионы.');
     }
 
     /* ================================================================
@@ -308,6 +298,7 @@ class TournamentSeasonController extends Controller
     {
         $season->load([
             'organizer',
+            'league',
             'leagues.activeTeams.team.captain',
             'leagues.activeTeams.team.members.user',
             'leagues.activeTeams.user',
@@ -334,7 +325,7 @@ class TournamentSeasonController extends Controller
     /**
      * Публичная страница по slug.
      */
-    public function showBySlug(string $slug)
+    public function showBySlug(string $leagueSlug, string $slug)
     {
         $season = TournamentSeason::where('slug', $slug)->firstOrFail();
         return $this->show($season);
@@ -350,7 +341,7 @@ class TournamentSeasonController extends Controller
 
         try {
             $this->seasonService->deleteSeason($season);
-            return redirect()->route('seasons.index')->with('success', 'Сезон удалён.');
+            return redirect()->route('leagues.index')->with('success', 'Сезон удалён.');
         } catch (\InvalidArgumentException $e) {
             return back()->with('error', $e->getMessage());
         }
@@ -365,6 +356,14 @@ class TournamentSeasonController extends Controller
         $user = $request->user();
         if ($season->organizer_id !== $user->id && !$user->isAdmin()) {
             abort(403, 'Вы не являетесь организатором этого сезона.');
+        }
+    }
+
+    private function authorizeLeague(Request $request, League $league): void
+    {
+        $user = $request->user();
+        if ($league->organizer_id !== $user->id && !$user->isAdmin()) {
+            abort(403, 'Вы не являетесь владельцем этой лиги.');
         }
     }
 }

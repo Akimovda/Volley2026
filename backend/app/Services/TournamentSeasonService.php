@@ -30,6 +30,7 @@ class TournamentSeasonService
 
         return TournamentSeason::create([
             'organizer_id' => $organizer->id,
+            'league_id'    => $data['league_id'] ?? null,
             'name'         => $data['name'],
             'slug'         => $slug,
             'direction'    => $data['direction'] ?? 'classic',
@@ -45,7 +46,7 @@ class TournamentSeasonService
      */
     public function updateSeason(TournamentSeason $season, array $data): TournamentSeason
     {
-        $fillable = ['name', 'direction', 'starts_at', 'ends_at', 'status', 'config'];
+        $fillable = ['name', 'league_id', 'direction', 'starts_at', 'ends_at', 'status', 'config'];
         $season->update(array_intersect_key($data, array_flip($fillable)));
 
         if (isset($data['slug']) && $data['slug'] !== $season->slug) {
@@ -64,7 +65,7 @@ class TournamentSeasonService
     public function activate(TournamentSeason $season): TournamentSeason
     {
         if ($season->leagues()->count() === 0) {
-            throw new InvalidArgumentException('Создайте хотя бы одну лигу перед активацией.');
+            throw new InvalidArgumentException('Создайте хотя бы один дивизион перед активацией.');
         }
 
         $season->update(['status' => TournamentSeason::STATUS_ACTIVE]);
@@ -90,7 +91,7 @@ class TournamentSeasonService
         ?int $roundNumber = null,
     ): TournamentSeasonEvent {
         if ($league->season_id !== $season->id) {
-            throw new InvalidArgumentException('Лига не принадлежит этому сезону.');
+            throw new InvalidArgumentException('Дивизион не принадлежит этому сезону.');
         }
 
         $roundNumber = $roundNumber ?? ($season->currentRound() + 1);

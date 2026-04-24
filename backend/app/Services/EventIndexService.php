@@ -100,6 +100,17 @@ class EventIndexService
         
         $occQ->orderBy('starts_at', 'asc');
 
+        // Фильтр по городу пользователя (по умолчанию)
+        $cityParam = trim((string) request('city', ''));
+        if ($cityParam !== 'all' && $user && $user->city_id) {
+            $userCityId = (int) $user->city_id;
+            $occQ->whereHas('event', function ($eq) use ($userCityId) {
+                $eq->whereHas('location', function ($lq) use ($userCityId) {
+                    $lq->where('city_id', $userCityId);
+                });
+            });
+        }
+
         // Staff: получаем organizer_id своего организатора
         $staffOrganizerIds = [];
         if ($userId > 0 && $user && in_array($user->role ?? '', ['staff'], true)) {

@@ -33,6 +33,7 @@ use App\Http\Controllers\TournamentController;
 use App\Http\Controllers\TournamentPublicController;
 use App\Http\Controllers\TournamentTvController;
 use App\Http\Controllers\TournamentSeasonController;
+use App\Http\Controllers\LeagueController;
 use App\Http\Controllers\PlayerRatingController;
 use App\Http\Controllers\TeamStatsController;
 	use App\Http\Controllers\ProfileNotificationChannelController;
@@ -753,6 +754,8 @@ Route::middleware([
 ])->group(function () {
     Route::get('/events/{event}/tournament/setup', [TournamentController::class, 'setup'])
         ->name('tournament.setup');
+    Route::post('/events/{event}/tournament/sync-league', [TournamentController::class, 'syncAllTeamsToLeague'])
+        ->name('tournament.syncLeague');
 
     Route::post('/events/{event}/tournament/stages', [TournamentController::class, 'createStage'])
         ->name('tournament.stages.store');
@@ -820,7 +823,7 @@ Route::middleware([
 
 /*
 |--------------------------------------------------------------------------
-| Seasons & Leagues management (AUTH + VERIFIED + RESTRICTED)
+| Leagues & Seasons management (AUTH + VERIFIED + RESTRICTED)
 |--------------------------------------------------------------------------
 */
 Route::middleware([
@@ -829,12 +832,24 @@ Route::middleware([
     'verified',
     'user.restricted',
 ])->group(function () {
-    // Сезоны — CRUD
-    Route::get('/seasons', [TournamentSeasonController::class, 'index'])
-        ->name('seasons.index');
-    Route::get('/seasons/create', [TournamentSeasonController::class, 'create'])
+    // Лиги — CRUD
+    Route::get('/leagues', [LeagueController::class, 'index'])
+        ->name('leagues.index');
+    Route::get('/leagues/create', [LeagueController::class, 'create'])
+        ->name('leagues.create');
+    Route::post('/leagues', [LeagueController::class, 'store'])
+        ->name('leagues.store');
+    Route::get('/leagues/{league}/edit', [LeagueController::class, 'edit'])
+        ->name('leagues.edit');
+    Route::put('/leagues/{league}', [LeagueController::class, 'update'])
+        ->name('leagues.update.league');
+    Route::delete('/leagues/{league}', [LeagueController::class, 'destroy'])
+        ->name('leagues.destroy');
+
+    // Сезоны — CRUD (внутри лиги)
+    Route::get('/leagues/{league}/seasons/create', [TournamentSeasonController::class, 'create'])
         ->name('seasons.create');
-    Route::post('/seasons', [TournamentSeasonController::class, 'store'])
+    Route::post('/leagues/{league}/seasons', [TournamentSeasonController::class, 'store'])
         ->name('seasons.store');
     Route::get('/seasons/{season}/edit', [TournamentSeasonController::class, 'edit'])
         ->name('seasons.edit');
@@ -849,42 +864,57 @@ Route::middleware([
     Route::post('/seasons/{season}/complete', [TournamentSeasonController::class, 'complete'])
         ->name('seasons.complete');
 
-    // Лиги — CRUD
-    Route::post('/seasons/{season}/leagues', [TournamentSeasonController::class, 'storeLeague'])
-        ->name('seasons.leagues.store');
-    Route::put('/leagues/{league}', [TournamentSeasonController::class, 'updateLeague'])
-        ->name('leagues.update');
-    Route::delete('/leagues/{league}', [TournamentSeasonController::class, 'destroyLeague'])
-        ->name('leagues.destroy');
+    // Дивизионы (бывшие "лиги" внутри сезона) — CRUD
+    Route::post('/seasons/{season}/divisions', [TournamentSeasonController::class, 'storeLeague'])
+        ->name('seasons.divisions.store');
+    Route::put('/divisions/{league}', [TournamentSeasonController::class, 'updateLeague'])
+        ->name('divisions.update');
+    Route::delete('/divisions/{league}', [TournamentSeasonController::class, 'destroyLeague'])
+        ->name('divisions.destroy');
 
-    // Команды в лиге
-    Route::post('/leagues/{league}/teams', [TournamentSeasonController::class, 'addTeamToLeague'])
-        ->name('leagues.teams.store');
-    Route::delete('/league-teams/{leagueTeam}', [TournamentSeasonController::class, 'removeTeamFromLeague'])
-        ->name('leagues.teams.destroy');
+    // Команды в дивизионе
+    Route::post('/divisions/{league}/teams', [TournamentSeasonController::class, 'addTeamToLeague'])
+        ->name('divisions.teams.store');
+    Route::delete('/division-teams/{leagueTeam}', [TournamentSeasonController::class, 'removeTeamFromLeague'])
+        ->name('divisions.teams.destroy');
 
-    // Управление статусом команды в лиге
-    Route::post('/league-teams/{leagueTeam}/to-reserve', [TournamentSeasonController::class, 'toReserve'])
-        ->name('league.teams.toReserve');
-    Route::post('/league-teams/{leagueTeam}/activate', [TournamentSeasonController::class, 'activateLeagueTeam'])
-        ->name('league.teams.activate');
+    // Управление статусом команды в дивизионе
+    Route::post('/division-teams/{leagueTeam}/to-reserve', [TournamentSeasonController::class, 'toReserve'])
+        ->name('divisions.teams.toReserve');
+    Route::post('/division-teams/{leagueTeam}/activate', [TournamentSeasonController::class, 'activateLeagueTeam'])
+        ->name('divisions.teams.activate');
 
     // Привязка турниров к сезону
     Route::post('/seasons/{season}/events', [TournamentSeasonController::class, 'attachEvent'])
         ->name('seasons.events.attach');
     Route::delete('/seasons/{season}/events/{event}', [TournamentSeasonController::class, 'detachEvent'])
         ->name('seasons.events.detach');
+
+    // Редирект со старого /seasons
+    Route::get('/seasons', fn() => redirect()->route('leagues.index'))
+        ->name('seasons.index');
 });
 
 /*
 |--------------------------------------------------------------------------
-| Seasons PUBLIC pages
+| Leagues & Seasons PUBLIC pages
 |--------------------------------------------------------------------------
 */
+Route::get('/leagues/all', [LeagueController::class, 'publicIndex'])
+    ->name('leagues.public');
+Route::get('/l/{slug}', [LeagueController::class, 'showBySlug'])
+    ->name('leagues.show.slug');
 Route::get('/seasons/{season}', [TournamentSeasonController::class, 'show'])
     ->name('seasons.show');
-Route::get('/s/{slug}', [TournamentSeasonController::class, 'showBySlug'])
+Route::get('/l/{leagueSlug}/s/{slug}', [TournamentSeasonController::class, 'showBySlug'])
     ->name('seasons.show.slug');
+
+// Редирект со старого формата /s/{slug}
+Route::get('/s/{slug}', function (string $slug) {
+    $season = App\Models\TournamentSeason::where('slug', $slug)->firstOrFail();
+    $leagueSlug = $season->league?->slug ?? 'league';
+    return redirect()->route('seasons.show.slug', [$leagueSlug, $slug], 301);
+})->name('seasons.show.slug.legacy');
 
 
 /*

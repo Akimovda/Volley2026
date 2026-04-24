@@ -233,13 +233,13 @@
 							</td>
 							<td>
 								@if($lt->status === 'active')
-								<form method="POST" action="{{ route('league.teams.toReserve', $lt) }}"
+								<form method="POST" action="{{ route('divisions.teams.toReserve', $lt) }}"
 								onsubmit="return confirm('Перевести в резерв?')" style="display:inline">
 									@csrf
 									<button type="submit" class="league-btn league-btn-danger">В резерв</button>
 								</form>
 								@elseif($lt->status === 'reserve')
-								<form method="POST" action="{{ route('league.teams.activate', $lt) }}"
+								<form method="POST" action="{{ route('divisions.teams.activate', $lt) }}"
 								onsubmit="return confirm('Активировать?')" style="display:inline">
 									@csrf
 									<button type="submit" class="league-btn league-btn-success">Активировать</button>
@@ -630,11 +630,11 @@
 		{{-- MVP турнира --}}
 		@php
 			$allCompleted = $stages->isNotEmpty() && $stages->every(fn($s) => $s->status === 'completed');
-			// Если сезонный турнир с 2+ группами, но дивизионов ещё нет — турнир не завершён
+			// Если сезонный турнир с 2+ группами, но групп Hard/Lite ещё нет — турнир не завершён
 			if ($allCompleted && $event->season_id) {
 				$groupStage = $stages->firstWhere('type', 'round_robin');
 				if ($groupStage && $groupStage->groups->count() >= 2) {
-					$hasDivisions = $stages->contains(fn($s) => str_starts_with($s->name, 'Дивизион'));
+					$hasDivisions = $stages->contains(fn($s) => str_starts_with($s->name, 'Группа '));
 					if (!$hasDivisions) {
 						$allCompleted = false;
 					}
@@ -988,15 +988,15 @@
 			
 			
 			@endif
-			{{-- Продвижение / Дивизионы --}}
+			{{-- Продвижение / Группы --}}
 			@if($stage->isCompleted() && in_array($stage->type, ['round_robin', 'groups_playoff']))
 			
-			{{-- Сезонный турнир → дивизионы --}}
+			{{-- Сезонный турнир → группы Hard/Lite --}}
 			@if($event->season_id && $stage->groups->count() >= 2)
-			@php $hasDivStages = $stages->filter(fn($s) => str_starts_with($s->name, 'Дивизион'))->isNotEmpty(); @endphp
+			@php $hasDivStages = $stages->filter(fn($s) => str_starts_with($s->name, 'Группа '))->isNotEmpty(); @endphp
 			<div class="ramka" style="background:rgba(41,103,186,.04);border:1px solid rgba(41,103,186,.15)">
 				<div class="d-flex between fvc" style="cursor:pointer" onclick="var b=this.nextElementSibling;b.style.display=b.style.display==='none'?'':'none';this.querySelector('.toggle-icon').textContent=b.style.display==='none'?'+':'-'">
-					<h3 class="-mt-05 mb-0">🏆 Формирование дивизионов</h3>
+					<h3 class="-mt-05 mb-0">🏆 Формирование групп</h3>
 					<span class="toggle-icon b-700 f-20">{{ $hasDivStages ? '+' : '-' }}</span>
 				</div>
 				<div style="{{ $hasDivStages ? 'display:none' : '' }}">
@@ -1012,11 +1012,11 @@
 					@endphp
 					
 					<div class="f-13 mb-3" style="color:#6b7280">
-						По результатам группового этапа команды распределяются в {{ count($divisionNames) }} дивизион{{ count($divisionNames) > 2 ? 'а' : '' }}:
+						По результатам группового этапа команды распределяются в {{ count($divisionNames) }} групп{{ count($divisionNames) > 2 ? 'а' : '' }}:
 						<strong>{{ implode(', ', $divisionNames) }}</strong>
 					</div>
 					
-					<form method="POST" action="{{ route('tournament.stages.formDivisions', $stage) }}" onsubmit="return confirm('Сформировать дивизионы? Будут созданы стадии, проведена жеребьёвка и назначены матчи.')">
+					<form method="POST" action="{{ route('tournament.stages.formDivisions', $stage) }}" onsubmit="return confirm('Сформировать группы? Будут созданы стадии, проведена жеребьёвка и назначены матчи.')">
 						@csrf
 						
 						{{-- Ряд 1: Кол-во + форматы --}}
@@ -1041,7 +1041,7 @@
 						{{-- Ряд 2: Жеребьёвка --}}
 						<div class="row mb-3">
 							<div class="col-md-4 mb-2">
-								<label class="f-13 b-600 mb-1 d-block">Жеребьёвка дивизионов</label>
+								<label class="f-13 b-600 mb-1 d-block">Жеребьёвка групп</label>
 								<select name="div_draw_mode" class="f-13" style="width:100%">
 									<option value="seeded">По рейтингу (seed)</option>
 									<option value="random">Случайная</option>
@@ -1052,7 +1052,7 @@
 						{{-- Ряд 3: Площадки --}}
 						@if(count($availCourts) > 0)
 						<div class="mb-3">
-							<label class="f-13 b-600 mb-2 d-block">Площадки для дивизионов</label>
+							<label class="f-13 b-600 mb-2 d-block">Площадки для групп</label>
 							<div class="row">
 								@foreach($divisionNames as $dn)
 								<div class="col-md-{{ (int)(12 / count($divisionNames)) }} mb-2">
@@ -1072,7 +1072,7 @@
 						</div>
 						@endif
 						
-						<button type="submit" class="btn btn-primary">Сформировать дивизионы</button>
+						<button type="submit" class="btn btn-primary">Сформировать группы</button>
 					</form>
 				</div>
 			</div>
@@ -1105,15 +1105,15 @@
 		</div>
 		@endforeach
 		
-		{{-- Промоушен после дивизионов --}}
+		{{-- Промоушен после групп --}}
 		@if($event->season_id && $stages->isNotEmpty())
 		@php
-		$divStages = $stages->filter(fn($s) => str_starts_with($s->name, 'Дивизион'));
+		$divStages = $stages->filter(fn($s) => str_starts_with($s->name, 'Группа '));
 		$allDivsCompleted = $divStages->isNotEmpty() && $divStages->every(fn($s) => $s->status === 'completed');
 		@endphp
 		@if($allDivsCompleted)
 		<div class="ramka" style="background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.2)">
-			<h3 style="margin:0 0 8px">✅ Все дивизионы завершены</h3>
+			<h3 style="margin:0 0 8px">✅ Все группы завершены</h3>
 			<p class="f-14" style="color:#6b7280;margin-bottom:12px">
 				По правилам сезона: все команды Hard остаются, из Lite — top-2 остаются, остальные уходят в резерв.
 				Освободившиеся места заполняются из резерва.

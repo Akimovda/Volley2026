@@ -128,7 +128,7 @@
                 <div class="card mb-4">
                     <div class="card-header d-flex justify-content-between">
                         <strong>Сезоны</strong>
-                        <a href="{{ route('seasons.index') }}" class="f-14">Управление →</a>
+                        <a href="{{ route('leagues.index') }}" class="f-14">Мои лиги →</a>
                     </div>
                     <div class="card-body p-0">
                         <table class="table table-sm mb-0">

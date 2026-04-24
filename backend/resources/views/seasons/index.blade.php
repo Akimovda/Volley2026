@@ -81,7 +81,7 @@
                             @endif
                             <a href="{{ route('seasons.show', $season) }}" class="btn btn-secondary f-13" style="padding:6px 14px">Публичная</a>
                             @if($season->slug)
-                                <a href="{{ route('seasons.show.slug', $season->slug) }}" class="btn btn-secondary f-13" style="padding:6px 14px" title="Публичная ссылка">🔗</a>
+                                <a href="{{ route('seasons.show.slug', [$season->league?->slug ?? 'league', $season->slug]) }}" class="btn btn-secondary f-13" style="padding:6px 14px" title="Публичная ссылка">🔗</a>
                             @endif
                         </div>
                     </div>

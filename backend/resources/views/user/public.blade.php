@@ -207,7 +207,7 @@
 										<li><span class="b-600">Рост:</span> {{ !empty($user->height_cm) ? ($user->height_cm.' см') : '—' }}</li>
 										<li><span class="b-600">Город:</span>
 											@if($user->city)
-											{{ $user->city->name }}@if($user->city->region) ({{ $user->city->region }})@endif
+											{{ $user->city->name }}@if($user->city->region) (<span class="f-16">{{ $user->city->region }}</span>)@endif
 											@else
 											—
 										@endif</li>
@@ -341,28 +341,29 @@
                                 <p class="b-600 mb-1">Классический волейбол</p>
 								
                                 @if(auth()->check() && !$isSelf)
-                                <form method="POST" action="{{ route('user.vote', $user->id) }}" class="mb-2">
+                                <form method="POST" action="{{ route('user.vote', $user->id) }}">
                                     @csrf
                                     <input type="hidden" name="direction" value="classic">
-                                    <div class="d-flex flex-wrap gap-1 mb-1">
+                                    <div class="f-16">
+                                        @if($myClassicVote) Ваша оценка: <strong>{{ $myClassicVote }}</strong> {{ $levelEmojis[$myClassicVote] }}
+                                        @else Выберите уровень: @endif
+									</div>									
+                                    <div class="text-center d-flex flex-wrap gap-1 mb-1 mt-1">
                                         @foreach($levelEmojis as $lvl => $emoji)
                                         <button type="submit" name="level" value="{{ $lvl }}"
 										class="btn btn-small {{ $myClassicVote == $lvl ? '' : 'btn-secondary' }}"
 										title="{{ $lvl }} — {{ level_name($lvl) }}"
-										style="font-size:2rem; padding: 0.2rem 0.6rem; {{ $myClassicVote == $lvl ? 'outline: 2px solid var(--cd)' : '' }}">
+										style="font-size:2rem; padding: 0.6rem; {{ $myClassicVote == $lvl ? 'outline: 2px solid var(--cd)' : '' }}">
                                             {{ $emoji }}
 										</button>
                                         @endforeach
 									</div>
-                                    <div>
-                                        @if($myClassicVote) Ваша оценка: <strong>{{ $myClassicVote }}</strong> {{ $levelEmojis[$myClassicVote] }}
-                                        @else Выберите уровень @endif
-									</div>
+
 								</form>
                                 @elseif($isSelf)
-                                <div class="mb-2">Нельзя оценивать себя</div>
+                                <div class="mb-1">Нельзя оценивать себя</div>
                                 @else
-                                <div class="mb-2"><a href="{{ route('login') }}">Войдите</a> чтобы оценить</div>
+                                <div class="mb-1"><a href="{{ route('login') }}">Войдите</a> чтобы оценить</div>
                                 @endif
 								
                                 {{-- Полоска с указателем --}}
@@ -372,13 +373,13 @@
 								$colorIdx = (int)round($classicAvg);
 								$colorIdx = max(1, min(7, $colorIdx));
                                 @endphp
-                                <div class="mt-2">
-                                    <div class="d-flex between mb-05">
-                                        <span>{{ $classicVotes->count() }} {{ trans_choice('оценка|оценки|оценок', $classicVotes->count()) }}</span>
-                                        <span class="b-600 cd">Средняя: {{ $classicAvg }}</span>
+                                <div class="">
+                                    <div class="d-flex between mb-1 f-16">
+                                        <span><span class="b-600 cd">{{ $classicVotes->count() }}</span> {{ trans_choice('оценка|оценки|оценок', $classicVotes->count()) }}</span>
+                                        <span>Средняя: <span class="b-600 cd">{{ $classicAvg }}</span></span>
 									</div>
                                     {{-- Указатель --}}
-                                    <div style="position:relative; padding-bottom: 0.4rem;">
+                                    <div style="position:relative; padding-bottom: 1rem;">
                                         <div style="position:absolute; left:{{ $pct }}%; transform:translateX(-50%); font-size:1.2rem; bottom:0.2rem; line-height:1">✔️</div>
 									</div>
                                     {{-- Полоска --}}
@@ -401,40 +402,41 @@
                                 <p class="b-600 mb-1">Пляжный волейбол</p>
 								
                                 @if(auth()->check() && !$isSelf)
-                                <form method="POST" action="{{ route('user.vote', $user->id) }}" class="mb-2">
+                                <form method="POST" action="{{ route('user.vote', $user->id) }}">
                                     @csrf
                                     <input type="hidden" name="direction" value="beach">
-                                    <div class="d-flex flex-wrap gap-1 mb-1">
+                                    <div class="f-16">
+                                        @if($myBeachVote) Ваша оценка: <strong>{{ $myBeachVote }}</strong> {{ $levelEmojis[$myBeachVote] }}
+                                        @else Выберите уровень @endif
+									</div>									
+                                    <div class="text-center  d-flex flex-wrap gap-1 mb-1 mt-1">
                                         @foreach($levelEmojis as $lvl => $emoji)
                                         <button type="submit" name="level" value="{{ $lvl }}"
 										class="btn btn-small {{ $myBeachVote == $lvl ? '' : 'btn-secondary' }}"
 										title="{{ $lvl }} — {{ level_name($lvl) }}"
-										style="font-size:2rem; padding: 0.2rem 0.6rem; {{ $myBeachVote == $lvl ? 'outline: 2px solid var(--cd)' : '' }}">
+										style="font-size:2rem; padding: 0.6rem; {{ $myBeachVote == $lvl ? 'outline: 2px solid var(--cd)' : '' }}">
                                             {{ $emoji }}
 										</button>
                                         @endforeach
 									</div>
-                                    <div class="f-14">
-                                        @if($myBeachVote) Ваша оценка: <strong>{{ $myBeachVote }}</strong> {{ $levelEmojis[$myBeachVote] }}
-                                        @else Выберите уровень @endif
-									</div>
+
 								</form>
                                 @elseif($isSelf)
-                                <div class="mb-2">Нельзя оценивать себя</div>
+                                <div class="mb-1">Нельзя оценивать себя</div>
                                 @else
-                                <div class="mb-2"><a href="{{ route('login') }}">Войдите</a> чтобы оценить</div>
+                                <div class="mb-1"><a href="{{ route('login') }}">Войдите</a> чтобы оценить</div>
                                 @endif
 								
                                 @if($beachAvg !== null)
                                 @php
 								$pctB = (($beachAvg - 1) / 6) * 100;
                                 @endphp
-                                <div class="mt-2">
-                                    <div class="d-flex between f-14 mb-05">
-                                        <span>{{ $beachVotes->count() }} {{ trans_choice('оценка|оценки|оценок', $beachVotes->count()) }}</span>
-                                        <span class="b-600 cd">Средняя: {{ $beachAvg }}</span>
+                                <div class="">
+                                    <div class="d-flex between f-16 mb-1">
+                                        <span><span class="b-600 cd">{{ $beachVotes->count() }}</span> {{ trans_choice('оценка|оценки|оценок', $beachVotes->count()) }}</span>
+                                        <span>Средняя: <span class="b-600 cd">{{ $beachAvg }}</span></span>
 									</div>
-                                    <div style="position:relative; padding-bottom: 0.4rem;">
+                                    <div style="position:relative; padding-bottom: 1rem;">
                                         <div style="position:absolute; left:{{ $pctB }}%; transform:translateX(-50%); font-size:1.2rem; bottom:0.2rem; line-height:1">✔️</div>
 									</div>
                                     <div style="display:flex; border-radius:0.6rem; overflow:hidden; height:1.2rem;">
@@ -554,13 +556,13 @@
 
                 {{-- ===== С ВАМИ УДОБНО ИГРАТЬ ===== --}}
                 <div class="ramka">
-                    <div class="d-flex between fvc">
+                    <div class="d-flex between">
                         <h2 class="-mt-05">С 
 							@if($user->gender === 'm') ним
 							@elseif($user->gender === 'f') ней
-							@else — @endif	
+							@else ним(ней) @endif	
 						удобно играть</h2>
-                        <span class="f-16 b-600 cd">{{ $likes->count() }}</span>
+                        <span class="f-16 b-600 cd">{{ $likes->count() }} 💔</span></span>
 					</div>
 					
                     {{-- Аватары лайкнувших --}}
@@ -574,9 +576,9 @@
 						$lkName = trim(($lk->first_name ?? '') . ' ' . ($lk->last_name ?? '')) ?: 'Игрок';
                         @endphp
                         @if($lk)
-                        <a href="{{ $lkUrl }}" title="{{ $lkName }}">
+                        <a class="user-avatar-img-wrapper f-0" href="{{ $lkUrl }}" title="{{ $lkName }}">
                             <img src="{{ $lkPhoto }}" alt="{{ $lkName }}"
-							style="width:4rem;height:4rem;border-radius:50%;object-fit:cover;border:2px solid var(--bg2)">
+							class="user-card-avatar-img">
 						</a>
                         @endif
                         @endforeach
@@ -584,13 +586,13 @@
                     @else
                     <div class="alert alert-info">Пока никто не отметил</div>
                     @endif
-					
+					 <div class="d-flex flex-wrap gap-1 text-center">
                     {{-- Кнопка лайка --}}
                     @if(auth()->check() && !$isSelf)
-                    <form method="POST" action="{{ route('user.like', $user->id) }}">
+                    <form class="d-inline-block mt-1" method="POST" action="{{ route('user.like', $user->id) }}">
                         @csrf
                         <button type="submit" class="btn {{ $iLiked ? '' : 'btn-secondary' }}">
-                            {{ $iLiked ? '💔 Не нравится играть вместе' : '🤍 Нравится играть вместе' }}
+                            {{ $iLiked ? '✅ Нравится играть вместе' : 'Нравится играть вместе' }}
 						</button>
 					</form>
                     @elseif(!auth()->check())
@@ -599,23 +601,21 @@
 					
                     {{-- Кнопка друга --}}
                     @if(auth()->check() && !$isSelf)
-                    <div style="margin-top:1rem;">
                         @if(auth()->user()->isFriendWith($user->id))
-                        <form method="POST" action="{{ route('friends.destroy', $user->id) }}">
+                        <form class="d-inline-block mt-1" method="POST" action="{{ route('friends.destroy', $user->id) }}">
                             @csrf
                             @method('DELETE')
-                            <button class="btn btn-secondary">✅ В друзьях</button>
+                            <button class="btn">✅ В друзьях</button>
 						</form>
                         @else
-                        <form method="POST" action="{{ route('friends.store', $user->id) }}">
+                        <form class="d-inline-block mt-1" method="POST" action="{{ route('friends.store', $user->id) }}">
                             @csrf
-                            <button class="btn">👥 Добавить в друзья</button>
+                            <button class="btn btn-secondary">Добавить в друзья</button>
 						</form>
                         @endif
-					</div>
                     @endif
 				</div>
-				
+				</div>
                 {{-- Contacts --}}
                 <div class="ramka">
                     <div class="card-body">

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Event;
 use App\Models\TournamentSeason;
+use App\Models\League;
 use App\Models\TournamentLeague;
 use App\Models\TournamentSeasonEvent;
 use Illuminate\Support\Str;
@@ -50,20 +51,41 @@ final class TournamentSeasonAutoCreateService
      */
     private function createNew(Event $event, array $data): ?TournamentSeason
     {
-        $leagueName = trim((string) ($data['new_league_name'] ?? 'Основная лига'));
-        if ($leagueName === '') {
-            $leagueName = 'Основная лига';
+        $divisionName = trim((string) ($data['new_league_name'] ?? 'Основной'));
+        if ($divisionName === '') {
+            $divisionName = 'Основной';
         }
 
+        $direction = $event->direction ?? 'classic';
+
+        // 1. League (верхнеуровневая сущность)
+        $leagueName = trim((string) ($data['league_name'] ?? $event->title));
+        $leagueSlug = Str::slug($leagueName);
+        if ($leagueSlug === '') $leagueSlug = 'league';
+        $baseSlug = $leagueSlug;
+        $i = 2;
+        while (League::where('slug', $leagueSlug)->exists()) {
+            $leagueSlug = $baseSlug . '-' . $i++;
+        }
+
+        $topLeague = League::create([
+            'organizer_id' => $event->organizer_id,
+            'name'         => $leagueName,
+            'slug'         => $leagueSlug,
+            'direction'    => $direction,
+            'status'       => League::STATUS_ACTIVE,
+        ]);
+
+        // 2. Season (внутри лиги)
         $seasonName = $event->title . ' — Сезон';
         $slug = Str::slug($seasonName) . '-' . Str::random(6);
 
-        // 1. Season
         $season = TournamentSeason::create([
             'organizer_id' => $event->organizer_id,
+            'league_id'    => $topLeague->id,
             'name'         => $seasonName,
             'slug'         => $slug,
-            'direction'    => $event->direction ?? 'classic',
+            'direction'    => $direction,
             'starts_at'    => $event->starts_at,
             'ends_at'      => $this->estimateEndDate($event),
             'status'       => TournamentSeason::STATUS_ACTIVE,
@@ -73,12 +95,12 @@ final class TournamentSeasonAutoCreateService
             ],
         ]);
 
-        // 2. League
+        // 3. Division (бывшая "лига" внутри сезона)
         $maxTeams = (int) ($data['tournament_teams_count'] ?? $event->tournament_teams_count ?? 4);
 
         $league = TournamentLeague::create([
             'season_id'  => $season->id,
-            'name'       => $leagueName,
+            'name'       => $divisionName,
             'level'      => 1,
             'sort_order' => 1,
             'max_teams'  => $maxTeams > 0 ? $maxTeams : null,
@@ -92,11 +114,12 @@ final class TournamentSeasonAutoCreateService
         $event->season_id = $season->id;
         $event->saveQuietly();
 
-        Log::info('TournamentSeasonAutoCreate: new season', [
-            'event_id'    => $event->id,
-            'season_id'   => $season->id,
-            'league_id'   => $league->id,
-            'league_name' => $leagueName,
+        Log::info('TournamentSeasonAutoCreate: new league+season', [
+            'event_id'      => $event->id,
+            'league_id'     => $topLeague->id,
+            'season_id'     => $season->id,
+            'division_id'   => $league->id,
+            'division_name' => $divisionName,
         ]);
 
         return $season;
