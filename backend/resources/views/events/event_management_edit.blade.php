@@ -138,7 +138,7 @@
                                 <input
                                     name="starts_at"
                                     type="datetime-local"
-                                    value="{{ old('starts_at', $event->starts_at ? $event->starts_at->copy()->format('Y-m-d\TH:i') : '') }}"
+                                    value="{{ old('starts_at', $event->starts_at ? $event->starts_at->copy()->setTimezone($event->timezone ?? 'UTC')->format('Y-m-d\TH:i') : '') }}"
                                     required
                                 >
                                 @error('starts_at')
@@ -688,7 +688,7 @@
                         <div class="col-md-12">
                             <div class="card">
                                 <input id="description_html_edit" type="hidden" name="description_html"
-                                    value="{{ old('description_html', $event->description?->html ?? '') }}">
+                                    value="{{ old('description_html', $event->description_html ?? '') }}">
                                 <trix-editor input="description_html_edit" class="trix-content"></trix-editor>
                                 @error('description_html')
                                     <div class="text-red-600 text-sm mt-2">{{ $message }}</div>
