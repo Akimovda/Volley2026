@@ -1,20 +1,26 @@
 {{--
     Partial: events._partials.team_config
 
-    Блок "Команды и игровая схема" для occurrence_edit: число команд (teams_count)
-    и radio-выбор подтипа схемы (subtype).
+    Блок "Команды и игровая схема" для occurrence_edit:
+    - Количество команд (teams_count) — number
+    - Подтип схемы (subtype) — select с опциями по direction события
 
     Expects in scope:
-      - $event          (Event)        — для direction (человекочитаемый лейбл)
-      - $subtypes       (iterable<string>) — список доступных схем для direction
-                                             (формируется в контроллере)
-      - $teamsCountVal  (int)          — значение teams_count с override-логикой
-      - $subtypeVal     (string|null)  — значение subtype с override-логикой
+      - $event          (Event)  — для direction (отображаемый лейбл)
+      - $subtypes       (array)  — ключи доступных схем для direction серии
+                                    (из config("volleyball.{direction}"))
+      - $teamsCountVal  (int)
+      - $subtypeVal     (string|null)
 
-    Примечание: min_players живёт в соседнем блоке location_players, т.к. он
-    про порог отмены, а не про конфигурацию команд. Это сознательно — UI на
-    странице именно такой, блоки не сливаются.
+    Примечание: значение унаследовано от настроек серии ($gs), но можно
+    поменять — тогда сохранится override в event_occurrence_game_settings.
 --}}
+@php
+$subtypeLabels = [
+    '2x2' => '2×2', '3x3' => '3×3', '4x4' => '4×4',
+    '4x2' => '4×2', '5x1' => '5×1', '5x1_libero' => '5×1 с либеро',
+];
+@endphp
 <div class="ramka">
     <h2 class="-mt-05">Команды и игровая схема</h2>
     <div class="row">
@@ -31,18 +37,12 @@
         <div class="col-md-8">
             <div class="card">
                 <label>Игровая схема (подтип)</label>
-                <div class="f-13" style="margin-bottom:.5rem">Доступные схемы для {{ direction_name($event->direction) }}:</div>
-                <div class="row">
+                <select name="subtype" id="occ_subtype" class="w-full rounded-lg border-gray-200">
                     @foreach($subtypes as $st)
-                    <div class="col-md-4">
-                        <label class="radio-item">
-                            <input type="radio" name="subtype" value="{{ $st }}" @checked(old('subtype', $subtypeVal) === $st)>
-                            <div class="custom-radio"></div>
-                            <span>{{ $st }}</span>
-                        </label>
-                    </div>
+                        <option value="{{ $st }}" @selected(old('subtype', $subtypeVal) === $st)>{{ $subtypeLabels[$st] ?? $st }}</option>
                     @endforeach
-                </div>
+                </select>
+                <div class="f-13" style="margin-top:.25rem;opacity:.7">Доступные схемы для {{ direction_name($event->direction) }}</div>
             </div>
         </div>
     </div>

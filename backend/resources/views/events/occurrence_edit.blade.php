@@ -85,7 +85,7 @@
     $subtypeVal = $gs->subtype ?? null;
     $teamsCountVal = $gs->teams_count ?? 2;
     $minPlayersVal = $gs->min_players ?? null;
-    $genderPolicyVal = $gs->gender_policy ?? 'any';
+    $genderPolicyVal = $gs->gender_policy ?? 'mixed_open';
     $genderLimitedSideVal = $gs->gender_limited_side ?? null;
     $genderLimitedMaxVal = $gs->gender_limited_max ?? null;
     $girlsMaxVal = $gs->girls_max ?? null;
@@ -157,20 +157,8 @@
             {{-- ============ ОПЛАТА ============ --}}
             @include('events._partials.payment')
 
-            {{-- ============ ВОЗВРАТ ============ --}}
-            @include('events._partials.refund')
-
             {{-- ============ ТРЕНЕР ============ --}}
             @include('events._partials.trainer')
-
-            {{-- ============ ПЕРСОНАЛЬНЫЕ ДАННЫЕ ============ --}}
-            @include('events._partials.personal_data')
-
-            {{-- ============ РЕГИСТРАЦИЯ ============ --}}
-            @include('events._partials.registration')
-
-            {{-- ============ НАПОМИНАНИЕ ============ --}}
-            @include('events._partials.reminder')
 
             {{-- ============ КНОПКИ ============ --}}
             <div class="ramka">
@@ -184,6 +172,7 @@
     </div>
 
     <x-slot name="script">
+    <script src="/js/occurrence-edit.js?v={{ time() }}"></script>
     <script src="/assets/trix.js?v={{ time() }}"></script>
     <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -207,21 +196,24 @@
 
         // ===== Платное/бесплатное — показ блока оплаты =====
         var isPaid = document.getElementById('occ_is_paid');
-        var payBlock = document.getElementById('occ_payment_block');
-        if (isPaid && payBlock) {
+        var priceWrap = document.getElementById('occ_price_wrap');
+        if (isPaid && priceWrap) {
             isPaid.addEventListener('change', function() {
-                payBlock.style.display = this.checked ? '' : 'none';
+                priceWrap.style.display = this.checked ? '' : 'none';
             });
         }
 
         // ===== Возрастная политика — показ полей возраста детей =====
-        var agePol = document.getElementById('occ_age_policy');
-        var childRow = document.getElementById('occ_child_age_row');
-        if (agePol && childRow) {
-            agePol.addEventListener('change', function() {
-                childRow.style.display = this.value === 'child' ? '' : 'none';
+        // В level_age partial используются radio[name="age_policy"] и id="occ_child_age_wrap".
+        var childWrap = document.getElementById('occ_child_age_wrap');
+        document.querySelectorAll('input[name="age_policy"]').forEach(function(r) {
+            r.addEventListener('change', function() {
+                if (childWrap) {
+                    if (this.value === 'child') childWrap.classList.remove('hidden');
+                    else childWrap.classList.add('hidden');
+                }
             });
-        }
+        });
 
         // ===== Гендерная политика — показ блока лимитов =====
         var genderLimitedWrap = document.getElementById('gender_limited_wrap');

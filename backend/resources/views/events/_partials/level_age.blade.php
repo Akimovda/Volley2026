@@ -1,26 +1,21 @@
 {{--
     Partial: events._partials.level_age
 
-    Блок "Уровень и возраст" для occurrence_edit: уровень игры
-    (beach_level_min/max для пляжа или classic_level_min/max для классики),
-    возрастная политика (adult/child/any) и свёрнутый подблок возраста детей.
+    Блок "Уровень и возраст" для occurrence_edit:
+    - Уровни (beach или classic по direction) — select
+    - Возрастная политика — radio (синхрон с create step1)
+    - Возраст детей (6-17) — при age_policy=child
 
     Expects in scope:
-      - $event       (Event)  — для direction (beach vs classic ветка)
-      - $occurrence  (EventOccurrence)  — для override значений уровней
-      - $agePolicy   (string) — adult|child|any с override-логикой
-      - $childMin    (int|null) — возраст детей min с override-логикой
-      - $childMax    (int|null) — возраст детей max с override-логикой
+      - $event       (Event)   — для direction
+      - $occurrence  (EventOccurrence)
+      - $agePolicy   (string)  — adult|child|any
+      - $childMin    (int|null)
+      - $childMax    (int|null)
 
-    Зависимости в shared JS (живёт в самом occurrence_edit.blade.php):
-      - id "occ_age_policy"    — селект возрастной политики
-      - id "occ_child_age_row" — row с child_age_min/max, показывается
-                                 при age_policy === 'child'
-    Эти id ТРОГАТЬ НЕЛЬЗЯ — на них завязан обработчик change.
-
-    Примечание: уровни (beach_level_* / classic_level_*) читаются напрямую
-    через $occurrence->X ?? $event->X, а не через @php-переменную, —
-    копируем поведение исходного шаблона 1:1.
+    JS (в occurrence_edit): child_age_wrap показывается при age_policy=child.
+    В create использовались radio + JS applyShowIf, здесь inline style
+    на wrap по старой схеме.
 --}}
 <div class="ramka">
     <h2 class="-mt-05">Уровень и возраст</h2>
@@ -73,30 +68,38 @@
         </div>
         @endif
 
-        <div class="col-md-3">
+        <div class="col-md-6">
             <div class="card">
-                <label>Возрастная политика</label>
-                <select name="age_policy" id="occ_age_policy">
-                    <option value="adult" @selected(old('age_policy', $agePolicy) === 'adult')>Взрослые</option>
-                    <option value="child" @selected(old('age_policy', $agePolicy) === 'child')>Дети</option>
-                    <option value="any" @selected(old('age_policy', $agePolicy) === 'any')>Все</option>
-                </select>
-            </div>
-        </div>
-    </div>
+                <label>Возрастные ограничения</label>
+                <label class="radio-item">
+                    <input type="radio" name="age_policy" value="adult" @checked(old('age_policy', $agePolicy) === 'adult')>
+                    <div class="custom-radio"></div>
+                    <span>Для взрослых</span>
+                </label>
+                <label class="radio-item">
+                    <input type="radio" name="age_policy" value="child" @checked(old('age_policy', $agePolicy) === 'child')>
+                    <div class="custom-radio"></div>
+                    <span>Для детей</span>
+                </label>
+                <label class="radio-item">
+                    <input type="radio" name="age_policy" value="any" @checked(old('age_policy', $agePolicy) === 'any')>
+                    <div class="custom-radio"></div>
+                    <span>Без ограничений</span>
+                </label>
 
-    {{-- Возраст детей (только если age_policy = child) --}}
-    <div class="row" id="occ_child_age_row" style="{{ old('age_policy', $agePolicy) === 'child' ? '' : 'display:none' }}">
-        <div class="col-md-3">
-            <div class="card">
-                <label>Возраст детей: от</label>
-                <input type="number" name="child_age_min" min="3" max="18" value="{{ old('child_age_min', $childMin) }}">
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card">
-                <label>до</label>
-                <input type="number" name="child_age_max" min="3" max="18" value="{{ old('child_age_max', $childMax) }}">
+                <div id="occ_child_age_wrap" class="mt-1 {{ old('age_policy', $agePolicy) === 'child' ? '' : 'hidden' }}">
+                    <div class="row">
+                        <div class="col-6">
+                            <label>Возраст от</label>
+                            <input type="number" name="child_age_min" min="6" max="17" value="{{ old('child_age_min', $childMin ?: 6) }}">
+                        </div>
+                        <div class="col-6">
+                            <label>до</label>
+                            <input type="number" name="child_age_max" min="6" max="17" value="{{ old('child_age_max', $childMax ?: 17) }}">
+                        </div>
+                    </div>
+                    <div class="f-13" style="margin-top:.25rem;opacity:.7">Допустимый возраст: от 6 до 17 лет</div>
+                </div>
             </div>
         </div>
     </div>
