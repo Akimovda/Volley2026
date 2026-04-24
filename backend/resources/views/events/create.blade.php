@@ -1188,7 +1188,7 @@ if ($initialStep < 1 || $initialStep > 3) {
 										@endphp
 										
 										<input type="datetime-local"
-										name="starts_at_local"
+										name="starts_at_local" id="starts_at_local"
 										value="{{ old('starts_at_local', $defaultDate) }}"
 										min="{{ $minDate }}"
 										max="{{ $maxDate }}">
@@ -1377,22 +1377,56 @@ if ($initialStep < 1 || $initialStep > 3) {
 										<div class="row">
 											<div class="col-sm-4">
 												<label>Начало регистрации</label>
-												<select name="reg_starts_days_before" id="reg_starts_days_before">
+												<input type="hidden" name="reg_starts_days_before" id="reg_starts_days_before" value="{{ $oldRegStartsDaysBefore }}">
+												<div class="d-flex" style="gap:.5rem;align-items:center">
+												<select id="reg_starts_days_sel" style="width:auto">
 													@for ($d = 0; $d <= 90; $d++)
-														<option value="{{ $d }}" 
-															@selected($oldRegStartsDaysBefore == $d)>
-															{{ $d }}
-														</option>
+														<option value="{{ $d }}" @selected($oldRegStartsDaysBefore == $d)>{{ $d }} д</option>
 													@endfor
 												</select>
-												
+												<select id="reg_starts_hours_sel" style="width:auto">
+													@for ($h = 0; $h <= 23; $h++)
+														<option value="{{ $h }}" @selected(0 == $h)>{{ $h }} ч</option>
+													@endfor
+												</select>
+												</div>
 												<ul class="list f-16 mt-1">
-													<li class="b-600">Дней до</li>
+													<li>До начала мероприятия.</li>
 													<li>По умолчанию: 3 дня.</li>
-												</ul>													
-												<div class="text-xs text-gray-500 mt-1"></div>
+												</ul>
+												<div id="reg_starts_hint" class="f-13 mt-1 b-600" style="color:var(--green)"></div>
+												<script>
+												document.addEventListener('DOMContentLoaded', function() {
+													var daysSel = document.getElementById('reg_starts_days_sel');
+													var hoursSel = document.getElementById('reg_starts_hours_sel');
+													var hidden = document.getElementById('reg_starts_days_before');
+													var hint = document.getElementById('reg_starts_hint');
+													var startsInput = document.getElementById('starts_at_local');
+													function syncRegStarts() {
+														var d = parseInt(daysSel.value || 0);
+														var h = parseInt(hoursSel.value || 0);
+														hidden.value = d;
+														if (startsInput && startsInput.value) {
+															try {
+																var start = new Date(startsInput.value);
+																start.setDate(start.getDate() - d);
+																start.setHours(start.getHours() - h);
+																var days = ['вс','пн','вт','ср','чт','пт','сб'];
+																var dd = String(start.getDate()).padStart(2,'0');
+																var mm = String(start.getMonth()+1).padStart(2,'0');
+																var hh = String(start.getHours()).padStart(2,'0');
+																var mi = String(start.getMinutes()).padStart(2,'0');
+																hint.textContent = 'Регистрация начнется: ' + dd + '.' + mm + ' ' + days[start.getDay()] + '. в ' + hh + ':' + mi;
+															} catch(e) { hint.textContent = ''; }
+														}
+													}
+													daysSel.addEventListener('change', syncRegStarts);
+													hoursSel.addEventListener('change', syncRegStarts);
+													if (startsInput) startsInput.addEventListener('change', syncRegStarts);
+													syncRegStarts();
+												});
+												</script>
 											</div>
-											
 											<div class="col-sm-4">
 												<label>Окончание регистрации</label>
 												<input type="hidden" name="reg_ends_minutes_before" id="reg_ends_minutes_before" value="{{ $oldRegEndsMinutesBefore }}">
