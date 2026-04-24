@@ -270,6 +270,10 @@ if ($role === 'admin') {
             abort(404);
         }
 
+        // Eager-load настройки игры с обеих сторон
+        $event->loadMissing('gameSettings');
+        $occurrence->loadMissing('gameSettingsOverride');
+
         $tz = $event->timezone ?: 'UTC';
         $startsLocal = $occurrence->starts_at
             ? \Carbon\Carbon::parse($occurrence->starts_at, 'UTC')->setTimezone($tz)->format('Y-m-d\TH:i')
@@ -278,9 +282,20 @@ if ($role === 'admin') {
         $locations = \App\Models\Location::orderBy('name')
             ->get(['id', 'name', 'address', 'city_id']);
 
-        return view('events.occurrence_edit', compact('event', 'occurrence', 'startsLocal', 'tz', 'locations'));
+        // Доступные подтипы для direction
+        $direction = $event->direction ?: 'classic';
+        $subtypes = array_keys(config("volleyball.{$direction}", []));
+
+        // Эффективные игровые настройки (override ?? event ?? defaults)
+        $gs = $occurrence->effectiveGameSettings();
+
+        return view('events.occurrence_edit', compact(
+            'event', 'occurrence', 'startsLocal', 'tz', 'locations',
+            'subtypes', 'gs'
+        ));
     }
 
+    
     public function updateOccurrence(Request $request, Event $event, \App\Models\EventOccurrence $occurrence)
     {
         $user = $request->user();
@@ -298,23 +313,55 @@ if ($role === 'admin') {
         }
 
         $data = $request->validate([
+            'title'                            => 'nullable|string|max:255',
+            'description_html'                 => 'nullable|string|max:65535',
+
             'starts_at_local'                  => 'required|date',
             'duration_hours'                   => 'nullable|integer|min:0|max:23',
             'duration_minutes'                 => 'nullable|integer|min:0|max:59',
             'location_id'                      => 'nullable|integer|exists:locations,id',
-            'max_players'                      => 'nullable|integer|min:0',
+            'show_participants'                => 'sometimes|boolean',
+
             'allow_registration'               => 'sometimes|boolean',
             'reg_starts_days_before'           => 'nullable|integer|min:0|max:365',
             'reg_ends_minutes_before'          => 'nullable|integer|min:0|max:10080',
             'cancel_lock_minutes_before'       => 'nullable|integer|min:0|max:10080',
             'remind_registration_enabled'      => 'sometimes|boolean',
-            'remind_registration_minutes_before' => 'nullable|integer|min:0',
-            'show_participants'                => 'sometimes|boolean',
+            'remind_registration_minutes_before' => 'nullable|integer|min:0|max:10080',
+
             'classic_level_min'                => 'nullable|integer|min:1|max:10',
             'classic_level_max'                => 'nullable|integer|min:1|max:10',
             'beach_level_min'                  => 'nullable|integer|min:1|max:10',
             'beach_level_max'                  => 'nullable|integer|min:1|max:10',
             'age_policy'                       => 'nullable|string|in:adult,child,any',
+            'child_age_min'                    => 'nullable|integer|min:3|max:18',
+            'child_age_max'                    => 'nullable|integer|min:3|max:18',
+
+            // ===== Игровая схема =====
+            'subtype'                          => 'nullable|string|max:10',
+            'teams_count'                      => 'nullable|integer|min:2|max:16',
+            'min_players'                      => 'nullable|integer|min:0|max:100',
+
+            // ===== Гендер =====
+            'gender_policy'                    => 'nullable|string|in:any,men_only,women_only,women_limited',
+            'girls_max'                        => 'nullable|integer|min:0|max:20',
+            'gender_limited_max'               => 'nullable|integer|min:0|max:10',
+            'gender_limited_side'              => 'nullable|string|in:women,men',
+
+            // ===== Оплата =====
+            'is_paid'                          => 'sometimes|boolean',
+            'price_rub'                        => 'nullable|numeric|min:0',
+            'price_currency'                   => 'nullable|string|max:3',
+            'price_text'                       => 'nullable|string|max:255',
+            'payment_method'                   => 'nullable|string|max:30',
+            'payment_link'                     => 'nullable|string|max:500',
+
+            'refund_hours_full'                => 'nullable|integer|min:0|max:720',
+            'refund_hours_partial'             => 'nullable|integer|min:0|max:720',
+            'refund_partial_pct'               => 'nullable|integer|min:0|max:100',
+
+            'trainer_user_id'                  => 'nullable|integer|exists:users,id',
+            'requires_personal_data'           => 'sometimes|boolean',
         ]);
 
         $tz = $event->timezone ?: 'UTC';
@@ -326,22 +373,79 @@ if ($role === 'admin') {
             $durationSec = $occurrence->duration_sec ?: ($event->duration_sec ?: 7200);
         }
 
+        // Хелпер: override-логика (NULL если совпадает с event, значение если отличается)
+        $override = function ($value, $eventValue) {
+            if ($value === null || $value === '') return null;
+            if (is_bool($eventValue) || is_bool($value)) {
+                return ((bool)$value) === ((bool)$eventValue) ? null : (bool)$value;
+            }
+            if (is_numeric($eventValue) && is_numeric($value)) {
+                return ((float)$value) == ((float)$eventValue) ? null : $value;
+            }
+            return (string)$value === (string)$eventValue ? null : $value;
+        };
+
+        // ===== Основные поля =====
+        $occurrence->starts_at = $startsUtc;
+        $occurrence->duration_sec = $durationSec;
+        $occurrence->location_id = $data['location_id'] ?? $event->location_id;
+
+        // ===== Название и описание (override) =====
+        $occurrence->title = $override($data['title'] ?? null, $event->title);
+        $occurrence->description_html = $override($data['description_html'] ?? null, $event->description_html);
+
+        // ===== Показ участников (override) =====
+        $occurrence->show_participants = $override(
+            (bool) ($data['show_participants'] ?? false),
+            (bool) ($event->show_participants ?? true)
+        );
+
+        // ===== Уровни и возраст (override) =====
+        $occurrence->classic_level_min = $override($data['classic_level_min'] ?? null, $event->classic_level_min);
+        $occurrence->classic_level_max = $override($data['classic_level_max'] ?? null, $event->classic_level_max);
+        $occurrence->beach_level_min = $override($data['beach_level_min'] ?? null, $event->beach_level_min);
+        $occurrence->beach_level_max = $override($data['beach_level_max'] ?? null, $event->beach_level_max);
+        $occurrence->age_policy = $override($data['age_policy'] ?? null, $event->age_policy ?? 'adult');
+        $occurrence->child_age_min = $override($data['child_age_min'] ?? null, $event->child_age_min ?? null);
+        $occurrence->child_age_max = $override($data['child_age_max'] ?? null, $event->child_age_max ?? null);
+
+        // ===== Оплата (override) =====
+        $isPaidInput = (bool) ($data['is_paid'] ?? false);
+        $occurrence->is_paid = $override($isPaidInput, (bool) ($event->is_paid ?? false));
+
+        $priceMinorInput = isset($data['price_rub']) && $data['price_rub'] !== null && $data['price_rub'] !== ''
+            ? (int) round(((float) $data['price_rub']) * 100)
+            : null;
+        $occurrence->price_minor = $override($priceMinorInput, $event->price_minor ?? null);
+        $occurrence->price_currency = $override($data['price_currency'] ?? null, $event->price_currency ?? 'RUB');
+        $occurrence->price_text = $override($data['price_text'] ?? null, $event->price_text ?? null);
+        $occurrence->payment_method = $override($data['payment_method'] ?? null, $event->payment_method ?? null);
+        $occurrence->payment_link = $override($data['payment_link'] ?? null, $event->payment_link ?? null);
+
+        // ===== Возврат (override) =====
+        $occurrence->refund_hours_full = $override($data['refund_hours_full'] ?? null, $event->refund_hours_full ?? null);
+        $occurrence->refund_hours_partial = $override($data['refund_hours_partial'] ?? null, $event->refund_hours_partial ?? null);
+        $occurrence->refund_partial_pct = $override($data['refund_partial_pct'] ?? null, $event->refund_partial_pct ?? null);
+
+        // ===== Тренер (override) =====
+        $occurrence->trainer_user_id = $override(
+            !empty($data['trainer_user_id']) ? (int) $data['trainer_user_id'] : null,
+            $event->trainer_user_id ?? null
+        );
+
+        // ===== Персональные данные (override) =====
+        $occurrence->requires_personal_data = $override(
+            (bool) ($data['requires_personal_data'] ?? false),
+            (bool) ($event->requires_personal_data ?? false)
+        );
+
+        // ===== Регистрация =====
         $allowReg = (bool) ($data['allow_registration'] ?? false);
         $daysBefore = (int) ($data['reg_starts_days_before'] ?? 3);
         $endsMinBefore = (int) ($data['reg_ends_minutes_before'] ?? 15);
         $cancelMinBefore = (int) ($data['cancel_lock_minutes_before'] ?? 60);
 
-        $occurrence->starts_at = $startsUtc;
-        $occurrence->duration_sec = $durationSec;
-        $occurrence->location_id = $data['location_id'] ?? $event->location_id;
-        $occurrence->max_players = $data['max_players'] ?? null;
         $occurrence->allow_registration = $allowReg;
-        $occurrence->show_participants = (bool) ($data['show_participants'] ?? false);
-        $occurrence->classic_level_min = $data['classic_level_min'] ?? null;
-        $occurrence->classic_level_max = $data['classic_level_max'] ?? null;
-        $occurrence->beach_level_min = $data['beach_level_min'] ?? null;
-        $occurrence->beach_level_max = $data['beach_level_max'] ?? null;
-        $occurrence->age_policy = $data['age_policy'] ?? 'adult';
         $occurrence->remind_registration_enabled = (bool) ($data['remind_registration_enabled'] ?? false);
         $occurrence->remind_registration_minutes_before = $data['remind_registration_minutes_before'] ?? null;
 
@@ -353,11 +457,39 @@ if ($role === 'admin') {
 
         $occurrence->save();
 
+        // =============================================================
+        // ===== ИГРОВЫЕ НАСТРОЙКИ (event_occurrence_game_settings) =====
+        // =============================================================
+        $eventGs = $event->gameSettings;  // текущие настройки серии
+
+        $gsOverride = [
+            'subtype'             => $override($data['subtype'] ?? null, $eventGs?->subtype),
+            'teams_count'         => $override(isset($data['teams_count']) ? (int)$data['teams_count'] : null, $eventGs?->teams_count),
+            'min_players'         => $override(isset($data['min_players']) && $data['min_players'] !== '' ? (int)$data['min_players'] : null, $eventGs?->min_players),
+            'gender_policy'       => $override($data['gender_policy'] ?? null, $eventGs?->gender_policy),
+            'girls_max'           => $override(isset($data['girls_max']) && $data['girls_max'] !== '' ? (int)$data['girls_max'] : null, $eventGs?->girls_max),
+            'gender_limited_max'  => $override(isset($data['gender_limited_max']) && $data['gender_limited_max'] !== '' ? (int)$data['gender_limited_max'] : null, $eventGs?->gender_limited_max),
+            'gender_limited_side' => $override($data['gender_limited_side'] ?? null, $eventGs?->gender_limited_side),
+        ];
+
+        // Если все override-значения NULL — удаляем запись override (нет смысла держать пустую)
+        $hasAnyOverride = collect($gsOverride)->contains(fn($v) => $v !== null);
+
+        if ($hasAnyOverride) {
+            \App\Models\EventOccurrenceGameSetting::updateOrCreate(
+                ['occurrence_id' => $occurrence->id],
+                $gsOverride
+            );
+        } else {
+            \App\Models\EventOccurrenceGameSetting::where('occurrence_id', $occurrence->id)->delete();
+        }
+
         return redirect()
             ->to(route('events.show', $event) . '?occurrence=' . $occurrence->id)
             ->with('status', 'Настройки даты обновлены.');
     }
 
+    
     public function update(Request $request, Event $event)
     {
         $user = $request->user();

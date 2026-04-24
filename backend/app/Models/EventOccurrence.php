@@ -14,33 +14,57 @@ class EventOccurrence extends Model
     protected $table = 'event_occurrences';
 
     protected $fillable = [
-            'event_id',
-            'starts_at',
-            'duration_sec',
-            'timezone',
-            'is_cancelled',
-            'cancelled_at',
-            'uniq_key',
-        
-            'location_id',
-            'allow_registration',
-            'max_players',
-        
-            'classic_level_min',
-            'classic_level_max',
-            'beach_level_min',
-            'beach_level_max',
-        
-            'registration_starts_at',
-            'registration_ends_at',
-            'cancel_self_until',
-        
-            'age_policy',
-            'is_snow',
+        'event_id',
+        'title',
+        'description_html',
+        'starts_at',
+        'duration_sec',
+        'timezone',
+        'is_cancelled',
+        'cancelled_at',
+        'uniq_key',
+
+        'location_id',
+        'allow_registration',
+        'max_players',
+        'show_participants',
+
+        'classic_level_min',
+        'classic_level_max',
+        'beach_level_min',
+        'beach_level_max',
+
+        'registration_starts_at',
+        'registration_ends_at',
+        'cancel_self_until',
+
+        'remind_registration_enabled',
+        'remind_registration_minutes_before',
+
+        'age_policy',
+        'child_age_min',
+        'child_age_max',
+        'is_snow',
+
+        // payment
+        'is_paid',
+        'price_minor',
+        'price_currency',
+        'price_text',
+        'payment_method',
+        'payment_link',
+
+        // refund
+        'refund_hours_full',
+        'refund_hours_partial',
+        'refund_partial_pct',
+
+        // misc
+        'trainer_user_id',
+        'requires_personal_data',
     ];
 
     protected $casts = [
-
         // starts_at всегда в UTC в БД
         'starts_at' => 'datetime',
         'duration_sec' => 'integer',
@@ -60,12 +84,64 @@ class EventOccurrence extends Model
         'registration_starts_at' => 'datetime',
         'registration_ends_at' => 'datetime',
         'cancel_self_until' => 'datetime',
-        
+
         'age_policy' => 'string',
+        'child_age_min' => 'integer',
+        'child_age_max' => 'integer',
         'is_snow' => 'boolean',
+
+        'show_participants' => 'boolean',
+        'remind_registration_enabled' => 'boolean',
+        'remind_registration_minutes_before' => 'integer',
+
+        'is_paid' => 'boolean',
+        'price_minor' => 'integer',
+        'refund_hours_full' => 'integer',
+        'refund_hours_partial' => 'integer',
+        'refund_partial_pct' => 'integer',
+        'trainer_user_id' => 'integer',
+        'requires_personal_data' => 'boolean',
     ];
     /* ===================== Teams ===================== */
-     public function teams()
+     /**
+     * Override игровых настроек per-occurrence.
+     * hasOne: запись либо есть (override), либо нет (наследуем от event_game_settings).
+     */
+    public function gameSettingsOverride()
+    {
+        return $this->hasOne(\App\Models\EventOccurrenceGameSetting::class, 'occurrence_id');
+    }
+
+    /**
+     * Эффективные игровые настройки (override → fallback на event).
+     * Возвращает объект с полями subtype, teams_count, min_players, max_players и т.д.
+     * Значения override имеют приоритет, NULL поля override наследуются от event_game_settings.
+     */
+    public function effectiveGameSettings(): object
+    {
+        $override = $this->gameSettingsOverride;
+        $eventSettings = $this->event?->gameSettings;
+
+        $fields = [
+            'subtype', 'teams_count', 'libero_mode',
+            'min_players', 'max_players', 'positions',
+            'gender_policy', 'gender_limited_side', 'gender_limited_max',
+            'gender_limited_positions', 'gender_limited_reg_starts_days_before',
+            'allow_girls', 'girls_max',
+        ];
+
+        $result = [];
+        foreach ($fields as $field) {
+            $overrideValue = $override?->{$field};
+            $result[$field] = ($overrideValue !== null)
+                ? $overrideValue
+                : ($eventSettings?->{$field} ?? null);
+        }
+
+        return (object) $result;
+    }
+
+    public function teams()
         {
             return $this->hasMany(\App\Models\EventTeam::class, 'occurrence_id');
         }
