@@ -2157,7 +2157,7 @@ if ($initialStep < 1 || $initialStep > 3) {
                                                         id="remind_hours_input"
                                                         class="w-full rounded-lg border-gray-200"
                                                     >
-                                                        @for ($h = 0; $h <= 2; $h++)
+                                                        @for ($h = 0; $h <= 24; $h++)
                                                             <option value="{{ $h }}" 
                                                                 @selected((int) floor($remMin / 60) == $h)>
                                                                 {{ $h }}
@@ -2468,6 +2468,19 @@ if ($initialStep < 1 || $initialStep > 3) {
 										<input id="description_html" type="hidden" name="description_html">
 										
 										<trix-editor input="description_html" class="trix-content"></trix-editor>
+<script>
+document.addEventListener('trix-paste', function(e) {
+    var editor = e.target.editor;
+    if (!editor) return;
+    // Небольшая задержка чтобы контент вставился
+    setTimeout(function() {
+        var doc = editor.getDocument();
+        var text = doc.toString();
+        // Очищаем и вставляем чистый текст
+        editor.loadHTML(editor.element.innerHTML.replace(/style="[^"]*"/gi, '').replace(/class="[^"]*"/gi, ''));
+    }, 10);
+});
+</script>
 										
 										@error('description_html')
 										<div class="text-red-600 text-sm mt-2">{{ $message }}</div>
