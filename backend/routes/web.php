@@ -283,6 +283,11 @@ Route::get('/auth/telegram/callback', [TelegramAuthController::class, 'callback'
 		
 		Route::get('/events/{event}/occurrences/manage', [EventManagementController::class, 'occurrences'])
         ->name('events.event_management.occurrences');
+
+    Route::get("/events/{event}/occurrences/{occurrence}/edit", [EventManagementController::class, "editOccurrence"])
+        ->name("events.occurrences.edit");
+    Route::put("/events/{event}/occurrences/{occurrence}", [EventManagementController::class, "updateOccurrence"])
+        ->name("events.occurrences.update");
 		// Подача заявки команды на турнир
 		Route::post('/events/{event}/teams/{team}/submit', [TournamentTeamController::class, 'submitApplication'])
         ->name('tournamentTeams.submit');

@@ -182,6 +182,12 @@
                                                 🧑‍🧑‍🧒‍🧒
                                             </a>
                                         @endif
+                                            <a href="{{ route('events.occurrences.edit', ['event' => (int)$event->id, 'occurrence' => (int)$occ->id]) }}"
+                                               class="btn btn-small btn-secondary mr-1"
+                                               title="Редактировать дату">
+                                                ⚙️
+                                            </a>
+
                                             <form method="POST"
                                                   action="{{ route('occurrences.destroy', ['occurrence' => (int)$occ->id]) }}"
                                                   class="d-inline-block">

@@ -254,6 +254,110 @@ if ($role === 'admin') {
         return back()->with('status', 'Повтор отменён.');
     }
 
+    public function editOccurrence(Request $request, Event $event, \App\Models\EventOccurrence $occurrence)
+    {
+        $user = $request->user();
+        if (!$user) return redirect()->route('login');
+
+        $role = (string) ($user->role ?? 'user');
+        if ($role === 'organizer' && (int) $event->organizer_id !== (int) $user->id) {
+            abort(403);
+        }
+        if ($role !== 'admin' && $role !== 'organizer') {
+            abort(403);
+        }
+        if ((int) $occurrence->event_id !== (int) $event->id) {
+            abort(404);
+        }
+
+        $tz = $event->timezone ?: 'UTC';
+        $startsLocal = $occurrence->starts_at
+            ? \Carbon\Carbon::parse($occurrence->starts_at, 'UTC')->setTimezone($tz)->format('Y-m-d\TH:i')
+            : '';
+
+        $locations = \App\Models\Location::orderBy('name')
+            ->get(['id', 'name', 'address', 'city_id']);
+
+        return view('events.occurrence_edit', compact('event', 'occurrence', 'startsLocal', 'tz', 'locations'));
+    }
+
+    public function updateOccurrence(Request $request, Event $event, \App\Models\EventOccurrence $occurrence)
+    {
+        $user = $request->user();
+        if (!$user) return redirect()->route('login');
+
+        $role = (string) ($user->role ?? 'user');
+        if ($role === 'organizer' && (int) $event->organizer_id !== (int) $user->id) {
+            abort(403);
+        }
+        if ($role !== 'admin' && $role !== 'organizer') {
+            abort(403);
+        }
+        if ((int) $occurrence->event_id !== (int) $event->id) {
+            abort(404);
+        }
+
+        $data = $request->validate([
+            'starts_at_local'                  => 'required|date',
+            'duration_hours'                   => 'nullable|integer|min:0|max:23',
+            'duration_minutes'                 => 'nullable|integer|min:0|max:59',
+            'location_id'                      => 'nullable|integer|exists:locations,id',
+            'max_players'                      => 'nullable|integer|min:0',
+            'allow_registration'               => 'sometimes|boolean',
+            'reg_starts_days_before'           => 'nullable|integer|min:0|max:365',
+            'reg_ends_minutes_before'          => 'nullable|integer|min:0|max:10080',
+            'cancel_lock_minutes_before'       => 'nullable|integer|min:0|max:10080',
+            'remind_registration_enabled'      => 'sometimes|boolean',
+            'remind_registration_minutes_before' => 'nullable|integer|min:0',
+            'show_participants'                => 'sometimes|boolean',
+            'classic_level_min'                => 'nullable|integer|min:1|max:10',
+            'classic_level_max'                => 'nullable|integer|min:1|max:10',
+            'beach_level_min'                  => 'nullable|integer|min:1|max:10',
+            'beach_level_max'                  => 'nullable|integer|min:1|max:10',
+            'age_policy'                       => 'nullable|string|in:adult,child,any',
+        ]);
+
+        $tz = $event->timezone ?: 'UTC';
+        $startsUtc = \Carbon\Carbon::parse($data['starts_at_local'], $tz)->utc();
+
+        $durationSec = ((int)($data['duration_hours'] ?? 0)) * 3600
+                     + ((int)($data['duration_minutes'] ?? 0)) * 60;
+        if ($durationSec <= 0) {
+            $durationSec = $occurrence->duration_sec ?: ($event->duration_sec ?: 7200);
+        }
+
+        $allowReg = (bool) ($data['allow_registration'] ?? false);
+        $daysBefore = (int) ($data['reg_starts_days_before'] ?? 3);
+        $endsMinBefore = (int) ($data['reg_ends_minutes_before'] ?? 15);
+        $cancelMinBefore = (int) ($data['cancel_lock_minutes_before'] ?? 60);
+
+        $occurrence->starts_at = $startsUtc;
+        $occurrence->duration_sec = $durationSec;
+        $occurrence->location_id = $data['location_id'] ?? $event->location_id;
+        $occurrence->max_players = $data['max_players'] ?? null;
+        $occurrence->allow_registration = $allowReg;
+        $occurrence->show_participants = (bool) ($data['show_participants'] ?? false);
+        $occurrence->classic_level_min = $data['classic_level_min'] ?? null;
+        $occurrence->classic_level_max = $data['classic_level_max'] ?? null;
+        $occurrence->beach_level_min = $data['beach_level_min'] ?? null;
+        $occurrence->beach_level_max = $data['beach_level_max'] ?? null;
+        $occurrence->age_policy = $data['age_policy'] ?? 'adult';
+        $occurrence->remind_registration_enabled = (bool) ($data['remind_registration_enabled'] ?? false);
+        $occurrence->remind_registration_minutes_before = $data['remind_registration_minutes_before'] ?? null;
+
+        if ($allowReg) {
+            $occurrence->registration_starts_at = $startsUtc->copy()->subDays($daysBefore);
+            $occurrence->registration_ends_at = $startsUtc->copy()->subMinutes($endsMinBefore);
+            $occurrence->cancel_self_until = $startsUtc->copy()->subMinutes($cancelMinBefore);
+        }
+
+        $occurrence->save();
+
+        return redirect()
+            ->to(route('events.show', $event) . '?occurrence=' . $occurrence->id)
+            ->with('status', 'Настройки даты обновлены.');
+    }
+
     public function update(Request $request, Event $event)
     {
         $user = $request->user();
