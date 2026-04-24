@@ -289,16 +289,46 @@ if ($role === 'admin') {
         // Эффективные игровые настройки (override ?? event ?? defaults)
         $gs = $occurrence->effectiveGameSettings();
 
-        // Эффективные тренеры: override (записи в event_occurrence_trainers)
-        // или, если override пуст — наследуем от event->trainers.
+        // Эффективные тренеры: override или, если override пуст — от event->trainers
         $occurrence->loadMissing('trainers');
         $event->loadMissing('trainers');
         $trainerInherited = $occurrence->trainers->isEmpty();
         $trainers = $trainerInherited ? $event->trainers : $occurrence->trainers;
 
+        // Effective-значения (override ?? event) для blade-полей:
+        $eff = function ($occVal, $eventVal) {
+            return ($occVal === null || $occVal === '') ? $eventVal : $occVal;
+        };
+
+        $title          = $eff($occurrence->title, $event->title);
+        $descriptionHtml= $eff($occurrence->description_html, $event->description_html);
+
+        $classicLevelMin= $eff($occurrence->classic_level_min, $event->classic_level_min);
+        $classicLevelMax= $eff($occurrence->classic_level_max, $event->classic_level_max);
+        $beachLevelMin  = $eff($occurrence->beach_level_min, $event->beach_level_min);
+        $beachLevelMax  = $eff($occurrence->beach_level_max, $event->beach_level_max);
+        $agePolicy      = $eff($occurrence->age_policy, $event->age_policy ?? 'adult');
+        $childAgeMin    = $eff($occurrence->child_age_min, $event->child_age_min);
+        $childAgeMax    = $eff($occurrence->child_age_max, $event->child_age_max);
+
+        $isPaid         = (bool) $eff($occurrence->is_paid, $event->is_paid ?? false);
+        $priceMinor     = $eff($occurrence->price_minor, $event->price_minor);
+        $priceRub       = $priceMinor !== null ? number_format((int) $priceMinor / 100, 0, '.', '') : '';
+
+        // Gender / subtype (из effective game settings $gs)
+        $subtypeVal          = $gs->subtype ?? null;
+        $genderPolicyVal     = $gs->gender_policy ?? 'mixed_open';
+        $genderLimitedSideVal= $gs->gender_limited_side ?? null;
+        $genderLimitedMaxVal = $gs->gender_limited_max ?? null;
+
         return view('events.occurrence_edit', compact(
             'event', 'occurrence', 'startsLocal', 'tz', 'locations',
-            'subtypes', 'gs', 'trainers', 'trainerInherited'
+            'subtypes', 'gs', 'trainers', 'trainerInherited',
+            'title', 'descriptionHtml',
+            'classicLevelMin', 'classicLevelMax', 'beachLevelMin', 'beachLevelMax',
+            'agePolicy', 'childAgeMin', 'childAgeMax',
+            'isPaid', 'priceRub',
+            'subtypeVal', 'genderPolicyVal', 'genderLimitedSideVal', 'genderLimitedMaxVal'
         ));
     }
 
@@ -372,6 +402,7 @@ if ($role === 'admin') {
             'trainer_user_ids.*'               => 'integer|exists:users,id',
             'requires_personal_data'           => 'sometimes|boolean',
         ]);
+
 
         $tz = $event->timezone ?: 'UTC';
         $startsUtc = \Carbon\Carbon::parse($data['starts_at_local'], $tz)->utc();
@@ -503,7 +534,7 @@ if ($role === 'admin') {
 
         return redirect()
             ->to(route('events.show', $event) . '?occurrence=' . $occurrence->id)
-            ->with('status', 'Настройки даты обновлены.');
+            ->with('status', 'Изменения сохранены.');
     }
 
     
