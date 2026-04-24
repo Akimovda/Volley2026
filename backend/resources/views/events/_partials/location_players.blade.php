@@ -4,11 +4,10 @@
     Блок "Локация и участники" для occurrence_edit: выбор локации
     и минимальное число игроков (порог отмены).
 
-    Expects in scope:
+    Expects in scope (effective-переменные из контроллера):
       - $locations      (Collection) — список доступных локаций (id, name, address)
-      - $occurrence     (EventOccurrence)
-      - $event          (Event)
-      - $minPlayersVal  (int|null) — значение min_players с override-логикой
+      - $locationId     (int|null)   — effective location_id
+      - $minPlayersVal  (int|null)   — effective min_players
 --}}
 <div class="ramka">
     <h2 class="-mt-05">Локация и участники</h2>
@@ -18,7 +17,7 @@
                 <label>Локация</label>
                 <select name="location_id">
                     @foreach($locations as $loc)
-                        <option value="{{ $loc->id }}" @selected(old('location_id', $occurrence->location_id ?? $event->location_id) == $loc->id)>
+                        <option value="{{ $loc->id }}" @selected(old('location_id', $locationId) == $loc->id)>
                             {{ $loc->name }} — {{ $loc->address }}
                         </option>
                     @endforeach

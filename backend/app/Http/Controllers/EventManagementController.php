@@ -327,7 +327,7 @@ if ($role === 'admin') {
             'title', 'descriptionHtml',
             'classicLevelMin', 'classicLevelMax', 'beachLevelMin', 'beachLevelMax',
             'agePolicy', 'childAgeMin', 'childAgeMax',
-            'isPaid', 'priceRub',
+            'isPaid', 'priceRub', 'locationId', 'minPlayersVal',
             'subtypeVal', 'genderPolicyVal', 'genderLimitedSideVal', 'genderLimitedMaxVal'
         ));
     }

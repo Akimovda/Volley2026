@@ -40,10 +40,12 @@
 	</x-slot>
 	
     <x-slot name="style">
+    <link rel="stylesheet" type="text/css" href="/assets/trix.css?v={{ time() }}">
         <link href="/assets/org.css" rel="stylesheet">
 	</x-slot>	
 	
     <x-slot name="script">
+    <script src="/assets/trix.js?v={{ time() }}"></script>
 		<script src="/assets/city.js"></script>  
 		<script src="/assets/org.js?v=2"></script>     
         <script>

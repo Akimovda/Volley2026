@@ -6,12 +6,15 @@
     - Возрастная политика — radio (синхрон с create step1)
     - Возраст детей (6-17) — при age_policy=child
 
-    Expects in scope:
-      - $event       (Event)   — для direction
-      - $occurrence  (EventOccurrence)
-      - $agePolicy   (string)  — adult|child|any
-      - $childMin    (int|null)
-      - $childMax    (int|null)
+    Expects in scope (effective-переменные из контроллера):
+      - $event            (Event)   — для direction
+      - $beachLevelMin    (int|null)
+      - $beachLevelMax    (int|null)
+      - $classicLevelMin  (int|null)
+      - $classicLevelMax  (int|null)
+      - $agePolicy        (string)  — adult|child|any
+      - $childAgeMin      (int|null)
+      - $childAgeMax      (int|null)
 
     JS (в occurrence_edit): child_age_wrap показывается при age_policy=child.
     В create использовались radio + JS applyShowIf, здесь inline style
@@ -27,7 +30,7 @@
                 <select name="beach_level_min">
                     <option value="">—</option>
                     @for($l = 1; $l <= 10; $l++)
-                        <option value="{{ $l }}" @selected(old('beach_level_min', $occurrence->beach_level_min ?? $event->beach_level_min) == $l)>{{ $l }}</option>
+                        <option value="{{ $l }}" @selected(old('beach_level_min', $beachLevelMin) == $l)>{{ $l }}</option>
                     @endfor
                 </select>
             </div>
@@ -38,7 +41,7 @@
                 <select name="beach_level_max">
                     <option value="">—</option>
                     @for($l = 1; $l <= 10; $l++)
-                        <option value="{{ $l }}" @selected(old('beach_level_max', $occurrence->beach_level_max ?? $event->beach_level_max) == $l)>{{ $l }}</option>
+                        <option value="{{ $l }}" @selected(old('beach_level_max', $beachLevelMax) == $l)>{{ $l }}</option>
                     @endfor
                 </select>
             </div>
@@ -50,7 +53,7 @@
                 <select name="classic_level_min">
                     <option value="">—</option>
                     @for($l = 1; $l <= 10; $l++)
-                        <option value="{{ $l }}" @selected(old('classic_level_min', $occurrence->classic_level_min ?? $event->classic_level_min) == $l)>{{ $l }}</option>
+                        <option value="{{ $l }}" @selected(old('classic_level_min', $classicLevelMin) == $l)>{{ $l }}</option>
                     @endfor
                 </select>
             </div>
@@ -61,7 +64,7 @@
                 <select name="classic_level_max">
                     <option value="">—</option>
                     @for($l = 1; $l <= 10; $l++)
-                        <option value="{{ $l }}" @selected(old('classic_level_max', $occurrence->classic_level_max ?? $event->classic_level_max) == $l)>{{ $l }}</option>
+                        <option value="{{ $l }}" @selected(old('classic_level_max', $classicLevelMax) == $l)>{{ $l }}</option>
                     @endfor
                 </select>
             </div>
@@ -91,11 +94,11 @@
                     <div class="row">
                         <div class="col-6">
                             <label>Возраст от</label>
-                            <input type="number" name="child_age_min" min="6" max="17" value="{{ old('child_age_min', $childMin ?: 6) }}">
+                            <input type="number" name="child_age_min" min="6" max="17" value="{{ old('child_age_min', $childAgeMin ?: 6) }}">
                         </div>
                         <div class="col-6">
                             <label>до</label>
-                            <input type="number" name="child_age_max" min="6" max="17" value="{{ old('child_age_max', $childMax ?: 17) }}">
+                            <input type="number" name="child_age_max" min="6" max="17" value="{{ old('child_age_max', $childAgeMax ?: 17) }}">
                         </div>
                     </div>
                     <div class="f-13" style="margin-top:.25rem;opacity:.7">Допустимый возраст: от 6 до 17 лет</div>
