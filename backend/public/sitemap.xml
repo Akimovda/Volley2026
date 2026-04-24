@@ -1,574 +1,460 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://volley-bot.store/</loc>
+    <loc>https://volleyplay.club/</loc>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/events</loc>
+    <loc>https://volleyplay.club/events</loc>
     <changefreq>hourly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/locations</loc>
+    <loc>https://volleyplay.club/locations</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/users</loc>
+    <loc>https://volleyplay.club/users</loc>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/about</loc>
+    <loc>https://volleyplay.club/about</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/help</loc>
+    <loc>https://volleyplay.club/help</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/rules</loc>
+    <loc>https://volleyplay.club/rules</loc>
     <changefreq>monthly</changefreq>
     <priority>0.4</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/level_players</loc>
+    <loc>https://volleyplay.club/level_players</loc>
     <changefreq>monthly</changefreq>
     <priority>0.4</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/tournament-formats</loc>
+    <loc>https://volleyplay.club/tournament-formats</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/events/352</loc>
-    <lastmod>2026-04-20T19:54:18+00:00</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://volley-bot.store/events/351</loc>
-    <lastmod>2026-04-20T19:15:56+00:00</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://volley-bot.store/events/350</loc>
+    <loc>https://volleyplay.club/events/350</loc>
     <lastmod>2026-04-20T19:12:51+00:00</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/events/349</loc>
-    <lastmod>2026-04-20T12:32:40+00:00</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://volley-bot.store/events/348</loc>
-    <lastmod>2026-04-20T06:41:20+00:00</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://volley-bot.store/events/347</loc>
+    <loc>https://volleyplay.club/events/347</loc>
     <lastmod>2026-04-19T18:18:08+00:00</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/events/346</loc>
-    <lastmod>2026-04-19T16:35:17+00:00</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://volley-bot.store/events/345</loc>
+    <loc>https://volleyplay.club/events/345</loc>
     <lastmod>2026-04-19T11:47:06+00:00</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/events/344</loc>
+    <loc>https://volleyplay.club/events/344</loc>
     <lastmod>2026-04-19T09:52:11+00:00</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/events/343</loc>
+    <loc>https://volleyplay.club/events/343</loc>
     <lastmod>2026-04-19T09:49:33+00:00</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/events/342</loc>
+    <loc>https://volleyplay.club/events/342</loc>
     <lastmod>2026-04-19T09:44:14+00:00</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/events/341</loc>
+    <loc>https://volleyplay.club/events/341</loc>
     <lastmod>2026-04-19T09:36:15+00:00</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/events/340</loc>
+    <loc>https://volleyplay.club/events/340</loc>
     <lastmod>2026-04-19T09:28:49+00:00</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/events/339</loc>
+    <loc>https://volleyplay.club/events/339</loc>
     <lastmod>2026-04-19T09:26:17+00:00</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/events/338</loc>
+    <loc>https://volleyplay.club/events/338</loc>
     <lastmod>2026-04-19T09:15:23+00:00</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/events/337</loc>
-    <lastmod>2026-04-18T16:49:00+00:00</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://volley-bot.store/events/336</loc>
-    <lastmod>2026-04-18T06:54:28+00:00</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://volley-bot.store/events/335</loc>
-    <lastmod>2026-04-16T13:29:59+00:00</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://volley-bot.store/events/334</loc>
+    <loc>https://volleyplay.club/events/334</loc>
     <lastmod>2026-04-16T07:49:03+00:00</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/events/333</loc>
+    <loc>https://volleyplay.club/events/333</loc>
     <lastmod>2026-04-16T08:04:29+00:00</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/events/332</loc>
+    <loc>https://volleyplay.club/events/332</loc>
     <lastmod>2026-04-16T15:55:26+00:00</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/events/331</loc>
-    <lastmod>2026-04-16T16:22:58+00:00</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://volley-bot.store/events/330</loc>
-    <lastmod>2026-04-14T17:15:18+00:00</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://volley-bot.store/events/329</loc>
-    <lastmod>2026-04-14T17:07:10+00:00</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://volley-bot.store/events/328</loc>
-    <lastmod>2026-04-14T17:02:27+00:00</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://volley-bot.store/events/327</loc>
-    <lastmod>2026-04-14T16:57:28+00:00</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://volley-bot.store/events/326</loc>
-    <lastmod>2026-04-14T16:53:26+00:00</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://volley-bot.store/events/325</loc>
-    <lastmod>2026-04-14T16:49:43+00:00</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://volley-bot.store/events/324</loc>
-    <lastmod>2026-04-14T16:46:40+00:00</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://volley-bot.store/events/323</loc>
-    <lastmod>2026-04-14T16:38:47+00:00</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://volley-bot.store/events/321</loc>
-    <lastmod>2026-04-14T10:59:51+00:00</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://volley-bot.store/events/320</loc>
+    <loc>https://volleyplay.club/events/320</loc>
     <lastmod>2026-04-14T10:06:03+00:00</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/events/319</loc>
-    <lastmod>2026-04-14T09:31:01+00:00</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://volley-bot.store/events/318</loc>
-    <lastmod>2026-04-14T09:22:46+00:00</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://volley-bot.store/locations/58-gimnaziia-11-garmoniia</loc>
+    <loc>https://volleyplay.club/locations/58-gimnaziia-11-garmoniia</loc>
     <lastmod>2026-04-15T08:48:39+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/locations/57-pliaznyi-centr-leto-zukova</loc>
+    <loc>https://volleyplay.club/locations/57-pliaznyi-centr-leto-zukova</loc>
     <lastmod>2026-04-15T08:37:50+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/locations/56-vitamin</loc>
+    <loc>https://volleyplay.club/locations/56-vitamin</loc>
     <lastmod>2026-04-14T10:02:50+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/locations/55-si-otel</loc>
+    <loc>https://volleyplay.club/locations/55-si-otel</loc>
     <lastmod>2026-04-13T16:04:04+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/locations/51-beach-territory-of-russia</loc>
+    <loc>https://volleyplay.club/locations/51-beach-territory-of-russia</loc>
     <lastmod>2026-04-14T08:28:22+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/locations/48-arena-48</loc>
+    <loc>https://volleyplay.club/locations/48-arena-48</loc>
     <lastmod>2026-04-14T08:36:05+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/locations/46-sirius-centr-pliaznyx-vidov-sporta</loc>
+    <loc>https://volleyplay.club/locations/46-sirius-centr-pliaznyx-vidov-sporta</loc>
     <lastmod>2026-04-14T08:59:02+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/locations/45-centr-pliaznyx-vidov-sporta-cunami</loc>
+    <loc>https://volleyplay.club/locations/45-centr-pliaznyx-vidov-sporta-cunami</loc>
     <lastmod>2026-04-08T19:11:16+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/locations/44-centr-pliaznyx-vidov-sporta-pesok</loc>
+    <loc>https://volleyplay.club/locations/44-centr-pliaznyx-vidov-sporta-pesok</loc>
     <lastmod>2026-04-08T19:11:16+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/locations/43-centr-pliaznogo-sporta-pliaz</loc>
+    <loc>https://volleyplay.club/locations/43-centr-pliaznogo-sporta-pliaz</loc>
     <lastmod>2026-04-19T12:07:48+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/locations/42-ntc-im-xa-samaranca</loc>
+    <loc>https://volleyplay.club/locations/42-ntc-im-xa-samaranca</loc>
     <lastmod>2026-04-14T08:45:42+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/locations/41-pliaznyi-centr-zara</loc>
+    <loc>https://volleyplay.club/locations/41-pliaznyi-centr-zara</loc>
     <lastmod>2026-04-15T08:28:25+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/locations/40-match-point</loc>
+    <loc>https://volleyplay.club/locations/40-match-point</loc>
     <lastmod>2026-04-14T08:37:39+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/locations/39-sokol-sportkompleks-s-beach-kortami</loc>
+    <loc>https://volleyplay.club/locations/39-sokol-sportkompleks-s-beach-kortami</loc>
     <lastmod>2026-04-15T04:37:19+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/locations/37-sportbeach-vidnoe</loc>
+    <loc>https://volleyplay.club/locations/37-sportbeach-vidnoe</loc>
     <lastmod>2026-04-15T04:46:54+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/locations/36-krokodil-pliaznyi-centr</loc>
+    <loc>https://volleyplay.club/locations/36-krokodil-pliaznyi-centr</loc>
     <lastmod>2026-04-15T08:23:39+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/locations/35-veski-sport-centr-pliaznyx-vidov-sporta</loc>
+    <loc>https://volleyplay.club/locations/35-veski-sport-centr-pliaznyx-vidov-sporta</loc>
     <lastmod>2026-04-15T05:03:28+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/locations/34-panda-volley</loc>
+    <loc>https://volleyplay.club/locations/34-panda-volley</loc>
     <lastmod>2026-04-14T08:53:56+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/locations/33-pliaznyi-centr-leto-troparevo</loc>
+    <loc>https://volleyplay.club/locations/33-pliaznyi-centr-leto-troparevo</loc>
     <lastmod>2026-04-15T08:33:44+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/locations/32-la-plage-club</loc>
+    <loc>https://volleyplay.club/locations/32-la-plage-club</loc>
     <lastmod>2026-04-15T04:31:31+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/locations/29-pliaz-maiak</loc>
+    <loc>https://volleyplay.club/locations/29-pliaz-maiak</loc>
     <lastmod>2026-04-15T08:52:12+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/locations/27-pliaz-oficerskii-ozero-razliv</loc>
+    <loc>https://volleyplay.club/locations/27-pliaz-oficerskii-ozero-razliv</loc>
     <lastmod>2026-04-08T18:30:55+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/locations/26-pliaz-severnyi-sestroreck</loc>
+    <loc>https://volleyplay.club/locations/26-pliaz-severnyi-sestroreck</loc>
     <lastmod>2026-04-08T18:30:55+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/locations/25-pliaz-laskovyi-kurortnyi-raion</loc>
+    <loc>https://volleyplay.club/locations/25-pliaz-laskovyi-kurortnyi-raion</loc>
     <lastmod>2026-04-08T18:30:55+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/locations/24-pliaz-u-laxta-centra</loc>
+    <loc>https://volleyplay.club/locations/24-pliaz-u-laxta-centra</loc>
     <lastmod>2026-04-08T18:30:55+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/locations/22-pliaz-serebrianyi-bor-2</loc>
+    <loc>https://volleyplay.club/locations/22-pliaz-serebrianyi-bor-2</loc>
     <lastmod>2026-04-15T08:44:11+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/locations/17-sredniaia-skola-11-m-zolotaia-niva</loc>
+    <loc>https://volleyplay.club/locations/17-sredniaia-skola-11-m-zolotaia-niva</loc>
     <lastmod>2026-04-15T08:41:39+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/locations/15-sk-molodost</loc>
+    <loc>https://volleyplay.club/locations/15-sk-molodost</loc>
     <lastmod>2026-03-07T15:06:06+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/locations/10-skola-1279-evrika-skolnyi-korpus</loc>
+    <loc>https://volleyplay.club/locations/10-skola-1279-evrika-skolnyi-korpus</loc>
     <lastmod>2026-02-24T17:20:30+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/user/278</loc>
+    <loc>https://volleyplay.club/user/295</loc>
+    <lastmod>2026-04-23T17:04:02+00:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.4</priority>
+  </url>
+  <url>
+    <loc>https://volleyplay.club/user/278</loc>
     <lastmod>2026-04-20T09:03:07+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.4</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/user/276</loc>
+    <loc>https://volleyplay.club/user/276</loc>
     <lastmod>2026-04-20T09:03:33+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.4</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/user/261</loc>
+    <loc>https://volleyplay.club/user/261</loc>
     <lastmod>2026-04-15T07:47:38+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.4</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/user/260</loc>
+    <loc>https://volleyplay.club/user/260</loc>
     <lastmod>2026-04-15T07:48:16+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.4</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/user/258</loc>
+    <loc>https://volleyplay.club/user/258</loc>
     <lastmod>2026-04-14T16:05:00+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.4</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/user/257</loc>
+    <loc>https://volleyplay.club/user/257</loc>
     <lastmod>2026-04-14T11:44:53+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.4</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/user/251</loc>
+    <loc>https://volleyplay.club/user/251</loc>
     <lastmod>2026-04-12T18:13:31+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.4</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/user/250</loc>
+    <loc>https://volleyplay.club/user/250</loc>
     <lastmod>2026-04-10T05:33:48+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.4</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/user/249</loc>
+    <loc>https://volleyplay.club/user/249</loc>
     <lastmod>2026-04-10T02:09:14+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.4</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/user/248</loc>
+    <loc>https://volleyplay.club/user/248</loc>
     <lastmod>2026-04-09T16:01:23+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.4</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/user/247</loc>
+    <loc>https://volleyplay.club/user/247</loc>
     <lastmod>2026-04-09T15:23:30+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.4</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/user/246</loc>
+    <loc>https://volleyplay.club/user/246</loc>
     <lastmod>2026-04-09T13:45:48+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.4</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/user/245</loc>
+    <loc>https://volleyplay.club/user/245</loc>
     <lastmod>2026-04-09T13:44:43+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.4</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/user/244</loc>
+    <loc>https://volleyplay.club/user/244</loc>
     <lastmod>2026-04-09T13:23:59+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.4</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/user/243</loc>
+    <loc>https://volleyplay.club/user/243</loc>
     <lastmod>2026-04-10T15:29:10+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.4</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/user/176</loc>
+    <loc>https://volleyplay.club/user/176</loc>
     <lastmod>2026-04-19T20:04:35+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.4</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/user/154</loc>
-    <lastmod>2026-04-23T04:19:47+00:00</lastmod>
+    <loc>https://volleyplay.club/user/154</loc>
+    <lastmod>2026-04-21T16:27:10+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.4</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/user/150</loc>
+    <loc>https://volleyplay.club/user/150</loc>
     <lastmod>2026-04-12T03:36:20+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.4</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/user/144</loc>
+    <loc>https://volleyplay.club/user/144</loc>
     <lastmod>2026-02-21T07:34:43+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.4</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/user/143</loc>
+    <loc>https://volleyplay.club/user/143</loc>
     <lastmod>2026-04-07T20:14:25+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.4</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/user/141</loc>
+    <loc>https://volleyplay.club/user/141</loc>
     <lastmod>2026-04-12T16:50:42+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.4</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/user/1</loc>
+    <loc>https://volleyplay.club/user/1</loc>
     <lastmod>2026-04-19T18:30:13+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.4</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/s/pliazka-turnir-sezon-VS0FWX</loc>
+    <loc>https://volleyplay.club/s/pliazka-turnir-sezon-VS0FWX</loc>
     <lastmod>2026-04-20T19:12:51+00:00</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/s/pliazka-turnir-sezon-z6P2Em</loc>
+    <loc>https://volleyplay.club/s/pliazka-turnir-sezon-z6P2Em</loc>
     <lastmod>2026-04-20T19:15:56+00:00</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://volley-bot.store/s/pliazka-turnir-sezon-yWsGII</loc>
+    <loc>https://volleyplay.club/s/pliazka-turnir-sezon-yWsGII</loc>
     <lastmod>2026-04-20T19:54:18+00:00</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
