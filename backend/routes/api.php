@@ -42,3 +42,4 @@ Route::get('/occurrences/{occurrence}/stats', function (string $occurrence) {
         'registered_total' => $count,
     ]);
 });
+Route::post('/integrations/channels/set-thread', [\App\Http\Controllers\Api\ChannelSetThreadController::class, '__invoke']);

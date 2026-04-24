@@ -168,6 +168,7 @@ $groupedByDate[$dateKey] = ['date' => $date, 'occurrences' => []];
 						$fFormat   = request('format', '');
 						$fLevel    = request('level', '');
 						$fLocation = request('location', '');
+$fCity     = request('city', '');
 						
 						$formatLabels = [
 						'game'               => 'Игра',
@@ -227,6 +228,15 @@ $groupedByDate[$dateKey] = ['date' => $date, 'occurrences' => []];
 								</div>
 								
 								<div class="col-12 d-flex flex-wrap gap-2 align-items-center">
+@auth
+@if(auth()->user()->city_id)
+<label class="checkbox-item">
+<input type="checkbox" name="city" value="all" {{ $fCity === 'all' ? 'checked' : '' }}>
+<div class="custom-checkbox"></div>
+<span>Все города</span>
+</label>
+@endif
+@endauth
 									<button type="submit" class="btn">Применить</button>
 									<a href="{{ route('events.index') }}" class="btn btn-secondary">Сброс</a>
 								</div>

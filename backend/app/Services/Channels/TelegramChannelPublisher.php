@@ -86,6 +86,10 @@ class TelegramChannelPublisher implements ChannelPublisher
                 'photo' => $message->imageUrl,
                 'parse_mode' => 'HTML',
                 'disable_notification' => $message->silent,
+
+            if ($message->messageThreadId) {
+                $payload['message_thread_id'] = $message->messageThreadId;
+            }
             ];
 
             if ($caption) {
@@ -117,6 +121,10 @@ class TelegramChannelPublisher implements ChannelPublisher
             'text' => $message->text,
             'parse_mode' => 'HTML',
             'disable_notification' => $message->silent,
+
+            if ($message->messageThreadId) {
+                $payload['message_thread_id'] = $message->messageThreadId;
+            }
         ];
 
         if ($keyboard) {

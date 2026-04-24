@@ -40,10 +40,12 @@
 	</x-slot>
 	
     <x-slot name="style">
+    <link rel="stylesheet" type="text/css" href="/assets/trix.css?v={{ time() }}">
         <link href="/assets/org.css" rel="stylesheet">
 	</x-slot>	
 	
     <x-slot name="script">
+    <script src="/assets/trix.js?v={{ time() }}"></script>
 		<script src="/assets/city.js"></script>  
 		<script src="/assets/org.js?v=2"></script>     
         <script>
@@ -52,6 +54,15 @@
                 document.addEventListener('trix-file-accept', function (event) {
                     event.preventDefault();
 				});
+
+                document.addEventListener('trix-paste', function(e) {
+                    var paste = e.paste;
+                    if (paste.html) {
+                        var clean = paste.html.replace(/<(?!\/?(br|p|b|i|u|strong|em|a |ul|ol|li))[^>]+>/gi, '');
+                        e.preventDefault();
+                        e.target.editor.insertHTML(clean);
+                    }
+                });
 				
                 // --- photos reorder
                 const grid = document.getElementById('photos_grid');

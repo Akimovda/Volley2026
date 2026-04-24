@@ -84,7 +84,60 @@
 	
     <x-slot name="style">
         <style>
-			
+/* Базовые классы для индикатора */
+.gradient-indicator {
+	position: relative;
+	margin-top: 3rem;
+}
+
+.gradient-bar {
+	display: flex;
+	border-radius: 0.6rem;
+	overflow: hidden;
+	height: 1.2rem;
+}
+
+/* Затемняющий слой (светлая тема) */
+.gradient-overlay-light {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	right: 0;
+	background: rgba(255, 255, 255, 0.8);
+	border-radius: 0 0.6rem 0.6rem 0;
+	pointer-events: none;
+}
+body.dark .gradient-overlay-light {
+	background: rgba(0, 0, 0, 0.8);
+}
+
+/* Вертикальная черта-указатель */
+.gradient-marker {
+	position: absolute;
+	bottom: 1.2rem;
+	transform: translateX(-50%);
+}
+
+.gradient-marker-line {
+	position: absolute;
+	bottom: 100%;
+	height: 2rem;
+	width: 2rem;
+	left: -1.8rem;
+	background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg version='1.1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' x='0px' y='0px' viewBox='0 0 471.098 471.098' style='enable-background:new 0 0 471.098 471.098;' xml:space='preserve'%3e%3cpath d='M403.288,153.454L111.732,45.741v-21.27C111.732,10.961,100.779,0,87.261,0C73.743,0,62.79,10.961,62.79,24.471v422.156 c0,13.51,10.952,24.471,24.471,24.471c13.518,0,24.471-10.961,24.471-24.471V275.555l291.557-107.699 c3.012-1.113,5.019-3.981,5.019-7.2C408.307,157.436,406.3,154.57,403.288,153.454z' fill='%232967BA'/%3e%3c/svg%3e");
+	background-repeat: no-repeat;
+	background-size: contain;
+	background-position: left center;
+	transform: scaleX(-1);
+}
+
+/* Для тёмной темы */
+body.dark .gradient-marker-line,
+.theme-dark .gradient-marker-line {
+	background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg version='1.1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' x='0px' y='0px' viewBox='0 0 471.098 471.098' style='enable-background:new 0 0 471.098 471.098;' xml:space='preserve'%3e%3cpath d='M403.288,153.454L111.732,45.741v-21.27C111.732,10.961,100.779,0,87.261,0C73.743,0,62.79,10.961,62.79,24.471v422.156 c0,13.51,10.952,24.471,24.471,24.471c13.518,0,24.471-10.961,24.471-24.471V275.555l291.557-107.699 c3.012-1.113,5.019-3.981,5.019-7.2C408.307,157.436,406.3,154.57,403.288,153.454z' fill='%23E7612F'/%3e%3c/svg%3e");
+	transform: scaleX(-1);
+}
+	
 		</style>
 	</x-slot>
 	
@@ -155,6 +208,7 @@
 	</x-slot>
 	
 	
+
 	
 	
     <div class="container">
@@ -348,7 +402,7 @@
                                         @if($myClassicVote) Ваша оценка: <strong>{{ $myClassicVote }}</strong> {{ $levelEmojis[$myClassicVote] }}
                                         @else Выберите уровень: @endif
 									</div>									
-                                    <div class="text-center d-flex flex-wrap gap-1 mb-1 mt-1">
+                                    <div class="text-center d-flex flex-wrap gap-1 mb-2 mt-2">
                                         @foreach($levelEmojis as $lvl => $emoji)
                                         <button type="submit" name="level" value="{{ $lvl }}"
 										class="btn btn-small {{ $myClassicVote == $lvl ? '' : 'btn-secondary' }}"
@@ -373,23 +427,31 @@
 								$colorIdx = (int)round($classicAvg);
 								$colorIdx = max(1, min(7, $colorIdx));
                                 @endphp
-                                <div class="">
-                                    <div class="d-flex between mb-1 f-16">
-                                        <span><span class="b-600 cd">{{ $classicVotes->count() }}</span> {{ trans_choice('оценка|оценки|оценок', $classicVotes->count()) }}</span>
-                                        <span>Средняя: <span class="b-600 cd">{{ $classicAvg }}</span></span>
-									</div>
-                                    {{-- Указатель --}}
-                                    <div style="position:relative; padding-bottom: 1rem;">
-                                        <div style="position:absolute; left:{{ $pct }}%; transform:translateX(-50%); font-size:1.2rem; bottom:0.2rem; line-height:1">✔️</div>
-									</div>
-                                    {{-- Полоска --}}
-                                    <div style="display:flex; border-radius:0.6rem; overflow:hidden; height:1.2rem;">
-                                        @foreach($levelColors as $lvl => $color)
-                                        <div style="flex:1; background:{{ $color }};"></div>
-                                        @endforeach
-									</div>
-									
-								</div>
+
+<div class="">
+    <div class="d-flex between mb-1 f-16">
+        <span><span class="b-600 cd">{{ $classicVotes->count() }}</span> {{ trans_choice('оценка|оценки|оценок', $classicVotes->count()) }}</span>
+        <span>Средняя: <span class="b-600 cd">{{ $classicAvg }}</span></span>
+    </div>
+    
+    <div class="gradient-indicator">
+        {{-- Полоска --}}
+        <div class="gradient-bar">
+            @foreach($levelColors as $lvl => $color)
+                <div style="flex:1; background:{{ $color }};"></div>
+            @endforeach
+        </div>
+        
+        {{-- Затемняющий слой (кинь один из классов в зависимости от темы) --}}
+        <div class="gradient-overlay-light" style="left: {{ $pct }}%;"></div>
+        {{-- Или для тёмной темы: <div class="gradient-overlay-dark" style="left: {{ $pct }}%;"></div> --}}
+        
+        {{-- Вертикальная черта --}}
+        <div class="gradient-marker" style="left: {{ $pct }}%;">
+            <div class="gradient-marker-line"></div>
+        </div>
+    </div>
+</div>
                                 @else
                                 <div class="mt-1">Оценок пока нет</div>
                                 @endif
@@ -397,60 +459,68 @@
 						</div>
 						
                         {{-- ПЛЯЖ --}}
-                        <div class="col-md-6">
-                            <div class="card">
-                                <p class="b-600 mb-1">Пляжный волейбол</p>
-								
-                                @if(auth()->check() && !$isSelf)
-                                <form method="POST" action="{{ route('user.vote', $user->id) }}">
-                                    @csrf
-                                    <input type="hidden" name="direction" value="beach">
-                                    <div class="f-16">
-                                        @if($myBeachVote) Ваша оценка: <strong>{{ $myBeachVote }}</strong> {{ $levelEmojis[$myBeachVote] }}
-                                        @else Выберите уровень @endif
-									</div>									
-                                    <div class="text-center  d-flex flex-wrap gap-1 mb-1 mt-1">
-                                        @foreach($levelEmojis as $lvl => $emoji)
-                                        <button type="submit" name="level" value="{{ $lvl }}"
-										class="btn btn-small {{ $myBeachVote == $lvl ? '' : 'btn-secondary' }}"
-										title="{{ $lvl }} — {{ level_name($lvl) }}"
-										style="font-size:2rem; padding: 0.6rem; {{ $myBeachVote == $lvl ? 'outline: 2px solid var(--cd)' : '' }}">
-                                            {{ $emoji }}
-										</button>
-                                        @endforeach
-									</div>
-
-								</form>
-                                @elseif($isSelf)
-                                <div class="mb-1">Нельзя оценивать себя</div>
-                                @else
-                                <div class="mb-1"><a href="{{ route('login') }}">Войдите</a> чтобы оценить</div>
-                                @endif
-								
-                                @if($beachAvg !== null)
-                                @php
-								$pctB = (($beachAvg - 1) / 6) * 100;
-                                @endphp
-                                <div class="">
-                                    <div class="d-flex between f-16 mb-1">
-                                        <span><span class="b-600 cd">{{ $beachVotes->count() }}</span> {{ trans_choice('оценка|оценки|оценок', $beachVotes->count()) }}</span>
-                                        <span>Средняя: <span class="b-600 cd">{{ $beachAvg }}</span></span>
-									</div>
-                                    <div style="position:relative; padding-bottom: 1rem;">
-                                        <div style="position:absolute; left:{{ $pctB }}%; transform:translateX(-50%); font-size:1.2rem; bottom:0.2rem; line-height:1">✔️</div>
-									</div>
-                                    <div style="display:flex; border-radius:0.6rem; overflow:hidden; height:1.2rem;">
-                                        @foreach($levelColors as $lvl => $color)
-                                        <div style="flex:1; background:{{ $color }};"></div>
-                                        @endforeach
-									</div>
-									
-								</div>
-                                @else
-                                <div class="mt-1">Оценок пока нет</div>
-                                @endif
-							</div>
-						</div>
+<div class="col-md-6">
+    <div class="card">
+        <p class="b-600 mb-1">Пляжный волейбол</p>
+        
+        @if(auth()->check() && !$isSelf)
+        <form method="POST" action="{{ route('user.vote', $user->id) }}">
+            @csrf
+            <input type="hidden" name="direction" value="beach">
+            <div class="f-16">
+                @if($myBeachVote) Ваша оценка: <strong>{{ $myBeachVote }}</strong> {{ $levelEmojis[$myBeachVote] }}
+                @else Выберите уровень @endif
+            </div>                                    
+            <div class="text-center d-flex flex-wrap gap-1 mb-2 mt-2">
+                @foreach($levelEmojis as $lvl => $emoji)
+                <button type="submit" name="level" value="{{ $lvl }}"
+                class="btn btn-small {{ $myBeachVote == $lvl ? '' : 'btn-secondary' }}"
+                title="{{ $lvl }} — {{ level_name($lvl) }}"
+                style="font-size:2rem; padding: 0.6rem; {{ $myBeachVote == $lvl ? 'outline: 2px solid var(--cd)' : '' }}">
+                    {{ $emoji }}
+                </button>
+                @endforeach
+            </div>
+        </form>
+        @elseif($isSelf)
+        <div class="mb-1">Нельзя оценивать себя</div>
+        @else
+        <div class="mb-1"><a href="{{ route('login') }}">Войдите</a> чтобы оценить</div>
+        @endif
+        
+        @if($beachAvg !== null)
+        @php
+        $pctB = (($beachAvg - 1) / 6) * 100;
+        @endphp
+        
+        <div class="">
+            <div class="d-flex between f-16 mb-1">
+                <span><span class="b-600 cd">{{ $beachVotes->count() }}</span> {{ trans_choice('оценка|оценки|оценок', $beachVotes->count()) }}</span>
+                <span>Средняя: <span class="b-600 cd">{{ $beachAvg }}</span></span>
+            </div>
+            
+            <div class="gradient-indicator">
+                {{-- Полоска --}}
+                <div class="gradient-bar">
+                    @foreach($levelColors as $lvl => $color)
+                        <div style="flex:1; background:{{ $color }};"></div>
+                    @endforeach
+                </div>
+                
+                {{-- Затемняющий слой --}}
+                <div class="gradient-overlay-light" style="left: {{ $pctB }}%;"></div>
+                
+                {{-- Флажок-указатель --}}
+                <div class="gradient-marker" style="left: {{ $pctB }}%;">
+                    <div class="gradient-marker-line"></div>
+                </div>
+            </div>
+        </div>
+        @else
+        <div class="mt-1">Оценок пока нет</div>
+        @endif
+    </div>
+</div>
 						
 					</div>
 				</div>
@@ -586,7 +656,7 @@
                     @else
                     <div class="alert alert-info">Пока никто не отметил</div>
                     @endif
-					 <div class="d-flex flex-wrap gap-05 text-center">
+					 <div class="d-flex flex-wrap gap-1 text-center">
                     {{-- Кнопка лайка --}}
                     @if(auth()->check() && !$isSelf)
                     <form class="d-inline-block mt-1" method="POST" action="{{ route('user.like', $user->id) }}">

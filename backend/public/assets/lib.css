@@ -1524,7 +1524,7 @@ background: #222333;
     user-select: none;
     width: 100%;     
 	filter: drop-shadow(0 1rem 2.2rem rgba(0, 0, 0, 0.15)) drop-shadow(0 0.5rem 1.2rem rgba(0, 0, 0, 0.13));
-    border-radius: 1rem;
+   border-radius: 1.6rem;
 }
 
 .fancybox-spaceball {
