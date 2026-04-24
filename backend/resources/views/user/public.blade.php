@@ -586,7 +586,7 @@
                     @else
                     <div class="alert alert-info">Пока никто не отметил</div>
                     @endif
-					 <div class="d-flex flex-wrap gap-1 text-center">
+					 <div class="d-flex flex-wrap gap-05 text-center">
                     {{-- Кнопка лайка --}}
                     @if(auth()->check() && !$isSelf)
                     <form class="d-inline-block mt-1" method="POST" action="{{ route('user.like', $user->id) }}">
