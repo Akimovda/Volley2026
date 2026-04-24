@@ -54,6 +54,15 @@
                 document.addEventListener('trix-file-accept', function (event) {
                     event.preventDefault();
 				});
+
+                document.addEventListener('trix-paste', function(e) {
+                    var paste = e.paste;
+                    if (paste.html) {
+                        var clean = paste.html.replace(/<(?!\/?(br|p|b|i|u|strong|em|a |ul|ol|li))[^>]+>/gi, '');
+                        e.preventDefault();
+                        e.target.editor.insertHTML(clean);
+                    }
+                });
 				
                 // --- ограничение файлов (до 5)
                 const photos = document.getElementById('loc_photos');
