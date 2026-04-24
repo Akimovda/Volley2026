@@ -11,5 +11,6 @@ class ChannelMessageData
         public readonly ?string $buttonText = null,
         public readonly ?string $imageUrl = null,
         public readonly bool $silent = false,
+        public readonly ?int $messageThreadId = null,
     ) {}
 }

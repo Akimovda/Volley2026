@@ -48,6 +48,8 @@ class PublishOccurrenceAnnouncementService
                 $privateLink = $this->resolvePrivateLink($event, $occurrence) ?: $fallbackUrl;
             }
 
+            $threadId = data_get($channel->meta, 'message_thread_id');
+
             $message = $this->builder->build($occurrence, [
                 'platform'                => $channel->platform,
                 'use_private_link'        => (bool) $link->use_private_link,
@@ -55,6 +57,7 @@ class PublishOccurrenceAnnouncementService
                 'silent'                  => (bool) $link->silent,
                 'include_image'           => (bool) $link->include_image,
                 'include_registered_list' => (bool) $link->include_registered_list,
+                'message_thread_id'       => $threadId ? (int) $threadId : null,
             ]);
 
             $messageKind = $message->imageUrl ? 'photo' : 'text';

@@ -72,6 +72,7 @@ class OccurrenceAnnouncementMessageBuilder
             buttonText: 'Записаться!',
             imageUrl:   $imageUrl,
             silent:     (bool) ($options['silent'] ?? false),
+            messageThreadId: $options['message_thread_id'] ?? null,
         );
     }
 
