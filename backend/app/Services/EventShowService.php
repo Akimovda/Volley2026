@@ -66,6 +66,48 @@ class EventShowService
         $page['cancel'] = $cancel;
         $page['freePositions'] = $join->data['free_positions'] ?? [];
 
+        // ===== Occurrence overrides on event (in-memory, after cache) =====
+        $occ = $page['occurrence'];
+        $evt = $page['event'];
+
+        // 1. Скалярные поля occurrence → event
+        foreach ([
+            'title', 'description_html',
+            'classic_level_min', 'classic_level_max',
+            'beach_level_min', 'beach_level_max',
+            'age_policy', 'child_age_min', 'child_age_max',
+            'is_paid', 'price_minor', 'price_currency', 'price_text',
+            'payment_method', 'payment_link',
+            'trainer_user_id',
+            'requires_personal_data', 'show_participants',
+        ] as $field) {
+            if (!is_null($occ->$field)) {
+                $evt->$field = $occ->$field;
+            }
+        }
+
+        // 2. Trainers override (event_occurrence_trainers → event.trainers relation)
+        $occ->loadMissing('trainers');
+        if ($occ->trainers->isNotEmpty()) {
+            $evt->setRelation('trainers', $occ->trainers);
+        }
+
+        // 3. Game settings override (event_occurrence_game_settings → event.gameSettings)
+        $occGs = $occ->gameSettingsOverride;
+        $evtGs = $evt->gameSettings;
+        if ($occGs && $evtGs) {
+            foreach ([
+                'subtype', 'teams_count', 'min_players', 'max_players',
+                'gender_policy', 'gender_limited_side', 'gender_limited_max',
+                'gender_limited_positions',
+                'libero_mode', 'positions',
+            ] as $gsField) {
+                if (!is_null($occGs->$gsField)) {
+                    $evtGs->$gsField = $occGs->$gsField;
+                }
+            }
+        }
+
         return $page;
     }
 
