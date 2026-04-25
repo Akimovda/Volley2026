@@ -203,6 +203,18 @@ class EventRegistrationsManagementController extends Controller
         $userId = (int) $data['user_id'];
         $pos = trim((string) ($data['position'] ?? ''));
 
+        // Определяем occurrence_id из запроса или ближайший
+        $occurrenceId = (int) $request->input('occurrence_id', $request->query('occurrence', 0));
+        if (!$occurrenceId) {
+            $occurrenceId = \App\Models\EventOccurrence::where('event_id', $event->id)
+                ->whereNull('cancelled_at')
+                ->where(function ($q) {
+                    $q->whereNull('is_cancelled')->orWhere('is_cancelled', false);
+                })
+                ->orderBy('starts_at')
+                ->value('id');
+        }
+
         $existing = DB::table('event_registrations')
             ->where('event_id', (int) $event->id)
             ->where('user_id', $userId)
@@ -212,6 +224,7 @@ class EventRegistrationsManagementController extends Controller
             if (!empty($existing->cancelled_at)) {
                 $upd = [
                     'cancelled_at' => null,
+                    'occurrence_id' => $occurrenceId ?: null,
                     'updated_at' => now(),
                 ];
 
@@ -238,7 +251,9 @@ class EventRegistrationsManagementController extends Controller
 
         $insert = [
             'event_id' => (int) $event->id,
+            'occurrence_id' => $occurrenceId ?: null,
             'user_id' => $userId,
+            'status' => 'confirmed',
             'cancelled_at' => null,
             'created_at' => now(),
             'updated_at' => now(),
@@ -253,7 +268,7 @@ class EventRegistrationsManagementController extends Controller
         $this->userNotificationService->createRegistrationCreatedNotification(
             userId: $userId,
             eventId: (int) $event->id,
-            occurrenceId: null,
+            occurrenceId: $occurrenceId ?: null,
             eventTitle: (string) ($event->title ?? ('Мероприятие #' . $event->id))
         );
 
@@ -362,7 +377,7 @@ class EventRegistrationsManagementController extends Controller
         $this->userNotificationService->createRegistrationCancelledByOrganizerNotification(
             userId: (int) $row->user_id,
             eventId: (int) $event->id,
-            occurrenceId: null,
+            occurrenceId: $occurrenceId ?: null,
             eventTitle: (string) ($event->title ?? ('Мероприятие #' . $event->id)),
             cancelledByUserId: (int) $authUser->id
         );
