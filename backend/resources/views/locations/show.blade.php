@@ -427,7 +427,7 @@
                     const data = await res.json();
                     const meta = data?.meta || data?.data?.meta;
                     if (!meta) return;
-                    const apiMax    = Number(meta.max_players) || maxCard;
+                    const apiMax    = Number(meta.total_capacity ?? meta.max_players) || maxCard;
                     const remaining = Number.isFinite(Number(meta.remaining_total))
                         ? Number(meta.remaining_total)
                         : Math.max(0, apiMax - (Number(meta.registered_total) || 0));

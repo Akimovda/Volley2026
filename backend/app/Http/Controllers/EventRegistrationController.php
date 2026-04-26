@@ -259,15 +259,28 @@ class EventRegistrationController extends Controller
             }
 
             if ($position) {
-                $slotService = app(EventRoleSlotService::class);
-
-                $ok = $slotService->tryTakeSlot(
-                    $occurrence->event,
-                    $position
-                );
-
-                if (!$ok) {
-                    throw new \Exception('Свободных мест на этой позиции больше нет.');
+                if ($position === 'reserve') {
+                    $occurrence->event->loadMissing('gameSettings');
+                    $reserveMax = (int) ($occurrence->event->gameSettings?->reserve_players_max ?? 0);
+                    if ($reserveMax <= 0) {
+                        throw new \Exception('Запись запасных игроков не предусмотрена.');
+                    }
+                    $reserveCount = \DB::table('event_registrations')
+                        ->where('occurrence_id', $occurrence->id)
+                        ->where('position', 'reserve')
+                        ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
+                        ->whereRaw("(status IS NULL OR status != 'cancelled')")
+                        ->whereNull('cancelled_at')
+                        ->count();
+                    if ($reserveCount >= $reserveMax) {
+                        throw new \Exception('Все места для запасных игроков заняты.');
+                    }
+                } else {
+                    $slotService = app(EventRoleSlotService::class);
+                    $ok = $slotService->tryTakeSlot($occurrence->event, $position);
+                    if (!$ok) {
+                        throw new \Exception('Свободных мест на этой позиции больше нет.');
+                    }
                 }
             }
 

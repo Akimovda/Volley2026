@@ -523,7 +523,7 @@ $fCity     = request('city', '');
 							return;
 						}
 						
-						const apiMax       = Number(meta.max_players ?? 0) || 0;
+						const apiMax       = Number(meta.total_capacity ?? meta.max_players ?? 0) || 0;
 						const effectiveMax = apiMax > 0 ? apiMax : maxCard;
 						let remainingTotal = Number(meta.remaining_total);
 						
