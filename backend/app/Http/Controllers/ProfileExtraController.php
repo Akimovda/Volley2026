@@ -166,7 +166,7 @@ class ProfileExtraController extends Controller
                 $errs = [];
                 foreach ($groupFields as $f) {
                     if (!$effective[$f]) {
-                        $errs[$f] = “Заполните все поля группы: Фамилия, Имя, Отчество и Телефон.”;
+                        $errs[$f] = "Заполните все поля группы: Фамилия, Имя, Отчество и Телефон.";
                     }
                 }
                 return back()->withErrors($errs)->withInput();
