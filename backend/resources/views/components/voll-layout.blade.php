@@ -173,7 +173,7 @@
 									<span class="menu-text">Мои мероприятия</span>
 								</a>
 								<a href="/user/profile" class="menu-item">
-									<span class="menu-text">Мои профиль</span>
+									<span class="menu-text">Мой профиль</span>
 								</a>
 								<a href="/profile/complete" class="menu-item">
 									<span class="menu-text">Редактировать профиль</span>
