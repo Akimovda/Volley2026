@@ -151,11 +151,7 @@
     
     $allLinked = $hasTg && $hasVk && $hasYa;
     
-    // Telegram widget settings
     $tgBotUsername = config('services.telegram.bot_username');
-    
-    // ✅ Важно для LINK: Telegram widget не вызывает redirect(), поэтому intent передаем в callback явно
-    $tgAuthUrl = route('auth.telegram.callback', ['intent' => 'link'], true);
     
     // can unlink only if more than one provider linked (чтобы не потерять доступ)
     $canUnlink = $linkedCount > 1;
@@ -508,25 +504,10 @@
 											Привязать
 										</button>
 										@else
-										<div class="provider-telegram">
-											<div id="TGloads" class="w-100 provider-telegram-btn btn btn-small">
-												Загрузка ...
-											</div>									
-											{{-- Виджет Telegram --}}
-											<script
-											async
-    onload="document.getElementById('TGloads').textContent = 'Привязать'"
-    onerror="document.getElementById('TGloads').textContent = 'Ошибка'"						
-											src="https://telegram.org/js/telegram-widget.js?22"
-											data-telegram-login="{{ $tgBotUsername }}"
-											data-size="large"
-											data-radius="10"
-											data-userpic="false"
-											data-request-access="write"
-											data-auth-url="{{ $tgAuthUrl }}"
-											></script>
-
-										</div>
+										<a href="{{ route('auth.telegram.redirect', ['return' => url()->current()]) }}"
+										   class="w-100 btn btn-small btn-tg">
+											Привязать Telegram
+										</a>
 										@endif
 										@endif
 									</div>
