@@ -321,6 +321,9 @@ if ($role === 'admin') {
         $genderLimitedSideVal= $gs->gender_limited_side ?? null;
         $genderLimitedMaxVal = $gs->gender_limited_max ?? null;
 
+        $locationId    = $eff($occurrence->location_id, $event->location_id);
+        $minPlayersVal = $gs->min_players ?? null;
+
         return view('events.occurrence_edit', compact(
             'event', 'occurrence', 'startsLocal', 'tz', 'locations',
             'subtypes', 'gs', 'trainers', 'trainerInherited',
