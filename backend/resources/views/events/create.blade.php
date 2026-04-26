@@ -12,7 +12,6 @@ $tournamentMaxRatingSum = old('tournament_max_rating_sum', $prefill['tournament_
 $tournamentCaptainConfirmsMembers = old('tournament_captain_confirms_members', $prefill['tournament_captain_confirms_members'] ?? true);
 $tournamentAutoSubmitWhenReady = old('tournament_auto_submit_when_ready',
 'tournament_application_mode', $prefill['tournament_auto_submit_when_ready'] ?? false);
-$tournamentSeedingMode = old('tournament_seeding_mode', $prefill['tournament_seeding_mode'] ?? 'manual');
 @endphp
 @php
 $registrationMode = old('registration_mode', $prefill['registration_mode'] ?? 'single');
@@ -60,7 +59,6 @@ $step1Fields = [
 'tournament_captain_confirms_members',
 'tournament_auto_submit_when_ready',
 'tournament_application_mode',
-'tournament_seeding_mode',
 // ✅ trainer
 'trainer_user_ids',      // новое
 'trainer_user_id',       // legacy оставить

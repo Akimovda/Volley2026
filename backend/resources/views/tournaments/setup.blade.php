@@ -254,9 +254,13 @@
 			@else
 			<div class="alert alert-info">В лиге пока нет команд. Команды добавятся после регистрации на турнир.</div>
 			@endif
-			
-			<div class="mt-2">
-				<a class="blink" href="{{ route('seasons.show', $seasonData['season']) }}" class="blink">Страница сезона →</a>
+
+			<div class="mt-2 flex items-center gap-3 flex-wrap">
+				<a class="blink" href="{{ route('seasons.show', $seasonData['season']) }}">Страница сезона →</a>
+				<form method="POST" action="{{ route('tournament.syncLeague', $event) }}" style="margin:0">
+					@csrf
+					<button type="submit" class="league-btn league-btn-success">↻ Синхронизировать команды в лигу</button>
+				</form>
 			</div>
 		</div>
 		@endif
