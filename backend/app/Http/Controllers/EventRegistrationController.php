@@ -377,6 +377,12 @@ class EventRegistrationController extends Controller
         }
         $this->dispatchAnnounceUpdate($occurrence);
 
+        \App\Jobs\NotifyOrganizerRegistrationJob::dispatch(
+            (int) $occurrence->id,
+            (int) $user->id,
+            'registered'
+        )->onQueue('default')->afterCommit();
+
         // Уведомляем друзей пользователя о его записи
         if ($created) {
             try {
@@ -572,7 +578,13 @@ class EventRegistrationController extends Controller
                 eventTitle: $eventTitle
             );
             $this->dispatchAnnounceUpdate($occurrence);
-            
+
+            \App\Jobs\NotifyOrganizerRegistrationJob::dispatch(
+                (int) $occurrence->id,
+                (int) $user->id,
+                'cancelled'
+            )->onQueue('default')->afterCommit();
+
             return $target('status', 'Запись отменена ✅');
         } catch (\Throwable $e) {
             DB::rollBack();

@@ -167,6 +167,32 @@
         </div>
         @endif
 
+        {{-- ======= УВЕДОМЛЕНИЯ О РЕГИСТРАЦИЯХ ======= --}}
+        <div class="ramka">
+            <h3 class="mt-0">🔔 Уведомления о записях игроков</h3>
+            <p class="f-15">
+                Когда включено — при каждой записи или отмене записи на ваши мероприятия
+                вы будете получать сообщение во <strong>все подключённые каналы</strong>.
+            </p>
+
+            <div class="alert alert-warning mb-2">
+                <strong>⚠️ Внимание!</strong> Включая данную функцию, вы можете получать
+                <strong>очень много сообщений</strong>, особенно если у вас много мероприятий
+                с активной записью. Убедитесь, что это вам нужно.
+            </div>
+
+            <form method="POST" action="{{ route('profile.notification_channels.settings') }}" class="d-flex align-items-center gap-1">
+                @csrf
+                <label class="d-flex align-items-center gap-05" style="cursor:pointer;font-size:1rem">
+                    <input type="hidden" name="notify_player_registrations" value="0">
+                    <input type="checkbox" name="notify_player_registrations" value="1"
+                           onchange="this.form.submit()"
+                           {{ ($notifyPlayerRegistrations ?? false) ? 'checked' : '' }}>
+                    <span>{{ ($notifyPlayerRegistrations ?? false) ? 'Уведомления включены' : 'Уведомления выключены' }}</span>
+                </label>
+            </form>
+        </div>
+
         <div class="row row2">
 
             {{-- Левая колонка: подключить системный канал --}}
