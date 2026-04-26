@@ -33,7 +33,8 @@
                 'Турниры'      => ['tournament_match_upcoming','tournament_match_result','tournament_advancement','tournament_completed','tournament_started','tournament_photos'],
                 'Лиги и сезоны'=> ['season_promotion','season_elimination','season_reserve_activated','season_confirm_participation'],
                 'Социальное'   => ['user_level_voted','user_play_liked'],
-                'Администрирование' => ['ad_event_payment_pending','admin_broadcast'],
+                'Уведомления организатору' => ['organizer_player_registered','organizer_player_cancelled'],
+            'Администрирование' => ['ad_event_payment_pending','admin_broadcast'],
             ];
 
             $byCode = $templates->keyBy('code');
