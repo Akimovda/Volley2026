@@ -66,8 +66,8 @@
     =============================== --}}
     @if($event->format === 'tournament')
 	@php
-	$teamsMax = $event->tournament_teams_count ?: ($event->tournamentSettings->teams_count ?? 0);
-	$teamSize = $event->tournamentSettings->team_size_min ?? 2;
+	$teamsMax = $event->tournament_teams_count ?: ($event->tournamentSetting?->teams_count ?? 0);
+	$teamSize = $event->tournamentSetting?->team_size_min ?? 2;
 	$teamsRegistered = \App\Models\EventTeam::where('event_id', $event->id)
 	->whereIn('status', ['ready','pending','submitted','confirmed','approved'])
 	->count();
@@ -80,7 +80,7 @@
 		👥 Команд: <strong>{{ $teamsRegistered }}</strong> / {{ $teamsMax }}
 	</div>
 	<div class="text-muted small mb-1">
-		👤 Свободных мест: <strong>{{ $playersRegistered }}</strong> / {{ $playersMax }}
+		👤 Свободных мест: <strong>{{ max(0, $playersMax - $playersRegistered) }}</strong> / {{ $playersMax }}
 	</div>
     @elseif(!is_null($registeredTotal))
 	<div class="text-muted small mb-1">
@@ -278,6 +278,14 @@
         @endforeach
 		@endif
 		@if(auth()->check() && $myTeams->count() === 0)
+		@php
+		$tournamentTeamsFull = isset($teamsMax, $teamsRegistered) && $teamsMax > 0 && $teamsRegistered >= $teamsMax;
+		@endphp
+		@if($tournamentTeamsFull)
+		<div class="alert alert-warning mt-1">
+			⚠️ Все командные места заняты. Вы можете подать заявку в <strong>резерв</strong> — организатор уведомит вас если освободится место.
+		</div>
+		@endif
 		<form method="POST" action="{{ route('tournamentTeams.store', $event) }}" class="form mt-1">
 			@csrf
 			<input type="text" name="name" class="form-control mb-1" placeholder="Название команды" required>
@@ -293,8 +301,8 @@
 				<option value="libero">Либеро</option>
 			</select>
 			@endif
-			<button type="submit" class="btn btn-primary w-100">
-				Создать команду
+			<button type="submit" class="btn {{ $tournamentTeamsFull ? 'btn-secondary' : 'btn-primary' }} w-100">
+				{{ $tournamentTeamsFull ? '📋 Подать заявку в резерв' : 'Создать команду' }}
 			</button>
 		</form>
 		@endif
