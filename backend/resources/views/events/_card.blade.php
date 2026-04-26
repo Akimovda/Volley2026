@@ -52,7 +52,8 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 		$maxPlayersCard = (int) (data_get($occ, 'max_players') ?? 0);
 		if ($maxPlayersCard <= 0) $maxPlayersCard = (int) (data_get($gs, 'max_players') ?? 0);
 		if ($maxPlayersCard <= 0) $maxPlayersCard = (int) (data_get($event, 'max_players') ?? 0);
-		
+		$maxPlayersCard += (int) (data_get($gs, 'reserve_players_max') ?? 0);
+
 		$showSeatLine = $maxPlayersCard > 0;
 			
 			$positions = $gs?->positions;

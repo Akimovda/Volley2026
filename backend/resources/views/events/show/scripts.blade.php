@@ -30,7 +30,7 @@
 		const playersCount = document.getElementById('players-count');
 		const playersList = document.getElementById('players-list');
 		const progress = document.getElementById('players-progress');
-		const maxPlayers = @json($occurrence->effectiveMaxPlayers());
+		const maxPlayers = @json($occurrence->effectiveMaxPlayers() + (int)($event->gameSettings?->reserve_players_max ?? 0));
 		const hasOccurrence = occurrenceId !== null && occurrenceId !== undefined;
 		
 		/*
@@ -123,70 +123,92 @@
 			if (!hasOccurrence || !playersList) {
 				return;
 			}
-			
+
 			try {
 				const res = await fetch(`/api/occurrences/${occurrenceId}/participants`);
 				const data = await res.json();
-				
+
+				const mainPlayers    = data.filter(p => p.position !== 'reserve');
+				const reservePlayers = data.filter(p => p.position === 'reserve');
+				const reserveList    = document.getElementById('reserve-players-list');
+				const reserveSection = document.getElementById('reserve-players-section');
+
 				playersList.innerHTML = '';
-				
-				if (data.length === 0) {
-					playersList.innerHTML =
-					'<div>Пока никто не записался</div>';
-					return;
-				}
-				
-				// Группируем по group_key для отображения пар
-				const groupOrder = [];
-				const groupMap = {};
-				const rendered = new Set();
 
-				data.forEach((p) => {
-					if (p.group_key) {
-						if (!groupMap[p.group_key]) {
-							groupMap[p.group_key] = [];
-							groupOrder.push({ type: 'group', key: p.group_key });
+				if (mainPlayers.length === 0) {
+					playersList.innerHTML = '<div>Пока никто не записался</div>';
+				} else {
+					// Группируем по group_key для отображения пар
+					const groupOrder = [];
+					const groupMap = {};
+
+					mainPlayers.forEach((p) => {
+						if (p.group_key) {
+							if (!groupMap[p.group_key]) {
+								groupMap[p.group_key] = [];
+								groupOrder.push({ type: 'group', key: p.group_key });
+							}
+							groupMap[p.group_key].push(p);
+						} else {
+							groupOrder.push({ type: 'solo', player: p });
 						}
-						groupMap[p.group_key].push(p);
-					} else {
-						groupOrder.push({ type: 'solo', player: p });
-					}
-				});
+					});
 
-				let displayIndex = 1;
+					let displayIndex = 1;
 
-				groupOrder.forEach((item) => {
-					if (item.type === 'solo') {
-						const p = item.player;
-						const el = document.createElement('div');
-						el.style.cssText = 'display:flex;align-items:center;gap:0.75rem;margin-bottom:0.5rem;';
-						el.innerHTML = `
-							<div class="f-13" style="width:20px;text-align:right;color:#aaa">${displayIndex++}.</div>
-							<a href="${p.url || '/user/'+p.id}"><img src="${p.avatar || 'https://ui-avatars.com/api/?name=Player'}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;"></a>
-							<div class="f-16" style="flex:1"><a href="${p.url || '/user/'+p.id}" class="blink">${levelIcon(p.level)} ${p.name}</a></div>
-							<div class="f-13 text-muted">${p.position && p.position !== 'player' ? positionLabel(p.position) : ''}</div>
-						`;
-						playersList.appendChild(el);
-					} else {
-						const members = groupMap[item.key];
-						members.forEach((p, mi) => {
+					groupOrder.forEach((item) => {
+						if (item.type === 'solo') {
+							const p = item.player;
 							const el = document.createElement('div');
 							el.style.cssText = 'display:flex;align-items:center;gap:0.75rem;margin-bottom:0.5rem;';
-							const num = displayIndex++;
-							const prefix = mi === 0
-								? `<div class="f-13" style="width:20px;text-align:right;color:#aaa">${num}.</div>`
-								: `<div class="f-13" style="width:20px;text-align:right;color:#aaa;padding-left:16px">╰ ${num}.</div>`;
 							el.innerHTML = `
-						${prefix}
-						<a href="${p.url || '/user/'+p.id}"><img src="${p.avatar || 'https://ui-avatars.com/api/?name=Player'}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;${mi > 0 ? 'margin-left:4px;' : ''}"></a>
-						<div class="f-16" style="flex:1"><a href="${p.url || '/user/'+p.id}" class="blink">${levelIcon(p.level)} ${p.name}</a></div>
-						<div class="f-13 text-muted">${p.position && p.position !== 'player' ? positionLabel(p.position) : ''}</div>
-					`;
+								<div class="f-13" style="width:20px;text-align:right;color:#aaa">${displayIndex++}.</div>
+								<a href="${p.url || '/user/'+p.id}"><img src="${p.avatar || 'https://ui-avatars.com/api/?name=Player'}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;"></a>
+								<div class="f-16" style="flex:1"><a href="${p.url || '/user/'+p.id}" class="blink">${levelIcon(p.level)} ${p.name}</a></div>
+								<div class="f-13 text-muted">${p.position && p.position !== 'player' ? positionLabel(p.position) : ''}</div>
+							`;
 							playersList.appendChild(el);
+						} else {
+							const members = groupMap[item.key];
+							members.forEach((p, mi) => {
+								const el = document.createElement('div');
+								el.style.cssText = 'display:flex;align-items:center;gap:0.75rem;margin-bottom:0.5rem;';
+								const num = displayIndex++;
+								const prefix = mi === 0
+									? `<div class="f-13" style="width:20px;text-align:right;color:#aaa">${num}.</div>`
+									: `<div class="f-13" style="width:20px;text-align:right;color:#aaa;padding-left:16px">╰ ${num}.</div>`;
+								el.innerHTML = `
+									${prefix}
+									<a href="${p.url || '/user/'+p.id}"><img src="${p.avatar || 'https://ui-avatars.com/api/?name=Player'}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;${mi > 0 ? 'margin-left:4px;' : ''}"></a>
+									<div class="f-16" style="flex:1"><a href="${p.url || '/user/'+p.id}" class="blink">${levelIcon(p.level)} ${p.name}</a></div>
+									<div class="f-13 text-muted">${p.position && p.position !== 'player' ? positionLabel(p.position) : ''}</div>
+								`;
+								playersList.appendChild(el);
+							});
+						}
+					});
+				}
+
+				// Запасные игроки
+				if (reserveList && reserveSection) {
+					if (reservePlayers.length > 0) {
+						reserveSection.style.display = '';
+						reserveList.innerHTML = '';
+						reservePlayers.forEach((p, i) => {
+							const el = document.createElement('div');
+							el.style.cssText = 'display:flex;align-items:center;gap:0.75rem;margin-bottom:0.5rem;';
+							el.innerHTML = `
+								<div class="f-13" style="width:20px;text-align:right;color:#aaa">${i + 1}.</div>
+								<a href="${p.url || '/user/'+p.id}"><img src="${p.avatar || 'https://ui-avatars.com/api/?name=Player'}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;"></a>
+								<div class="f-16" style="flex:1"><a href="${p.url || '/user/'+p.id}" class="blink">${levelIcon(p.level)} ${p.name}</a></div>
+							`;
+							reserveList.appendChild(el);
 						});
+					} else {
+						reserveSection.style.display = 'none';
 					}
-				});
-				} catch (e) {
+				}
+			} catch (e) {
 				console.error('participants load error', e);
 			}
 		}
@@ -216,9 +238,10 @@
 				middle: 'ЦБ',
 				opposite: 'Диагональный',
 				libero: 'Либеро',
-				player: ''
+				player: '',
+				reserve: 'Запасной',
 			};
-			
+
 			return map[pos] ?? pos;
 		}
 		

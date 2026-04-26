@@ -599,8 +599,9 @@ if ($role === 'admin') {
             'reg_starts_days_before'   => ['nullable', 'integer', 'min:0', 'max:365'],
             'reg_ends_minutes_before'  => ['nullable', 'integer', 'min:0', 'max:10080'],
             'cancel_lock_minutes_before' => ['nullable', 'integer', 'min:0', 'max:10080'],
-            'game_max_players'         => ['nullable', 'integer', 'min:0'],
-            'game_min_players'         => ['nullable', 'integer', 'min:0'],
+            'game_max_players'             => ['nullable', 'integer', 'min:0'],
+            'game_min_players'             => ['nullable', 'integer', 'min:0'],
+            'game_reserve_players_max'     => ['nullable', 'integer', 'min:0', 'max:20'],
             'game_subtype'             => ['nullable', 'string', 'max:32'],
             'game_libero_mode'         => ['nullable', 'string', 'max:32'],
             'game_gender_policy'       => ['nullable', 'string', 'max:64'],
@@ -727,6 +728,9 @@ if ($role === 'admin') {
                     : null,
                 'girls_max' => $data['game_girls_max'] ?? null,
                 'teams_count' => $data['teams_count'] ?? null,
+                'reserve_players_max' => array_key_exists('game_reserve_players_max', $data)
+                    ? (($data['game_reserve_players_max'] === '' || $data['game_reserve_players_max'] === null) ? null : (int) $data['game_reserve_players_max'])
+                    : null,
             ], static fn ($v) => $v !== null);
     
             if (!isset($gsPayload['subtype']) && !$event->gameSettings) {

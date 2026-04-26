@@ -343,7 +343,30 @@
 					'limit' => $slot->max_slots
 				];
 			}
-			
+
+			/*
+				|--------------------------------------------------------------------------
+				| RESERVE SLOTS
+				| Открываются только когда все основные позиции заняты
+				|--------------------------------------------------------------------------
+			*/
+			$reserveMax = (int) ($settings?->reserve_players_max ?? 0);
+			if ($reserveMax > 0 && empty($freePositions)) {
+				$reserveCount = $registrationsByPosition->get('reserve')?->count() ?? 0;
+				// Не считаем текущую запись пользователя (если он уже запасной)
+				if ($userRegistration && $userRegistration->position === 'reserve') {
+					$reserveCount = max(0, $reserveCount - 1);
+				}
+				$freeReserve = max(0, $reserveMax - $reserveCount);
+				if ($freeReserve > 0) {
+					$freePositions[] = [
+						'key'   => 'reserve',
+						'free'  => $freeReserve,
+						'limit' => $reserveMax,
+					];
+				}
+			}
+
 			return $freePositions;
 		}
 		
@@ -714,14 +737,18 @@
 			
 			$registeredTotal = $occurrence->registrations_count ?? $registrations->count();
 
-			$remainingTotal = max(0, $maxPlayers - $registeredTotal);
+			$reserveMax = (int) ($occurrence->event->gameSettings?->reserve_players_max ?? 0);
+			$totalCapacity = $maxPlayers + $reserveMax;
+			$remainingTotal = max(0, $totalCapacity - $registeredTotal);
 
 			$result->data['free_positions'] = $freePositions;
 
 			$result->data['meta'] = [
-				'max_players'      => $maxPlayers,
-				'registered_total' => $registeredTotal,
-				'remaining_total'  => $remainingTotal,
+				'max_players'          => $maxPlayers,
+				'reserve_players_max'  => $reserveMax,
+				'total_capacity'       => $totalCapacity,
+				'registered_total'     => $registeredTotal,
+				'remaining_total'      => $remainingTotal,
 				'is_registered'    => $result->meta['is_registered'] ?? false,
 				'user_position'    => $result->meta['user_position'] ?? null,
 				'age_policy'       => $agePolicy,

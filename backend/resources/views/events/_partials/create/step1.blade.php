@@ -209,6 +209,17 @@
 													</div>
 												</div>
 												
+												{{-- reserve_players_max --}}
+												<div class="mt-1" data-show-if="direction=classic">
+													<label class="pt-05">Запасные игроки</label>
+													<select name="game_reserve_players_max" id="game_reserve_players_max" class="w-full rounded-lg border-gray-200">
+														<option value="" @selected(!old('game_reserve_players_max', $prefill['game_reserve_players_max'] ?? ''))>Нет</option>
+														@for($i = 1; $i <= 10; $i++)
+															<option value="{{ $i }}" @selected((int)old('game_reserve_players_max', $prefill['game_reserve_players_max'] ?? 0) === $i)>{{ $i }}</option>
+														@endfor
+													</select>
+												</div>
+
 												{{-- libero_mode --}}
 												<div id="libero_mode_block" class="mt-1" data-show-if="direction=classic,game_subtype=5x1">
 													<label class="pt-05">Режим либеро</label>
