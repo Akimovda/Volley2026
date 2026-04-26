@@ -204,6 +204,7 @@
 											<div class="col-sm-4">
 												<label>Начало регистрации</label>
 												<input type="hidden" name="reg_starts_days_before" id="reg_starts_days_before" value="{{ $oldRegStartsDaysBefore }}">
+										<input type="hidden" name="reg_starts_hours_before" id="reg_starts_hours_before" value="{{ old('reg_starts_hours_before', 0) }}">
 												<div class="d-flex" style="gap:.5rem;align-items:center">
 												<select id="reg_starts_days_sel" style="width:auto">
 													@for ($d = 0; $d <= 90; $d++)
@@ -232,6 +233,8 @@
 														var d = parseInt(daysSel.value || 0);
 														var h = parseInt(hoursSel.value || 0);
 														hidden.value = d;
+var hiddenH = document.getElementById('reg_starts_hours_before');
+if (hiddenH) hiddenH.value = h;
 														if (startsInput && startsInput.value) {
 															try {
 																var start = new Date(startsInput.value);
