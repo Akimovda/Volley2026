@@ -105,6 +105,14 @@
                         <span class="menu-text">Мои купоны</span>
                     @endif
                 </a>
+                <a href="{{ route('player.my-events') }}"
+                   class="menu-item {{ $activeMenu === 'my_events' ? 'active' : '' }}">
+                    @if($activeMenu === 'my_events')
+                        <strong class="cd menu-text">Мои мероприятия</strong>
+                    @else
+                        <span class="menu-text">Мои мероприятия</span>
+                    @endif
+                </a>
                 <a href="{{ route('player.dashboard') }}"
                    class="menu-item {{ $activeMenu === 'player_dashboard' ? 'active' : '' }}">
                     @if($activeMenu === 'player_dashboard')
@@ -301,6 +309,14 @@
             <strong class="cd menu-text">Мои купоны</strong>
         @else
             <span class="menu-text">Мои купоны</span>
+        @endif
+    </a>
+    <a href="{{ route('player.my-events') }}"
+       class="menu-item {{ $activeMenu === 'my_events' ? 'active' : '' }}">
+        @if($activeMenu === 'my_events')
+            <strong class="cd menu-text">Мои мероприятия</strong>
+        @else
+            <span class="menu-text">Мои мероприятия</span>
         @endif
     </a>
     <a href="{{ route('player.dashboard') }}"
