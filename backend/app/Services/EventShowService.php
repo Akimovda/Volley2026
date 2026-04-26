@@ -156,7 +156,8 @@ class EventShowService
             ])
             ->withCount([
                 'registrations as registrations_count' => function ($q) {
-                    $q->where(function ($qq) {
+                    $q->whereNull('cancelled_at')
+                    ->where(function ($qq) {
                         $qq->whereNull('is_cancelled')->orWhere('is_cancelled', false);
                     })
                     ->where(function ($qq) {

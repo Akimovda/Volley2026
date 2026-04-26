@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use App\Services\EventOccurrenceStatsService;
 use App\Services\StaffLogService;
 
 class EventRegistrationsManagementController extends Controller
@@ -236,6 +237,10 @@ class EventRegistrationsManagementController extends Controller
                     ->where('id', (int) $existing->id)
                     ->update($upd);
 
+                if ($occurrenceId) {
+                    app(EventOccurrenceStatsService::class)->increment($occurrenceId);
+                }
+
                 $this->userNotificationService->createRegistrationCreatedNotification(
                     userId: $userId,
                     eventId: (int) $event->id,
@@ -264,6 +269,10 @@ class EventRegistrationsManagementController extends Controller
         }
 
         DB::table('event_registrations')->insert($insert);
+
+        if ($occurrenceId) {
+            app(EventOccurrenceStatsService::class)->increment($occurrenceId);
+        }
 
         $this->userNotificationService->createRegistrationCreatedNotification(
             userId: $userId,
@@ -360,8 +369,19 @@ class EventRegistrationsManagementController extends Controller
             ->where('id', $registration)
             ->update([
                 'cancelled_at' => $isCancelled ? null : now(),
-                'updated_at' => now(),
+                'is_cancelled'  => $isCancelled ? false : true,
+                'status'        => $isCancelled ? 'confirmed' : 'cancelled',
+                'updated_at'    => now(),
             ]);
+
+        $occId = $row->occurrence_id ?? null;
+        if ($occId) {
+            if ($isCancelled) {
+                app(EventOccurrenceStatsService::class)->increment((int) $occId);
+            } else {
+                app(EventOccurrenceStatsService::class)->decrement((int) $occId);
+            }
+        }
 
         if ($isCancelled) {
             $this->userNotificationService->createRegistrationCreatedNotification(
@@ -405,7 +425,7 @@ class EventRegistrationsManagementController extends Controller
         $row = DB::table('event_registrations')
             ->where('id', $registration)
             ->where('event_id', (int) $event->id)
-            ->first(['id', 'user_id', 'group_key']);
+            ->first(['id', 'user_id', 'group_key', 'occurrence_id', 'cancelled_at', 'is_cancelled', 'status']);
 
         if (!$row) {
             return back()->with('error', 'Регистрация не найдена.');
@@ -426,6 +446,12 @@ class EventRegistrationsManagementController extends Controller
 
         if (!$deleted) {
             return back()->with('error', 'Регистрация не найдена.');
+        }
+
+        // Уменьшаем счётчик только если запись была активной
+        $wasActive = empty($row->cancelled_at) && !$row->is_cancelled && $row->status !== 'cancelled';
+        if ($wasActive && !empty($row->occurrence_id)) {
+            app(EventOccurrenceStatsService::class)->decrement((int) $row->occurrence_id);
         }
 
         $this->userNotificationService->createRegistrationCancelledByOrganizerNotification(
