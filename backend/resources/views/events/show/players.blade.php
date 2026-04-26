@@ -85,7 +85,7 @@
     @elseif(!is_null($registeredTotal))
 	<div class="text-muted small mb-1">
 		Свободных мест:
-		<span id="players-count">{{ $registeredTotal }}</span>
+		<span id="players-count">{{ $maxPlayers > 0 ? max(0, $maxPlayers - $registeredTotal) : $registeredTotal }}</span>
 		@if($maxPlayers)
 		/ {{ $maxPlayers }}
 		@endif

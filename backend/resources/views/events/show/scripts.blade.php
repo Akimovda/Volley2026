@@ -59,7 +59,9 @@
 				*/
 				channel.listen('.stats.updated', (e) => {
 					if (playersCount) {
-						playersCount.textContent = e.registeredTotal;
+						playersCount.textContent = maxPlayers > 0
+							? Math.max(0, maxPlayers - e.registeredTotal)
+							: e.registeredTotal;
 					}
 					
 					if (progress && maxPlayers) {
@@ -101,7 +103,9 @@
 					
 					if (playersCount) {
 						const current = parseInt(playersCount.textContent || '0', 10);
-						playersCount.textContent = current + 1;
+						playersCount.textContent = maxPlayers > 0
+							? Math.max(0, current - 1)
+							: current + 1;
 					}
 				});
 				} catch (err) {
@@ -255,7 +259,9 @@
 				const data = await res.json();
 				
 				if (data.registered_total !== undefined && playersCount) {
-					playersCount.textContent = data.registered_total;
+					playersCount.textContent = maxPlayers > 0
+						? Math.max(0, maxPlayers - data.registered_total)
+						: data.registered_total;
 				}
 				if (data.registered_total !== undefined && progress && maxPlayers > 0) {
 					const percent = Math.min(100, (data.registered_total / maxPlayers) * 100);
