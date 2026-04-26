@@ -60,6 +60,14 @@
         <a href="{{ route('tournament.pdf.results', $event) }}" class="btn btn-secondary f-13" style="padding:6px 12px">
             📊 PDF Результаты
         </a>
+        @auth
+        @if(auth()->user()->role === 'admin' || (int)($event->organizer_id ?? 0) === auth()->id())
+        <a href="{{ route('tournament.setup', [$event, 'occurrence_id' => $selectedOccurrence?->id]) }}"
+           class="btn btn-primary f-13" style="padding:6px 12px">
+            ⚙️ Настроить турнир
+        </a>
+        @endif
+        @endauth
     </div>
 
     {{-- Табы --}}
