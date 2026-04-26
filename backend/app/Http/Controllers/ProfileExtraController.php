@@ -145,6 +145,35 @@ class ProfileExtraController extends Controller
         $data = $request->validate($rules, $messages);
 
         // =========================
+        // 1.5) Групповая валидация: ФИО + телефон — всё или ничего
+        // =========================
+        if (in_array('last_name', $allowed, true)) {
+            $groupFields = ['last_name', 'first_name', 'patronymic', 'phone'];
+            $groupLabels = [
+                'last_name'  => 'Фамилия',
+                'first_name' => 'Имя',
+                'patronymic' => 'Отчество',
+                'phone'      => 'Телефон',
+            ];
+            $effective = [];
+            foreach ($groupFields as $f) {
+                $val = array_key_exists($f, $data) ? $data[$f] : ($target->$f ?? null);
+                $effective[$f] = !is_null($val) && trim((string) $val) !== '';
+            }
+            $anyFilled = in_array(true, $effective, true);
+            $allFilled = !in_array(false, $effective, true);
+            if ($anyFilled && !$allFilled) {
+                $errs = [];
+                foreach ($groupFields as $f) {
+                    if (!$effective[$f]) {
+                        $errs[$f] = “Заполните все поля группы: Фамилия, Имя, Отчество и Телефон.”;
+                    }
+                }
+                return back()->withErrors($errs)->withInput();
+            }
+        }
+
+        // =========================
         // 2) Защита “после заполнения” (только для self, если не admin)
         // =========================
         if ($mode === 'self' && !$isAdmin) {

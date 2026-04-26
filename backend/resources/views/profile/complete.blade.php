@@ -1370,6 +1370,25 @@
 									ok = ok && !bad;
 								}
 								
+								// Группа ФИО + телефон: всё или ничего
+								{
+									const grp = [
+										document.querySelector('input[name="last_name"]'),
+										document.querySelector('input[name="first_name"]'),
+										document.querySelector('input[name="patronymic"]'),
+										phoneMasked,
+									].filter(Boolean);
+									if (grp.length > 0) {
+										const vals = grp.map(el => (el.value || '').trim());
+										const anyFilled = vals.some(v => v !== '');
+										if (anyFilled) {
+											grp.forEach((el, i) => {
+												if (!vals[i]) { setInvalid(el, true); ok = false; }
+											});
+										}
+									}
+								}
+
 								// City: если введено что-то, но city_id не выбран — подсветим
 								if (cityInput && !cityInput.disabled && cityId) {
 									const q = (cityInput.value || '').trim();
