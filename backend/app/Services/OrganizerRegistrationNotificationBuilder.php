@@ -19,6 +19,11 @@ class OrganizerRegistrationNotificationBuilder
         'defender' => 'Защитник',
     ];
 
+    public function __construct(
+        private NotificationTemplateService  $templateService,
+        private NotificationTemplateRenderer $templateRenderer,
+    ) {}
+
     /**
      * @param  string $type  'registered' | 'cancelled'
      */
@@ -28,97 +33,60 @@ class OrganizerRegistrationNotificationBuilder
         string $type,
         string $platform = 'telegram'
     ): ChannelMessageData {
-        $event    = $occurrence->event;
-        $tz       = $occurrence->timezone ?: ($event->timezone ?: 'UTC');
-        $starts   = Carbon::parse($occurrence->starts_at, 'UTC')->setTimezone($tz);
-        $durationSec = $occurrence->duration_sec ?? $event->duration_sec ?? null;
-        $ends     = $durationSec ? $starts->copy()->addSeconds((int) $durationSec) : null;
+        $templateCode = $type === 'registered'
+            ? 'organizer_player_registered'
+            : 'organizer_player_cancelled';
 
-        $text = $this->buildText($occurrence, $player, $type, $starts, $ends, $platform);
+        $data = $this->buildTemplateData($occurrence, $player);
 
-        $occUrl = route('events.show', [
-            'event'      => (int) $event->id,
-            'occurrence' => (int) $occurrence->id,
-        ]);
+        $tpl = $this->templateService->findActiveTemplate($templateCode);
 
-        $messageThreadId = null;
+        if ($tpl) {
+            $title     = $this->templateRenderer->render($tpl->title_template, $data) ?? '';
+            $body      = $this->templateRenderer->render($tpl->body_template, $data) ?? '';
+            $btnText   = $tpl->button_text ? ($this->templateRenderer->render($tpl->button_text, $data) ?? $tpl->button_text) : 'Открыть мероприятие';
+            $btnUrl    = $tpl->button_url_template ? ($this->templateRenderer->render($tpl->button_url_template, $data) ?? null) : ($data['event_url'] ?? null);
+        } else {
+            $title   = $type === 'registered' ? '✅ Регистрация подтверждена' : '⛔️ Бронь отменена';
+            $body    = $this->buildFallbackText($data, $type);
+            $btnText = 'Открыть мероприятие';
+            $btnUrl  = $data['event_url'] ?? null;
+        }
 
         return new ChannelMessageData(
-            title: $type === 'registered' ? '✅ Регистрация подтверждена' : '⛔️ Бронь отменена',
-            text: $text,
-            buttonUrl: $occUrl,
-            buttonText: 'Открыть мероприятие',
-            imageUrl: null,
-            silent: false,
-            messageThreadId: $messageThreadId,
+            title: $title,
+            text: $body,
+            buttonUrl: $btnUrl,
+            buttonText: $btnText,
         );
     }
 
-    private function buildText(
-        EventOccurrence $occurrence,
-        User $player,
-        string $type,
-        Carbon $starts,
-        ?Carbon $ends,
-        string $platform
-    ): string {
+    private function buildTemplateData(EventOccurrence $occurrence, User $player): array
+    {
         $event    = $occurrence->event;
         $location = $event->location ?? null;
+        $tz       = $occurrence->timezone ?: ($event->timezone ?: 'UTC');
 
-        $header = $type === 'registered' ? '✅ Регистрация подтверждена' : '⛔️ Бронь отменена';
+        $starts      = Carbon::parse($occurrence->starts_at, 'UTC')->setTimezone($tz);
+        $durationSec = $occurrence->duration_sec ?? $event->duration_sec ?? null;
+        $ends        = $durationSec ? $starts->copy()->addSeconds((int) $durationSec) : null;
 
-        $lines = [];
-        $lines[] = $header;
-        $lines[] = '';
-
-        // Название
-        $title = (string) ($event->title ?? '—');
-        $lines[] = '🏐 ' . ($platform === 'telegram' ? "<b>{$title}</b>" : $title);
-        $lines[] = '';
-        $lines[] = 'Информация:';
-        $lines[] = '';
-
-        // Дата
         Carbon::setLocale('ru');
-        $dayName  = mb_ucfirst($starts->translatedFormat('l'));
-        $dateStr  = $starts->translatedFormat('j F');
-        $lines[] = "📆: {$dayName}, {$dateStr}";
+        $dayName = mb_ucfirst($starts->translatedFormat('l'));
+        $dateStr = $starts->translatedFormat('j F');
+        $timeStr = $starts->format('H:i') . ($ends ? ' - ' . $ends->format('H:i') : '');
 
-        // Время
-        $timeStr = $starts->format('H:i');
-        if ($ends) {
-            $timeStr .= ' - ' . $ends->format('H:i');
-        }
-        $lines[] = "🕘: {$timeStr}";
+        $addrParts = array_filter([
+            $location->metro   ?? null,
+            $location->city?->name ?? null,
+            $location->address ?? null,
+        ]);
+        $locationFull = $addrParts ? implode(', ', $addrParts) : ($location->name ?? '');
 
-        // Место
-        if ($location) {
-            $addrParts = array_filter([
-                $location->metro ?? null,
-                $location->city?->name ?? null,
-                $location->address ?? null,
-            ]);
-            $addr = $addrParts ? implode(', ', $addrParts) : ($location->name ?? null);
-            if ($addr) {
-                $lines[] = "📍: {$addr}";
-            }
-        }
+        $registered  = $this->countRegistered((int) $occurrence->id);
+        $maxPlayers  = $this->getMaxPlayers($occurrence);
+        $available   = $maxPlayers > 0 ? max(0, $maxPlayers - $registered) : 0;
 
-        $lines[] = '';
-
-        // Статистика мест
-        $registered = $this->countRegistered((int) $occurrence->id);
-        $maxPlayers = $this->getMaxPlayers($occurrence);
-        if ($maxPlayers > 0) {
-            $available = max(0, $maxPlayers - $registered);
-            $lines[] = "Сейчас {$registered} мест(о) забронировано, а {$available} доступно.";
-        }
-
-        $lines[] = '';
-        $lines[] = 'Детали записи:';
-        $lines[] = '';
-
-        // Игрок
         $playerName = trim(implode(' ', array_filter([
             $player->last_name,
             $player->first_name,
@@ -127,20 +95,54 @@ class OrganizerRegistrationNotificationBuilder
         if ($playerName === '') {
             $playerName = (string) ($player->name ?? '—');
         }
-        $lines[] = "👤 : {$playerName}";
 
-        $phone = (string) ($player->phone ?? '');
-        if ($phone !== '') {
-            $lines[] = "☎️ : {$phone}";
+        $positionCode  = $this->getPlayerPosition($player->id, $occurrence->id);
+        $positionLabel = $positionCode ? (self::POS_LABELS[$positionCode] ?? $positionCode) : '';
+
+        $occUrl = route('events.show', [
+            'event'      => (int) $event->id,
+            'occurrence' => (int) $occurrence->id,
+        ]);
+
+        return [
+            'event_title'      => (string) ($event->title ?? ''),
+            'event_date'       => "{$dayName}, {$dateStr}",
+            'event_time'       => $timeStr,
+            'location_full'    => $locationFull,
+            'booked_count'     => (string) $registered,
+            'available_count'  => (string) $available,
+            'player_name'      => $playerName,
+            'player_phone'     => (string) ($player->phone ?? ''),
+            'player_position'  => $positionLabel,
+            'event_url'        => $occUrl,
+        ];
+    }
+
+    private function buildFallbackText(array $data, string $type): string
+    {
+        $header = $type === 'registered' ? '✅ Регистрация подтверждена' : '⛔️ Бронь отменена';
+        $lines  = [
+            $header, '',
+            "🏐 {$data['event_title']}", '',
+            'Информация:', '',
+            "📆: {$data['event_date']}",
+            "🕘: {$data['event_time']}",
+        ];
+        if ($data['location_full'] !== '') {
+            $lines[] = "📍: {$data['location_full']}";
         }
-
-        // Позиция
-        $position = $this->getPlayerPosition($player->id, $occurrence->id);
-        if ($position !== null) {
-            $posLabel = self::POS_LABELS[$position] ?? $position;
-            $lines[] = "✅ {$posLabel}";
+        $lines[] = '';
+        $lines[] = "Сейчас {$data['booked_count']} мест(о) забронировано, а {$data['available_count']} доступно.";
+        $lines[] = '';
+        $lines[] = 'Детали записи:';
+        $lines[] = '';
+        $lines[] = "👤 : {$data['player_name']}";
+        if ($data['player_phone'] !== '') {
+            $lines[] = "☎️ : {$data['player_phone']}";
         }
-
+        if ($data['player_position'] !== '') {
+            $lines[] = "✅ {$data['player_position']}";
+        }
         return implode("\n", $lines);
     }
 
@@ -157,20 +159,19 @@ class OrganizerRegistrationNotificationBuilder
 
     private function getMaxPlayers(EventOccurrence $occurrence): int
     {
-        $max = $occurrence->max_players
+        return (int) ($occurrence->max_players
             ?? $occurrence->event?->gameSettings?->max_players
-            ?? 0;
-        return (int) $max;
+            ?? 0);
     }
 
     private function getPlayerPosition(int $userId, int $occurrenceId): ?string
     {
-        $row = DB::table('event_registrations')
+        $val = DB::table('event_registrations')
             ->where('user_id', $userId)
             ->where('occurrence_id', $occurrenceId)
             ->whereNull('cancelled_at')
             ->value('position');
 
-        return $row !== null ? (string) $row : null;
+        return $val !== null ? (string) $val : null;
     }
 }
