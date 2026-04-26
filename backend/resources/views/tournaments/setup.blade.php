@@ -261,6 +261,13 @@
 					@csrf
 					<button type="submit" class="league-btn league-btn-success">↻ Синхронизировать команды в лигу</button>
 				</form>
+				<form method="POST" action="{{ route('tournament.applyPromotion', $event) }}" style="margin:0"
+					  onsubmit="return confirm('Применить продвижение: выбыть последние команды в резерв, подтянуть из резерва?')">
+					@csrf
+					<button type="submit" class="league-btn" style="background:#fff3cd;border-color:#ffc107;color:#856404">
+						🔄 Перенести составы на следующий тур
+					</button>
+				</form>
 			</div>
 		</div>
 		@endif

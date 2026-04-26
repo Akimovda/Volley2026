@@ -65,7 +65,9 @@ class TournamentPromotionService
             $leagueRules = $rules[$league->name] ?? $league->config ?? [];
 
             $promoteCount  = (int) ($leagueRules['promote_count'] ?? $league->promoteCount());
-            $eliminateCount = (int) ($leagueRules['eliminate_count'] ?? $league->eliminateCount());
+            // Для группы Lite: минимум 2 выбывания, если явно не задано иное
+            $isLiteLeague = stripos($league->name, 'lite') !== false || stripos($league->name, 'лайт') !== false;
+            $eliminateCount = (int) ($leagueRules['eliminate_count'] ?? $league->eliminateCount() ?: ($isLiteLeague ? 2 : 0));
 
             // 5. Promote — лучшие уходят в высшую лигу
             if ($promoteCount > 0) {

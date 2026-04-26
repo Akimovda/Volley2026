@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\TournamentSeason;
 use App\Models\TournamentLeague;
 use App\Models\TournamentLeagueTeam;
+use App\Models\TournamentSeasonEvent;
 use App\Models\EventTeam;
 use App\Models\User;
 use Illuminate\Support\Collection;
@@ -147,6 +148,13 @@ class TournamentLeagueService
                     report($e);
                 }
 
+                // Уведомляем организатора
+                try {
+                    $this->notifyOrganizerReserveOffer($league, $reserve);
+                } catch (\Throwable $e) {
+                    report($e);
+                }
+
                 // Создаём job для таймаута
                 \App\Jobs\ExpireReserveConfirmationJob::dispatch($reserve->id)
                     ->delay(now()->addHours(2));
@@ -228,6 +236,33 @@ class TournamentLeagueService
                 'button_url' => $confirmUrl,
             ],
             channels: ['in_app', 'telegram', 'vk', 'max']
+        );
+    }
+
+    /**
+     * Уведомление организатора о том, что команда из резерва приглашена на место.
+     */
+    private function notifyOrganizerReserveOffer(TournamentLeague $league, TournamentLeagueTeam $leagueTeam): void
+    {
+        $season = $league->season;
+        $event = \App\Models\TournamentSeasonEvent::where('season_id', $season->id)
+            ->whereHas('event', fn($q) => $q->whereNotNull('organizer_id'))
+            ->first()?->event;
+
+        if (!$event?->organizer_id) return;
+
+        $teamName = $leagueTeam->team?->name ?? 'Команда #' . $leagueTeam->id;
+
+        app(UserNotificationService::class)->create(
+            userId: (int) $event->organizer_id,
+            type: 'reserve_spot_offered_organizer',
+            title: 'Команда из резерва приглашена',
+            body: "Команда «{$teamName}» из резерва лиги «{$league->name}» получила приглашение. Ожидаем подтверждения от капитана (2 часа).",
+            payload: [
+                'league_id' => $league->id,
+                'league_team_id' => $leagueTeam->id,
+            ],
+            channels: ['in_app', 'telegram']
         );
     }
 
