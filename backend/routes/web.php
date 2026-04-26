@@ -1081,6 +1081,9 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         ->name('org.tournament-analytics');
     Route::get('/player/dashboard', [\App\Http\Controllers\PlayerDashboardController::class, 'index'])
         ->name('player.dashboard');
+
+    Route::get('/my/events', [\App\Http\Controllers\PlayerDashboardController::class, 'myEvents'])
+        ->name('player.my-events');
 });
 
 /*

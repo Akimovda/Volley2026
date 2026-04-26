@@ -215,4 +215,44 @@ class PlayerDashboardController extends Controller
         }
         return $streak;
     }
+
+    public function myEvents(Request $request)
+    {
+        $userId = $request->user()->id;
+        $filter = $request->input('filter', 'current');
+        $userTz = $request->user()->timezone ?? 'Europe/Moscow';
+
+        $query = DB::table('event_registrations as er')
+            ->join('event_occurrences as eo', 'eo.id', '=', 'er.occurrence_id')
+            ->join('events as e', 'e.id', '=', 'er.event_id')
+            ->leftJoin('locations as l', 'l.id', '=', 'e.location_id')
+            ->leftJoin('cities as ci', 'ci.id', '=', 'l.city_id')
+            ->where('er.user_id', $userId)
+            ->whereRaw('(er.is_cancelled IS NULL OR er.is_cancelled = false)')
+            ->whereNull('eo.cancelled_at')
+            ->select(
+                'er.id as registration_id',
+                'er.position',
+                'er.created_at as registered_at',
+                'e.id as event_id',
+                'e.title',
+                'e.format',
+                'eo.id as occurrence_id',
+                'eo.starts_at',
+                'eo.cancel_self_until',
+                'e.cancel_self_until as event_cancel_self_until',
+                'l.name as location_name',
+                'ci.name as city_name'
+            );
+
+        if ($filter === 'current') {
+            $query->where('eo.starts_at', '>=', now())->orderBy('eo.starts_at', 'asc');
+        } else {
+            $query->where('eo.starts_at', '<', now())->orderBy('eo.starts_at', 'desc');
+        }
+
+        $registrations = $query->paginate(20)->withQueryString();
+
+        return view('player.my-events', compact('registrations', 'filter', 'userTz'));
+    }
 }
