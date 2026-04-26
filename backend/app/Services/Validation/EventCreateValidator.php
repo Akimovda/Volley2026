@@ -175,7 +175,14 @@
 			'min:1',
 			'max:99'
             ],
-			
+
+            'game_reserve_players_max' => [
+			'nullable',
+			'integer',
+			'min:0',
+			'max:20'
+            ],
+
             'game_allow_girls' => ['nullable','boolean'],
 			
             'game_girls_max' => [

@@ -633,15 +633,19 @@ class EventGameSettingsService
         |--------------------------------------------------------------------------
         */
     
+        $rawReserve = $data['game_reserve_players_max'] ?? null;
+        $reservePlayersMax = ($rawReserve !== null && $rawReserve !== '') ? (int) $rawReserve : null;
+
         $egsPayload = [
-            'subtype'       => $subtype,
-            'libero_mode'   => $liberoMode,
-            'min_players'   => $data['game_min_players'] ?? null,
-            'max_players'   => $maxPlayersCalculated,
-            'teams_count'   => $teams,
-            'allow_girls'   => $allowGirls,
-            'girls_max'     => $girlsMax,
-            'positions'     => $positions,
+            'subtype'              => $subtype,
+            'libero_mode'          => $liberoMode,
+            'min_players'          => $data['game_min_players'] ?? null,
+            'max_players'          => $maxPlayersCalculated,
+            'teams_count'          => $teams,
+            'allow_girls'          => $allowGirls,
+            'girls_max'            => $girlsMax,
+            'positions'            => $positions,
+            'reserve_players_max'  => $reservePlayersMax,
         ];
     
         if (empty($egsPayload['subtype'])) {

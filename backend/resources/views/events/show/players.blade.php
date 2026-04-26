@@ -58,7 +58,9 @@
     <h2 class="-mt-05">Запись на мероприятие</h2>
 	
     @php
-	$maxPlayers = $occurrence->effectiveMaxPlayers();
+	$maxPlayers    = $occurrence->effectiveMaxPlayers();
+	$reserveMax    = (int) ($event->gameSettings?->reserve_players_max ?? 0);
+	$totalCapacity = $maxPlayers + $reserveMax;
     @endphp
 	
     {{-- ===============================
@@ -85,16 +87,16 @@
     @elseif(!is_null($registeredTotal))
 	<div class="text-muted small mb-1">
 		Свободных мест:
-		<span id="players-count">{{ $maxPlayers > 0 ? max(0, $maxPlayers - $registeredTotal) : $registeredTotal }}</span>
-		@if($maxPlayers)
-		/ {{ $maxPlayers }}
+		<span id="players-count">{{ $totalCapacity > 0 ? max(0, $totalCapacity - $registeredTotal) : $registeredTotal }}</span>
+		@if($totalCapacity)
+		/ {{ $totalCapacity }}
 		@endif
 	</div>
     @endif
-	
+
     @php
     $pCount = ($event->format === 'tournament') ? ($playersRegistered ?? 0) : ($registeredTotal ?? 0);
-    $pMax   = ($event->format === 'tournament') ? ($playersMax ?? 0) : ($maxPlayers ?? 0);
+    $pMax   = ($event->format === 'tournament') ? ($playersMax ?? 0) : ($totalCapacity ?? 0);
     $percent = ($pMax > 0) ? min(100, ($pCount / $pMax) * 100) : 0;
 	
 	$barClass = 'bg-danger';
@@ -335,12 +337,18 @@
 			— скидка <strong>{{ $activeCoupon->getDiscountPct() }}%</strong>
 		</div>
 		@endif
+		@php $hasOnlyReserve = count($freePositions) === 1 && ($freePositions[0]['key'] ?? '') === 'reserve'; @endphp
+		@if($hasOnlyReserve)
+		<div class="alert alert-warning mb-1">
+			Основные места заняты. Вы можете записаться как запасной игрок.
+		</div>
+		@endif
 		@foreach ($freePositions as $pos)
 		@php
 		$key = (string)($pos['key'] ?? '');
 		$free = (int)($pos['free'] ?? 0);
 		@endphp
-		
+
 		<form method="POST" action="{{ $joinAction }}" data-ajax-join>
 			@csrf
 			<input type="hidden" name="position" value="{{ $key }}">
@@ -351,19 +359,21 @@
 			@endif
 			<button
 			type="submit"
-			class="d-flex between btn btn-primary w-100 mb-1"
+			class="d-flex between btn {{ $key === 'reserve' ? 'btn-secondary' : 'btn-primary' }} w-100 mb-1"
 			{{ $free <= 0 ? 'disabled' : '' }}>
 				{{ position_name($key) }}
 				<span>
-					<span class="pl-1 pr-1 f-11">Свободно:</span> {{ $free }} 
+					<span class="pl-1 pr-1 f-11">Свободно:</span> {{ $free }}
 				</span>
 			</button>
 		</form>
 		@endforeach
-		
+
+		@if(!$hasOnlyReserve)
 		<div class="text-muted small">
 			Выбери позицию<br>(показаны только свободные).
 		</div>
+		@endif
 		@endif
 		@endif
 	</div>{{-- /join-registration-block --}}		
@@ -379,9 +389,11 @@ $isFinished    = $occurrence->isFinished();
 $isRunning     = $occurrence->isRunning();
 $eventStarted  = $isFinished || $isRunning;
 
-$maxPlayers    = $occurrence->effectiveMaxPlayers();
-$registered    = $registered_total ?? 0;
-$isFull        = $maxPlayers > 0 && $registered >= $maxPlayers;
+$maxPlayers       = $occurrence->effectiveMaxPlayers();
+$reserveMaxFull   = (int) ($event->gameSettings?->reserve_players_max ?? 0);
+$totalCapacityFull = $maxPlayers + $reserveMaxFull;
+$registered       = $registered_total ?? 0;
+$isFull           = $totalCapacityFull > 0 && $registered >= $totalCapacityFull;
 
 $direction     = (string)($event->direction ?? 'classic');
 $isBeach       = $direction === 'beach';
@@ -712,6 +724,12 @@ $showWaitlist = !$isTournament && !$eventStarted && $isFull && auth()->check();
 			@endif
 			@else
 			<div id="players-list"></div>
+			@if($reserveMax > 0)
+			<div id="reserve-players-section" style="display:none;margin-top:1rem;">
+				<div class="text-muted small b-600 mb-05">🔄 Запасные игроки</div>
+				<div id="reserve-players-list"></div>
+			</div>
+			@endif
 			@endif
 		</div>
 		@endif

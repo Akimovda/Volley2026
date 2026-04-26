@@ -683,6 +683,7 @@ use App\Services\StaffLogService;
 				$prefill['game_gender_limited_reg_starts_days_before'] = $gs->gender_limited_reg_starts_days_before;
 				$prefill['game_allow_girls'] = (bool)($gs->allow_girls ?? true);
 				$prefill['game_girls_max'] = $gs->girls_max;
+				$prefill['game_reserve_players_max'] = $gs->reserve_players_max;
 			}
 			
 			unset($prefill['starts_at'], $prefill['public_token']);

@@ -1385,7 +1385,12 @@ document.addEventListener("trix-file-accept", function (event) {
 	if (liberoModeSelect) liberoModeSelect.addEventListener('change', function () {
 		if (genderPolicyEl && trim(genderPolicyEl.value || '') === 'mixed_limited') buildPositionsCheckboxes();
 	});
-	
+
+	var reservePlayersSelect = document.getElementById('game_reserve_players_max');
+	if (reservePlayersSelect) {
+		reservePlayersSelect.addEventListener('change', function () { refreshUI('reserve_change'); });
+	}
+
 	// ========== 11. RECURRENCE UI ==========
 	if (recEl) recEl.addEventListener('change', syncRecFieldsVisibility);
 	if (recType) recType.addEventListener('change', syncMonthsVisibility);
@@ -2213,9 +2218,16 @@ function recalcPlayers() {
     }
     
     var preview = document.getElementById('players_preview');
-    
+
     if (preview) {
-        preview.textContent = maxPlayers + " игроков";
+        var reserveEl = document.getElementById('game_reserve_players_max');
+        var reserveMax = reserveEl ? (parseInt(reserveEl.value, 10) || 0) : 0;
+        var totalMax = maxPlayers + reserveMax;
+        var text = totalMax + " игроков";
+        if (reserveMax > 0 && maxPlayers > 0) {
+            text += " (" + maxPlayers + " основных + " + reserveMax + " запасных)";
+        }
+        preview.textContent = text;
     }
 }
 	
