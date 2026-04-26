@@ -227,10 +227,11 @@ if ($endType === 'until') {
 			}
 			
 			$regStartsDaysBefore = (int)($data['reg_starts_days_before'] ?? 3);
+			$regStartsHoursBefore = (int)($data['reg_starts_hours_before'] ?? 0);
 			$regEndsMinutesBefore = (int)($data['reg_ends_minutes_before'] ?? 15);
 			$cancelLockMinutesBefore = (int)($data['cancel_lock_minutes_before'] ?? 60);
 			
-			$regStartsUtc = $startsUtc->subDays($regStartsDaysBefore);
+			$regStartsUtc = $startsUtc->subDays($regStartsDaysBefore)->subHours($regStartsHoursBefore);
 			$regEndsUtc = $startsUtc->subMinutes($regEndsMinutesBefore);
 			$cancelUntilUtc = $startsUtc->subMinutes($cancelLockMinutesBefore);
 			
