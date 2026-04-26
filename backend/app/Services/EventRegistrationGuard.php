@@ -713,21 +713,15 @@
 		): void {
 			
 			$registeredTotal = $occurrence->registrations_count ?? $registrations->count();
-			$direction = (string) ($occurrence->event->direction ?? 'classic');
-			
+
 			$remainingTotal = max(0, $maxPlayers - $registeredTotal);
-			$remainingSlots = collect($freePositions)->sum('free');
-			
-			$effectiveRemaining = $direction === 'classic'
-				? $remainingSlots
-				: $remainingTotal;
-			
+
 			$result->data['free_positions'] = $freePositions;
-			
+
 			$result->data['meta'] = [
 				'max_players'      => $maxPlayers,
 				'registered_total' => $registeredTotal,
-				'remaining_total'  => $effectiveRemaining,
+				'remaining_total'  => $remainingTotal,
 				'is_registered'    => $result->meta['is_registered'] ?? false,
 				'user_position'    => $result->meta['user_position'] ?? null,
 				'age_policy'       => $agePolicy,
