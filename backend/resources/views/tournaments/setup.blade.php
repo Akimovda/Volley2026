@@ -255,12 +255,16 @@
 			<div class="alert alert-info">В лиге пока нет команд. Команды добавятся после регистрации на турнир.</div>
 			@endif
 
+			@php
+			$_tourAllCompleted = $stages->isNotEmpty() && $stages->every(fn($s) => $s->status === 'completed');
+			@endphp
 			<div class="mt-2 flex items-center gap-3 flex-wrap">
 				<a class="blink" href="{{ route('seasons.show', $seasonData['season']) }}">Страница сезона →</a>
 				<form method="POST" action="{{ route('tournament.syncLeague', $event) }}" style="margin:0">
 					@csrf
 					<button type="submit" class="league-btn league-btn-success">↻ Синхронизировать команды в лигу</button>
 				</form>
+				@if($_tourAllCompleted)
 				<form method="POST" action="{{ route('tournament.applyPromotion', $event) }}" style="margin:0"
 					  onsubmit="return confirm('Применить продвижение: выбыть последние команды в резерв, подтянуть из резерва?')">
 					@csrf
@@ -268,6 +272,7 @@
 						🔄 Перенести составы на следующий тур
 					</button>
 				</form>
+				@endif
 			</div>
 		</div>
 		@endif
