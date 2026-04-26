@@ -387,6 +387,8 @@ if ($role === 'admin') {
             'girls_max'                        => 'nullable|integer|min:0|max:20',
             'gender_limited_max'               => 'nullable|integer|min:0|max:10',
             'gender_limited_side'              => 'nullable|string|in:female,male',
+            'gender_limited_positions'         => 'nullable|array',
+            'gender_limited_positions.*'       => 'nullable|string|max:32',
 
             // ===== Оплата =====
             'is_paid'                          => 'sometimes|boolean',
@@ -438,10 +440,13 @@ if ($role === 'admin') {
         $occurrence->description_html = $override($data['description_html'] ?? null, $event->description_html);
 
         // ===== Показ участников (override) =====
-        $occurrence->show_participants = $override(
-            (bool) ($data['show_participants'] ?? false),
-            (bool) ($event->show_participants ?? true)
-        );
+        // Только если поле реально пришло в запросе (sometimes|boolean)
+        if (array_key_exists('show_participants', $data)) {
+            $occurrence->show_participants = $override(
+                (bool) $data['show_participants'],
+                (bool) ($event->show_participants ?? true)
+            );
+        }
 
         // ===== Уровни и возраст (override) =====
         $occurrence->classic_level_min = $override($data['classic_level_min'] ?? null, $event->classic_level_min);
@@ -513,14 +518,28 @@ if ($role === 'admin') {
         // =============================================================
         $eventGs = $event->gameSettings;  // текущие настройки серии
 
+        // gender_limited_positions: сравниваем как отсортированные массивы
+        $glpSubmitted = isset($data['gender_limited_positions']) && is_array($data['gender_limited_positions'])
+            ? array_values(array_unique(array_filter($data['gender_limited_positions'])))
+            : null;
+        $glpEvent = $eventGs?->gender_limited_positions ?? null;
+        if (is_string($glpEvent)) $glpEvent = json_decode($glpEvent, true) ?? [];
+        $glpOverride = null;
+        if ($glpSubmitted !== null) {
+            $a = $glpSubmitted; sort($a);
+            $b = is_array($glpEvent) ? $glpEvent : []; sort($b);
+            $glpOverride = ($a === $b) ? null : $glpSubmitted;
+        }
+
         $gsOverride = [
-            'subtype'             => $override($data['subtype'] ?? null, $eventGs?->subtype),
-            'teams_count'         => $override(isset($data['teams_count']) ? (int)$data['teams_count'] : null, $eventGs?->teams_count),
-            'min_players'         => $override(isset($data['min_players']) && $data['min_players'] !== '' ? (int)$data['min_players'] : null, $eventGs?->min_players),
-            'gender_policy'       => $override($data['gender_policy'] ?? null, $eventGs?->gender_policy),
-            'girls_max'           => $override(isset($data['girls_max']) && $data['girls_max'] !== '' ? (int)$data['girls_max'] : null, $eventGs?->girls_max),
-            'gender_limited_max'  => $override(isset($data['gender_limited_max']) && $data['gender_limited_max'] !== '' ? (int)$data['gender_limited_max'] : null, $eventGs?->gender_limited_max),
-            'gender_limited_side' => $override($data['gender_limited_side'] ?? null, $eventGs?->gender_limited_side),
+            'subtype'                  => $override($data['subtype'] ?? null, $eventGs?->subtype),
+            'teams_count'              => $override(isset($data['teams_count']) ? (int)$data['teams_count'] : null, $eventGs?->teams_count),
+            'min_players'              => $override(isset($data['min_players']) && $data['min_players'] !== '' ? (int)$data['min_players'] : null, $eventGs?->min_players),
+            'gender_policy'            => $override($data['gender_policy'] ?? null, $eventGs?->gender_policy),
+            'girls_max'                => $override(isset($data['girls_max']) && $data['girls_max'] !== '' ? (int)$data['girls_max'] : null, $eventGs?->girls_max),
+            'gender_limited_max'       => $override(isset($data['gender_limited_max']) && $data['gender_limited_max'] !== '' ? (int)$data['gender_limited_max'] : null, $eventGs?->gender_limited_max),
+            'gender_limited_side'      => $override($data['gender_limited_side'] ?? null, $eventGs?->gender_limited_side),
+            'gender_limited_positions' => $glpOverride,
         ];
 
         // Если все override-значения NULL — удаляем запись override (нет смысла держать пустую)
