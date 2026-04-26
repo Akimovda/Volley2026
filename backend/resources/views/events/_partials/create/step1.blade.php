@@ -434,39 +434,6 @@
 												</label>
 											</div>
 										</div>
-										<div class="col-md-8">
-											<div class="card">
-												
-												<label>Посев</label>
-												
-												<div class="row">
-													<div class="col-md-4">
-														
-														<select
-														name="tournament_seeding_mode"
-														id="tournament_seeding_mode"
-														class="w-full rounded-lg border-gray-200"
-														>
-															<option value="manual" @selected((string)$tournamentSeedingMode === 'manual')>Ручной</option>
-															<option value="random" @selected((string)$tournamentSeedingMode === 'random')>Случайный</option>
-															<option value="rating" @selected((string)$tournamentSeedingMode === 'rating')>По рейтингу</option>
-														</select>
-														@error('tournament_seeding_mode')
-														<div class="text-xs text-red-600 mt-1">{{ $message }}</div>
-														@enderror
-														
-													</div>
-													<div class="col-md-8">
-														
-														<ul class="list f-16">
-															<li>Состав команды определяется выбранной схемой игры.</li>
-															<li>Макс. всего игроков считается автоматически: основной состав + запасные.</li>
-															<li>Для пляжных турниров можно дополнительно ограничить сумму рейтинга.</li>
-														</ul>
-													</div>
-												</div>
-											</div>
-										</div>
 									</div>	
 								</div>
 							</div>
