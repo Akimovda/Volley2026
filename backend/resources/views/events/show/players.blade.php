@@ -80,11 +80,11 @@
 		👥 Команд: <strong>{{ $teamsRegistered }}</strong> / {{ $teamsMax }}
 	</div>
 	<div class="text-muted small mb-1">
-		👤 Участников: <strong>{{ $playersRegistered }}</strong> / {{ $playersMax }}
+		👤 Свободных мест: <strong>{{ $playersRegistered }}</strong> / {{ $playersMax }}
 	</div>
     @elseif(!is_null($registeredTotal))
 	<div class="text-muted small mb-1">
-		Участников:
+		Свободных мест:
 		<span id="players-count">{{ $registeredTotal }}</span>
 		@if($maxPlayers)
 		/ {{ $maxPlayers }}
