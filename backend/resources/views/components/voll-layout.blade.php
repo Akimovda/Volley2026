@@ -169,7 +169,7 @@
 								<a href="{{ route('notifications.index') }}" class="menu-item">
 									<span class="menu-text">Уведомления</span>
 								</a>
-								<a href="/" class="menu-item">
+								<a href="{{ route('player.my-events') }}" class="menu-item">
 									<span class="menu-text">Мои мероприятия</span>
 								</a>
 								<a href="/user/profile" class="menu-item">
