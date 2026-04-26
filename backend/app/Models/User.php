@@ -53,6 +53,7 @@
         'beach_level',
         'beach_universal',
         'allow_user_contact',
+        'notify_player_registrations',
         'avatar_media_id',      // 👈 ДОБАВИТЬ
 		];
 		
@@ -73,10 +74,11 @@
 		protected function casts(): array
 		{
 			return [
-            'birth_date'         => 'date',
-            'beach_universal'    => 'boolean',
-            'allow_user_contact' => 'boolean',
-            'password'           => 'hashed',
+            'birth_date'                  => 'date',
+            'beach_universal'             => 'boolean',
+            'allow_user_contact'          => 'boolean',
+            'notify_player_registrations' => 'boolean',
+            'password'                    => 'hashed',
 			];
 		}
 		

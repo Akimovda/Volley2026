@@ -36,9 +36,10 @@ class ProfileNotificationChannelController extends Controller
             ->get();
 
         return view('profile.notification-channels', [
-            'channels'     => $channels,
-            'bindRequests' => $bindRequests,
-            'isPro'        => $user->isOrganizerPro(),
+            'channels'                   => $channels,
+            'bindRequests'               => $bindRequests,
+            'isPro'                      => $user->isOrganizerPro(),
+            'notifyPlayerRegistrations'  => (bool) ($user->notify_player_registrations ?? false),
         ]);
     }
 
@@ -102,6 +103,29 @@ class ProfileNotificationChannelController extends Controller
         return redirect()
             ->route('profile.notification_channels')
             ->with('status', 'Канал уведомлений удалён.');
+    }
+
+    public function updateSettings(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return redirect()->route('login');
+        }
+
+        $this->ensureCanManageChannels($user);
+
+        $data = $request->validate([
+            'notify_player_registrations' => ['nullable', 'boolean'],
+        ]);
+
+        $user->update([
+            'notify_player_registrations' => (bool) ($data['notify_player_registrations'] ?? false),
+        ]);
+
+        return redirect()
+            ->route('profile.notification_channels')
+            ->with('status', 'Настройки уведомлений сохранены.');
     }
 
     private function ensureCanManageChannels($user): void

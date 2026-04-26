@@ -140,6 +140,9 @@ Route::get('/logout', fn () => redirect('/'));
 		
 		Route::delete('/user/profile/notification-channels/{channel}', [ProfileNotificationChannelController::class, 'destroy'])
         ->name('profile.notification_channels.destroy');
+
+		Route::post('/user/profile/notification-channels/settings', [ProfileNotificationChannelController::class, 'updateSettings'])
+        ->name('profile.notification_channels.settings');
 	});
 
 	/*
