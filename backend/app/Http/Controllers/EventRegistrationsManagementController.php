@@ -340,7 +340,7 @@ class EventRegistrationsManagementController extends Controller
         $row = DB::table('event_registrations')
             ->where('id', $registration)
             ->where('event_id', (int) $event->id)
-            ->first(['id', 'user_id', 'group_key', 'cancelled_at']);
+            ->first(['id', 'user_id', 'group_key', 'cancelled_at', 'occurrence_id']);
 
         if (!$row) {
             return back()->with('error', 'Регистрация не найдена.');
@@ -377,7 +377,7 @@ class EventRegistrationsManagementController extends Controller
         $this->userNotificationService->createRegistrationCancelledByOrganizerNotification(
             userId: (int) $row->user_id,
             eventId: (int) $event->id,
-            occurrenceId: $occurrenceId ?: null,
+            occurrenceId: $row->occurrence_id ?? null,
             eventTitle: (string) ($event->title ?? ('Мероприятие #' . $event->id)),
             cancelledByUserId: (int) $authUser->id
         );
