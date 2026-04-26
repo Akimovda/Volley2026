@@ -30,7 +30,7 @@
 		const playersCount = document.getElementById('players-count');
 		const playersList = document.getElementById('players-list');
 		const progress = document.getElementById('players-progress');
-		const maxPlayers = @json($event->gameSettings?->max_players ?? 0);
+		const maxPlayers = @json($maxPlayers ?? 0);
 		const hasOccurrence = occurrenceId !== null && occurrenceId !== undefined;
 		
 		/*
