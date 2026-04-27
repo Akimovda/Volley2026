@@ -66,7 +66,7 @@ $searchUrl = route('api.users.search');
 	
     <x-slot name="d_description">
         <div class="d-flex between fvc mt-1" style="flex-wrap:wrap;gap:1rem;">
-            <div class="f-15" style="opacity:.6;">
+            <div class="f-16">
                 @if($isBeach)
 				🏖 Пляжный волейбол
                 @else
@@ -82,15 +82,20 @@ $searchUrl = route('api.users.search');
 	
     <x-slot name="style">
 		<style>
-			.reg-table { width: 100%; border-collapse: collapse; }
-			.reg-table th { font-size: 1.3rem; opacity: .6; padding: .8rem 1rem; text-align: left; border-bottom: 0.1rem solid var(--border-color, #eee); }
-			.reg-table td { font-size: 1.5rem; padding: 1rem; border-bottom: 0.1rem solid var(--border-color, #eee); vertical-align: middle; }
-			.reg-table tr.cancelled td { opacity: .5; }
-			.badge { display: inline-block; padding: .3rem 1rem; border-radius: 2rem; font-size: 1.3rem; font-weight: 600; }
+
+
+			.badge { display: inline-block; padding: .3rem 1rem; border-radius: 2rem; font-size: 1.5rem; font-weight: 600; }
 			.badge-ok  { background: rgba(76,175,80,.12); color: #2e7d32; }
 			.badge-err { background: rgba(244,67,54,.12);  color: #c62828; }
 			.summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; }
 			@media (max-width: 768px) { .summary-grid { grid-template-columns: 1fr; } }
+			@media (min-width: 769px) {  
+			.table-scrollable {
+			overflow: unset;
+			}
+			}			
+			
+			
 		</style>
 	</x-slot>
 	
@@ -100,14 +105,14 @@ $searchUrl = route('api.users.search');
         @if(session('status'))
         <div class="ramka">
 			<div class="alert alert-success">
-				{{ session('status') }} ✅ 
+				{{ session('status') }}
 			</div>
 		</div>
         @endif
         @if(session('error'))
         <div class="ramka">
 			<div class="alert alert-error">
-				{{ session('error') }} ❌ 
+				{{ session('error') }}
 			</div>
 		</div>
         @endif
@@ -116,35 +121,37 @@ $searchUrl = route('api.users.search');
         <div class="ramka">
             <div class="summary-grid">
                 <div class="card text-center">
-                    <div class="f-13" style="opacity:.6">Свободных мест</div>
-                    <div class="f-32 b-700 cd">{{ $capacityLine }}</div>
-                    <div class="f-13" style="opacity:.5">Активных: {{ $activeCount }}</div>
+                    <div>Свободных мест</div>
+                    <div class="f-22 b-600 cd">{{ $capacityLine }}</div>
+                    <div>Активных: {{ $activeCount }}</div>
 				</div>
                 <div class="card text-center">
-                    <div class="f-13" style="opacity:.6">Дата</div>
-                    <div class="f-16 b-600">{{ $dateLine }}</div>
-                    <div class="f-13" style="opacity:.5">{{ $tz }}</div>
+                    <div>Дата</div>
+                    <div class="b-600">{{ $dateLine }}</div>
+                    <div>{{ $tz }}</div>
 				</div>
                 <div class="card text-center">
-                    <div class="f-13" style="opacity:.6">Место</div>
-                    <div class="f-15 b-600">{{ $address }}</div>
+                    <div>Место</div>
+                    <div class="b-600">{{ $address }}</div>
 				</div>
 			</div>
 		</div>
 		
         {{-- Добавить игрока --}}
-        <div class="ramka" style="z-index:5">
-            <h2 class="-mt-05">➕ Добавить игрока</h2>
-            <div class="f-15 mb-2" style="opacity:.6;">
+        <div class="ramka" style="z-index:6">
+            <h2 class="-mt-05">Добавить игрока</h2>
+            <p>
                 Начните вводить имя или email. Введите <strong>bot</strong> для поиска ботов-помощников.
-			</div>
+			</p>
             <form method="POST"
 			action="{{ route('events.registrations.add', ['event' => $event->id]) }}"
 			id="add-player-form"
 			class="form">
                 @csrf
-                <div class="row row2">
+                <div class="row">
+				
                     <div class="col-md-6">
+					<div class="card">
                         <label>Игрок</label>
                         <div style="position:relative;" id="ac-wrap">
                             <input type="text" id="ac-input" autocomplete="off"
@@ -154,8 +161,10 @@ $searchUrl = route('api.users.search');
 						</div>
                         <div id="ac-selected" style="display:none;margin-top:.5rem;font-size:1.4rem;color:#4caf50;font-weight:600;"></div>
 					</div>
+					</div>
                     @if($hasPositions)
-                    <div class="col-md-4">
+                    <div class="col-md-6">
+				<div class="card">
                         <label>Позиция</label>
                         <select name="position">
                             <option value="">— без позиции —</option>
@@ -164,28 +173,32 @@ $searchUrl = route('api.users.search');
                             @endforeach
 						</select>
 					</div>
+					</div>
                     @endif
-                    <div class="col-md-2 d-flex" style="align-items:flex-end;">
-                        <button type="submit" id="add-player-btn" disabled
-						class="btn btn-secondary w-100" style="opacity:.4;">
+				</div>
+				<div class="text-center mt-2">
+				        <button type="submit" id="add-player-btn" disabled
+						class="btn" style="opacity:.4;">
                             Добавить
 						</button>
-					</div>
-				</div>
+				</div>		
+				
+				
 			</form>
 		</div>
 		
         {{-- Таблица игроков --}}
-        <div class="ramka">
-            <h2 class="-mt-05">👥 Зарегистрированные игроки</h2>
+        <div class="ramka" style="z-index:5">
+            <h2 class="-mt-05">Зарегистрированные игроки</h2>
 			
             @if($registrations->isEmpty())
-            <div class="card text-center" style="padding:3rem;opacity:.5;">
+            <div class="alert alert-info">
                 Пока никто не записан
 			</div>
             @else
-            <div style="overflow-x:auto;">
-                <table class="reg-table">
+			<div class="table-scrollable mb-0">
+				<div class="table-drag-indicator"></div>
+				<table class="table">
                     <thead>
                         <tr>
                             <th>Игрок</th>
@@ -193,14 +206,15 @@ $searchUrl = route('api.users.search');
                             @if($hasPositions)<th>Позиция</th>@endif
                             @if($isBeach)<th>Группа</th>@endif
                             <th>Статус</th>
-                            <th style="text-align:right;">Действия</th>
+                            @if($hasOrgNote ?? false)<th style="min-width:160px">Комментарий</th>@endif
+                            <th class="text-center">Действия</th>
 						</tr>
 					</thead>
                     <tbody>
                         @foreach($registrations as $r)
                         @php
 						$name     = $r->name ?: ($r->email ?: ('User_' . $r->user_id));
-						$phone    = property_exists($r, 'phone') ? ($r->phone ?: '—') : '—';
+						$phone    = $r->phone ?: '—';
 						$posKey   = $r->position ?: '';
 						$posLabel = $posKey ? ($posLabels[$posKey] ?? $posKey) : '—';
 						$st       = $statusText($r);
@@ -210,27 +224,29 @@ $searchUrl = route('api.users.search');
                         <tr class="{{ $st === 'отменено' ? 'cancelled' : '' }}">
                             <td>
                                 <div class="d-flex fvc gap-1">
-                                    <a href="{{ route('users.show', $r->user_id) }}" class="b-600 cd">
+                                    <a href="{{ route('users.show', $r->user_id) }}" class="b-600 blink">
                                         {{ $name }}
 									</a>
-                                    @if($isBot)<span title="Бот" style="opacity:.4;">🤖</span>@endif
+                                    @if($isBot)<span title="Бот">🤖</span>@endif
 								</div>
-                                <div class="f-13" style="opacity:.4;">#{{ $r->user_id }} · reg #{{ $r->id }}</div>
+                                <p class="pt-1">#{{ $r->user_id }} · reg #{{ $r->id }}</p>
 							</td>
                             <td>{{ $phone }}</td>
                             @if($hasPositions)
                             <td>
-                                <div class="f-14 b-600 mb-05">{{ $posLabel }}</div>
+						{{--
+                                <div class="f-16 mb-05">{{ $posLabel }}</div>
+						--}}		
                                 <form class="d-flex gap-1 fvc" method="POST"
 								action="{{ route('events.registrations.position', ['event' => $event->id, 'registration' => $r->id]) }}">
                                     @csrf @method('PATCH')
-                                    <select name="position" style="font-size:1.3rem;">
+                                    <select name="position">
                                         <option value="">— без —</option>
                                         @foreach($posLabels as $k => $lbl)
                                         <option value="{{ $k }}" @selected($posKey === $k)>{{ $lbl }}</option>
                                         @endforeach
 									</select>
-                                    <button class="btn btn-small btn-secondary" type="submit">✓</button>
+                                    <button class="btn btn-secondary" type="submit">✓</button>
 								</form>
 							</td>
                             @endif
@@ -254,25 +270,33 @@ $searchUrl = route('api.users.search');
                                 @endif
 							</td>
                             @endif
-                            <td>
-                                <span class="badge {{ $st === 'отменено' ? 'badge-err' : 'badge-ok' }}">
+                            <td class="text-center">
+                                <span class="f-15 p-1 pt-05 pb-05 {{ $st === 'отменено' ? 'alert-error' : 'alert-success' }}">
                                     {{ $st }}
 								</span>
 							</td>
-                            <td style="text-align:right;">
-                                <div class="d-flex gap-1" style="justify-content:flex-end;">
-                                    <form method="POST"
-									action="{{ route('events.registrations.cancel', ['event' => $event->id, 'registration' => $r->id]) }}">
-                                        @csrf @method('PATCH')
-                                        <button class="btn btn-small btn-secondary">
-                                            {{ $st === 'отменено' ? '✅ Восстановить' : '❌ Отклонить' }}
-										</button>
-									</form>
+                            <td>
+                                <div class="d-flex gap-1 text-center">
+<form method="POST"
+    action="{{ route('events.registrations.cancel', ['event' => $event->id, 'registration' => $r->id]) }}">
+    @csrf @method('PATCH')
+    
+    <button class="btn {{ $st === 'отменено' ? 'btn-svg icon-copy' : 'btn-danger btn-svg icon-stop' }}" 
+            title="{{ $st === 'отменено' ? 'Восстановить' : 'Отклонить' }}">
+    </button>
+</form>
                                     <form method="POST"
 									action="{{ route('events.registrations.destroy', ['event' => $event->id, 'registration' => $r->id]) }}"
 									onsubmit="return confirm('Удалить регистрацию полностью?');">
                                         @csrf @method('DELETE')
-                                        <button class="btn btn-small btn-secondary">🗑 Удалить</button>
+										<button type="submit" 
+										class="icon-delete btn-alert btn btn-danger btn-svg"
+										data-title="Удалить регистрацию?"
+										data-text="Регистрация будет удалена полностью"
+										data-icon="warning"
+										data-confirm-text="Да, удалить"
+										data-cancel-text="Отмена">
+										</button>	
 									</form>
 								</div>
 							</td>
@@ -287,7 +311,7 @@ $searchUrl = route('api.users.search');
         {{-- Группы (только пляжка) --}}
         @if($isBeach)
         <div class="ramka">
-            <h2 class="-mt-05">👫 Объединить в пару</h2>
+            <h2 class="-mt-05">Объединить в пару</h2>
             <form method="POST"
 			action="{{ route('events.registrations.group.invite', ['event' => $event->id]) }}"
 			class="form">
@@ -318,7 +342,15 @@ $searchUrl = route('api.users.search');
 			</form>
 		</div>
         @endif
-		
+
+        {{-- PDF --}}
+        <div class="ramka text-center">
+            <a href="{{ route('events.registrations.pdf', ['event' => $event->id]) }}{{ request()->has('occurrence') ? '?occurrence=' . (int)request()->query('occurrence') : '' }}"
+               class="btn btn-secondary">
+                ⬇ Скачать список PDF
+            </a>
+        </div>
+
 	</div>
 	
     <x-slot name="script">
@@ -367,7 +399,7 @@ $searchUrl = route('api.users.search');
 						var div = document.createElement('div');
 						div.style.cssText = 'padding:1rem 1.6rem;cursor:pointer;font-size:1.5rem;border-bottom:0.1rem solid var(--border-color,#eee);display:flex;justify-content:space-between;align-items:center;';
 						div.innerHTML =
-						'<span class="b-600">' + (item.is_bot ? '🤖 ' : '') + esc(item.label || item.name) + '</span>' +
+						'<span class="b-500">' + (item.is_bot ? '🤖 ' : '') + esc(item.label || item.name) + '</span>' +
 						(item.meta ? '<span style="font-size:1.3rem;opacity:.5;">' + esc(item.meta) + '</span>' : '');
 						div.addEventListener('mouseover', function() { this.style.background = 'var(--bg-hover,#f5f5f5)'; });
 						div.addEventListener('mouseout',  function() { this.style.background = ''; });
@@ -415,6 +447,30 @@ $searchUrl = route('api.users.search');
 					}
 				});
 			})();
+
+			// --- Автосохранение комментария организатора (blur) ---
+			$(document).on('blur', '.org-note-input', function() {
+				var ta  = $(this);
+				var url = ta.data('url');
+				var val = ta.val();
+				$.ajax({
+					url: url,
+					method: 'POST',
+					headers: {
+						'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+						'X-HTTP-Method-Override': 'PATCH',
+						'Accept': 'application/json',
+					},
+					data: { organizer_note: val, _method: 'PATCH' },
+					success: function() {
+						ta.css('border-color', '#10b981');
+						setTimeout(function() { ta.css('border-color', ''); }, 1500);
+					},
+					error: function() {
+						ta.css('border-color', '#ef4444');
+					}
+				});
+			});
 		</script>
 	</x-slot>
 	
