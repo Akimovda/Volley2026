@@ -39,7 +39,8 @@ final class NotificationTemplateDataBuilder
         $organizer = $event?->organizer ?? $occurrence?->event?->organizer;
 
         $tz = (string) (
-            $occurrence?->timezone
+            $location?->city?->timezone
+            ?: $occurrence?->timezone
             ?: $event?->timezone
             ?: 'UTC'
         );
