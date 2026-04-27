@@ -149,3 +149,113 @@ sudo supervisorctl restart volleyplay-queue:* volleyplay-reverb
 - Протокол: migration-protocol.md (project files)
 - Два Telegram бота: dev (VolleyEvent_bot, порт 8092), prod (VolleyEvents_bot, порт 8094)
 - НЕ держать оба бота в одном канале
+
+## Паттерн поиска игроков (autocomplete)
+
+Эталон: `resources/views/events/show/players.blade.php` — блоки `invite-ac-*` (мульти) и `group-invite-ac-*` (одиночный).
+Используется также в: trainer override (occurrence_edit), group invite.
+
+### HTML структура
+
+```html
+{{-- Обёртка — position:relative, БЕЗ overflow:hidden --}}
+<div style="position:relative" class="mb-2" id="xxx-ac-wrap">
+    <input type="text" id="xxx-ac-input" autocomplete="off" class="form-control"
+        placeholder="Введите имя или email игрока…">
+    <div id="xxx-ac-dd" class="form-select-dropdown trainer_dd"></div>
+</div>
+
+{{-- Одиночный выбор: hidden + индикатор --}}
+<input type="hidden" name="user_id" id="xxx-user-id" value="">
+<div id="xxx-selected"></div>
+
+{{-- Мульти-выбор: список chips (hidden inputs добавляются в форму динамически) --}}
+<div id="xxx-selected-list" class="mb-2"></div>
+```
+
+### JS логика (IIFE, всегда)
+
+```js
+(function() {
+    var input  = document.getElementById('xxx-ac-input');
+    var dd     = document.getElementById('xxx-ac-dd');
+    var timer  = null;
+
+    if (!input) return; // guard обязателен
+
+    function showDd() { dd.classList.add('form-select-dropdown--active'); }
+    function hideDd() { dd.classList.remove('form-select-dropdown--active'); }
+    function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    function render(items) {
+        dd.innerHTML = '';
+        if (!items.length) {
+            dd.innerHTML = '<div class="city-message">Ничего не найдено</div>';
+            showDd(); return;
+        }
+        items.forEach(function(item) {
+            var div = document.createElement('div');
+            div.className = 'trainer-item form-select-option';
+            div.innerHTML = '<div class="text-sm text-gray-900">' + esc(item.label || item.name) + '</div>';
+            div.addEventListener('click', function() { pick(item.id, item.label || item.name); });
+            dd.appendChild(div);
+        });
+        showDd();
+    }
+
+    input.addEventListener('input', function() {
+        clearTimeout(timer);
+        var q = input.value.trim();
+        if (q.length < 2) { hideDd(); return; }
+        dd.innerHTML = '<div class="city-message">Поиск…</div>';
+        showDd();
+        timer = setTimeout(function() {
+            fetch('/api/users/search?q=' + encodeURIComponent(q), {
+                headers: { 'Accept': 'application/json' },
+                credentials: 'same-origin'
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) { render(data.items || []); })
+            .catch(function() {
+                dd.innerHTML = '<div class="city-message">Ошибка загрузки</div>';
+                showDd();
+            });
+        }, 250);
+    });
+
+    document.addEventListener('click', function(e) {
+        var wrap = document.getElementById('xxx-ac-wrap');
+        if (wrap && !wrap.contains(e.target)) hideDd();
+    });
+
+    input.addEventListener('keydown', function(e) { if (e.key === 'Escape') hideDd(); });
+})();
+```
+
+### Chips (мульти-выбор)
+
+- `selected` — объект `{ id: label }`, hidden inputs добавляются в `form` динамически
+- Chip: `span.className = 'd-flex mb-1 between f-16 fvc pl-1 pr-1'`
+- Кнопка удаления: `button.className = 'trainer-chip-remove btn btn-small btn-secondary'`, `textContent = '×'`
+- Hidden per chip: `input type="hidden" name="to_user_ids[]" value="ID"` + `data-invite-hidden="ID"` для удаления
+- Уже выбранный item в dropdown: `div.style.opacity = '0.4'`, обработчик клика не вешается
+
+### Одиночный выбор
+
+- `hidden.value = String(id)`, `input.value = label`, индикатор `selected.textContent = '✅ Выбран: ' + label`
+- `reset()` при вводе нового текста: `hidden.value = ''`, `btn.disabled = true`
+
+### API
+
+- Endpoint: `GET /api/users/search?q=QUERY`
+- Ответ: `{ items: [ { id, label, name } ] }`
+- `item.label || item.name` — использовать оба варианта
+
+### Важно
+
+- НЕ использовать `class="form-select-dropdown"` для управления видимостью — он даёт `visibility:hidden`
+- Показ/скрытие ТОЛЬКО через `form-select-dropdown--active`
+- `fetch` с `credentials:'same-origin'` — достаточно для большинства браузеров; на Safari при CORS-проблемах заменить на `jQuery.ajax`
+- Весь JS — в IIFE `(function(){...})()`
+- Guard `if (!input) return;` в начале каждого блока
+- Debounce 250мс, минимум 2 символа
