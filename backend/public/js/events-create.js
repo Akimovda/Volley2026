@@ -480,6 +480,7 @@ document.addEventListener("trix-file-accept", function (event) {
 		
 		if (!curAllowed) {
 			tournamentSchemeEl.value = (direction === 'beach') ? '2x2' : '5x1';
+			if (typeof toggleReserveFields === 'function') toggleReserveFields();
 		}
 	}
 	
@@ -1044,9 +1045,14 @@ document.addEventListener("trix-file-accept", function (event) {
 			
 			if (format === 'tournament') {
             	if (!need(tournamentSchemeEl && val(tournamentSchemeEl), 'Выбери схему турнира.', tournamentSchemeEl)) return false;
-            	if (!need(tournamentReserveEl && val(tournamentReserveEl), 'Укажи максимум запасных игроков.', tournamentReserveEl)) return false;
-				
+
             	var scheme = String(val(tournamentSchemeEl));
+
+            	if (scheme !== '2x2') {
+            		if (!need(tournamentReserveEl && val(tournamentReserveEl), 'Укажи максимум запасных игроков.', tournamentReserveEl)) return false;
+            	} else if (tournamentReserveEl && tournamentReserveEl.value === '') {
+            		tournamentReserveEl.value = '0';
+            	}
             	var basePlayers = getTournamentBasePlayersByScheme(scheme);
             	var tReserve = Number(val(tournamentReserveEl));
             	var expectedTotal = basePlayers + tReserve;

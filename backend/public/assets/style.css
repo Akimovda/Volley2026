@@ -1344,7 +1344,12 @@ body.dark .btn-secondary:hover svg {
 	color: #2967BA;
 	box-shadow: none;
 }
-
+.btn-success,
+body.dark .btn-success{
+	background: #247f1c;
+	color: #fff;
+	box-shadow: none;
+}
 .btn-outline:hover {
 	background: rgba(41, 103, 186, 0.08);
 	border-color: #2A75D6;
