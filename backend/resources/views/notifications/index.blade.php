@@ -97,8 +97,12 @@
 							</div>
 							<div>
 								<div class="text-right f-16">
-									{{ $notification->created_at?->format('d.m.Y H:i') }}
-								</div>					
+									@php
+										$notifDt = \App\Support\DateTime::utcToLocal($notification->created_at, $userTz);
+									@endphp
+									{{ $notifDt?->format('d.m.Y H:i') }}
+									<span class="text-muted f-12">{{ $notifDt?->format('T') }}</span>
+								</div>
 								
 							</div>						
 						</div>
