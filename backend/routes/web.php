@@ -291,6 +291,8 @@ Route::get('/auth/telegram/callback', [TelegramAuthController::class, 'callback'
         ->name("events.occurrences.edit");
     Route::put("/events/{event}/occurrences/{occurrence}", [EventManagementController::class, "updateOccurrence"])
         ->name("events.occurrences.update");
+    Route::post("/events/{event}/occurrences/{occurrence}/toggle-bot", [EventManagementController::class, "toggleBotOccurrence"])
+        ->name("events.occurrences.toggle-bot");
 		// Подача заявки команды на турнир
 		Route::post('/events/{event}/teams/{team}/submit', [TournamentTeamController::class, 'submitApplication'])
         ->name('tournamentTeams.submit');
@@ -450,6 +452,9 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
 		
 		Route::put('/events/create/event_management/{event}', [EventManagementController::class, 'update'])
         ->name('events.event_management.update');
+
+        Route::post('/events/create/event_management/{event}/toggle-bot', [EventManagementController::class, 'toggleBotEvent'])
+        ->name('events.event_management.toggle-bot');
 		
 		Route::delete('/events/event_management/{event}', [EventManagementController::class, 'destroy'])
         ->name('events.event_management.destroy');

@@ -297,9 +297,23 @@ return ['label' => 'Мест: —', 'free' => null, 'max' => null, 'registered' 
 								{{-- Действия --}}
 								<td class="nowrap align-top f-0">
 									
-									@if($isRecurring)
-									<div class="d-flex gap-1">	
-                                        {{-- Для recurring: изменить серию, открыть даты, отменить всю серию --}}
+									@php
+									$showBotBtn = ($event->format ?? 'game') !== 'tournament'
+										&& ($event->registration_type ?? 'individual') !== 'team'
+										&& (bool)($event->allow_registration ?? false);
+									$botOn = (bool)($event->bot_assistant_enabled ?? false);
+								@endphp
+								@if($isRecurring)
+									<div class="d-flex gap-1">
+                                        @if($showBotBtn)
+                                        <button type="button"
+                                            class="btn btn-svg event-bot-toggle"
+                                            data-url="{{ route('events.event_management.toggle-bot', ['event' => (int)$event->id]) }}"
+                                            data-enabled="{{ $botOn ? '1' : '0' }}"
+                                            title="{{ $botOn ? 'Бот включён для всех дат (нажми чтобы выключить)' : 'Бот выключен (нажми чтобы включить)' }}"
+                                            @if($botOn) style="border-color:#10b981;color:#10b981" @endif>🤖</button>
+                                        @endif
+	                                        {{-- Для recurring: изменить серию, открыть даты, отменить всю серию --}}
                                         <a href="{{ route('events.event_management.edit', ['event' => (int)$event->id]) }}"
 										class="icon-edit btn btn-svg"
 										title="Изменить серию"></a>
@@ -347,8 +361,16 @@ return ['label' => 'Мест: —', 'free' => null, 'max' => null, 'registered' 
 									class="mt-1 w-100 btn btn-secondary btn-small"
 									>Открыть даты</a>										
 									@else
-									<div class="d-flex gap-1">	
-                                        {{-- Для single: изменить, копировать, отменить --}}
+									<div class="d-flex gap-1">
+                                        @if($showBotBtn)
+                                        <button type="button"
+                                            class="btn btn-svg event-bot-toggle"
+                                            data-url="{{ route('events.event_management.toggle-bot', ['event' => (int)$event->id]) }}"
+                                            data-enabled="{{ $botOn ? '1' : '0' }}"
+                                            title="{{ $botOn ? 'Бот включён (нажми чтобы выключить)' : 'Бот выключен (нажми чтобы включить)' }}"
+                                            @if($botOn) style="border-color:#10b981;color:#10b981" @endif>🤖</button>
+                                        @endif
+	                                        {{-- Для single: изменить, копировать, отменить --}}
                                         <a href="{{ route('events.event_management.edit', ['event' => (int)$event->id]) }}"
 										class="icon-edit btn btn-svg"
 										title="Изменить"></a>
@@ -514,4 +536,50 @@ return ['label' => 'Мест: —', 'free' => null, 'max' => null, 'registered' 
 				refreshBulk();
 			});
 		</script>
-	</x-voll-layout>				
+
+    <x-slot name="script">
+    <script>
+    $(function() {
+        $(document).on('click', '.event-bot-toggle', function() {
+            var btn = $(this);
+            var url = btn.data('url');
+            btn.prop('disabled', true);
+
+            $.ajax({
+                url: url,
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+                dataType: 'json',
+                success: function(data) {
+                    var on = !!data.enabled;
+                    btn.data('enabled', on ? '1' : '0');
+                    if (on) {
+                        btn.css({'border-color': '#10b981', 'color': '#10b981'});
+                    } else {
+                        btn.css({'border-color': '', 'color': ''});
+                    }
+                    btn.attr('title', on
+                        ? 'Бот включён для всех дат (нажми чтобы выключить)'
+                        : 'Бот выключен (нажми чтобы включить)');
+                    swal({
+                        title: on ? '🤖 Бот включён' : '🤖 Бот выключен',
+                        text: on
+                            ? 'Помощник записи активирован для всех дат мероприятия'
+                            : 'Помощник записи деактивирован для всех дат мероприятия',
+                        icon: on ? 'success' : 'info',
+                        button: 'OK',
+                    });
+                },
+                error: function() {
+                    swal({ title: 'Ошибка', text: 'Не удалось изменить статус бота', icon: 'error', button: 'OK' });
+                },
+                complete: function() {
+                    btn.prop('disabled', false);
+                }
+            });
+        });
+    });
+    </script>
+    </x-slot>
+
+	</x-voll-layout>

@@ -137,10 +137,19 @@
                         </thead>
 
                         <tbody>
-                            @foreach($occurrences as $occ)
+                            @php
+                            $showBotToggle = ($event->format ?? 'game') !== 'tournament'
+                                && ($event->registration_type ?? 'individual') !== 'team'
+                                && (bool)($event->allow_registration ?? false);
+                        @endphp
+                        @foreach($occurrences as $occ)
                                 @php
                                     $seat = $seatMeta($occ);
                                     $isCancelled = !empty($occ->cancelled_at);
+                                    $occBotRaw = $occ->getRawOriginal('bot_assistant_enabled');
+                                    $effectiveBot = $occBotRaw === null
+                                        ? (bool)($event->bot_assistant_enabled ?? false)
+                                        : (bool)$occBotRaw;
                                 @endphp
 
                                 <tr>
@@ -169,6 +178,16 @@
 
                                     <td class="align-top nowrap f-0">
                                         <div class="d-flex">
+                                            @if($showBotToggle)
+                                            <button type="button"
+                                                class="btn btn-small btn-secondary mr-1 occ-bot-toggle"
+                                                data-url="{{ route('events.occurrences.toggle-bot', ['event' => (int)$event->id, 'occurrence' => (int)$occ->id]) }}"
+                                                data-enabled="{{ $effectiveBot ? '1' : '0' }}"
+                                                title="{{ $effectiveBot ? 'Бот включён (нажми чтобы выключить)' : 'Бот выключен (нажми чтобы включить)' }}"
+                                                @if($effectiveBot) style="border-color:#10b981;color:#10b981" @endif>
+                                                🤖
+                                            </button>
+                                            @endif
                                             @if($event->format === 'tournament')
                                             <a href="{{ route('tournament.setup', $event) }}"
                                                class="btn btn-small btn-secondary mr-1"
@@ -231,4 +250,46 @@
             @endif
         </div>
     </div>
+
+    <x-slot name="script">
+    <script>
+    $(function() {
+        $(document).on('click', '.occ-bot-toggle', function() {
+            var btn = $(this);
+            var url = btn.data('url');
+            btn.prop('disabled', true);
+
+            $.ajax({
+                url: url,
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+                dataType: 'json',
+                success: function(data) {
+                    var on = !!data.enabled;
+                    btn.data('enabled', on ? '1' : '0');
+                    if (on) {
+                        btn.css({'border-color': '#10b981', 'color': '#10b981'});
+                    } else {
+                        btn.css({'border-color': '', 'color': ''});
+                    }
+                    btn.attr('title', on ? 'Бот включён (нажми чтобы выключить)' : 'Бот выключен (нажми чтобы включить)');
+                    swal({
+                        title: on ? '🤖 Бот включён' : '🤖 Бот выключен',
+                        text: on ? 'Помощник записи активирован для этой даты' : 'Помощник записи отключён для этой даты',
+                        icon: on ? 'success' : 'info',
+                        button: 'OK',
+                    });
+                },
+                error: function() {
+                    swal({ title: 'Ошибка', text: 'Не удалось изменить статус бота', icon: 'error', button: 'OK' });
+                },
+                complete: function() {
+                    btn.prop('disabled', false);
+                }
+            });
+        });
+    });
+    </script>
+    </x-slot>
+
 </x-voll-layout>
