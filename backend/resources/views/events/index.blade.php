@@ -21,15 +21,15 @@ $hasEvents = $evList->isNotEmpty();
 }
 
 
-// ✅ TZ пользователя: null если нет города — каждая карточка/замыкание использует timezone события
-$userTz = auth()->user()?->city?->timezone
-    ? \App\Support\DateTime::effectiveUserTz(auth()->user())
-    : null;
+// ✅ TZ пользователя (всегда строка — нужна для группировки по датам)
+$userTz = \App\Support\DateTime::effectiveUserTz(auth()->user());
+// true только если пользователь явно задал город — иначе карточки покажут timezone события
+$userHasCityTz = !is_null(auth()->user()?->city?->timezone);
 
 // ✅ Формат для карточек occurrences
-$fmtDate = function ($occ) use ($userTz) {
+$fmtDate = function ($occ) use ($userTz, $userHasCityTz) {
 $eventTz = $occ->timezone ?: ($occ->event?->timezone ?: 'UTC');
-$effectiveTz = $userTz ?: $eventTz;
+$effectiveTz = $userHasCityTz ? $userTz : $eventTz;
 
 $sUser = $occ->starts_at
 ? \Illuminate\Support\Carbon::parse($occ->starts_at, 'UTC')->setTimezone($effectiveTz)

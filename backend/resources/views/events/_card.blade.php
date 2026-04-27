@@ -102,7 +102,7 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 			
 			$dirLabel = ($dir === 'beach') ? 'Пляжка' : (($dir === 'classic') ? 'Классика' : '—');
 			$tzEvent  = (string)($occ->timezone ?: ($event?->timezone ?: 'UTC'));
-			$tzUser   = $userTz ?: $tzEvent;
+			$tzUser   = ($userHasCityTz ?? false) ? ($userTz ?? $tzEvent) : $tzEvent;
 			
 			$sLocal = $occ->starts_at
 			? \Illuminate\Support\Carbon::parse($occ->starts_at, 'UTC')->setTimezone($tzUser)
