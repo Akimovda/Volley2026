@@ -632,14 +632,15 @@ class EventRegistrationsManagementController extends Controller
 
         $hasOrgNote = Schema::hasColumn('event_registrations', 'organizer_note');
 
-        $occurrenceId = (int) $request->query('occurrence', 0);
-
-        $regsQuery = DB::table('event_registrations as er')
+        $registrations = DB::table('event_registrations as er')
             ->join('users as u', 'u.id', '=', 'er.user_id')
             ->where('er.event_id', (int) $event->id)
             ->whereNull('er.cancelled_at')
             ->where(function ($q) {
                 $q->whereNull('er.is_cancelled')->orWhere('er.is_cancelled', false);
+            })
+            ->where(function ($q) {
+                $q->whereNull('er.status')->orWhere('er.status', '!=', 'cancelled');
             })
             ->select([
                 'er.id',
@@ -651,13 +652,8 @@ class EventRegistrationsManagementController extends Controller
                 'u.phone',
                 'u.is_bot',
             ])
-            ->orderBy('er.id');
-
-        if ($occurrenceId) {
-            $regsQuery->where('er.occurrence_id', $occurrenceId);
-        }
-
-        $registrations = $regsQuery->get();
+            ->orderBy('er.id')
+            ->get();
 
         $location = null;
         if (!empty($event->location_id) && Schema::hasTable('locations')) {

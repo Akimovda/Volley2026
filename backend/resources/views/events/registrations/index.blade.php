@@ -277,8 +277,8 @@ $searchUrl = route('api.users.search');
 							</td>
                             @if($hasOrgNote ?? false)
                             <td class="align-top">
-                                <textarea class="org-note-input" rows="2"
-                                    style="width:100%;min-width:140px;font-size:1.3rem;resize:vertical;border:1px solid #e2e8f0;border-radius:.6rem;padding:.4rem .6rem;"
+                                <textarea class="org-note-input" rows="1"
+                                    style="width:100%;min-width:140px;font-size:1.3rem;resize:none;overflow:hidden;border:1px solid #e2e8f0;border-radius:.6rem;padding:.4rem .6rem;"
                                     data-url="{{ route('events.registrations.note', ['event' => $event->id, 'registration' => $r->id]) }}"
                                     placeholder="Заметка…">{{ $r->organizer_note ?? '' }}</textarea>
                             </td>
@@ -455,6 +455,11 @@ $searchUrl = route('api.users.search');
 					}
 				});
 			})();
+
+			// --- Авторасширение textarea ---
+			function autoResize(el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
+			$(document).on('input', '.org-note-input', function() { autoResize(this); });
+			$('.org-note-input').each(function() { autoResize(this); });
 
 			// --- Автосохранение комментария организатора (blur) ---
 			$(document).on('blur', '.org-note-input', function() {
