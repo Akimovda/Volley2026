@@ -442,20 +442,28 @@
 			'min:0',
 			'max:365'
             ],
-			
+
             'reg_ends_minutes_before' => [
 			'nullable',
 			'integer',
 			'min:0',
 			'max:10080'
             ],
-			
+
             'cancel_lock_minutes_before' => [
 			'nullable',
 			'integer',
 			'min:0',
 			'max:10080'
             ],
+
+            // Named select fields (server-side computation)
+            'reg_starts_d' => ['nullable', 'integer', 'min:0', 'max:90'],
+            'reg_starts_h' => ['nullable', 'integer', 'min:0', 'max:23'],
+            'reg_ends_h'   => ['nullable', 'integer', 'min:0', 'max:24'],
+            'reg_ends_m'   => ['nullable', 'integer', 'min:0', 'max:59'],
+            'cancel_lock_h' => ['nullable', 'integer', 'min:0', 'max:24'],
+            'cancel_lock_m' => ['nullable', 'integer', 'min:0', 'max:59'],
 			
 			]);
 			

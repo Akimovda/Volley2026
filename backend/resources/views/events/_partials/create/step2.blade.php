@@ -206,14 +206,14 @@
 												<input type="hidden" name="reg_starts_days_before" id="reg_starts_days_before" value="{{ $oldRegStartsDaysBefore }}">
 										<input type="hidden" name="reg_starts_hours_before" id="reg_starts_hours_before" value="{{ old('reg_starts_hours_before', 0) }}">
 												<div class="d-flex" style="gap:.5rem;align-items:center">
-												<select id="reg_starts_days_sel" style="width:auto">
+												<select id="reg_starts_days_sel" name="reg_starts_d" style="width:auto">
 													@for ($d = 0; $d <= 90; $d++)
 														<option value="{{ $d }}" @selected($oldRegStartsDaysBefore == $d)>{{ $d }} д</option>
 													@endfor
 												</select>
-												<select id="reg_starts_hours_sel" style="width:auto">
+												<select id="reg_starts_hours_sel" name="reg_starts_h" style="width:auto">
 													@for ($h = 0; $h <= 23; $h++)
-														<option value="{{ $h }}" @selected(0 == $h)>{{ $h }} ч</option>
+														<option value="{{ $h }}" @selected(($oldRegStartsHoursBefore ?? 0) == $h)>{{ $h }} ч</option>
 													@endfor
 												</select>
 												</div>
@@ -260,13 +260,13 @@ if (hiddenH) hiddenH.value = h;
 												<label>Окончание регистрации</label>
 												<input type="hidden" name="reg_ends_minutes_before" id="reg_ends_minutes_before" value="{{ $oldRegEndsMinutesBefore }}">
 												<div class="d-flex" style="gap:.5rem;align-items:center">
-												<select id="reg_ends_hours" style="width:auto">
+												<select id="reg_ends_hours" name="reg_ends_h" style="width:auto">
 												@for ($h = 0; $h <= 24; $h++)
 													<option value="{{ $h }}" @selected($regEndsHours == $h)>{{ $h }} ч</option>
 												@endfor
 												</select>
-												<select id="reg_ends_mins" style="width:auto">
-												@foreach ([0,10,20,30,40,50] as $m)
+												<select id="reg_ends_mins" name="reg_ends_m" style="width:auto">
+												@foreach ([0,10,15,20,30,40,50] as $m)
 													<option value="{{ $m }}" @selected($regEndsMinutes == $m)>{{ $m }} мин</option>
 												@endforeach
 												</select>
@@ -281,13 +281,13 @@ if (hiddenH) hiddenH.value = h;
 												<label>Запрет отмены записи</label>
 												<input type="hidden" name="cancel_lock_minutes_before" id="cancel_lock_minutes_before" value="{{ $oldCancelLockMinutesBefore }}">
 												<div class="d-flex" style="gap:.5rem;align-items:center">
-												<select id="cancel_lock_hours" style="width:auto">
+												<select id="cancel_lock_hours" name="cancel_lock_h" style="width:auto">
 												@for ($h = 0; $h <= 24; $h++)
 													<option value="{{ $h }}" @selected($cancelLockHours == $h)>{{ $h }} ч</option>
 												@endfor
 												</select>
-												<select id="cancel_lock_mins" style="width:auto">
-												@foreach ([0,10,20,30,40,50] as $m)
+												<select id="cancel_lock_mins" name="cancel_lock_m" style="width:auto">
+												@foreach ([0,10,15,20,30,40,50] as $m)
 													<option value="{{ $m }}" @selected($cancelLockMinutes == $m)>{{ $m }} мин</option>
 												@endforeach
 												</select>

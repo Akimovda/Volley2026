@@ -4,7 +4,7 @@
 - Всегда отвечай на русском языке
 
 ## Стек
-- Laravel 12, PHP 8.3, PostgreSQL, Blade (частично Vue), jQuery v4
+- Laravel 12, PHP 8.3, PostgreSQL, Blade (частично Vue), jQuery v3.7.1
 - Telegram/VK/MAX бот интеграции
 - Сервер: /var/www/volley-bot/backend (dev), /var/www/volleyplay/backend (prod)
 
@@ -19,7 +19,22 @@
 - swal: класс .btn-alert + data-атрибуты
 - Fancybox = jQuery: jQuery.fancybox.open({src:'#id',type:'inline'}), НЕ standalone
 - Safari: использовать jQuery.ajax (не fetch — CORS), polling 200мс (не input/keyup)
+- Safari select bug: использовать change (не input) для <select> — input не срабатывает
 - Класс form-select-dropdown даёт visibility:hidden — НЕ использовать для dropdown
+
+## Окно регистрации (паттерн)
+- Данные хранятся как UTC-метки: registration_starts_at, registration_ends_at, cancel_self_until
+- При отображении формы редактирования — вычислять обратно из diff UTC-меток (как в occurrence_edit.blade.php)
+- Формат: часы+минуты split (select h + select m) + hidden total_minutes + JS change→sync
+- event_management_edit: вычислять из event->starts_at + event->cancel_self_until (fixed)
+- НЕ использовать hardcoded old('field', 60) без $savedValue из модели
+- createCustomSelect (script.js) оборачивает все .form select — jQuery trigger может не вызывать нативные addEventListener
+- РЕШЕНИЕ: давать <select> атрибут name и вычислять итог на сервере (reg_ends_h + reg_ends_m → минуты)
+- step2 create: selects имеют name="reg_ends_h","reg_ends_m","cancel_lock_h","cancel_lock_m","reg_starts_d","reg_starts_h"
+- EventOccurrenceService::buildRegistrationWindows() читает эти поля и вычисляет minutes (приоритет перед hidden полями)
+- OccurrenceExpansionService::expand() читает offsets из reference occurrence (первый occ по uniq_key) и пропагирует на все future occs
+- ВАЖНО: Carbon::diffInSeconds() по умолчанию absolute=false (знаковое!) — использовать timestamp арифметику: $a->timestamp - $b->timestamp
+- Scheduled expand: events:expand-recurring работает ежедневно в 03:10 и ПЕРЕЗАПИСЫВАЕТ окна регистрации у всех future occurrences
 
 ## Occurrence override паттерн
 - NULL в occurrence = наследуется от серии
