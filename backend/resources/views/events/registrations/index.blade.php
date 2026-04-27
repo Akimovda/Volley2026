@@ -154,10 +154,10 @@ $searchUrl = route('api.users.search');
 					<div class="card">
                         <label>Игрок</label>
                         <div style="position:relative;" id="ac-wrap">
-                            <input type="text" id="ac-input" autocomplete="off"
+                            <input type="text" id="ac-input" autocomplete="off" class="form-control"
 							placeholder="Имя, email или «bot»…">
                             <input type="hidden" name="user_id" id="ac-userid">
-                            <div id="ac-dd" style="display:none;position:absolute;left:0;right:0;top:100%;margin-top:.4rem;z-index:50;background:var(--bg-card,#fff);border:0.1rem solid var(--border-color,#eee);border-radius:1.2rem;box-shadow:0 1rem 3rem rgba(0,0,0,.1);max-height:24rem;overflow-y:auto;"></div>
+                            <div id="ac-dd" class="form-select-dropdown trainer_dd"></div>
 						</div>
                         <div id="ac-selected" style="display:none;margin-top:.5rem;font-size:1.4rem;color:#4caf50;font-weight:600;"></div>
 					</div>
@@ -378,16 +378,23 @@ $searchUrl = route('api.users.search');
 				var addBtn  = document.getElementById('add-player-btn');
 				var timer   = null;
 				var searchUrl = '{{ $searchUrl }}';
-				
+
 				if (!input) return;
-				
+
+				function showDd() { dd.classList.add('form-select-dropdown--active'); }
+				function hideDd() { dd.classList.remove('form-select-dropdown--active'); }
+
+				function esc(s) {
+					return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+				}
+
 				function clearSel() {
 					hidden.value = '';
 					addBtn.disabled = true;
 					addBtn.style.opacity = '.4';
 					sel.style.display = 'none';
 				}
-				
+
 				function setSel(id, label) {
 					hidden.value = id;
 					addBtn.disabled = false;
@@ -395,37 +402,31 @@ $searchUrl = route('api.users.search');
 					sel.style.display = 'block';
 					sel.textContent = '✅ ' + label;
 					dd.innerHTML = '';
-					dd.style.display = 'none';
+					hideDd();
 					input.value = label.replace(/^🤖\s*/, '');
 				}
-				
-				function esc(s) {
-					return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-				}
-				
+
 				function render(items) {
 					dd.innerHTML = '';
 					if (!items.length) {
-						dd.innerHTML = '<div style="padding:1.2rem 1.6rem;font-size:1.5rem;opacity:.5;">Ничего не найдено</div>';
-						dd.style.display = 'block';
+						dd.innerHTML = '<div class="city-message">Ничего не найдено</div>';
+						showDd();
 						return;
 					}
 					items.forEach(function(item) {
 						var div = document.createElement('div');
-						div.style.cssText = 'padding:1rem 1.6rem;cursor:pointer;font-size:1.5rem;border-bottom:0.1rem solid var(--border-color,#eee);display:flex;justify-content:space-between;align-items:center;';
+						div.className = 'trainer-item form-select-option';
 						div.innerHTML =
-						'<span class="b-500">' + (item.is_bot ? '🤖 ' : '') + esc(item.label || item.name) + '</span>' +
-						(item.meta ? '<span style="font-size:1.3rem;opacity:.5;">' + esc(item.meta) + '</span>' : '');
-						div.addEventListener('mouseover', function() { this.style.background = 'var(--bg-hover,#f5f5f5)'; });
-						div.addEventListener('mouseout',  function() { this.style.background = ''; });
+							'<span class="b-500">' + (item.is_bot ? '🤖 ' : '') + esc(item.label || item.name) + '</span>' +
+							(item.meta ? '<span class="f-13" style="opacity:.5;">' + esc(item.meta) + '</span>' : '');
 						div.addEventListener('click', function() {
 							setSel(item.id, (item.is_bot ? '🤖 ' : '') + (item.label || item.name));
 						});
 						dd.appendChild(div);
 					});
-					dd.style.display = 'block';
+					showDd();
 				}
-				
+
 				function search(q) {
 					fetch(searchUrl + '?q=' + encodeURIComponent(q), {
 						headers: { 'Accept': 'application/json' },
@@ -434,27 +435,29 @@ $searchUrl = route('api.users.search');
 					.then(function(r) { return r.json(); })
 					.then(function(data) { render(data.items || []); })
 					.catch(function() {
-						dd.innerHTML = '<div style="padding:1.2rem 1.6rem;color:#e53935;">Ошибка поиска</div>';
-						dd.style.display = 'block';
+						dd.innerHTML = '<div class="city-message">Ошибка поиска</div>';
+						showDd();
 					});
 				}
-				
+
 				input.addEventListener('input', function() {
 					clearSel();
 					clearTimeout(timer);
 					var q = input.value.trim();
-					if (q.length < 2) { dd.style.display = 'none'; return; }
-					dd.innerHTML = '<div style="padding:1.2rem 1.6rem;font-size:1.5rem;opacity:.5;">Поиск…</div>';
-					dd.style.display = 'block';
+					if (q.length < 2) { hideDd(); return; }
+					dd.innerHTML = '<div class="city-message">Поиск…</div>';
+					showDd();
 					timer = setTimeout(function() { search(q); }, 250);
 				});
-				
-				document.addEventListener('click', function(e) {
-					if (!document.getElementById('ac-wrap').contains(e.target)) {
-						dd.style.display = 'none';
-					}
+
+				input.addEventListener('keydown', function(e) {
+					if (e.key === 'Escape') hideDd();
 				});
-				
+
+				document.addEventListener('click', function(e) {
+					if (!document.getElementById('ac-wrap').contains(e.target)) hideDd();
+				});
+
 				document.getElementById('add-player-form').addEventListener('submit', function(e) {
 					if (!hidden.value) {
 						e.preventDefault();
