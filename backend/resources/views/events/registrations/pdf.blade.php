@@ -2,9 +2,25 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
+@php
+    $fontNormal = base_path('vendor/dompdf/dompdf/lib/fonts/DejaVuSans.ttf');
+    $fontBold   = base_path('vendor/dompdf/dompdf/lib/fonts/DejaVuSans-Bold.ttf');
+@endphp
 <style>
+@@font-face {
+    font-family: 'DejaVu Sans';
+    src: url("{{ $fontNormal }}") format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+@@font-face {
+    font-family: 'DejaVu Sans';
+    src: url("{{ $fontBold }}") format('truetype');
+    font-weight: bold;
+    font-style: normal;
+}
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: DejaVu Sans, sans-serif; font-size: 11px; color: #222; }
+    body { font-family: 'DejaVu Sans', sans-serif; font-size: 11px; color: #222; }
     .header { border-bottom: 2px solid #1a56db; padding-bottom: 10px; margin-bottom: 14px; }
     .title { font-size: 18px; font-weight: bold; color: #1a56db; margin-bottom: 4px; }
     .meta { font-size: 11px; color: #555; margin-bottom: 2px; }
@@ -30,6 +46,7 @@
         'opposite' => 'Диагональный',
         'middle'   => 'Центральный',
         'libero'   => 'Либеро',
+        'reserve'  => 'Резерв',
     ];
     $dateLine = '—';
     if ($startsLocal) {
@@ -46,8 +63,8 @@
 
 <div class="header">
     <div class="title">{{ $event->title }}</div>
-    <div class="meta">&#128197; <strong>Дата:</strong> {{ $dateLine }}</div>
-    <div class="meta">&#128205; <strong>Место:</strong> {{ $locationLine }}</div>
+    <div class="meta"><strong>Дата:</strong> {{ $dateLine }}</div>
+    <div class="meta"><strong>Место:</strong> {{ $locationLine }}</div>
 </div>
 
 <div class="stats">
