@@ -319,9 +319,6 @@
                                 <label>Макс. игроков</label>
                                 <input type="number" name="game_max_players" min="0" max="99"
                                     value="{{ old('game_max_players', $event->gameSettings?->max_players ?? 0) }}">
-                                <ul class="list f-16 mt-1">
-                                    <li>Рассчитывается автоматически при создании.</li>
-                                </ul>
                             </div>
                         </div>
 
@@ -501,6 +498,22 @@
                                 </div>
                                 <ul class="list f-16 mt-1">
                                     <li>По умолчанию: 1 час.</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="card">
+                                <label>Персональные данные при записи</label>
+                                <label class="checkbox-item">
+                                    <input type="hidden" name="requires_personal_data" value="0">
+                                    <input type="checkbox" name="requires_personal_data" value="1"
+                                        @checked(old('requires_personal_data', $event->requires_personal_data ?? false))>
+                                    <div class="custom-checkbox"></div>
+                                    <span>Запрашивать личные данные</span>
+                                </label>
+                                <ul class="list f-16 mt-1">
+                                    <li>Игрок при записи должен заполнить профиль (имя, телефон).</li>
                                 </ul>
                             </div>
                         </div>
@@ -858,40 +871,6 @@
 
 
 
-            // Автоматический расчёт макс. игроков (только для НЕ-турниров)
-            function updateMaxPlayers() {
-                const display = document.getElementById('max_players_display');
-                const hidden = document.getElementById('game_max_players_hidden');
-                
-                // Работаем только если есть элементы автоматического расчёта  
-                if (!display || !hidden) {
-                    console.log('Автоматический расчёт отключён (турнир)');
-                    return;
-                }
-                
-                const teamsInput = document.querySelector('input[name="teams_count"]');
-                if (teamsInput) {
-                    const teams = parseInt(teamsInput.value) || 2;
-                    const maxPlayers = teams * 6;
-                    
-                    display.textContent = maxPlayers;
-                    hidden.value = maxPlayers;
-                    
-                    console.log(`Автоматический расчёт: ${teams} команд = ${maxPlayers} игроков`);
-                }
-            }
-            
-            // Привязываем обработчики только если есть автоматический расчёт
-            const display = document.getElementById('max_players_display');
-            if (display) {
-                const teamsInput = document.querySelector('input[name="teams_count"]');
-                if (teamsInput) {
-                    teamsInput.addEventListener('input', updateMaxPlayers);
-                    teamsInput.addEventListener('change', updateMaxPlayers);
-                    console.log('Автоматический расчёт подключён');
-                }
-                updateMaxPlayers(); // Инициализация
-            }
         });
 
             // === Payment link toggle ===
