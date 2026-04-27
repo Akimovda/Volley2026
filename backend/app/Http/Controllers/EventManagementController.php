@@ -708,6 +708,7 @@ if ($role === 'admin') {
                 ? ($data['payment_link'] ?? null)
                 : null;
             $event->show_participants = (bool) ($data['show_participants'] ?? false);
+            $event->requires_personal_data             = (bool) ($data['requires_personal_data'] ?? false);
             $event->remind_registration_enabled        = (bool) ($data['remind_registration_enabled'] ?? false);
             $event->remind_registration_minutes_before = $data['remind_registration_minutes_before'] ?? null;
 
