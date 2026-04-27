@@ -5,14 +5,6 @@
 	@endphp
 	<x-slot name="title">Управление турниром — {{ $event->title }}</x-slot>
 	
-    <x-slot name="style">
-        <style>
-			
-			
-			
-		</style>
-	</x-slot>
-	
     <x-slot name="h1">Турнир: {{ $event->title }}</x-slot>
 	 <x-slot name="h2">Управление турниром</x-slot>
 	
@@ -233,16 +225,14 @@
 							</td>
 							<td>
 								@if($lt->status === 'active')
-								<form method="POST" action="{{ route('divisions.teams.toReserve', $lt) }}"
-								onsubmit="return confirm('Перевести в резерв?')" style="display:inline">
+								<form method="POST" action="{{ route('divisions.teams.toReserve', $lt) }}" style="display:inline">
 									@csrf
-									<button type="submit" class="league-btn league-btn-danger">В резерв</button>
+									<button type="submit" class="league-btn league-btn-danger btn-alert" data-title="Перевести в резерв?" data-icon="warning" data-confirm-text="Да" data-cancel-text="Отмена">В резерв</button>
 								</form>
 								@elseif($lt->status === 'reserve')
-								<form method="POST" action="{{ route('divisions.teams.activate', $lt) }}"
-								onsubmit="return confirm('Активировать?')" style="display:inline">
+								<form method="POST" action="{{ route('divisions.teams.activate', $lt) }}" style="display:inline">
 									@csrf
-									<button type="submit" class="league-btn league-btn-success">Активировать</button>
+									<button type="submit" class="league-btn league-btn-success btn-alert" data-title="Активировать команду?" data-icon="question" data-confirm-text="Да" data-cancel-text="Отмена">Активировать</button>
 								</form>
 								@endif
 							</td>
@@ -265,10 +255,9 @@
 					<button type="submit" class="league-btn league-btn-success">↻ Синхронизировать команды в лигу</button>
 				</form>
 				@if($_tourAllCompleted)
-				<form method="POST" action="{{ route('tournament.applyPromotion', $event) }}" style="margin:0"
-					  onsubmit="return confirm('Применить продвижение: выбыть последние команды в резерв, подтянуть из резерва?')">
+				<form method="POST" action="{{ route('tournament.applyPromotion', $event) }}" style="margin:0">
 					@csrf
-					<button type="submit" class="league-btn" style="background:#fff3cd;border-color:#ffc107;color:#856404">
+					<button type="submit" class="league-btn btn-alert" style="background:#fff3cd;border-color:#ffc107;color:#856404" data-title="Применить продвижение?" data-icon="question" data-confirm-text="Да, перенести" data-cancel-text="Отмена">
 						🔄 Перенести составы на следующий тур
 					</button>
 				</form>
@@ -335,10 +324,10 @@
 								<div class="col-md-6">
 									<div class="card">
 										<label>Капитан (поиск)</label>
-										<div style="position:relative">
+										<div style="position:relative" id="org-captain-ac-wrap">
 											<input type="text" id="org-captain-search" placeholder="Имя или ID..." autocomplete="off">
 											<input type="hidden" name="captain_user_id" id="org-captain-id">
-											<div id="org-captain-dd" class="form-select-dropdown trainer_dd" style="position:absolute;z-index:10;width:100%"></div>
+											<div id="org-captain-dd" class="form-select-dropdown trainer_dd"></div>
 										</div>
 									</div>
 								</div>
@@ -733,7 +722,7 @@
 				@foreach($tournamentPhotos as $media)
 				<div style="position:relative;width:20%;">
 					<img src="{{ $media->getUrl('thumb') }}" style="width:100%; aspect-ratio: 16/9;object-fit:cover;border-radius:8px">
-					<form method="POST" action="{{ route('tournament.photos.destroy', [$event, $media->id]) }}" style="position:absolute; bottom:1rem; right:1rem" onsubmit="return confirm('Удалить?')">
+					<form method="POST" action="{{ route('tournament.photos.destroy', [$event, $media->id]) }}" style="position:absolute; bottom:1rem; right:1rem">
 						@csrf @method('DELETE')
 						<button type="submit" 
 						class="icon-delete btn-alert btn btn-danger btn-svg"
@@ -831,14 +820,14 @@
 				</div>
 				<div class="d-flex" style="gap:6px">
 					@if($stage->isInProgress() || $stage->isCompleted())
-					<form method="POST" action="{{ route('tournament.stages.revert', $stage) }}" onsubmit="return confirm('Откатить стадию? Все счета будут сброшены!')">
+					<form method="POST" action="{{ route('tournament.stages.revert', $stage) }}">
 						@csrf
-						<button class="btn btn-secondary f-12" style="color:#ca8a04">Откатить</button>
+						<button class="btn btn-secondary f-12 btn-alert" style="color:#ca8a04" data-title="Откатить стадию?" data-icon="warning" data-confirm-text="Да, откатить" data-cancel-text="Отмена">Откатить</button>
 					</form>
 					@endif
-					<form method="POST" action="{{ route('tournament.stages.destroy', $stage) }}" onsubmit="return confirm('Удалить стадию и все её матчи?')">
+					<form method="POST" action="{{ route('tournament.stages.destroy', $stage) }}">
 						@csrf @method('DELETE')
-						<button class="btn btn-secondary f-12" style="color:#dc2626">Удалить</button>
+						<button class="btn btn-secondary f-12 btn-alert" style="color:#dc2626" data-title="Удалить стадию и все её матчи?" data-icon="warning" data-confirm-text="Да, удалить" data-cancel-text="Отмена">Удалить</button>
 					</form>
 				</div>
 			</div>
@@ -1032,7 +1021,7 @@
 						<strong>{{ implode(', ', $divisionNames) }}</strong>
 					</div>
 					
-					<form method="POST" action="{{ route('tournament.stages.formDivisions', $stage) }}" onsubmit="return confirm('Сформировать группы? Будут созданы стадии, проведена жеребьёвка и назначены матчи.')">
+					<form method="POST" action="{{ route('tournament.stages.formDivisions', $stage) }}">
 						@csrf
 						
 						{{-- Ряд 1: Кол-во + форматы --}}
@@ -1088,7 +1077,7 @@
 						</div>
 						@endif
 						
-						<button type="submit" class="btn btn-primary">Сформировать группы</button>
+						<button type="submit" class="btn btn-primary btn-alert" data-title="Сформировать группы?" data-icon="question" data-confirm-text="Да, сформировать" data-cancel-text="Отмена">Сформировать группы</button>
 					</form>
 				</div>
 			</div>
@@ -1134,9 +1123,9 @@
 				По правилам сезона: все команды Hard остаются, из Lite — top-2 остаются, остальные уходят в резерв.
 				Освободившиеся места заполняются из резерва.
 			</p>
-			<form method="POST" action="{{ route('tournament.applyPromotion', $event) }}" onsubmit="return confirm('Применить промоушен? Команды будут перемещены между active и reserve.')">
+			<form method="POST" action="{{ route('tournament.applyPromotion', $event) }}">
 				@csrf
-				<button type="submit" class="btn btn-primary">Применить промоушен</button>
+				<button type="submit" class="btn btn-primary btn-alert" data-title="Применить промоушен?" data-icon="question" data-confirm-text="Да, применить" data-cancel-text="Отмена">Применить промоушен</button>
 			</form>
 		</div>
 		@endif
@@ -1198,19 +1187,25 @@
 			var inp = document.getElementById('org-captain-search');
 			var hidden = document.getElementById('org-captain-id');
 			var dd = document.getElementById('org-captain-dd');
+			var wrap = document.getElementById('org-captain-ac-wrap');
 			if (!inp || !dd || !hidden) return;
 			var timer = null;
-			
+
 			function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 			function showDd() { dd.classList.add('form-select-dropdown--active'); }
 			function hideDd() { dd.classList.remove('form-select-dropdown--active'); }
-			
+
 			inp.addEventListener('input', function() {
 				clearTimeout(timer);
 				var q = inp.value.trim();
 				if (q.length < 2) { hideDd(); dd.innerHTML = ''; return; }
+				dd.innerHTML = '<div class="city-message">Поиск…</div>';
+				showDd();
 				timer = setTimeout(function() {
-					fetch('/api/users/search?q=' + encodeURIComponent(q))
+					fetch('/api/users/search?q=' + encodeURIComponent(q), {
+						headers: { 'Accept': 'application/json' },
+						credentials: 'same-origin'
+					})
 					.then(function(r) { return r.json(); })
 					.then(function(data) {
 						dd.innerHTML = '';
@@ -1220,30 +1215,31 @@
 							showDd();
 							return;
 						}
-						items.slice(0,8).forEach(function(u) {
+						items.slice(0, 8).forEach(function(u) {
+							var label = u.label || u.name || '#' + u.id;
 							var div = document.createElement('div');
 							div.className = 'trainer-item form-select-option';
-							div.setAttribute('data-id', u.id);
-							div.setAttribute('data-name', u.label || u.name || '');
-							div.innerHTML = '<div class="text-sm">' + esc(u.label || u.name || '#'+u.id) + '</div>';
+							div.innerHTML = '<div class="text-sm">' + esc(label) + '</div>';
 							div.addEventListener('click', function() {
-								inp.value = div.getAttribute('data-name');
-								hidden.value = div.getAttribute('data-id');
+								inp.value = label;
+								hidden.value = String(u.id);
 								hideDd();
 							});
 							dd.appendChild(div);
 						});
 						showDd();
+					})
+					.catch(function() {
+						dd.innerHTML = '<div class="city-message">Ошибка загрузки</div>';
+						showDd();
 					});
-				}, 300);
+				}, 250);
 			});
-			
-			inp.addEventListener('focus', function() {
-				if (dd.children.length > 0) showDd();
-			});
-			
+
+			inp.addEventListener('keydown', function(e) { if (e.key === 'Escape') hideDd(); });
+
 			document.addEventListener('click', function(e) {
-				if (!dd.contains(e.target) && e.target !== inp) hideDd();
+				if (wrap && !wrap.contains(e.target)) hideDd();
 			});
 		})();
 	</script>
