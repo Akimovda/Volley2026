@@ -54,7 +54,8 @@
         'beach_universal',
         'allow_user_contact',
         'notify_player_registrations',
-        'avatar_media_id',      // 👈 ДОБАВИТЬ
+        'avatar_media_id',
+        'profile_completed_at',
 		];
 		
 		protected $hidden = [
@@ -75,6 +76,7 @@
 		{
 			return [
             'birth_date'                  => 'date',
+            'profile_completed_at'        => 'datetime',
             'beach_universal'             => 'boolean',
             'allow_user_contact'          => 'boolean',
             'notify_player_registrations' => 'boolean',
