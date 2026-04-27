@@ -275,6 +275,14 @@ $searchUrl = route('api.users.search');
                                     {{ $st }}
 								</span>
 							</td>
+                            @if($hasOrgNote ?? false)
+                            <td class="align-top">
+                                <textarea class="org-note-input" rows="2"
+                                    style="width:100%;min-width:140px;font-size:1.3rem;resize:vertical;border:1px solid #e2e8f0;border-radius:.6rem;padding:.4rem .6rem;"
+                                    data-url="{{ route('events.registrations.note', ['event' => $event->id, 'registration' => $r->id]) }}"
+                                    placeholder="Заметка…">{{ $r->organizer_note ?? '' }}</textarea>
+                            </td>
+                            @endif
                             <td>
                                 <div class="d-flex gap-1 text-center">
 <form method="POST"
