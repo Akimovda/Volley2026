@@ -62,6 +62,8 @@ class SendEventRegistrationReminders extends Command
             ->join('event_occurrences as eo', 'eo.id', '=', 'er.occurrence_id')
             ->join('events as e', 'e.id', '=', 'eo.event_id')
             ->join('users as u', 'u.id', '=', 'er.user_id')
+            ->leftJoin('locations as loc', 'loc.id', '=', 'e.location_id')
+            ->leftJoin('cities as cit', 'cit.id', '=', 'loc.city_id')
             ->select([
                 'er.id as registration_id',
                 'er.user_id',
@@ -70,6 +72,7 @@ class SendEventRegistrationReminders extends Command
                 'eo.starts_at',
                 'eo.timezone',
                 'e.title as event_title',
+                'cit.timezone as location_city_timezone',
             ])
             ->whereNotNull('er.occurrence_id');
 
@@ -187,7 +190,7 @@ class SendEventRegistrationReminders extends Command
                 }
             }
 
-            $tz = (string) ($r->timezone ?: 'UTC');
+            $tz = (string) ($r->location_city_timezone ?: $r->timezone ?: 'UTC');
             $startsLocalText = $startsUtc->copy()->setTimezone($tz)->format('d.m.Y H:i') . ' (' . $tz . ')';
 
             if ($dryRun) {

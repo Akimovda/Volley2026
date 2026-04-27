@@ -343,8 +343,8 @@
                                             hidden.value = h * 60 + m;
                                         }
                                 
-                                        hoursInput.addEventListener('input', syncRemind);
-                                        minutesInput.addEventListener('input', syncRemind);
+                                        hoursInput.addEventListener('change', syncRemind);
+                                        minutesInput.addEventListener('change', syncRemind);
                                         syncRemind();
                                     });
                                 </script>
