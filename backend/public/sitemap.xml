@@ -46,6 +46,12 @@
     <priority>0.5</priority>
   </url>
   <url>
+    <loc>https://volley-bot.store/events/358</loc>
+    <lastmod>2026-04-26T20:25:20+00:00</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://volley-bot.store/events/357</loc>
     <lastmod>2026-04-24T12:52:33+00:00</lastmod>
     <changefreq>daily</changefreq>
@@ -455,7 +461,7 @@
   </url>
   <url>
     <loc>https://volley-bot.store/user/1</loc>
-    <lastmod>2026-04-24T14:40:55+00:00</lastmod>
+    <lastmod>2026-04-26T17:35:24+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.4</priority>
   </url>
