@@ -101,8 +101,8 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 			$canCancelSelf = $regEnabled && !$eventStarted && (!$cancelUntilUtc || $nowUtc->lt($cancelUntilUtc));
 			
 			$dirLabel = ($dir === 'beach') ? 'Пляжка' : (($dir === 'classic') ? 'Классика' : '—');
-			$tzUser   = $userTz ?? 'UTC';
 			$tzEvent  = (string)($occ->timezone ?: ($event?->timezone ?: 'UTC'));
+			$tzUser   = $userTz ?: $tzEvent;
 			
 			$sLocal = $occ->starts_at
 			? \Illuminate\Support\Carbon::parse($occ->starts_at, 'UTC')->setTimezone($tzUser)
@@ -403,7 +403,7 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 						
 						@elseif ($regNotStarted)
                         @php
-						$regStartsLocal = $regStartsUtc ? $regStartsUtc->setTimezone($userTz ?? 'UTC') : null;
+						$regStartsLocal = $regStartsUtc ? $regStartsUtc->setTimezone($tzUser) : null;
                         @endphp
 						
                         <div class="w-100">

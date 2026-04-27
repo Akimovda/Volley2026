@@ -21,26 +21,29 @@ $hasEvents = $evList->isNotEmpty();
 }
 
 
-// ✅ TZ пользователя (в нём показываем время)
-$userTz = \App\Support\DateTime::effectiveUserTz(auth()->user());
+// ✅ TZ пользователя: null если нет города — каждая карточка/замыкание использует timezone события
+$userTz = auth()->user()?->city?->timezone
+    ? \App\Support\DateTime::effectiveUserTz(auth()->user())
+    : null;
 
 // ✅ Формат для карточек occurrences
 $fmtDate = function ($occ) use ($userTz) {
 $eventTz = $occ->timezone ?: ($occ->event?->timezone ?: 'UTC');
+$effectiveTz = $userTz ?: $eventTz;
 
 $sUser = $occ->starts_at
-? \Illuminate\Support\Carbon::parse($occ->starts_at, 'UTC')->setTimezone($userTz)
+? \Illuminate\Support\Carbon::parse($occ->starts_at, 'UTC')->setTimezone($effectiveTz)
 : null;
 
 if (!$sUser) {
-return ['date' => '—', 'time' => '—', 'tz' => $userTz, 'tzLabel' => $userTz, 'eventTz' => $eventTz];
+return ['date' => '—', 'time' => '—', 'tz' => $effectiveTz, 'tzLabel' => $effectiveTz, 'eventTz' => $eventTz];
 }
 
 $date = $sUser->format('d.m.Y');
 $time = $sUser->format('H:i');
 $tzLabel = $sUser->format('T') . ' (UTC' . $sUser->format('P') . ')';
 
-return ['date' => $date, 'time' => $time, 'tz' => $userTz, 'tzLabel' => $tzLabel, 'eventTz' => $eventTz];
+return ['date' => $date, 'time' => $time, 'tz' => $effectiveTz, 'tzLabel' => $tzLabel, 'eventTz' => $eventTz];
 };
 
 

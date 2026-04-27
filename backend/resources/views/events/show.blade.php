@@ -25,8 +25,8 @@ $registeredTotal = $registered_total ?? $join->data['meta']['registered_total'] 
 // =========================
 // Timezones + Date/Time labels
 // =========================
-$userTz = \App\Support\DateTime::effectiveUserTz(auth()->user());
 $eventTz = $occurrence?->timezone ?: ($event->timezone ?: 'UTC');
+$userTz = \App\Support\DateTime::effectiveUserTz(auth()->user(), $eventTz);
 
 $startsUtc = $occurrence?->starts_at ?: $event->starts_at;
 $durationSec = $occurrence?->duration_sec ?? $event->duration_sec ?? null;
