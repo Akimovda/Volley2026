@@ -97,6 +97,10 @@ class TelegramAuthController extends Controller
         $request->session()->put('telegram_oidc_verifier', $codeVerifier);
         $request->session()->put('oauth_intent', $intent);
 
+        // Явно сохраняем сессию до ухода на Telegram — гарантирует, что state
+        // попадёт в БД прежде чем браузер покинет наш домен.
+        $request->session()->save();
+
         $params = [
             'client_id'             => config('services.telegram.oidc_client_id'),
             'redirect_uri'          => route('auth.telegram.callback'),

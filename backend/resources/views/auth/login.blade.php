@@ -40,7 +40,10 @@
     <div class="container">
                 <div class="ramka">
   					@php
-					$returnUrl = url()->full(); // страница, где нажали кнопку
+					// Приоритет: ?return= в URL → url.intended (поставил Authenticate middleware) → /events
+					$returnUrl = filled(request()->query('return'))
+					    ? request()->query('return')
+					    : (session('url.intended') ?: url('/events'));
 					@endphp                  
 					<div class="social-auth">
 						<!-- Кнопка VK -->

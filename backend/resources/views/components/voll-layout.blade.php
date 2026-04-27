@@ -285,14 +285,14 @@
 							<span class="auth-text">Войти с Яндекс ID</span>
 						</div>
 						
-<div data-href="{{ route('auth.telegram.redirect', ['return' => url()->full()]) }}" class="auth-btn auth-btn-telegram">
-<span class="auth-icon-circle">
-<span class="icon-tg"></span>
-</span>
-<span class="auth-text">Войти через Telegram</span>
-</div>
-							
-					
+						<div data-href="{{ route('auth.telegram.redirect', ['return' => url()->full()]) }}" class="auth-btn auth-btn-telegram">
+							<span class="auth-icon-circle">
+								<span class="icon-tg"></span>
+							</span>
+							<span class="auth-text">Войти через Telegram</span>
+						</div>
+						
+						
 						{{--
 						<div data-href="#max" class="auth-btn auth-btn-max">
 							<span class="auth-icon-circle">
@@ -489,42 +489,46 @@
 								<a href="/events">
 									<span class="footer-menu-text">Игры и тренировки</span>
 								</a>
-								<a href="#">
-									<span class="footer-menu-text">Клубы и Тренировки</span>
+								<a href="/locations">
+									<span class="footer-menu-text">Локации</span>
 								</a>
-								<a href="#">
-									<span class="footer-menu-text">Правила сервиса</span>
+								<a href="/volleyball_school">
+									<span class="footer-menu-text">Школы волейбола</span>
 								</a>              
-								<a href="#">
-									<span class="footer-menu-text">Инструкция</span>
+								<a href="/leagues/all">
+									<span class="footer-menu-text">Лиги и сезоны</span>
 								</a>
-								<a href="/level_players">
-									<span class="footer-menu-text">Уровни игроков</span>
-								</a>  
-								<a href="#">
-									<span class="footer-menu-text">О сервисе</span>
-								</a>                 
 								<a href="/users">
 									<span class="footer-menu-text">Игроки</span>
-								</a>
-								<a href="#">
-									<span class="footer-menu-text">Новости</span>
-								</a>
-								<a href="#">
-									<span class="footer-menu-text">Группы</span>
-								</a>                          
+								</a>  
 							</nav>
 						</div>
 						
 						<div class="col-3">
-							<!--
-								<div class="footer-contact">
+							
+							<nav class="footer-menu">                
+								<a href="/help">
+									<span class="footer-menu-text">Помощь</span>
+								</a>                 
+								<a href="/rules">
+									<span class="footer-menu-text">Правила сервиса</span>
+								</a>
+								<a href="/level_players">
+									<span class="footer-menu-text">Уровни игроков</span>
+								</a>
+								<a href="/about">
+									<span class="footer-menu-text">О сервисе</span>
+								</a>                          
+							</nav>				
+							
+							{{--
+							<div class="footer-contact">
 								<h4>Контакты</h4>
 								<p><a href="mailto:info@volleyplay.ru">info@volleyplay.ru</a></p>
 								<p><a href="tel:+78001234567">8 (800) 123-45-67</a></p>
 								<p>Ежедневно с 9:00 до 21:00</p>
-								</div>
-							-->	
+							</div>
+							
 							<div class="footer-app">
 								<div class="h4 title-h">Какие то кнопки</div>
 								<div class="app-links">
@@ -538,7 +542,7 @@
 									</a>
 								</div>
 							</div>
-							
+							--}}
 							<div class="footer-copyright">
 								<p>© VolleyPlay 2026. Все права защищены.</p>
 							</div>
@@ -556,40 +560,40 @@
 		@if(isset($script))
         {{ $script }}
 		@endif	
-			
-			
-			<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">		
-			<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>		
-			<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ru.js"></script>			
-			<script>		
+		
+		
+		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">		
+		<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>		
+		<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ru.js"></script>			
+		<script>		
 			document.addEventListener('DOMContentLoaded', function() {
-			// Для всех полей type="date"
-			const dateInputs = document.querySelectorAll('input[type="date"]');
-			dateInputs.forEach(input => {
-			flatpickr(input, {
-            dateFormat: "Y-m-d",
-            locale: "ru",
-            allowInput: true,
-            altInput: true,
-            altFormat: "d.m.Y",
-			});
-			});
-			
-			// Для всех полей type="datetime-local"
-			const datetimeInputs = document.querySelectorAll('input[type="datetime-local"]');
-			datetimeInputs.forEach(input => {
-			flatpickr(input, {
-            enableTime: true,
-            dateFormat: "Y-m-d H:i:S",
-            locale: "ru",
-            allowInput: true,
-            altInput: true,
-            altFormat: "d.m.Y H:i",
-            time_24hr: true,
-			});
-			});
+				// Для всех полей type="date"
+				const dateInputs = document.querySelectorAll('input[type="date"]');
+				dateInputs.forEach(input => {
+					flatpickr(input, {
+						dateFormat: "Y-m-d",
+						locale: "ru",
+						allowInput: true,
+						altInput: true,
+						altFormat: "d.m.Y",
+					});
+				});
+				
+				// Для всех полей type="datetime-local"
+				const datetimeInputs = document.querySelectorAll('input[type="datetime-local"]');
+				datetimeInputs.forEach(input => {
+					flatpickr(input, {
+						enableTime: true,
+						dateFormat: "Y-m-d H:i:S",
+						locale: "ru",
+						allowInput: true,
+						altInput: true,
+						altFormat: "d.m.Y H:i",
+						time_24hr: true,
+					});
+				});
 			});		
-			</script>
+		</script>
 		
 	</body>
 </html>					
