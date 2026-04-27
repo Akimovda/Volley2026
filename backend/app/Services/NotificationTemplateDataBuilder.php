@@ -54,7 +54,7 @@ final class NotificationTemplateDataBuilder
         $durationSec = $occurrence?->duration_sec ?? $event?->duration_sec ?? null;
         $durationMinutes = $durationSec ? (int) floor(((int) $durationSec) / 60) : null;
 
-        $eventUrl = $this->buildEventUrl($event?->id, $occurrence?->id);
+        $eventUrl = $this->buildEventUrl($event?->id, $occurrence?->id, $event);
 
         $locationName = trim((string) ($location?->name ?? ''));
         $locationAddress = trim((string) ($location?->address ?? ''));
@@ -135,25 +135,39 @@ final class NotificationTemplateDataBuilder
         return $this->sanitize(array_merge($data, $extra));
     }
 
-    private function buildEventUrl(?int $eventId, ?int $occurrenceId): ?string
+    private function buildEventUrl(?int $eventId, ?int $occurrenceId, ?Event $event = null): ?string
     {
         if (!$eventId) {
             return null;
         }
 
+        // Для приватных событий добавляем public_token, чтобы ссылка открывалась
+        // во внутреннем браузере мессенджера без авторизации
+        $token = null;
+        if ($event && (int) ($event->is_private ?? 0) === 1 && !empty($event->public_token)) {
+            $token = (string) $event->public_token;
+        }
+
+        $params = array_filter([
+            'event'      => $eventId,
+            'occurrence' => $occurrenceId ?: null,
+            'token'      => $token,
+        ]);
+
         try {
-            return $occurrenceId
-                ? route('events.show', ['event' => $eventId, 'occurrence' => $occurrenceId])
-                : route('events.show', ['event' => $eventId]);
+            return route('events.show', $params);
         } catch (\Throwable) {
             $base = rtrim((string) config('app.url'), '/');
             if ($base === '') {
                 return null;
             }
 
-            return $occurrenceId
-                ? "{$base}/events/{$eventId}?occurrence={$occurrenceId}"
-                : "{$base}/events/{$eventId}";
+            $query = http_build_query(array_filter([
+                'occurrence' => $occurrenceId ?: null,
+                'token'      => $token,
+            ]));
+
+            return $query ? "{$base}/events/{$eventId}?{$query}" : "{$base}/events/{$eventId}";
         }
     }
 
