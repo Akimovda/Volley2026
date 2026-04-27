@@ -36,11 +36,16 @@ class DateTime
             return null;
         }
     }
-    public static function effectiveUserTz(?\App\Models\User $user): string
+    public static function effectiveUserTz(?\App\Models\User $user, ?string $fallbackTz = null): string
     {
-        $tz = $user?->city?->timezone ?: config('app.timezone', 'UTC');
-    
-        return self::userTz($tz);
+        $cityTz = $user?->city?->timezone;
+        if ($cityTz) return self::userTz($cityTz);
+
+        if ($fallbackTz !== null && trim($fallbackTz) !== '') {
+            return self::userTz($fallbackTz);
+        }
+
+        return self::userTz(config('app.timezone', 'UTC'));
     }
     /**
      * $local ожидаем вида 'Y-m-d\TH:i' или любой parseable Carbon
