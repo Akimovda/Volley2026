@@ -308,11 +308,15 @@ class ProfileExtraController extends Controller
             }
         });
 
-        // Если пришли со страницы завершения профиля — редиректим на профиль с якорем провайдеров
+        // Если пришли со страницы завершения профиля — фиксируем первое заполнение и редиректим
         if ($request->boolean('from_complete')) {
-            return redirect()->route('profile.show')
-                ->with('status', 'Профиль обновлён.')
-                ->with('show_providers_hint', true);
+            if (!$isEditingOther && is_null($target->profile_completed_at)) {
+                $target->profile_completed_at = now();
+                $target->save();
+            }
+
+            return redirect()->route('events.index')
+                ->with('success', 'Профиль заполнен! Добро пожаловать 🏐');
         }
 
         return back()->with('status', 'Профиль обновлён.');
