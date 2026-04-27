@@ -3,6 +3,30 @@
     $isAdmin = (auth()->user()?->role ?? null) === 'admin';
     $remMin = (int) old('remind_registration_minutes_before', $event->remind_registration_minutes_before ?? 600);
     if ($remMin < 0) $remMin = 600;
+
+    // Вычисляем реальные значения окна регистрации из сохранённых UTC-меток
+    $evStartsAt = $event->starts_at ? \Carbon\Carbon::parse($event->starts_at, 'UTC') : null;
+    $regStartsDaysSaved = 3;
+    $regEndsMinSaved    = 15;
+    $cancelMinSaved     = 60;
+
+    if ($evStartsAt && $event->registration_starts_at) {
+        $regStartsDaysSaved = (int) abs($evStartsAt->diffInDays(\Carbon\Carbon::parse($event->registration_starts_at, 'UTC')));
+    }
+    if ($evStartsAt && $event->registration_ends_at) {
+        $regEndsMinSaved = (int) abs($evStartsAt->diffInMinutes(\Carbon\Carbon::parse($event->registration_ends_at, 'UTC')));
+    }
+    if ($evStartsAt && $event->cancel_self_until) {
+        $cancelMinSaved = (int) abs($evStartsAt->diffInMinutes(\Carbon\Carbon::parse($event->cancel_self_until, 'UTC')));
+    }
+
+    $regEndsMinCurrent = (int) old('reg_ends_minutes_before', $regEndsMinSaved);
+    $regEndsHours      = (int) floor($regEndsMinCurrent / 60);
+    $regEndsMins       = $regEndsMinCurrent % 60;
+
+    $cancelMinCurrent = (int) old('cancel_lock_minutes_before', $cancelMinSaved);
+    $cancelHours      = (int) floor($cancelMinCurrent / 60);
+    $cancelMins       = $cancelMinCurrent % 60;
 @endphp
 
 <x-voll-layout>
@@ -431,7 +455,7 @@
                                 <label>Начало регистрации (дней до)</label>
                                 <select name="reg_starts_days_before">
                                     @for($d = 0; $d <= 90; $d++)
-                                        <option value="{{ $d }}" @selected((old('reg_starts_days_before', 3)) == $d)>{{ $d }}</option>
+                                        <option value="{{ $d }}" @selected((old('reg_starts_days_before', $regStartsDaysSaved)) == $d)>{{ $d }}</option>
                                     @endfor
                                 </select>
                             </div>
@@ -439,23 +463,45 @@
 
                         <div class="col-md-4">
                             <div class="card">
-                                <label>Окончание регистрации (минут до)</label>
-                                <select name="reg_ends_minutes_before">
-                                    @foreach([1,5,10,15,20,25,30,35,40,45,50,55,60] as $m)
-                                        <option value="{{ $m }}" @selected((old('reg_ends_minutes_before', 15)) == $m)>{{ $m }}</option>
-                                    @endforeach
-                                </select>
+                                <label>Окончание регистрации (до начала)</label>
+                                <input type="hidden" name="reg_ends_minutes_before" id="mgmt_reg_ends_min" value="{{ $regEndsMinCurrent }}">
+                                <div class="d-flex" style="gap:.5rem;align-items:center">
+                                    <select id="mgmt_reg_ends_h" style="width:auto">
+                                        @for ($h = 0; $h <= 24; $h++)
+                                            <option value="{{ $h }}" @selected($regEndsHours == $h)>{{ $h }} ч</option>
+                                        @endfor
+                                    </select>
+                                    <select id="mgmt_reg_ends_m" style="width:auto">
+                                        @foreach([0,10,15,20,30,40,50] as $m)
+                                            <option value="{{ $m }}" @selected($regEndsMins == $m)>{{ $m }} мин</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <ul class="list f-16 mt-1">
+                                    <li>По умолчанию: 15 минут.</li>
+                                </ul>
                             </div>
                         </div>
 
                         <div class="col-md-4">
                             <div class="card">
-                                <label>Запрет отмены записи (минут до)</label>
-                                <select name="cancel_lock_minutes_before">
-                                    @foreach([1,5,10,15,20,25,30,35,40,45,50,55,60] as $m)
-                                        <option value="{{ $m }}" @selected((old('cancel_lock_minutes_before', 60)) == $m)>{{ $m }}</option>
-                                    @endforeach
-                                </select>
+                                <label>Запрет отмены записи (до начала)</label>
+                                <input type="hidden" name="cancel_lock_minutes_before" id="mgmt_cancel_min" value="{{ $cancelMinCurrent }}">
+                                <div class="d-flex" style="gap:.5rem;align-items:center">
+                                    <select id="mgmt_cancel_h" style="width:auto">
+                                        @for ($h = 0; $h <= 24; $h++)
+                                            <option value="{{ $h }}" @selected($cancelHours == $h)>{{ $h }} ч</option>
+                                        @endfor
+                                    </select>
+                                    <select id="mgmt_cancel_m" style="width:auto">
+                                        @foreach([0,10,15,20,30,40,50] as $m)
+                                            <option value="{{ $m }}" @selected($cancelMins == $m)>{{ $m }} мин</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <ul class="list f-16 mt-1">
+                                    <li>По умолчанию: 1 час.</li>
+                                </ul>
                             </div>
                         </div>
 
@@ -740,6 +786,26 @@
             rH?.addEventListener('input', syncRemind);
             rM?.addEventListener('input', syncRemind);
             syncRemind();
+
+            // --- Окно регистрации (часы+минуты → hidden total минут) ---
+            function syncRegHM(hSel, mSel, hidden) {
+                if (!hSel || !mSel || !hidden) return;
+                var total = parseInt(hSel.value) * 60 + parseInt(mSel.value);
+                if (total < 1) total = 1;
+                hidden.value = total;
+            }
+            var regEndsH   = document.getElementById('mgmt_reg_ends_h');
+            var regEndsM   = document.getElementById('mgmt_reg_ends_m');
+            var regEndsHid = document.getElementById('mgmt_reg_ends_min');
+            var cancelH    = document.getElementById('mgmt_cancel_h');
+            var cancelM    = document.getElementById('mgmt_cancel_m');
+            var cancelHid  = document.getElementById('mgmt_cancel_min');
+            regEndsH?.addEventListener('change', function() { syncRegHM(regEndsH, regEndsM, regEndsHid); });
+            regEndsM?.addEventListener('change', function() { syncRegHM(regEndsH, regEndsM, regEndsHid); });
+            cancelH?.addEventListener('change',  function() { syncRegHM(cancelH,  cancelM,  cancelHid); });
+            cancelM?.addEventListener('change',  function() { syncRegHM(cancelH,  cancelM,  cancelHid); });
+            syncRegHM(regEndsH, regEndsM, regEndsHid);
+            syncRegHM(cancelH,  cancelM,  cancelHid);
 
             // --- Бот-ассистент toggle ---
             const botChk = document.getElementById('bot_assistant_enabled_edit');

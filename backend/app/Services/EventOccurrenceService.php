@@ -226,10 +226,25 @@ if ($endType === 'until') {
 				);
 			}
 			
-			$regStartsDaysBefore = (int)($data['reg_starts_days_before'] ?? 3);
-			$regStartsHoursBefore = (int)($data['reg_starts_hours_before'] ?? 0);
-			$regEndsMinutesBefore = (int)($data['reg_ends_minutes_before'] ?? 15);
-			$cancelLockMinutesBefore = (int)($data['cancel_lock_minutes_before'] ?? 60);
+			if (array_key_exists('reg_starts_d', $data) || array_key_exists('reg_starts_h', $data)) {
+				$regStartsDaysBefore = (int)($data['reg_starts_d'] ?? 3);
+				$regStartsHoursBefore = (int)($data['reg_starts_h'] ?? 0);
+			} else {
+				$regStartsDaysBefore = (int)($data['reg_starts_days_before'] ?? 3);
+				$regStartsHoursBefore = (int)($data['reg_starts_hours_before'] ?? 0);
+			}
+
+			if (array_key_exists('reg_ends_h', $data) || array_key_exists('reg_ends_m', $data)) {
+				$regEndsMinutesBefore = max(1, (int)($data['reg_ends_h'] ?? 0) * 60 + (int)($data['reg_ends_m'] ?? 0));
+			} else {
+				$regEndsMinutesBefore = (int)($data['reg_ends_minutes_before'] ?? 15);
+			}
+
+			if (array_key_exists('cancel_lock_h', $data) || array_key_exists('cancel_lock_m', $data)) {
+				$cancelLockMinutesBefore = max(1, (int)($data['cancel_lock_h'] ?? 0) * 60 + (int)($data['cancel_lock_m'] ?? 0));
+			} else {
+				$cancelLockMinutesBefore = (int)($data['cancel_lock_minutes_before'] ?? 60);
+			}
 			
 			$regStartsUtc = $startsUtc->subDays($regStartsDaysBefore)->subHours($regStartsHoursBefore);
 			$regEndsUtc = $startsUtc->subMinutes($regEndsMinutesBefore);

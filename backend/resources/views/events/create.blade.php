@@ -163,19 +163,37 @@ if ($initialStep < 1 || $initialStep > 3) {
     $oldTrainerLabel = (string) old('trainer_user_label', $trainerPrefillLabel ?? ($prefill['trainer_user_label'] ?? ''));
 	
 	
-    // ✅ registration offsets defaults
-    $oldRegStartsDaysBefore = (int) old('reg_starts_days_before', 3);
-    $oldRegEndsMinutesBefore = (int) old('reg_ends_minutes_before', 15);
-    $oldCancelLockMinutesBefore = (int) old('cancel_lock_minutes_before', 60);
-	
-    if ($oldRegStartsDaysBefore < 0) $oldRegStartsDaysBefore = 3;
-    if ($oldRegEndsMinutesBefore < 0) $oldRegEndsMinutesBefore = 15;
-    if ($oldCancelLockMinutesBefore < 0) $oldCancelLockMinutesBefore = 60;
+    // ✅ registration offsets defaults — read from named select fields (reg_ends_h/m, cancel_lock_h/m)
+    $oldRegStartsDaysBefore = (int) old('reg_starts_d', old('reg_starts_days_before', 3));
+    $oldRegStartsHoursBefore = (int) old('reg_starts_h', 0);
 
-    $regEndsHours = intdiv($oldRegEndsMinutesBefore, 60);
-    $regEndsMinutes = $oldRegEndsMinutesBefore % 60;
-    $cancelLockHours = intdiv($oldCancelLockMinutesBefore, 60);
-    $cancelLockMinutes = $oldCancelLockMinutesBefore % 60;
+    if (old('reg_ends_h') !== null || old('reg_ends_m') !== null) {
+        $regEndsHours   = max(0, (int) old('reg_ends_h', 0));
+        $regEndsMinutes = max(0, (int) old('reg_ends_m', 0));
+    } elseif (old('reg_ends_minutes_before') !== null) {
+        $tmp = max(1, (int) old('reg_ends_minutes_before'));
+        $regEndsHours   = intdiv($tmp, 60);
+        $regEndsMinutes = $tmp % 60;
+    } else {
+        $regEndsHours   = 0;
+        $regEndsMinutes = 15;
+    }
+
+    if (old('cancel_lock_h') !== null || old('cancel_lock_m') !== null) {
+        $cancelLockHours   = max(0, (int) old('cancel_lock_h', 0));
+        $cancelLockMinutes = max(0, (int) old('cancel_lock_m', 0));
+    } elseif (old('cancel_lock_minutes_before') !== null) {
+        $tmp = max(1, (int) old('cancel_lock_minutes_before'));
+        $cancelLockHours   = intdiv($tmp, 60);
+        $cancelLockMinutes = $tmp % 60;
+    } else {
+        $cancelLockHours   = 1;
+        $cancelLockMinutes = 0;
+    }
+
+    // Computed totals for hidden fallback fields
+    $oldRegEndsMinutesBefore    = $regEndsHours * 60 + $regEndsMinutes;
+    $oldCancelLockMinutesBefore = $cancelLockHours * 60 + $cancelLockMinutes;
 	@endphp
 	
 	

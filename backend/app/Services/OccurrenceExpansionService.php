@@ -50,10 +50,25 @@ final class OccurrenceExpansionService
         $nowUtc     = CarbonImmutable::now('UTC');
         $horizonUtc = $nowUtc->addDays(max(1, $horizonDays))->endOfDay();
 
-        // registration offsets (можно вынести в конфиг позже)
-        $daysBefore      = 3;
-        $endsMinBefore   = 15;
-        $cancelMinBefore = 60;
+        // Derive registration offsets from the reference occurrence (first occurrence)
+        $regStartsSecBefore = 3 * 86400; // default: 3 days
+        $endsMinBefore      = 15;
+        $cancelMinBefore    = 60;
+
+        $eventStartUtc = CarbonImmutable::parse($event->starts_at, 'UTC');
+        $refUniq = "event:{$event->id}:" . $eventStartUtc->format('YmdHis');
+        $refOcc = EventOccurrence::where('event_id', $event->id)
+            ->where('uniq_key', $refUniq)
+            ->first();
+
+        if ($refOcc && $refOcc->registration_starts_at && $refOcc->registration_ends_at && $refOcc->cancel_self_until) {
+            $refStart  = CarbonImmutable::parse($refOcc->registration_starts_at, 'UTC');
+            $refEnd    = CarbonImmutable::parse($refOcc->registration_ends_at, 'UTC');
+            $refCancel = CarbonImmutable::parse($refOcc->cancel_self_until, 'UTC');
+            $regStartsSecBefore = max(0, $eventStartUtc->timestamp - $refStart->timestamp);
+            $endsMinBefore      = max(1, (int) round(($eventStartUtc->timestamp - $refEnd->timestamp) / 60));
+            $cancelMinBefore    = max(1, (int) round(($eventStartUtc->timestamp - $refCancel->timestamp) / 60));
+        }
 
         // snapshot max_players
         $maxPlayersSnapshot = null;
@@ -99,7 +114,7 @@ final class OccurrenceExpansionService
                 event: $event,
                 occStartUtc: $occStartUtc,
                 durationSec: $durationSec,
-                daysBefore: $daysBefore,
+                regStartsSecBefore: $regStartsSecBefore,
                 endsMinBefore: $endsMinBefore,
                 cancelMinBefore: $cancelMinBefore,
                 maxPlayersSnapshot: $maxPlayersSnapshot
@@ -118,7 +133,7 @@ final class OccurrenceExpansionService
         Event $event,
         CarbonImmutable $occStartUtc,
         int $durationSec,
-        int $daysBefore,
+        int $regStartsSecBefore,
         int $endsMinBefore,
         int $cancelMinBefore,
         ?int $maxPlayersSnapshot
@@ -136,7 +151,7 @@ final class OccurrenceExpansionService
 
         if ($allowReg) {
 
-            $regStarts = $occStartUtc->subDays(max(0, $daysBefore));
+            $regStarts = $occStartUtc->subSeconds(max(0, $regStartsSecBefore));
             $regEnds   = $occStartUtc->subMinutes(max(0, $endsMinBefore));
             $cancelTil = $occStartUtc->subMinutes(max(0, $cancelMinBefore));
 
