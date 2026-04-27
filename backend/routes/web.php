@@ -500,6 +500,12 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
 		
 		Route::patch('/events/{event}/registrations/{registration}/cancel', [EventRegistrationsManagementController::class, 'cancel'])
         ->name('events.registrations.cancel');
+
+		Route::patch('/events/{event}/registrations/{registration}/note', [EventRegistrationsManagementController::class, 'updateNote'])
+        ->name('events.registrations.note');
+
+		Route::get('/events/{event}/registrations/pdf', [EventRegistrationsManagementController::class, 'exportPdf'])
+        ->name('events.registrations.pdf');
 		
 		Route::delete('/events/{event}/registrations/{registration}', [EventRegistrationsManagementController::class, 'destroy'])
         ->name('events.registrations.destroy');

@@ -41,6 +41,7 @@ class EventRegistrationsManagementController extends Controller
         $hasCancelledAt = true; // уже проверили выше
         $hasIsCancelled = Schema::hasColumn('event_registrations', 'is_cancelled');
         $hasStatus      = Schema::hasColumn('event_registrations', 'status');
+        $hasOrgNote     = Schema::hasColumn('event_registrations', 'organizer_note');
  
         // Game context для позиций и группировки
         $event->loadMissing('gameSettings');
@@ -75,8 +76,10 @@ class EventRegistrationsManagementController extends Controller
                 $hasIsCancelled ? 'er.is_cancelled' : DB::raw('NULL::boolean as is_cancelled'),
                 $hasStatus      ? 'er.status'       : DB::raw('NULL::text as status'),
                 'er.created_at',
+                $hasOrgNote ? 'er.organizer_note' : DB::raw("NULL::text as organizer_note"),
                 'u.name',
-                'u.email',   // нужно для отображения в blade
+                'u.email',
+                'u.phone',
                 'u.is_bot',
             ])
             ->orderByRaw('CASE WHEN er.cancelled_at IS NULL THEN 0 ELSE 1 END ASC')
@@ -178,6 +181,7 @@ class EventRegistrationsManagementController extends Controller
                     'direction'          => $direction,
                     'gameSubtype'        => $gameSubtype,
                     'availablePositions' => $availablePositions,
+                    'hasOrgNote'         => $hasOrgNote,
                 ]);
     }
 
@@ -567,6 +571,111 @@ class EventRegistrationsManagementController extends Controller
             return back()->with('error', $e->getMessage());
         }
     }
+    /**
+     * PATCH /events/{event}/registrations/{registration}/note
+     */
+    public function updateNote(Request $request, Event $event, int $registration)
+    {
+        $user = $request->user();
+        if (!$user) abort(401);
+
+        $this->ensureCanCreateEvents($user);
+        $this->ensureCanManageEvent($user, $event);
+
+        $data = $request->validate([
+            'organizer_note' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $row = DB::table('event_registrations')
+            ->where('id', $registration)
+            ->where('event_id', (int) $event->id)
+            ->first(['id']);
+
+        if (!$row) abort(404);
+
+        DB::table('event_registrations')
+            ->where('id', $registration)
+            ->update([
+                'organizer_note' => trim((string) ($data['organizer_note'] ?? '')),
+                'updated_at'     => now(),
+            ]);
+
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => true]);
+        }
+
+        return back()->with('status', 'Комментарий сохранён ✅');
+    }
+
+    /**
+     * GET /events/{event}/registrations/pdf
+     */
+    public function exportPdf(Request $request, Event $event)
+    {
+        $user = $request->user();
+        if (!$user) return redirect()->route('login');
+
+        $this->ensureCanCreateEvents($user);
+        $this->ensureCanManageEvent($user, $event);
+
+        $event->loadMissing('gameSettings');
+
+        $tz = (string) ($event->timezone ?: 'UTC');
+        $startsLocal = null;
+        $endsLocal   = null;
+        if (!empty($event->starts_at)) {
+            $startsLocal = Carbon::parse($event->starts_at, 'UTC')->setTimezone($tz);
+        }
+        if (!empty($event->ends_at)) {
+            $endsLocal = Carbon::parse($event->ends_at, 'UTC')->setTimezone($tz);
+        }
+
+        $hasOrgNote = Schema::hasColumn('event_registrations', 'organizer_note');
+
+        $occurrenceId = (int) $request->query('occurrence', 0);
+
+        $regsQuery = DB::table('event_registrations as er')
+            ->join('users as u', 'u.id', '=', 'er.user_id')
+            ->where('er.event_id', (int) $event->id)
+            ->whereNull('er.cancelled_at')
+            ->where(function ($q) {
+                $q->whereNull('er.is_cancelled')->orWhere('er.is_cancelled', false);
+            })
+            ->select([
+                'er.id',
+                'er.user_id',
+                'er.position',
+                $hasOrgNote ? 'er.organizer_note' : DB::raw("NULL::text as organizer_note"),
+                'er.created_at',
+                'u.name',
+                'u.phone',
+                'u.is_bot',
+            ])
+            ->orderBy('er.id');
+
+        if ($occurrenceId) {
+            $regsQuery->where('er.occurrence_id', $occurrenceId);
+        }
+
+        $registrations = $regsQuery->get();
+
+        $location = null;
+        if (!empty($event->location_id) && Schema::hasTable('locations')) {
+            $location = DB::table('locations as l')
+                ->leftJoin('cities as c', 'c.id', '=', 'l.city_id')
+                ->where('l.id', (int) $event->location_id)
+                ->first(['l.name', 'l.address', 'c.name as city_name']);
+        }
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('events.registrations.pdf', compact(
+            'event', 'registrations', 'startsLocal', 'endsLocal', 'tz', 'location'
+        ))->setPaper('a4', 'portrait');
+
+        $filename = 'registrations-' . $event->id . '-' . now()->format('Ymd') . '.pdf';
+
+        return $pdf->download($filename);
+    }
+
     private function resolvePositions(string $direction, string $subtype, string $liberoMode): array
     {
         if ($direction === 'beach') return [];
