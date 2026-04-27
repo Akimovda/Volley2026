@@ -13,6 +13,9 @@
 - Использовать: cat > /tmp/file.php + php -r с bootstrap
 - sudo нужен для root-файлов (org.js, некоторые blade)
 - sed -i для простых замен, Python для сложных (спецсимволы, табы)
+- CarbonImmutable::diffInSeconds() — absolute=false по умолчанию, возвращает отрицательные значения; использовать $a->timestamp - $b->timestamp
+- createCustomSelect в script.js оборачивает все .form select — селекты без name атрибута не отправляются на сервер
+- ExpandEventOccurrencesJob/OccurrenceExpansionService: offset для reg_starts/reg_ends/cancel_lock берётся из первой (reference) occurrence, не хардкод
 
 ## JS файлы
 - lib.js — везде, script.js — логика+swal, fas.js — fancybox+swiper, org.js — орг. панель
@@ -28,13 +31,10 @@
 - Формат: часы+минуты split (select h + select m) + hidden total_minutes + JS change→sync
 - event_management_edit: вычислять из event->starts_at + event->cancel_self_until (fixed)
 - НЕ использовать hardcoded old('field', 60) без $savedValue из модели
-- createCustomSelect (script.js) оборачивает все .form select — jQuery trigger может не вызывать нативные addEventListener
 - РЕШЕНИЕ: давать <select> атрибут name и вычислять итог на сервере (reg_ends_h + reg_ends_m → минуты)
 - step2 create: selects имеют name="reg_ends_h","reg_ends_m","cancel_lock_h","cancel_lock_m","reg_starts_d","reg_starts_h"
 - EventOccurrenceService::buildRegistrationWindows() читает эти поля и вычисляет minutes (приоритет перед hidden полями)
-- OccurrenceExpansionService::expand() читает offsets из reference occurrence (первый occ по uniq_key) и пропагирует на все future occs
-- ВАЖНО: Carbon::diffInSeconds() по умолчанию absolute=false (знаковое!) — использовать timestamp арифметику: $a->timestamp - $b->timestamp
-- Scheduled expand: events:expand-recurring работает ежедневно в 03:10 и ПЕРЕЗАПИСЫВАЕТ окна регистрации у всех future occurrences
+- Scheduled expand: events:expand-recurring работает ежедневно в 03:10 и перезаписывает окна регистрации у всех future occurrences
 
 ## Occurrence override паттерн
 - NULL в occurrence = наследуется от серии

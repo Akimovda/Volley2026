@@ -43,6 +43,14 @@ class EnsureProfileCompleted
             }
         }
 
+        // Имя заполнено (пришло через OAuth) — считаем профиль завершённым
+        $name = trim((string) ($user->name ?? ''));
+        if ($name !== '' && $name !== 'Пользователь') {
+            $user->profile_completed_at = now();
+            $user->save();
+            return $next($request);
+        }
+
         // AJAX / JSON запросы — не редиректим
         if ($request->expectsJson() || $request->ajax()) {
             return $next($request);
