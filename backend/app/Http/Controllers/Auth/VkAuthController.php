@@ -14,14 +14,9 @@ use Laravel\Socialite\Facades\Socialite;
 
 class VkAuthController extends Controller
 {
-    private function debug(): bool
-    {
-        return (bool) config('app.debug');
-    }
-
     private function logWarn(string $msg, array $ctx = []): void
     {
-        if ($this->debug()) Log::warning('[VK_OAUTH] ' . $msg, $ctx);
+        Log::warning('[VK_OAUTH] ' . $msg, $ctx);
     }
 
     private function storeReturnTo(Request $request): void
@@ -40,7 +35,7 @@ class VkAuthController extends Controller
         $urlHost = parse_url($url, PHP_URL_HOST);
 
         if ($urlHost && $appHost && strcasecmp($urlHost, $appHost) !== 0) return $fallback;
-        if (str_contains($url, '/auth/') || str_contains($url, '/logout')) return $fallback;
+        if (str_contains($url, '/auth/') || str_contains($url, '/logout') || str_contains($url, '/login') || str_contains($url, '/register')) return $fallback;
 
         return $url;
     }
@@ -56,7 +51,11 @@ class VkAuthController extends Controller
         $this->storeReturnTo($request);
         $request->session()->put('oauth_provider', 'vk');
         $request->session()->put('oauth_intent', $intent);
-        return Socialite::driver('vkid')->redirect();
+        // Socialite пишет state в сессию внутри redirect(); явно сохраняем после,
+        // чтобы state гарантированно попал в БД до того как браузер уйдёт на VK.
+        $response = Socialite::driver('vkid')->redirect();
+        $request->session()->save();
+        return $response;
     }
 
     public function callback(Request $request)
@@ -127,10 +126,10 @@ class VkAuthController extends Controller
             $user->save();
         }
 
-        UserPhotoFromProviderService::seedFromProviderIfAllowed($user, $avatar, $isNewUser);
-
         Auth::login($user, true);
         $request->session()->regenerate();
+
+        UserPhotoFromProviderService::seedFromProviderIfAllowed($user, $avatar, $isNewUser);
 
         if ($isNewUser) {
             return redirect()->route('profile.complete')->with('welcome', true);

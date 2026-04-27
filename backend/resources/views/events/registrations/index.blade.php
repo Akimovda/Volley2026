@@ -412,7 +412,7 @@ $searchUrl = route('api.users.search');
 					}
 					items.forEach(function(item) {
 						var div = document.createElement('div');
-						div.style.cssText = 'display:flex;justify-content:space-between;align-items:center;';
+						div.style.cssText = 'padding:1rem 1.6rem;cursor:pointer;font-size:1.5rem;border-bottom:0.1rem solid var(--border-color,#eee);display:flex;justify-content:space-between;align-items:center;';
 						div.innerHTML =
 						'<span class="b-500">' + (item.is_bot ? '🤖 ' : '') + esc(item.label || item.name) + '</span>' +
 						(item.meta ? '<span style="font-size:1.3rem;opacity:.5;">' + esc(item.meta) + '</span>' : '');
