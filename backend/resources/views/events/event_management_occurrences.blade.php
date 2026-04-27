@@ -184,7 +184,7 @@
                                                 data-url="{{ route('events.occurrences.toggle-bot', ['event' => (int)$event->id, 'occurrence' => (int)$occ->id]) }}"
                                                 data-enabled="{{ $effectiveBot ? '1' : '0' }}"
                                                 title="{{ $effectiveBot ? 'Бот включён (нажми чтобы выключить)' : 'Бот выключен (нажми чтобы включить)' }}"
-                                                @if($effectiveBot) style="border-color:#10b981;color:#10b981" @endif>
+                                                @if($effectiveBot) style="background:#10b981;border-color:#10b981;color:#fff" @endif>
                                                 🤖
                                             </button>
                                             @endif
@@ -268,9 +268,9 @@
                     var on = !!data.enabled;
                     btn.data('enabled', on ? '1' : '0');
                     if (on) {
-                        btn.css({'border-color': '#10b981', 'color': '#10b981'});
+                        btn.css({'background': '#10b981', 'border-color': '#10b981', 'color': '#fff'});
                     } else {
-                        btn.css({'border-color': '', 'color': ''});
+                        btn.css({'background': '', 'border-color': '', 'color': ''});
                     }
                     btn.attr('title', on ? 'Бот включён (нажми чтобы выключить)' : 'Бот выключен (нажми чтобы включить)');
                     swal({
