@@ -239,6 +239,28 @@ if ($role === 'admin') {
             'occurrences' => $occurrences,
         ]);
     }
+    public function toggleBotEvent(Request $request, Event $event): \Illuminate\Http\JsonResponse
+    {
+        $newValue = !(bool)($event->bot_assistant_enabled ?? false);
+        $event->bot_assistant_enabled = $newValue;
+        $event->save();
+
+        return response()->json(['enabled' => $newValue]);
+    }
+
+    public function toggleBotOccurrence(Request $request, Event $event, \App\Models\EventOccurrence $occurrence): \Illuminate\Http\JsonResponse
+    {
+        $occOverride = $occurrence->getRawOriginal('bot_assistant_enabled');
+        $effective = $occOverride === null
+            ? (bool) ($event->bot_assistant_enabled ?? false)
+            : (bool) $occOverride;
+
+        $occurrence->bot_assistant_enabled = !$effective;
+        $occurrence->save();
+
+        return response()->json(['enabled' => !$effective]);
+    }
+
     public function destroyOccurrence(\App\Models\EventOccurrence $occurrence, \Illuminate\Http\Request $request)
     {
         $deleteMode = (string)$request->input('delete_mode', 'single');

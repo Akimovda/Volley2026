@@ -62,6 +62,7 @@ class EventOccurrence extends Model
         // misc
         'trainer_user_id',
         'requires_personal_data',
+        'bot_assistant_enabled',
     ];
 
     protected $casts = [

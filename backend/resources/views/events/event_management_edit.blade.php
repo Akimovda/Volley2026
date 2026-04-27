@@ -672,7 +672,7 @@
                 @if(($event->registration_type ?? 'individual') !== 'team' && ($event->format ?? 'game') !== 'tournament')
                 {{-- ===== БЛОК 7: Помощник записи 🤖 ===== --}}
                 <div class="ramka">
-                    <h2 class="-mt-05">Помощник записи 🤖</h2>
+                    <h2 class="-mt-05">Помощник записи <span id="bot_icon_edit" style="color:{{ ($event->bot_assistant_enabled ?? false) ? '#10b981' : '#9ca3af' }}">🤖</span></h2>
                     <div class="row">
                         <div class="col-md-12">
                             <div class="card">
@@ -811,10 +811,12 @@
             const botChk = document.getElementById('bot_assistant_enabled_edit');
             const botSettings = document.getElementById('bot_settings_edit');
             const botFill     = document.getElementById('bot_fill_edit');
+            const botIcon     = document.getElementById('bot_icon_edit');
             function syncBot() {
                 const show = botChk?.checked;
                 if (botSettings) botSettings.style.display = show ? '' : 'none';
                 if (botFill) botFill.style.display = show ? '' : 'none';
+                if (botIcon) botIcon.style.color = show ? '#10b981' : '#9ca3af';
             }
             botChk?.addEventListener('change', syncBot);
 

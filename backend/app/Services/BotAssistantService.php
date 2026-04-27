@@ -33,7 +33,17 @@ final class BotAssistantService
     {
         $event = $occurrence->event ?? $occurrence->load('event')->event;
 
-        if (!$event || !$event->bot_assistant_enabled) {
+        if (!$event) {
+            return;
+        }
+
+        // NULL на occurrence = наследуем от события
+        $occOverride = $occurrence->getRawOriginal('bot_assistant_enabled');
+        $enabled = $occOverride === null
+            ? (bool) ($event->bot_assistant_enabled ?? false)
+            : (bool) $occOverride;
+
+        if (!$enabled) {
             return;
         }
 
