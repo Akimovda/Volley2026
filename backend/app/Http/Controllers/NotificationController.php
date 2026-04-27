@@ -4,6 +4,7 @@
 	
 	use App\Models\UserNotification;
 	use App\Services\UserNotificationService;
+	use App\Support\DateTime as DT;
 	use DomainException;
 	use Illuminate\Http\RedirectResponse;
 	use Illuminate\Http\Request;
@@ -31,7 +32,8 @@
 			
 			return view('notifications.index', [
             'notifications' => $notifications,
-            'unreadCount' => $unreadCount,
+            'unreadCount'   => $unreadCount,
+            'userTz'        => DT::effectiveUserTz($user),
 			]);
 		}
 		
