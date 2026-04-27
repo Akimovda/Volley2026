@@ -347,23 +347,32 @@
 			/*
 				|--------------------------------------------------------------------------
 				| RESERVE SLOTS
-				| Открываются только когда все основные позиции заняты
+				| Открываются только когда ВСЕ основные позиции заняты глобально.
+				| Проверяем по всем слотам без гендерного фильтра — чтобы мужчина
+				| с заполненным setter-слотом не видел reserve, пока есть свободные
+				| outside-места (доступные другому полу).
 				|--------------------------------------------------------------------------
 			*/
 			$reserveMax = (int) ($settings?->reserve_players_max ?? 0);
 			if ($reserveMax > 0 && empty($freePositions)) {
-				$reserveCount = $registrationsByPosition->get('reserve')?->count() ?? 0;
-				// Не считаем текущую запись пользователя (если он уже запасной)
-				if ($userRegistration && $userRegistration->position === 'reserve') {
-					$reserveCount = max(0, $reserveCount - 1);
-				}
-				$freeReserve = max(0, $reserveMax - $reserveCount);
-				if ($freeReserve > 0) {
-					$freePositions[] = [
-						'key'   => 'reserve',
-						'free'  => $freeReserve,
-						'limit' => $reserveMax,
-					];
+				// Все слоты глобально заняты (без гендерного фильтра)
+				$allMainFull = collect($slots)->every(
+					fn($s) => ($s->max_slots - ($takenPerRole[$s->role] ?? 0)) <= 0
+				);
+				if ($allMainFull) {
+					$reserveCount = $registrationsByPosition->get('reserve')?->count() ?? 0;
+					// Не считаем текущую запись пользователя (если он уже запасной)
+					if ($userRegistration && $userRegistration->position === 'reserve') {
+						$reserveCount = max(0, $reserveCount - 1);
+					}
+					$freeReserve = max(0, $reserveMax - $reserveCount);
+					if ($freeReserve > 0) {
+						$freePositions[] = [
+							'key'   => 'reserve',
+							'free'  => $freeReserve,
+							'limit' => $reserveMax,
+						];
+					}
 				}
 			}
 
@@ -581,7 +590,12 @@
 			// Классика: если вообще нет свободных позиций — запись невозможна
 			if ($isClassic) {
                 if ($maxPlayers > 0 && empty($freePositions)) {
-                    $result->errors[] = 'Свободных мест на мероприятие больше нет.';
+                    $registeredTotal = $occurrence->registrations_count ?? $registrations->count();
+                    if ($registeredTotal >= $maxPlayers) {
+                        $result->errors[] = 'Свободных мест на мероприятие больше нет.';
+                    } else {
+                        $result->errors[] = 'Нет доступных позиций для записи.';
+                    }
                     return;
                 }
             
