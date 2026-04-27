@@ -18,28 +18,36 @@
     tbody td { padding: 6px 8px; vertical-align: top; font-size: 10px; }
     .num { color: #999; }
     .note { color: #555; font-style: italic; }
+    .pos { color: #444; }
     .footer { margin-top: 18px; font-size: 9px; color: #aaa; border-top: 1px solid #e2e8f0; padding-top: 6px; }
 </style>
 </head>
 <body>
+@php
+    $posLabels = [
+        'setter'   => 'Связующий',
+        'outside'  => 'Доигровщик',
+        'opposite' => 'Диагональный',
+        'middle'   => 'Центральный',
+        'libero'   => 'Либеро',
+    ];
+    $dateLine = '—';
+    if ($startsLocal) {
+        $dateLine = $startsLocal->format('d.m.Y') . ' · ' . $startsLocal->format('H:i');
+        if ($endsLocal) $dateLine .= '–' . $endsLocal->format('H:i');
+        $dateLine .= ' (' . $tz . ')';
+    }
+    $locationLine = '—';
+    if ($location) {
+        $parts = array_filter([$location->city_name ?? null, $location->address ?? null, $location->name ?? null]);
+        $locationLine = implode(', ', $parts) ?: '—';
+    }
+@endphp
 
 <div class="header">
     <div class="title">{{ $event->title }}</div>
-    @php
-        $dateLine = '—';
-        if ($startsLocal) {
-            $dateLine = $startsLocal->format('d.m.Y') . ' · ' . $startsLocal->format('H:i');
-            if ($endsLocal) $dateLine .= '–' . $endsLocal->format('H:i');
-            $dateLine .= ' (' . $tz . ')';
-        }
-        $locationLine = '—';
-        if ($location) {
-            $parts = array_filter([$location->city_name ?? null, $location->address ?? null, $location->name ?? null]);
-            $locationLine = implode(', ', $parts) ?: '—';
-        }
-    @endphp
-    <div class="meta">📅 <strong>Дата:</strong> {{ $dateLine }}</div>
-    <div class="meta">📍 <strong>Место:</strong> {{ $locationLine }}</div>
+    <div class="meta">&#128197; <strong>Дата:</strong> {{ $dateLine }}</div>
+    <div class="meta">&#128205; <strong>Место:</strong> {{ $locationLine }}</div>
 </div>
 
 <div class="stats">
@@ -49,9 +57,10 @@
 <table>
     <thead>
         <tr>
-            <th style="width:28px">#</th>
+            <th style="width:24px">#</th>
             <th>Имя</th>
-            <th style="width:110px">Телефон</th>
+            <th style="width:105px">Телефон</th>
+            <th style="width:90px">Позиция</th>
             <th>Комментарий</th>
         </tr>
     </thead>
@@ -59,23 +68,21 @@
         @forelse($registrations as $i => $r)
         <tr>
             <td class="num">{{ $i + 1 }}</td>
-            <td>
-                {{ $r->name ?: ('User #' . $r->user_id) }}
-                @if(!empty($r->is_bot)) <span style="color:#888">(бот)</span> @endif
-            </td>
+            <td>{{ $r->name ?: ('User #' . $r->user_id) }}@if(!empty($r->is_bot)) (бот)@endif</td>
             <td>{{ $r->phone ?: '—' }}</td>
+            <td class="pos">{{ $posLabels[$r->position ?? ''] ?? ($r->position ?: '—') }}</td>
             <td class="note">{{ $r->organizer_note ?: '' }}</td>
         </tr>
         @empty
         <tr>
-            <td colspan="4" style="text-align:center;color:#999;padding:12px;">Нет активных регистраций</td>
+            <td colspan="5" style="text-align:center;color:#999;padding:12px;">Нет активных регистраций</td>
         </tr>
         @endforelse
     </tbody>
 </table>
 
 <div class="footer">
-    Сформировано: {{ now()->format('d.m.Y H:i') }} · volleyplay.club
+    Сформировано: {{ now()->format('d.m.Y H:i') }} &middot; volleyplay.club
 </div>
 
 </body>
