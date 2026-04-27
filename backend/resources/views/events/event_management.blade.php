@@ -311,7 +311,7 @@ return ['label' => 'Мест: —', 'free' => null, 'max' => null, 'registered' 
                                             data-url="{{ route('events.event_management.toggle-bot', ['event' => (int)$event->id]) }}"
                                             data-enabled="{{ $botOn ? '1' : '0' }}"
                                             title="{{ $botOn ? 'Бот включён для всех дат (нажми чтобы выключить)' : 'Бот выключен (нажми чтобы включить)' }}"
-                                            @if($botOn) style="border-color:#10b981;color:#10b981" @endif>🤖</button>
+                                            @if($botOn) style="background:#10b981;border-color:#10b981;color:#fff" @endif>🤖</button>
                                         @endif
 	                                        {{-- Для recurring: изменить серию, открыть даты, отменить всю серию --}}
                                         <a href="{{ route('events.event_management.edit', ['event' => (int)$event->id]) }}"
@@ -368,7 +368,7 @@ return ['label' => 'Мест: —', 'free' => null, 'max' => null, 'registered' 
                                             data-url="{{ route('events.event_management.toggle-bot', ['event' => (int)$event->id]) }}"
                                             data-enabled="{{ $botOn ? '1' : '0' }}"
                                             title="{{ $botOn ? 'Бот включён (нажми чтобы выключить)' : 'Бот выключен (нажми чтобы включить)' }}"
-                                            @if($botOn) style="border-color:#10b981;color:#10b981" @endif>🤖</button>
+                                            @if($botOn) style="background:#10b981;border-color:#10b981;color:#fff" @endif>🤖</button>
                                         @endif
 	                                        {{-- Для single: изменить, копировать, отменить --}}
                                         <a href="{{ route('events.event_management.edit', ['event' => (int)$event->id]) }}"
@@ -554,9 +554,9 @@ return ['label' => 'Мест: —', 'free' => null, 'max' => null, 'registered' 
                     var on = !!data.enabled;
                     btn.data('enabled', on ? '1' : '0');
                     if (on) {
-                        btn.css({'border-color': '#10b981', 'color': '#10b981'});
+                        btn.css({'background': '#10b981', 'border-color': '#10b981', 'color': '#fff'});
                     } else {
-                        btn.css({'border-color': '', 'color': ''});
+                        btn.css({'background': '', 'border-color': '', 'color': ''});
                     }
                     btn.attr('title', on
                         ? 'Бот включён для всех дат (нажми чтобы выключить)'
