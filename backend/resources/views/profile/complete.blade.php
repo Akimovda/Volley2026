@@ -29,13 +29,19 @@
 		
 		// ВАЖНО: права считаем по actor, а не по user (target)
 		$canEditProtected = (bool)($canEditProtected ?? ($actor && $actor->can('edit-protected-profile-fields')));
-		
+
+		// Первичное заполнение: все поля открыты, даже если подтянулись из OAuth
+		$isFirstCompletion = is_null($user?->profile_completed_at) && ($actor?->id === $user?->id);
+		if ($isFirstCompletion) {
+			$canEditProtected = true;
+		}
+
 		$filled = function ($value) {
 		if (is_null($value)) return false;
 		if (is_string($value)) return trim($value) !== '';
 		return true;
 		};
-		
+
 		$lockHint = 'Поле уже заполнено. Изменить может только администратор.';
 		
 		$posMap = [
@@ -297,7 +303,18 @@
 				
 				
 				{{-- ========================= FLASH / ERRORS ========================= --}}
-				@if (session('welcome'))
+				@if ($isFirstCompletion)
+				<div class="ramka" style="border-left: 4px solid var(--c-primary, #2563eb);">
+					<div class="text-center">
+						<h3 class="mt-0">Добро пожаловать на VolleyPlay.Club! 🏐</h3>
+						<p>Заполните анкету — это займёт меньше минуты.<br>
+						После сохранения персональные данные нельзя будет изменить самостоятельно.</p>
+						@if($user?->first_name || $user?->last_name)
+						<p class="f-14" style="color: var(--c-muted, #6b7280);">Имя и фамилия подтянулись из вашего аккаунта — проверьте и при необходимости исправьте.</p>
+						@endif
+					</div>
+				</div>
+				@elseif (session('welcome'))
 				<div class="ramka">
 					<div class="text-center">
 						<h3 class="mt-0">Добро пожаловать на VolleyPlay.Club!</h3>

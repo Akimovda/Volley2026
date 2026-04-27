@@ -94,6 +94,11 @@ public static function isUser(User $user): bool
 
     protected static function selfEdit(User $target, array $data): GuardResult
     {
+        // Если анкета ещё не была заполнена пользователем — все поля открыты для редактирования
+        if (is_null($target->profile_completed_at)) {
+            return self::validateAge($target, $data);
+        }
+
         $protectedOnce = [
             'first_name',
             'last_name',

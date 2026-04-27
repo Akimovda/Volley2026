@@ -175,8 +175,9 @@ class ProfileExtraController extends Controller
 
         // =========================
         // 2) Защита “после заполнения” (только для self, если не admin)
+        //    Пропускаем если анкета ещё не была явно завершена пользователем
         // =========================
-        if ($mode === 'self' && !$isAdmin) {
+        if ($mode === 'self' && !$isAdmin && !is_null($target->profile_completed_at)) {
             $protected = [
                 'first_name', 'last_name', 'patronymic',
                 'phone', 'birth_date', 'city_id',

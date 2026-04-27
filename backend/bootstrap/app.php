@@ -19,9 +19,11 @@ return Application::configure(basePath: dirname(__DIR__))
             'yookassa/webhook',
         ]);
         $middleware->alias([
-            'user.restricted' => \App\Http\Middleware\EnsureUserNotRestricted::class,
-            'track.view'      => \App\Http\Middleware\TrackPageView::class,
+            'user.restricted'     => \App\Http\Middleware\EnsureUserNotRestricted::class,
+            'track.view'          => \App\Http\Middleware\TrackPageView::class,
+            'profile.completed'   => \App\Http\Middleware\EnsureProfileCompleted::class,
         ]);
+        $middleware->appendToGroup('web', \App\Http\Middleware\EnsureProfileCompleted::class);
     })
     ->withSchedule(function (Schedule $schedule) {
         // Reminders: каждую минуту

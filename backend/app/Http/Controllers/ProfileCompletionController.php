@@ -148,14 +148,26 @@
 			// -------------------------------------------------
 			// 4. Save
 			// -------------------------------------------------
+			$isFirstCompletion = is_null($target->profile_completed_at) && $target->id === $actor->id;
+
 			$target->fill($result->data);
+
+			if ($isFirstCompletion) {
+				$target->profile_completed_at = now();
+			}
+
 			$target->save();
-			
+
 			// -------------------------------------------------
-			// 5. Redirect (ВАЖНО: target id)
+			// 5. Redirect
 			// -------------------------------------------------
+			if ($isFirstCompletion) {
+				return redirect()->route('events.index')
+					->with('success', 'Профиль заполнен! Добро пожаловать 🏐');
+			}
+
 			return redirect()
-			->route('profile.complete', ['user_id' => $target->id])
-			->with('success', 'Профиль обновлён.');
+				->route('profile.complete', ['user_id' => $target->id])
+				->with('success', 'Профиль обновлён.');
 		}
 	}	
