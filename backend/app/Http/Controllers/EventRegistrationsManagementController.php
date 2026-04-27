@@ -50,14 +50,31 @@ class EventRegistrationsManagementController extends Controller
         $liberoMode         = (string) ($event->gameSettings?->libero_mode ?? 'with_libero');
         $availablePositions = $this->resolvePositions($direction, $gameSubtype, $liberoMode);
 
-        $maxPlayers = (int) DB::table('event_game_settings')
-            ->where('event_id', (int) $event->id)
-            ->value('max_players');
+        $occurrenceId = (int) $request->query('occurrence', 0);
+        $occurrence   = null;
+        if ($occurrenceId) {
+            $occurrence = DB::table('event_occurrences')
+                ->where('id', $occurrenceId)
+                ->where('event_id', (int) $event->id)
+                ->first(['id', 'max_players', 'starts_at', 'timezone']);
+        }
 
-        $activeRegs = (int) DB::table('event_registrations')
+        // max_players: из occurrence если открыта конкретная дата, иначе из event_game_settings
+        if ($occurrence && $occurrence->max_players > 0) {
+            $maxPlayers = (int) $occurrence->max_players;
+        } else {
+            $maxPlayers = (int) DB::table('event_game_settings')
+                ->where('event_id', (int) $event->id)
+                ->value('max_players');
+        }
+
+        $activeRegsQuery = DB::table('event_registrations')
             ->where('event_id', (int) $event->id)
-            ->whereNull('cancelled_at')
-            ->count();
+            ->whereNull('cancelled_at');
+        if ($occurrenceId) {
+            $activeRegsQuery->where('occurrence_id', $occurrenceId);
+        }
+        $activeRegs = (int) $activeRegsQuery->count();
 
         $freeSeats = null;
         if ($maxPlayers > 0) {
@@ -67,6 +84,7 @@ class EventRegistrationsManagementController extends Controller
         $registrations = DB::table('event_registrations as er')
             ->join('users as u', 'u.id', '=', 'er.user_id')
             ->where('er.event_id', (int) $event->id)
+            ->when($occurrenceId, fn ($q) => $q->where('er.occurrence_id', $occurrenceId))
             ->select([
                 'er.id',
                 'er.user_id',
@@ -143,20 +161,18 @@ class EventRegistrationsManagementController extends Controller
                 ]);
         }
 
-        $tz = (string) ($event->timezone ?: 'UTC');
+        // Дата: если открыта конкретная occurrence — берём её дату, иначе дату события
+        $tz = (string) ($occurrence->timezone ?? $event->timezone ?: 'UTC');
         $startsLocal = null;
-        $endsLocal = null;
+        $endsLocal   = null;
 
-        if (!empty($event->starts_at)) {
-            $startsLocal = Carbon::parse($event->starts_at, 'UTC')->setTimezone($tz);
+        $startsAt = $occurrence->starts_at ?? $event->starts_at ?? null;
+        if (!empty($startsAt)) {
+            $startsLocal = Carbon::parse($startsAt, 'UTC')->setTimezone($tz);
         }
-
-        if (!empty($event->ends_at)) {
+        if (!$occurrence && !empty($event->ends_at)) {
             $endsLocal = Carbon::parse($event->ends_at, 'UTC')->setTimezone($tz);
         }
-
-        $freeCount = is_null($freeSeats) ? 0 : (int) $freeSeats;
-        $activeCount = (int) $activeRegs;
 
         return view('events.registrations.index', [
                     'event'              => $event,
@@ -177,6 +193,7 @@ class EventRegistrationsManagementController extends Controller
                     'hasStatus'          => $hasStatus,
                     'q'                  => $q,
                     'users'              => $users,
+                    'occurrenceId'       => $occurrenceId ?: null,
                     // game context
                     'direction'          => $direction,
                     'gameSubtype'        => $gameSubtype,
@@ -620,48 +637,7 @@ class EventRegistrationsManagementController extends Controller
 
         $event->loadMissing('gameSettings');
 
-        $tz = (string) ($event->timezone ?: 'UTC');
-        $startsLocal = null;
-        $endsLocal   = null;
-        if (!empty($event->starts_at)) {
-            $startsLocal = Carbon::parse($event->starts_at, 'UTC')->setTimezone($tz);
-        }
-        if (!empty($event->ends_at)) {
-            $endsLocal = Carbon::parse($event->ends_at, 'UTC')->setTimezone($tz);
-        }
-
-        $hasOrgNote = Schema::hasColumn('event_registrations', 'organizer_note');
-
-        $registrations = DB::table('event_registrations as er')
-            ->join('users as u', 'u.id', '=', 'er.user_id')
-            ->where('er.event_id', (int) $event->id)
-            ->whereNull('er.cancelled_at')
-            ->where(function ($q) {
-                $q->whereNull('er.is_cancelled')->orWhere('er.is_cancelled', false);
-            })
-            ->where(function ($q) {
-                $q->whereNull('er.status')->orWhere('er.status', '!=', 'cancelled');
-            })
-            ->select([
-                'er.id',
-                'er.user_id',
-                'er.position',
-                $hasOrgNote ? 'er.organizer_note' : DB::raw("NULL::text as organizer_note"),
-                'er.created_at',
-                'u.name',
-                'u.phone',
-                'u.is_bot',
-            ])
-            ->orderBy('er.id')
-            ->get();
-
-        $location = null;
-        if (!empty($event->location_id) && Schema::hasTable('locations')) {
-            $location = DB::table('locations as l')
-                ->leftJoin('cities as c', 'c.id', '=', 'l.city_id')
-                ->where('l.id', (int) $event->location_id)
-                ->first(['l.name', 'l.address', 'c.name as city_name']);
-        }
+        [$tz, $startsLocal, $endsLocal, $registrations, $location] = $this->resolveExportContext($request, $event, withCreatedAt: true);
 
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('events.registrations.pdf', compact(
             'event', 'registrations', 'startsLocal', 'endsLocal', 'tz', 'location'
@@ -685,47 +661,7 @@ class EventRegistrationsManagementController extends Controller
 
         $event->loadMissing('gameSettings');
 
-        $tz = (string) ($event->timezone ?: 'UTC');
-        $startsLocal = null;
-        $endsLocal   = null;
-        if (!empty($event->starts_at)) {
-            $startsLocal = Carbon::parse($event->starts_at, 'UTC')->setTimezone($tz);
-        }
-        if (!empty($event->ends_at)) {
-            $endsLocal = Carbon::parse($event->ends_at, 'UTC')->setTimezone($tz);
-        }
-
-        $hasOrgNote = Schema::hasColumn('event_registrations', 'organizer_note');
-
-        $registrations = DB::table('event_registrations as er')
-            ->join('users as u', 'u.id', '=', 'er.user_id')
-            ->where('er.event_id', (int) $event->id)
-            ->whereNull('er.cancelled_at')
-            ->where(function ($q) {
-                $q->whereNull('er.is_cancelled')->orWhere('er.is_cancelled', false);
-            })
-            ->where(function ($q) {
-                $q->whereNull('er.status')->orWhere('er.status', '!=', 'cancelled');
-            })
-            ->select([
-                'er.id',
-                'er.user_id',
-                'er.position',
-                $hasOrgNote ? 'er.organizer_note' : DB::raw("NULL::text as organizer_note"),
-                'u.name',
-                'u.phone',
-                'u.is_bot',
-            ])
-            ->orderBy('er.id')
-            ->get();
-
-        $location = null;
-        if (!empty($event->location_id) && Schema::hasTable('locations')) {
-            $location = DB::table('locations as l')
-                ->leftJoin('cities as c', 'c.id', '=', 'l.city_id')
-                ->where('l.id', (int) $event->location_id)
-                ->first(['l.name', 'l.address', 'c.name as city_name']);
-        }
+        [$tz, $startsLocal, $endsLocal, $registrations, $location] = $this->resolveExportContext($request, $event);
 
         $posLabels = [
             'setter'   => 'Связующий',
@@ -783,6 +719,66 @@ class EventRegistrationsManagementController extends Controller
             'Content-Type'        => 'text/plain; charset=utf-8',
             'Content-Disposition' => 'attachment; filename="' . $filename . '"',
         ]);
+    }
+
+    private function resolveExportContext(Request $request, Event $event, bool $withCreatedAt = false): array
+    {
+        $occurrenceId = (int) $request->query('occurrence', 0);
+        $occurrence   = null;
+        if ($occurrenceId) {
+            $occurrence = DB::table('event_occurrences')
+                ->where('id', $occurrenceId)
+                ->where('event_id', (int) $event->id)
+                ->first(['id', 'starts_at', 'timezone', 'location_id']);
+        }
+
+        $tz          = (string) ($occurrence->timezone ?? $event->timezone ?: 'UTC');
+        $startsAt    = $occurrence->starts_at ?? $event->starts_at ?? null;
+        $startsLocal = $startsAt ? Carbon::parse($startsAt, 'UTC')->setTimezone($tz) : null;
+        $endsLocal   = (!$occurrence && !empty($event->ends_at))
+            ? Carbon::parse($event->ends_at, 'UTC')->setTimezone($tz)
+            : null;
+
+        $hasOrgNote  = Schema::hasColumn('event_registrations', 'organizer_note');
+        $locationId  = $occurrence->location_id ?? $event->location_id ?? null;
+
+        $select = [
+            'er.id',
+            'er.user_id',
+            'er.position',
+            $hasOrgNote ? 'er.organizer_note' : DB::raw("NULL::text as organizer_note"),
+            'u.name',
+            'u.phone',
+            'u.is_bot',
+        ];
+        if ($withCreatedAt) {
+            $select[] = 'er.created_at';
+        }
+
+        $registrations = DB::table('event_registrations as er')
+            ->join('users as u', 'u.id', '=', 'er.user_id')
+            ->where('er.event_id', (int) $event->id)
+            ->when($occurrenceId, fn ($q) => $q->where('er.occurrence_id', $occurrenceId))
+            ->whereNull('er.cancelled_at')
+            ->where(function ($q) {
+                $q->whereNull('er.is_cancelled')->orWhere('er.is_cancelled', false);
+            })
+            ->where(function ($q) {
+                $q->whereNull('er.status')->orWhere('er.status', '!=', 'cancelled');
+            })
+            ->select($select)
+            ->orderBy('er.id')
+            ->get();
+
+        $location = null;
+        if ($locationId && Schema::hasTable('locations')) {
+            $location = DB::table('locations as l')
+                ->leftJoin('cities as c', 'c.id', '=', 'l.city_id')
+                ->where('l.id', (int) $locationId)
+                ->first(['l.name', 'l.address', 'c.name as city_name']);
+        }
+
+        return [$tz, $startsLocal, $endsLocal, $registrations, $location];
     }
 
     private function resolvePositions(string $direction, string $subtype, string $liberoMode): array

@@ -352,12 +352,15 @@ $searchUrl = route('api.users.search');
         @endif
 
         {{-- Экспорт --}}
+        @php
+            $exportQuery = ($occurrenceId ?? null) ? '?occurrence=' . $occurrenceId : '';
+        @endphp
         <div class="ramka d-flex gap-2 justify-content-center flex-wrap">
-            <a href="{{ route('events.registrations.pdf', ['event' => $event->id]) }}"
+            <a href="{{ route('events.registrations.pdf', ['event' => $event->id]) . $exportQuery }}"
                class="btn btn-secondary">
                 ⬇ Скачать PDF
             </a>
-            <a href="{{ route('events.registrations.txt', ['event' => $event->id]) }}"
+            <a href="{{ route('events.registrations.txt', ['event' => $event->id]) . $exportQuery }}"
                class="btn btn-secondary">
                 ⬇ Скачать TXT
             </a>
@@ -409,7 +412,7 @@ $searchUrl = route('api.users.search');
 					}
 					items.forEach(function(item) {
 						var div = document.createElement('div');
-						div.style.cssText = 'padding:1rem 1.6rem;cursor:pointer;font-size:1.5rem;border-bottom:0.1rem solid var(--border-color,#eee);display:flex;justify-content:space-between;align-items:center;';
+						div.style.cssText = 'display:flex;justify-content:space-between;align-items:center;';
 						div.innerHTML =
 						'<span class="b-500">' + (item.is_bot ? '🤖 ' : '') + esc(item.label || item.name) + '</span>' +
 						(item.meta ? '<span style="font-size:1.3rem;opacity:.5;">' + esc(item.meta) + '</span>' : '');
