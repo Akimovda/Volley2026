@@ -506,7 +506,10 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
 
 		Route::get('/events/{event}/registrations/pdf', [EventRegistrationsManagementController::class, 'exportPdf'])
         ->name('events.registrations.pdf');
-		
+
+		Route::get('/events/{event}/registrations/txt', [EventRegistrationsManagementController::class, 'exportTxt'])
+        ->name('events.registrations.txt');
+
 		Route::delete('/events/{event}/registrations/{registration}', [EventRegistrationsManagementController::class, 'destroy'])
         ->name('events.registrations.destroy');
 		

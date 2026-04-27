@@ -278,7 +278,7 @@ $searchUrl = route('api.users.search');
                             @if($hasOrgNote ?? false)
                             <td class="align-top">
                                 <textarea class="org-note-input" rows="1"
-                                    style="width:100%;min-width:140px;font-size:1.3rem;resize:none;overflow:hidden;border:1px solid #e2e8f0;border-radius:.6rem;padding:.4rem .6rem;"
+                                    style="width:100%;min-width:140px;font-size:1.3rem;resize:none;overflow:hidden;border:1px solid #e2e8f0;border-radius:.6rem;padding:.4rem .6rem;height:2.4rem;min-height:2.4rem;box-sizing:border-box;"
                                     data-url="{{ route('events.registrations.note', ['event' => $event->id, 'registration' => $r->id]) }}"
                                     placeholder="Заметка…">{{ $r->organizer_note ?? '' }}</textarea>
                             </td>
@@ -351,11 +351,15 @@ $searchUrl = route('api.users.search');
 		</div>
         @endif
 
-        {{-- PDF --}}
-        <div class="ramka text-center">
-            <a href="{{ route('events.registrations.pdf', ['event' => $event->id]) }}{{ request()->has('occurrence') ? '?occurrence=' . (int)request()->query('occurrence') : '' }}"
+        {{-- Экспорт --}}
+        <div class="ramka d-flex gap-2 justify-content-center flex-wrap">
+            <a href="{{ route('events.registrations.pdf', ['event' => $event->id]) }}"
                class="btn btn-secondary">
-                ⬇ Скачать список PDF
+                ⬇ Скачать PDF
+            </a>
+            <a href="{{ route('events.registrations.txt', ['event' => $event->id]) }}"
+               class="btn btn-secondary">
+                ⬇ Скачать TXT
             </a>
         </div>
 
@@ -457,7 +461,7 @@ $searchUrl = route('api.users.search');
 			})();
 
 			// --- Авторасширение textarea ---
-			function autoResize(el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
+			function autoResize(el) { el.style.height = '2.4rem'; if (el.scrollHeight > el.offsetHeight) el.style.height = el.scrollHeight + 'px'; }
 			$(document).on('input', '.org-note-input', function() { autoResize(this); });
 			$('.org-note-input').each(function() { autoResize(this); });
 

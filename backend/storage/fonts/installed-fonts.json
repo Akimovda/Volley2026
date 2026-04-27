@@ -1,0 +1,8 @@
+{
+    "dejavu sans": {
+        "bold": "dejavu_sans_bold_536a912fb6a380d003d10e7800b74381",
+        "bold_italic": "\/var\/www\/volley-bot\/backend\/vendor\/dompdf\/dompdf\/lib\/fonts\/DejaVuSans-BoldOblique",
+        "italic": "\/var\/www\/volley-bot\/backend\/vendor\/dompdf\/dompdf\/lib\/fonts\/DejaVuSans-Oblique",
+        "normal": "\/var\/www\/volley-bot\/backend\/storage\/fonts\/dejavu_sans_normal_03f9936d10db6d3cd34f17f8f7616c58"
+    }
+}

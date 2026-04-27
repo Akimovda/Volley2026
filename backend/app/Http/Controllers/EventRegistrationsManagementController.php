@@ -672,6 +672,119 @@ class EventRegistrationsManagementController extends Controller
         return $pdf->download($filename);
     }
 
+    /**
+     * GET /events/{event}/registrations/txt
+     */
+    public function exportTxt(Request $request, Event $event)
+    {
+        $user = $request->user();
+        if (!$user) return redirect()->route('login');
+
+        $this->ensureCanCreateEvents($user);
+        $this->ensureCanManageEvent($user, $event);
+
+        $event->loadMissing('gameSettings');
+
+        $tz = (string) ($event->timezone ?: 'UTC');
+        $startsLocal = null;
+        $endsLocal   = null;
+        if (!empty($event->starts_at)) {
+            $startsLocal = Carbon::parse($event->starts_at, 'UTC')->setTimezone($tz);
+        }
+        if (!empty($event->ends_at)) {
+            $endsLocal = Carbon::parse($event->ends_at, 'UTC')->setTimezone($tz);
+        }
+
+        $hasOrgNote = Schema::hasColumn('event_registrations', 'organizer_note');
+
+        $registrations = DB::table('event_registrations as er')
+            ->join('users as u', 'u.id', '=', 'er.user_id')
+            ->where('er.event_id', (int) $event->id)
+            ->whereNull('er.cancelled_at')
+            ->where(function ($q) {
+                $q->whereNull('er.is_cancelled')->orWhere('er.is_cancelled', false);
+            })
+            ->where(function ($q) {
+                $q->whereNull('er.status')->orWhere('er.status', '!=', 'cancelled');
+            })
+            ->select([
+                'er.id',
+                'er.user_id',
+                'er.position',
+                $hasOrgNote ? 'er.organizer_note' : DB::raw("NULL::text as organizer_note"),
+                'u.name',
+                'u.phone',
+                'u.is_bot',
+            ])
+            ->orderBy('er.id')
+            ->get();
+
+        $location = null;
+        if (!empty($event->location_id) && Schema::hasTable('locations')) {
+            $location = DB::table('locations as l')
+                ->leftJoin('cities as c', 'c.id', '=', 'l.city_id')
+                ->where('l.id', (int) $event->location_id)
+                ->first(['l.name', 'l.address', 'c.name as city_name']);
+        }
+
+        $posLabels = [
+            'setter'   => 'Связующий',
+            'outside'  => 'Доигровщик',
+            'opposite' => 'Диагональный',
+            'middle'   => 'Центральный',
+            'libero'   => 'Либеро',
+            'reserve'  => 'Резерв',
+        ];
+
+        $dateLine = '—';
+        if ($startsLocal) {
+            $dateLine = $startsLocal->format('d.m.Y') . ' · ' . $startsLocal->format('H:i');
+            if ($endsLocal) $dateLine .= '–' . $endsLocal->format('H:i');
+            $dateLine .= ' (' . $tz . ')';
+        }
+
+        $locationLine = '—';
+        if ($location) {
+            $parts = array_filter([$location->city_name ?? null, $location->address ?? null, $location->name ?? null]);
+            $locationLine = implode(', ', $parts) ?: '—';
+        }
+
+        $lines = [];
+        $lines[] = $event->title;
+        $lines[] = 'Дата: ' . $dateLine;
+        $lines[] = 'Место: ' . $locationLine;
+        $lines[] = 'Участников: ' . $registrations->count();
+        $lines[] = str_repeat('─', 50);
+        $lines[] = '';
+
+        foreach ($registrations as $i => $r) {
+            $name     = $r->name ?: ('User #' . $r->user_id);
+            if (!empty($r->is_bot)) $name .= ' (бот)';
+            $phone    = $r->phone ?: '—';
+            $posKey   = $r->position ?? '';
+            $posLabel = $posKey ? ($posLabels[$posKey] ?? $posKey) : '—';
+            $note     = $r->organizer_note ?? '';
+
+            $line = ($i + 1) . '. ' . $name;
+            $line .= '  |  ' . $phone;
+            $line .= '  |  ' . $posLabel;
+            if ($note !== '') $line .= '  |  ' . $note;
+            $lines[] = $line;
+        }
+
+        $lines[] = '';
+        $lines[] = str_repeat('─', 50);
+        $lines[] = 'Сформировано: ' . now()->setTimezone($tz)->format('d.m.Y H:i') . ' (' . $tz . ')';
+
+        $content  = implode("\n", $lines);
+        $filename = 'registrations-' . $event->id . '-' . now()->format('Ymd') . '.txt';
+
+        return response($content, 200, [
+            'Content-Type'        => 'text/plain; charset=utf-8',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
+    }
+
     private function resolvePositions(string $direction, string $subtype, string $liberoMode): array
     {
         if ($direction === 'beach') return [];
