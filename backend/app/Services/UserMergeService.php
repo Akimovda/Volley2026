@@ -193,73 +193,55 @@ class UserMergeService
 
     public function findDuplicates(): array
     {
+        // Группируем по телефону — находим все аккаунты с одинаковым номером
+        $groups = DB::select("
+            SELECT phone, array_agg(id ORDER BY id) as user_ids
+            FROM users
+            WHERE phone IS NOT NULL AND phone != ''
+              AND is_bot = false
+              AND deleted_at IS NULL
+              AND merged_into_user_id IS NULL
+            GROUP BY phone
+            HAVING COUNT(*) > 1
+            ORDER BY COUNT(*) DESC, phone
+        ");
+
         $result = [];
 
-        // 🔴 Точные — Фамилия + телефон
-        $exactDupes = DB::select("
-            SELECT u1.id as id1, u2.id as id2
-            FROM users u1
-            JOIN users u2 ON u1.id < u2.id
-                AND u1.last_name = u2.last_name
-                AND u1.last_name IS NOT NULL AND u1.last_name != ''
-                AND u1.phone = u2.phone
-                AND u1.phone IS NOT NULL AND u1.phone != ''
-            WHERE u1.is_bot = false AND u2.is_bot = false
-                AND u1.deleted_at IS NULL AND u2.deleted_at IS NULL
-                AND u1.merged_into_user_id IS NULL AND u2.merged_into_user_id IS NULL
-        ");
+        foreach ($groups as $g) {
+            // PostgreSQL возвращает array_agg как строку вида "{1,2,3}"
+            $ids = array_map('intval', explode(',', trim($g->user_ids, '{}')));
+            $users = User::whereIn('id', $ids)->orderBy('id')->get();
 
-        foreach ($exactDupes as $d) {
-            $result[] = $this->buildDupEntry('red', 'Фамилия + телефон', $d->id1, $d->id2);
-        }
-
-        // 🟡 Вероятные — только телефон
-        $phoneDupes = DB::select("
-            SELECT u1.id as id1, u2.id as id2
-            FROM users u1
-            JOIN users u2 ON u1.id < u2.id
-                AND u1.phone = u2.phone
-                AND u1.phone IS NOT NULL AND u1.phone != ''
-                AND (u1.last_name IS NULL OR u2.last_name IS NULL OR u1.last_name != u2.last_name)
-            WHERE u1.is_bot = false AND u2.is_bot = false
-                AND u1.deleted_at IS NULL AND u2.deleted_at IS NULL
-                AND u1.merged_into_user_id IS NULL AND u2.merged_into_user_id IS NULL
-        ");
-
-        $addedPairs = collect($result)->map(fn($r) => $r['user1']->id . '-' . $r['user2']->id)->toArray();
-
-        foreach ($phoneDupes as $d) {
-            if (!in_array($d->id1 . '-' . $d->id2, $addedPairs)) {
-                $result[] = $this->buildDupEntry('yellow', 'Только телефон', $d->id1, $d->id2);
+            // Считаем статистику и определяем рекомендованного primary
+            $statsMap = [];
+            $scores   = [];
+            foreach ($users as $u) {
+                $stats = $this->userStats($u->id);
+                $statsMap[$u->id] = $stats;
+                $scores[$u->id]   = $stats['registrations'] * 2
+                                  + $stats['payments'] * 3
+                                  + ($stats['profile_complete'] ? 5 : 0);
             }
+            arsort($scores);
+            $recommendedPrimaryId = array_key_first($scores);
+
+            // Определяем уровень: если у всех одинаковая фамилия — красный
+            $lastNames = $users->pluck('last_name')->filter()->unique();
+            $level = ($lastNames->count() === 1) ? 'red' : 'yellow';
+            $label = ($level === 'red') ? 'Фамилия + телефон' : 'Только телефон';
+
+            $result[] = [
+                'level'               => $level,
+                'label'               => $label,
+                'phone'               => $g->phone,
+                'users'               => $users,
+                'stats'               => $statsMap,
+                'recommended_primary' => $recommendedPrimaryId,
+            ];
         }
 
         return $result;
-    }
-
-    private function buildDupEntry(string $level, string $label, int $id1, int $id2): array
-    {
-        $u1 = User::find($id1);
-        $u2 = User::find($id2);
-
-        $stats1 = $this->userStats($id1);
-        $stats2 = $this->userStats($id2);
-
-        // Рекомендуем основным того, у кого больше данных
-        $score1 = $stats1['registrations'] * 2 + $stats1['payments'] * 3 + ($stats1['profile_complete'] ? 5 : 0);
-        $score2 = $stats2['registrations'] * 2 + $stats2['payments'] * 3 + ($stats2['profile_complete'] ? 5 : 0);
-
-        $recommended_primary = $score1 >= $score2 ? $id1 : $id2;
-
-        return [
-            'level'               => $level,
-            'label'               => $label,
-            'user1'               => $u1,
-            'user2'               => $u2,
-            'stats1'              => $stats1,
-            'stats2'              => $stats2,
-            'recommended_primary' => $recommended_primary,
-        ];
     }
 
     private function userStats(int $userId): array
