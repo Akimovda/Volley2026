@@ -125,7 +125,24 @@
 				$position,
 				$user
 			);
-			
+
+			// 5.5. Глобальный лимит: если maxPlayers исчерпан, нормальные позиции недоступны
+			// (слот может иметь место, но общий cap уже достигнут другими позициями)
+			if ($isClassic && $maxPlayers > 0) {
+				$registeredTotal = $occurrence->registrations_count ?? $registrations->count();
+				if ($registeredTotal >= $maxPlayers) {
+					$reserveMax    = (int) ($event->gameSettings?->reserve_players_max ?? 0);
+					$reserveCount  = $registrationsByPosition->get('reserve')?->count() ?? 0;
+					if ($userRegistration && $userRegistration->position === 'reserve') {
+						$reserveCount = max(0, $reserveCount - 1);
+					}
+					$freeReserve = max(0, $reserveMax - $reserveCount);
+					$freePositions = $freeReserve > 0
+						? [['key' => 'reserve', 'free' => $freeReserve, 'limit' => $reserveMax]]
+						: [];
+				}
+			}
+
 			// 6. Проверка доступности мест / позиций
             $this->checkCapacityAndPositions(
                 $occurrence,
