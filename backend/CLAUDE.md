@@ -79,6 +79,9 @@ sudo supervisorctl restart volleyplay-queue:* volleyplay-reverb
 - В конце каждой сессии обновляй этот файл: добавляй новые находки, баги, паттерны
 - Коммить изменения CLAUDE.md вместе с кодом
 - Не дублируй — обновляй существующие секции
+- НЕ изучай структуру проекта заново каждый раз — вся информация уже в этом файле
+- Сразу приступай к задаче, используя контекст из CLAUDE.md
+- Изучай конкретные файлы только когда нужно для текущей задачи
 
 ## Турнирная система v2.1
 - Форматы classic: round robin, groups+playoff, single elimination, swiss
@@ -259,3 +262,32 @@ sudo supervisorctl restart volleyplay-queue:* volleyplay-reverb
 - Весь JS — в IIFE `(function(){...})()`
 - Guard `if (!input) return;` в начале каждого блока
 - Debounce 250мс, минимум 2 символа
+
+## Push-уведомления (APNs) и Face ID
+
+### Push-уведомления
+- Таблица: device_tokens (user_id, platform ios/android, token unique, is_active bool)
+- Модель: DeviceToken, сервис: PushNotificationService
+- APNs — прямая реализация через curl HTTP/2 + JWT (ES256) — БЕЗ внешних пакетов
+- laravel-notification-channels/apn несовместим с Laravel 12 + PHP 8.3
+- PushNotificationService: send(userId, title, body, data=[]) — берёт активные iOS токены
+- JWT: header.payload.signature, подпись openssl_sign+ES256, DER→JOSE конвертация вручную
+- HTTP 410 от APNs = токен устарел → автоматически is_active=false
+- Конфиг: config/apn.php, переменные: APN_KEY_ID, APN_TEAM_ID, APN_BUNDLE_ID, APN_PRIVATE_KEY, APN_PRODUCTION
+- .p8 файл хранить в storage/app/apns/AuthKey.p8
+- Канал 'push' добавлен в UserNotificationService + NotificationDeliverySender
+- 4 типа с push: registration_created, event_reminder, event_cancelled, friend_joined_event
+- normalizeChannels() проверяет наличие активных iOS токенов перед добавлением канала
+
+### API endpoints
+- POST /api/device-token (auth:sanctum) — сохранить/обновить токен
+- DELETE /api/device-token (auth:sanctum) — деактивировать токен
+- POST /api/biometric/register (auth:sanctum) — сгенерировать biometric_token
+- POST /api/biometric/login — авторизация по biometric_token, возвращает Sanctum токен
+- DELETE /api/biometric/revoke (auth:sanctum) — удалить biometric_token
+
+### Face ID
+- Поле biometric_token (string 64, nullable, unique) добавлено в таблицу users
+- Скрыто в $hidden User модели
+- Генерация: Str::random(64)
+- BiometricController: register/login/revoke

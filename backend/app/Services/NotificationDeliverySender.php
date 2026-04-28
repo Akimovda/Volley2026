@@ -57,10 +57,32 @@ final class NotificationDeliverySender
                 return;
             }
 
+            if ($channel === 'push') {
+                $this->sendPush($user, $payload);
+                $this->markSent($deliveryId);
+                return;
+            }
+
             $this->markFailed($deliveryId, 'Неизвестный канал доставки.');
         } catch (\Throwable $e) {
             $this->markFailed($deliveryId, $e->getMessage());
         }
+    }
+
+    private function sendPush(User $user, array $payload): void
+    {
+        $service = app(\App\Services\PushNotificationService::class);
+        $service->send(
+            userId: (int) $user->id,
+            title:  (string) ($payload['title'] ?? 'Уведомление'),
+            body:   (string) ($payload['body'] ?? ''),
+            data:   array_filter([
+                'type'          => $payload['template_code'] ?? null,
+                'event_id'      => $payload['event_id'] ?? null,
+                'occurrence_id' => $payload['occurrence_id'] ?? null,
+                'button_url'    => $payload['button_url'] ?? null,
+            ], fn ($v) => $v !== null)
+        );
     }
 
     private function sendTelegram(User $user, array $payload): void
