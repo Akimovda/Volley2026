@@ -22,13 +22,18 @@
 .dup-card { border-left: 4px solid #eee; }
 .dup-card.red    { border-left-color: #e74c3c; }
 .dup-card.yellow { border-left-color: #f39c12; }
-.dup-field { display: flex; gap: 1rem; font-size: 1.4rem; margin-bottom: .4rem; }
-.dup-field .label { opacity: .5; width: 12rem; flex-shrink: 0; }
-.dup-match { color: #e74c3c; font-weight: 600; }
-.dup-providers span { display: inline-block; background: rgba(41,103,186,.1); color: #2967BA; font-size: 1.2rem; padding: .2rem .7rem; border-radius: 2rem; margin-right: .3rem; }
-.dup-recommended { background: #f0fdf4; border: 1.5px solid #22c55e; border-radius: 8px; padding: .5rem .8rem; display: inline-flex; align-items: center; gap: .4rem; font-size: 1.3rem; color: #16a34a; font-weight: 600; }
-.dup-stat { font-size: 1.3rem; color: #555; }
+.dup-user { border: 1.5px solid #e5e7eb; border-radius: 8px; padding: 1rem; position: relative; }
+.dup-user.is-primary { border-color: #22c55e; background: #f0fdf4; }
+.dup-user.is-secondary { border-color: #fca5a5; background: #fff5f5; }
+.dup-badge { display: inline-flex; align-items: center; gap: .3rem; font-size: 1.2rem; padding: .2rem .6rem; border-radius: 2rem; font-weight: 600; }
+.dup-badge.primary   { background: #dcfce7; color: #16a34a; }
+.dup-badge.secondary { background: #fee2e2; color: #dc2626; }
+.dup-field { display: flex; gap: .8rem; font-size: 1.35rem; margin-bottom: .3rem; }
+.dup-field .label { opacity: .5; width: 10rem; flex-shrink: 0; }
+.dup-providers span { display: inline-block; background: rgba(41,103,186,.1); color: #2967BA; font-size: 1.2rem; padding: .15rem .6rem; border-radius: 2rem; margin-right: .3rem; }
+.dup-stat { font-size: 1.3rem; color: #555; margin-top: .4rem; }
 .dup-stat strong { color: #111; }
+.dup-phone { font-size: 1.3rem; background: #f3f4f6; padding: .2rem .7rem; border-radius: .4rem; }
 </style>
 </x-slot>
 
@@ -43,14 +48,8 @@
 
 <div class="ramka">
     <div class="d-flex between fvc mb-2">
-        <div>
-            <span class="f-16">Найдено дублей: <strong>{{ count($duplicates) }}</strong></span>
-        </div>
-        <div class="d-flex gap-1">
-            <span class="f-13" style="opacity:.5">
-                🔴 Фамилия+телефон &nbsp; 🟡 Только телефон
-            </span>
-        </div>
+        <span class="f-16">Найдено групп дублей: <strong>{{ count($duplicates) }}</strong></span>
+        <span class="f-13" style="opacity:.5">🔴 Фамилия+телефон &nbsp; 🟡 Только телефон</span>
     </div>
 
     @if(empty($duplicates))
@@ -59,119 +58,140 @@
 
     @foreach($duplicates as $dup)
     @php
-        $u1 = $dup['user1'];
-        $u2 = $dup['user2'];
-        $s1 = $dup['stats1'];
-        $s2 = $dup['stats2'];
-        $rec = $dup['recommended_primary'];
-        $level = $dup['level'];
-        $label = $dup['label'];
-        $icon = $level === 'red' ? '🔴' : '🟡';
-        // primary — тот кого рекомендуем, secondary — кто сливается
-        $primary   = $rec === $u1->id ? $u1 : $u2;
-        $secondary = $rec === $u1->id ? $u2 : $u1;
-        $sp        = $rec === $u1->id ? $s1 : $s2;
-        $ss        = $rec === $u1->id ? $s2 : $s1;
+        $users  = $dup['users'];
+        $stats  = $dup['stats'];
+        $rec    = $dup['recommended_primary'];
+        $level  = $dup['level'];
+        $label  = $dup['label'];
+        $icon   = $level === 'red' ? '🔴' : '🟡';
+        $count  = $users->count();
+        // primary — рекомендованный, secondaries — все остальные
+        $primary    = $users->firstWhere('id', $rec);
+        $secondaries = $users->where('id', '!=', $rec)->values();
+        $secondaryIds = $secondaries->pluck('id')->toArray();
     @endphp
 
-    <div class="card dup-card {{ $level }} mb-2">
+    <div class="card dup-card {{ $level }} mb-3">
+        {{-- Заголовок группы --}}
         <div class="d-flex between fvc mb-2">
-            <span class="f-14 b-600">{{ $icon }} {{ $label }}</span>
+            <div class="d-flex fvc gap-1">
+                <span class="f-14 b-600">{{ $icon }} {{ $label }}</span>
+                <span class="dup-phone">{{ $dup['phone'] }}</span>
+                @if($count > 2)
+                <span class="f-13" style="background:#fef3c7;color:#92400e;padding:.2rem .6rem;border-radius:2rem;font-weight:600;">
+                    {{ $count }} аккаунта
+                </span>
+                @endif
+            </div>
         </div>
 
-        <div class="row row2">
+        {{-- Карточки пользователей --}}
+        <div class="row row{{ min($count, 3) }}">
+
             {{-- Рекомендованный основной --}}
-            <div class="col-md-5">
-                <div class="dup-recommended mb-1">⭐ Рекомендуем основным</div>
-                <div class="f-15 b-600 mb-1 mt-1">
-                    <a href="{{ route('admin.users.show', $primary) }}" class="cd" target="_blank">
-                        #{{ $primary->id }} {{ $primary->name }}
-                    </a>
+            <div class="col-md-{{ $count === 2 ? 5 : 4 }}">
+                <div class="dup-user is-primary">
+                    <div class="dup-badge primary mb-1">⭐ Основной</div>
+                    <div class="f-15 b-600 mb-1">
+                        <a href="{{ route('admin.users.show', $primary) }}" class="cd" target="_blank">
+                            #{{ $primary->id }} {{ $primary->name ?: '—' }}
+                        </a>
+                    </div>
+                    <div class="dup-field"><span class="label">Фамилия</span><span>{{ $primary->last_name ?? '—' }}</span></div>
+                    <div class="dup-field"><span class="label">Имя</span><span>{{ $primary->first_name ?? '—' }}</span></div>
+                    <div class="dup-field"><span class="label">Отчество</span><span>{{ $primary->patronymic ?? '—' }}</span></div>
+                    <div class="dup-field"><span class="label">Email</span><span style="opacity:.6;font-size:1.2rem">{{ $primary->email }}</span></div>
+                    <div class="dup-field"><span class="label">Профиль</span><span>{{ $stats[$primary->id]['profile_complete'] ? '✅' : '—' }}</span></div>
+                    <div class="dup-providers mt-05 mb-05">
+                        @if($primary->telegram_id)<span>TG</span>@endif
+                        @if($primary->vk_id)<span>VK</span>@endif
+                        @if($primary->yandex_id)<span>YA</span>@endif
+                    </div>
+                    <div class="dup-stat">
+                        Записей: <strong>{{ $stats[$primary->id]['registrations'] }}</strong> ·
+                        Платежей: <strong>{{ $stats[$primary->id]['payments'] }}</strong>
+                        @if($stats[$primary->id]['wallet_balance'] > 0)
+                        · Кошелёк: <strong>{{ number_format($stats[$primary->id]['wallet_balance'] / 100, 0, '.', ' ') }} ₽</strong>
+                        @endif
+                    </div>
+                    <div class="f-12 mt-05" style="opacity:.4">с {{ $primary->created_at->format('d.m.Y') }}</div>
                 </div>
-                <div class="dup-field"><span class="label">Email</span><span class="f-13" style="opacity:.6">{{ $primary->email }}</span></div>
-                <div class="dup-field"><span class="label">Телефон</span>
-                    <span class="{{ $u1->phone && $u1->phone === $u2->phone ? 'dup-match' : '' }}">
-                        {{ $primary->phone ?? '—' }}
-                    </span>
-                </div>
-                <div class="dup-field"><span class="label">Профиль</span>
-                    <span>{{ $sp['profile_complete'] ? '✅ заполнен' : '— не заполнен' }}</span>
-                </div>
-                <div class="dup-providers mt-1 mb-1">
-                    @if($primary->telegram_id)<span>TG</span>@endif
-                    @if($primary->vk_id)<span>VK</span>@endif
-                    @if($primary->yandex_id)<span>YA</span>@endif
-                </div>
-                <div class="dup-stat">
-                    Записей: <strong>{{ $sp['registrations'] }}</strong> ·
-                    Платежей: <strong>{{ $sp['payments'] }}</strong>
-                    @if($sp['wallet_balance'] > 0)
-                        · Кошелёк: <strong>{{ number_format($sp['wallet_balance'] / 100, 0, '.', ' ') }} ₽</strong>
-                    @endif
-                </div>
-                <div class="f-13 mt-05" style="opacity:.5">Создан: {{ $primary->created_at->format('d.m.Y') }}</div>
             </div>
 
-            {{-- Разделитель --}}
-            <div class="col-md-2 d-flex" style="align-items:center;justify-content:center;font-size:2rem;opacity:.3">
-                ←
-            </div>
+            @if($count === 2)
+            <div class="col-md-2 d-flex" style="align-items:center;justify-content:center;font-size:2rem;opacity:.25">←</div>
+            @endif
 
-            {{-- Вторичный (будет удалён) --}}
-            <div class="col-md-5">
-                <div class="f-13 mb-1" style="color:#e74c3c;">будет деактивирован</div>
-                <div class="f-15 b-600 mb-1">
-                    <a href="{{ route('admin.users.show', $secondary) }}" class="cd" target="_blank">
-                        #{{ $secondary->id }} {{ $secondary->name }}
-                    </a>
+            {{-- Вторичные аккаунты --}}
+            @foreach($secondaries as $sec)
+            <div class="col-md-{{ $count === 2 ? 5 : 4 }}">
+                <div class="dup-user is-secondary">
+                    <div class="dup-badge secondary mb-1">🗑 Будет удалён</div>
+                    <div class="f-15 b-600 mb-1">
+                        <a href="{{ route('admin.users.show', $sec) }}" class="cd" target="_blank">
+                            #{{ $sec->id }} {{ $sec->name ?: '—' }}
+                        </a>
+                    </div>
+                    <div class="dup-field"><span class="label">Фамилия</span><span>{{ $sec->last_name ?? '—' }}</span></div>
+                    <div class="dup-field"><span class="label">Имя</span><span>{{ $sec->first_name ?? '—' }}</span></div>
+                    <div class="dup-field"><span class="label">Отчество</span><span>{{ $sec->patronymic ?? '—' }}</span></div>
+                    <div class="dup-field"><span class="label">Email</span><span style="opacity:.6;font-size:1.2rem">{{ $sec->email }}</span></div>
+                    <div class="dup-field"><span class="label">Профиль</span><span>{{ $stats[$sec->id]['profile_complete'] ? '✅' : '—' }}</span></div>
+                    <div class="dup-providers mt-05 mb-05">
+                        @if($sec->telegram_id)<span>TG</span>@endif
+                        @if($sec->vk_id)<span>VK</span>@endif
+                        @if($sec->yandex_id)<span>YA</span>@endif
+                    </div>
+                    <div class="dup-stat">
+                        Записей: <strong>{{ $stats[$sec->id]['registrations'] }}</strong> ·
+                        Платежей: <strong>{{ $stats[$sec->id]['payments'] }}</strong>
+                        @if($stats[$sec->id]['wallet_balance'] > 0)
+                        · Кошелёк: <strong>{{ number_format($stats[$sec->id]['wallet_balance'] / 100, 0, '.', ' ') }} ₽</strong>
+                        @endif
+                    </div>
+                    <div class="f-12 mt-05" style="opacity:.4">с {{ $sec->created_at->format('d.m.Y') }}</div>
                 </div>
-                <div class="dup-field"><span class="label">Email</span><span class="f-13" style="opacity:.6">{{ $secondary->email }}</span></div>
-                <div class="dup-field"><span class="label">Телефон</span><span>{{ $secondary->phone ?? '—' }}</span></div>
-                <div class="dup-field"><span class="label">Профиль</span>
-                    <span>{{ $ss['profile_complete'] ? '✅ заполнен' : '— не заполнен' }}</span>
-                </div>
-                <div class="dup-providers mt-1 mb-1">
-                    @if($secondary->telegram_id)<span>TG</span>@endif
-                    @if($secondary->vk_id)<span>VK</span>@endif
-                    @if($secondary->yandex_id)<span>YA</span>@endif
-                </div>
-                <div class="dup-stat">
-                    Записей: <strong>{{ $ss['registrations'] }}</strong> ·
-                    Платежей: <strong>{{ $ss['payments'] }}</strong>
-                    @if($ss['wallet_balance'] > 0)
-                        · Кошелёк: <strong>{{ number_format($ss['wallet_balance'] / 100, 0, '.', ' ') }} ₽</strong>
-                    @endif
-                </div>
-                <div class="f-13 mt-05" style="opacity:.5">Создан: {{ $secondary->created_at->format('d.m.Y') }}</div>
             </div>
+            @endforeach
+
         </div>
 
         {{-- Кнопки --}}
         <div class="d-flex gap-1 mt-2 flex-wrap">
-            {{-- Рекомендованное слияние --}}
+            {{-- Рекомендованное слияние (все вторичные → в основной) --}}
             <form method="POST" action="{{ route('admin.users.duplicates.merge') }}"
-                  onsubmit="return confirm('Объединить: основной #{{ $primary->id }}, удалить #{{ $secondary->id }}?\n\nВсе данные (платежи, записи, кошелёк) будут перенесены. Действие необратимо.')">
+                  onsubmit="return confirm('Объединить все {{ $count }} аккаунта?\n\nОсновной: #{{ $primary->id }} {{ $primary->name }}\nБудут удалены: {{ $secondaries->map(fn($s)=>"#".$s->id." ".$s->name)->implode(", ") }}\n\nВсе данные (платежи, записи, кошелёк) перенесутся. Действие необратимо.')">
                 @csrf
                 <input type="hidden" name="primary_id" value="{{ $primary->id }}">
-                <input type="hidden" name="secondary_id" value="{{ $secondary->id }}">
+                @foreach($secondaryIds as $sid)
+                <input type="hidden" name="secondary_ids[]" value="{{ $sid }}">
+                @endforeach
                 <button class="btn btn-small" style="background:#22c55e;color:#fff;border-color:#22c55e;">
-                    ⭐ Объединить (рекомендовано)
+                    ⭐ Объединить {{ $count > 2 ? "все {$count}" : '' }} → основной #{{ $primary->id }}
                 </button>
             </form>
 
-            {{-- Обратное слияние --}}
+            {{-- Выбор другого основного --}}
+            @foreach($secondaries as $altPrimary)
+            @php
+                $altSecondaryIds = $users->where('id', '!=', $altPrimary->id)->pluck('id')->toArray();
+            @endphp
             <form method="POST" action="{{ route('admin.users.duplicates.merge') }}"
-                  onsubmit="return confirm('Объединить наоборот: основной #{{ $secondary->id }}, удалить #{{ $primary->id }}?\n\nДействие необратимо.')">
+                  onsubmit="return confirm('Сделать основным #{{ $altPrimary->id }}?\n\nДействие необратимо.')">
                 @csrf
-                <input type="hidden" name="primary_id" value="{{ $secondary->id }}">
-                <input type="hidden" name="secondary_id" value="{{ $primary->id }}">
+                <input type="hidden" name="primary_id" value="{{ $altPrimary->id }}">
+                @foreach($altSecondaryIds as $sid)
+                <input type="hidden" name="secondary_ids[]" value="{{ $sid }}">
+                @endforeach
                 <button class="btn btn-small btn-secondary">
-                    Наоборот: основной #{{ $secondary->id }}
+                    Основной #{{ $altPrimary->id }}
                 </button>
             </form>
+            @endforeach
         </div>
     </div>
     @endforeach
+
     @endif
 </div>
 
