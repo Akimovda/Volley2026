@@ -116,7 +116,7 @@ class UserMergeService
             // 8. Премиум-подписка
             $hasPremium = DB::table('premium_subscriptions')
                 ->where('user_id', $primary->id)
-                ->where('ends_at', '>', now())
+                ->where('expires_at', '>', now())
                 ->exists();
             if (!$hasPremium) {
                 DB::table('premium_subscriptions')
