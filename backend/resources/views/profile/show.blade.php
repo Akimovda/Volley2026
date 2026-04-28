@@ -62,13 +62,31 @@
     @endif
     
     @if (session('error'))
-	<div class="container">	
+	<div class="container">
 		<div class="ramka">
 			<div class="alert alert-error">
 				{{ session('error') }}
 			</div>
 		</div>
 	</div>
+    @endif
+
+    @if (session('duplicate_user_id'))
+    @php $dupeUser = \App\Models\User::find(session('duplicate_user_id')); @endphp
+    @if ($dupeUser)
+	<div class="container">
+		<div class="ramka" style="border-left: 4px solid #f59e0b; background: #fffbeb;">
+			<div class="f-16">
+				<strong>Возможный дубль аккаунта</strong><br>
+				Найден другой аккаунт с таким же номером телефона:
+				<strong>{{ $dupeUser->name ?: 'ID #'.$dupeUser->id }}</strong>
+				({{ $dupeUser->email }}).
+				Если это вы — обратитесь к администратору для объединения аккаунтов,
+				или <a href="/admin/users/duplicates">перейдите на страницу дублей</a> (для администраторов).
+			</div>
+		</div>
+	</div>
+    @endif
     @endif
     
     @php

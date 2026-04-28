@@ -330,6 +330,19 @@ class ProfileExtraController extends Controller
             }
         });
 
+        // Проверка дубля по телефону (только при самостоятельном заполнении)
+        $duplicateWarning = null;
+        if (!$isEditingOther && isset($data['phone']) && !empty($data['phone'])) {
+            $dupe = User::where('phone', $data['phone'])
+                ->where('id', '!=', $target->id)
+                ->whereNull('merged_into_user_id')
+                ->whereNull('deleted_at')
+                ->first();
+            if ($dupe) {
+                $duplicateWarning = $dupe->id;
+            }
+        }
+
         // Если пришли со страницы завершения профиля — фиксируем первое заполнение и редиректим
         if ($request->boolean('from_complete')) {
             if (!$isEditingOther) {
@@ -340,11 +353,23 @@ class ProfileExtraController extends Controller
                 }
             }
 
-            return redirect()->route('events.index')
+            $redirect = redirect()->route('events.index')
                 ->with('success', 'Профиль заполнен! Добро пожаловать 🏐');
+
+            if ($duplicateWarning) {
+                $redirect = $redirect->with('duplicate_user_id', $duplicateWarning);
+            }
+
+            return $redirect;
         }
 
-        return back()->with('status', 'Профиль обновлён.');
+        $redirect = back()->with('status', 'Профиль обновлён.');
+
+        if ($duplicateWarning) {
+            $redirect = $redirect->with('duplicate_user_id', $duplicateWarning);
+        }
+
+        return $redirect;
     }
 
     private function filled($value): bool
