@@ -56,6 +56,7 @@
         'notify_player_registrations',
         'avatar_media_id',
         'profile_completed_at',
+        'biometric_token',
 		];
 		
 		protected $hidden = [
@@ -63,6 +64,7 @@
         'remember_token',
         'two_factor_recovery_codes',
         'two_factor_secret',
+        'biometric_token',
 		];
 		
 		
@@ -87,6 +89,11 @@
 		public function notificationsInbox()
 		{
 			return $this->hasMany(\App\Models\UserNotification::class, 'user_id');
+		}
+
+		public function deviceTokens(): HasMany
+		{
+			return $this->hasMany(DeviceToken::class);
 		}
 		// --------------------------------------------------
 		// Media Library

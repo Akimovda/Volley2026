@@ -92,7 +92,7 @@ final class UserNotificationService
                     'updated_at'    => now(),
                 ]);
 
-                if (in_array($channel, ['telegram', 'vk', 'max'], true)) {
+                if (in_array($channel, ['telegram', 'vk', 'max', 'push'], true)) {
                     SendNotificationDeliveryJob::dispatch($deliveryId)
                         ->onQueue('default')
                         ->afterCommit();
@@ -263,7 +263,7 @@ final class UserNotificationService
                 'occurrence_id' => $occurrenceId,
                 'event_title'   => $eventTitle,
             ],
-            channels: ['in_app', 'telegram', 'vk', 'max']
+            channels: ['in_app', 'telegram', 'vk', 'max', 'push']
         );
     }
 
@@ -310,7 +310,7 @@ final class UserNotificationService
                 'occurrence_id' => $occurrenceId,
                 'event_title'   => $eventTitle,
             ],
-            channels: ['in_app', 'telegram', 'vk', 'max']
+            channels: ['in_app', 'telegram', 'vk', 'max', 'push']
         );
     }
     public function createRegistrationCancelledNotification(
@@ -380,7 +380,7 @@ final class UserNotificationService
                 'event_title'    => $eventTitle,
                 'starts_at_text' => $startsAtText,
             ],
-            channels: ['in_app', 'telegram', 'vk', 'max']
+            channels: ['in_app', 'telegram', 'vk', 'max', 'push']
         );
     }
 
@@ -407,7 +407,7 @@ final class UserNotificationService
                 'cancel_reason' => $reason,
                 'reason'        => $reason,
             ],
-            channels: ['in_app', 'telegram', 'vk', 'max']
+            channels: ['in_app', 'telegram', 'vk', 'max', 'push']
         );
     }
 
@@ -546,7 +546,7 @@ final class UserNotificationService
     {
         $channels = collect($channels)
             ->map(fn ($v) => (string) $v)
-            ->filter(fn ($v) => in_array($v, ['in_app', 'telegram', 'vk', 'max'], true))
+            ->filter(fn ($v) => in_array($v, ['in_app', 'telegram', 'vk', 'max', 'push'], true))
             ->unique()
             ->values();
 
@@ -562,6 +562,15 @@ final class UserNotificationService
             }
             if ($channel === 'max' && empty($user->max_chat_id)) {
                 continue;
+            }
+            if ($channel === 'push') {
+                $hasPushTokens = \App\Models\DeviceToken::where('user_id', $user->id)
+                    ->where('is_active', true)
+                    ->where('platform', 'ios')
+                    ->exists();
+                if (!$hasPushTokens) {
+                    continue;
+                }
             }
             $result[] = $channel;
         }

@@ -43,3 +43,16 @@ Route::get('/occurrences/{occurrence}/stats', function (string $occurrence) {
     ]);
 });
 Route::post('/integrations/channels/set-thread', [\App\Http\Controllers\Api\ChannelSetThreadController::class, '__invoke']);
+
+// Push-уведомления — device tokens
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/device-token', [\App\Http\Controllers\Api\DeviceTokenController::class, 'store']);
+    Route::delete('/device-token', [\App\Http\Controllers\Api\DeviceTokenController::class, 'destroy']);
+});
+
+// Face ID / биометрическая авторизация
+Route::post('/biometric/login', [\App\Http\Controllers\Api\BiometricController::class, 'login']);
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/biometric/register', [\App\Http\Controllers\Api\BiometricController::class, 'register']);
+    Route::delete('/biometric/revoke', [\App\Http\Controllers\Api\BiometricController::class, 'revoke']);
+});
