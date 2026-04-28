@@ -567,7 +567,7 @@ if (hiddenH) hiddenH.value = h;
 								<input type="hidden" name="create_season" value="0">
 								<input type="checkbox" name="create_season" value="1" id="create_season" checked>
 								<div class="custom-checkbox"></div>
-								<span>Создать как серию турниров (Сезон)</span>
+								<span>Создать как серию турниров Лиги</span>
 							</label>
 
 							<ul class="list f-16 mt-1 mb-2" id="season_hint">
@@ -611,12 +611,22 @@ if (hiddenH) hiddenH.value = h;
 								<div class="row mt-2" id="existing_league_fields" style="display:none;">
 									<div class="col-md-6">
 										<div class="card">
-											<label>Сезон</label>
-											<select name="existing_season_id" id="existing_season_id">
-												<option value="">— выбрать сезон —</option>
+											<label>Лига</label>
+											<select name="existing_league_id" id="existing_league_id">
+												<option value="">— выбрать лигу —</option>
 												@if(isset($organizerSeasons))
-													@foreach($organizerSeasons as $s)
-														<option value="{{ $s->id }}">{{ $s->name }}</option>
+													@php
+													$leaguesForSelect = collect();
+													foreach($organizerSeasons as $s) {
+														foreach($s->leagues as $l) {
+															if (!$leaguesForSelect->contains('id', $l->id)) {
+																$leaguesForSelect->push($l);
+															}
+														}
+													}
+													@endphp
+													@foreach($leaguesForSelect as $l)
+														<option value="{{ $l->id }}">{{ $l->name }}</option>
 													@endforeach
 												@endif
 											</select>
@@ -624,9 +634,9 @@ if (hiddenH) hiddenH.value = h;
 									</div>
 									<div class="col-md-6">
 										<div class="card">
-											<label>Лига</label>
-											<select name="existing_league_id" id="existing_league_id">
-												<option value="">— сначала выберите сезон —</option>
+											<label>Сезон</label>
+											<select name="existing_season_id" id="existing_season_id">
+												<option value="">— сначала выберите лигу —</option>
 											</select>
 										</div>
 									</div>
@@ -647,17 +657,19 @@ if (hiddenH) hiddenH.value = h;
 							const seasonSelect   = document.getElementById('existing_season_id');
 							const leagueSelect   = document.getElementById('existing_league_id');
 
-							const seasonsData = @php
-							$seasonsJs = isset($organizerSeasons) ? $organizerSeasons->map(function($s) {
-								return [
-									'id' => $s->id,
-									'name' => $s->name,
-									'leagues' => $s->leagues->map(function($l) {
-										return ['id' => $l->id, 'name' => $l->name];
-									})->values()->toArray(),
-								];
-							})->values()->toArray() : [];
-							echo json_encode($seasonsJs);
+							const leaguesData = @php
+							$leaguesJs = [];
+							if (isset($organizerSeasons)) {
+								foreach ($organizerSeasons as $s) {
+									foreach ($s->leagues as $l) {
+										if (!isset($leaguesJs[$l->id])) {
+											$leaguesJs[$l->id] = ['id' => $l->id, 'name' => $l->name, 'seasons' => []];
+										}
+										$leaguesJs[$l->id]['seasons'][] = ['id' => $s->id, 'name' => $s->name];
+									}
+								}
+							}
+							echo json_encode(array_values($leaguesJs));
 						@endphp;
 
 							function getFormat() {
@@ -683,16 +695,16 @@ if (hiddenH) hiddenH.value = h;
 								existingFields.style.display = (mode === 'existing') ? '' : 'none';
 							}
 
-							function populateLeagues() {
-								const sid = parseInt(seasonSelect.value);
-								leagueSelect.innerHTML = '<option value="">— выбрать лигу —</option>';
-								const season = seasonsData.find(s => s.id === sid);
-								if (season) {
-									season.leagues.forEach(l => {
+							function populateSeasons() {
+								const lid = parseInt(leagueSelect.value);
+								seasonSelect.innerHTML = '<option value="">— выбрать сезон —</option>';
+								const league = leaguesData.find(l => l.id === lid);
+								if (league) {
+									league.seasons.forEach(s => {
 										const opt = document.createElement('option');
-										opt.value = l.id;
-										opt.textContent = l.name;
-										leagueSelect.appendChild(opt);
+										opt.value = s.id;
+										opt.textContent = s.name;
+										seasonSelect.appendChild(opt);
 									});
 								}
 							}
@@ -704,7 +716,7 @@ if (hiddenH) hiddenH.value = h;
 							if (isRecurring)   isRecurring.addEventListener('change', syncSeasonBox);
 							if (createSeason)  createSeason.addEventListener('change', syncSeasonFields);
 							if (leagueMode)    leagueMode.addEventListener('change', syncLeagueMode);
-							if (seasonSelect)  seasonSelect.addEventListener('change', populateLeagues);
+							if (leagueSelect)  leagueSelect.addEventListener('change', populateSeasons);
 
 							syncSeasonBox();
 							syncSeasonFields();
