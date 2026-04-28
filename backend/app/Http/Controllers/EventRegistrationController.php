@@ -156,7 +156,18 @@ class EventRegistrationController extends Controller
         $subscriptionId = $request->input('subscription_id');
         $couponCode     = $request->input('coupon_code');
 
-        return $this->persistRegistration($user, $occurrence, $position, $subscriptionId, $couponCode);
+        try {
+            return $this->persistRegistration($user, $occurrence, $position, $subscriptionId, $couponCode);
+        } catch (\Exception $e) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['ok' => false, 'message' => $e->getMessage()], 422);
+            }
+
+            return redirect()->route('events.show', [
+                'event'      => (int) $event->id,
+                'occurrence' => (int) $occurrence->id,
+            ])->with('error', $e->getMessage());
+        }
     }
 
     /**
