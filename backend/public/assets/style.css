@@ -4591,7 +4591,7 @@ body.dark .progress { background: rgba(255,255,255,0.12); }
 /* iOS safe area — Capacitor WebView (VolleyPlayApp) */
 .is-app .fix-header {
 	top: 0;
-	padding-top: calc(1rem + env(safe-area-inset-top, 0px));
+	padding-top: env(safe-area-inset-top, 0px);
 }
 .is-app body {
 	padding-bottom: env(safe-area-inset-bottom, 0px);
