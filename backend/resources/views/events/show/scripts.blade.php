@@ -391,7 +391,17 @@ function initJoinForms() {
 
             if (!data.ok) {
                 showJoinError(data.message || 'Ошибка записи');
-                if (btn) { btn.disabled = false; btn.textContent = btn.dataset.label || 'Записаться'; }
+                if (data.no_slots) {
+                    if (btn) {
+                        btn.disabled = true;
+                        const freeSpan = btn.querySelector('span');
+                        if (freeSpan) freeSpan.innerHTML = '<span class="pl-1 pr-1 f-11">Свободно:</span> 0';
+                    }
+                    updatePlayers();
+                    loadParticipants();
+                } else {
+                    if (btn) { btn.disabled = false; btn.textContent = btn.dataset.label || 'Записаться'; }
+                }
                 return;
             }
 
