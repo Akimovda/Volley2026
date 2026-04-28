@@ -39,6 +39,7 @@ use App\Http\Controllers\TeamStatsController;
 	use App\Http\Controllers\ProfileNotificationChannelController;
 	use App\Http\Controllers\TelegramNotifyBindingController;
 	use App\Http\Controllers\VkNotifyBindingController;
+use App\Http\Controllers\Integrations\VkCommunityBindController;
 	use App\Http\Controllers\OccurrenceWaitlistController;
 	
 	// ADMIN
@@ -143,6 +144,15 @@ Route::get('/logout', fn () => redirect('/'));
 
 		Route::post('/user/profile/notification-channels/settings', [ProfileNotificationChannelController::class, 'updateSettings'])
         ->name('profile.notification_channels.settings');
+	});
+
+	Route::middleware(['auth'])->group(function () {
+		Route::post('/integrations/vk-community/redirect', [VkCommunityBindController::class, 'redirect'])
+			->name('integrations.vk_community.redirect');
+		Route::get('/integrations/vk-community/callback', [VkCommunityBindController::class, 'callback'])
+			->name('integrations.vk_community.callback');
+		Route::post('/integrations/vk-community/select', [VkCommunityBindController::class, 'selectGroup'])
+			->name('integrations.vk_community.select');
 	});
 
 	/*

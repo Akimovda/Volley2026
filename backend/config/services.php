@@ -48,6 +48,12 @@ return [
         'oidc_client_secret' => env('TELEGRAM_OIDC_CLIENT_SECRET'),
     ],
 
+    'vk_wall' => [
+        'client_id'     => env('VK_WALL_APP_ID'),
+        'client_secret' => env('VK_WALL_APP_SECRET'),
+        'redirect'      => env('VK_WALL_REDIRECT_URI'),
+    ],
+
     'vkid' => [
         'client_id'      => env('VKID_CLIENT_ID'),
         'client_secret'  => env('VKID_CLIENT_SECRET'),
