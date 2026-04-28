@@ -174,10 +174,10 @@ class ProfileExtraController extends Controller
         }
 
         // =========================
-        // 2) Защита “после заполнения” (только для self, если не admin)
+        // 2) Защита “после заполнения” (только для self, если не admin и не organizer)
         //    Пропускаем если анкета ещё не была явно завершена пользователем
         // =========================
-        if ($mode === 'self' && !$isAdmin && !is_null($target->profile_completed_at)) {
+        if ($mode === 'self' && !$isAdmin && !$isOrganizer && !is_null($target->profile_completed_at)) {
             $protected = [
                 'first_name', 'last_name', 'patronymic',
                 'phone', 'birth_date', 'city_id',
@@ -188,6 +188,28 @@ class ProfileExtraController extends Controller
                 if (array_key_exists($field, $data) && $this->filled($target->$field)) {
                     unset($data[$field]);
                 }
+            }
+        }
+
+        // =========================
+        // 2.5) Организатор редактирует себя: нельзя очистить уже заполненные поля
+        // =========================
+        if ($mode === 'self' && $isOrganizer && !is_null($target->profile_completed_at)) {
+            $mustRemainFilled = [
+                'first_name', 'last_name', 'patronymic', 'phone',
+                'birth_date', 'city_id', 'classic_level', 'beach_level',
+            ];
+            $errs = [];
+            foreach ($mustRemainFilled as $field) {
+                if (array_key_exists($field, $data)
+                    && !$this->filled($data[$field])
+                    && $this->filled($target->$field)
+                ) {
+                    $errs[$field] = 'Это поле нельзя оставить пустым.';
+                }
+            }
+            if (!empty($errs)) {
+                return back()->withErrors($errs)->withInput();
             }
         }
 
