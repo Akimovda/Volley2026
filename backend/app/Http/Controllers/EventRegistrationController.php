@@ -313,7 +313,7 @@ class EventRegistrationController extends Controller
                     }
                 } else {
                     $slotService = app(EventRoleSlotService::class);
-                    $ok = $slotService->tryTakeSlot($occurrence->event, $position);
+                    $ok = $slotService->tryTakeSlot($occurrence->event, $position, $occurrence->id);
                     if (!$ok) {
                         throw new \Exception('Свободных мест на этой позиции больше нет.');
                     }

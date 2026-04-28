@@ -85,22 +85,32 @@ class EventRoleSlotService
 
     /**
      * Try to take slot (atomic)
-     * Protects from race conditions
+     * Counts actual active registrations per occurrence — not the stale taken_slots counter.
+     * Safe because the caller holds pg_advisory_xact_lock for (occurrence_id, roleKey).
      */
-    public function tryTakeSlot(Event $event, string $role): bool
+    public function tryTakeSlot(Event $event, string $role, int $occurrenceId): bool
     {
-        $updated = EventRoleSlot::where('event_id', $event->id)
+        $slot = EventRoleSlot::where('event_id', $event->id)
             ->where('role', $role)
-            ->whereColumn('taken_slots', '<', 'max_slots')
-            ->update([
-                'taken_slots' => \DB::raw('taken_slots + 1')
-            ]);
+            ->first();
 
-        if ($updated > 0) {
-            $this->clear($event);
+        if (!$slot) {
+            return false;
         }
 
-        return $updated > 0;
+        $taken = \DB::table('event_registrations')
+            ->where('occurrence_id', $occurrenceId)
+            ->where('position', $role)
+            ->whereNull('cancelled_at')
+            ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
+            ->count();
+
+        if ($taken >= $slot->max_slots) {
+            return false;
+        }
+
+        $this->clear($event);
+        return true;
     }
 
     /**
