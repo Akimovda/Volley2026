@@ -26,6 +26,9 @@
 .dup-field .label { opacity: .5; width: 12rem; flex-shrink: 0; }
 .dup-match { color: #e74c3c; font-weight: 600; }
 .dup-providers span { display: inline-block; background: rgba(41,103,186,.1); color: #2967BA; font-size: 1.2rem; padding: .2rem .7rem; border-radius: 2rem; margin-right: .3rem; }
+.dup-recommended { background: #f0fdf4; border: 1.5px solid #22c55e; border-radius: 8px; padding: .5rem .8rem; display: inline-flex; align-items: center; gap: .4rem; font-size: 1.3rem; color: #16a34a; font-weight: 600; }
+.dup-stat { font-size: 1.3rem; color: #555; }
+.dup-stat strong { color: #111; }
 </style>
 </x-slot>
 
@@ -58,101 +61,112 @@
     @php
         $u1 = $dup['user1'];
         $u2 = $dup['user2'];
+        $s1 = $dup['stats1'];
+        $s2 = $dup['stats2'];
+        $rec = $dup['recommended_primary'];
         $level = $dup['level'];
         $label = $dup['label'];
         $icon = $level === 'red' ? '🔴' : '🟡';
+        // primary — тот кого рекомендуем, secondary — кто сливается
+        $primary   = $rec === $u1->id ? $u1 : $u2;
+        $secondary = $rec === $u1->id ? $u2 : $u1;
+        $sp        = $rec === $u1->id ? $s1 : $s2;
+        $ss        = $rec === $u1->id ? $s2 : $s1;
     @endphp
 
     <div class="card dup-card {{ $level }} mb-2">
-        <div class="d-flex between fvc mb-1">
+        <div class="d-flex between fvc mb-2">
             <span class="f-14 b-600">{{ $icon }} {{ $label }}</span>
         </div>
 
         <div class="row row2">
-            {{-- Пользователь 1 --}}
+            {{-- Рекомендованный основной --}}
             <div class="col-md-5">
-                <div class="f-15 b-600 mb-1">
-                    <a href="{{ route('admin.users.show', $u1) }}" class="cd" target="_blank">
-                        #{{ $u1->id }} {{ $u1->name }}
+                <div class="dup-recommended mb-1">⭐ Рекомендуем основным</div>
+                <div class="f-15 b-600 mb-1 mt-1">
+                    <a href="{{ route('admin.users.show', $primary) }}" class="cd" target="_blank">
+                        #{{ $primary->id }} {{ $primary->name }}
                     </a>
                 </div>
-                <div class="dup-field"><span class="label">Фамилия</span><span>{{ $u1->last_name ?? '—' }}</span></div>
-                <div class="dup-field"><span class="label">Имя</span><span>{{ $u1->first_name ?? '—' }}</span></div>
-                <div class="dup-field"><span class="label">Отчество</span><span>{{ $u1->patronymic ?? '—' }}</span></div>
+                <div class="dup-field"><span class="label">Email</span><span class="f-13" style="opacity:.6">{{ $primary->email }}</span></div>
                 <div class="dup-field"><span class="label">Телефон</span>
                     <span class="{{ $u1->phone && $u1->phone === $u2->phone ? 'dup-match' : '' }}">
-                        {{ $u1->phone ?? '—' }}
+                        {{ $primary->phone ?? '—' }}
                     </span>
                 </div>
-                <div class="dup-field"><span class="label">Дата рожд.</span><span>{{ $u1->birth_date ?? '—' }}</span></div>
-                <div class="dup-field"><span class="label">Роль</span><span>{{ $u1->role ?? 'user' }}</span></div>
-                <div class="dup-providers mt-1">
-                    @if($u1->telegram_id)<span>TG</span>@endif
-                    @if($u1->vk_id)<span>VK</span>@endif
-                    @if($u1->yandex_id)<span>YA</span>@endif
+                <div class="dup-field"><span class="label">Профиль</span>
+                    <span>{{ $sp['profile_complete'] ? '✅ заполнен' : '— не заполнен' }}</span>
                 </div>
-                <div class="f-13 mt-1" style="opacity:.5">
-                    Регистраций: {{ \DB::table('event_registrations')->where('user_id',$u1->id)->count() }}
-                    · Создан: {{ $u1->created_at->format('d.m.Y') }}
+                <div class="dup-providers mt-1 mb-1">
+                    @if($primary->telegram_id)<span>TG</span>@endif
+                    @if($primary->vk_id)<span>VK</span>@endif
+                    @if($primary->yandex_id)<span>YA</span>@endif
                 </div>
+                <div class="dup-stat">
+                    Записей: <strong>{{ $sp['registrations'] }}</strong> ·
+                    Платежей: <strong>{{ $sp['payments'] }}</strong>
+                    @if($sp['wallet_balance'] > 0)
+                        · Кошелёк: <strong>{{ number_format($sp['wallet_balance'] / 100, 0, '.', ' ') }} ₽</strong>
+                    @endif
+                </div>
+                <div class="f-13 mt-05" style="opacity:.5">Создан: {{ $primary->created_at->format('d.m.Y') }}</div>
             </div>
 
             {{-- Разделитель --}}
             <div class="col-md-2 d-flex" style="align-items:center;justify-content:center;font-size:2rem;opacity:.3">
-                ↔
+                ←
             </div>
 
-            {{-- Пользователь 2 --}}
+            {{-- Вторичный (будет удалён) --}}
             <div class="col-md-5">
+                <div class="f-13 mb-1" style="color:#e74c3c;">будет деактивирован</div>
                 <div class="f-15 b-600 mb-1">
-                    <a href="{{ route('admin.users.show', $u2) }}" class="cd" target="_blank">
-                        #{{ $u2->id }} {{ $u2->name }}
+                    <a href="{{ route('admin.users.show', $secondary) }}" class="cd" target="_blank">
+                        #{{ $secondary->id }} {{ $secondary->name }}
                     </a>
                 </div>
-                <div class="dup-field"><span class="label">Фамилия</span>
-                    <span class="{{ $u1->last_name && $u1->last_name === $u2->last_name ? 'dup-match' : '' }}">
-                        {{ $u2->last_name ?? '—' }}
-                    </span>
+                <div class="dup-field"><span class="label">Email</span><span class="f-13" style="opacity:.6">{{ $secondary->email }}</span></div>
+                <div class="dup-field"><span class="label">Телефон</span><span>{{ $secondary->phone ?? '—' }}</span></div>
+                <div class="dup-field"><span class="label">Профиль</span>
+                    <span>{{ $ss['profile_complete'] ? '✅ заполнен' : '— не заполнен' }}</span>
                 </div>
-                <div class="dup-field"><span class="label">Имя</span><span>{{ $u2->first_name ?? '—' }}</span></div>
-                <div class="dup-field"><span class="label">Отчество</span><span>{{ $u2->patronymic ?? '—' }}</span></div>
-                <div class="dup-field"><span class="label">Телефон</span>
-                    <span class="{{ $u1->phone && $u1->phone === $u2->phone ? 'dup-match' : '' }}">
-                        {{ $u2->phone ?? '—' }}
-                    </span>
+                <div class="dup-providers mt-1 mb-1">
+                    @if($secondary->telegram_id)<span>TG</span>@endif
+                    @if($secondary->vk_id)<span>VK</span>@endif
+                    @if($secondary->yandex_id)<span>YA</span>@endif
                 </div>
-                <div class="dup-field"><span class="label">Дата рожд.</span><span>{{ $u2->birth_date ?? '—' }}</span></div>
-                <div class="dup-field"><span class="label">Роль</span><span>{{ $u2->role ?? 'user' }}</span></div>
-                <div class="dup-providers mt-1">
-                    @if($u2->telegram_id)<span>TG</span>@endif
-                    @if($u2->vk_id)<span>VK</span>@endif
-                    @if($u2->yandex_id)<span>YA</span>@endif
+                <div class="dup-stat">
+                    Записей: <strong>{{ $ss['registrations'] }}</strong> ·
+                    Платежей: <strong>{{ $ss['payments'] }}</strong>
+                    @if($ss['wallet_balance'] > 0)
+                        · Кошелёк: <strong>{{ number_format($ss['wallet_balance'] / 100, 0, '.', ' ') }} ₽</strong>
+                    @endif
                 </div>
-                <div class="f-13 mt-1" style="opacity:.5">
-                    Регистраций: {{ \DB::table('event_registrations')->where('user_id',$u2->id)->count() }}
-                    · Создан: {{ $u2->created_at->format('d.m.Y') }}
-                </div>
+                <div class="f-13 mt-05" style="opacity:.5">Создан: {{ $secondary->created_at->format('d.m.Y') }}</div>
             </div>
         </div>
 
-        {{-- Кнопки слияния --}}
+        {{-- Кнопки --}}
         <div class="d-flex gap-1 mt-2 flex-wrap">
+            {{-- Рекомендованное слияние --}}
             <form method="POST" action="{{ route('admin.users.duplicates.merge') }}"
-                  onsubmit="return confirm('Объединить #{{ $u1->id }} ← #{{ $u2->id }}? Это действие необратимо.')">
+                  onsubmit="return confirm('Объединить: основной #{{ $primary->id }}, удалить #{{ $secondary->id }}?\n\nВсе данные (платежи, записи, кошелёк) будут перенесены. Действие необратимо.')">
                 @csrf
-                <input type="hidden" name="primary_id" value="{{ $u1->id }}">
-                <input type="hidden" name="secondary_id" value="{{ $u2->id }}">
-                <button class="btn btn-small">
-                    ← Основной #{{ $u1->id }} · удалить #{{ $u2->id }}
+                <input type="hidden" name="primary_id" value="{{ $primary->id }}">
+                <input type="hidden" name="secondary_id" value="{{ $secondary->id }}">
+                <button class="btn btn-small" style="background:#22c55e;color:#fff;border-color:#22c55e;">
+                    ⭐ Объединить (рекомендовано)
                 </button>
             </form>
+
+            {{-- Обратное слияние --}}
             <form method="POST" action="{{ route('admin.users.duplicates.merge') }}"
-                  onsubmit="return confirm('Объединить #{{ $u2->id }} ← #{{ $u1->id }}? Это действие необратимо.')">
+                  onsubmit="return confirm('Объединить наоборот: основной #{{ $secondary->id }}, удалить #{{ $primary->id }}?\n\nДействие необратимо.')">
                 @csrf
-                <input type="hidden" name="primary_id" value="{{ $u2->id }}">
-                <input type="hidden" name="secondary_id" value="{{ $u1->id }}">
+                <input type="hidden" name="primary_id" value="{{ $secondary->id }}">
+                <input type="hidden" name="secondary_id" value="{{ $primary->id }}">
                 <button class="btn btn-small btn-secondary">
-                    → Основной #{{ $u2->id }} · удалить #{{ $u1->id }}
+                    Наоборот: основной #{{ $secondary->id }}
                 </button>
             </form>
         </div>
