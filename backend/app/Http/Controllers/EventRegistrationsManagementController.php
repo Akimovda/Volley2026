@@ -59,6 +59,26 @@ class EventRegistrationsManagementController extends Controller
                 ->first(['id', 'max_players', 'starts_at', 'timezone']);
         }
 
+        // Свободные слоты по позициям (только для классики с конкретной датой)
+        $freePositionSlots = []; // role => free_count
+        if ($occurrenceId && $direction === 'classic') {
+            $slots = app(\App\Services\EventRoleSlotService::class)->getSlots($event);
+            if ($slots->isNotEmpty()) {
+                $takenByRole = DB::table('event_registrations')
+                    ->where('occurrence_id', $occurrenceId)
+                    ->whereNull('cancelled_at')
+                    ->whereIn('position', $slots->pluck('role')->all())
+                    ->selectRaw('position, count(*) as cnt')
+                    ->groupBy('position')
+                    ->pluck('cnt', 'position')
+                    ->toArray();
+                foreach ($slots as $slot) {
+                    $taken = (int) ($takenByRole[$slot->role] ?? 0);
+                    $freePositionSlots[$slot->role] = max(0, $slot->max_slots - $taken);
+                }
+            }
+        }
+
         // max_players: из occurrence если открыта конкретная дата, иначе из event_game_settings
         if ($occurrence && $occurrence->max_players > 0) {
             $maxPlayers = (int) $occurrence->max_players;
@@ -198,6 +218,7 @@ class EventRegistrationsManagementController extends Controller
                     'direction'          => $direction,
                     'gameSubtype'        => $gameSubtype,
                     'availablePositions' => $availablePositions,
+                    'freePositionSlots'  => $freePositionSlots,
                     'hasOrgNote'         => $hasOrgNote,
                 ]);
     }
@@ -227,6 +248,7 @@ class EventRegistrationsManagementController extends Controller
 
         // Определяем occurrence_id из запроса или ближайший
         $occurrenceId = (int) $request->input('occurrence_id', $request->query('occurrence', 0));
+        $event->loadMissing('gameSettings');
         if (!$occurrenceId) {
             $occurrenceId = \App\Models\EventOccurrence::where('event_id', $event->id)
                 ->whereNull('cancelled_at')
@@ -235,6 +257,28 @@ class EventRegistrationsManagementController extends Controller
                 })
                 ->orderBy('starts_at')
                 ->value('id');
+        }
+
+        // Проверяем лимит слота позиции
+        if ($pos !== '' && $occurrenceId && (string)($event->direction ?? 'classic') === 'classic') {
+            $slots = app(\App\Services\EventRoleSlotService::class)->getSlots($event);
+            $slot  = $slots->firstWhere('role', $pos);
+            if ($slot) {
+                $taken = DB::table('event_registrations')
+                    ->where('occurrence_id', $occurrenceId)
+                    ->whereNull('cancelled_at')
+                    ->where('position', $pos)
+                    ->count();
+                if ($taken >= $slot->max_slots) {
+                    $posLabels = $this->resolvePositions(
+                        (string)($event->direction ?? 'classic'),
+                        (string)($event->gameSettings?->subtype ?? ''),
+                        (string)($event->gameSettings?->libero_mode ?? 'with_libero')
+                    );
+                    $lbl = $posLabels[$pos] ?? $pos;
+                    return back()->with('error', "Позиция «{$lbl}» заполнена ({$taken}/{$slot->max_slots}).");
+                }
+            }
         }
 
         $existing = DB::table('event_registrations')
@@ -333,16 +377,43 @@ class EventRegistrationsManagementController extends Controller
         $row = DB::table('event_registrations')
             ->where('id', $registration)
             ->where('event_id', (int) $event->id)
-            ->first(['id']);
+            ->first(['id', 'position', 'occurrence_id']);
 
         if (!$row) {
             return back()->with('error', 'Регистрация не найдена.');
         }
 
+        $newPos     = trim((string) ($data['position'] ?? ''));
+        $currentPos = (string) ($row->position ?? '');
+        $occId      = (int) ($row->occurrence_id ?? 0);
+
+        // Проверяем лимит только если позиция меняется
+        $event->loadMissing('gameSettings');
+        if ($newPos !== '' && $newPos !== $currentPos && $occId && (string)($event->direction ?? 'classic') === 'classic') {
+            $slots = app(\App\Services\EventRoleSlotService::class)->getSlots($event);
+            $slot  = $slots->firstWhere('role', $newPos);
+            if ($slot) {
+                $taken = DB::table('event_registrations')
+                    ->where('occurrence_id', $occId)
+                    ->whereNull('cancelled_at')
+                    ->where('position', $newPos)
+                    ->count();
+                if ($taken >= $slot->max_slots) {
+                    $posLabels = $this->resolvePositions(
+                        (string)($event->direction ?? 'classic'),
+                        (string)($event->gameSettings?->subtype ?? ''),
+                        (string)($event->gameSettings?->libero_mode ?? 'with_libero')
+                    );
+                    $lbl = $posLabels[$newPos] ?? $newPos;
+                    return back()->with('error', "Позиция «{$lbl}» заполнена ({$taken}/{$slot->max_slots}).");
+                }
+            }
+        }
+
         DB::table('event_registrations')
             ->where('id', $registration)
             ->update([
-                'position' => trim((string) ($data['position'] ?? '')),
+                'position' => $newPos,
                 'updated_at' => now(),
             ]);
 
