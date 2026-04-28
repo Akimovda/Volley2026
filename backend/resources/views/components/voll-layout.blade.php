@@ -594,6 +594,27 @@
 				});
 			});		
 		</script>
-		
+
+		<script>
+		if (navigator.userAgent.includes('VolleyPlayApp') && window.Capacitor) {
+			Capacitor.Plugins.PushNotifications.requestPermissions().then(function(result) {
+				if (result.receive === 'granted') {
+					Capacitor.Plugins.PushNotifications.register();
+				}
+			});
+			Capacitor.Plugins.PushNotifications.addListener('registration', function(token) {
+				fetch('/api/device-token', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content
+					},
+					credentials: 'same-origin',
+					body: JSON.stringify({ platform: 'ios', token: token.value })
+				});
+			});
+		}
+		</script>
+
 	</body>
 </html>					
