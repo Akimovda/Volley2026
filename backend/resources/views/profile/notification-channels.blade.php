@@ -237,10 +237,15 @@
                         <div class="card text-muted f-15">Пока нет подключённых каналов.</div>
                     @else
                         @foreach($channels as $channel)
+                        @php $isWall = ($channel->meta['kind'] ?? '') === 'vk_wall'; @endphp
                         <div class="card mb-1">
                             <div class="d-flex between">
                                 <div>
-                                    <span class="b-700 f-16">{{ strtoupper($channel->platform) }}</span>
+                                    @if($isWall)
+                                        <span class="b-700 f-16">🔵 VK стена</span>
+                                    @else
+                                        <span class="b-700 f-16">{{ strtoupper($channel->platform) }}</span>
+                                    @endif
                                     @if($channel->is_verified)
                                         <span class="badge badge-green ml-05">подтверждён</span>
                                     @else
@@ -248,7 +253,7 @@
                                     @endif
                                     @if(($channel->bot_type ?? 'system') === 'user')
                                         <span class="badge badge-orange ml-05">🤖 свой бот{{ $channel->user_bot_username ? ' @'.$channel->user_bot_username : '' }}</span>
-                                    @else
+                                    @elseif(!$isWall)
                                         <span class="badge ml-05">системный</span>
                                     @endif
                                 </div>
@@ -267,7 +272,11 @@
                             </div>
 
                             <div class="f-15 b-600 mt-05">{{ $channel->title ?: 'Без названия' }}</div>
-                            <div class="f-13 text-muted">chat_id: {{ $channel->chat_id }}</div>
+                            @if($isWall && !empty($channel->meta['group_name']))
+                                <div class="f-13 text-muted">Сообщество: {{ $channel->meta['group_name'] }}</div>
+                            @else
+                                <div class="f-13 text-muted">chat_id: {{ $channel->chat_id }}</div>
+                            @endif
                             @if(!empty($channel->verified_at))
                                 <div class="f-13 text-muted">Подтверждён: {{ $channel->verified_at->format('d.m.Y H:i') }}</div>
                             @endif
@@ -289,6 +298,27 @@
                     @endif
                 </div>
             </div>
+        </div>
+
+        {{-- VK Wall --}}
+        <div class="ramka">
+            <h3 class="mt-0">🔵 Привязать VK-сообщество (публикация на стене)</h3>
+            <p class="f-15 text-muted mb-2">
+                Анонсы будут публиковаться <strong>на стене</strong> вашего VK-сообщества — без бота и беседы.
+                Потребуется авторизация через VK с доступом к управлению стеной.
+            </p>
+            <form method="POST" action="{{ route('integrations.vk_community.redirect') }}" class="d-flex gap-1 flex-wrap align-items-end">
+                @csrf
+                <div style="flex:1;min-width:220px;">
+                    <label class="f-14 b-600 mb-05 d-block">Название канала</label>
+                    <input type="text" name="title" value="{{ old('vk_wall_title') }}"
+                           placeholder="Например: VK Волейбол Новосибирск"
+                           class="w-100" required maxlength="128">
+                </div>
+                <button type="submit" class="btn btn-primary" style="white-space:nowrap;">
+                    🔵 Привязать VK-сообщество
+                </button>
+            </form>
         </div>
 
         {{-- Персональный бот --}}

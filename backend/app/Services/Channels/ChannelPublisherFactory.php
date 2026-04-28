@@ -25,10 +25,24 @@ class ChannelPublisherFactory
         $plt   = $platform ?? (string) ($channel?->platform ?? '');
         $token = $channel?->resolveToken(); // null для системного
 
+        if ($plt === 'vk') {
+            $meta = $channel?->meta ?? [];
+            if (($meta['kind'] ?? '') === 'vk_wall') {
+                $rawToken = $meta['access_token'] ?? '';
+                $decrypted = '';
+                if ($rawToken !== '') {
+                    try {
+                        $decrypted = decrypt($rawToken);
+                    } catch (\Throwable) {}
+                }
+                return new VkWallPublisher($decrypted);
+            }
+            return app(VkChannelPublisher::class);
+        }
+
         return match ($plt) {
             'telegram' => new TelegramChannelPublisher($token),
             'max'      => new MaxChannelPublisher($token),
-            'vk'       => app(VkChannelPublisher::class), // VK — только системный пока
             default    => throw new InvalidArgumentException("Unsupported platform [{$plt}]"),
         };
     }
