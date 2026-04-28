@@ -118,6 +118,27 @@ class YandexAuthController extends Controller
         $user = User::where('yandex_id', $yandexId)->first();
         $isNewUser = false;
 
+        // Нормализованный телефон от Яндекса
+        $yandexPhone = null;
+        $rawPhone = $raw['default_phone']['number'] ?? null;
+        if ($rawPhone) {
+            $yandexPhone = '+' . preg_replace('/\D/', '', $rawPhone);
+            if (strlen($yandexPhone) < 7) $yandexPhone = null;
+        }
+
+        if (!$user) {
+            // Попытка найти существующего пользователя по телефону
+            if ($yandexPhone) {
+                $user = User::where('phone', $yandexPhone)->whereNull('merged_into_user_id')->first();
+                if ($user) {
+                    $user->yandex_id    = $yandexId;
+                    $user->yandex_phone = $yandexPhone;
+                    $user->save();
+                    $this->logWarn('Linked yandex to existing user by phone', ['user_id' => $user->id, 'phone' => $yandexPhone]);
+                }
+            }
+        }
+
         if (!$user) {
             $isNewUser = true;
 
@@ -129,8 +150,12 @@ class YandexAuthController extends Controller
             $user = new User();
             $user->email     = $safeEmail;
             $user->password  = Hash::make(Str::random(32));
-            $user->name     = trim(($yaUser->getName() ?: '') ?: 'Пользователь');
+            $user->name      = trim(($yaUser->getName() ?: '') ?: 'Пользователь');
             $user->yandex_id = $yandexId;
+            if ($yandexPhone) {
+                $user->phone        = $yandexPhone;
+                $user->yandex_phone = $yandexPhone;
+            }
 
             // Сохраняем только пол
             if (!empty($raw['sex'])) {
@@ -140,14 +165,17 @@ class YandexAuthController extends Controller
 
             $user->save();
         } else {
-            // Для существующих — только пол если не заполнен
+            // Для существующих — обновляем пол и телефон если отсутствуют
+            $changed = false;
             if (empty($user->gender) && !empty($raw['sex'])) {
                 $g = $raw['sex'] === 'male' ? 'm' : ($raw['sex'] === 'female' ? 'f' : null);
-                if ($g) {
-                    $user->gender = $g;
-                    $user->save();
-                }
+                if ($g) { $user->gender = $g; $changed = true; }
             }
+            if ($yandexPhone) {
+                if (empty($user->yandex_phone)) { $user->yandex_phone = $yandexPhone; $changed = true; }
+                if (empty($user->phone))         { $user->phone = $yandexPhone;        $changed = true; }
+            }
+            if ($changed) $user->save();
         }
 
         UserPhotoFromProviderService::seedFromProviderIfAllowed($user, $avatar, $isNewUser);
