@@ -390,6 +390,10 @@ function initJoinForms() {
             const data = await res.json();
 
             if (!data.ok) {
+                if (data.redirect) {
+                    window.location.href = data.redirect;
+                    return;
+                }
                 showJoinError(data.message || 'Ошибка записи');
                 if (data.no_slots) {
                     if (btn) {

@@ -123,6 +123,19 @@ class EventRegistrationController extends Controller
         );
 
         if (!$result->allowed) {
+            // Незаполненный профиль — редирект на страницу заполнения
+            if ($result->meta['profile_required'] ?? false) {
+                if ($request->ajax() || $request->wantsJson()) {
+                    return response()->json([
+                        'ok'       => false,
+                        'message'  => 'Для записи на это мероприятие необходимо заполнить личные данные.',
+                        'redirect' => route('profile.complete'),
+                    ], 422);
+                }
+                return redirect()->route('profile.complete')
+                    ->with('warning', 'Для записи на «' . ($event->title ?? 'мероприятие') . '» необходимо заполнить личные данные.');
+            }
+
             // Уведомляем пользователя об ошибке записи (inApp + мессенджеры)
             if ($user) {
                 $eventTitle = (string)($occurrence->event->title ?? ('#' . $occurrence->event_id));

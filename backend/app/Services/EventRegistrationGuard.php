@@ -97,7 +97,10 @@
 			
 			// 1. Проверка авторизации и окна регистрации
 			$this->checkAuthAndWindow($user, $occurrence, $event, $result);
-			
+
+			// 1.5. Проверка заполненности профиля (requires_personal_data)
+			$this->checkPersonalData($user, $occurrence, $event, $result);
+
 			// 2. Проверка возрастной политики (исправлено)
 			$this->checkAgePolicy($user, $occurrence, $event, $agePolicy, $result);
 			
@@ -381,10 +384,39 @@
 		
 		/*
 			|--------------------------------------------------------------------------
+			| PERSONAL DATA
+			|--------------------------------------------------------------------------
+		*/
+
+		private function checkPersonalData(
+			?User $user,
+			EventOccurrence $occurrence,
+			$event,
+			GuardResult $result
+		): void {
+			if (!$user) return;
+
+			$required = !is_null($occurrence->requires_personal_data)
+				? (bool) $occurrence->requires_personal_data
+				: (bool) ($event->requires_personal_data ?? false);
+
+			if (!$required) return;
+
+			$requirements = app(\App\Services\EventRegistrationRequirements::class);
+			$missing = $requirements->missing($user, $event);
+
+			if (!empty($missing)) {
+				$result->errors[] = 'Для записи на это мероприятие необходимо заполнить личные данные в профиле.';
+				$result->meta['profile_required'] = true;
+			}
+		}
+
+		/*
+			|--------------------------------------------------------------------------
 			| AUTH + REGISTRATION WINDOW
 			|--------------------------------------------------------------------------
 		*/
-		
+
 		private function checkAuthAndWindow(
 			?User $user,
 			EventOccurrence $occurrence,
