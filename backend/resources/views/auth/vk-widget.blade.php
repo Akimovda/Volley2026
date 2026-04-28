@@ -3,7 +3,7 @@
 <html lang="ru">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>Вход через VK</title>
 </head>
 <body style="font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; padding: 24px;">
