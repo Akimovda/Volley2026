@@ -436,7 +436,10 @@
 			$requirements = app(\App\Services\EventRegistrationRequirements::class);
 			$missing = $requirements->missing($user, $event);
 
-			if (!empty($missing)) {
+			// Уровень обрабатывает checkLevelPolicy — здесь проверяем только личные данные
+			$personalMissing = array_filter($missing, fn($m) => !in_array($m, ['classic_level', 'beach_level']));
+
+			if (!empty($personalMissing)) {
 				$result->errors[] = 'Для записи на это мероприятие необходимо заполнить личные данные в профиле.';
 				$result->meta['profile_required'] = true;
 			}
