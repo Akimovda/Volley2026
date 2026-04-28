@@ -155,15 +155,15 @@ class UserMergeService
 
             DB::table('occurrence_waitlist')->where('user_id', $secondary->id)->delete();
 
-            // 12. Команды — без дублей по team_id
+            // 12. Команды — без дублей по event_team_id
             $primaryTeams = DB::table('event_team_members')
                 ->where('user_id', $primary->id)
-                ->pluck('team_id')
+                ->pluck('event_team_id')
                 ->toArray();
 
             DB::table('event_team_members')
                 ->where('user_id', $secondary->id)
-                ->whereNotIn('team_id', $primaryTeams)
+                ->whereNotIn('event_team_id', $primaryTeams)
                 ->update(['user_id' => $primary->id]);
 
             DB::table('event_team_members')->where('user_id', $secondary->id)->delete();
