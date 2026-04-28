@@ -4596,3 +4596,6 @@ body.dark .progress { background: rgba(255,255,255,0.12); }
 .is-app body {
 	padding-bottom: env(safe-area-inset-bottom, 0px);
 }
+.is-app .top-section {
+	padding-top: calc(12rem + env(safe-area-inset-top, 0px));
+}
