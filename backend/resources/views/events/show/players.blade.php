@@ -247,6 +247,11 @@
 		@if (!empty($join->errors))
 		<div class="alert alert-info mt-1">
 			{{ $join->errors[0] }}
+			@if (!empty($join->meta['profile_required']))
+			<div class="mt-1">
+				<a href="{{ route('profile.complete') }}" class="btn btn-small btn-primary">Заполнить профиль</a>
+			</div>
+			@endif
 		</div>
 		@endif
 		
