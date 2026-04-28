@@ -58,6 +58,6 @@ class EnsureProfileCompleted
         }
 
         return redirect()->route('profile.complete')
-            ->with('warning', 'Пожалуйста, заполните профиль перед продолжением.');
+            ->with('profile_prompt', true);
     }
 }

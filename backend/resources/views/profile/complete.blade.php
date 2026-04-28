@@ -980,9 +980,21 @@
 				
 				
 				
-				<x-slot name="script">	
-					<script src="/assets/city.js"></script>  			
-					<script src="/assets/fas.js"></script> 				
+				<x-slot name="script">
+					<script src="/assets/city.js"></script>
+					<script src="/assets/fas.js"></script>
+					@if(session('profile_prompt'))
+					<script>
+					document.addEventListener('DOMContentLoaded', function() {
+						swal({
+							title: 'Приветствую! 👋',
+							text: 'Заполните обязательные поля: Ваше ФИО, номер сотового и город проживания!',
+							icon: 'info',
+							button: 'Хорошо',
+						});
+					});
+					</script>
+					@endif
 					<script>
 						$('.levelmark-row').each(function() {
 							const initialIndex = $(this).find('.swiper-slide.current-slide').index();
