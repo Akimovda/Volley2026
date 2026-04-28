@@ -247,6 +247,37 @@
             }
         }
 
+        // --- Гендерное окно регистрации ---
+        $gs = $event?->gameSettings ?? null;
+        if (
+            $gs &&
+            $gs->gender_policy === 'mixed_limited' &&
+            $gs->gender_limited_side &&
+            $gs->gender_limited_reg_starts_days_before !== null &&
+            $occurrence->starts_at
+        ) {
+            $viewerGender = strtolower((string) $user->gender);
+            $side = $gs->gender_limited_side;
+            $targetGender = $side === 'male' ? 'm' : ($side === 'female' ? 'f' : null);
+
+            if ($targetGender && $viewerGender !== '' && $viewerGender[0] === $targetGender) {
+                $nowUtc = Carbon::now('UTC');
+                $restrictedOpensAt = Carbon::parse($occurrence->starts_at, 'UTC')
+                    ->subDays((int) $gs->gender_limited_reg_starts_days_before);
+
+                if ($nowUtc->lessThan($restrictedOpensAt)) {
+                    $label = $side === 'female' ? 'девушек' : 'мужчин';
+                    $tz = $occurrence->event?->timezone ?? 'Europe/Moscow';
+                    $opensFormatted = $restrictedOpensAt->copy()->setTimezone($tz)->format('d.m.Y H:i');
+                    return (object)[
+                        'allowed' => false,
+                        'code'    => 'gender_reg_not_started',
+                        'message' => 'Регистрация для ' . $label . ' ещё не началась — откроется ' . $opensFormatted . '.',
+                    ];
+                }
+            }
+        }
+
         return (object)['allowed' => true, 'code' => null, 'message' => null];
     }
 

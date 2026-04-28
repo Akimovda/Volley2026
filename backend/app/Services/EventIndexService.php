@@ -91,7 +91,7 @@ class EventIndexService
             ->with([
                 'event.location:' . implode(',', $this->locationColumns),
                 'event.location.city:id,name,region,timezone',
-                'event.gameSettings:event_id,subtype,libero_mode,max_players,reserve_players_max',
+                'event.gameSettings:event_id,subtype,libero_mode,max_players,reserve_players_max,gender_policy,gender_limited_side,gender_limited_reg_starts_days_before',
                 'event.media'
             ]);
         
