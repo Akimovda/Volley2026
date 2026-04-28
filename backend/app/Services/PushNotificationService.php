@@ -34,14 +34,14 @@ final class PushNotificationService
             ->where('platform', 'ios')
             ->pluck('token');
 
-        Log::info('APNs send() called', [
+        Log::warning('APNs send() called', [
             'user_id'      => $userId,
             'title'        => $title,
             'tokens_found' => $tokens->count(),
         ]);
 
         if ($tokens->isEmpty()) {
-            Log::info('APNs: no active iOS tokens for user, skipping.', ['user_id' => $userId]);
+            Log::warning('APNs: no active iOS tokens for user, skipping.', ['user_id' => $userId]);
             return $result;
         }
 
@@ -50,7 +50,7 @@ final class PushNotificationService
                 $sent = $this->sendToToken($token, $title, $body, $data);
                 if ($sent) {
                     $result['sent']++;
-                    Log::info('APNs push sent', [
+                    Log::warning('APNs push sent', [
                         'user_id' => $userId,
                         'token'   => substr($token, 0, 10) . '...',
                     ]);
@@ -67,7 +67,7 @@ final class PushNotificationService
             }
         }
 
-        Log::info('APNs send() finished', array_merge(['user_id' => $userId], $result));
+        Log::warning('APNs send() finished', array_merge(['user_id' => $userId], $result));
 
         return $result;
     }
@@ -129,7 +129,7 @@ final class PushNotificationService
             throw new \RuntimeException('APNs curl error: ' . $curlError);
         }
 
-        Log::debug('APNs HTTP response', [
+        Log::warning('APNs HTTP response', [
             'token'    => substr($token, 0, 10) . '...',
             'httpCode' => $httpCode,
             'response' => $response ?: '(empty)',
@@ -138,7 +138,7 @@ final class PushNotificationService
         if ($httpCode !== 200) {
             if ($httpCode === 410) {
                 DeviceToken::where('token', $token)->update(['is_active' => false]);
-                Log::info('APNs token deactivated (410 Gone)', ['token' => substr($token, 0, 10) . '...']);
+                Log::warning('APNs token deactivated (410 Gone)', ['token' => substr($token, 0, 10) . '...']);
                 return false;
             }
             throw new \RuntimeException("APNs HTTP {$httpCode}: {$response}");
