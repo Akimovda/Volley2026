@@ -24,6 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'profile.completed'   => \App\Http\Middleware\EnsureProfileCompleted::class,
         ]);
         $middleware->appendToGroup('web', \App\Http\Middleware\EnsureProfileCompleted::class);
+        $middleware->appendToGroup('web', \App\Http\Middleware\SavePushToken::class);
     })
     ->withSchedule(function (Schedule $schedule) {
         // Reminders: каждую минуту
