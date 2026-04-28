@@ -10,6 +10,7 @@ $posLabels = $availablePositions ?? [
 $isBeach   = ($direction ?? 'classic') === 'beach';
 $isClassic = !$isBeach;
 $hasPositions = $isClassic && count($posLabels) > 0;
+$freeSlots = $freePositionSlots ?? []; // role => free_count (пусто = нет конфига слотов)
 
 $eventTitle = (string)($event->title ?? 'Мероприятие');
 
@@ -173,7 +174,10 @@ $searchUrl = route('api.users.search');
                         <select name="position">
                             <option value="">— без позиции —</option>
                             @foreach($posLabels as $k => $lbl)
-                            <option value="{{ $k }}">{{ $lbl }}</option>
+                            @php $slotFree = array_key_exists($k, $freeSlots) ? (int)$freeSlots[$k] : null; @endphp
+                            @if($slotFree === null || $slotFree > 0)
+                            <option value="{{ $k }}">{{ $lbl }}@if($slotFree !== null) (своб: {{ $slotFree }})@endif</option>
+                            @endif
                             @endforeach
 						</select>
 					</div>
@@ -247,7 +251,11 @@ $searchUrl = route('api.users.search');
 								<select name="position">
 									<option value="">— без —</option>
 									@foreach($posLabels as $k => $lbl)
-									<option value="{{ $k }}" @selected($posKey === $k)>{{ $lbl }}</option>
+									@php
+									$slotFree = array_key_exists($k, $freeSlots) ? (int)$freeSlots[$k] : null;
+									$isFull   = $slotFree !== null && $slotFree <= 0 && $posKey !== $k;
+									@endphp
+									<option value="{{ $k }}" @selected($posKey === $k) @disabled($isFull)>{{ $lbl }}@if($isFull) (заполнено)@endif</option>
 									@endforeach
 								</select>
 								<button class="btn btn-secondary" type="submit">✓</button>
