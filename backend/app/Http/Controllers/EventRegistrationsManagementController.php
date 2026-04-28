@@ -712,7 +712,7 @@ class EventRegistrationsManagementController extends Controller
         $lines[] = str_repeat('─', 50);
         $lines[] = 'Сформировано: ' . now()->setTimezone($tz)->format('d.m.Y H:i') . ' (' . $tz . ')';
 
-        $content  = implode("\n", $lines);
+        $content  = "\xEF\xBB\xBF" . implode("\n", $lines); // UTF-8 BOM для корректного отображения кириллицы в Windows
         $filename = 'registrations-' . $event->id . '-' . now()->format('Ymd') . '.txt';
 
         return response($content, 200, [
