@@ -616,5 +616,25 @@
 		}
 		</script>
 
+		@auth
+		<script>
+		(function() {
+			var token = localStorage.getItem('push_token');
+			if (!token) return;
+			fetch('/api/device-token', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content
+				},
+				credentials: 'same-origin',
+				body: JSON.stringify({ platform: 'ios', token: token })
+			}).then(function(r) {
+				if (r.ok) localStorage.removeItem('push_token');
+			});
+		})();
+		</script>
+		@endauth
+
 	</body>
 </html>					
