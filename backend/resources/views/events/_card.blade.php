@@ -390,13 +390,7 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 						
 						@elseif ($isJoined)
                         @if ($cancel?->allowed)
-                        <form class="w-100" method="POST" action="{{ route('occurrences.leave', ['occurrence' => $occ->id]) }}">
-                            @csrf
-                            @method('DELETE')
-							
-                            <button data-title="Отменить запись?" data-text="Вы уверены?" data-confirm-text="Да, отменить" data-cancel-text="Отмена" type="submit" class="btn-alert btn btn-danger w-100">Отменить запись</button>
-							
-						</form>
+                        <a href="{{ $eventPageUrl }}" class="btn w-100">Вы записаны!</a>
                         @else
                         <div class="alert alert-info">{{ $cancel?->message ?? 'Отмена недоступна' }}</div>
                         @endif

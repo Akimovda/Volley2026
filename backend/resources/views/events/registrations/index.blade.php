@@ -42,6 +42,13 @@ return $statusText($r) === 'отменено';
 
 $activeRegistrations = $registrations->filter(fn($r) => !$isCancelled($r))->values();
 $searchUrl = route('api.users.search');
+
+$actionLabel = fn(string $a) => match($a) {
+    'registered' => ['text' => 'Записался',    'cls' => 'alert-success'],
+    'cancelled'  => ['text' => 'Отменил',      'cls' => 'alert-error'],
+    'restored'   => ['text' => 'Восстановлен', 'cls' => 'alert-info'],
+    default      => ['text' => $a,             'cls' => ''],
+};
 @endphp
 
 <x-voll-layout body_class="registrations-page">
@@ -214,6 +221,7 @@ $searchUrl = route('api.users.search');
 						@if($hasPositions)<th>Позиция</th>@endif
 						@if($isBeach)<th>Группа</th>@endif
 						<th>Статус</th>
+						<th style="min-width:130px">Дата</th>
 						@if($hasOrgNote ?? false)<th style="min-width:160px">Комментарий</th>@endif
 						<th class="text-center">Действия</th>
 					</tr>
@@ -286,6 +294,17 @@ $searchUrl = route('api.users.search');
 							<span class="f-15 p-1 pt-05 pb-05 {{ $st === 'отменено' ? 'alert-error' : 'alert-success' }}">
 								{{ $st }}
 							</span>
+						</td>
+						<td class="f-14" style="white-space:nowrap;opacity:.75;">
+							@php
+							$dateTs = $st === 'отменено' && $r->cancelled_at
+								? \Carbon\Carbon::parse($r->cancelled_at, 'UTC')->setTimezone($tz)
+								: \Carbon\Carbon::parse($r->created_at, 'UTC')->setTimezone($tz);
+							@endphp
+							<div>{{ $dateTs->format('d.m.Y') }}</div>
+							<div class="f-13">{{ $dateTs->format('H:i') }}</div>
+							@if($st === 'отменено')<div class="f-12" style="color:#c62828">отменено</div>
+							@else<div class="f-12" style="color:#2e7d32">записан</div>@endif
 						</td>
 						@if($hasOrgNote ?? false)
 						<td class="align-top">
@@ -363,6 +382,60 @@ $searchUrl = route('api.users.search');
 	</div>
 	@endif
 	
+	{{-- История действий --}}
+	@if(($registrationLogs ?? collect())->isNotEmpty())
+	<div class="ramka">
+		<h2 class="-mt-05">История действий</h2>
+		<p class="f-14" style="opacity:.6">Последние {{ $registrationLogs->count() }} событий. Данные до запуска лога восстановлены из записей.</p>
+		<div class="table-scrollable">
+			<div class="table-drag-indicator"></div>
+			<table class="table">
+				<thead>
+					<tr>
+						<th>Дата / Время</th>
+						<th>Игрок</th>
+						<th>Действие</th>
+						<th>Кем</th>
+					</tr>
+				</thead>
+				<tbody>
+					@foreach($registrationLogs as $log)
+					@php
+					$logTs  = \Carbon\Carbon::parse($log->created_at, 'UTC')->setTimezone($tz);
+					$badge  = $actionLabel($log->action);
+					$isSelf = $log->actor_id && $log->actor_id == $log->user_id;
+					@endphp
+					<tr>
+						<td class="f-14" style="white-space:nowrap">
+							<div>{{ $logTs->format('d.m.Y') }}</div>
+							<div class="f-13" style="opacity:.65">{{ $logTs->format('H:i:s') }}</div>
+						</td>
+						<td>
+							<a href="{{ route('users.show', $log->user_id) }}" class="blink b-600">{{ $log->user_name ?: ('User #'.$log->user_id) }}</a>
+							<div class="f-13" style="opacity:.5">reg #{{ $log->registration_id }}</div>
+						</td>
+						<td>
+							<span class="f-14 p-1 pt-05 pb-05 {{ $badge['cls'] }}">{{ $badge['text'] }}</span>
+						</td>
+						<td class="f-14">
+							@if($log->actor_id)
+								@if($isSelf)
+									<span style="opacity:.6">сам игрок</span>
+								@else
+									<a href="{{ route('users.show', $log->actor_id) }}" class="blink">{{ $log->actor_name ?: ('User #'.$log->actor_id) }}</a>
+								@endif
+							@else
+								<span style="opacity:.4">—</span>
+							@endif
+						</td>
+					</tr>
+					@endforeach
+				</tbody>
+			</table>
+		</div>
+	</div>
+	@endif
+
 	{{-- Экспорт --}}
 	@php
 	$exportQuery = ($occurrenceId ?? null) ? '?occurrence=' . $occurrenceId : '';

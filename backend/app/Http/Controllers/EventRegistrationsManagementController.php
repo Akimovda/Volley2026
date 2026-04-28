@@ -194,6 +194,33 @@ class EventRegistrationsManagementController extends Controller
             $endsLocal = Carbon::parse($event->ends_at, 'UTC')->setTimezone($tz);
         }
 
+        // История действий по occurrence (или всему event если occurrence не выбран)
+        $registrationLogs = collect();
+        if (Schema::hasTable('event_registration_logs')) {
+            $logsQuery = DB::table('event_registration_logs as rl')
+                ->join('users as u', 'u.id', '=', 'rl.user_id')
+                ->leftJoin('users as a', 'a.id', '=', 'rl.actor_id')
+                ->where('rl.event_id', (int) $event->id)
+                ->select([
+                    'rl.id',
+                    'rl.registration_id',
+                    'rl.user_id',
+                    'rl.actor_id',
+                    'rl.action',
+                    'rl.created_at',
+                    'u.name as user_name',
+                    'a.name as actor_name',
+                ])
+                ->orderByDesc('rl.created_at')
+                ->orderByDesc('rl.id');
+
+            if ($occurrenceId) {
+                $logsQuery->where('rl.occurrence_id', $occurrenceId);
+            }
+
+            $registrationLogs = $logsQuery->limit(200)->get();
+        }
+
         return view('events.registrations.index', [
                     'event'              => $event,
                     'location'           => $location,
@@ -220,6 +247,7 @@ class EventRegistrationsManagementController extends Controller
                     'availablePositions' => $availablePositions,
                     'freePositionSlots'  => $freePositionSlots,
                     'hasOrgNote'         => $hasOrgNote,
+                    'registrationLogs'   => $registrationLogs,
                 ]);
     }
 
@@ -306,6 +334,18 @@ class EventRegistrationsManagementController extends Controller
                     app(EventOccurrenceStatsService::class)->increment($occurrenceId);
                 }
 
+                if (Schema::hasTable('event_registration_logs')) {
+                    DB::table('event_registration_logs')->insert([
+                        'registration_id' => (int) $existing->id,
+                        'event_id'        => (int) $event->id,
+                        'occurrence_id'   => $occurrenceId ?: null,
+                        'user_id'         => $userId,
+                        'actor_id'        => (int) $authUser->id,
+                        'action'          => 'restored',
+                        'created_at'      => now(),
+                    ]);
+                }
+
                 $this->userNotificationService->createRegistrationCreatedNotification(
                     userId: $userId,
                     eventId: (int) $event->id,
@@ -333,10 +373,22 @@ class EventRegistrationsManagementController extends Controller
             $insert['position'] = $pos;
         }
 
-        DB::table('event_registrations')->insert($insert);
+        $newRegId = DB::table('event_registrations')->insertGetId($insert);
 
         if ($occurrenceId) {
             app(EventOccurrenceStatsService::class)->increment($occurrenceId);
+        }
+
+        if (Schema::hasTable('event_registration_logs')) {
+            DB::table('event_registration_logs')->insert([
+                'registration_id' => $newRegId,
+                'event_id'        => (int) $event->id,
+                'occurrence_id'   => $occurrenceId ?: null,
+                'user_id'         => $userId,
+                'actor_id'        => (int) $authUser->id,
+                'action'          => 'registered',
+                'created_at'      => now(),
+            ]);
         }
 
         $this->userNotificationService->createRegistrationCreatedNotification(
@@ -457,14 +509,28 @@ class EventRegistrationsManagementController extends Controller
             }
         }
 
+        $cancelledAt = $isCancelled ? null : now();
+
         DB::table('event_registrations')
             ->where('id', $registration)
             ->update([
-                'cancelled_at' => $isCancelled ? null : now(),
+                'cancelled_at'  => $cancelledAt,
                 'is_cancelled'  => $isCancelled ? false : true,
                 'status'        => $isCancelled ? 'confirmed' : 'cancelled',
                 'updated_at'    => now(),
             ]);
+
+        if (Schema::hasTable('event_registration_logs')) {
+            DB::table('event_registration_logs')->insert([
+                'registration_id' => $registration,
+                'event_id'        => (int) $event->id,
+                'occurrence_id'   => $row->occurrence_id ?? null,
+                'user_id'         => (int) $row->user_id,
+                'actor_id'        => (int) $authUser->id,
+                'action'          => $isCancelled ? 'restored' : 'cancelled',
+                'created_at'      => now(),
+            ]);
+        }
 
         $occId = $row->occurrence_id ?? null;
         if ($occId) {
