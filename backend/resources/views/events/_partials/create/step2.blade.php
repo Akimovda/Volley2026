@@ -565,7 +565,7 @@ if (hiddenH) hiddenH.value = h;
 
 							<label class="checkbox-item">
 								<input type="hidden" name="create_season" value="0">
-								<input type="checkbox" name="create_season" value="1" id="create_season" checked>
+								<input type="checkbox" name="create_season" value="1" id="create_season">
 								<div class="custom-checkbox"></div>
 								<span>Создать как серию турниров Лиги</span>
 							</label>
@@ -632,12 +632,24 @@ if (hiddenH) hiddenH.value = h;
 											</select>
 										</div>
 									</div>
-									<div class="col-md-6">
+									{{-- Сезон — показывается после выбора лиги --}}
+									<div class="col-md-6" id="season_col" style="display:none;">
 										<div class="card">
 											<label>Сезон</label>
-											<select name="existing_season_id" id="existing_season_id">
-												<option value="">— сначала выберите лигу —</option>
+											<select name="existing_season_mode" id="existing_season_mode" class="mb-2">
+												<option value="existing">Выбрать существующий</option>
+												<option value="new">Создать новый</option>
 											</select>
+											<div id="existing_season_wrap">
+												<select name="existing_season_id" id="existing_season_id">
+													<option value="">— выбрать сезон —</option>
+												</select>
+											</div>
+											<div id="new_season_wrap" style="display:none;">
+												<input type="text" name="new_season_name" id="new_season_name"
+													placeholder="Например: Сезон 2026"
+													class="w-full rounded-lg border-gray-200">
+											</div>
 										</div>
 									</div>
 								</div>
@@ -654,8 +666,12 @@ if (hiddenH) hiddenH.value = h;
 							const leagueMode     = document.getElementById('season_league_mode');
 							const newFields      = document.getElementById('new_league_fields');
 							const existingFields = document.getElementById('existing_league_fields');
-							const seasonSelect   = document.getElementById('existing_season_id');
-							const leagueSelect   = document.getElementById('existing_league_id');
+							const leagueSelect        = document.getElementById('existing_league_id');
+							const seasonCol           = document.getElementById('season_col');
+							const seasonModeSelect    = document.getElementById('existing_season_mode');
+							const existingSeasonWrap  = document.getElementById('existing_season_wrap');
+							const newSeasonWrap       = document.getElementById('new_season_wrap');
+							const seasonSelect        = document.getElementById('existing_season_id');
 
 							const leaguesData = @php
 							$leaguesJs = [];
@@ -695,18 +711,35 @@ if (hiddenH) hiddenH.value = h;
 								existingFields.style.display = (mode === 'existing') ? '' : 'none';
 							}
 
+							function syncSeasonMode() {
+								const mode = seasonModeSelect ? seasonModeSelect.value : 'existing';
+								existingSeasonWrap.style.display = (mode === 'existing') ? '' : 'none';
+								newSeasonWrap.style.display      = (mode === 'new')      ? '' : 'none';
+							}
+
 							function populateSeasons() {
 								const lid = parseInt(leagueSelect.value);
 								seasonSelect.innerHTML = '<option value="">— выбрать сезон —</option>';
+								if (!lid) { seasonCol.style.display = 'none'; return; }
+
 								const league = leaguesData.find(l => l.id === lid);
-								if (league) {
+								const hasSeason = league && league.seasons.length > 0;
+
+								if (hasSeason) {
 									league.seasons.forEach(s => {
 										const opt = document.createElement('option');
 										opt.value = s.id;
 										opt.textContent = s.name;
 										seasonSelect.appendChild(opt);
 									});
+									if (seasonModeSelect) seasonModeSelect.value = 'existing';
+								} else {
+									// нет сезонов — сразу режим создания нового
+									if (seasonModeSelect) seasonModeSelect.value = 'new';
 								}
+
+								seasonCol.style.display = '';
+								syncSeasonMode();
 							}
 
 							if (formatSelect) {
@@ -716,7 +749,8 @@ if (hiddenH) hiddenH.value = h;
 							if (isRecurring)   isRecurring.addEventListener('change', syncSeasonBox);
 							if (createSeason)  createSeason.addEventListener('change', syncSeasonFields);
 							if (leagueMode)    leagueMode.addEventListener('change', syncLeagueMode);
-							if (leagueSelect)  leagueSelect.addEventListener('change', populateSeasons);
+							if (leagueSelect)     leagueSelect.addEventListener('change', populateSeasons);
+							if (seasonModeSelect) seasonModeSelect.addEventListener('change', syncSeasonMode);
 
 							syncSeasonBox();
 							syncSeasonFields();
