@@ -26,7 +26,7 @@ class EnsureProfileCompleted
     {
         $user = $request->user();
 
-        if (!$user || !is_null($user->profile_completed_at)) {
+        if (!$user) {
             return $next($request);
         }
 
@@ -43,11 +43,12 @@ class EnsureProfileCompleted
             }
         }
 
-        // Имя заполнено (пришло через OAuth) — считаем профиль завершённым
-        $name = trim((string) ($user->name ?? ''));
-        if ($name !== '' && $name !== 'Пользователь') {
-            $user->profile_completed_at = now();
-            $user->save();
+        if ($user->isProfileComplete()) {
+            // Фиксируем дату первого заполнения если ещё не стоит
+            if (is_null($user->profile_completed_at)) {
+                $user->profile_completed_at = now();
+                $user->save();
+            }
             return $next($request);
         }
 
