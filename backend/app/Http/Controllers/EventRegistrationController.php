@@ -159,14 +159,26 @@ class EventRegistrationController extends Controller
         try {
             return $this->persistRegistration($user, $occurrence, $position, $subscriptionId, $couponCode);
         } catch (\Exception $e) {
+            $isNoSlots = in_array($e->getMessage(), [
+                'Свободных мест на этой позиции больше нет.',
+                'Все места для запасных игроков заняты.',
+            ]);
+            $friendlyMsg = $isNoSlots
+                ? 'Ой, вы не успели занять место 🐌, кто-то был быстрее Вас!'
+                : $e->getMessage();
+
             if ($request->ajax() || $request->wantsJson()) {
-                return response()->json(['ok' => false, 'message' => $e->getMessage()], 422);
+                return response()->json([
+                    'ok'       => false,
+                    'message'  => $friendlyMsg,
+                    'no_slots' => $isNoSlots,
+                ], 422);
             }
 
             return redirect()->route('events.show', [
                 'event'      => (int) $event->id,
                 'occurrence' => (int) $occurrence->id,
-            ])->with('error', $e->getMessage());
+            ])->with('error', $friendlyMsg);
         }
     }
 
