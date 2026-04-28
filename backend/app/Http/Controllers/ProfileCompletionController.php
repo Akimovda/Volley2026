@@ -148,13 +148,19 @@
 			// -------------------------------------------------
 			// 4. Save
 			// -------------------------------------------------
-			$isFirstCompletion = is_null($target->profile_completed_at) && $target->id === $actor->id;
+			$wasComplete = !is_null($target->profile_completed_at);
 
 			$target->fill($result->data);
 
-			if ($isFirstCompletion) {
-				$target->profile_completed_at = now();
+			if ($target->isProfileComplete()) {
+				if (is_null($target->profile_completed_at)) {
+					$target->profile_completed_at = now();
+				}
+			} else {
+				$target->profile_completed_at = null;
 			}
+
+			$isFirstCompletion = !$wasComplete && !is_null($target->profile_completed_at) && $target->id === $actor->id;
 
 			$target->save();
 

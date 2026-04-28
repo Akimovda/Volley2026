@@ -212,6 +212,16 @@
 		// Roles
 		// --------------------------------------------------
 		
+		public function isProfileComplete(): bool
+		{
+			return !empty($this->first_name)
+				&& !empty($this->last_name)
+				&& !empty($this->patronymic)
+				&& !empty($this->birth_date)
+				&& !empty($this->phone)
+				&& !empty($this->city_id);
+		}
+
 		public function isAdmin(): bool
 		{
 			return ProfileUpdateGuard::isAdmin($this);

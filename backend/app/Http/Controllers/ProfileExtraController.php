@@ -310,9 +310,12 @@ class ProfileExtraController extends Controller
 
         // Если пришли со страницы завершения профиля — фиксируем первое заполнение и редиректим
         if ($request->boolean('from_complete')) {
-            if (!$isEditingOther && is_null($target->profile_completed_at)) {
-                $target->profile_completed_at = now();
-                $target->save();
+            if (!$isEditingOther) {
+                $target->refresh();
+                if ($target->isProfileComplete() && is_null($target->profile_completed_at)) {
+                    $target->profile_completed_at = now();
+                    $target->save();
+                }
             }
 
             return redirect()->route('events.index')
