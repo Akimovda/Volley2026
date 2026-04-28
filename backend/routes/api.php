@@ -44,8 +44,8 @@ Route::get('/occurrences/{occurrence}/stats', function (string $occurrence) {
 });
 Route::post('/integrations/channels/set-thread', [\App\Http\Controllers\Api\ChannelSetThreadController::class, '__invoke']);
 
-// Push-уведомления — device tokens
-Route::middleware('auth:sanctum')->group(function () {
+// Push-уведомления — device tokens (поддержка и sanctum-токена, и web-сессии)
+Route::middleware('auth:sanctum,web')->group(function () {
     Route::post('/device-token', [\App\Http\Controllers\Api\DeviceTokenController::class, 'store']);
     Route::delete('/device-token', [\App\Http\Controllers\Api\DeviceTokenController::class, 'destroy']);
 });
