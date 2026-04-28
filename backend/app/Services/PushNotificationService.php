@@ -22,17 +22,43 @@ final class PushNotificationService
         $this->production     = (bool)   config('apn.production', false);
     }
 
-    public function send(int $userId, string $title, string $body, array $data = []): void
+    /**
+     * @return array{sent: int, failed: int, skipped: int}
+     */
+    public function send(int $userId, string $title, string $body, array $data = []): array
     {
+        $result = ['sent' => 0, 'failed' => 0, 'skipped' => 0];
+
         $tokens = DeviceToken::where('user_id', $userId)
             ->where('is_active', true)
             ->where('platform', 'ios')
             ->pluck('token');
 
+        Log::info('APNs send() called', [
+            'user_id'      => $userId,
+            'title'        => $title,
+            'tokens_found' => $tokens->count(),
+        ]);
+
+        if ($tokens->isEmpty()) {
+            Log::info('APNs: no active iOS tokens for user, skipping.', ['user_id' => $userId]);
+            return $result;
+        }
+
         foreach ($tokens as $token) {
             try {
-                $this->sendToToken($token, $title, $body, $data);
+                $sent = $this->sendToToken($token, $title, $body, $data);
+                if ($sent) {
+                    $result['sent']++;
+                    Log::info('APNs push sent', [
+                        'user_id' => $userId,
+                        'token'   => substr($token, 0, 10) . '...',
+                    ]);
+                } else {
+                    $result['skipped']++;
+                }
             } catch (\Throwable $e) {
+                $result['failed']++;
                 Log::warning('APNs push failed', [
                     'user_id' => $userId,
                     'token'   => substr($token, 0, 10) . '...',
@@ -40,18 +66,31 @@ final class PushNotificationService
                 ]);
             }
         }
+
+        Log::info('APNs send() finished', array_merge(['user_id' => $userId], $result));
+
+        return $result;
     }
 
-    private function sendToToken(string $token, string $title, string $body, array $data): void
+    private function sendToToken(string $token, string $title, string $body, array $data): bool
     {
-        if ($this->keyId === '' || $this->teamId === '' || $this->bundleId === '' || $this->privateKeyPath === '') {
-            Log::debug('APNs not configured, skipping push notification.');
-            return;
+        $missing = array_filter([
+            'key_id'          => $this->keyId,
+            'team_id'         => $this->teamId,
+            'bundle_id'       => $this->bundleId,
+            'private_key_path' => $this->privateKeyPath,
+        ], fn($v) => $v === '');
+
+        if ($missing !== []) {
+            Log::warning('APNs not configured, skipping push notification.', [
+                'missing_keys' => array_keys($missing),
+            ]);
+            return false;
         }
 
         if (!file_exists($this->privateKeyPath)) {
             Log::warning('APNs private key not found: ' . $this->privateKeyPath);
-            return;
+            return false;
         }
 
         $jwt  = $this->buildJwt();
@@ -90,14 +129,22 @@ final class PushNotificationService
             throw new \RuntimeException('APNs curl error: ' . $curlError);
         }
 
+        Log::debug('APNs HTTP response', [
+            'token'    => substr($token, 0, 10) . '...',
+            'httpCode' => $httpCode,
+            'response' => $response ?: '(empty)',
+        ]);
+
         if ($httpCode !== 200) {
-            // 410 = token no longer valid → deactivate
             if ($httpCode === 410) {
                 DeviceToken::where('token', $token)->update(['is_active' => false]);
-                return;
+                Log::info('APNs token deactivated (410 Gone)', ['token' => substr($token, 0, 10) . '...']);
+                return false;
             }
             throw new \RuntimeException("APNs HTTP {$httpCode}: {$response}");
         }
+
+        return true;
     }
 
     private function buildJwt(): string
