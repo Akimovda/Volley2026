@@ -817,6 +817,24 @@
                         открытия регистрации и обновления списков участников.
 					</p>
 					
+                    {{-- Уведомления о записях игроков --}}
+                    <div class="mt-2 pt-2" style="border-top:1px solid var(--border-color, #e0e0e0)">
+                        <div class="f-15 b-600 mb-05">🔔 Уведомления о записях игроков</div>
+                        <p class="f-14 text-muted mb-1">
+                            При каждой записи или отмене записи на ваши мероприятия — личное сообщение от нашего бота через Telegram, VK или MAX.
+                        </p>
+                        <form method="POST" action="{{ route('profile.notification_channels.settings') }}" class="d-flex align-items-center gap-1">
+                            @csrf
+                            <label class="d-flex align-items-center gap-05" style="cursor:pointer;font-size:1rem">
+                                <input type="hidden" name="notify_player_registrations" value="0">
+                                <input type="checkbox" name="notify_player_registrations" value="1"
+                                       onchange="this.form.submit()"
+                                       {{ $notifyPlayerRegistrations ? 'checked' : '' }}>
+                                <span>{{ $notifyPlayerRegistrations ? 'Включены' : 'Выключены' }}</span>
+                            </label>
+                        </form>
+                    </div>
+
                     <div class="mt-2 m-center">
                         <a href="{{ route('profile.notification_channels') }}" class="btn">
                             Управление каналами уведомлений

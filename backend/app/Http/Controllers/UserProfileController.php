@@ -19,9 +19,10 @@ class UserProfileController extends Controller
             ->exists();
 
         return view('profile.show', [
-            'request'                    => $request,
-            'user'                       => $user,
-            'hasPendingOrganizerRequest' => $hasPendingOrganizerRequest,
+            'request'                       => $request,
+            'user'                          => $user,
+            'hasPendingOrganizerRequest'    => $hasPendingOrganizerRequest,
+            'notifyPlayerRegistrations'     => (bool) ($user->notify_player_registrations ?? false),
         ]);
     }
 }
