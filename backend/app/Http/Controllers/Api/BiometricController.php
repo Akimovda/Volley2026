@@ -56,7 +56,7 @@ class BiometricController extends Controller
         Auth::login($user, true);
         $request->session()->regenerate();
 
-        return response()->json(['ok' => true, 'redirect' => '/dashboard']);
+        return response()->json(['ok' => true, 'redirect' => '/events']);
     }
 
     public function revoke(Request $request): JsonResponse
