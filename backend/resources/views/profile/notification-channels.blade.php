@@ -22,38 +22,37 @@
         {{-- ======= ИНСТРУКЦИЯ ======= --}}
         <div class="ramka">
             <div class="alert alert-info mb-2">
-                <div class="alert-title b-700 f-17">❓ Что такое каналы уведомлений и зачем они нужны?</div>
+                <div class="alert-title b-700 f-17">❓ Что такое каналы уведомлений?</div>
                 <p class="mt-1 mb-0">
-                    <strong>Канал уведомлений</strong> — это ваш чат, группа или канал
-                    в <strong>Telegram</strong>, <strong>VK</strong> или <strong>MAX</strong>,
-                    куда наш бот будет автоматически отправлять анонсы ваших мероприятий:
-                    когда вы создаёте игру, когда появляются свободные места, напоминания и т.&nbsp;д.
+                    Это ваш чат или канал в <strong>Telegram</strong> / <strong>MAX</strong>,
+                    куда наш бот автоматически отправляет анонсы ваших мероприятий.
+                    Для <strong>ВКонтакте</strong> анонсы публикуются прямо на стене вашего сообщества —
+                    через ключ доступа (см. блок ниже).
                 </p>
             </div>
 
-            <h3 class="mt-0">📋 Как это работает — 3 шага</h3>
+            <h3 class="mt-0">📋 Telegram и MAX — как подключить</h3>
 
             <div class="row">
                 <div class="col-md-4">
                     <div class="card h-100">
                         <div class="f-30 text-center mb-05">1️⃣</div>
-                        <div class="b-700 f-16 text-center mb-05">Создаёте ссылку привязки</div>
+                        <div class="b-700 f-16 text-center mb-05">Создайте ссылку привязки</div>
                         <p class="f-14 mb-0">
-                            Ниже в блоке <strong>«Подключить канал»</strong> выбираете платформу
-                            (Telegram / VK / MAX), придумываете название — и жмёте кнопку.
-                            Сервис сгенерирует уникальную ссылку-приглашение для бота.
+                            В блоке <strong>«Подключить канал»</strong> выберите платформу
+                            (Telegram или MAX), придумайте название — и нажмите кнопку.
+                            Сервис сгенерирует уникальную ссылку-приглашение.
                         </p>
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="card h-100">
                         <div class="f-30 text-center mb-05">2️⃣</div>
-                        <div class="b-700 f-16 text-center mb-05">Добавляете бота в чат</div>
+                        <div class="b-700 f-16 text-center mb-05">Добавьте бота в чат</div>
                         <p class="f-14 mb-0">
-                            Нажимаете на кнопку из инструкции — открывается мессенджер.
-                            Выбираете свою группу или канал и добавляете туда бота
-                            <strong>с правами администратора</strong>
-                            (чтобы он мог писать сообщения).
+                            Нажмите кнопку «Открыть» — откроется мессенджер.
+                            Выберите свою группу или канал и добавьте бота
+                            <strong>с правами администратора</strong>.
                         </p>
                     </div>
                 </div>
@@ -63,21 +62,19 @@
                         <div class="b-700 f-16 text-center mb-05">Канал подтверждён</div>
                         <p class="f-14 mb-0">
                             Бот автоматически отметит канал как подтверждённый.
-                            Обновите страницу — увидите его в списке справа с зелёным бейджем
+                            Обновите страницу — увидите его в списке с бейджем
                             <span class="badge badge-green">подтверждён</span>.
-                            Теперь можно использовать его для анонсов.
                         </p>
                     </div>
                 </div>
             </div>
 
-            {{-- Пошаговки для каждой платформы --}}
-            <h3>🧭 Подробные инструкции по платформам</h3>
+            {{-- Пошаговки для Telegram и MAX --}}
+            <h3>🧭 Инструкции по платформам</h3>
 
             <div class="tabs-content">
                 <div class="tabs">
                     <div class="tab active" data-tab="howto-tg">✈️ Telegram</div>
-                    <div class="tab" data-tab="howto-vk">🔵 VK</div>
                     <div class="tab" data-tab="howto-max">💬 MAX</div>
                     <div class="tab-highlight"></div>
                 </div>
@@ -85,35 +82,23 @@
 
                     <div class="tab-pane active" id="howto-tg">
                         <ol class="list">
-                            <li>Создайте или откройте свою <strong>группу / супергруппу / канал</strong> в Telegram, куда будут приходить анонсы.</li>
-                            <li>В блоке ниже выберите <strong>Telegram</strong>, укажите название (для себя) и нажмите <strong>«Создать ссылку привязки»</strong>.</li>
+                            <li>Создайте или откройте свою <strong>группу / супергруппу / канал</strong> в Telegram.</li>
+                            <li>В блоке ниже выберите <strong>Telegram</strong>, укажите название и нажмите <strong>«Создать ссылку привязки»</strong>.</li>
                             <li>Появится кнопка <strong>«Подключить Telegram»</strong> — нажмите её.</li>
-                            <li>Telegram предложит выбрать чат — выберите нужный. Бот автоматически добавится в чат.</li>
-                            <li>⚠️ <strong>Важно:</strong> дайте боту права <strong>администратора</strong>, иначе он не сможет публиковать сообщения.</li>
-                            <li>Бот пришлёт подтверждение в чат — канал готов. Обновите эту страницу.</li>
-                        </ol>
-                    </div>
-
-                    <div class="tab-pane" id="howto-vk">
-                        <ol class="list">
-                            <li>Создайте или откройте свою <strong>группу ВКонтакте</strong> (именно сообщество, не личную страницу).</li>
-                            <li>Включите в сообществе <strong>сообщения сообщества</strong>: <em>Управление → Сообщения → Включено</em>.</li>
-                            <li>Здесь выберите <strong>VK</strong> и нажмите <strong>«Создать ссылку привязки»</strong> — скопируйте появившийся код вида <code>bind_xxxxx</code>.</li>
-                            <li>Нажмите <strong>«Открыть VK»</strong> — откроется диалог с нашим ботом.</li>
-                            <li>Добавьте бота в свою группу как <strong>администратора</strong> или напишите ему в личку из своей группы.</li>
-                            <li>Отправьте боту сообщение с кодом <code>bind_xxxxx</code> — привязка завершится автоматически.</li>
-                            <li>Обновите эту страницу — канал появится в списке подтверждённых.</li>
+                            <li>Telegram предложит выбрать чат — выберите нужный. Бот добавится автоматически.</li>
+                            <li>⚠️ Дайте боту права <strong>администратора</strong> — иначе он не сможет публиковать сообщения.</li>
+                            <li>Бот пришлёт подтверждение в чат. Обновите эту страницу.</li>
                         </ol>
                     </div>
 
                     <div class="tab-pane" id="howto-max">
                         <ol class="list">
-                            <li>Создайте или откройте свой <strong>чат в MAX</strong>, куда будут приходить анонсы.</li>
+                            <li>Создайте или откройте свой <strong>чат в MAX</strong>.</li>
                             <li>Добавьте в чат нашего MAX-бота <strong>с правами администратора</strong>.</li>
-                            <li>Здесь выберите <strong>MAX</strong> и нажмите <strong>«Создать ссылку привязки»</strong>.</li>
-                            <li>Нажмите кнопку <strong>«Открыть MAX»</strong> — откроется бот с уже переданным токеном.</li>
-                            <li>Бот покажет список чатов, где он состоит — выберите нужный.</li>
-                            <li>Готово! Обновите страницу — канал отметится как подтверждённый.</li>
+                            <li>В блоке ниже выберите <strong>MAX</strong> и нажмите <strong>«Создать ссылку привязки»</strong>.</li>
+                            <li>Нажмите <strong>«Открыть MAX»</strong> — откроется бот с уже переданным токеном.</li>
+                            <li>Бот покажет список чатов — выберите нужный.</li>
+                            <li>Готово! Обновите страницу.</li>
                         </ol>
                     </div>
 
@@ -122,9 +107,8 @@
 
             <div class="alert alert-warning mt-2 mb-0">
                 <strong>💡 Совет:</strong> можно подключить <strong>несколько каналов</strong> на разных платформах —
-                анонсы будут дублироваться во все подтверждённые каналы одновременно.
-                Если ссылка привязки не сработала — она действительна <strong>30 минут</strong>,
-                после чего нужно создать новую.
+                анонсы дублируются во все подтверждённые каналы одновременно.
+                Ссылка привязки действительна <strong>30 минут</strong>.
             </div>
         </div>
 
@@ -167,48 +151,21 @@
         </div>
         @endif
 
-        {{-- ======= УВЕДОМЛЕНИЯ О РЕГИСТРАЦИЯХ ======= --}}
-        <div class="ramka">
-            <h3 class="mt-0">🔔 Уведомления о записях игроков</h3>
-            <p class="f-15">
-                Когда включено — при каждой записи или отмене записи на ваши мероприятия
-                вы будете получать сообщение во <strong>все подключённые каналы</strong>.
-            </p>
-
-            <div class="alert alert-warning mb-2">
-                <strong>⚠️ Внимание!</strong> Включая данную функцию, вы можете получать
-                <strong>очень много сообщений</strong>, особенно если у вас много мероприятий
-                с активной записью. Убедитесь, что это вам нужно.
-            </div>
-
-            <form method="POST" action="{{ route('profile.notification_channels.settings') }}" class="d-flex align-items-center gap-1">
-                @csrf
-                <label class="d-flex align-items-center gap-05" style="cursor:pointer;font-size:1rem">
-                    <input type="hidden" name="notify_player_registrations" value="0">
-                    <input type="checkbox" name="notify_player_registrations" value="1"
-                           onchange="this.form.submit()"
-                           {{ ($notifyPlayerRegistrations ?? false) ? 'checked' : '' }}>
-                    <span>{{ ($notifyPlayerRegistrations ?? false) ? 'Уведомления включены' : 'Уведомления выключены' }}</span>
-                </label>
-            </form>
-        </div>
-
         <div class="row row2">
 
-            {{-- Левая колонка: подключить системный канал --}}
+            {{-- Левая колонка: подключить системный канал (Telegram / MAX) --}}
             <div class="col-lg-6">
                 <div class="ramka">
                     <h3 class="mt-0">📡 Подключить канал</h3>
-                    <p class="f-15 text-muted">Системный бот сервиса отправляет анонсы в вашу группу или канал.</p>
+                    <p class="f-15 text-muted">Системный бот отправляет анонсы в ваш чат или канал.</p>
 
                     <form method="POST" action="{{ route('profile.notification_channels.bind') }}" class="form">
                         @csrf
                         <div class="card">
                             <label class="f-15 b-600 mb-05">Платформа</label>
                             <select name="platform" class="w-100">
-                                <option value="telegram" {{ old('platform','telegram')==='telegram'?'selected':'' }}>Telegram</option>
-                                <option value="vk"       {{ old('platform')==='vk'?'selected':'' }}>VK</option>
-                                <option value="max"      {{ old('platform')==='max'?'selected':'' }}>MAX</option>
+                                <option value="telegram" {{ old('platform','telegram')==='telegram'?'selected':'' }}>✈️ Telegram</option>
+                                <option value="max"      {{ old('platform')==='max'?'selected':'' }}>💬 MAX</option>
                             </select>
                             @error('platform')<div class="red f-14 mt-05">{{ $message }}</div>@enderror
                         </div>
@@ -325,12 +282,12 @@
         <div class="ramka">
             <h3 class="mt-0">🔵 Привязать VK-сообщество</h3>
             <p class="f-15 mb-2">
-                Анонсы ваших мероприятий будут автоматически публиковаться на стене сообщества.
-                Бот не нужен — используется ключ доступа, который вы создаёте сами в настройках своего сообщества.
+                Анонсы будут публиковаться на стене вашего VK-сообщества.
+                Бот не нужен — используется ключ доступа, который вы создаёте в настройках своего сообщества.
             </p>
 
             <div class="alert alert-info mb-2">
-                <div class="b-700 f-15 mb-1">Как привязать VK-сообщество — 5 шагов</div>
+                <div class="b-700 f-15 mb-1">Как создать ключ доступа — 5 шагов</div>
                 <ol class="list mb-0">
                     <li>Откройте ваше сообщество ВКонтакте → <strong>Управление</strong> → <strong>Работа с API</strong></li>
                     <li>Нажмите <strong>«Создать ключ»</strong></li>
@@ -341,7 +298,7 @@
                         </ul>
                     </li>
                     <li>Нажмите <strong>«Создать»</strong> и скопируйте полученный ключ</li>
-                    <li>Вставьте ключ в поле ниже и нажмите <strong>«Привязать»</strong></li>
+                    <li>Вставьте адрес сообщества и ключ в поля ниже, нажмите <strong>«Привязать»</strong></li>
                 </ol>
                 <div class="f-13 text-muted mt-1">
                     ⚠️ Ключ хранится в зашифрованном виде и используется только для публикации анонсов.
@@ -469,8 +426,8 @@
         {{-- Последние запросы привязки --}}
         <div class="ramka">
             <h3 class="mt-0">🔗 Последние запросы привязки</h3>
-<div class="table-scrollable">
-	<div class="table-drag-indicator"></div>
+            <div class="table-scrollable">
+                <div class="table-drag-indicator"></div>
                 <table class="table">
                     <thead>
                         <tr>
