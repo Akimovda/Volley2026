@@ -698,14 +698,18 @@
 			if (!NativeBiometric) return;
 
 			async function offerBiometricSetup() {
+				console.log('BIOMETRIC: start setup');
 				try {
 					var avail = await NativeBiometric.isAvailable();
+					console.log('BIOMETRIC: isAvailable result', avail);
 					if (!avail.isAvailable) return;
 
+					console.log('BIOMETRIC: checking credentials');
 					try {
 						var creds = await NativeBiometric.getCredentials({ server: 'volleyplay.club' });
+						console.log('BIOMETRIC: credentials check', creds);
 						if (creds && creds.password) return;
-					} catch (e) { /* нет credentials — предложить */ }
+					} catch (e) { console.log('BIOMETRIC: credentials check error (no creds)', e); }
 
 					if (sessionStorage.getItem('biometric_offered')) return;
 					sessionStorage.setItem('biometric_offered', 'true');
@@ -719,9 +723,13 @@
 							confirm: 'Включить'
 						}
 					});
+					console.log('BIOMETRIC: swal result', result);
 					if (!result) return;
 
-					var token = crypto.randomUUID();
+					var token = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, function(c) {
+						return (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16);
+					});
+					console.log('BIOMETRIC: generated token', token);
 
 					var resp = await fetch('/api/biometric/register', {
 						method: 'POST',
@@ -733,17 +741,20 @@
 						credentials: 'same-origin',
 						body: JSON.stringify({ biometric_token: token })
 					});
+					console.log('BIOMETRIC: register response', resp.status);
 
 					if (resp.ok) {
+						console.log('BIOMETRIC: setCredentials calling');
 						await NativeBiometric.setCredentials({
 							username: 'volleyplay_user',
 							password: token,
 							server: 'volleyplay.club'
 						});
+						console.log('BIOMETRIC: setCredentials done');
 						swal('Готово!', 'Face ID включён. В следующий раз вы войдёте мгновенно.', 'success');
 					}
 				} catch (e) {
-					console.log('Biometric setup error:', e);
+					console.log('BIOMETRIC: ERROR', e);
 				}
 			}
 
