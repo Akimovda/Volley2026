@@ -711,6 +711,7 @@
 						if (creds && creds.password) return;
 					} catch (e) { console.log('BIOMETRIC: credentials check error (no creds)', e); }
 
+					console.log('BIOMETRIC: showing swal dialog');
 					if (sessionStorage.getItem('biometric_offered')) return;
 					sessionStorage.setItem('biometric_offered', 'true');
 
