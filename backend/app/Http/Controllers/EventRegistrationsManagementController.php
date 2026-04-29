@@ -353,6 +353,16 @@ class EventRegistrationsManagementController extends Controller
                     eventTitle: (string) ($event->title ?? ('Мероприятие #' . $event->id))
                 );
 
+                if ($occurrenceId) {
+                    \App\Jobs\NotifyOrganizerRegistrationJob::dispatch(
+                        $occurrenceId,
+                        $userId,
+                        'org_registered',
+                        (int) $authUser->id,
+                        $pos ?: null
+                    )->onQueue('default')->afterCommit();
+                }
+
                 return back()->with('status', 'Игрок восстановлен ✅');
             }
 
@@ -397,6 +407,16 @@ class EventRegistrationsManagementController extends Controller
             occurrenceId: $occurrenceId ?: null,
             eventTitle: (string) ($event->title ?? ('Мероприятие #' . $event->id))
         );
+
+        if ($occurrenceId) {
+            \App\Jobs\NotifyOrganizerRegistrationJob::dispatch(
+                $occurrenceId,
+                $userId,
+                'org_registered',
+                (int) $authUser->id,
+                $pos ?: null
+            )->onQueue('default')->afterCommit();
+        }
 
         // Лог Staff
         if ($authUser->isStaff()) {
@@ -493,7 +513,7 @@ class EventRegistrationsManagementController extends Controller
         $row = DB::table('event_registrations')
             ->where('id', $registration)
             ->where('event_id', (int) $event->id)
-            ->first(['id', 'user_id', 'group_key', 'cancelled_at', 'occurrence_id']);
+            ->first(['id', 'user_id', 'group_key', 'cancelled_at', 'occurrence_id', 'position']);
 
         if (!$row) {
             return back()->with('error', 'Регистрация не найдена.');
@@ -549,6 +569,16 @@ class EventRegistrationsManagementController extends Controller
                 eventTitle: (string) ($event->title ?? ('Мероприятие #' . $event->id))
             );
 
+            if ($occId) {
+                \App\Jobs\NotifyOrganizerRegistrationJob::dispatch(
+                    (int) $occId,
+                    (int) $row->user_id,
+                    'org_registered',
+                    (int) $authUser->id,
+                    $row->position ?: null
+                )->onQueue('default')->afterCommit();
+            }
+
             return back()->with('status', 'Восстановлено ✅');
         }
 
@@ -559,6 +589,16 @@ class EventRegistrationsManagementController extends Controller
             eventTitle: (string) ($event->title ?? ('Мероприятие #' . $event->id)),
             cancelledByUserId: (int) $authUser->id
         );
+
+        if ($occId) {
+            \App\Jobs\NotifyOrganizerRegistrationJob::dispatch(
+                (int) $occId,
+                (int) $row->user_id,
+                'org_cancelled',
+                (int) $authUser->id,
+                $row->position ?: null
+            )->onQueue('default')->afterCommit();
+        }
 
         // Лог Staff
         if ($authUser->isStaff()) {
@@ -583,7 +623,7 @@ class EventRegistrationsManagementController extends Controller
         $row = DB::table('event_registrations')
             ->where('id', $registration)
             ->where('event_id', (int) $event->id)
-            ->first(['id', 'user_id', 'group_key', 'occurrence_id', 'cancelled_at', 'is_cancelled', 'status']);
+            ->first(['id', 'user_id', 'group_key', 'occurrence_id', 'cancelled_at', 'is_cancelled', 'status', 'position']);
 
         if (!$row) {
             return back()->with('error', 'Регистрация не найдена.');
@@ -619,6 +659,16 @@ class EventRegistrationsManagementController extends Controller
             eventTitle: (string) ($event->title ?? ('Мероприятие #' . $event->id)),
             cancelledByUserId: (int) $authUser->id
         );
+
+        if (!empty($row->occurrence_id)) {
+            \App\Jobs\NotifyOrganizerRegistrationJob::dispatch(
+                (int) $row->occurrence_id,
+                (int) $row->user_id,
+                'org_deleted',
+                (int) $authUser->id,
+                $row->position ?: null
+            )->onQueue('default')->afterCommit();
+        }
 
         // Лог Staff
         if ($authUser->isStaff()) {

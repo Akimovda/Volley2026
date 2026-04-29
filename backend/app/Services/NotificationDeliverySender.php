@@ -277,14 +277,17 @@ final class NotificationDeliverySender
 
         // ---- Эмодзи по типу уведомления ----
         $emoji = match ($type) {
-            'registration_created'                                  => '✅',
+            'registration_created'                                       => '✅',
             'registration_cancelled',
-            'registration_cancelled_by_organizer'                   => '❌',
-            'event_reminder'                                        => '⏰',
-            'event_cancelled', 'event_cancelled_quorum'             => '🚫',
-            'group_invite', 'tournament_team_invite'                => '🤝',
-            'event_invite'                                          => '🏐',
-            default                                                 => '📢',
+            'registration_cancelled_by_organizer'                        => '❌',
+            'event_reminder'                                             => '⏰',
+            'event_cancelled', 'event_cancelled_quorum'                  => '🚫',
+            'group_invite', 'tournament_team_invite'                     => '🤝',
+            'event_invite'                                               => '🏐',
+            'organizer_player_registered', 'organizer_registered_player' => '✅',
+            'organizer_player_cancelled',  'organizer_cancelled_player'  => '⛔️',
+            'organizer_deleted_player'                                   => '🗑',
+            default                                                      => '📢',
         };
 
         $lines = [];
