@@ -731,7 +731,7 @@
 					});
 					console.log('BIOMETRIC: generated token', token);
 
-					var resp = await fetch('/api/biometric/register', {
+					var resp = await fetch('/auth/biometric-register', {
 						method: 'POST',
 						headers: {
 							'Content-Type': 'application/json',

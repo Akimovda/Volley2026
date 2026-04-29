@@ -247,7 +247,11 @@ Route::get('/auth/telegram/callback', [TelegramAuthController::class, 'callback'
 	Route::get('/auth/yandex/redirect', [YandexAuthController::class, 'redirect'])->name('auth.yandex.redirect');
 	Route::get('/auth/yandex/callback', [YandexAuthController::class, 'callback'])->name('auth.yandex.callback');
 	Route::post('/auth/biometric-login', [\App\Http\Controllers\Api\BiometricController::class, 'webLogin'])->name('auth.biometric.login');
-	
+
+	Route::middleware(['auth:sanctum', config('jetstream.auth_session')])->group(function () {
+		Route::post('/auth/biometric-register', [\App\Http\Controllers\Api\BiometricController::class, 'register'])->name('auth.biometric.register');
+	});
+
 	/*
 		|--------------------------------------------------------------------------
 		| AUTH: Турниры (команды, заявки, приглашения)
