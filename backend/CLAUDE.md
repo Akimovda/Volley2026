@@ -303,10 +303,12 @@ sudo supervisorctl restart volleyplay-queue:* volleyplay-reverb
 - deleteCredentials только при 422 (невалидный токен), при 419/500 — сохранять credentials
 - SESSION_SAME_SITE=none (нужен для WebView OAuth), SESSION_SECURE_COOKIE=true
 
-### Universal Links (НЕ настроено, требует работы)
-- AASA файл отсутствует: public/.well-known/apple-app-site-association не создан
-- nginx блокирует /.well-known/ правилом `location ~ /\. { deny all; }`
-- Для настройки нужно:
-  1. Создать public/.well-known/apple-app-site-association с TEAM_ID и BUNDLE_ID
-  2. Добавить в nginx ДО deny-правила: `location ^~ /.well-known/ { allow all; try_files $uri =404; }`
-  3. sudo nginx -s reload
+### Universal Links (настроено ✓)
+- AASA файл: public/.well-known/apple-app-site-association — в git, деплоится автоматически
+- appID: V762R44QWF.club.volleyplay.app
+- Пути: /auth/telegram/callback*, /auth/vk/callback*, /auth/yandex/callback*, /events, /events/*
+- webcredentials: тот же appID (для Face ID / Associated Domains)
+- nginx: location ^~ /.well-known/ { default_type application/json; allow all; try_files $uri =404; }
+  добавлен в /etc/nginx/sites-available/volleyplay.club ДО блока `location ~ /\. { deny all; }`
+- ВАЖНО: после изменений nginx нужен `sudo systemctl restart nginx` (не reload — он не применял конфиг)
+- Проверка: curl -sI https://volleyplay.club/.well-known/apple-app-site-association → 200 OK, application/json
