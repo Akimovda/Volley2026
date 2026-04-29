@@ -177,9 +177,9 @@ $actionLabel = fn(string $a) => match($a) {
 				@if($hasPositions)
 				<div class="col-md-6">
 					<div class="card">
-                        <label>Позиция</label>
-                        <select name="position">
-                            <option value="">— без позиции —</option>
+                        <label>Позиция <span style="color:red">*</span></label>
+                        <select name="position" required>
+                            <option value="" disabled selected>— выбрать позицию —</option>
                             @foreach($posLabels as $k => $lbl)
                             @php $slotFree = array_key_exists($k, $freeSlots) ? (int)$freeSlots[$k] : null; @endphp
                             @if($slotFree === null || $slotFree > 0)
@@ -456,34 +456,40 @@ $actionLabel = fn(string $a) => match($a) {
 <x-slot name="script">
 	<script>
 		(function () {
-			var input   = document.getElementById('ac-input');
-			var dd      = document.getElementById('ac-dd');
-			var hidden  = document.getElementById('ac-userid');
-			var sel     = document.getElementById('ac-selected');
-			var addBtn  = document.getElementById('add-player-btn');
-			var timer   = null;
+			var input     = document.getElementById('ac-input');
+			var dd        = document.getElementById('ac-dd');
+			var hidden    = document.getElementById('ac-userid');
+			var sel       = document.getElementById('ac-selected');
+			var addBtn    = document.getElementById('add-player-btn');
+			var posSelect = document.querySelector('#add-player-form select[name="position"]');
+			var timer     = null;
 			var searchUrl = '{{ $searchUrl }}';
-			
+
 			if (!input) return;
-			
+
 			function showDd() { dd.classList.add('form-select-dropdown--active'); }
 			function hideDd() { dd.classList.remove('form-select-dropdown--active'); }
-			
+
 			function esc(s) {
 				return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 			}
-			
+
+			function updateBtn() {
+				var userOk = !!hidden.value;
+				var posOk  = !posSelect || posSelect.value !== '';
+				addBtn.disabled = !(userOk && posOk);
+				addBtn.style.opacity = (userOk && posOk) ? '1' : '.4';
+			}
+
 			function clearSel() {
 				hidden.value = '';
-				addBtn.disabled = true;
-				addBtn.style.opacity = '.4';
+				updateBtn();
 				sel.style.display = 'none';
 			}
-			
+
 			function setSel(id, label) {
 				hidden.value = id;
-				addBtn.disabled = false;
-				addBtn.style.opacity = '1';
+				updateBtn();
 				sel.style.display = 'block';
 				sel.textContent = '✅ ' + label;
 				dd.innerHTML = '';
@@ -543,10 +549,19 @@ $actionLabel = fn(string $a) => match($a) {
 				if (!document.getElementById('ac-wrap').contains(e.target)) hideDd();
 			});
 			
+			if (posSelect) {
+				posSelect.addEventListener('change', updateBtn);
+			}
+
 			document.getElementById('add-player-form').addEventListener('submit', function(e) {
 				if (!hidden.value) {
 					e.preventDefault();
 					input.focus();
+					return;
+				}
+				if (posSelect && !posSelect.value) {
+					e.preventDefault();
+					posSelect.focus();
 				}
 			});
 		})();

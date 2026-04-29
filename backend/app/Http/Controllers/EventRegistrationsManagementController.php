@@ -266,9 +266,20 @@ class EventRegistrationsManagementController extends Controller
             return back()->with('error', 'Нет колонки cancelled_at в event_registrations.');
         }
 
+        $event->loadMissing('gameSettings');
+        $addDirection = (string)($event->direction ?? 'classic');
+        $addPositions = $this->resolvePositions(
+            $addDirection,
+            (string)($event->gameSettings?->subtype ?? ''),
+            (string)($event->gameSettings?->libero_mode ?? 'with_libero')
+        );
+        $positionRequired = $addDirection === 'classic' && count($addPositions) > 0;
+
         $data = $request->validate([
             'user_id' => ['required', 'integer', 'exists:users,id'],
-            'position' => ['nullable', 'string', 'max:255'],
+            'position' => $positionRequired
+                ? ['required', 'string', 'max:255', 'in:' . implode(',', array_keys($addPositions))]
+                : ['nullable', 'string', 'max:255'],
         ]);
 
         $userId = (int) $data['user_id'];
@@ -276,7 +287,6 @@ class EventRegistrationsManagementController extends Controller
 
         // Определяем occurrence_id из запроса или ближайший
         $occurrenceId = (int) $request->input('occurrence_id', $request->query('occurrence', 0));
-        $event->loadMissing('gameSettings');
         if (!$occurrenceId) {
             $occurrenceId = \App\Models\EventOccurrence::where('event_id', $event->id)
                 ->whereNull('cancelled_at')
