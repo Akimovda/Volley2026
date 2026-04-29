@@ -124,7 +124,7 @@ class ProfileNotificationChannelController extends Controller
         ]);
 
         return redirect()
-            ->route('profile.notification_channels')
+            ->back()
             ->with('status', 'Настройки уведомлений сохранены.');
     }
 
