@@ -9,152 +9,165 @@ use App\Models\UserNotificationChannel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Str;
 
 class VkCommunityBindController extends Controller
 {
-    private const OAUTH_URL   = 'https://oauth.vk.com/authorize';
-    private const TOKEN_URL   = 'https://oauth.vk.com/access_token';
-    private const GROUPS_URL  = 'https://api.vk.com/method/groups.get';
-    private const API_VER     = '5.199';
+    private const API_BASE = 'https://api.vk.com/method/';
+    private const API_VER  = '5.199';
 
-    // Минимальные scope: управление стеной сообщества
-    private const SCOPE = 'wall,groups,offline';
-
-    public function redirect(Request $request)
+    public function bind(Request $request)
     {
-        $request->validate(['title' => ['required', 'string', 'max:128']]);
-
-        $title = $request->input('title');
-        $state = Str::random(32);
-
-        session([
-            'vk_wall_oauth_state' => $state,
-            'vk_wall_channel_title' => $title,
+        $request->validate([
+            'token'      => ['required', 'string', 'min:10'],
+            'group_slug' => ['required', 'string', 'max:150'],
         ]);
 
-        $params = http_build_query([
-            'client_id'     => config('services.vk_wall.client_id'),
-            'redirect_uri'  => config('services.vk_wall.redirect'),
-            'display'       => 'page',
-            'scope'         => self::SCOPE,
-            'response_type' => 'code',
-            'v'             => self::API_VER,
-            'state'         => $state,
-        ]);
+        $token = trim($request->input('token'));
 
-        return redirect(self::OAUTH_URL . '?' . $params);
-    }
+        // Убрать vk.com/ префикс если пользователь вставил ссылку
+        $groupSlug = trim($request->input('group_slug'));
+        $groupSlug = preg_replace('#^https?://(www\.)?vk\.com/#i', '', $groupSlug);
+        $groupSlug = trim($groupSlug, '/ ');
 
-    public function callback(Request $request)
-    {
-        if ($request->input('state') !== session('vk_wall_oauth_state')) {
-            return redirect()->route('profile.notification_channels')
-                ->with('error', '❌ Ошибка авторизации VK: неверный state.');
-        }
-
-        if ($request->has('error')) {
-            return redirect()->route('profile.notification_channels')
-                ->with('error', '❌ VK отказал в доступе: ' . $request->input('error_description', 'unknown'));
-        }
-
-        $code = $request->input('code');
-
-        $tokenResp = Http::timeout(15)->get(self::TOKEN_URL, [
-            'client_id'     => config('services.vk_wall.client_id'),
-            'client_secret' => config('services.vk_wall.client_secret'),
-            'redirect_uri'  => config('services.vk_wall.redirect'),
-            'code'          => $code,
-        ])->json();
-
-        if (isset($tokenResp['error'])) {
-            return redirect()->route('profile.notification_channels')
-                ->with('error', '❌ Ошибка получения токена VK: ' . ($tokenResp['error_description'] ?? $tokenResp['error']));
-        }
-
-        $accessToken = $tokenResp['access_token'] ?? null;
-
-        if (!$accessToken) {
-            return redirect()->route('profile.notification_channels')
-                ->with('error', '❌ VK не вернул access_token.');
-        }
-
-        // Получаем список сообществ, где пользователь — администратор
-        $groupsResp = Http::timeout(15)->get(self::GROUPS_URL, [
-            'access_token' => $accessToken,
-            'filter'       => 'admin',
-            'extended'     => 1,
-            'fields'       => 'name,photo_50',
-            'count'        => 100,
+        // Шаг 1: валидировать токен через groups.getTokenPermissions
+        // (не требует group_id, разработан для серверной проверки community-токенов)
+        $permResp = Http::timeout(10)->get(self::API_BASE . 'groups.getTokenPermissions', [
+            'access_token' => $token,
             'v'            => self::API_VER,
         ])->json();
 
-        if (isset($groupsResp['error'])) {
-            return redirect()->route('profile.notification_channels')
-                ->with('error', '❌ Не удалось получить список сообществ VK.');
+        if ($this->isVkError($permResp)) {
+            $errorStr = $this->vkErrorString($permResp);
+            if ($this->isSecurityOrInvalidError($permResp)) {
+                return back()
+                    ->withInput(['group_slug' => $groupSlug])
+                    ->with('error', '❌ Неверный токен или токен не является ключом доступа сообщества. Убедитесь, что скопировали его из раздела «Управление → Работа с API» своего сообщества.');
+            }
+            return back()
+                ->withInput(['group_slug' => $groupSlug])
+                ->with('error', '❌ Ошибка проверки токена VK: ' . $errorStr);
         }
 
-        $groups = $groupsResp['response']['items'] ?? [];
+        // Шаг 2: проверить права токена
+        $permissions = $permResp['response']['permissions'] ?? [];
+        $permNames   = array_column($permissions, 'name');
 
-        if (empty($groups)) {
-            return redirect()->route('profile.notification_channels')
-                ->with('error', '❌ Нет сообществ ВКонтакте, где вы являетесь администратором.');
+        if (!in_array('manage', $permNames, true)) {
+            return back()
+                ->withInput(['group_slug' => $groupSlug])
+                ->with('error', '❌ Токен не имеет прав управления сообществом. При создании ключа отметьте «Разрешить приложению доступ к управлению сообществом».');
         }
 
-        session([
-            'vk_wall_access_token'   => encrypt($accessToken),
-            'vk_wall_groups'         => $groups,
-        ]);
-
-        $title = session('vk_wall_channel_title', 'VK-сообщество');
-
-        return view('integrations.vk_community_select', compact('groups', 'title'));
-    }
-
-    public function selectGroup(Request $request)
-    {
-        $request->validate([
-            'group_id' => ['required', 'integer'],
-            'title'    => ['required', 'string', 'max:128'],
-        ]);
-
-        $groupId       = (int) $request->input('group_id');
-        $title         = $request->input('title');
-        $encryptedToken = session('vk_wall_access_token');
-        $groups         = session('vk_wall_groups', []);
-
-        if (!$encryptedToken) {
-            return redirect()->route('profile.notification_channels')
-                ->with('error', '❌ Сессия истекла. Повторите привязку.');
+        if (!in_array('wall', $permNames, true)) {
+            return back()
+                ->withInput(['group_slug' => $groupSlug])
+                ->with('error', '❌ Токен не имеет прав на публикацию на стене. При создании ключа отметьте «Разрешить приложению доступ к стене сообщества».');
         }
 
-        // Ищем имя группы
-        $group = collect($groups)->firstWhere('id', $groupId);
-        if (!$group) {
-            return redirect()->route('profile.notification_channels')
-                ->with('error', '❌ Сообщество не найдено.');
+        // Шаг 3: получить информацию о сообществе по явно указанному адресу
+        $groupResp = Http::timeout(10)->get(self::API_BASE . 'groups.getById', [
+            'access_token' => $token,
+            'group_id'     => $groupSlug,
+            'fields'       => 'screen_name',
+            'v'            => self::API_VER,
+        ])->json();
+
+        if ($this->isVkError($groupResp)) {
+            return back()
+                ->withInput(['group_slug' => $groupSlug])
+                ->with('error', '❌ Сообщество «' . e($groupSlug) . '» не найдено. Проверьте адрес — это должен быть адрес вашего сообщества ВКонтакте (например, club12345678 или msk_volley).');
         }
 
-        // Создаём канал (owner_id — отрицательный для сообщества)
+        $groups = $groupResp['response']['groups'] ?? $groupResp['response'] ?? [];
+        if (empty($groups) || !is_array($groups)) {
+            return back()
+                ->withInput(['group_slug' => $groupSlug])
+                ->with('error', '❌ Сообщество «' . e($groupSlug) . '» не найдено. Проверьте адрес сообщества.');
+        }
+
+        $group = $groups[0];
+        $groupId    = (int) ($group['id'] ?? 0);
+        $groupName  = (string) ($group['name'] ?? '');
+        $screenName = (string) ($group['screen_name'] ?? $groupSlug);
+
+        if (!$groupId) {
+            return back()
+                ->withInput(['group_slug' => $groupSlug])
+                ->with('error', '❌ Не удалось определить ID сообщества. Попробуйте ещё раз.');
+        }
+
+        // Проверить: не привязано ли уже это сообщество
+        $exists = UserNotificationChannel::where('user_id', Auth::id())
+            ->where('platform', 'vk')
+            ->where('chat_id', '-' . $groupId)
+            ->exists();
+
+        if ($exists) {
+            return back()
+                ->withInput(['group_slug' => $groupSlug])
+                ->with('error', '⚠️ VK-сообщество «' . $groupName . '» уже привязано.');
+        }
+
+        // Шаг 4: сохранить канал
         UserNotificationChannel::create([
             'user_id'     => Auth::id(),
             'platform'    => 'vk',
-            'chat_id'     => (string) (-$groupId),
-            'title'       => $title,
+            'chat_id'     => '-' . $groupId,
+            'title'       => $groupName ?: $screenName,
             'is_verified' => true,
             'verified_at' => now(),
             'bot_type'    => 'system',
             'meta'        => [
-                'kind'         => 'vk_wall',
-                'group_id'     => $groupId,
-                'group_name'   => $group['name'] ?? '',
-                'access_token' => $encryptedToken,
+                'kind'              => 'vk_community',
+                'access_token'      => encrypt($token),
+                'group_id'          => $groupId,
+                'group_name'        => $groupName,
+                'group_screen_name' => $screenName,
             ],
         ]);
 
-        session()->forget(['vk_wall_access_token', 'vk_wall_groups', 'vk_wall_oauth_state', 'vk_wall_channel_title']);
-
         return redirect()->route('profile.notification_channels')
-            ->with('status', '✅ VK-сообщество «' . ($group['name'] ?? '') . '» успешно подключено!');
+            ->with('status', '✅ VK-сообщество «' . $groupName . '» успешно привязано!');
+    }
+
+    private function isVkError(mixed $resp): bool
+    {
+        return !is_array($resp) || isset($resp['error']);
+    }
+
+    private function isSecurityOrInvalidError(mixed $resp): bool
+    {
+        if (!is_array($resp)) {
+            return true;
+        }
+        $err = $resp['error'] ?? null;
+        if ($err === null) {
+            return false;
+        }
+        // OAuth-формат: {"error":"invalid_request","error_description":"Security Error"}
+        if (is_string($err) && ($err === 'invalid_request' || $err === 'access_denied')) {
+            return true;
+        }
+        // Стандартный VK формат: error_code 5 (auth failed), 27 (community token required)
+        if (is_array($err)) {
+            $code = $err['error_code'] ?? 0;
+            return in_array($code, [5, 27], true);
+        }
+        return false;
+    }
+
+    private function vkErrorString(mixed $resp): string
+    {
+        if (!is_array($resp)) {
+            return 'нет ответа от VK';
+        }
+        $err = $resp['error'] ?? null;
+        if (is_string($err)) {
+            return $resp['error_description'] ?? $err;
+        }
+        if (is_array($err)) {
+            return $err['error_msg'] ?? ('код ' . ($err['error_code'] ?? '?'));
+        }
+        return 'неизвестная ошибка';
     }
 }
