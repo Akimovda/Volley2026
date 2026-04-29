@@ -385,6 +385,9 @@
 				| Проверяем по всем слотам без гендерного фильтра — чтобы мужчина
 				| с заполненным setter-слотом не видел reserve, пока есть свободные
 				| outside-места (доступные другому полу).
+				|
+				| При mixed_limited: если 'reserve' не входит в gender_limited_positions,
+				| ограничиваемый пол не видит запасные места.
 				|--------------------------------------------------------------------------
 			*/
 			$reserveMax = (int) ($settings?->reserve_players_max ?? 0);
@@ -394,18 +397,33 @@
 					fn($s) => ($s->max_slots - ($takenPerRole[$s->role] ?? 0)) <= 0
 				);
 				if ($allMainFull) {
-					$reserveCount = $registrationsByPosition->get('reserve')?->count() ?? 0;
-					// Не считаем текущую запись пользователя (если он уже запасной)
-					if ($userRegistration && $userRegistration->position === 'reserve') {
-						$reserveCount = max(0, $reserveCount - 1);
+					// Гендерный фильтр для reserve
+					$genderBlockReserve = false;
+					if ($settings && $settings->gender_policy === 'mixed_limited' && $user) {
+						$rvg = strtolower((string)($user->gender ?? ''));
+						$rSide = $settings->gender_limited_side;
+						$rPos = $settings->gender_limited_positions ?? [];
+						if (is_string($rPos)) $rPos = json_decode($rPos, true) ?: [];
+						$rTg = match($rSide) { 'male' => 'm', 'female' => 'f', default => null };
+						if ($rTg && $rvg && $rvg[0] === $rTg && !in_array('reserve', $rPos, true)) {
+							$genderBlockReserve = true;
+						}
 					}
-					$freeReserve = max(0, $reserveMax - $reserveCount);
-					if ($freeReserve > 0) {
-						$freePositions[] = [
-							'key'   => 'reserve',
-							'free'  => $freeReserve,
-							'limit' => $reserveMax,
-						];
+
+					if (!$genderBlockReserve) {
+						$reserveCount = $registrationsByPosition->get('reserve')?->count() ?? 0;
+						// Не считаем текущую запись пользователя (если он уже запасной)
+						if ($userRegistration && $userRegistration->position === 'reserve') {
+							$reserveCount = max(0, $reserveCount - 1);
+						}
+						$freeReserve = max(0, $reserveMax - $reserveCount);
+						if ($freeReserve > 0) {
+							$freePositions[] = [
+								'key'   => 'reserve',
+								'free'  => $freeReserve,
+								'limit' => $reserveMax,
+							];
+						}
 					}
 				}
 			}
