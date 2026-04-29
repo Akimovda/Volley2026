@@ -101,7 +101,7 @@
             'eventId'           => $eventId,
             'section'           => $section,
             'cities'            => $cities,
-            'canEditProtected'  => ProfileUpdateGuard::isOrganizer($actor) && $actor->id === $target->id,
+            'canEditProtected'  => ProfileUpdateGuard::isAdmin($actor) || (ProfileUpdateGuard::isOrganizer($actor) && $actor->id === $target->id),
 			//     'hasPendingRequest' => $hasPendingRequest,
 			]);
 		}
