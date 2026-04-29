@@ -27,7 +27,8 @@ class ChannelPublisherFactory
 
         if ($plt === 'vk') {
             $meta = $channel?->meta ?? [];
-            if (($meta['kind'] ?? '') === 'vk_wall') {
+            $kind = $meta['kind'] ?? '';
+            if ($kind === 'vk_wall' || $kind === 'vk_community') {
                 $rawToken = $meta['access_token'] ?? '';
                 $decrypted = '';
                 if ($rawToken !== '') {

@@ -147,12 +147,8 @@ Route::get('/logout', fn () => redirect('/'));
 	});
 
 	Route::middleware(['auth'])->group(function () {
-		Route::post('/integrations/vk-community/redirect', [VkCommunityBindController::class, 'redirect'])
-			->name('integrations.vk_community.redirect');
-		Route::get('/integrations/vk-community/callback', [VkCommunityBindController::class, 'callback'])
-			->name('integrations.vk_community.callback');
-		Route::post('/integrations/vk-community/select', [VkCommunityBindController::class, 'selectGroup'])
-			->name('integrations.vk_community.select');
+		Route::post('/integrations/vk-community/bind', [VkCommunityBindController::class, 'bind'])
+			->name('integrations.vk_community.bind');
 	});
 
 	/*

@@ -237,11 +237,18 @@
                         <div class="card text-muted f-15">Пока нет подключённых каналов.</div>
                     @else
                         @foreach($channels as $channel)
-                        @php $isWall = ($channel->meta['kind'] ?? '') === 'vk_wall'; @endphp
+                        @php
+                            $kind = $channel->meta['kind'] ?? '';
+                            $isWall = $kind === 'vk_wall';
+                            $isCommunity = $kind === 'vk_community';
+                            $isVkOwned = $isWall || $isCommunity;
+                        @endphp
                         <div class="card mb-1">
                             <div class="d-flex between">
                                 <div>
-                                    @if($isWall)
+                                    @if($isCommunity)
+                                        <span class="b-700 f-16">🔵 VK сообщество</span>
+                                    @elseif($isWall)
                                         <span class="b-700 f-16">🔵 VK стена</span>
                                     @else
                                         <span class="b-700 f-16">{{ strtoupper($channel->platform) }}</span>
@@ -253,7 +260,7 @@
                                     @endif
                                     @if(($channel->bot_type ?? 'system') === 'user')
                                         <span class="badge badge-orange ml-05">🤖 свой бот{{ $channel->user_bot_username ? ' @'.$channel->user_bot_username : '' }}</span>
-                                    @elseif(!$isWall)
+                                    @elseif(!$isVkOwned)
                                         <span class="badge ml-05">системный</span>
                                     @endif
                                 </div>
@@ -272,7 +279,21 @@
                             </div>
 
                             <div class="f-15 b-600 mt-05">{{ $channel->title ?: 'Без названия' }}</div>
-                            @if($isWall && !empty($channel->meta['group_name']))
+                            @if($isCommunity)
+                                @if(!empty($channel->meta['group_screen_name']))
+                                    <div class="f-13 text-muted">
+                                        Сообщество:
+                                        <a href="https://vk.com/{{ $channel->meta['group_screen_name'] }}" target="_blank" rel="noopener">
+                                            {{ $channel->meta['group_name'] ?? $channel->meta['group_screen_name'] }}
+                                        </a>
+                                    </div>
+                                @elseif(!empty($channel->meta['group_name']))
+                                    <div class="f-13 text-muted">Сообщество: {{ $channel->meta['group_name'] }}</div>
+                                @endif
+                                @if(!$channel->is_verified)
+                                    <div class="f-13 red mt-05">⚠️ Ключ недействителен — привяжите сообщество заново</div>
+                                @endif
+                            @elseif($isWall && !empty($channel->meta['group_name']))
                                 <div class="f-13 text-muted">Сообщество: {{ $channel->meta['group_name'] }}</div>
                             @else
                                 <div class="f-13 text-muted">chat_id: {{ $channel->chat_id }}</div>
@@ -300,22 +321,43 @@
             </div>
         </div>
 
-        {{-- VK Wall --}}
+        {{-- VK Community (прямой токен) --}}
         <div class="ramka">
-            <h3 class="mt-0">🔵 Привязать VK-сообщество (публикация на стене)</h3>
-            <p class="f-15 text-muted mb-2">
-                Анонсы будут публиковаться <strong>на стене</strong> вашего VK-сообщества — без бота и беседы.
-                Потребуется авторизация через VK с доступом к управлению стеной.
+            <h3 class="mt-0">🔵 Привязать VK-сообщество</h3>
+            <p class="f-15 mb-2">
+                Анонсы ваших мероприятий будут автоматически публиковаться на стене сообщества.
+                Бот не нужен — используется ключ доступа, который вы создаёте сами в настройках своего сообщества.
             </p>
-            <form method="POST" action="{{ route('integrations.vk_community.redirect') }}" class="d-flex gap-1 flex-wrap align-items-end">
-                @csrf
-                <div style="flex:1;min-width:220px;">
-                    <label class="f-14 b-600 mb-05 d-block">Название канала</label>
-                    <input type="text" name="title" value="{{ old('vk_wall_title') }}"
-                           placeholder="Например: VK Волейбол Новосибирск"
-                           class="w-100" required maxlength="128">
+
+            <div class="alert alert-info mb-2">
+                <div class="b-700 f-15 mb-1">Как привязать VK-сообщество — 5 шагов</div>
+                <ol class="list mb-0">
+                    <li>Откройте ваше сообщество ВКонтакте → <strong>Управление</strong> → <strong>Работа с API</strong></li>
+                    <li>Нажмите <strong>«Создать ключ»</strong></li>
+                    <li>Отметьте права доступа:
+                        <ul>
+                            <li>Разрешить приложению доступ к управлению сообществом</li>
+                            <li>Разрешить приложению доступ к стене сообщества</li>
+                        </ul>
+                    </li>
+                    <li>Нажмите <strong>«Создать»</strong> и скопируйте полученный ключ</li>
+                    <li>Вставьте ключ в поле ниже и нажмите <strong>«Привязать»</strong></li>
+                </ol>
+                <div class="f-13 text-muted mt-1">
+                    ⚠️ Ключ хранится в зашифрованном виде и используется только для публикации анонсов.
                 </div>
-                <button type="submit" class="btn btn-primary" style="white-space:nowrap;">
+            </div>
+
+            <form method="POST" action="{{ route('integrations.vk_community.bind') }}" class="form">
+                @csrf
+                <div class="card">
+                    <label class="f-15 b-600 mb-05">Ключ доступа сообщества VK <span class="red">*</span></label>
+                    <input type="password" name="token" value=""
+                           placeholder="Вставьте ключ доступа сообщества..."
+                           class="w-100" required style="font-family:monospace">
+                    @error('token')<div class="red f-14 mt-05">{{ $message }}</div>@enderror
+                </div>
+                <button type="submit" class="btn btn-primary">
                     🔵 Привязать VK-сообщество
                 </button>
             </form>
