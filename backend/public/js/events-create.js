@@ -665,11 +665,12 @@ document.addEventListener("trix-file-accept", function (event) {
 	}
 	
 	var POS_LABELS = {
-		setter: 'Связующий (setter)',
+		setter:  'Связующий (setter)',
 		outside: 'Доигровщик (outside)',
-		opposite: 'Диагональный (opposite)',
-		middle: 'Центральный (middle)',
-		libero: 'Либеро (libero)'
+		opposite:'Диагональный (opposite)',
+		middle:  'Центральный (middle)',
+		libero:  'Либеро (libero)',
+		reserve: 'Запасной игрок'
 	};
 	
 	function syncGender5050Hint() {
@@ -690,13 +691,19 @@ document.addEventListener("trix-file-accept", function (event) {
 	function positionsForSubtype() {
 		var st = gameSubtype ? trim(gameSubtype.value) : '';
 		var libero = liberoModeSelect ? trim(liberoModeSelect.value || 'with_libero') : 'with_libero';
-		
-		if (st === '4x2') return ['setter', 'outside'];
-		if (st === '4x4') return ['setter', 'outside', 'opposite'];
-		if (st === '5x1') return (libero === 'with_libero')
-		? ['setter', 'outside', 'opposite', 'middle', 'libero']
-		: ['setter', 'outside', 'opposite', 'middle'];
-		return [];
+		var reserveEl2 = document.getElementById('game_reserve_players_max');
+		var reserveMax = reserveEl2 ? (parseInt(reserveEl2.value, 10) || 0) : 0;
+
+		var base;
+		if (st === '4x2') base = ['setter', 'outside'];
+		else if (st === '4x4') base = ['setter', 'outside', 'opposite'];
+		else if (st === '5x1') base = (libero === 'with_libero')
+			? ['setter', 'outside', 'opposite', 'middle', 'libero']
+			: ['setter', 'outside', 'opposite', 'middle'];
+		else return [];
+
+		if (reserveMax > 0) base = base.concat(['__sep__', 'reserve']);
+		return base;
 	}
 	
 	function getOldSelectedPositions() {
@@ -745,24 +752,33 @@ document.addEventListener("trix-file-accept", function (event) {
 		
 		for (var k = 0; k < list.length; k++) {
 			var key = list[k];
-			
+
+			if (key === '__sep__') {
+				var sep = document.createElement('div');
+				sep.className = 'f-13';
+				sep.style.cssText = 'opacity:.6;margin:.4rem 0 .2rem;border-top:1px solid #e5e7eb;padding-top:.4rem';
+				sep.textContent = 'Запасные места:';
+				positionsBox.appendChild(sep);
+				continue;
+			}
+
 			var label = document.createElement('label');
 			label.className = 'checkbox-item';
-			
+
 			var cb = document.createElement('input');
 			cb.type = 'checkbox';
 			cb.name = 'game_gender_limited_positions[]';
 			cb.value = key;
-			
+
 			var hasCur = (cur.length > 0);
 			cb.checked = hasCur ? !!curMap[key] : !!oldMap[key];
-			
+
 			var customCheckbox = document.createElement('div');
 			customCheckbox.className = 'custom-checkbox';
-			
+
 			var span = document.createElement('span');
 			span.textContent = POS_LABELS[key] || key;
-			
+
 			label.appendChild(cb);
 			label.appendChild(customCheckbox);
 			label.appendChild(span);
@@ -1394,7 +1410,10 @@ document.addEventListener("trix-file-accept", function (event) {
 
 	var reservePlayersSelect = document.getElementById('game_reserve_players_max');
 	if (reservePlayersSelect) {
-		reservePlayersSelect.addEventListener('change', function () { refreshUI('reserve_change'); });
+		reservePlayersSelect.addEventListener('change', function () {
+			refreshUI('reserve_change');
+			if (genderPolicyEl && trim(genderPolicyEl.value || '') === 'mixed_limited') buildPositionsCheckboxes();
+		});
 	}
 
 	// ========== 11. RECURRENCE UI ==========

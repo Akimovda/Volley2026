@@ -84,7 +84,7 @@
             <div class="col-md-4">
                 <div class="card">
                     <label>Позиции, доступные ограничиваемому полу</label>
-                    <div id="occ_positions_box"></div>
+                    <div id="occ_positions_box" data-reserve-max="{{ (int) ($event->gameSettings?->reserve_players_max ?? 0) }}"></div>
                     <input type="hidden" id="occ_positions_old_json" value="{{ e(json_encode(array_values($selectedPositions))) }}">
                 </div>
             </div>

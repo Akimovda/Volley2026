@@ -18,20 +18,26 @@
         outside:  'Доигровщик (outside)',
         opposite: 'Диагональный (opposite)',
         middle:   'Центральный (middle)',
-        libero:   'Либеро (libero)'
+        libero:   'Либеро (libero)',
+        reserve:  'Запасной игрок'
     };
 
     // ========= Позиции, доступные для subtype =========
     // В occurrence_edit libero входит в subtype (5x1 vs 5x1_libero),
     // отдельного libero_mode нет.
     function positionsForSubtype(subtype) {
+        var box = document.getElementById('occ_positions_box');
+        var reserveMax = box ? parseInt(box.getAttribute('data-reserve-max') || '0', 10) : 0;
+        var base;
         switch (subtype) {
-            case '4x2':        return ['setter', 'outside'];
-            case '4x4':        return ['setter', 'outside', 'opposite'];
-            case '5x1':        return ['setter', 'outside', 'opposite', 'middle'];
-            case '5x1_libero': return ['setter', 'outside', 'opposite', 'middle', 'libero'];
+            case '4x2':        base = ['setter', 'outside']; break;
+            case '4x4':        base = ['setter', 'outside', 'opposite']; break;
+            case '5x1':        base = ['setter', 'outside', 'opposite', 'middle']; break;
+            case '5x1_libero': base = ['setter', 'outside', 'opposite', 'middle', 'libero']; break;
             default:           return [];
         }
+        if (reserveMax > 0) base = base.concat(['__sep__', 'reserve']);
+        return base;
     }
 
     // ========= DOM утилиты =========
@@ -93,6 +99,15 @@
         var source     = useCurrent ? currentMap : oldMap;
 
         list.forEach(function (key) {
+            if (key === '__sep__') {
+                var sep = document.createElement('div');
+                sep.className = 'f-13';
+                sep.style.cssText = 'opacity:.6;margin:.4rem 0 .2rem;border-top:1px solid #e5e7eb;padding-top:.4rem';
+                sep.textContent = 'Запасные места:';
+                box.appendChild(sep);
+                return;
+            }
+
             var label = document.createElement('label');
             label.className = 'checkbox-item';
 
