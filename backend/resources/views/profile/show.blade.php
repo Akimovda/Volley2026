@@ -561,6 +561,18 @@
 					
 				</div>	
 				
+				<div class="ramka is-app-only" style="display:none">
+					<h2 class="-mt-05">Быстрый вход</h2>
+					<p>Face ID / Touch ID для входа в приложение.</p>
+					<div id="biometric-status" class="mb-2"></div>
+					<button id="biometric-disable-btn" class="btn btn-secondary btn-small" style="display:none">
+						Отключить Face ID
+					</button>
+					<button id="biometric-enable-btn" class="btn btn-small" style="display:none">
+						Включить Face ID
+					</button>
+				</div>
+
 				<div class="ramka">
                     <h2 class="-mt-05">Уведомления и рассылки</h2>
 					
@@ -1249,5 +1261,103 @@
 			}
 			);
 		});
+	</script>
+
+	<script>
+	(function() {
+		if (!navigator.userAgent.includes('VolleyPlayApp') || !window.Capacitor) return;
+
+		document.querySelectorAll('.is-app-only').forEach(function(el) { el.style.display = ''; });
+
+		var NativeBiometric = window.Capacitor.Plugins.NativeBiometric;
+		if (!NativeBiometric) return;
+
+		var statusEl     = document.getElementById('biometric-status');
+		var disableBtn   = document.getElementById('biometric-disable-btn');
+		var enableBtn    = document.getElementById('biometric-enable-btn');
+
+		async function refreshStatus() {
+			try {
+				var avail = await NativeBiometric.isAvailable();
+				if (!avail.isAvailable) {
+					if (statusEl) statusEl.textContent = 'Face ID / Touch ID недоступен на этом устройстве.';
+					return;
+				}
+				try {
+					var creds = await NativeBiometric.getCredentials({ server: 'volleyplay.club' });
+					if (creds && creds.password) {
+						if (statusEl) statusEl.textContent = '✅ Face ID включён.';
+						if (disableBtn) disableBtn.style.display = '';
+						if (enableBtn) enableBtn.style.display = 'none';
+						return;
+					}
+				} catch (e) { /* нет credentials */ }
+				if (statusEl) statusEl.textContent = 'Face ID не настроен.';
+				if (disableBtn) disableBtn.style.display = 'none';
+				if (enableBtn) enableBtn.style.display = '';
+			} catch (e) {
+				if (statusEl) statusEl.textContent = 'Не удалось проверить статус.';
+			}
+		}
+
+		if (disableBtn) {
+			disableBtn.addEventListener('click', async function() {
+				disableBtn.disabled = true;
+				try {
+					await fetch('/api/biometric/revoke', {
+						method: 'DELETE',
+						headers: {
+							'Accept': 'application/json',
+							'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content
+						},
+						credentials: 'same-origin'
+					});
+					await NativeBiometric.deleteCredentials({ server: 'volleyplay.club' });
+					await refreshStatus();
+				} catch (e) {
+					alert('Ошибка при отключении Face ID');
+				} finally {
+					disableBtn.disabled = false;
+				}
+			});
+		}
+
+		if (enableBtn) {
+			enableBtn.addEventListener('click', async function() {
+				enableBtn.disabled = true;
+				try {
+					var avail = await NativeBiometric.isAvailable();
+					if (!avail.isAvailable) { alert('Face ID недоступен.'); return; }
+
+					var token = crypto.randomUUID();
+					var resp = await fetch('/api/biometric/register', {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+							'Accept': 'application/json',
+							'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content
+						},
+						credentials: 'same-origin',
+						body: JSON.stringify({ biometric_token: token })
+					});
+
+					if (resp.ok) {
+						await NativeBiometric.setCredentials({
+							username: 'volleyplay_user',
+							password: token,
+							server: 'volleyplay.club'
+						});
+						await refreshStatus();
+					}
+				} catch (e) {
+					alert('Ошибка при включении Face ID');
+				} finally {
+					enableBtn.disabled = false;
+				}
+			});
+		}
+
+		refreshStatus();
+	})();
 	</script>
 </x-voll-layout>

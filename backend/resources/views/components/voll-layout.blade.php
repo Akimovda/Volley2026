@@ -7,8 +7,9 @@
 	<head>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-		<script>if(navigator.userAgent.includes('VolleyPlayApp')){document.documentElement.classList.add('is-app');}</script>
+		<script>if(navigator.userAgent.includes('VolleyPlayApp')){document.documentElement.classList.add('is-app');window.addEventListener('load',function(){var btn=document.getElementById('app-back-btn');if(btn&&window.history.length<=1){btn.style.display='none';}});}</script>
 		<meta name="csrf-token" content="{{ csrf_token() }}">
+		@auth<meta name="user-authenticated" content="true">@endauth
 		<title>{{ $title ?? 'Волейбольный сервис Your Volley Club!' }}</title>
 		<meta name="description" content="{{ $description ?? 'Волейбольный сервис Your Volley Club!' }}">
 		<link rel="icon" type="image/png" href="/icons/favicon-96x96.png" sizes="96x96" />
@@ -636,6 +637,131 @@
 		})();
 		</script>
 		@endauth
+
+		{{-- Face ID: вход (только для неавторизованных в приложении) --}}
+		<script>
+		(function() {
+			if (!navigator.userAgent.includes('VolleyPlayApp')) return;
+			if (!window.Capacitor) return;
+			if (document.querySelector('meta[name="user-authenticated"]')) return;
+
+			var NativeBiometric = window.Capacitor.Plugins.NativeBiometric;
+			if (!NativeBiometric) return;
+
+			async function tryBiometricLogin() {
+				try {
+					var avail = await NativeBiometric.isAvailable();
+					if (!avail.isAvailable) return;
+
+					var creds = await NativeBiometric.getCredentials({ server: 'volleyplay.club' });
+					if (!creds || !creds.password) return;
+
+					await NativeBiometric.verifyIdentity({
+						reason: 'Войти в VolleyPlay',
+						title: 'Вход по Face ID',
+					});
+
+					var resp = await fetch('/auth/biometric-login', {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+							'Accept': 'application/json',
+							'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content
+						},
+						credentials: 'same-origin',
+						body: JSON.stringify({ biometric_token: creds.password })
+					});
+
+					if (resp.ok) {
+						var data = await resp.json();
+						window.location.href = data.redirect || '/dashboard';
+					} else {
+						await NativeBiometric.deleteCredentials({ server: 'volleyplay.club' });
+					}
+				} catch (e) {
+					console.log('Biometric login skipped:', e);
+				}
+			}
+
+			tryBiometricLogin();
+		})();
+		</script>
+
+		{{-- Face ID: предложение настроить (только для авторизованных в приложении) --}}
+		@auth
+		<script>
+		(function() {
+			if (!navigator.userAgent.includes('VolleyPlayApp')) return;
+			if (!window.Capacitor) return;
+
+			var NativeBiometric = window.Capacitor.Plugins.NativeBiometric;
+			if (!NativeBiometric) return;
+
+			async function offerBiometricSetup() {
+				try {
+					var avail = await NativeBiometric.isAvailable();
+					if (!avail.isAvailable) return;
+
+					try {
+						var creds = await NativeBiometric.getCredentials({ server: 'volleyplay.club' });
+						if (creds && creds.password) return;
+					} catch (e) { /* нет credentials — предложить */ }
+
+					if (sessionStorage.getItem('biometric_offered')) return;
+					sessionStorage.setItem('biometric_offered', 'true');
+
+					var result = await Swal.fire({
+						title: 'Быстрый вход',
+						text: 'Хотите входить по Face ID?',
+						icon: 'question',
+						showCancelButton: true,
+						confirmButtonText: 'Включить',
+						cancelButtonText: 'Позже'
+					});
+					if (!result.isConfirmed) return;
+
+					var token = crypto.randomUUID();
+
+					var resp = await fetch('/api/biometric/register', {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+							'Accept': 'application/json',
+							'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content
+						},
+						credentials: 'same-origin',
+						body: JSON.stringify({ biometric_token: token })
+					});
+
+					if (resp.ok) {
+						await NativeBiometric.setCredentials({
+							username: 'volleyplay_user',
+							password: token,
+							server: 'volleyplay.club'
+						});
+						Swal.fire({
+							title: 'Готово!',
+							text: 'Face ID включён. В следующий раз вы войдёте мгновенно.',
+							icon: 'success',
+							timer: 2000,
+							showConfirmButton: false
+						});
+					}
+				} catch (e) {
+					console.log('Biometric setup error:', e);
+				}
+			}
+
+			document.addEventListener('DOMContentLoaded', function() { offerBiometricSetup(); });
+		})();
+		</script>
+		@endauth
+
+	<button id="app-back-btn" onclick="window.history.back()" aria-label="Назад">
+		<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+			<polyline points="15 18 9 12 15 6"></polyline>
+		</svg>
+	</button>
 
 	</body>
 </html>					
