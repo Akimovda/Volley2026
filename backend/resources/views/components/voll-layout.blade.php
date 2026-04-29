@@ -689,7 +689,9 @@
 				}
 			}
 
-			tryBiometricLogin();
+			if (!document.querySelector('meta[name="user-authenticated"]')) {
+				tryBiometricLogin();
+			}
 		})();
 		</script>
 
