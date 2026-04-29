@@ -351,9 +351,17 @@
             <form method="POST" action="{{ route('integrations.vk_community.bind') }}" class="form">
                 @csrf
                 <div class="card">
+                    <label class="f-15 b-600 mb-05">Адрес сообщества VK <span class="red">*</span></label>
+                    <input type="text" name="group_slug" value="{{ old('group_slug') }}"
+                           placeholder="club12345678 или msk_volley или vk.com/club12345678"
+                           class="w-100" required>
+                    <div class="f-13 text-muted mt-05">Адрес из браузера или короткое имя сообщества</div>
+                    @error('group_slug')<div class="red f-14 mt-05">{{ $message }}</div>@enderror
+                </div>
+                <div class="card">
                     <label class="f-15 b-600 mb-05">Ключ доступа сообщества VK <span class="red">*</span></label>
                     <input type="password" name="token" value=""
-                           placeholder="Вставьте ключ доступа сообщества..."
+                           placeholder="Вставьте ключ доступа из «Управление → Работа с API»"
                            class="w-100" required style="font-family:monospace">
                     @error('token')<div class="red f-14 mt-05">{{ $message }}</div>@enderror
                 </div>

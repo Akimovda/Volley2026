@@ -18,66 +18,102 @@ class VkCommunityBindController extends Controller
     public function bind(Request $request)
     {
         $request->validate([
-            'token' => ['required', 'string', 'min:10'],
+            'token'      => ['required', 'string', 'min:10'],
+            'group_slug' => ['required', 'string', 'max:150'],
         ]);
 
         $token = trim($request->input('token'));
 
-        // Шаг 1: проверить токен и получить данные сообщества
-        $groupResp = Http::timeout(10)->get(self::API_BASE . 'groups.getById', [
-            'access_token' => $token,
-            'v'            => self::API_VER,
-        ])->json();
+        // Убрать vk.com/ префикс если пользователь вставил ссылку
+        $groupSlug = trim($request->input('group_slug'));
+        $groupSlug = preg_replace('#^https?://(www\.)?vk\.com/#i', '', $groupSlug);
+        $groupSlug = trim($groupSlug, '/ ');
 
-        if (isset($groupResp['error'])) {
-            $code = $groupResp['error']['error_code'] ?? 0;
-            if ($code === 5 || $code === 27) {
-                return back()->with('error', '❌ Неверный токен. Проверьте что вы скопировали его полностью.');
-            }
-            return back()->with('error', '❌ Ошибка VK API: ' . ($groupResp['error']['error_msg'] ?? 'неизвестная ошибка'));
-        }
-
-        $groups = $groupResp['response']['groups'] ?? $groupResp['response'] ?? [];
-        if (empty($groups)) {
-            return back()->with('error', '❌ Не удалось получить данные сообщества. Убедитесь что токен принадлежит сообществу.');
-        }
-
-        $group = $groups[0];
-        $groupId    = (int) ($group['id'] ?? 0);
-        $groupName  = $group['name'] ?? '';
-        $screenName = $group['screen_name'] ?? '';
-
-        if (!$groupId) {
-            return back()->with('error', '❌ Не удалось определить ID сообщества.');
-        }
-
-        // Шаг 2: проверить права токена
+        // Шаг 1: валидировать токен через groups.getTokenPermissions
+        // (не требует group_id, разработан для серверной проверки community-токенов)
         $permResp = Http::timeout(10)->get(self::API_BASE . 'groups.getTokenPermissions', [
             'access_token' => $token,
             'v'            => self::API_VER,
         ])->json();
 
-        if (isset($permResp['error'])) {
-            return back()->with('error', '❌ Не удалось проверить права токена. Попробуйте создать токен заново.');
+        if ($this->isVkError($permResp)) {
+            $errorStr = $this->vkErrorString($permResp);
+            if ($this->isSecurityOrInvalidError($permResp)) {
+                return back()
+                    ->withInput(['group_slug' => $groupSlug])
+                    ->with('error', '❌ Неверный токен или токен не является ключом доступа сообщества. Убедитесь, что скопировали его из раздела «Управление → Работа с API» своего сообщества.');
+            }
+            return back()
+                ->withInput(['group_slug' => $groupSlug])
+                ->with('error', '❌ Ошибка проверки токена VK: ' . $errorStr);
         }
 
+        // Шаг 2: проверить права токена
         $permissions = $permResp['response']['permissions'] ?? [];
         $permNames   = array_column($permissions, 'name');
 
         if (!in_array('manage', $permNames, true)) {
-            return back()->with('error', '❌ Токен не имеет прав управления сообществом. При создании ключа отметьте «Разрешить приложению доступ к управлению сообществом».');
+            return back()
+                ->withInput(['group_slug' => $groupSlug])
+                ->with('error', '❌ Токен не имеет прав управления сообществом. При создании ключа отметьте «Разрешить приложению доступ к управлению сообществом».');
         }
 
         if (!in_array('wall', $permNames, true)) {
-            return back()->with('error', '❌ Токен не имеет прав на публикацию на стене. При создании ключа отметьте «Разрешить приложению доступ к стене сообщества».');
+            return back()
+                ->withInput(['group_slug' => $groupSlug])
+                ->with('error', '❌ Токен не имеет прав на публикацию на стене. При создании ключа отметьте «Разрешить приложению доступ к стене сообщества».');
         }
 
-        // Шаг 3: сохранить канал
+        // Шаг 3: получить информацию о сообществе по явно указанному адресу
+        $groupResp = Http::timeout(10)->get(self::API_BASE . 'groups.getById', [
+            'access_token' => $token,
+            'group_id'     => $groupSlug,
+            'fields'       => 'screen_name',
+            'v'            => self::API_VER,
+        ])->json();
+
+        if ($this->isVkError($groupResp)) {
+            return back()
+                ->withInput(['group_slug' => $groupSlug])
+                ->with('error', '❌ Сообщество «' . e($groupSlug) . '» не найдено. Проверьте адрес — это должен быть адрес вашего сообщества ВКонтакте (например, club12345678 или msk_volley).');
+        }
+
+        $groups = $groupResp['response']['groups'] ?? $groupResp['response'] ?? [];
+        if (empty($groups) || !is_array($groups)) {
+            return back()
+                ->withInput(['group_slug' => $groupSlug])
+                ->with('error', '❌ Сообщество «' . e($groupSlug) . '» не найдено. Проверьте адрес сообщества.');
+        }
+
+        $group = $groups[0];
+        $groupId    = (int) ($group['id'] ?? 0);
+        $groupName  = (string) ($group['name'] ?? '');
+        $screenName = (string) ($group['screen_name'] ?? $groupSlug);
+
+        if (!$groupId) {
+            return back()
+                ->withInput(['group_slug' => $groupSlug])
+                ->with('error', '❌ Не удалось определить ID сообщества. Попробуйте ещё раз.');
+        }
+
+        // Проверить: не привязано ли уже это сообщество
+        $exists = UserNotificationChannel::where('user_id', Auth::id())
+            ->where('platform', 'vk')
+            ->where('chat_id', '-' . $groupId)
+            ->exists();
+
+        if ($exists) {
+            return back()
+                ->withInput(['group_slug' => $groupSlug])
+                ->with('error', '⚠️ VK-сообщество «' . $groupName . '» уже привязано.');
+        }
+
+        // Шаг 4: сохранить канал
         UserNotificationChannel::create([
             'user_id'     => Auth::id(),
             'platform'    => 'vk',
             'chat_id'     => '-' . $groupId,
-            'title'       => $groupName ?: ('VK: ' . $screenName),
+            'title'       => $groupName ?: $screenName,
             'is_verified' => true,
             'verified_at' => now(),
             'bot_type'    => 'system',
@@ -92,5 +128,46 @@ class VkCommunityBindController extends Controller
 
         return redirect()->route('profile.notification_channels')
             ->with('status', '✅ VK-сообщество «' . $groupName . '» успешно привязано!');
+    }
+
+    private function isVkError(mixed $resp): bool
+    {
+        return !is_array($resp) || isset($resp['error']);
+    }
+
+    private function isSecurityOrInvalidError(mixed $resp): bool
+    {
+        if (!is_array($resp)) {
+            return true;
+        }
+        $err = $resp['error'] ?? null;
+        if ($err === null) {
+            return false;
+        }
+        // OAuth-формат: {"error":"invalid_request","error_description":"Security Error"}
+        if (is_string($err) && ($err === 'invalid_request' || $err === 'access_denied')) {
+            return true;
+        }
+        // Стандартный VK формат: error_code 5 (auth failed), 27 (community token required)
+        if (is_array($err)) {
+            $code = $err['error_code'] ?? 0;
+            return in_array($code, [5, 27], true);
+        }
+        return false;
+    }
+
+    private function vkErrorString(mixed $resp): string
+    {
+        if (!is_array($resp)) {
+            return 'нет ответа от VK';
+        }
+        $err = $resp['error'] ?? null;
+        if (is_string($err)) {
+            return $resp['error_description'] ?? $err;
+        }
+        if (is_array($err)) {
+            return $err['error_msg'] ?? ('код ' . ($err['error_code'] ?? '?'));
+        }
+        return 'неизвестная ошибка';
     }
 }
