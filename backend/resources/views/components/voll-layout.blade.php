@@ -681,8 +681,11 @@
 						console.log('BIOMETRIC LOGIN: success, redirecting');
 						var data = await resp.json();
 						window.location.href = data.redirect || '/dashboard';
-					} else {
+					} else if (resp.status === 422) {
+						console.log('BIOMETRIC LOGIN: invalid token, deleting credentials');
 						await NativeBiometric.deleteCredentials({ server: 'volleyplay.club' });
+					} else {
+						console.log('BIOMETRIC LOGIN: server error ' + resp.status + ', keeping credentials');
 					}
 				} catch (e) {
 					console.log('BIOMETRIC LOGIN: error', e);
