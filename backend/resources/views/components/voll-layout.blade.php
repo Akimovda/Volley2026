@@ -618,6 +618,15 @@
 		}
 		</script>
 
+		<script>
+		if (navigator.userAgent.includes('VolleyPlayApp') && window.Capacitor) {
+			var SplashScreen = window.Capacitor.Plugins.SplashScreen;
+			if (SplashScreen) {
+				SplashScreen.hide();
+			}
+		}
+		</script>
+
 		@auth
 		<script>
 		(function() {
