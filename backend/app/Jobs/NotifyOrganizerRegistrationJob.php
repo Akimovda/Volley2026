@@ -33,7 +33,9 @@ class NotifyOrganizerRegistrationJob implements ShouldQueue
     public function __construct(
         public readonly int $occurrenceId,
         public readonly int $playerId,
-        public readonly string $type, // 'registered' | 'cancelled'
+        public readonly string $type, // 'registered' | 'cancelled' | 'org_registered' | 'org_cancelled' | 'org_deleted'
+        public readonly ?int $actorId = null,
+        public readonly ?string $position = null,
     ) {}
 
     public function handle(UserNotificationService $notificationService): void
@@ -44,29 +46,44 @@ class NotifyOrganizerRegistrationJob implements ShouldQueue
             return;
         }
 
-        $organizer = $occurrence->event?->organizer;
-
-        if (!$organizer || !$organizer->notify_player_registrations) {
-            return;
-        }
-
         $player = User::find($this->playerId);
 
         if (!$player) {
             return;
         }
 
-        $notificationType = $this->type === 'registered'
-            ? 'organizer_player_registered'
-            : 'organizer_player_cancelled';
+        $isOrgAction = str_starts_with($this->type, 'org_');
 
-        $fallbackTitle = $this->type === 'registered'
-            ? '✅ Регистрация подтверждена'
-            : '⛔️ Бронь отменена';
+        if ($isOrgAction) {
+            if (!$this->actorId) {
+                return;
+            }
+            $actor = User::find($this->actorId);
+            if (!$actor || !$actor->notify_player_registrations) {
+                return;
+            }
+            [$notifyUserId, $notificationType, $fallbackTitle] = match ($this->type) {
+                'org_registered' => [(int) $actor->id, 'organizer_registered_player', '✅ Вы записали'],
+                'org_cancelled'  => [(int) $actor->id, 'organizer_cancelled_player',  '⛔️ Вы отменили запись'],
+                default          => [(int) $actor->id, 'organizer_deleted_player',    '🗑 Вы удалили запись'],
+            };
+        } else {
+            $organizer = $occurrence->event?->organizer;
+            if (!$organizer || !$organizer->notify_player_registrations) {
+                return;
+            }
+            $notifyUserId = (int) $organizer->id;
+            $notificationType = $this->type === 'registered'
+                ? 'organizer_player_registered'
+                : 'organizer_player_cancelled';
+            $fallbackTitle = $this->type === 'registered'
+                ? '✅ Регистрация подтверждена'
+                : '⛔️ Бронь отменена';
+        }
 
         try {
             $notificationService->create(
-                userId:   (int) $organizer->id,
+                userId:   $notifyUserId,
                 type:     $notificationType,
                 title:    $fallbackTitle,
                 body:     null,
@@ -96,7 +113,7 @@ class NotifyOrganizerRegistrationJob implements ShouldQueue
             $player->patronymic,
         ]))) ?: ((string) ($player->name ?? ''));
 
-        $positionCode = DB::table('event_registrations')
+        $positionCode = $this->position ?? DB::table('event_registrations')
             ->where('user_id', $player->id)
             ->where('occurrence_id', $occurrence->id)
             ->whereNull('cancelled_at')
