@@ -4599,3 +4599,28 @@ body.dark .progress { background: rgba(255,255,255,0.12); }
 .is-app .top-section {
 	padding-top: calc(12rem + env(safe-area-inset-top, 0px));
 }
+#app-back-btn {
+	display: none;
+}
+.is-app #app-back-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	position: fixed;
+	bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+	left: 16px;
+	width: 44px;
+	height: 44px;
+	border-radius: 50%;
+	background: rgba(255, 255, 255, 0.95);
+	border: 1px solid rgba(0, 0, 0, 0.1);
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+	color: #1a3a6b;
+	cursor: pointer;
+	z-index: 9999;
+	-webkit-tap-highlight-color: transparent;
+}
+.is-app #app-back-btn:active {
+	background: rgba(230, 230, 230, 0.95);
+	transform: scale(0.92);
+}
