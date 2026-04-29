@@ -25,5 +25,7 @@ class VerifyCsrfToken extends Middleware
     protected $except = [
         // Telegram Login Widget callback
         'auth/telegram/callback',
+        // Biometric login: аутентификация через biometric_token, CSRF недоступен на гостевой странице
+        'auth/biometric-login',
     ];
 }

@@ -649,18 +649,22 @@
 			if (!NativeBiometric) return;
 
 			async function tryBiometricLogin() {
+				console.log('BIOMETRIC LOGIN: start');
 				try {
 					var avail = await NativeBiometric.isAvailable();
 					if (!avail.isAvailable) return;
 
 					var creds = await NativeBiometric.getCredentials({ server: 'volleyplay.club' });
 					if (!creds || !creds.password) return;
+					console.log('BIOMETRIC LOGIN: credentials found');
 
 					await NativeBiometric.verifyIdentity({
 						reason: 'Войти в VolleyPlay',
 						title: 'Вход по Face ID',
 					});
+					console.log('BIOMETRIC LOGIN: face id passed');
 
+					console.log('BIOMETRIC LOGIN: posting to server');
 					var resp = await fetch('/auth/biometric-login', {
 						method: 'POST',
 						headers: {
@@ -671,15 +675,17 @@
 						credentials: 'same-origin',
 						body: JSON.stringify({ biometric_token: creds.password })
 					});
+					console.log('BIOMETRIC LOGIN: server response', resp.status);
 
 					if (resp.ok) {
+						console.log('BIOMETRIC LOGIN: success, redirecting');
 						var data = await resp.json();
 						window.location.href = data.redirect || '/dashboard';
 					} else {
 						await NativeBiometric.deleteCredentials({ server: 'volleyplay.club' });
 					}
 				} catch (e) {
-					console.log('Biometric login skipped:', e);
+					console.log('BIOMETRIC LOGIN: error', e);
 				}
 			}
 
