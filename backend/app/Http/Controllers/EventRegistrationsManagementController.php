@@ -568,6 +568,10 @@ class EventRegistrationsManagementController extends Controller
                 app(EventOccurrenceStatsService::class)->increment((int) $occId);
             } else {
                 app(EventOccurrenceStatsService::class)->decrement((int) $occId);
+                $occ = \App\Models\EventOccurrence::find((int) $occId);
+                if ($occ) {
+                    app(\App\Services\WaitlistService::class)->onSpotFreed($occ, $row->position ?: '');
+                }
             }
         }
 
@@ -660,6 +664,10 @@ class EventRegistrationsManagementController extends Controller
         $wasActive = empty($row->cancelled_at) && !$row->is_cancelled && $row->status !== 'cancelled';
         if ($wasActive && !empty($row->occurrence_id)) {
             app(EventOccurrenceStatsService::class)->decrement((int) $row->occurrence_id);
+            $occ = \App\Models\EventOccurrence::find((int) $row->occurrence_id);
+            if ($occ) {
+                app(\App\Services\WaitlistService::class)->onSpotFreed($occ, $row->position ?: '');
+            }
         }
 
         $this->userNotificationService->createRegistrationCancelledByOrganizerNotification(
