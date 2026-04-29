@@ -680,7 +680,7 @@
 					if (resp.ok) {
 						console.log('BIOMETRIC LOGIN: success, redirecting');
 						var data = await resp.json();
-						window.location.href = data.redirect || '/dashboard';
+						window.location.href = data.redirect || '/events';
 					} else if (resp.status === 422) {
 						console.log('BIOMETRIC LOGIN: invalid token, deleting credentials');
 						await NativeBiometric.deleteCredentials({ server: 'volleyplay.club' });
