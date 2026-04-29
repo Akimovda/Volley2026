@@ -710,15 +710,16 @@
 					if (sessionStorage.getItem('biometric_offered')) return;
 					sessionStorage.setItem('biometric_offered', 'true');
 
-					var result = await Swal.fire({
+					var result = await swal({
 						title: 'Быстрый вход',
 						text: 'Хотите входить по Face ID?',
-						icon: 'question',
-						showCancelButton: true,
-						confirmButtonText: 'Включить',
-						cancelButtonText: 'Позже'
+						icon: 'info',
+						buttons: {
+							cancel: 'Позже',
+							confirm: 'Включить'
+						}
 					});
-					if (!result.isConfirmed) return;
+					if (!result) return;
 
 					var token = crypto.randomUUID();
 
@@ -739,13 +740,7 @@
 							password: token,
 							server: 'volleyplay.club'
 						});
-						Swal.fire({
-							title: 'Готово!',
-							text: 'Face ID включён. В следующий раз вы войдёте мгновенно.',
-							icon: 'success',
-							timer: 2000,
-							showConfirmButton: false
-						});
+						swal('Готово!', 'Face ID включён. В следующий раз вы войдёте мгновенно.', 'success');
 					}
 				} catch (e) {
 					console.log('Biometric setup error:', e);
