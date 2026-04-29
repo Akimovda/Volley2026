@@ -190,6 +190,21 @@ class WaitlistService
             return $maxPlayers > 0 && $registered < $maxPlayers;
         }
 
+        // Резервные места (классика и пляжка)
+        if ($position === 'reserve') {
+            $reserveMax = (int)(DB::table('event_game_settings')
+                ->where('event_id', $event->id)
+                ->value('reserve_players_max') ?? 0);
+            if ($reserveMax <= 0) return false;
+            $reserveTaken = DB::table('event_registrations')
+                ->where('occurrence_id', $occurrence->id)
+                ->where('position', 'reserve')
+                ->whereNull('cancelled_at')
+                ->where(fn($q) => $q->whereNull('status')->orWhere('status', 'confirmed'))
+                ->count();
+            return $reserveTaken < $reserveMax;
+        }
+
         // Для классики — проверяем конкретную позицию
         if (!$position) return false;
 
@@ -237,6 +252,7 @@ class WaitlistService
             'middle'   => 'Центральный',
             'libero'   => 'Либеро',
             'player'   => 'Игрок',
+            'reserve'  => 'Резерв',
             default    => $key,
         };
     }

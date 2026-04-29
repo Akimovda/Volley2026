@@ -126,7 +126,9 @@ class NotifyOrganizerRegistrationJob implements ShouldQueue
             ->where(fn ($q) => $q->whereNull('status')->orWhere('status', 'confirmed'))
             ->count();
         $maxPlayers = (int) ($occurrence->max_players ?? $event->gameSettings?->max_players ?? 0);
-        $available = $maxPlayers > 0 ? max(0, $maxPlayers - $booked) : 0;
+        $reserveMax = (int) ($event->gameSettings?->reserve_players_max ?? 0);
+        $totalMax   = $maxPlayers + $reserveMax;
+        $available  = $totalMax > 0 ? max(0, $totalMax - $booked) : 0;
 
         $tz = $occurrence->timezone ?: ($event->timezone ?: 'UTC');
         $starts = Carbon::parse($occurrence->starts_at, 'UTC')->setTimezone($tz);

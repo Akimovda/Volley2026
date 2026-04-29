@@ -25,11 +25,11 @@ class EventRegistrationObserver
 
     public function updated(EventRegistration $registration): void
     {
-        // Если запись отменена
-        if ($registration->wasChanged('is_cancelled') && $registration->is_cancelled) {
-            $this->triggerWaitlist($registration);
-        }
-        if ($registration->wasChanged('status') && $registration->status === 'cancelled') {
+        $cancelledByStatus    = $registration->wasChanged('status') && $registration->status === 'cancelled';
+        $cancelledByIsFlag    = $registration->wasChanged('is_cancelled') && $registration->is_cancelled;
+        $cancelledByCancelledAt = $registration->wasChanged('cancelled_at') && $registration->cancelled_at !== null;
+
+        if ($cancelledByStatus || $cancelledByIsFlag || $cancelledByCancelledAt) {
             $this->triggerWaitlist($registration);
         }
     }
