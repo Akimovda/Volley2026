@@ -282,12 +282,31 @@ sudo supervisorctl restart volleyplay-queue:* volleyplay-reverb
 ### API endpoints
 - POST /api/device-token (auth:sanctum) — сохранить/обновить токен
 - DELETE /api/device-token (auth:sanctum) — деактивировать токен
-- POST /api/biometric/register (auth:sanctum) — сгенерировать biometric_token
+- POST /api/biometric/register (auth:sanctum) — API-версия (требует Sanctum токен, НЕ для WebView)
 - POST /api/biometric/login — авторизация по biometric_token, возвращает Sanctum токен
 - DELETE /api/biometric/revoke (auth:sanctum) — удалить biometric_token
+
+### Web endpoints (Capacitor/WebView — используют web-сессию)
+- POST /auth/biometric-login — вход по biometric_token, создаёт web-сессию, возвращает JSON {ok, redirect}
+- POST /auth/biometric-register (auth:sanctum+jetstream) — регистрация biometric_token через web-сессию
+- Исключены из CSRF в bootstrap/app.php → validateCsrfTokens(except): auth/biometric-login
+- НЕ использовать VerifyCsrfToken::$except — в Laravel 12 он игнорируется, только bootstrap/app.php
 
 ### Face ID
 - Поле biometric_token (string 64, nullable, unique) добавлено в таблицу users
 - Скрыто в $hidden User модели
-- Генерация: Str::random(64)
-- BiometricController: register/login/revoke
+- Генерация: Str::random(64), НЕ crypto.randomUUID() (недоступен в старых WKWebView до iOS 15.4)
+- Использовать: ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, ...) через getRandomValues
+- BiometricController (Api/): register/login/revoke/webLogin
+- JS в voll-layout.blade.php: tryBiometricLogin (гости) + offerBiometricSetup (@auth)
+- tryBiometricLogin: guard if(!meta[name="user-authenticated"]) — не запускать для авторизованных
+- deleteCredentials только при 422 (невалидный токен), при 419/500 — сохранять credentials
+- SESSION_SAME_SITE=none (нужен для WebView OAuth), SESSION_SECURE_COOKIE=true
+
+### Universal Links (НЕ настроено, требует работы)
+- AASA файл отсутствует: public/.well-known/apple-app-site-association не создан
+- nginx блокирует /.well-known/ правилом `location ~ /\. { deny all; }`
+- Для настройки нужно:
+  1. Создать public/.well-known/apple-app-site-association с TEAM_ID и BUNDLE_ID
+  2. Добавить в nginx ДО deny-правила: `location ^~ /.well-known/ { allow all; try_files $uri =404; }`
+  3. sudo nginx -s reload
