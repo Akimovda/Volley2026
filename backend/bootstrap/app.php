@@ -17,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->validateCsrfTokens(except: [
             'yookassa/webhook',
+            'auth/biometric-login',
         ]);
         $middleware->alias([
             'user.restricted'     => \App\Http\Middleware\EnsureUserNotRestricted::class,
