@@ -1,0 +1,22 @@
+{
+    "applinks": {
+        "apps": [],
+        "details": [
+            {
+                "appID": "V762R44QWF.club.volleyplay.app",
+                "paths": [
+                    "/auth/telegram/callback*",
+                    "/auth/vk/callback*",
+                    "/auth/yandex/callback*",
+                    "/events",
+                    "/events/*"
+                ]
+            }
+        ]
+    },
+    "webcredentials": {
+        "apps": [
+            "V762R44QWF.club.volleyplay.app"
+        ]
+    }
+}
