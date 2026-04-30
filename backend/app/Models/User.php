@@ -82,6 +82,7 @@
             'beach_universal'             => 'boolean',
             'allow_user_contact'          => 'boolean',
             'notify_player_registrations' => 'boolean',
+            'is_hidden'                   => 'boolean',
             'password'                    => 'hashed',
 			];
 		}

@@ -20,6 +20,9 @@ class UserDirectoryController extends Controller
 
         $users = User::query()
             ->with('city')
+            ->where(function ($q2) {
+                $q2->whereNull('is_hidden')->orWhere('is_hidden', false);
+            })
             ->when($q !== '', function ($query) use ($q) {
                 $query->where(function ($qq) use ($q) {
                     $qq->whereRaw("CONCAT(last_name, ' ', first_name) ILIKE ?", ["%{$q}%"])

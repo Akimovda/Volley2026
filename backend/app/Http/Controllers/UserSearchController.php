@@ -55,6 +55,9 @@ class UserSearchController extends Controller
                 'role',
                 'email',
             ])
+            ->where(function ($q2) {
+                $q2->whereNull('is_hidden')->orWhere('is_hidden', false);
+            })
             ->when($rolesFilter, fn($q2) => $q2->whereIn('role', $rolesFilter))
             ->where(function ($w) use ($likes, $q) {
                 if (ctype_digit($q) && (int) $q > 0) {
