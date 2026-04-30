@@ -80,6 +80,7 @@
 					$isUnread = empty($notification->read_at);
 					$type = (string) ($notification->type ?? '');
 					$eventId = (int) ($payload['event_id'] ?? 0);
+					$occurrenceId = (int) ($payload['occurrence_id'] ?? 0);
 					$inviteId = (int) ($payload['invite_id'] ?? 0);
 					$autoJoin = (bool) ($payload['auto_join_after_registration'] ?? false);
 					@endphp
@@ -114,7 +115,7 @@
 								$message = $notification->body; // или откуда берётся текст
 								$message = preg_replace(
 								'/(https?:\/\/[^\s]+)/',
-								'<a href="$1" target="_blank" rel="nofollow">перейти по ссылке</a>',
+								'<a href="$1" rel="nofollow">перейти по ссылке</a>',
 								e($message) // экранируем для безопасности
 								);
 								@endphp
@@ -126,7 +127,7 @@
 								
 								@if($type === 'group_invite' && $eventId > 0 && $inviteId > 0)
 								<div class="mt-2 d-flex gap-2 flex-wrap">
-									<a href="{{ route('events.show', ['event' => $eventId]) }}" class="btn btn-outline-primary">
+									<a href="/events/{{ $eventId }}{{ $occurrenceId ? '?occurrence=' . $occurrenceId : '' }}" class="btn btn-outline-primary">
 										Открыть мероприятие
 									</a>
 									
