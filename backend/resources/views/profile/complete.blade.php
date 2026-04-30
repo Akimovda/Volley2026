@@ -550,17 +550,38 @@
 												if ($birthValue === null) {
 												$birthValue = $user?->birth_date ? $user->birth_date->format('Y-m-d') : '';
 												}
+												$birthDay   = $birthValue ? (int) date('j', strtotime($birthValue)) : 0;
+												$birthMonth = $birthValue ? (int) date('n', strtotime($birthValue)) : 0;
+												$birthYear  = $birthValue ? (int) date('Y', strtotime($birthValue)) : 0;
 												@endphp
-											
-												<input
-												type="date"
-												min="1945-01-01" 
-												max="2024-01-01"
-												name="birth_date"
-												class="{{ $errors->has('birth_date') ? 'input-error' : '' }}"
-												value="{{ $birthValue }}"
-												@disabled($lockedBirth)
-												>
+
+												<input type="hidden" name="birth_date" id="birth_date_hidden" value="{{ $birthValue }}">
+												<div class="d-flex gap-2">
+													<select id="birth_day" style="width:80px"
+														class="{{ $errors->has('birth_date') ? 'input-error' : '' }}"
+														@disabled($lockedBirth)>
+														<option value="">День</option>
+														@for($d = 1; $d <= 31; $d++)
+														<option value="{{ $d }}" @selected($birthDay === $d)>{{ $d }}</option>
+														@endfor
+													</select>
+													<select id="birth_month" style="flex:1"
+														class="{{ $errors->has('birth_date') ? 'input-error' : '' }}"
+														@disabled($lockedBirth)>
+														<option value="">Месяц</option>
+														@foreach(['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'] as $mi => $mn)
+														<option value="{{ $mi + 1 }}" @selected($birthMonth === $mi + 1)>{{ $mn }}</option>
+														@endforeach
+													</select>
+													<select id="birth_year" style="width:100px"
+														class="{{ $errors->has('birth_date') ? 'input-error' : '' }}"
+														@disabled($lockedBirth)>
+														<option value="">Год</option>
+														@for($y = 2015; $y >= 1945; $y--)
+														<option value="{{ $y }}" @selected($birthYear === $y)>{{ $y }}</option>
+														@endfor
+													</select>
+												</div>
 												<ul class="list f-16 mt-1">
 													@error('birth_date')<li class="red b-600">{{ $message }}</li>@enderror
 													@if($lockedBirth)<li>{{ $lockHint }}</li>@endif
@@ -1205,15 +1226,54 @@
 								});
 							});
 							
-							// Слушаем изменения даты рождения
+							// Дата рождения: 3 select → hidden input
+							(function() {
+								var dayEl  = document.getElementById('birth_day');
+								var monEl  = document.getElementById('birth_month');
+								var yearEl = document.getElementById('birth_year');
+								var hidden = document.getElementById('birth_date_hidden');
+								if (!dayEl || !monEl || !yearEl || !hidden) return;
+
+								var MONTHS_30 = [4, 6, 9, 11];
+
+								function daysInMonth(m, y) {
+									if (m === 2) return (y && y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0)) ? 29 : 28;
+									return MONTHS_30.includes(m) ? 30 : 31;
+								}
+
+								function updateDays() {
+									var m = parseInt(monEl.value) || 0;
+									var y = parseInt(yearEl.value) || 0;
+									var maxDay = m ? daysInMonth(m, y) : 31;
+									var cur = parseInt(dayEl.value) || 0;
+									var html = '<option value="">День</option>';
+									for (var d = 1; d <= maxDay; d++) {
+										html += '<option value="' + d + '"' + (cur === d ? ' selected' : '') + '>' + d + '</option>';
+									}
+									dayEl.innerHTML = html;
+									if (cur > maxDay) dayEl.value = '';
+								}
+
+								function assembleBirthDate() {
+									var d = parseInt(dayEl.value) || 0;
+									var m = parseInt(monEl.value) || 0;
+									var y = parseInt(yearEl.value) || 0;
+									hidden.value = (d && m && y)
+										? y + '-' + String(m).padStart(2,'0') + '-' + String(d).padStart(2,'0')
+										: '';
+									hidden.dispatchEvent(new Event('change', { bubbles: true }));
+								}
+
+								monEl.addEventListener('change', function() { updateDays(); assembleBirthDate(); });
+								yearEl.addEventListener('change', function() { updateDays(); assembleBirthDate(); });
+								dayEl.addEventListener('change', assembleBirthDate);
+
+								updateDays();
+							})();
+
+							// Слушаем изменения даты рождения (через hidden input)
 							if (birthInput) {
 								birthInput.addEventListener('change', updateAvailableLevels);
-								birthInput.addEventListener('blur', updateAvailableLevels);
-								birthInput.addEventListener('input', function() {
-									if (!this.value) {
-										updateAvailableLevels();
-									}
-								});
 							}
 							
 							// Инициализация при загрузке
@@ -1426,7 +1486,21 @@
 									setInvalid(cityInput, bad);
 									ok = ok && !bad;
 								}
-								
+
+								// Birth date: все три select обязательны
+								{
+									const bDay  = document.getElementById('birth_day');
+									const bMon  = document.getElementById('birth_month');
+									const bYear = document.getElementById('birth_year');
+									if (bDay && !bDay.disabled) {
+										const bOk = !!(bDay.value && bMon.value && bYear.value);
+										setInvalid(bDay, !bOk);
+										setInvalid(bMon, !bOk);
+										setInvalid(bYear, !bOk);
+										ok = ok && bOk;
+									}
+								}
+
 								if (!ok) {
 									e.preventDefault();
 									const firstBad = document.querySelector('.input-error');
