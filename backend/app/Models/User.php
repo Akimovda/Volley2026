@@ -83,6 +83,7 @@
             'allow_user_contact'          => 'boolean',
             'notify_player_registrations' => 'boolean',
             'is_hidden'                   => 'boolean',
+            'is_test'                     => 'boolean',
             'password'                    => 'hashed',
 			];
 		}

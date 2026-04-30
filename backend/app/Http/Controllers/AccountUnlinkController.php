@@ -22,6 +22,11 @@ class AccountUnlinkController extends Controller
         return $this->unlink($request, 'yandex');
     }
 
+    public function apple(Request $request)
+    {
+        return $this->unlink($request, 'apple');
+    }
+
     private function unlink(Request $request, string $provider)
     {
         /** @var User $u */
@@ -31,6 +36,7 @@ class AccountUnlinkController extends Controller
             'telegram' => !empty($u->telegram_id),
             'vk'       => !empty($u->vk_id),
             'yandex'   => !empty($u->yandex_id),
+            'apple'    => !empty($u->apple_id),
         ];
 
         if (empty($providers[$provider])) {
@@ -62,6 +68,10 @@ class AccountUnlinkController extends Controller
             $u->yandex_avatar = null;
         }
 
+        if ($provider === 'apple') {
+            $u->apple_id = null;
+        }
+
         $u->save();
 
         // если отвязали текущий provider в сессии — подчистим метки
@@ -73,6 +83,7 @@ class AccountUnlinkController extends Controller
             'telegram' => 'Telegram',
             'vk' => 'VK',
             'yandex' => 'Yandex',
+            'apple' => 'Apple',
             default => 'Provider',
         };
 

@@ -2703,6 +2703,42 @@ body.dark  .auth-btn-telegram-widget-up {
 	background: rgba(255, 255, 255, 0.2);
 	}
 */
+/* Apple */
+.auth-btn-apple {
+    border-color: rgba(0, 0, 0, 0.15);
+    background-color: #1a1a1a;
+    color: #ffffff;
+}
+.auth-btn-apple:hover {
+    background-color: #000000;
+    border-color: #000000;
+    color: #ffffff;
+}
+.auth-btn-apple .auth-icon-circle {
+    background-color: rgba(255, 255, 255, 0.15);
+}
+body.dark .auth-btn-apple {
+    background-color: #ffffff;
+    border-color: #ffffff;
+    color: #000000;
+}
+body.dark .auth-btn-apple .auth-icon-circle {
+    background-color: rgba(0, 0, 0, 0.1);
+}
+body.dark .auth-btn-apple svg {
+    color: #000000;
+}
+.btn-apple {
+    background-color: #1a1a1a;
+    color: #ffffff;
+    border-color: #1a1a1a;
+}
+.btn-apple:hover {
+    background-color: #000000;
+    border-color: #000000;
+    color: #ffffff;
+}
+
 /* Эффект клика */
 @keyframes click-wave {
 	0% {

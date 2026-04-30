@@ -246,6 +246,8 @@ Route::get('/auth/telegram/callback', [TelegramAuthController::class, 'callback'
 	Route::get('/auth/vk/callback', [VkAuthController::class, 'callback'])->name('auth.vk.callback');
 	Route::get('/auth/yandex/redirect', [YandexAuthController::class, 'redirect'])->name('auth.yandex.redirect');
 	Route::get('/auth/yandex/callback', [YandexAuthController::class, 'callback'])->name('auth.yandex.callback');
+	Route::get('/auth/apple/redirect', [\App\Http\Controllers\Auth\AppleAuthController::class, 'redirect'])->name('auth.apple.redirect');
+	Route::post('/auth/apple/callback', [\App\Http\Controllers\Auth\AppleAuthController::class, 'callback'])->name('auth.apple.callback');
 	Route::post('/auth/biometric-login', [\App\Http\Controllers\Api\BiometricController::class, 'webLogin'])->name('auth.biometric.login');
 	Route::get('/auth/review-login', [\App\Http\Controllers\Auth\ReviewLoginController::class, 'show'])->name('auth.review.show');
 	Route::post('/auth/review-login', [\App\Http\Controllers\Auth\ReviewLoginController::class, 'login'])->name('auth.review.login');
@@ -415,6 +417,7 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
 		Route::post('/account/unlink/telegram', [AccountUnlinkController::class, 'telegram'])->name('account.unlink.telegram');
 		Route::post('/account/unlink/vk', [AccountUnlinkController::class, 'vk'])->name('account.unlink.vk');
 		Route::post('/account/unlink/yandex', [AccountUnlinkController::class, 'yandex'])->name('account.unlink.yandex');
+		Route::post('/account/unlink/apple', [AccountUnlinkController::class, 'apple'])->name('account.unlink.apple');
 		
 		Route::post('/account/delete-request', [AccountDeleteRequestController::class, 'store'])->name('account.delete.request');
 		

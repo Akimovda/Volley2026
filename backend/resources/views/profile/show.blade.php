@@ -121,6 +121,7 @@
     $hasTg = !empty($u?->telegram_id);
     $hasVk = !empty($u?->vk_id);
     $hasYa = !empty($u?->yandex_id);
+    $hasApple = !empty($u?->apple_id);
 	// персональные уведомления
     $hasMaxNotify = !empty($u?->max_chat_id);
     $hasTelegramNotify = !empty($u?->telegram_notify_chat_id);
@@ -137,6 +138,8 @@
 	$provider = 'vk';
 	} elseif ($hasYa && (string) $u->yandex_id === $providerId) {
 	$provider = 'yandex';
+	} elseif ($hasApple && (string) $u->apple_id === $providerId) {
+	$provider = 'apple';
 	}
     }
     
@@ -146,6 +149,7 @@
 	'telegram' => $hasTg,
 	'vk' => $hasVk,
 	'yandex' => $hasYa,
+	'apple' => $hasApple,
 	]);
     
 	if (count($linkedProviders) === 1) {
@@ -154,11 +158,11 @@
     }
     
     // fallback 2: если определить нельзя, но входы есть
-    if (!$provider && ($hasTg || $hasVk || $hasYa)) {
+    if (!$provider && ($hasTg || $hasVk || $hasYa || $hasApple)) {
 	$provider = 'unknown';
     }
-    
-    $linkedCount = (int)$hasTg + (int)$hasVk + (int)$hasYa;
+
+    $linkedCount = (int)$hasTg + (int)$hasVk + (int)$hasYa + (int)$hasApple;
     
     // “provider looks off” (после неуспешной привязки мог остаться мусор в сессии)
 	
@@ -167,7 +171,7 @@
     $vkLinkUrl     = route('auth.vk.redirect', ['link' => 1]);
     $yandexLinkUrl = route('auth.yandex.redirect', ['link' => 1]);
     
-    $allLinked = $hasTg && $hasVk && $hasYa;
+    $allLinked = $hasTg && $hasVk && $hasYa && $hasApple;
     
     $tgBotUsername = config('services.telegram.bot_username');
     
@@ -346,10 +350,10 @@
 					
 				</div>	
 				@php
-    $providerCount = (int)!empty($u?->telegram_id) + (int)!empty($u?->vk_id) + (int)!empty($u?->yandex_id);
+    $providerCount = (int)!empty($u?->telegram_id) + (int)!empty($u?->vk_id) + (int)!empty($u?->yandex_id) + (int)!empty($u?->apple_id);
 @endphp
 
-@if(session('show_providers_hint') || $providerCount < 3)
+@if(session('show_providers_hint') || $providerCount < 4)
 <div class="ramka" id="providers-hint">
     <div class="d-flex fvc gap-2">
         <span style="font-size:2.4rem">🔐</span>
@@ -527,6 +531,48 @@
 											Привязать Telegram
 										</a>
 										@endif
+										@endif
+									</div>
+								</div>
+							</div>
+							{{-- Apple card --}}
+							<div class="col-6 col-md-3 col-lg-6 col-xl-3">
+								<div class="card">
+									<div class="provider-card__header">
+										<span class="provider-card__icon" style="font-size:1.5rem;line-height:1">
+											<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
+										</span>
+										<span class="provider-card__title">Apple</span>
+									</div>
+
+									<div class="provider-card__status">
+										{!! $badge($hasApple) !!}
+									</div>
+
+									<div class="provider-card__actions">
+										@if($hasApple)
+										@if($canUnlink)
+										<form method="POST"
+										action="{{ route('account.unlink.apple') }}"
+										onsubmit="return confirm('Отвязать Apple ID от аккаунта?');">
+											@csrf
+											<button type="submit" class="btn-alert w-100 btn btn-small btn-secondary"
+											data-title="Отвязать Apple ID от аккаунта?"
+											data-icon="warning"
+											data-confirm-text="Да, отвязать"
+											data-cancel-text="Отмена">
+												Отвязать
+											</button>
+										</form>
+										@else
+										<button class="w-100 btn btn-small btn-secondary" disabled>
+											Нельзя отвязать
+										</button>
+										@endif
+										@else
+										<a href="{{ route('auth.apple.redirect', ['link' => 1]) }}" class="w-100 btn btn-small btn-apple">
+											Привязать
+										</a>
 										@endif
 									</div>
 								</div>
