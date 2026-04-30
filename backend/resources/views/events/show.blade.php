@@ -228,6 +228,12 @@ $hasCoords =
 			
 			<div class="row row2">
 				<div class="col-lg-8">
+					{{-- Нативные кнопки — видны только в Capacitor (.is-app) --}}
+					<div class="native-actions">
+						<button type="button" class="btn btn-secondary btn-haptic" id="btn-share-event">Поделиться</button>
+						<button type="button" class="btn btn-secondary btn-haptic" id="btn-add-calendar">В календарь</button>
+					</div>
+
 					@include('events.show.description')
 					@include('events.show.info')
 					
@@ -321,5 +327,43 @@ $hasCoords =
 		</div>
 		<x-slot name="script">
 			@include('events.show.scripts')
+			@php
+				$calStart = $starts ? $starts->toIso8601String() : '';
+				$calEnd   = $ends
+					? $ends->toIso8601String()
+					: ($starts ? $starts->copy()->addHours(2)->toIso8601String() : '');
+				$calLoc   = $address ?? '';
+				$calNotes = strip_tags($event->description ?? '');
+			@endphp
+			<script>
+			(function () {
+				if (!window.VolleyNative || !window.VolleyNative.isApp) return;
+
+				var shareBtn = document.getElementById('btn-share-event');
+				var calBtn   = document.getElementById('btn-add-calendar');
+
+				if (shareBtn) {
+					shareBtn.addEventListener('click', function () {
+						window.VolleyNative.share({
+							title: @json($event->title ?? ''),
+							text: 'Присоединяйся к игре на VolleyPlay!',
+							url: window.location.href
+						});
+					});
+				}
+
+				if (calBtn) {
+					calBtn.addEventListener('click', function () {
+						window.VolleyNative.addToCalendar({
+							title: @json($event->title ?? ''),
+							location: @json($calLoc),
+							notes: @json($calNotes),
+							startDate: @json($calStart),
+							endDate: @json($calEnd)
+						});
+					});
+				}
+			})();
+			</script>
 		</x-slot>
 	</x-voll-layout>					

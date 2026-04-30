@@ -48,6 +48,10 @@ Route::post('/integrations/channels/set-thread', [\App\Http\Controllers\Api\Chan
 Route::middleware('auth:sanctum,web')->group(function () {
     Route::post('/device-token', [\App\Http\Controllers\Api\DeviceTokenController::class, 'store']);
     Route::delete('/device-token', [\App\Http\Controllers\Api\DeviceTokenController::class, 'destroy']);
+    Route::get('/notifications/unread-count', function (Request $request) {
+        $count = $request->user()->notificationsInbox()->whereNull('read_at')->count();
+        return response()->json(['count' => $count]);
+    });
 });
 
 // Face ID / биометрическая авторизация
