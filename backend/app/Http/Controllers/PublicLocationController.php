@@ -25,106 +25,162 @@ class PublicLocationController extends Controller
      * 2) иначе если у пользователя есть city_id и в этом городе есть локации — показываем его
      * 3) иначе показываем все города
      */
-            public function index(Request $request)
-            {
-                $viewMode = (string) $request->query('view', 'cards');
-                if (!in_array($viewMode, ['rows','cards','map'], true)) $viewMode = 'cards';
-            
-                $activeOnly = (int) $request->query('active', 0) === 1;
-            
-                // city filter: только если city_id в URL
-                $reqCityId = (int) $request->query('city_id', 0);
-            
-                // --- базовый фильтр локаций (публичные) ---
-                $baseLocationQ = Location::query()->whereNull('organizer_id');
-            
-                if ($reqCityId > 0) {
-                    $baseLocationQ->where('city_id', $reqCityId);
-                }
-            
-                // --- ACTIVE: строим список активных location_id (как у тебя), но без принудительного city_id=403 ---
-                $activeLocationIds = null;
-            
-                if ($activeOnly) {
-                    $todayUtc = CarbonImmutable::now('UTC')->startOfDay();
-                    $activeLocationIds = [];
-            
-                    if (Schema::hasTable('event_occurrences')) {
-$q = EventOccurrence::query()
-    ->whereNotNull('starts_at')
-    ->where('starts_at', '>=', $todayUtc)
-                            ->whereHas('event', function ($e) {
-                                $e->where(function ($pub) {
-                                    if (Schema::hasColumn('events', 'is_private')) {
-                                        $pub->whereNull('is_private')->orWhere('is_private', false);
-                                    }
-                                    if (Schema::hasColumn('events', 'visibility')) {
-                                        $pub->whereNull('visibility')->orWhere('visibility', '!=', 'private');
-                                    }
-                                });
-                            })
-                            ->with(['event:id,location_id']);
-            
-                        // ✅ если выбран город — сузим
-                        if ($reqCityId > 0) {
-                            $q->whereHas('event', fn($e) => $e->whereHas('location', fn($l) => $l->where('city_id', $reqCityId)));
-                        }
-            
-                        $activeLocationIds = $q->get()
-                            ->pluck('event.location_id')->filter()->unique()->values()->all();
-                    } else if (Schema::hasTable('events')) {
-$q = Event::query()
-    ->whereNotNull('starts_at')
-    ->where('starts_at', '>=', $todayUtc)
-                            ->where(function ($pub) {
-                                if (Schema::hasColumn('events', 'is_private')) {
-                                    $pub->whereNull('is_private')->orWhere('is_private', false);
-                                }
-                                if (Schema::hasColumn('events', 'visibility')) {
-                                    $pub->whereNull('visibility')->orWhere('visibility', '!=', 'private');
-                                }
-                            });
-            
-                        if ($reqCityId > 0) {
-                            $q->whereHas('location', fn($l) => $l->where('city_id', $reqCityId));
-                        }
-            
-                        $activeLocationIds = $q->pluck('location_id')->filter()->unique()->values()->all();
-                    }
-            
-                    if (empty($activeLocationIds)) $activeLocationIds = [-1]; // чтобы было пусто
-                }
-            
-                // ✅ пагинация по городам
-                $citiesQ = City::query()
-                    ->select('id','name','region','country_code','timezone')
-                    ->when($reqCityId > 0, fn($q) => $q->whereKey($reqCityId))
-                    ->whereHas('locations', function ($q) use ($activeOnly, $activeLocationIds) {
-                        $q->whereNull('organizer_id');
-                        if ($activeOnly && is_array($activeLocationIds)) {
-                            $q->whereIn('id', $activeLocationIds);
-                        }
+    public function index(Request $request)
+    {
+        $viewMode = (string) $request->query('view', 'cards');
+        if (!in_array($viewMode, ['rows', 'cards', 'card', 'map'], true)) $viewMode = 'cards';
+
+        $activeOnly = (int) $request->query('active', 0) === 1;
+        $reqCityId  = (int) $request->query('city_id', 0);
+
+        // Вычисляем активные location_id для фильтра "только с событиями"
+        $activeLocationIds = null;
+
+        if ($activeOnly) {
+            $todayUtc          = CarbonImmutable::now('UTC')->startOfDay();
+            $activeLocationIds = [];
+
+            if (Schema::hasTable('event_occurrences')) {
+                $q = EventOccurrence::query()
+                    ->whereNotNull('starts_at')
+                    ->where('starts_at', '>=', $todayUtc)
+                    ->whereHas('event', function ($e) {
+                        $e->where(function ($pub) {
+                            if (Schema::hasColumn('events', 'is_private')) {
+                                $pub->whereNull('is_private')->orWhere('is_private', false);
+                            }
+                            if (Schema::hasColumn('events', 'visibility')) {
+                                $pub->whereNull('visibility')->orWhere('visibility', '!=', 'private');
+                            }
+                        });
                     })
-                    ->with(['locations' => function ($q) use ($activeOnly, $activeLocationIds) {
-                        $q->whereNull('organizer_id')
-                          ->with('city:id,name,timezone')
-                          ->orderBy('name');
-            
-                        if ($activeOnly && is_array($activeLocationIds)) {
-                            $q->whereIn('id', $activeLocationIds);
+                    ->with(['event:id,location_id']);
+
+                if ($reqCityId > 0) {
+                    $q->whereHas('event', fn($e) => $e->whereHas('location', fn($l) => $l->where('city_id', $reqCityId)));
+                }
+
+                $activeLocationIds = $q->get()->pluck('event.location_id')->filter()->unique()->values()->all();
+
+            } elseif (Schema::hasTable('events')) {
+                $q = Event::query()
+                    ->whereNotNull('starts_at')
+                    ->where('starts_at', '>=', $todayUtc)
+                    ->where(function ($pub) {
+                        if (Schema::hasColumn('events', 'is_private')) {
+                            $pub->whereNull('is_private')->orWhere('is_private', false);
                         }
-                    }])
-                    ->orderBy('name');
-            
-                $cities = $citiesQ->paginate(10)->withQueryString(); // 10 городов на страницу, внутри — все их локации
-            
-                return view('locations.index', [
-                    'cities' => $cities,
-                    'viewMode' => $viewMode,
-                    'activeOnly' => $activeOnly ? 1 : 0,
-                    'selectedCityId' => $reqCityId,
-                ]);
+                        if (Schema::hasColumn('events', 'visibility')) {
+                            $pub->whereNull('visibility')->orWhere('visibility', '!=', 'private');
+                        }
+                    });
+
+                if ($reqCityId > 0) {
+                    $q->whereHas('location', fn($l) => $l->where('city_id', $reqCityId));
+                }
+
+                $activeLocationIds = $q->pluck('location_id')->filter()->unique()->values()->all();
             }
+
+            if (empty($activeLocationIds)) $activeLocationIds = [-1];
+        }
+
+        // MAP: грузим все локации напрямую, передаём JSON в blade
+        if ($viewMode === 'map') {
+            $mapQ = Location::query()
+                ->whereNull('organizer_id')
+                ->whereNotNull('lat')
+                ->whereNotNull('lng')
+                ->with('city:id,name');
+
+            if ($reqCityId > 0) {
+                $mapQ->where('city_id', $reqCityId);
+            }
+
+            if ($activeOnly && is_array($activeLocationIds)) {
+                $mapQ->whereIn('id', $activeLocationIds);
+            }
+
+            $locationsJson = $mapQ->orderBy('name')->get()->map(fn($loc) => [
+                'id'      => (int) $loc->id,
+                'name'    => (string) $loc->name,
+                'lat'     => (float) $loc->lat,
+                'lng'     => (float) $loc->lng,
+                'address' => (string) ($loc->address ?? ''),
+                'city'    => (string) ($loc->city?->name ?? ''),
+                'url'     => route('locations.show', [
+                    'location' => $loc->id,
+                    'slug'     => Str::slug($loc->name, '-') ?: 'location',
+                ]),
+            ])->toJson();
+
+            return view('locations.index', [
+                'cities'             => collect(),
+                'locationsPaginated' => null,
+                'locationsJson'      => $locationsJson,
+                'viewMode'           => $viewMode,
+                'activeOnly'         => $activeOnly ? 1 : 0,
+                'selectedCityId'     => $reqCityId,
+            ]);
+        }
+
+        // CARD (paginated): плоский список локаций с пагинацией
+        if ($viewMode === 'card') {
+            $locQ = Location::query()
+                ->whereNull('organizer_id')
+                ->with(['city:id,name', 'media'])
+                ->orderBy('name');
+
+            if ($reqCityId > 0) {
+                $locQ->where('city_id', $reqCityId);
+            }
+
+            if ($activeOnly && is_array($activeLocationIds)) {
+                $locQ->whereIn('id', $activeLocationIds);
+            }
+
+            $locationsPaginated = $locQ->paginate(12)->withQueryString();
+
+            return view('locations.index', [
+                'cities'             => collect(),
+                'locationsPaginated' => $locationsPaginated,
+                'locationsJson'      => null,
+                'viewMode'           => $viewMode,
+                'activeOnly'         => $activeOnly ? 1 : 0,
+                'selectedCityId'     => $reqCityId,
+            ]);
+        }
+
+        // CARDS / ROWS: все города со всеми локациями без пагинации
+        $cities = City::query()
+            ->select('id', 'name', 'region', 'country_code', 'timezone')
+            ->when($reqCityId > 0, fn($q) => $q->whereKey($reqCityId))
+            ->whereHas('locations', function ($q) use ($activeOnly, $activeLocationIds) {
+                $q->whereNull('organizer_id');
+                if ($activeOnly && is_array($activeLocationIds)) {
+                    $q->whereIn('id', $activeLocationIds);
+                }
+            })
+            ->with(['locations' => function ($q) use ($activeOnly, $activeLocationIds) {
+                $q->whereNull('organizer_id')
+                  ->with('city:id,name,timezone')
+                  ->orderBy('name');
+                if ($activeOnly && is_array($activeLocationIds)) {
+                    $q->whereIn('id', $activeLocationIds);
+                }
+            }])
+            ->orderBy('name')
+            ->get();
+
+        return view('locations.index', [
+            'cities'             => $cities,
+            'locationsPaginated' => null,
+            'locationsJson'      => null,
+            'viewMode'           => $viewMode,
+            'activeOnly'         => $activeOnly ? 1 : 0,
+            'selectedCityId'     => $reqCityId,
+        ]);
+    }
 
     /**
      * Публичная страница локации: /locations/{id}-{slug}

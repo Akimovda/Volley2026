@@ -54,7 +54,7 @@
 
 
 
-<div class="ramka">
+<div class="ramka" style="z-index:5">
     <h2 class="-mt-05">Запись на мероприятие</h2>
 	
     @php
@@ -308,7 +308,7 @@
 				<option value="libero">Либеро</option>
 			</select>
 			@endif
-			<button type="submit" class="btn {{ $tournamentTeamsFull ? 'btn-secondary' : 'btn-primary' }} w-100">
+			<button type="submit" class="btn mt-1 {{ $tournamentTeamsFull ? 'btn-secondary' : 'btn-primary' }} w-100">
 				{{ $tournamentTeamsFull ? '📋 Подать заявку в резерв' : 'Создать команду' }}
 			</button>
 		</form>
