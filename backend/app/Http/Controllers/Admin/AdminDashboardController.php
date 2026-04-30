@@ -56,24 +56,28 @@ class AdminDashboardController extends Controller
         $row = DB::table('users')
             ->whereNull('deleted_at')
             ->selectRaw("
-                SUM(CASE WHEN telegram_id IS NOT NULL AND vk_id IS NULL AND yandex_id IS NULL THEN 1 ELSE 0 END) as tg_only,
-                SUM(CASE WHEN telegram_id IS NULL AND vk_id IS NOT NULL AND yandex_id IS NULL THEN 1 ELSE 0 END) as vk_only,
-                SUM(CASE WHEN telegram_id IS NULL AND vk_id IS NULL AND yandex_id IS NOT NULL THEN 1 ELSE 0 END) as ya_only,
-                SUM(CASE WHEN telegram_id IS NOT NULL AND vk_id IS NOT NULL AND yandex_id IS NULL THEN 1 ELSE 0 END) as tg_vk,
-                SUM(CASE WHEN telegram_id IS NOT NULL AND vk_id IS NULL AND yandex_id IS NOT NULL THEN 1 ELSE 0 END) as tg_ya,
-                SUM(CASE WHEN telegram_id IS NULL AND vk_id IS NOT NULL AND yandex_id IS NOT NULL THEN 1 ELSE 0 END) as ya_vk,
-                SUM(CASE WHEN telegram_id IS NOT NULL AND vk_id IS NOT NULL AND yandex_id IS NOT NULL THEN 1 ELSE 0 END) as ya_vk_tg
+                SUM(CASE WHEN telegram_id IS NOT NULL AND vk_id IS NULL AND yandex_id IS NULL AND apple_id IS NULL THEN 1 ELSE 0 END) as tg_only,
+                SUM(CASE WHEN telegram_id IS NULL AND vk_id IS NOT NULL AND yandex_id IS NULL AND apple_id IS NULL THEN 1 ELSE 0 END) as vk_only,
+                SUM(CASE WHEN telegram_id IS NULL AND vk_id IS NULL AND yandex_id IS NOT NULL AND apple_id IS NULL THEN 1 ELSE 0 END) as ya_only,
+                SUM(CASE WHEN telegram_id IS NULL AND vk_id IS NULL AND yandex_id IS NULL AND apple_id IS NOT NULL THEN 1 ELSE 0 END) as apple_only,
+                SUM(CASE WHEN telegram_id IS NOT NULL AND vk_id IS NOT NULL AND yandex_id IS NULL AND apple_id IS NULL THEN 1 ELSE 0 END) as tg_vk,
+                SUM(CASE WHEN telegram_id IS NOT NULL AND vk_id IS NULL AND yandex_id IS NOT NULL AND apple_id IS NULL THEN 1 ELSE 0 END) as tg_ya,
+                SUM(CASE WHEN telegram_id IS NULL AND vk_id IS NOT NULL AND yandex_id IS NOT NULL AND apple_id IS NULL THEN 1 ELSE 0 END) as ya_vk,
+                SUM(CASE WHEN telegram_id IS NOT NULL AND vk_id IS NOT NULL AND yandex_id IS NOT NULL THEN 1 ELSE 0 END) as ya_vk_tg,
+                SUM(CASE WHEN apple_id IS NOT NULL THEN 1 ELSE 0 END) as apple_any
             ")
             ->first();
 
         $providers = [
-            'tg_only'  => (int) ($row->tg_only ?? 0),
-            'vk_only'  => (int) ($row->vk_only ?? 0),
-            'ya_only'  => (int) ($row->ya_only ?? 0),
-            'tg_vk'    => (int) ($row->tg_vk ?? 0),
-            'tg_ya'    => (int) ($row->tg_ya ?? 0),
-            'ya_vk'    => (int) ($row->ya_vk ?? 0),
-            'ya_vk_tg' => (int) ($row->ya_vk_tg ?? 0),
+            'tg_only'    => (int) ($row->tg_only ?? 0),
+            'vk_only'    => (int) ($row->vk_only ?? 0),
+            'ya_only'    => (int) ($row->ya_only ?? 0),
+            'apple_only' => (int) ($row->apple_only ?? 0),
+            'tg_vk'      => (int) ($row->tg_vk ?? 0),
+            'tg_ya'      => (int) ($row->tg_ya ?? 0),
+            'ya_vk'      => (int) ($row->ya_vk ?? 0),
+            'ya_vk_tg'   => (int) ($row->ya_vk_tg ?? 0),
+            'apple_any'  => (int) ($row->apple_any ?? 0),
         ];
 
         // -----------------------------

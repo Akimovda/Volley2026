@@ -68,8 +68,8 @@
         @php
             $p = $providers ?? [];
             $totalConnected = ($p['tg_only'] ?? 0) + ($p['vk_only'] ?? 0) + ($p['ya_only'] ?? 0)
-                + ($p['tg_vk'] ?? 0) + ($p['tg_ya'] ?? 0) + ($p['ya_vk'] ?? 0)
-                + ($p['ya_vk_tg'] ?? 0);
+                + ($p['apple_only'] ?? 0) + ($p['tg_vk'] ?? 0) + ($p['tg_ya'] ?? 0)
+                + ($p['ya_vk'] ?? 0) + ($p['ya_vk_tg'] ?? 0);
         @endphp
 
         {{-- KPI --}}
@@ -175,19 +175,21 @@
 
                         @php
                         $providerRows = [
+                            ['label' => '🍎 Apple',       'key' => 'apple_any',  'hint' => 'всего с Apple ID', 'bold' => true],
+                            ['label' => '🍎 Apple only',  'key' => 'apple_only', 'hint' => 'только Apple'],
                             ['label' => '🤖 TG only',     'key' => 'tg_only',   'hint' => 'только Telegram'],
                             ['label' => '💙 VK only',     'key' => 'vk_only',   'hint' => 'только VK'],
                             ['label' => '🟡 Ya only',     'key' => 'ya_only',   'hint' => 'только Яндекс'],
                             ['label' => 'TG + VK',        'key' => 'tg_vk',     'hint' => ''],
                             ['label' => 'TG + Ya',        'key' => 'tg_ya',     'hint' => ''],
                             ['label' => 'Ya + VK',        'key' => 'ya_vk',     'hint' => ''],
-                            ['label' => 'Ya + VK + TG',   'key' => 'ya_vk_tg',  'hint' => 'все три'],
+                            ['label' => 'Ya + VK + TG',   'key' => 'ya_vk_tg',  'hint' => 'все три (без Apple)'],
                         ];
                         @endphp
 
                         <table class="table f-16">
                             @foreach($providerRows as $row)
-                            <tr>
+                            <tr @if(!empty($row['bold'])) style="background:rgba(0,0,0,.03)" @endif>
                                 <td class="b-600">{{ $row['label'] }}</td>
                                 <td class="f-14" style="opacity:.6">{{ $row['hint'] }}</td>
                                 <td class="text-right b-600 cd">{{ $p[$row['key']] ?? 0 }}</td>
