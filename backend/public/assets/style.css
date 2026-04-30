@@ -1592,6 +1592,9 @@ body.dark .alert-volleyball {
     display: inline-block;
     position: relative;
 }
+.breadcrumbs li > span {
+    padding: 0.4rem 0.8rem;
+}
 .breadcrumbs a:hover {
     color: #000;
     background: rgba(41, 103, 186, 0.1);
@@ -3975,6 +3978,9 @@ body.dark .icon-light .provider-card__icon svg {
 }
 .provider-card__icon.icon-yandex {
 	background-color: #fc3f1d!important;
+}
+.provider-card__icon.icon-apple {
+	background-color: #000!important;
 }
 .provider-card__icon.icon-max {
 	background: linear-gradient(135deg, #007aff, #8a2be2)!important; /* градиент как на лого */

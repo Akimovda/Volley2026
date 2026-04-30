@@ -28,6 +28,12 @@
 					Карточки
 				</a>
 			</div>
+			<div class="mt-2" data-aos-delay="300" data-aos="fade-up">
+				<a href="{{ request()->fullUrlWithQuery(array_merge($base, ['view' => 'card', 'page' => 1])) }}"
+				class="btn {{ $mode === 'card' ? '' : 'btn-secondary' }}">
+					По страницам
+				</a>
+			</div>
 			<div class="mt-2" data-aos-delay="350" data-aos="fade-up">
 				<a href="{{ request()->fullUrlWithQuery(array_merge($base, ['view' => 'rows'])) }}"
 				class="btn {{ $mode === 'rows' ? '' : 'btn-secondary' }}">
@@ -89,7 +95,7 @@
 
     <div class="container">
 
-        @if(!$cities || $cities->isEmpty() && $viewMode !== 'map')
+        @if(!in_array($mode, ['map', 'card']) && (!$cities || $cities->isEmpty()))
 		<div class="ramka">
 			<div class="alert alert-info">Локации не найдены.</div>
 		</div>
@@ -153,6 +159,26 @@
 		@endforeach
 		@endif
 
+		{{-- ===== CARD (paginated) MODE ===== --}}
+		@if($mode === 'card' && isset($locationsPaginated) && $locationsPaginated && $locationsPaginated->isNotEmpty())
+		<div class="ramka">
+			<div class="row">
+				@foreach($locationsPaginated as $loc)
+				<div class="col-sm-6 col-lg-4">
+					<x-location-card :location="$loc" />
+				</div>
+				@endforeach
+			</div>
+			<div class="mt-3">
+				{{ $locationsPaginated->links() }}
+			</div>
+		</div>
+		@elseif($mode === 'card' && (!isset($locationsPaginated) || !$locationsPaginated || $locationsPaginated->isEmpty()))
+		<div class="ramka">
+			<div class="alert alert-info">Локации не найдены.</div>
+		</div>
+		@endif
+
 		{{-- ===== MAP MODE ===== --}}
 		@if($mode === 'map')
 		<div class="ramka">
@@ -162,87 +188,75 @@
 			<div id="ymap" style="height: 56rem; width: 100%; border-radius: 1rem; overflow: hidden; opacity: 0; transition: opacity 0.5s;"></div>
 
 			<script>window.__LOC_POINTS__ = {!! $locationsJson ?? '[]' !!};</script>
-			<script src="https://api-maps.yandex.ru/2.1/?apikey={{ config('services.yandex_maps.key') }}&lang=ru_RU"></script>
 
 			<script>
 				(function () {
-					let currentMap = null;
-					let currentObjectManager = null;
+					var currentMap = null;
+					var currentObjectManager = null;
 
-					function applyThemeToMap(theme) {
-						const mapContainer = document.getElementById('ymap');
-						if (!mapContainer) return;
-
-						if (theme === 'dark') {
-							mapContainer.style.filter = 'invert(0.9) hue-rotate(180deg)';
-							if (currentObjectManager) {
-								currentObjectManager.clusters.options.set({ preset: 'islands#orangeClusterIcons' });
-								currentObjectManager.objects.options.set({ preset: 'islands#orangeIcon' });
-							}
-						} else {
-							mapContainer.style.filter = 'none';
-							if (currentObjectManager) {
-								currentObjectManager.clusters.options.set({ preset: 'islands#darkBlueClusterIcons' });
-								currentObjectManager.objects.options.set({ preset: 'islands#blueIcon' });
-							}
-						}
+					function getTheme() {
+						return localStorage.getItem('theme') === 'dark' ? 'dark' : 'light';
 					}
 
-					window.updateLocationsMapTheme = function() {
-						var theme = localStorage.getItem('theme') === 'dark' ? 'dark' : 'light';
-						applyThemeToMap(theme);
-					};
+					function getMapType(theme) {
+						return theme === 'dark' ? 'yandex#dark' : 'yandex#map';
+					}
+
+					function getIconPresets(theme) {
+						return theme === 'dark'
+							? { cluster: 'islands#orangeClusterIcons', object: 'islands#orangeIcon' }
+							: { cluster: 'islands#blueClusterIcons',   object: 'islands#blueIcon'   };
+					}
 
 					function showMap() {
 						var mapDiv = document.getElementById('ymap');
-						if (mapDiv && mapDiv.style.opacity !== '1') {
-							mapDiv.style.opacity = '1';
-						}
+						if (mapDiv && mapDiv.style.opacity !== '1') mapDiv.style.opacity = '1';
 					}
+
+					window.updateLocationsMapTheme = function() {
+						var theme = getTheme();
+						if (currentMap) currentMap.setType(getMapType(theme));
+						if (currentObjectManager) {
+							var p = getIconPresets(theme);
+							currentObjectManager.clusters.options.set({ preset: p.cluster });
+							currentObjectManager.objects.options.set({ preset: p.object });
+						}
+					};
 
 					function init() {
 						var pts = Array.isArray(window.__LOC_POINTS__) ? window.__LOC_POINTS__ : [];
-						var hasPts = pts.length > 0;
+						var theme = getTheme();
 
-						if (!hasPts) {
-							var map = new ymaps.Map("ymap", {
+						if (!pts.length) {
+							currentMap = new ymaps.Map('ymap', {
 								center: [55.751244, 37.618423],
 								zoom: 4,
+								type: getMapType(theme),
 								controls: ['zoomControl', 'fullscreenControl']
 							});
-							currentMap = map;
 							showMap();
 							return;
 						}
 
 						var lats = pts.map(function(p) { return p.lat; });
 						var lngs = pts.map(function(p) { return p.lng; });
+						var centerLat = (Math.min.apply(null, lats) + Math.max.apply(null, lats)) / 2;
+						var centerLng = (Math.min.apply(null, lngs) + Math.max.apply(null, lngs)) / 2;
 
-						var minLat = Math.min.apply(null, lats);
-						var maxLat = Math.max.apply(null, lats);
-						var minLng = Math.min.apply(null, lngs);
-						var maxLng = Math.max.apply(null, lngs);
-
-						var centerLat = (minLat + maxLat) / 2;
-						var centerLng = (minLng + maxLng) / 2;
-
-						var map = new ymaps.Map("ymap", {
+						var map = new ymaps.Map('ymap', {
 							center: [centerLat, centerLng],
 							zoom: 10,
+							type: getMapType(theme),
 							controls: ['zoomControl', 'fullscreenControl']
 						});
-
 						currentMap = map;
 
-						map.setBounds([[minLat, minLng], [maxLat, maxLng]], {
-							checkZoomRange: true,
-							zoomMargin: 50
-						}).then(showMap).catch(showMap);
-
+						map.setBounds(
+							[[Math.min.apply(null, lats), Math.min.apply(null, lngs)],
+							 [Math.max.apply(null, lats), Math.max.apply(null, lngs)]],
+							{ checkZoomRange: true, zoomMargin: 50 }
+						).then(showMap).catch(showMap);
 						setTimeout(showMap, 500);
-
-						var currentTheme = localStorage.getItem('theme') === 'dark' ? 'dark' : 'light';
-						applyThemeToMap(currentTheme);
 
 						var objectManager = new ymaps.ObjectManager({
 							clusterize: true,
@@ -250,53 +264,46 @@
 							clusterDisableClickZoom: false,
 							geoObjectSeparatePanning: true
 						});
-
 						currentObjectManager = objectManager;
 
-						var features = pts.map(function(p, index) {
+						var p = getIconPresets(theme);
+						objectManager.objects.options.set({ preset: p.object });
+						objectManager.clusters.options.set({ preset: p.cluster });
+
+						var features = pts.map(function(loc, index) {
 							function esc(s) {
 								return String(s ?? '').replace(/[&<>"']/g, function(c) {
 									return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c];
 								});
 							}
-
-							var balloon = '<div style="max-width: 25rem">'
-								+ '<a href="' + esc(p.url) + '" class="f-16 b-600 blink">' + esc(p.name) + '</a>'
-								+ (p.city    ? '<div class="f-13 mt-1">'  + esc(p.city)    + '</div>' : '')
-								+ (p.address ? '<div class="f-15 mt-05">' + esc(p.address) + '</div>' : '')
+							var balloon = '<div style="max-width:25rem">'
+								+ '<a href="' + esc(loc.url) + '" class="f-16 b-600 blink">' + esc(loc.name) + '</a>'
+								+ (loc.city    ? '<div class="f-13 mt-1">'  + esc(loc.city)    + '</div>' : '')
+								+ (loc.address ? '<div class="f-15 mt-05">' + esc(loc.address) + '</div>' : '')
 								+ '</div>';
-
 							return {
-								type: "Feature",
+								type: 'Feature',
 								id: index,
-								geometry: { type: "Point", coordinates: [p.lat, p.lng] },
+								geometry: { type: 'Point', coordinates: [loc.lat, loc.lng] },
 								properties: {
-									hintContent: (p.city ? p.city + ': ' : '') + p.name,
+									hintContent: (loc.city ? loc.city + ': ' : '') + loc.name,
 									balloonContent: balloon,
-									clusterCaption: p.city || p.name
+									clusterCaption: loc.city || loc.name
 								}
 							};
 						});
 
-						objectManager.add({ type: "FeatureCollection", features: features });
-
-						objectManager.objects.options.set('preset', 'islands#redDotIcon');
-
-						if (currentTheme === 'dark') {
-							objectManager.clusters.options.set({ preset: 'islands#grayClusterIcons' });
-						} else {
-							objectManager.clusters.options.set({ preset: 'islands#blueClusterIcons' });
-						}
-
+						objectManager.add({ type: 'FeatureCollection', features: features });
 						map.geoObjects.add(objectManager);
 					}
 
-					ymaps.ready(init);
-				})();
-			</script>
+					// Загружаем API с нужной темой
+					var theme = getTheme();
+					var script = document.createElement('script');
+					script.src = 'https://api-maps.yandex.ru/2.1/?apikey={{ config('services.yandex_maps.key') }}&lang=ru_RU&theme=' + theme;
+					script.onload = function() { ymaps.ready(init); };
+					document.head.appendChild(script);
 
-			<script>
-				(function() {
 					document.addEventListener('click', function(e) {
 						if (e.target.closest('.fix-header-btn-theme')) {
 							setTimeout(function() {

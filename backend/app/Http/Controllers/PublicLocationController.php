@@ -28,7 +28,7 @@ class PublicLocationController extends Controller
     public function index(Request $request)
     {
         $viewMode = (string) $request->query('view', 'cards');
-        if (!in_array($viewMode, ['rows', 'cards', 'map'], true)) $viewMode = 'cards';
+        if (!in_array($viewMode, ['rows', 'cards', 'card', 'map'], true)) $viewMode = 'cards';
 
         $activeOnly = (int) $request->query('active', 0) === 1;
         $reqCityId  = (int) $request->query('city_id', 0);
@@ -115,11 +115,39 @@ class PublicLocationController extends Controller
             ])->toJson();
 
             return view('locations.index', [
-                'cities'         => collect(),
-                'locationsJson'  => $locationsJson,
-                'viewMode'       => $viewMode,
-                'activeOnly'     => $activeOnly ? 1 : 0,
-                'selectedCityId' => $reqCityId,
+                'cities'             => collect(),
+                'locationsPaginated' => null,
+                'locationsJson'      => $locationsJson,
+                'viewMode'           => $viewMode,
+                'activeOnly'         => $activeOnly ? 1 : 0,
+                'selectedCityId'     => $reqCityId,
+            ]);
+        }
+
+        // CARD (paginated): плоский список локаций с пагинацией
+        if ($viewMode === 'card') {
+            $locQ = Location::query()
+                ->whereNull('organizer_id')
+                ->with(['city:id,name', 'media'])
+                ->orderBy('name');
+
+            if ($reqCityId > 0) {
+                $locQ->where('city_id', $reqCityId);
+            }
+
+            if ($activeOnly && is_array($activeLocationIds)) {
+                $locQ->whereIn('id', $activeLocationIds);
+            }
+
+            $locationsPaginated = $locQ->paginate(12)->withQueryString();
+
+            return view('locations.index', [
+                'cities'             => collect(),
+                'locationsPaginated' => $locationsPaginated,
+                'locationsJson'      => null,
+                'viewMode'           => $viewMode,
+                'activeOnly'         => $activeOnly ? 1 : 0,
+                'selectedCityId'     => $reqCityId,
             ]);
         }
 
@@ -145,11 +173,12 @@ class PublicLocationController extends Controller
             ->get();
 
         return view('locations.index', [
-            'cities'         => $cities,
-            'locationsJson'  => null,
-            'viewMode'       => $viewMode,
-            'activeOnly'     => $activeOnly ? 1 : 0,
-            'selectedCityId' => $reqCityId,
+            'cities'             => $cities,
+            'locationsPaginated' => null,
+            'locationsJson'      => null,
+            'viewMode'           => $viewMode,
+            'activeOnly'         => $activeOnly ? 1 : 0,
+            'selectedCityId'     => $reqCityId,
         ]);
     }
 
