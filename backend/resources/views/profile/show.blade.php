@@ -1139,31 +1139,67 @@
 				
 				
 				
-				<div class="ramka">  	
-					
-					{{-- ✅ Удаление аккаунта — заявка админу --}}
-					
-					
+				<div class="ramka" id="delete-account">
+
 					<h2 class="mt-0">Удаление аккаунта</h2>
-					<p>Самостоятельное удаление отключено. Вы можете отправить администратору заявку на удаление.</p>
-					<p>Заявка попадёт администратору. После обработки аккаунт будет удалён/деактивирован.</p>
-					
-					<div class="mt-2 m-center">
-						<form method="POST"
-						action="{{ route('account.delete.request') }}"
-						onsubmit="return confirm('Отправить заявку на удаление аккаунта администратору?');">
-							@csrf
-							<button type="submit" class="btn btn-outline-secondary">
-								Запросить удаление аккаунта
-							</button>
-						</form>
+
+					@if (!empty($hasPendingDeleteRequest))
+					<div class="alert alert-info mb-1">
+						Заявка на удаление уже отправлена и ожидает рассмотрения. Администратор свяжется с вами.
 					</div>
-					
-					
+					@else
+					<p class="f-15" style="opacity:.8">После удаления все ваши данные будут безвозвратно удалены. Заявка отправляется администратору — аккаунт будет удалён в ближайшее время.</p>
+					<form method="POST" action="{{ route('account.delete.request') }}" id="form-delete-account" style="display:none">
+						@csrf
+					</form>
+					<button type="button" class="btn btn-danger" id="btn-delete-account">
+						Удалить аккаунт
+					</button>
+					@endif
+
 				</div>
 			</div>
 		</div>
 	</div>	
+	<script>
+	(function () {
+		var btn = document.getElementById('btn-delete-account');
+		if (!btn) return;
+		btn.addEventListener('click', function () {
+			swal({
+				title: 'Удалить аккаунт?',
+				text: 'Все данные будут безвозвратно удалены. Это действие нельзя отменить.',
+				icon: 'warning',
+				dangerMode: true,
+				buttons: {
+					cancel: { text: 'Отмена', visible: true, closeModal: true },
+					confirm: { text: 'Да, хочу удалить', value: true, className: 'btn-danger' }
+				}
+			}).then(function (confirmed) {
+				if (!confirmed) return;
+				swal({
+					title: 'Подтвердите удаление',
+					text: 'Введите слово УДАЛИТЬ для подтверждения',
+					icon: 'warning',
+					dangerMode: true,
+					content: { element: 'input', attributes: { placeholder: 'УДАЛИТЬ', type: 'text' } },
+					buttons: {
+						cancel: { text: 'Отмена', visible: true, closeModal: true },
+						confirm: { text: 'Удалить аккаунт', value: true, className: 'btn-danger' }
+					}
+				}).then(function (value) {
+					if (value !== 'УДАЛИТЬ') {
+						if (value !== null) {
+							swal({ title: 'Неверное слово', text: 'Нужно ввести слово УДАЛИТЬ', icon: 'error' });
+						}
+						return;
+					}
+					document.getElementById('form-delete-account').submit();
+				});
+			});
+		});
+	})();
+	</script>
 	<script>
 		document.addEventListener('DOMContentLoaded', function () {
 			async function copyToClipboard(text) {

@@ -349,6 +349,11 @@
         <span class="menu-text">Мои гости 👑</span>
     </a>
     @endif
+    <a href="{{ route('profile.show') }}#delete-account"
+       class="menu-item {{ $activeMenu === 'delete_account' ? 'active' : '' }}"
+       style="color:#e53e3e">
+        <span class="menu-text">Удалить аккаунт</span>
+    </a>
     <form method="POST" action="{{ route('logout') }}" class="logout-form" x-data>
         @csrf
         <button type="submit" class="menu-item">Выйти</button>
