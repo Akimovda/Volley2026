@@ -21,6 +21,7 @@
         "mews/purifier": "^3.4",
         "movemoveapp/vkid": "^1.0",
         "rlanvin/php-rrule": "^2.6",
+        "socialiteproviders/apple": "^5.8",
         "socialiteproviders/vkontakte": "^5.1",
         "socialiteproviders/yandex": "^4.1",
         "spatie/laravel-medialibrary": "^11.17",

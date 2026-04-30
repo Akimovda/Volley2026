@@ -6,6 +6,7 @@ use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvi
 use SocialiteProviders\Manager\SocialiteWasCalled;
 
 // SocialiteProviders extenders
+use SocialiteProviders\Apple\AppleExtendSocialite;
 use SocialiteProviders\Yandex\YandexExtendSocialite;
 // VKontakte extender нужен только если используете driver('vkontakte'):
 // use SocialiteProviders\VKontakte\VKontakteExtendSocialite;
@@ -24,6 +25,7 @@ class EventServiceProvider extends ServiceProvider
      */
     protected $listen = [
         SocialiteWasCalled::class => [
+            AppleExtendSocialite::class.'@handle',
             YandexExtendSocialite::class.'@handle',
 
             // Если когда-нибудь будете использовать driver('vkontakte'), раскомментируйте:
