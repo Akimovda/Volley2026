@@ -568,7 +568,8 @@
 		
 		<script src="/assets/lib.js?v={{ time() }}"></script>    
 		@livewireScripts
-		<script src="/assets/script.js?v={{ time() }}"></script>     
+		<script src="/assets/script.js?v={{ time() }}"></script>
+		<script src="/assets/capacitor-native.js?v={{ filemtime(public_path('assets/capacitor-native.js')) }}"></script>
 		@if(isset($script))
         {{ $script }}
 		@endif	

@@ -71,9 +71,12 @@
 	</x-slot>	
 	
 	<div class="container">
-		
-		
-		
+
+		{{-- Нативная кнопка Share --}}
+		<div class="native-actions">
+			<button type="button" class="btn btn-secondary btn-haptic" id="btn-share-season">Поделиться</button>
+		</div>
+
 		{{-- Расписание туров --}}
 		@if(isset($occurrences) && $occurrences->count())
 		<div class="ramka">	
@@ -224,5 +227,22 @@
 			
 		</div>
 	</div>
-	
+
+	<x-slot name="script">
+	<script>
+	(function () {
+		if (!window.VolleyNative || !window.VolleyNative.isApp) return;
+		var btn = document.getElementById('btn-share-season');
+		if (!btn) return;
+		btn.addEventListener('click', function () {
+			window.VolleyNative.share({
+				title: @json($season->name ?? ''),
+				text: 'Сезон на VolleyPlay',
+				url: window.location.href
+			});
+		});
+	})();
+	</script>
+	</x-slot>
+
 </x-voll-layout>

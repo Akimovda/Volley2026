@@ -100,6 +100,11 @@
 
 		<div class="col-lg-8 col-xl-9 order-2 order-lg-2">
 
+		{{-- Нативная кнопка Share --}}
+		<div class="native-actions">
+			<button type="button" class="btn btn-secondary btn-haptic" id="btn-share-league">Поделиться</button>
+		</div>
+
 		{{-- Сезоны --}}
 		@if($league->seasons->isNotEmpty())
 			@foreach($league->seasons as $season)
@@ -173,4 +178,22 @@
 		</div>{{-- /col-lg-8 --}}
 		</div>{{-- /row --}}
 	</div>
+
+	<x-slot name="script">
+	<script>
+	(function () {
+		if (!window.VolleyNative || !window.VolleyNative.isApp) return;
+		var btn = document.getElementById('btn-share-league');
+		if (!btn) return;
+		btn.addEventListener('click', function () {
+			window.VolleyNative.share({
+				title: @json($league->name ?? ''),
+				text: 'Лига на VolleyPlay',
+				url: window.location.href
+			});
+		});
+	})();
+	</script>
+	</x-slot>
+
 </x-voll-layout>

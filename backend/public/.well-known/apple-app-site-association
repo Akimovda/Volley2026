@@ -9,7 +9,11 @@
                     "/auth/vk/callback*",
                     "/auth/yandex/callback*",
                     "/events",
-                    "/events/*"
+                    "/events/*",
+                    "/s/*",
+                    "/l/*",
+                    "/locations",
+                    "/locations/*"
                 ]
             }
         ]

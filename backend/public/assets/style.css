@@ -4672,3 +4672,19 @@ body.dark .progress { background: rgba(255,255,255,0.12); }
 .is-app body.dark #app-back-btn:active {
 	background: rgba(0, 0, 0, 0.95);
 }
+
+/* ─── Нативные кнопки (Capacitor) ─────────────────────────── */
+.native-actions {
+	display: inline-flex;
+	gap: 8px;
+	margin-bottom: 12px;
+	flex-wrap: wrap;
+}
+.native-actions .btn {
+	border-radius: 20px;
+	padding: 4px 14px;
+	font-size: 13px;
+}
+body:not(.is-app) .native-actions {
+	display: none !important;
+}
