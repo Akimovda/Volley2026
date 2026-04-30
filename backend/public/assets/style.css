@@ -4624,3 +4624,9 @@ body.dark .progress { background: rgba(255,255,255,0.12); }
 	background: rgba(230, 230, 230, 0.95);
 	transform: scale(0.92);
 }
+.is-app body.dark #app-back-btn {
+	background: rgba(34, 35, 51, 0.95);
+}
+.is-app body.dark #app-back-btn:active {
+	background: rgba(0, 0, 0, 0.95);
+}
