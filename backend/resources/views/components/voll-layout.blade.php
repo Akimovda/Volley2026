@@ -665,6 +665,12 @@
 			window._oauthInProgress = false;
 
 			async function tryBiometricLogin() {
+				if (window._biometricAttempted) {
+					console.log('[Biometric] already attempted, skipping');
+					return;
+				}
+				window._biometricAttempted = true;
+
 				try {
 					var avail = await NativeBiometric.isAvailable();
 					if (!avail.isAvailable) return;
