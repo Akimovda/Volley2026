@@ -671,6 +671,12 @@
 					return;
 				}
 
+				if (window._biometricInProgress) {
+					console.log('[Biometric] already in progress, skipping');
+					return;
+				}
+				window._biometricInProgress = true;
+
 				try {
 					var avail = await NativeBiometric.isAvailable();
 					if (!avail.isAvailable) return;
@@ -711,6 +717,7 @@
 					if (resp.ok) {
 						var data = await resp.json();
 						localStorage.removeItem('biometricFailedAt');
+						window._biometricInProgress = false;
 						window.location.href = data.redirect || '/events';
 					} else if (resp.status === 422) {
 						await NativeBiometric.deleteCredentials({ server: 'volleyplay.club' });
@@ -718,8 +725,11 @@
 				} catch(e) {
 					console.log('[Biometric] verifyIdentity failed or timeout:', e.message);
 					localStorage.setItem('biometricFailedAt', Date.now().toString());
+					window._biometricInProgress = false;
 					window.location.reload();
 				}
+
+				window._biometricInProgress = false;
 			}
 
 			// Отмена biometric redirect при клике на OAuth кнопки
