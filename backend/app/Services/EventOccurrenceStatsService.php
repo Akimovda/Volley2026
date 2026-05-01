@@ -9,15 +9,21 @@ use Illuminate\Support\Facades\Cache;
 class EventOccurrenceStatsService
 {
     /**
-     * Получить количество зарегистрированных
+     * Получить количество зарегистрированных — live COUNT из event_registrations.
+     * Не используем event_occurrence_stats: счётчик устаревает при массовых отменах через QueryBuilder.
      */
     public function getRegisteredCount(int $occurrenceId): int
     {
-        return (int) (
-            DB::table('event_occurrence_stats')
-                ->where('occurrence_id', $occurrenceId)
-                ->value('registered_count') ?? 0
-        );
+        return (int) DB::table('event_registrations')
+            ->where('occurrence_id', $occurrenceId)
+            ->whereNull('cancelled_at')
+            ->where(function ($q) {
+                $q->whereNull('is_cancelled')->orWhere('is_cancelled', false);
+            })
+            ->where(function ($q) {
+                $q->whereNull('status')->orWhere('status', '!=', 'cancelled');
+            })
+            ->count();
     }
 
     /**
