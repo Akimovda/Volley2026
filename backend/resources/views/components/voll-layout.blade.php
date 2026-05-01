@@ -718,6 +718,7 @@
 				} catch(e) {
 					console.log('[Biometric] verifyIdentity failed or timeout:', e.message);
 					localStorage.setItem('biometricFailedAt', Date.now().toString());
+					window.location.reload();
 				}
 			}
 
