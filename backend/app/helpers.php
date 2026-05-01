@@ -3,6 +3,18 @@
 declare(strict_types=1);
 
 // =========================
+// App settings
+// =========================
+
+if (! function_exists('getAppSetting')) {
+    function getAppSetting(string $key, mixed $default = null): mixed
+    {
+        $row = \Illuminate\Support\Facades\DB::table('app_settings')->where('key', $key)->first();
+        return $row ? $row->value : $default;
+    }
+}
+
+// =========================
 // Levels
 // =========================
 

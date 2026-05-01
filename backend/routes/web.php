@@ -696,6 +696,7 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
 		->name('notification_templates.update');
 		
         Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+        Route::post('/settings/deletion-delay', [AdminDashboardController::class, 'updateDeletionDelay'])->name('settings.deletion_delay');
 		
         Route::get('/audits', [AdminAuditController::class, 'index'])->name('audits.index');
 		
