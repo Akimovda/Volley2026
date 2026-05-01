@@ -755,6 +755,101 @@
 
                 {{-- ===== БЛОК 8: Описание ===== --}}
                 <div class="ramka">
+                    <h2 class="-mt-05">Фото мероприятия</h2>
+                    <div class="row">
+                        <div class="col-md-12">
+                            @php
+                                $userEventPhotos = auth()->user()->getMedia('event_photos')->sortByDesc('created_at');
+                                $currentEventPhotos = $event->event_photos ?? [];
+                            @endphp
+                            @if($userEventPhotos->count() > 0)
+                            <div class="card">
+                                <label>Фотографии для мероприятия</label>
+                                <div class="event-photos-selector-edit"
+                                     data-selected='{{ json_encode(old('event_photos_edit') ? json_decode(old('event_photos_edit'), true) : $currentEventPhotos) }}'>
+                                    <div class="swiper eventPhotosSwiperEdit">
+                                        <div class="swiper-wrapper">
+                                            @foreach($userEventPhotos as $photo)
+                                            <div class="swiper-slide">
+                                                <div class="hover-image mb-1">
+                                                    <img src="{{ $photo->getUrl('event_thumb') }}" alt="event photo" loading="lazy"/>
+                                                </div>
+                                                <div class="mt-1 d-flex between fvc">
+                                                    <label class="checkbox-item mb-0">
+                                                        <input type="checkbox" class="photo-select-edit" value="{{ $photo->id }}">
+                                                        <div class="custom-checkbox"></div>
+                                                        <span>Выбрать</span>
+                                                    </label>
+                                                    <div class="photo-order-badge-edit f-16 b-600 cd"></div>
+                                                </div>
+                                            </div>
+                                            @endforeach
+                                        </div>
+                                        <div class="swiper-pagination"></div>
+                                    </div>
+                                    <ul class="list f-16 mt-1">
+                                        <li>Выберите фото для мероприятия. Первое отмеченное фото будет главным.</li>
+                                        <li>Фотографии можно добавить (с галочкой "Для мероприятий") в разделе <a target="_blank" href="{{ route('user.photos') }}">Ваши фотографии</a></li>
+                                    </ul>
+                                    <input type="hidden" name="event_photos" id="event_photos_input_edit" value="">
+                                </div>
+                            </div>
+                            <script>
+                            document.addEventListener('DOMContentLoaded', function() {
+                                new Swiper('.eventPhotosSwiperEdit', {
+                                    slidesPerView: 1,
+                                    spaceBetween: 15,
+                                    pagination: { el: '.swiper-pagination', clickable: true },
+                                    breakpoints: { 640: { slidesPerView: 1 }, 768: { slidesPerView: 1 }, 1024: { slidesPerView: 1 } }
+                                });
+
+                                var container = document.querySelector('.event-photos-selector-edit');
+                                var savedPhotos = JSON.parse(container.dataset.selected || '[]');
+                                var selectedPhotos = savedPhotos.slice();
+
+                                function updateUI() {
+                                    document.querySelectorAll('.photo-select-edit').forEach(function(checkbox) {
+                                        var id = parseInt(checkbox.value);
+                                        var isSelected = selectedPhotos.includes(id);
+                                        checkbox.checked = isSelected;
+                                        var badge = checkbox.closest('.swiper-slide').querySelector('.photo-order-badge-edit');
+                                        if (isSelected) {
+                                            var order = selectedPhotos.indexOf(id) + 1;
+                                            badge.textContent = order === 1 ? '★ Главное' : 'Фото: ' + order;
+                                        } else {
+                                            badge.textContent = '';
+                                        }
+                                    });
+                                    document.getElementById('event_photos_input_edit').value = JSON.stringify(selectedPhotos);
+                                }
+
+                                document.querySelectorAll('.photo-select-edit').forEach(function(checkbox) {
+                                    checkbox.addEventListener('change', function() {
+                                        var id = parseInt(this.value);
+                                        if (this.checked) {
+                                            selectedPhotos.push(id);
+                                        } else {
+                                            var index = selectedPhotos.indexOf(id);
+                                            if (index !== -1) selectedPhotos.splice(index, 1);
+                                        }
+                                        updateUI();
+                                    });
+                                });
+
+                                updateUI();
+                            });
+                            </script>
+                            @else
+                            <div class="alert alert-info">
+                                <p>У вас нет фото для мероприятий.</p>
+                                <p>Фотографии можно добавить (с галочкой "Для мероприятий") в разделе <a target="_blank" href="{{ route('user.photos') }}">Ваши фотографии</a></p>
+                            </div>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ramka">
                     <h2 class="-mt-05">Описание мероприятия</h2>
                     <div class="row">
                         <div class="col-md-12">

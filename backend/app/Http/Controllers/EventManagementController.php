@@ -648,6 +648,7 @@ if ($role === 'admin') {
             'remind_registration_enabled'         => ['sometimes', 'boolean'],
             'remind_registration_minutes_before'  => ['nullable', 'integer', 'min:0'],
             'description_html'         => ['nullable', 'string'],
+            'event_photos'             => ['nullable', 'string'],
             'bot_assistant_enabled'      => ['sometimes', 'boolean'],
             'bot_assistant_threshold'    => ['sometimes', 'integer', 'min:5', 'max:30'],
             'bot_assistant_max_fill_pct' => ['sometimes', 'integer', 'min:10', 'max:60'],
@@ -717,6 +718,10 @@ if ($role === 'admin') {
 
             if (array_key_exists('description_html', $data) && $data['description_html'] !== null) {
                 $event->description_html = $data['description_html'];
+            }
+
+            if (array_key_exists('event_photos', $data)) {
+                $event->event_photos = json_decode($data['event_photos'] ?? '[]', true) ?: [];
             }
 
             if ($allowReg) {
