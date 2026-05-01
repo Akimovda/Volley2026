@@ -65,18 +65,20 @@ class AccountDeleteRequestController extends Controller
             'password'          => bcrypt(Str::random(40)),
         ])->save();
 
-        // Мягкое удаление (SoftDeletes — устанавливает deleted_at)
-        $user->delete();
-
         Log::warning('Account deleted and anonymized', [
             'user_id' => $userId,
             'name'    => $userName,
             'email'   => $userEmail,
         ]);
 
+        // Logout до delete — иначе SoftDeletes скрывает user от Eloquent и Logout event падает
         Auth::logout();
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
+
+        // SoftDelete после logout
+        $user->delete();
+
+        // regenerate (не invalidate) — чтобы flash-сообщение дошло до следующей страницы
+        $request->session()->regenerate();
 
         return redirect('/')->with('success', 'Ваш аккаунт удалён. Спасибо что были с нами.');
     }
