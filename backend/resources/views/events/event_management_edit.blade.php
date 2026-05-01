@@ -6,12 +6,18 @@
 
     // Вычисляем реальные значения окна регистрации из сохранённых UTC-меток
     $evStartsAt = $event->starts_at ? \Carbon\Carbon::parse($event->starts_at, 'UTC') : null;
-    $regStartsDaysSaved = 3;
-    $regEndsMinSaved    = 15;
-    $cancelMinSaved     = 60;
+    $regStartsDaysSaved  = 3;
+    $regStartsHoursSaved = 0;
+    $regEndsMinSaved     = 15;
+    $cancelMinSaved      = 60;
 
     if ($evStartsAt && $event->registration_starts_at) {
-        $regStartsDaysSaved = (int) abs($evStartsAt->diffInDays(\Carbon\Carbon::parse($event->registration_starts_at, 'UTC')));
+        $regStartsTs = \Carbon\Carbon::parse($event->registration_starts_at, 'UTC');
+        $diffSec = $evStartsAt->timestamp - $regStartsTs->timestamp;
+        if ($diffSec > 0) {
+            $regStartsDaysSaved  = (int) floor($diffSec / 86400);
+            $regStartsHoursSaved = (int) floor(($diffSec % 86400) / 3600);
+        }
     }
     if ($evStartsAt && $event->registration_ends_at) {
         $regEndsMinSaved = (int) abs($evStartsAt->diffInMinutes(\Carbon\Carbon::parse($event->registration_ends_at, 'UTC')));
@@ -450,11 +456,18 @@
                         <div class="col-md-4">
                             <div class="card">
                                 <label>Начало регистрации (дней до)</label>
-                                <select name="reg_starts_days_before">
-                                    @for($d = 0; $d <= 90; $d++)
-                                        <option value="{{ $d }}" @selected((old('reg_starts_days_before', $regStartsDaysSaved)) == $d)>{{ $d }}</option>
-                                    @endfor
-                                </select>
+                                <div class="d-flex" style="gap:.5rem;align-items:center">
+                                    <select name="reg_starts_days_before" id="mgmt_reg_starts_d" style="width:auto">
+                                        @for($d = 0; $d <= 90; $d++)
+                                            <option value="{{ $d }}" @selected((old('reg_starts_days_before', $regStartsDaysSaved)) == $d)>{{ $d }} д</option>
+                                        @endfor
+                                    </select>
+                                    <select name="reg_starts_hours_before" id="mgmt_reg_starts_h" style="width:auto">
+                                        @for($h = 0; $h <= 23; $h++)
+                                            <option value="{{ $h }}" @selected((old('reg_starts_hours_before', $regStartsHoursSaved)) == $h)>{{ $h }} ч</option>
+                                        @endfor
+                                    </select>
+                                </div>
                             </div>
                         </div>
 
