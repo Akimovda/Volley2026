@@ -223,6 +223,23 @@
                         </table>
 
                         <a href="{{ route('admin.users.index') }}" class="btn btn-secondary">К пользователям</a>
+
+                        <div class="mt-3 pt-3" style="border-top:1px solid #eee">
+                            <div class="b-600 mb-2">⏱ Удаление аккаунтов</div>
+                            <div class="f-14 mb-2" style="opacity:.6">Время на отмену после подтверждения</div>
+                            <div class="d-flex align-items-center" style="gap:8px;flex-wrap:wrap">
+                                <input type="number"
+                                       id="deletion-delay"
+                                       class="form-control form-control-sm"
+                                       style="width:90px"
+                                       min="5"
+                                       max="3600"
+                                       value="{{ $deletionDelay }}">
+                                <span class="f-14">сек</span>
+                                <button type="button" class="btn btn-sm btn-primary" id="save-deletion-delay">Сохранить</button>
+                                <span class="text-success f-14" id="deletion-delay-saved" style="display:none">✓ Сохранено</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -273,3 +290,33 @@
     </div>
 
 </x-voll-layout>
+
+<script>
+(function () {
+    var btn = document.getElementById('save-deletion-delay');
+    if (!btn) return;
+    btn.addEventListener('click', function () {
+        var value = document.getElementById('deletion-delay').value;
+        btn.disabled = true;
+        jQuery.ajax({
+            url: '{{ route('admin.settings.deletion_delay') }}',
+            method: 'POST',
+            data: {
+                _token: document.querySelector('meta[name="csrf-token"]').content,
+                value: value
+            },
+            success: function () {
+                var saved = document.getElementById('deletion-delay-saved');
+                saved.style.display = '';
+                setTimeout(function () { saved.style.display = 'none'; }, 2000);
+            },
+            error: function () {
+                swal({ title: 'Ошибка сохранения', icon: 'error', timer: 1500, buttons: false });
+            },
+            complete: function () {
+                btn.disabled = false;
+            }
+        });
+    });
+})();
+</script>

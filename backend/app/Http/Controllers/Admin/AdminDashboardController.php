@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Event;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class AdminDashboardController extends Controller
@@ -121,6 +122,7 @@ class AdminDashboardController extends Controller
         // -----------------------------
         $eventsCount = (int) Event::query()->count();
         $dupCount = count(app(\App\Services\UserMergeService::class)->findDuplicates());
+        $deletionDelay = (int) getAppSetting('account_deletion_delay_seconds', 30);
 
         return view('admin.dashboard.index', compact(
             'totalUsers',
@@ -135,6 +137,19 @@ class AdminDashboardController extends Controller
             'restrictionByEvent',
             'eventsCount',
             'dupCount',
+            'deletionDelay',
         ));
+    }
+
+    public function updateDeletionDelay(Request $request)
+    {
+        $request->validate(['value' => 'required|integer|min:5|max:3600']);
+
+        DB::table('app_settings')->updateOrInsert(
+            ['key' => 'account_deletion_delay_seconds'],
+            ['value' => (string) $request->integer('value'), 'updated_at' => now()]
+        );
+
+        return response()->json(['success' => true]);
     }
 }

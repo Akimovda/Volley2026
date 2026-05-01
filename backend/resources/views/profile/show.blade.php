@@ -1143,19 +1143,19 @@
 
 					<h2 class="mt-0">Удаление аккаунта</h2>
 
-					@if (!empty($hasPendingDeleteRequest))
-					<div class="alert alert-info mb-1">
-						Заявка на удаление уже отправлена и ожидает рассмотрения. Администратор свяжется с вами.
-					</div>
-					@else
-					<p class="f-15" style="opacity:.8">После удаления все ваши данные будут безвозвратно удалены. Заявка отправляется администратору — аккаунт будет удалён в ближайшее время.</p>
+					<p class="f-15" style="opacity:.8">После удаления все ваши данные будут безвозвратно удалены. У вас будет <strong id="grace-period-display">{{ $deletionDelay }}</strong> сек чтобы передумать и отменить действие.</p>
+
 					<form method="POST" action="{{ route('account.delete.request') }}" id="form-delete-account" style="display:none">
 						@csrf
 					</form>
+
 					<button type="button" class="btn btn-danger" id="btn-delete-account">
 						Удалить аккаунт
 					</button>
-					@endif
+
+					<button type="button" class="btn btn-warning" id="btn-cancel-deletion" style="display:none">
+						Отменить удаление (<span id="countdown-seconds">0</span> сек)
+					</button>
 
 				</div>
 			</div>
@@ -1163,41 +1163,86 @@
 	</div>	
 	<script>
 	(function () {
-		var btn = document.getElementById('btn-delete-account');
-		if (!btn) return;
-		btn.addEventListener('click', function () {
+		var deleteBtn = document.getElementById('btn-delete-account');
+		var cancelBtn = document.getElementById('btn-cancel-deletion');
+		var countdownSpan = document.getElementById('countdown-seconds');
+		var gracePeriodEl = document.getElementById('grace-period-display');
+		var countdownTimer = null;
+		var deletionDelay = parseInt(gracePeriodEl ? gracePeriodEl.textContent : '30', 10);
+
+		if (!deleteBtn) return;
+
+		deleteBtn.addEventListener('click', function () {
 			swal({
-				title: 'Удалить аккаунт?',
-				text: 'Все данные будут безвозвратно удалены. Это действие нельзя отменить.',
+				title: 'Вы уверены?',
+				text: 'После удаления все ваши данные будут безвозвратно удалены. У вас будет ' + deletionDelay + ' секунд чтобы передумать.',
 				icon: 'warning',
 				dangerMode: true,
 				buttons: {
 					cancel: { text: 'Отмена', visible: true, closeModal: true },
-					confirm: { text: 'Да, хочу удалить', value: true, className: 'btn-danger' }
+					confirm: { text: 'Да, хочу удалить', className: 'swal-button--danger' }
 				}
 			}).then(function (confirmed) {
 				if (!confirmed) return;
+
 				swal({
-					title: 'Подтвердите удаление',
+					title: 'Последнее предупреждение',
 					text: 'Введите слово УДАЛИТЬ для подтверждения',
-					icon: 'warning',
 					dangerMode: true,
-					content: { element: 'input', attributes: { placeholder: 'УДАЛИТЬ', type: 'text' } },
+					content: {
+						element: 'input',
+						attributes: {
+							placeholder: 'УДАЛИТЬ',
+							type: 'text',
+							style: 'color:#333;border:1px solid #ccc;font-size:16px;padding:8px;width:100%;box-sizing:border-box;'
+						}
+					},
 					buttons: {
 						cancel: { text: 'Отмена', visible: true, closeModal: true },
-						confirm: { text: 'Удалить аккаунт', value: true, className: 'btn-danger' }
+						confirm: { text: 'Подтвердить', className: 'swal-button--danger' }
 					}
 				}).then(function (value) {
+					if (value === null) return;
 					if (value !== 'УДАЛИТЬ') {
-						if (value !== null) {
-							swal({ title: 'Неверное слово', text: 'Нужно ввести слово УДАЛИТЬ', icon: 'error' });
-						}
+						swal({ title: 'Неверно', text: 'Нужно ввести слово УДАЛИТЬ', icon: 'error', timer: 2000, buttons: false });
 						return;
 					}
-					document.getElementById('form-delete-account').submit();
+					startCountdown();
 				});
 			});
 		});
+
+		cancelBtn.addEventListener('click', function () {
+			if (countdownTimer) {
+				clearInterval(countdownTimer);
+				countdownTimer = null;
+			}
+			cancelBtn.style.display = 'none';
+			deleteBtn.style.display = '';
+			swal({ title: 'Удаление отменено', icon: 'info', timer: 1500, buttons: false });
+		});
+
+		function startCountdown() {
+			var remaining = deletionDelay;
+			deleteBtn.style.display = 'none';
+			cancelBtn.style.display = '';
+			countdownSpan.textContent = remaining;
+
+			countdownTimer = setInterval(function () {
+				remaining--;
+				countdownSpan.textContent = remaining;
+				if (remaining <= 0) {
+					clearInterval(countdownTimer);
+					countdownTimer = null;
+					executeAccountDeletion();
+				}
+			}, 1000);
+		}
+
+		function executeAccountDeletion() {
+			cancelBtn.style.display = 'none';
+			document.getElementById('form-delete-account').submit();
+		}
 	})();
 	</script>
 	<script>
