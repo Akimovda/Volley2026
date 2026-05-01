@@ -739,10 +739,10 @@
 				});
 			});
 
-			if (!sessionStorage.getItem('biometric_checked')) {
-				sessionStorage.setItem('biometric_checked', 'true');
-				setTimeout(function() { tryBiometricLogin(); }, 1500);
-			}
+			// if (!sessionStorage.getItem('biometric_checked')) {
+			// 	sessionStorage.setItem('biometric_checked', 'true');
+			// 	setTimeout(function() { tryBiometricLogin(); }, 1500);
+			// }
 		})();
 		</script>
 
