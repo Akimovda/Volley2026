@@ -80,6 +80,10 @@ class AccountDeleteRequestController extends Controller
         // regenerate (не invalidate) — чтобы flash-сообщение дошло до следующей страницы
         $request->session()->regenerate();
 
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json(['success' => true]);
+        }
+
         return redirect('/')->with('success', 'Ваш аккаунт удалён. Спасибо что были с нами.');
     }
 }
