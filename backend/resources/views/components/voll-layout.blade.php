@@ -113,6 +113,12 @@
 			var preloader = document.getElementById('app-preloader');
 			if (preloader) {
 				preloader.style.display = 'flex';
+				// Скрыть Capacitor splash — за ней уже виден наш HTML прелоадер
+				setTimeout(function() {
+					if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.SplashScreen) {
+						window.Capacitor.Plugins.SplashScreen.hide();
+					}
+				}, 100);
 			}
 
 			window.addEventListener('load', function() {
