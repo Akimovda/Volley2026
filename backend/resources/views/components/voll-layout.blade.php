@@ -33,7 +33,7 @@
 		<div id="app-preloader">
 			<img src="/icons/favicon.svg" alt="" id="preloader-logo">
 			<div id="preloader-title">Загрузка...</div>
-			<div id="preloader-subtitle">Пару секунд, идёт загрузка</div>
+			<div id="preloader-subtitle">Пару секунд, скоро все буде...</div>
 			<div id="preloader-bar-track">
 				<div id="preloader-bar-fill"></div>
 			</div>
