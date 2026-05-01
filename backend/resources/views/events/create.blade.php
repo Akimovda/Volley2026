@@ -499,9 +499,12 @@ if ($initialStep < 1 || $initialStep > 3) {
 		// Вешаем на все значимые события
 		$('form').on('change', '#direction, #format, #game_subtype, #game_libero_mode, #game_gender_policy', safeRerenderAll);
 		
-		// Обработчик для registration_mode (скрытие блока бота при командной записи)
+		// Скрытие блока бота при командной записи
 		$('form').on('change', '#registration_mode', function() {
-			if (typeof applyAllowRegShowIf === 'function') applyAllowRegShowIf();
+			if (typeof window.applyAllowRegShowIf === 'function') window.applyAllowRegShowIf();
+		});
+		$(document).ready(function() {
+			if (typeof window.applyAllowRegShowIf === 'function') window.applyAllowRegShowIf();
 		});
 		// Показ/скрытие блока "Начало регистрации для ограничиваемого пола"
 		function toggleGenderLimitedReg() {

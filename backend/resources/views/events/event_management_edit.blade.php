@@ -682,7 +682,7 @@
                     </div>
                 </div>
 
-                @if(($event->registration_type ?? 'individual') !== 'team' && ($event->format ?? 'game') !== 'tournament')
+                @if(!in_array($event->registration_mode ?? 'single', ['team', 'team_classic', 'team_beach'], true) && ($event->format ?? 'game') !== 'tournament')
                 {{-- ===== БЛОК 7: Помощник записи 🤖 ===== --}}
                 <div class="ramka">
                     <h2 class="-mt-05">Помощник записи <span id="bot_icon_edit" style="color:{{ ($event->bot_assistant_enabled ?? false) ? '#10b981' : '#9ca3af' }}">🤖</span></h2>

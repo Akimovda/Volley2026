@@ -524,7 +524,7 @@ if (hiddenH) hiddenH.value = h;
             }
         });
         
-        // Обработка data-hide-if для registration_type
+        // Обработка data-hide-if для registration_type (устаревшее поле, сохранено для совместимости)
         document.querySelectorAll('[data-hide-if]').forEach(function(el) {
             var hideCondition = el.getAttribute('data-hide-if');
             if (hideCondition && hideCondition.indexOf('registration_type=') !== -1) {
@@ -536,6 +536,21 @@ if (hiddenH) hiddenH.value = h;
                 }
             }
         });
+
+        // Обработка data-hide-if для registration_mode (поддержка через запятую: team,team_classic,team_beach)
+        document.querySelectorAll('[data-hide-if]').forEach(function(el) {
+            var hideCondition = el.getAttribute('data-hide-if');
+            if (hideCondition && hideCondition.indexOf('registration_mode=') !== -1) {
+                var match = hideCondition.match(/registration_mode=([a-zA-Z_,]+)/);
+                if (match) {
+                    var modes = match[1].split(',');
+                    var regModeEl = document.getElementById('registration_mode');
+                    var currentMode = regModeEl ? regModeEl.value : 'single';
+                    el.style.display = modes.indexOf(currentMode) !== -1 ? 'none' : '';
+                }
+            }
+        });
+
         // Показать/скрыть блок стоимости
         var stub = document.getElementById('no_registration_stub');
         if (stub) stub.style.display = isReg ? 'none' : '';
@@ -547,6 +562,7 @@ if (hiddenH) hiddenH.value = h;
         if (isReg) adModalShown = false;
     }
     allowRegRadios.forEach(function(r){ r.addEventListener('change', applyAllowRegShowIf); });
+    window.applyAllowRegShowIf = applyAllowRegShowIf;
     applyAllowRegShowIf();
 })();
 </script>	
