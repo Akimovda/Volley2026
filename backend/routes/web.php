@@ -78,7 +78,13 @@ use App\Http\Controllers\Integrations\VkCommunityBindController;
 		|--------------------------------------------------------------------------
 	*/
 	
-	Route::get('/', fn () => view('welcome'))->name('home');
+	Route::get('/', function () {
+		$ua = request()->header('User-Agent', '');
+		if (str_contains($ua, 'VolleyPlayApp')) {
+			return redirect('/events');
+		}
+		return view('welcome');
+	})->name('home');
 
 // Редирект если кто-то зашёл на /logout напрямую через GET
 Route::get('/logout', fn () => redirect('/'));
