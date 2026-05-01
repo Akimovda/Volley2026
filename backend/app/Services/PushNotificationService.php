@@ -147,6 +147,14 @@ final class PushNotificationService
                 Log::warning('APNs token deactivated (410 Gone)', ['token' => substr($token, 0, 10) . '...']);
                 return false;
             }
+            if ($httpCode === 400) {
+                $body = json_decode($response, true);
+                if (isset($body['reason']) && in_array($body['reason'], ['BadDeviceToken', 'Unregistered'])) {
+                    DeviceToken::where('token', $token)->update(['is_active' => false]);
+                    Log::warning('APNs token deactivated (400 ' . $body['reason'] . ')', ['token' => substr($token, 0, 10) . '...']);
+                    return false;
+                }
+            }
             throw new \RuntimeException("APNs HTTP {$httpCode}: {$response}");
         }
 

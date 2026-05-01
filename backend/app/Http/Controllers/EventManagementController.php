@@ -386,6 +386,7 @@ if ($role === 'admin') {
 
             'allow_registration'               => 'sometimes|boolean',
             'reg_starts_days_before'           => 'nullable|integer|min:0|max:365',
+            'reg_starts_hours_before'          => 'nullable|integer|min:0|max:23',
             'reg_ends_minutes_before'          => 'nullable|integer|min:0|max:10080',
             'cancel_lock_minutes_before'       => 'nullable|integer|min:0|max:10080',
             'remind_registration_enabled'      => 'sometimes|boolean',
@@ -619,6 +620,7 @@ if ($role === 'admin') {
             'beach_level_max'          => ['nullable', 'integer', 'min:0', 'max:10'],
             'age_policy'               => ['nullable', 'string', 'in:adult,child,any'],
             'reg_starts_days_before'   => ['nullable', 'integer', 'min:0', 'max:365'],
+            'reg_starts_hours_before'  => ['nullable', 'integer', 'min:0', 'max:23'],
             'reg_ends_minutes_before'  => ['nullable', 'integer', 'min:0', 'max:10080'],
             'cancel_lock_minutes_before' => ['nullable', 'integer', 'min:0', 'max:10080'],
             'game_max_players'             => ['nullable', 'integer', 'min:0'],
@@ -666,6 +668,7 @@ if ($role === 'admin') {
     
             $allowReg = (bool) ($data['allow_registration'] ?? false);
             $daysBefore = (int) ($data['reg_starts_days_before'] ?? 3);
+            $hoursBefore = (int) ($data['reg_starts_hours_before'] ?? 0);
             $endsMinBefore = (int) ($data['reg_ends_minutes_before'] ?? 15);
             $cancelMinBefore = (int) ($data['cancel_lock_minutes_before'] ?? 60);
     
@@ -717,7 +720,7 @@ if ($role === 'admin') {
             }
 
             if ($allowReg) {
-                $event->registration_starts_at = $startsUtc->copy()->subDays($daysBefore);
+                $event->registration_starts_at = $startsUtc->copy()->subDays($daysBefore)->subHours($hoursBefore);
                 $event->registration_ends_at = $startsUtc->copy()->subMinutes($endsMinBefore);
                 $event->cancel_self_until = $startsUtc->copy()->subMinutes($cancelMinBefore);
             } else {
