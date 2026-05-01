@@ -24,12 +24,14 @@
 - Safari: использовать jQuery.ajax (не fetch — CORS), polling 200мс (не input/keyup)
 - Safari select bug: использовать change (не input) для <select> — input не срабатывает
 - Класс form-select-dropdown даёт visibility:hidden — НЕ использовать для dropdown
+- createCustomSelect оборачивает .form select → дропдаун обрезается если .card имеет overflow:hidden → добавлять style="overflow:visible" на карточку
 
 ## Окно регистрации (паттерн)
 - Данные хранятся как UTC-метки: registration_starts_at, registration_ends_at, cancel_self_until
 - При отображении формы редактирования — вычислять обратно из diff UTC-меток (как в occurrence_edit.blade.php)
 - Формат: часы+минуты split (select h + select m) + hidden total_minutes + JS change→sync
 - event_management_edit: вычислять из event->starts_at + event->cancel_self_until (fixed)
+- event_management_edit reg_starts: два поля reg_starts_days_before + reg_starts_hours_before; вычислять через timestamp diff: days=floor(diffSec/86400), hours=floor((diffSec%86400)/3600)
 - НЕ использовать hardcoded old('field', 60) без $savedValue из модели
 - РЕШЕНИЕ: давать <select> атрибут name и вычислять итог на сервере (reg_ends_h + reg_ends_m → минуты)
 - step2 create: selects имеют name="reg_ends_h","reg_ends_m","cancel_lock_h","cancel_lock_m","reg_starts_d","reg_starts_h"
@@ -56,6 +58,10 @@
 - Карточка мероприятия: resources/views/events/_card.blade.php
 - Меню профиля: resources/views/profile/_menu.blade.php
 - Аватары: Spatie Media, collection='avatar', конверсия thumb
+- Фото мероприятия: event_photos (JSON array Media IDs) в колонке events.event_photos (cast array)
+  - Пользовательские фото: user->getMedia('event_photos'), конверсия event_thumb
+  - Выбор: swiper с чекбоксами → hidden input event_photos = JSON → EventStoreService/EventManagementController
+  - event_management_edit поддерживает редактирование фото: Swiper с суффиксом Edit (уникальные IDs)
 
 ## Боты
 - Telegram dev: /opt/volley-telegram-bot/bot.py (порт 8092)
@@ -274,11 +280,17 @@ sudo supervisorctl restart volleyplay-queue:* volleyplay-reverb
 - PushNotificationService: send(userId, title, body, data=[]) — берёт активные iOS токены
 - JWT: header.payload.signature, подпись openssl_sign+ES256, DER→JOSE конвертация вручную
 - HTTP 410 от APNs = токен устарел → автоматически is_active=false
+- HTTP 400 BadDeviceToken = токен невалиден → автоматически is_active=false
 - Конфиг: config/apn.php, переменные: APN_KEY_ID, APN_TEAM_ID, APN_BUNDLE_ID, APN_PRIVATE_KEY, APN_PRODUCTION
 - .p8 файл хранить в storage/app/apns/AuthKey.p8
 - Канал 'push' добавлен в UserNotificationService + NotificationDeliverySender
 - 4 типа с push: registration_created, event_reminder, event_cancelled, friend_joined_event
 - normalizeChannels() проверяет наличие активных iOS токенов перед добавлением канала
+- ВАЖНО: Xcode/debug сборка → sandbox-токены (api.sandbox.push.apple.com), TestFlight/App Store → production-токены (api.push.apple.com)
+- APN_PRODUCTION=false только для dev-сервера; prod должен быть true когда идут реальные пользователи с TestFlight/App Store
+- Токены регистрируются на том сервере, на который указывает WebView (prod-приложение → volleyplay.club → prod DB)
+- При тестировании push с Xcode-сборкой: токены попадают в prod DB, отправлять нужно через prod-сервер с APN_PRODUCTION=false
+- APNs возвращает 200 OK на sandbox но не доставляет если приложение свёрнуто и entitlements некорректны — проверять aps-environment:development в Target → Signing & Capabilities
 
 ### API endpoints
 - POST /api/device-token (auth:sanctum) — сохранить/обновить токен
