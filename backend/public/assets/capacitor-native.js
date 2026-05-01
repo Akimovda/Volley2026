@@ -133,6 +133,16 @@
         updateBadge: updateBadge
     };
 
+    // ─── Preloader ───────────────────────────────────────────────────────────
+
+    window.addEventListener('load', function () {
+        if (isCapacitor && Plugins.Preloader) {
+            setTimeout(function () {
+                Plugins.Preloader.hide();
+            }, 200);
+        }
+    });
+
     // ─── Pull-to-refresh ─────────────────────────────────────────────────────
 
     document.addEventListener('pull-to-refresh', function () {
