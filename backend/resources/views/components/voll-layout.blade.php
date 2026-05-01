@@ -741,7 +741,7 @@
 
 			if (!sessionStorage.getItem('biometric_checked')) {
 				sessionStorage.setItem('biometric_checked', 'true');
-				setTimeout(function() { tryBiometricLogin(); }, 2000);
+				setTimeout(function() { tryBiometricLogin(); }, 1500);
 			}
 		})();
 		</script>
