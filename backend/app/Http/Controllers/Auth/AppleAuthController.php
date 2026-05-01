@@ -48,6 +48,7 @@ class AppleAuthController extends Controller
 
         return Socialite::driver('apple')
             ->scopes(['name', 'email'])
+            ->stateless()
             ->redirect();
     }
 
@@ -61,7 +62,7 @@ class AppleAuthController extends Controller
         }
 
         try {
-            $appleUser = Socialite::driver('apple')->user();
+            $appleUser = Socialite::driver('apple')->stateless()->user();
         } catch (\Throwable $e) {
             Log::error('[APPLE_OAUTH] user() failed', ['e' => $e->getMessage()]);
             return redirect()->route('login')->with('error', 'Не удалось войти через Apple. Попробуйте ещё раз.');
