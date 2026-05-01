@@ -709,6 +709,9 @@
 				} catch (e) {
 					console.log('[Biometric] verifyIdentity failed or timeout:', e.message);
 					localStorage.setItem('biometricFailedAt', Date.now().toString());
+					if (!window._oauthInProgress) {
+						window.location.href = '/events';
+					}
 				}
 			}
 
@@ -721,7 +724,7 @@
 
 			if (!sessionStorage.getItem('biometric_checked')) {
 				sessionStorage.setItem('biometric_checked', 'true');
-				tryBiometricLogin();
+				setTimeout(function() { tryBiometricLogin(); }, 2000);
 			}
 		})();
 		</script>
