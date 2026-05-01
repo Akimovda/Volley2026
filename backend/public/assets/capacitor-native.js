@@ -141,6 +141,9 @@
                 Plugins.Preloader.hide();
             }, 200);
         }
+        document.documentElement.classList.remove('is-app-loading');
+        document.documentElement.classList.add('is-app-loaded');
+        document.documentElement.style.backgroundColor = '';
     });
 
     // ─── Pull-to-refresh ─────────────────────────────────────────────────────

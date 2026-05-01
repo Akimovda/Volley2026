@@ -7,7 +7,7 @@
 	<head>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-		<script>if(navigator.userAgent.includes('VolleyPlayApp')){document.documentElement.classList.add('is-app');window.addEventListener('load',function(){var btn=document.getElementById('app-back-btn');if(btn&&window.history.length<=1){btn.style.display='none';}});}</script>
+		<script>if(navigator.userAgent.includes('VolleyPlayApp')){document.documentElement.classList.add('is-app');window.addEventListener('load',function(){var btn=document.getElementById('app-back-btn');if(btn&&window.history.length<=1){btn.style.display='none';}});}if(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform()){document.documentElement.classList.add('is-app-loading');document.documentElement.style.backgroundColor='#1a3a6b';}</script>
 		<meta name="csrf-token" content="{{ csrf_token() }}">
 		@auth<meta name="user-authenticated" content="true">@endauth
 		<title>{{ $title ?? 'Волейбольный сервис Your Volley Club!' }}</title>
@@ -26,7 +26,12 @@
 		<link href="/assets/style.css?v={{ time() }}" rel="stylesheet">
 		@if(isset($style))
         {{ $style }}
-		@endif	
+		@endif
+		<style>
+			html.is-app-loading { background-color: #1a3a6b !important; }
+			html.is-app-loading body { opacity: 0; transition: opacity 0.3s ease; }
+			html.is-app-loaded body { opacity: 1; }
+		</style>
 	</head>
 	<body @class([$body_class ?? null])>
 		<script>
