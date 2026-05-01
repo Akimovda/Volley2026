@@ -156,31 +156,43 @@
             document.body.classList.add('is-app');
         }
 
-        // Badge: запрашиваем только для авторизованных пользователей
-        if (isCapacitor && Plugins.Badge && document.querySelector('meta[name="user-authenticated"]')) {
-            fetch('/api/notifications/unread-count', {
-                credentials: 'same-origin',
-                headers: { 'Accept': 'application/json' }
-            }).then(function (r) {
-                return r.ok ? r.json() : null;
-            }).then(function (data) {
-                if (data && typeof data.count === 'number') {
-                    updateBadge(data.count);
-                }
-            }).catch(function () {});
+        // Badge: обновляем при загрузке и при возврате в приложение
+        if (isCapacitor && Plugins.Badge) {
+            function refreshBadge() {
+                if (!document.querySelector('meta[name="user-authenticated"]')) return;
+                fetch('/api/notifications/unread-count', {
+                    credentials: 'same-origin',
+                    headers: { 'Accept': 'application/json' }
+                }).then(function (r) {
+                    return r.ok ? r.json() : null;
+                }).then(function (data) {
+                    if (data && typeof data.count === 'number') {
+                        updateBadge(data.count);
+                    }
+                }).catch(function () {});
+            }
+
+            refreshBadge();
+            window.addEventListener('focus', refreshBadge);
+            document.addEventListener('visibilitychange', function () {
+                if (!document.hidden) refreshBadge();
+            });
         }
 
-        // Haptic на кнопки
-        document.querySelectorAll('.btn-haptic').forEach(function (btn) {
-            btn.addEventListener('click', function () { haptic('light'); });
-        });
-        document.querySelectorAll('.btn-alert').forEach(function (btn) {
-            btn.addEventListener('click', function () { haptic('medium'); });
-        });
+        // Глобальный haptic на ВСЕ кнопки, ссылки и интерактивные элементы
+        if (isCapacitor) {
+            document.addEventListener('click', function (e) {
+                var target = e.target.closest('button, a, [role="button"], input[type="submit"], input[type="button"], .btn, label');
+                if (!target) return;
+                if (target.disabled || target.classList.contains('disabled')) return;
+                if (target.getAttribute('target') === '_blank') return;
 
-        // Haptic при отправке форм join/leave
-        document.querySelectorAll('form[action*="/join"], form[action*="/leave"]').forEach(function (form) {
-            form.addEventListener('submit', function () { haptic('success'); });
-        });
+                if (target.classList.contains('btn-danger') || target.classList.contains('btn-alert')) {
+                    haptic('warning');
+                } else {
+                    haptic('light');
+                }
+            }, true);
+        }
     });
 })();
