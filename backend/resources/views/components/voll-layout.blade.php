@@ -115,10 +115,6 @@
 				preloader.style.display = 'flex';
 			}
 
-			if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.SplashScreen) {
-				window.Capacitor.Plugins.SplashScreen.hide();
-			}
-
 			window.addEventListener('load', function() {
 				setTimeout(function() {
 					var bar = document.getElementById('preloader-bar-fill');
