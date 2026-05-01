@@ -44,14 +44,15 @@ Route::get('/occurrences/{occurrence}/stats', function (string $occurrence) {
 });
 Route::post('/integrations/channels/set-thread', [\App\Http\Controllers\Api\ChannelSetThreadController::class, '__invoke']);
 
-// Push-уведомления — device tokens (поддержка и sanctum-токена, и web-сессии)
+// Push-уведомления — device tokens + уведомления (поддержка и sanctum-токена, и web-сессии)
 Route::middleware('auth:sanctum,web')->group(function () {
     Route::post('/device-token', [\App\Http\Controllers\Api\DeviceTokenController::class, 'store']);
     Route::delete('/device-token', [\App\Http\Controllers\Api\DeviceTokenController::class, 'destroy']);
-    Route::get('/notifications/unread-count', function (Request $request) {
-        $count = $request->user()->notificationsInbox()->whereNull('read_at')->count();
-        return response()->json(['count' => $count]);
-    });
+    Route::get('/notifications/unread-count', [\App\Http\Controllers\Api\NotificationsApiController::class, 'unreadCount']);
+    Route::get('/notifications', [\App\Http\Controllers\Api\NotificationsApiController::class, 'index']);
+    Route::post('/notifications/read-all', [\App\Http\Controllers\Api\NotificationsApiController::class, 'markAllRead']);
+    Route::post('/notifications/{id}/read', [\App\Http\Controllers\Api\NotificationsApiController::class, 'markRead']);
+    Route::delete('/notifications/{id}', [\App\Http\Controllers\Api\NotificationsApiController::class, 'destroy']);
 });
 
 // Face ID / биометрическая авторизация
