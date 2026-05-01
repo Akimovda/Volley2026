@@ -70,6 +70,11 @@
 		<a href="{{ $yandexLink }}" target="_blank" class="mt-1 btn btn-secondary btn-small">
 			Яндекс Карты
 		</a>
-		@endif	
+		@endif
+	</div>
+
+	<div class="native-actions mt-1">
+		<button type="button" class="btn btn-secondary btn-haptic" id="btn-share-event">🤝 Поделиться</button>
+		<button type="button" class="btn btn-secondary btn-haptic" id="btn-add-calendar">📆 В календарь</button>
 	</div>
 </div>	

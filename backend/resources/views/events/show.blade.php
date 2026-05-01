@@ -228,12 +228,6 @@ $hasCoords =
 			
 			<div class="row row2">
 				<div class="col-lg-8">
-					{{-- Нативные кнопки — видны только в Capacitor (.is-app) --}}
-					<div class="native-actions">
-						<button type="button" class="btn btn-secondary btn-haptic" id="btn-share-event">Поделиться</button>
-						<button type="button" class="btn btn-secondary btn-haptic" id="btn-add-calendar">В календарь</button>
-					</div>
-
 					@include('events.show.description')
 					@include('events.show.info')
 					
