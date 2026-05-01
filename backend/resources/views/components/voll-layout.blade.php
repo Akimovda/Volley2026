@@ -32,8 +32,8 @@
 		{{-- Прелоадер приложения (только Capacitor) --}}
 		<div id="app-preloader">
 			<img src="/icons/favicon.svg" alt="" id="preloader-logo">
-			<div id="preloader-title">Приветствуем Вас!</div>
-			<div id="preloader-subtitle">Хорошей игры и тренировки!</div>
+			<div id="preloader-title">Загрузка...</div>
+			<div id="preloader-subtitle">Пару секунд, идёт загрузка</div>
 			<div id="preloader-bar-track">
 				<div id="preloader-bar-fill"></div>
 			</div>
