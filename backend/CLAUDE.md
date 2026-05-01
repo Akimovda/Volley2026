@@ -68,6 +68,7 @@ cd /var/www/volleyplay/backend
 git fetch origin && git merge origin/main --no-edit
 composer install --no-dev --optimize-autoloader
 npm ci && npm run build
+php artisan livewire:publish --assets
 php artisan migrate --force
 php artisan config:clear && php artisan config:cache
 php artisan route:cache && php artisan view:cache

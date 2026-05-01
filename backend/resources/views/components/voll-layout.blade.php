@@ -670,10 +670,15 @@
 					var creds = await NativeBiometric.getCredentials({ server: 'volleyplay.club' });
 					if (!creds || !creds.password) return;
 
-					await NativeBiometric.verifyIdentity({
-						reason: 'Войти в VolleyPlay',
-						title: 'Вход по Face ID',
-					});
+					await Promise.race([
+						NativeBiometric.verifyIdentity({
+							reason: 'Войти в VolleyPlay',
+							title: 'Вход по Face ID',
+						}),
+						new Promise(function(_, reject) {
+							setTimeout(function() { reject(new Error('timeout')); }, 5000);
+						})
+					]);
 
 					var resp = await fetch('/auth/biometric-login', {
 						method: 'POST',
@@ -693,7 +698,8 @@
 						await NativeBiometric.deleteCredentials({ server: 'volleyplay.club' });
 					}
 				} catch (e) {
-					console.log('BIOMETRIC LOGIN: error', e);
+					console.log('[Biometric] verifyIdentity failed or timeout:', e.message);
+					window.location.href = '/events';
 				}
 			}
 
