@@ -123,6 +123,17 @@
         } catch (e) {}
     }
 
+    // ─── Auth Overlay ────────────────────────────────────────────────────────
+
+    async function showAuthOverlay() {
+        if (!isCapacitor || !Plugins.Preloader) return;
+        try {
+            await Plugins.Preloader.showOverlay();
+        } catch (e) {
+            console.warn('[VolleyNative] showOverlay error:', e);
+        }
+    }
+
     // ─── Public API ──────────────────────────────────────────────────────────
 
     window.VolleyNative = {
@@ -130,7 +141,8 @@
         share: share,
         addToCalendar: addToCalendar,
         haptic: haptic,
-        updateBadge: updateBadge
+        updateBadge: updateBadge,
+        showAuthOverlay: showAuthOverlay
     };
 
     // ─── Preloader ───────────────────────────────────────────────────────────
@@ -141,9 +153,6 @@
                 Plugins.Preloader.hide();
             }, 200);
         }
-        document.documentElement.classList.remove('is-app-loading');
-        document.documentElement.classList.add('is-app-loaded');
-        document.documentElement.style.backgroundColor = '';
     });
 
     // ─── Pull-to-refresh ─────────────────────────────────────────────────────
