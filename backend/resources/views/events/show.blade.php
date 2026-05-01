@@ -331,30 +331,75 @@ $hasCoords =
 			@endphp
 			<script>
 			(function () {
-				if (!window.VolleyNative || !window.VolleyNative.isApp) return;
-
 				var shareBtn = document.getElementById('btn-share-event');
 				var calBtn   = document.getElementById('btn-add-calendar');
 
 				if (shareBtn) {
 					shareBtn.addEventListener('click', function () {
-						window.VolleyNative.share({
-							title: @json($event->title ?? ''),
-							text: 'Присоединяйся к игре на VolleyPlay!',
-							url: window.location.href
-						});
+						if (window.VolleyNative && window.VolleyNative.isApp) {
+							window.VolleyNative.share({
+								title: @json($event->title ?? ''),
+								text: 'Присоединяйся к игре на VolleyPlay!',
+								url: window.location.href
+							});
+						} else if (navigator.share) {
+							navigator.share({
+								title: @json($event->title ?? ''),
+								text: 'Присоединяйся к игре на VolleyPlay!',
+								url: window.location.href
+							}).catch(function() {});
+						} else {
+							navigator.clipboard.writeText(window.location.href).then(function() {
+								shareBtn.textContent = '✅ Ссылка скопирована';
+								setTimeout(function() { shareBtn.textContent = '🤝 Поделиться'; }, 2000);
+							}).catch(function() {});
+						}
 					});
 				}
 
 				if (calBtn) {
 					calBtn.addEventListener('click', function () {
-						window.VolleyNative.addToCalendar({
-							title: @json($event->title ?? ''),
-							location: @json($calLoc),
-							notes: @json($calNotes),
-							startDate: @json($calStart),
-							endDate: @json($calEnd)
-						});
+						if (window.VolleyNative && window.VolleyNative.isApp) {
+							window.VolleyNative.addToCalendar({
+								title: @json($event->title ?? ''),
+								location: @json($calLoc),
+								notes: @json($calNotes),
+								startDate: @json($calStart),
+								endDate: @json($calEnd)
+							});
+						} else {
+							var title    = @json($event->title ?? '');
+							var location = @json($calLoc);
+							var notes    = @json($calNotes);
+							var start    = new Date(@json($calStart));
+							var end      = new Date(@json($calEnd));
+
+							function icsDate(d) {
+								return d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+							}
+							var uid = 'event-' + @json($occurrence->id ?? 0) + '@volleyplay.club';
+							var ics = [
+								'BEGIN:VCALENDAR',
+								'VERSION:2.0',
+								'PRODID:-//VolleyPlay//RU',
+								'BEGIN:VEVENT',
+								'UID:' + uid,
+								'DTSTAMP:' + icsDate(new Date()),
+								'DTSTART:' + icsDate(start),
+								'DTEND:' + icsDate(end),
+								'SUMMARY:' + title.replace(/\n/g, '\\n'),
+								'LOCATION:' + location.replace(/\n/g, '\\n'),
+								'DESCRIPTION:' + notes.replace(/\n/g, '\\n').substring(0, 500),
+								'END:VEVENT',
+								'END:VCALENDAR'
+							].join('\r\n');
+
+							var blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+							var a = document.createElement('a');
+							a.href = URL.createObjectURL(blob);
+							a.download = 'event.ics';
+							a.click();
+						}
 					});
 				}
 			})();

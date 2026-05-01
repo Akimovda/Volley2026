@@ -4688,3 +4688,13 @@ body.dark .progress { background: rgba(255,255,255,0.12); }
 body:not(.is-app) .native-actions {
 	display: none !important;
 }
+.event-share-actions {
+	display: flex;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+.event-share-actions .btn {
+	border-radius: 20px;
+	padding: 4px 14px;
+	font-size: 13px;
+}
