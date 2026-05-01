@@ -35,8 +35,13 @@
 	</div>
 	@endif	
 	
+	<div class="event-share-actions mt-1 mb-1">
+		<button type="button" class="btn btn-secondary btn-haptic" id="btn-share-event">🤝 Поделиться</button>
+		<button type="button" class="btn btn-secondary btn-haptic" id="btn-add-calendar">📆 В календарь</button>
+	</div>
+
 	@if($hasCoords)
-	
+
 	@php
 	$theme = request()->cookie('theme') == 'dark' ? 'dark' : 'light';
 	$ll = $lng . ',' . $lat;
@@ -73,8 +78,5 @@
 		@endif
 	</div>
 
-	<div class="native-actions mt-1">
-		<button type="button" class="btn btn-secondary btn-haptic" id="btn-share-event">🤝 Поделиться</button>
-		<button type="button" class="btn btn-secondary btn-haptic" id="btn-add-calendar">📆 В календарь</button>
-	</div>
+
 </div>	
