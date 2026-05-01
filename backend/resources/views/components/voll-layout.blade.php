@@ -666,7 +666,7 @@
 
 			async function tryBiometricLogin() {
 				var lastFail = localStorage.getItem('biometricFailedAt');
-				if (lastFail && (Date.now() - parseInt(lastFail)) < 60000) {
+				if (lastFail && (Date.now() - parseInt(lastFail)) < 43200000) {
 					console.log('[Biometric] skipping — failed less than 60s ago');
 					return;
 				}
@@ -726,7 +726,7 @@
 					console.log('[Biometric] verifyIdentity failed or timeout:', e.message);
 					localStorage.setItem('biometricFailedAt', Date.now().toString());
 					window._biometricInProgress = false;
-					window.location.href = '/events';
+					// Не делаем redirect — сервер уже перенаправил на /events
 				}
 
 				window._biometricInProgress = false;
