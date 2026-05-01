@@ -71,8 +71,8 @@ class AccountDeleteRequestController extends Controller
             'email'   => $userEmail,
         ]);
 
-        // Logout до delete — иначе SoftDeletes скрывает user от Eloquent и Logout event падает
-        Auth::logout();
+        // Logout через web guard — роут под auth:sanctum (RequestGuard), у которого logout() не существует
+        Auth::guard('web')->logout();
 
         // SoftDelete после logout
         $user->delete();
