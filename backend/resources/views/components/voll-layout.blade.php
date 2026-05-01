@@ -674,10 +674,19 @@
 				try {
 					var avail = await NativeBiometric.isAvailable();
 					if (!avail.isAvailable) return;
+				} catch(e) { return; }
 
-					var creds = await NativeBiometric.getCredentials({ server: 'volleyplay.club' });
-					if (!creds || !creds.password) return;
+				var creds;
+				try {
+					creds = await NativeBiometric.getCredentials({ server: 'volleyplay.club' });
+				} catch(e) {
+					console.log('[Biometric] no saved credentials — normal for new users');
+					return;
+				}
 
+				if (!creds || !creds.password) return;
+
+				try {
 					await Promise.race([
 						NativeBiometric.verifyIdentity({
 							reason: 'Войти в VolleyPlay',
@@ -706,12 +715,9 @@
 					} else if (resp.status === 422) {
 						await NativeBiometric.deleteCredentials({ server: 'volleyplay.club' });
 					}
-				} catch (e) {
+				} catch(e) {
 					console.log('[Biometric] verifyIdentity failed or timeout:', e.message);
 					localStorage.setItem('biometricFailedAt', Date.now().toString());
-					if (!window._oauthInProgress) {
-						window.location.href = '/events';
-					}
 				}
 			}
 
