@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\DeviceToken;
+use App\Models\UserNotification;
 use Illuminate\Support\Facades\Log;
 
 final class PushNotificationService
@@ -45,9 +46,13 @@ final class PushNotificationService
             return $result;
         }
 
+        $badge = UserNotification::where('user_id', $userId)
+            ->whereNull('read_at')
+            ->count();
+
         foreach ($tokens as $token) {
             try {
-                $sent = $this->sendToToken($token, $title, $body, $data);
+                $sent = $this->sendToToken($token, $title, $body, $data, $badge);
                 if ($sent) {
                     $result['sent']++;
                     Log::warning('APNs push sent', [
@@ -72,7 +77,7 @@ final class PushNotificationService
         return $result;
     }
 
-    private function sendToToken(string $token, string $title, string $body, array $data): bool
+    private function sendToToken(string $token, string $title, string $body, array $data, int $badge = 0): bool
     {
         $missing = array_filter([
             'key_id'          => $this->keyId,
@@ -102,6 +107,7 @@ final class PushNotificationService
             'aps' => [
                 'alert' => ['title' => $title, 'body' => $body],
                 'sound' => 'default',
+                'badge' => $badge,
             ],
             'data' => $data,
         ], JSON_UNESCAPED_UNICODE);
