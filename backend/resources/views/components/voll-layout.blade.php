@@ -662,6 +662,8 @@
 			var NativeBiometric = window.Capacitor.Plugins.NativeBiometric;
 			if (!NativeBiometric) return;
 
+			window._oauthInProgress = false;
+
 			async function tryBiometricLogin() {
 				try {
 					var avail = await NativeBiometric.isAvailable();
@@ -699,9 +701,18 @@
 					}
 				} catch (e) {
 					console.log('[Biometric] verifyIdentity failed or timeout:', e.message);
-					window.location.href = '/events';
+					if (!window._oauthInProgress) {
+						window.location.href = '/events';
+					}
 				}
 			}
+
+			// Отмена biometric redirect при клике на OAuth кнопки
+			document.querySelectorAll('a[href*="/auth/"]').forEach(function(a) {
+				a.addEventListener('click', function() {
+					window._oauthInProgress = true;
+				});
+			});
 
 			if (!sessionStorage.getItem('biometric_checked')) {
 				sessionStorage.setItem('biometric_checked', 'true');
