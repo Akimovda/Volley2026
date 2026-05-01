@@ -2,8 +2,6 @@ import Capacitor
 import UIKit
 import WebKit
 
-// MARK: - Plugin
-
 @objc(NotificationsScreenPlugin)
 public class NotificationsScreenPlugin: CAPPlugin, CAPBridgedPlugin {
 
@@ -21,8 +19,7 @@ public class NotificationsScreenPlugin: CAPPlugin, CAPBridgedPlugin {
             }
 
             let vc = NotificationsViewController()
-            // Pass WKWebView so the VC can extract cookies for authenticated API calls
-            vc.webView = bridge.webView
+            vc.webView = bridge.webView  // передаём WKWebView для извлечения cookies
 
             let nav = UINavigationController(rootViewController: vc)
             nav.modalPresentationStyle = .pageSheet
@@ -32,7 +29,7 @@ public class NotificationsScreenPlugin: CAPPlugin, CAPBridgedPlugin {
             }
 
             bridge.viewController?.present(nav, animated: true) {
-                call.resolve()
+                call.resolve(["opened": true])
             }
         }
     }
