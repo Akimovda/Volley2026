@@ -1241,7 +1241,32 @@
 
 		function executeAccountDeletion() {
 			cancelBtn.style.display = 'none';
-			document.getElementById('form-delete-account').submit();
+
+			jQuery.ajax({
+				url: '/account/delete-request',
+				method: 'POST',
+				data: {
+					_token: document.querySelector('meta[name="csrf-token"]').content
+				},
+				success: function() {
+					document.cookie.split(';').forEach(function(c) {
+						var name = c.split('=')[0].trim();
+						document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/';
+						document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=.volleyplay.club';
+						document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=volleyplay.club';
+					});
+
+					try { localStorage.clear(); } catch(e) {}
+					try { sessionStorage.clear(); } catch(e) {}
+
+					window.location.replace('/');
+				},
+				error: function() {
+					swal({ title: 'Ошибка', text: 'Не удалось удалить аккаунт', icon: 'error' });
+					cancelBtn.style.display = 'none';
+					deleteBtn.style.display = '';
+				}
+			});
 		}
 	})();
 	</script>
