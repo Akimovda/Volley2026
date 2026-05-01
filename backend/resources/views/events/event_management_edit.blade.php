@@ -454,7 +454,7 @@
                         </div>
 
                         <div class="col-md-4">
-                            <div class="card">
+                            <div class="card" style="overflow:visible">
                                 <label>Начало регистрации (дней до)</label>
                                 <div class="d-flex" style="gap:.5rem;align-items:center">
                                     <select name="reg_starts_days_before" id="mgmt_reg_starts_d" style="width:auto">
