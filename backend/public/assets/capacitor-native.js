@@ -1,6 +1,19 @@
 (function () {
     'use strict';
 
+    setTimeout(function() {
+        var info = {
+            hasCapacitor: typeof window.Capacitor !== 'undefined',
+            hasPlugins: !!(window.Capacitor && window.Capacitor.Plugins),
+            plugins: window.Capacitor && window.Capacitor.Plugins
+                ? Object.keys(window.Capacitor.Plugins).join(', ')
+                : 'no plugins',
+            hasVolleyCalendar: !!(window.Capacitor && window.Capacitor.Plugins
+                && window.Capacitor.Plugins.VolleyCalendar)
+        };
+        alert('DIAG: ' + JSON.stringify(info));
+    }, 3000);
+
     var isCapacitor = !!(
         window.Capacitor &&
         window.Capacitor.isNativePlatform &&
