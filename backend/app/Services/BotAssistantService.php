@@ -62,7 +62,7 @@ final class BotAssistantService
         }
 
         // Боты не работают при командной записи
-        if (($event->registration_type ?? 'individual') === 'team') {
+        if (in_array((string)($event->registration_mode ?? 'single'), ['team', 'team_classic', 'team_beach'], true)) {
             return;
         }
 
