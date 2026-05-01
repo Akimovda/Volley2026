@@ -1,7 +1,7 @@
 import UIKit
 import WebKit
 
-// MARK: - Model
+// MARK: - Models
 
 struct VolleyNotification: Decodable {
     let id: Int
@@ -23,24 +23,12 @@ struct VolleyNotification: Decodable {
     }
 }
 
-struct NotificationsPage: Decodable {
-    let data: [VolleyNotification]
-    let hasMore: Bool
-    let nextPage: Int
-
-    enum CodingKeys: String, CodingKey {
-        case data
-        case hasMore = "has_more"
-        case nextPage = "next_page"
-    }
-}
-
 // MARK: - ViewController
 
 class NotificationsViewController: UIViewController {
 
-    // Injected by plugin — used to extract session cookies from WKWebView
-    weak var webView: WKWebView?
+    // Injected by plugin to extract WKWebView session cookies
+    var webView: WKWebView?
 
     private let tableView = UITableView(frame: .zero, style: .plain)
     private let refreshControl = UIRefreshControl()
@@ -72,7 +60,7 @@ class NotificationsViewController: UIViewController {
             title: "Прочитать все",
             style: .plain,
             target: self,
-            action: #selector(markAllRead)
+            action: #selector(markAllReadTapped)
         )
         navigationItem.leftBarButtonItem = UIBarButtonItem(
             barButtonSystemItem: .close,
@@ -127,21 +115,19 @@ class NotificationsViewController: UIViewController {
         loadPage(page: 1, reset: true)
     }
 
-    @objc private func markAllRead() {
-        apiRequest(path: "/api/notifications/read-all", method: "POST") { [weak self] _ in
-            DispatchQueue.main.async {
-                self?.items = self?.items.map { n in
-                    guard !n.isRead else { return n }
-                    // Re-decode with read_at filled — easier to just rebuild
-                    return VolleyNotification(
-                        id: n.id, type: n.type, title: n.title, body: n.body,
-                        url: n.url, readAt: ISO8601DateFormatter().string(from: Date()),
-                        createdAt: n.createdAt, createdAtHuman: n.createdAtHuman
-                    )
-                } ?? []
-                self?.tableView.reloadData()
-                self?.postBadgeUpdate()
+    @objc private func markAllReadTapped() {
+        callApi(method: "POST", path: "/api/notifications/read-all") { [weak self] _ in
+            guard let self = self else { return }
+            self.items = self.items.map { n in
+                guard !n.isRead else { return n }
+                return VolleyNotification(
+                    id: n.id, type: n.type, title: n.title, body: n.body,
+                    url: n.url, readAt: ISO8601DateFormatter().string(from: Date()),
+                    createdAt: n.createdAt, createdAtHuman: n.createdAtHuman
+                )
             }
+            self.tableView.reloadData()
+            self.refreshBadge()
         }
     }
 
@@ -152,91 +138,152 @@ class NotificationsViewController: UIViewController {
         isLoading = true
         if reset { loadingIndicator.startAnimating() }
 
-        apiRequest(path: "/api/notifications?page=\(page)&per_page=20", method: "GET") { [weak self] result in
-            DispatchQueue.main.async {
-                guard let self = self else { return }
-                self.isLoading = false
-                self.loadingIndicator.stopAnimating()
-                self.refreshControl.endRefreshing()
+        callApi(method: "GET", path: "/api/notifications?page=\(page)&per_page=20") { [weak self] json in
+            guard let self = self else { return }
+            self.isLoading = false
+            self.loadingIndicator.stopAnimating()
+            self.refreshControl.endRefreshing()
 
-                switch result {
-                case .success(let data):
-                    guard let page = try? JSONDecoder().decode(NotificationsPage.self, from: data) else { return }
-                    if reset {
-                        self.items = page.data
-                    } else {
-                        self.items.append(contentsOf: page.data)
-                    }
-                    self.hasMore = page.hasMore
-                    self.currentPage = page.nextPage
-                    self.tableView.reloadData()
-                    self.emptyLabel.isHidden = !self.items.isEmpty
-                case .failure:
-                    break
-                }
+            guard let json = json,
+                  let dataArray = json["data"] as? [[String: Any]] else {
+                print("[Notifications] Failed to parse page response")
+                return
             }
+
+            let decoded = dataArray.compactMap { Self.decodeNotification($0) }
+            if reset {
+                self.items = decoded
+            } else {
+                self.items.append(contentsOf: decoded)
+            }
+            self.hasMore = json["has_more"] as? Bool ?? false
+            self.currentPage = json["next_page"] as? Int ?? (page + 1)
+            self.tableView.reloadData()
+            self.emptyLabel.isHidden = !self.items.isEmpty
+            print("[Notifications] received \(decoded.count) items (total: \(self.items.count))")
         }
     }
 
     // MARK: - API
 
-    private func apiRequest(
-        path: String,
-        method: String,
-        completion: @escaping (Result<Data, Error>) -> Void
-    ) {
-        guard let url = URL(string: baseURL + path) else { return }
+    private func callApi(method: String, path: String, completion: @escaping ([String: Any]?) -> Void) {
+        guard let url = URL(string: baseURL + path) else {
+            completion(nil); return
+        }
 
-        // Extract session cookies from WKWebView's isolated cookie store
         guard let wv = webView else {
-            completion(.failure(URLError(.userAuthenticationRequired)))
+            print("[Notifications] webView is nil, falling back to HTTPCookieStorage")
+            callApiFallback(method: method, url: url, completion: completion)
             return
         }
 
-        wv.configuration.websiteDataStore.httpCookieStore.getAllCookies { cookies in
+        wv.configuration.websiteDataStore.httpCookieStore.getAllCookies { [weak self] cookies in
+            guard let self = self else { return }
+
+            let domainCookies = cookies.filter {
+                $0.domain.contains("volleyplay.club") || $0.domain.hasPrefix(".volleyplay.club")
+            }
+            let cookieHeader = domainCookies.map { "\($0.name)=\($0.value)" }.joined(separator: "; ")
+
+            print("[Notifications] Cookies count: \(domainCookies.count)")
+            print("[Notifications] Cookie header: \(cookieHeader.prefix(120))")
+
             var request = URLRequest(url: url)
             request.httpMethod = method
             request.setValue("application/json", forHTTPHeaderField: "Accept")
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            // Laravel распознаёт AJAX запрос и возвращает JSON 401 вместо 302 redirect
+            request.setValue("XMLHttpRequest", forHTTPHeaderField: "X-Requested-With")
 
-            // Build Cookie header manually (WKWebView cookies are isolated from URLSession)
-            let cookieHeader = cookies
-                .filter { $0.domain.contains("volleyplay.club") }
-                .map { "\($0.name)=\($0.value)" }
-                .joined(separator: "; ")
             if !cookieHeader.isEmpty {
                 request.setValue(cookieHeader, forHTTPHeaderField: "Cookie")
             }
 
-            URLSession.shared.dataTask(with: request) { data, _, error in
-                if let error = error {
-                    completion(.failure(error))
-                } else {
-                    completion(.success(data ?? Data()))
+            // CSRF токен для POST/DELETE (XSRF-TOKEN хранится в cookies, URL-encoded)
+            if method != "GET", let csrfCookie = domainCookies.first(where: { $0.name == "XSRF-TOKEN" }) {
+                let decoded = csrfCookie.value.removingPercentEncoding ?? csrfCookie.value
+                request.setValue(decoded, forHTTPHeaderField: "X-XSRF-TOKEN")
+            }
+
+            URLSession.shared.dataTask(with: request) { data, response, error in
+                DispatchQueue.main.async {
+                    if let httpResp = response as? HTTPURLResponse {
+                        print("[Notifications] \(method) \(path) → \(httpResp.statusCode)")
+                    }
+                    guard let data = data else {
+                        print("[Notifications] No data, error: \(error?.localizedDescription ?? "nil")")
+                        completion(nil); return
+                    }
+                    self.parseResponse(data: data, completion: completion)
                 }
             }.resume()
         }
     }
 
-    private func deleteNotification(id: Int, completion: @escaping (Bool) -> Void) {
-        apiRequest(path: "/api/notifications/\(id)", method: "DELETE") { result in
+    private func callApiFallback(method: String, url: URL, completion: @escaping ([String: Any]?) -> Void) {
+        let cookies = HTTPCookieStorage.shared.cookies(for: url) ?? []
+        let cookieHeader = cookies.map { "\($0.name)=\($0.value)" }.joined(separator: "; ")
+
+        var request = URLRequest(url: url)
+        request.httpMethod = method
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue("XMLHttpRequest", forHTTPHeaderField: "X-Requested-With")
+        if !cookieHeader.isEmpty {
+            request.setValue(cookieHeader, forHTTPHeaderField: "Cookie")
+        }
+
+        URLSession.shared.dataTask(with: request) { [weak self] data, response, _ in
             DispatchQueue.main.async {
-                if case .success = result { completion(true) } else { completion(false) }
+                if let httpResp = response as? HTTPURLResponse {
+                    print("[Notifications] fallback → \(httpResp.statusCode)")
+                }
+                guard let data = data else { completion(nil); return }
+                self?.parseResponse(data: data, completion: completion)
             }
+        }.resume()
+    }
+
+    private func parseResponse(data: Data, completion: ([String: Any]?) -> Void) {
+        if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+            completion(json)
+        } else if let array = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] {
+            completion(["data": array])
+        } else {
+            let preview = String(data: data, encoding: .utf8).map { String($0.prefix(200)) } ?? "binary"
+            print("[Notifications] Bad JSON: \(preview)")
+            completion(nil)
         }
     }
 
-    private func markRead(id: Int) {
-        apiRequest(path: "/api/notifications/\(id)/read", method: "POST") { _ in }
+    // MARK: - Badge
+
+    private func refreshBadge() {
+        webView?.evaluateJavaScript(
+            "fetch('/api/notifications/unread-count',{credentials:'same-origin'," +
+            "headers:{'Accept':'application/json'}})" +
+            ".then(r=>r.json()).then(d=>{if(window.VolleyNative)window.VolleyNative.updateBadge(d.count||0);})" +
+            ".catch(()=>{});",
+            completionHandler: nil
+        )
     }
 
-    private func postBadgeUpdate() {
-        // Notify the web layer to refresh its badge count
-        webView?.evaluateJavaScript(
-            "if(window.VolleyNative && window.VolleyNative.updateBadge) { " +
-            "fetch('/api/notifications/unread-count',{credentials:'same-origin',headers:{'Accept':'application/json'}})" +
-            ".then(r=>r.json()).then(d=>window.VolleyNative.updateBadge(d.count||0)).catch(()=>{}); }",
-            completionHandler: nil
+    // MARK: - Helpers
+
+    private static func decodeNotification(_ d: [String: Any]) -> VolleyNotification? {
+        guard let id = d["id"] as? Int,
+              let type = d["type"] as? String,
+              let title = d["title"] as? String,
+              let body = d["body"] as? String,
+              let createdAt = d["created_at"] as? String,
+              let createdAtHuman = d["created_at_human"] as? String
+        else { return nil }
+
+        return VolleyNotification(
+            id: id, type: type, title: title, body: body,
+            url: d["url"] as? String,
+            readAt: d["read_at"] as? String,
+            createdAt: createdAt,
+            createdAtHuman: createdAtHuman
         )
     }
 }
@@ -265,25 +312,26 @@ extension NotificationsViewController: UITableViewDelegate {
         let n = items[indexPath.row]
 
         if !n.isRead {
-            markRead(id: n.id)
+            callApi(method: "POST", path: "/api/notifications/\(n.id)/read") { _ in }
             items[indexPath.row] = VolleyNotification(
                 id: n.id, type: n.type, title: n.title, body: n.body,
                 url: n.url, readAt: ISO8601DateFormatter().string(from: Date()),
                 createdAt: n.createdAt, createdAtHuman: n.createdAtHuman
             )
             tableView.reloadRows(at: [indexPath], with: .none)
-            postBadgeUpdate()
+            refreshBadge()
         }
 
         if let path = n.url, !path.isEmpty, let url = URL(string: baseURL + path) {
-            dismiss(animated: true) {
-                // Navigate WebView to the URL via JS
-                self.webView?.evaluateJavaScript("window.location.href = '\(url.absoluteString)';", completionHandler: nil)
+            dismiss(animated: true) { [weak self] in
+                self?.webView?.evaluateJavaScript(
+                    "window.location.href = '\(url.absoluteString)';",
+                    completionHandler: nil
+                )
             }
         }
     }
 
-    // Swipe to delete
     func tableView(
         _ tableView: UITableView,
         trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath
@@ -291,20 +339,20 @@ extension NotificationsViewController: UITableViewDelegate {
         let action = UIContextualAction(style: .destructive, title: "Удалить") { [weak self] _, _, done in
             guard let self = self else { done(false); return }
             let n = self.items[indexPath.row]
-            self.deleteNotification(id: n.id) { success in
-                if success {
+            self.callApi(method: "DELETE", path: "/api/notifications/\(n.id)") { json in
+                let ok = json?["ok"] as? Bool ?? false
+                if ok {
                     self.items.remove(at: indexPath.row)
                     tableView.deleteRows(at: [indexPath], with: .automatic)
                     self.emptyLabel.isHidden = !self.items.isEmpty
                 }
-                done(success)
+                done(ok)
             }
         }
         action.image = UIImage(systemName: "trash")
         return UISwipeActionsConfiguration(actions: [action])
     }
 
-    // Infinite scroll
     func scrollViewDidScroll(_ scrollView: UIScrollView) {
         let threshold = scrollView.contentSize.height - scrollView.frame.height - 200
         guard scrollView.contentOffset.y > threshold, hasMore, !isLoading else { return }

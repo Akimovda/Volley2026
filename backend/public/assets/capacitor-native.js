@@ -8,6 +8,11 @@
     );
     var Plugins = isCapacitor ? (window.Capacitor.Plugins || {}) : {};
 
+    console.log('[BELL] capacitor-native.js loaded, isCapacitor:', isCapacitor,
+        'window.Capacitor:', !!window.Capacitor,
+        'isNativePlatform:', !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()),
+        'NotificationsScreen:', !!(isCapacitor && Plugins.NotificationsScreen));
+
     // ─── Share ───────────────────────────────────────────────────────────────
 
     function share(opts) {
@@ -126,13 +131,18 @@
     // ─── Notifications Screen ────────────────────────────────────────────────
 
     function openNotifications() {
+        console.log('[BELL] openNotifications() called, isCapacitor:', isCapacitor, 'NotificationsScreen:', !!(Plugins.NotificationsScreen));
         if (isCapacitor && Plugins.NotificationsScreen) {
-            Plugins.NotificationsScreen.open().catch(function (err) {
-                console.warn('VolleyNative.openNotifications error:', err);
-            });
+            console.log('[BELL] calling NotificationsScreen.open()');
+            Plugins.NotificationsScreen.open()
+                .then(function () { console.log('[BELL] NotificationsScreen.open() resolved'); })
+                .catch(function (err) {
+                    console.error('[BELL] NotificationsScreen.open() error:', err);
+                });
             return;
         }
         // Fallback: navigate to web notifications page
+        console.log('[BELL] fallback → /profile/notifications');
         window.location.href = '/profile/notifications';
     }
 
@@ -196,12 +206,24 @@
         // Перехват клика на колокольчик уведомлений → открыть нативный экран
         if (isCapacitor) {
             document.addEventListener('click', function (e) {
-                var bell = e.target.closest('.fix-header-btn-mail-wrap');
+                var bell = e.target.closest(
+                    '.fix-header-btn-mail-wrap, ' +
+                    '.fix-header-btn-mail, ' +
+                    'a[href*="/notifications"], ' +
+                    '[data-notifications], ' +
+                    '.notifications-link, ' +
+                    '.btn-notifications'
+                );
                 if (!bell) return;
+                console.log('[BELL] click intercepted, target class:', bell.className, 'tag:', bell.tagName, 'href:', bell.href || '');
                 e.preventDefault();
                 e.stopImmediatePropagation();
+                e.stopPropagation();
                 openNotifications();
             }, true);
+            console.log('[BELL] click interceptor installed');
+        } else {
+            console.log('[BELL] interceptor NOT installed (isCapacitor=false)');
         }
 
         // Глобальный haptic на ВСЕ кнопки, ссылки и интерактивные элементы
