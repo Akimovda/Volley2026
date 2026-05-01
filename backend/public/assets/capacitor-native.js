@@ -123,6 +123,19 @@
         } catch (e) {}
     }
 
+    // ─── Notifications Screen ────────────────────────────────────────────────
+
+    function openNotifications() {
+        if (isCapacitor && Plugins.NotificationsScreen) {
+            Plugins.NotificationsScreen.open().catch(function (err) {
+                console.warn('VolleyNative.openNotifications error:', err);
+            });
+            return;
+        }
+        // Fallback: navigate to web notifications page
+        window.location.href = '/profile/notifications';
+    }
+
     // ─── Public API ──────────────────────────────────────────────────────────
 
     window.VolleyNative = {
@@ -130,7 +143,8 @@
         share: share,
         addToCalendar: addToCalendar,
         haptic: haptic,
-        updateBadge: updateBadge
+        updateBadge: updateBadge,
+        openNotifications: openNotifications
     };
 
     // ─── Preloader ───────────────────────────────────────────────────────────
@@ -177,6 +191,17 @@
             document.addEventListener('visibilitychange', function () {
                 if (!document.hidden) refreshBadge();
             });
+        }
+
+        // Перехват клика на колокольчик уведомлений → открыть нативный экран
+        if (isCapacitor) {
+            document.addEventListener('click', function (e) {
+                var bell = e.target.closest('.fix-header-btn-mail-wrap');
+                if (!bell) return;
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                openNotifications();
+            }, true);
         }
 
         // Глобальный haptic на ВСЕ кнопки, ссылки и интерактивные элементы
