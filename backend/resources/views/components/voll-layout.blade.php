@@ -665,11 +665,11 @@
 			window._oauthInProgress = false;
 
 			async function tryBiometricLogin() {
-				if (window._biometricAttempted) {
-					console.log('[Biometric] already attempted, skipping');
+				var lastFail = localStorage.getItem('biometricFailedAt');
+				if (lastFail && (Date.now() - parseInt(lastFail)) < 60000) {
+					console.log('[Biometric] skipping — failed less than 60s ago');
 					return;
 				}
-				window._biometricAttempted = true;
 
 				try {
 					var avail = await NativeBiometric.isAvailable();
@@ -701,15 +701,14 @@
 
 					if (resp.ok) {
 						var data = await resp.json();
+						localStorage.removeItem('biometricFailedAt');
 						window.location.href = data.redirect || '/events';
 					} else if (resp.status === 422) {
 						await NativeBiometric.deleteCredentials({ server: 'volleyplay.club' });
 					}
 				} catch (e) {
 					console.log('[Biometric] verifyIdentity failed or timeout:', e.message);
-					if (!window._oauthInProgress) {
-						window.location.href = '/events';
-					}
+					localStorage.setItem('biometricFailedAt', Date.now().toString());
 				}
 			}
 
