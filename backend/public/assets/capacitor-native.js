@@ -143,23 +143,47 @@
         }
     });
 
-    // ─── OAuth Universal Link handler ────────────────────────────────────────
-    // После Telegram/VK/Yandex OAuth в системном браузере / Telegram app
-    // callback-URL приходит как Universal Link → Capacitor стреляет appUrlOpen.
-    // Без этого листенера WebView остаётся на oauth.telegram.org (зависание).
+    // ─── OAuth: открываем в Browser (SFSafariViewController), не в WebView ──────
+    // Если WebView уйдёт на oauth.telegram.org — Capacitor JS bridge там недоступен
+    // и appUrlOpen не может быть доставлен обратно. Решение: открывать OAuth через
+    // Plugins.Browser (SFSafariViewController), WebView остаётся на нашем домене.
+    // Когда callback приходит как Universal Link, iOS закрывает SFSafari и стреляет
+    // appUrlOpen — уже в нашем живом WebView-контексте.
 
-    if (isCapacitor && Plugins.App) {
-        Plugins.App.addListener('appUrlOpen', function (data) {
-            if (!data || !data.url) return;
-            var url = data.url;
-            var oauthPaths = ['/auth/telegram/callback', '/auth/vk/callback', '/auth/yandex/callback'];
-            for (var i = 0; i < oauthPaths.length; i++) {
-                if (url.indexOf(oauthPaths[i]) !== -1) {
-                    window.location.href = url;
-                    return;
+    if (isCapacitor) {
+        // appUrlOpen: закрыть SFSafari (если открыт) и перейти на callback URL
+        if (Plugins.App) {
+            Plugins.App.addListener('appUrlOpen', function (data) {
+                if (!data || !data.url) return;
+                var url = data.url;
+                var oauthPaths = ['/auth/telegram/callback', '/auth/vk/callback', '/auth/yandex/callback'];
+                for (var i = 0; i < oauthPaths.length; i++) {
+                    if (url.indexOf(oauthPaths[i]) !== -1) {
+                        if (Plugins.Browser) {
+                            Plugins.Browser.close().catch(function () {});
+                        }
+                        window.location.href = url;
+                        return;
+                    }
                 }
-            }
-        });
+            });
+        }
+
+        // Перехватить клики на OAuth-кнопки — открывать через SFSafari если доступен
+        document.addEventListener('click', function (e) {
+            if (!Plugins.Browser) return;
+            var target = e.target.closest('[data-href]');
+            if (!target) return;
+            var href = target.getAttribute('data-href') || '';
+            if (!href) return;
+            // Только /auth/ ссылки (OAuth редиректы)
+            if (href.indexOf('/auth/') === -1) return;
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            // Резолвим относительный URL в абсолютный
+            var absUrl = href.indexOf('http') === 0 ? href : window.location.origin + href;
+            Plugins.Browser.open({ url: absUrl });
+        }, true); // capture phase
     }
 
     // ─── Pull-to-refresh ─────────────────────────────────────────────────────
