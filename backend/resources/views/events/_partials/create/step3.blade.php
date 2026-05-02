@@ -180,7 +180,7 @@
 						</div>
 						{{-- ===== Помощник записи 🤖 =====--}}
 						
-                        <div class="ramka" data-show-if="allow_registration=1" data-hide-if="registration_mode=team,team_classic,team_beach" id="bot_assistant_block">
+                        <div class="ramka" data-show-if="allow_registration=1" data-hide-if="registration_mode=team,team_classic,team_beach|format=tournament" id="bot_assistant_block">
                             <h2 class="-mt-05">Помощник записи 🤖</h2>
                             <div class="row">
                                 <div class="col-md-12">

@@ -551,6 +551,22 @@ if (hiddenH) hiddenH.value = h;
             }
         });
 
+        // Обработка data-hide-if для format (поддержка через запятую: tournament,...)
+        document.querySelectorAll('[data-hide-if]').forEach(function(el) {
+            var hideCondition = el.getAttribute('data-hide-if');
+            if (hideCondition && hideCondition.indexOf('format=') !== -1) {
+                var match = hideCondition.match(/format=([a-zA-Z_,]+)/);
+                if (match) {
+                    var formats = match[1].split(',');
+                    var formatEl = document.getElementById('format');
+                    var currentFormat = formatEl ? formatEl.value : 'game';
+                    if (formats.indexOf(currentFormat) !== -1) {
+                        el.style.display = 'none';
+                    }
+                }
+            }
+        });
+
         // Показать/скрыть блок стоимости
         var stub = document.getElementById('no_registration_stub');
         if (stub) stub.style.display = isReg ? 'none' : '';
