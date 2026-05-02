@@ -250,6 +250,7 @@ Route::get('/user/profile', [\App\Http\Controllers\UserProfileController::class,
 
 Route::get('/auth/telegram/redirect', [TelegramAuthController::class, 'redirect'])->name('auth.telegram.redirect');
 Route::get('/auth/telegram/callback', [TelegramAuthController::class, 'callback'])->middleware('no-store-html')->name('auth.telegram.callback');
+Route::post('/auth/telegram/webapp', [TelegramAuthController::class, 'webapp'])->middleware('no-store-html')->name('auth.telegram.webapp');
 Route::post('/auth/telegram/miniapp', [TelegramAuthController::class, 'miniapp'])->name('auth.telegram.miniapp');
 Route::get('/auth/tma-status', [TmaAuthController::class, 'status'])->name('auth.tma.status');
 Route::post('/auth/tma-exchange', [TmaAuthController::class, 'exchange'])->name('auth.tma.exchange');
