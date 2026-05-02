@@ -655,24 +655,28 @@
 		</script>
 		@endauth
 
+		{{-- Telegram Mini App: DEBUG баннер (временно, вне @guest) --}}
+		<script>
+		(function() {
+			var tg = window.Telegram && window.Telegram.WebApp;
+			var isAuth = !!document.querySelector('meta[name="user-authenticated"]');
+			var dbg = 'TG: ' + (tg ? '✓' : '✗')
+				+ ' | initData: ' + (tg && tg.initData ? tg.initData.substring(0,30)+'...' : '(пусто)')
+				+ ' | auth: ' + (isAuth ? 'да' : 'нет')
+				+ ' | ver: ' + (tg && tg.version ? tg.version : '?');
+			var banner = document.createElement('div');
+			banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#c62828;color:#fff;font-size:11px;padding:4px 8px;z-index:99999;word-break:break-all;white-space:pre-wrap';
+			banner.textContent = dbg;
+			document.body.appendChild(banner);
+		})();
+		</script>
+
 		{{-- Telegram Mini App: вход через initData (только если не авторизован) --}}
 		@guest
 		<script>
 		(function() {
 			if (document.querySelector('meta[name="user-authenticated"]')) return;
 			var tg = window.Telegram && window.Telegram.WebApp;
-
-			// DEBUG: покажем что есть в Telegram-контексте
-			if (tg) {
-				var dbg = 'TG WebApp: ✓\ninitData: ' + (tg.initData ? tg.initData.substring(0,40)+'...' : '(пусто)') + '\nversion: ' + (tg.version||'?');
-				console.log('[TG_DEBUG]', dbg);
-				// Временный баннер для диагностики
-				var banner = document.createElement('div');
-				banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#1976d2;color:#fff;font-size:11px;padding:4px 8px;z-index:99999;word-break:break-all';
-				banner.textContent = dbg;
-				document.body.appendChild(banner);
-			}
-
 			if (!tg || !tg.initData) return;
 
 			function doTgWebappLogin(btn) {
