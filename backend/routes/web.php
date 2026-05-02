@@ -249,6 +249,7 @@ Route::get('/user/profile', [\App\Http\Controllers\UserProfileController::class,
 
 Route::get('/auth/telegram/redirect', [TelegramAuthController::class, 'redirect'])->name('auth.telegram.redirect');
 Route::get('/auth/telegram/callback', [TelegramAuthController::class, 'callback'])->name('auth.telegram.callback');
+Route::post('/auth/telegram/webapp', [TelegramAuthController::class, 'webapp'])->name('auth.telegram.webapp');
 	Route::get('/auth/vk/redirect', [VkAuthController::class, 'redirect'])->name('auth.vk.redirect');
 	Route::get('/auth/vk/callback', [VkAuthController::class, 'callback'])->name('auth.vk.callback');
 	Route::get('/auth/yandex/redirect', [YandexAuthController::class, 'redirect'])->name('auth.yandex.redirect');

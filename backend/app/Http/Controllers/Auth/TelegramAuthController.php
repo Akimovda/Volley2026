@@ -122,6 +122,76 @@ class TelegramAuthController extends Controller
         return redirect(self::AUTH_URL . '?' . http_build_query($params));
     }
 
+    /* ── Mini App: auth via initData ── */
+
+    public function webapp(Request $request)
+    {
+        $initData = (string) $request->input('init_data', '');
+
+        if ($initData === '') {
+            return response()->json(['error' => 'Missing init_data'], 422);
+        }
+
+        parse_str($initData, $params);
+
+        $hash = (string) ($params['hash'] ?? '');
+        if ($hash === '') {
+            return response()->json(['error' => 'Missing hash'], 422);
+        }
+
+        unset($params['hash']);
+        ksort($params);
+
+        $checkString = implode("\n", array_map(
+            fn($k, $v) => "{$k}={$v}",
+            array_keys($params),
+            array_values($params)
+        ));
+
+        $botToken  = (string) config('services.telegram.bot_token');
+        $secretKey = hash_hmac('sha256', 'WebAppData', $botToken, true);
+        $calcHash  = hash_hmac('sha256', $checkString, $secretKey);
+
+        if (!hash_equals($calcHash, $hash)) {
+            Log::warning('TG_WEBAPP: invalid hash');
+            return response()->json(['error' => 'Invalid signature'], 403);
+        }
+
+        $authDate = (int) ($params['auth_date'] ?? 0);
+        if ($authDate <= 0 || (time() - $authDate) > 86400) {
+            return response()->json(['error' => 'Expired data'], 403);
+        }
+
+        $userJson = $params['user'] ?? '';
+        if ($userJson === '') {
+            return response()->json(['error' => 'Missing user data'], 422);
+        }
+
+        $userData = json_decode($userJson, true);
+        if (!$userData || empty($userData['id'])) {
+            return response()->json(['error' => 'Invalid user data'], 422);
+        }
+
+        $tgId     = (string) $userData['id'];
+        $name     = trim(($userData['first_name'] ?? '') . ' ' . ($userData['last_name'] ?? ''));
+        $username = $userData['username'] ?? null;
+
+        $returnTo = $this->sanitizeReturnTo((string) $request->input('return_to', url('/events')));
+        $intent   = Auth::check() ? 'link' : 'login';
+
+        Log::info('TG_WEBAPP_AUTH', ['tg_id' => $tgId, 'name' => $name, 'intent' => $intent]);
+
+        // processAuth делает redirect() — перехватываем через session flash и возвращаем JSON
+        $response = $this->processAuth($request, $tgId, $name, $username, null, $intent, $returnTo);
+
+        // Если processAuth вернул redirect — отдаём JSON с URL
+        if ($response instanceof \Illuminate\Http\RedirectResponse) {
+            return response()->json(['ok' => true, 'redirect' => $response->getTargetUrl()]);
+        }
+
+        return $response;
+    }
+
     /* ── STEP 2: callback from Telegram ── */
 
     public function callback(Request $request)
