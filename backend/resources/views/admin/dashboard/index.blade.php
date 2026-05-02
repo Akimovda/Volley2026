@@ -32,6 +32,7 @@
                             <a href="{{ route('admin.users.index') }}" class="menu-item"><span class="menu-text">Список пользователей</span></a>
                             <a href="{{ route('admin.users.index') }}?role=banned" class="menu-item"><span class="menu-text">Бан-список</span></a>
                             <a href="{{ route('admin.organizer_requests.index') }}" class="menu-item"><span class="menu-text">Заявки организаторов</span></a>
+                            <a href="{{ route('admin.impersonate.index') }}" class="menu-item"><span class="menu-text">👁 Войти как пользователь</span></a>
                         </nav>
                     </div>
                     <div class="col-sm-6 col-lg-3">

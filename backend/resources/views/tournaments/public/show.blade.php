@@ -173,10 +173,22 @@
     @elseif($tab === 'groups')
         @foreach($stages as $stage)
             @if($stage->groups->isNotEmpty())
+                @php
+                    $stageTiebreakers = \App\Models\TournamentTiebreaker::where('stage_id', $stage->id)
+                        ->whereIn('status', ['pending', 'resolved'])
+                        ->get()
+                        ->groupBy('group_id');
+                @endphp
                 <div class="mb-3">
                     <div class="b-700 f-16 mb-2">{{ $stage->name }}</div>
                     <div class="row">
                         @foreach($stage->groups as $group)
+                            @php
+                                $groupTbs = $stageTiebreakers[$group->id] ?? collect();
+                                $pendingTbTeamIds = $groupTbs->where('status', 'pending')
+                                    ->flatMap(fn($tb) => [$tb->team_a_id, $tb->team_b_id])
+                                    ->unique()->toArray();
+                            @endphp
                             <div class="col-md-6 mb-3">
                                 <div class="card p-3">
                                     <div class="b-700 f-15 mb-2">{{ $group->name }}</div>
@@ -196,8 +208,9 @@
                                             </thead>
                                             <tbody>
                                                 @foreach($group->standings->sortBy('rank') as $s)
-                                                    <tr style="border-bottom:1px solid rgba(128,128,128,.1)">
-                                                        <td class="p-1 b-700">{{ $s->rank }}</td>
+                                                    @php $inTb = in_array($s->team_id, $pendingTbTeamIds); @endphp
+                                                    <tr style="border-bottom:1px solid rgba(128,128,128,.1){{ $inTb ? ';background:rgba(251,191,36,.06)' : '' }}">
+                                                        <td class="p-1 b-700">{{ $s->rank }}{{ $inTb ? ' 🎲' : '' }}</td>
                                                         <td class="p-1">
     <div class="b-600">{{ $s->team->name ?? '—' }}</div>
     @if($s->team && $s->team->members->count())
@@ -214,6 +227,11 @@
                                                 @endforeach
                                             </tbody>
                                         </table>
+                                        @if($groupTbs->where('status', 'pending')->isNotEmpty())
+                                        <div class="mt-2 f-12" style="color:#d97706">
+                                            🎲 Ожидается жеребьёвка между командами с равными показателями
+                                        </div>
+                                        @endif
                                     @endif
                                 </div>
                             </div>

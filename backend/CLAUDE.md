@@ -118,6 +118,17 @@ sudo supervisorctl restart volleyplay-queue:* volleyplay-reverb
 - MVP = Round Robin + Олимпийка + WinRate (~15 дней)
 - Полный план: tournament_plan_final.md (project files)
 
+### Ранжирование в группе (TournamentStandingsService::rankGroup)
+1. Победы (rating_points) — desc
+2. Набранные очки (points_scored) — desc, без матчей против аутсайдеров
+3. Разница мячей (points_scored - points_conceded) — desc, без матчей против аутсайдеров
+4. Личная встреча (head-to-head)
+5. Жеребьёвка — resolved tiebreaker из таблицы tournament_tiebreakers
+- Аутсайдер = команда с 0 побед при played > 0; матчи против неё исключаются из критериев 2 и 3
+- Тайбрейк: автодетекция pending-пар после каждого rankGroup(); организатор выбирает «матч» или «жребий»
+- is_tiebreaker=true в tournament_matches → матч не учитывается в standings
+- Enum method: 'match' | 'lottery' (не 'lot')
+
 ## Лиги и Сезоны
 - Иерархия: League (долгоживущая) -> Season (временной период) -> Events (туры)
 - Таблица leagues: HasMedia, соцсети, логотип, organizer_id, slug
@@ -345,3 +356,16 @@ sudo supervisorctl restart volleyplay-queue:* volleyplay-reverb
   добавлен в /etc/nginx/sites-available/volleyplay.club ДО блока `location ~ /\. { deny all; }`
 - ВАЖНО: после изменений nginx нужен `sudo systemctl restart nginx` (не reload — он не применял конфиг)
 - Проверка: curl -sI https://volleyplay.club/.well-known/apple-app-site-association → 200 OK, application/json
+
+## Impersonation (вход от имени пользователя)
+- Контроллер: `Admin/ImpersonationController` — index(), search(), start(), leave()
+- Middleware: `BlockInImpersonation` → алиас `block.impersonation` в bootstrap/app.php
+- Роуты: GET /admin/impersonate, GET /admin/impersonate/search, POST /admin/impersonate/start/{user}
+- Выход: POST /admin/impersonate/leave — БЕЗ `can:is-admin` (вошедший является другим пользователем)
+- Session key: `impersonator_id` = ID реального администратора
+- start(): логирует через AdminAuditLogger (auth() = админ)
+- leave(): логирует напрямую через DB::table('admin_audits') с actor_user_id = impersonator_id
+- Заблокированные действия: отвязка OAuth, удаление аккаунта, платежи (user-confirm, refund, payment-settings), biometric-register
+- UI: красный бар сверху через `@include('_partials.impersonation_bar')` в voll-layout
+- Поиск: собственный endpoint /admin/impersonate/search (включает email, role — только для админов)
+- Нельзя войти от имени другого администратора

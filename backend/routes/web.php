@@ -53,7 +53,8 @@ use App\Http\Controllers\Integrations\VkCommunityBindController;
 	use App\Http\Controllers\Admin\AdminLocationPhotoController;
 	use App\Http\Controllers\Admin\AdminNotificationTemplateController;
 	use App\Http\Controllers\Admin\AdminBroadcastController;
-	
+use App\Http\Controllers\Admin\ImpersonationController;
+
 	// AJAX (city-first)
 	use App\Http\Controllers\Ajax\CityMetaController;
 	use App\Http\Controllers\Ajax\LocationsByCityController;
@@ -259,7 +260,9 @@ Route::get('/auth/telegram/callback', [TelegramAuthController::class, 'callback'
 	Route::post('/auth/review-login', [\App\Http\Controllers\Auth\ReviewLoginController::class, 'login'])->name('auth.review.login');
 
 	Route::middleware(['auth:sanctum', config('jetstream.auth_session')])->group(function () {
-		Route::post('/auth/biometric-register', [\App\Http\Controllers\Api\BiometricController::class, 'register'])->name('auth.biometric.register');
+		Route::post('/auth/biometric-register', [\App\Http\Controllers\Api\BiometricController::class, 'register'])
+            ->name('auth.biometric.register')
+            ->middleware('block.impersonation');
 	});
 
 	/*
@@ -420,12 +423,12 @@ Route::post('/user/photos/{media}/set-avatar', [UserPhotoController::class, 'set
 Route::delete('/user/photos/event/{media}', [UserPhotoController::class, 'destroyEventPhoto'])->name('user.photos.destroyEventPhoto');
 Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->name('user.photos.destroy');
 		
-		Route::post('/account/unlink/telegram', [AccountUnlinkController::class, 'telegram'])->name('account.unlink.telegram');
-		Route::post('/account/unlink/vk', [AccountUnlinkController::class, 'vk'])->name('account.unlink.vk');
-		Route::post('/account/unlink/yandex', [AccountUnlinkController::class, 'yandex'])->name('account.unlink.yandex');
-		Route::post('/account/unlink/apple', [AccountUnlinkController::class, 'apple'])->name('account.unlink.apple');
-		
-		Route::post('/account/delete-request', [AccountDeleteRequestController::class, 'store'])->name('account.delete.request');
+		Route::post('/account/unlink/telegram', [AccountUnlinkController::class, 'telegram'])->name('account.unlink.telegram')->middleware('block.impersonation');
+		Route::post('/account/unlink/vk', [AccountUnlinkController::class, 'vk'])->name('account.unlink.vk')->middleware('block.impersonation');
+		Route::post('/account/unlink/yandex', [AccountUnlinkController::class, 'yandex'])->name('account.unlink.yandex')->middleware('block.impersonation');
+		Route::post('/account/unlink/apple', [AccountUnlinkController::class, 'apple'])->name('account.unlink.apple')->middleware('block.impersonation');
+
+		Route::post('/account/delete-request', [AccountDeleteRequestController::class, 'store'])->name('account.delete.request')->middleware('block.impersonation');
 		
 		Route::post('/profile/contact-privacy', [ProfileContactPrivacyController::class, 'update'])
         ->name('profile.contact_privacy.update');
@@ -754,7 +757,16 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
 		
         Route::delete('/locations/{location}/photos/{media}', [AdminLocationPhotoController::class, 'destroy'])
 		->name('locations.photos.destroy');
+
+        Route::get('/impersonate', [ImpersonationController::class, 'index'])->name('impersonate.index');
+        Route::post('/impersonate/start/{user}', [ImpersonationController::class, 'start'])->name('impersonate.start');
+        Route::get('/impersonate/search', [ImpersonationController::class, 'search'])->name('impersonate.search');
 	});
+
+// Выход из режима impersonation — БЕЗ can:is-admin (вошли как другой пользователь)
+Route::post('/admin/impersonate/leave', [ImpersonationController::class, 'leave'])
+    ->middleware(['auth'])
+    ->name('admin.impersonate.leave');
 
 
 /*
@@ -834,6 +846,12 @@ Route::middleware([
 
     Route::post('/events/{event}/tournament/apply-promotion', [TournamentController::class, 'applyDivisionPromotion'])
         ->name('tournament.applyPromotion');
+
+    Route::post('/tournament-tiebreakers/{tiebreaker}/match', [TournamentController::class, 'tiebreakerCreateMatch'])
+        ->name('tournament.tiebreaker.match.create');
+
+    Route::post('/tournament-tiebreakers/{tiebreaker}/lot', [TournamentController::class, 'tiebreakerResolveLot'])
+        ->name('tournament.tiebreaker.lot.resolve');
 
     Route::post('/tournament-stages/{stage}/form-divisions', [TournamentController::class, 'formDivisions'])
         ->name('tournament.stages.formDivisions');
@@ -1085,10 +1103,12 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     Route::get('/profile/payment-settings', [\App\Http\Controllers\PaymentSettingsController::class, 'show'])
         ->name('profile.payment_settings');
     Route::post('/profile/payment-settings', [\App\Http\Controllers\PaymentSettingsController::class, 'update'])
-        ->name('profile.payment_settings.update');
+        ->name('profile.payment_settings.update')
+        ->middleware('block.impersonation');
 
     Route::post('/payments/{payment}/user-confirm', [\App\Http\Controllers\PaymentController::class, 'userConfirm'])
-        ->name('payments.user_confirm');
+        ->name('payments.user_confirm')
+        ->middleware('block.impersonation');
     Route::post('/payments/{payment}/org-confirm', [\App\Http\Controllers\PaymentController::class, 'orgConfirm'])
         ->name('payments.org_confirm');
 });
@@ -1109,7 +1129,8 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
 
 Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified'])->group(function () {
     Route::post('/payments/{payment}/refund', [\App\Http\Controllers\PaymentController::class, 'refund'])
-        ->name('payments.refund');
+        ->name('payments.refund')
+        ->middleware('block.impersonation');
 });
 
 /*

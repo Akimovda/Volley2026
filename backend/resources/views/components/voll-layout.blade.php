@@ -34,7 +34,9 @@
 				document.body.classList.add('dark');
 			}
 		</script>
-		
+
+		@include('_partials.impersonation_bar')
+
 		<header>
 			<div class="fix-header">
 				<div class="fix-header-main">
@@ -257,9 +259,12 @@
 								</a>								
 								<a href="/admin/broadcasts/" class="menu-item">
 									<span class="menu-text">Рассылки</span>
-								</a>								
-								
-							</nav>	
+								</a>
+								<a href="{{ route('admin.impersonate.index') }}" class="menu-item">
+									<span class="menu-text">👁 Войти как...</span>
+								</a>
+
+							</nav>
 						</div>
 						@endif
 						

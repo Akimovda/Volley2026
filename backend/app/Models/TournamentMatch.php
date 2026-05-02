@@ -34,13 +34,15 @@ class TournamentMatch extends Model
         'loser_next_match_slot',
         'scored_by_user_id',
         'scored_at',
+        'is_tiebreaker',
     ];
 
     protected $casts = [
-        'score_home'   => 'array',
-        'score_away'   => 'array',
-        'scheduled_at' => 'datetime',
-        'scored_at'    => 'datetime',
+        'score_home'    => 'array',
+        'score_away'    => 'array',
+        'scheduled_at'  => 'datetime',
+        'scored_at'     => 'datetime',
+        'is_tiebreaker' => 'boolean',
     ];
 
     public const STATUS_SCHEDULED = 'scheduled';

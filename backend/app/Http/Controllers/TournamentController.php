@@ -9,6 +9,7 @@ use App\Models\EventTeamApplication;
 use App\Models\TournamentGroup;
 use App\Models\TournamentMatch;
 use App\Models\TournamentStanding;
+use App\Models\TournamentTiebreaker;
 use App\Services\TournamentSetupService;
 use App\Services\TournamentMatchService;
 use App\Services\TournamentStandingsService;
@@ -115,10 +116,19 @@ class TournamentController extends Controller
             }
         }
 
+        // Pending tiebreakers для всех стадий, отображаемых на этой странице
+        $stageIds = $stages->pluck('id');
+        $pendingTiebreakers = TournamentTiebreaker::whereIn('stage_id', $stageIds)
+            ->where('status', 'pending')
+            ->with(['teamA', 'teamB', 'group'])
+            ->get()
+            ->groupBy('group_id');
+
         return view('tournaments.setup', compact(
             'event', 'stages', 'teams', 'pendingApplications',
             'applicationMode', 'userEventPhotos',
-            'seasonData', 'selectedOccurrence', 'leagueTeams'
+            'seasonData', 'selectedOccurrence', 'leagueTeams',
+            'pendingTiebreakers'
         ));
     }
 
@@ -445,6 +455,26 @@ class TournamentController extends Controller
                 }
             } catch (\Throwable $e) {
                 \Log::warning('Stats update failed: ' . $e->getMessage());
+            }
+
+            // Если это тайбрейк-матч — разрезолвим тайбрейкер и пересчитаем standings
+            $freshMatch = $freshMatch ?? $match->fresh();
+            if ($freshMatch->is_tiebreaker && $freshMatch->winner_team_id) {
+                $tb = TournamentTiebreaker::where('match_id', $freshMatch->id)->first();
+                if ($tb && $tb->status !== 'resolved') {
+                    $tb->update([
+                        'winner_team_id'      => $freshMatch->winner_team_id,
+                        'resolved_by_user_id' => $request->user()->id,
+                        'resolved_at'         => now(),
+                        'status'              => 'resolved',
+                    ]);
+                    if ($freshMatch->group_id) {
+                        $group = TournamentGroup::find($freshMatch->group_id);
+                        if ($group) {
+                            $this->standingsService->recalculateGroup($stage, $group);
+                        }
+                    }
+                }
             }
 
             // Проверяем, завершена ли стадия
@@ -1590,5 +1620,75 @@ class TournamentController extends Controller
         }
 
         return $this->redirectToSetup($event, 'Статистика игроков сохранена.');
+    }
+
+    /* ================================================================
+     *  Тайбрейк: создать матч между двумя командами
+     * ================================================================ */
+
+    public function tiebreakerCreateMatch(Request $request, TournamentTiebreaker $tiebreaker)
+    {
+        $stage = $tiebreaker->stage;
+        $event = $stage->event;
+        $this->authorizeOrganizer($request, $event);
+
+        if ($tiebreaker->status !== 'pending') {
+            return back()->with('error', 'Тайбрейк уже обработан.');
+        }
+
+        $maxNumber = TournamentMatch::where('stage_id', $stage->id)->max('match_number') ?? 0;
+        $maxRound  = TournamentMatch::where('stage_id', $stage->id)->max('round') ?? 0;
+
+        $match = TournamentMatch::create([
+            'stage_id'       => $stage->id,
+            'group_id'       => $tiebreaker->group_id,
+            'team_home_id'   => $tiebreaker->team_a_id,
+            'team_away_id'   => $tiebreaker->team_b_id,
+            'round'          => $maxRound + 1,
+            'match_number'   => $maxNumber + 1,
+            'status'         => TournamentMatch::STATUS_SCHEDULED,
+            'is_tiebreaker'  => true,
+        ]);
+
+        $tiebreaker->update([
+            'method'   => 'match',
+            'match_id' => $match->id,
+        ]);
+
+        return redirect()
+            ->route('tournament.matches.score.form', $match)
+            ->with('success', 'Тайбрейк-матч создан. Введите счёт.');
+    }
+
+    /* ================================================================
+     *  Тайбрейк: жребий — организатор выбирает победителя
+     * ================================================================ */
+
+    public function tiebreakerResolveLot(Request $request, TournamentTiebreaker $tiebreaker)
+    {
+        $stage = $tiebreaker->stage;
+        $event = $stage->event;
+        $this->authorizeOrganizer($request, $event);
+
+        if ($tiebreaker->status !== 'pending') {
+            return back()->with('error', 'Тайбрейк уже обработан.');
+        }
+
+        $validated = $request->validate([
+            'winner_team_id' => 'required|integer|in:' . $tiebreaker->team_a_id . ',' . $tiebreaker->team_b_id,
+        ]);
+
+        $tiebreaker->update([
+            'method'              => 'lottery',
+            'winner_team_id'      => $validated['winner_team_id'],
+            'resolved_by_user_id' => $request->user()->id,
+            'resolved_at'         => now(),
+            'status'              => 'resolved',
+        ]);
+
+        $group = $tiebreaker->group;
+        $this->standingsService->recalculateGroup($stage, $group);
+
+        return $this->redirectToSetup($event, 'Жребий проведён, таблица обновлена.');
     }
 }
