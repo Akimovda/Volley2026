@@ -322,6 +322,7 @@ class EventRegistrationsManagementController extends Controller
         $existing = DB::table('event_registrations')
             ->where('event_id', (int) $event->id)
             ->where('user_id', $userId)
+            ->when($occurrenceId, fn($q) => $q->where('occurrence_id', $occurrenceId))
             ->first(['id', 'cancelled_at']);
 
         if ($existing) {
