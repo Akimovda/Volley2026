@@ -123,8 +123,11 @@ sudo supervisorctl restart volleyplay-queue:* volleyplay-reverb
 2. Набранные очки (points_scored) — desc, без матчей против аутсайдеров
 3. Разница мячей (points_scored - points_conceded) — desc, без матчей против аутсайдеров
 4. Личная встреча (head-to-head)
-5. Жеребий — проводится командами, организатор вручную указывает итог
+5. Жеребьёвка — resolved tiebreaker из таблицы tournament_tiebreakers
 - Аутсайдер = команда с 0 побед при played > 0; матчи против неё исключаются из критериев 2 и 3
+- Тайбрейк: автодетекция pending-пар после каждого rankGroup(); организатор выбирает «матч» или «жребий»
+- is_tiebreaker=true в tournament_matches → матч не учитывается в standings
+- Enum method: 'match' | 'lottery' (не 'lot')
 
 ## Лиги и Сезоны
 - Иерархия: League (долгоживущая) -> Season (временной период) -> Events (туры)
