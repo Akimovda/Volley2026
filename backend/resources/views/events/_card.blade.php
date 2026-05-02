@@ -49,21 +49,10 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 		$gs = $event?->gameSettings ?? null;
 		$regEnabled = (bool) data_get($event, 'allow_registration', false);
 
-		$isTournamentFmt  = ($fmt === 'tournament');
-		$tournamentTeamsMax = $isTournamentFmt ? (int)($event->tournament_teams_count ?? 0) : 0;
-		// Размер команды из subtype: '2x2' → 2, '4x4' → 4 и т.д.
-		$gsSubtype = (string)($gs?->subtype ?? '');
-		$teamSizeForTmnt  = ($isTournamentFmt && preg_match('/^(\d+)x\d+$/i', $gsSubtype, $m)) ? (int)$m[1] : 2;
-
 		$maxPlayersCard = (int) (data_get($occ, 'max_players') ?? 0);
 		if ($maxPlayersCard <= 0) $maxPlayersCard = (int) (data_get($gs, 'max_players') ?? 0);
 		if ($maxPlayersCard <= 0) $maxPlayersCard = (int) (data_get($event, 'max_players') ?? 0);
 		$maxPlayersCard += (int) (data_get($gs, 'reserve_players_max') ?? 0);
-
-		// Для турнира используем количество команд, а не игроков
-		if ($isTournamentFmt && $tournamentTeamsMax > 0) {
-			$maxPlayersCard = $tournamentTeamsMax;
-		}
 
 		$showSeatLine = $maxPlayersCard > 0;
 			
@@ -89,6 +78,17 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 			
 			$dir  = (string)($event?->direction ?? '');
 			$fmt  = (string)($event?->format ?? '');
+
+			// Для турнира — используем кол-во команд вместо max_players
+			$isTournamentFmt    = ($fmt === 'tournament');
+			$tournamentTeamsMax = $isTournamentFmt ? (int)($event->tournament_teams_count ?? 0) : 0;
+			$gsSubtype          = (string)($gs?->subtype ?? '');
+			$teamSizeForTmnt    = ($isTournamentFmt && preg_match('/^(\d+)x\d+$/i', $gsSubtype, $m)) ? (int)$m[1] : 2;
+			if ($isTournamentFmt && $tournamentTeamsMax > 0) {
+				$maxPlayersCard = $tournamentTeamsMax;
+				$showSeatLine   = true;
+			}
+
 			$clMin = is_null($event?->classic_level_min) ? '' : (int)$event->classic_level_min;
 			$clMax = is_null($event?->classic_level_max) ? '' : (int)$event->classic_level_max;
 			$bMin  = is_null($event?->beach_level_min) ? '' : (int)$event->beach_level_min;
