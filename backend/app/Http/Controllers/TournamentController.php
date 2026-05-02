@@ -639,7 +639,15 @@ class TournamentController extends Controller
             return back()->with('error', 'Лига не найдена.');
         }
 
-        $stages = $event->tournamentStages()->where('name', 'like', 'Группа %')->get();
+        $stages = $event->tournamentStages()
+            ->where('name', 'like', 'Группа %')
+            ->where('name', '!=', 'Групповой этап')
+            ->get();
+
+        if ($stages->isEmpty()) {
+            return back()->with('error', 'Группы Hard/Lite не найдены. Сначала сформируйте группы через "Сформировать группы".');
+        }
+
         $allCompleted = $stages->every(fn($s) => $s->status === 'completed');
         if (!$allCompleted) {
             return back()->with('error', 'Не все группы завершены.');
@@ -863,6 +871,22 @@ class TournamentController extends Controller
         \Illuminate\Support\Facades\DB::transaction(function () use (
             $event, $setupService, $divisionNames, $hardTeamIds, $liteTeamIds, $mediumTeamIds, $stage, $occurrenceId, $divFormats, $request
         ) {
+            // Удаляем ранее созданные дивизионные стадии (Hard/Medium/Lite) перед пересозданием
+            $existing = $event->tournamentStages()
+                ->where('name', 'like', 'Группа %')
+                ->where('name', '!=', 'Групповой этап')
+                ->where('occurrence_id', $stage->occurrence_id)
+                ->get();
+            foreach ($existing as $ex) {
+                foreach ($ex->groups as $grp) {
+                    $grp->standings()->delete();
+                    \App\Models\TournamentMatch::where('group_id', $grp->id)->delete();
+                    \App\Models\TournamentGroupTeam::where('group_id', $grp->id)->delete();
+                    $grp->delete();
+                }
+                $ex->delete();
+            }
+
             $divisions = [
                 'Hard' => $hardTeamIds,
                 'Medium' => $mediumTeamIds,

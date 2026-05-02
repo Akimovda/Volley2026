@@ -100,8 +100,8 @@
     @endif
 
     @php
-    $pCount = ($event->format === 'tournament') ? ($playersRegistered ?? 0) : ($registeredTotal ?? 0);
-    $pMax   = ($event->format === 'tournament') ? ($playersMax ?? 0) : ($totalCapacity ?? 0);
+    $pCount = ($event->format === 'tournament') ? ($teamsRegistered ?? 0) : ($registeredTotal ?? 0);
+    $pMax   = ($event->format === 'tournament') ? ($teamsMax ?? 0) : ($totalCapacity ?? 0);
     $percent = ($pMax > 0) ? min(100, ($pCount / $pMax) * 100) : 0;
 	
 	$barClass = 'bg-danger';
