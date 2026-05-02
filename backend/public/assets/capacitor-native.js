@@ -210,6 +210,14 @@
             if (!target) return;
             var href = target.getAttribute('data-href') || '';
             if (!href || href.indexOf('/auth/') === -1) return;
+
+            // Telegram-кнопка + TMA-пользователь доступен → TMA-блок обработает сам
+            // через /auth/telegram/miniapp (нативная авторизация, без браузера)
+            if (target.classList.contains('auth-btn-telegram')) {
+                var twa = window.Telegram && window.Telegram.WebApp;
+                if (twa && twa.initDataUnsafe && twa.initDataUnsafe.user) return;
+            }
+
             e.preventDefault();
             e.stopImmediatePropagation();
 
