@@ -452,8 +452,19 @@ class EventRegistrationsManagementController extends Controller
             return back()->with('error', 'В таблице event_registrations нет колонки position (место).');
         }
 
+        $event->loadMissing('gameSettings');
+        $updDirection = (string)($event->direction ?? 'classic');
+        $updPositions = $this->resolvePositions(
+            $updDirection,
+            (string)($event->gameSettings?->subtype ?? ''),
+            (string)($event->gameSettings?->libero_mode ?? 'with_libero')
+        );
+        $posRequired = $updDirection === 'classic' && count($updPositions) > 0;
+
         $data = $request->validate([
-            'position' => ['nullable', 'string', 'max:255'],
+            'position' => $posRequired
+                ? ['required', 'string', 'max:255', 'in:' . implode(',', array_keys($updPositions))]
+                : ['nullable', 'string', 'max:255'],
         ]);
 
         $row = DB::table('event_registrations')
@@ -470,8 +481,7 @@ class EventRegistrationsManagementController extends Controller
         $occId      = (int) ($row->occurrence_id ?? 0);
 
         // Проверяем лимит только если позиция меняется
-        $event->loadMissing('gameSettings');
-        if ($newPos !== '' && $newPos !== $currentPos && $occId && (string)($event->direction ?? 'classic') === 'classic') {
+        if ($newPos !== '' && $newPos !== $currentPos && $occId && $updDirection === 'classic') {
             $slots = app(\App\Services\EventRoleSlotService::class)->getSlots($event);
             $slot  = $slots->firstWhere('role', $newPos);
             if ($slot) {
@@ -481,12 +491,7 @@ class EventRegistrationsManagementController extends Controller
                     ->where('position', $newPos)
                     ->count();
                 if ($taken >= $slot->max_slots) {
-                    $posLabels = $this->resolvePositions(
-                        (string)($event->direction ?? 'classic'),
-                        (string)($event->gameSettings?->subtype ?? ''),
-                        (string)($event->gameSettings?->libero_mode ?? 'with_libero')
-                    );
-                    $lbl = $posLabels[$newPos] ?? $newPos;
+                    $lbl = $updPositions[$newPos] ?? $newPos;
                     return back()->with('error', "Позиция «{$lbl}» заполнена ({$taken}/{$slot->max_slots}).");
                 }
             }

@@ -257,7 +257,9 @@ $actionLabel = fn(string $a) => match($a) {
 							action="{{ route('events.registrations.position', ['event' => $event->id, 'registration' => $r->id]) }}">
 								@csrf @method('PATCH')
 								<select name="position">
-									<option value="">— без —</option>
+									@if(!$posKey)
+									<option value="" disabled selected>— выбрать —</option>
+									@endif
 									@foreach($posLabels as $k => $lbl)
 									@php
 									$slotFree = array_key_exists($k, $freeSlots) ? (int)$freeSlots[$k] : null;
