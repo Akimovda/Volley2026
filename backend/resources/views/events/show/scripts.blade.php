@@ -27,6 +27,7 @@
 	
 	(function () {
 		const occurrenceId = @json($occurrence->id ?? null);
+		const isTournament = @json($event->format === 'tournament');
 		const playersCount = document.getElementById('players-count');
 		const playersList = document.getElementById('players-list');
 		const progress = document.getElementById('players-progress');
@@ -64,7 +65,7 @@
 							: e.registeredTotal;
 					}
 					
-					if (progress && maxPlayers) {
+					if (!isTournament && progress && maxPlayers) {
 						const percent = Math.min(
 						100,
 						(e.registeredTotal / maxPlayers) * 100
@@ -286,7 +287,7 @@
 						? Math.max(0, maxPlayers - data.registered_total)
 						: data.registered_total;
 				}
-				if (data.registered_total !== undefined && progress && maxPlayers > 0) {
+				if (!isTournament && data.registered_total !== undefined && progress && maxPlayers > 0) {
 					const percent = Math.min(100, (data.registered_total / maxPlayers) * 100);
 					progress.style.transition = 'width 0.4s ease';
 					progress.style.width = percent + '%';
