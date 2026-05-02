@@ -577,47 +577,133 @@
 		<script src="/assets/script.js?v={{ time() }}"></script>
 		<script src="/assets/capacitor-native.js?v={{ filemtime(public_path('assets/capacitor-native.js')) }}"></script>
 
-		{{-- Telegram Mini App: авторизация через initData (без редиректа на oauth.telegram.org) --}}
+		{{-- Telegram Mini App: авторизация (initData для Telegram, polling+token для VK/Яндекс) --}}
 		<script>
 		(function() {
 			if (!window.Telegram || !window.Telegram.WebApp) return;
 			var twa = window.Telegram.WebApp;
-			if (!twa.initData || !twa.initDataUnsafe || !twa.initDataUnsafe.user) return;
+			if (!twa.initData) return;
 
-			var btn = document.querySelector('.auth-btn-telegram');
-			if (!btn) return;
+			var csrfToken = function() {
+				return (document.querySelector('meta[name="csrf-token"]') || {}).content || '';
+			};
 
-			var origHref = btn.getAttribute('data-href') || '';
+			// ── 1. Telegram native login ─────────────────────────────────────────────────
+			if (twa.initDataUnsafe && twa.initDataUnsafe.user) {
+				var tgBtn = document.querySelector('.auth-btn-telegram');
+				if (tgBtn) {
+					var origHref = tgBtn.getAttribute('data-href') || '';
+					tgBtn.addEventListener('click', function(e) {
+						e.stopImmediatePropagation();
+						e.preventDefault();
+						var returnTo = '';
+						try {
+							var u = new URL(origHref, window.location.origin);
+							returnTo = u.searchParams.get('return') || '';
+						} catch(err) {}
+						fetch('/auth/telegram/miniapp', {
+							method: 'POST',
+							headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken() },
+							credentials: 'same-origin',
+							body: JSON.stringify({ init_data: twa.initData, return_to: returnTo })
+						})
+						.then(function(r) { return r.json(); })
+						.then(function(data) { window.location.href = data.redirect || origHref || '/events'; })
+						.catch(function() { if (origHref) window.location.href = origHref; });
+					}, true);
+				}
+			}
 
-			// Capture-фаза: срабатывает до jQuery bubble-обработчика из script.js
-			btn.addEventListener('click', function(e) {
-				e.stopImmediatePropagation();
-				e.preventDefault();
+			// ── 2. VK/Яндекс OAuth через polling + one-time token ────────────────────────
+			// Когда OAuth открывается в браузере Telegram, сессия устанавливается там,
+			// а не в WebView Mini App. Решение: polling /auth/tma-status?client_id=XXX,
+			// затем обмен токена на сессию через /auth/tma-exchange.
 
-				var returnTo = '';
-				try {
-					var u = new URL(origHref, window.location.origin);
-					returnTo = u.searchParams.get('return') || '';
-				} catch(err) {}
+			var pollTimer = null;
+			var pollCount = 0;
+			var MAX_POLLS = 90; // 3 минуты при интервале 2 сек
 
-				fetch('/auth/telegram/miniapp', {
+			function stopPolling() {
+				if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+				sessionStorage.removeItem('tma_oauth_client_id');
+			}
+
+			function exchangeToken(token, redirectTo) {
+				stopPolling();
+				fetch('/auth/tma-exchange', {
 					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-						'Accept': 'application/json',
-						'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') || {}).content || ''
-					},
+					headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken() },
 					credentials: 'same-origin',
-					body: JSON.stringify({ init_data: twa.initData, return_to: returnTo })
+					body: JSON.stringify({ token: token })
 				})
 				.then(function(r) { return r.json(); })
 				.then(function(data) {
-					window.location.href = data.redirect || origHref || '/events';
+					if (data.ok) window.location.href = data.redirect || '/events';
 				})
-				.catch(function() {
-					if (origHref) window.location.href = origHref;
-				});
-			}, true); // capture-фаза → раньше jQuery bubble
+				.catch(function() {});
+			}
+
+			function startPolling(clientId) {
+				if (pollTimer) clearInterval(pollTimer);
+				pollCount = 0;
+				pollTimer = setInterval(function() {
+					if (++pollCount > MAX_POLLS) { stopPolling(); return; }
+					fetch('/auth/tma-status?client_id=' + encodeURIComponent(clientId), {
+						credentials: 'same-origin',
+						headers: { 'Accept': 'application/json' }
+					})
+					.then(function(r) { return r.json(); })
+					.then(function(data) {
+						if (data.ready && data.token) exchangeToken(data.token, data.redirect || '/events');
+					})
+					.catch(function() {});
+				}, 2000);
+			}
+
+			// Перехват кликов на кнопки VK и Яндекс (capture-фаза — до jQuery)
+			document.addEventListener('click', function(e) {
+				var target = e.target.closest('[data-href]');
+				if (!target) return;
+				if (!target.classList.contains('auth-btn-vk') && !target.classList.contains('auth-btn-yandex')) return;
+
+				var href = target.getAttribute('data-href') || '';
+				if (!href || href.indexOf('/auth/') === -1) return;
+
+				e.preventDefault();
+				e.stopImmediatePropagation();
+
+				var clientId = (Math.random().toString(36) + Date.now().toString(36)).slice(2);
+				sessionStorage.setItem('tma_oauth_client_id', clientId);
+
+				var sep = href.indexOf('?') === -1 ? '?' : '&';
+				var authUrl = (href.indexOf('http') === 0 ? href : window.location.origin + href) + sep + 'tma_client_id=' + encodeURIComponent(clientId);
+
+				// Открываем OAuth в браузере Telegram, Mini App остаётся живым
+				if (twa.openLink) {
+					twa.openLink(authUrl, { try_instant_view: false });
+				} else {
+					window.location.href = authUrl; // fallback для старых версий
+				}
+
+				startPolling(clientId);
+			}, true);
+
+			// При возврате в Mini App (visibilitychange/focus) возобновляем polling
+			// если OAuth был открыт ранее но токен ещё не пришёл
+			function resumePollingIfNeeded() {
+				if (pollTimer) return; // уже идёт
+				if (document.querySelector('meta[name="user-authenticated"]')) return; // уже авторизован
+				var savedId = sessionStorage.getItem('tma_oauth_client_id');
+				if (savedId) startPolling(savedId);
+			}
+
+			document.addEventListener('visibilitychange', function() {
+				if (!document.hidden) resumePollingIfNeeded();
+			});
+
+			// Запуск при загрузке страницы — на случай если Mini App был перезагружен
+			// пока OAuth выполнялся в браузере
+			resumePollingIfNeeded();
 		})();
 		</script>
 

@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Support\UserPhotoFromProviderService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -59,6 +60,11 @@ class YandexAuthController extends Controller
         $this->storeReturnTo($request);
         $request->session()->put('oauth_provider', 'yandex');
         $request->session()->put('oauth_intent', $intent);
+
+        // TMA: запоминаем client_id для polling-механизма
+        if ($request->filled('tma_client_id')) {
+            $request->session()->put('oauth_tma_client_id', (string) $request->query('tma_client_id'));
+        }
 
         return Socialite::driver('yandex')
             ->scopes($this->scopes)
@@ -185,6 +191,16 @@ class YandexAuthController extends Controller
 
         $request->session()->put('auth_provider', 'yandex');
         $request->session()->put('auth_provider_id', $yandexId);
+
+        // TMA: сигнализируем polling-клиенту о завершении авторизации
+        $tmaClientId = $request->session()->pull('oauth_tma_client_id');
+        if ($tmaClientId) {
+            $redirectUrl = $isNewUser ? route('profile.complete') : $returnTo;
+            $token = Str::random(40);
+            Cache::put("tma_auth_token_{$token}", ['user_id' => $user->id, 'redirect' => $redirectUrl], now()->addMinutes(5));
+            Cache::put("tma_pending_{$tmaClientId}", ['token' => $token], now()->addMinutes(5));
+            return view('auth.tma-oauth-done');
+        }
 
         if ($isNewUser) {
             return redirect()->route('profile.complete')->with('welcome', true);
