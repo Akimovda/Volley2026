@@ -6,6 +6,7 @@ use App\Models\TournamentGroup;
 use App\Models\TournamentMatch;
 use App\Models\TournamentStage;
 use App\Models\TournamentStanding;
+use App\Models\TournamentTiebreaker;
 
 class TournamentStandingsService
 {
@@ -19,7 +20,6 @@ class TournamentStandingsService
             ->get()
             ->keyBy('team_id');
 
-        // Сбрасываем счётчики
         foreach ($standings as $standing) {
             $standing->fill([
                 'played'          => 0,
@@ -34,9 +34,10 @@ class TournamentStandingsService
             ]);
         }
 
-        // Считаем по матчам
+        // Тайбрейк-матчи не учитываются в таблице
         $matches = TournamentMatch::where('stage_id', $stage->id)
             ->where('group_id', $group->id)
+            ->where(fn($q) => $q->whereNull('is_tiebreaker')->orWhere('is_tiebreaker', false))
             ->whereIn('status', [TournamentMatch::STATUS_COMPLETED, TournamentMatch::STATUS_FORFEIT])
             ->get();
 
@@ -69,19 +70,16 @@ class TournamentStandingsService
                 continue;
             }
 
-            // Сеты
             $home->sets_won  += $match->sets_home;
             $home->sets_lost += $match->sets_away;
             $away->sets_won  += $match->sets_away;
             $away->sets_lost += $match->sets_home;
 
-            // Очки
             $home->points_scored   += $match->total_points_home;
             $home->points_conceded += $match->total_points_away;
             $away->points_scored   += $match->total_points_away;
             $away->points_conceded += $match->total_points_home;
 
-            // Победы / поражения
             if ($match->winner_team_id === $homeId) {
                 $home->wins++;
                 $away->losses++;
@@ -90,23 +88,19 @@ class TournamentStandingsService
                 $home->losses++;
             }
 
-            // Rating points
             $matchFormat = $stage->configValue('match_format', 'bo3');
             if ($matchFormat === 'bo1') {
-                // Bo1: победа = 1, поражение = 0
                 if ($match->winner_team_id === $homeId) {
                     $home->rating_points += 1;
                 } else {
                     $away->rating_points += 1;
                 }
             } else {
-                // Bo3/Bo5: 3/2/1/0 по разнице сетов
                 $home->rating_points += $this->swissPoints($match->sets_home, $match->sets_away);
                 $away->rating_points += $this->swissPoints($match->sets_away, $match->sets_home);
             }
         }
 
-        // Сохраняем и ранжируем
         foreach ($standings as $standing) {
             $standing->save();
         }
@@ -114,9 +108,6 @@ class TournamentStandingsService
         $this->rankGroup($stage, $group, $matches);
     }
 
-    /**
-     * Очки швейцарской системы.
-     */
     protected function swissPoints(int $setsWon, int $setsLost): int
     {
         if ($setsWon > $setsLost) {
@@ -126,20 +117,14 @@ class TournamentStandingsService
     }
 
     /**
-     * Ранжирование с тай-брейками:
-     * rating_points → head-to-head → set diff → point diff
-     * 
-     * Правило исключения аутсайдера:
-     * Если команда проиграла ВСЕ матчи (0 побед), то при сравнении
-     * остальных команд между собой матчи с аутсайдером исключаются
-     * из расчёта разницы очков и сетов.
-     */
-    /**
-     * Ранжирование с тай-брейками:
-     * 1. rating_points (desc)
-     * 2. Head-to-head (только если не круговая зависимость)
-     * 3. Clean set diff (без аутсайдеров)
-     * 4. Clean point diff (без аутсайдеров)
+     * Ранжирование:
+     * 1. rating_points (победы) — desc
+     * 2. Clean points_scored (без матчей против аутсайдеров) — desc
+     * 3. Clean point diff — desc
+     * 4. Личная встреча
+     * 5. Жеребьёвка (resolved tiebreaker)
+     *
+     * Аутсайдер = команда с 0 побед при played > 0.
      */
     protected function rankGroup(TournamentStage $stage, TournamentGroup $group, $matches): void
     {
@@ -149,7 +134,6 @@ class TournamentStandingsService
 
         $h2h = $this->buildHeadToHead($matches);
 
-        // Аутсайдеры: 0 побед при played > 0
         $outsiderTeamIds = $standings
             ->filter(fn($s) => $s->played > 0 && $s->wins === 0)
             ->pluck('team_id')
@@ -157,75 +141,151 @@ class TournamentStandingsService
 
         $cleanStats = $this->buildCleanStats($matches, $outsiderTeamIds);
 
-        // Проверяем круговой h2h среди команд с одинаковыми очками
-        $byRating = $standings->groupBy('rating_points');
-        $circularTeamIds = [];
-        foreach ($byRating as $rp => $groupStandings) {
-            if ($groupStandings->count() >= 3) {
-                $teamIds = $groupStandings->pluck('team_id')->toArray();
-                if ($this->isCircularH2H($teamIds, $h2h)) {
-                    $circularTeamIds = array_merge($circularTeamIds, $teamIds);
-                }
-            }
+        $resolvedTiebreakers = TournamentTiebreaker::where('stage_id', $stage->id)
+            ->where('group_id', $group->id)
+            ->where('status', 'resolved')
+            ->whereNotNull('winner_team_id')
+            ->get();
+
+        $tiebreakerWinners = [];
+        foreach ($resolvedTiebreakers as $tb) {
+            $loserId = $tb->team_a_id === $tb->winner_team_id ? $tb->team_b_id : $tb->team_a_id;
+            $tiebreakerWinners[$tb->winner_team_id][$loserId] = true;
         }
 
-        $sorted = $standings->sort(function ($a, $b) use ($h2h, $cleanStats, $circularTeamIds) {
-            // 1. Rating points (desc)
+        $sorted = $standings->sort(function ($a, $b) use ($h2h, $cleanStats, $tiebreakerWinners) {
             if ($a->rating_points !== $b->rating_points) {
                 return $b->rating_points <=> $a->rating_points;
             }
 
-            // 2. Head-to-head (пропускаем при круговой зависимости)
-            if (!in_array($a->team_id, $circularTeamIds) || !in_array($b->team_id, $circularTeamIds)) {
-                $h2hResult = $this->headToHeadCompare($a->team_id, $b->team_id, $h2h);
-                if ($h2hResult !== 0) {
-                    return $h2hResult;
-                }
+            $aScored = $cleanStats[$a->team_id]['points_scored'] ?? $a->points_scored;
+            $bScored = $cleanStats[$b->team_id]['points_scored'] ?? $b->points_scored;
+            if ($aScored !== $bScored) {
+                return $bScored <=> $aScored;
             }
 
-            // 3. Set diff без аутсайдеров (desc)
-            $aSetDiff = ($cleanStats[$a->team_id]['sets_won'] ?? 0) - ($cleanStats[$a->team_id]['sets_lost'] ?? 0);
-            $bSetDiff = ($cleanStats[$b->team_id]['sets_won'] ?? 0) - ($cleanStats[$b->team_id]['sets_lost'] ?? 0);
-            if ($aSetDiff !== $bSetDiff) {
-                return $bSetDiff <=> $aSetDiff;
+            $aPointDiff = ($cleanStats[$a->team_id]['points_scored'] ?? $a->points_scored)
+                        - ($cleanStats[$a->team_id]['points_conceded'] ?? $a->points_conceded);
+            $bPointDiff = ($cleanStats[$b->team_id]['points_scored'] ?? $b->points_scored)
+                        - ($cleanStats[$b->team_id]['points_conceded'] ?? $b->points_conceded);
+            if ($aPointDiff !== $bPointDiff) {
+                return $bPointDiff <=> $aPointDiff;
             }
 
-            // 4. Point diff без аутсайдеров (desc)
-            $aPointDiff = ($cleanStats[$a->team_id]['points_scored'] ?? 0) - ($cleanStats[$a->team_id]['points_conceded'] ?? 0);
-            $bPointDiff = ($cleanStats[$b->team_id]['points_scored'] ?? 0) - ($cleanStats[$b->team_id]['points_conceded'] ?? 0);
-            return $bPointDiff <=> $aPointDiff;
+            $h2hResult = $this->headToHeadCompare($a->team_id, $b->team_id, $h2h);
+            if ($h2hResult !== 0) {
+                return $h2hResult;
+            }
+
+            // 5. Жеребьёвка
+            if (isset($tiebreakerWinners[$a->team_id][$b->team_id])) {
+                return -1;
+            }
+            if (isset($tiebreakerWinners[$b->team_id][$a->team_id])) {
+                return 1;
+            }
+
+            return 0;
         });
 
         $rank = 1;
         foreach ($sorted->values() as $standing) {
             $standing->update(['rank' => $rank++]);
         }
+
+        $this->syncPendingTiebreakers($stage, $group, $standings, $cleanStats, $h2h, $tiebreakerWinners);
     }
 
     /**
-     * Проверяет круговую зависимость h2h среди команд.
+     * Создаёт pending tiebreaker для пар в ничью.
+     * Удаляет pending tiebreaker для пар, которые больше не в ничью.
      */
-    protected function isCircularH2H(array $teamIds, array $h2h): bool
-    {
-        foreach ($teamIds as $tid) {
-            $winsInGroup = 0;
-            $lossesInGroup = 0;
-            foreach ($teamIds as $other) {
-                if ($tid === $other) continue;
-                if (($h2h[$tid][$other] ?? 0) > ($h2h[$other][$tid] ?? 0)) {
-                    $winsInGroup++;
-                } elseif (($h2h[$other][$tid] ?? 0) > ($h2h[$tid][$other] ?? 0)) {
-                    $lossesInGroup++;
-                }
-            }
-            if ($winsInGroup === 0 || $lossesInGroup === 0) {
-                return false;
+    public function syncPendingTiebreakers(
+        TournamentStage $stage,
+        TournamentGroup $group,
+        $standings,
+        array $cleanStats,
+        array $h2h,
+        array $tiebreakerWinners
+    ): void {
+        $tiedPairs = $this->detectTiedPairs($standings, $cleanStats, $h2h, $tiebreakerWinners);
+
+        $existing = TournamentTiebreaker::where('stage_id', $stage->id)
+            ->where('group_id', $group->id)
+            ->where('status', 'pending')
+            ->get()
+            ->keyBy(fn($tb) => $this->pairKey($tb->team_a_id, $tb->team_b_id));
+
+        $tiedKeys = [];
+        foreach ($tiedPairs as [$aId, $bId]) {
+            $key = $this->pairKey($aId, $bId);
+            $tiedKeys[] = $key;
+
+            if (!$existing->has($key)) {
+                TournamentTiebreaker::create([
+                    'stage_id'  => $stage->id,
+                    'group_id'  => $group->id,
+                    'team_a_id' => $aId,
+                    'team_b_id' => $bId,
+                    'status'    => 'pending',
+                ]);
             }
         }
-        return true;
+
+        foreach ($existing as $key => $tb) {
+            if (!in_array($key, $tiedKeys)) {
+                $tb->delete();
+            }
+        }
     }
 
-protected function buildCleanStats($matches, array $outsiderTeamIds): array
+    /**
+     * Возвращает все пары команд, у которых все 4 критерия равны (нужна жеребьёвка).
+     */
+    public function detectTiedPairs(
+        $standings,
+        array $cleanStats,
+        array $h2h,
+        array $tiebreakerWinners
+    ): array {
+        $pairs = [];
+        $arr   = $standings->values()->all();
+
+        for ($i = 0; $i < count($arr); $i++) {
+            for ($j = $i + 1; $j < count($arr); $j++) {
+                $a = $arr[$i];
+                $b = $arr[$j];
+
+                if ($a->rating_points !== $b->rating_points) continue;
+
+                $aScored = $cleanStats[$a->team_id]['points_scored'] ?? $a->points_scored;
+                $bScored = $cleanStats[$b->team_id]['points_scored'] ?? $b->points_scored;
+                if ($aScored !== $bScored) continue;
+
+                $aDiff = ($cleanStats[$a->team_id]['points_scored'] ?? $a->points_scored)
+                       - ($cleanStats[$a->team_id]['points_conceded'] ?? $a->points_conceded);
+                $bDiff = ($cleanStats[$b->team_id]['points_scored'] ?? $b->points_scored)
+                       - ($cleanStats[$b->team_id]['points_conceded'] ?? $b->points_conceded);
+                if ($aDiff !== $bDiff) continue;
+
+                if ($this->headToHeadCompare($a->team_id, $b->team_id, $h2h) !== 0) continue;
+
+                if (isset($tiebreakerWinners[$a->team_id][$b->team_id])) continue;
+                if (isset($tiebreakerWinners[$b->team_id][$a->team_id])) continue;
+
+                $pairs[] = [$a->team_id, $b->team_id];
+            }
+        }
+
+        return $pairs;
+    }
+
+    public function pairKey(int $aId, int $bId): string
+    {
+        return min($aId, $bId) . '-' . max($aId, $bId);
+    }
+
+    protected function buildCleanStats($matches, array $outsiderTeamIds): array
     {
         $stats = [];
 
@@ -235,12 +295,10 @@ protected function buildCleanStats($matches, array $outsiderTeamIds): array
             $homeId = $match->team_home_id;
             $awayId = $match->team_away_id;
 
-            // Пропускаем матчи с участием аутсайдеров
             if (in_array($homeId, $outsiderTeamIds) || in_array($awayId, $outsiderTeamIds)) {
                 continue;
             }
 
-            // Инициализируем
             foreach ([$homeId, $awayId] as $tid) {
                 if (!isset($stats[$tid])) {
                     $stats[$tid] = ['sets_won' => 0, 'sets_lost' => 0, 'points_scored' => 0, 'points_conceded' => 0];
@@ -287,9 +345,6 @@ protected function buildCleanStats($matches, array $outsiderTeamIds): array
         return 0;
     }
 
-    /**
-     * Полный пересчёт standings всей стадии.
-     */
     public function recalculateStage(TournamentStage $stage): void
     {
         $groups = $stage->groups;

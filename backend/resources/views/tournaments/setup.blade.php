@@ -883,6 +883,52 @@
 							@endforeach
 						</div>
 						@endif
+
+						{{-- Pending tiebreakers для этой группы --}}
+						@if(isset($pendingTiebreakers[$group->id]) && $pendingTiebreakers[$group->id]->isNotEmpty())
+						<div class="mt-2 p-2" style="background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.4);border-radius:8px">
+							<div class="f-13 b-700 mb-2" style="color:#d97706">⚠️ Необходима жеребьёвка</div>
+							@foreach($pendingTiebreakers[$group->id] as $tb)
+							<div class="mb-2 pb-2" style="border-bottom:1px solid rgba(251,191,36,.2)">
+								<div class="f-13 b-600 mb-1">
+									{{ $tb->teamA->name ?? '?' }} <span style="opacity:.5">vs</span> {{ $tb->teamB->name ?? '?' }}
+								</div>
+								<div class="f-12 mb-2" style="opacity:.6">Команды равны по всем критериям. Выберите способ определения победителя:</div>
+								<div class="d-flex" style="gap:8px;flex-wrap:wrap">
+									{{-- Вариант 1: провести матч --}}
+									<form method="POST" action="{{ route('tournament.tiebreaker.match.create', $tb) }}" style="display:inline">
+										@csrf
+										<input type="hidden" name="occurrence_id" value="{{ $selectedOccurrence?->id }}">
+										<button type="submit" class="btn btn-secondary f-12" style="padding:4px 10px">
+											🏐 Провести матч
+										</button>
+									</form>
+									{{-- Вариант 2: жребий --}}
+									<button type="button"
+										class="btn btn-secondary f-12"
+										style="padding:4px 10px;border-color:#d97706;color:#d97706"
+										onclick="document.getElementById('tb-lot-{{ $tb->id }}').style.display='block';this.style.display='none'">
+										🎲 Жребий
+									</button>
+								</div>
+								{{-- Форма жребия (скрыта) --}}
+								<div id="tb-lot-{{ $tb->id }}" style="display:none;margin-top:8px">
+									<form method="POST" action="{{ route('tournament.tiebreaker.lot.resolve', $tb) }}" class="d-flex" style="gap:8px;align-items:center;flex-wrap:wrap">
+										@csrf
+										<select name="winner_team_id" class="form-control f-13" style="width:auto;min-width:140px">
+											<option value="">— Победитель жребия —</option>
+											<option value="{{ $tb->team_a_id }}">{{ $tb->teamA->name ?? '?' }}</option>
+											<option value="{{ $tb->team_b_id }}">{{ $tb->teamB->name ?? '?' }}</option>
+										</select>
+										<input type="hidden" name="occurrence_id" value="{{ $selectedOccurrence?->id }}">
+										<button type="submit" class="btn btn-primary f-12" style="padding:4px 12px">Подтвердить</button>
+									</form>
+								</div>
+							</div>
+							@endforeach
+						</div>
+						@endif
+
 					</div>
 				</div>
 				@endforeach

@@ -835,6 +835,12 @@ Route::middleware([
     Route::post('/events/{event}/tournament/apply-promotion', [TournamentController::class, 'applyDivisionPromotion'])
         ->name('tournament.applyPromotion');
 
+    Route::post('/tournament-tiebreakers/{tiebreaker}/match', [TournamentController::class, 'tiebreakerCreateMatch'])
+        ->name('tournament.tiebreaker.match.create');
+
+    Route::post('/tournament-tiebreakers/{tiebreaker}/lot', [TournamentController::class, 'tiebreakerResolveLot'])
+        ->name('tournament.tiebreaker.lot.resolve');
+
     Route::post('/tournament-stages/{stage}/form-divisions', [TournamentController::class, 'formDivisions'])
         ->name('tournament.stages.formDivisions');
 

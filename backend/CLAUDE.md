@@ -118,6 +118,14 @@ sudo supervisorctl restart volleyplay-queue:* volleyplay-reverb
 - MVP = Round Robin + Олимпийка + WinRate (~15 дней)
 - Полный план: tournament_plan_final.md (project files)
 
+### Ранжирование в группе (TournamentStandingsService::rankGroup)
+1. Победы (rating_points) — desc
+2. Набранные очки (points_scored) — desc, без матчей против аутсайдеров
+3. Разница мячей (points_scored - points_conceded) — desc, без матчей против аутсайдеров
+4. Личная встреча (head-to-head)
+5. Жеребий — проводится командами, организатор вручную указывает итог
+- Аутсайдер = команда с 0 побед при played > 0; матчи против неё исключаются из критериев 2 и 3
+
 ## Лиги и Сезоны
 - Иерархия: League (долгоживущая) -> Season (временной период) -> Events (туры)
 - Таблица leagues: HasMedia, соцсети, логотип, organizer_id, slug
