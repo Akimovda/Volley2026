@@ -1256,10 +1256,16 @@
 						document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=volleyplay.club';
 					});
 
-					try { localStorage.clear(); } catch(e) {}
-					try { sessionStorage.clear(); } catch(e) {}
-
-					window.location.replace('/');
+					swal({
+						title: 'Аккаунт удалён',
+						text: 'Ваш аккаунт был успешно удалён. Все данные будут анонимизированы.',
+						icon: 'success',
+						button: 'OK'
+					}).then(function() {
+						try { localStorage.clear(); } catch(e) {}
+						try { sessionStorage.clear(); } catch(e) {}
+						window.location.replace('/');
+					});
 				},
 				error: function() {
 					swal({ title: 'Ошибка', text: 'Не удалось удалить аккаунт', icon: 'error' });
