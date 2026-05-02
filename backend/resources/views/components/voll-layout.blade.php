@@ -21,14 +21,38 @@
 		@if(isset($canonical))
         <link rel="canonical" href="{{ trim($canonical) }}">
 		@endif
+		<script src="https://telegram.org/js/telegram-web-app.js"></script>
 		<link href="/assets/lib.css?v={{ time() }}" rel="stylesheet">
 		@livewireStyles
 		<link href="/assets/style.css?v={{ time() }}" rel="stylesheet">
+		<style>
+		/* Telegram Mini App — safe area (fullscreen mode) */
+		.tg-webapp .fix-header {
+			top: 0; left: 0; right: 0;
+			border-radius: 0;
+			padding-top: var(--tg-safe-area-inset-top, env(safe-area-inset-top, 0px));
+		}
+		.tg-webapp .top-section {
+			padding-top: calc(12rem + var(--tg-safe-area-inset-top, env(safe-area-inset-top, 0px)));
+		}
+		body.tg-webapp {
+			padding-bottom: var(--tg-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+		}
+		</style>
 		@if(isset($style))
         {{ $style }}
 		@endif
 	</head>
 	<body @class([$body_class ?? null])>
+		<script>
+		(function() {
+			var tg = window.Telegram && window.Telegram.WebApp;
+			if (!tg) return;
+			document.body.classList.add('tg-webapp');
+			if (tg.ready) tg.ready();
+			if (tg.expand) tg.expand();
+		})();
+		</script>
 		<script>
 			if (localStorage.getItem('theme') === 'dark') {
 				document.body.classList.add('dark');
@@ -654,22 +678,6 @@
 		})();
 		</script>
 		@endauth
-
-		{{-- Telegram Mini App: DEBUG баннер (временно, вне @guest) --}}
-		<script>
-		(function() {
-			var tg = window.Telegram && window.Telegram.WebApp;
-			var isAuth = !!document.querySelector('meta[name="user-authenticated"]');
-			var dbg = 'TG: ' + (tg ? '✓' : '✗')
-				+ ' | initData: ' + (tg && tg.initData ? tg.initData.substring(0,30)+'...' : '(пусто)')
-				+ ' | auth: ' + (isAuth ? 'да' : 'нет')
-				+ ' | ver: ' + (tg && tg.version ? tg.version : '?');
-			var banner = document.createElement('div');
-			banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#c62828;color:#fff;font-size:11px;padding:4px 8px;z-index:99999;word-break:break-all;white-space:pre-wrap';
-			banner.textContent = dbg;
-			document.body.appendChild(banner);
-		})();
-		</script>
 
 		{{-- Telegram Mini App: вход через initData (только если не авторизован) --}}
 		@guest
