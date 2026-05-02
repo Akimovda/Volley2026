@@ -44,7 +44,6 @@
 
     </div>
 
-    <x-slot name="scripts">
     <script>
     (function () {
         var input   = document.getElementById('imp-ac-input');
@@ -127,6 +126,5 @@
         input.addEventListener('keydown', function (e) { if (e.key === 'Escape') hideDd(); });
     })();
     </script>
-    </x-slot>
 
 </x-voll-layout>
