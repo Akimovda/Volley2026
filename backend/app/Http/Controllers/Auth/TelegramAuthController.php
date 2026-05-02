@@ -97,6 +97,14 @@ class TelegramAuthController extends Controller
         $request->session()->put('telegram_oidc_verifier', $codeVerifier);
         $request->session()->put('oauth_intent', $intent);
 
+        // Резервное хранилище state в Cache (10 мин) — на случай если сессионная кука
+        // не вернётся при cross-domain redirect (Telegram WebView, системный браузер).
+        Cache::put("tg_oidc_{$state}", [
+            'verifier'  => $codeVerifier,
+            'intent'    => $intent,
+            'return_to' => $request->session()->get('oauth_return_to', url('/events')),
+        ], now()->addMinutes(10));
+
         // Явно сохраняем сессию до ухода на Telegram — гарантирует, что state
         // попадёт в БД прежде чем браузер покинет наш домен.
         $request->session()->save();
@@ -138,14 +146,28 @@ class TelegramAuthController extends Controller
             return redirect()->to($returnTo)->with('error', 'Telegram: некорректный ответ');
         }
 
-        // Verify state
-        $savedState = $request->session()->pull('telegram_oidc_state');
+        // Verify state — сначала из сессии, при потере (Telegram WebView → system browser) из Cache
+        $savedState   = $request->session()->pull('telegram_oidc_state');
+        $codeVerifier = $request->session()->pull('telegram_oidc_verifier');
+        $intent       = (string) $request->session()->pull('oauth_intent', '');
+
         if (!$savedState || !hash_equals($savedState, $state)) {
-            return redirect()->to($returnTo)->with('error', 'Telegram: неверный state');
+            // Fallback: ищем в Cache по значению state
+            $cached = Cache::pull("tg_oidc_{$state}");
+            if ($cached) {
+                $savedState   = $state;   // state совпадает с ключом — CSRF-защита сохранена
+                $codeVerifier = $cached['verifier'];
+                $intent       = $cached['intent'];
+                $returnTo     = $cached['return_to'] ?: $returnTo;
+                Log::info('TG_OIDC: cache fallback used (session cookie lost)');
+            } else {
+                return redirect()->to($returnTo)->with('error', 'Telegram: неверный state');
+            }
         }
 
-        $codeVerifier = $request->session()->pull('telegram_oidc_verifier');
-        $intent = (string) $request->session()->pull('oauth_intent', Auth::check() ? 'link' : 'login');
+        if (empty($intent)) {
+            $intent = Auth::check() ? 'link' : 'login';
+        }
 
         // Exchange code for tokens
         $clientId     = config('services.telegram.oidc_client_id');

@@ -63,13 +63,19 @@
             ->map(fn ($s) => trim((string) $s))
             ->filter()
             ->values();
-			
+
 			if ($required->isEmpty() && $section !== '') {
 				$map = config('profile.sections', []);
 				$required = collect($map[$section] ?? []);
 			}
-			
+
 			$requiredKeys = $required->unique()->values()->all();
+
+			// Профиль уже заполнен, нет специальных требований, просматривает свой профиль → редирект
+			if (empty($requiredKeys) && empty($section) && empty($eventId)
+				&& $target->id === $actor->id && $target->isProfileComplete()) {
+				return redirect('/user/profile')->with('status', 'Ваш профиль уже заполнен ✅');
+			}
 			$request->session()->put('pending_profile_required', $requiredKeys);
 			
 			// -------------------------------------------------

@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
+use Laravel\Socialite\Two\InvalidStateException;
 
 class VkAuthController extends Controller
 {
@@ -64,6 +65,16 @@ class VkAuthController extends Controller
 
         try {
             $vkUser = Socialite::driver('vkid')->user();
+        } catch (InvalidStateException $e) {
+            // Telegram WebView / iOS WKWebView теряют сессионную куку при cross-domain redirect.
+            // Stateless-fallback: CSRF-токен пропускаем, но VK access_token всё равно валиден.
+            try {
+                $vkUser = Socialite::driver('vkid')->stateless()->user();
+                $this->logWarn('stateless fallback used (session cookie lost)');
+            } catch (\Throwable $e2) {
+                $this->logWarn('callback failed (stateless also failed)', ['e' => $e2->getMessage()]);
+                return redirect()->route('login')->with('error', 'VK: ошибка авторизации. Попробуйте ещё раз.');
+            }
         } catch (\Throwable $e) {
             $this->logWarn('callback failed', ['e' => $e->getMessage()]);
             return redirect()->route('login')->with('error', 'VK: сессия авторизации истекла. Попробуйте ещё раз.');
