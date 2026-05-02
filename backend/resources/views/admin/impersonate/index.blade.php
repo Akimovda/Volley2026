@@ -70,8 +70,8 @@
             if (item.role !== 'admin') {
                 html += '<form method="POST" action="/admin/impersonate/start/' + item.id + '" style="margin:0">' +
                     '<input type="hidden" name="_token" value="{{ csrf_token() }}">' +
-                    '<button type="submit" class="btn btn-primary btn-small" ' +
-                    'onclick="return confirm(\'Войти от имени: ' + esc(item.label || item.name) + '?\')">Войти как</button>' +
+                    '<button type="submit" class="btn btn-primary btn-small btn-imp-confirm" ' +
+                    'data-name="' + esc(item.label || item.name) + '">Войти как</button>' +
                 '</form>';
             } else {
                 html += '<span class="text-muted f-13">Запрещено</span>';
@@ -124,6 +124,24 @@
         });
 
         input.addEventListener('keydown', function (e) { if (e.key === 'Escape') hideDd(); });
+
+        results.addEventListener('click', function (e) {
+            var btn = e.target.closest('.btn-imp-confirm');
+            if (!btn) return;
+            e.preventDefault();
+            var form = btn.closest('form');
+            var name = btn.dataset.name || '';
+            swal({
+                title: 'Войти от имени: ' + name + '?',
+                icon: 'warning',
+                buttons: {
+                    cancel: { text: 'Отмена', value: null, visible: true, closeModal: true },
+                    confirm: { text: 'Войти', value: true, visible: true, closeModal: true }
+                }
+            }).then(function (value) {
+                if (value && form) form.submit();
+            });
+        });
     })();
     </script>
 
