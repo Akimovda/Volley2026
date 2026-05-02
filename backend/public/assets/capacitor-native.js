@@ -167,7 +167,12 @@
                 body: JSON.stringify({ token: token })
             })
             .then(function (r) { return r.json(); })
-            .then(function (data) { if (data.ok) window.location.href = data.redirect || '/events'; })
+            .then(function (data) {
+                if (data.ok) {
+                    if (Plugins.Browser) Plugins.Browser.close().catch(function () {});
+                    window.location.href = data.redirect || '/events';
+                }
+            })
             .catch(function () {});
         }
 
@@ -186,19 +191,16 @@
             }, 2000);
         }
 
-        // appUrlOpen: если Universal Links всё же сработали — используем быстрый путь
+        // appUrlOpen: Telegram callback через Universal Link — быстрый путь
+        // VK/Yandex callback удалены из AASA (используют polling), чтобы не ломать TMA flow
         if (Plugins.App) {
             Plugins.App.addListener('appUrlOpen', function (data) {
                 if (!data || !data.url) return;
                 var url = data.url;
-                var oauthPaths = ['/auth/telegram/callback', '/auth/vk/callback', '/auth/yandex/callback'];
-                for (var i = 0; i < oauthPaths.length; i++) {
-                    if (url.indexOf(oauthPaths[i]) !== -1) {
-                        stopCapOAuthPolling(); // не нужен — идём напрямую
-                        if (Plugins.Browser) Plugins.Browser.close().catch(function () {});
-                        window.location.href = url;
-                        return;
-                    }
+                if (url.indexOf('/auth/telegram/callback') !== -1) {
+                    stopCapOAuthPolling();
+                    if (Plugins.Browser) Plugins.Browser.close().catch(function () {});
+                    window.location.href = url;
                 }
             });
         }

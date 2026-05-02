@@ -83,7 +83,15 @@ class VkAuthController extends Controller
                 return redirect()->route('login')->with('error', 'VK: ошибка авторизации. Попробуйте ещё раз.');
             }
         } catch (\Throwable $e) {
-            $this->logWarn('callback failed', ['e' => $e->getMessage()]);
+            $this->logWarn('callback failed', [
+                'e'     => $e->getMessage(),
+                'class' => get_class($e),
+                'file'  => $e->getFile() . ':' . $e->getLine(),
+                'trace' => array_slice(
+                    array_map(fn($f) => ($f['class'] ?? '') . ($f['type'] ?? '') . ($f['function'] ?? '') . ' ' . ($f['file'] ?? '') . ':' . ($f['line'] ?? ''), $e->getTrace()),
+                    0, 8
+                ),
+            ]);
             return redirect()->route('login')->with('error', 'VK: сессия авторизации истекла. Попробуйте ещё раз.');
         }
 
