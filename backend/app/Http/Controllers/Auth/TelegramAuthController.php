@@ -342,6 +342,121 @@ class TelegramAuthController extends Controller
         return redirect()->to($returnTo);
     }
 
+    /* ── Telegram Mini App auth (initData) ── */
+
+    public function miniapp(Request $request)
+    {
+        $initData = (string) $request->input('init_data', '');
+        $returnTo = $this->sanitizeReturnTo((string) $request->input('return_to', url('/events')));
+
+        if ($initData === '') {
+            return response()->json(['error' => 'No init_data'], 400);
+        }
+
+        parse_str($initData, $params);
+        $hash = (string) ($params['hash'] ?? '');
+        unset($params['hash']);
+
+        if ($hash === '') {
+            return response()->json(['error' => 'No hash'], 400);
+        }
+
+        ksort($params);
+        $checkString = collect($params)->map(fn($v, $k) => "{$k}={$v}")->implode("\n");
+        $botToken    = (string) config('services.telegram.bot_token');
+        $secretKey   = hash_hmac('sha256', $botToken, 'WebAppData', true);
+        $calcHash    = hash_hmac('sha256', $checkString, $secretKey);
+
+        if (!hash_equals($calcHash, $hash)) {
+            Log::warning('TG_MINIAPP: invalid hash');
+            return response()->json(['error' => 'Invalid signature'], 403);
+        }
+
+        $authDate = (int) ($params['auth_date'] ?? 0);
+        if ($authDate <= 0 || (time() - $authDate) > 86400) {
+            return response()->json(['error' => 'Expired initData'], 403);
+        }
+
+        $userData = json_decode($params['user'] ?? '{}', true) ?? [];
+        $tgId     = (string) ($userData['id'] ?? '');
+        $name     = trim(($userData['first_name'] ?? '') . ' ' . ($userData['last_name'] ?? ''));
+        $username = $userData['username'] ?? null;
+
+        if ($tgId === '') {
+            return response()->json(['error' => 'No user id'], 400);
+        }
+
+        Log::info('TG_MINIAPP_AUTH', ['tg_id' => $tgId, 'name' => $name]);
+
+        $intent = Auth::check() ? 'link' : 'login';
+        $request->session()->forget('oauth_provider');
+
+        if ($intent === 'link') {
+            $current = $request->user();
+
+            if ((string) ($current->telegram_id ?? '') === $tgId) {
+                return response()->json(['redirect' => $returnTo]);
+            }
+
+            if (User::where('telegram_id', $tgId)->where('id', '!=', $current->id)->exists()) {
+                return response()->json(['error' => 'already_used', 'message' => 'Этот Telegram уже привязан к другому аккаунту.'], 422);
+            }
+
+            $current->telegram_id = $tgId;
+            if (!empty($username) && $current->isFillable('telegram_username') && empty($current->telegram_username)) {
+                $current->telegram_username = $username;
+            }
+            $current->save();
+            $request->session()->put('auth_provider', 'telegram');
+
+            return response()->json(['redirect' => $returnTo]);
+        }
+
+        // LOGIN
+        $user      = User::where('telegram_id', $tgId)->first();
+        $isNewUser = false;
+
+        if (!$user) {
+            $user = User::where('telegram_notify_chat_id', $tgId)->first();
+            if ($user) {
+                $user->telegram_id = $tgId;
+                if (!empty($username) && $user->isFillable('telegram_username') && empty($user->telegram_username)) {
+                    $user->telegram_username = $username;
+                }
+                $user->save();
+            }
+        }
+
+        if (!$user) {
+            $isNewUser = true;
+            $email = "tg_{$tgId}@telegram.local";
+            if (User::where('email', $email)->exists()) {
+                $email = "tg_{$tgId}_" . now()->timestamp . "@telegram.local";
+            }
+            $nameParts = explode(' ', trim($name), 2);
+
+            $user             = new User();
+            $user->email      = $email;
+            $user->password   = Hash::make(Str::random(32));
+            $user->name       = trim($name) ?: 'Пользователь';
+            $user->first_name = $nameParts[0] ?? '';
+            $user->last_name  = $nameParts[1] ?? '';
+            $user->telegram_id = $tgId;
+            if (!empty($username)) {
+                $user->telegram_username = $username;
+            }
+            $user->save();
+        }
+
+        Auth::login($user, true);
+        $request->session()->regenerate();
+        $request->session()->put('auth_provider', 'telegram');
+
+        return response()->json([
+            'redirect' => $isNewUser ? route('profile.complete') : $returnTo,
+        ]);
+    }
+
     /* ── Legacy widget fallback ── */
 
     private function handleLegacyCallback(Request $request, string $returnTo)

@@ -35,10 +35,11 @@
 			}
 		</script>
 
-		@include('_partials.impersonation_bar')
+		
 
 		<header>
 			<div class="fix-header">
+			@include('_partials.impersonation_bar')
 				<div class="fix-header-main">
 					<div class="fix-header-logo">
 						<a href="/">
@@ -575,6 +576,51 @@
 		@livewireScripts
 		<script src="/assets/script.js?v={{ time() }}"></script>
 		<script src="/assets/capacitor-native.js?v={{ filemtime(public_path('assets/capacitor-native.js')) }}"></script>
+
+		{{-- Telegram Mini App: авторизация через initData (без редиректа на oauth.telegram.org) --}}
+		<script>
+		(function() {
+			if (!window.Telegram || !window.Telegram.WebApp) return;
+			var twa = window.Telegram.WebApp;
+			if (!twa.initData || !twa.initDataUnsafe || !twa.initDataUnsafe.user) return;
+
+			var btn = document.querySelector('.auth-btn-telegram');
+			if (!btn) return;
+
+			var origHref = btn.getAttribute('data-href') || '';
+
+			// Capture-фаза: срабатывает до jQuery bubble-обработчика из script.js
+			btn.addEventListener('click', function(e) {
+				e.stopImmediatePropagation();
+				e.preventDefault();
+
+				var returnTo = '';
+				try {
+					var u = new URL(origHref, window.location.origin);
+					returnTo = u.searchParams.get('return') || '';
+				} catch(err) {}
+
+				fetch('/auth/telegram/miniapp', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						'Accept': 'application/json',
+						'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') || {}).content || ''
+					},
+					credentials: 'same-origin',
+					body: JSON.stringify({ init_data: twa.initData, return_to: returnTo })
+				})
+				.then(function(r) { return r.json(); })
+				.then(function(data) {
+					window.location.href = data.redirect || origHref || '/events';
+				})
+				.catch(function() {
+					if (origHref) window.location.href = origHref;
+				});
+			}, true); // capture-фаза → раньше jQuery bubble
+		})();
+		</script>
+
 		@if(isset($script))
         {{ $script }}
 		@endif	
