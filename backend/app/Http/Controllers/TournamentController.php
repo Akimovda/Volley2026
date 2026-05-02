@@ -502,6 +502,74 @@ class TournamentController extends Controller
         }
     }
 
+    public function rescoreMatch(Request $request, TournamentMatch $match)
+    {
+        $stage = $match->stage;
+        $event = $stage->event;
+        $this->authorizeOrganizer($request, $event);
+
+        if (!$match->isCompleted()) {
+            return back()->with('error', 'Матч не завершён — используйте обычный ввод счёта.');
+        }
+
+        $stageIsDivStage = str_starts_with($stage->name, 'Группа ');
+        if (!$stageIsDivStage) {
+            $hasDivStages = $event->tournamentStages()
+                ->where('name', 'like', 'Группа %')
+                ->where('occurrence_id', $stage->occurrence_id)
+                ->exists();
+            if ($hasDivStages) {
+                return back()->with('error', 'Нельзя исправить счёт — группы уже сформированы. Откатите распределение и повторите.');
+            }
+        }
+
+        $rawSets = $request->input('sets', []);
+        $sets = [];
+        foreach ($rawSets as $set) {
+            $h = (int) ($set[0] ?? 0);
+            $a = (int) ($set[1] ?? 0);
+            if ($h > 0 || $a > 0) {
+                $sets[] = [$h, $a];
+            }
+        }
+
+        if (empty($sets)) {
+            return back()->with('error', 'Введите счёт хотя бы одного сета.');
+        }
+
+        try {
+            \Illuminate\Support\Facades\DB::transaction(function () use ($match, $sets, $request, $stage) {
+                $this->matchService->resetScore($match);
+                $this->matchService->recordScore($match->fresh(), $sets, $request->user());
+            });
+
+            try {
+                $freshMatch = $match->fresh();
+                $statsService = app(\App\Services\TournamentStatsService::class);
+                $statsService->updateAfterMatch($freshMatch);
+                if ($freshMatch->team_home_id) {
+                    $homeMembers = \App\Models\EventTeamMember::where('event_team_id', $freshMatch->team_home_id)->pluck('user_id');
+                    foreach ($homeMembers as $uid) { $statsService->rebuildCareerStats($uid); }
+                }
+                if ($freshMatch->team_away_id) {
+                    $awayMembers = \App\Models\EventTeamMember::where('event_team_id', $freshMatch->team_away_id)->pluck('user_id');
+                    foreach ($awayMembers as $uid) { $statsService->rebuildCareerStats($uid); }
+                }
+                if ($event->season_id) {
+                    app(\App\Services\TournamentSeasonStatsService::class)->updateForMatch($freshMatch, $event);
+                }
+            } catch (\Throwable $e) {
+                \Log::warning('Stats update after rescore failed: ' . $e->getMessage());
+            }
+
+            $this->checkStageCompletion($stage);
+        } catch (\InvalidArgumentException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return $this->redirectToSetup($event, 'Счёт матча #' . $match->match_number . ' исправлен, таблица пересчитана.');
+    }
+
     /**
      * Форма ввода счёта (мобильная).
      */
@@ -547,30 +615,28 @@ class TournamentController extends Controller
             return back()->with('error', 'Не все группы завершены.');
         }
 
-        $liteStage = $stages->first(fn($s) => str_contains($s->name, 'Lite'));
-        $mediumStage = $stages->first(fn($s) => str_contains($s->name, 'Medium'));
+        $liteStages = $stages->filter(fn($s) => str_contains($s->name, 'Lite'));
+        $mediumStages = $stages->filter(fn($s) => str_contains($s->name, 'Medium'));
 
         $toReserve = [];
 
         // Lite: top-2 остаются, остальные в резерв
-        if ($liteStage) {
+        foreach ($liteStages as $liteStage) {
             $standings = \App\Models\TournamentStanding::where('stage_id', $liteStage->id)
                 ->orderBy('rank')->get();
-            $keepCount = 2;
             foreach ($standings as $s) {
-                if ($s->rank > $keepCount) {
+                if ($s->rank > 2) {
                     $toReserve[] = $s->team_id;
                 }
             }
         }
 
         // Medium: top-3 остаются, остальные в резерв
-        if ($mediumStage) {
+        foreach ($mediumStages as $mediumStage) {
             $standings = \App\Models\TournamentStanding::where('stage_id', $mediumStage->id)
                 ->orderBy('rank')->get();
-            $keepCount = 3;
             foreach ($standings as $s) {
-                if ($s->rank > $keepCount) {
+                if ($s->rank > 3) {
                     $toReserve[] = $s->team_id;
                 }
             }
@@ -579,46 +645,49 @@ class TournamentController extends Controller
         // Hard: все остаются — ничего не делаем
 
         $movedCount = 0;
-        foreach ($toReserve as $teamId) {
-            $lt = \App\Models\TournamentLeagueTeam::where('league_id', $league->id)
-                ->where('team_id', $teamId)
-                ->where('status', 'active')
-                ->first();
+        $notifications = [];
 
-            if ($lt) {
-                $nextPos = $league->nextReservePosition();
-                $lt->update([
-                    'status' => 'reserve',
-                    'left_at' => now(),
-                    'reserve_position' => $nextPos,
-                ]);
-                $movedCount++;
+        \Illuminate\Support\Facades\DB::transaction(function () use ($league, $toReserve, $event, &$movedCount, &$notifications) {
+            foreach ($toReserve as $teamId) {
+                $lt = \App\Models\TournamentLeagueTeam::where('league_id', $league->id)
+                    ->where('team_id', $teamId)
+                    ->where('status', 'active')
+                    ->first();
 
-                // Уведомление о выбывании
-                try {
-                    $team = $lt->team;
-                    if ($team) {
-                        app(\App\Services\TournamentNotificationService::class)
-                            ->notifyElimination($team, $event, $league->name, $nextPos);
-                    }
-                } catch (\Throwable $e) {
-                    \Log::warning('Promotion notification failed: ' . $e->getMessage());
+                if ($lt) {
+                    $nextPos = $league->nextReservePosition();
+                    $lt->update([
+                        'status' => 'reserve',
+                        'left_at' => now(),
+                        'reserve_position' => $nextPos,
+                    ]);
+                    $movedCount++;
+                    $notifications[] = ['team' => $lt->team, 'pos' => $nextPos];
                 }
             }
-        }
 
-        // Активируем из резерва если есть
-        $vacancies = $movedCount;
-        if ($vacancies > 0) {
-            $reserves = $league->reserveTeams()
-                ->orderBy('reserve_position')
-                ->limit($vacancies)
-                ->get();
+            // Активируем из резерва если есть
+            if ($movedCount > 0) {
+                $reserves = $league->reserveTeams()
+                    ->orderBy('reserve_position')
+                    ->limit($movedCount)
+                    ->get();
 
-            foreach ($reserves as $rt) {
-                // Не активируем тех, кого только что перевели
-                if (in_array($rt->team_id, $toReserve)) continue;
-                $rt->activateFromReserve();
+                foreach ($reserves as $rt) {
+                    if (in_array($rt->team_id, $toReserve)) continue;
+                    $rt->activateFromReserve();
+                }
+            }
+        });
+
+        foreach ($notifications as $n) {
+            try {
+                if ($n['team']) {
+                    app(\App\Services\TournamentNotificationService::class)
+                        ->notifyElimination($n['team'], $event, $league->name, $n['pos']);
+                }
+            } catch (\Throwable $e) {
+                \Log::warning('Promotion notification failed: ' . $e->getMessage());
             }
         }
 
@@ -807,6 +876,19 @@ class TournamentController extends Controller
                 $divCourts = $request->input($courtKey, []);
                 if (!empty($divCourts)) {
                     $group->update(['courts' => array_values($divCourts)]);
+                }
+
+                // Автогенерация расписания (если указано время начала)
+                $scheduleStart = $request->input('schedule_start');
+                if ($scheduleStart) {
+                    $courtsForSchedule = array_values($divCourts ?: $stage->cfg('courts', []));
+                    app(\App\Services\TournamentScheduleService::class)->generateSchedule(
+                        $divStage,
+                        \Carbon\Carbon::parse($scheduleStart),
+                        (int) $request->input('schedule_match_duration', 30),
+                        (int) $request->input('schedule_break_duration', 5),
+                        $courtsForSchedule,
+                    );
                 }
             }
         });
