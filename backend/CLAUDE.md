@@ -356,3 +356,16 @@ sudo supervisorctl restart volleyplay-queue:* volleyplay-reverb
   добавлен в /etc/nginx/sites-available/volleyplay.club ДО блока `location ~ /\. { deny all; }`
 - ВАЖНО: после изменений nginx нужен `sudo systemctl restart nginx` (не reload — он не применял конфиг)
 - Проверка: curl -sI https://volleyplay.club/.well-known/apple-app-site-association → 200 OK, application/json
+
+## Impersonation (вход от имени пользователя)
+- Контроллер: `Admin/ImpersonationController` — index(), search(), start(), leave()
+- Middleware: `BlockInImpersonation` → алиас `block.impersonation` в bootstrap/app.php
+- Роуты: GET /admin/impersonate, GET /admin/impersonate/search, POST /admin/impersonate/start/{user}
+- Выход: POST /admin/impersonate/leave — БЕЗ `can:is-admin` (вошедший является другим пользователем)
+- Session key: `impersonator_id` = ID реального администратора
+- start(): логирует через AdminAuditLogger (auth() = админ)
+- leave(): логирует напрямую через DB::table('admin_audits') с actor_user_id = impersonator_id
+- Заблокированные действия: отвязка OAuth, удаление аккаунта, платежи (user-confirm, refund, payment-settings), biometric-register
+- UI: красный бар сверху через `@include('_partials.impersonation_bar')` в voll-layout
+- Поиск: собственный endpoint /admin/impersonate/search (включает email, role — только для админов)
+- Нельзя войти от имени другого администратора
