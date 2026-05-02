@@ -154,7 +154,7 @@ class TelegramAuthController extends Controller
         ));
 
         $botToken  = (string) config('services.telegram.bot_token');
-        $secretKey = hash_hmac('sha256', 'WebAppData', $botToken, true);
+        $secretKey = hash_hmac('sha256', $botToken, 'WebAppData', true);
         $calcHash  = hash_hmac('sha256', $checkString, $secretKey);
 
         if (!hash_equals($calcHash, $hash)) {
