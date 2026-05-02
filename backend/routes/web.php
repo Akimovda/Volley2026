@@ -820,6 +820,9 @@ Route::middleware([
     Route::patch('/tournament-matches/{match}/score', [TournamentController::class, 'score'])
         ->name('tournament.matches.score');
 
+    Route::patch('/tournament-matches/{match}/rescore', [TournamentController::class, 'rescoreMatch'])
+        ->name('tournament.matches.rescore');
+
     // Player match stats (detailed)
     Route::get('/events/{event}/tournament/start-scoring', [TournamentController::class, 'startScoring'])
         ->name('tournament.start_scoring');

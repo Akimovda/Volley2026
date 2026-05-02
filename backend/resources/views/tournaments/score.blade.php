@@ -1,6 +1,7 @@
 <x-voll-layout body_class="tournament-score-page">
-<x-slot name="title">Ввод счёта — {{ $event->title }}</x-slot>
-<x-slot name="h1">Ввод счёта</x-slot>
+@php $isEdit = request()->query('edit') === '1' && $match->isCompleted(); @endphp
+<x-slot name="title">{{ $isEdit ? 'Исправить счёт' : 'Ввод счёта' }} — {{ $event->title }}</x-slot>
+<x-slot name="h1">{{ $isEdit ? 'Исправить счёт' : 'Ввод счёта' }}</x-slot>
 
 <x-slot name="breadcrumbs">
     <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
@@ -60,7 +61,7 @@
     </div>
 
     {{-- Форма счёта --}}
-    <form method="POST" action="{{ route('tournament.matches.score', $match) }}" id="scoreForm">
+    <form method="POST" action="{{ $isEdit ? route('tournament.matches.rescore', $match) : route('tournament.matches.score', $match) }}" id="scoreForm">
         @csrf
         @method('PATCH')
 
@@ -70,11 +71,20 @@
             $setsToWin = match($format) { 'bo1' => 1, 'bo3' => 2, 'bo5' => 3, default => 2 };
             $setPoints = $stage->setPoints();
             $maxScore = $setPoints + 20; // допуск для overtime (25+20=45)
+            $existingHome = $isEdit ? ($match->score_home ?? []) : [];
+            $existingAway = $isEdit ? ($match->score_away ?? []) : [];
+            $existingSetsCount = max(count($existingHome), $setsToWin);
         @endphp
+
+        @if($isEdit)
+        <div class="p-2 mb-3 f-13" style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:8px;color:#92400e">
+            ⚠️ Исправление счёта пересчитает турнирную таблицу
+        </div>
+        @endif
 
         <div id="sets_container">
             @for($i = 0; $i < $maxSets; $i++)
-                <div class="card p-3 mb-3 set-row" data-set="{{ $i }}" style="{{ $i >= $setsToWin ? 'display:none;' : '' }}">
+                <div class="card p-3 mb-3 set-row" data-set="{{ $i }}" style="{{ $i >= $existingSetsCount && !isset($existingHome[$i]) ? 'display:none;' : '' }}">
                     <div class="d-flex between fvc">
                         <span class="b-700 f-14">Сет {{ $i + 1 }}</span>
                         <div class="d-flex fvc" style="gap:10px">
@@ -82,7 +92,7 @@
                                     style="width:60px;text-align:center;font-size:1.2rem;font-weight:700;padding:6px 2px">
                                 <option value="">—</option>
                                 @for($s = 0; $s <= $maxScore; $s++)
-                                    <option value="{{ $s }}">{{ $s }}</option>
+                                    <option value="{{ $s }}" {{ isset($existingHome[$i]) && $existingHome[$i] == $s ? 'selected' : '' }}>{{ $s }}</option>
                                 @endfor
                             </select>
                             <span class="f-18 b-700" style="opacity:.4">:</span>
@@ -90,7 +100,7 @@
                                     style="width:60px;text-align:center;font-size:1.2rem;font-weight:700;padding:6px 2px">
                                 <option value="">—</option>
                                 @for($s = 0; $s <= $maxScore; $s++)
-                                    <option value="{{ $s }}">{{ $s }}</option>
+                                    <option value="{{ $s }}" {{ isset($existingAway[$i]) && $existingAway[$i] == $s ? 'selected' : '' }}>{{ $s }}</option>
                                 @endfor
                             </select>
                         </div>
@@ -104,8 +114,8 @@
             <div class="f-12" style="opacity:.5">по сетам</div>
         </div>
 
-        <button type="submit" class="btn btn-primary w-100 p-3 f-16" id="submitBtn" disabled>
-            Записать счёт
+        <button type="submit" class="btn btn-primary w-100 p-3 f-16" id="submitBtn" {{ $isEdit ? '' : 'disabled' }}>
+            {{ $isEdit ? 'Сохранить исправленный счёт' : 'Записать счёт' }}
         </button>
 
         @php

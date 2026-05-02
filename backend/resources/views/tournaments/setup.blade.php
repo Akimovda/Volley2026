@@ -788,6 +788,8 @@
 		@foreach($stages as $stage)
 		@php
 		$borderColor = $stage->isCompleted() ? '#10b981' : ($stage->isInProgress() ? '#2967BA' : '#555');
+		$_isDivStage = str_starts_with($stage->name, 'Группа ');
+		$stageHasDivDistribution = !$_isDivStage && $stages->contains(fn($s) => str_starts_with($s->name, 'Группа ') && $s->occurrence_id == $stage->occurrence_id);
 		@endphp
 		<div class="ramka" id="stage_{{ $stage->id }}" style="border-left:4px solid {{ $borderColor }}">
 			<div class="d-flex between fvc mb-2" style="flex-wrap:wrap;gap:8px">
@@ -939,6 +941,9 @@
 <td class="p-1" style="text-align:center">
 @if($match->isCompleted())
 <span class="f-11 b-600 p-1 px-2" style="background:rgba(16,185,129,.15);border-radius:6px;color:#10b981">✓</span>
+@if(!$stageHasDivDistribution)
+<a href="{{ route('tournament.matches.score.form', $match) }}?edit=1" class="f-14" style="text-decoration:none;margin-left:4px" title="Исправить счёт">🛠</a>
+@endif
 @elseif($match->status === 'live')
 <span class="f-11 b-600 p-1 px-2" style="background:rgba(220,38,38,.15);border-radius:6px;color:#dc2626">LIVE</span>
 @else
@@ -1043,18 +1048,7 @@
 							@endforeach
 						</div>
 						
-						{{-- Ряд 2: Жеребьёвка --}}
-						<div class="row mb-3">
-							<div class="col-md-4 mb-2">
-								<label class="f-13 b-600 mb-1 d-block">Жеребьёвка групп</label>
-								<select name="div_draw_mode" class="f-13" style="width:100%">
-									<option value="seeded">По рейтингу (seed)</option>
-									<option value="random">Случайная</option>
-								</select>
-							</div>
-						</div>
-						
-						{{-- Ряд 3: Площадки --}}
+						{{-- Ряд 2: Площадки --}}
 						@if(count($availCourts) > 0)
 						<div class="mb-3">
 							<label class="f-13 b-600 mb-2 d-block">Площадки для групп</label>
@@ -1077,6 +1071,28 @@
 						</div>
 						@endif
 						
+						{{-- Расписание --}}
+						<div class="mb-3">
+							<label class="f-13 b-600 mb-2 d-block">Расписание (опционально)</label>
+							<div class="card p-3">
+								<div class="f-13 mb-2">Если указать время начала — матчи автоматически получат расписание и площадки.</div>
+								<div class="d-flex" style="gap:12px;flex-wrap:wrap;align-items:flex-end">
+									<div>
+										<label>Начало</label>
+										<input type="datetime-local" name="schedule_start" value="">
+									</div>
+									<div>
+										<label>Матч (мин)</label>
+										<input type="number" name="schedule_match_duration" value="30" min="15" max="180">
+									</div>
+									<div>
+										<label>Перерыв (мин)</label>
+										<input type="number" name="schedule_break_duration" value="5" min="0" max="60">
+									</div>
+								</div>
+							</div>
+						</div>
+
 						<button type="submit" class="btn btn-primary btn-alert" data-title="Сформировать группы?" data-icon="question" data-confirm-text="Да, сформировать" data-cancel-text="Отмена">Сформировать группы</button>
 					</form>
 				</div>
@@ -1111,16 +1127,18 @@
 		@endforeach
 		
 		{{-- Промоушен после групп --}}
+		<div id="promotion_block"></div>
 		@if($event->season_id && $stages->isNotEmpty())
 		@php
 		$divStages = $stages->filter(fn($s) => str_starts_with($s->name, 'Группа '));
 		$allDivsCompleted = $divStages->isNotEmpty() && $divStages->every(fn($s) => $s->status === 'completed');
+		$hasMedium = $divStages->contains(fn($s) => str_contains($s->name, 'Medium'));
 		@endphp
 		@if($allDivsCompleted)
 		<div class="ramka" style="background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.2)">
 			<h3 style="margin:0 0 8px">✅ Все группы завершены</h3>
 			<p class="f-14" style="color:#6b7280;margin-bottom:12px">
-				По правилам сезона: все команды Hard остаются, из Lite — top-2 остаются, остальные уходят в резерв.
+				По правилам сезона: все команды Hard остаются, из Lite — top-2 остаются{{ $hasMedium ? ', из Medium — top-3 остаются' : '' }}, остальные уходят в резерв.
 				Освободившиеся места заполняются из резерва.
 			</p>
 			<form method="POST" action="{{ route('tournament.applyPromotion', $event) }}">
