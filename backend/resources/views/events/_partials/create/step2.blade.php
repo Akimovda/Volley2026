@@ -639,49 +639,46 @@ if (hiddenH) hiddenH.value = h;
 									</div>
 								</div>
 
-								{{-- Существующая лига --}}
+								{{-- Существующая лига (иерархия: Лига → Сезон → Дивизион) --}}
 								<div class="row mt-2" id="existing_league_fields" style="display:none;">
-									<div class="col-md-6">
+									<div class="col-md-4">
 										<div class="card">
 											<label>Лига</label>
-											<select name="existing_league_id" id="existing_league_id">
+											<select id="top_league_select">
 												<option value="">— выбрать лигу —</option>
 												@if(isset($organizerSeasons))
 													@php
-													$leaguesForSelect = collect();
+													$topLeaguesForSelect = [];
 													foreach($organizerSeasons as $s) {
-														foreach($s->leagues as $l) {
-															if (!$leaguesForSelect->contains('id', $l->id)) {
-																$leaguesForSelect->push($l);
-															}
+														$lid = $s->league_id;
+														if ($lid && !isset($topLeaguesForSelect[$lid])) {
+															$topLeaguesForSelect[$lid] = $s->league?->name ?? ('Лига #'.$lid);
 														}
 													}
 													@endphp
-													@foreach($leaguesForSelect as $l)
-														<option value="{{ $l->id }}">{{ $l->name }}</option>
+													@foreach($topLeaguesForSelect as $lid => $lname)
+														<option value="{{ $lid }}">{{ $lname }}</option>
 													@endforeach
 												@endif
 											</select>
 										</div>
 									</div>
 									{{-- Сезон — показывается после выбора лиги --}}
-									<div class="col-md-6" id="season_col" style="display:none;">
+									<div class="col-md-4" id="season_col" style="display:none;">
 										<div class="card">
 											<label>Сезон</label>
-											<select name="existing_season_mode" id="existing_season_mode" class="mb-2">
-												<option value="existing">Выбрать существующий</option>
-												<option value="new">Создать новый</option>
+											<select name="existing_season_id" id="existing_season_id">
+												<option value="">— выбрать сезон —</option>
 											</select>
-											<div id="existing_season_wrap">
-												<select name="existing_season_id" id="existing_season_id">
-													<option value="">— выбрать сезон —</option>
-												</select>
-											</div>
-											<div id="new_season_wrap" style="display:none;">
-												<input type="text" name="new_season_name" id="new_season_name"
-													placeholder="Например: Сезон 2026"
-													class="w-full rounded-lg border-gray-200">
-											</div>
+										</div>
+									</div>
+									{{-- Дивизион — показывается после выбора сезона --}}
+									<div class="col-md-4" id="division_col" style="display:none;">
+										<div class="card">
+											<label>Дивизион</label>
+											<select name="existing_league_id" id="existing_league_id">
+												<option value="">— выбрать дивизион —</option>
+											</select>
 										</div>
 									</div>
 								</div>
@@ -698,23 +695,27 @@ if (hiddenH) hiddenH.value = h;
 							const leagueMode     = document.getElementById('season_league_mode');
 							const newFields      = document.getElementById('new_league_fields');
 							const existingFields = document.getElementById('existing_league_fields');
+							const topLeagueSelect     = document.getElementById('top_league_select');
 							const leagueSelect        = document.getElementById('existing_league_id');
 							const seasonCol           = document.getElementById('season_col');
-							const seasonModeSelect    = document.getElementById('existing_season_mode');
-							const existingSeasonWrap  = document.getElementById('existing_season_wrap');
-							const newSeasonWrap       = document.getElementById('new_season_wrap');
+							const divisionCol         = document.getElementById('division_col');
 							const seasonSelect        = document.getElementById('existing_season_id');
 
 							const leaguesData = @php
 							$leaguesJs = [];
 							if (isset($organizerSeasons)) {
 								foreach ($organizerSeasons as $s) {
-									foreach ($s->leagues as $l) {
-										if (!isset($leaguesJs[$l->id])) {
-											$leaguesJs[$l->id] = ['id' => $l->id, 'name' => $l->name, 'seasons' => []];
-										}
-										$leaguesJs[$l->id]['seasons'][] = ['id' => $s->id, 'name' => $s->name];
+									$lid = $s->league_id;
+									if (!$lid) continue;
+									if (!isset($leaguesJs[$lid])) {
+										$lname = $s->league?->name ?? ('Лига #'.$lid);
+										$leaguesJs[$lid] = ['id' => $lid, 'name' => $lname, 'seasons' => []];
 									}
+									$divs = [];
+									foreach ($s->leagues as $div) {
+										$divs[] = ['id' => $div->id, 'name' => $div->name];
+									}
+									$leaguesJs[$lid]['seasons'][] = ['id' => $s->id, 'name' => $s->name, 'divisions' => $divs];
 								}
 							}
 							echo json_encode(array_values($leaguesJs));
@@ -743,35 +744,44 @@ if (hiddenH) hiddenH.value = h;
 								existingFields.style.display = (mode === 'existing') ? '' : 'none';
 							}
 
-							function syncSeasonMode() {
-								const mode = seasonModeSelect ? seasonModeSelect.value : 'existing';
-								existingSeasonWrap.style.display = (mode === 'existing') ? '' : 'none';
-								newSeasonWrap.style.display      = (mode === 'new')      ? '' : 'none';
-							}
-
 							function populateSeasons() {
-								const lid = parseInt(leagueSelect.value);
+								const lid = parseInt(topLeagueSelect ? topLeagueSelect.value : 0);
 								seasonSelect.innerHTML = '<option value="">— выбрать сезон —</option>';
+								leagueSelect.innerHTML = '<option value="">— выбрать дивизион —</option>';
+								divisionCol.style.display = 'none';
 								if (!lid) { seasonCol.style.display = 'none'; return; }
 
 								const league = leaguesData.find(l => l.id === lid);
-								const hasSeason = league && league.seasons.length > 0;
-
-								if (hasSeason) {
+								if (league && league.seasons.length > 0) {
 									league.seasons.forEach(s => {
 										const opt = document.createElement('option');
 										opt.value = s.id;
 										opt.textContent = s.name;
 										seasonSelect.appendChild(opt);
 									});
-									if (seasonModeSelect) seasonModeSelect.value = 'existing';
-								} else {
-									// нет сезонов — сразу режим создания нового
-									if (seasonModeSelect) seasonModeSelect.value = 'new';
 								}
-
 								seasonCol.style.display = '';
-								syncSeasonMode();
+							}
+
+							function populateDivisions() {
+								const lid    = parseInt(topLeagueSelect ? topLeagueSelect.value : 0);
+								const sid    = parseInt(seasonSelect.value);
+								leagueSelect.innerHTML = '<option value="">— выбрать дивизион —</option>';
+								divisionCol.style.display = 'none';
+								if (!lid || !sid) return;
+
+								const league  = leaguesData.find(l => l.id === lid);
+								const season  = league && league.seasons.find(s => s.id === sid);
+								if (season && season.divisions && season.divisions.length > 0) {
+									season.divisions.forEach(d => {
+										const opt = document.createElement('option');
+										opt.value = d.id;
+										opt.textContent = d.name;
+										leagueSelect.appendChild(opt);
+									});
+									if (season.divisions.length === 1) leagueSelect.value = season.divisions[0].id;
+									divisionCol.style.display = '';
+								}
 							}
 
 							if (formatSelect) {
@@ -781,8 +791,8 @@ if (hiddenH) hiddenH.value = h;
 							if (isRecurring)   isRecurring.addEventListener('change', syncSeasonBox);
 							if (createSeason)  createSeason.addEventListener('change', syncSeasonFields);
 							if (leagueMode)    leagueMode.addEventListener('change', syncLeagueMode);
-							if (leagueSelect)     leagueSelect.addEventListener('change', populateSeasons);
-							if (seasonModeSelect) seasonModeSelect.addEventListener('change', syncSeasonMode);
+							if (topLeagueSelect) topLeagueSelect.addEventListener('change', populateSeasons);
+							if (seasonSelect)    seasonSelect.addEventListener('change', populateDivisions);
 
 							syncSeasonBox();
 							syncSeasonFields();

@@ -125,6 +125,18 @@ final class OccurrenceExpansionService
             }
         }
 
+        // Для tournament-событий — синхронизируем SeasonEvents после expansion
+        if ($created > 0 && $event->format === 'tournament' && $event->season_id) {
+            try {
+                app(TournamentSeasonAutoCreateService::class)->syncSeasonEventsAfterExpand($event);
+            } catch (\Throwable $e) {
+                Log::warning('OccurrenceExpansion: syncSeasonEventsAfterExpand failed', [
+                    'event_id' => $event->id,
+                    'error'    => $e->getMessage(),
+                ]);
+            }
+        }
+
         return $created;
     }
 

@@ -84,6 +84,11 @@
 	<div class="text-muted small mb-1">
 		👤 Свободных мест: <strong>{{ max(0, $playersMax - $playersRegistered) }}</strong> / {{ $playersMax }}
 	</div>
+	@if(auth()->check() && (auth()->user()->role === 'admin' || (int)($event->organizer_id ?? 0) === auth()->id()))
+	<div class="mt-1 mb-1">
+		<a href="{{ route('tournament.setup', $event) }}" class="btn btn-primary btn-sm">⚙️ Управление турниром →</a>
+	</div>
+	@endif
     @elseif(!is_null($registeredTotal))
 	<div class="text-muted small mb-1">
 		Свободных мест:

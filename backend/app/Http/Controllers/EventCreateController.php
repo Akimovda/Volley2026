@@ -405,7 +405,7 @@ use App\Services\StaffLogService;
             // Сезоны и лиги организатора — для блока «Серия турниров»
             $organizerSeasons = TournamentSeason::where('organizer_id', $organizerId ?: $user->id)
                 ->whereIn('status', ['active', 'draft'])
-                ->with('leagues')
+                ->with(['leagues', 'league'])
                 ->orderByDesc('created_at')
                 ->get();
 

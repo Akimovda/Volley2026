@@ -131,6 +131,23 @@
 					· Туров: {{ $season->seasonEvents->count() }}
 				</div>
 
+				{{-- Ссылки на турниры сезона --}}
+				@php
+				$seasonEventLinks = $season->seasonEvents->unique('event_id')->map(function($se) {
+					return \App\Models\Event::find($se->event_id);
+				})->filter()->values();
+				@endphp
+				@if($seasonEventLinks->isNotEmpty())
+				<div class="mb-1">
+					@foreach($seasonEventLinks as $seEvent)
+					<a href="{{ route('events.show', $seEvent) }}" class="blink f-15 d-inline-block mr-2">🏆 {{ $seEvent->title }}</a>
+					@if(auth()->check() && (auth()->user()->role === 'admin' || (int)$seEvent->organizer_id === auth()->id()))
+					<a href="{{ route('tournament.setup', $seEvent) }}" class="btn btn-primary btn-sm f-13">⚙️ Управление</a>
+					@endif
+					@endforeach
+				</div>
+				@endif
+
 				{{-- Рейтинг топ-5 --}}
 				@php $seasonStats = $season->stats->sortByDesc('match_win_rate')->take(5); @endphp
 				@if($seasonStats->isNotEmpty())
