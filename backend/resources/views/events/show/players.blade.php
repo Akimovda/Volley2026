@@ -715,15 +715,25 @@ $showWaitlist = !$isTournament && !$eventStarted && $isFull && auth()->check();
 			@else
             @foreach($tournamentTeams as $tTeam)
 			<div class="card mb-1" style="padding: 0.5rem 0.8rem">
-				<div class="d-flex between fvc mb-1">
+				<div class="d-flex between fvc mb-05">
 					<a href="{{ route('tournamentTeams.show', [$event, $tTeam]) }}" class="blink f-16 b-600">{{ $tTeam->name }}</a>
-					<span class="f-16"><strong class="cd">{{ $tTeam->members->count() }}</strong> чел.</span>
 				</div>
-				<div class="f-15">
-					@foreach($tTeam->members as $m)
-					{{ trim(($m->user->last_name ?? '') . ' ' . ($m->user->first_name ?? '')) ?: $m->user->name ?? '?' }}@if(!$loop->last), @endif
-					@endforeach
+				@foreach($tTeam->members->sortBy(fn($m) => $m->role_code === 'captain' ? 0 : 1) as $m)
+				@php
+					$mUser   = $m->user;
+					$mLevel  = (int)($mUser->beach_level ?? $mUser->classic_level ?? 0);
+					$mColor  = $mLevel > 0 ? level_color($mLevel) : '#aaaaaa';
+					$mName   = trim(($mUser->last_name ?? '') . ' ' . ($mUser->first_name ?? '')) ?: ($mUser->name ?? '?');
+				@endphp
+				<div class="d-flex fvc" style="gap:0.5rem;margin-bottom:0.3rem;">
+					<span class="f-13 text-muted" style="width:16px;text-align:right;flex-shrink:0;">{{ $loop->iteration }}.</span>
+					<a href="{{ route('users.show', $mUser) }}">
+						<img src="{{ $mUser->profile_photo_url }}" alt="" style="width:34px;height:34px;border-radius:50%;object-fit:cover;flex-shrink:0;">
+					</a>
+					<span style="width:10px;height:10px;border-radius:50%;background:{{ $mColor }};display:inline-block;flex-shrink:0;border:1px solid rgba(0,0,0,.15);"></span>
+					<a href="{{ route('users.show', $mUser) }}" class="blink f-15">{{ $mName }}</a>
 				</div>
+				@endforeach
 			</div>
             @endforeach
 			@endif
