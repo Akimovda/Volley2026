@@ -6,6 +6,8 @@ use App\Models\Event;
 use App\Models\EventChannelMessage;
 use App\Models\EventOccurrence;
 use App\Services\Channels\ChannelPublisherFactory;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class PublishOccurrenceAnnouncementService
 {
@@ -35,6 +37,9 @@ class PublishOccurrenceAnnouncementService
             $channel = $link->channel;
 
             if (!$channel || !$channel->is_verified) {
+                $this->log($event->id, $occurrence->id, $channel?->id ?? 0, $channel?->platform ?? '?', 'skip', [
+                    'reason' => !$channel ? 'channel_missing' : 'not_verified',
+                ]);
                 continue;
             }
 
@@ -83,6 +88,9 @@ class PublishOccurrenceAnnouncementService
             if ($record->exists) {
                 // Текст не изменился → ничего делать не нужно
                 if ($record->last_payload_hash === $hash) {
+                    $this->log($event->id, $occurrence->id, $channel->id, $channel->platform, 'skip', [
+                        'reason' => 'hash_unchanged',
+                    ]);
                     continue;
                 }
 
@@ -117,11 +125,19 @@ class PublishOccurrenceAnnouncementService
                             'last_synced_at'      => now(),
                             'meta'                => $newMeta,
                         ]);
+
+                        $this->log($event->id, $occurrence->id, $channel->id, $channel->platform, 'update', [
+                            'external_message_id' => $result['external_message_id'] ?? $record->external_message_id,
+                        ]);
                     } catch (\Throwable $e) {
-                        \Illuminate\Support\Facades\Log::warning(
+                        Log::warning(
                             'PublishOccurrenceAnnouncement: update failed',
                             ['channel' => $channel->platform, 'error' => $e->getMessage()]
                         );
+                        $this->log($event->id, $occurrence->id, $channel->id, $channel->platform, 'fail', [
+                            'action' => 'update',
+                            'error'  => $e->getMessage(),
+                        ]);
                     }
                 }
 
@@ -132,6 +148,9 @@ class PublishOccurrenceAnnouncementService
             // ── Записи нет → отправляем первый анонс ──────────────────────
             // В режиме refreshOnly (обновление при записи игрока) — пропускаем
             if ($refreshOnly) {
+                $this->log($event->id, $occurrence->id, $channel->id, $channel->platform, 'skip', [
+                    'reason' => 'refresh_only_no_record',
+                ]);
                 continue;
             }
 
@@ -153,12 +172,40 @@ class PublishOccurrenceAnnouncementService
                     'last_synced_at'      => now(),
                     'meta'                => $newMeta,
                 ])->save();
+
+                $this->log($event->id, $occurrence->id, $channel->id, $channel->platform, 'send', [
+                    'external_message_id' => $result['external_message_id'] ?? null,
+                    'message_kind'        => $messageKind,
+                ]);
             } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::warning(
+                Log::warning(
                     'PublishOccurrenceAnnouncement: send failed',
                     ['channel' => $channel->platform, 'error' => $e->getMessage()]
                 );
+                $this->log($event->id, $occurrence->id, $channel->id, $channel->platform, 'fail', [
+                    'action' => 'send',
+                    'error'  => $e->getMessage(),
+                ]);
             }
+        }
+    }
+
+    private function log(int $eventId, int $occurrenceId, int $channelId, string $platform, string $action, array $meta = []): void
+    {
+        try {
+            DB::table('channel_publish_logs')->insert([
+                'event_id'          => $eventId,
+                'occurrence_id'     => $occurrenceId,
+                'channel_id'        => $channelId,
+                'platform'          => $platform,
+                'action'            => $action,
+                'notification_type' => 'registration_open',
+                'error'             => $action === 'fail' ? ($meta['error'] ?? null) : null,
+                'meta'              => json_encode($meta, JSON_UNESCAPED_UNICODE),
+                'created_at'        => now(),
+            ]);
+        } catch (\Throwable) {
+            // не прерываем основной поток
         }
     }
 
