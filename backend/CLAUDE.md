@@ -54,6 +54,26 @@
 - Все используют effective-переменные из контроллера
 - Trix editor: /assets/trix.css + /assets/trix.js (v2.1.15, локально)
 
+## Форма создания события — data-show-if / data-hide-if
+- Логика в `step2.blade.php` → `applyAllowRegShowIf()` (глобально через window)
+- Синтаксис data-show-if: `field=val` (одно), `f1=v1,f2=v2` (AND между полями), `f=v1|v2|v3` (OR внутри поля)
+- Синтаксис data-hide-if: `f=v1,v2,v3` (OR по значениям), `f1=v1|f2=v2` (OR между полями — pipe разделяет условия)
+- Поддерживаемые поля: allow_registration, registration_type, registration_mode, format
+- Триггер: `$('form').on('change', '#registration_mode, #format', ...)` в create.blade.php
+
+## Турниры (format=tournament) — карточка
+- `tournament_teams_count` (events) — кол-во команд в турнире (НЕ использовать game_settings.max_players)
+- `game_settings.subtype` = '2x2' → team_size = 2 (parse через regex `/^(\d+)x\d+$/`)
+- Счётчик команд: EventRegistrationGuard добавляет tournament_teams_max/registered/remaining в meta
+- Зарегистрированных команд: COUNT(DISTINCT group_key), fallback ceil(registered_total / team_size)
+- Карточка: data-is-tournament="1", label " команд" через `<span data-seat-unit>`
+
+## Dark mode (body.dark)
+- Inline style="color:..." нельзя переопределить CSS-классом
+- Решение для тёмных цветов: добавить класс на элемент + text-shadow с белым glow в `body.dark .class`
+- Уровень 7 ("Профи М.С.") = #212121 — чёрный, невидим на тёмном фоне → class level-color-badge
+- CSS: `body.dark .level-color-badge { text-shadow: 0 0 8px rgba(255,255,255,.85); }`
+
 ## Ключевые компоненты
 - Карточка мероприятия: resources/views/events/_card.blade.php
 - Меню профиля: resources/views/profile/_menu.blade.php
