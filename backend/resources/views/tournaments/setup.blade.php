@@ -1079,7 +1079,7 @@
 								<div class="d-flex" style="gap:12px;flex-wrap:wrap;align-items:flex-end">
 									<div>
 										<label>Начало</label>
-										<input type="datetime-local" name="schedule_start" value="">
+										<input type="datetime-local" name="schedule_start" value="{{ \Carbon\Carbon::now($event->timezone ?? 'Europe/Moscow')->format('Y-m-d\TH:i') }}">
 									</div>
 									<div>
 										<label>Матч (мин)</label>
