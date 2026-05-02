@@ -63,7 +63,13 @@ class UserMergeService
 
             DB::table('event_registrations')
                 ->where('user_id', $secondary->id)
-                ->update(['is_cancelled' => true]);
+                ->whereRaw('is_cancelled IS NULL OR is_cancelled = false')
+                ->update([
+                    'is_cancelled' => true,
+                    'cancelled_at' => now(),
+                    'status'       => 'cancelled',
+                    'updated_at'   => now(),
+                ]);
 
             // 4. Лог регистраций
             DB::table('event_registration_logs')
