@@ -160,6 +160,9 @@ $actionLabel = fn(string $a) => match($a) {
 		id="add-player-form"
 		class="form">
 			@csrf
+			@if(!empty($occurrenceId))
+			<input type="hidden" name="occurrence_id" value="{{ $occurrenceId }}">
+			@endif
 			<div class="row">
 				
 				<div class="col-md-6">
