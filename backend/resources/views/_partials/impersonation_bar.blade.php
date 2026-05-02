@@ -3,20 +3,17 @@
 @endphp
 @if($impersonatorId)
 <div id="impersonation-bar" style="
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 99999;
+border-radius: 1.6rem 1.6rem 0 0;
     background: #c0392b;
     color: #fff;
-    padding: 6px 16px;
+    padding: .6rem 2rem;
     font-size: 13px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
-    box-shadow: 0 2px 8px rgba(0,0,0,.3);
+    gap: 1rem;
+	
+    box-shadow: 0 .2rem .8rem rgba(0,0,0,.3);
 ">
     <span>
         👁 Вы просматриваете сайт от имени пользователя
@@ -39,6 +36,15 @@
     </form>
 </div>
 <style>
-    body { padding-top: 36px !important; }
+.top-section {
+       padding: 15rem 0 1rem!important;
+}	
+@media (max-width: 767px) {
+    .top-section {
+        padding: 20rem 0 2rem!important;
+    }
+}	
+	
+
 </style>
 @endif

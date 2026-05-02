@@ -21,18 +21,22 @@
     <div class="container">
 
         @if(session('status'))
-            <div class="alert alert-success mb-3">{{ session('status') }}</div>
+			<div class="ramka">
+            <div class="alert alert-success">{{ session('status') }}</div>
+			</div>
         @endif
         @if(session('error'))
-            <div class="alert alert-danger mb-3">{{ session('error') }}</div>
+			<div class="ramka">
+            <div class="alert alert-danger">{{ session('error') }}</div>
+			</div>
         @endif
 
-        <div class="ramka mb-3">
-            <h2 class="mb-2">Поиск пользователя</h2>
-            <p class="text-muted mb-3 f-14">Введите имя или email. Опасные действия (платежи, отвязка аккаунтов, удаление) будут заблокированы.</p>
+        <div class="ramka">
+            <h2 class="-mt-05">Поиск пользователя</h2>
+            <p>Введите имя или email. Опасные действия (платежи, отвязка аккаунтов, удаление) будут заблокированы.</p>
 
             {{-- Поиск --}}
-            <div style="position:relative;max-width:480px;" class="mb-3" id="imp-ac-wrap">
+            <div style="position:relative; max-width: 50rem;" class="form mt-2" id="imp-ac-wrap">
                 <input type="text" id="imp-ac-input" autocomplete="off" class="form-control"
                        placeholder="Введите имя или email пользователя…">
                 <div id="imp-ac-dd" class="form-select-dropdown trainer_dd"></div>
@@ -58,13 +62,12 @@
         function esc(s)   { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
         function renderUser(item) {
-            var roleLabel = item.role === 'admin' ? ' [ADMIN]' : (item.role === 'organizer' ? ' [Орг]' : '');
+            var roleLabel = item.role === 'admin' ? ' [Администратор]' : (item.role === 'organizer' ? ' [Организатор]' : '');
             var roleColor = item.role === 'admin' ? 'color:#c0392b' : (item.role === 'organizer' ? 'color:#2980b9' : '');
-            var html = '<div class="ramka mb-2 d-flex fvc" style="gap:12px;">' +
+            var html = '<div class="card mt-2 d-flex fvc" style="gap:12px;">' +
                 '<div style="flex:1">' +
                     '<strong>' + esc(item.label || item.name) + '</strong>' +
-                    '<span style="' + roleColor + ';margin-left:6px;font-size:12px;">' + esc(roleLabel) + '</span><br>' +
-                    '<span class="text-muted f-13">' + esc(item.email || '') + '</span>' +
+                    '<strong class="f-16" style="' + roleColor + ';margin-left:6px;">' + esc(roleLabel) + '</strong><br>' +
                 '</div>';
 
             if (item.role !== 'admin') {
@@ -74,7 +77,7 @@
                     'data-name="' + esc(item.label || item.name) + '">Войти как</button>' +
                 '</form>';
             } else {
-                html += '<span class="text-muted f-13">Запрещено</span>';
+                html += '<span class="text-muted f-16">Запрещено</span>';
             }
 
             html += '</div>';
