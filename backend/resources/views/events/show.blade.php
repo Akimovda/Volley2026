@@ -201,7 +201,10 @@ $hasCoords =
 				.progress-bar {
 				height: 10px;
 				border-radius: 10px;
-				}				
+				}
+				body.dark .level-color-badge {
+				text-shadow: 0 0 8px rgba(255,255,255,.85), 0 0 3px rgba(255,255,255,.6);
+				}
 			</style>
 		</x-slot>
 		

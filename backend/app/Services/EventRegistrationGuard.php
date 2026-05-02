@@ -841,7 +841,7 @@
 
 			$result->data['free_positions'] = $freePositions;
 
-			$result->data['meta'] = [
+			$meta = [
 				'max_players'          => $maxPlayers,
 				'reserve_players_max'  => $reserveMax,
 				'total_capacity'       => $totalCapacity,
@@ -855,6 +855,28 @@
 				'gender_policy'    => $policy,
 				'gender_blocked'   => $genderBlocked
 			];
+
+			// Данные команд для турнира
+			if ((string)($occurrence->event->format ?? '') === 'tournament') {
+				$teamsMax = (int)($occurrence->event->tournament_teams_count ?? 0);
+				$gsSubtype = (string)($occurrence->event->gameSettings?->subtype ?? '');
+				$teamSize  = preg_match('/^(\d+)x\d+$/i', $gsSubtype, $m) ? (int)$m[1] : 2;
+				// Считаем пары/группы по group_key; если нет групп — делим игроков на teamSize
+				$byGroup = \Illuminate\Support\Facades\DB::table('event_registrations')
+					->where('occurrence_id', $occurrence->id)
+					->whereRaw('is_cancelled IS NULL OR is_cancelled = false')
+					->whereNotNull('group_key')
+					->distinct('group_key')
+					->count('group_key');
+				$teamsRegistered = $byGroup > 0
+					? $byGroup
+					: (int) ceil($registeredTotal / max(1, $teamSize));
+				$meta['tournament_teams_max']        = $teamsMax;
+				$meta['tournament_teams_registered'] = $teamsRegistered;
+				$meta['tournament_teams_remaining']  = max(0, $teamsMax - $teamsRegistered);
+			}
+
+			$result->data['meta'] = $meta;
 		}
 		
 		/*
