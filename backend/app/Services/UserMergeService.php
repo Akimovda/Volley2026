@@ -10,13 +10,18 @@ use Illuminate\Support\Facades\Log;
 
 class UserMergeService
 {
-    public function merge(User $primary, User $secondary): void
+    /**
+     * @return array{transferred: int, cancelled_conflicts: array<int, array{event_id:int, title:string, starts_at:string}>}
+     */
+    public function merge(User $primary, User $secondary): array
     {
         if ($primary->id === $secondary->id) {
             throw new \InvalidArgumentException('Нельзя объединить аккаунт с самим собой.');
         }
 
-        DB::transaction(function () use ($primary, $secondary) {
+        $result = ['transferred' => 0, 'cancelled_conflicts' => []];
+
+        DB::transaction(function () use ($primary, $secondary, &$result) {
 
             // 1. Провайдеры — уникальные поля: сначала обнуляем у secondary, потом ставим на primary
             $uniqueProviderFields = ['telegram_id', 'vk_id', 'yandex_id'];
@@ -55,6 +60,33 @@ class UserMergeService
                 ->where('user_id', $primary->id)
                 ->pluck('occurrence_id')
                 ->toArray();
+
+            // Фиксируем конфликтные будущие записи ПЕРЕД отменой
+            $nowUtc = now('UTC');
+            $conflictRows = DB::table('event_registrations as er')
+                ->join('event_occurrences as eo', 'eo.id', '=', 'er.occurrence_id')
+                ->join('events as e', 'e.id', '=', 'er.event_id')
+                ->where('er.user_id', $secondary->id)
+                ->whereIn('er.occurrence_id', $primaryOccurrences)
+                ->whereRaw('er.is_cancelled IS NULL OR er.is_cancelled = false')
+                ->where('eo.starts_at', '>', $nowUtc)
+                ->select('er.occurrence_id', 'er.event_id', 'e.title', 'eo.starts_at', 'eo.timezone')
+                ->get();
+
+            foreach ($conflictRows as $row) {
+                $tz = $row->timezone ?: 'UTC';
+                $result['cancelled_conflicts'][] = [
+                    'event_id'   => $row->event_id,
+                    'title'      => $row->title ?? ('Мероприятие #' . $row->event_id),
+                    'starts_at'  => \Carbon\Carbon::parse($row->starts_at, 'UTC')->setTimezone($tz)->format('d.m.Y H:i'),
+                ];
+            }
+
+            $transferred = DB::table('event_registrations')
+                ->where('user_id', $secondary->id)
+                ->whereNotIn('occurrence_id', $primaryOccurrences)
+                ->whereRaw('is_cancelled IS NULL OR is_cancelled = false');
+            $result['transferred'] = $transferred->count();
 
             DB::table('event_registrations')
                 ->where('user_id', $secondary->id)
@@ -210,8 +242,13 @@ class UserMergeService
 
             DB::table('users')->where('id', $secondary->id)->update(['deleted_at' => now()]);
 
-            Log::info("UserMerge: #{$secondary->id} → #{$primary->id}");
+            Log::info("UserMerge: #{$secondary->id} → #{$primary->id}", [
+                'transferred'         => $result['transferred'],
+                'cancelled_conflicts' => count($result['cancelled_conflicts']),
+            ]);
         });
+
+        return $result;
     }
 
     public function findDuplicates(): array
@@ -254,6 +291,14 @@ class UserMergeService
             $level = ($lastNames->count() === 1) ? 'red' : 'yellow';
             $label = ($level === 'red') ? 'Фамилия + телефон' : 'Только телефон';
 
+            // Конфликты между рекомендованным primary и остальными
+            $conflictsMap = [];
+            foreach ($users as $u) {
+                if ($u->id !== $recommendedPrimaryId) {
+                    $conflictsMap[$u->id] = $this->upcomingConflicts($recommendedPrimaryId, $u->id);
+                }
+            }
+
             $result[] = [
                 'level'               => $level,
                 'label'               => $label,
@@ -261,6 +306,7 @@ class UserMergeService
                 'users'               => $users,
                 'stats'               => $statsMap,
                 'recommended_primary' => $recommendedPrimaryId,
+                'conflicts'           => $conflictsMap,
             ];
         }
 
@@ -272,6 +318,13 @@ class UserMergeService
         $registrations = DB::table('event_registrations')
             ->where('user_id', $userId)
             ->whereRaw('is_cancelled IS NULL OR is_cancelled = false')
+            ->count();
+
+        $upcoming = DB::table('event_registrations as er')
+            ->join('event_occurrences as eo', 'eo.id', '=', 'er.occurrence_id')
+            ->where('er.user_id', $userId)
+            ->whereRaw('er.is_cancelled IS NULL OR er.is_cancelled = false')
+            ->where('eo.starts_at', '>', now('UTC'))
             ->count();
 
         $payments = DB::table('payments')
@@ -286,10 +339,33 @@ class UserMergeService
         $profileComplete = !is_null($user?->profile_completed_at);
 
         return [
-            'registrations'  => $registrations,
-            'payments'       => $payments,
-            'wallet_balance' => (int) $walletBalance,
+            'registrations'    => $registrations,
+            'upcoming'         => $upcoming,
+            'payments'         => $payments,
+            'wallet_balance'   => (int) $walletBalance,
             'profile_complete' => $profileComplete,
         ];
+    }
+
+    /** Возвращает кол-во конфликтующих будущих записей между двумя пользователями */
+    public function upcomingConflicts(int $primaryId, int $secondaryId): int
+    {
+        $primaryOccurrences = DB::table('event_registrations')
+            ->where('user_id', $primaryId)
+            ->whereRaw('is_cancelled IS NULL OR is_cancelled = false')
+            ->pluck('occurrence_id')
+            ->toArray();
+
+        if (empty($primaryOccurrences)) {
+            return 0;
+        }
+
+        return DB::table('event_registrations as er')
+            ->join('event_occurrences as eo', 'eo.id', '=', 'er.occurrence_id')
+            ->where('er.user_id', $secondaryId)
+            ->whereIn('er.occurrence_id', $primaryOccurrences)
+            ->whereRaw('er.is_cancelled IS NULL OR er.is_cancelled = false')
+            ->where('eo.starts_at', '>', now('UTC'))
+            ->count();
     }
 }

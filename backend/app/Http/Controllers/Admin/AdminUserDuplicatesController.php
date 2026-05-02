@@ -38,13 +38,28 @@ class AdminUserDuplicatesController extends Controller
 
         try {
             $merged = [];
+            $totalTransferred = 0;
+            $cancelledEvents  = [];
+
             foreach ($secondaries as $secondary) {
-                $this->mergeService->merge($primary, $secondary);
+                $result = $this->mergeService->merge($primary, $secondary);
                 $merged[] = '#' . $secondary->id;
+                $totalTransferred += $result['transferred'];
+                foreach ($result['cancelled_conflicts'] as $c) {
+                    $cancelledEvents[] = "«{$c['title']}» ({$c['starts_at']})";
+                }
             }
+
             $list = implode(', ', $merged);
-            return redirect()->route('admin.users.duplicates')
-                ->with('status', "✅ Аккаунты {$list} объединены с #{$primary->id}.");
+            $msg  = "✅ Аккаунты {$list} объединены с #{$primary->id}.";
+            if ($totalTransferred > 0) {
+                $msg .= " Перенесено записей: {$totalTransferred}.";
+            }
+            if (!empty($cancelledEvents)) {
+                $msg .= ' ⚠️ Отменены дублирующие записи: ' . implode(', ', $cancelledEvents) . '.';
+            }
+
+            return redirect()->route('admin.users.duplicates')->with('status', $msg);
         } catch (\Throwable $e) {
             return redirect()->back()
                 ->with('error', '❌ Ошибка: ' . $e->getMessage());
