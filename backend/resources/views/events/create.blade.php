@@ -500,7 +500,7 @@ if ($initialStep < 1 || $initialStep > 3) {
 		$('form').on('change', '#direction, #format, #game_subtype, #game_libero_mode, #game_gender_policy', safeRerenderAll);
 		
 		// Скрытие блока бота при командной записи
-		$('form').on('change', '#registration_mode', function() {
+		$('form').on('change', '#registration_mode, #format', function() {
 			if (typeof window.applyAllowRegShowIf === 'function') window.applyAllowRegShowIf();
 		});
 		$(document).ready(function() {

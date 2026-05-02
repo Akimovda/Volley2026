@@ -525,18 +525,24 @@ $fCity     = request('city', '');
 							if (leftEl) leftEl.textContent = String(maxCard);
 							return;
 						}
-						
-						const apiMax       = Number(meta.total_capacity ?? meta.max_players ?? 0) || 0;
-						const effectiveMax = apiMax > 0 ? apiMax : maxCard;
-						let remainingTotal = Number(meta.remaining_total);
-						
-						if (!Number.isFinite(remainingTotal)) {
-							const registeredTotal = Number(meta.registered_total ?? 0) || 0;
-							remainingTotal = Math.max(0, effectiveMax - registeredTotal);
+
+						const isTournament = el.dataset.isTournament === '1';
+						if (isTournament && meta.tournament_teams_max > 0) {
+							const tMax  = Number(meta.tournament_teams_max);
+							const tLeft = Number(meta.tournament_teams_remaining ?? Math.max(0, tMax - Number(meta.tournament_teams_registered ?? 0)));
+							if (leftEl)  leftEl.textContent  = String(tLeft);
+							if (totalEl) totalEl.textContent = String(tMax);
+						} else {
+							const apiMax       = Number(meta.total_capacity ?? meta.max_players ?? 0) || 0;
+							const effectiveMax = apiMax > 0 ? apiMax : maxCard;
+							let remainingTotal = Number(meta.remaining_total);
+							if (!Number.isFinite(remainingTotal)) {
+								const registeredTotal = Number(meta.registered_total ?? 0) || 0;
+								remainingTotal = Math.max(0, effectiveMax - registeredTotal);
+							}
+							if (leftEl)  leftEl.textContent  = String(remainingTotal);
+							if (totalEl) totalEl.textContent = String(effectiveMax);
 						}
-						
-						if (leftEl)  leftEl.textContent  = String(remainingTotal);
-						if (totalEl) totalEl.textContent = String(effectiveMax);
 					} catch (e) {}
 				}
 				

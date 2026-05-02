@@ -48,11 +48,22 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 		$coverUrl = $event ? $event->getFirstMediaUrl('cover') : '';
 		$gs = $event?->gameSettings ?? null;
 		$regEnabled = (bool) data_get($event, 'allow_registration', false);
-		
+
+		$isTournamentFmt  = ($fmt === 'tournament');
+		$tournamentTeamsMax = $isTournamentFmt ? (int)($event->tournament_teams_count ?? 0) : 0;
+		// Размер команды из subtype: '2x2' → 2, '4x4' → 4 и т.д.
+		$gsSubtype = (string)($gs?->subtype ?? '');
+		$teamSizeForTmnt  = ($isTournamentFmt && preg_match('/^(\d+)x\d+$/i', $gsSubtype, $m)) ? (int)$m[1] : 2;
+
 		$maxPlayersCard = (int) (data_get($occ, 'max_players') ?? 0);
 		if ($maxPlayersCard <= 0) $maxPlayersCard = (int) (data_get($gs, 'max_players') ?? 0);
 		if ($maxPlayersCard <= 0) $maxPlayersCard = (int) (data_get($event, 'max_players') ?? 0);
 		$maxPlayersCard += (int) (data_get($gs, 'reserve_players_max') ?? 0);
+
+		// Для турнира используем количество команд, а не игроков
+		if ($isTournamentFmt && $tournamentTeamsMax > 0) {
+			$maxPlayersCard = $tournamentTeamsMax;
+		}
 
 		$showSeatLine = $maxPlayersCard > 0;
 			
@@ -258,12 +269,17 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 								data-reg-not-started="{{ $regNotStarted ? '1' : '0' }}"
 								data-reg-closed="{{ $regClosed ? '1' : '0' }}"
 								data-max-players="{{ (int)$maxPlayersCard }}"
+								data-is-tournament="{{ $isTournamentFmt ? '1' : '0' }}"
+								data-tournament-team-size="{{ $teamSizeForTmnt }}"
 								>
 									<div>
 										<span class="b-600" data-left>{{ (int)$maxPlayersCard }}</span>
 										<span class="text-muted">из</span>
 										<span class="b-600" data-total>{{ (int)$maxPlayersCard }}</span>
-									</div>	
+										@if($isTournamentFmt)
+										<span class="text-muted" data-seat-unit> команд</span>
+										@endif
+									</div>
 								</div>
 								@elseif($regEnabled)
 								Лимит не задан

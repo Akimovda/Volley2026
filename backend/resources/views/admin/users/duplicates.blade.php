@@ -155,6 +155,9 @@
                         @if($stats[$primary->id]['wallet_balance'] > 0)
                             · Кошелёк: <strong>{{ number_format($stats[$primary->id]['wallet_balance'] / 100, 0, '.', ' ') }} ₽</strong>
                         @endif
+                        @if(($stats[$primary->id]['upcoming'] ?? 0) > 0)
+                            <br><span style="color:#0d6efd;">📅 Предстоящих: <strong>{{ $stats[$primary->id]['upcoming'] }}</strong></span>
+                        @endif
                         <br><span style="font-size:1.2rem;color:#9ca3af;">с {{ $primary->created_at->format('d.m.Y') }}</span>
                     </div>
                 </div>
@@ -189,6 +192,13 @@
                         Платежей: <strong>{{ $stats[$sec->id]['payments'] }}</strong>
                         @if($stats[$sec->id]['wallet_balance'] > 0)
                             · Кошелёк: <strong>{{ number_format($stats[$sec->id]['wallet_balance'] / 100, 0, '.', ' ') }} ₽</strong>
+                        @endif
+                        @if(($stats[$sec->id]['upcoming'] ?? 0) > 0)
+                            <br><span style="color:#0d6efd;">📅 Предстоящих: <strong>{{ $stats[$sec->id]['upcoming'] }}</strong></span>
+                        @endif
+                        @php $conflicts = $dup['conflicts'][$sec->id] ?? 0; @endphp
+                        @if($conflicts > 0)
+                            <br><span style="color:#dc2626;">⚠️ Конфликт с осн.: <strong>{{ $conflicts }}</strong> зап. будут отменены</span>
                         @endif
                         <br><span style="font-size:1.2rem;color:#9ca3af;">с {{ $sec->created_at->format('d.m.Y') }}</span>
                     </div>
