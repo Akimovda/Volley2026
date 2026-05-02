@@ -11,6 +11,7 @@ class TournamentSeasonEvent extends Model
         'season_id',
         'league_id',
         'event_id',
+        'occurrence_id',
         'round_number',
         'status',
     ];
