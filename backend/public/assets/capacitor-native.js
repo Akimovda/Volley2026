@@ -143,6 +143,25 @@
         }
     });
 
+    // ─── OAuth Universal Link handler ────────────────────────────────────────
+    // После Telegram/VK/Yandex OAuth в системном браузере / Telegram app
+    // callback-URL приходит как Universal Link → Capacitor стреляет appUrlOpen.
+    // Без этого листенера WebView остаётся на oauth.telegram.org (зависание).
+
+    if (isCapacitor && Plugins.App) {
+        Plugins.App.addListener('appUrlOpen', function (data) {
+            if (!data || !data.url) return;
+            var url = data.url;
+            var oauthPaths = ['/auth/telegram/callback', '/auth/vk/callback', '/auth/yandex/callback'];
+            for (var i = 0; i < oauthPaths.length; i++) {
+                if (url.indexOf(oauthPaths[i]) !== -1) {
+                    window.location.href = url;
+                    return;
+                }
+            }
+        });
+    }
+
     // ─── Pull-to-refresh ─────────────────────────────────────────────────────
 
     document.addEventListener('pull-to-refresh', function () {
