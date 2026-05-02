@@ -143,15 +143,50 @@
         }
     });
 
-    // ─── OAuth: открываем в Browser (SFSafariViewController), не в WebView ──────
-    // Если WebView уйдёт на oauth.telegram.org — Capacitor JS bridge там недоступен
-    // и appUrlOpen не может быть доставлен обратно. Решение: открывать OAuth через
-    // Plugins.Browser (SFSafariViewController), WebView остаётся на нашем домене.
-    // Когда callback приходит как Universal Link, iOS закрывает SFSafari и стреляет
-    // appUrlOpen — уже в нашем живом WebView-контексте.
+    // ─── OAuth: открываем в Browser (SFSafariViewController) + polling fallback ──
+    // SFSafariViewController не всегда передаёт Universal Link обратно в приложение
+    // (appUrlOpen может не сработать). Поэтому параллельно используем polling:
+    // генерируем tma_client_id, передаём в OAuth URL → сервер сохраняет в Cache →
+    // WebView опрашивает /auth/tma-status каждые 2 сек → обменивает токен на сессию.
 
     if (isCapacitor) {
-        // appUrlOpen: закрыть SFSafari (если открыт) и перейти на callback URL
+        var oauthPollTimer = null;
+
+        function stopCapOAuthPolling() {
+            if (oauthPollTimer) { clearInterval(oauthPollTimer); oauthPollTimer = null; }
+            sessionStorage.removeItem('cap_oauth_client_id');
+        }
+
+        function exchangeCapOAuthToken(token) {
+            stopCapOAuthPolling();
+            var csrf = (document.querySelector('meta[name="csrf-token"]') || {}).content || '';
+            fetch('/auth/tma-exchange', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf },
+                credentials: 'same-origin',
+                body: JSON.stringify({ token: token })
+            })
+            .then(function (r) { return r.json(); })
+            .then(function (data) { if (data.ok) window.location.href = data.redirect || '/events'; })
+            .catch(function () {});
+        }
+
+        function startCapOAuthPolling(clientId) {
+            if (oauthPollTimer) clearInterval(oauthPollTimer);
+            var count = 0;
+            oauthPollTimer = setInterval(function () {
+                if (++count > 90) { stopCapOAuthPolling(); return; } // 3 мин максимум
+                fetch('/auth/tma-status?client_id=' + encodeURIComponent(clientId), {
+                    credentials: 'same-origin',
+                    headers: { 'Accept': 'application/json' }
+                })
+                .then(function (r) { return r.json(); })
+                .then(function (data) { if (data.ready && data.token) exchangeCapOAuthToken(data.token); })
+                .catch(function () {});
+            }, 2000);
+        }
+
+        // appUrlOpen: если Universal Links всё же сработали — используем быстрый путь
         if (Plugins.App) {
             Plugins.App.addListener('appUrlOpen', function (data) {
                 if (!data || !data.url) return;
@@ -159,9 +194,8 @@
                 var oauthPaths = ['/auth/telegram/callback', '/auth/vk/callback', '/auth/yandex/callback'];
                 for (var i = 0; i < oauthPaths.length; i++) {
                     if (url.indexOf(oauthPaths[i]) !== -1) {
-                        if (Plugins.Browser) {
-                            Plugins.Browser.close().catch(function () {});
-                        }
+                        stopCapOAuthPolling(); // не нужен — идём напрямую
+                        if (Plugins.Browser) Plugins.Browser.close().catch(function () {});
                         window.location.href = url;
                         return;
                     }
@@ -169,21 +203,34 @@
             });
         }
 
-        // Перехватить клики на OAuth-кнопки — открывать через SFSafari если доступен
+        // Перехватить клики на OAuth-кнопки: открыть через SFSafari + начать polling
         document.addEventListener('click', function (e) {
             if (!Plugins.Browser) return;
             var target = e.target.closest('[data-href]');
             if (!target) return;
             var href = target.getAttribute('data-href') || '';
-            if (!href) return;
-            // Только /auth/ ссылки (OAuth редиректы)
-            if (href.indexOf('/auth/') === -1) return;
+            if (!href || href.indexOf('/auth/') === -1) return;
             e.preventDefault();
             e.stopImmediatePropagation();
-            // Резолвим относительный URL в абсолютный
-            var absUrl = href.indexOf('http') === 0 ? href : window.location.origin + href;
+
+            var clientId = (Math.random().toString(36) + Date.now().toString(36)).slice(2);
+            sessionStorage.setItem('cap_oauth_client_id', clientId);
+
+            var sep = href.indexOf('?') === -1 ? '?' : '&';
+            var fullHref = href + sep + 'tma_client_id=' + encodeURIComponent(clientId);
+            var absUrl = fullHref.indexOf('http') === 0 ? fullHref : window.location.origin + fullHref;
             Plugins.Browser.open({ url: absUrl });
+
+            startCapOAuthPolling(clientId);
         }, true); // capture phase
+
+        // browserFinished: пользователь вручную закрыл SFSafari — проверяем ещё раз
+        if (Plugins.Browser) {
+            Plugins.Browser.addListener('browserFinished', function () {
+                var savedId = sessionStorage.getItem('cap_oauth_client_id');
+                if (savedId && !oauthPollTimer) startCapOAuthPolling(savedId);
+            });
+        }
     }
 
     // ─── Pull-to-refresh ─────────────────────────────────────────────────────
