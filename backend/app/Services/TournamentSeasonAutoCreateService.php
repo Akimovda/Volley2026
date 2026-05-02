@@ -59,7 +59,7 @@ final class TournamentSeasonAutoCreateService
         $direction = $event->direction ?? 'classic';
 
         // 1. League (верхнеуровневая сущность)
-        $leagueName = trim((string) ($data['league_name'] ?? $event->title));
+        $leagueName = trim((string) ($data['new_league_name'] ?? $data['league_name'] ?? $event->title));
         $leagueSlug = Str::slug($leagueName);
         if ($leagueSlug === '') $leagueSlug = 'league';
         $baseSlug = $leagueSlug;
@@ -195,6 +195,26 @@ final class TournamentSeasonAutoCreateService
         ]);
 
         return $season;
+    }
+
+    /**
+     * Синхронизировать SeasonEvents для события после expansion occurrences.
+     * Вызывается из OccurrenceExpansionService если event — tournament с season_id.
+     */
+    public function syncSeasonEventsAfterExpand(Event $event): void
+    {
+        if ($event->format !== 'tournament' || !$event->season_id) {
+            return;
+        }
+
+        $season  = TournamentSeason::find($event->season_id);
+        $league  = TournamentLeague::where('season_id', $event->season_id)->first();
+
+        if (!$season || !$league) {
+            return;
+        }
+
+        $this->createSeasonEventsForOccurrences($event, $season, $league);
     }
 
     /**
