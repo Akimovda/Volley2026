@@ -795,51 +795,44 @@
 			var tg = window.Telegram && window.Telegram.WebApp;
 			if (!tg || !tg.initData) return;
 
-			function interceptTgBtn(btn) {
-				if (!btn) return;
-				btn.removeAttribute('data-href');
-				btn.removeAttribute('href');
-				btn.style.cursor = 'pointer';
-				btn.addEventListener('click', function(e) {
-					e.preventDefault();
-					e.stopPropagation();
-					var csrfMeta = document.querySelector('meta[name="csrf-token"]');
-					var csrf = csrfMeta ? csrfMeta.content : '';
-					btn.style.opacity = '0.6';
-					btn.style.pointerEvents = 'none';
-					fetch('/auth/telegram/webapp', {
-						method: 'POST',
-						credentials: 'same-origin',
-						headers: {
-							'Content-Type': 'application/json',
-							'Accept': 'application/json',
-							'X-CSRF-TOKEN': csrf
-						},
-						body: JSON.stringify({
-							init_data: tg.initData,
-							return_to: window.location.href
-						})
+			function doTgWebappLogin(btn) {
+				var csrfMeta = document.querySelector('meta[name="csrf-token"]');
+				var csrf = csrfMeta ? csrfMeta.content : '';
+				if (btn) { btn.style.opacity = '0.6'; btn.style.pointerEvents = 'none'; }
+				fetch('/auth/telegram/webapp', {
+					method: 'POST',
+					credentials: 'same-origin',
+					headers: {
+						'Content-Type': 'application/json',
+						'Accept': 'application/json',
+						'X-CSRF-TOKEN': csrf
+					},
+					body: JSON.stringify({
+						init_data: tg.initData,
+						return_to: window.location.href
 					})
-					.then(function(r) { return r.json(); })
-					.then(function(data) {
-						if (data.ok && data.redirect) {
-							window.location.href = data.redirect;
-						} else {
-							btn.style.opacity = '';
-							btn.style.pointerEvents = '';
-							alert('Ошибка входа: ' + (data.error || 'неизвестная ошибка'));
-						}
-					})
-					.catch(function() {
-						btn.style.opacity = '';
-						btn.style.pointerEvents = '';
-						alert('Ошибка соединения');
-					});
+				})
+				.then(function(r) { return r.json(); })
+				.then(function(data) {
+					if (data.ok && data.redirect) {
+						window.location.href = data.redirect;
+					} else {
+						if (btn) { btn.style.opacity = ''; btn.style.pointerEvents = ''; }
+						alert('Ошибка входа: ' + (data.error || 'неизвестная ошибка'));
+					}
+				})
+				.catch(function() {
+					if (btn) { btn.style.opacity = ''; btn.style.pointerEvents = ''; }
+					alert('Ошибка соединения');
 				});
 			}
 
-			document.querySelectorAll('.auth-btn-telegram').forEach(function(btn) {
-				interceptTgBtn(btn);
+			// jQuery уже навесил data-href обработчик на .auth-btn-telegram — снимаем его
+			$(function() {
+				$('.auth-btn-telegram').off('click').on('click', function(e) {
+					e.preventDefault();
+					doTgWebappLogin(this);
+				});
 			});
 		})();
 		</script>
