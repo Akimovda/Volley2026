@@ -97,6 +97,11 @@ class TelegramAuthController extends Controller
         $request->session()->put('telegram_oidc_verifier', $codeVerifier);
         $request->session()->put('oauth_intent', $intent);
 
+        // Capacitor/TMA: запоминаем client_id для polling-механизма
+        if ($request->filled('tma_client_id')) {
+            $request->session()->put('oauth_tma_client_id', (string) $request->query('tma_client_id'));
+        }
+
         // Резервное хранилище state в Cache (10 мин) — на случай если сессионная кука
         // не вернётся при cross-domain redirect (Telegram WebView, системный браузер).
         Cache::put("tg_oidc_{$state}", [
@@ -222,7 +227,8 @@ class TelegramAuthController extends Controller
             'intent'   => $intent,
         ]);
 
-        return $this->processAuth($request, $tgId, $name, $username, $photoUrl, $intent, $returnTo);
+        $tmaClientId = $request->session()->pull('oauth_tma_client_id');
+        return $this->processAuth($request, $tgId, $name, $username, $photoUrl, $intent, $returnTo, $tmaClientId);
     }
 
     /* ── JWT validation ── */
@@ -250,7 +256,7 @@ class TelegramAuthController extends Controller
 
     /* ── Common auth logic (shared between OIDC and legacy) ── */
 
-    private function processAuth(Request $request, string $tgId, string $name, ?string $username, ?string $photoUrl, string $intent, string $returnTo)
+    private function processAuth(Request $request, string $tgId, string $name, ?string $username, ?string $photoUrl, string $intent, string $returnTo, ?string $tmaClientId = null)
     {
         $request->session()->forget('oauth_provider');
 
@@ -333,6 +339,15 @@ class TelegramAuthController extends Controller
 
         $request->session()->put('auth_provider', 'telegram');
         $request->session()->put('auth_provider_id', $tgId);
+
+        // Capacitor/TMA polling: сигнализируем о завершении авторизации
+        if ($tmaClientId) {
+            $redirectUrl = $isNewUser ? route('profile.complete') : $returnTo;
+            $token = Str::random(40);
+            Cache::put("tma_auth_token_{$token}", ['user_id' => $user->id, 'redirect' => $redirectUrl], now()->addMinutes(5));
+            Cache::put("tma_pending_{$tmaClientId}", ['token' => $token], now()->addMinutes(5));
+            return view('auth.tma-oauth-done');
+        }
 
         if ($isNewUser) {
             return redirect()->route('profile.complete')
@@ -480,8 +495,9 @@ class TelegramAuthController extends Controller
         $username = $tgData['username'] ?? null;
         $photoUrl = $tgData['photo_url'] ?? null;
         $intent   = Auth::check() ? 'link' : 'login';
+        $tmaClientId = $request->session()->pull('oauth_tma_client_id');
 
-        return $this->processAuth($request, $tgId, $name, $username, $photoUrl, $intent, $returnTo);
+        return $this->processAuth($request, $tgId, $name, $username, $photoUrl, $intent, $returnTo, $tmaClientId);
     }
 
     private function isLegacyHashValid(array $data): bool
