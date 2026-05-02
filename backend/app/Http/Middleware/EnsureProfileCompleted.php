@@ -30,8 +30,8 @@ class EnsureProfileCompleted
             return $next($request);
         }
 
-        // Боты, тест-аккаунты, admins — не трогаем
-        if ($user->is_bot || $user->is_test || $user->isAdmin()) {
+        // Боты, тест-аккаунты, admins, режим impersonation — не трогаем
+        if ($user->is_bot || $user->is_test || $user->isAdmin() || $request->session()->has('impersonator_id')) {
             return $next($request);
         }
 
