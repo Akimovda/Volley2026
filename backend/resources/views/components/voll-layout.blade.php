@@ -968,7 +968,11 @@
 				}
 			}
 
-			document.addEventListener('DOMContentLoaded', function() { offerBiometricSetup(); });
+			if (document.readyState === 'loading') {
+				document.addEventListener('DOMContentLoaded', function() { offerBiometricSetup(); });
+			} else {
+				setTimeout(function() { offerBiometricSetup(); }, 0);
+			}
 		})();
 		</script>
 		@endauth
