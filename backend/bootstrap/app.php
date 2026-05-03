@@ -25,6 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'track.view'          => \App\Http\Middleware\TrackPageView::class,
             'profile.completed'   => \App\Http\Middleware\EnsureProfileCompleted::class,
             'block.impersonation' => \App\Http\Middleware\BlockInImpersonation::class,
+            'no-store-html'       => \App\Http\Middleware\NoStoreHtml::class,
         ]);
         $middleware->appendToGroup('web', \App\Http\Middleware\EnsureProfileCompleted::class);
         $middleware->appendToGroup('web', \App\Http\Middleware\SavePushToken::class);
