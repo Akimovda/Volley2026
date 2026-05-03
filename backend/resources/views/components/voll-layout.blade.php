@@ -817,8 +817,7 @@
 		{{-- Face ID: вход (только для неавторизованных в приложении) --}}
 		<script>
 		(function() {
-			if (!navigator.userAgent.includes('VolleyPlayApp')) return;
-			if (!window.Capacitor) return;
+			if (!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform())) return;
 			if (document.querySelector('meta[name="user-authenticated"]')) return;
 
 			var NativeBiometric = window.Capacitor.Plugins.NativeBiometric;
@@ -841,7 +840,7 @@
 
 				try {
 					var avail = await NativeBiometric.isAvailable();
-					if (!avail.isAvailable) return;
+					if (!avail.isAvailable && avail.biometryType === 0) return;
 				} catch(e) { return; }
 
 				var creds;
@@ -921,8 +920,7 @@
 		@auth
 		<script>
 		(function() {
-			if (!navigator.userAgent.includes('VolleyPlayApp')) return;
-			if (!window.Capacitor) return;
+			if (!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform())) return;
 
 			var NativeBiometric = window.Capacitor.Plugins.NativeBiometric;
 			if (!NativeBiometric) return;
@@ -930,7 +928,7 @@
 			async function offerBiometricSetup() {
 				try {
 					var avail = await NativeBiometric.isAvailable();
-					if (!avail.isAvailable) return;
+					if (!avail.isAvailable && avail.biometryType === 0) return;
 
 					try {
 						var creds = await NativeBiometric.getCredentials({ server: 'volleyplay.club' });
