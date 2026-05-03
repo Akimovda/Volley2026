@@ -362,13 +362,17 @@ $hasCoords =
 
 				if (calBtn) {
 					calBtn.addEventListener('click', function () {
-						if (window.VolleyNative && window.VolleyNative.isApp) {
-							window.VolleyNative.addToCalendar({
-								title: @json($event->title ?? ''),
-								location: @json($calLoc),
-								notes: @json($calNotes),
-								startDate: @json($calStart),
-								endDate: @json($calEnd)
+						if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.VolleyCalendar) {
+							window.Capacitor.Plugins.VolleyCalendar.addEvent({
+								title: @json($event->title ?? 'Волейбол'),
+								location: @json($event->location->name ?? ''),
+								notes: @json(strip_tags($event->description ?? '')),
+								startDate: @json($event->starts_at?->toIso8601String() ?? ''),
+								endDate: @json($event->ends_at?->toIso8601String() ?? '')
+							}).then(function(r) {
+								swal('Готово', 'Событие добавлено в календарь', 'success');
+							}).catch(function(e) {
+								console.log('[Calendar] error:', e);
 							});
 						} else {
 							var title    = @json($event->title ?? '');
