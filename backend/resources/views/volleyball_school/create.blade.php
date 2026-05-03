@@ -27,7 +27,7 @@ $organizers = $isAdmin
 	</x-slot>
 	
     <x-slot name="style">
-    <link rel="stylesheet" type="text/css" href="/assets/trix.css?v={{ time() }}">
+    <link rel="stylesheet" type="text/css" href="@asset_v('assets/trix.css')">
         <link href="/assets/org.css" rel="stylesheet">
         <style>
 
@@ -35,7 +35,7 @@ $organizers = $isAdmin
 	</x-slot>
 	
     <x-slot name="script">
-    <script src="/assets/trix.js?v={{ time() }}"></script>
+    <script src="@asset_v('assets/trix.js')"></script>
         <script src="/assets/city.js"></script>
         <script src="/assets/org.js?v=2"></script>
         <script>

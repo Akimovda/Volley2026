@@ -21,9 +21,9 @@
 		@if(isset($canonical))
         <link rel="canonical" href="{{ trim($canonical) }}">
 		@endif
-		<link href="/assets/lib.css?v={{ time() }}" rel="stylesheet">
+		<link href="@asset_v('assets/lib.css')" rel="stylesheet">
 		@livewireStyles
-		<link href="/assets/style.css?v={{ time() }}" rel="stylesheet">
+		<link href="@asset_v('assets/style.css')" rel="stylesheet">
 		@if(isset($style))
         {{ $style }}
 		@endif
@@ -572,10 +572,10 @@
 		</footer>	
 		
 		
-		<script src="/assets/lib.js?v={{ time() }}"></script>    
+		<script src="@asset_v('assets/lib.js')"></script>
 		@livewireScripts
-		<script src="/assets/script.js?v={{ time() }}"></script>
-		<script src="/assets/capacitor-native.js?v={{ filemtime(public_path('assets/capacitor-native.js')) }}"></script>
+		<script src="@asset_v('assets/script.js')"></script>
+		<script src="@asset_v('assets/capacitor-native.js')"></script>
 
 		{{-- Telegram Mini App: авторизация (initData для Telegram, polling+token для VK/Яндекс) --}}
 		<script>

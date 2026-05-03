@@ -119,7 +119,7 @@
     <x-slot name="t_description">Изменения применяются только к этой дате. Поля предзаполнены значениями из серии — при сохранении они становятся override.</x-slot>
 
     <x-slot name="style">
-    <link rel="stylesheet" type="text/css" href="/assets/trix.css?v={{ time() }}">
+    <link rel="stylesheet" type="text/css" href="@asset_v('assets/trix.css')">
     </x-slot>
 
     <div class="container form">
@@ -172,8 +172,8 @@
     </div>
 
     <x-slot name="script">
-    <script src="/js/occurrence-edit.js?v={{ time() }}"></script>
-    <script src="/assets/trix.js?v={{ time() }}"></script>
+    <script src="@asset_v('js/occurrence-edit.js')"></script>
+    <script src="@asset_v('assets/trix.js')"></script>
     <script>
     document.addEventListener('DOMContentLoaded', function() {
         // ===== Часы/минуты → скрытое поле минут =====

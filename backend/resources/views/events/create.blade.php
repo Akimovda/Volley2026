@@ -387,7 +387,7 @@ if ($initialStep < 1 || $initialStep > 3) {
 	</script>
 	{{-- Page JS --}}
 	<script src="/js/config/volleyball-config.js"></script>
-	<script src="/js/events-create.js?v={{ time() }}"></script>
+	<script src="@asset_v('js/events-create.js')"></script>
 	
 	<script>
 		let rerenderTimer = null;
