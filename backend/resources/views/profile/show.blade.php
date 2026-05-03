@@ -535,6 +535,7 @@
 									</div>
 								</div>
 							</div>
+							@unless(str_contains(request()->userAgent() ?? '', 'Android'))
 							{{-- Apple card --}}
 							<div class="col-6 col-md-3 col-lg-6 col-xl-4">
 								<div class="card">
@@ -575,6 +576,7 @@
 									</div>
 								</div>
 							</div>
+							@endunless
 							{{-- MAX card (placeholder) --}}
 							<div class="col-6 col-md-3 col-lg-6 col-xl-4">
 								<div class="card">

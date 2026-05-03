@@ -301,6 +301,7 @@
 					@endphp
 					
 					<div class="social-auth">
+						@unless(str_contains(request()->userAgent() ?? '', 'Android'))
 						<!-- Кнопка Apple (обязательно первой по требованию Apple) -->
 						<a href="{{ route('auth.apple.redirect', ['return' => $returnUrl]) }}" class="auth-btn auth-btn-apple">
 							<span class="auth-icon-circle">
@@ -310,6 +311,7 @@
 							</span>
 							<span class="auth-text">Войти через Apple</span>
 						</a>
+						@endunless
 
 						<!-- Кнопка VK -->
 						<div data-href="{{ route('auth.vk.redirect', ['return' => $returnUrl]) }}" class="auth-btn auth-btn-vk">
