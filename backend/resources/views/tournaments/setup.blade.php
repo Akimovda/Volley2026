@@ -1161,7 +1161,7 @@
 					</div>
 					<div>
 						<label class="f-13 b-600 mb-1 d-block">Выходят</label>
-						<input name="advance_per_group" type="number" value="{{ $stage->cfg('advance_count', 2) }}" min="1" max="8" style="width:60px">
+						<input name="advance_per_group" type="number" value="{{ $stage->cfg('advance_count', 2) }}" min="1" max="8" style="width:120px">
 					</div>
 					<button type="submit" class="btn btn-primary">Продвинуть</button>
 				</form>

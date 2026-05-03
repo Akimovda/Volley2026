@@ -345,6 +345,19 @@ class TournamentStandingsService
         return 0;
     }
 
+    /**
+     * Получить топ-N команд из группы по рангу (для продвижения в плей-офф).
+     */
+    public function getAdvancingTeams(int $stageId, int $groupId, int $count): \Illuminate\Support\Collection
+    {
+        return \App\Models\TournamentStanding::where('stage_id', $stageId)
+            ->where('group_id', $groupId)
+            ->where('rank', '>', 0)
+            ->orderBy('rank')
+            ->limit($count)
+            ->get();
+    }
+
     public function recalculateStage(TournamentStage $stage): void
     {
         $groups = $stage->groups;
