@@ -899,10 +899,19 @@
 				});
 			});
 
-			// if (!sessionStorage.getItem('biometric_checked')) {
-			// 	sessionStorage.setItem('biometric_checked', 'true');
-			// 	setTimeout(function() { tryBiometricLogin(); }, 1500);
-			// }
+			function _initTryBiometric() {
+				if (!sessionStorage.getItem('biometric_checked')) {
+					sessionStorage.setItem('biometric_checked', 'true');
+					// 1500мс — Capacitor-плагины успевают инициализироваться до вызова
+					setTimeout(function() { tryBiometricLogin(); }, 1500);
+				}
+			}
+
+			if (document.readyState === 'loading') {
+				document.addEventListener('DOMContentLoaded', _initTryBiometric);
+			} else {
+				setTimeout(_initTryBiometric, 0);
+			}
 		})();
 		</script>
 
