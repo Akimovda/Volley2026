@@ -249,15 +249,15 @@ Route::get('/user/profile', [\App\Http\Controllers\UserProfileController::class,
     ->name('league.reserve.confirm');
 
 Route::get('/auth/telegram/redirect', [TelegramAuthController::class, 'redirect'])->name('auth.telegram.redirect');
-Route::get('/auth/telegram/callback', [TelegramAuthController::class, 'callback'])->name('auth.telegram.callback');
-Route::post('/auth/telegram/webapp', [TelegramAuthController::class, 'webapp'])->name('auth.telegram.webapp');
+Route::get('/auth/telegram/callback', [TelegramAuthController::class, 'callback'])->middleware('no-store-html')->name('auth.telegram.callback');
+Route::post('/auth/telegram/webapp', [TelegramAuthController::class, 'webapp'])->middleware('no-store-html')->name('auth.telegram.webapp');
 Route::post('/auth/telegram/miniapp', [TelegramAuthController::class, 'miniapp'])->name('auth.telegram.miniapp');
 Route::get('/auth/tma-status', [TmaAuthController::class, 'status'])->name('auth.tma.status');
 Route::post('/auth/tma-exchange', [TmaAuthController::class, 'exchange'])->name('auth.tma.exchange');
-	Route::get('/auth/vk/redirect', [VkAuthController::class, 'redirect'])->name('auth.vk.redirect');
-	Route::get('/auth/vk/callback', [VkAuthController::class, 'callback'])->name('auth.vk.callback');
-	Route::get('/auth/yandex/redirect', [YandexAuthController::class, 'redirect'])->name('auth.yandex.redirect');
-	Route::get('/auth/yandex/callback', [YandexAuthController::class, 'callback'])->name('auth.yandex.callback');
+	Route::get('/auth/vk/redirect', [VkAuthController::class, 'redirect'])->middleware('no-store-html')->name('auth.vk.redirect');
+	Route::get('/auth/vk/callback', [VkAuthController::class, 'callback'])->middleware('no-store-html')->name('auth.vk.callback');
+	Route::get('/auth/yandex/redirect', [YandexAuthController::class, 'redirect'])->middleware('no-store-html')->name('auth.yandex.redirect');
+	Route::get('/auth/yandex/callback', [YandexAuthController::class, 'callback'])->middleware('no-store-html')->name('auth.yandex.callback');
 	Route::get('/auth/apple/redirect', [\App\Http\Controllers\Auth\AppleAuthController::class, 'redirect'])->name('auth.apple.redirect');
 	Route::post('/auth/apple/callback', [\App\Http\Controllers\Auth\AppleAuthController::class, 'callback'])->name('auth.apple.callback');
 	Route::post('/auth/biometric-login', [\App\Http\Controllers\Api\BiometricController::class, 'webLogin'])->name('auth.biometric.login');
@@ -462,6 +462,7 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
 		
 		// create wizard
 		Route::get('/events/create', [EventCreateController::class, 'choose'])
+        ->middleware('no-store-html')
         ->name('events.create');
 		
 		// store event
@@ -470,6 +471,7 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
 		
 		// event management
 		Route::get('/events/create/event_management', [EventManagementController::class, 'index'])
+        ->middleware('no-store-html')
         ->name('events.create.event_management');
 		
 		// GET без /edit — редирект на edit-форму (чтобы не ловить 405 на PUT-роуте)
@@ -478,6 +480,7 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
 		})->whereNumber('event');
 
 		Route::get('/events/create/event_management/{event}/edit', [EventManagementController::class, 'edit'])
+        ->middleware('no-store-html')
         ->name('events.event_management.edit');
 		
 		Route::put('/events/create/event_management/{event}', [EventManagementController::class, 'update'])
@@ -561,6 +564,7 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
 	
 	Route::middleware(['auth'])->group(function () {
 		Route::get('/profile/complete', [\App\Http\Controllers\ProfileCompletionController::class, 'show'])
+        ->middleware('no-store-html')
         ->name('profile.complete');
 		
 		Route::post('/profile/extra', [\App\Http\Controllers\ProfileExtraController::class, 'update'])
