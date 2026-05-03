@@ -46,6 +46,12 @@
     <priority>0.5</priority>
   </url>
   <url>
+    <loc>https://volley-bot.store/events/367</loc>
+    <lastmod>2026-05-02T07:28:54+00:00</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://volley-bot.store/events/366</loc>
     <lastmod>2026-04-27T11:15:41+00:00</lastmod>
     <changefreq>daily</changefreq>
@@ -540,6 +546,18 @@
   <url>
     <loc>https://volley-bot.store/s/2025-2026</loc>
     <lastmod>2026-04-27T17:55:32+00:00</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://volley-bot.store/s/pliazka-turnir-sezon-t14aDA</loc>
+    <lastmod>2026-05-02T06:12:11+00:00</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://volley-bot.store/s/2026-dOcHT4</loc>
+    <lastmod>2026-05-02T07:28:54+00:00</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
