@@ -1,0 +1,10 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "club.volleyplay.app",
+    "sha256_cert_fingerprints": [
+      "BC:47:E5:01:F0:CB:03:9B:7A:67:17:A0:87:2B:35:36:B8:C6:64:E9:4F:30:C3:C8:B9:49:94:33:6D:39:99:D4"
+    ]
+  }
+}]

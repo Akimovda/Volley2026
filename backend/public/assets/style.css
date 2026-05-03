@@ -2529,6 +2529,7 @@ body.dark .theme-icon {
 .fix-header-menu.open .auth-btn:nth-child(1) { animation-delay: 0.1s; }
 .fix-header-menu.open .auth-btn:nth-child(2) { animation-delay: 0.2s; }
 .fix-header-menu.open .auth-btn:nth-child(3) { animation-delay: 0.3s; }
+.fix-header-menu.open .auth-btn:nth-child(4) { animation-delay: 0.4s; }
 @keyframes fadeInUp {
 	from {
 		opacity: 0;
@@ -2707,30 +2708,7 @@ body.dark  .auth-btn-telegram-widget-up {
 	}
 */
 /* Apple */
-.auth-btn-apple {
-    border-color: rgba(0, 0, 0, 0.15);
-    background-color: #1a1a1a;
-    color: #ffffff;
-}
-.auth-btn-apple:hover {
-    background-color: #000000;
-    border-color: #000000;
-    color: #ffffff;
-}
-.auth-btn-apple .auth-icon-circle {
-    background-color: rgba(255, 255, 255, 0.15);
-}
-body.dark .auth-btn-apple {
-    background-color: #ffffff;
-    border-color: #ffffff;
-    color: #000000;
-}
-body.dark .auth-btn-apple .auth-icon-circle {
-    background-color: rgba(0, 0, 0, 0.1);
-}
-body.dark .auth-btn-apple svg {
-    color: #000000;
-}
+
 .btn-apple {
     background-color: #1a1a1a;
     color: #ffffff;
@@ -2741,7 +2719,22 @@ body.dark .auth-btn-apple svg {
     border-color: #000000;
     color: #ffffff;
 }
-
+/* Apple */
+.auth-btn-apple {
+    background-color: #f5f5f7; /* rgba(0, 0, 0, 0.05) на белом */
+    border-color: rgba(0, 0, 0, 0.1);
+    color: #1d1d1f;
+}
+.auth-btn-apple:hover {
+    border-color: rgba(0, 0, 0, 0.2);
+    background-color: #e8e8ed; /* rgba(0, 0, 0, 0.08) на белом */
+}
+.auth-btn-apple .auth-icon-circle {
+    background-color: #1d1d1f;
+}
+body.dark .auth-btn-apple {
+    background: linear-gradient(135deg, #2b2b2e, #1c1c1e);
+}
 /* Эффект клика */
 @keyframes click-wave {
 	0% {

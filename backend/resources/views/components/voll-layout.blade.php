@@ -26,18 +26,18 @@
 		@livewireStyles
 		<link href="@asset_v('assets/style.css')" rel="stylesheet">
 		<style>
-		/* Telegram Mini App — safe area (fullscreen mode) */
-		.tg-webapp .fix-header {
+			/* Telegram Mini App — safe area (fullscreen mode) */
+			.tg-webapp .fix-header {
 			top: 0; left: 0; right: 0;
 			border-radius: 0;
 			padding-top: var(--tg-safe-area-inset-top, env(safe-area-inset-top, 0px));
-		}
-		.tg-webapp .top-section {
+			}
+			.tg-webapp .top-section {
 			padding-top: calc(12rem + var(--tg-safe-area-inset-top, env(safe-area-inset-top, 0px)));
-		}
-		body.tg-webapp {
+			}
+			body.tg-webapp {
 			padding-bottom: var(--tg-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
-		}
+			}
 		</style>
 		@if(isset($style))
         {{ $style }}
@@ -45,25 +45,25 @@
 	</head>
 	<body @class([$body_class ?? null])>
 		<script>
-		(function() {
-			var tg = window.Telegram && window.Telegram.WebApp;
-			if (!tg) return;
-			document.body.classList.add('tg-webapp');
-			if (tg.ready) tg.ready();
-			if (tg.expand) tg.expand();
-		})();
+			(function() {
+				var tg = window.Telegram && window.Telegram.WebApp;
+				if (!tg) return;
+				document.body.classList.add('tg-webapp');
+				if (tg.ready) tg.ready();
+				if (tg.expand) tg.expand();
+			})();
 		</script>
 		<script>
 			if (localStorage.getItem('theme') === 'dark') {
 				document.body.classList.add('dark');
 			}
 		</script>
-
 		
-
+		
+		
 		<header>
 			<div class="fix-header">
-			@include('_partials.impersonation_bar')
+				@include('_partials.impersonation_bar')
 				<div class="fix-header-main">
 					<div class="fix-header-logo">
 						<a href="/">
@@ -288,7 +288,7 @@
 								<a href="{{ route('admin.impersonate.index') }}" class="menu-item">
 									<span class="menu-text">👁 Войти как...</span>
 								</a>
-
+								
 							</nav>
 						</div>
 						@endif
@@ -312,7 +312,7 @@
 							<span class="auth-text">Войти через Apple</span>
 						</a>
 						@endunless
-
+						
 						<!-- Кнопка VK -->
 						<div data-href="{{ route('auth.vk.redirect', ['return' => $returnUrl]) }}" class="auth-btn auth-btn-vk">
 							<span class="auth-icon-circle">
@@ -545,12 +545,6 @@
 								<a href="/users">
 									<span class="footer-menu-text">Игроки</span>
 								</a>  
-							</nav>
-						</div>
-						
-						<div class="col-3">
-							
-							<nav class="footer-menu">                
 								<a href="/help">
 									<span class="footer-menu-text">Помощь</span>
 								</a>                 
@@ -562,8 +556,12 @@
 								</a>
 								<a href="/about">
 									<span class="footer-menu-text">О сервисе</span>
-								</a>                          
-							</nav>				
+								</a>  								
+							</nav>
+						</div>
+						
+						<div class="col-3">
+							
 							
 							{{--
 							<div class="footer-contact">
@@ -572,21 +570,21 @@
 								<p><a href="tel:+78001234567">8 (800) 123-45-67</a></p>
 								<p>Ежедневно с 9:00 до 21:00</p>
 							</div>
-							
+							--}}
 							<div class="footer-app">
-								<div class="h4 title-h">Какие то кнопки</div>
+								<div class="h4 title-h">Приложения</div>
 								<div class="app-links">
 									<a href="#" class="app-link">
 										<span class="icon-apple"></span>
 										<span>App Store</span>
 									</a>
 									<a href="#" class="app-link">
-										<span class="icon-google-play"></span>
+										<span class="icon-googleplay"></span>
 										<span>Google Play</span>
 									</a>
 								</div>
 							</div>
-							--}}
+							
 							<div class="footer-copyright">
 								<p>© VolleyPlay 2026. Все права защищены.</p>
 							</div>
@@ -602,142 +600,142 @@
 		@livewireScripts
 		<script src="@asset_v('assets/script.js')"></script>
 		<script src="@asset_v('assets/capacitor-native.js')"></script>
-
+		
 		{{-- Telegram Mini App: авторизация (initData для Telegram, polling+token для VK/Яндекс) --}}
 		<script>
-		(function() {
-			if (!window.Telegram || !window.Telegram.WebApp) return;
-			var twa = window.Telegram.WebApp;
-			if (!twa.initData) return;
-
-			var csrfToken = function() {
-				return (document.querySelector('meta[name="csrf-token"]') || {}).content || '';
-			};
-
-			// ── 1. Telegram native login ─────────────────────────────────────────────────
-			if (twa.initDataUnsafe && twa.initDataUnsafe.user) {
-				var tgBtn = document.querySelector('.auth-btn-telegram');
-				if (tgBtn) {
-					var origHref = tgBtn.getAttribute('data-href') || '';
-					tgBtn.addEventListener('click', function(e) {
-						e.stopImmediatePropagation();
-						e.preventDefault();
-						var returnTo = '';
-						try {
-							var u = new URL(origHref, window.location.origin);
-							returnTo = u.searchParams.get('return') || '';
-						} catch(err) {}
-						fetch('/auth/telegram/miniapp', {
-							method: 'POST',
-							headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken() },
-							credentials: 'same-origin',
-							body: JSON.stringify({ init_data: twa.initData, return_to: returnTo })
-						})
-						.then(function(r) { return r.json(); })
-						.then(function(data) { window.location.href = data.redirect || origHref || '/events'; })
-						.catch(function() { if (origHref) window.location.href = origHref; });
-					}, true);
+			(function() {
+				if (!window.Telegram || !window.Telegram.WebApp) return;
+				var twa = window.Telegram.WebApp;
+				if (!twa.initData) return;
+				
+				var csrfToken = function() {
+					return (document.querySelector('meta[name="csrf-token"]') || {}).content || '';
+				};
+				
+				// ── 1. Telegram native login ─────────────────────────────────────────────────
+				if (twa.initDataUnsafe && twa.initDataUnsafe.user) {
+					var tgBtn = document.querySelector('.auth-btn-telegram');
+					if (tgBtn) {
+						var origHref = tgBtn.getAttribute('data-href') || '';
+						tgBtn.addEventListener('click', function(e) {
+							e.stopImmediatePropagation();
+							e.preventDefault();
+							var returnTo = '';
+							try {
+								var u = new URL(origHref, window.location.origin);
+								returnTo = u.searchParams.get('return') || '';
+							} catch(err) {}
+							fetch('/auth/telegram/miniapp', {
+								method: 'POST',
+								headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken() },
+								credentials: 'same-origin',
+								body: JSON.stringify({ init_data: twa.initData, return_to: returnTo })
+							})
+							.then(function(r) { return r.json(); })
+							.then(function(data) { window.location.href = data.redirect || origHref || '/events'; })
+							.catch(function() { if (origHref) window.location.href = origHref; });
+						}, true);
+					}
 				}
-			}
-
-			// ── 2. VK/Яндекс OAuth через polling + one-time token ────────────────────────
-			// Когда OAuth открывается в браузере Telegram, сессия устанавливается там,
-			// а не в WebView Mini App. Решение: polling /auth/tma-status?client_id=XXX,
-			// затем обмен токена на сессию через /auth/tma-exchange.
-
-			var pollTimer = null;
-			var pollCount = 0;
-			var MAX_POLLS = 90; // 3 минуты при интервале 2 сек
-
-			function stopPolling() {
-				if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
-				sessionStorage.removeItem('tma_oauth_client_id');
-			}
-
-			function exchangeToken(token, redirectTo) {
-				stopPolling();
-				fetch('/auth/tma-exchange', {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken() },
-					credentials: 'same-origin',
-					body: JSON.stringify({ token: token })
-				})
-				.then(function(r) { return r.json(); })
-				.then(function(data) {
-					if (data.ok) window.location.href = data.redirect || '/events';
-				})
-				.catch(function() {});
-			}
-
-			function startPolling(clientId) {
-				if (pollTimer) clearInterval(pollTimer);
-				pollCount = 0;
-				pollTimer = setInterval(function() {
-					if (++pollCount > MAX_POLLS) { stopPolling(); return; }
-					fetch('/auth/tma-status?client_id=' + encodeURIComponent(clientId), {
+				
+				// ── 2. VK/Яндекс OAuth через polling + one-time token ────────────────────────
+				// Когда OAuth открывается в браузере Telegram, сессия устанавливается там,
+				// а не в WebView Mini App. Решение: polling /auth/tma-status?client_id=XXX,
+				// затем обмен токена на сессию через /auth/tma-exchange.
+				
+				var pollTimer = null;
+				var pollCount = 0;
+				var MAX_POLLS = 90; // 3 минуты при интервале 2 сек
+				
+				function stopPolling() {
+					if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+					sessionStorage.removeItem('tma_oauth_client_id');
+				}
+				
+				function exchangeToken(token, redirectTo) {
+					stopPolling();
+					fetch('/auth/tma-exchange', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken() },
 						credentials: 'same-origin',
-						headers: { 'Accept': 'application/json' }
+						body: JSON.stringify({ token: token })
 					})
 					.then(function(r) { return r.json(); })
 					.then(function(data) {
-						if (data.ready && data.token) exchangeToken(data.token, data.redirect || '/events');
+						if (data.ok) window.location.href = data.redirect || '/events';
 					})
 					.catch(function() {});
-				}, 2000);
-			}
-
-			// Перехват кликов на кнопки VK и Яндекс (capture-фаза — до jQuery)
-			document.addEventListener('click', function(e) {
-				var target = e.target.closest('[data-href]');
-				if (!target) return;
-				if (!target.classList.contains('auth-btn-vk') && !target.classList.contains('auth-btn-yandex')) return;
-
-				var href = target.getAttribute('data-href') || '';
-				if (!href || href.indexOf('/auth/') === -1) return;
-
-				e.preventDefault();
-				e.stopImmediatePropagation();
-
-				var clientId = (Math.random().toString(36) + Date.now().toString(36)).slice(2);
-				sessionStorage.setItem('tma_oauth_client_id', clientId);
-
-				var sep = href.indexOf('?') === -1 ? '?' : '&';
-				var authUrl = (href.indexOf('http') === 0 ? href : window.location.origin + href) + sep + 'tma_client_id=' + encodeURIComponent(clientId);
-
-				// Открываем OAuth в браузере Telegram, Mini App остаётся живым
-				if (twa.openLink) {
-					twa.openLink(authUrl, { try_instant_view: false });
-				} else {
-					window.location.href = authUrl; // fallback для старых версий
 				}
-
-				startPolling(clientId);
-			}, true);
-
-			// При возврате в Mini App (visibilitychange/focus) возобновляем polling
-			// если OAuth был открыт ранее но токен ещё не пришёл
-			function resumePollingIfNeeded() {
-				if (pollTimer) return; // уже идёт
-				if (document.querySelector('meta[name="user-authenticated"]')) return; // уже авторизован
-				var savedId = sessionStorage.getItem('tma_oauth_client_id');
-				if (savedId) startPolling(savedId);
-			}
-
-			document.addEventListener('visibilitychange', function() {
-				if (!document.hidden) resumePollingIfNeeded();
-			});
-
-			// Запуск при загрузке страницы — на случай если Mini App был перезагружен
-			// пока OAuth выполнялся в браузере
-			resumePollingIfNeeded();
-		})();
+				
+				function startPolling(clientId) {
+					if (pollTimer) clearInterval(pollTimer);
+					pollCount = 0;
+					pollTimer = setInterval(function() {
+						if (++pollCount > MAX_POLLS) { stopPolling(); return; }
+						fetch('/auth/tma-status?client_id=' + encodeURIComponent(clientId), {
+							credentials: 'same-origin',
+							headers: { 'Accept': 'application/json' }
+						})
+						.then(function(r) { return r.json(); })
+						.then(function(data) {
+							if (data.ready && data.token) exchangeToken(data.token, data.redirect || '/events');
+						})
+						.catch(function() {});
+					}, 2000);
+				}
+				
+				// Перехват кликов на кнопки VK и Яндекс (capture-фаза — до jQuery)
+				document.addEventListener('click', function(e) {
+					var target = e.target.closest('[data-href]');
+					if (!target) return;
+					if (!target.classList.contains('auth-btn-vk') && !target.classList.contains('auth-btn-yandex')) return;
+					
+					var href = target.getAttribute('data-href') || '';
+					if (!href || href.indexOf('/auth/') === -1) return;
+					
+					e.preventDefault();
+					e.stopImmediatePropagation();
+					
+					var clientId = (Math.random().toString(36) + Date.now().toString(36)).slice(2);
+					sessionStorage.setItem('tma_oauth_client_id', clientId);
+					
+					var sep = href.indexOf('?') === -1 ? '?' : '&';
+					var authUrl = (href.indexOf('http') === 0 ? href : window.location.origin + href) + sep + 'tma_client_id=' + encodeURIComponent(clientId);
+					
+					// Открываем OAuth в браузере Telegram, Mini App остаётся живым
+					if (twa.openLink) {
+						twa.openLink(authUrl, { try_instant_view: false });
+						} else {
+						window.location.href = authUrl; // fallback для старых версий
+					}
+					
+					startPolling(clientId);
+				}, true);
+				
+				// При возврате в Mini App (visibilitychange/focus) возобновляем polling
+				// если OAuth был открыт ранее но токен ещё не пришёл
+				function resumePollingIfNeeded() {
+					if (pollTimer) return; // уже идёт
+					if (document.querySelector('meta[name="user-authenticated"]')) return; // уже авторизован
+					var savedId = sessionStorage.getItem('tma_oauth_client_id');
+					if (savedId) startPolling(savedId);
+				}
+				
+				document.addEventListener('visibilitychange', function() {
+					if (!document.hidden) resumePollingIfNeeded();
+				});
+				
+				// Запуск при загрузке страницы — на случай если Mini App был перезагружен
+				// пока OAuth выполнялся в браузере
+				resumePollingIfNeeded();
+			})();
 		</script>
-
+		
 		@if(isset($script))
         {{ $script }}
 		@endif	
 		
-		
+		{{--
 		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">		
 		<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>		
 		<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ru.js"></script>			
@@ -770,11 +768,34 @@
 				});
 			});		
 		</script>
-
+		--}}
 		<script>
-		if (navigator.userAgent.includes('VolleyPlayApp') && window.Capacitor) {
-			Capacitor.Plugins.PushNotifications.addListener('registration', function(token) {
-				localStorage.setItem('push_token', token.value);
+			if (navigator.userAgent.includes('VolleyPlayApp') && window.Capacitor) {
+				Capacitor.Plugins.PushNotifications.addListener('registration', function(token) {
+					localStorage.setItem('push_token', token.value);
+					fetch('/api/device-token', {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+							'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content
+						},
+						credentials: 'same-origin',
+						body: JSON.stringify({ platform: 'ios', token: token.value })
+					});
+				});
+				Capacitor.Plugins.PushNotifications.requestPermissions().then(function(result) {
+					if (result.receive === 'granted') {
+						Capacitor.Plugins.PushNotifications.register();
+					}
+				});
+			}
+		</script>
+		
+		@auth
+		<script>
+			(function() {
+				var token = localStorage.getItem('push_token');
+				if (!token) return;
 				fetch('/api/device-token', {
 					method: 'POST',
 					headers: {
@@ -782,79 +803,56 @@
 						'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content
 					},
 					credentials: 'same-origin',
-					body: JSON.stringify({ platform: 'ios', token: token.value })
+					body: JSON.stringify({ platform: 'ios', token: token })
+					}).then(function(r) {
+					if (r.ok) localStorage.removeItem('push_token');
 				});
-			});
-			Capacitor.Plugins.PushNotifications.requestPermissions().then(function(result) {
-				if (result.receive === 'granted') {
-					Capacitor.Plugins.PushNotifications.register();
-				}
-			});
-		}
-		</script>
-
-		@auth
-		<script>
-		(function() {
-			var token = localStorage.getItem('push_token');
-			if (!token) return;
-			fetch('/api/device-token', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content
-				},
-				credentials: 'same-origin',
-				body: JSON.stringify({ platform: 'ios', token: token })
-			}).then(function(r) {
-				if (r.ok) localStorage.removeItem('push_token');
-			});
-		})();
+			})();
 		</script>
 		@endauth
-
-
+		
+		
 		{{-- Face ID: вход (только для неавторизованных в приложении) --}}
 		<script>
-		(function() {
-			if (!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform())) return;
-			if (document.querySelector('meta[name="user-authenticated"]')) return;
-
-			var NativeBiometric = window.Capacitor.Plugins.NativeBiometric;
-			if (!NativeBiometric) return;
-
-			window._oauthInProgress = false;
-
-			async function tryBiometricLogin() {
-				var lastFail = localStorage.getItem('biometricFailedAt');
-				if (lastFail && (Date.now() - parseInt(lastFail)) < 43200000) {
-					console.log('[Biometric] skipping — failed less than 60s ago');
-					return;
-				}
-
-				if (window._biometricInProgress) {
-					console.log('[Biometric] already in progress, skipping');
-					return;
-				}
-				window._biometricInProgress = true;
-
-				try {
-					var avail = await NativeBiometric.isAvailable();
-					if (!avail.isAvailable && avail.biometryType === 0) return;
-				} catch(e) { return; }
-
-				var creds;
-				try {
-					creds = await NativeBiometric.getCredentials({ server: 'volleyplay.club' });
-				} catch(e) {
-					console.log('[Biometric] no saved credentials — normal for new users');
-					return;
-				}
-
-				if (!creds || !creds.password) return;
-
-				try {
-					await Promise.race([
+			(function() {
+				if (!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform())) return;
+				if (document.querySelector('meta[name="user-authenticated"]')) return;
+				
+				var NativeBiometric = window.Capacitor.Plugins.NativeBiometric;
+				if (!NativeBiometric) return;
+				
+				window._oauthInProgress = false;
+				
+				async function tryBiometricLogin() {
+					var lastFail = localStorage.getItem('biometricFailedAt');
+					if (lastFail && (Date.now() - parseInt(lastFail)) < 43200000) {
+						console.log('[Biometric] skipping — failed less than 60s ago');
+						return;
+					}
+					
+					if (window._biometricInProgress) {
+						console.log('[Biometric] already in progress, skipping');
+						return;
+					}
+					window._biometricInProgress = true;
+					
+					try {
+						var avail = await NativeBiometric.isAvailable();
+						if (!avail.isAvailable && avail.biometryType === 0) return;
+					} catch(e) { return; }
+					
+					var creds;
+					try {
+						creds = await NativeBiometric.getCredentials({ server: 'volleyplay.club' });
+						} catch(e) {
+						console.log('[Biometric] no saved credentials — normal for new users');
+						return;
+					}
+					
+					if (!creds || !creds.password) return;
+					
+					try {
+						await Promise.race([
 						NativeBiometric.verifyIdentity({
 							reason: 'Войти в VolleyPlay',
 							title: 'Вход по Face ID',
@@ -862,143 +860,143 @@
 						new Promise(function(_, reject) {
 							setTimeout(function() { reject(new Error('timeout')); }, 5000);
 						})
-					]);
-
-					var resp = await fetch('/auth/biometric-login', {
-						method: 'POST',
-						headers: {
-							'Content-Type': 'application/json',
-							'Accept': 'application/json',
-							'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content
-						},
-						credentials: 'same-origin',
-						body: JSON.stringify({ biometric_token: creds.password })
-					});
-
-					if (resp.ok) {
-						var data = await resp.json();
-						localStorage.removeItem('biometricFailedAt');
+						]);
+						
+						var resp = await fetch('/auth/biometric-login', {
+							method: 'POST',
+							headers: {
+								'Content-Type': 'application/json',
+								'Accept': 'application/json',
+								'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content
+							},
+							credentials: 'same-origin',
+							body: JSON.stringify({ biometric_token: creds.password })
+						});
+						
+						if (resp.ok) {
+							var data = await resp.json();
+							localStorage.removeItem('biometricFailedAt');
+							window._biometricInProgress = false;
+							window.location.href = data.redirect || '/events';
+							} else if (resp.status === 422) {
+							await NativeBiometric.deleteCredentials({ server: 'volleyplay.club' });
+						}
+						} catch(e) {
+						console.log('[Biometric] verifyIdentity failed or timeout:', e.message);
+						localStorage.setItem('biometricFailedAt', Date.now().toString());
 						window._biometricInProgress = false;
-						window.location.href = data.redirect || '/events';
-					} else if (resp.status === 422) {
-						await NativeBiometric.deleteCredentials({ server: 'volleyplay.club' });
+						// Не делаем redirect — сервер уже перенаправил на /events
 					}
-				} catch(e) {
-					console.log('[Biometric] verifyIdentity failed or timeout:', e.message);
-					localStorage.setItem('biometricFailedAt', Date.now().toString());
+					
 					window._biometricInProgress = false;
-					// Не делаем redirect — сервер уже перенаправил на /events
 				}
-
-				window._biometricInProgress = false;
-			}
-
-			// Отмена biometric redirect при клике на OAuth кнопки
-			document.querySelectorAll('a[href*="/auth/"]').forEach(function(a) {
-				a.addEventListener('click', function() {
-					window._oauthInProgress = true;
+				
+				// Отмена biometric redirect при клике на OAuth кнопки
+				document.querySelectorAll('a[href*="/auth/"]').forEach(function(a) {
+					a.addEventListener('click', function() {
+						window._oauthInProgress = true;
+					});
 				});
-			});
-
-			function _initTryBiometric() {
-				if (!sessionStorage.getItem('biometric_checked')) {
-					sessionStorage.setItem('biometric_checked', 'true');
-					// 1500мс — Capacitor-плагины успевают инициализироваться до вызова
-					setTimeout(function() { tryBiometricLogin(); }, 1500);
+				
+				function _initTryBiometric() {
+					if (!sessionStorage.getItem('biometric_checked')) {
+						sessionStorage.setItem('biometric_checked', 'true');
+						// 1500мс — Capacitor-плагины успевают инициализироваться до вызова
+						setTimeout(function() { tryBiometricLogin(); }, 1500);
+					}
 				}
-			}
-
-			if (document.readyState === 'loading') {
-				document.addEventListener('DOMContentLoaded', _initTryBiometric);
-			} else {
-				setTimeout(_initTryBiometric, 0);
-			}
-		})();
+				
+				if (document.readyState === 'loading') {
+					document.addEventListener('DOMContentLoaded', _initTryBiometric);
+					} else {
+					setTimeout(_initTryBiometric, 0);
+				}
+			})();
 		</script>
-
+		
 		{{-- Face ID: предложение настроить (только для авторизованных в приложении) --}}
 		@auth
 		<script>
-		(function() {
-			if (!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform())) return;
-
-			var NativeBiometric = window.Capacitor.Plugins.NativeBiometric;
-			if (!NativeBiometric) return;
-
-			async function offerBiometricSetup() {
-				try {
-					var avail = await NativeBiometric.isAvailable();
-					if (!avail.isAvailable && avail.biometryType === 0) return;
-
+			(function() {
+				if (!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform())) return;
+				
+				var NativeBiometric = window.Capacitor.Plugins.NativeBiometric;
+				if (!NativeBiometric) return;
+				
+				async function offerBiometricSetup() {
 					try {
-						var creds = await NativeBiometric.getCredentials({ server: 'volleyplay.club' });
-						if (creds && creds.password) return;
-					} catch (e) { /* нет credentials — предложить */ }
-
-					if (sessionStorage.getItem('biometric_offered')) return;
-					sessionStorage.setItem('biometric_offered', 'true');
-
-					var result = await swal({
-						title: 'Быстрый вход',
-						text: 'Хотите входить по Face ID?',
-						icon: 'info',
-						buttons: {
-							cancel: 'Позже',
-							confirm: 'Включить'
-						}
-					});
-					if (!result) return;
-
-					var token = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, function(c) {
-						return (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16);
-					});
-
-					var resp = await fetch('/auth/biometric-register', {
-						method: 'POST',
-						headers: {
-							'Content-Type': 'application/json',
-							'Accept': 'application/json',
-							'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content
-						},
-						credentials: 'same-origin',
-						body: JSON.stringify({ biometric_token: token })
-					});
-
-					if (resp.ok) {
-						await NativeBiometric.setCredentials({
-							username: 'volleyplay_user',
-							password: token,
-							server: 'volleyplay.club'
+						var avail = await NativeBiometric.isAvailable();
+						if (!avail.isAvailable && avail.biometryType === 0) return;
+						
+						try {
+							var creds = await NativeBiometric.getCredentials({ server: 'volleyplay.club' });
+							if (creds && creds.password) return;
+						} catch (e) { /* нет credentials — предложить */ }
+						
+						if (sessionStorage.getItem('biometric_offered')) return;
+						sessionStorage.setItem('biometric_offered', 'true');
+						
+						var result = await swal({
+							title: 'Быстрый вход',
+							text: 'Хотите входить по Face ID?',
+							icon: 'info',
+							buttons: {
+								cancel: 'Позже',
+								confirm: 'Включить'
+							}
 						});
-						swal('Готово!', 'Face ID включён. В следующий раз вы войдёте мгновенно.', 'success');
+						if (!result) return;
+						
+						var token = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, function(c) {
+							return (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16);
+						});
+						
+						var resp = await fetch('/auth/biometric-register', {
+							method: 'POST',
+							headers: {
+								'Content-Type': 'application/json',
+								'Accept': 'application/json',
+								'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content
+							},
+							credentials: 'same-origin',
+							body: JSON.stringify({ biometric_token: token })
+						});
+						
+						if (resp.ok) {
+							await NativeBiometric.setCredentials({
+								username: 'volleyplay_user',
+								password: token,
+								server: 'volleyplay.club'
+							});
+							swal('Готово!', 'Face ID включён. В следующий раз вы войдёте мгновенно.', 'success');
+						}
+						} catch (e) {
+						console.log('BIOMETRIC: ERROR', e);
 					}
-				} catch (e) {
-					console.log('BIOMETRIC: ERROR', e);
 				}
-			}
-
-			if (document.readyState === 'loading') {
-				document.addEventListener('DOMContentLoaded', function() { offerBiometricSetup(); });
-			} else {
-				setTimeout(function() { offerBiometricSetup(); }, 0);
-			}
-		})();
+				
+				if (document.readyState === 'loading') {
+					document.addEventListener('DOMContentLoaded', function() { offerBiometricSetup(); });
+					} else {
+					setTimeout(function() { offerBiometricSetup(); }, 0);
+				}
+			})();
 		</script>
 		@endauth
-
-	<script>
-	if ('serviceWorker' in navigator) {
-		navigator.serviceWorker.getRegistrations().then(function(registrations) {
-			registrations.forEach(function(reg) { reg.unregister(); });
-		});
-	}
-	</script>
-
-	<button id="app-back-btn" onclick="window.history.back()" aria-label="Назад">
-		<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-			<polyline points="15 18 9 12 15 6"></polyline>
-		</svg>
-	</button>
-
+		
+		<script>
+			if ('serviceWorker' in navigator) {
+				navigator.serviceWorker.getRegistrations().then(function(registrations) {
+					registrations.forEach(function(reg) { reg.unregister(); });
+				});
+			}
+		</script>
+		
+		<button id="app-back-btn" onclick="window.history.back()" aria-label="Назад">
+			<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+				<polyline points="15 18 9 12 15 6"></polyline>
+			</svg>
+		</button>
+		
 	</body>
 </html>					
