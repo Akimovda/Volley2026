@@ -66,6 +66,8 @@ class YandexAuthController extends Controller
             $request->session()->put('oauth_tma_client_id', (string) $request->query('tma_client_id'));
         }
 
+        $request->session()->save();
+
         return Socialite::driver('yandex')
             ->scopes($this->scopes)
             ->with(['scope' => implode(' ', $this->scopes)])
