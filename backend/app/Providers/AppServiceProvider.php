@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use App\Models\UserNotification;
 use App\Models\EventRegistration;
+use App\Support\AssetVersion;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -26,6 +28,10 @@ public function boot(): void
 {
     EventRegistration::observe(EventRegistrationObserver::class);
         User::observe(UserObserver::class);
+
+    Blade::directive('asset_v', function ($expression) {
+        return "<?php echo \App\Support\AssetVersion::url($expression); ?>";
+    });
     
 View::composer('*', function ($view) {
     $notificationsUnread = 0;
