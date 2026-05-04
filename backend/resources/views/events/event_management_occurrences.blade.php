@@ -108,7 +108,8 @@ return ['label' => 'Мест: —', 'registered' => $registered];
 			{{-- Кнопка архива --}}
 			@if($archived->isNotEmpty())
 			<div class="mb-2 d-flex" style="justify-content:flex-end;">
-				<button type="button" id="toggle-archive" class="btn btn-secondary btn-small">
+				<button type="button" id="toggle-archive" class="btn btn-secondary btn-small"
+					onclick="var s=document.getElementById('archive-section');if(s){var h=s.style.display==='none'||s.style.display==='';s.style.display=h?'block':'none';this.textContent=h?'▲ Скрыть архив':'🗄 Архивные ({{ $archived->count() }})';}">
 					🗄 Архивные ({{ $archived->count() }})
 				</button>
 			</div>
@@ -182,14 +183,7 @@ return ['label' => 'Мест: —', 'registered' => $registered];
 						});
 					});
 
-					document.getElementById('toggle-archive') && document.getElementById('toggle-archive').addEventListener('click', function() {
-						var section = document.getElementById('archive-section');
-						if (!section) return;
-						var hidden = section.style.display === 'none' || section.style.display === '';
-						section.style.display = hidden ? 'block' : 'none';
-						this.textContent = hidden ? '▲ Скрыть архив' : '🗄 Архивные ({{ $archived->count() }})';
 					});
-				});
 			</script>
 		</x-slot>
 		
