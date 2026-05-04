@@ -29,6 +29,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
         $middleware->appendToGroup('web', \App\Http\Middleware\EnsureProfileCompleted::class);
         $middleware->appendToGroup('web', \App\Http\Middleware\SavePushToken::class);
+        $middleware->prependToGroup('api', \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class);
     })
     ->withSchedule(function (Schedule $schedule) {
         // Reminders: каждую минуту
