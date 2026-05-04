@@ -68,7 +68,7 @@ class UserMergeService
                 ->join('events as e', 'e.id', '=', 'er.event_id')
                 ->where('er.user_id', $secondary->id)
                 ->whereIn('er.occurrence_id', $primaryOccurrences)
-                ->whereRaw('er.is_cancelled IS NULL OR er.is_cancelled = false')
+                ->whereRaw('(er.is_cancelled IS NULL OR er.is_cancelled = false)')
                 ->where('eo.starts_at', '>', $nowUtc)
                 ->select('er.occurrence_id', 'er.event_id', 'e.title', 'eo.starts_at', 'eo.timezone')
                 ->get();
@@ -82,20 +82,21 @@ class UserMergeService
                 ];
             }
 
-            $transferred = DB::table('event_registrations')
+            $result['transferred'] = DB::table('event_registrations')
                 ->where('user_id', $secondary->id)
                 ->whereNotIn('occurrence_id', $primaryOccurrences)
-                ->whereRaw('is_cancelled IS NULL OR is_cancelled = false');
-            $result['transferred'] = $transferred->count();
+                ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
+                ->count();
 
             DB::table('event_registrations')
                 ->where('user_id', $secondary->id)
                 ->whereNotIn('occurrence_id', $primaryOccurrences)
                 ->update(['user_id' => $primary->id]);
 
+            // Отменяем оставшиеся конфликтные записи secondary
             DB::table('event_registrations')
                 ->where('user_id', $secondary->id)
-                ->whereRaw('is_cancelled IS NULL OR is_cancelled = false')
+                ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
                 ->update([
                     'is_cancelled' => true,
                     'cancelled_at' => now(),
