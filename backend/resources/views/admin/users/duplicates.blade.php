@@ -72,6 +72,13 @@
     font-size: 1.2rem; padding: .2rem .7rem;
     border-radius: 2rem; font-weight: 700;
 }
+
+.dup-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: .75rem;
+    align-items: start;
+}
 </style>
 </x-slot>
 
@@ -128,80 +135,102 @@
         </div>
 
         {{-- Карточки пользователей --}}
-        <div class="d-flex gap-2 flex-wrap mb-2" style="align-items:stretch;">
+        <div class="dup-grid mb-2">
 
             {{-- Рекомендованный основной --}}
-            <div style="flex:1;min-width:220px;">
-                <div class="dup-user is-primary">
+            @php
+                $pStat     = $stats[$primary->id];
+                $pLastReg  = $pStat['last_reg_at'] ? \Carbon\Carbon::parse($pStat['last_reg_at'])->format('d.m.Y') : null;
+                $pUpdated  = $primary->updated_at ? $primary->updated_at->format('d.m.Y') : null;
+                $pActive   = $primary->updated_at && $primary->updated_at->diffInDays(now()) <= 30;
+            @endphp
+            <div class="dup-user is-primary">
+                <div class="d-flex between fvc mb-1">
                     <div class="dup-badge primary">⭐ Основной</div>
-                    <div class="f-15 b-600 mb-1">
-                        <a href="{{ route('admin.users.show', $primary) }}" target="_blank" class="cd">
-                            #{{ $primary->id }} {{ $primary->name ?: '—' }}
-                        </a>
-                    </div>
-                    <div class="dup-field"><span class="lbl">Фамилия</span><span>{{ $primary->last_name ?? '—' }}</span></div>
-                    <div class="dup-field"><span class="lbl">Имя</span><span>{{ $primary->first_name ?? '—' }}</span></div>
-                    <div class="dup-field"><span class="lbl">Отчество</span><span>{{ $primary->patronymic ?? '—' }}</span></div>
-                    <div class="dup-field"><span class="lbl">Email</span><span style="font-size:1.2rem;color:#6b7280;">{{ $primary->email }}</span></div>
-                    <div class="dup-field"><span class="lbl">Профиль</span><span>{{ $stats[$primary->id]['profile_complete'] ? '✅ заполнен' : '—' }}</span></div>
-                    <div class="dup-providers">
-                        @if($primary->telegram_id)<span class="prov">TG</span>@endif
-                        @if($primary->vk_id)<span class="prov">VK</span>@endif
-                        @if($primary->yandex_id)<span class="prov">YA</span>@endif
-                    </div>
-                    <div class="dup-stat">
-                        Записей: <strong>{{ $stats[$primary->id]['registrations'] }}</strong> ·
-                        Платежей: <strong>{{ $stats[$primary->id]['payments'] }}</strong>
-                        @if($stats[$primary->id]['wallet_balance'] > 0)
-                            · Кошелёк: <strong>{{ number_format($stats[$primary->id]['wallet_balance'] / 100, 0, '.', ' ') }} ₽</strong>
-                        @endif
-                        @if(($stats[$primary->id]['upcoming'] ?? 0) > 0)
-                            <br><span style="color:#0d6efd;">📅 Предстоящих: <strong>{{ $stats[$primary->id]['upcoming'] }}</strong></span>
-                        @endif
-                        <br><span style="font-size:1.2rem;color:#9ca3af;">с {{ $primary->created_at->format('d.m.Y') }}</span>
-                    </div>
+                    @if($pActive)<span style="font-size:1.15rem;color:#16a34a;">🟢 активен</span>@endif
+                </div>
+                <div class="f-15 b-600 mb-1">
+                    <a href="{{ route('admin.users.show', $primary) }}" target="_blank" class="cd">
+                        #{{ $primary->id }} {{ $primary->name ?: '—' }}
+                    </a>
+                </div>
+                <div class="dup-field"><span class="lbl">Профиль</span><span>{{ $pStat['profile_complete'] ? '✅ заполнен' : '—' }}</span></div>
+                @if($primary->phone)
+                <div class="dup-field"><span class="lbl">Телефон</span><span>{{ $primary->phone }}</span></div>
+                @endif
+                <div class="dup-providers">
+                    @if($primary->telegram_id)
+                        <span class="prov">TG{{ $primary->telegram_username ? ' @'.$primary->telegram_username : '' }}</span>
+                    @endif
+                    @if($primary->vk_id)<span class="prov">VK #{{ $primary->vk_id }}</span>@endif
+                    @if($primary->yandex_id)<span class="prov">YA #{{ $primary->yandex_id }}</span>@endif
+                </div>
+                <div class="dup-stat">
+                    Записей: <strong>{{ $pStat['registrations'] }}</strong> ·
+                    Платежей: <strong>{{ $pStat['payments'] }}</strong>
+                    @if($pStat['wallet_balance'] > 0)
+                        · Кошелёк: <strong>{{ number_format($pStat['wallet_balance'] / 100, 0, '.', ' ') }} ₽</strong>
+                    @endif
+                    @if(($pStat['upcoming'] ?? 0) > 0)
+                        <br><span style="color:#0d6efd;">📅 Предстоящих: <strong>{{ $pStat['upcoming'] }}</strong></span>
+                    @endif
+                    @if($pLastReg)
+                        <br>🗓 Последняя запись: <strong>{{ $pLastReg }}</strong>
+                    @else
+                        <br><span style="color:#9ca3af;">Записей на события нет</span>
+                    @endif
+                    <br><span style="font-size:1.2rem;color:#9ca3af;">создан {{ $primary->created_at->format('d.m.Y') }} · изменён {{ $pUpdated }}</span>
                 </div>
             </div>
 
-            @if($count === 2)
-            <div class="dup-arrow">←</div>
-            @endif
-
             {{-- Вторичные аккаунты --}}
             @foreach($secondaries as $sec)
-            <div style="flex:1;min-width:220px;">
-                <div class="dup-user is-secondary">
+            @php
+                $sStat    = $stats[$sec->id];
+                $sLastReg = $sStat['last_reg_at'] ? \Carbon\Carbon::parse($sStat['last_reg_at'])->format('d.m.Y') : null;
+                $sUpdated = $sec->updated_at ? $sec->updated_at->format('d.m.Y') : null;
+                $sActive  = $sec->updated_at && $sec->updated_at->diffInDays(now()) <= 30;
+                $conflicts = $dup['conflicts'][$sec->id] ?? 0;
+            @endphp
+            <div class="dup-user is-secondary">
+                <div class="d-flex between fvc mb-1">
                     <div class="dup-badge secondary">🗑 Будет удалён</div>
-                    <div class="f-15 b-600 mb-1">
-                        <a href="{{ route('admin.users.show', $sec) }}" target="_blank" class="cd">
-                            #{{ $sec->id }} {{ $sec->name ?: '—' }}
-                        </a>
-                    </div>
-                    <div class="dup-field"><span class="lbl">Фамилия</span><span>{{ $sec->last_name ?? '—' }}</span></div>
-                    <div class="dup-field"><span class="lbl">Имя</span><span>{{ $sec->first_name ?? '—' }}</span></div>
-                    <div class="dup-field"><span class="lbl">Отчество</span><span>{{ $sec->patronymic ?? '—' }}</span></div>
-                    <div class="dup-field"><span class="lbl">Email</span><span style="font-size:1.2rem;color:#6b7280;">{{ $sec->email }}</span></div>
-                    <div class="dup-field"><span class="lbl">Профиль</span><span>{{ $stats[$sec->id]['profile_complete'] ? '✅ заполнен' : '—' }}</span></div>
-                    <div class="dup-providers">
-                        @if($sec->telegram_id)<span class="prov">TG</span>@endif
-                        @if($sec->vk_id)<span class="prov">VK</span>@endif
-                        @if($sec->yandex_id)<span class="prov">YA</span>@endif
-                    </div>
-                    <div class="dup-stat">
-                        Записей: <strong>{{ $stats[$sec->id]['registrations'] }}</strong> ·
-                        Платежей: <strong>{{ $stats[$sec->id]['payments'] }}</strong>
-                        @if($stats[$sec->id]['wallet_balance'] > 0)
-                            · Кошелёк: <strong>{{ number_format($stats[$sec->id]['wallet_balance'] / 100, 0, '.', ' ') }} ₽</strong>
-                        @endif
-                        @if(($stats[$sec->id]['upcoming'] ?? 0) > 0)
-                            <br><span style="color:#0d6efd;">📅 Предстоящих: <strong>{{ $stats[$sec->id]['upcoming'] }}</strong></span>
-                        @endif
-                        @php $conflicts = $dup['conflicts'][$sec->id] ?? 0; @endphp
-                        @if($conflicts > 0)
-                            <br><span style="color:#dc2626;">⚠️ Конфликт с осн.: <strong>{{ $conflicts }}</strong> зап. будут отменены</span>
-                        @endif
-                        <br><span style="font-size:1.2rem;color:#9ca3af;">с {{ $sec->created_at->format('d.m.Y') }}</span>
-                    </div>
+                    @if($sActive)<span style="font-size:1.15rem;color:#16a34a;">🟢 активен</span>@endif
+                </div>
+                <div class="f-15 b-600 mb-1">
+                    <a href="{{ route('admin.users.show', $sec) }}" target="_blank" class="cd">
+                        #{{ $sec->id }} {{ $sec->name ?: '—' }}
+                    </a>
+                </div>
+                <div class="dup-field"><span class="lbl">Профиль</span><span>{{ $sStat['profile_complete'] ? '✅ заполнен' : '—' }}</span></div>
+                @if($sec->phone)
+                <div class="dup-field"><span class="lbl">Телефон</span><span>{{ $sec->phone }}</span></div>
+                @endif
+                <div class="dup-providers">
+                    @if($sec->telegram_id)
+                        <span class="prov">TG{{ $sec->telegram_username ? ' @'.$sec->telegram_username : '' }}</span>
+                    @endif
+                    @if($sec->vk_id)<span class="prov">VK #{{ $sec->vk_id }}</span>@endif
+                    @if($sec->yandex_id)<span class="prov">YA #{{ $sec->yandex_id }}</span>@endif
+                </div>
+                <div class="dup-stat">
+                    Записей: <strong>{{ $sStat['registrations'] }}</strong> ·
+                    Платежей: <strong>{{ $sStat['payments'] }}</strong>
+                    @if($sStat['wallet_balance'] > 0)
+                        · Кошелёк: <strong>{{ number_format($sStat['wallet_balance'] / 100, 0, '.', ' ') }} ₽</strong>
+                    @endif
+                    @if(($sStat['upcoming'] ?? 0) > 0)
+                        <br><span style="color:#0d6efd;">📅 Предстоящих: <strong>{{ $sStat['upcoming'] }}</strong></span>
+                    @endif
+                    @if($conflicts > 0)
+                        <br><span style="color:#dc2626;">⚠️ Конфликт с осн.: <strong>{{ $conflicts }}</strong> зап. будут отменены</span>
+                    @endif
+                    @if($sLastReg)
+                        <br>🗓 Последняя запись: <strong>{{ $sLastReg }}</strong>
+                    @else
+                        <br><span style="color:#9ca3af;">Записей на события нет</span>
+                    @endif
+                    <br><span style="font-size:1.2rem;color:#9ca3af;">создан {{ $sec->created_at->format('d.m.Y') }} · изменён {{ $sUpdated }}</span>
                 </div>
             </div>
             @endforeach
