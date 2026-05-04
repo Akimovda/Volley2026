@@ -75,7 +75,7 @@ final class NotificationDeliverySender
         $service->send(
             userId: (int) $user->id,
             title:  (string) ($payload['title'] ?? 'Уведомление'),
-            body:   (string) ($payload['body'] ?? ''),
+            body:   $this->cleanBodyForPush((string) ($payload['body'] ?? '')),
             data:   array_filter([
                 'type'          => $payload['template_code'] ?? null,
                 'event_id'      => $payload['event_id'] ?? null,
@@ -83,6 +83,23 @@ final class NotificationDeliverySender
                 'button_url'    => $payload['button_url'] ?? null,
             ], fn ($v) => $v !== null)
         );
+    }
+
+    private function cleanBodyForPush(string $body): string
+    {
+        if ($body === '') return '';
+        $lines = explode("\n", $body);
+        $lines = array_filter($lines, function (string $line): bool {
+            $line = trim($line);
+            if ($line === '') return false;
+            if (str_contains($line, 'http://') || str_contains($line, 'https://')) return false;
+            if (str_contains($line, 'Открыть мероприятие')) return false;
+            if (str_contains($line, 'Смотрите и делитесь')) return false;
+            if (str_contains($line, 'Подробности')) return false;
+            if (preg_match('/^[^:]+:\s*$/', $line)) return false;
+            return true;
+        });
+        return trim(implode("\n", $lines));
     }
 
     private function sendTelegram(User $user, array $payload): void
