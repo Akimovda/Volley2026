@@ -84,7 +84,7 @@ class NotificationsApiController extends Controller
             'id'               => $n->id,
             'type'             => $n->type,
             'title'            => $n->title,
-            'body'             => $this->enrichBody($n->body, $payload, $actionUrl),
+            'body'             => $this->enrichBody($n->body, $payload, $actionUrl, $n->user_id),
             'icon'             => $this->icon($n->type),
             'read'             => $n->read_at !== null,
             'read_at'          => $n->read_at?->toIso8601String(),
@@ -94,7 +94,7 @@ class NotificationsApiController extends Controller
         ];
     }
 
-    private function enrichBody(?string $rawBody, array $payload, ?string $actionUrl): string
+    private function enrichBody(?string $rawBody, array $payload, ?string $actionUrl, int $userId): string
     {
         $body = $this->cleanBody($rawBody);
 
@@ -122,6 +122,24 @@ class NotificationsApiController extends Controller
                     if ($address) {
                         $body .= "\nАдрес: " . $address;
                     }
+                }
+            }
+
+            $occurrenceId = $payload['occurrence_id'] ?? null;
+            $regQuery     = \App\Models\EventRegistration::where('event_id', $eventId)
+                ->where('user_id', $userId)
+                ->whereRaw('is_cancelled IS NULL OR is_cancelled = false');
+            if ($occurrenceId) {
+                $regQuery->where('occurrence_id', $occurrenceId);
+            }
+            $registration = $regQuery->latest()->first();
+
+            if ($registration && $registration->position) {
+                $positionName = position_name($registration->position);
+                $lines        = explode("\n", $body);
+                $hasPosition  = collect($lines)->contains(fn (string $l) => str_contains($l, 'Позиция:'));
+                if (!$hasPosition && $positionName) {
+                    $body .= "\nПозиция: " . $positionName;
                 }
             }
         }
