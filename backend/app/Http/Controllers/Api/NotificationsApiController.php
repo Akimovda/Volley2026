@@ -14,19 +14,24 @@ class NotificationsApiController extends Controller
         $perPage = min((int) $request->get('per_page', 20), 50);
         $page    = max(1, (int) $request->get('page', 1));
 
-        $query = $request->user()
-            ->notificationsInbox()
-            ->orderByDesc('created_at');
+        $inbox = $request->user()->notificationsInbox();
+
+        $unreadCount = (clone $inbox)->whereNull('read_at')->count();
+
+        $query = (clone $inbox)->orderByDesc('created_at');
+
+        if ($request->boolean('unread')) {
+            $query->whereNull('read_at');
+        }
 
         $total = $query->count();
         $items = (clone $query)->forPage($page, $perPage)->get();
 
-        $data = $items->map(fn (UserNotification $n) => $this->format($n));
-
         return response()->json([
-            'data'      => $data,
-            'has_more'  => ($page * $perPage) < $total,
-            'next_page' => $page + 1,
+            'data'         => $items->map(fn (UserNotification $n) => $this->format($n)),
+            'unread_count' => $unreadCount,
+            'has_more'     => ($page * $perPage) < $total,
+            'next_page'    => ($page * $perPage) < $total ? $page + 1 : null,
         ]);
     }
 
@@ -40,11 +45,11 @@ class NotificationsApiController extends Controller
 
     public function markAllRead(Request $request): JsonResponse
     {
-        $request->user()->notificationsInbox()
+        $count = $request->user()->notificationsInbox()
             ->whereNull('read_at')
             ->update(['read_at' => now()]);
 
-        return response()->json(['ok' => true]);
+        return response()->json(['ok' => true, 'count' => $count]);
     }
 
     public function destroy(Request $request, int $id): JsonResponse
@@ -66,13 +71,12 @@ class NotificationsApiController extends Controller
         $payload = $n->payload ?? [];
         $rawUrl  = $payload['button_url'] ?? $payload['event_url'] ?? $payload['url'] ?? null;
 
-        // Оставляем только path (без домена) для универсальности
-        $url = null;
+        $actionUrl = null;
         if ($rawUrl) {
-            $parsed = parse_url((string) $rawUrl);
-            $url = ($parsed['path'] ?? '/');
+            $parsed    = parse_url((string) $rawUrl);
+            $actionUrl = $parsed['path'] ?? '/';
             if (!empty($parsed['query'])) {
-                $url .= '?' . $parsed['query'];
+                $actionUrl .= '?' . $parsed['query'];
             }
         }
 
@@ -81,10 +85,25 @@ class NotificationsApiController extends Controller
             'type'             => $n->type,
             'title'            => $n->title,
             'body'             => $n->body,
-            'url'              => $url,
+            'icon'             => $this->icon($n->type),
+            'read'             => $n->read_at !== null,
             'read_at'          => $n->read_at?->toIso8601String(),
             'created_at'       => $n->created_at->toIso8601String(),
             'created_at_human' => $n->created_at->diffForHumans(),
+            'action_url'       => $actionUrl,
         ];
+    }
+
+    private function icon(string $type): string
+    {
+        return match (true) {
+            str_starts_with($type, 'event_reminder')       => 'calendar',
+            str_starts_with($type, 'registration_created') => 'calendar',
+            str_starts_with($type, 'friend_joined')        => 'team',
+            str_starts_with($type, 'tournament')           => 'trophy',
+            str_starts_with($type, 'league')               => 'trophy',
+            str_starts_with($type, 'season')               => 'trophy',
+            default                                        => 'bell',
+        };
     }
 }
