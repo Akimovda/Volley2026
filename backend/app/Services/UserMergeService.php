@@ -367,15 +367,20 @@ class UserMergeService
     {
         $registrations = DB::table('event_registrations')
             ->where('user_id', $userId)
-            ->whereRaw('is_cancelled IS NULL OR is_cancelled = false')
+            ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
             ->count();
 
         $upcoming = DB::table('event_registrations as er')
             ->join('event_occurrences as eo', 'eo.id', '=', 'er.occurrence_id')
             ->where('er.user_id', $userId)
-            ->whereRaw('er.is_cancelled IS NULL OR er.is_cancelled = false')
+            ->whereRaw('(er.is_cancelled IS NULL OR er.is_cancelled = false)')
             ->where('eo.starts_at', '>', now('UTC'))
             ->count();
+
+        $lastRegAt = DB::table('event_registrations')
+            ->where('user_id', $userId)
+            ->orderByDesc('created_at')
+            ->value('created_at');
 
         $payments = DB::table('payments')
             ->where('user_id', $userId)
@@ -391,6 +396,7 @@ class UserMergeService
         return [
             'registrations'    => $registrations,
             'upcoming'         => $upcoming,
+            'last_reg_at'      => $lastRegAt,
             'payments'         => $payments,
             'wallet_balance'   => (int) $walletBalance,
             'profile_complete' => $profileComplete,
@@ -402,7 +408,7 @@ class UserMergeService
     {
         $primaryOccurrences = DB::table('event_registrations')
             ->where('user_id', $primaryId)
-            ->whereRaw('is_cancelled IS NULL OR is_cancelled = false')
+            ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
             ->pluck('occurrence_id')
             ->toArray();
 
@@ -414,7 +420,7 @@ class UserMergeService
             ->join('event_occurrences as eo', 'eo.id', '=', 'er.occurrence_id')
             ->where('er.user_id', $secondaryId)
             ->whereIn('er.occurrence_id', $primaryOccurrences)
-            ->whereRaw('er.is_cancelled IS NULL OR er.is_cancelled = false')
+            ->whereRaw('(er.is_cancelled IS NULL OR er.is_cancelled = false)')
             ->where('eo.starts_at', '>', now('UTC'))
             ->count();
     }
