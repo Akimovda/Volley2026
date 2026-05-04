@@ -443,7 +443,7 @@ $showWaitlist = !$isTournament && !$eventStarted && $isFull && auth()->check();
 
 @if(!$isTournament && !$eventStarted && $isFull)
 <div class="ramka">
-    <h2 class="-mt-05">🔔 Резерв</h2>
+    <h2 class="-mt-05">Резерв</h2>
 	
     @if(!auth()->check())
 	<div class="text-muted small">🔐 Войдите на сайт чтобы записаться в резерв.</div>
@@ -486,8 +486,8 @@ $showWaitlist = !$isTournament && !$eventStarted && $isFull && auth()->check();
 				@csrf
 				
 				@if($isClassic && !empty($allPositions))
-				<div class="mb-2">
-					<label class="form-label mb-1">Выберите позиции (можно несколько):</label>
+				<div class="mb-2 form">
+					<label>Выберите позиции (можно несколько):</label>
 					<div class="d-flex flex-wrap gap-2">
 						@foreach($allPositions as $key => $label)
 						<label class="checkbox-item mb-0">
@@ -503,7 +503,7 @@ $showWaitlist = !$isTournament && !$eventStarted && $isFull && auth()->check();
 				</div>
 				@endif
 				
-				<button type="submit" class="btn btn-primary">🔔 Записаться в резерв</button>
+				<button type="submit" class="btn btn-primary">Записаться в резерв</button>
 			</form>
 			@endif
 			
@@ -517,9 +517,9 @@ $showWaitlist = !$isTournament && !$eventStarted && $isFull && auth()->check();
             ->get();
 			@endphp
 			<div class="mt-3">
-				<div class="fw-semibold small mb-1">Список резерва:</div>
+				<div class="b-500 mb-1">Список резерва:</div>
 				@foreach($waitlistEntries as $i => $entry)
-				<div class="d-flex align-items-center gap-2 small py-1 border-bottom">
+				<div class="d-flex align-items-center gap-1 small py-1 border-bottom">
 					<span class="text-muted">{{ $i + 1 }}.</span>
 					<span>{{ $entry->user->name ?? '#'.$entry->user_id }}</span>
 					@if(!empty($entry->positions))

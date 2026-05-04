@@ -113,6 +113,7 @@ final class NotificationTemplateDataBuilder
             'registration_id' => $registration?->id,
             'registration_status' => $registration?->status ?? null,
             'registration_position' => $registration?->position ?? null,
+            'registration_position_name' => $registration?->position ? position_name($registration->position) : null,
             'registration_group_key' => $registration?->group_key ?? null,
             'registration_created_at' => !empty($registration?->created_at)
                 ? Carbon::parse($registration->created_at)->format('Y-m-d H:i:s')
@@ -130,6 +131,8 @@ final class NotificationTemplateDataBuilder
             'event_time' => $startsLocal?->format('H:i'),
             'event_datetime' => $startsLocal?->format('d.m.Y H:i'),
             'starts_at_text' => $startsLocal?->format('d.m.Y H:i') . ($startsLocal ? " ({$tz})" : ''),
+            // алиас для шаблонов, использующих {event_address}
+            'event_address' => $locationFull,
         ];
 
         return $this->sanitize(array_merge($data, $extra));

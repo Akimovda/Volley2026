@@ -84,7 +84,7 @@ class NotificationsApiController extends Controller
             'id'               => $n->id,
             'type'             => $n->type,
             'title'            => $n->title,
-            'body'             => $n->body,
+            'body'             => $this->cleanBody($n->body),
             'icon'             => $this->icon($n->type),
             'read'             => $n->read_at !== null,
             'read_at'          => $n->read_at?->toIso8601String(),
@@ -92,6 +92,24 @@ class NotificationsApiController extends Controller
             'created_at_human' => $n->created_at->diffForHumans(),
             'action_url'       => $actionUrl,
         ];
+    }
+
+    private function cleanBody(?string $body): string
+    {
+        if (!$body) return '';
+        $lines = explode("\n", $body);
+        $lines = array_filter($lines, function (string $line): bool {
+            $line = trim($line);
+            if ($line === '') return false;
+            if (str_contains($line, 'http://') || str_contains($line, 'https://')) return false;
+            if (str_contains($line, 'Открыть мероприятие')) return false;
+            if (str_contains($line, 'Смотрите и делитесь')) return false;
+            if (str_contains($line, 'Подробности')) return false;
+            // Убираем строки-заглушки с пустым значением: "Адрес: ", "Место: " и т.д.
+            if (preg_match('/^[^:]+:\s*$/', $line)) return false;
+            return true;
+        });
+        return trim(implode("\n", $lines));
     }
 
     private function icon(string $type): string

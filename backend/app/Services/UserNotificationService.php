@@ -621,7 +621,7 @@ final class UserNotificationService
         if (!$template) {
             return [
                 'title'         => $this->templateRenderer->render($fallbackTitle, $templateData) ?? $fallbackTitle,
-                'body'          => $this->templateRenderer->render($fallbackBody, $templateData),
+                'body'          => $this->buildEnrichedBody($type, $fallbackBody, $templateData),
                 'image_url'     => $payload['image_url'] ?? null,
                 'button_text'   => $payload['button_text'] ?? null,
                 'button_url'    => $payload['button_url'] ?? null,
@@ -637,6 +637,32 @@ final class UserNotificationService
             'button_url'    => $this->templateRenderer->render($template->button_url_template ?? ($payload['button_url'] ?? null), $templateData),
             'template_data' => $templateData,  // ← структурированные данные для Sender-а
         ];
+    }
+
+    private function buildEnrichedBody(string $type, ?string $fallbackBody, array $data): ?string
+    {
+        $base = $this->templateRenderer->render($fallbackBody, $data);
+
+        $enrichedTypes = ['registration_created', 'event_reminder', 'event_cancelled', 'event_cancelled_quorum'];
+        if (!in_array($type, $enrichedTypes, true)) {
+            return $base;
+        }
+
+        $lines = ($base !== null && trim($base) !== '') ? [trim($base)] : [];
+
+        $location = trim((string) ($data['location_full'] ?? $data['location_address'] ?? ''));
+        if ($location !== '') {
+            $lines[] = '📍 ' . $location;
+        }
+
+        if ($type === 'registration_created') {
+            $positionName = trim((string) ($data['registration_position_name'] ?? ''));
+            if ($positionName !== '') {
+                $lines[] = '🏐 Позиция: ' . $positionName;
+            }
+        }
+
+        return $lines ? implode("\n", $lines) : null;
     }
 
     private function findRegistration(int $userId, ?int $eventId = null, ?int $occurrenceId = null): ?EventRegistration
