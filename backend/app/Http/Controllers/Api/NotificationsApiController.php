@@ -128,7 +128,7 @@ class NotificationsApiController extends Controller
             $occurrenceId = $payload['occurrence_id'] ?? null;
             $regQuery     = \App\Models\EventRegistration::where('event_id', $eventId)
                 ->where('user_id', $userId)
-                ->whereRaw('is_cancelled IS NULL OR is_cancelled = false');
+                ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)');
             if ($occurrenceId) {
                 $regQuery->where('occurrence_id', $occurrenceId);
             }
