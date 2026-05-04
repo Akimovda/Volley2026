@@ -96,7 +96,7 @@
                             $dirLabel = match($school->direction) {
                                 'classic' => '🏐 Классический волейбол',
                                 'beach'   => '🏖 Пляжный волейбол',
-                                'both'    => '🏐🏖 Классика + Пляж',
+                                'both'    => '🏐🏖 Классика + Пляжка',
                                 default   => ''
                             };
                         @endphp

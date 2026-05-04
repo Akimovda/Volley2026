@@ -192,8 +192,8 @@ $organizers = $isAdmin
 										<label>Направление <span class="red">*</span></label>
 										<select name="direction">
 											<option value="classic" @selected(old('direction') === 'classic')>Классика</option>
-											<option value="beach" @selected(old('direction') === 'beach')>Пляж</option>
-											<option value="both" @selected(old('direction') === 'both')>Классика + Пляж</option>
+											<option value="beach" @selected(old('direction') === 'beach')>Пляжка</option>
+											<option value="both" @selected(old('direction') === 'both')>Классика + Пляжка</option>
 										</select>
 										@error('direction')<div class="text-xs text-red-600 mt-1">{{ $message }}</div>@enderror
 									</div>

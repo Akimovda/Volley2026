@@ -218,7 +218,7 @@
                         </a>
                         <div class="f-12" style="opacity:.5">
                             {{ $tourn->starts_at ? $tourn->starts_at->format('d.m.Y') : '' }}
-                            · {{ $tourn->direction === 'beach' ? 'Пляж' : 'Классика' }}
+                            · {{ $tourn->direction === 'beach' ? 'Пляжка' : 'Классика' }}
                         </div>
                     </div>
                     <span class="f-12 p-1 px-2 b-600" style="background:rgba(41,103,186,.15);border-radius:6px">

@@ -59,7 +59,7 @@
                 <h2 class="font-semibold text-xl text-gray-800 leading-tight">
                     Управление: {{ $event->title }}
                     @if($isBeach)
-                        <span class="ml-2 text-xs font-normal text-blue-500">🏖 Пляж</span>
+                        <span class="ml-2 text-xs font-normal text-blue-500">🏖 Пляжка</span>
                     @else
                         <span class="ml-2 text-xs font-normal text-gray-400">🏐 Классика · {{ $gameSubtype }}</span>
                     @endif

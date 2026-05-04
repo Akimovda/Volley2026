@@ -87,7 +87,7 @@ $formatLabel = $formats[$formatKey];
                             $startsLocal = (string)($get($payload,'starts_at_local',''));
                             $timezone = (string)($get($payload,'timezone',''));
 
-                            $dirLabel = $direction === 'beach' ? 'Пляж' : ($direction === 'classic' ? 'Классика' : '');
+                            $dirLabel = $direction === 'beach' ? 'Пляжка' : ($direction === 'classic' ? 'Классика' : '');
 
                             $dtLabel = '—';
                             if ($startsLocal !== '') {
