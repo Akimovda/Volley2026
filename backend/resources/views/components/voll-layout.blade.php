@@ -38,6 +38,11 @@
 			body.tg-webapp {
 			padding-bottom: var(--tg-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
 			}
+			/* Нативное приложение — скрыть веб-элементы */
+			.is-app footer,
+			.is-app .fix-header-btn-theme {
+			display: none !important;
+			}
 		</style>
 		@if(isset($style))
         {{ $style }}
