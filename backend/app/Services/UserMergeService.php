@@ -305,20 +305,29 @@ class UserMergeService
         $excludeIds = empty($seenIds) ? [0] : array_keys($seenIds);
         $placeholders = implode(',', $excludeIds);
 
+        // Вычисляемое имя: first+last если заполнены, иначе поле name (как в User::getNameAttribute)
         $nameGroups = DB::select("
-            SELECT LOWER(TRIM(first_name)) AS fn,
-                   LOWER(TRIM(last_name))  AS ln,
+            SELECT name_key,
                    array_agg(id ORDER BY id) AS user_ids
-            FROM users
-            WHERE last_name  IS NOT NULL AND last_name  != ''
-              AND first_name IS NOT NULL AND first_name != ''
-              AND is_bot = false
-              AND deleted_at IS NULL
-              AND merged_into_user_id IS NULL
-              AND id NOT IN ({$placeholders})
-            GROUP BY LOWER(TRIM(first_name)), LOWER(TRIM(last_name))
+            FROM (
+                SELECT id,
+                    LOWER(TRIM(
+                        CASE
+                            WHEN TRIM(COALESCE(first_name,'')) != '' OR TRIM(COALESCE(last_name,'')) != ''
+                            THEN COALESCE(first_name,'') || ' ' || COALESCE(last_name,'')
+                            ELSE COALESCE(name,'')
+                        END
+                    )) AS name_key
+                FROM users
+                WHERE is_bot = false
+                  AND deleted_at IS NULL
+                  AND merged_into_user_id IS NULL
+                  AND id NOT IN ({$placeholders})
+            ) sub
+            WHERE name_key != '' AND name_key != 'пользователь'
+            GROUP BY name_key
             HAVING COUNT(*) > 1
-            ORDER BY COUNT(*) DESC, ln
+            ORDER BY COUNT(*) DESC, name_key
         ");
 
         foreach ($nameGroups as $g) {
