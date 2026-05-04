@@ -248,15 +248,22 @@ class TelegramAuthController extends Controller
         $clientId     = config('services.telegram.oidc_client_id');
         $clientSecret = config('services.telegram.oidc_client_secret');
 
-        $tokenResponse = Http::asForm()
-            ->withBasicAuth($clientId, $clientSecret)
-            ->post(self::TOKEN_URL, [
-                'grant_type'    => 'authorization_code',
-                'code'          => $code,
-                'redirect_uri'  => route('auth.telegram.callback'),
-                'client_id'     => $clientId,
-                'code_verifier' => $codeVerifier,
-            ]);
+        try {
+            $tokenResponse = Http::timeout(15)
+                ->connectTimeout(5)
+                ->asForm()
+                ->withBasicAuth($clientId, $clientSecret)
+                ->post(self::TOKEN_URL, [
+                    'grant_type'    => 'authorization_code',
+                    'code'          => $code,
+                    'redirect_uri'  => route('auth.telegram.callback'),
+                    'client_id'     => $clientId,
+                    'code_verifier' => $codeVerifier,
+                ]);
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            Log::error('Telegram OIDC token exchange timeout/connection error', ['error' => $e->getMessage()]);
+            return redirect()->to($returnTo)->with('error', 'Telegram: сервис временно недоступен, попробуйте ещё раз');
+        }
 
         if (!$tokenResponse->successful()) {
             Log::error('Telegram OIDC token exchange failed', [
@@ -306,9 +313,16 @@ class TelegramAuthController extends Controller
     private function validateIdToken(string $idToken, string $clientId): object
     {
         $jwks = Cache::remember('telegram_oidc_jwks', 3600, function () {
-            $response = Http::get(self::JWKS_URL);
+            $response = Http::timeout(10)->connectTimeout(5)->get(self::JWKS_URL);
+            if (!$response->successful()) {
+                throw new \RuntimeException('Failed to fetch JWKS: HTTP ' . $response->status());
+            }
             return $response->json();
         });
+
+        if (empty($jwks['keys'])) {
+            throw new \RuntimeException('Empty or invalid JWKS response');
+        }
 
         $keys = JWK::parseKeySet($jwks);
         $decoded = JWT::decode($idToken, $keys);
