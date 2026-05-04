@@ -8,6 +8,35 @@
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 		<script>if(navigator.userAgent.includes('VolleyPlayApp')){document.documentElement.classList.add('is-app');window.addEventListener('load',function(){var btn=document.getElementById('app-back-btn');if(btn&&window.history.length<=1){btn.style.display='none';}});}</script>
+		<script>
+		if(navigator.userAgent.includes('VolleyPlayApp')){
+			document.addEventListener('click',function(e){
+				if(!navigator.onLine){
+					var link=e.target.closest('a[href]');
+					if(link&&!link.href.startsWith('javascript:')&&!link.href.startsWith('#')){
+						e.preventDefault();e.stopPropagation();showAppOffline();return false;
+					}
+				}
+			},true);
+			window.addEventListener('offline',function(){showAppOffline();});
+			window.addEventListener('online',function(){var o=document.getElementById('vp-offline-screen');if(o)o.remove();});
+			function showAppOffline(){
+				if(document.getElementById('vp-offline-screen'))return;
+				var o=document.createElement('div');
+				o.id='vp-offline-screen';
+				o.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#1a3a6b;color:#fff;font-family:-apple-system,sans-serif;text-align:center;padding:32px';
+				o.innerHTML='<svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#F5A623" stroke-width="1.5" style="margin-bottom:24px"><line x1="1" y1="1" x2="23" y2="23"/><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/><path d="M10.71 5.05A16 16 0 0 1 22.56 9"/><path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1" fill="#F5A623"/></svg>'
+					+'<h2 style="margin:0 0 8px;font-size:20px;font-weight:600">Нет подключения к интернету</h2>'
+					+'<p style="margin:0 0 32px;opacity:0.6;font-size:15px">Проверьте соединение<br>и попробуйте снова</p>'
+					+'<button id="vp-offline-retry" style="background:#F5A623;color:#1a3a6b;border:none;padding:14px 48px;border-radius:16px;font-size:16px;font-weight:600;cursor:pointer">Повторить</button>';
+				document.body.appendChild(o);
+				document.getElementById('vp-offline-retry').addEventListener('click',function(){
+					if(navigator.onLine){o.remove();location.reload();}
+					else{this.textContent='Нет сети...';var btn=this;setTimeout(function(){btn.textContent='Повторить';},1500);}
+				});
+			}
+		}
+		</script>
 		<meta name="csrf-token" content="{{ csrf_token() }}">
 		@auth<meta name="user-authenticated" content="true">@endauth
 		<title>{{ $title ?? 'Волейбольный сервис Your Volley Club!' }}</title>
