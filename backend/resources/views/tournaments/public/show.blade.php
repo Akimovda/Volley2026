@@ -24,7 +24,7 @@
 
     {{-- Мета --}}
     <div class="d-flex mb-3" style="flex-wrap:wrap;gap:8px">
-        <span class="p-1 px-2 f-12 b-600" style="background:rgba(41,103,186,.15);border-radius:6px">{{ $event->direction === 'beach' ? '🏖 Пляж' : '🏐 Классика' }}</span>
+        <span class="p-1 px-2 f-12 b-600" style="background:rgba(41,103,186,.15);border-radius:6px">{{ $event->direction === 'beach' ? '🏖 Пляжка' : '🏐 Классика' }}</span>
         <span class="p-1 px-2 f-12 b-600" style="background:rgba(16,185,129,.15);border-radius:6px;color:#10b981">{{ $totalTeams }} команд</span>
         <span class="p-1 px-2 f-12 b-600" style="background:rgba(231,97,47,.15);border-radius:6px;color:#E7612F">{{ $totalMatches }} матчей сыграно</span>
     </div>

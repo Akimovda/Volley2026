@@ -575,7 +575,7 @@ body.dark .gradient-marker-line,
 
                         @if($careerBeach && $careerBeach->total_matches > 0)
                             <div class="card p-3" style="flex:1;min-width:200px">
-                                <div class="f-13 b-600 mb-1" style="opacity:.6">🏖 Пляж</div>
+                                <div class="f-13 b-600 mb-1" style="opacity:.6">🏖 Пляжка</div>
                                 <div class="d-flex" style="gap:16px;flex-wrap:wrap">
                                     <div style="text-align:center">
                                         <div class="f-24 b-800" style="color:#E7612F">{{ $careerBeach->match_win_rate }}%</div>

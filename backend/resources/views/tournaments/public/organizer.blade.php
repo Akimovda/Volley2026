@@ -90,7 +90,7 @@
                     <a href="{{ route('tournament.public.show', $tourn) }}" class="blink b-600 f-16">{{ $tourn->title }}</a>
                     <div class="f-13" style="opacity:.5">
                         {{ $tourn->starts_at ? $tourn->starts_at->format('d.m.Y') : '' }}
-                        · {{ $tourn->direction === 'beach' ? 'Пляж' : 'Классика' }}
+                        · {{ $tourn->direction === 'beach' ? 'Пляжка' : 'Классика' }}
                         @if($tourn->location) · {{ $tourn->location->name }} @endif
                         · {{ $matchesCount }} матчей
                     </div>

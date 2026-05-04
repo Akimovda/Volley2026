@@ -112,8 +112,8 @@
 										<label>Направление <span class="red">*</span></label>
 										<select name="direction">
 											<option value="classic" @selected(old('direction', $school->direction) === 'classic')>Классика</option>
-											<option value="beach" @selected(old('direction', $school->direction) === 'beach')>Пляж</option>
-											<option value="both" @selected(old('direction', $school->direction) === 'both')>Классика + Пляж</option>
+											<option value="beach" @selected(old('direction', $school->direction) === 'beach')>Пляжка</option>
+											<option value="both" @selected(old('direction', $school->direction) === 'both')>Классика + Пляжка</option>
 										</select>
 									</div>
 								</div>

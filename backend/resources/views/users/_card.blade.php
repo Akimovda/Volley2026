@@ -137,7 +137,7 @@
             </div>
         </div>
         <div class="user-level">
-            <div class="user-level-label">Пляж</div>
+            <div class="user-level-label">Пляжка</div>
             <div class="user-level-value">
                 @if($beachLevel)
                     <span class="levelmark level-{{ $beachLevel }}">{{ $beach }}</span>

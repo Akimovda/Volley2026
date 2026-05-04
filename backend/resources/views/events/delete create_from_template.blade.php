@@ -5,7 +5,7 @@
 
     $dirLabels = [
         'classic' => 'Классика',
-        'beach'   => 'Пляж',
+        'beach'   => 'Пляжка',
     ];
 
     $formatLabels = [

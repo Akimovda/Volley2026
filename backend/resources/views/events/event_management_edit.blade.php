@@ -139,7 +139,7 @@
                                 <label>Направление</label>
                                 <select name="direction" id="direction_edit">
                                     <option value="classic" @selected(old('direction', $event->direction) === 'classic')>Классика</option>
-                                    <option value="beach" @selected(old('direction', $event->direction) === 'beach')>Пляж</option>
+                                    <option value="beach" @selected(old('direction', $event->direction) === 'beach')>Пляжка</option>
                                 </select>
                             </div>
                         </div>

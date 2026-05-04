@@ -1,16 +1,27 @@
 <x-voll-layout body_class="player-dashboard-page">
+	@php
+	$user = auth()->user();
+	@endphp	
 
     <x-slot name="title">Моя статистика</x-slot>
     <x-slot name="h1">Моя статистика</x-slot>
+    <x-slot name="h2">
+        @if(!empty($user->first_name) || !empty($user->last_name))
+        {{ trim($user->first_name . ' ' . $user->last_name) }}
+        @else
+        Пользователь #{{ $user->id }}
+        @endif
+	</x-slot>	
+
     <x-slot name="t_description">Ваша активность на площадке</x-slot>
 
     <x-slot name="breadcrumbs">
         <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
-            <a href="{{ route('profile.show') }}" itemprop="item"><span itemprop="name">Профиль</span></a>
+            <a href="{{ route('profile.show') }}" itemprop="item"><span itemprop="name">Мой профиль</span></a>
             <meta itemprop="position" content="2">
         </li>
         <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
-            <span itemprop="name">Статистика</span>
+            <span itemprop="name">Моя статистика</span>
             <meta itemprop="position" content="3">
         </li>
     </x-slot>
@@ -32,30 +43,30 @@
 
         {{-- СВОДКА --}}
         <div class="ramka">
-            <h2 class="-mt-05">🏐 Активность</h2>
-            <div class="row row2">
+            <h2 class="-mt-05">Активность</h2>
+            <div class="row">
                 <div class="col-6 col-md-3">
                     <div class="card text-center">
-                        <div class="f-13" style="opacity:.6">Всего игр</div>
-                        <div class="f-36 b-700 cs">{{ $totalVisits }}</div>
+                        <div class="">Всего игр</div>
+                        <div style="font-size: 3rem" class="b-600 cd">{{ $totalVisits }}</div>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="card text-center">
-                        <div class="f-13" style="opacity:.6">В этом месяце</div>
-                        <div class="f-36 b-700 cd">{{ $visitsThisMonth }}</div>
+                        <div class="">В этом месяце</div>
+                        <div style="font-size: 3rem" class="f-36 b-600 cd">{{ $visitsThisMonth }}</div>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="card text-center">
-                        <div class="f-13" style="opacity:.6">Отмен</div>
-                        <div class="f-36 b-700 red">{{ $totalCancellations }}</div>
+                        <div class="">Отмен</div>
+                        <div style="font-size: 3rem" class="f-36 b-600 cd">{{ $totalCancellations }}</div>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="card text-center">
-                        <div class="f-13" style="opacity:.6">Серия недель</div>
-                        <div class="f-36 b-700">{{ $streak }} 🔥</div>
+                        <div class="">Серия недель</div>
+                        <div style="font-size: 3rem" class="f-36 b-600 cd">{{ $streak }}</div>
                     </div>
                 </div>
             </div>
@@ -63,31 +74,32 @@
 
         {{-- РЕЙТИНГ И ОЦЕНКИ --}}
         <div class="ramka">
-            <h2 class="-mt-05">⭐ Рейтинг и оценки</h2>
-            <div class="row row2">
+            <h2 class="-mt-05">Рейтинг и оценки</h2>
+            <div class="row">
                 <div class="col-6 col-md-3">
                     <div class="card text-center">
-                        <div class="f-13" style="opacity:.6">Оценок уровня</div>
-                        <div class="f-36 b-700">{{ $totalVotes }}</div>
+                        <div>Оценок уровня</div>
+                        <div style="font-size: 3rem" class="f-36 b-600 cd">{{ $totalVotes }}</div>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="card text-center">
-                        <div class="f-13" style="opacity:.6">Средний уровень</div>
-                        <div class="f-36 b-700 cd">{{ $avgLevel ? round($avgLevel, 1) : '—' }}</div>
+                        <div>Средний уровень</div>
+                        <div style="font-size: 3rem" class="f-36 b-600 cd">{{ $avgLevel ? round($avgLevel, 1) : '—' }}</div>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="card text-center">
-                        <div class="f-13" style="opacity:.6">❤️ Нравится с ними играть</div>
-                        <div class="f-36 b-700 cs">{{ $likesCount }}</div>
+                        <div>Нравится</div>
+                        <div style="font-size: 3rem" class="f-36 b-600 cd">{{ $likesCount }}</div>
+						<div class="f-16">c вами играть</div>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="card text-center">
-                        <div class="f-13" style="opacity:.6">Топ активности</div>
-                        <div class="f-36 b-700">{{ $percentile }}%</div>
-                        <div class="f-12" style="opacity:.5">игроков</div>
+                        <div>Топ активности</div>
+                        <div style="font-size: 3rem" class="f-36 b-600 cd">{{ $percentile }}%</div>
+                        <div class="f-16">игроков</div>
                     </div>
                 </div>
             </div>
@@ -95,18 +107,18 @@
 
         {{-- ПРОСМОТРЫ ПРОФИЛЯ --}}
         <div class="ramka">
-            <h2 class="-mt-05">👁 Просмотры профиля</h2>
-            <div class="row row2">
+            <h2 class="-mt-05">Просмотры профиля</h2>
+            <div class="row">
                 <div class="col-6">
                     <div class="card text-center">
-                        <div class="f-13" style="opacity:.6">За все время</div>
-                        <div class="f-36 b-700">{{ $profileViews }}</div>
+                        <div>За все время</div>
+                        <div style="font-size: 3rem" class="f-36 b-600 cd">{{ $profileViews }}</div>
                     </div>
                 </div>
                 <div class="col-6">
                     <div class="card text-center">
-                        <div class="f-13" style="opacity:.6">За последние 30 дней</div>
-                        <div class="f-36 b-700 cd">{{ $profileViews30d }}</div>
+                        <div>За последние 30 дней</div>
+                        <div style="font-size: 3rem" class="f-36 b-600 cd">{{ $profileViews30d }}</div>
                     </div>
                 </div>
             </div>
@@ -114,65 +126,65 @@
 
         {{-- ДИНАМИКА --}}
         <div class="ramka">
-            <h2 class="-mt-05">📈 Активность по месяцам</h2>
+            <h2 class="-mt-05">Активность по месяцам</h2>
             <div class="card">
                 <canvas id="playerMonthlyChart" height="80"></canvas>
             </div>
         </div>
 
         {{-- ПОЗИЦИИ + ЛОКАЦИИ + ОРГАНИЗАТОРЫ --}}
-        <div class="ramka">
+        
             <div class="row row2">
                 {{-- Позиции --}}
                 <div class="col-sm-4">
-                    <h2 class="-mt-05">🏃 Позиции</h2>
-                    <div class="card">
+				<div class="ramka">
+                    <h2 class="-mt-05">Позиции</h2>
                         @forelse($positions as $pos)
                         <div class="d-flex between fvc py-1">
-                            <span class="f-16">{{ position_name($pos->position) }}</span>
+                            <span>{{ position_name($pos->position) }}</span>
                             <span class="f-16 b-600">{{ $pos->cnt }}</span>
                         </div>
                         @empty
-                        <div class="f-16" style="opacity:.5">Нет данных</div>
+						<div class="alert alert-info">Нет данных</div>
                         @endforelse
                     </div>
                 </div>
 
                 {{-- Локации --}}
                 <div class="col-sm-4">
-                    <h2 class="-mt-05">📍 Любимые площадки</h2>
-                    <div class="card">
+				<div class="ramka">
+                    <h2 class="-mt-05">Площадки</h2>
                         @forelse($topLocations as $i => $loc)
                         <div class="d-flex between fvc py-1 {{ $i > 0 ? 'border-top' : '' }}">
-                            <a href="{{ route('locations.show', [$loc->id, \Illuminate\Support\Str::slug($loc->name)]) }}" class="f-16">
+                            <a href="{{ route('locations.show', [$loc->id, \Illuminate\Support\Str::slug($loc->name)]) }}" class="blink">
                                 {{ $loc->name }}
                             </a>
                             <span class="f-16 b-600">{{ $loc->visits }}</span>
                         </div>
                         @empty
-                        <div class="f-16" style="opacity:.5">Нет данных</div>
+                        <div class="alert alert-info">Нет данных</div>
                         @endforelse
                     </div>
                 </div>
 
                 {{-- Организаторы --}}
                 <div class="col-sm-4">
-                    <h2 class="-mt-05">🧑‍💼 Любимые организаторы</h2>
-                    <div class="card">
+				<div class="ramka">
+                    <h2 class="-mt-05">Организаторы</h2>
                         @forelse($topOrganizers as $i => $org)
                         <div class="d-flex between fvc py-1 {{ $i > 0 ? 'border-top' : '' }}">
-                            <a href="{{ route('users.show', $org->id) }}" class="f-16">
+                            <a href="{{ route('users.show', $org->id) }}" class="blink">
                                 {{ trim($org->first_name . ' ' . $org->last_name) ?: '#'.$org->id }}
                             </a>
                             <span class="f-16 b-600">{{ $org->visits }}</span>
                         </div>
                         @empty
-                        <div class="f-16" style="opacity:.5">Нет данных</div>
+                        <div class="alert alert-info">Нет данных</div>
                         @endforelse
                     </div>
                 </div>
             </div>
-        </div>
+
 
 
 
@@ -388,10 +400,10 @@
     @else
     {{-- Не Premium --}}
     <div class="ramka">
-        <div class="card text-center" style="padding:3rem 2rem;">
-            <div style="font-size:3.6rem;margin-bottom:1.5rem;">👑</div>
+        <div class="text-center">
+            <div style="font-size:3.6rem; margin-bottom:1.5rem;">👑</div>
             <div class="f-22 b-700 mb-1">Premium возможности</div>
-            <div class="f-16 mb-2" style="opacity:.6;">
+            <div class="mb-2">
                 Друзья, гости профиля и детальная история игр доступны в Premium
             </div>
             <a href="{{ route('premium.index') }}" class="btn">Подключить Premium</a>

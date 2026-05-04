@@ -66,7 +66,7 @@
                            value="{{ old('name', $isEdit ? $template->name : '') }}"
                            required>
                     <div class="text-xs text-gray-500 mt-1">
-                        Например: “Пляж 2×2 — вечер, платно, регистрация”
+                        Например: “Пляжка 2×2 — вечер, платно, регистрация”
                     </div>
                 </div>
 
