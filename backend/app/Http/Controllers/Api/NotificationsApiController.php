@@ -84,7 +84,7 @@ class NotificationsApiController extends Controller
             'id'               => $n->id,
             'type'             => $n->type,
             'title'            => $n->title,
-            'body'             => $this->cleanBody($n->body),
+            'body'             => $this->enrichBody($n->body, $payload, $actionUrl),
             'icon'             => $this->icon($n->type),
             'read'             => $n->read_at !== null,
             'read_at'          => $n->read_at?->toIso8601String(),
@@ -92,6 +92,41 @@ class NotificationsApiController extends Controller
             'created_at_human' => $n->created_at->diffForHumans(),
             'action_url'       => $actionUrl,
         ];
+    }
+
+    private function enrichBody(?string $rawBody, array $payload, ?string $actionUrl): string
+    {
+        $body = $this->cleanBody($rawBody);
+
+        $eventId = $payload['event_id'] ?? null;
+        if (!$eventId && $actionUrl && preg_match('#/events/(\d+)#', $actionUrl, $m)) {
+            $eventId = (int) $m[1];
+        }
+
+        if ($eventId) {
+            $event = \App\Models\Event::with('location.city')->find($eventId);
+            if ($event && $event->location) {
+                $lines      = explode("\n", $body);
+                $hasAddress = collect($lines)->contains(
+                    fn (string $l) => str_contains($l, 'Адрес:') && strlen(trim(str_replace('Адрес:', '', $l))) > 1
+                );
+
+                if (!$hasAddress) {
+                    $address = $event->location->name ?? '';
+                    if ($event->location->address) {
+                        $address .= ', ' . $event->location->address;
+                    }
+                    if ($event->location->city) {
+                        $address .= ', ' . $event->location->city->name;
+                    }
+                    if ($address) {
+                        $body .= "\nАдрес: " . $address;
+                    }
+                }
+            }
+        }
+
+        return $body;
     }
 
     private function cleanBody(?string $body): string
