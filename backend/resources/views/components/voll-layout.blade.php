@@ -21,17 +21,17 @@
 			document.addEventListener('click',function(e){
 				var bell=e.target.closest('.fix-header-btn-mail');
 				if(bell){
-					e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
-					if(window.VolleyPlay&&window.VolleyPlay.openNotifications){window.VolleyPlay.openNotifications();}
-					else if(window.webkit&&window.webkit.messageHandlers&&window.webkit.messageHandlers.openNotifications){window.webkit.messageHandlers.openNotifications.postMessage({});}
-					return false;
+					var called=false;
+					if(window.VolleyPlay&&typeof window.VolleyPlay.openNotifications==='function'){window.VolleyPlay.openNotifications();called=true;}
+					else if(window.webkit&&window.webkit.messageHandlers&&window.webkit.messageHandlers.openNotifications){window.webkit.messageHandlers.openNotifications.postMessage({});called=true;}
+					if(called){e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();return false;}
 				}
 				var notifLink=e.target.closest('a[href*="/notifications"]');
 				if(notifLink){
-					e.preventDefault();e.stopPropagation();
-					if(window.VolleyPlay&&window.VolleyPlay.openNotifications){window.VolleyPlay.openNotifications();}
-					else if(window.webkit&&window.webkit.messageHandlers&&window.webkit.messageHandlers.openNotifications){window.webkit.messageHandlers.openNotifications.postMessage({});}
-					return false;
+					var called=false;
+					if(window.VolleyPlay&&typeof window.VolleyPlay.openNotifications==='function'){window.VolleyPlay.openNotifications();called=true;}
+					else if(window.webkit&&window.webkit.messageHandlers&&window.webkit.messageHandlers.openNotifications){window.webkit.messageHandlers.openNotifications.postMessage({});called=true;}
+					if(called){e.preventDefault();e.stopPropagation();return false;}
 				}
 			},true);
 			window.addEventListener('offline',function(){showAppOffline();});
