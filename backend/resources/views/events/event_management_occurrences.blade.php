@@ -182,18 +182,12 @@ return ['label' => 'Мест: —', 'registered' => $registered];
 						});
 					});
 
-					$('#toggle-archive').on('click', function() {
-						var section = $('#archive-section');
-						var btn = $(this);
-						if (section.is(':visible')) {
-							section.slideUp(200);
-							btn.text(btn.text().replace('▲ ', ''));
-						} else {
-							section.slideDown(200);
-							if (btn.text().indexOf('▲') === -1) {
-								btn.text('▲ ' + btn.text());
-							}
-						}
+					document.getElementById('toggle-archive') && document.getElementById('toggle-archive').addEventListener('click', function() {
+						var section = document.getElementById('archive-section');
+						if (!section) return;
+						var hidden = section.style.display === 'none' || section.style.display === '';
+						section.style.display = hidden ? 'block' : 'none';
+						this.textContent = hidden ? '▲ Скрыть архив' : '🗄 Архивные ({{ $archived->count() }})';
 					});
 				});
 			</script>
