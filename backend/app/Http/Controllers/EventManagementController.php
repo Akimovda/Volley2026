@@ -226,17 +226,22 @@ if ($role === 'admin') {
             'location.city',
             'organizer',
         ]);
-    
-        $occurrences = $event->occurrences()
+
+        $allOccurrences = $event->occurrences()
             ->withCount([
-                'registrations as active_regs' => fn ($q) => $q->whereNull('cancelled_at'),
+                'registrations as active_regs' => fn ($q) => $q->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)'),
             ])
             ->orderBy('starts_at')
             ->get();
-    
+
+        $now = now('UTC');
+        $upcoming = $allOccurrences->filter(fn ($o) => $o->starts_at && \Carbon\Carbon::parse($o->starts_at, 'UTC')->gte($now))->values();
+        $archived = $allOccurrences->filter(fn ($o) => !$o->starts_at || \Carbon\Carbon::parse($o->starts_at, 'UTC')->lt($now))->sortByDesc('starts_at')->values();
+
         return view('events.event_management_occurrences', [
-            'event' => $event,
-            'occurrences' => $occurrences,
+            'event'      => $event,
+            'occurrences' => $upcoming,
+            'archived'    => $archived,
         ]);
     }
     public function toggleBotEvent(Request $request, Event $event): \Illuminate\Http\JsonResponse
