@@ -383,3 +383,13 @@ sudo supervisorctl restart volleyplay-queue:* volleyplay-reverb
 - UI: красный бар сверху через `@include('_partials.impersonation_bar')` в voll-layout
 - Поиск: собственный endpoint /admin/impersonate/search (включает email, role — только для админов)
 - Нельзя войти от имени другого администратора
+
+## Дубли пользователей и очистка неактивных аккаунтов
+- Поиск дублей: `UserMergeService::findDuplicates()` — по телефону + по first_name+last_name (case-insensitive)
+- Таблица стаффа: `organizer_staff` (колонка staff_user_id) — не `staff_assignments`
+- Роли: `users.role` IN ('admin','superadmin','organizer') — ProfileUpdateGuard::isAdmin/isOrganizer
+- Telegram уведомления: `config('services.telegram.bot_token')` + `config('services.telegram.admin_chat_id')` (env: TELEGRAM_BOT_TOKEN, TELEGRAM_ADMIN_CHAT_ID)
+- `CheckUserDuplicatesJob` — ежедневно 04:00, уведомляет в Telegram о дублях
+- `PurgeInactiveUsersJob` — ежедневно 04:30, soft-delete аккаунтов без профиля >14 дней
+- Критерии очистки: profile_completed_at IS NULL + нет регистраций/платежей/баланса + is_bot IS NOT TRUE + не admin/organizer/staff
+- Artisan: `users:check-duplicates`, `users:purge-inactive [--dry-run]`
