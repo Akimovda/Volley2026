@@ -21,7 +21,14 @@
 		@if(isset($canonical))
         <link rel="canonical" href="{{ trim($canonical) }}">
 		@endif
-		<script async src="https://telegram.org/js/telegram-web-app.js"></script>
+		<script>
+			if (!document.documentElement.classList.contains('is-app')) {
+				var s = document.createElement('script');
+				s.src = 'https://telegram.org/js/telegram-web-app.js';
+				s.async = true;
+				document.head.appendChild(s);
+			}
+		</script>
 		<link href="@asset_v('assets/lib.css')" rel="stylesheet">
 		@livewireStyles
 		<link href="@asset_v('assets/style.css')" rel="stylesheet">
