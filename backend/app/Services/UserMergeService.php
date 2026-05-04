@@ -253,8 +253,11 @@ class UserMergeService
 
     public function findDuplicates(): array
     {
-        // Группируем по телефону — находим все аккаунты с одинаковым номером
-        $groups = DB::select("
+        $result  = [];
+        $seenIds = [];
+
+        // 1. По совпадению телефона
+        $phoneGroups = DB::select("
             SELECT phone, array_agg(id ORDER BY id) as user_ids
             FROM users
             WHERE phone IS NOT NULL AND phone != ''
@@ -266,32 +269,20 @@ class UserMergeService
             ORDER BY COUNT(*) DESC, phone
         ");
 
-        $result = [];
-
-        foreach ($groups as $g) {
-            // PostgreSQL возвращает array_agg как строку вида "{1,2,3}"
-            $ids = array_map('intval', explode(',', trim($g->user_ids, '{}')));
+        foreach ($phoneGroups as $g) {
+            $ids   = array_map('intval', explode(',', trim($g->user_ids, '{}')));
             $users = User::whereIn('id', $ids)->orderBy('id')->get();
 
-            // Считаем статистику и определяем рекомендованного primary
-            $statsMap = [];
-            $scores   = [];
-            foreach ($users as $u) {
-                $stats = $this->userStats($u->id);
-                $statsMap[$u->id] = $stats;
-                $scores[$u->id]   = $stats['registrations'] * 2
-                                  + $stats['payments'] * 3
-                                  + ($stats['profile_complete'] ? 5 : 0);
+            foreach ($ids as $id) {
+                $seenIds[$id] = true;
             }
-            arsort($scores);
-            $recommendedPrimaryId = array_key_first($scores);
 
-            // Определяем уровень: если у всех одинаковая фамилия — красный
+            [$statsMap, $recommendedPrimaryId] = $this->buildGroupStats($users);
+
             $lastNames = $users->pluck('last_name')->filter()->unique();
-            $level = ($lastNames->count() === 1) ? 'red' : 'yellow';
-            $label = ($level === 'red') ? 'Фамилия + телефон' : 'Только телефон';
+            $level     = ($lastNames->count() === 1) ? 'red' : 'yellow';
+            $label     = ($level === 'red') ? 'Фамилия + телефон' : 'Только телефон';
 
-            // Конфликты между рекомендованным primary и остальными
             $conflictsMap = [];
             foreach ($users as $u) {
                 if ($u->id !== $recommendedPrimaryId) {
@@ -310,7 +301,66 @@ class UserMergeService
             ];
         }
 
+        // 2. По совпадению имя + фамилия (исключая уже найденных по телефону)
+        $excludeIds = empty($seenIds) ? [0] : array_keys($seenIds);
+        $placeholders = implode(',', $excludeIds);
+
+        $nameGroups = DB::select("
+            SELECT LOWER(TRIM(first_name)) AS fn,
+                   LOWER(TRIM(last_name))  AS ln,
+                   array_agg(id ORDER BY id) AS user_ids
+            FROM users
+            WHERE last_name  IS NOT NULL AND last_name  != ''
+              AND first_name IS NOT NULL AND first_name != ''
+              AND is_bot = false
+              AND deleted_at IS NULL
+              AND merged_into_user_id IS NULL
+              AND id NOT IN ({$placeholders})
+            GROUP BY LOWER(TRIM(first_name)), LOWER(TRIM(last_name))
+            HAVING COUNT(*) > 1
+            ORDER BY COUNT(*) DESC, ln
+        ");
+
+        foreach ($nameGroups as $g) {
+            $ids   = array_map('intval', explode(',', trim($g->user_ids, '{}')));
+            $users = User::whereIn('id', $ids)->orderBy('id')->get();
+
+            [$statsMap, $recommendedPrimaryId] = $this->buildGroupStats($users);
+
+            $conflictsMap = [];
+            foreach ($users as $u) {
+                if ($u->id !== $recommendedPrimaryId) {
+                    $conflictsMap[$u->id] = $this->upcomingConflicts($recommendedPrimaryId, $u->id);
+                }
+            }
+
+            $result[] = [
+                'level'               => 'yellow',
+                'label'               => 'Имя + Фамилия',
+                'phone'               => null,
+                'users'               => $users,
+                'stats'               => $statsMap,
+                'recommended_primary' => $recommendedPrimaryId,
+                'conflicts'           => $conflictsMap,
+            ];
+        }
+
         return $result;
+    }
+
+    private function buildGroupStats($users): array
+    {
+        $statsMap = [];
+        $scores   = [];
+        foreach ($users as $u) {
+            $stats            = $this->userStats($u->id);
+            $statsMap[$u->id] = $stats;
+            $scores[$u->id]   = $stats['registrations'] * 2
+                              + $stats['payments'] * 3
+                              + ($stats['profile_complete'] ? 5 : 0);
+        }
+        arsort($scores);
+        return [$statsMap, array_key_first($scores)];
     }
 
     private function userStats(int $userId): array
