@@ -18,6 +18,22 @@
 					}
 				}
 			},true);
+			document.addEventListener('click',function(e){
+				var bell=e.target.closest('.fix-header-btn-mail');
+				if(bell){
+					e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
+					if(window.VolleyPlay&&window.VolleyPlay.openNotifications){window.VolleyPlay.openNotifications();}
+					else if(window.webkit&&window.webkit.messageHandlers&&window.webkit.messageHandlers.openNotifications){window.webkit.messageHandlers.openNotifications.postMessage({});}
+					return false;
+				}
+				var notifLink=e.target.closest('a[href*="/notifications"]');
+				if(notifLink){
+					e.preventDefault();e.stopPropagation();
+					if(window.VolleyPlay&&window.VolleyPlay.openNotifications){window.VolleyPlay.openNotifications();}
+					else if(window.webkit&&window.webkit.messageHandlers&&window.webkit.messageHandlers.openNotifications){window.webkit.messageHandlers.openNotifications.postMessage({});}
+					return false;
+				}
+			},true);
 			window.addEventListener('offline',function(){showAppOffline();});
 			window.addEventListener('online',function(){var o=document.getElementById('vp-offline-screen');if(o)o.remove();});
 			function showAppOffline(){
