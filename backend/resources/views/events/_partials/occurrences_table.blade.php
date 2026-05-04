@@ -42,6 +42,8 @@
                 <td class="text-center f-16">
                     @if($isCancelled)
                         <span class="f-16 p-1 pt-05 pb-05 alert-error">Отменено</span>
+                    @elseif(!empty($isArchived))
+                        <span class="f-16 p-1 pt-05 pb-05" style="background:#f3f4f6;color:#6b7280;">Завершено</span>
                     @else
                         <span class="f-16 p-1 pt-05 pb-05 alert-success">Активно</span>
                     @endif
