@@ -393,3 +393,15 @@ sudo supervisorctl restart volleyplay-queue:* volleyplay-reverb
 - `PurgeInactiveUsersJob` — ежедневно 04:30, soft-delete аккаунтов без профиля >14 дней
 - Критерии очистки: profile_completed_at IS NULL + нет регистраций/платежей/баланса + is_bot IS NOT TRUE + не admin/organizer/staff
 - Artisan: `users:check-duplicates`, `users:purge-inactive [--dry-run]`
+
+## SQL-безопасность — известные паттерны
+
+### whereRaw с OR — обязательно в скобках
+Laravel Query Builder: `->whereRaw('a IS NULL OR a = false')` без скобок генерирует:
+`WHERE prev_condition AND a IS NULL OR a = false` → из-за AND>OR захватывает чужие строки.
+**Всегда писать:** `->whereRaw('(a IS NULL OR a = false)')`
+Аудит проведён 2026-05-04, все места исправлены.
+
+### AdminUserController::deleteOrPurge
+Сейчас делает hard delete 30+ таблиц без транзакции (try-catch на каждый DELETE — намеренно для PostgreSQL).
+**Задача:** переход на soft delete — анонимизировать PII (ФИО/телефон/email), ставить deleted_at, НЕ удалять историю (регистрации, платежи). См. память project_soft_delete_users.md
