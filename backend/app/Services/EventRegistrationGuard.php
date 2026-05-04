@@ -864,7 +864,7 @@
 				// Считаем пары/группы по group_key; если нет групп — делим игроков на teamSize
 				$byGroup = \Illuminate\Support\Facades\DB::table('event_registrations')
 					->where('occurrence_id', $occurrence->id)
-					->whereRaw('is_cancelled IS NULL OR is_cancelled = false')
+					->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
 					->whereNotNull('group_key')
 					->distinct('group_key')
 					->count('group_key');

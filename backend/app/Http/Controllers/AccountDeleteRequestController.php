@@ -23,7 +23,7 @@ class AccountDeleteRequestController extends Controller
         // Отменить активные регистрации на события
         DB::table('event_registrations')
             ->where('user_id', $userId)
-            ->whereRaw('is_cancelled IS NULL OR is_cancelled = false')
+            ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
             ->update([
                 'is_cancelled' => true,
                 'cancelled_at' => now(),
