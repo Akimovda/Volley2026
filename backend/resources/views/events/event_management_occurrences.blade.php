@@ -122,7 +122,7 @@ return ['label' => 'Мест: —', 'registered' => $registered];
                     Предстоящих повторов нет.
 				</div>
 				@else
-				@include('events._partials.occurrences_table', ['occurrences' => $occurrences, 'event' => $event, 'isAdmin' => $isAdmin, 'tz' => $tz, 'seatMeta' => $seatMeta, 'fmtOccurrenceDt' => $fmtOccurrenceDt])
+				@include('events._partials.occurrences_table', ['occurrences' => $occurrences, 'event' => $event, 'isAdmin' => $isAdmin, 'tz' => $tz, 'seatMeta' => $seatMeta, 'fmtOccurrenceDt' => $fmtOccurrenceDt, 'isArchived' => false])
 				@endif
 			</div>
 
@@ -130,7 +130,7 @@ return ['label' => 'Мест: —', 'registered' => $registered];
 			@if($archived->isNotEmpty())
 			<div id="archive-section" class="ramka mt-2" style="display:none;">
 				<div class="f-15 b-600 mb-2" style="color:#6b7280;">🗄 Архивные мероприятия</div>
-				@include('events._partials.occurrences_table', ['occurrences' => $archived, 'event' => $event, 'isAdmin' => $isAdmin, 'tz' => $tz, 'seatMeta' => $seatMeta, 'fmtOccurrenceDt' => $fmtOccurrenceDt])
+				@include('events._partials.occurrences_table', ['occurrences' => $archived, 'event' => $event, 'isAdmin' => $isAdmin, 'tz' => $tz, 'seatMeta' => $seatMeta, 'fmtOccurrenceDt' => $fmtOccurrenceDt, 'isArchived' => true])
 			</div>
 			@endif
 
