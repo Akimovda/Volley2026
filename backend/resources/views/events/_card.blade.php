@@ -393,7 +393,7 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
                         <div class="alert alert-info">Мероприятие уже началось</div>
 						
 						@elseif (!auth()->check())
-                        <div class="alert alert-info">Вам нужно войти на сайт!</div>
+                        <div class="alert alert-info">Вам нужно войти!</div>
 						
 						@elseif ($joinCode === 'age_blocked')
                         <div class="alert alert-info">{{ $join->message }}</div>

@@ -301,6 +301,20 @@ sudo supervisorctl restart volleyplay-queue:* volleyplay-reverb
 - Guard `if (!input) return;` в начале каждого блока
 - Debounce 250мс, минимум 2 символа
 
+## Apple Sign In — диагностика и известные баги
+
+### `invalid_request` от Apple token endpoint
+- Причина: `code` параметр пустой/отсутствует в POST от Apple
+- Диагностика: `php /tmp/test_apple_token.php` с dummy кодом → должен вернуть `invalid_grant` (не `invalid_request`)
+- `invalid_grant` = credentials OK, код невалиден → всё нормально
+- `invalid_request` = credentials OK, но code пустой → проблема на стороне WKWebView form_post
+- Конфиг: client_id=club.volleyplay.app.signin, team_id=V762R44QWF, key_id=A78BY2CKKQ
+- Ключ: /var/www/volleyplay/backend/storage/app/apple/AuthKey_A78BY2CKKQ.p8
+- AppleAuthController: добавлен guard для пустого code (ранний выход с логом) + session()->save() в redirect()
+- Если `[APPLE_OAUTH] missing code` в логах — смотреть `keys` (что пришло в POST теле)
+- Возможная причина: WKWebView не выполнил Apple form_post JS перед навигацией (race condition)
+- Долгосрочный fix: @capacitor-community/apple-sign-in плагин (нативный ASAuthorizationAppleIDProvider)
+
 ## Push-уведомления (APNs) и Face ID
 
 ### Push-уведомления

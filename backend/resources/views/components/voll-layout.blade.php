@@ -38,6 +38,11 @@
 			body.tg-webapp {
 			padding-bottom: var(--tg-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
 			}
+			/* Нативное приложение — скрыть веб-элементы */
+			.is-app footer,
+			.is-app .fix-header-btn-theme {
+			display: none !important;
+			}
 		</style>
 		@if(isset($style))
         {{ $style }}
@@ -54,9 +59,19 @@
 			})();
 		</script>
 		<script>
-			if (localStorage.getItem('theme') === 'dark') {
-				document.body.classList.add('dark');
-			}
+			(function() {
+				if (document.documentElement.classList.contains('is-app')) {
+					var mq = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+					if (mq && mq.matches) document.body.classList.add('dark');
+					if (mq && mq.addEventListener) {
+						mq.addEventListener('change', function(e) {
+							document.body.classList.toggle('dark', e.matches);
+						});
+					}
+				} else if (localStorage.getItem('theme') === 'dark') {
+					document.body.classList.add('dark');
+				}
+			})();
 		</script>
 		
 		

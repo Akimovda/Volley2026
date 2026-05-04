@@ -45,6 +45,7 @@ class AppleAuthController extends Controller
         $intent = $request->boolean('link') ? 'link' : (Auth::check() ? 'link' : 'login');
         $this->storeReturnTo($request);
         $request->session()->put('oauth_intent', $intent);
+        $request->session()->save();
 
         return Socialite::driver('apple')
             ->scopes(['name', 'email'])
@@ -61,10 +62,26 @@ class AppleAuthController extends Controller
             return redirect()->route('login')->with('error', 'Apple: ошибка авторизации');
         }
 
+        $code = (string) $request->input('code', '');
+        if ($code === '') {
+            Log::error('[APPLE_OAUTH] missing code', [
+                'has_code'  => $request->has('code'),
+                'has_token' => $request->has('id_token'),
+                'has_user'  => $request->has('user'),
+                'has_state' => $request->has('state'),
+                'method'    => $request->method(),
+                'keys'      => array_keys($request->all()),
+            ]);
+            return redirect()->route('login')->with('error', 'Не удалось войти через Apple. Попробуйте ещё раз.');
+        }
+
         try {
             $appleUser = Socialite::driver('apple')->stateless()->user();
         } catch (\Throwable $e) {
-            Log::error('[APPLE_OAUTH] user() failed', ['e' => $e->getMessage()]);
+            Log::error('[APPLE_OAUTH] user() failed', [
+                'e'    => $e->getMessage(),
+                'code' => substr($code, 0, 8) . '…',
+            ]);
             return redirect()->route('login')->with('error', 'Не удалось войти через Apple. Попробуйте ещё раз.');
         }
 
