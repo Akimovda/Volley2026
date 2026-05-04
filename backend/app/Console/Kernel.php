@@ -38,6 +38,16 @@ class Kernel extends ConsoleKernel
             ->everyMinute()
             ->withoutOverlapping()
             ->appendOutputTo(storage_path('logs/cron-notifications.log'));
+
+        $schedule->command('users:check-duplicates')
+            ->dailyAt('04:00')
+            ->withoutOverlapping()
+            ->appendOutputTo(storage_path('logs/cron-user-duplicates.log'));
+
+        $schedule->command('users:purge-inactive')
+            ->dailyAt('04:30')
+            ->withoutOverlapping()
+            ->appendOutputTo(storage_path('logs/cron-user-purge.log'));
     }
 
     /**

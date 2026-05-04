@@ -90,7 +90,7 @@
             Найдено групп дублей: <strong>{{ count($duplicates) }}</strong>
         </div>
         <div class="f-13" style="color:#9ca3af;">
-            🔴 совпадает фамилия + телефон &nbsp;·&nbsp; 🟡 только телефон
+            🔴 фамилия + телефон &nbsp;·&nbsp; 🟡 только телефон &nbsp;·&nbsp; 🟡 имя + фамилия
         </div>
     </div>
 
@@ -121,7 +121,7 @@
         {{-- Заголовок --}}
         <div class="d-flex fvc gap-1 mb-2 flex-wrap">
             <span class="f-14 b-600">{{ $icon }} {{ $dup['label'] }}</span>
-            <span class="dup-phone-badge">📞 {{ $dup['phone'] }}</span>
+            @if($dup['phone'])<span class="dup-phone-badge">📞 {{ $dup['phone'] }}</span>@endif
             @if($count > 2)
                 <span class="dup-count-badge">{{ $count }} аккаунта</span>
             @endif
