@@ -40,7 +40,13 @@
 				$result->errors[] = 'Событие не найдено.';
 				return $result;
 			}
-			
+
+			// Командный турнир — прямая запись заблокирована
+			if (in_array((string)($event->registration_mode ?? ''), ['team_classic', 'team_beach'], true)) {
+				$result->errors[] = 'На турнир можно записаться только в составе команды.';
+				return $result;
+			}
+
 			$direction = (string) ($event->direction ?? 'classic');
             $isClassic = $direction === 'classic';
             $isBeach = $direction === 'beach';
@@ -197,11 +203,17 @@
             if (!$user) {
                 return (object)['allowed' => true, 'code' => null, 'message' => null];
             }
-        
+
             $event    = $occurrence->event;
             $dir      = (string)($event?->direction ?? 'classic');
             $agePolicy = (string)($occurrence->age_policy ?? $event?->age_policy ?? 'any');
-        
+
+            // Командный турнир — прямая запись заблокирована
+            if (in_array((string)($event?->registration_mode ?? ''), ['team_classic', 'team_beach'], true)) {
+                return (object)['allowed' => false, 'code' => 'team_only',
+                    'message' => 'Запись только в составе команды'];
+            }
+
             // --- Возраст ---
             if ($agePolicy === 'adult' || $agePolicy === 'child') {
                 $birthDate = $user->birth_date ?? null;
