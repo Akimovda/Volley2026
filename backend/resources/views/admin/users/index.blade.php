@@ -168,6 +168,7 @@
 						<th>VK</th>
 						<th>Yandex</th>
 						<th>Apple</th>
+						<th>Google</th>
 						<th>Регистрация</th>
 					</tr>
 				</thead>
@@ -195,6 +196,7 @@
 						<td data-label="VK" class="text-center">{{ $u->vk_id ? '✅' : '—' }}</td>
 						<td data-label="Яндекс" class="text-center">{{ $u->yandex_id ? '✅' : '—' }}</td>
 						<td data-label="Apple" class="text-center">{{ $u->apple_id ? '✅' : '—' }}</td>
+						<td data-label="Google" class="text-center">{{ $u->google_id ? '✅' : '—' }}</td>
 						<td data-label="Регистрация" class="text-center">{{ $u->created_at?->format('Y-m-d') }}</td>
 					</tr>
 					@endforeach

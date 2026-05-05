@@ -80,4 +80,10 @@ return [
         'private_key' => base_path(env('APPLE_PRIVATE_KEY_PATH', '')),
         'redirect'    => env('APP_URL') . '/auth/apple/callback',
     ],
+
+    'google' => [
+        'client_id'     => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect'      => env('APP_URL') . '/auth/google/callback',
+    ],
 ];

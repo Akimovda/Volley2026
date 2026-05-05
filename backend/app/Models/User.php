@@ -57,6 +57,7 @@
         'avatar_media_id',
         'profile_completed_at',
         'biometric_token',
+        'google_id',
 		];
 		
 		protected $hidden = [

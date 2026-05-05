@@ -154,6 +154,8 @@ class VkAuthController extends Controller
 
         Auth::login($user, true);
         $request->session()->regenerate();
+        $request->session()->put('auth_provider', 'vk');
+        $request->session()->put('auth_provider_id', $vkId);
 
         UserPhotoFromProviderService::seedFromProviderIfAllowed($user, $avatar, $isNewUser);
 

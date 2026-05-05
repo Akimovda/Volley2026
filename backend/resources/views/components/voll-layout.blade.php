@@ -11,14 +11,6 @@
 		<script>
 		if(navigator.userAgent.includes('VolleyPlayApp')){
 			document.addEventListener('click',function(e){
-				if(!navigator.onLine){
-					var link=e.target.closest('a[href]');
-					if(link&&!link.href.startsWith('javascript:')&&!link.href.startsWith('#')){
-						e.preventDefault();e.stopPropagation();showAppOffline();return false;
-					}
-				}
-			},true);
-			document.addEventListener('click',function(e){
 				var bell=e.target.closest('.fix-header-btn-mail');
 				if(bell){
 					var called=false;
@@ -34,23 +26,6 @@
 					if(called){e.preventDefault();e.stopPropagation();return false;}
 				}
 			},true);
-			window.addEventListener('offline',function(){showAppOffline();});
-			window.addEventListener('online',function(){var o=document.getElementById('vp-offline-screen');if(o)o.remove();});
-			function showAppOffline(){
-				if(document.getElementById('vp-offline-screen'))return;
-				var o=document.createElement('div');
-				o.id='vp-offline-screen';
-				o.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#1a3a6b;color:#fff;font-family:-apple-system,sans-serif;text-align:center;padding:32px';
-				o.innerHTML='<svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#F5A623" stroke-width="1.5" style="margin-bottom:24px"><line x1="1" y1="1" x2="23" y2="23"/><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/><path d="M10.71 5.05A16 16 0 0 1 22.56 9"/><path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1" fill="#F5A623"/></svg>'
-					+'<h2 style="margin:0 0 8px;font-size:20px;font-weight:600">Нет подключения к интернету</h2>'
-					+'<p style="margin:0 0 32px;opacity:0.6;font-size:15px">Проверьте соединение<br>и попробуйте снова</p>'
-					+'<button id="vp-offline-retry" style="background:#F5A623;color:#1a3a6b;border:none;padding:14px 48px;border-radius:16px;font-size:16px;font-weight:600;cursor:pointer">Повторить</button>';
-				document.body.appendChild(o);
-				document.getElementById('vp-offline-retry').addEventListener('click',function(){
-					if(navigator.onLine){o.remove();location.reload();}
-					else{this.textContent='Нет сети...';var btn=this;setTimeout(function(){btn.textContent='Повторить';},1500);}
-				});
-			}
 		}
 		</script>
 		<meta name="csrf-token" content="{{ csrf_token() }}">
@@ -65,6 +40,9 @@
 		<link rel="manifest" href="/icons/site.webmanifest" />		
 		@if(isset($canonical))
         <link rel="canonical" href="{{ trim($canonical) }}">
+		@endif
+		@if(!request()->header('User-Agent') || !str_contains(request()->header('User-Agent'), 'VolleyPlayApp'))
+		<meta name="apple-itunes-app" content="app-id=6764748613">
 		@endif
 		<script>
 			if (!document.documentElement.classList.contains('is-app')) {
@@ -101,6 +79,50 @@
 		@endif
 	</head>
 	<body @class([$body_class ?? null])>
+		<script>
+		(function() {
+			var ua = navigator.userAgent;
+			if (!ua.includes('Android') || ua.includes('VolleyPlayApp')) return;
+			var STORAGE_KEY = 'rustore_banner_hidden_until';
+			var hidden = localStorage.getItem(STORAGE_KEY);
+			if (hidden && Date.now() < parseInt(hidden, 10)) return;
+
+			var banner = document.createElement('div');
+			banner.id = 'rustore-app-banner';
+			banner.innerHTML =
+				'<a href="https://www.rustore.ru/catalog/app/club.volleyplay.app" id="rustore-banner-link" style="display:flex;align-items:center;flex:1;min-width:0;text-decoration:none;color:inherit;">' +
+					'<img src="/icons/favicon-96x96.png" style="width:40px;height:40px;border-radius:8px;margin-right:10px;flex-shrink:0;" alt="">' +
+					'<div style="min-width:0;">' +
+						'<div style="font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">VolleyClub</div>' +
+						'<div style="font-size:12px;opacity:.65;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Открыть в приложении</div>' +
+					'</div>' +
+				'</a>' +
+				'<a href="https://www.rustore.ru/catalog/app/club.volleyplay.app" id="rustore-banner-btn" style="margin-left:10px;flex-shrink:0;background:#5B5CF6;color:#fff;font-size:13px;font-weight:600;padding:6px 14px;border-radius:20px;text-decoration:none;white-space:nowrap;">Открыть</a>' +
+				'<button id="rustore-banner-close" style="margin-left:10px;flex-shrink:0;background:none;border:none;font-size:20px;line-height:1;cursor:pointer;opacity:.5;padding:4px 6px;" aria-label="Закрыть">×</button>';
+
+			var s = banner.style;
+			s.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;display:flex;align-items:center;padding:0 12px;height:60px;box-shadow:0 2px 8px rgba(0,0,0,.15);box-sizing:border-box;';
+
+			function applyTheme() {
+				var dark = document.body && document.body.classList.contains('dark');
+				banner.style.background = dark ? '#1e1e2e' : '#ffffff';
+				var closeBtn = document.getElementById('rustore-banner-close');
+				if (closeBtn) closeBtn.style.color = dark ? '#ffffff' : '#000000';
+			}
+
+			document.body.insertBefore(banner, document.body.firstChild);
+			applyTheme();
+
+			document.getElementById('rustore-banner-close').addEventListener('click', function(e) {
+				e.preventDefault();
+				banner.remove();
+				localStorage.setItem(STORAGE_KEY, String(Date.now() + 7 * 24 * 60 * 60 * 1000));
+			});
+
+			var obs = typeof MutationObserver !== 'undefined' && new MutationObserver(applyTheme);
+			if (obs) obs.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+		})();
+		</script>
 		<script>
 			(function() {
 				var tg = window.Telegram && window.Telegram.WebApp;
@@ -404,17 +426,30 @@
 						</div>
 						
 						
+						@unless(str_contains(request()->userAgent() ?? '', 'iPhone') || str_contains(request()->userAgent() ?? '', 'iPad') || str_contains(request()->userAgent() ?? '', 'Macintosh'))
+						<!-- Кнопка Google (Android + desktop, не Apple) -->
+						<a href="{{ route('auth.google.redirect', ['return' => $returnUrl]) }}" class="auth-btn auth-btn-google">
+							<span class="auth-icon-circle">
+								<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+									<path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+									<path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+									<path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+									<path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+								</svg>
+							</span>
+							<span class="auth-text">Войти через Google</span>
+						</a>
+						@endunless
+
 						{{--
 						<div data-href="#max" class="auth-btn auth-btn-max">
 							<span class="auth-icon-circle">
 								<span class="icon-max"></span>
 							</span>
 							<span class="auth-text">Войти через Max</span>
-						</div>								
+						</div>
 						--}}
-						
-						
-						
+
 					</div>
 					@endauth
 				</div>

@@ -301,6 +301,18 @@ sudo supervisorctl restart volleyplay-queue:* volleyplay-reverb
 - Guard `if (!input) return;` в начале каждого блока
 - Debounce 250мс, минимум 2 символа
 
+## Google OAuth
+
+- Провайдер: Laravel Socialite driver('google')
+- Конфиг: config/services.php → 'google' (GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET)
+- Колонка: users.google_id (varchar, nullable, unique)
+- Контроллер: GoogleAuthController (паттерн VkAuthController: redirect/callback, link/login intent)
+- Роуты: GET /auth/google/redirect, GET /auth/google/callback
+- Отвязка: POST /account/unlink/google (AccountUnlinkController::google)
+- Кнопки: login.blade.php + profile/show.blade.php (Google карточка)
+- Apple (только не-Android) скрывается через @unless(str_contains(UA, 'Android')), Google показывается всем
+- После настройки Google Cloud Console: заменить placeholder в .env на реальные значения
+
 ## Apple Sign In — диагностика и известные баги
 
 ### `invalid_request` от Apple token endpoint
