@@ -103,21 +103,18 @@
 			if (isAndroid) {
 				banner.innerHTML =
 					'<a href="' + STORE_URL + '" style="display:flex;align-items:center;flex:1;min-width:0;text-decoration:none;color:inherit;">' +
-						'<img src="/icons/favicon-96x96.png" style="width:40px;height:40px;border-radius:8px;margin-right:10px;flex-shrink:0;" alt="">' +
-						'<div style="min-width:0;">' +
-							'<div style="font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">VolleyClub</div>' +
-							'<div style="font-size:12px;opacity:.65;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Открыть в приложении</div>' +
-						'</div>' +
+						'<img src="/icons/app-logo.png" style="width:20px;height:20px;border-radius:5px;margin-right:8px;flex-shrink:0;" alt="">' +
+						'<div style="font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">VolleyClub — волейбольный сервис</div>' +
 					'</a>' +
-					'<a href="' + STORE_URL + '" style="margin-left:10px;flex-shrink:0;background:#5B5CF6;color:#fff;font-size:13px;font-weight:600;padding:6px 14px;border-radius:20px;text-decoration:none;white-space:nowrap;">Открыть</a>' +
+					'<a href="' + STORE_URL + '" style="margin-left:10px;flex-shrink:0;background:#F97316;color:#fff;font-size:13px;font-weight:600;padding:6px 14px;border-radius:20px;text-decoration:none;white-space:nowrap;">Открыть</a>' +
 					'<button id="app-banner-close" style="margin-left:10px;flex-shrink:0;background:none;border:none;font-size:20px;line-height:1;cursor:pointer;opacity:.5;padding:4px 6px;" aria-label="Закрыть">×</button>';
 			} else {
 				banner.innerHTML =
 					'<a href="' + STORE_URL + '" style="display:flex;align-items:center;flex:1;min-width:0;text-decoration:none;color:inherit;">' +
-						'<img src="/icons/favicon-96x96.png" style="width:24px;height:24px;border-radius:5px;margin-right:8px;flex-shrink:0;" alt="">' +
-						'<span style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">VolleyClub</span>' +
+						'<img src="/icons/app-logo.png" style="width:20px;height:20px;border-radius:5px;margin-right:8px;flex-shrink:0;" alt="">' +
+						'<div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">VolleyClub — волейбольный сервис</div>' +
 					'</a>' +
-					'<a href="' + STORE_URL + '" style="margin-left:10px;flex-shrink:0;background:#5B5CF6;color:#fff;font-size:12px;font-weight:600;padding:5px 12px;border-radius:20px;text-decoration:none;white-space:nowrap;">Открыть</a>' +
+					'<a href="' + STORE_URL + '" style="margin-left:10px;flex-shrink:0;background:#F97316;color:#fff;font-size:12px;font-weight:600;padding:5px 12px;border-radius:20px;text-decoration:none;white-space:nowrap;">Открыть</a>' +
 					'<button id="app-banner-close" style="margin-left:8px;flex-shrink:0;background:none;border:none;font-size:18px;line-height:1;cursor:pointer;opacity:.5;padding:4px 6px;" aria-label="Закрыть">×</button>';
 			}
 
