@@ -404,6 +404,13 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 						@elseif ($joinCode === 'level_too_low')
                         <div class="alert alert-info">{{ $join->message }}</div>
 						
+						@elseif ($joinCode === 'team_only')
+                        @if ($isJoined)
+                        <a href="{{ $eventPageUrl }}" class="btn w-100">Отменить запись</a>
+                        @else
+                        <a href="{{ $eventPageUrl }}" class="btn w-100">Записаться</a>
+                        @endif
+
 						@elseif ($isJoined)
                         @if ($cancel?->allowed)
                         <a href="{{ $eventPageUrl }}" class="btn w-100">Вы записаны!</a>
