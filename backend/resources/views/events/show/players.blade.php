@@ -829,27 +829,31 @@ $showWaitlist = !$isTournament && !$eventStarted && $isFull && auth()->check();
 		$_leagueForReserve = \App\Models\TournamentLeague::whereHas('season', fn($q) => $q->where('id', $event->season_id))
 			->first();
 		$_reserveLeagueTeams = $_leagueForReserve
-			? $_leagueForReserve->reserveTeams()->with('team.captain', 'team.members.user')->orderBy('reserve_position')->get()
+			? $_leagueForReserve->reserveTeams()->with('team.captain', 'team.members.user', 'user')->orderBy('reserve_position')->get()
 			: collect();
 		@endphp
 		@if($_reserveLeagueTeams->count() > 0)
 		<div class="ramka">
-			<h2 class="-mt-05">🔁 Команды в резерве</h2>
+			<h2 class="-mt-05">🔁 В резерве</h2>
 			@foreach($_reserveLeagueTeams as $_lt)
 			<div class="card mb-1" style="padding: 0.5rem 0.8rem">
 				<div class="d-flex between fvc">
 					<div>
-						<span class="f-16 b-600">{{ $loop->iteration }}. {{ $_lt->team?->name ?? '—' }}</span>
+						@if($_lt->team)
+						<span class="f-16 b-600">{{ $loop->iteration }}. {{ $_lt->team->name }}</span>
+						@else
+						<span class="f-16 b-600">{{ $loop->iteration }}. {{ trim(($_lt->user?->last_name ?? '') . ' ' . ($_lt->user?->first_name ?? '')) ?: ($_lt->user?->name ?? '—') }}</span>
+						@endif
 						@if($_lt->status === 'pending_confirmation')
 						<span class="f-13 text-warning ms-2">⏳ ожидает подтверждения</span>
 						@endif
 					</div>
-					<span class="f-13 text-muted">#{$_lt->reserve_position}</span>
+					<span class="f-13 text-muted">#{{ $_lt->reserve_position }}</span>
 				</div>
 				@if($_lt->team?->members->count())
 				<div class="f-14 text-muted mt-05">
 					@foreach($_lt->team->members as $_m)
-					{{ trim(($_m->user->last_name ?? '') . ' ' . ($_m->user->first_name ?? '')) ?: ($_m->user->name ?? '?') }}@if(!$_m === $_lt->team->members->last()), @endif
+					{{ trim(($_m->user->last_name ?? '') . ' ' . ($_m->user->first_name ?? '')) ?: ($_m->user->name ?? '?') }}@if($_m !== $_lt->team->members->last()), @endif
 					@endforeach
 				</div>
 				@endif
