@@ -270,6 +270,8 @@ final class TournamentTeamService
                 throw new DomainException('Участник команды не найден.');
             }
 
+            $wasRequested = $member->confirmation_status === 'requested';
+
             $old = [
                 'confirmation_status' => $member->confirmation_status,
                 'confirmed_at' => $member->confirmed_at,
@@ -293,6 +295,34 @@ final class TournamentTeamService
                 ],
             );
 
+            // Если это был запрос на вступление — отклоняем остальные запросы
+            if ($wasRequested) {
+                $otherRequests = EventTeamMember::where('event_team_id', $team->id)
+                    ->where('id', '!=', $member->id)
+                    ->where('confirmation_status', 'requested')
+                    ->get();
+
+                foreach ($otherRequests as $other) {
+                    $other->update(['confirmation_status' => 'declined', 'responded_at' => now()]);
+                    $this->notifyUser(
+                        userId: (int) $other->user_id,
+                        type: 'team_join_declined',
+                        title: 'Заявка на вступление отклонена',
+                        body: "Место в паре «{$team->name}» занято другим игроком.",
+                        payload: ['team_id' => $team->id, 'event_id' => $team->event_id],
+                    );
+                }
+
+                // Уведомляем принятого игрока
+                $this->notifyUser(
+                    userId: (int) $member->user_id,
+                    type: 'team_join_accepted',
+                    title: 'Заявка на вступление принята',
+                    body: "Капитан принял вашу заявку в пару «{$team->name}».",
+                    payload: ['team_id' => $team->id, 'event_id' => $team->event_id],
+                );
+            }
+
             return $this->refreshTeamState($team->fresh());
         });
     }
@@ -309,6 +339,8 @@ final class TournamentTeamService
                 throw new DomainException('Участник команды не найден.');
             }
 
+            $wasRequested = $member->confirmation_status === 'requested';
+
             $old = [
                 'confirmation_status' => $member->confirmation_status,
             ];
@@ -324,10 +356,18 @@ final class TournamentTeamService
                 userId: $member->user_id,
                 performedByUserId: $performedBy->id,
                 oldValue: $old,
-                newValue: [
-                    'confirmation_status' => 'declined',
-                ],
+                newValue: ['confirmation_status' => 'declined'],
             );
+
+            if ($wasRequested) {
+                $this->notifyUser(
+                    userId: (int) $member->user_id,
+                    type: 'team_join_declined',
+                    title: 'Заявка на вступление отклонена',
+                    body: "Капитан отклонил вашу заявку в пару «{$team->name}».",
+                    payload: ['team_id' => $team->id, 'event_id' => $team->event_id],
+                );
+            }
 
             return $this->refreshTeamState($team->fresh());
         });
@@ -730,6 +770,7 @@ final class TournamentTeamService
 
     /**
      * Игрок покидает команду (сам). Рефанд если per_player.
+     * Для beach_pair: если капитан уходит — передаёт капитанство второму игроку.
      */
     public function leaveTeam(EventTeam $team, int $userId): void
     {
@@ -738,28 +779,178 @@ final class TournamentTeamService
             throw new DomainException('Вы не состоите в этой команде.');
         }
 
-        if ((int) $team->captain_user_id === $userId) {
-            throw new DomainException('Капитан не может покинуть команду. Используйте «Расформировать команду».');
+        // Проверяем дедлайн самостоятельного выхода
+        $occurrence = $team->occurrence;
+        $cancelUntil = $occurrence?->effectiveCancelSelfUntil();
+        if ($cancelUntil && now('UTC')->greaterThan($cancelUntil)) {
+            throw new DomainException('Срок самостоятельного выхода из команды истёк. Обратитесь к организатору.');
         }
 
+        $isCaptain = (int) $team->captain_user_id === $userId;
         $event = $team->event;
 
-        // Рефанд если per_player и есть оплата
-        $this->refundForMember($member, $event);
+        if ($isCaptain) {
+            if ($team->team_kind !== 'beach_pair') {
+                throw new DomainException('Капитан не может покинуть команду. Используйте «Расформировать команду».');
+            }
 
-        $member->delete();
+            // Beach pair: передаём капитанство второму подтверждённому игроку
+            $newCaptainMember = $team->members()
+                ->where('user_id', '!=', $userId)
+                ->where('confirmation_status', 'confirmed')
+                ->orderBy('position_order')
+                ->first();
 
-        // Обновляем статус команды
-        $this->recheckTeamCompleteness($team);
+            if (!$newCaptainMember) {
+                // Нет другого участника — расформировываем
+                $this->disbandTeam($team, $userId);
+                return;
+            }
 
-        // Уведомляем капитана
-        try {
-            app(\App\Services\UserNotificationService::class)->create(
+            DB::transaction(function () use ($team, $member, $newCaptainMember, $event, $userId) {
+                $this->refundForMember($member, $event);
+                $member->delete();
+
+                $team->update(['captain_user_id' => $newCaptainMember->user_id]);
+                $newCaptainMember->update([
+                    'role_code' => 'captain',
+                    'team_role' => 'captain',
+                ]);
+
+                $this->audit($team, 'captain_transferred', $newCaptainMember->user_id, $userId, [], [
+                    'reason' => 'previous_captain_left',
+                    'new_captain_user_id' => $newCaptainMember->user_id,
+                ]);
+
+                $this->suspendApplicationIfNeeded($team);
+                $this->recheckTeamCompleteness($team);
+
+                $this->notifyUser(
+                    userId: (int) $newCaptainMember->user_id,
+                    type: 'team_captain_transferred',
+                    title: 'Вы стали капитаном',
+                    body: "Капитан покинул пару «{$team->name}». Теперь вы капитан.",
+                    payload: ['team_id' => $team->id, 'event_id' => $event->id],
+                );
+            });
+
+            return;
+        }
+
+        // Обычный участник покидает команду
+        DB::transaction(function () use ($team, $member, $event) {
+            $this->refundForMember($member, $event);
+            $member->delete();
+
+            $this->suspendApplicationIfNeeded($team);
+            $this->recheckTeamCompleteness($team);
+
+            $this->notifyUser(
                 userId: (int) $team->captain_user_id,
                 type: 'team_member_left',
                 title: 'Игрок покинул команду',
                 body: "Игрок покинул команду «{$team->name}».",
                 payload: ['team_id' => $team->id, 'event_id' => $event->id],
+            );
+        });
+    }
+
+    /**
+     * Запрос игрока на вступление в пару (beach_pair с вакантным местом).
+     */
+    public function joinRequest(EventTeam $team, User $user): EventTeamMember
+    {
+        if ($team->team_kind !== 'beach_pair') {
+            throw new DomainException('Запросы на вступление доступны только для пляжных пар.');
+        }
+
+        $confirmedCount = $team->members()->where('confirmation_status', 'confirmed')->count();
+        if ($confirmedCount >= 2) {
+            throw new DomainException('В паре нет свободного места.');
+        }
+
+        // Проверяем дедлайн
+        $occurrence = $team->occurrence;
+        $cancelUntil = $occurrence?->effectiveCancelSelfUntil();
+        if ($cancelUntil && now('UTC')->greaterThan($cancelUntil)) {
+            throw new DomainException('Срок подачи заявок на вступление в пару истёк.');
+        }
+
+        // Не должен уже быть в этой команде
+        $alreadyHere = $team->members()
+            ->where('user_id', $user->id)
+            ->whereIn('confirmation_status', ['confirmed', 'joined', 'requested'])
+            ->exists();
+        if ($alreadyHere) {
+            throw new DomainException('Вы уже подали заявку или состоите в этой паре.');
+        }
+
+        // Не должен быть в другой активной команде на это мероприятие
+        $alreadyInTeam = EventTeamMember::whereHas('team', function ($q) use ($team) {
+            $q->where('event_id', $team->event_id)
+              ->where('id', '!=', $team->id)
+              ->whereIn('status', ['ready', 'pending_members', 'submitted', 'confirmed', 'approved']);
+        })
+        ->where('user_id', $user->id)
+        ->whereIn('confirmation_status', ['confirmed', 'joined'])
+        ->exists();
+
+        if ($alreadyInTeam) {
+            throw new DomainException('Вы уже состоите в другой команде на это мероприятие.');
+        }
+
+        return DB::transaction(function () use ($team, $user) {
+            $member = EventTeamMember::create([
+                'event_team_id' => $team->id,
+                'user_id' => $user->id,
+                'role_code' => 'player',
+                'team_role' => 'player',
+                'confirmation_status' => 'requested',
+                'position_order' => 2,
+                'invited_by_user_id' => $user->id,
+                'joined_at' => now(),
+                'meta' => null,
+            ]);
+
+            $this->audit($team, 'join_requested', $user->id, $user->id, [], [
+                'confirmation_status' => 'requested',
+            ]);
+
+            $memberName = trim(($user->last_name ?? '') . ' ' . ($user->first_name ?? '')) ?: $user->name;
+            $this->notifyUser(
+                userId: (int) $team->captain_user_id,
+                type: 'team_join_request',
+                title: 'Запрос на вступление в пару',
+                body: "{$memberName} хочет вступить в вашу пару «{$team->name}».",
+                payload: ['team_id' => $team->id, 'event_id' => $team->event_id],
+            );
+
+            return $member;
+        });
+    }
+
+    /**
+     * Приостанавливает заявку команды на турнир если команда стала неполной.
+     */
+    private function suspendApplicationIfNeeded(EventTeam $team): void
+    {
+        EventTeamApplication::where('event_team_id', $team->id)
+            ->whereIn('status', ['pending', 'approved'])
+            ->update(['status' => 'incomplete']);
+    }
+
+    /**
+     * Универсальный хелпер для отправки уведомлений.
+     */
+    private function notifyUser(int $userId, string $type, string $title, string $body, array $payload = []): void
+    {
+        try {
+            app(\App\Services\UserNotificationService::class)->create(
+                userId: $userId,
+                type: $type,
+                title: $title,
+                body: $body,
+                payload: $payload,
                 channels: ['in_app', 'telegram', 'vk', 'max']
             );
         } catch (\Throwable $e) {

@@ -193,6 +193,27 @@ class TournamentTeamController extends Controller
 
 
     /**
+     * Игрок отправляет запрос на вступление в пару с вакантным местом.
+     */
+    public function joinRequest(
+        Request $request,
+        Event $event,
+        EventTeam $team,
+        TournamentTeamService $service
+    ): RedirectResponse {
+        abort_unless((int) $team->event_id === (int) $event->id, 404);
+        $user = $request->user();
+        abort_unless($user, 403);
+
+        try {
+            $service->joinRequest($team, $user);
+            return back()->with('success', 'Запрос на вступление отправлен. Ожидайте ответа капитана.');
+        } catch (DomainException $e) {
+            return back()->withErrors(['join' => $e->getMessage()]);
+        }
+    }
+
+    /**
      * Игрок покидает команду.
      */
     public function leaveTeam(
