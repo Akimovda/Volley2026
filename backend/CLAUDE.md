@@ -309,9 +309,22 @@ sudo supervisorctl restart volleyplay-queue:* volleyplay-reverb
 - Контроллер: GoogleAuthController (паттерн VkAuthController: redirect/callback, link/login intent)
 - Роуты: GET /auth/google/redirect, GET /auth/google/callback
 - Отвязка: POST /account/unlink/google (AccountUnlinkController::google)
-- Кнопки: login.blade.php + profile/show.blade.php (Google карточка)
-- Apple (только не-Android) скрывается через @unless(str_contains(UA, 'Android')), Google показывается всем
-- После настройки Google Cloud Console: заменить placeholder в .env на реальные значения
+- Кнопки OAuth в ДВУХ местах: login.blade.php (страница /login) + voll-layout.blade.php (попап в шапке)
+- При добавлении нового OAuth провайдера — обновлять ОБА файла
+- profile/show.blade.php — карточка привязки/отвязки Google
+- Условие показа: Apple скрывается на Android (@unless(str_contains(UA, 'Android'))), Google скрывается на Apple (@unless iPhone/iPad/Macintosh)
+- GOOGLE_CLIENT_ID и GOOGLE_CLIENT_SECRET настроены в prod .env (Google Cloud Console)
+
+## Smart App Banner и RuStore баннер
+
+- iOS Smart App Banner: `<meta name="apple-itunes-app" content="app-id=6764748613">` в `<head>` voll-layout.blade.php
+  - Обёрнут в @if(!str_contains(UA, 'VolleyPlayApp')) — не показывать внутри приложения
+  - Safari сам показывает нативный баннер, кастомный HTML не нужен
+- Android RuStore баннер: JS-блок сразу после `<body>` в voll-layout.blade.php
+  - Показывается если: UA содержит 'Android' И не содержит 'VolleyPlayApp'
+  - Закрытие сохраняет timestamp в localStorage('rustore_banner_hidden_until') на 7 дней
+  - Ссылка: https://www.rustore.ru/catalog/app/club.volleyplay.app
+  - MutationObserver на body.classList для синхронизации с тёмной темой
 
 ## Apple Sign In — диагностика и известные баги
 

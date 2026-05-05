@@ -41,9 +41,6 @@
 		@if(isset($canonical))
         <link rel="canonical" href="{{ trim($canonical) }}">
 		@endif
-		@if(!request()->header('User-Agent') || !str_contains(request()->header('User-Agent'), 'VolleyPlayApp'))
-		<meta name="apple-itunes-app" content="app-id=6764748613">
-		@endif
 		<script>
 			if (!document.documentElement.classList.contains('is-app')) {
 				var s = document.createElement('script');
@@ -68,6 +65,9 @@
 			body.tg-webapp {
 			padding-bottom: var(--tg-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
 			}
+			/* App Store / RuStore баннер — сдвигаем fixed-шапку вниз */
+			body.has-app-banner { padding-top: var(--app-banner-h, 0px); }
+			body.has-app-banner .fix-header { top: var(--app-banner-h, 0px) !important; }
 			/* Нативное приложение — скрыть веб-элементы */
 			.is-app footer,
 			.is-app .fix-header-btn-theme {
@@ -82,40 +82,64 @@
 		<script>
 		(function() {
 			var ua = navigator.userAgent;
-			if (!ua.includes('Android') || ua.includes('VolleyPlayApp')) return;
-			var STORAGE_KEY = 'rustore_banner_hidden_until';
+			if (ua.includes('VolleyPlayApp')) return;
+
+			var isAndroid = ua.includes('Android');
+			var isIOS = (ua.includes('iPhone') || ua.includes('iPad')) && !isAndroid;
+			if (!isAndroid && !isIOS) return;
+
+			var STORAGE_KEY = isAndroid ? 'rustore_banner_hidden_until' : 'appbanner_hidden_until';
 			var hidden = localStorage.getItem(STORAGE_KEY);
 			if (hidden && Date.now() < parseInt(hidden, 10)) return;
 
+			var STORE_URL = isAndroid
+				? 'https://www.rustore.ru/catalog/app/club.volleyplay.app'
+				: 'https://apps.apple.com/app/id6764748613';
+			var HEIGHT = isAndroid ? 60 : 40;
+
 			var banner = document.createElement('div');
-			banner.id = 'rustore-app-banner';
-			banner.innerHTML =
-				'<a href="https://www.rustore.ru/catalog/app/club.volleyplay.app" id="rustore-banner-link" style="display:flex;align-items:center;flex:1;min-width:0;text-decoration:none;color:inherit;">' +
-					'<img src="/icons/favicon-96x96.png" style="width:40px;height:40px;border-radius:8px;margin-right:10px;flex-shrink:0;" alt="">' +
-					'<div style="min-width:0;">' +
-						'<div style="font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">VolleyClub</div>' +
-						'<div style="font-size:12px;opacity:.65;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Открыть в приложении</div>' +
-					'</div>' +
-				'</a>' +
-				'<a href="https://www.rustore.ru/catalog/app/club.volleyplay.app" id="rustore-banner-btn" style="margin-left:10px;flex-shrink:0;background:#5B5CF6;color:#fff;font-size:13px;font-weight:600;padding:6px 14px;border-radius:20px;text-decoration:none;white-space:nowrap;">Открыть</a>' +
-				'<button id="rustore-banner-close" style="margin-left:10px;flex-shrink:0;background:none;border:none;font-size:20px;line-height:1;cursor:pointer;opacity:.5;padding:4px 6px;" aria-label="Закрыть">×</button>';
+			banner.id = 'app-store-banner';
 
-			var s = banner.style;
-			s.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;display:flex;align-items:center;padding:0 12px;height:60px;box-shadow:0 2px 8px rgba(0,0,0,.15);box-sizing:border-box;';
-
-			function applyTheme() {
-				var dark = document.body && document.body.classList.contains('dark');
-				banner.style.background = dark ? '#1e1e2e' : '#ffffff';
-				var closeBtn = document.getElementById('rustore-banner-close');
-				if (closeBtn) closeBtn.style.color = dark ? '#ffffff' : '#000000';
+			if (isAndroid) {
+				banner.innerHTML =
+					'<a href="' + STORE_URL + '" style="display:flex;align-items:center;flex:1;min-width:0;text-decoration:none;color:inherit;">' +
+						'<img src="/icons/favicon-96x96.png" style="width:40px;height:40px;border-radius:8px;margin-right:10px;flex-shrink:0;" alt="">' +
+						'<div style="min-width:0;">' +
+							'<div style="font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">VolleyClub</div>' +
+							'<div style="font-size:12px;opacity:.65;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Открыть в приложении</div>' +
+						'</div>' +
+					'</a>' +
+					'<a href="' + STORE_URL + '" style="margin-left:10px;flex-shrink:0;background:#5B5CF6;color:#fff;font-size:13px;font-weight:600;padding:6px 14px;border-radius:20px;text-decoration:none;white-space:nowrap;">Открыть</a>' +
+					'<button id="app-banner-close" style="margin-left:10px;flex-shrink:0;background:none;border:none;font-size:20px;line-height:1;cursor:pointer;opacity:.5;padding:4px 6px;" aria-label="Закрыть">×</button>';
+			} else {
+				banner.innerHTML =
+					'<a href="' + STORE_URL + '" style="display:flex;align-items:center;flex:1;min-width:0;text-decoration:none;color:inherit;">' +
+						'<img src="/icons/favicon-96x96.png" style="width:24px;height:24px;border-radius:5px;margin-right:8px;flex-shrink:0;" alt="">' +
+						'<span style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">VolleyClub</span>' +
+					'</a>' +
+					'<a href="' + STORE_URL + '" style="margin-left:10px;flex-shrink:0;background:#5B5CF6;color:#fff;font-size:12px;font-weight:600;padding:5px 12px;border-radius:20px;text-decoration:none;white-space:nowrap;">Открыть</a>' +
+					'<button id="app-banner-close" style="margin-left:8px;flex-shrink:0;background:none;border:none;font-size:18px;line-height:1;cursor:pointer;opacity:.5;padding:4px 6px;" aria-label="Закрыть">×</button>';
 			}
 
+			banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;display:flex;align-items:center;padding:0 12px;height:' + HEIGHT + 'px;box-shadow:0 2px 8px rgba(0,0,0,.15);box-sizing:border-box;';
+
+			document.documentElement.style.setProperty('--app-banner-h', HEIGHT + 'px');
+			document.body.classList.add('has-app-banner');
 			document.body.insertBefore(banner, document.body.firstChild);
+
+			function applyTheme() {
+				var dark = document.body.classList.contains('dark');
+				banner.style.background = dark ? '#1e1e2e' : '#ffffff';
+				var closeBtn = document.getElementById('app-banner-close');
+				if (closeBtn) closeBtn.style.color = dark ? '#ffffff' : '#000000';
+			}
 			applyTheme();
 
-			document.getElementById('rustore-banner-close').addEventListener('click', function(e) {
+			document.getElementById('app-banner-close').addEventListener('click', function(e) {
 				e.preventDefault();
 				banner.remove();
+				document.body.classList.remove('has-app-banner');
+				document.documentElement.style.removeProperty('--app-banner-h');
 				localStorage.setItem(STORAGE_KEY, String(Date.now() + 7 * 24 * 60 * 60 * 1000));
 			});
 
@@ -676,7 +700,7 @@
 							<div class="footer-app">
 								<div class="h4 title-h">Приложения</div>
 								<div class="app-links">
-									<a href="#" class="app-link">
+									<a href="https://apps.apple.com/ru/app/volleyclub/id6764748613" class="app-link">
 										<span class="icon-apple"></span>
 										<span>App Store</span>
 									</a>
