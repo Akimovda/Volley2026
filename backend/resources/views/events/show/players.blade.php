@@ -839,7 +839,7 @@ $showWaitlist = !$isTournament && !$eventStarted && $isFull && auth()->check();
 			<div class="card mb-1" style="padding: 0.5rem 0.8rem">
 				<div class="d-flex between fvc">
 					<div>
-						<span class="f-16 b-600">{{ $_loop->iteration }}. {{ $_lt->team?->name ?? '—' }}</span>
+						<span class="f-16 b-600">{{ $loop->iteration }}. {{ $_lt->team?->name ?? '—' }}</span>
 						@if($_lt->status === 'pending_confirmation')
 						<span class="f-13 text-warning ms-2">⏳ ожидает подтверждения</span>
 						@endif
