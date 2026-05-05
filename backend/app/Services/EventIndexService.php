@@ -341,7 +341,7 @@ class EventIndexService
             return [];
         }
 
-        return DB::table('event_registrations')
+        $regIds = DB::table('event_registrations')
             ->where('user_id', $user->id)
             ->whereIn('occurrence_id', $occurrenceIds)
             ->when($this->hasCancelledAt, fn($q) => $q->whereNull('cancelled_at'))
@@ -353,8 +353,19 @@ class EventIndexService
             })
             ->when($this->hasStatus, fn($q) => $q->where('status', 'confirmed'))
             ->pluck('occurrence_id')
-            ->map(fn($v)=>(int)$v)
-            ->all();
+            ->map(fn($v) => (int)$v);
+
+        // Добавляем occurrence_id из командных турниров
+        $teamIds = DB::table('event_team_members')
+            ->join('event_teams', 'event_teams.id', '=', 'event_team_members.event_team_id')
+            ->where('event_team_members.user_id', $user->id)
+            ->whereIn('event_team_members.confirmation_status', ['confirmed', 'joined'])
+            ->whereIn('event_teams.status', ['draft', 'ready', 'pending_members', 'submitted', 'confirmed', 'approved'])
+            ->whereIn('event_teams.occurrence_id', $occurrenceIds)
+            ->pluck('event_teams.occurrence_id')
+            ->map(fn($v) => (int)$v);
+
+        return $regIds->merge($teamIds)->unique()->values()->all();
     }
 
     /*
@@ -538,12 +549,26 @@ class EventIndexService
             })
             ->when($this->hasStatus, fn($q) => $q->where('status', 'confirmed'))
             ->pluck($column)
-            ->map(fn($v)=>(int)$v)
-            ->unique()
-            ->values()
-            ->all();
+            ->map(fn($v)=>(int)$v);
 
-        return [$ids,[]];
+        // Добавляем occurrence_id из командных турниров (event_team_members)
+        if ($column === 'occurrence_id') {
+            $teamIds = DB::table('event_team_members')
+                ->join('event_teams', 'event_teams.id', '=', 'event_team_members.event_team_id')
+                ->where('event_team_members.user_id', $user->id)
+                ->whereIn('event_team_members.confirmation_status', ['confirmed', 'joined'])
+                ->whereIn('event_teams.status', ['draft', 'ready', 'pending_members', 'submitted', 'confirmed', 'approved'])
+                ->whereNotNull('event_teams.occurrence_id')
+                ->pluck('event_teams.occurrence_id')
+                ->map(fn($v) => (int)$v);
+
+            $ids = $ids->merge($teamIds);
+        }
+
+        return [
+            $ids->unique()->values()->all(),
+            [],
+        ];
     }
 
     /*
