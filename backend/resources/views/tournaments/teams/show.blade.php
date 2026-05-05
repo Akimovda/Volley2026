@@ -31,8 +31,8 @@ $isOrganizer    = auth()->check() && ((int)$event->organizer_id === (int)auth()-
 $canManage      = $isCaptain || $isOrganizer;
 $posLabels = ['setter'=>'Связующий','outside'=>'Доигровщик','opposite'=>'Диагональный','middle'=>'Центральный','libero'=>'Либеро'];
 $roleLabels = ['captain'=>'Капитан','player'=>'Основной игрок','reserve'=>'Запасной'];
-$stLabels = ['confirmed'=>'Подтверждён','joined'=>'Ожидает подтверждения','invited'=>'Приглашён','declined'=>'Отклонён'];
-$stColors = ['confirmed'=>'#4caf50','joined'=>'#ff9800','invited'=>'#2967BA','declined'=>'#f44336'];
+$stLabels = ['confirmed'=>'Подтверждён','joined'=>'Ожидает подтверждения','invited'=>'Приглашён','declined'=>'Отклонён','requested'=>'Запрос на вступление'];
+$stColors = ['confirmed'=>'#4caf50','joined'=>'#ff9800','invited'=>'#2967BA','declined'=>'#f44336','requested'=>'#9c27b0'];
 $invStColors = ['accepted'=>'#4caf50','declined'=>'#f44336','revoked'=>'#999','expired'=>'#999','pending'=>'#ff9800'];
 $invStLabels = ['pending'=>'Ожидает','accepted'=>'Принято','declined'=>'Отклонено','revoked'=>'Отозвано','expired'=>'Истекло'];
 @endphp
@@ -64,15 +64,22 @@ $invStLabels = ['pending'=>'Ожидает','accepted'=>'Принято','declin
             @endif
         </div>
 
-        @forelse($team->members as $member)
+        @php
+            $activeMembers = $team->members->where('confirmation_status', '!=', 'requested');
+            $joinRequests  = $team->members->where('confirmation_status', 'requested');
+        @endphp
+        @forelse($activeMembers as $member)
         <div class="card d-flex between fvc mb-1" style="flex-wrap:wrap;gap:1rem">
-            <div>
-                <div class="b-600 f-16">{{ $member->user->name ?? ('#'.$member->user_id) }}</div>
-                <div class="f-13" style="opacity:.6">
-                    {{ $roleLabels[$member->team_role] ?? $member->team_role }}
-                    @if($team->team_kind==='classic_team' && $member->position_code)
-                        · {{ $posLabels[$member->position_code] ?? $member->position_code }}
-                    @endif
+            <div class="d-flex fvc" style="gap:.8rem">
+                <img src="{{ $member->user->profile_photo_url ?? '' }}" alt="" style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;">
+                <div>
+                    <div class="b-600 f-16">{{ $member->user->name ?? ('#'.$member->user_id) }}</div>
+                    <div class="f-13" style="opacity:.6">
+                        {{ $roleLabels[$member->team_role] ?? $member->team_role }}
+                        @if($team->team_kind==='classic_team' && $member->position_code)
+                            · {{ $posLabels[$member->position_code] ?? $member->position_code }}
+                        @endif
+                    </div>
                 </div>
             </div>
             <div class="d-flex gap-1 fvc">
@@ -103,7 +110,43 @@ $invStLabels = ['pending'=>'Ожидает','accepted'=>'Принято','declin
         @empty
         <div class="card text-center" style="padding:2rem;opacity:.5">Состав пока пуст</div>
         @endforelse
+
+        {{-- Вакантный слот (beach_pair) --}}
+        @if($team->team_kind === 'beach_pair' && $activeMembers->where('confirmation_status','confirmed')->count() < 2)
+        <div class="card d-flex fvc mb-1" style="gap:.8rem;opacity:.55;border:2px dashed var(--border-color,#ddd)">
+            <div style="width:36px;height:36px;border-radius:50%;background:var(--bg2,#f5f5f5);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:1.8rem;color:#aaa;">?</div>
+            <span class="f-15" style="font-style:italic">Место партнёра свободно</span>
+        </div>
+        @endif
     </div>
+
+    {{-- Запросы на вступление --}}
+    @if($canManage && $joinRequests->isNotEmpty())
+    <div class="ramka">
+        <h2 class="-mt-05">🙋 Запросы на вступление ({{ $joinRequests->count() }})</h2>
+        @foreach($joinRequests as $member)
+        <div class="card d-flex between fvc mb-1" style="flex-wrap:wrap;gap:1rem">
+            <div class="d-flex fvc" style="gap:.8rem">
+                <img src="{{ $member->user->profile_photo_url ?? '' }}" alt="" style="width:40px;height:40px;border-radius:50%;object-fit:cover;flex-shrink:0;">
+                <div>
+                    <div class="b-600 f-16">{{ $member->user->name ?? ('#'.$member->user_id) }}</div>
+                    <div class="f-13" style="opacity:.6">{{ $member->joined_at?->format('d.m.Y H:i') }}</div>
+                </div>
+            </div>
+            <div class="d-flex gap-1 fvc">
+                <form method="POST" action="{{ route('tournamentTeams.members.confirm',[$event,$team,$member]) }}">
+                    @csrf
+                    <button class="btn btn-small">✅ Принять</button>
+                </form>
+                <form method="POST" action="{{ route('tournamentTeams.members.decline',[$event,$team,$member]) }}">
+                    @csrf
+                    <button class="btn btn-small btn-secondary">✗ Отклонить</button>
+                </form>
+            </div>
+        </div>
+        @endforeach
+    </div>
+    @endif
 
     {{-- Созданные приглашения --}}
     @if($canManage)

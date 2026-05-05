@@ -711,19 +711,45 @@ $showWaitlist = !$isTournament && !$eventStarted && $isFull && auth()->check();
 			@if($event->format === 'tournament')
 			@php
             $tournamentTeams = \App\Models\EventTeam::where('event_id', $event->id)
-			->whereIn('status', ['ready','pending','submitted','confirmed','approved'])
+			->whereIn('status', ['ready','pending_members','draft','submitted','confirmed','approved','incomplete'])
 			->with(['captain', 'members.user'])
+			->orderByRaw("CASE WHEN status IN ('ready','submitted','confirmed','approved') THEN 0 ELSE 1 END")
 			->get();
+
+			// Определяем команду текущего пользователя (confirmed/joined)
+			$myTeamIdOnEvent = null;
+			$myPendingRequestTeamIds = collect();
+			if (auth()->check()) {
+				$myMemberships = \App\Models\EventTeamMember::whereHas('team', fn($q) => $q->where('event_id', $event->id))
+					->where('user_id', auth()->id())
+					->whereIn('confirmation_status', ['confirmed', 'joined', 'requested'])
+					->get();
+				$myTeamIdOnEvent = $myMemberships->whereIn('confirmation_status', ['confirmed','joined'])->first()?->event_team_id;
+				$myPendingRequestTeamIds = $myMemberships->where('confirmation_status', 'requested')->pluck('event_team_id');
+			}
 			@endphp
 			@if($tournamentTeams->isEmpty())
             <div class="alert alert-info">Пока нет команд</div>
 			@else
             @foreach($tournamentTeams as $tTeam)
+			@php
+				$confirmedMembers = $tTeam->members->where('confirmation_status', 'confirmed')->sortBy(fn($m) => $m->role_code === 'captain' ? 0 : 1);
+				$isBeachPair = $tTeam->team_kind === 'beach_pair';
+				$hasVacancy  = $isBeachPair && $confirmedMembers->count() < 2;
+				$iMyTeam     = (int)$myTeamIdOnEvent === (int)$tTeam->id;
+				$iAlreadyRequested = $myPendingRequestTeamIds->contains($tTeam->id);
+				$cancelUntil = $occurrence->effectiveCancelSelfUntil();
+				$joinOpen    = !$cancelUntil || now('UTC')->lessThanOrEqualTo($cancelUntil);
+				$canJoin     = $hasVacancy && auth()->check() && !$iMyTeam && !$iAlreadyRequested && !$myTeamIdOnEvent && $joinOpen;
+			@endphp
 			<div class="card mb-1" style="padding: 0.5rem 0.8rem">
 				<div class="d-flex between fvc mb-05">
 					<a href="{{ route('tournamentTeams.show', [$event, $tTeam]) }}" class="blink f-16 b-600">{{ $tTeam->name }}</a>
+					@if($hasVacancy)
+					<span class="f-12 b-600" style="color:#f97316">Ищет партнёра</span>
+					@endif
 				</div>
-				@foreach($tTeam->members->sortBy(fn($m) => $m->role_code === 'captain' ? 0 : 1) as $m)
+				@foreach($confirmedMembers as $m)
 				@php
 					$mUser   = $m->user;
 					$mLevel  = (int)($mUser->beach_level ?? $mUser->classic_level ?? 0);
@@ -739,8 +765,31 @@ $showWaitlist = !$isTournament && !$eventStarted && $isFull && auth()->check();
 					<a href="{{ route('users.show', $mUser) }}" class="blink f-15">{{ $mName }}</a>
 				</div>
 				@endforeach
+				{{-- Вакантный слот --}}
+				@if($hasVacancy)
+				<div class="d-flex fvc" style="gap:0.5rem;margin-bottom:0.3rem;">
+					<span class="f-13 text-muted" style="width:16px;text-align:right;flex-shrink:0;">2.</span>
+					<div style="width:34px;height:34px;border-radius:50%;background:var(--bg2,#f5f5f5);flex-shrink:0;display:flex;align-items:center;justify-content:center;border:2px dashed #ccc;font-size:1.8rem;color:#aaa;">?</div>
+					<span style="width:10px;height:10px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0;"></span>
+					@if($canJoin)
+					<form method="POST" action="{{ route('tournamentTeams.joinRequest', [$event, $tTeam]) }}">
+						@csrf
+						<button class="btn btn-small" style="font-size:1.2rem;padding:3px 10px">Войти в пару</button>
+					</form>
+					@elseif($iAlreadyRequested)
+					<span class="f-13" style="color:#f97316;font-style:italic">Заявка отправлена</span>
+					@elseif($iMyTeam)
+					<span class="f-13" style="opacity:.4;font-style:italic">Ваша пара</span>
+					@else
+					<span class="f-13" style="opacity:.4;font-style:italic">Место свободно</span>
+					@endif
+				</div>
+				@endif
 			</div>
             @endforeach
+			@if($errors->has('join'))
+			<div class="alert alert-danger mt-1">{{ $errors->first('join') }}</div>
+			@endif
 			@endif
 			@else
 			<div id="players-list"></div>

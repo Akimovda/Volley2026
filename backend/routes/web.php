@@ -336,6 +336,9 @@ Route::post('/auth/tma-exchange', [TmaAuthController::class, 'exchange'])->name(
 
     Route::post('/events/{event}/teams/{team}/disband', [TournamentTeamController::class, 'disbandTeam'])
         ->name('tournamentTeams.disband');
+
+    Route::post('/events/{event}/teams/{team}/join-request', [TournamentTeamController::class, 'joinRequest'])
+        ->name('tournamentTeams.joinRequest');
 	});
 	
 	/*
