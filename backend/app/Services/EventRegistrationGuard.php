@@ -203,23 +203,30 @@
             $agePolicy = (string)($occurrence->age_policy ?? $event?->age_policy ?? 'any');
         
             // --- Возраст ---
-            if ($agePolicy === 'child') {
+            if ($agePolicy === 'adult' || $agePolicy === 'child') {
                 $birthDate = $user->birth_date ?? null;
                 if (!$birthDate) {
                     return (object)['allowed' => false, 'code' => 'age_blocked',
                         'message' => '🔞 Вы не проходите по возрасту'];
                 }
-                $age    = \Illuminate\Support\Carbon::parse($birthDate)
-                            ->diffInYears(\Illuminate\Support\Carbon::parse($occurrence->starts_at, 'UTC'));
-                $ageMin = (int)($event?->child_age_min ?? 0);
-                $ageMax = (int)($event?->child_age_max ?? 0);
-                if ($ageMax > 0 && $age > $ageMax) {
-                    return (object)['allowed' => false, 'code' => 'age_blocked',
-                        'message' => '🔞 Вы не проходите по возрасту'];
-                }
-                if ($ageMin > 0 && $age < $ageMin) {
-                    return (object)['allowed' => false, 'code' => 'age_blocked',
-                        'message' => '🔞 Вы не проходите по возрасту'];
+                $age = \Illuminate\Support\Carbon::parse($birthDate)
+                         ->diffInYears(\Illuminate\Support\Carbon::parse($occurrence->starts_at, 'UTC'));
+                if ($agePolicy === 'adult') {
+                    if ($age < 18) {
+                        return (object)['allowed' => false, 'code' => 'age_blocked',
+                            'message' => '🔞 Это мероприятие только для взрослых (18+)'];
+                    }
+                } else {
+                    $ageMin = (int)($event?->child_age_min ?? 0);
+                    $ageMax = (int)($event?->child_age_max ?? 0);
+                    if ($ageMax > 0 && $age > $ageMax) {
+                        return (object)['allowed' => false, 'code' => 'age_blocked',
+                            'message' => '🔞 Вы не проходите по возрасту'];
+                    }
+                    if ($ageMin > 0 && $age < $ageMin) {
+                        return (object)['allowed' => false, 'code' => 'age_blocked',
+                            'message' => '🔞 Вы не проходите по возрасту'];
+                    }
                 }
             }
         
@@ -554,50 +561,79 @@
 			string $policy,
 			GuardResult $result
 		): void {
-			
-			// Если политика не 'child', пропускаем (adult обрабатывается отдельно или игнорируется)
-			if ($policy !== 'child') {
+			if ($policy === 'any') {
 				return;
 			}
-			
-			// Проверяем наличие даты рождения у пользователя
+
 			if (!$user) {
-				$result->errors[] = 'Для записи на детское мероприятие необходимо войти в аккаунт.';
+				$result->errors[] = $policy === 'adult'
+					? 'Для записи на мероприятие необходимо войти в аккаунт.'
+					: 'Для записи на детское мероприятие необходимо войти в аккаунт.';
 				return;
 			}
-			
+
 			if (!Schema::hasColumn('users', 'birth_date') || !$user->birth_date) {
-				$result->errors[] = 'Для записи на детское мероприятие укажи дату рождения в профиле.';
+				$result->errors[] = $policy === 'adult'
+					? 'Для записи на это мероприятие укажи дату рождения в профиле.'
+					: 'Для записи на детское мероприятие укажи дату рождения в профиле.';
 				return;
 			}
-			
-			// Определяем дату мероприятия (сначала occurrence, потом event)
+
 			$eventDate = $occurrence->starts_at
 				? Carbon::parse($occurrence->starts_at, 'UTC')
 				: ($event->starts_at ? Carbon::parse($event->starts_at, 'UTC') : null);
-			
+
 			if (!$eventDate) {
 				$result->errors[] = 'Дата мероприятия не указана.';
 				return;
 			}
-			
-			$birthDate = Carbon::parse($user->birth_date);
-			
-			// Считаем полный возраст на момент мероприятия
-			$age = $birthDate->diffInYears($eventDate);
-			
+
+			$age = Carbon::parse($user->birth_date)->diffInYears($eventDate);
+
+			if ($policy === 'adult') {
+				if ($age < 18) {
+					$result->errors[] = 'Это мероприятие только для взрослых (18+).';
+				}
+				return;
+			}
+
+			// policy === 'child'
 			$min = (int)($event->child_age_min ?? 0);
 			$max = (int)($event->child_age_max ?? 0);
-			
+
 			if ($min > 0 && $age < $min) {
 				$result->errors[] = "Возраст участника меньше допустимого для этого мероприятия (нужно от {$min} лет).";
 				return;
 			}
-			
+
 			if ($max > 0 && $age > $max) {
 				$result->errors[] = "Возраст участника больше допустимого для этого мероприятия (нужно до {$max} лет).";
 				return;
 			}
+		}
+
+		/**
+		 * Проверяет право участника записаться/встать в резерв без проверки мест.
+		 * Используется в листе ожидания.
+		 */
+		public function checkEligibility(?User $user, EventOccurrence $occurrence): GuardResult
+		{
+			$result = GuardResult::allow();
+			$event  = $occurrence->event;
+
+			if (!$event) {
+				$result->addError('Событие не найдено.');
+				return $result;
+			}
+
+			$agePolicy = $occurrence->age_policy ?? $event->age_policy ?? 'any';
+
+			$this->checkAuthAndWindow($user, $occurrence, $event, $result);
+			$this->checkPersonalData($user, $occurrence, $event, $result);
+			$this->checkAgePolicy($user, $occurrence, $event, $agePolicy, $result);
+			$this->checkLevelPolicy($user, $occurrence, $event, $result);
+
+			return $result;
 		}
 		
 		/*

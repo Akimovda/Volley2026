@@ -24,6 +24,12 @@ class OccurrenceWaitlistController extends Controller
             return back()->with('error', 'Резерв недоступен для турниров.');
         }
 
+        // Проверяем возраст, уровень и прочие условия допуска
+        $eligibility = app(EventRegistrationGuard::class)->checkEligibility($user, $occurrence);
+        if (!$eligibility->allowed) {
+            return back()->with('error', implode(' ', $eligibility->errors));
+        }
+
         // Проверяем лимит резерва (не больше max_players)
         $maxPlayers = (int)($occurrence->event->gameSettings->max_players ?? 0);
         if ($maxPlayers > 0) {
