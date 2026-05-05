@@ -65,7 +65,8 @@ class AdminDashboardController extends Controller
                 SUM(CASE WHEN telegram_id IS NOT NULL AND vk_id IS NULL AND yandex_id IS NOT NULL AND apple_id IS NULL THEN 1 ELSE 0 END) as tg_ya,
                 SUM(CASE WHEN telegram_id IS NULL AND vk_id IS NOT NULL AND yandex_id IS NOT NULL AND apple_id IS NULL THEN 1 ELSE 0 END) as ya_vk,
                 SUM(CASE WHEN telegram_id IS NOT NULL AND vk_id IS NOT NULL AND yandex_id IS NOT NULL THEN 1 ELSE 0 END) as ya_vk_tg,
-                SUM(CASE WHEN apple_id IS NOT NULL THEN 1 ELSE 0 END) as apple_any
+                SUM(CASE WHEN apple_id IS NOT NULL THEN 1 ELSE 0 END) as apple_any,
+                SUM(CASE WHEN google_id IS NOT NULL THEN 1 ELSE 0 END) as google_any
             ")
             ->first();
 
@@ -79,6 +80,7 @@ class AdminDashboardController extends Controller
             'ya_vk'      => (int) ($row->ya_vk ?? 0),
             'ya_vk_tg'   => (int) ($row->ya_vk_tg ?? 0),
             'apple_any'  => (int) ($row->apple_any ?? 0),
+            'google_any' => (int) ($row->google_any ?? 0),
         ];
 
         // -----------------------------

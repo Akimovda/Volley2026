@@ -260,6 +260,8 @@ Route::post('/auth/tma-exchange', [TmaAuthController::class, 'exchange'])->name(
 	Route::get('/auth/yandex/callback', [YandexAuthController::class, 'callback'])->middleware('no-store-html')->name('auth.yandex.callback');
 	Route::get('/auth/apple/redirect', [\App\Http\Controllers\Auth\AppleAuthController::class, 'redirect'])->name('auth.apple.redirect');
 	Route::post('/auth/apple/callback', [\App\Http\Controllers\Auth\AppleAuthController::class, 'callback'])->name('auth.apple.callback');
+	Route::get('/auth/google/redirect', [\App\Http\Controllers\Auth\GoogleAuthController::class, 'redirect'])->middleware('no-store-html')->name('auth.google.redirect');
+	Route::get('/auth/google/callback', [\App\Http\Controllers\Auth\GoogleAuthController::class, 'callback'])->middleware('no-store-html')->name('auth.google.callback');
 	Route::post('/auth/biometric-login', [\App\Http\Controllers\Api\BiometricController::class, 'webLogin'])->name('auth.biometric.login');
 	Route::get('/auth/review-login', [\App\Http\Controllers\Auth\ReviewLoginController::class, 'show'])->name('auth.review.show');
 	Route::post('/auth/review-login', [\App\Http\Controllers\Auth\ReviewLoginController::class, 'login'])->name('auth.review.login');
@@ -432,6 +434,7 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
 		Route::post('/account/unlink/vk', [AccountUnlinkController::class, 'vk'])->name('account.unlink.vk')->middleware('block.impersonation');
 		Route::post('/account/unlink/yandex', [AccountUnlinkController::class, 'yandex'])->name('account.unlink.yandex')->middleware('block.impersonation');
 		Route::post('/account/unlink/apple', [AccountUnlinkController::class, 'apple'])->name('account.unlink.apple')->middleware('block.impersonation');
+		Route::post('/account/unlink/google', [AccountUnlinkController::class, 'google'])->name('account.unlink.google')->middleware('block.impersonation');
 
 		Route::post('/account/delete-request', [AccountDeleteRequestController::class, 'store'])->name('account.delete.request')->middleware('block.impersonation');
 		

@@ -27,6 +27,11 @@ class AccountUnlinkController extends Controller
         return $this->unlink($request, 'apple');
     }
 
+    public function google(Request $request)
+    {
+        return $this->unlink($request, 'google');
+    }
+
     private function unlink(Request $request, string $provider)
     {
         /** @var User $u */
@@ -37,6 +42,7 @@ class AccountUnlinkController extends Controller
             'vk'       => !empty($u->vk_id),
             'yandex'   => !empty($u->yandex_id),
             'apple'    => !empty($u->apple_id),
+            'google'   => !empty($u->google_id),
         ];
 
         if (empty($providers[$provider])) {
@@ -72,6 +78,10 @@ class AccountUnlinkController extends Controller
             $u->apple_id = null;
         }
 
+        if ($provider === 'google') {
+            $u->google_id = null;
+        }
+
         $u->save();
 
         // если отвязали текущий provider в сессии — подчистим метки
@@ -84,6 +94,7 @@ class AccountUnlinkController extends Controller
             'vk' => 'VK',
             'yandex' => 'Yandex',
             'apple' => 'Apple',
+            'google' => 'Google',
             default => 'Provider',
         };
 

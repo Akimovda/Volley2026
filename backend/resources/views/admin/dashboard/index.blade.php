@@ -178,6 +178,7 @@
                         $providerRows = [
                             ['label' => '🍎 Apple',       'key' => 'apple_any',  'hint' => 'всего с Apple ID', 'bold' => true],
                             ['label' => '🍎 Apple only',  'key' => 'apple_only', 'hint' => 'только Apple'],
+                            ['label' => '🔵 Google',      'key' => 'google_any', 'hint' => 'всего с Google', 'bold' => true],
                             ['label' => '🤖 TG only',     'key' => 'tg_only',   'hint' => 'только Telegram'],
                             ['label' => '💙 VK only',     'key' => 'vk_only',   'hint' => 'только VK'],
                             ['label' => '🟡 Ya only',     'key' => 'ya_only',   'hint' => 'только Яндекс'],
