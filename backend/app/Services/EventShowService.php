@@ -31,14 +31,19 @@ class EventShowService
         $occurrenceId = (int) $request->query('occurrence');
 
         if (!$occurrenceId) {
-            $occurrenceId = EventOccurrence::query()
+            $baseQuery = EventOccurrence::query()
                 ->where('event_id', $event->id)
                 ->whereNull('cancelled_at')
                 ->where(function ($q) {
                     $q->whereNull('is_cancelled')->orWhere('is_cancelled', false);
-                })
+                });
+
+            // ближайшая будущая occurrence; если нет — последняя прошедшая
+            $occurrenceId = (clone $baseQuery)
+                ->where('starts_at', '>=', now())
                 ->orderBy('starts_at')
-                ->value('id');
+                ->value('id')
+                ?? $baseQuery->orderByDesc('starts_at')->value('id');
         }
 
         if (!$occurrenceId) {
