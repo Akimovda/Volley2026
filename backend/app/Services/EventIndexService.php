@@ -355,7 +355,7 @@ class EventIndexService
             ->pluck('occurrence_id')
             ->map(fn($v) => (int)$v);
 
-        // Добавляем occurrence_id из командных турниров
+        // Добавляем occurrence_id из командных турниров (по occurrence_id)
         $teamIds = DB::table('event_team_members')
             ->join('event_teams', 'event_teams.id', '=', 'event_team_members.event_team_id')
             ->where('event_team_members.user_id', $user->id)
@@ -364,6 +364,27 @@ class EventIndexService
             ->whereIn('event_teams.occurrence_id', $occurrenceIds)
             ->pluck('event_teams.occurrence_id')
             ->map(fn($v) => (int)$v);
+
+        // Для командных турниров: если игрок в команде по event_id — считать записанным
+        // на все occurrences этого турнира (команды могут быть привязаны к другой дате)
+        $tournamentEventIds = DB::table('event_team_members as etm')
+            ->join('event_teams as et', 'et.id', '=', 'etm.event_team_id')
+            ->join('events as e', 'e.id', '=', 'et.event_id')
+            ->where('etm.user_id', $user->id)
+            ->whereIn('etm.confirmation_status', ['confirmed', 'joined'])
+            ->whereIn('et.status', ['draft', 'ready', 'pending_members', 'submitted', 'confirmed', 'approved'])
+            ->whereIn('e.registration_mode', ['team_classic', 'team_beach'])
+            ->distinct()
+            ->pluck('et.event_id');
+
+        if ($tournamentEventIds->isNotEmpty()) {
+            $tournamentOccIds = DB::table('event_occurrences')
+                ->whereIn('event_id', $tournamentEventIds)
+                ->whereIn('id', $occurrenceIds)
+                ->pluck('id')
+                ->map(fn($v) => (int)$v);
+            $teamIds = $teamIds->merge($tournamentOccIds);
+        }
 
         return $regIds->merge($teamIds)->unique()->values()->all();
     }

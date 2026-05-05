@@ -741,13 +741,29 @@ $showWaitlist = !$isTournament && !$eventStarted && $isFull && auth()->check();
 				$cancelUntil = $occurrence->effectiveCancelSelfUntil();
 				$joinOpen    = !$cancelUntil || now('UTC')->lessThanOrEqualTo($cancelUntil);
 				$canJoin     = $hasVacancy && auth()->check() && !$iMyTeam && !$iAlreadyRequested && !$myTeamIdOnEvent && $joinOpen;
+				$teamStatusMap = [
+					'approved'        => ['label' => 'Подтверждена', 'color' => '#16a34a'],
+					'confirmed'       => ['label' => 'Подтверждена', 'color' => '#16a34a'],
+					'ready'           => ['label' => 'Готова',        'color' => '#16a34a'],
+					'submitted'       => ['label' => 'Заявка подана', 'color' => '#2563eb'],
+					'draft'           => ['label' => 'Формируется',   'color' => '#9ca3af'],
+					'pending_members' => ['label' => 'Ожидает участников', 'color' => '#f97316'],
+					'incomplete'      => ['label' => 'Неполная',      'color' => '#dc2626'],
+				];
+				$statusInfo = $teamStatusMap[$tTeam->status] ?? ['label' => $tTeam->status, 'color' => '#9ca3af'];
 			@endphp
-			<div class="card mb-1" style="padding: 0.5rem 0.8rem">
+			<div class="card mb-1" style="padding: 0.5rem 0.8rem{{ $iMyTeam ? ';border:1.5px solid #2563eb' : '' }}">
 				<div class="d-flex between fvc mb-05">
 					<a href="{{ route('tournamentTeams.show', [$event, $tTeam]) }}" class="blink f-16 b-600">{{ $tTeam->name }}</a>
-					@if($hasVacancy)
-					<span class="f-12 b-600" style="color:#f97316">Ищет партнёра</span>
-					@endif
+					<div class="d-flex fvc" style="gap:0.4rem;flex-wrap:wrap;justify-content:flex-end">
+						@if($iMyTeam)
+						<span class="f-12 b-600" style="color:#2563eb">Ваша команда</span>
+						@endif
+						<span class="f-12" style="color:{{ $statusInfo['color'] }}">{{ $statusInfo['label'] }}</span>
+						@if($hasVacancy && !$iMyTeam)
+						<span class="f-12 b-600" style="color:#f97316">Ищет партнёра</span>
+						@endif
+					</div>
 				</div>
 				@foreach($confirmedMembers as $m)
 				@php
