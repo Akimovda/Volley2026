@@ -53,6 +53,9 @@ class CancelEventsByQuorum extends Command
                 'eo.timezone',
                 'eo.registration_ends_at',
                 'e.title as event_title',
+                'e.format as event_format',
+                'e.registration_mode as event_registration_mode',
+                'e.tournament_teams_count as event_tournament_teams_count',
                 'egs.min_players',
                 'loc.name as location_name',
                 'loc.address as location_address',
@@ -106,14 +109,38 @@ class CancelEventsByQuorum extends Command
                 continue;
             }
 
-            $activeRegs = $this->countActiveRegistrations((int) $row->event_id, (int) $row->id);
+            $regMode = (string) ($row->event_registration_mode ?? '');
+            $isTeamMode = in_array($regMode, ['team_beach', 'team_classic'], true)
+                || (string) ($row->event_format ?? '') === 'tournament';
 
-            if ($activeRegs >= $minPlayers) {
-                $skipped++;
-                continue;
+            if ($isTeamMode) {
+                $minTeams = (int) ($row->event_tournament_teams_count ?? 0);
+                if ($minTeams <= 0) {
+                    // Командный турнир без настроенного порога — авто-отмена не применяется
+                    $skipped++;
+                    continue;
+                }
+
+                $approvedTeams = $this->countApprovedTeams((int) $row->event_id, (int) $row->id);
+
+                if ($approvedTeams >= $minTeams) {
+                    $skipped++;
+                    continue;
+                }
+
+                $activeRegs = $approvedTeams;
+                $minPlayers = $minTeams;
+                $userIds = $this->getTeamMemberUserIds((int) $row->event_id, (int) $row->id);
+            } else {
+                $activeRegs = $this->countActiveRegistrations((int) $row->event_id, (int) $row->id);
+
+                if ($activeRegs >= $minPlayers) {
+                    $skipped++;
+                    continue;
+                }
+
+                $userIds = $this->getActiveRegisteredUserIds((int) $row->event_id, (int) $row->id);
             }
-
-            $userIds = $this->getActiveRegisteredUserIds((int) $row->event_id, (int) $row->id);
 
             $startsLocalText = $startsUtc->copy()
                 ->setTimezone($timezone)
@@ -213,6 +240,54 @@ class CancelEventsByQuorum extends Command
 
         // 00:00 - 06:59 => тоже за 8 часов
         return $startsAtUtc->copy()->subHours(8);
+    }
+
+    private function countApprovedTeams(int $eventId, int $occurrenceId): int
+    {
+        if (!Schema::hasTable('event_teams')) {
+            return 0;
+        }
+
+        return (int) DB::table('event_teams')
+            ->where('event_id', $eventId)
+            ->where('occurrence_id', $occurrenceId)
+            ->where('status', 'approved')
+            ->count();
+    }
+
+    private function getTeamMemberUserIds(int $eventId, int $occurrenceId): array
+    {
+        if (!Schema::hasTable('event_teams')) {
+            return [];
+        }
+
+        $teamIds = DB::table('event_teams')
+            ->where('event_id', $eventId)
+            ->where('occurrence_id', $occurrenceId)
+            ->where('status', 'approved')
+            ->pluck('id');
+
+        if ($teamIds->isEmpty()) {
+            return [];
+        }
+
+        $captains = DB::table('event_teams')
+            ->whereIn('id', $teamIds)
+            ->pluck('captain_user_id');
+
+        $members = collect();
+        if (Schema::hasTable('event_team_members')) {
+            $members = DB::table('event_team_members')
+                ->whereIn('team_id', $teamIds)
+                ->pluck('user_id');
+        }
+
+        return $captains->merge($members)
+            ->filter(fn ($v) => (int) $v > 0)
+            ->map(fn ($v) => (int) $v)
+            ->unique()
+            ->values()
+            ->all();
     }
 
     private function countActiveRegistrations(int $eventId, int $occurrenceId): int
