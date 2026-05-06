@@ -744,15 +744,15 @@ $showWaitlist = !$isTournament && !$eventStarted && $isFull && auth()->check();
 				$joinOpen    = !$cancelUntil || now('UTC')->lessThanOrEqualTo($cancelUntil);
 				$canJoin     = $hasVacancy && auth()->check() && !$iMyTeam && !$iAlreadyRequested && !$myTeamIdOnEvent && $joinOpen;
 				$teamStatusMap = [
-					'approved'        => ['label' => 'Подтверждена', 'color' => '#16a34a'],
-					'confirmed'       => ['label' => 'Подтверждена', 'color' => '#16a34a'],
-					'ready'           => ['label' => 'Готова',        'color' => '#16a34a'],
-					'submitted'       => ['label' => 'Заявка подана', 'color' => '#2563eb'],
-					'draft'           => ['label' => 'Формируется',   'color' => '#9ca3af'],
-					'pending_members' => ['label' => 'Ожидает участников', 'color' => '#f97316'],
-					'incomplete'      => ['label' => 'Неполная',      'color' => '#dc2626'],
+					'approved'        => ['label' => 'Подтверждена',       'color' => '#166534', 'bg' => '#f0fdf4'],
+					'confirmed'       => ['label' => 'Подтверждена',       'color' => '#166534', 'bg' => '#f0fdf4'],
+					'ready'           => ['label' => 'Готова',             'color' => '#166534', 'bg' => '#f0fdf4'],
+					'submitted'       => ['label' => 'Заявка подана',      'color' => '#1e40af', 'bg' => '#dbeafe'],
+					'draft'           => ['label' => 'Формируется',        'color' => '#6b7280', 'bg' => '#f3f4f6'],
+					'pending_members' => ['label' => 'Ожидает участников', 'color' => '#92400e', 'bg' => '#fff7e6'],
+					'incomplete'      => ['label' => 'Неполная',           'color' => '#9f1239', 'bg' => '#fff1f2'],
 				];
-				$statusInfo = $teamStatusMap[$tTeam->status] ?? ['label' => $tTeam->status, 'color' => '#9ca3af'];
+				$statusInfo = $teamStatusMap[$tTeam->status] ?? ['label' => $tTeam->status, 'color' => '#6b7280', 'bg' => '#f3f4f6'];
 			@endphp
 			<div class="card mb-1" style="padding: 0.5rem 0.8rem{{ $iMyTeam ? ';border:1.5px solid #2563eb' : '' }}">
 				<div class="d-flex between fvc mb-05">
@@ -761,7 +761,7 @@ $showWaitlist = !$isTournament && !$eventStarted && $isFull && auth()->check();
 						@if($iMyTeam)
 						<span class="f-12 b-600" style="color:#2563eb">Ваша команда</span>
 						@endif
-						<span class="f-12" style="color:{{ $statusInfo['color'] }}">{{ $statusInfo['label'] }}</span>
+						<span style="display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600;background:{{ $statusInfo['bg'] }};color:{{ $statusInfo['color'] }}">{{ $statusInfo['label'] }}</span>
 						@if($hasVacancy && !$iMyTeam)
 						<span class="f-12 b-600" style="color:#f97316">Ищет партнёра</span>
 						@endif

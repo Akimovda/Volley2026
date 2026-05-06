@@ -31,7 +31,9 @@ $inviteRole     = $invite->team_role ?? null;
 $invitePosition = $invite->position_code ?? null;
 $canRespond     = in_array((string)($invite->status ?? 'pending'), ['pending'], true);
 $st = (string)($invite->status ?? 'pending');
-$stAllColors = ['accepted'=>'#4caf50','declined'=>'#f44336','revoked'=>'#999','expired'=>'#999','pending'=>'#ff9800'];
+$stAllColor  = ['accepted'=>'#166534','declined'=>'#9f1239','revoked'=>'#6b7280','expired'=>'#6b7280','pending'=>'#92400e','cancelled'=>'#6b7280'];
+$stAllBg     = ['accepted'=>'#f0fdf4','declined'=>'#fff1f2','revoked'=>'#f3f4f6','expired'=>'#f3f4f6','pending'=>'#fff7e6','cancelled'=>'#f3f4f6'];
+$stAllIcon   = ['accepted'=>'✅','declined'=>'❌','revoked'=>'↩️','expired'=>'⌛','pending'=>'⏳','cancelled'=>'🚫'];
 $stAllLabels = ['accepted'=>'Принято','declined'=>'Отклонено','cancelled'=>'Отменено','revoked'=>'Отозвано','expired'=>'Истекло','pending'=>'Ожидает ответа'];
 $locationLine = collect([$event?->location?->city?->name,$event?->location?->name,$event?->location?->address])->filter()->implode(', ');
 @endphp
@@ -51,8 +53,8 @@ $locationLine = collect([$event?->location?->city?->name,$event?->location?->nam
     <div class="ramka">
         <div class="d-flex between fvc mb-1" style="flex-wrap:wrap;gap:.5rem">
             <h2 class="-mt-05">{{ $team?->name ?? 'Команда' }}</h2>
-            <span class="f-13 b-600" style="color:{{ $stAllColors[$st] ?? '#999' }}">
-                {{ $stAllLabels[$st] ?? $st }}
+            <span style="display:inline-flex;align-items:center;gap:.3rem;padding:3px 12px;border-radius:12px;font-size:13px;font-weight:600;background:{{ $stAllBg[$st] ?? '#f3f4f6' }};color:{{ $stAllColor[$st] ?? '#6b7280' }}">
+                {{ $stAllIcon[$st] ?? '' }} {{ $stAllLabels[$st] ?? $st }}
             </span>
         </div>
 

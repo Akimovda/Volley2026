@@ -9,24 +9,24 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 		<script>if(navigator.userAgent.includes('VolleyPlayApp')){document.documentElement.classList.add('is-app');window.addEventListener('load',function(){var btn=document.getElementById('app-back-btn');if(btn&&window.history.length<=1){btn.style.display='none';}});}</script>
 		<script>
-		if(navigator.userAgent.includes('VolleyPlayApp')){
-			document.addEventListener('click',function(e){
-				var bell=e.target.closest('.fix-header-btn-mail');
-				if(bell){
-					var called=false;
-					if(window.VolleyPlay&&typeof window.VolleyPlay.openNotifications==='function'){window.VolleyPlay.openNotifications();called=true;}
-					else if(window.webkit&&window.webkit.messageHandlers&&window.webkit.messageHandlers.openNotifications){window.webkit.messageHandlers.openNotifications.postMessage({});called=true;}
-					if(called){e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();return false;}
-				}
-				var notifLink=e.target.closest('a[href*="/notifications"]');
-				if(notifLink){
-					var called=false;
-					if(window.VolleyPlay&&typeof window.VolleyPlay.openNotifications==='function'){window.VolleyPlay.openNotifications();called=true;}
-					else if(window.webkit&&window.webkit.messageHandlers&&window.webkit.messageHandlers.openNotifications){window.webkit.messageHandlers.openNotifications.postMessage({});called=true;}
-					if(called){e.preventDefault();e.stopPropagation();return false;}
-				}
-			},true);
-		}
+			if(navigator.userAgent.includes('VolleyPlayApp')){
+				document.addEventListener('click',function(e){
+					var bell=e.target.closest('.fix-header-btn-mail');
+					if(bell){
+						var called=false;
+						if(window.VolleyPlay&&typeof window.VolleyPlay.openNotifications==='function'){window.VolleyPlay.openNotifications();called=true;}
+						else if(window.webkit&&window.webkit.messageHandlers&&window.webkit.messageHandlers.openNotifications){window.webkit.messageHandlers.openNotifications.postMessage({});called=true;}
+						if(called){e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();return false;}
+					}
+					var notifLink=e.target.closest('a[href*="/notifications"]');
+					if(notifLink){
+						var called=false;
+						if(window.VolleyPlay&&typeof window.VolleyPlay.openNotifications==='function'){window.VolleyPlay.openNotifications();called=true;}
+						else if(window.webkit&&window.webkit.messageHandlers&&window.webkit.messageHandlers.openNotifications){window.webkit.messageHandlers.openNotifications.postMessage({});called=true;}
+						if(called){e.preventDefault();e.stopPropagation();return false;}
+					}
+				},true);
+			}
 		</script>
 		<meta name="csrf-token" content="{{ csrf_token() }}">
 		@auth<meta name="user-authenticated" content="true">@endauth
@@ -80,69 +80,69 @@
 	</head>
 	<body @class([$body_class ?? null])>
 		<script>
-		(function() {
-			var ua = navigator.userAgent;
-			if (ua.includes('VolleyPlayApp')) return;
-
-			var isAndroid = ua.includes('Android');
-			var isIOS = (ua.includes('iPhone') || ua.includes('iPad')) && !isAndroid;
-			if (!isAndroid && !isIOS) return;
-
-			var STORAGE_KEY = isAndroid ? 'rustore_banner_hidden_until' : 'appbanner_hidden_until';
-			var hidden = localStorage.getItem(STORAGE_KEY);
-			if (hidden && Date.now() < parseInt(hidden, 10)) return;
-
-			var STORE_URL = isAndroid
+			(function() {
+				var ua = navigator.userAgent;
+				if (ua.includes('VolleyPlayApp')) return;
+				
+				var isAndroid = ua.includes('Android');
+				var isIOS = (ua.includes('iPhone') || ua.includes('iPad')) && !isAndroid;
+				if (!isAndroid && !isIOS) return;
+				
+				var STORAGE_KEY = isAndroid ? 'rustore_banner_hidden_until' : 'appbanner_hidden_until';
+				var hidden = localStorage.getItem(STORAGE_KEY);
+				if (hidden && Date.now() < parseInt(hidden, 10)) return;
+				
+				var STORE_URL = isAndroid
 				? 'https://www.rustore.ru/catalog/app/club.volleyplay.app'
 				: 'https://apps.apple.com/app/id6764748613';
-			var HEIGHT = isAndroid ? 60 : 40;
-
-			var banner = document.createElement('div');
-			banner.id = 'app-store-banner';
-
-			if (isAndroid) {
-				banner.innerHTML =
+				var HEIGHT = isAndroid ? 60 : 40;
+				
+				var banner = document.createElement('div');
+				banner.id = 'app-store-banner';
+				
+				if (isAndroid) {
+					banner.innerHTML =
 					'<a href="' + STORE_URL + '" style="display:flex;align-items:center;flex:1;min-width:0;text-decoration:none;color:inherit;">' +
-						'<img src="/icons/app-logo.png" style="width:20px;height:20px;border-radius:5px;margin-right:8px;flex-shrink:0;" alt="">' +
-						'<div style="font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">VolleyClub — волейбольный сервис</div>' +
+					'<img src="/icons/app-logo.png" style="width:20px;height:20px;border-radius:5px;margin-right:8px;flex-shrink:0;" alt="">' +
+					'<div style="font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">VolleyClub — волейбольный сервис</div>' +
 					'</a>' +
 					'<a href="' + STORE_URL + '" style="margin-left:10px;flex-shrink:0;background:#F97316;color:#fff;font-size:13px;font-weight:600;padding:6px 14px;border-radius:20px;text-decoration:none;white-space:nowrap;">Открыть</a>' +
 					'<button id="app-banner-close" style="margin-left:10px;flex-shrink:0;background:none;border:none;font-size:20px;line-height:1;cursor:pointer;opacity:.5;padding:4px 6px;" aria-label="Закрыть">×</button>';
-			} else {
-				banner.innerHTML =
+					} else {
+					banner.innerHTML =
 					'<a href="' + STORE_URL + '" style="display:flex;align-items:center;flex:1;min-width:0;text-decoration:none;color:inherit;">' +
-						'<img src="/icons/app-logo.png" style="width:20px;height:20px;border-radius:5px;margin-right:8px;flex-shrink:0;" alt="">' +
-						'<div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">VolleyClub — волейбольный сервис</div>' +
+					'<img src="/icons/app-logo.png" style="width:20px;height:20px;border-radius:5px;margin-right:8px;flex-shrink:0;" alt="">' +
+					'<div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">VolleyClub — волейбольный сервис</div>' +
 					'</a>' +
 					'<a href="' + STORE_URL + '" style="margin-left:10px;flex-shrink:0;background:#F97316;color:#fff;font-size:12px;font-weight:600;padding:5px 12px;border-radius:20px;text-decoration:none;white-space:nowrap;">Открыть</a>' +
 					'<button id="app-banner-close" style="margin-left:8px;flex-shrink:0;background:none;border:none;font-size:18px;line-height:1;cursor:pointer;opacity:.5;padding:4px 6px;" aria-label="Закрыть">×</button>';
-			}
-
-			banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;display:flex;align-items:center;padding:0 12px;height:' + HEIGHT + 'px;box-shadow:0 2px 8px rgba(0,0,0,.15);box-sizing:border-box;';
-
-			document.documentElement.style.setProperty('--app-banner-h', HEIGHT + 'px');
-			document.body.classList.add('has-app-banner');
-			document.body.insertBefore(banner, document.body.firstChild);
-
-			function applyTheme() {
-				var dark = document.body.classList.contains('dark');
-				banner.style.background = dark ? '#1e1e2e' : '#ffffff';
-				var closeBtn = document.getElementById('app-banner-close');
-				if (closeBtn) closeBtn.style.color = dark ? '#ffffff' : '#000000';
-			}
-			applyTheme();
-
-			document.getElementById('app-banner-close').addEventListener('click', function(e) {
-				e.preventDefault();
-				banner.remove();
-				document.body.classList.remove('has-app-banner');
-				document.documentElement.style.removeProperty('--app-banner-h');
-				localStorage.setItem(STORAGE_KEY, String(Date.now() + 7 * 24 * 60 * 60 * 1000));
-			});
-
-			var obs = typeof MutationObserver !== 'undefined' && new MutationObserver(applyTheme);
-			if (obs) obs.observe(document.body, { attributes: true, attributeFilter: ['class'] });
-		})();
+				}
+				
+				banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;display:flex;align-items:center;padding:0 12px;height:' + HEIGHT + 'px;box-shadow:0 2px 8px rgba(0,0,0,.15);box-sizing:border-box;';
+				
+				document.documentElement.style.setProperty('--app-banner-h', HEIGHT + 'px');
+				document.body.classList.add('has-app-banner');
+				document.body.insertBefore(banner, document.body.firstChild);
+				
+				function applyTheme() {
+					var dark = document.body.classList.contains('dark');
+					banner.style.background = dark ? '#1e1e2e' : '#ffffff';
+					var closeBtn = document.getElementById('app-banner-close');
+					if (closeBtn) closeBtn.style.color = dark ? '#ffffff' : '#000000';
+				}
+				applyTheme();
+				
+				document.getElementById('app-banner-close').addEventListener('click', function(e) {
+					e.preventDefault();
+					banner.remove();
+					document.body.classList.remove('has-app-banner');
+					document.documentElement.style.removeProperty('--app-banner-h');
+					localStorage.setItem(STORAGE_KEY, String(Date.now() + 7 * 24 * 60 * 60 * 1000));
+				});
+				
+				var obs = typeof MutationObserver !== 'undefined' && new MutationObserver(applyTheme);
+				if (obs) obs.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+			})();
 		</script>
 		<script>
 			(function() {
@@ -163,7 +163,7 @@
 							document.body.classList.toggle('dark', e.matches);
 						});
 					}
-				} else if (localStorage.getItem('theme') === 'dark') {
+					} else if (localStorage.getItem('theme') === 'dark') {
 					document.body.classList.add('dark');
 				}
 			})();
@@ -461,7 +461,7 @@
 							<span class="auth-text">Войти через Google</span>
 						</a>
 						@endunless
-
+						
 						{{--
 						<div data-href="#max" class="auth-btn auth-btn-max">
 							<span class="auth-icon-circle">
@@ -470,7 +470,7 @@
 							<span class="auth-text">Войти через Max</span>
 						</div>
 						--}}
-
+						
 					</div>
 					@endauth
 				</div>
@@ -697,14 +697,20 @@
 							<div class="footer-app">
 								<div class="h4 title-h">Приложения</div>
 								<div class="app-links">
-									<a href="https://apps.apple.com/ru/app/volleyclub/id6764748613" class="app-link">
-										<span class="icon-apple"></span>
-										<span>App Store</span>
-									</a>
-									<a href="#" class="app-link">
-										<span class="icon-googleplay"></span>
-										<span>Google Play</span>
-									</a>
+									<div class="row">
+										<div class="col-6">
+											<a href="https://apps.apple.com/ru/app/volleyclub/id6764748613" class="app-link">
+												<span class="icon-apple"></span>
+												<span>App Store</span>
+											</a>
+										</div>	
+										<div class="col-6">
+											<a href="https://www.rustore.ru/catalog/app/club.volleyplay.app" class="app-link">
+												<span class="icon-rustore"></span>
+												<span>RuStore</span>
+											</a>
+										</div>	
+									</div>
 								</div>
 							</div>
 							
@@ -858,40 +864,7 @@
         {{ $script }}
 		@endif	
 		
-		{{--
-		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">		
-		<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>		
-		<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ru.js"></script>			
-		<script>		
-			document.addEventListener('DOMContentLoaded', function() {
-				// Для всех полей type="date"
-				const dateInputs = document.querySelectorAll('input[type="date"]');
-				dateInputs.forEach(input => {
-					flatpickr(input, {
-						dateFormat: "Y-m-d",
-						locale: "ru",
-						allowInput: true,
-						altInput: true,
-						altFormat: "d.m.Y",
-					});
-				});
-				
-				// Для всех полей type="datetime-local"
-				const datetimeInputs = document.querySelectorAll('input[type="datetime-local"]');
-				datetimeInputs.forEach(input => {
-					flatpickr(input, {
-						enableTime: true,
-						dateFormat: "Y-m-d H:i:S",
-						locale: "ru",
-						allowInput: true,
-						altInput: true,
-						altFormat: "d.m.Y H:i",
-						time_24hr: true,
-					});
-				});
-			});		
-		</script>
-		--}}
+		
 		<script>
 			if (navigator.userAgent.includes('VolleyPlayApp') && window.Capacitor) {
 				Capacitor.Plugins.PushNotifications.addListener('registration', function(token) {
