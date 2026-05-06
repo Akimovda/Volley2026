@@ -88,6 +88,13 @@ class ImpersonationController extends Controller
         $request->session()->put('impersonator_id', $admin->id);
 
         Auth::loginUsingId($user->id);
+        // Синхронизируем password_hash_web, иначе AuthenticateSession middleware
+        // увидит расхождение (в сессии хеш админа vs хеш impersonated user)
+        // и выкинет из аккаунта на первом же auth_session-маршруте (например /user/profile).
+        $request->session()->put(
+            'password_hash_'.Auth::getDefaultDriver(),
+            $user->getAuthPassword()
+        );
         $request->session()->regenerate();
 
         return redirect('/events')->with('status', "Вы вошли от имени: {$user->name}");
@@ -120,6 +127,13 @@ class ImpersonationController extends Controller
         $request->session()->forget('impersonator_id');
 
         Auth::loginUsingId($impersonatorId);
+        $admin = User::find($impersonatorId);
+        if ($admin) {
+            $request->session()->put(
+                'password_hash_'.Auth::getDefaultDriver(),
+                $admin->getAuthPassword()
+            );
+        }
         $request->session()->regenerate();
 
         return redirect('/admin/impersonate')->with('status', 'Вы вернулись в свой аккаунт.');

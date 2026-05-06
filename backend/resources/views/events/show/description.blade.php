@@ -149,7 +149,7 @@
 						@endphp
 						
 						@if($levelMin || $levelMax)
-						<div class="event-row" style="flex-direction:column;gap:.5rem;">
+						<div class="event-row between" style="flex-wrap: wrap;gap:.5rem;">
 							<span class="b-600">📈 Уровень:</span>
 							<span>
 								@if($levelMin)
