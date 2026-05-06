@@ -32,9 +32,15 @@ $canManage      = $isCaptain || $isOrganizer;
 $posLabels = ['setter'=>'Связующий','outside'=>'Доигровщик','opposite'=>'Диагональный','middle'=>'Центральный','libero'=>'Либеро'];
 $roleLabels = ['captain'=>'Капитан','player'=>'Основной игрок','reserve'=>'Запасной'];
 $stLabels = ['confirmed'=>'Подтверждён','joined'=>'Ожидает подтверждения','invited'=>'Приглашён','declined'=>'Отклонён','requested'=>'Запрос на вступление'];
-$stColors = ['confirmed'=>'#4caf50','joined'=>'#ff9800','invited'=>'#2967BA','declined'=>'#f44336','requested'=>'#9c27b0'];
-$invStColors = ['accepted'=>'#4caf50','declined'=>'#f44336','revoked'=>'#999','expired'=>'#999','pending'=>'#ff9800'];
+$stColor  = ['confirmed'=>'#166534','joined'=>'#92400e','invited'=>'#1e40af','declined'=>'#9f1239','requested'=>'#5b21b6'];
+$stBg     = ['confirmed'=>'#f0fdf4','joined'=>'#fff7e6','invited'=>'#dbeafe','declined'=>'#fff1f2','requested'=>'#f5f3ff'];
 $invStLabels = ['pending'=>'Ожидает','accepted'=>'Принято','declined'=>'Отклонено','revoked'=>'Отозвано','expired'=>'Истекло'];
+$invStColor  = ['accepted'=>'#166534','declined'=>'#9f1239','revoked'=>'#6b7280','expired'=>'#6b7280','pending'=>'#92400e'];
+$invStBg     = ['accepted'=>'#f0fdf4','declined'=>'#fff1f2','revoked'=>'#f3f4f6','expired'=>'#f3f4f6','pending'=>'#fff7e6'];
+$appStLabels = ['pending'=>'На рассмотрении','approved'=>'Принята','rejected'=>'Отклонена'];
+$appStBg     = ['pending'=>'#fff7e6','approved'=>'#f0fdf4','rejected'=>'#fff1f2'];
+$appStColor  = ['pending'=>'#92400e','approved'=>'#166534','rejected'=>'#9f1239'];
+$appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌'];
 @endphp
 
 <div class="container">
@@ -83,7 +89,7 @@ $invStLabels = ['pending'=>'Ожидает','accepted'=>'Принято','declin
                 </div>
             </div>
             <div class="d-flex gap-1 fvc">
-                <span class="f-13 b-600" style="color:{{ $stColors[$member->confirmation_status] ?? '#999' }}">
+                <span style="display:inline-block;padding:2px 10px;border-radius:10px;font-size:12px;font-weight:600;background:{{ $stBg[$member->confirmation_status] ?? '#f3f4f6' }};color:{{ $stColor[$member->confirmation_status] ?? '#6b7280' }}">
                     {{ $stLabels[$member->confirmation_status] ?? $member->confirmation_status }}
                 </span>
                 @if($isCaptain && (int)$member->user_id !== (int)$team->captain_user_id)
@@ -167,7 +173,7 @@ $invStLabels = ['pending'=>'Ожидает','accepted'=>'Принято','declin
                         @if($inv->position_code) · {{ $posLabels[$inv->position_code] ?? $inv->position_code }} @endif
                     </span>
                 </div>
-                <span class="f-13 b-600" style="color:{{ $invStColors[$inv->status] ?? '#ff9800' }}">
+                <span style="display:inline-block;padding:2px 10px;border-radius:10px;font-size:12px;font-weight:600;background:{{ $invStBg[$inv->status] ?? '#fff7e6' }};color:{{ $invStColor[$inv->status] ?? '#92400e' }}">
                     {{ $invStLabels[$inv->status] ?? $inv->status }}
                 </span>
             </div>
@@ -228,7 +234,14 @@ $invStLabels = ['pending'=>'Ожидает','accepted'=>'Принято','declin
     <div class="ramka">
         <h2 class="-mt-05">📋 Подача заявки</h2>
         @if($team->application)
-            <div class="alert alert-info">Заявка подана · Статус: <strong>{{ $team->application->status }}</strong></div>
+            @php $appSt = $team->application->status ?? 'pending'; @endphp
+            <div class="d-flex fvc" style="gap:.6rem;margin-bottom:.75rem;padding:.6rem .9rem;border-radius:8px;background:{{ $appStBg[$appSt] ?? '#f8f9fa' }}">
+                <span style="font-size:1.1rem">{{ $appStIcon[$appSt] ?? '📋' }}</span>
+                <div>
+                    <span class="f-13" style="opacity:.6">Статус заявки</span>
+                    <div class="b-600 f-15" style="color:{{ $appStColor[$appSt] ?? '#333' }}">{{ $appStLabels[$appSt] ?? $appSt }}</div>
+                </div>
+            </div>
 
             {{-- Блок оплаты (после подачи заявки) --}}
             @php
