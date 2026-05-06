@@ -853,15 +853,27 @@
 									<th class="p-1" style="text-align:center">В</th>
 									<th class="p-1" style="text-align:center">П</th>
 									<th class="p-1" style="text-align:center">Очки</th>
-<th class="p-1" style="text-align:center">Разн.</th>
+<th class="p-1" style="text-align:center" title="Чистая (без матчей с аутсайдерами) / Полная">Разн.</th>
 								</tr>
 							</thead>
 							<tbody>
+								@php
+									$groupOutsiders = $outsidersByGroup[$group->id] ?? [];
+									$groupClean     = $cleanStatsByGroup[$group->id] ?? [];
+									$fmtDiff = fn($v) => ($v > 0 ? '+' : '') . $v;
+								@endphp
 								@foreach($group->standings->sortBy('rank') as $standing)
-								<tr style="border-bottom:1px solid rgba(128,128,128,.1)">
+								@php
+									$isOutsider = in_array((int) $standing->team_id, $groupOutsiders, true);
+									$fullDiff   = $standing->points_scored - $standing->points_conceded;
+									$cleanPs    = $groupClean[$standing->team_id]['points_scored']   ?? $standing->points_scored;
+									$cleanPc    = $groupClean[$standing->team_id]['points_conceded'] ?? $standing->points_conceded;
+									$cleanDiff  = $cleanPs - $cleanPc;
+								@endphp
+								<tr style="border-bottom:1px solid rgba(128,128,128,.1){{ $isOutsider ? ';opacity:.7' : '' }}">
 									<td class="p-1 b-700" style="text-align:center">{{ $standing->rank }}</td>
 									<td class="p-1">
-										<div class="b-600">{{ $standing->team->name ?? '—' }}</div>
+										<div class="b-600">{{ $standing->team->name ?? '—' }}@if($isOutsider) <span class="f-11" style="color:#9ca3af">· аутсайдер</span>@endif</div>
 										@if($standing->team && $standing->team->members->count())
 										<div class="f-11" style="color:#6b7280">{{ $standing->team->members->map(fn($m) => $m->user->last_name ?? '?')->implode(' / ') }}</div>
 										@endif
@@ -870,7 +882,13 @@
 									<td class="p-1" style="text-align:center;color:#10b981">{{ $standing->wins }}</td>
 									<td class="p-1" style="text-align:center;color:#dc2626">{{ $standing->losses }}</td>
 									<td class="p-1 b-700" style="text-align:center">{{ $standing->rating_points }}</td>
-<td class="p-1" style="text-align:center">{{ $standing->points_scored - $standing->points_conceded > 0 ? '+' : '' }}{{ $standing->points_scored - $standing->points_conceded }}</td>
+<td class="p-1" style="text-align:center" title="Чистая / Полная">
+	@if($cleanDiff === $fullDiff)
+		{{ $fmtDiff($fullDiff) }}
+	@else
+		<span class="b-600">{{ $fmtDiff($cleanDiff) }}</span><span style="color:#6b7280">&nbsp;/&nbsp;({{ $fmtDiff($fullDiff) }})</span>
+	@endif
+</td>
 								</tr>
 								@endforeach
 							</tbody>
@@ -884,47 +902,104 @@
 						</div>
 						@endif
 
-						{{-- Pending tiebreakers для этой группы --}}
-						@if(isset($pendingTiebreakers[$group->id]) && $pendingTiebreakers[$group->id]->isNotEmpty())
+						{{-- Tiebreaker sets (множественные связки команд) --}}
+						@php
+							$groupSets = $tiebreakerSets[$group->id] ?? collect();
+							$pendingSets  = $groupSets->where('status', 'pending');
+							$resolvedSets = $groupSets->where('status', 'resolved');
+							$teamNames = $group->standings->pluck('team.name', 'team_id');
+						@endphp
+
+						@if($pendingSets->isNotEmpty())
 						<div class="mt-2 p-2" style="background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.4);border-radius:8px">
-							<div class="f-13 b-700 mb-2" style="color:#d97706">⚠️ Необходима жеребьёвка</div>
-							@foreach($pendingTiebreakers[$group->id] as $tb)
+							<div class="f-13 b-700 mb-2" style="color:#d97706">⚠️ Необходим тайбрейк</div>
+							@foreach($pendingSets as $tset)
+							@php
+								$tids = array_map('intval', $tset->team_ids ?? []);
+								$labels = array_map(fn($tid) => $teamNames[$tid] ?? ('#' . $tid), $tids);
+							@endphp
 							<div class="mb-2 pb-2" style="border-bottom:1px solid rgba(251,191,36,.2)">
-								<div class="f-13 b-600 mb-1">
-									{{ $tb->teamA->name ?? '?' }} <span style="opacity:.5">vs</span> {{ $tb->teamB->name ?? '?' }}
-								</div>
-								<div class="f-12 mb-2" style="opacity:.6">Команды равны по всем критериям. Выберите способ определения победителя:</div>
-								<div class="d-flex" style="gap:8px;flex-wrap:wrap">
-									{{-- Вариант 1: провести матч --}}
-									<form method="POST" action="{{ route('tournament.tiebreaker.match.create', $tb) }}" style="display:inline">
-										@csrf
-										<input type="hidden" name="occurrence_id" value="{{ $selectedOccurrence?->id }}">
-										<button type="submit" class="btn btn-secondary f-12" style="padding:4px 10px">
-											🏐 Провести матч
+								<div class="f-13 b-600 mb-1">{{ implode(' = ', $labels) }}</div>
+
+								@if($tset->method === 'match')
+									<div class="f-12 mb-1" style="color:#d97706">🏐 Тайбрейк-матчи созданы. Введите счёт ниже — когда все матчи завершатся, порядок определится автоматически.</div>
+									@php $ms = $tset->match_settings ?? []; @endphp
+									<div class="f-12" style="opacity:.7">Правила: до {{ $ms['points_to_win'] ?? '?' }} очк.{!! !empty($ms['two_point_margin']) ? ', разница в 2' : '' !!}</div>
+								@else
+									<div class="f-12 mb-2" style="opacity:.6">Команды равны по всем критериям. Выберите способ:</div>
+									<div class="d-flex" style="gap:8px;flex-wrap:wrap;align-items:flex-start">
+										{{-- Вариант 1: учесть матчи с аутсайдером (full diff) --}}
+										<form method="POST" action="{{ route('tournament.tiebreaker.set.fullDiff', $tset) }}" style="display:inline">
+											@csrf
+											<input type="hidden" name="occurrence_id" value="{{ $selectedOccurrence?->id }}">
+											<button type="submit" class="btn btn-secondary f-12 btn-alert" style="padding:4px 10px"
+												data-title="Учесть матчи с аутсайдером?" data-icon="info"
+												data-confirm-text="Применить" data-cancel-text="Отмена">
+												🟰 Полная разница
+											</button>
+										</form>
+
+										{{-- Вариант 2: сыграть мини-матчи --}}
+										<button type="button" class="btn btn-secondary f-12" style="padding:4px 10px"
+											onclick="document.getElementById('tbset-match-{{ $tset->id }}').style.display='block';this.style.display='none'">
+											🏐 Сыграть матчи
 										</button>
-									</form>
-									{{-- Вариант 2: жребий --}}
-									<button type="button"
-										class="btn btn-secondary f-12"
-										style="padding:4px 10px;border-color:#d97706;color:#d97706"
-										onclick="document.getElementById('tb-lot-{{ $tb->id }}').style.display='block';this.style.display='none'">
-										🎲 Жребий
-									</button>
-								</div>
-								{{-- Форма жребия (скрыта) --}}
-								<div id="tb-lot-{{ $tb->id }}" style="display:none;margin-top:8px">
-									<form method="POST" action="{{ route('tournament.tiebreaker.lot.resolve', $tb) }}" class="d-flex" style="gap:8px;align-items:center;flex-wrap:wrap">
-										@csrf
-										<select name="winner_team_id" class="form-control f-13" style="width:auto;min-width:140px">
-											<option value="">— Победитель жребия —</option>
-											<option value="{{ $tb->team_a_id }}">{{ $tb->teamA->name ?? '?' }}</option>
-											<option value="{{ $tb->team_b_id }}">{{ $tb->teamB->name ?? '?' }}</option>
-										</select>
-										<input type="hidden" name="occurrence_id" value="{{ $selectedOccurrence?->id }}">
-										<button type="submit" class="btn btn-primary f-12" style="padding:4px 12px">Подтвердить</button>
-									</form>
-								</div>
+
+										{{-- Вариант 3: жребий --}}
+										<button type="button" class="btn btn-secondary f-12" style="padding:4px 10px;border-color:#d97706;color:#d97706"
+											onclick="document.getElementById('tbset-lot-{{ $tset->id }}').style.display='block';this.style.display='none'">
+											🎲 Жребий
+										</button>
+									</div>
+
+									{{-- Форма мини-матчей --}}
+									<div id="tbset-match-{{ $tset->id }}" style="display:none;margin-top:8px">
+										<form method="POST" action="{{ route('tournament.tiebreaker.set.matches', $tset) }}" class="d-flex" style="gap:8px;align-items:center;flex-wrap:wrap">
+											@csrf
+											<input type="hidden" name="occurrence_id" value="{{ $selectedOccurrence?->id }}">
+											<label class="f-12 fvc" style="gap:4px">До
+												<input type="number" name="points_to_win" value="15" min="1" max="30" class="form-control f-13" style="width:70px;padding:2px 6px" required>
+											очк.</label>
+											<label class="f-12 fvc" style="gap:4px">
+												<input type="checkbox" name="two_point_margin" value="1"> разница 2
+											</label>
+											<button type="submit" class="btn btn-primary f-12" style="padding:4px 12px">Создать матчи</button>
+										</form>
+										<div class="f-11 mt-1" style="opacity:.6">Будет создано {{ count($tids) * (count($tids) - 1) / 2 }} матч(ей) — round-robin между командами.</div>
+									</div>
+
+									{{-- Форма жребия --}}
+									<div id="tbset-lot-{{ $tset->id }}" style="display:none;margin-top:8px">
+										<form method="POST" action="{{ route('tournament.tiebreaker.set.lottery', $tset) }}" class="d-flex" style="gap:6px;align-items:center;flex-wrap:wrap">
+											@csrf
+											<input type="hidden" name="occurrence_id" value="{{ $selectedOccurrence?->id }}">
+											<span class="f-12" style="opacity:.7">Порядок:</span>
+											@foreach($tids as $i => $tid)
+											<select name="order[]" class="form-control f-12" style="width:auto;min-width:120px;padding:2px 6px" required>
+												<option value="">— {{ $i + 1 }} место —</option>
+												@foreach($tids as $tid2)
+												<option value="{{ $tid2 }}">{{ $teamNames[$tid2] ?? ('#' . $tid2) }}</option>
+												@endforeach
+											</select>
+											@endforeach
+											<button type="submit" class="btn btn-primary f-12" style="padding:4px 12px">Подтвердить</button>
+										</form>
+									</div>
+								@endif
 							</div>
+							@endforeach
+						</div>
+						@endif
+
+						@if($resolvedSets->isNotEmpty())
+						<div class="mt-2 p-2 f-12" style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.3);border-radius:8px">
+							@foreach($resolvedSets as $rset)
+							@php
+								$order  = $rset->resolved_order ?: [];
+								$labels = array_map(fn($tid) => $teamNames[(int) $tid] ?? ('#' . $tid), $order);
+								$methodLabel = ['full_diff' => 'полная разница', 'match' => 'матчи', 'lottery' => 'жребий'][$rset->method] ?? $rset->method;
+							@endphp
+							<div class="mb-1">✅ Тайбрейк ({{ $methodLabel }}): {{ implode(' → ', $labels) }}</div>
 							@endforeach
 						</div>
 						@endif
