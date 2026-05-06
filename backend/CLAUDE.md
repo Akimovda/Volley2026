@@ -120,14 +120,20 @@ sudo supervisorctl restart volleyplay-queue:* volleyplay-reverb
 
 ### Ранжирование в группе (TournamentStandingsService::rankGroup)
 1. Победы (rating_points) — desc
-2. Набранные очки (points_scored) — desc, без матчей против аутсайдеров
-3. Разница мячей (points_scored - points_conceded) — desc, без матчей против аутсайдеров
-4. Личная встреча (head-to-head)
-5. Жеребьёвка — resolved tiebreaker из таблицы tournament_tiebreakers
+2. Набранные очки (clean points_scored) — desc, без матчей против аутсайдеров
+3. Разница мячей (clean diff) — desc, без матчей против аутсайдеров
+4. Личная встреча (h2h транзитивно среди tied tuple)
+5. resolved_order из `tournament_tiebreaker_sets` (новый формат, N команд)
+6. Legacy: попарный resolved tiebreaker из `tournament_tiebreakers` (только если все пары tuple разрешены)
+7. Иначе — все команды tuple получают одинаковый rank, создаётся pending `TournamentTiebreakerSet`
 - Аутсайдер = команда с 0 побед при played > 0; матчи против неё исключаются из критериев 2 и 3
-- Тайбрейк: автодетекция pending-пар после каждого rankGroup(); организатор выбирает «матч» или «жребий»
-- is_tiebreaker=true в tournament_matches → матч не учитывается в standings
-- Enum method: 'match' | 'lottery' (не 'lot')
+- `TournamentTiebreakerSet`: связка из 2-N команд с равными (rating, clean_ps, clean_diff)
+- 3 варианта resolve: `full_diff` (учесть матчи с аутсайдером) | `match` (RR между tied, кастомные points_to_win 1..30, two_point_margin) | `lottery` (организатор задаёт порядок)
+- Метод `match`: создаются is_tiebreaker=true матчи, при submitScore последнего — `maybeResolveTiebreakerSet` авторезолвит set
+- Валидация тайбрейк-матча: один сет, до points_to_win, без сетки `2:0/2:1`
+- В таблице standings показ `чистая / (полная)` если они отличаются; аутсайдер с opacity 0.7 и подписью «· аутсайдер»
+- is_tiebreaker=true в tournament_matches → матч не учитывается в standings/cleanStats
+- Enum method: 'full_diff' | 'match' | 'lottery'
 
 ## Лиги и Сезоны
 - Иерархия: League (долгоживущая) -> Season (временной период) -> Events (туры)

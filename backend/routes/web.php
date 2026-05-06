@@ -868,6 +868,13 @@ Route::middleware([
     Route::post('/tournament-tiebreakers/{tiebreaker}/lot', [TournamentController::class, 'tiebreakerResolveLot'])
         ->name('tournament.tiebreaker.lot.resolve');
 
+    Route::post('/tournament-tiebreaker-sets/{set}/full-diff', [TournamentController::class, 'tiebreakerSetResolveFullDiff'])
+        ->name('tournament.tiebreaker.set.fullDiff');
+    Route::post('/tournament-tiebreaker-sets/{set}/matches', [TournamentController::class, 'tiebreakerSetCreateMatches'])
+        ->name('tournament.tiebreaker.set.matches');
+    Route::post('/tournament-tiebreaker-sets/{set}/lottery', [TournamentController::class, 'tiebreakerSetResolveLottery'])
+        ->name('tournament.tiebreaker.set.lottery');
+
     Route::post('/tournament-stages/{stage}/form-divisions', [TournamentController::class, 'formDivisions'])
         ->name('tournament.stages.formDivisions');
 

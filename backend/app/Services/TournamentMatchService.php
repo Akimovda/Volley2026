@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\TournamentMatch;
 use App\Models\TournamentStage;
+use App\Models\TournamentTiebreakerSet;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -54,7 +55,8 @@ class TournamentMatchService
         $stage  = $match->stage;
         $format = $stage->matchFormat();
 
-        $this->validateScore($scoreHome, $scoreAway, $format, $stage);
+        $tbOverrides = $this->resolveTiebreakerOverrides($match);
+        $this->validateScore($scoreHome, $scoreAway, $format, $stage, $tbOverrides);
 
         $setsHome = 0;
         $setsAway = 0;
@@ -84,6 +86,10 @@ class TournamentMatchService
                 'scored_by_user_id' => $scorer?->id,
                 'scored_at'         => now(),
             ]);
+
+            if ($match->is_tiebreaker && $match->group_id) {
+                $this->maybeResolveTiebreakerSet($match->fresh(), $scorer);
+            }
 
             if ($match->group_id) {
                 $this->standingsService->recalculateGroup(
@@ -217,11 +223,26 @@ class TournamentMatchService
         array $scoreAway,
         string $format,
         TournamentStage $stage,
+        ?array $tbOverrides = null,
     ): void {
         $setCount = count($scoreHome);
 
         if ($setCount !== count($scoreAway)) {
             throw new InvalidArgumentException('Количество сетов home и away должно совпадать.');
+        }
+
+        // Тайбрейк-матч: один сет с кастомными правилами
+        if ($tbOverrides !== null) {
+            if ($setCount !== 1) {
+                throw new InvalidArgumentException('Тайбрейк-матч играется в один сет.');
+            }
+            $this->validateTiebreakerSet(
+                (int) $scoreHome[0],
+                (int) $scoreAway[0],
+                (int) $tbOverrides['points_to_win'],
+                (bool) ($tbOverrides['two_point_margin'] ?? false),
+            );
+            return;
         }
 
         $maxSets = match ($format) {
@@ -296,5 +317,128 @@ class TournamentMatchService
         if ($loser < $targetPoints - 1 && $winner !== $targetPoints) {
             throw new InvalidArgumentException("Сет {$setNumber}: победитель должен набрать ровно {$targetPoints} (не {$winner}), если проигравший набрал {$loser}.");
         }
+    }
+
+    /**
+     * Валидация одного сета тайбрейк-матча с кастомными правилами.
+     */
+    protected function validateTiebreakerSet(int $home, int $away, int $target, bool $twoPointMargin): void
+    {
+        if ($home < 0 || $away < 0) {
+            throw new InvalidArgumentException('Очки не могут быть отрицательными.');
+        }
+        if ($home === $away) {
+            throw new InvalidArgumentException('Тайбрейк-матч не может закончиться вничью.');
+        }
+
+        $winner = max($home, $away);
+        $loser  = min($home, $away);
+
+        if ($winner < $target) {
+            throw new InvalidArgumentException("Победитель должен набрать минимум {$target} очков (сейчас {$winner}).");
+        }
+
+        if ($twoPointMargin) {
+            if ($winner - $loser < 2) {
+                throw new InvalidArgumentException("Разница должна быть минимум 2 очка ({$home}:{$away}).");
+            }
+            if ($loser >= $target - 1 && $winner - $loser !== 2) {
+                throw new InvalidArgumentException("При тай-брейке разница должна быть ровно 2 ({$home}:{$away}).");
+            }
+            if ($loser < $target - 1 && $winner !== $target) {
+                throw new InvalidArgumentException("Победитель должен набрать ровно {$target} (не {$winner}), если проигравший набрал {$loser}.");
+            }
+        } else {
+            if ($winner !== $target) {
+                throw new InvalidArgumentException("Победитель должен набрать ровно {$target} очков (сейчас {$winner}).");
+            }
+            if ($loser >= $target) {
+                throw new InvalidArgumentException("Проигравший не может набрать {$loser} очков при цели {$target}.");
+            }
+        }
+    }
+
+    /**
+     * Найти match_settings из pending tiebreaker_set, к которому относится матч.
+     */
+    protected function resolveTiebreakerOverrides(TournamentMatch $match): ?array
+    {
+        if (!$match->is_tiebreaker || !$match->group_id) {
+            return null;
+        }
+
+        $set = TournamentTiebreakerSet::where('stage_id', $match->stage_id)
+            ->where('group_id', $match->group_id)
+            ->where('status', 'pending')
+            ->where('method', 'match')
+            ->whereJsonContains('team_ids', (int) $match->team_home_id)
+            ->whereJsonContains('team_ids', (int) $match->team_away_id)
+            ->first();
+
+        return $set?->match_settings;
+    }
+
+    /**
+     * Если все RR-матчи tiebreaker_set завершены — вычислить порядок и резолвить set.
+     */
+    protected function maybeResolveTiebreakerSet(TournamentMatch $match, ?User $scorer): void
+    {
+        $set = TournamentTiebreakerSet::where('stage_id', $match->stage_id)
+            ->where('group_id', $match->group_id)
+            ->where('status', 'pending')
+            ->where('method', 'match')
+            ->whereJsonContains('team_ids', (int) $match->team_home_id)
+            ->whereJsonContains('team_ids', (int) $match->team_away_id)
+            ->first();
+
+        if (!$set) return;
+
+        $teamIds = array_map('intval', $set->team_ids ?? []);
+        $expectedMatches = count($teamIds) * (count($teamIds) - 1) / 2;
+
+        $rrMatches = TournamentMatch::where('stage_id', $set->stage_id)
+            ->where('group_id', $set->group_id)
+            ->where('is_tiebreaker', true)
+            ->whereIn('team_home_id', $teamIds)
+            ->whereIn('team_away_id', $teamIds)
+            ->where('created_at', '>=', $set->created_at)
+            ->get();
+
+        $completed = $rrMatches->where('status', TournamentMatch::STATUS_COMPLETED);
+        if ($completed->count() < $expectedMatches) {
+            return;
+        }
+
+        // Ранжируем по: wins desc → diff desc → points_scored desc
+        $stats = [];
+        foreach ($teamIds as $tid) {
+            $stats[$tid] = ['wins' => 0, 'ps' => 0, 'pc' => 0];
+        }
+        foreach ($completed as $m) {
+            if (!isset($stats[$m->team_home_id]) || !isset($stats[$m->team_away_id])) continue;
+            $stats[$m->team_home_id]['ps'] += $m->total_points_home;
+            $stats[$m->team_home_id]['pc'] += $m->total_points_away;
+            $stats[$m->team_away_id]['ps'] += $m->total_points_away;
+            $stats[$m->team_away_id]['pc'] += $m->total_points_home;
+            if ($m->winner_team_id) {
+                $stats[$m->winner_team_id]['wins']++;
+            }
+        }
+
+        $sorted = $teamIds;
+        usort($sorted, function ($a, $b) use ($stats) {
+            if ($stats[$a]['wins'] !== $stats[$b]['wins']) return $stats[$b]['wins'] <=> $stats[$a]['wins'];
+            $da = $stats[$a]['ps'] - $stats[$a]['pc'];
+            $db = $stats[$b]['ps'] - $stats[$b]['pc'];
+            if ($da !== $db) return $db <=> $da;
+            return $stats[$b]['ps'] <=> $stats[$a]['ps'];
+        });
+
+        $set->update([
+            'resolved_order'      => $sorted,
+            'status'              => 'resolved',
+            'resolved_by_user_id' => $scorer?->id,
+            'resolved_at'         => now(),
+        ]);
     }
 }

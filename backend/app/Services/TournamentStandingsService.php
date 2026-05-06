@@ -7,6 +7,7 @@ use App\Models\TournamentMatch;
 use App\Models\TournamentStage;
 use App\Models\TournamentStanding;
 use App\Models\TournamentTiebreaker;
+use App\Models\TournamentTiebreakerSet;
 
 class TournamentStandingsService
 {
@@ -117,14 +118,49 @@ class TournamentStandingsService
     }
 
     /**
-     * Ранжирование:
-     * 1. rating_points (победы) — desc
-     * 2. Clean points_scored (без матчей против аутсайдеров) — desc
-     * 3. Clean point diff — desc
-     * 4. Личная встреча
-     * 5. Жеребьёвка (resolved tiebreaker)
+     * Список аутсайдеров группы (0 побед при played > 0).
+     */
+    public function getOutsiderTeamIds($standings): array
+    {
+        return $standings
+            ->filter(fn($s) => $s->played > 0 && $s->wins === 0)
+            ->pluck('team_id')
+            ->map(fn($id) => (int) $id)
+            ->values()
+            ->toArray();
+    }
+
+    /**
+     * Чистая статистика (без матчей с аутсайдерами) — публично для UI.
+     */
+    public function computeCleanStats(TournamentStage $stage, TournamentGroup $group): array
+    {
+        $matches = TournamentMatch::where('stage_id', $stage->id)
+            ->where('group_id', $group->id)
+            ->where(fn($q) => $q->whereNull('is_tiebreaker')->orWhere('is_tiebreaker', false))
+            ->whereIn('status', [TournamentMatch::STATUS_COMPLETED])
+            ->get();
+
+        $standings = TournamentStanding::where('stage_id', $stage->id)
+            ->where('group_id', $group->id)
+            ->get();
+
+        $outsiders = $this->getOutsiderTeamIds($standings);
+
+        return $this->buildCleanStats($matches, $outsiders);
+    }
+
+    /**
+     * Ранжирование с учётом разрешённых tiebreaker sets.
      *
-     * Аутсайдер = команда с 0 побед при played > 0.
+     * Порядок:
+     * 1. rating_points — desc
+     * 2. clean points_scored — desc
+     * 3. clean point diff — desc
+     * 4. h2h среди tied tuple, если транзитивно
+     * 5. resolved_order из TournamentTiebreakerSet, если есть
+     * 6. legacy: попарный TournamentTiebreaker resolved (старые данные)
+     * 7. Иначе — все команды tied tuple получают одинаковый rank, создаётся pending set
      */
     protected function rankGroup(TournamentStage $stage, TournamentGroup $group, $matches): void
     {
@@ -134,155 +170,229 @@ class TournamentStandingsService
 
         $h2h = $this->buildHeadToHead($matches);
 
-        $outsiderTeamIds = $standings
-            ->filter(fn($s) => $s->played > 0 && $s->wins === 0)
-            ->pluck('team_id')
-            ->toArray();
+        $outsiderTeamIds = $this->getOutsiderTeamIds($standings);
 
         $cleanStats = $this->buildCleanStats($matches, $outsiderTeamIds);
 
-        $resolvedTiebreakers = TournamentTiebreaker::where('stage_id', $stage->id)
+        // Загрузить разрешённые tiebreaker sets
+        $resolvedSets = TournamentTiebreakerSet::where('stage_id', $stage->id)
+            ->where('group_id', $group->id)
+            ->where('status', 'resolved')
+            ->whereNotNull('resolved_order')
+            ->get();
+
+        $resolvedOrderByTeam = []; // team_id => position в resolved_order (0-based)
+        $resolvedSetByTeam   = []; // team_id => set_id (для определения принадлежности)
+        foreach ($resolvedSets as $rset) {
+            $order = $rset->resolved_order ?: [];
+            foreach ($order as $idx => $tid) {
+                $resolvedOrderByTeam[(int) $tid] = $idx;
+                $resolvedSetByTeam[(int) $tid]   = $rset->id;
+            }
+        }
+
+        // Legacy: пары
+        $legacyResolved = TournamentTiebreaker::where('stage_id', $stage->id)
             ->where('group_id', $group->id)
             ->where('status', 'resolved')
             ->whereNotNull('winner_team_id')
             ->get();
 
-        $tiebreakerWinners = [];
-        foreach ($resolvedTiebreakers as $tb) {
+        $legacyWinners = [];
+        foreach ($legacyResolved as $tb) {
             $loserId = $tb->team_a_id === $tb->winner_team_id ? $tb->team_b_id : $tb->team_a_id;
-            $tiebreakerWinners[$tb->winner_team_id][$loserId] = true;
+            $legacyWinners[$tb->winner_team_id][$loserId] = true;
         }
 
-        $sorted = $standings->sort(function ($a, $b) use ($h2h, $cleanStats, $tiebreakerWinners) {
-            if ($a->rating_points !== $b->rating_points) {
-                return $b->rating_points <=> $a->rating_points;
-            }
+        // Сгруппировать по тройке (rating, clean_ps, clean_diff)
+        $tuples = []; // key => list of standings
+        foreach ($standings as $s) {
+            $cps = $cleanStats[$s->team_id]['points_scored'] ?? $s->points_scored;
+            $cpc = $cleanStats[$s->team_id]['points_conceded'] ?? $s->points_conceded;
+            $key = $s->rating_points . ':' . $cps . ':' . ($cps - $cpc);
+            $tuples[$key][] = ['standing' => $s, 'cps' => $cps, 'cdiff' => $cps - $cpc];
+        }
 
-            $aScored = $cleanStats[$a->team_id]['points_scored'] ?? $a->points_scored;
-            $bScored = $cleanStats[$b->team_id]['points_scored'] ?? $b->points_scored;
-            if ($aScored !== $bScored) {
-                return $bScored <=> $aScored;
-            }
-
-            $aPointDiff = ($cleanStats[$a->team_id]['points_scored'] ?? $a->points_scored)
-                        - ($cleanStats[$a->team_id]['points_conceded'] ?? $a->points_conceded);
-            $bPointDiff = ($cleanStats[$b->team_id]['points_scored'] ?? $b->points_scored)
-                        - ($cleanStats[$b->team_id]['points_conceded'] ?? $b->points_conceded);
-            if ($aPointDiff !== $bPointDiff) {
-                return $bPointDiff <=> $aPointDiff;
-            }
-
-            $h2hResult = $this->headToHeadCompare($a->team_id, $b->team_id, $h2h);
-            if ($h2hResult !== 0) {
-                return $h2hResult;
-            }
-
-            // 5. Жеребьёвка
-            if (isset($tiebreakerWinners[$a->team_id][$b->team_id])) {
-                return -1;
-            }
-            if (isset($tiebreakerWinners[$b->team_id][$a->team_id])) {
-                return 1;
-            }
-
-            return 0;
+        // Отсортировать ключи tuples desc по rating, cps, cdiff
+        $sortedKeys = array_keys($tuples);
+        usort($sortedKeys, function ($a, $b) {
+            [$ra, $pa, $da] = explode(':', $a);
+            [$rb, $pb, $db] = explode(':', $b);
+            if ((int) $ra !== (int) $rb) return (int) $rb <=> (int) $ra;
+            if ((int) $pa !== (int) $pb) return (int) $pb <=> (int) $pa;
+            return (int) $db <=> (int) $da;
         });
 
         $rank = 1;
-        foreach ($sorted->values() as $standing) {
-            $standing->update(['rank' => $rank++]);
+        $finalOrder = []; // team_id => rank
+        $ambiguousSets = []; // [[team_ids], ...]
+
+        foreach ($sortedKeys as $key) {
+            $bucket = $tuples[$key];
+            $teamIds = array_map(fn($r) => (int) $r['standing']->team_id, $bucket);
+
+            if (count($bucket) === 1) {
+                $finalOrder[$teamIds[0]] = $rank++;
+                continue;
+            }
+
+            // 1. Если есть resolved_order для этого набора — применить
+            $allResolved = true;
+            foreach ($teamIds as $tid) {
+                if (!isset($resolvedOrderByTeam[$tid])) {
+                    $allResolved = false;
+                    break;
+                }
+            }
+
+            if ($allResolved) {
+                $sortedTeams = $teamIds;
+                usort($sortedTeams, fn($a, $b) => $resolvedOrderByTeam[$a] <=> $resolvedOrderByTeam[$b]);
+                foreach ($sortedTeams as $tid) {
+                    $finalOrder[$tid] = $rank++;
+                }
+                continue;
+            }
+
+            // 2. Попробовать h2h транзитивно
+            $h2hOrder = $this->resolveByHeadToHead($teamIds, $h2h);
+            if ($h2hOrder !== null) {
+                foreach ($h2hOrder as $tid) {
+                    $finalOrder[$tid] = $rank++;
+                }
+                continue;
+            }
+
+            // 3. Legacy пары (если все пары в наборе разрешены попарно — построить порядок)
+            $legacyOrder = $this->resolveByLegacyPairs($teamIds, $legacyWinners);
+            if ($legacyOrder !== null) {
+                foreach ($legacyOrder as $tid) {
+                    $finalOrder[$tid] = $rank++;
+                }
+                continue;
+            }
+
+            // 4. Неоднозначно — все команды получают одинаковый rank, регистрируем pending set
+            $startRank = $rank;
+            foreach ($teamIds as $tid) {
+                $finalOrder[$tid] = $startRank;
+            }
+            $rank += count($teamIds);
+            $ambiguousSets[] = $teamIds;
         }
 
-        $this->syncPendingTiebreakers($stage, $group, $standings, $cleanStats, $h2h, $tiebreakerWinners);
+        foreach ($standings as $standing) {
+            $r = $finalOrder[$standing->team_id] ?? null;
+            if ($r !== null) {
+                $standing->update(['rank' => $r]);
+            }
+        }
+
+        $this->syncPendingTiebreakerSets($stage, $group, $ambiguousSets);
     }
 
     /**
-     * Создаёт pending tiebreaker для пар в ничью.
-     * Удаляет pending tiebreaker для пар, которые больше не в ничью.
+     * Если h2h-подграф среди $teamIds полностью транзитивен (уникальные wins-counts) —
+     * вернёт упорядоченный массив team_ids от 1-го к последнему. Иначе null.
      */
-    public function syncPendingTiebreakers(
+    protected function resolveByHeadToHead(array $teamIds, array $h2h): ?array
+    {
+        $winsAmong = [];
+        foreach ($teamIds as $tid) {
+            $winsAmong[$tid] = 0;
+        }
+        foreach ($teamIds as $a) {
+            foreach ($teamIds as $b) {
+                if ($a === $b) continue;
+                $winsAmong[$a] += $h2h[$a][$b] ?? 0;
+            }
+        }
+
+        $values = array_values($winsAmong);
+        if (count($values) !== count(array_unique($values))) {
+            return null;
+        }
+
+        $sorted = $teamIds;
+        usort($sorted, fn($a, $b) => $winsAmong[$b] <=> $winsAmong[$a]);
+        return $sorted;
+    }
+
+    /**
+     * Восстановление порядка через legacy попарные тайбрейки.
+     * Возвращает упорядоченный массив, если граф полностью разрешим, иначе null.
+     */
+    protected function resolveByLegacyPairs(array $teamIds, array $legacyWinners): ?array
+    {
+        $wins = array_fill_keys($teamIds, 0);
+        $covered = 0;
+
+        for ($i = 0; $i < count($teamIds); $i++) {
+            for ($j = $i + 1; $j < count($teamIds); $j++) {
+                $a = $teamIds[$i];
+                $b = $teamIds[$j];
+                if (isset($legacyWinners[$a][$b])) {
+                    $wins[$a]++;
+                    $covered++;
+                } elseif (isset($legacyWinners[$b][$a])) {
+                    $wins[$b]++;
+                    $covered++;
+                }
+            }
+        }
+
+        $expectedPairs = count($teamIds) * (count($teamIds) - 1) / 2;
+        if ($covered < $expectedPairs) {
+            return null;
+        }
+
+        $values = array_values($wins);
+        if (count($values) !== count(array_unique($values))) {
+            return null;
+        }
+
+        $sorted = $teamIds;
+        usort($sorted, fn($a, $b) => $wins[$b] <=> $wins[$a]);
+        return $sorted;
+    }
+
+    /**
+     * Создаёт/удаляет pending tiebreaker sets для группы.
+     */
+    public function syncPendingTiebreakerSets(
         TournamentStage $stage,
         TournamentGroup $group,
-        $standings,
-        array $cleanStats,
-        array $h2h,
-        array $tiebreakerWinners
+        array $ambiguousSets
     ): void {
-        $tiedPairs = $this->detectTiedPairs($standings, $cleanStats, $h2h, $tiebreakerWinners);
-
-        $existing = TournamentTiebreaker::where('stage_id', $stage->id)
+        $existing = TournamentTiebreakerSet::where('stage_id', $stage->id)
             ->where('group_id', $group->id)
             ->where('status', 'pending')
             ->get()
-            ->keyBy(fn($tb) => $this->pairKey($tb->team_a_id, $tb->team_b_id));
+            ->keyBy('team_ids_key');
 
-        $tiedKeys = [];
-        foreach ($tiedPairs as [$aId, $bId]) {
-            $key = $this->pairKey($aId, $bId);
-            $tiedKeys[] = $key;
+        $newKeys = [];
+        foreach ($ambiguousSets as $teamIds) {
+            $key = TournamentTiebreakerSet::buildKey($teamIds);
+            $newKeys[] = $key;
 
             if (!$existing->has($key)) {
-                TournamentTiebreaker::create([
-                    'stage_id'  => $stage->id,
-                    'group_id'  => $group->id,
-                    'team_a_id' => $aId,
-                    'team_b_id' => $bId,
-                    'status'    => 'pending',
+                $sortedIds = array_map('intval', $teamIds);
+                sort($sortedIds);
+                TournamentTiebreakerSet::create([
+                    'stage_id'     => $stage->id,
+                    'group_id'     => $group->id,
+                    'team_ids'     => $sortedIds,
+                    'team_ids_key' => $key,
+                    'status'       => 'pending',
                 ]);
             }
         }
 
-        foreach ($existing as $key => $tb) {
-            if (!in_array($key, $tiedKeys)) {
-                $tb->delete();
+        foreach ($existing as $key => $tbs) {
+            if (!in_array($key, $newKeys, true)) {
+                $tbs->delete();
             }
         }
-    }
-
-    /**
-     * Возвращает все пары команд, у которых все 4 критерия равны (нужна жеребьёвка).
-     */
-    public function detectTiedPairs(
-        $standings,
-        array $cleanStats,
-        array $h2h,
-        array $tiebreakerWinners
-    ): array {
-        $pairs = [];
-        $arr   = $standings->values()->all();
-
-        for ($i = 0; $i < count($arr); $i++) {
-            for ($j = $i + 1; $j < count($arr); $j++) {
-                $a = $arr[$i];
-                $b = $arr[$j];
-
-                if ($a->rating_points !== $b->rating_points) continue;
-
-                $aScored = $cleanStats[$a->team_id]['points_scored'] ?? $a->points_scored;
-                $bScored = $cleanStats[$b->team_id]['points_scored'] ?? $b->points_scored;
-                if ($aScored !== $bScored) continue;
-
-                $aDiff = ($cleanStats[$a->team_id]['points_scored'] ?? $a->points_scored)
-                       - ($cleanStats[$a->team_id]['points_conceded'] ?? $a->points_conceded);
-                $bDiff = ($cleanStats[$b->team_id]['points_scored'] ?? $b->points_scored)
-                       - ($cleanStats[$b->team_id]['points_conceded'] ?? $b->points_conceded);
-                if ($aDiff !== $bDiff) continue;
-
-                if ($this->headToHeadCompare($a->team_id, $b->team_id, $h2h) !== 0) continue;
-
-                if (isset($tiebreakerWinners[$a->team_id][$b->team_id])) continue;
-                if (isset($tiebreakerWinners[$b->team_id][$a->team_id])) continue;
-
-                $pairs[] = [$a->team_id, $b->team_id];
-            }
-        }
-
-        return $pairs;
-    }
-
-    public function pairKey(int $aId, int $bId): string
-    {
-        return min($aId, $bId) . '-' . max($aId, $bId);
     }
 
     protected function buildCleanStats($matches, array $outsiderTeamIds): array
@@ -333,16 +443,6 @@ class TournamentStandingsService
         }
 
         return $h2h;
-    }
-
-    protected function headToHeadCompare(int $aId, int $bId, array $h2h): int
-    {
-        $aWins = $h2h[$aId][$bId] ?? 0;
-        $bWins = $h2h[$bId][$aId] ?? 0;
-
-        if ($aWins > $bWins) return -1;
-        if ($bWins > $aWins) return 1;
-        return 0;
     }
 
     /**
