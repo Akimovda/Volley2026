@@ -145,6 +145,7 @@ class ProfileNotificationChannelController extends Controller
     {
         $titleSuffix = $title !== '' ? " ({$title})" : '';
         $maxBotLink = rtrim((string) config('services.max.bot_link', ''), '/');
+        $maxBotHandle = $maxBotLink !== '' ? trim(parse_url($maxBotLink, PHP_URL_PATH) ?? '', '/') : '';
 
         return match ($platform) {
             'telegram' => [
@@ -181,17 +182,16 @@ class ProfileNotificationChannelController extends Controller
 
             'max' => [
                 'platform' => 'max',
-                'message' => 'Открой MAX-бота и выбери чат, куда нужно отправлять анонсы.',
+                'message' => 'В MAX нет автоматического выбора группы (как в Telegram), поэтому привязка идёт в два шага: сначала добавь бота в чат, затем выбери чат в личке с ботом.',
                 'button_text' => 'Открыть MAX',
                 'link' => $maxBotLink !== '' ? ($maxBotLink . '?start=' . $token) : '',
                 'command' => null,
                 'instruction' => implode("\n", [
-                    '1. Нажми кнопку «Открыть MAX».',
-                    '2. В MAX откроется бот с уже переданным токеном привязки.',
-                    '3. Бот покажет список чатов, где он участвует.',
-                    '4. Выбери чат, куда должны приходить анонсы.',
-                    '5. После подтверждения обнови страницу профиля.',
-                    'Если у тебя несколько чатов, выбери нужный из списка.',
+                    '1. Открой свой чат/группу в MAX и добавь туда бота' . ($maxBotHandle !== '' ? ' ' . $maxBotHandle : '') . ' с правами администратора. Без этого шага список чатов будет пустым.',
+                    '2. Нажми кнопку «Открыть MAX» ниже — откроется личный диалог с ботом.',
+                    '3. Бот пришлёт список чатов, в которых он состоит, с номерами (1, 2, ...).',
+                    '4. Отправь боту в этот же диалог номер нужного чата (например: 1).',
+                    '5. Бот подтвердит привязку. Обнови страницу профиля — канал появится в списке справа.',
                 ]),
                 'title' => $titleSuffix,
             ],

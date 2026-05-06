@@ -32,27 +32,46 @@ class MaxBindWebhookController extends Controller
             ->where('expires_at', '>', now())
             ->first();
 
-        abort_if(!$binding, 404, 'Bind request not found.');
-
-        $meta = [];
-        if (!empty($binding->meta)) {
-            $decoded = json_decode((string) $binding->meta, true);
-            if (is_array($decoded)) {
-                $meta = $decoded;
+        if ($binding) {
+            $meta = [];
+            if (!empty($binding->meta)) {
+                $decoded = json_decode((string) $binding->meta, true);
+                if (is_array($decoded)) {
+                    $meta = $decoded;
+                }
             }
+
+            $kind = (string) ($meta['kind'] ?? 'channel');
+            if (!in_array($kind, ['channel', 'personal'], true)) {
+                $kind = 'channel';
+            }
+
+            return response()->json([
+                'ok' => true,
+                'token' => $binding->token,
+                'kind' => $kind,
+                'user_id' => (int) $binding->user_id,
+                'expires_at' => $binding->expires_at,
+            ]);
         }
 
-        $kind = (string) ($meta['kind'] ?? 'channel');
-        if (!in_array($kind, ['channel', 'personal'], true)) {
-            $kind = 'channel';
-        }
+        // Fallback: токен мог быть создан через ProfileNotificationChannelController,
+        // который пишет в channel_bind_requests (общая таблица для tg/vk/max).
+        $channelBind = DB::table('channel_bind_requests')
+            ->where('token', $data['token'])
+            ->where('platform', 'max')
+            ->where('status', 'pending')
+            ->where('expires_at', '>', now())
+            ->first();
+
+        abort_if(!$channelBind, 404, 'Bind request not found.');
 
         return response()->json([
             'ok' => true,
-            'token' => $binding->token,
-            'kind' => $kind,
-            'user_id' => (int) $binding->user_id,
-            'expires_at' => $binding->expires_at,
+            'token' => $channelBind->token,
+            'kind' => 'channel',
+            'user_id' => (int) $channelBind->user_id,
+            'expires_at' => $channelBind->expires_at,
         ]);
     }
 
