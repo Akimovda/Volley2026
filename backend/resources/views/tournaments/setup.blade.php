@@ -6,7 +6,7 @@
 	<x-slot name="title">Управление турниром — {{ $event->title }}</x-slot>
 	
     <x-slot name="h1">Турнир: {{ $event->title }}</x-slot>
-	 <x-slot name="h2">Управление турниром</x-slot>
+	<x-slot name="h2">Управление турниром</x-slot>
 	
 	
 	
@@ -171,94 +171,96 @@
 			{{-- Состав лиги --}}
 			@if($leagueTeams->count())
 			<div class="mt-2">
-				<h3 style="font-size:16px;margin-bottom:10px">
+				<p class="b-600">
 					Состав лиги
-					<span style="font-weight:400;color:#6b7280">
+					<span class="cd">
 						— {{ $leagueTeams->where('status', 'active')->count() }} акт.
 						@if($leagueTeams->where('status', 'reserve')->count())
 						/ {{ $leagueTeams->where('status', 'reserve')->count() }} рез.
 						@endif
 					</span>
-				</h3>
-				
-				<table class="league-table">
-					<thead>
-						<tr>
-							<th style="width:30px">#</th>
-							<th>Команда</th>
-							<th>Статус</th>
-							<th>Действие</th>
-						</tr>
-					</thead>
-					<tbody>
-						@foreach($leagueTeams as $lt)
-						<tr style="{{ $lt->status === 'reserve' ? 'opacity:.55' : '' }}">
-							<td>{{ $loop->iteration }}</td>
-							<td>
-								@if($lt->team)
-								<div class="team-name">{{ $lt->team->name }}</div>
-								<div class="team-members">
-									@php
-									$members = $lt->team->members->map(function($m) {
-									$u = $m->user;
-									return $u ? ($u->first_name . ' ' . $u->last_name) : '?';
-									})->implode(' / ');
-									@endphp
-									{{ $members }}
-								</div>
-								@elseif($lt->user)
-								<div class="team-name">{{ $lt->user->first_name }} {{ $lt->user->last_name }}</div>
-								@else
-								—
-								@endif
-							</td>
-							<td>
-								@if($lt->status === 'active')
-								<span class="league-badge league-badge-active">Активен</span>
-								@elseif($lt->status === 'reserve')
-								<span class="league-badge league-badge-reserve">Резерв #{{ $lt->reserve_position }}</span>
-								@elseif($lt->status === 'pending_confirmation')
-								<span class="league-badge league-badge-pending">Ожидает</span>
-								@else
-								<span class="league-badge">{{ $lt->status }}</span>
-								@endif
-							</td>
-							<td>
-								@if($lt->status === 'active')
-								<form method="POST" action="{{ route('divisions.teams.toReserve', $lt) }}" style="display:inline">
-									@csrf
-									<button type="submit" class="league-btn league-btn-danger btn-alert" data-title="Перевести в резерв?" data-icon="warning" data-confirm-text="Да" data-cancel-text="Отмена">В резерв</button>
-								</form>
-								@elseif($lt->status === 'reserve')
-								<form method="POST" action="{{ route('divisions.teams.activate', $lt) }}" style="display:inline">
-									@csrf
-									<button type="submit" class="league-btn league-btn-success btn-alert" data-title="Активировать команду?" data-icon="question" data-confirm-text="Да" data-cancel-text="Отмена">Активировать</button>
-								</form>
-								@endif
-							</td>
-						</tr>
-						@endforeach
-					</tbody>
-				</table>
+				</p>
+				<div class="table-scrollable">
+					<div class="table-drag-indicator"></div>				
+					<table class="table">
+						<thead>
+							<tr>
+								<th style="width:30px">#</th>
+								<th>Команда</th>
+								<th>Статус</th>
+								<th>Действие</th>
+							</tr>
+						</thead>
+						<tbody>
+							@foreach($leagueTeams as $lt)
+							<tr>
+								<td>{{ $loop->iteration }}</td>
+								<td>
+									@if($lt->team)
+									<div class="team-name cd b-600">{{ $lt->team->name }}</div>
+									<div class="team-members">
+										@php
+										$members = $lt->team->members->map(function($m) {
+										$u = $m->user;
+										return $u ? ($u->first_name . ' ' . $u->last_name) : '?';
+										})->implode(' / ');
+										@endphp
+										{{ $members }}
+									</div>
+									@elseif($lt->user)
+									<div class="team-name">{{ $lt->user->first_name }} {{ $lt->user->last_name }}</div>
+									@else
+									—
+									@endif
+								</td>
+								<td class="text-center">
+									@if($lt->status === 'active')
+									<span class="alert-success p-1 pt-05 pb-05">Активен</span>
+									@elseif($lt->status === 'reserve')
+									<span class="alert-warning p-1 pt-05 pb-05">Резерв #{{ $lt->reserve_position }}</span>
+									@elseif($lt->status === 'pending_confirmation')
+									<span class="alert-info p-1 pt-05 pb-05">Ожидает</span>
+									@else
+									<span class="league-badge">{{ $lt->status }}</span>
+									@endif
+								</td>
+								<td class="text-center">
+									@if($lt->status === 'active')
+									<form method="POST" action="{{ route('divisions.teams.toReserve', $lt) }}" style="display:inline">
+										@csrf
+										<button type="submit" class="btn btn-danger btn-alert btn-small" data-title="Перевести в резерв?" data-icon="warning" data-confirm-text="Да" data-cancel-text="Отмена">В резерв</button>
+									</form>
+									@elseif($lt->status === 'reserve')
+									<form method="POST" action="{{ route('divisions.teams.activate', $lt) }}" style="display:inline">
+										@csrf
+										<button type="submit" class="btn btn-success btn-alert btn-small" data-title="Активировать команду?" data-icon="info" data-confirm-text="Да" data-cancel-text="Отмена">Активировать</button>
+									</form>
+									@endif
+								</td>
+							</tr>
+							@endforeach
+						</tbody>
+					</table>
+				</div>
 			</div>
 			@else
 			<div class="alert alert-info">В лиге пока нет команд. Команды добавятся после регистрации на турнир.</div>
 			@endif
-
+			
 			@php
 			$_tourAllCompleted = $stages->isNotEmpty() && $stages->every(fn($s) => $s->status === 'completed');
 			@endphp
-			<div class="mt-2 flex items-center gap-3 flex-wrap">
-				<a class="blink" href="{{ route('seasons.show', $seasonData['season']) }}">Страница сезона →</a>
+			<div class="mt-2 d-flex text-center gap-1 flex-wrap">
+				<a class="btn" href="{{ route('seasons.show', $seasonData['season']) }}">Страница сезона</a>
 				<form method="POST" action="{{ route('tournament.syncLeague', $event) }}" style="margin:0">
 					@csrf
-					<button type="submit" class="league-btn league-btn-success">↻ Синхронизировать команды в лигу</button>
+					<button type="submit" class="btn">Синхронизировать команды в лигу</button>
 				</form>
 				@if($_tourAllCompleted)
 				<form method="POST" action="{{ route('tournament.applyPromotion', $event) }}" style="margin:0">
 					@csrf
-					<button type="submit" class="league-btn btn-alert" style="background:#fff3cd;border-color:#ffc107;color:#856404" data-title="Применить продвижение?" data-icon="question" data-confirm-text="Да, перенести" data-cancel-text="Отмена">
-						🔄 Перенести составы на следующий тур
+					<button type="submit" class="btn btn-alert" data-title="Применить продвижение?" data-icon="info" data-confirm-text="Да, перенести" data-cancel-text="Отмена">
+						Перенести составы на следующий тур
 					</button>
 				</form>
 				@endif
@@ -275,9 +277,9 @@
 			@if($teams->isEmpty())
 			<div class="alert alert-info">Нет подтверждённых команд.</div>
 			@else
-			<div class="row row2">
+			<div class="row">
 				@foreach($teams as $team)
-				<div class="col-6 col-md-3 mb-1">
+				<div class="col-md-6 col-xl-3">
 					<div class="card">
 						<a href="{{ route('tournamentTeams.show', [$event, $team]) }}" class="blink b-600 d-block mb-1">
 							{{ $team->name }}
@@ -350,12 +352,11 @@
 		============================================================ --}}
 		@php $hasStages = $event->tournamentStages->isNotEmpty(); @endphp
 		<div class="ramka">
-			<div class="d-flex between fvc" style="cursor:pointer" onclick="var b=this.nextElementSibling;b.style.display=b.style.display==='none'?'':'none';this.querySelector('.toggle-icon').textContent=b.style.display==='none'?'+':'-'">
-				<h2 class="-mt-05">Добавить стадию</h2>
-				<span class="toggle-icon b-700 f-20">{{ $hasStages ? '+' : '-' }}</span>
+			<h2 class="-mt-05">Добавить стадию</h2>
+			<div class="btn btn-secondary" style="cursor:pointer" onclick="var b=this.nextElementSibling;b.style.display=b.style.display==='none'?'':'none';this.querySelector('.toggle-icon').textContent=b.style.display==='none'?'+':'-'">➕ Добавить стадию			
 			</div>
 			<div style="{{ $hasStages ? 'display:none' : '' }}">
-				<form method="POST" action="{{ route('tournament.stages.store', $event) }}">
+				<form class="mt-2" method="POST" action="{{ route('tournament.stages.store', $event) }}">
 					@csrf
 					@if($selectedOccurrence)
 					<input type="hidden" name="occurrence_id" value="{{ $selectedOccurrence->id }}">
@@ -437,17 +438,17 @@
 					</div>
 					<div class="mt-2" id="group_fields">
 						<div class="row">
-							<div class="col-md-3">
+							<div class="col-lg-3 col-md-6">
 								<div class="card"><label>Кол-во групп</label>
 									<input name="groups_count" type="number" value="2" min="1" max="16">
 								</div>
 							</div>
-							<div class="col-md-3">
+							<div class="col-lg-3 col-md-6">
 								<div class="card"><label>Выходят из группы</label>
 									<input name="advance_count" type="number" value="2" min="1" max="8">
 								</div>
 							</div>
-							<div class="col-md-3">
+							<div class="col-lg-3 col-md-6">
 								<div class="card"><label>Матч за 3-е место</label>
 									<select name="third_place_match">
 										<option value="0">Нет</option>
@@ -455,7 +456,7 @@
 									</select>
 								</div>
 							</div>
-							<div class="col-md-3">
+							<div class="col-lg-3 col-md-6">
 								<div class="card">
 									<label>Кол-во площадок</label>
 									<select name="courts_count" id="courts_count_select">
@@ -488,15 +489,15 @@
 						
 						{{-- Назначение кортов группам (динамическое) --}}
 						<div class="mt-2" id="courts_group_assign" style="display:none">
-						<div class="card">
-							<label>Площадки для групп</label>
-							<hr class="mb-1">
-							<div id="courts_group_boxes" class="row"></div>
-						</div>	
+							<div class="card">
+								<label>Площадки для групп</label>
+								<hr class="mb-1">
+								<div id="courts_group_boxes" class="row"></div>
+							</div>	
 						</div>
 						{{-- Жеребьёвка --}}
-						<div class="row mt-2 mb-2">
-							<div class="col-md-4">
+						<div class="row mt-2">
+							<div class="col-xl-3">
 								<div class="card">
 									<label>Жеребьёвка</label>
 									<select name="draw_mode" id="draw_mode_select">
@@ -506,71 +507,82 @@
 									</select>
 								</div>
 							</div>
+							
+							<div class="col-xl-9">	
+								{{-- Расписание (опционально) --}}
+								<div id="schedule_fields">
+									<div class="card">
+										<label>Расписание (опционально)</label>
+										<hr class="mb-1">
+										<div class="row">
+											<div class="col-md-4">
+												<label>Начало</label>
+												<input type="datetime-local" name="schedule_start" value="">
+											</div>
+											<div class="col-md-4">
+												<label>Матч (мин)</label>
+												<input type="number" name="schedule_match_duration" value="30" min="15" max="180">
+											</div>
+											<div class="col-md-4">
+												<label>Перерыв (мин)</label>
+												<input type="number" name="schedule_break_duration" value="5" min="0" max="60">
+											</div>
+										</div>
+										<ul class="list f-16 mt-1">
+											<li>Если указать время начала — матчи автоматически получат расписание.</li>
+										</ul>										
+										
+									</div>
+								</div>							
+							</div>	
 						</div>
 						
 						{{-- Ручное распределение --}}
-						<div id="manual_draw_block" style="display:none" class="mt-2 mb-2">
-							<div class="card p-3">
-								<div class="b-700 f-14 mb-2">Ручное распределение по группам</div>
-								<div class="f-13 mb-2" style="color:#9ca3af">Выберите группу для каждой команды.</div>
+						<div class="mt-2" id="manual_draw_block" style="display:none">
+							<div class="card">
+								<label>Ручное распределение по группам</label>
+								<p>Выберите группу для каждой команды.</p>
 								@if($teams->isNotEmpty())
-								<table style="width:100%;border-collapse:collapse;font-size:14px">
-									<thead>
-										<tr style="border-bottom:2px solid rgba(128,128,128,.2)">
-											<th class="p-1" style="text-align:left">Команда</th>
-											<th class="p-1" style="text-align:center;width:150px">Группа</th>
-										</tr>
-									</thead>
-									<tbody>
-										@foreach($teams as $team)
-										<tr style="border-bottom:1px solid rgba(128,128,128,.1)">
-											<td class="p-1">
-												<div class="b-600">{{ $team->name }}</div>
-												@if($team->members->count())
-												<div class="f-12" style="color:#6b7280">{{ $team->members->map(fn($m) => trim(($m->user->last_name ?? '') . ' ' . ($m->user->first_name ?? '')))->implode(' / ') }}</div>
-												@endif
-											</td>
-											<td class="p-1" style="text-align:center">
-												<select name="manual_teams[{{ $team->id }}]" class="f-13 manual-group-select" style="width:100%">
-													<option value="">—</option>
-													<option value="A">Группа A</option>
-													<option value="B">Группа B</option>
-												</select>
-											</td>
-										</tr>
-										@endforeach
-									</tbody>
-								</table>
+								<div class="table-scrollable no-overflow">
+									<div class="table-drag-indicator"></div>				
+									<table class="table">
+										<thead>
+											<tr>
+												<th>Команда</th>
+												<th>Группа</th>
+											</tr>
+										</thead>
+										<tbody>
+											@foreach($teams as $team)
+											<tr>
+												<td>
+													<div class="b-600">{{ $team->name }}</div>
+													@if($team->members->count())
+													<div class="f-16">{{ $team->members->map(fn($m) => trim(($m->user->last_name ?? '') . ' ' . ($m->user->first_name ?? '')))->implode(' / ') }}</div>
+													@endif
+												</td>
+												<td class="text-center">
+													<select name="manual_teams[{{ $team->id }}]" class="manual-group-select" >
+														<option value="">—</option>
+														<option value="A">Группа A</option>
+														<option value="B">Группа B</option>
+													</select>
+												</td>
+											</tr>
+											@endforeach
+										</tbody>
+									</table>
+								</div>
 								@else
-								<div class="f-13" style="opacity:.5">Нет команд для распределения</div>
+								<div class="alert alert-info">Нет команд для распределения</div>
 								@endif
 							</div>
 						</div>
 						
-						{{-- Расписание (опционально) --}}
-<div id="schedule_fields" class="mt-2 mb-2">
-<div class="card p-3">
-<div class="b-700 f-14 mb-2">Расписание (опционально)</div>
-<div class="f-13 mb-2">Если указать время начала — матчи автоматически получат расписание.</div>
-<div class="d-flex" style="gap:12px;flex-wrap:wrap;align-items:flex-end">
-<div>
-<label>Начало</label>
-<input type="datetime-local" name="schedule_start" value="">
-</div>
-<div>
-<label>Матч (мин)</label>
-<input type="number" name="schedule_match_duration" value="30" min="15" max="180">
-</div>
-<div>
-<label>Перерыв (мин)</label>
-<input type="number" name="schedule_break_duration" value="5" min="0" max="60">
-</div>
-</div>
-</div>
-</div>
-<div class="text-center">
-<button type="submit" class="btn btn-primary mt-1">Создать стадию и провести жеребьёвку</button>
-</div>
+						
+						<div class="text-center">
+							<button type="submit" class="btn btn-primary mt-2">Создать стадию и провести жеребьёвку</button>
+						</div>
 						<script>
 							(function(){
 								var courtsSel = document.getElementById("courts_count_select");
@@ -634,38 +646,38 @@
 		
 		{{-- MVP турнира --}}
 		@php
-			$allCompleted = $stages->isNotEmpty() && $stages->every(fn($s) => $s->status === 'completed');
-			// Если сезонный турнир с 2+ группами, но групп Hard/Lite ещё нет — турнир не завершён
-			if ($allCompleted && $event->season_id) {
-				$groupStage = $stages->firstWhere('type', 'round_robin');
-				if ($groupStage && $groupStage->groups->count() >= 2) {
-					$hasDivisions = $stages->contains(fn($s) => str_starts_with($s->name, 'Группа '));
-					if (!$hasDivisions) {
-						$allCompleted = false;
-					}
-				}
-			}
-			$participants = collect();
-			if ($allCompleted) {
-				$participants = \App\Models\PlayerTournamentStats::where('event_id', $event->id)
-					->with('user')
-					->orderByDesc('match_win_rate')
-					->get();
-			}
+		$allCompleted = $stages->isNotEmpty() && $stages->every(fn($s) => $s->status === 'completed');
+		// Если сезонный турнир с 2+ группами, но групп Hard/Lite ещё нет — турнир не завершён
+		if ($allCompleted && $event->season_id) {
+		$groupStage = $stages->firstWhere('type', 'round_robin');
+		if ($groupStage && $groupStage->groups->count() >= 2) {
+		$hasDivisions = $stages->contains(fn($s) => str_starts_with($s->name, 'Группа '));
+		if (!$hasDivisions) {
+		$allCompleted = false;
+		}
+		}
+		}
+		$participants = collect();
+		if ($allCompleted) {
+		$participants = \App\Models\PlayerTournamentStats::where('event_id', $event->id)
+		->with('user')
+		->orderByDesc('match_win_rate')
+		->get();
+		}
 		@endphp
 		@if($allCompleted && $participants->isNotEmpty())
 		<div class="ramka">
-			<h2 class="-mt-05">⭐ MVP турнира</h2>
+			<h2 class="-mt-05">MVP турнира</h2>
 			@if($event->tournament_mvp_user_id)
-				@php $currentMvp = \App\Models\User::find($event->tournament_mvp_user_id); @endphp
-				<div class="card p-3 mb-2" style="text-align:center;background:rgba(231,97,47,.06);border:1px solid rgba(231,97,47,.2)">
-					<div class="f-13 b-600 mb-1" style="opacity:.5">Текущий MVP</div>
-					<div class="f-20 b-800">⭐
-						<a href="{{ route('users.show', $currentMvp) }}" class="blink">
-							{{ trim(($currentMvp->last_name ?? '') . ' ' . ($currentMvp->first_name ?? '')) ?: $currentMvp->name ?? '?' }}
-						</a>
-					</div>
+			@php $currentMvp = \App\Models\User::find($event->tournament_mvp_user_id); @endphp
+			<div class="card" style="text-align:center;background:rgba(231,97,47,.06);border:1px solid rgba(231,97,47,.2)">
+				<div class="f-13 b-600 mb-1">Текущий MVP</div>
+				<div class="f-20 b-800">⭐
+					<a href="{{ route('users.show', $currentMvp) }}" class="blink">
+						{{ trim(($currentMvp->last_name ?? '') . ' ' . ($currentMvp->first_name ?? '')) ?: $currentMvp->name ?? '?' }}
+					</a>
 				</div>
+			</div>
 			@endif
 			<form method="POST" action="{{ route('tournament.mvp', $event) }}">
 				@csrf
@@ -706,7 +718,7 @@
 			</form>
 		</div>
 		@endif
-
+		
 		{{-- Фото турнира --}}
 		@if($allCompleted)
 		<div class="ramka">
@@ -791,20 +803,20 @@
 		$_isDivStage = str_starts_with($stage->name, 'Группа ');
 		$stageHasDivDistribution = !$_isDivStage && $stages->contains(fn($s) => str_starts_with($s->name, 'Группа ') && $s->occurrence_id == $stage->occurrence_id);
 		@endphp
-		<div class="ramka" id="stage_{{ $stage->id }}" style="border-left:4px solid {{ $borderColor }}">
-			<div class="d-flex between fvc mb-2" style="flex-wrap:wrap;gap:8px">
+		<div class="ramka" id="stage_{{ $stage->id }}">
+			<div class="d-flex between fvc" style="flex-wrap:wrap;gap:8px">
 				<div>
-					<h3 class="mb-1" style="font-size:1.3rem">
+					<h2 class="-mt-05">
 						{{ $stage->name }}
 						@if($stage->isCompleted())
-						<span class="f-12 b-600 p-1 px-2 ml-1" style="background:rgba(16,185,129,.15);border-radius:6px;color:#10b981">Завершена</span>
+						<span class="f-18 alert-warning pt-05 pb-05 p-1">Завершена</span>
 						@elseif($stage->isInProgress())
-						<span class="f-12 b-600 p-1 px-2 ml-1" style="background:rgba(41,103,186,.15);border-radius:6px;color:#5b9ef0">В процессе</span>
+						<span class="f-18 alert-success pt-05 pb-05 p-1">В процессе</span>
 						@else
-						<span class="f-12 b-600 p-1 px-2 ml-1" style="opacity:.5">Ожидание</span>
+						<span class="f-18 alert-info pt-05 pb-05 p-1">Ожидание</span>
 						@endif
-					</h3>
-					<div class="f-13" style="opacity:.5">
+					</h2>
+					<p>
 						@php
 						$stageTypeLabels = [
 						'round_robin' => 'Круговая система',
@@ -818,81 +830,88 @@
 						$matchFormatLabels = ['bo1' => 'Best of 1', 'bo3' => 'Best of 3', 'bo5' => 'Best of 5'];
 						@endphp
 						{{ $stageTypeLabels[$stage->type] ?? $stage->type }} · {{ $matchFormatLabels[$stage->matchFormat()] ?? strtoupper($stage->matchFormat()) }} · до {{ $stage->setPoints() }} очков
-					</div>
+					</p>
 				</div>
 				<div class="d-flex" style="gap:6px">
 					@if($stage->isInProgress() || $stage->isCompleted())
 					<form method="POST" action="{{ route('tournament.stages.revert', $stage) }}">
 						@csrf
-						<button class="btn btn-secondary f-12 btn-alert" style="color:#ca8a04" data-title="Откатить стадию?" data-icon="warning" data-confirm-text="Да, откатить" data-cancel-text="Отмена">Откатить</button>
+						<button class="btn btn-secondary f-12 btn-alert" data-title="Откатить стадию?" data-icon="warning" data-confirm-text="Да, откатить" data-cancel-text="Отмена">Откатить</button>
 					</form>
 					@endif
 					<form method="POST" action="{{ route('tournament.stages.destroy', $stage) }}">
 						@csrf @method('DELETE')
-						<button class="btn btn-secondary f-12 btn-alert" style="color:#dc2626" data-title="Удалить стадию и все её матчи?" data-icon="warning" data-confirm-text="Да, удалить" data-cancel-text="Отмена">Удалить</button>
+						<button class="btn btn-danger f-12 btn-alert" data-title="Удалить стадию и все её матчи?" data-icon="warning" data-confirm-text="Да, удалить" data-cancel-text="Отмена">Удалить</button>
 					</form>
 				</div>
 			</div>
 			
 			{{-- Группы --}}
 			@if($stage->groups->isNotEmpty())
-			<div class="row mb-3">
-				@foreach($stage->groups as $group)
-				<div class="col-md-6 mb-2">
-					<div class="card p-2">
-						<div class="b-700 f-14 mb-2">{{ $group->name }}</div>
-						
+			<div class="tabs-content mt-2">
+				<div class="tabs">
+					@foreach($stage->groups as $index => $group)
+					<div class="tab" data-tab="group{{ $group->id }}">{{ $group->name }}</div>
+					@endforeach
+					<div class="tab-highlight"></div>
+				</div>
+				
+				<div class="tab-panes">
+					@foreach($stage->groups as $index => $group)
+					<div class="tab-pane" id="group{{ $group->id }}">
+						{{-- Содержимое группы --}}
 						@if($group->standings->isNotEmpty())
-						<div style="overflow-x:auto">
-						<table style="width:100%;border-collapse:collapse;font-size:13px">
-							<thead>
-								<tr style="border-bottom:2px solid rgba(128,128,128,.2)">
-									<th class="p-1" style="text-align:center;width:30px">Место</th>
-									<th class="p-1" style="text-align:left">Команда</th>
-									<th class="p-1" style="text-align:center">И</th>
-									<th class="p-1" style="text-align:center">В</th>
-									<th class="p-1" style="text-align:center">П</th>
-									<th class="p-1" style="text-align:center">Очки</th>
-<th class="p-1" style="text-align:center" title="Чистая (без матчей с аутсайдерами) / Полная">Разн.</th>
-								</tr>
-							</thead>
-							<tbody>
-								@php
+						<div class="table-scrollable">
+							<div class="table-drag-indicator"></div>
+							<table class="table">
+								<thead>
+									<tr style="border-bottom:2px solid rgba(128,128,128,.2)">
+										<th class="p-1" style="text-align:center;width:30px">Место</th>
+										<th class="p-1" style="text-align:left">Команда</th>
+										<th class="p-1" style="text-align:center">И</th>
+										<th class="p-1" style="text-align:center">В</th>
+										<th class="p-1" style="text-align:center">П</th>
+										<th class="p-1" style="text-align:center">Очки</th>
+										<th class="p-1" style="text-align:center" title="Чистая (без матчей с аутсайдерами) / Полная">Разн.</th>
+									</tr>
+								</thead>
+								<tbody>
+									@php
 									$groupOutsiders = $outsidersByGroup[$group->id] ?? [];
 									$groupClean     = $cleanStatsByGroup[$group->id] ?? [];
 									$fmtDiff = fn($v) => ($v > 0 ? '+' : '') . $v;
-								@endphp
-								@foreach($group->standings->sortBy('rank') as $standing)
-								@php
+									@endphp
+									@foreach($group->standings->sortBy('rank') as $standing)
+									@php
 									$isOutsider = in_array((int) $standing->team_id, $groupOutsiders, true);
 									$fullDiff   = $standing->points_scored - $standing->points_conceded;
 									$cleanPs    = $groupClean[$standing->team_id]['points_scored']   ?? $standing->points_scored;
 									$cleanPc    = $groupClean[$standing->team_id]['points_conceded'] ?? $standing->points_conceded;
 									$cleanDiff  = $cleanPs - $cleanPc;
-								@endphp
-								<tr style="border-bottom:1px solid rgba(128,128,128,.1){{ $isOutsider ? ';opacity:.7' : '' }}">
-									<td class="p-1 b-700" style="text-align:center">{{ $standing->rank }}</td>
-									<td class="p-1">
-										<div class="b-600">{{ $standing->team->name ?? '—' }}@if($isOutsider) <span class="f-11" style="color:#9ca3af">· аутсайдер</span>@endif</div>
-										@if($standing->team && $standing->team->members->count())
-										<div class="f-11" style="color:#6b7280">{{ $standing->team->members->map(fn($m) => $m->user->last_name ?? '?')->implode(' / ') }}</div>
-										@endif
-									</td>
-									<td class="p-1" style="text-align:center">{{ $standing->played }}</td>
-									<td class="p-1" style="text-align:center;color:#10b981">{{ $standing->wins }}</td>
-									<td class="p-1" style="text-align:center;color:#dc2626">{{ $standing->losses }}</td>
-									<td class="p-1 b-700" style="text-align:center">{{ $standing->rating_points }}</td>
-<td class="p-1" style="text-align:center" title="Чистая / Полная">
-	@if($cleanDiff === $fullDiff)
-		{{ $fmtDiff($fullDiff) }}
-	@else
-		<span class="b-600">{{ $fmtDiff($cleanDiff) }}</span><span style="color:#6b7280">&nbsp;/&nbsp;({{ $fmtDiff($fullDiff) }})</span>
-	@endif
-</td>
-								</tr>
-								@endforeach
-							</tbody>
-						</table>
+									@endphp
+									<tr>
+										<td style="text-align:center">{{ $standing->rank }}</td>
+										<td>
+											<div class="b-600 cd">{{ $standing->team->name ?? '—' }}@if($isOutsider) <span class="f-16">· аутсайдер</span>@endif</div>
+											@if($standing->team && $standing->team->members->count())
+											<div class="f-16">{{ $standing->team->members->map(fn($m) => $m->user->last_name ?? '?')->implode(' / ') }}</div>
+											@endif
+										</td>
+										<td style="text-align:center"><span class="b-600 alert-info pt-05 pb-05 p-1">{{ $standing->played }}</span></td>
+										<td style="text-align:center;"><span class="b-600 alert-success pt-05 pb-05 p-1">{{ $standing->wins }}</span></td>
+										<td style="text-align:center;"><span class="b-600 alert-danger pt-05 pb-05 p-1">{{ $standing->losses }}</span></td>
+										<td class="b-600" style="text-align:center">{{ $standing->rating_points }}</td>
+										<td style="text-align:center" title="Чистая / Полная">
+											@if($cleanDiff === $fullDiff)
+											{{ $fmtDiff($fullDiff) }}
+											@else
+											<span class="b-600">{{ $fmtDiff($cleanDiff) }}</span><span style="color:#6b7280">&nbsp;/&nbsp;({{ $fmtDiff($fullDiff) }})</span>
+											@endif
+										</td>
+									</tr>
+									@endforeach
+								</tbody>
+							</table>
 						</div>
 						@elseif($group->teams->isNotEmpty())
 						<div class="d-flex" style="flex-wrap:wrap;gap:6px">
@@ -901,116 +920,115 @@
 							@endforeach
 						</div>
 						@endif
-
+						
 						{{-- Tiebreaker sets (множественные связки команд) --}}
 						@php
-							$groupSets = $tiebreakerSets[$group->id] ?? collect();
-							$pendingSets  = $groupSets->where('status', 'pending');
-							$resolvedSets = $groupSets->where('status', 'resolved');
-							$teamNames = $group->standings->pluck('team.name', 'team_id');
+						$groupSets = $tiebreakerSets[$group->id] ?? collect();
+						$pendingSets  = $groupSets->where('status', 'pending');
+						$resolvedSets = $groupSets->where('status', 'resolved');
+						$teamNames = $group->standings->pluck('team.name', 'team_id');
 						@endphp
-
+						
 						@if($pendingSets->isNotEmpty())
-						<div class="mt-2 p-2" style="background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.4);border-radius:8px">
-							<div class="f-13 b-700 mb-2" style="color:#d97706">⚠️ Необходим тайбрейк</div>
+						<div class="mb-2 alert alert-info">
+							<div class="b-600 mb-1">Необходим тайбрейк</div>
 							@foreach($pendingSets as $tset)
 							@php
-								$tids = array_map('intval', $tset->team_ids ?? []);
-								$labels = array_map(fn($tid) => $teamNames[$tid] ?? ('#' . $tid), $tids);
+							$tids = array_map('intval', $tset->team_ids ?? []);
+							$labels = array_map(fn($tid) => $teamNames[$tid] ?? ('#' . $tid), $tids);
 							@endphp
-							<div class="mb-2 pb-2" style="border-bottom:1px solid rgba(251,191,36,.2)">
-								<div class="f-13 b-600 mb-1">{{ implode(' = ', $labels) }}</div>
-
-								@if($tset->method === 'match')
-									<div class="f-12 mb-1" style="color:#d97706">🏐 Тайбрейк-матчи созданы. Введите счёт ниже — когда все матчи завершатся, порядок определится автоматически.</div>
-									@php $ms = $tset->match_settings ?? []; @endphp
-									<div class="f-12" style="opacity:.7">Правила: до {{ $ms['points_to_win'] ?? '?' }} очк.{!! !empty($ms['two_point_margin']) ? ', разница в 2' : '' !!}</div>
-								@else
-									<div class="f-12 mb-2" style="opacity:.6">Команды равны по всем критериям. Выберите способ:</div>
-									<div class="d-flex" style="gap:8px;flex-wrap:wrap;align-items:flex-start">
-										{{-- Вариант 1: учесть матчи с аутсайдером (full diff) --}}
-										<form method="POST" action="{{ route('tournament.tiebreaker.set.fullDiff', $tset) }}" style="display:inline">
-											@csrf
-											<input type="hidden" name="occurrence_id" value="{{ $selectedOccurrence?->id }}">
-											<button type="submit" class="btn btn-secondary f-12 btn-alert" style="padding:4px 10px"
-												data-title="Учесть матчи с аутсайдером?" data-icon="info"
-												data-confirm-text="Применить" data-cancel-text="Отмена">
-												🟰 Полная разница
-											</button>
-										</form>
-
-										{{-- Вариант 2: сыграть мини-матчи --}}
-										<button type="button" class="btn btn-secondary f-12" style="padding:4px 10px"
-											onclick="document.getElementById('tbset-match-{{ $tset->id }}').style.display='block';this.style.display='none'">
-											🏐 Сыграть матчи
-										</button>
-
-										{{-- Вариант 3: жребий --}}
-										<button type="button" class="btn btn-secondary f-12" style="padding:4px 10px;border-color:#d97706;color:#d97706"
-											onclick="document.getElementById('tbset-lot-{{ $tset->id }}').style.display='block';this.style.display='none'">
-											🎲 Жребий
-										</button>
-									</div>
-
-									{{-- Форма мини-матчей --}}
-									<div id="tbset-match-{{ $tset->id }}" style="display:none;margin-top:8px">
-										<form method="POST" action="{{ route('tournament.tiebreaker.set.matches', $tset) }}" class="d-flex" style="gap:8px;align-items:center;flex-wrap:wrap">
-											@csrf
-											<input type="hidden" name="occurrence_id" value="{{ $selectedOccurrence?->id }}">
-											<label class="f-12 fvc" style="gap:4px">До
-												<input type="number" name="points_to_win" value="15" min="1" max="30" class="form-control f-13" style="width:70px;padding:2px 6px" required>
-											очк.</label>
-											<label class="f-12 fvc" style="gap:4px">
-												<input type="checkbox" name="two_point_margin" value="1"> разница 2
-											</label>
-											<button type="submit" class="btn btn-primary f-12" style="padding:4px 12px">Создать матчи</button>
-										</form>
-										<div class="f-11 mt-1" style="opacity:.6">Будет создано {{ count($tids) * (count($tids) - 1) / 2 }} матч(ей) — round-robin между командами.</div>
-									</div>
-
-									{{-- Форма жребия --}}
-									<div id="tbset-lot-{{ $tset->id }}" style="display:none;margin-top:8px">
-										<form method="POST" action="{{ route('tournament.tiebreaker.set.lottery', $tset) }}" class="d-flex" style="gap:6px;align-items:center;flex-wrap:wrap">
-											@csrf
-											<input type="hidden" name="occurrence_id" value="{{ $selectedOccurrence?->id }}">
-											<span class="f-12" style="opacity:.7">Порядок:</span>
-											@foreach($tids as $i => $tid)
-											<select name="order[]" class="form-control f-12" style="width:auto;min-width:120px;padding:2px 6px" required>
-												<option value="">— {{ $i + 1 }} место —</option>
-												@foreach($tids as $tid2)
-												<option value="{{ $tid2 }}">{{ $teamNames[$tid2] ?? ('#' . $tid2) }}</option>
-												@endforeach
-											</select>
-											@endforeach
-											<button type="submit" class="btn btn-primary f-12" style="padding:4px 12px">Подтвердить</button>
-										</form>
-									</div>
-								@endif
+							
+							<div class="b-600 mb-1">{{ implode(' = ', $labels) }}</div>
+							
+							@if($tset->method === 'match')
+							<p>🏐 Тайбрейк-матчи созданы. Введите счёт ниже — когда все матчи завершатся, порядок определится автоматически.</p>
+							@php $ms = $tset->match_settings ?? []; @endphp
+							<p>Правила: до {{ $ms['points_to_win'] ?? '?' }} очк.{!! !empty($ms['two_point_margin']) ? ', разница в 2' : '' !!}</p>
+							@else
+							<p>Команды равны по всем критериям. Выберите способ:</p>
+							<div class="d-flex" style="gap:8px;flex-wrap:wrap;align-items:flex-start">
+								{{-- Вариант 1: учесть матчи с аутсайдером (full diff) --}}
+								<form method="POST" action="{{ route('tournament.tiebreaker.set.fullDiff', $tset) }}" style="display:inline">
+									@csrf
+									<input type="hidden" name="occurrence_id" value="{{ $selectedOccurrence?->id }}">
+									<button type="submit" class="btn btn-secondary btn-alert"
+									data-title="Учесть матчи с аутсайдером?" data-icon="info"
+									data-confirm-text="Применить" data-cancel-text="Отмена">
+										🟰 Полная разница
+									</button>
+								</form>
+								
+								{{-- Вариант 2: сыграть мини-матчи --}}
+								<button type="button" class="btn btn-secondary"
+								onclick="document.getElementById('tbset-match-{{ $tset->id }}').style.display='block';this.style.display='none'">
+									🏐 Сыграть матчи
+								</button>
+								
+								{{-- Вариант 3: жребий --}}
+								<button type="button" class="btn btn-secondary"
+								onclick="document.getElementById('tbset-lot-{{ $tset->id }}').style.display='block';this.style.display='none'">
+									🎲 Жребий
+								</button>
 							</div>
+							
+							{{-- Форма мини-матчей --}}
+							<div id="tbset-match-{{ $tset->id }}" style="display:none;margin-top:8px">
+								<form method="POST" action="{{ route('tournament.tiebreaker.set.matches', $tset) }}" class="d-flex" style="gap:8px;align-items:center;flex-wrap:wrap">
+									@csrf
+									<input type="hidden" name="occurrence_id" value="{{ $selectedOccurrence?->id }}">
+									<label class="f-12 fvc" style="gap:4px">До
+										<input type="number" name="points_to_win" value="15" min="1" max="30" class="form-control f-13" style="width:70px;padding:2px 6px" required>
+									очк.</label>
+									<label class="fvc" style="gap:4px">
+										<input type="checkbox" name="two_point_margin" value="1"> разница 2
+									</label>
+									<button type="submit" class="btn btn-primary">Создать матчи</button>
+								</form>
+								<div class="f-11 mt-1" style="opacity:.6">Будет создано {{ count($tids) * (count($tids) - 1) / 2 }} матч(ей) — round-robin между командами.</div>
+							</div>
+							
+							{{-- Форма жребия --}}
+							<div id="tbset-lot-{{ $tset->id }}" style="display:none;margin-top:8px">
+								<form method="POST" action="{{ route('tournament.tiebreaker.set.lottery', $tset) }}" class="d-flex" style="gap:6px;align-items:center;flex-wrap:wrap">
+									@csrf
+									<input type="hidden" name="occurrence_id" value="{{ $selectedOccurrence?->id }}">
+									<span class="f-12" style="opacity:.7">Порядок:</span>
+									@foreach($tids as $i => $tid)
+									<select name="order[]" class="form-control f-12" style="width:auto;min-width:120px;padding:2px 6px" required>
+										<option value="">— {{ $i + 1 }} место —</option>
+										@foreach($tids as $tid2)
+										<option value="{{ $tid2 }}">{{ $teamNames[$tid2] ?? ('#' . $tid2) }}</option>
+										@endforeach
+									</select>
+									@endforeach
+									<button type="submit" class="btn btn-primary f-12" style="padding:4px 12px">Подтвердить</button>
+								</form>
+							</div>
+							@endif
+							
 							@endforeach
 						</div>
 						@endif
-
+						
 						@if($resolvedSets->isNotEmpty())
 						<div class="mt-2 p-2 f-12" style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.3);border-radius:8px">
 							@foreach($resolvedSets as $rset)
 							@php
-								$order  = $rset->resolved_order ?: [];
-								$labels = array_map(fn($tid) => $teamNames[(int) $tid] ?? ('#' . $tid), $order);
-								$methodLabel = ['full_diff' => 'полная разница', 'match' => 'матчи', 'lottery' => 'жребий'][$rset->method] ?? $rset->method;
+							$order  = $rset->resolved_order ?: [];
+							$labels = array_map(fn($tid) => $teamNames[(int) $tid] ?? ('#' . $tid), $order);
+							$methodLabel = ['full_diff' => 'полная разница', 'match' => 'матчи', 'lottery' => 'жребий'][$rset->method] ?? $rset->method;
 							@endphp
 							<div class="mb-1">✅ Тайбрейк ({{ $methodLabel }}): {{ implode(' → ', $labels) }}</div>
 							@endforeach
 						</div>
 						@endif
-
 					</div>
+					@endforeach
 				</div>
-				@endforeach
 			</div>
 			@endif
 			
-
+			
 			
 			{{-- Матчи --}}
 			@if($stage->matches->isNotEmpty())
@@ -1018,78 +1036,96 @@
 			$matchesByGroup = $stage->matches->sortBy(["round", "match_number"])->groupBy('group_id');
 			$hasGroups = $stage->groups->count() > 1;
 			@endphp
-			@foreach($matchesByGroup as $groupId => $groupMatches)
-			@php $groupName = $stage->groups->firstWhere('id', $groupId)?->name ?? ''; @endphp
-			<div class="card p-2">
-				<div class="b-700 f-14 mb-2">{{ $groupName ? 'Матчи ' . $groupName : 'Матчи' }}</div>
-				<div style="overflow-x:auto">
-					<table style="width:100%;border-collapse:collapse;font-size:13px">
-						<thead>
-<tr style="border-bottom:2px solid rgba(128,128,128,.2)">
-<th class="p-1" style="text-align:left">#</th>
-<th class="p-1" style="text-align:left">Тур</th>
-<th class="p-1" style="text-align:left">Дома</th>
-<th class="p-1" style="text-align:left">Гости</th>
-<th class="p-1" style="text-align:center">Сеты</th>
-<th class="p-1" style="text-align:center">Счёт</th>
-<th class="p-1" style="text-align:center">Время</th>
-<th class="p-1" style="text-align:center">Корт</th>
-<th class="p-1" style="text-align:center">Статус</th>
-<th class="p-1"></th>
-</tr>
-</thead>
-						<tbody>
-@foreach($groupMatches as $match)
-<tr style="border-bottom:1px solid rgba(128,128,128,.1);{{ $match->isCompleted() ? 'background:rgba(16,185,129,.06)' : '' }}">
-<td class="p-1">{{ $match->match_number }}</td>
-<td class="p-1">R{{ $match->round }}</td>
-<td class="p-1 {{ $match->winner_team_id === $match->team_home_id ? 'b-700' : '' }}">
-<div>{{ $match->teamHome->name ?? 'TBD' }}</div>
-@if($match->teamHome && $match->teamHome->members->count())
-<div class="f-11" style="color:#6b7280">{{ $match->teamHome->members->map(fn($m) => $m->user->last_name ?? '?')->implode(' / ') }}</div>
-@endif
-</td>
-<td class="p-1 {{ $match->winner_team_id === $match->team_away_id ? 'b-700' : '' }}">
-<div>{{ $match->teamAway->name ?? 'TBD' }}</div>
-@if($match->teamAway && $match->teamAway->members->count())
-<div class="f-11" style="color:#6b7280">{{ $match->teamAway->members->map(fn($m) => $m->user->last_name ?? '?')->implode(' / ') }}</div>
-@endif
-</td>
-<td class="p-1" style="text-align:center">{{ $match->setsScore() ?? '—' }}</td>
-<td class="p-1" style="text-align:center">{{ $match->detailedScore() ?: '—' }}</td>
-<td class="p-1" style="text-align:center">{{ $match->scheduled_at ? $match->scheduled_at->setTimezone($event->timezone ?? 'Europe/Moscow')->format('H:i') : '—' }}</td>
-<td class="p-1" style="text-align:center">{{ $match->court ?? '—' }}</td>
-<td class="p-1" style="text-align:center">
-@if($match->isCompleted())
-<span class="f-11 b-600 p-1 px-2" style="background:rgba(16,185,129,.15);border-radius:6px;color:#10b981">✓</span>
-@if(!$stageHasDivDistribution)
-<a href="{{ route('tournament.matches.score.form', $match) }}?edit=1" class="f-14" style="text-decoration:none;margin-left:4px" title="Исправить счёт">🛠</a>
-@endif
-@elseif($match->status === 'live')
-<span class="f-11 b-600 p-1 px-2" style="background:rgba(220,38,38,.15);border-radius:6px;color:#dc2626">LIVE</span>
-@else
-<span class="f-11" style="opacity:.5">ожидание</span>
-@endif
-</td>
-<td class="p-1">
-@if($match->isScheduled() && $match->hasTeams())
-<a href="{{ route('tournament.matches.score.form', $match) }}" class="btn btn-primary f-12" style="padding:4px 10px">
-Счёт
-</a>
-@endif
-@if($match->isCompleted())
-<a href="{{ route('tournament.matches.player_stats.form', $match) }}" class="btn btn-secondary f-12" style="padding:4px 8px" title="Статистика игроков">
-📊
-</a>
-@endif
-</td>
-</tr>
-@endforeach
-</tbody>
-					</table>
+			
+			<div class="tabs-content">
+				<div class="tabs">
+					@foreach($matchesByGroup as $groupId => $groupMatches)
+					@php $groupName = $stage->groups->firstWhere('id', $groupId)?->name ?? ''; @endphp
+					<div class="tab" data-tab="matches-group{{ $groupId }}">{{ $groupName ? 'Матчи ' . $groupName : 'Матчи' }}</div>
+					@endforeach
+					<div class="tab-highlight"></div>
+				</div>
+				
+				<div class="tab-panes">
+					@foreach($matchesByGroup as $groupId => $groupMatches)
+					@php $groupName = $stage->groups->firstWhere('id', $groupId)?->name ?? ''; @endphp
+					<div class="tab-pane" id="matches-group{{ $groupId }}">
+						<div class="">
+							
+							<div class="table-scrollable">
+								<div class="table-drag-indicator"></div>
+								<table class="table">
+									<thead>
+										<tr style="border-bottom:2px solid rgba(128,128,128,.2)">
+											<th class="p-1" style="text-align:left">#</th>
+											<th class="p-1" style="text-align:left">Тур</th>
+											<th class="p-1" style="text-align:left">Дома</th>
+											<th class="p-1" style="text-align:left">Гости</th>
+											<th class="p-1" style="text-align:center">Сеты</th>
+											<th class="p-1" style="text-align:center">Счёт</th>
+											<th class="p-1" style="text-align:center">Время</th>
+											<th class="p-1" style="text-align:center">Корт</th>
+											<th class="p-1" style="text-align:center">Статус</th>
+											<th class="p-1"></th>
+										</tr>
+									</thead>
+									<tbody>
+										@foreach($groupMatches as $match)
+										<tr>
+											<td>{{ $match->match_number }}</td>
+											<td>R{{ $match->round }}</td>
+											<td class="{{ $match->winner_team_id === $match->team_home_id ? 'cd b-600' : '' }}">
+												<div>{{ $match->teamHome->name ?? 'TBD' }}</div>
+												@if($match->teamHome && $match->teamHome->members->count())
+												<div class="f-11" style="color:#6b7280">{{ $match->teamHome->members->map(fn($m) => $m->user->last_name ?? '?')->implode(' / ') }}</div>
+												@endif
+											</td>
+											<td class="p-1 {{ $match->winner_team_id === $match->team_away_id ? 'cd b-600' : '' }}">
+												<div>{{ $match->teamAway->name ?? 'TBD' }}</div>
+												@if($match->teamAway && $match->teamAway->members->count())
+												<div class="f-11" style="color:#6b7280">{{ $match->teamAway->members->map(fn($m) => $m->user->last_name ?? '?')->implode(' / ') }}</div>
+												@endif
+											</td>
+											<td style="text-align:center">{{ $match->setsScore() ?? '—' }}</td>
+											<td style="text-align:center">{{ $match->detailedScore() ?: '—' }}</td>
+											<td style="text-align:center">{{ $match->scheduled_at ? $match->scheduled_at->setTimezone($event->timezone ?? 'Europe/Moscow')->format('H:i') : '—' }}</td>
+											<td style="text-align:center">{{ $match->court ?? '—' }}</td>
+											<td style="text-align:center">
+												@if($match->isCompleted())
+												<span class="b-600 alert-success pt-05 pb-05 p-1">✓</span>
+												@if(!$stageHasDivDistribution)
+												<a href="{{ route('tournament.matches.score.form', $match) }}?edit=1" class="f-14" style="text-decoration:none;margin-left:4px" title="Исправить счёт">🛠</a>
+												@endif
+												@elseif($match->status === 'live')
+												<span class="f-11 b-600 p-1 px-2" style="background:rgba(220,38,38,.15);border-radius:6px;color:#dc2626">LIVE</span>
+												@else
+												<span>ожидание</span>
+												@endif
+											</td>
+											<td class="p-1">
+												@if($match->isScheduled() && $match->hasTeams())
+												<a href="{{ route('tournament.matches.score.form', $match) }}" class="btn btn-primary f-12" style="padding:4px 10px">
+													Счёт
+												</a>
+												@endif
+												@if($match->isCompleted())
+												<a href="{{ route('tournament.matches.player_stats.form', $match) }}" class="btn btn-secondary f-12" style="padding:4px 8px" title="Статистика игроков">
+													📊
+												</a>
+												@endif
+											</td>
+										</tr>
+										@endforeach
+									</tbody>
+								</table>
+							</div>
+						</div>
+					</div>
+					@endforeach
 				</div>
 			</div>
-			@endforeach
+			
+			
 			@php
 			$hasUnplayed = $stage->matches->where('status', 'scheduled')
 			->filter(fn($m) => $m->team_home_id && $m->team_away_id)->isNotEmpty();
@@ -1116,7 +1152,7 @@
 			</div>
 			@endif
 			
-			
+			</div>
 			
 			@endif
 			{{-- Продвижение / Группы --}}
@@ -1125,10 +1161,10 @@
 			{{-- Сезонный турнир → группы Hard/Lite --}}
 			@if($event->season_id && $stage->groups->count() >= 2)
 			@php $hasDivStages = $stages->filter(fn($s) => str_starts_with($s->name, 'Группа '))->isNotEmpty(); @endphp
-			<div class="ramka" style="background:rgba(41,103,186,.04);border:1px solid rgba(41,103,186,.15)">
+			<div class="ramka">
 				<div class="d-flex between fvc" style="cursor:pointer" onclick="var b=this.nextElementSibling;b.style.display=b.style.display==='none'?'':'none';this.querySelector('.toggle-icon').textContent=b.style.display==='none'?'+':'-'">
-					<h3 class="-mt-05 mb-0">🏆 Формирование групп</h3>
-					<span class="toggle-icon b-700 f-20">{{ $hasDivStages ? '+' : '-' }}</span>
+					<h2 class="-mt-05">Формирование групп</h2>
+					<span class="toggle-icon b-600 f-20">{{ $hasDivStages ? '+' : '-' }}</span>
 				</div>
 				<div style="{{ $hasDivStages ? 'display:none' : '' }}">
 					@php
@@ -1142,44 +1178,49 @@
 					$availCourts = $stage->cfg('courts', []);
 					@endphp
 					
-					<div class="f-13 mb-3" style="color:#6b7280">
+					<p>
 						По результатам группового этапа команды распределяются в {{ count($divisionNames) }} групп{{ count($divisionNames) > 2 ? 'а' : '' }}:
 						<strong>{{ implode(', ', $divisionNames) }}</strong>
-					</div>
+					</p>
 					
 					<form method="POST" action="{{ route('tournament.stages.formDivisions', $stage) }}">
 						@csrf
 						
 						{{-- Ряд 1: Кол-во + форматы --}}
-						<div class="row mb-3">
+						<div class="row">
 							<div class="col-md-3 mb-2">
-								<label class="f-13 b-600 mb-1 d-block">Выходят в Hard</label>
+							<div class="card">
+								<label>Выходят в Hard</label>
 								<input name="advance_per_group" type="number" value="{{ $advanceCount }}" min="1" max="8" style="width:70px">
-								<div class="f-12 mt-1" style="color:#9ca3af">из каждой группы</div>
+								<p>из каждой группы</p>
+							</div>	
 							</div>
 							@foreach($divisionNames as $dn)
 							<div class="col-md-3 mb-2">
-								<label class="f-13 b-600 mb-1 d-block">Формат {{ $dn }}</label>
+							<div class="card">
+								<label>Формат {{ $dn }}</label>
 								<select name="div_format_{{ strtolower($dn) }}" class="f-13" style="width:100%">
 									<option value="">как в группах</option>
 									<option value="bo1">Bo1</option>
 									<option value="bo3">Bo3</option>
 								</select>
+							</div>	
 							</div>
 							@endforeach
 						</div>
 						
 						{{-- Ряд 2: Площадки --}}
 						@if(count($availCourts) > 0)
-						<div class="mb-3">
-							<label class="f-13 b-600 mb-2 d-block">Площадки для групп</label>
+						<div class="card mb-2">
+							<label>Площадки для групп</label>
+							<hr class="mb-1">
 							<div class="row">
 								@foreach($divisionNames as $dn)
 								<div class="col-md-{{ (int)(12 / count($divisionNames)) }} mb-2">
-									<div class="f-13 b-600 mb-1">{{ $dn }}:</div>
+									<label>{{ $dn }}:</label>
 									<div class="d-flex" style="flex-wrap:wrap;gap:6px">
 										@foreach($availCourts as $court)
-										<label class="checkbox-item f-13" style="margin:0">
+										<label class="checkbox-item f-13 pr-2" style="margin:0">
 											<input type="checkbox" name="div_courts_{{ strtolower($dn) }}[]" value="{{ $court }}">
 											<div class="custom-checkbox"></div>
 											<span>{{ $court }}</span>
@@ -1193,10 +1234,10 @@
 						@endif
 						
 						{{-- Расписание --}}
-						<div class="mb-3">
-							<label class="f-13 b-600 mb-2 d-block">Расписание (опционально)</label>
-							<div class="card p-3">
-								<div class="f-13 mb-2">Если указать время начала — матчи автоматически получат расписание и площадки.</div>
+						<div class="card mb-2">
+							<label>Расписание (опционально)</label>
+								<p>Если указать время начала — матчи автоматически получат расписание и площадки.</p>
+								<hr class="mb-1">
 								<div class="d-flex" style="gap:12px;flex-wrap:wrap;align-items:flex-end">
 									<div>
 										<label>Начало</label>
@@ -1211,9 +1252,8 @@
 										<input type="number" name="schedule_break_duration" value="5" min="0" max="60">
 									</div>
 								</div>
-							</div>
 						</div>
-
+						
 						<button type="submit" class="btn btn-primary btn-alert" data-title="Сформировать группы?" data-icon="question" data-confirm-text="Да, сформировать" data-cancel-text="Отмена">Сформировать группы</button>
 					</form>
 				</div>
@@ -1244,7 +1284,7 @@
 			@endif
 			@endif
 			@endif
-		</div>
+		
 		@endforeach
 		
 		{{-- Промоушен после групп --}}
@@ -1281,7 +1321,7 @@
 		
 		
 		@if($stages->isEmpty())
-		<div style="text-align:center;opacity:.5;padding:40px 0">
+		<div class="ramka" style="text-align:center">
 			<p class="f-18 b-600">Турнир пока не настроен</p>
 			<p>Создайте первую стадию выше, затем проведите жеребьёвку.</p>
 		</div>
@@ -1289,7 +1329,7 @@
 		
 		
 	</div>
-
+	
 	<script>
 		document.addEventListener('DOMContentLoaded', function() {
 			var typeSelect = document.getElementById('stage_type_select');
@@ -1329,11 +1369,11 @@
 			var wrap = document.getElementById('org-captain-ac-wrap');
 			if (!inp || !dd || !hidden) return;
 			var timer = null;
-
+			
 			function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 			function showDd() { dd.classList.add('form-select-dropdown--active'); }
 			function hideDd() { dd.classList.remove('form-select-dropdown--active'); }
-
+			
 			inp.addEventListener('input', function() {
 				clearTimeout(timer);
 				var q = inp.value.trim();
@@ -1374,9 +1414,9 @@
 					});
 				}, 250);
 			});
-
+			
 			inp.addEventListener('keydown', function(e) { if (e.key === 'Escape') hideDd(); });
-
+			
 			document.addEventListener('click', function(e) {
 				if (wrap && !wrap.contains(e.target)) hideDd();
 			});

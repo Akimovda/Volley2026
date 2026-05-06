@@ -78,8 +78,8 @@ class ProfileNotificationChannelController extends Controller
         $instruction = $this->buildBindInstruction($platform, $token, $title);
 
         return redirect()
-            ->route('profile.notification_channels')
-            ->with('status', 'Ссылка для привязки канала создана.')
+            ->to(route('profile.notification_channels') . '#bind-result')
+            ->with('status', 'Ссылка для привязки канала создана. Следуйте инструкции ниже.')
             ->with('bind_request_id', $bind->id)
             ->with('bind_instruction', $instruction);
     }

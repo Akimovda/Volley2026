@@ -123,30 +123,37 @@
         @php $bindInstruction = session('bind_instruction'); @endphp
 
         @if(!empty($bindInstruction))
-        <div class="ramka">
-            <div class="alert alert-info">
-                <div class="alert-title">
-                    Инструкция по привязке {{ strtoupper($bindInstruction['platform'] ?? '') }}
+        <div class="ramka" id="bind-result">
+            <div class="alert alert-success">
+                <div class="alert-title b-700 f-17">
+                    ✅ Ссылка для привязки {{ strtoupper($bindInstruction['platform'] ?? '') }} создана
                 </div>
-                <p>{{ $bindInstruction['message'] ?? '' }}</p>
+                <p class="mt-1">{{ $bindInstruction['message'] ?? '' }}</p>
+
+                <div class="b-700 f-16 mt-2 mb-05">📋 Что делать дальше:</div>
+                @if(!empty($bindInstruction['instruction']))
+                    <div class="f-15 pre-line">{{ $bindInstruction['instruction'] }}</div>
+                @endif
 
                 @if(!empty($bindInstruction['link']))
-                    <a href="{{ $bindInstruction['link'] }}" target="_blank" rel="noopener"
-                       class="btn btn-small btn-primary mt-1">
-                        {{ $bindInstruction['button_text'] ?? 'Открыть' }}
-                    </a>
+                    <div class="mt-2">
+                        <a href="{{ $bindInstruction['link'] }}" target="_blank" rel="noopener"
+                           class="btn btn-primary">
+                            👉 {{ $bindInstruction['button_text'] ?? 'Открыть' }}
+                        </a>
+                    </div>
                 @endif
 
                 @if(($bindInstruction['platform'] ?? '') !== 'max' && !empty($bindInstruction['command']))
-                    <div class="mt-1">
-                        <div class="f-14 b-600 mb-05">Команда / токен:</div>
+                    <div class="mt-2">
+                        <div class="f-14 b-600 mb-05">Команда для отправки боту:</div>
                         <code class="code-block">{{ $bindInstruction['command'] }}</code>
                     </div>
                 @endif
 
-                @if(!empty($bindInstruction['instruction']))
-                    <div class="mt-1 f-15 pre-line">{{ $bindInstruction['instruction'] }}</div>
-                @endif
+                <div class="f-13 text-muted mt-2">
+                    ⏱ Ссылка действительна 30 минут. После добавления бота в чат — обновите страницу.
+                </div>
             </div>
         </div>
         @endif
@@ -471,6 +478,18 @@
             }
         });
     }
+
+    (function() {
+        var target = document.getElementById('bind-result');
+        if (!target) return;
+        // Плавный скролл к блоку с инструкцией + кратковременная подсветка
+        setTimeout(function() {
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            target.style.transition = 'box-shadow .4s ease';
+            target.style.boxShadow = '0 0 0 3px rgba(40,167,69,.45)';
+            setTimeout(function() { target.style.boxShadow = ''; }, 2200);
+        }, 100);
+    })();
     </script>
     </x-slot>
 
