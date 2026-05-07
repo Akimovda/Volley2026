@@ -699,16 +699,10 @@
 								<div class="app-links">
 									<div class="row">
 										<div class="col-6">
-											<a href="https://apps.apple.com/ru/app/volleyclub/id6764748613" class="app-link">
-												<span class="icon-apple"></span>
-												<span>App Store</span>
-											</a>
+											<a href="https://apps.apple.com/ru/app/volleyclub/id6764748613" class="appstore app-link"></a>
 										</div>	
 										<div class="col-6">
-											<a href="https://www.rustore.ru/catalog/app/club.volleyplay.app" class="app-link">
-												<span class="icon-rustore"></span>
-												<span>RuStore</span>
-											</a>
+											<a href="https://www.rustore.ru/catalog/app/club.volleyplay.app" class="rustore app-link"></a>
 										</div>	
 									</div>
 								</div>

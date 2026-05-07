@@ -3500,25 +3500,35 @@ body.dark .footer-menu a:hover {
 	flex-direction: column;
 	gap: 0.75rem;
 }
-
 .footer .app-link {
 	display: flex;
 	align-items: center;
-	gap: 0.75rem;
-	padding: 0.9rem 1.2rem;
-	background: rgba(41, 103, 186, 0.1); /* Полупрозрачный синий */
+	background-color: rgba(41, 103, 186, 0.1); /* Полупрозрачный синий */
 	border: 1px solid rgba(41, 103, 186, 0.3);
 	border-radius: 1rem;
 	font-weight: 600;
 	transition: all 0.3s ease;
+	height: 5.5rem;
+	background-repeat: no-repeat;
+	background-size: cover;
+	background-position: center center;
+	will-change: transform;
 }
-
 .footer .app-link:hover {
-	background: rgba(41, 103, 186, 0.2);
+	background-color: rgba(41, 103, 186, 0.2);
 	border-color: #2967BA;
 	transform: translateY(-0.2rem);
 	box-shadow: 0 0.4rem 1.2rem rgba(41, 103, 186, 0.2);
 	color: #000;
+}
+.app-link.appstore {
+	background-image: url(/img/appstore.png); 
+}
+.app-link.rustore {
+	background-image: url(/img/rustore.png); 
+}
+body.dark .footer .app-link {
+	filter: invert(94%);
 }
 body.dark .footer .app-link:hover {
 	color: #FFB171;
