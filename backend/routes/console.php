@@ -62,3 +62,9 @@ Schedule::command('tournament:monthly-summary')
 Schedule::command('sitemap:generate')
     ->dailyAt('04:00')
     ->withoutOverlapping();
+
+// Публикация анонсов в каналы (registration_open) — каждую минуту:
+// находит occurrences с открытой регистрацией без отправленного анонса и публикует.
+Schedule::command('events:publish-pending-announcements --limit=100')
+    ->everyMinute()
+    ->withoutOverlapping();
