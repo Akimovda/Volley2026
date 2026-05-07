@@ -299,18 +299,48 @@ class TournamentStatsService
             }
         }
 
-        // 2. Оставшиеся команды — по standings последней стадии с группами
+        // 2. Оставшиеся команды — по standings последней стадии с группами.
+        // Если групп несколько (Группа A/B/...) — выводим каждую как отдельный «дивизион»,
+        // чтобы UI показал колонки с локальным ранжированием внутри группы.
         $groupStage = $stages->filter(fn($s) => $s->groups->isNotEmpty())->last();
         if ($groupStage) {
-            $standings = TournamentStanding::where('stage_id', $groupStage->id)
-                ->with('team')
-                ->orderBy('rank')
-                ->get();
+            $stageGroups = $groupStage->groups->sortBy('name')->values();
 
-            foreach ($standings as $s) {
-                if (in_array($s->team_id, $assignedTeams)) continue;
-                $classification[] = ['place' => $place++, 'team_id' => $s->team_id, 'team_name' => $s->team->name ?? '?'];
-                $assignedTeams[] = $s->team_id;
+            if ($stageGroups->count() > 1) {
+                foreach ($stageGroups as $g) {
+                    $standings = TournamentStanding::where('stage_id', $groupStage->id)
+                        ->where('group_id', $g->id)
+                        ->with('team')
+                        ->orderBy('rank')
+                        ->get();
+
+                    foreach ($standings as $s) {
+                        if (in_array($s->team_id, $assignedTeams)) continue;
+                        $classification[] = [
+                            'place' => $place++,
+                            'team_id' => $s->team_id,
+                            'team_name' => $s->team->name ?? '?',
+                            'division' => $g->name,
+                            'wins' => $s->wins,
+                            'losses' => $s->losses,
+                            'rating_points' => $s->rating_points,
+                            'points_scored' => $s->points_scored,
+                            'points_conceded' => $s->points_conceded,
+                        ];
+                        $assignedTeams[] = $s->team_id;
+                    }
+                }
+            } else {
+                $standings = TournamentStanding::where('stage_id', $groupStage->id)
+                    ->with('team')
+                    ->orderBy('rank')
+                    ->get();
+
+                foreach ($standings as $s) {
+                    if (in_array($s->team_id, $assignedTeams)) continue;
+                    $classification[] = ['place' => $place++, 'team_id' => $s->team_id, 'team_name' => $s->team->name ?? '?'];
+                    $assignedTeams[] = $s->team_id;
+                }
             }
         }
 
