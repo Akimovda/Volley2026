@@ -46,7 +46,7 @@ class OccurrenceWaitlistController extends Controller
 
         app(WaitlistService::class)->join($occurrence, $user, $positions);
 
-        return back()->with('status', 'Вы записаны в резерв! Мы уведомим вас когда освободится место.');
+        return back()->with('status', 'Вы записаны в резерв! Когда освободится подходящее место, мы автоматически переведём вас в основной состав.');
     }
 
     public function destroy(Request $request, EventOccurrence $occurrence): \Illuminate\Http\RedirectResponse

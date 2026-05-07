@@ -4,6 +4,7 @@
 	
 	use App\Models\User;
 	use App\Models\EventOccurrence;
+	use App\Models\OccurrenceWaitlist;
 	use App\Services\EventRoleSlotService;
 	use Illuminate\Support\Carbon;
 	use Illuminate\Support\Facades\Schema;
@@ -192,12 +193,51 @@
 				$policy,
 				$genderBlocked
 			);
-			
+
+			// Гейт листа ожидания: если есть кто-то в очереди (помимо текущего user) —
+			// основная запись закрыта, доступна только запись в waitlist.
+			// Турниры пропускаем — у них своя ветка (notifyNext без автозаписи).
+			$this->checkWaitlistGate($user, $occurrence, $event, $result);
+
 			if (!empty($result->errors)) {
 				$result->allowed = false;
 			}
-			
+
 			return $result;
+		}
+
+		/*
+			|--------------------------------------------------------------------------
+			| WAITLIST GATE
+			|--------------------------------------------------------------------------
+			| Если на мероприятии уже есть кто-то в листе ожидания (помимо текущего
+			| пользователя) — обычная запись в основной состав запрещается.
+			| Освободившееся место будет автоматически отдано первому подходящему
+			| из очереди через WaitlistService::autoBookNext().
+		*/
+		private function checkWaitlistGate(
+			?User $user,
+			EventOccurrence $occurrence,
+			$event,
+			GuardResult $result
+		): void {
+			if ((string) ($event->format ?? '') === 'tournament') {
+				return;
+			}
+
+			$query = OccurrenceWaitlist::query()
+				->where('occurrence_id', $occurrence->id);
+			if ($user) {
+				$query->where('user_id', '!=', $user->id);
+			}
+
+			$hasOthers = $query->exists();
+			$result->meta['waitlist_has_others'] = $hasOthers;
+
+			if ($hasOthers) {
+				$result->meta['waitlist_only'] = true;
+				$result->errors[] = 'На мероприятии есть лист ожидания. Запись в основной состав закрыта — доступна только запись в резерв.';
+			}
 		}
 		
 		/*
