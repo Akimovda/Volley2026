@@ -210,8 +210,8 @@ class EventRegistrationsManagementController extends Controller
                     'rl.actor_id',
                     'rl.action',
                     'rl.created_at',
-                    'u.name as user_name',
-                    'a.name as actor_name',
+                    DB::raw("COALESCE(NULLIF(TRIM(CONCAT_WS(' ', u.last_name, u.first_name)), ''), u.name) as user_name"),
+                    DB::raw("COALESCE(NULLIF(TRIM(CONCAT_WS(' ', a.last_name, a.first_name)), ''), a.name) as actor_name"),
                 ])
                 ->orderByDesc('rl.created_at')
                 ->orderByDesc('rl.id');
