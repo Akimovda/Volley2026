@@ -61,6 +61,19 @@
 	$maxPlayers    = $occurrence->effectiveMaxPlayers();
 	$reserveMax    = (int) ($event->gameSettings?->reserve_players_max ?? 0);
 	$totalCapacity = $maxPlayers + $reserveMax;
+
+	$teamStatusMap = [
+		'approved'        => ['label' => 'Подтверждена',       'color' => '#166534', 'bg' => '#f0fdf4'],
+		'confirmed'       => ['label' => 'Подтверждена',       'color' => '#166534', 'bg' => '#f0fdf4'],
+		'ready'           => ['label' => 'Готова',             'color' => '#166534', 'bg' => '#f0fdf4'],
+		'submitted'       => ['label' => 'Заявка подана',      'color' => '#1e40af', 'bg' => '#dbeafe'],
+		'draft'           => ['label' => 'Формируется',        'color' => '#6b7280', 'bg' => '#f3f4f6'],
+		'pending'         => ['label' => 'Ожидает',            'color' => '#92400e', 'bg' => '#fff7e6'],
+		'pending_members' => ['label' => 'Ожидает участников', 'color' => '#92400e', 'bg' => '#fff7e6'],
+		'incomplete'      => ['label' => 'Неполная',           'color' => '#9f1239', 'bg' => '#fff1f2'],
+		'cancelled'       => ['label' => 'Отменена',           'color' => '#9f1239', 'bg' => '#fff1f2'],
+		'rejected'        => ['label' => 'Отклонена',          'color' => '#9f1239', 'bg' => '#fff1f2'],
+	];
     @endphp
 	
     {{-- ===============================
@@ -281,9 +294,16 @@
 		@endphp
 		@if($myTeams->count() > 0)
         @foreach($myTeams as $myTeam)
+        @php
+        $myTeamStatusInfo = $teamStatusMap[$myTeam->status] ?? ['label' => $myTeam->status, 'color' => '#6b7280', 'bg' => '#f3f4f6'];
+        @endphp
         <div class="card mt-1">
             <div class="b-600 cd">{{ $myTeam->name }}</div>
-            <div class="f-16">Статус: {{ $myTeam->status }} · Игроков: {{ $myTeam->members->count() }}</div>
+            <div class="f-16">
+                Статус:
+                <span style="display:inline-block;padding:1px 8px;border-radius:10px;font-size:13px;font-weight:600;background:{{ $myTeamStatusInfo['bg'] }};color:{{ $myTeamStatusInfo['color'] }}">{{ $myTeamStatusInfo['label'] }}</span>
+                · Игроков: {{ $myTeam->members->count() }}
+            </div>
             <a href="{{ route('tournamentTeams.show', [$event, $myTeam]) }}" class="btn btn-small btn-secondary mt-1">
                 Открыть команду
 			</a>
@@ -707,7 +727,7 @@ $showWaitlist = !$isTournament && !$eventStarted && $isFull && auth()->check();
 		@if($showParticipants)
 		
 		<div class="ramka">
-			<h2 class="-mt-05">Записанные игроки</h2>	
+			<h2 class="-mt-05">{{ $event->format === 'tournament' ? 'Записанные игроки/команды' : 'Записанные игроки' }}</h2>
 			
 			@if($event->format === 'tournament')
 			@php
@@ -743,15 +763,6 @@ $showWaitlist = !$isTournament && !$eventStarted && $isFull && auth()->check();
 				$cancelUntil = $occurrence->effectiveCancelSelfUntil();
 				$joinOpen    = !$cancelUntil || now('UTC')->lessThanOrEqualTo($cancelUntil);
 				$canJoin     = $hasVacancy && auth()->check() && !$iMyTeam && !$iAlreadyRequested && !$myTeamIdOnEvent && $joinOpen;
-				$teamStatusMap = [
-					'approved'        => ['label' => 'Подтверждена',       'color' => '#166534', 'bg' => '#f0fdf4'],
-					'confirmed'       => ['label' => 'Подтверждена',       'color' => '#166534', 'bg' => '#f0fdf4'],
-					'ready'           => ['label' => 'Готова',             'color' => '#166534', 'bg' => '#f0fdf4'],
-					'submitted'       => ['label' => 'Заявка подана',      'color' => '#1e40af', 'bg' => '#dbeafe'],
-					'draft'           => ['label' => 'Формируется',        'color' => '#6b7280', 'bg' => '#f3f4f6'],
-					'pending_members' => ['label' => 'Ожидает участников', 'color' => '#92400e', 'bg' => '#fff7e6'],
-					'incomplete'      => ['label' => 'Неполная',           'color' => '#9f1239', 'bg' => '#fff1f2'],
-				];
 				$statusInfo = $teamStatusMap[$tTeam->status] ?? ['label' => $tTeam->status, 'color' => '#6b7280', 'bg' => '#f3f4f6'];
 			@endphp
 			<div class="card mb-1" style="padding: 0.5rem 0.8rem{{ $iMyTeam ? ';border:1.5px solid #2563eb' : '' }}">

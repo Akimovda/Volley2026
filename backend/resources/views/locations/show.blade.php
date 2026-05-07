@@ -427,12 +427,18 @@
                     const data = await res.json();
                     const meta = data?.meta || data?.data?.meta;
                     if (!meta) return;
-                    const apiMax    = Number(meta.total_capacity ?? meta.max_players) || maxCard;
-                    const remaining = Number.isFinite(Number(meta.remaining_total))
-                        ? Number(meta.remaining_total)
-                        : Math.max(0, apiMax - (Number(meta.registered_total) || 0));
-                    if (leftEl)  leftEl.textContent  = String(remaining);
-                    if (totalEl) totalEl.textContent = String(apiMax);
+                    const isTournament = el.dataset.isTournament === '1';
+                    if (isTournament && meta.tournament_teams_max > 0) {
+                        const tMax = Number(meta.tournament_teams_max);
+                        const tReg = Number(meta.tournament_teams_registered ?? 0) || 0;
+                        if (leftEl)  leftEl.textContent  = String(tReg);
+                        if (totalEl) totalEl.textContent = String(tMax);
+                    } else {
+                        const apiMax = Number(meta.total_capacity ?? meta.max_players) || maxCard;
+                        const reg    = Number(meta.registered_total ?? 0) || 0;
+                        if (leftEl)  leftEl.textContent  = String(reg);
+                        if (totalEl) totalEl.textContent = String(apiMax);
+                    }
                 } catch(e) {}
             });
         });
