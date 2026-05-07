@@ -1,0 +1,98 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Console\Commands;
+
+use App\Models\EventOccurrence;
+use App\Services\PublishOccurrenceAnnouncementService;
+use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Throwable;
+
+class PublishPendingAnnouncements extends Command
+{
+    protected $signature = 'events:publish-pending-announcements
+        {--limit=100 : Max occurrences to publish per run}
+        {--dry-run : Only show what would be published}';
+
+    protected $description = 'Publish channel announcements (registration_open) for occurrences whose registration window has just opened.';
+
+    public function handle(PublishOccurrenceAnnouncementService $service): int
+    {
+        if (!Schema::hasTable('event_occurrences')
+            || !Schema::hasTable('event_notification_channels')
+            || !Schema::hasTable('event_channel_messages')
+        ) {
+            $this->warn('Required tables missing — skip');
+            return self::SUCCESS;
+        }
+
+        $limit  = max(1, (int) $this->option('limit'));
+        $dryRun = (bool) $this->option('dry-run');
+        $now    = now('UTC');
+
+        // Берём DISTINCT occurrence_id у которых хотя бы один привязанный канал
+        // ещё не получил анонс. Сервис publish() сам обойдёт все каналы и отправит
+        // тем, у кого нет записи в event_channel_messages (для остальных hash_check).
+        $rows = DB::table('event_occurrences as eo')
+            ->join('event_notification_channels as enc', 'enc.event_id', '=', 'eo.event_id')
+            ->leftJoin('event_channel_messages as ecm', function ($j) {
+                $j->on('ecm.event_id', '=', 'eo.event_id')
+                  ->on('ecm.occurrence_id', '=', 'eo.id')
+                  ->on('ecm.channel_id', '=', 'enc.channel_id')
+                  ->where('ecm.notification_type', 'registration_open');
+            })
+            ->whereNull('ecm.id') // канал ещё не получил анонс этой occurrence
+            ->where('enc.notification_type', 'registration_open')
+            ->where('eo.starts_at', '>', $now)
+            ->whereNull('eo.cancelled_at')
+            ->whereRaw('(eo.is_cancelled IS NULL OR eo.is_cancelled = false)')
+            ->whereNotNull('eo.registration_starts_at')
+            ->where('eo.registration_starts_at', '<=', $now)
+            ->select('eo.id')
+            ->distinct()
+            ->orderBy('eo.id')
+            ->limit($limit)
+            ->pluck('id');
+
+        $count = $rows->count();
+        $this->info("Found {$count} occurrences pending announcement");
+
+        if ($count === 0 || $dryRun) {
+            if ($dryRun) {
+                $this->line('Dry-run: ' . $rows->implode(','));
+            }
+            return self::SUCCESS;
+        }
+
+        $ok = 0;
+        $fail = 0;
+
+        foreach ($rows as $occId) {
+            $occurrence = EventOccurrence::query()
+                ->with(['event.notificationChannels.channel', 'event.media', 'event.location.city', 'event.organizer', 'event.gameSettings'])
+                ->find($occId);
+
+            if (!$occurrence) {
+                continue;
+            }
+
+            try {
+                $service->publish($occurrence);
+                $ok++;
+            } catch (Throwable $e) {
+                $fail++;
+                \Log::warning('events:publish-pending-announcements failed', [
+                    'occurrence_id' => $occId,
+                    'error'         => $e->getMessage(),
+                ]);
+            }
+        }
+
+        $this->info("Published OK={$ok} FAIL={$fail}");
+
+        return self::SUCCESS;
+    }
+}
