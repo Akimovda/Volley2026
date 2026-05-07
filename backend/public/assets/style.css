@@ -1294,6 +1294,9 @@ body.dark .btn {
 		opacity: 0;
 	}
 }
+.btn svg {
+	transition: all 0.25s ease;
+}
 .btn-svg {
 	width: 3.4rem;
 	height: 3.4rem;	
@@ -1306,7 +1309,7 @@ body.dark .btn {
 	border-radius: 0.6rem;
 }
 .btn-svg svg {
-	fill: #fff;
+	fill: #2967BA;
 	width: 1.9rem;
 	height: 1.9rem;
 }
@@ -1316,7 +1319,7 @@ body.dark .btn {
 	color: #333;
 }
 .btn-secondary svg {
-	fill: #333;
+	fill: #2967BA;
 }
 .btn-secondary:hover {
 	color: #000;
@@ -1329,13 +1332,13 @@ body.dark .btn-secondary {
 	color: #cacaca;
 }
 body.dark .btn-secondary svg {
-	fill: #cacaca;
+	fill: #E7612F;
 }
 body.dark .btn-secondary:hover {
 	color: #FFFFFF;
 }
 body.dark .btn-secondary:hover svg {
-	fill: #FFFFFF;
+	fill: #FFB171;
 }
 /* Прозрачная кнопка */
 .btn-outline {
@@ -1396,6 +1399,10 @@ body.dark .btn-danger:hover {
 	opacity: 0.5;
 	cursor: not-allowed;
 	transform: none !important;
+}
+
+.btn-danger svg {
+	fill: #fff;
 }
 
 /* Тёмная тема для кнопок */
