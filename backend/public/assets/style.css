@@ -25,6 +25,10 @@ html {
 	}
 } 
 
+*[id]:not(#days) {
+    scroll-margin-top: 10.4rem;
+}
+
 body *::selection {
     color: #fff;
     background: #2967BA;
@@ -87,9 +91,7 @@ body.dark  {
 	color-scheme: dark;
 	color: #cacaca;
 }
-*[id] {
-    scroll-margin-top: 10.4rem;
-}
+
 p {
 	margin-bottom: 1rem;
 }
@@ -1296,6 +1298,7 @@ body.dark .btn {
 }
 .btn svg {
 	transition: all 0.25s ease;
+	fill: #fff;
 }
 .btn-svg {
 	width: 3.4rem;
@@ -1309,7 +1312,6 @@ body.dark .btn {
 	border-radius: 0.6rem;
 }
 .btn-svg svg {
-	fill: #2967BA;
 	width: 1.9rem;
 	height: 1.9rem;
 }
@@ -1401,9 +1403,7 @@ body.dark .btn-danger:hover {
 	transform: none !important;
 }
 
-.btn-danger svg {
-	fill: #fff;
-}
+
 
 /* Тёмная тема для кнопок */
 body.dark .btn-outline {

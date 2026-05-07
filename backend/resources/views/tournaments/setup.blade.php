@@ -5,11 +5,30 @@
 	@endphp
 	<x-slot name="title">Управление турниром — {{ $event->title }}</x-slot>
 	
-    <x-slot name="h1">Турнир: {{ $event->title }}</x-slot>
-	<x-slot name="h2">Управление турниром</x-slot>
+    <x-slot name="h1">Управление турниром: {{ $event->title }}</x-slot>
+	
+	
+{{-- Активный тур --}}
+@if($selectedOccurrence)
+@php
+$occDate = \Carbon\Carbon::parse($selectedOccurrence->starts_at)->setTimezone($event->timezone ?? 'Europe/Moscow');
+$tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selectedOccurrence->id) + 1;
+@endphp
+<x-slot name="h2">
+		Тур {{ $tourNumber }} ({{ $occDate->format('d.m.Y') }})
+</x-slot>
+@endif	
 	
 	
 	
+    <x-slot name="t_description">
+				{{ $seasonData['season']->name }}
+				/ {{ $seasonData['league']->name ?? 'Лига' }}  
+	</x-slot>	
+	
+	
+	
+
 	<x-slot name="breadcrumbs">
 		<li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
 			<a href="{{ route('events.show', $event) }}" itemprop="item"><span itemprop="name">{{ $event->title }}</span></a>
@@ -20,6 +39,42 @@
 			<meta itemprop="position" content="3">
 		</li>
 	</x-slot>
+	
+	<x-slot name="d_description">
+		<div class="d-flex flex-wrap gap-1 m-center">
+			<div class="mt-2" data-aos-delay="250" data-aos="fade-up">
+				<button class="btn ufilter-btn">Выбрать тур</button>
+			</div>
+			<!--
+			<div class="mt-2" data-aos-delay="350" data-aos="fade-up">
+				<a href="/" class="btn btn-secondary">тут ссылка вернуться</a>
+			</div>	
+			-->
+		</div>
+	</x-slot>	
+	
+	<div class="users-filter">
+		<div class="container">
+			<div class="ramka">	
+				{{-- Выбор тура --}}
+				@if($seasonData['occurrences']->count() > 1)
+				<h2 class="-mt-05">Тур:</h2>
+				<div class="d-flex text-center" style="gap:1rem; flex-wrap:wrap;">
+					@foreach($seasonData['occurrences'] as $occ)
+					@php
+					$isSelected = $selectedOccurrence && $selectedOccurrence->id === $occ->id;
+					$occDate = \Carbon\Carbon::parse($occ->starts_at)->setTimezone($event->timezone ?? 'Europe/Moscow');
+					@endphp
+					<a href="{{ route('tournament.setup', $event) }}?occurrence_id={{ $occ->id }}"
+					class="btn {{ !$isSelected ? 'btn-secondary' : '' }}">
+						{{ $loop->iteration }} ({{ $occDate->format('d.m') }})
+					</a>
+					@endforeach
+				</div>
+				@endif		
+			</div>
+		</div>
+	</div>
 	
 	<div class="container form">
 		
@@ -143,43 +198,20 @@
 				.tour-btn { padding:5px 10px; font-size:12px; }
 				}
 			</style>
-			
-			<h2 class="-mt-05">
-				{{ $seasonData['season']->name }}
-				<span class="f-16">/ {{ $seasonData['league']->name ?? 'Лига' }}</span>
-			</h2>
-			
-			{{-- Выбор тура --}}
-			@if($seasonData['occurrences']->count() > 1)
-			<div class="mb-2">
-				<label>Тур:</label>
-				<div class="d-flex" style="gap:1rem;flex-wrap:wrap;">
-					@foreach($seasonData['occurrences'] as $occ)
-					@php
-					$isSelected = $selectedOccurrence && $selectedOccurrence->id === $occ->id;
-					$occDate = \Carbon\Carbon::parse($occ->starts_at)->setTimezone($event->timezone ?? 'Europe/Moscow');
-					@endphp
-					<a href="{{ route('tournament.setup', $event) }}?occurrence_id={{ $occ->id }}"
-					class="btn btn-small {{ !$isSelected ? 'btn-secondary' : '' }}">
-						{{ $loop->iteration }} ({{ $occDate->format('d.m') }})
-					</a>
-					@endforeach
-				</div>
-			</div>
-			@endif
+
 			
 			{{-- Состав лиги --}}
 			@if($leagueTeams->count())
-			<div class="mt-2">
-				<p class="b-600">
-					Состав лиги
+			<div class="">
+				<h2 class="-mt-05">
+					Состав лиги: 
 					<span class="cd">
 						— {{ $leagueTeams->where('status', 'active')->count() }} акт.
 						@if($leagueTeams->where('status', 'reserve')->count())
 						/ {{ $leagueTeams->where('status', 'reserve')->count() }} рез.
 						@endif
 					</span>
-				</p>
+				</h2>
 				<div class="table-scrollable">
 					<div class="table-drag-indicator"></div>				
 					<table class="table">
@@ -228,12 +260,12 @@
 									@if($lt->status === 'active')
 									<form method="POST" action="{{ route('divisions.teams.toReserve', $lt) }}" style="display:inline">
 										@csrf
-										<button type="submit" class="btn btn-secondary btn-alert btn-small" data-title="Перевести в резерв?" data-icon="warning" data-confirm-text="Да" data-cancel-text="Отмена">🔴 В резерв</button>
+										<button type="submit" class="btn btn-secondary btn-alert btn-small" data-title="Перевести в резерв?" data-icon="warning" data-confirm-text="Да" data-cancel-text="Отмена">🔴&nbsp;В&nbsp;резерв</button>
 									</form>
 									@elseif($lt->status === 'reserve')
 									<form method="POST" action="{{ route('divisions.teams.activate', $lt) }}" style="display:inline">
 										@csrf
-										<button type="submit" class="btn btn-secondary btn-alert btn-small" data-title="Активировать команду?" data-icon="info" data-confirm-text="Да" data-cancel-text="Отмена">🟢 Активировать</button>
+										<button type="submit" class="btn btn-secondary btn-alert btn-small" data-title="Активировать команду?" data-icon="info" data-confirm-text="Да" data-cancel-text="Отмена">🟢&nbsp;Активировать</button>
 									</form>
 									@endif
 								</td>
@@ -1091,18 +1123,18 @@
 											<td style="text-align:center">{{ $match->scheduled_at ? $match->scheduled_at->setTimezone($event->timezone ?? 'Europe/Moscow')->format('H:i') : '—' }}</td>
 											<td style="text-align:center">{{ $match->court ?? '—' }}</td>
 											<td style="text-align:center">
-											<div class="text-center d-flex gap-1">
-												@if($match->isCompleted())
-												<span class="b-600 alert-success pt-05 pb-05 p-1">✓</span>
-												@if(!$stageHasDivDistribution)
-												<a href="{{ route('tournament.matches.score.form', $match) }}?edit=1" class="btn icon-edit btn-svg btn-secondary" title="Исправить счёт"></a>
-												@endif
-												@elseif($match->status === 'live')
-												<span class="b-600 alert-danger pt-05 pb-05 p-1">LIVE</span>
-												@else
-												<span class="b-600 alert-warning pt-05 pb-05 p-1">ожидание</span>
-												@endif
-											</div>	
+												<div class="text-center d-flex gap-1">
+													@if($match->isCompleted())
+													<span class="b-600 alert-success pt-05 pb-05 p-1">✓</span>
+													@if(!$stageHasDivDistribution)
+													<a href="{{ route('tournament.matches.score.form', $match) }}?edit=1" class="btn icon-edit btn-svg btn-secondary" title="Исправить счёт"></a>
+													@endif
+													@elseif($match->status === 'live')
+													<span class="b-600 alert-danger pt-05 pb-05 p-1">LIVE</span>
+													@else
+													<span class="b-600 alert-warning pt-05 pb-05 p-1">ожидание</span>
+													@endif
+												</div>	
 											</td>
 											<td class="p-1">
 												@if($match->isScheduled() && $match->hasTeams())
@@ -1154,51 +1186,51 @@
 			</div>
 			@endif
 			
+		</div>
+		
+		@endif
+		{{-- Продвижение / Группы --}}
+		@if($stage->isCompleted() && in_array($stage->type, ['round_robin', 'groups_playoff']))
+		
+		{{-- Сезонный турнир → группы Hard/Lite --}}
+		@if($event->season_id && $stage->groups->count() >= 2)
+		@php $hasDivStages = $stages->filter(fn($s) => str_starts_with($s->name, 'Группа '))->isNotEmpty(); @endphp
+		<div class="ramka">
+			<div class="d-flex between fvc" style="cursor:pointer" onclick="var b=this.nextElementSibling;b.style.display=b.style.display==='none'?'':'none';this.querySelector('.toggle-icon').textContent=b.style.display==='none'?'+':'-'">
+				<h2 class="-mt-05">Формирование групп</h2>
+				<span class="toggle-icon b-600 f-20">{{ $hasDivStages ? '+' : '-' }}</span>
 			</div>
-			
-			@endif
-			{{-- Продвижение / Группы --}}
-			@if($stage->isCompleted() && in_array($stage->type, ['round_robin', 'groups_playoff']))
-			
-			{{-- Сезонный турнир → группы Hard/Lite --}}
-			@if($event->season_id && $stage->groups->count() >= 2)
-			@php $hasDivStages = $stages->filter(fn($s) => str_starts_with($s->name, 'Группа '))->isNotEmpty(); @endphp
-			<div class="ramka">
-				<div class="d-flex between fvc" style="cursor:pointer" onclick="var b=this.nextElementSibling;b.style.display=b.style.display==='none'?'':'none';this.querySelector('.toggle-icon').textContent=b.style.display==='none'?'+':'-'">
-					<h2 class="-mt-05">Формирование групп</h2>
-					<span class="toggle-icon b-600 f-20">{{ $hasDivStages ? '+' : '-' }}</span>
-				</div>
-				<div style="{{ $hasDivStages ? 'display:none' : '' }}">
-					@php
-					$groupsCount = $stage->groups->count();
-					$divisionNames = match($groupsCount) {
-					2 => ['Hard', 'Lite'],
-					3 => ['Hard', 'Medium', 'Lite'],
-					default => array_merge(['Hard'], array_map(fn($i) => 'Medium-' . $i, range(1, max(1, $groupsCount - 2))), ['Lite']),
-					};
-					$advanceCount = (int) $stage->cfg('advance_count', 2);
-					$availCourts = $stage->cfg('courts', []);
-					@endphp
+			<div style="{{ $hasDivStages ? 'display:none' : '' }}">
+				@php
+				$groupsCount = $stage->groups->count();
+				$divisionNames = match($groupsCount) {
+				2 => ['Hard', 'Lite'],
+				3 => ['Hard', 'Medium', 'Lite'],
+				default => array_merge(['Hard'], array_map(fn($i) => 'Medium-' . $i, range(1, max(1, $groupsCount - 2))), ['Lite']),
+				};
+				$advanceCount = (int) $stage->cfg('advance_count', 2);
+				$availCourts = $stage->cfg('courts', []);
+				@endphp
+				
+				<p>
+					По результатам группового этапа команды распределяются в {{ count($divisionNames) }} групп{{ count($divisionNames) > 2 ? 'а' : '' }}:
+					<strong>{{ implode(', ', $divisionNames) }}</strong>
+				</p>
+				
+				<form method="POST" action="{{ route('tournament.stages.formDivisions', $stage) }}">
+					@csrf
 					
-					<p>
-						По результатам группового этапа команды распределяются в {{ count($divisionNames) }} групп{{ count($divisionNames) > 2 ? 'а' : '' }}:
-						<strong>{{ implode(', ', $divisionNames) }}</strong>
-					</p>
-					
-					<form method="POST" action="{{ route('tournament.stages.formDivisions', $stage) }}">
-						@csrf
-						
-						{{-- Ряд 1: Кол-во + форматы --}}
-						<div class="row">
-							<div class="col-md-3 mb-2">
+					{{-- Ряд 1: Кол-во + форматы --}}
+					<div class="row">
+						<div class="col-md-3 mb-2">
 							<div class="card">
 								<label>Выходят в Hard</label>
 								<input name="advance_per_group" type="number" value="{{ $advanceCount }}" min="1" max="8" style="width:70px">
 								<p>из каждой группы</p>
 							</div>	
-							</div>
-							@foreach($divisionNames as $dn)
-							<div class="col-md-3 mb-2">
+						</div>
+						@foreach($divisionNames as $dn)
+						<div class="col-md-3 mb-2">
 							<div class="card">
 								<label>Формат {{ $dn }}</label>
 								<select name="div_format_{{ strtolower($dn) }}" class="f-13" style="width:100%">
@@ -1207,85 +1239,85 @@
 									<option value="bo3">Bo3</option>
 								</select>
 							</div>	
+						</div>
+						@endforeach
+					</div>
+					
+					{{-- Ряд 2: Площадки --}}
+					@if(count($availCourts) > 0)
+					<div class="card mb-2">
+						<label>Площадки для групп</label>
+						<hr class="mb-1">
+						<div class="row">
+							@foreach($divisionNames as $dn)
+							<div class="col-md-{{ (int)(12 / count($divisionNames)) }} mb-2">
+								<label>{{ $dn }}:</label>
+								<div class="d-flex" style="flex-wrap:wrap;gap:6px">
+									@foreach($availCourts as $court)
+									<label class="checkbox-item f-13 pr-2" style="margin:0">
+										<input type="checkbox" name="div_courts_{{ strtolower($dn) }}[]" value="{{ $court }}">
+										<div class="custom-checkbox"></div>
+										<span>{{ $court }}</span>
+									</label>
+									@endforeach
+								</div>
 							</div>
 							@endforeach
 						</div>
-						
-						{{-- Ряд 2: Площадки --}}
-						@if(count($availCourts) > 0)
-						<div class="card mb-2">
-							<label>Площадки для групп</label>
-							<hr class="mb-1">
-							<div class="row">
-								@foreach($divisionNames as $dn)
-								<div class="col-md-{{ (int)(12 / count($divisionNames)) }} mb-2">
-									<label>{{ $dn }}:</label>
-									<div class="d-flex" style="flex-wrap:wrap;gap:6px">
-										@foreach($availCourts as $court)
-										<label class="checkbox-item f-13 pr-2" style="margin:0">
-											<input type="checkbox" name="div_courts_{{ strtolower($dn) }}[]" value="{{ $court }}">
-											<div class="custom-checkbox"></div>
-											<span>{{ $court }}</span>
-										</label>
-										@endforeach
-									</div>
-								</div>
-								@endforeach
+					</div>
+					@endif
+					
+					{{-- Расписание --}}
+					<div class="card mb-2">
+						<label>Расписание (опционально)</label>
+						<p>Если указать время начала — матчи автоматически получат расписание и площадки.</p>
+						<hr class="mb-1">
+						<div class="d-flex" style="gap:12px;flex-wrap:wrap;align-items:flex-end">
+							<div>
+								<label>Начало</label>
+								<input type="datetime-local" name="schedule_start" value="{{ \Carbon\Carbon::now($event->timezone ?? 'Europe/Moscow')->format('Y-m-d\TH:i') }}">
+							</div>
+							<div>
+								<label>Матч (мин)</label>
+								<input type="number" name="schedule_match_duration" value="30" min="15" max="180">
+							</div>
+							<div>
+								<label>Перерыв (мин)</label>
+								<input type="number" name="schedule_break_duration" value="5" min="0" max="60">
 							</div>
 						</div>
-						@endif
-						
-						{{-- Расписание --}}
-						<div class="card mb-2">
-							<label>Расписание (опционально)</label>
-								<p>Если указать время начала — матчи автоматически получат расписание и площадки.</p>
-								<hr class="mb-1">
-								<div class="d-flex" style="gap:12px;flex-wrap:wrap;align-items:flex-end">
-									<div>
-										<label>Начало</label>
-										<input type="datetime-local" name="schedule_start" value="{{ \Carbon\Carbon::now($event->timezone ?? 'Europe/Moscow')->format('Y-m-d\TH:i') }}">
-									</div>
-									<div>
-										<label>Матч (мин)</label>
-										<input type="number" name="schedule_match_duration" value="30" min="15" max="180">
-									</div>
-									<div>
-										<label>Перерыв (мин)</label>
-										<input type="number" name="schedule_break_duration" value="5" min="0" max="60">
-									</div>
-								</div>
-						</div>
-						
-						<button type="submit" class="btn btn-primary btn-alert" data-title="Сформировать группы?" data-icon="question" data-confirm-text="Да, сформировать" data-cancel-text="Отмена">Сформировать группы</button>
-					</form>
-				</div>
-			</div>
-			@else
-			{{-- Обычный → плей-офф --}}
-			@php $nextStages = $stages->where('type', 'single_elim')->where('status', 'pending'); @endphp
-			@if($nextStages->isNotEmpty())
-			<div class="p-3 mt-2" style="background:rgba(41,103,186,.08);border-radius:10px">
-				<div class="b-700 mb-2">Продвижение в плей-офф</div>
-				<form method="POST" action="{{ route('tournament.stages.advance', $stage) }}" class="d-flex fvc" style="gap:10px;flex-wrap:wrap">
-					@csrf
-					<div>
-						<label class="f-13 b-600 mb-1 d-block">Стадия</label>
-						<select name="playoff_stage_id">
-							@foreach($nextStages as $ns)
-							<option value="{{ $ns->id }}">{{ $ns->name }}</option>
-							@endforeach
-						</select>
 					</div>
-					<div>
-						<label class="f-13 b-600 mb-1 d-block">Выходят</label>
-						<input name="advance_per_group" type="number" value="{{ $stage->cfg('advance_count', 2) }}" min="1" max="8" style="width:120px">
-					</div>
-					<button type="submit" class="btn btn-primary">Продвинуть</button>
+					
+					<button type="submit" class="btn btn-primary btn-alert" data-title="Сформировать группы?" data-icon="question" data-confirm-text="Да, сформировать" data-cancel-text="Отмена">Сформировать группы</button>
 				</form>
 			</div>
-			@endif
-			@endif
-			@endif
+		</div>
+		@else
+		{{-- Обычный → плей-офф --}}
+		@php $nextStages = $stages->where('type', 'single_elim')->where('status', 'pending'); @endphp
+		@if($nextStages->isNotEmpty())
+		<div class="p-3 mt-2" style="background:rgba(41,103,186,.08);border-radius:10px">
+			<div class="b-700 mb-2">Продвижение в плей-офф</div>
+			<form method="POST" action="{{ route('tournament.stages.advance', $stage) }}" class="d-flex fvc" style="gap:10px;flex-wrap:wrap">
+				@csrf
+				<div>
+					<label class="f-13 b-600 mb-1 d-block">Стадия</label>
+					<select name="playoff_stage_id">
+						@foreach($nextStages as $ns)
+						<option value="{{ $ns->id }}">{{ $ns->name }}</option>
+						@endforeach
+					</select>
+				</div>
+				<div>
+					<label class="f-13 b-600 mb-1 d-block">Выходят</label>
+					<input name="advance_per_group" type="number" value="{{ $stage->cfg('advance_count', 2) }}" min="1" max="8" style="width:120px">
+				</div>
+				<button type="submit" class="btn btn-primary">Продвинуть</button>
+			</form>
+		</div>
+		@endif
+		@endif
+		@endif
 		
 		@endforeach
 		
