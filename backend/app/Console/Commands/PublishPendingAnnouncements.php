@@ -4,22 +4,20 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
-use App\Models\EventOccurrence;
-use App\Services\PublishOccurrenceAnnouncementService;
+use App\Jobs\PublishOccurrenceRegistrationOpenJob;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use Throwable;
 
 class PublishPendingAnnouncements extends Command
 {
     protected $signature = 'events:publish-pending-announcements
-        {--limit=100 : Max occurrences to publish per run}
-        {--dry-run : Only show what would be published}';
+        {--limit=100 : Max occurrences to dispatch per run}
+        {--dry-run : Only show what would be dispatched}';
 
-    protected $description = 'Publish channel announcements (registration_open) for occurrences whose registration window has just opened.';
+    protected $description = 'Dispatch channel announcement jobs (registration_open) for occurrences whose registration window has just opened.';
 
-    public function handle(PublishOccurrenceAnnouncementService $service): int
+    public function handle(): int
     {
         if (!Schema::hasTable('event_occurrences')
             || !Schema::hasTable('event_notification_channels')
@@ -67,31 +65,14 @@ class PublishPendingAnnouncements extends Command
             return self::SUCCESS;
         }
 
-        $ok = 0;
-        $fail = 0;
-
+        // Диспатчим в очередь — реальную публикацию делает worker асинхронно.
+        // PublishOccurrenceAnnouncementService внутри сам пропускает уже отправленные
+        // (по hash в event_channel_messages), поэтому повторный dispatch безопасен.
         foreach ($rows as $occId) {
-            $occurrence = EventOccurrence::query()
-                ->with(['event.notificationChannels.channel', 'event.media', 'event.location.city', 'event.organizer', 'event.gameSettings'])
-                ->find($occId);
-
-            if (!$occurrence) {
-                continue;
-            }
-
-            try {
-                $service->publish($occurrence);
-                $ok++;
-            } catch (Throwable $e) {
-                $fail++;
-                \Log::warning('events:publish-pending-announcements failed', [
-                    'occurrence_id' => $occId,
-                    'error'         => $e->getMessage(),
-                ]);
-            }
+            PublishOccurrenceRegistrationOpenJob::dispatch((int) $occId)->onQueue('default');
         }
 
-        $this->info("Published OK={$ok} FAIL={$fail}");
+        $this->info("Dispatched {$count} jobs to queue");
 
         return self::SUCCESS;
     }
