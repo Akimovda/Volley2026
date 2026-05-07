@@ -1,7 +1,7 @@
 <?php
 
+use App\Http\Middleware\AuthenticateSessionWithImpersonation;
 use Laravel\Jetstream\Features;
-use Laravel\Jetstream\Http\Middleware\AuthenticateSession;
 
 return [
 
@@ -31,7 +31,7 @@ return [
 
     'middleware' => ['web'],
 
-    'auth_session' => AuthenticateSession::class,
+    'auth_session' => AuthenticateSessionWithImpersonation::class,
 
     /*
     |--------------------------------------------------------------------------

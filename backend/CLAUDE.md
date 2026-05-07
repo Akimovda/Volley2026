@@ -432,6 +432,11 @@ sudo supervisorctl restart volleyplay-queue:* volleyplay-reverb
 - UI: красный бар сверху через `@include('_partials.impersonation_bar')` в voll-layout
 - Поиск: собственный endpoint /admin/impersonate/search (включает email, role — только для админов)
 - Нельзя войти от имени другого администратора
+- **AuthenticateSessionWithImpersonation** (`config/jetstream.php` → `auth_session`):
+  - Расширяет Jetstream\AuthenticateSession
+  - При активной impersonation синхронизирует `password_hash_<driver>` в session с current user перед parent::handle
+  - Без этого: при переходе на любой auth-защищённый маршрут после Auth::loginUsingId — расхождение hash → session()->flush() → редирект на /login (теряется impersonator_id)
+  - Затрагивает ВСЕ маршруты с config('jetstream.auth_session') (auth:sanctum + auth_session): /events/create/event_management, /events/.../management, /profile/*, /user/* и т.п.
 
 ## Дубли пользователей и очистка неактивных аккаунтов
 - Поиск дублей: `UserMergeService::findDuplicates()` — по телефону + по first_name+last_name (case-insensitive)
