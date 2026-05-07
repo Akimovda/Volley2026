@@ -17,6 +17,14 @@
 - createCustomSelect в script.js оборачивает все .form select — селекты без name атрибута не отправляются на сервер
 - ExpandEventOccurrencesJob/OccurrenceExpansionService: offset для reg_starts/reg_ends/cancel_lock берётся из первой (reference) occurrence, не хардкод
 
+## Storage permissions (DOMPDF, кеш шрифтов)
+- PHP-FPM работает под www-data, файлы в `storage/fonts/` исторически могут принадлежать `appuser:appuser` → www-data не может перезаписать `installed-fonts.json` → 500 при экспорте PDF
+- Симптом: ошибка `file_put_contents(.../storage/fonts/installed-fonts.json): Permission denied` в логах при экспорте PDF (`EventRegistrationsManagementController::exportPdf`)
+- У админа экспорт может работать (если шаблон не подгружает новые `@font-face`), у организатора — падает
+- Фикс: `sudo chown -R appuser:www-data storage/fonts && sudo chmod -R g+rwX storage/fonts && sudo chmod g+s storage/fonts`
+- `g+s` (setgid) на директории — критично, чтобы новые файлы наследовали group=www-data (без него снова падёт когда DOMPDF создаст новый файл)
+- На dev уже так: `drwxrwsr-x` (с `s`); проверять при настройке нового сервера
+
 ## PHP-FPM opcache (КРИТИЧНО на проде)
 - На проде PHP-FPM держит скомпилированные классы и config в opcache в памяти
 - `php artisan config:cache` / `route:cache` обновляют файлы кеша, но **opcache** продолжает отдавать старые версии
