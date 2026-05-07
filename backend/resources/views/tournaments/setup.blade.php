@@ -67,7 +67,7 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 					@endphp
 					<a href="{{ route('tournament.setup', $event) }}?occurrence_id={{ $occ->id }}"
 					class="btn {{ !$isSelected ? 'btn-secondary' : '' }}">
-						{{ $loop->iteration }} ({{ $occDate->format('d.m') }})
+						<span class="b-600">{{ $loop->iteration }}</span> - ({{ $occDate->format('d.m') }})
 					</a>
 					@endforeach
 				</div>
