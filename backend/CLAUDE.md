@@ -17,6 +17,15 @@
 - createCustomSelect в script.js оборачивает все .form select — селекты без name атрибута не отправляются на сервер
 - ExpandEventOccurrencesJob/OccurrenceExpansionService: offset для reg_starts/reg_ends/cancel_lock берётся из первой (reference) occurrence, не хардкод
 
+## PHP-FPM opcache (КРИТИЧНО на проде)
+- На проде PHP-FPM держит скомпилированные классы и config в opcache в памяти
+- `php artisan config:cache` / `route:cache` обновляют файлы кеша, но **opcache** продолжает отдавать старые версии
+- При любых изменениях в `app/Http/Middleware/*`, `config/*.php`, новых классов middleware/service — **обязательно** `sudo systemctl reload php8.3-fpm` ПОСЛЕ deploy
+- Признак не подхваченного opcache: код в файле новый, `php artisan` (CLI) видит правильное значение, но веб-запросы ведут себя как со старой версией
+- Команда reload: `sudo systemctl reload php8.3-fpm` (требует TTY → предлагать пользователю через `! sudo ...`)
+- supervisorctl restart волей-queue **НЕ заменяет** reload php-fpm — это разные процессы
+- При деплое с изменением классов или config — порядок: git merge → composer install → config:cache → route:cache → view:cache → supervisorctl restart queue → systemctl reload php-fpm
+
 ## JS файлы
 - lib.js — везде, script.js — логика+swal, fas.js — fancybox+swiper, org.js — орг. панель
 - swal: класс .btn-alert + data-атрибуты
@@ -97,8 +106,10 @@ npm ci && npm run build
 php artisan livewire:publish --assets
 php artisan migrate --force
 php artisan config:clear && php artisan config:cache
-php artisan route:cache && php artisan view:cache
+php artisan route:clear && php artisan route:cache
+php artisan view:clear && php artisan view:cache
 sudo supervisorctl restart volleyplay-queue:* volleyplay-reverb
+sudo systemctl reload php8.3-fpm   # ← обязательно при изменении PHP-классов/config (opcache)
 
 ## Текущая версия: v1.9.2
 
