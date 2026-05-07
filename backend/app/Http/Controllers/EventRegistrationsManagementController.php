@@ -115,6 +115,8 @@ class EventRegistrationsManagementController extends Controller
                 $hasStatus      ? 'er.status'       : DB::raw('NULL::text as status'),
                 'er.created_at',
                 $hasOrgNote ? 'er.organizer_note' : DB::raw("NULL::text as organizer_note"),
+                'u.first_name',
+                'u.last_name',
                 'u.name',
                 'u.email',
                 'u.phone',
