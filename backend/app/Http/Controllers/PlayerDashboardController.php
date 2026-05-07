@@ -14,17 +14,17 @@ class PlayerDashboardController extends Controller
         // --- ПОСЕЩЕНИЯ ---
         $totalVisits = DB::table('event_registrations')
             ->where('user_id', $userId)
-            ->where('is_cancelled', false)
+            ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false) AND (status IS NULL OR status != \'cancelled\') AND cancelled_at IS NULL')
             ->count();
 
         $totalCancellations = DB::table('event_registrations')
             ->where('user_id', $userId)
-            ->where('is_cancelled', true)
+            ->whereRaw('is_cancelled = true OR status = \'cancelled\' OR cancelled_at IS NOT NULL')
             ->count();
 
         $visitsThisMonth = DB::table('event_registrations')
             ->where('user_id', $userId)
-            ->where('is_cancelled', false)
+            ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false) AND (status IS NULL OR status != \'cancelled\') AND cancelled_at IS NULL')
             ->where('created_at', '>=', now()->startOfMonth())
             ->count();
 
@@ -66,7 +66,7 @@ class PlayerDashboardController extends Controller
         $monthlyVisits = DB::table('event_registrations as er')
             ->join('event_occurrences as eo', 'eo.id', '=', 'er.occurrence_id')
             ->where('er.user_id', $userId)
-            ->where('er.is_cancelled', false)
+            ->whereRaw('(er.is_cancelled IS NULL OR er.is_cancelled = false) AND (er.status IS NULL OR er.status != \'cancelled\') AND er.cancelled_at IS NULL')
             ->where('er.created_at', '>=', now()->subMonths(12))
             ->select(
                 DB::raw("TO_CHAR(er.created_at, 'YYYY-MM') as month"),
@@ -79,7 +79,7 @@ class PlayerDashboardController extends Controller
         // --- ПОЗИЦИИ ---
         $positions = DB::table('event_registrations')
             ->where('user_id', $userId)
-            ->where('is_cancelled', false)
+            ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false) AND (status IS NULL OR status != \'cancelled\') AND cancelled_at IS NULL')
             ->whereNotNull('position')
             ->select('position', DB::raw('COUNT(*) as cnt'))
             ->groupBy('position')
@@ -92,7 +92,7 @@ class PlayerDashboardController extends Controller
             ->join('events as e', 'e.id', '=', 'er.event_id')
             ->join('locations as l', 'l.id', '=', 'e.location_id')
             ->where('er.user_id', $userId)
-            ->where('er.is_cancelled', false)
+            ->whereRaw('(er.is_cancelled IS NULL OR er.is_cancelled = false) AND (er.status IS NULL OR er.status != \'cancelled\') AND er.cancelled_at IS NULL')
             ->select('l.id', 'l.name', DB::raw('COUNT(*) as visits'))
             ->groupBy('l.id', 'l.name')
             ->orderByDesc('visits')
@@ -104,7 +104,7 @@ class PlayerDashboardController extends Controller
             ->join('events as e', 'e.id', '=', 'er.event_id')
             ->join('users as u', 'u.id', '=', 'e.organizer_id')
             ->where('er.user_id', $userId)
-            ->where('er.is_cancelled', false)
+            ->whereRaw('(er.is_cancelled IS NULL OR er.is_cancelled = false) AND (er.status IS NULL OR er.status != \'cancelled\') AND er.cancelled_at IS NULL')
             ->select(
                 'u.id', 'u.first_name', 'u.last_name',
                 DB::raw('COUNT(*) as visits')
@@ -120,7 +120,7 @@ class PlayerDashboardController extends Controller
         // --- РЕЙТИНГ АКТИВНОСТИ ---
         $totalUsersCount = DB::table('users')->where('is_bot', false)->count();
         $usersWithMoreVisits = DB::table('event_registrations')
-            ->where('is_cancelled', false)
+            ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false) AND (status IS NULL OR status != \'cancelled\') AND cancelled_at IS NULL')
             ->where('user_id', '!=', $userId)
             ->select('user_id', DB::raw('COUNT(*) as cnt'))
             ->groupBy('user_id')
@@ -156,7 +156,7 @@ class PlayerDashboardController extends Controller
             ->leftJoin('locations as l', 'l.id', '=', 'e.location_id')
             ->leftJoin('users as org', 'org.id', '=', 'e.organizer_id')
             ->where('er.user_id', $userId)
-            ->where('er.is_cancelled', false)
+            ->whereRaw('(er.is_cancelled IS NULL OR er.is_cancelled = false) AND (er.status IS NULL OR er.status != \'cancelled\') AND er.cancelled_at IS NULL')
             ->select(
                 'e.id as event_id', 'e.title',
                 'eo.starts_at', 'er.position',
@@ -194,7 +194,7 @@ class PlayerDashboardController extends Controller
         $weeks = DB::table('event_registrations as er')
             ->join('event_occurrences as eo', 'eo.id', '=', 'er.occurrence_id')
             ->where('er.user_id', $userId)
-            ->where('er.is_cancelled', false)
+            ->whereRaw('(er.is_cancelled IS NULL OR er.is_cancelled = false) AND (er.status IS NULL OR er.status != \'cancelled\') AND er.cancelled_at IS NULL')
             ->where('er.created_at', '>=', now()->subMonths(6))
             ->select(DB::raw("DATE_TRUNC('week', er.created_at) as week"))
             ->groupBy('week')
