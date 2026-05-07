@@ -96,8 +96,11 @@ class AdminUserController extends Controller
         ));
     }
 
-    public function show(User $user)
+    public function show($user)
     {
+        // Открываем и soft-deleted пользователей, чтобы админ мог видеть историю
+        $user = User::withTrashed()->findOrFail($user);
+
         $linkAudits = [];
         if (DB::getSchemaBuilder()->hasTable('account_link_audits')) {
             $linkAudits = DB::table('account_link_audits')
@@ -140,8 +143,11 @@ class AdminUserController extends Controller
      * Полное удаление пользователя (purge).
      * Требуем confirm=yes
      */
-    public function purge(Request $request, User $user)
+    public function purge(Request $request, $user)
     {
+        // Поддержка purge для soft-deleted (анонимизированных) пользователей
+        $user = User::withTrashed()->findOrFail($user);
+
         if ((int) auth()->id() === (int) $user->id) {
             return back()->withErrors(['user' => 'Нельзя удалить самого себя.']);
         }
