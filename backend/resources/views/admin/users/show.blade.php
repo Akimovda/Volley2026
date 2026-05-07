@@ -92,19 +92,47 @@
 							</div>
                             <div>
                                 <div class="fw-bold fs-5">{{ $user->name }}</div>
-                                <div class="text-muted">{{ $user->email }}</div>
+                                <div class="text-muted">
+                                    {{ $user->email }}
+                                    @if($user->email_verified_at)
+                                    <span class="text-success ms-1" title="Email подтверждён {{ $user->email_verified_at?->format('Y-m-d H:i') }}">✓</span>
+                                    @endif
+                                </div>
                                 <div class="small text-muted mt-1">
                                     Регистрация: {{ $user->created_at?->format('Y-m-d H:i') ?? '—' }}
-                                    @if(property_exists($user, 'deleted_at') && $user->deleted_at)
-									<span class="text-danger fw-bold ms-2">DELETED</span>
+                                </div>
+                                @php
+                                    $isAnonymizedEmail = is_string($user->email) && preg_match('/^deleted_\d+@deleted\.volleyplay\.club$/', $user->email);
+                                    $isDeleted = $user->deleted_at || $isAnonymizedEmail;
+                                @endphp
+                                @if($isDeleted)
+                                <div class="small text-danger fw-bold mt-1">
+                                    🗑 DELETED:
+                                    @if($user->deleted_at)
+                                        {{ \Carbon\Carbon::parse($user->deleted_at)->format('Y-m-d H:i') }}
+                                    @else
+                                        анонимизирован (дата не сохранена), последнее обновление {{ $user->updated_at?->format('Y-m-d H:i') ?? '—' }}
                                     @endif
-								</div>
+                                </div>
+                                @endif
+                                @if($user->merged_into_user_id)
+                                <div class="small text-warning mt-1">
+                                    🔀 Объединён с пользователем
+                                    <a class="blink" href="{{ route('admin.users.show', $user->merged_into_user_id) }}">#{{ $user->merged_into_user_id }}</a>
+                                </div>
+                                @endif
 							</div>
 						</div>
-                        
+
                         <div class="mt-1">
                             <div><strong>Имя/Фамилия:</strong> {{ $user->last_name }} {{ $user->first_name }}</div>
-                            <div><strong>Телефон:</strong> {{ $user->phone ?? '—' }}</div>
+                            <div>
+                                <strong>Телефон:</strong> {{ $user->phone ?? '—' }}
+                                @if($user->phone && $user->phone_verified_at)
+                                <span class="text-success ms-1" title="Телефон подтверждён {{ $user->phone_verified_at?->format('Y-m-d H:i') }}">✓</span>
+                                @endif
+                            </div>
+                            <div><strong>Пароль:</strong> {{ !empty($user->password) ? 'установлен' : '—' }}</div>
 						</div>
                         <ul class="list mt-1">
                            <li><a class="blink" href="/user/{{ $user->id }}">Публичный профиль пользователя</a></li>						
@@ -114,15 +142,15 @@
 					</div>
 				</div>
 				
-				{{-- Карточка провайдеров --}}
-				<div class="ramka"> 
-					<h2 class="-mt-05">Провайдеры</h2>
+				{{-- Карточка провайдеров OAuth --}}
+				<div class="ramka">
+					<h2 class="-mt-05">Провайдеры OAuth</h2>
 					<div class="card-body">
 						<div class="small">
-							{{-- TG --}}
+							{{-- Telegram --}}
 							<div class="mb-2">
-								<span class="text-muted" style="min-width:80px; display:inline-block;">TG:</span>
-								<strong>{{ $user->telegram_id ? 'yes' : '—' }}</strong>
+								<span class="text-muted" style="min-width:80px; display:inline-block;">Telegram:</span>
+								<strong>{{ $user->telegram_id ? '✅' : '—' }}</strong>
 								@if($user->telegram_username)
 								<span class="text-muted">(@{{ $user->telegram_username }})</span>
 								@endif
@@ -130,11 +158,11 @@
 								<span class="text-muted ms-2">id: {{ $user->telegram_id }}</span>
 								@endif
 							</div>
-							
+
 							{{-- VK --}}
 							<div class="mb-2">
 								<span class="text-muted" style="min-width:80px; display:inline-block;">VK:</span>
-								<strong>{{ $user->vk_id ? 'yes' : '—' }}</strong>
+								<strong>{{ $user->vk_id ? '✅' : '—' }}</strong>
 								@if($user->vk_id)
 								<span class="text-muted ms-2">id: {{ $user->vk_id }}</span>
 								@endif
@@ -142,11 +170,11 @@
 								<span class="text-muted ms-2">email: {{ $user->vk_email }}</span>
 								@endif
 							</div>
-							
+
 							{{-- Yandex --}}
-							<div>
+							<div class="mb-2">
 								<span class="text-muted" style="min-width:80px; display:inline-block;">Yandex:</span>
-								<strong>{{ $user->yandex_id ? 'yes' : '—' }}</strong>
+								<strong>{{ $user->yandex_id ? '✅' : '—' }}</strong>
 								@if($user->yandex_id)
 								<span class="text-muted ms-2">id: {{ $user->yandex_id }}</span>
 								@endif
@@ -154,8 +182,62 @@
 								<span class="text-muted ms-2">email: {{ $user->yandex_email }}</span>
 								@endif
 							</div>
+
+							{{-- Google --}}
+							<div class="mb-2">
+								<span class="text-muted" style="min-width:80px; display:inline-block;">Google:</span>
+								<strong>{{ !empty($user->google_id) ? '✅' : '—' }}</strong>
+								@if(!empty($user->google_id))
+								<span class="text-muted ms-2">id: {{ $user->google_id }}</span>
+								@endif
+							</div>
+
+							{{-- Apple --}}
+							<div>
+								<span class="text-muted" style="min-width:80px; display:inline-block;">Apple:</span>
+								<strong>{{ !empty($user->apple_id) ? '✅' : '—' }}</strong>
+								@if(!empty($user->apple_id))
+								<span class="text-muted ms-2">id: {{ $user->apple_id }}</span>
+								@endif
+							</div>
 						</div>
 					</div>
+				</div>
+
+				{{-- Каналы уведомлений (привязки для рассылок ботов) --}}
+				<div class="ramka">
+					<h2 class="-mt-05">Каналы уведомлений</h2>
+					<div class="card-body">
+						<div class="small">
+							{{-- Telegram bot --}}
+							<div class="mb-2">
+								<span class="text-muted" style="min-width:120px; display:inline-block;">Telegram бот:</span>
+								<strong>{{ !empty($user->telegram_notify_chat_id) ? '✅' : '—' }}</strong>
+								@if(!empty($user->telegram_notify_chat_id))
+								<span class="text-muted ms-2">chat_id: {{ $user->telegram_notify_chat_id }}</span>
+								@endif
+							</div>
+
+							{{-- VK bot --}}
+							<div class="mb-2">
+								<span class="text-muted" style="min-width:120px; display:inline-block;">VK бот:</span>
+								<strong>{{ !empty($user->vk_notify_user_id) ? '✅' : '—' }}</strong>
+								@if(!empty($user->vk_notify_user_id))
+								<span class="text-muted ms-2">user_id: {{ $user->vk_notify_user_id }}</span>
+								@endif
+							</div>
+
+							{{-- MAX bot --}}
+							<div>
+								<span class="text-muted" style="min-width:120px; display:inline-block;">MAX:</span>
+								<strong>{{ !empty($user->max_chat_id) ? '✅' : '—' }}</strong>
+								@if(!empty($user->max_chat_id))
+								<span class="text-muted ms-2">chat_id: {{ $user->max_chat_id }}</span>
+								@endif
+							</div>
+						</div>
+					</div>
+				</div>
 				</div>
 				
 				{{-- Admin audits --}}
