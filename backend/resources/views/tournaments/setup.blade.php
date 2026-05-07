@@ -228,12 +228,12 @@
 									@if($lt->status === 'active')
 									<form method="POST" action="{{ route('divisions.teams.toReserve', $lt) }}" style="display:inline">
 										@csrf
-										<button type="submit" class="btn btn-danger btn-alert btn-small" data-title="Перевести в резерв?" data-icon="warning" data-confirm-text="Да" data-cancel-text="Отмена">В резерв</button>
+										<button type="submit" class="btn btn-secondary btn-alert btn-small" data-title="Перевести в резерв?" data-icon="warning" data-confirm-text="Да" data-cancel-text="Отмена">В резерв</button>
 									</form>
 									@elseif($lt->status === 'reserve')
 									<form method="POST" action="{{ route('divisions.teams.activate', $lt) }}" style="display:inline">
 										@csrf
-										<button type="submit" class="btn btn-success btn-alert btn-small" data-title="Активировать команду?" data-icon="info" data-confirm-text="Да" data-cancel-text="Отмена">Активировать</button>
+										<button type="submit" class="btn btn-secondary btn-alert btn-small" data-title="Активировать команду?" data-icon="info" data-confirm-text="Да" data-cancel-text="Отмена">Активировать</button>
 									</form>
 									@endif
 								</td>
@@ -1077,7 +1077,7 @@
 											<td class="{{ $match->winner_team_id === $match->team_home_id ? 'cd b-600' : '' }}">
 												<div>{{ $match->teamHome->name ?? 'TBD' }}</div>
 												@if($match->teamHome && $match->teamHome->members->count())
-												<div class="f-11" style="color:#6b7280">{{ $match->teamHome->members->map(fn($m) => $m->user->last_name ?? '?')->implode(' / ') }}</div>
+												<div class="f-16">{{ $match->teamHome->members->map(fn($m) => $m->user->last_name ?? '?')->implode(' / ') }}</div>
 												@endif
 											</td>
 											<td class="p-1 {{ $match->winner_team_id === $match->team_away_id ? 'cd b-600' : '' }}">
@@ -1091,16 +1091,18 @@
 											<td style="text-align:center">{{ $match->scheduled_at ? $match->scheduled_at->setTimezone($event->timezone ?? 'Europe/Moscow')->format('H:i') : '—' }}</td>
 											<td style="text-align:center">{{ $match->court ?? '—' }}</td>
 											<td style="text-align:center">
+											<div class="text-center d-flex gap-1">
 												@if($match->isCompleted())
 												<span class="b-600 alert-success pt-05 pb-05 p-1">✓</span>
 												@if(!$stageHasDivDistribution)
-												<a href="{{ route('tournament.matches.score.form', $match) }}?edit=1" class="f-14" style="text-decoration:none;margin-left:4px" title="Исправить счёт">🛠</a>
+												<a href="{{ route('tournament.matches.score.form', $match) }}?edit=1" class="btn btn-small btn-secondary" title="Исправить счёт">🛠</a>
 												@endif
 												@elseif($match->status === 'live')
-												<span class="f-11 b-600 p-1 px-2" style="background:rgba(220,38,38,.15);border-radius:6px;color:#dc2626">LIVE</span>
+												<span class="b-600 alert-danger pt-05 pb-05 p-1">LIVE</span>
 												@else
-												<span>ожидание</span>
+												<span class="b-600 alert-warning pt-05 pb-05 p-1">ожидание</span>
 												@endif
+											</div>	
 											</td>
 											<td class="p-1">
 												@if($match->isScheduled() && $match->hasTeams())
