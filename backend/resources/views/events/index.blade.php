@@ -497,20 +497,18 @@ $fCity     = request('city', '');
 				async function loadSeatLine(el) {
 					const occId        = el.dataset.occurrenceId;
 					const regEnabled   = el.dataset.registrationEnabled === '1';
-					const regNotStarted = el.dataset.regNotStarted === '1';
-					const regClosed    = el.dataset.regClosed === '1';
 					const maxCard      = Number(el.dataset.maxPlayers ?? 0) || 0;
 					if (maxCard <= 0) return;
-					
+
 					const leftEl  = el.querySelector('[data-left]');
 					const totalEl = el.querySelector('[data-total]');
 					if (totalEl) totalEl.textContent = String(maxCard);
-					
-					if (regNotStarted || regClosed || !regEnabled) {
-						if (leftEl) leftEl.textContent = String(maxCard);
+
+					if (!regEnabled) {
+						if (leftEl) leftEl.textContent = '0';
 						return;
 					}
-					
+
 					try {
 						const res = await fetch(`/occurrences/${occId}/availability`, {
 							method: 'GET',
@@ -519,28 +517,24 @@ $fCity     = request('city', '');
 						});
 						let data = null;
 						try { data = await res.json(); } catch (e) {}
-						
+
 						const meta = data?.meta || data?.data?.meta || null;
 						if (!data || !meta) {
-							if (leftEl) leftEl.textContent = String(maxCard);
+							if (leftEl) leftEl.textContent = '0';
 							return;
 						}
 
 						const isTournament = el.dataset.isTournament === '1';
 						if (isTournament && meta.tournament_teams_max > 0) {
-							const tMax  = Number(meta.tournament_teams_max);
-							const tLeft = Number(meta.tournament_teams_remaining ?? Math.max(0, tMax - Number(meta.tournament_teams_registered ?? 0)));
-							if (leftEl)  leftEl.textContent  = String(tLeft);
+							const tMax = Number(meta.tournament_teams_max);
+							const tReg = Number(meta.tournament_teams_registered ?? 0) || 0;
+							if (leftEl)  leftEl.textContent  = String(tReg);
 							if (totalEl) totalEl.textContent = String(tMax);
 						} else {
 							const apiMax       = Number(meta.total_capacity ?? meta.max_players ?? 0) || 0;
 							const effectiveMax = apiMax > 0 ? apiMax : maxCard;
-							let remainingTotal = Number(meta.remaining_total);
-							if (!Number.isFinite(remainingTotal)) {
-								const registeredTotal = Number(meta.registered_total ?? 0) || 0;
-								remainingTotal = Math.max(0, effectiveMax - registeredTotal);
-							}
-							if (leftEl)  leftEl.textContent  = String(remainingTotal);
+							const registeredTotal = Number(meta.registered_total ?? 0) || 0;
+							if (leftEl)  leftEl.textContent  = String(registeredTotal);
 							if (totalEl) totalEl.textContent = String(effectiveMax);
 						}
 					} catch (e) {}

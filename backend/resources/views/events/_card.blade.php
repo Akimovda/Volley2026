@@ -273,7 +273,7 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 								data-tournament-team-size="{{ $teamSizeForTmnt }}"
 								>
 									<div>
-										<span class="b-600" data-left>{{ (int)$maxPlayersCard }}</span>
+										<span class="b-600" data-left>0</span>
 										<span class="text-muted">из</span>
 										<span class="b-600" data-total>{{ (int)$maxPlayersCard }}</span>
 										@if($isTournamentFmt)

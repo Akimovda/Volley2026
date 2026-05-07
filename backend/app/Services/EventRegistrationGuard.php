@@ -41,8 +41,40 @@
 				return $result;
 			}
 
-			// Командный турнир — прямая запись заблокирована
+			// Командный турнир — прямая запись заблокирована.
+			// Сначала проверяем окно регистрации (чтобы UI мог показать «откроется ...» / «закрыта»),
+			// затем добавляем неблокирующую подсказку «нужна команда».
 			if (in_array((string)($event->registration_mode ?? ''), ['team_classic', 'team_beach'], true)) {
+				$nowUtc = Carbon::now('UTC');
+				$tz     = (string)($event?->timezone ?? 'Europe/Moscow');
+
+				if (
+					$occurrence->starts_at &&
+					$nowUtc->greaterThanOrEqualTo(Carbon::parse($occurrence->starts_at, 'UTC'))
+				) {
+					$result->addError('Мероприятие уже началось.');
+					return $result;
+				}
+
+				if (!$occurrence->effectiveAllowRegistration()) {
+					$result->addError('Регистрация на мероприятие выключена.');
+					return $result;
+				}
+
+				$regStartsAt = $occurrence->effectiveRegistrationStartsAt();
+				if ($regStartsAt && $nowUtc->lessThan($regStartsAt)) {
+					$opens = $regStartsAt->copy()->setTimezone($tz)->locale('ru')->translatedFormat('d F в H:i');
+					$result->addError('Регистрация ещё не началась — откроется ' . $opens . '.');
+					return $result;
+				}
+
+				$regEndsAt = $occurrence->effectiveRegistrationEndsAt();
+				if ($regEndsAt && $nowUtc->greaterThanOrEqualTo($regEndsAt)) {
+					$result->addError('Регистрация уже завершена.');
+					return $result;
+				}
+
+				// Регистрация открыта — оставляем allowed=true и подсказку про команду.
 				$result->errors[] = 'На турнир можно записаться только в составе команды.';
 				return $result;
 			}
@@ -208,8 +240,35 @@
             $dir      = (string)($event?->direction ?? 'classic');
             $agePolicy = (string)($occurrence->age_policy ?? $event?->age_policy ?? 'any');
 
-            // Командный турнир — прямая запись заблокирована
+            // Командный турнир — прямая запись заблокирована.
+            // Если окно регистрации ещё не открыто/уже закрыто/мероприятие началось — отдаём
+            // allowed=false БЕЗ кода 'team_only', чтобы карточка показала корректный alert
+            // («Регистрация откроется …» / «Регистрация закрыта» / «Мероприятие уже началось»).
             if (in_array((string)($event?->registration_mode ?? ''), ['team_classic', 'team_beach'], true)) {
+                $nowUtc = Carbon::now('UTC');
+
+                if (
+                    $occurrence->starts_at &&
+                    $nowUtc->greaterThanOrEqualTo(Carbon::parse($occurrence->starts_at, 'UTC'))
+                ) {
+                    return (object)['allowed' => false, 'code' => null, 'message' => null];
+                }
+
+                if (!$occurrence->effectiveAllowRegistration()) {
+                    return (object)['allowed' => false, 'code' => null, 'message' => null];
+                }
+
+                $regStartsAt = $occurrence->effectiveRegistrationStartsAt();
+                if ($regStartsAt && $nowUtc->lessThan($regStartsAt)) {
+                    return (object)['allowed' => false, 'code' => null, 'message' => null];
+                }
+
+                $regEndsAt = $occurrence->effectiveRegistrationEndsAt();
+                if ($regEndsAt && $nowUtc->greaterThanOrEqualTo($regEndsAt)) {
+                    return (object)['allowed' => false, 'code' => null, 'message' => null];
+                }
+
+                // Регистрация открыта — нужна команда
                 return (object)['allowed' => false, 'code' => 'team_only',
                     'message' => 'Запись только в составе команды'];
             }
