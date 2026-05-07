@@ -48,7 +48,10 @@ public static function isUser(User $user): bool
             return self::adminEdit($target, $data);
         }
 
-        if (self::isOrganizer($actor) && $actor->id !== $target->id) {
+        if (self::isOrganizer($actor)) {
+            if ($actor->id === $target->id) {
+                return self::adminEdit($target, $data);
+            }
             return self::organizerEdit($target, $data);
         }
 

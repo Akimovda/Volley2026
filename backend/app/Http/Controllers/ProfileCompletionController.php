@@ -72,8 +72,10 @@
 			$requiredKeys = $required->unique()->values()->all();
 
 			// Профиль уже заполнен, нет специальных требований, просматривает свой профиль → редирект
+			// Админы и организаторы могут редактировать свой профиль без ограничений
 			if (empty($requiredKeys) && empty($section) && empty($eventId)
-				&& $target->id === $actor->id && $target->isProfileComplete()) {
+				&& $target->id === $actor->id && $target->isProfileComplete()
+				&& !ProfileUpdateGuard::isAdmin($actor) && !ProfileUpdateGuard::isOrganizer($actor)) {
 				return redirect('/user/profile')->with('status', 'Ваш профиль уже заполнен ✅');
 			}
 			$request->session()->put('pending_profile_required', $requiredKeys);
