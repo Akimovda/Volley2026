@@ -229,6 +229,8 @@ class PlayerDashboardController extends Controller
             ->leftJoin('cities as ci', 'ci.id', '=', 'l.city_id')
             ->where('er.user_id', $userId)
             ->whereRaw('(er.is_cancelled IS NULL OR er.is_cancelled = false)')
+            ->whereRaw("(er.status IS NULL OR er.status != 'cancelled')")
+            ->whereNull('er.cancelled_at')
             ->whereNull('eo.cancelled_at')
             ->select(
                 'er.id as registration_id',
