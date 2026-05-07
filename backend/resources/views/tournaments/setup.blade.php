@@ -228,12 +228,12 @@
 									@if($lt->status === 'active')
 									<form method="POST" action="{{ route('divisions.teams.toReserve', $lt) }}" style="display:inline">
 										@csrf
-										<button type="submit" class="btn btn-secondary btn-alert btn-small" data-title="Перевести в резерв?" data-icon="warning" data-confirm-text="Да" data-cancel-text="Отмена">В резерв</button>
+										<button type="submit" class="btn btn-secondary btn-alert btn-small" data-title="Перевести в резерв?" data-icon="warning" data-confirm-text="Да" data-cancel-text="Отмена">🔴 В резерв</button>
 									</form>
 									@elseif($lt->status === 'reserve')
 									<form method="POST" action="{{ route('divisions.teams.activate', $lt) }}" style="display:inline">
 										@csrf
-										<button type="submit" class="btn btn-secondary btn-alert btn-small" data-title="Активировать команду?" data-icon="info" data-confirm-text="Да" data-cancel-text="Отмена">Активировать</button>
+										<button type="submit" class="btn btn-secondary btn-alert btn-small" data-title="Активировать команду?" data-icon="info" data-confirm-text="Да" data-cancel-text="Отмена">🟢 Активировать</button>
 									</form>
 									@endif
 								</td>
@@ -1011,14 +1011,14 @@
 						@endif
 						
 						@if($resolvedSets->isNotEmpty())
-						<div class="mt-2 p-2 f-12" style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.3);border-radius:8px">
+						<div class="mb-2 alert alert-success">
 							@foreach($resolvedSets as $rset)
 							@php
 							$order  = $rset->resolved_order ?: [];
 							$labels = array_map(fn($tid) => $teamNames[(int) $tid] ?? ('#' . $tid), $order);
 							$methodLabel = ['full_diff' => 'полная разница', 'match' => 'матчи', 'lottery' => 'жребий'][$rset->method] ?? $rset->method;
 							@endphp
-							<div class="mb-1">✅ Тайбрейк ({{ $methodLabel }}): {{ implode(' → ', $labels) }}</div>
+							<p>Тайбрейк ({{ $methodLabel }}): {{ implode(' → ', $labels) }}</p>
 							@endforeach
 						</div>
 						@endif
@@ -1074,16 +1074,16 @@
 										<tr>
 											<td>{{ $match->match_number }}</td>
 											<td>R{{ $match->round }}</td>
-											<td class="{{ $match->winner_team_id === $match->team_home_id ? 'cd b-600' : '' }}">
-												<div>{{ $match->teamHome->name ?? 'TBD' }}</div>
+											<td>
+												<div class="{{ $match->winner_team_id === $match->team_home_id ? 'cd b-600' : '' }}">{{ $match->teamHome->name ?? 'TBD' }}</div>
 												@if($match->teamHome && $match->teamHome->members->count())
-												<div class="f-16">{{ $match->teamHome->members->map(fn($m) => $m->user->last_name ?? '?')->implode(' / ') }}</div>
+												<div class="f-13">{{ $match->teamHome->members->map(fn($m) => $m->user->last_name ?? '?')->implode(' / ') }}</div>
 												@endif
 											</td>
-											<td class="p-1 {{ $match->winner_team_id === $match->team_away_id ? 'cd b-600' : '' }}">
-												<div>{{ $match->teamAway->name ?? 'TBD' }}</div>
+											<td>
+												<div class="{{ $match->winner_team_id === $match->team_away_id ? 'cd b-600' : '' }}">{{ $match->teamAway->name ?? 'TBD' }}</div>
 												@if($match->teamAway && $match->teamAway->members->count())
-												<div class="f-11" style="color:#6b7280">{{ $match->teamAway->members->map(fn($m) => $m->user->last_name ?? '?')->implode(' / ') }}</div>
+												<div class="f-13">{{ $match->teamAway->members->map(fn($m) => $m->user->last_name ?? '?')->implode(' / ') }}</div>
 												@endif
 											</td>
 											<td style="text-align:center">{{ $match->setsScore() ?? '—' }}</td>
@@ -1095,7 +1095,7 @@
 												@if($match->isCompleted())
 												<span class="b-600 alert-success pt-05 pb-05 p-1">✓</span>
 												@if(!$stageHasDivDistribution)
-												<a href="{{ route('tournament.matches.score.form', $match) }}?edit=1" class="btn btn-small btn-secondary" title="Исправить счёт">🛠</a>
+												<a href="{{ route('tournament.matches.score.form', $match) }}?edit=1" class="btn icon-edit btn-svg btn-secondary" title="Исправить счёт"></a>
 												@endif
 												@elseif($match->status === 'live')
 												<span class="b-600 alert-danger pt-05 pb-05 p-1">LIVE</span>
@@ -1106,12 +1106,12 @@
 											</td>
 											<td class="p-1">
 												@if($match->isScheduled() && $match->hasTeams())
-												<a href="{{ route('tournament.matches.score.form', $match) }}" class="btn btn-primary f-12" style="padding:4px 10px">
+												<a href="{{ route('tournament.matches.score.form', $match) }}" class="btn btn-primary btn-small">
 													Счёт
 												</a>
 												@endif
 												@if($match->isCompleted())
-												<a href="{{ route('tournament.matches.player_stats.form', $match) }}" class="btn btn-secondary f-12" style="padding:4px 8px" title="Статистика игроков">
+												<a href="{{ route('tournament.matches.player_stats.form', $match) }}" class="btn btn-secondary btn-small" title="Статистика игроков">
 													📊
 												</a>
 												@endif
@@ -1298,7 +1298,7 @@
 		$hasMedium = $divStages->contains(fn($s) => str_contains($s->name, 'Medium'));
 		@endphp
 		@if($allDivsCompleted)
-		<div class="ramka" style="background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.2)">
+		<div class="ramka">
 			<h3 style="margin:0 0 8px">✅ Все группы завершены</h3>
 			<p class="f-14" style="color:#6b7280;margin-bottom:12px">
 				По правилам сезона: все команды Hard остаются, из Lite — top-2 остаются{{ $hasMedium ? ', из Medium — top-3 остаются' : '' }}, остальные уходят в резерв.
