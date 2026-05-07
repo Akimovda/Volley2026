@@ -2,7 +2,9 @@
 
 namespace App\Services;
 
+use App\Models\Event;
 use App\Models\EventOccurrence;
+use App\Models\EventRegistration;
 use App\Models\OccurrenceWaitlist;
 use App\Models\User;
 use App\Jobs\CheckWaitlistNotificationJob;
@@ -87,7 +89,174 @@ class WaitlistService
             return;
         }
 
-        $this->notifyNext($occurrence->id, $position);
+        // Турниры — оставляем старую логику с уведомлением (командная регистрация ≠ позиции)
+        $event = $occurrence->event ?: $occurrence->loadMissing('event')->event;
+        if ($event && (string) $event->format === 'tournament') {
+            $this->notifyNext($occurrence->id, $position);
+            return;
+        }
+
+        // Индивидуальная регистрация — автозапись первого подходящего из очереди.
+        // Один вызов onSpotFreed соответствует освобождению одной позиции,
+        // поэтому достаточно одного autoBookNext (массовая отмена даст N вызовов).
+        $this->autoBookNext($occurrence, $position);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | AUTO-BOOK NEXT — автоматическая запись из листа ожидания на позицию
+    |--------------------------------------------------------------------------
+    | Возвращает true если кого-то записали; false — никто не подошёл и место
+    | остаётся свободным для общей записи.
+    */
+    public function autoBookNext(EventOccurrence $occurrence, string $position = ''): bool
+    {
+        $event = $occurrence->event ?: $occurrence->loadMissing('event')->event;
+        if (!$event) return false;
+
+        // Турниры в эту ветку не идут — защита на случай прямого вызова
+        if ((string) $event->format === 'tournament') {
+            return false;
+        }
+
+        $direction = (string) ($event->direction ?? 'classic');
+
+        return DB::transaction(function () use ($occurrence, $event, $position, $direction) {
+            $now = now();
+
+            // Очередь: премиум первыми, затем по created_at; lockForUpdate против гонок
+            $entries = OccurrenceWaitlist::query()
+                ->from('occurrence_waitlist')
+                ->where('occurrence_waitlist.occurrence_id', $occurrence->id)
+                ->leftJoin('premium_subscriptions', function ($join) use ($now) {
+                    $join->on('premium_subscriptions.user_id', '=', 'occurrence_waitlist.user_id')
+                         ->where('premium_subscriptions.status', 'active')
+                         ->where('premium_subscriptions.expires_at', '>', $now);
+                })
+                ->orderByRaw('CASE WHEN premium_subscriptions.id IS NOT NULL THEN 0 ELSE 1 END')
+                ->orderBy('occurrence_waitlist.created_at')
+                ->select('occurrence_waitlist.*')
+                ->lockForUpdate()
+                ->get();
+
+            $guard = app(EventRegistrationGuard::class);
+
+            foreach ($entries as $entry) {
+                // Позиция должна подходить (для пляжки positions=[] → подходит любая)
+                if (!$entry->subscribedToPosition($position)) {
+                    continue;
+                }
+
+                $user = $entry->user;
+                if (!$user) {
+                    $entry->delete();
+                    continue;
+                }
+
+                // Уже записан в этом occurrence (страховка)
+                $alreadyRegistered = EventRegistration::query()
+                    ->where('user_id', $user->id)
+                    ->where('occurrence_id', $occurrence->id)
+                    ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
+                    ->whereRaw("(status IS NULL OR status != 'cancelled')")
+                    ->exists();
+                if ($alreadyRegistered) {
+                    $entry->delete();
+                    continue;
+                }
+
+                // Eligibility (без проверки мест) — уровень/возраст/гендер/окно
+                $result = $guard->checkEligibility($user, $occurrence);
+                if (!$result->allowed) {
+                    Log::info("Waitlist autoBook skip: user #{$user->id} not eligible", [
+                        'occurrence' => $occurrence->id,
+                        'errors'     => $result->errors,
+                    ]);
+                    continue;
+                }
+
+                // Захват слота для классических основных позиций
+                $isReserve = $position === 'reserve';
+                if ($direction === 'classic' && $position !== '' && !$isReserve) {
+                    $ok = app(EventRoleSlotService::class)->tryTakeSlot($event, $position, $occurrence->id);
+                    if (!$ok) {
+                        // Слот занят — место уже не наше, выходим
+                        return false;
+                    }
+                }
+
+                // Резервная позиция: проверяем лимит резерва
+                if ($isReserve) {
+                    $reserveMax = (int) ($event->gameSettings?->reserve_players_max ?? 0);
+                    if ($reserveMax <= 0) return false;
+                    $reserveTaken = DB::table('event_registrations')
+                        ->where('occurrence_id', $occurrence->id)
+                        ->where('position', 'reserve')
+                        ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
+                        ->whereRaw("(status IS NULL OR status != 'cancelled')")
+                        ->count();
+                    if ($reserveTaken >= $reserveMax) return false;
+                }
+
+                // Пляжка: проверка по общему лимиту
+                if ($direction === 'beach') {
+                    $maxPlayers = (int) ($event->gameSettings?->max_players ?? 0);
+                    $registered = DB::table('event_registrations')
+                        ->where('occurrence_id', $occurrence->id)
+                        ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
+                        ->whereRaw("(status IS NULL OR status != 'cancelled')")
+                        ->count();
+                    if ($maxPlayers > 0 && $registered >= $maxPlayers) return false;
+                }
+
+                // Создаём регистрацию — через свойства, чтобы записать поля вне $fillable
+                // (auto_booked, is_cancelled, payment_status и т.п.)
+                $reg = new EventRegistration();
+                $reg->user_id       = $user->id;
+                $reg->event_id      = $occurrence->event_id;
+                $reg->occurrence_id = $occurrence->id;
+                $reg->status        = 'confirmed';
+                $reg->is_cancelled  = false;
+                $reg->position      = $position !== '' ? $position : null;
+                $reg->auto_booked   = true;
+                $reg->save();
+
+                // Платное мероприятие — создаём платёж с окном оплаты
+                if (!empty($event->is_paid) && (int) ($event->price_minor ?? 0) > 0) {
+                    $payment = app(PaymentService::class)->createForRegistration($reg, $event, $occurrence);
+
+                    if ($event->payment_method === 'yoomoney') {
+                        $reg->payment_status     = 'pending';
+                        $reg->payment_id         = $payment->id;
+                        $reg->payment_expires_at = $payment->expires_at;
+                        $reg->save();
+                    } elseif (in_array($event->payment_method, ['tbank_link', 'sber_link'], true)) {
+                        $reg->payment_status = 'link_pending';
+                        $reg->payment_id     = $payment->id;
+                        $reg->save();
+                    }
+                }
+
+                // EventRegistrationObserver::created() сам удалит entry,
+                // но делаем явно — это идемпотентно и надёжнее в транзакции
+                $entry->delete();
+
+                // Уведомление: «Вы записаны из резерва в основной состав»
+                app(UserNotificationService::class)->createWaitlistAutoBookedNotification(
+                    userId: $user->id,
+                    eventId: $event->id,
+                    occurrenceId: $occurrence->id,
+                    eventTitle: $event->title,
+                    position: $position
+                );
+
+                Log::info("Waitlist auto-booked: user #{$user->id} → occurrence #{$occurrence->id} pos='{$position}'");
+
+                return true;
+            }
+
+            return false;
+        });
     }
 
     /*

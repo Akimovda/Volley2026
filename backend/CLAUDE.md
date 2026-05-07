@@ -178,11 +178,29 @@ sudo supervisorctl restart volleyplay-queue:* volleyplay-reverb
 - Поля уведомлений: weekly_digest, notify_level_min/max, notify_city_id
 - Контроллер: PremiumController, настройки: PremiumSettingsController
 
-## Лист ожидания (Waitlist)
+## Лист ожидания (Waitlist) — автозапись из резерва
 - Модель: OccurrenceWaitlist (таблица occurrence_waitlist), сервис: WaitlistService
-- Поля: positions (массив), notified_at, notification_expires_at
-- Окно уведомления: 15 минут (NOTIFICATION_WINDOW_MINUTES)
-- Job: CheckWaitlistNotificationJob
+- Поля: positions (массив), notified_at, notification_expires_at (legacy — для турниров)
+- Триггер: EventRegistrationObserver::deleted/updated → WaitlistService::onSpotFreed
+- **Индивидуальная регистрация (НЕ турниры)** — `autoBookNext`:
+  - При освобождении места АВТОМАТИЧЕСКИ записывает первого подходящего из очереди в основной состав
+  - Очередь: премиум-пользователи первыми, затем по created_at
+  - lockForUpdate на occurrence_waitlist для защиты от гонок при массовой отмене
+  - Цикл в onSpotFreed: до 20 итераций (важно при массовой отмене 3+ мест)
+  - Проверка: subscribedToPosition + EventRegistrationGuard::checkEligibility
+  - Платные мероприятия: PaymentService::createForRegistration с expires_at — игрок должен оплатить за payment_hold_minutes (15 мин), иначе AutoUnconfirmBookingJob/PaymentService::releaseExpired откатит и запустит следующего из очереди
+  - Уведомление: createWaitlistAutoBookedNotification (in_app, telegram, vk, max, push)
+  - auto_booked=true в event_registrations, поле НЕ в $fillable — через свойства+save
+  - Если никто из waitlist не подходит (Guard/positions) — место остаётся свободным для общей записи
+- **Турниры (format=tournament)** — старая логика (`notifyNext` + CheckWaitlistNotificationJob):
+  - Уведомление об освободившемся месте, окно 15 минут на ручную запись
+  - notified_at + notification_expires_at используются
+- **EventRegistrationGuard::check()** — `checkWaitlistGate`:
+  - Если есть кто-то в waitlist (помимо текущего user) → запись в основной состав запрещена
+  - Сообщение: «Запись в основной состав закрыта — доступна только запись в резерв»
+  - meta.waitlist_only=true, meta.waitlist_has_others=bool
+  - Турниры пропускаются (оставлена старая логика)
+  - checkEligibility (используется для входа в waitlist) — gate НЕ применяется
 
 ## Команды (EventTeam)
 - Модель: EventTeam — принадлежит event_id + occurrence_id

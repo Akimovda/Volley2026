@@ -119,7 +119,7 @@ final class UserNotificationService
             title: 'Вы записаны в резерв',
             body: "ℹ️ Вы записаны в резерв на мероприятие «{$eventTitle}».\n"
                 . "Ваша подписка на позиции: {$posText}.\n"
-                . "🔔 Мы Вас уведомим, как позиция будет доступна!",
+                . "✅ Когда освободится подходящее место — мы автоматически запишем вас в основной состав.",
             payload: [
                 'event_id'      => $eventId,
                 'occurrence_id' => $occurrenceId,
@@ -138,7 +138,7 @@ final class UserNotificationService
         string $position = ''
     ): UserNotification {
         $posLabel = $position ? position_name($position) : 'место';
-    
+
         return $this->create(
             userId: $userId,
             type: 'waitlist_spot_freed',
@@ -152,6 +152,38 @@ final class UserNotificationService
                 'position'      => $position,
             ],
             channels: ['in_app', 'telegram', 'vk', 'max']
+        );
+    }
+
+    public function createWaitlistAutoBookedNotification(
+        int $userId,
+        int $eventId,
+        ?int $occurrenceId,
+        string $eventTitle,
+        string $position = ''
+    ): UserNotification {
+        $user = User::query()->find($userId);
+        $fullName = trim(($user?->last_name ?? '') . ' ' . ($user?->first_name ?? ''));
+        if ($fullName === '') {
+            $fullName = $user?->name ?: 'игрок';
+        }
+
+        $posLabel = $position ? position_name($position) : 'основной состав';
+
+        return $this->create(
+            userId: $userId,
+            type: 'waitlist_auto_booked',
+            title: '✅ Вы записаны из резерва в основной состав',
+            body: "Уважаемый(ая), {$fullName}! Вы записаны из резерва в основной состав на мероприятие «{$eventTitle}».\n"
+                . "На позицию: {$posLabel}.\n"
+                . "Не опаздывайте и приходите заранее!",
+            payload: [
+                'event_id'      => $eventId,
+                'occurrence_id' => $occurrenceId,
+                'event_title'   => $eventTitle,
+                'position'      => $position,
+            ],
+            channels: ['in_app', 'telegram', 'vk', 'max', 'push']
         );
     }
     public function createGroupInviteNotification(
