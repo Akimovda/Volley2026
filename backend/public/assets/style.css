@@ -3995,6 +3995,7 @@ body.dark .icon-light .provider-card__icon svg {
 }
 .provider-card__title {
 	font-weight: 600;
+	padding-left: 1rem;
 }
 .social-btns {
 	display: flex;
