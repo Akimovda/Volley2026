@@ -97,7 +97,7 @@ class OccurrenceAnnouncementMessageBuilder
         $lines[] = '';
 
         // ── Дата ─────────────────────────────────────────────────────────────
-        $dateStr = $starts->translatedFormat('j F'); // «6 апреля»
+        $dateStr = $starts->locale('ru')->translatedFormat('j F, l'); // «7 мая, четверг»
         $lines[] = "🗓 {$dateStr}";
 
         // ── Время ─────────────────────────────────────────────────────────────
@@ -335,7 +335,7 @@ class OccurrenceAnnouncementMessageBuilder
     }
 
     /**
-     * Длительность: «2:00», «1:30»
+     * Длительность: «2 ч», «1 ч 30 мин», «45 мин»
      */
     private function formatDuration(Carbon $starts, Carbon $ends): string
     {
@@ -343,7 +343,10 @@ class OccurrenceAnnouncementMessageBuilder
         if ($mins <= 0) return '';
         $h = intdiv($mins, 60);
         $m = $mins % 60;
-        return $m > 0 ? sprintf('%d:%02d', $h, $m) : "{$h}:00";
+
+        if ($h === 0) return "{$m} мин";
+        if ($m === 0) return "{$h} ч";
+        return "{$h} ч {$m} мин";
     }
 
     private function currencySymbol(string $code): string
@@ -388,10 +391,6 @@ class OccurrenceAnnouncementMessageBuilder
             ->whereNull('er.cancelled_at')
             ->where(function ($q) {
                 $q->whereNull('er.status')->orWhere('er.status', 'confirmed');
-            })
-            ->where(function ($q) {
-                // Скрываем ботов из публичного списка
-                $q->whereNull('u.is_bot')->orWhere('u.is_bot', false);
             })
             ->orderBy('er.id')
             ->limit(30)
