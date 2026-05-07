@@ -232,7 +232,8 @@ $actionLabel = fn(string $a) => match($a) {
 				<tbody>
 					@foreach($registrations as $r)
 					@php
-					$name     = $r->name ?: ($r->email ?: ('User_' . $r->user_id));
+					$fullName = trim(($r->last_name ?? '') . ' ' . ($r->first_name ?? ''));
+					$name     = $fullName !== '' ? $fullName : ($r->name ?: ($r->email ?: ('User_' . $r->user_id)));
 					$phone    = $r->phone ?: '—';
 					$posKey   = $r->position ?: '';
 					$posLabel = $posKey ? ($posLabels[$posKey] ?? $posKey) : '—';
@@ -366,7 +367,7 @@ $actionLabel = fn(string $a) => match($a) {
 					<select name="from_user_id" required>
 						<option value="">— выбрать —</option>
 						@foreach($activeRegistrations as $r)
-						<option value="{{ $r->user_id }}">#{{ $r->user_id }} — {{ $r->name ?? '' }}</option>
+						<option value="{{ $r->user_id }}">#{{ $r->user_id }} — {{ trim(($r->last_name ?? '').' '.($r->first_name ?? '')) ?: ($r->name ?? '') }}</option>
 						@endforeach
 					</select>
 				</div>
@@ -375,7 +376,7 @@ $actionLabel = fn(string $a) => match($a) {
 					<select name="to_user_id" required>
 						<option value="">— выбрать —</option>
 						@foreach($activeRegistrations as $r)
-						<option value="{{ $r->user_id }}">#{{ $r->user_id }} — {{ $r->name ?? '' }}</option>
+						<option value="{{ $r->user_id }}">#{{ $r->user_id }} — {{ trim(($r->last_name ?? '').' '.($r->first_name ?? '')) ?: ($r->name ?? '') }}</option>
 						@endforeach
 					</select>
 				</div>
