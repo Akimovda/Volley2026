@@ -459,12 +459,12 @@
                                 <div class="d-flex" style="gap:.5rem;align-items:center">
                                     <select name="reg_starts_days_before" id="mgmt_reg_starts_d" style="width:auto">
                                         @for($d = 0; $d <= 90; $d++)
-                                            <option value="{{ $d }}" @selected((old('reg_starts_days_before', $regStartsDaysSaved)) == $d)>{{ $d }} {{ __(\'events.dur_d_short\') }}</option>
+                                            <option value="{{ $d }}" @selected((old('reg_starts_days_before', $regStartsDaysSaved)) == $d)>{{ $d }} {{ __('events.dur_d_short') }}</option>
                                         @endfor
                                     </select>
                                     <select name="reg_starts_hours_before" id="mgmt_reg_starts_h" style="width:auto">
                                         @for($h = 0; $h <= 23; $h++)
-                                            <option value="{{ $h }}" @selected((old('reg_starts_hours_before', $regStartsHoursSaved)) == $h)>{{ $h }} {{ __(\'events.dur_h_short\') }}</option>
+                                            <option value="{{ $h }}" @selected((old('reg_starts_hours_before', $regStartsHoursSaved)) == $h)>{{ $h }} {{ __('events.dur_h_short') }}</option>
                                         @endfor
                                     </select>
                                 </div>
@@ -478,12 +478,12 @@
                                 <div class="d-flex" style="gap:.5rem;align-items:center">
                                     <select id="mgmt_reg_ends_h" style="width:auto">
                                         @for ($h = 0; $h <= 24; $h++)
-                                            <option value="{{ $h }}" @selected($regEndsHours == $h)>{{ $h }} {{ __(\'events.dur_h_short\') }}</option>
+                                            <option value="{{ $h }}" @selected($regEndsHours == $h)>{{ $h }} {{ __('events.dur_h_short') }}</option>
                                         @endfor
                                     </select>
                                     <select id="mgmt_reg_ends_m" style="width:auto">
                                         @foreach([0,10,15,20,30,40,50] as $m)
-                                            <option value="{{ $m }}" @selected($regEndsMins == $m)>{{ $m }} {{ __(\'events.dur_m_short\') }}</option>
+                                            <option value="{{ $m }}" @selected($regEndsMins == $m)>{{ $m }} {{ __('events.dur_m_short') }}</option>
                                         @endforeach
                                     </select>
                                 </div>
@@ -500,12 +500,12 @@
                                 <div class="d-flex" style="gap:.5rem;align-items:center">
                                     <select id="mgmt_cancel_h" style="width:auto">
                                         @for ($h = 0; $h <= 24; $h++)
-                                            <option value="{{ $h }}" @selected($cancelHours == $h)>{{ $h }} {{ __(\'events.dur_h_short\') }}</option>
+                                            <option value="{{ $h }}" @selected($cancelHours == $h)>{{ $h }} {{ __('events.dur_h_short') }}</option>
                                         @endfor
                                     </select>
                                     <select id="mgmt_cancel_m" style="width:auto">
                                         @foreach([0,10,15,20,30,40,50] as $m)
-                                            <option value="{{ $m }}" @selected($cancelMins == $m)>{{ $m }} {{ __(\'events.dur_m_short\') }}</option>
+                                            <option value="{{ $m }}" @selected($cancelMins == $m)>{{ $m }} {{ __('events.dur_m_short') }}</option>
                                         @endforeach
                                     </select>
                                 </div>
