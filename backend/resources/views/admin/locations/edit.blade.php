@@ -1,11 +1,11 @@
 {{-- resources/views/admin/locations/edit.blade.php --}}
 <x-voll-layout body_class="admin-page admin-locations-edit">
     <x-slot name="title">
-        Редактировать локацию (admin)
+        {{ __('admin.loc_edit_title') }}
 	</x-slot>
 	
     <x-slot name="description">
-        Страница редактирования локации в административной панели
+        {{ __('admin.loc_edit_title') }}
 	</x-slot>
 	
     <x-slot name="canonical">
@@ -13,24 +13,24 @@
 	</x-slot>
 	
     <x-slot name="h1">
-        Редактировать локацию
+        {{ __('admin.loc_edit_title') }}
 	</x-slot>
 	
     <x-slot name="h2">
-        Административная панель
+        {{ __('admin.breadcrumb_dashboard') }}
 	</x-slot>
 	
     <x-slot name="t_description">
-        Отредактируйте информацию о локации. Поля, отмеченные *, обязательны для заполнения.
+        {{ __('admin.loc_edit_t_description') }}
 	</x-slot>
 	
     <x-slot name="breadcrumbs">
         <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
-            <a href="{{ route('admin.dashboard') }}" itemprop="item"><span itemprop="name">Админ-панель</span></a>
+            <a href="{{ route('admin.dashboard') }}" itemprop="item"><span itemprop="name">{{ __('admin.breadcrumb_dashboard') }}</span></a>
             <meta itemprop="position" content="1">
 		</li>
         <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
-            <a href="{{ route('admin.locations.index') }}" itemprop="item"><span itemprop="name">Локации</span></a>
+            <a href="{{ route('admin.locations.index') }}" itemprop="item"><span itemprop="name">{{ __('admin.loc_breadcrumb') }}</span></a>
             <meta itemprop="position" content="2">
 		</li>
         <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
@@ -82,7 +82,7 @@
                         const photo_ids = currentOrderIds();
                         if (!photo_ids.length) return;
 						
-                        if (hint) hint.textContent = 'Сохраняю порядок...';
+                        if (hint) hint.textContent = @json(__('admin.loc_photos_save_progress'));
                         try {
                             const res = await fetch(reorderUrl, {
                                 method: 'POST',
@@ -95,12 +95,12 @@
 							});
 							
                             if (!res.ok) {
-                                if (hint) hint.textContent = 'Не удалось сохранить порядок (HTTP ' + res.status + ').';
+                                if (hint) hint.textContent = @json(__('admin.loc_photos_save_http_err')).replace(':status', res.status);
                                 return;
 							}
-                            if (hint) hint.textContent = 'Порядок фото сохранён ✅';
+                            if (hint) hint.textContent = @json(__('admin.loc_photos_save_done'));
 							} catch (e) {
-                            if (hint) hint.textContent = 'Ошибка сети при сохранении порядка.';
+                            if (hint) hint.textContent = @json(__('admin.loc_photos_save_net_err'));
 						}
 					}
 					
@@ -134,7 +134,7 @@
         @if ($errors->any())
         <div class="ramka">
             <div class="alert alert-danger">
-                <div class="font-semibold mb-2">Ошибки:</div>
+                <div class="font-semibold mb-2">{{ __('admin.errors_title') }}</div>
                 <ul class="list-disc ml-5 space-y-1">
                     @foreach ($errors->all() as $err)
                     <li>{{ $err }}</li>
@@ -182,7 +182,7 @@
 		
 		
         <div class="ramka">
-		<h2 class="-mt-05">Данные локации</h2>
+		<h2 class="-mt-05">{{ __('admin.loc_form_title') }}</h2>
             <form method="POST" action="{{ route('admin.locations.update', $location) }}" enctype="multipart/form-data" class="form">
                 @csrf
                 @method('PUT')
@@ -191,7 +191,7 @@
                     {{-- NAME --}}
                     <div class="col-12">
                         <div class="card">
-                            <label>Название <span class="text-danger">*</span></label>
+                            <label>{{ __('admin.loc_label_name') }} <span class="text-danger">*</span></label>
                             <input
 							type="text"
 							name="name"
@@ -206,7 +206,7 @@
                     {{-- CITY --}}
 					<div class="col-md-4">
 						<div class="card">
-							<label>Город *</label>
+							<label>{{ __('admin.loc_label_city') }} *</label>
 							
 							{{-- То, что реально сохраняем --}}
 							<input type="hidden" name="city_id" id="city_id" value="{{ old('city_id', $location->city_id) }}" required>
@@ -215,7 +215,7 @@
 							<div class="city-autocomplete" id="city-autocomplete" data-search-url="{{ route('cities.search') }}">
 								<input type="text"
 								id="city_search"
-								placeholder="Начните вводить город…"
+								placeholder="{{ __('admin.loc_search_city_ph') }}"
 								value="{{ old('city_label', $selectedCityLabel) }}"
 								autocomplete="off"
 								@error('city_id') class="error" @enderror>
@@ -232,7 +232,7 @@
                     {{-- ADDRESS --}}
                     <div class="col-md-8">
                         <div class="card">
-                            <label>Адрес</label>
+                            <label>{{ __('admin.loc_label_address') }}</label>
                             <input
 							type="text"
 							name="address"
@@ -246,7 +246,7 @@
                     {{-- SHORT_TEXT --}}
                     <div class="col-12">
                         <div class="card">
-                            <label>Description</label>
+                            <label>{{ __('admin.loc_label_short_text') }}</label>
                             <input
 							type="text"
 							name="short_text"
@@ -260,7 +260,7 @@
                     {{-- LONG_TEXT (Trix) --}}
                     <div class="col-12">
                         <div class="card">
-                            <label>Короткое описание (только для превью)</label>
+                            <label>{{ __('admin.loc_label_short_text_preview') }}</label>
                             <input id="long_text" type="hidden" name="long_text" value="{{ old('long_text', $location->long_text) }}">
                             <trix-editor
 							input="long_text"
@@ -273,7 +273,7 @@
                     {{-- LONG_TEXT_FULL (Trix) --}}
                     <div class="col-12">
                         <div class="card">
-                            <label>Полное описание</label>
+                            <label>{{ __('admin.loc_label_long_text') }}</label>
                             <input id="long_text_full" type="hidden" name="long_text_full" value="{{ old('long_text_full', $location->long_text_full) }}">
                             <trix-editor
 							input="long_text_full"
@@ -286,7 +286,7 @@
                     {{-- COORDS --}}
                     <div class="col-md-6">
                         <div class="card">
-                            <label>Широта (lat)</label>
+                            <label>{{ __('admin.loc_label_lat') }} (lat)</label>
                             <input
 							type="number"
 							name="lat"
@@ -300,7 +300,7 @@
 					
                     <div class="col-md-6">
                         <div class="card">
-                            <label>Долгота (lng)</label>
+                            <label>{{ __('admin.loc_label_lng') }} (lng)</label>
                             <input
 							type="number"
 							name="lng"
@@ -315,7 +315,7 @@
                     {{-- PHOTOS (новые) --}}
                     <div class="col-12">
                         <div class="card">
-                            <label>Добавить новые фото (до 5)</label>
+                            <label>{{ __('admin.loc_label_photos_new_5') }}</label>
                             <input
 							id="loc_photos"
 							type="file"
@@ -325,7 +325,7 @@
 							class="@error('photos') is-invalid @enderror"
                             >
                             <div class="f-16 b-500 mt-1">
-                                jpg/jpeg/png/webp, до 5MB каждое, максимум 5 файлов
+                                {{ __('admin.loc_photos_hint') }}
 							</div>
                             @error('photos')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                             @error('photos.*')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
@@ -335,7 +335,7 @@
                     {{-- NOTE --}}
                     <div class="col-12">
                         <div class="card">
-                            <label>Примечание</label>
+                            <label>{{ __('admin.loc_label_note') }}</label>
                             <input
 							type="text"
 							name="note"
@@ -348,7 +348,7 @@
 				</div>
 				
 				<div class="mt-2 text-center">
-					<button type="submit" class="btn btn-primary">Сохранить изменения</button>
+					<button type="submit" class="btn btn-primary">{{ __('admin.btn_save_changes') }}</button>
 				</div>
 			</form>
 			{{-- 
@@ -357,11 +357,11 @@
 					<div class="mt-3">
 						<form method="POST"
 						action="{{ route('admin.locations.destroy', $location) }}"
-						onsubmit="return confirm('Удалить локацию и все её фото?')"
+						onsubmit="return confirm({!! json_encode(__('admin.loc_confirm_delete_full')) !!})"
 						style="display: inline;">
 							@csrf
 							@method('DELETE')
-							<button class="btn btn-danger" type="submit">Удалить локацию</button>
+							<button class="btn btn-danger" type="submit">{{ __('admin.loc_btn_delete_loc') }}</button>
 						</form>
 					</div>
 				</div>			
@@ -372,8 +372,8 @@
         {{-- PHOTOS (D&D SORT) --}}
         @if(!$photos->isEmpty())
         <div class="ramka">
-			<h2 class="-mt-05">Загруженные фотографии</h2>
-			<div class="f-16 b-500"> Перетащи карточки мышкой и нажми «Сохранить порядок».</div>
+			<h2 class="-mt-05">{{ __('admin.loc_uploaded_section') }}</h2>
+			<div class="f-16 b-500"> {{ __('admin.loc_drag_hint') }}</div>
 			
 			
 			
@@ -396,16 +396,16 @@
 							<span class="b-600 cd">#{{ $m->id }}</span>
 							<form method="POST"
 							action="{{ route('admin.locations.photos.destroy', [$location, $m]) }}"
-							onsubmit="return confirm('Удалить фото?')">
+							onsubmit="return confirm({!! json_encode(__('admin.loc_confirm_delete_photo')) !!})">
 								@csrf
 								@method('DELETE')
 								<button type="submit" 
 								class="btn btn-small btn-danger btn-alert"
-								data-title="Удалить фото?"
+								data-title="{{ __('admin.loc_confirm_delete_photo') }}"
 								data-icon="warning"
-								data-confirm-text="Да, удалить"
-								data-cancel-text="Отмена">
-									Удалить
+								data-confirm-text="{{ __('admin.btn_delete') }}"
+								data-cancel-text="{{ __('admin.btn_cancel') }}">
+									{{ __('admin.btn_delete') }}
 								</button>								
 								
 							</form>
@@ -416,7 +416,7 @@
 			</div>
 			<div class="mt-2 text-center">
 				<button type="button" id="photos_save_btn" class="btn">
-					Сохранить порядок
+					{{ __('admin.loc_photos_save_order') }}
 				</button>
 			</div>
 			

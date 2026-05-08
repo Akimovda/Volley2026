@@ -1,6 +1,6 @@
 <x-voll-layout body_class="tournament-stats-page">
-<x-slot name="title">Статистика — {{ $event->title }}</x-slot>
-<x-slot name="h1">📊 Статистика игроков</x-slot>
+<x-slot name="title">{{ __('tournaments.stats_title') }} — {{ $event->title }}</x-slot>
+<x-slot name="h1">📊 {{ __('tournaments.stats_h1') }}</x-slot>
 
 <x-slot name="breadcrumbs">
     <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
@@ -8,7 +8,7 @@
         <meta itemprop="position" content="2">
     </li>
     <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
-        <span itemprop="name">Статистика матча #{{ $match->match_number }}</span>
+        <span itemprop="name">{{ __('tournaments.stats_match_n', ['n' => $match->match_number]) }}</span>
         <meta itemprop="position" content="3">
     </li>
 </x-slot>
@@ -30,7 +30,7 @@
     {{-- Шапка матча --}}
     <div class="card p-3 mb-3" style="text-align:center">
         <div class="f-13 mb-1" style="opacity:.6">
-            Матч #{{ $match->match_number }} · {{ $match->setsScore() }} ({{ $match->detailedScore() }})
+            {{ __('tournaments.stats_match_header', ['n' => $match->match_number]) }} · {{ $match->setsScore() }} ({{ $match->detailedScore() }})
         </div>
         <div class="d-flex between fvc">
             <div style="flex:1"><span class="b-700 f-16">{{ $match->teamHome->name ?? 'TBD' }}</span></div>
@@ -44,12 +44,12 @@
         @for($s = 1; $s <= $setsCount; $s++)
             <button type="button" class="btn {{ $s === 1 ? 'btn-primary' : 'btn-secondary' }} set-tab f-13 px-3 py-2"
                     data-set="{{ $s }}" onclick="switchSet({{ $s }})">
-                Сет {{ $s }}
+                {{ __('tournaments.score_set_n', ['n' => $s]) }}
             </button>
         @endfor
         <button type="button" class="btn btn-secondary set-tab f-13 px-3 py-2"
                 data-set="0" onclick="switchSet(0)">
-            Итого
+            {{ __('tournaments.stats_total') }}
         </button>
     </div>
 
@@ -58,17 +58,17 @@
 
         @php
             $fieldLabels = [
-                'serves_total'    => ['label' => 'Подачи', 'short' => 'Подачи'],
-                'aces'            => ['label' => 'Эйсы', 'short' => 'Эйс'],
-                'serve_errors'    => ['label' => 'Ош. подачи', 'short' => 'Ош.Под.'],
-                'attacks_total'   => ['label' => 'Атаки', 'short' => 'Атк'],
-                'kills'           => ['label' => 'Результ.', 'short' => 'Рез'],
-                'attack_errors'   => ['label' => 'Ош. атаки', 'short' => 'Ош.Атаки'],
-                'blocks'          => ['label' => 'Блоки', 'short' => 'Блк'],
-                'block_errors'    => ['label' => 'Ош. блока', 'short' => 'Ош.Блока'],
-                'digs'            => ['label' => 'Приём/Защита', 'short' => 'Прием/защита'],
-                'reception_errors'=> ['label' => 'Ош. приёма/защиты', 'short' => 'Ош.Пр/Защита'],
-                'assists'         => ['label' => 'Передачи', 'short' => 'Передачи'],
+                'serves_total'    => ['label' => __('tournaments.stat_serves'), 'short' => __('tournaments.stat_serves_short')],
+                'aces'            => ['label' => __('tournaments.stat_aces'), 'short' => __('tournaments.stat_aces_short')],
+                'serve_errors'    => ['label' => __('tournaments.stat_serve_err'), 'short' => __('tournaments.stat_serve_err_short')],
+                'attacks_total'   => ['label' => __('tournaments.stat_attacks'), 'short' => __('tournaments.stat_attacks_short')],
+                'kills'           => ['label' => __('tournaments.stat_kills'), 'short' => __('tournaments.stat_kills_short')],
+                'attack_errors'   => ['label' => __('tournaments.stat_attack_err'), 'short' => __('tournaments.stat_attack_err_short')],
+                'blocks'          => ['label' => __('tournaments.stat_blocks'), 'short' => __('tournaments.stat_blocks_short')],
+                'block_errors'    => ['label' => __('tournaments.stat_block_err'), 'short' => __('tournaments.stat_block_err_short')],
+                'digs'            => ['label' => __('tournaments.stat_digs'), 'short' => __('tournaments.stat_digs_short')],
+                'reception_errors'=> ['label' => __('tournaments.stat_dig_err'), 'short' => __('tournaments.stat_dig_err_short')],
+                'assists'         => ['label' => __('tournaments.stat_assists'), 'short' => __('tournaments.stat_assists_short')],
             ];
             $teams = [
                 ['id' => $match->team_home_id, 'name' => $match->teamHome->name ?? 'Home', 'players' => $players['home']],
@@ -124,11 +124,11 @@
         @endfor
 
         <button type="submit" class="btn btn-primary w-100 p-3 f-16 mb-2">
-            💾 Сохранить статистику
+            💾 {{ __('tournaments.stats_btn_save') }}
         </button>
 
         <a href="{{ route('tournament.setup', $event) }}" class="btn btn-secondary w-100 p-2 f-14" style="text-align:center;display:block">
-            ← Назад
+            {{ __('tournaments.btn_back') }}
         </a>
     </form>
 

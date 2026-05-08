@@ -1,24 +1,24 @@
 {{-- resources/views/payment/transactions.blade.php --}}
 <x-voll-layout body_class="transactions-page">
 
-    <x-slot name="title">Транзакции</x-slot>
-    <x-slot name="h1">Транзакции</x-slot>
-    <x-slot name="t_description">История платежей ваших мероприятий</x-slot>
+    <x-slot name="title">{{ __('profile.pay_tx_title') }}</x-slot>
+    <x-slot name="h1">{{ __('profile.pay_tx_title') }}</x-slot>
+    <x-slot name="t_description">{{ __('profile.pay_tx_t_description') }}</x-slot>
 
     <x-slot name="breadcrumbs">
         <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
-            <a href="{{ route('profile.show') }}" itemprop="item"><span itemprop="name">Профиль</span></a>
+            <a href="{{ route('profile.show') }}" itemprop="item"><span itemprop="name">{{ __('profile.nch_breadcrumb') }}</span></a>
             <meta itemprop="position" content="2">
         </li>
         <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
-            <span itemprop="name">Транзакции</span>
+            <span itemprop="name">{{ __('profile.pay_tx_title') }}</span>
             <meta itemprop="position" content="3">
         </li>
     </x-slot>
 
     <x-slot name="d_description">
         <div class="d-flex gap-2 mt-2">
-            <a href="{{ route('profile.payment_settings') }}" class="btn btn-secondary">⚙️ Настройки оплаты</a>
+            <a href="{{ route('profile.payment_settings') }}" class="btn btn-secondary">⚙️ {{ __('profile.pay_settings_title') }}</a>
         </div>
     </x-slot>
 
@@ -59,15 +59,15 @@
             <h2 class="-mt-05">📋 История платежей</h2>
 
             @if($payments->isEmpty())
-                <div class="alert alert-info">Платежей пока нет.</div>
+                <div class="alert alert-info">{{ __('profile.pay_tx_empty') }}</div>
             @else
                 <div class="table-scrollable mb-0">
                     <table class="table f-16">
                         <thead>
                             <tr>
                                 <th>ID</th>
-                                <th>Игрок</th>
-                                <th>Мероприятие</th>
+                                <th>{{ __('profile.col_player') }}</th>
+                                <th>{{ __('profile.col_event') }}</th>
                                 <th>Метод</th>
                                 <th>Сумма</th>
                                 <th>Статус</th>

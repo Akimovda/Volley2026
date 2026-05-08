@@ -27,6 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'block.impersonation' => \App\Http\Middleware\BlockInImpersonation::class,
             'no-store-html'       => \App\Http\Middleware\NoStoreHtml::class,
         ]);
+        $middleware->appendToGroup('web', \App\Http\Middleware\SetLocale::class);
         $middleware->appendToGroup('web', \App\Http\Middleware\EnsureProfileCompleted::class);
         $middleware->appendToGroup('web', \App\Http\Middleware\SavePushToken::class);
         $middleware->prependToGroup('api', \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class);

@@ -2,14 +2,14 @@
 <x-voll-layout body_class="users-page">
 	
     <x-slot name="title">
-        Игроки — Страница {{ request()->page ?? 1 }}
+        {{ __('profile.idx_title_page', ['n' => request()->page ?? 1]) }}
 	</x-slot>
 	
     <x-slot name="description">
         @if(request()->has('role'))
-		Игроки с ролью {{ request()->role }}
+		{{ __('profile.idx_desc_role', ['role' => request()->role]) }}
         @else
-		Все игроки платформы
+		{{ __('profile.idx_desc_all') }}
         @endif
 	</x-slot>
 	
@@ -22,35 +22,35 @@
     <x-slot name="breadcrumbs">
         <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
             <a href="{{ route('users.index') }}" itemprop="item">
-                <span itemprop="name">Игроки</span>
+                <span itemprop="name">{{ __('profile.idx_breadcrumb') }}</span>
 			</a>
             <meta itemprop="position" content="2">
 		</li>
 	</x-slot>
 	
-    <x-slot name="h1">Игроки платформы</x-slot>
+    <x-slot name="h1">{{ __('profile.idx_h1') }}</x-slot>
     <x-slot name="t_description">
 		
 @php
     $count = (int)($users->total() ?? $users->count() ?? 0);
-    $word = trans_choice('человек|человека|человек', $count);
+    $word = trans_choice(__('profile.idx_count_people'), $count);
     
     if(!empty(array_filter($filters ?? []))) {
-        $foundWord = trans_choice('найден|найдено|найдено', $count);
+        $foundWord = trans_choice(__('profile.idx_count_found'), $count);
     }
 @endphp
 
 @if(!empty(array_filter($filters ?? [])))
     {{ ucfirst($foundWord) }} <strong class="cd">{{ $count }}</strong> {{ $word }}
 @else
-    Зарегистрировано <strong class="cd">{{ $count }}</strong> {{ $word }}
+    {{ __('profile.idx_t_registered') }} <strong class="cd">{{ $count }}</strong> {{ $word }}
 @endif
 		
 		
 	</x-slot>
     <x-slot name="d_description">
 		<div data-aos-delay="250" data-aos="fade-up">
-			<button class="btn ufilter-btn mt-2">Фильтр</button>
+			<button class="btn ufilter-btn mt-2">{{ __('profile.idx_btn_filter') }}</button>
 		</div> 
 	</x-slot>
 
@@ -63,20 +63,20 @@
                 <form method="GET" action="{{ route('users.index') }}" class="form">
                     <div class="row">
                         <div class="col-md-4 col-sm-6">
-                            <label>Фамилия / имя</label>
+                            <label>{{ __('profile.idx_label_name') }}</label>
                             <div style="position:relative;">
                                 <input name="q" id="users-search-q"
                                     value="{{ $filters['q'] ?? '' }}"
-                                    placeholder="Акимов Дмитрий"
+                                    placeholder="{{ __('profile.idx_ph_name') }}"
                                     autocomplete="off"/>
                                 <div id="users-search-dd" class="form-select-dropdown trainer_dd"></div>
                             </div>
                         </div>
 						
                         <div class="col-md-4 col-sm-6">
-                            <label>Город</label>
+                            <label>{{ __('profile.idx_label_city') }}</label>
                             <select name="city_id">
-                                <option value="">— любой —</option>
+                                <option value="">{{ __('profile.idx_any') }}</option>
                                 @foreach($cities as $c)
 								<option value="{{ $c->id }}" @selected((string)($filters['city_id'] ?? '') === (string)$c->id)>
 									{{ $c->name }}@if($c->region) ({{ $c->region }})@endif
@@ -86,18 +86,18 @@
 						</div>
 						
 						<div class="col-md-4 col-sm-6">
-                            <label>Пол</label>
+                            <label>{{ __('profile.idx_label_gender') }}</label>
                             <select name="gender">
-                                <option value="">— любой —</option>
-                                <option value="m" @selected(($filters['gender'] ?? '') === 'm')>Мужчина</option>
-                                <option value="f" @selected(($filters['gender'] ?? '') === 'f')>Женщина</option>
+                                <option value="">{{ __('profile.idx_any') }}</option>
+                                <option value="m" @selected(($filters['gender'] ?? '') === 'm')>{{ __('profile.idx_gender_m') }}</option>
+                                <option value="f" @selected(($filters['gender'] ?? '') === 'f')>{{ __('profile.idx_gender_f') }}</option>
 							</select>
 						</div>
 						
 						<div class="col-md-4 col-sm-6">
-                            <label>Уровень (классика)</label>
+                            <label>{{ __('profile.idx_label_classic_lvl') }}</label>
                             <select name="classic_level">
-                                <option value="">— любой —</option>
+                                <option value="">{{ __('profile.idx_any') }}</option>
                                 @foreach(range(1,7) as $lvl)
                                 <option value="{{ $lvl }}" @selected((string)($filters['classic_level'] ?? '') === (string)$lvl)>{{ $lvl }} — {{ level_name($lvl) }}</option>
                                 @endforeach
@@ -105,9 +105,9 @@
                         </div>
 						
 						<div class="col-md-4 col-sm-6">
-                            <label>Уровень (пляж)</label>
+                            <label>{{ __('profile.idx_label_beach_lvl') }}</label>
                             <select name="beach_level">
-                                <option value="">— любой —</option>
+                                <option value="">{{ __('profile.idx_any') }}</option>
                                 @foreach(range(1,7) as $lvl)
                                 <option value="{{ $lvl }}" @selected((string)($filters['beach_level'] ?? '') === (string)$lvl)>{{ $lvl }} — {{ level_name($lvl) }}</option>
                                 @endforeach
@@ -115,13 +115,13 @@
                         </div>
 						
                         <div class="col-md-4 col-sm-6">
-                            <label>Возраст</label>
+                            <label>{{ __('profile.idx_label_age') }}</label>
                             <div class="row g-2">
                                 <div class="col-6">
                                     <input
 									name="age_min"
 									value="{{ $filters['age_min'] ?? '' }}"
-									placeholder="от, напр. 18"
+									placeholder="{{ __('profile.idx_ph_age_min') }}"
 									inputmode="numeric"
                                     />
 								</div>
@@ -129,7 +129,7 @@
                                     <input
 									name="age_max"
 									value="{{ $filters['age_max'] ?? '' }}"
-									placeholder="до, напр. 45"
+									placeholder="{{ __('profile.idx_ph_age_max') }}"
 									inputmode="numeric"
                                     />
 								</div>
@@ -137,10 +137,10 @@
 						</div>
 						
                         <div class="col-12 text-right m-center">
-                            <button class="btn" type="submit">Искать</button>
+                            <button class="btn" type="submit">{{ __('profile.idx_btn_search') }}</button>
 							
 							@if(!empty(array_filter($filters ?? [])))
-							<a class="btn btn-secondary" href="{{ route('users.index') }}">Сбросить</a>
+							<a class="btn btn-secondary" href="{{ route('users.index') }}">{{ __('profile.idx_btn_reset') }}</a>
 							@endif
 						</div>
 					</div>
@@ -157,7 +157,7 @@
             @if(($users ?? collect())->isEmpty())
 			<div class="ramka">
 			<div class="alert alert-info">
-					Ничего не найдено. Попробуй сбросить фильтры или изменить условия поиска.
+					{{ __('profile.idx_empty_filtered') }}
 			</div>
 			</div>
             @else
@@ -200,7 +200,7 @@
         dd.innerHTML = '';
         
         if (!items.length) {
-            dd.innerHTML = '<div class="city-message">Ничего не найдено</div>';
+            dd.innerHTML = '<div class="city-message">' + @json(__('profile.idx_search_no_results')) + '</div>';
             showDd();
             return;
         }
@@ -232,7 +232,7 @@
             return; 
         }
         
-        dd.innerHTML = '<div class="city-message">Поиск…</div>';
+        dd.innerHTML = '<div class="city-message">' + @json(__('profile.idx_search_searching')) + '</div>';
         showDd();
         
         timer = setTimeout(function() {
@@ -246,7 +246,7 @@
                 render(items);
             })
             .catch(function() {
-                dd.innerHTML = '<div class="city-message">Ошибка загрузки</div>';
+                dd.innerHTML = '<div class="city-message">' + @json(__('profile.idx_search_error')) + '</div>';
                 showDd();
             });
         }, 250);

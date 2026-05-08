@@ -3,17 +3,17 @@
 <x-voll-layout body_class="profile-page">
     
     <x-slot name="title">
-        Мой профиль
+        {{ __('profile.show_title') }}
 	</x-slot>
     
-    <x-slot name="description">Мой профиль: 
+    <x-slot name="description">{{ __('profile.show_description_prefix') }} 
         @php
 		$user = auth()->user();
         @endphp
         @if(!empty($user->first_name) || !empty($user->last_name))
 		{{ trim($user->first_name . ' ' . $user->last_name) }}
         @else
-		Пользователь #{{ $user->id }}
+		{{ __('profile.show_user_n', ['id' => $user->id]) }}
         @endif
 	</x-slot>
     
@@ -26,13 +26,13 @@
     <x-slot name="breadcrumbs">
         <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
             <a href="{{ route('profile.show') }}" itemprop="item">
-                <span itemprop="name">Мой профиль</span>
+                <span itemprop="name">{{ __('profile.show_title') }}</span>
 			</a>
             <meta itemprop="position" content="2">
 		</li>
 	</x-slot>
     
-    <x-slot name="h1">Мой профиль</x-slot>
+    <x-slot name="h1">{{ __('profile.show_title') }}</x-slot>
     
     <x-slot name="h2">
         @php
@@ -41,12 +41,12 @@
         @if(!empty($user->first_name) || !empty($user->last_name))
 		{{ trim($user->first_name . ' ' . $user->last_name) }}
         @else
-		Пользователь #{{ $user->id }}
+		{{ __('profile.show_user_n', ['id' => $user->id]) }}
         @endif
 	</x-slot>
     
     <x-slot name="t_description">
-        Здесь отображаются данные вашей анкеты. 
+        {{ __('profile.show_t_description') }}
 	</x-slot>
     
     
@@ -77,12 +77,12 @@
 	<div class="container">
 		<div class="ramka" style="border-left: 4px solid #f59e0b; background: #fffbeb;">
 			<div class="f-16">
-				<strong>Возможный дубль аккаунта</strong><br>
-				Найден другой аккаунт с таким же номером телефона:
-				<strong>{{ $dupeUser->name ?: 'ID #'.$dupeUser->id }}</strong>
+				<strong>{{ __('profile.dupe_title') }}</strong><br>
+				{{ __('profile.dupe_text_lead') }}
+				<strong>{{ $dupeUser->name ?: __('profile.dupe_user_id_prefix').$dupeUser->id }}</strong>
 				({{ $dupeUser->email }}).
-				Если это вы — обратитесь к администратору для объединения аккаунтов,
-				или <a href="/admin/users/duplicates">перейдите на страницу дублей</a> (для администраторов).
+				{{ __('profile.dupe_text_action') }}
+				<a href="/admin/users/duplicates">{{ __('profile.dupe_link_text') }}</a> {{ __('profile.dupe_text_admin') }}
 			</div>
 		</div>
 	</div>
@@ -96,13 +96,7 @@
 	
     $u->loadMissing(['city', 'classicPositions', 'beachZones']);
     
-    $posMap = [
-    'setter'   => 'Связующий',
-    'outside'  => 'Доигровщик',
-    'opposite' => 'Диагональный',
-    'middle'   => 'Центральный блокирующий',
-    'libero'   => 'Либеро',
-    ];
+    $posMap = __('profile.pos_long');
     
     $classicPrimary = optional($u->classicPositions)->firstWhere('is_primary', true)?->position;
     $classicExtras  = optional($u->classicPositions)
@@ -207,7 +201,7 @@
 	if ($p === 'google') {
 	return '<span class="'.$base.'"><span class="'.$dot.'" style="background:#4285F4;"></span><span class="'.$txt.'">Google</span></span>';
 	}
-	return '<span class="'.$base.'"><span class="'.$dot.'" style="background:#9CA3AF;"></span><span class="'.$txt.'">Не определён</span></span>';
+	return '<span class="'.$base.'"><span class="'.$dot.'" style="background:#9CA3AF;"></span><span class="'.$txt.'">'.e(__('profile.providers_unknown')).'</span></span>';
     };
     
     $badge = function (bool $ok) {
@@ -246,33 +240,33 @@
 				<div class="ramka pb-2">  
 					{{-- Анкета игрока --}}
 					
-					<h2 class="-mt-05">Персональные данные</h2>
+					<h2 class="-mt-05">{{ __('profile.sec_personal') }}</h2>
 					<div class="row mb-0">
 						<div class="col-sm-6 pb-0">
 							<ul class="list mb-0">	
-								<li><span class="b-600">Фамилия:</span> {{ $u->last_name ?? '—' }}</li>
-								<li><span class="b-600">Имя:</span> {{ $u->first_name ?? '—' }}</li>
-								<li><span class="b-600">Отчество:</span> {{ $u->patronymic ?? '—' }}</li>
-								<li><span class="b-600">Телефон:</span> {{ $u->phone ?? '—' }}</li>
+								<li><span class="b-600">{{ __('profile.pers_last_name') }}</span> {{ $u->last_name ?? '—' }}</li>
+								<li><span class="b-600">{{ __('profile.pers_first_name') }}</span> {{ $u->first_name ?? '—' }}</li>
+								<li><span class="b-600">{{ __('profile.pers_patronymic') }}</span> {{ $u->patronymic ?? '—' }}</li>
+								<li><span class="b-600">{{ __('profile.pers_phone') }}</span> {{ $u->phone ?? '—' }}</li>
 							</ul>	
 						</div>	
 						<div class="col-sm-6 pb-0">
 							<ul class="list mb-0">	
 								<li>
-									<span class="b-600">Пол:</span>		
-									@if($u->gender === 'm') Мужчина
-									@elseif($u->gender === 'f') Женщина
+									<span class="b-600">{{ __('profile.pers_gender') }}</span>		
+									@if($u->gender === 'm') {{ __('profile.pers_gender_m') }}
+									@elseif($u->gender === 'f') {{ __('profile.pers_gender_f') }}
 									@else — @endif
 									
 								</li>
 								<li>
-									<span class="b-600">Рост:</span>			
+									<span class="b-600">{{ __('profile.pers_height') }}</span>			
 									
-									{{ !empty($u->height_cm) ? ($u->height_cm.' см') : '—' }}
+									{{ !empty($u->height_cm) ? ($u->height_cm.' '.__('profile.pers_height_unit')) : '—' }}
 									
 								</li>
 								<li>
-									<span class="b-600">Город:</span>		
+									<span class="b-600">{{ __('profile.pers_city') }}</span>		
 									
 									@if($u->city)
 									{{ $u->city->name }}@if($u->city->region) ({{ $u->city->region }})@endif
@@ -281,8 +275,8 @@
 									@endif
 									
 								</li>
-								<li><span class="b-600">Дата рождения:</span> {{ $birth }} 					@if(!is_null($age))
-									({{ $age }} лет)
+								<li><span class="b-600">{{ __('profile.pers_birth') }}</span> {{ $birth }} 					@if(!is_null($age))
+									{{ __('profile.pers_age', ['age' => $age]) }}
 								@endif</li>
 							</ul>								
 						</div>
@@ -292,27 +286,27 @@
 				
 				
 				<div class="ramka">  	
-					<h2 class="-mt-05">Навыки в волейболе</h2>
+					<h2 class="-mt-05">{{ __('profile.sec_skills') }}</h2>
 					<div class="row">
 						<div class="col-md-6 col-lg-12 col-xl-6">
 							<div class="card">
-								<p class="b-600 mb-1">Классический волейбол</p>
+								<p class="b-600 mb-1">{{ __('profile.skill_classic') }}</p>
 								
 								<div class="level-wrap">
 									<div class="level-levelmark levelmark level-{{ $u->classic_level ?? '—' }}">
-										<div class="f-11">Уровень: </div>
+										<div class="f-11">{{ __('profile.skill_level') }} </div>
 										<div class="f-22 l-13">{{ $u->classic_level ?? '—' }}</div>
 										<div class="f-11">{{ level_name($u->classic_level) ?? '—' }}</div>
 									</div>	
 									<div class="level-level">	
 										<ul class="list">
 											<li>
-												<span class="b-600">Амплуа игрока:</span><br>
+												<span class="b-600">{{ __('profile.skill_role') }}</span><br>
 												
 												@if($classicPrimary)
 												{{ $posMap[$classicPrimary] ?? $classicPrimary }}
 												@if(!empty($classicExtras))
-												</li><li><span class="b-600">Дополнительно:</span><br>{{ collect($classicExtras)->map(fn($p) => $posMap[$p] ?? $p)->join(', ') }}
+												</li><li><span class="b-600">{{ __('profile.skill_role_extra') }}</span><br>{{ collect($classicExtras)->map(fn($p) => $posMap[$p] ?? $p)->join(', ') }}
 												@endif
 												@else
 												—
@@ -325,27 +319,27 @@
 						</div>
 						<div class="col-md-6 col-lg-12 col-xl-6">
 							<div class="card">
-								<p class="b-600 mb-1">Пляжный волейбол</p>
+								<p class="b-600 mb-1">{{ __('profile.skill_beach') }}</p>
 								
 								
 								<div class="level-wrap">
 									<div class="level-levelmark levelmark level-{{ $u->beach_level ?? '—' }}">
-										<div class="f-11">Уровень: </div>
+										<div class="f-11">{{ __('profile.skill_level') }} </div>
 										<div class="f-22 l-13">{{ $u->beach_level ?? '—' }}</div>
 										<div class="f-11">{{ level_name($u->beach_level) ?? '—' }}</div>
 									</div>	
 									<div class="level-level">	
 										<ul class="list">
 											<li>
-												<span class="b-600">Зона игры:</span><br>
+												<span class="b-600">{{ __('profile.skill_zone') }}</span><br>
 												
 												
 												@if(!empty($u->beach_universal))
-												Универсал (2 и 4)
+												{{ __('profile.skill_universal') }}
 												@elseif(!is_null($beachPrimary))
-												Основная: {{ $beachPrimary }}
+												{{ __('profile.skill_zone_main') }} {{ $beachPrimary }}
 												@if(!empty($beachExtras))
-												; Доп.: {{ collect($beachExtras)->join(', ') }}
+												{{ __('profile.skill_zone_extra') }} {{ collect($beachExtras)->join(', ') }}
 												@endif
 												@else
 												—
@@ -373,15 +367,14 @@
         <div>
             <div class="b-600 mb-05">
                 @if($providerCount === 1)
-                    Привязан только 1 способ входа
+                    {{ __('profile.phint_only_one') }}
                 @elseif($providerCount === 2)
-                    Привязано 2 из 3 способов входа
+                    {{ __('profile.phint_two_of_three') }}
                 @endif
             </div>
             <p>
-                Привяжите все три провайдера (Telegram, VK, Яндекс) — это защитит аккаунт от потери доступа
-                и поможет системе не создавать дубли.
-                <a href="#providers" class="cd b-600">Привязать →</a>
+                {{ __('profile.phint_lead') }}
+                <a href="#providers" class="cd b-600">{{ __('profile.phint_link') }}</a>
             </p>
         </div>
     </div>
@@ -392,22 +385,22 @@
 					
                     {{-- Привязка провайдеров --}}
 					
-					<h2 class="-mt-05">Привязка входов</h2>
-					<p>Привяжите дополнительные способы входа к текущему аккаунту.</p>
+					<h2 class="-mt-05">{{ __('profile.sec_providers') }}</h2>
+					<p>{{ __('profile.providers_lead') }}</p>
 					
 					<p>
-                        <span class="text-muted">Текущий вход:</span>
+                        <span class="text-muted">{{ __('profile.providers_current') }}</span>
                         {!! $providerIcon($provider) !!}
 					</p>
 					
 					@if($allLinked)
-					<p>Все способы входа уже привязаны !</p>
+					<p>{{ __('profile.providers_all_linked') }}</p>
 					@else
-					<p>Как привязать:</p>
+					<p>{{ __('profile.providers_how') }}</p>
 					<ul class="list">
-						<li>Нажмите кнопку нужного провайдера ниже.</li>
-						<li>Подтвердите вход у провайдера.</li>
-						<li>После возврата на сайт провайдер привяжется к текущему аккаунту.</li>
+						<li>{{ __('profile.providers_step_1') }}</li>
+						<li>{{ __('profile.providers_step_2') }}</li>
+						<li>{{ __('profile.providers_step_3') }}</li>
 					</ul>
 					@endif					
 					
@@ -432,26 +425,20 @@
 										@if($canUnlink)
 										<form method="POST" 
 										action="{{ route('account.unlink.vk') }}" 
-										onsubmit="return confirm('Отвязать VK от аккаунта?');">
+										onsubmit="return confirm('{{ __('profile.unlink_confirm_vk') }}');">
 											@csrf
 											{{-- btn-danger --}}
 											<button type="submit" class="btn-alert w-100 btn btn-small btn-secondary"
-											data-title="Отвязать VK от аккаунта?"
+											data-title="{{ __('profile.unlink_confirm_vk') }}"
 											data-icon="warning"
-											data-confirm-text="Да, отвязать"
-											data-cancel-text="Отмена">
-												Отвязать
-											</button>
+											data-confirm-text="{{ __('profile.unlink_confirm_yes') }}"
+											data-cancel-text="{{ __('profile.unlink_confirm_no') }}">{{ __('profile.providers_unlink_btn') }}</button>
 										</form>
 										@else
-										<button class="w-100 btn btn-small btn-secondary" disabled>
-											Нельзя отвязать
-										</button>
+										<button class="w-100 btn btn-small btn-secondary" disabled>{{ __('profile.providers_cant_unlink') }}</button>
 										@endif
 										@else
-										<a href="{{ $vkLinkUrl }}" class="w-100 btn btn-small">
-											Привязать
-										</a>
+										<a href="{{ $vkLinkUrl }}" class="w-100 btn btn-small">{{ __('profile.providers_link_btn') }}</a>
 										@endif
 									</div>
 								</div>
@@ -473,26 +460,20 @@
 										@if($canUnlink)
 										<form method="POST" 
 										action="{{ route('account.unlink.yandex') }}" 
-										onsubmit="return confirm('Отвязать Yandex от аккаунта?');">
+										onsubmit="return confirm('{{ __('profile.unlink_confirm_yandex') }}');">
 											@csrf
 											{{-- btn-danger --}}
 											<button type="submit" class="w-100 btn btn-alert btn-small btn-secondary"
-											data-title="Отвязать Yandex от аккаунта?"
+											data-title="{{ __('profile.unlink_confirm_yandex') }}"
 											data-icon="warning"
-											data-confirm-text="Да, отвязать"
-											data-cancel-text="Отмена">											
-												Отвязать
-											</button>
+											data-confirm-text="{{ __('profile.unlink_confirm_yes') }}"
+											data-cancel-text="{{ __('profile.unlink_confirm_no') }}">{{ __('profile.providers_unlink_btn') }}</button>
 										</form>
 										@else
-										<button class="w-100 btn btn-small btn-secondary" disabled>
-											Нельзя отвязать
-										</button>
+										<button class="w-100 btn btn-small btn-secondary" disabled>{{ __('profile.providers_cant_unlink') }}</button>
 										@endif
 										@else
-										<a href="{{ $yandexLinkUrl }}" class="w-100 btn btn-small">
-											Привязать
-										</a>
+										<a href="{{ $yandexLinkUrl }}" class="w-100 btn btn-small">{{ __('profile.providers_link_btn') }}</a>
 										@endif
 									</div>
 								</div>
@@ -514,34 +495,30 @@
 										@if($canUnlink)
 										<form method="POST" 
 										action="{{ route('account.unlink.telegram') }}" 
-										onsubmit="return confirm('Отвязать Telegram от аккаунта?');">
+										onsubmit="return confirm('{{ __('profile.unlink_confirm_telegram') }}');">
 											@csrf
 											{{-- btn-danger --}}
 											<button type="submit" class="btn-alert w-100 btn btn-small btn-secondary"
-											data-title="Отвязать Telegram от аккаунта?"
+											data-title="{{ __('profile.unlink_confirm_telegram') }}"
 											data-icon="warning"
-											data-confirm-text="Да, отвязать"
-											data-cancel-text="Отмена">												
-												Отвязать
-											</button>
+											data-confirm-text="{{ __('profile.unlink_confirm_yes') }}"
+											data-cancel-text="{{ __('profile.unlink_confirm_no') }}">{{ __('profile.providers_unlink_btn') }}</button>
 										</form>
 										@else
-										<button class="w-100 btn btn-small btn-secondary" disabled>
-											Нельзя отвязать
-										</button>
+										<button class="w-100 btn btn-small btn-secondary" disabled>{{ __('profile.providers_cant_unlink') }}</button>
 										@endif
 										@else
 										@if(empty($tgBotUsername))
 										<div class="provider-error">
-											Ошибка настройки бота
+											{{ __('profile.tg_setup_error') }}
 										</div>
 										<button class="w-100 btn btn-disabled btn-small" disabled>
-											Привязать
+											{{ __('profile.providers_link_btn') }}
 										</button>
 										@else
 										<a href="{{ route('auth.telegram.redirect', ['return' => url()->current()]) }}"
 										   class="w-100 btn btn-small btn-tg">
-											Telegram
+											{{ __('profile.tg_button') }}
 										</a>
 										@endif
 										@endif
@@ -566,25 +543,19 @@
 										@if($canUnlink)
 										<form method="POST"
 										action="{{ route('account.unlink.apple') }}"
-										onsubmit="return confirm('Отвязать Apple ID от аккаунта?');">
+										onsubmit="return confirm('{{ __('profile.unlink_confirm_apple') }}');">
 											@csrf
 											<button type="submit" class="btn-alert w-100 btn btn-small btn-secondary"
-											data-title="Отвязать Apple ID от аккаунта?"
+											data-title="{{ __('profile.unlink_confirm_apple') }}"
 											data-icon="warning"
-											data-confirm-text="Да, отвязать"
-											data-cancel-text="Отмена">
-												Отвязать
-											</button>
+											data-confirm-text="{{ __('profile.unlink_confirm_yes') }}"
+											data-cancel-text="{{ __('profile.unlink_confirm_no') }}">{{ __('profile.providers_unlink_btn') }}</button>
 										</form>
 										@else
-										<button class="w-100 btn btn-small btn-secondary" disabled>
-											Нельзя отвязать
-										</button>
+										<button class="w-100 btn btn-small btn-secondary" disabled>{{ __('profile.providers_cant_unlink') }}</button>
 										@endif
 										@else
-										<a href="{{ route('auth.apple.redirect', ['link' => 1]) }}" class="w-100 btn btn-small">
-											Привязать
-										</a>
+										<a href="{{ route('auth.apple.redirect', ['link' => 1]) }}" class="w-100 btn btn-small">{{ __('profile.providers_link_btn') }}</a>
 										@endif
 									</div>
 								</div>
@@ -614,25 +585,19 @@
 										@if($canUnlink)
 										<form method="POST"
 										action="{{ route('account.unlink.google') }}"
-										onsubmit="return confirm('Отвязать Google от аккаунта?');">
+										onsubmit="return confirm('{{ __('profile.unlink_confirm_google') }}');">
 											@csrf
 											<button type="submit" class="btn-alert w-100 btn btn-small btn-secondary"
-											data-title="Отвязать Google от аккаунта?"
+											data-title="{{ __('profile.unlink_confirm_google') }}"
 											data-icon="warning"
-											data-confirm-text="Да, отвязать"
-											data-cancel-text="Отмена">
-												Отвязать
-											</button>
+											data-confirm-text="{{ __('profile.unlink_confirm_yes') }}"
+											data-cancel-text="{{ __('profile.unlink_confirm_no') }}">{{ __('profile.providers_unlink_btn') }}</button>
 										</form>
 										@else
-										<button class="w-100 btn btn-small btn-secondary" disabled>
-											Нельзя отвязать
-										</button>
+										<button class="w-100 btn btn-small btn-secondary" disabled>{{ __('profile.providers_cant_unlink') }}</button>
 										@endif
 										@else
-										<a href="{{ $googleLinkUrl }}" class="w-100 btn btn-small">
-											Привязать
-										</a>
+										<a href="{{ $googleLinkUrl }}" class="w-100 btn btn-small">{{ __('profile.providers_link_btn') }}</a>
 										@endif
 									</div>
 								</div>
@@ -651,7 +616,7 @@
 									
 									<div class="provider-card__actions">
 										<button class="btn btn-disabled w-100 btn-small" disabled>
-											В разработке
+											{{ __('profile.max_in_dev') }}
 										</button>
 									</div>
 								</div>
@@ -661,30 +626,29 @@
 					
 					
 					@if(($hasTg || $hasVk || $hasYa) && !$canUnlink)
-					<p class="mt-2">Отвязка последнего способа входа запрещена — сначала привяжите ещё один.</p>
+					<p class="mt-2">{{ __('profile.providers_only_left') }}</p>
 					@endif
 					
 					
 				</div>	
 				
 				<div class="ramka is-app-only" style="display:none">
-					<h2 class="-mt-05">Быстрый вход</h2>
-					<p>Face ID / Touch ID для входа в приложение.</p>
+					<h2 class="-mt-05">{{ __('profile.sec_quick_login') }}</h2>
+					<p>{{ __('profile.quick_login_lead') }}</p>
 					<div id="biometric-status" class="mb-2"></div>
 					<button id="biometric-disable-btn" class="btn btn-secondary btn-small" style="display:none">
-						Отключить Face ID
+						{{ __('profile.face_disable_btn') }}
 					</button>
 					<button id="biometric-enable-btn" class="btn btn-small" style="display:none">
-						Включить Face ID
+						{{ __('profile.face_enable_btn') }}
 					</button>
 				</div>
 
 				<div class="ramka">
-                    <h2 class="-mt-05">Уведомления и рассылки</h2>
+                    <h2 class="-mt-05">{{ __('profile.sec_notifications') }}</h2>
 					
                     <p class="mb-15">
-                        Не пропустите ни одного важного события — подпишитесь на уведомления, и вы всегда будете в курсе
-                        новостей, анонсов мероприятий и своевременных напоминаний о начале.
+                        {{ __('profile.notif_lead') }}
 					</p>
 					
                     <div class="row provider-cards">
@@ -693,7 +657,7 @@
                             <div class="card">
                                 <div class="provider-card__header">
                                     <span class="provider-card__icon icon-tg"></span>
-                                    <span class="provider-card__title">Уведомления в Telegram</span>
+                                    <span class="provider-card__title">{{ __('profile.notif_tg_title') }}</span>
 								</div>
 								
                                 @if($hasTelegramNotify)
@@ -702,7 +666,7 @@
 								</div>
 								
 								<ul class="list">
-									<li>Личные уведомления в <b>Telegram</b> включены.</li>
+									<li>{!! __('profile.notif_tg_on') !!}</li>
 								</ul>
 								
 								<form method="POST" action="{{ route('profile.telegram.disconnect') }}" class="mt-3">
@@ -710,13 +674,11 @@
 									<button
 									type="submit"
 									class="w-100 btn btn-small btn-secondary btn-alert"
-									data-title="Отключить уведомления в Telegram?"
+									data-title="{{ __('profile.notif_tg_disconnect_title') }}"
 									data-icon="warning"
-									data-confirm-text="Да, отключить"
-									data-cancel-text="Отмена"
-									>
-										Отключить
-									</button>
+									data-confirm-text="{{ __('profile.notif_disconnect_yes') }}"
+									data-cancel-text="{{ __('profile.unlink_confirm_no') }}"
+									>{{ __('profile.notif_disable_btn') }}</button>
 								</form>
                                 @else
 								<div class="provider-card__status">
@@ -724,19 +686,19 @@
 								</div>
 								
 								<ul class="list f-16">
-									<li>Хотите получать уведомления в <b>Telegram</b>?</li>
+									<li>{!! __('profile.notif_tg_offer') !!}</li>
 								</ul>
 								
 								<button type="button" id="connect-telegram-btn" class="w-100 btn btn-small">
-									Подключить Telegram
+									{{ __('profile.notif_tg_connect') }}
 								</button>
 								
 								<div id="connect-telegram-result" class="mt-1 hidden">
 									<ul class="list f-16">
-										<li>Нажмите на ссылку ниже</li>
-										<li>Откройте личный чат с Telegram-ботом</li>
-										<li>Нажмите <b>Start</b></li>
-										<li>После этого личные уведомления подключатся автоматически</li>
+										<li>{{ __('profile.notif_tg_step_1') }}</li>
+										<li>{{ __('profile.notif_tg_step_2') }}</li>
+										<li>{!! __('profile.notif_tg_step_3') !!}</li>
+										<li>{{ __('profile.notif_tg_step_4') }}</li>
 									</ul>
 									
 									<a
@@ -758,7 +720,7 @@
                             <div class="card">
                                 <div class="provider-card__header">
                                     <span class="provider-card__icon icon-max"></span>
-                                    <span class="provider-card__title">Уведомления в MAX</span>
+                                    <span class="provider-card__title">{{ __('profile.notif_max_title') }}</span>
 								</div>
 								
                                 @if($hasMaxNotify)
@@ -767,14 +729,12 @@
 								</div>
 								
 								<ul class="list">
-									<li>Личные уведомления в <b>MAX</b> включены.</li>
+									<li>{!! __('profile.notif_max_on') !!}</li>
 								</ul>
 								
 								<form method="POST" action="{{ route('profile.max.disconnect') }}" class="mt-3">
 									@csrf
-									<button type="submit" class="w-100 btn btn-small btn-secondary btn-alert" data-title="Отключить MAX-уведомления?" data-icon="warning" data-confirm-text="Да, отключить" data-cancel-text="Отмена">
-										Отключить
-									</button>
+									<button type="submit" class="w-100 btn btn-small btn-secondary btn-alert" data-title="{{ __('profile.notif_max_disconnect_title') }}" data-icon="warning" data-confirm-text="{{ __('profile.notif_disconnect_yes') }}" data-cancel-text="{{ __('profile.unlink_confirm_no') }}">{{ __('profile.notif_disable_btn') }}</button>
 								</form>
                                 @else
 								<div class="provider-card__status">
@@ -782,19 +742,19 @@
 								</div>
 								
 								<ul class="list f-16">
-									<li>Хотите получать уведомления в <b>MAX</b>?</li>
+									<li>{!! __('profile.notif_max_offer') !!}</li>
 								</ul>
 								
 								<button type="button" id="connect-max-btn" class="w-100 btn btn-small">
-									Подключить MAX
+									{{ __('profile.notif_max_connect') }}
 								</button>
 								
 								<div id="connect-max-result" class="mt-1 hidden">
 									<ul class="list f-16">
-										<li>Нажмите на ссылку ниже</li>
-										<li>Откройте личный чат с ботом MAX</li>
-										<li>Нажмите <b>«Начать»</b></li>
-										<li>После этого личные уведомления подключатся автоматически</li>
+										<li>{{ __('profile.notif_max_step_1') }}</li>
+										<li>{{ __('profile.notif_max_step_2') }}</li>
+										<li>{!! __('profile.notif_max_step_3') !!}</li>
+										<li>{{ __('profile.notif_max_step_4') }}</li>
 									</ul>
 									
 									<a
@@ -815,7 +775,7 @@
                             <div class="card">
                                 <div class="provider-card__header">
                                     <span class="provider-card__icon icon-vk"></span>
-                                    <span class="provider-card__title">Уведомления в VK</span>
+                                    <span class="provider-card__title">{{ __('profile.notif_vk_title') }}</span>
 								</div>
 								
                                 @if($hasVkNotify)
@@ -824,7 +784,7 @@
 								</div>
 								
 								<ul class="list">
-									<li>Личные уведомления во <b>VK</b> включены.</li>
+									<li>{!! __('profile.notif_vk_on') !!}</li>
 								</ul>
 								
 								<form method="POST" action="{{ route('profile.vk.disconnect') }}" class="mt-1">
@@ -832,13 +792,11 @@
 									<button
 									type="submit"
 									class="w-100 btn btn-small btn-secondary btn-alert"
-									data-title="Отключить уведомления во VK?"
+									data-title="{{ __('profile.notif_vk_disconnect_title') }}"
 									data-icon="warning"
-									data-confirm-text="Да, отключить"
-									data-cancel-text="Отмена"
-									>
-										Отключить
-									</button>
+									data-confirm-text="{{ __('profile.notif_disconnect_yes') }}"
+									data-cancel-text="{{ __('profile.unlink_confirm_no') }}"
+									>{{ __('profile.notif_disable_btn') }}</button>
 								</form>
                                 @else
 								<div class="provider-card__status">
@@ -846,20 +804,20 @@
 								</div>
                                 
 								<ul class="list f-16">
-									<li>Хотите получать уведомления во <b>VK</b>?</li>
+									<li>{!! __('profile.notif_vk_offer') !!}</li>
 								</ul>
 								
 								<button type="button" id="connect-vk-btn" class="w-100 btn btn-small">
-									Подключить VK
+									{{ __('profile.notif_vk_connect') }}
 								</button>					
                                 
 								<div id="connect-vk-result" class="mt-1 hidden">
 									<ul class="list f-16">
-										<li>Нажмите на ссылку ниже</li>
-										<li>Откройте личный диалог с VK-ботом</li>
-										<li>Команда уже скопирована в буфер обмена</li>
-										<li>Просто вставьте её в чат и отправьте</li>
-										<li>После этого личные уведомления подключатся автоматически</li>
+										<li>{{ __('profile.notif_vk_step_1') }}</li>
+										<li>{{ __('profile.notif_vk_step_2') }}</li>
+										<li>{{ __('profile.notif_vk_step_3') }}</li>
+										<li>{{ __('profile.notif_vk_step_4') }}</li>
+										<li>{{ __('profile.notif_vk_step_5') }}</li>
 									</ul>
 									
 									
@@ -874,7 +832,7 @@
 									></a>
 									
 									<div id="connect-vk-command-box" class="mt-1 hidden">
-										<div class="f-16 text-muted">Команда для бота (скопирована в буфер):</div>
+										<div class="f-16 text-muted">{{ __('profile.notif_vk_command_label') }}</div>
 										<div style="overflow-wrap:break-word" id="connect-vk-command" class="f-16 b-600"></div>
 										<div id="connect-vk-copy-hint" class="f-14 text-muted mt-05 hidden"></div>
 									</div>
@@ -889,9 +847,9 @@
 
 					@if(($hasTelegramNotify || $hasVkNotify || $hasMaxNotify) && in_array((string)($u->role ?? 'user'), ['admin', 'organizer', 'staff'], true))
 					<div class="mt-2 pt-2 form" style="border-top:1px solid var(--border-color, #e0e0e0)">
-						<label>Уведомления о записях игроков</label>
+						<label>{{ __('profile.notif_org_label') }}</label>
 						<p>
-							При каждой записи или отмене записи на ваши мероприятия — личное сообщение от нашего бота через Telegram, VK или MAX.
+							{{ __('profile.notif_org_lead') }}
 						</p>
 						<form method="POST" action="{{ route('profile.notification_channels.settings') }}" class="d-flex align-items-center gap-1">
 							@csrf
@@ -901,7 +859,7 @@
 									   onchange="this.form.submit()"
 									   {{ $notifyPlayerRegistrations ? 'checked' : '' }}>
 								<div class="custom-checkbox"></div>	   
-								<span>{{ $notifyPlayerRegistrations ? 'Включены' : 'Выключены' }}</span>
+								<span>{{ $notifyPlayerRegistrations ? __('profile.notif_org_on') : __('profile.notif_org_off') }}</span>
 							</label>
 						</form>
 					</div>
@@ -931,19 +889,19 @@
                 @endphp
 				@if($canManageNotificationChannels)
                 <div class="ramka">
-                    <h2 class="-mt-05">Каналы уведомлений</h2>
+                    <h2 class="-mt-05">{{ __('profile.sec_channels') }}</h2>
 					
                     @if($notificationChannels->isNotEmpty())
-					<p><b>Список подключенных 📣:</b></p>
+					<p><b>{{ __('profile.channels_list_label') }}</b></p>
 					<ol class="list">
 						@foreach($notificationChannels as $channel)
 						<li>
-							{{ $channel->title ?: ('Канал #' . $channel->id) }}
+							{{ $channel->title ?: __('profile.channels_default_n', ['id' => $channel->id]) }}
 							@if(!empty($channel->platform))
 							<span class="text-muted">({{ strtoupper($channel->platform) }})</span>
 							@endif
 							@if(!(bool) $channel->is_verified)
-							<span class="text-muted">— не подтверждён</span>
+							<span class="text-muted">{{ __('profile.channels_unverified') }}</span>
 							@endif
 						</li>
 						@endforeach
@@ -951,13 +909,12 @@
                     @endif
 					
                     <p>
-                        Подключайте Telegram / VK / MAX каналы для анонсов мероприятий,
-                        открытия регистрации и обновления списков участников.
+                        {{ __('profile.channels_lead') }}
 					</p>
 					
                     <div class="mt-2 m-center">
                         <a href="{{ route('profile.notification_channels') }}" class="btn">
-                            Управление каналами уведомлений
+                            {{ __('profile.channels_manage_btn') }}
 						</a>
 					</div>
 				</div>
@@ -968,16 +925,16 @@
 				@if(auth()->check() && (auth()->user()->isOrganizer() || auth()->user()->isAdmin()))
 				@php $paymentSettings = \App\Models\PaymentSetting::where('organizer_id', auth()->id())->first(); @endphp
 				<div class="ramka">
-					<h2 class="-mt-05">💳 Платёжная система</h2>
+					<h2 class="-mt-05">{{ __('profile.sec_payment') }}</h2>
 					
 					{{-- Выбор назначения --}}
 					<div class="card mb-2">
-						<div class="f-15 b-600 mb-1">Настройте приём оплаты</div>
+						<div class="f-15 b-600 mb-1">{{ __('profile.pay_setup_title') }}</div>
 						<div class="tabs-content">
 							<div class="tabs">
-								<div class="tab active" data-tab="pay-events">🏐 Для мероприятий</div>
+								<div class="tab active" data-tab="pay-events">{{ __('profile.pay_tab_events') }}</div>
 								@if(auth()->user()->isAdmin())
-								<div class="tab" data-tab="pay-premium">👑 Premium и реклама</div>
+								<div class="tab" data-tab="pay-premium">{{ __('profile.pay_tab_premium') }}</div>
 								@endif
 								<div class="tab-highlight"></div>
 							</div>
@@ -987,21 +944,21 @@
 								<div class="tab-pane active" id="pay-events">
 									<div class="mt-1">
 										@if($paymentSettings?->yoomoney_verified)
-										<div class="f-16 cs b-600">✅ Платежи настроены (ЮМани)</div>
-										<div class="f-15 mt-05" style="opacity:.6">Shop ID: {{ $paymentSettings->yoomoney_shop_id }}</div>
+										<div class="f-16 cs b-600">{{ __('profile.pay_yoo_ok') }}</div>
+										<div class="f-15 mt-05" style="opacity:.6">{{ __('profile.pay_shop_id') }} {{ $paymentSettings->yoomoney_shop_id }}</div>
 										@elseif($paymentSettings && ($paymentSettings->tbank_link || $paymentSettings->sber_link))
-										<div class="f-16 cd b-600">🔗 Настроены платежи по ссылке</div>
+										<div class="f-16 cd b-600">{{ __('profile.pay_link_ok') }}</div>
 										@if($paymentSettings->tbank_link)
-										<div class="f-15 mt-05" style="opacity:.6">Т-Банк: {{ $paymentSettings->tbank_link }}</div>
+										<div class="f-15 mt-05" style="opacity:.6">{{ __('profile.pay_tbank_label') }} {{ $paymentSettings->tbank_link }}</div>
 										@endif
 										@if($paymentSettings->sber_link)
-										<div class="f-15 mt-05" style="opacity:.6">Сбер: {{ $paymentSettings->sber_link }}</div>
+										<div class="f-15 mt-05" style="opacity:.6">{{ __('profile.pay_sber_label') }} {{ $paymentSettings->sber_link }}</div>
 										@endif
 										@else
-										<div class="f-15" style="opacity:.5">⚙️ Платежи не настроены</div>
+										<div class="f-15" style="opacity:.5">{{ __('profile.pay_not_setup') }}</div>
 										@endif
 										<div class="mt-2">
-											<a href="{{ route('profile.payment_settings') }}" class="btn btn-secondary">⚙️ Настроить оплату</a>
+											<a href="{{ route('profile.payment_settings') }}" class="btn btn-secondary">{{ __('profile.pay_setup_btn') }}</a>
 										</div>
 									</div>
 								</div>
@@ -1014,19 +971,19 @@
 										$premiumPayment = \App\Models\PlatformPaymentSetting::first();
 										@endphp
 										@if($premiumPayment)
-										<div class="f-16 b-600 mb-1">Текущий метод:
+										<div class="f-16 b-600 mb-1">{{ __('profile.pay_method_current') }}
 											<span class="cd">{{ match($premiumPayment->method) {
-												'tbank_link' => '🏦 Т-Банк (по ссылке)',
-												'sber_link'  => '💚 Сбер (по ссылке)',
-												'yoomoney'   => '🟡 ЮМани',
+												'tbank_link' => __('profile.pay_method_tbank'),
+												'sber_link'  => __('profile.pay_method_sber'),
+												'yoomoney'   => __('profile.pay_method_yoo'),
 												default       => $premiumPayment->method,
 											} }}</span>
 										</div>
 										@else
-										<div class="f-15" style="opacity:.5">⚙️ Платежи за Premium не настроены</div>
+										<div class="f-15" style="opacity:.5">{{ __('profile.pay_premium_not_setup') }}</div>
 										@endif
 										<div class="mt-2">
-											<a href="{{ route('admin.platform_payment_settings') }}" class="btn btn-secondary">⚙️ Настроить оплату Premium</a>
+											<a href="{{ route('admin.platform_payment_settings') }}" class="btn btn-secondary">{{ __('profile.pay_premium_setup_btn') }}</a>
 										</div>
 									</div>
 								</div>
@@ -1047,10 +1004,10 @@
 				: collect();
 				@endphp
 				<div class="ramka">
-					<h2 class="-mt-05">Школы волейбола</h2>
+					<h2 class="-mt-05">{{ __('profile.sec_schools') }}</h2>
 					
 					@if(auth()->user()->isAdmin() && $allSchools->isNotEmpty())
-					<div class="b-600 mb-1 f-16">Все школы на платформе:</div>
+					<div class="b-600 mb-1 f-16">{{ __('profile.schools_admin_all') }}</div>
 					@foreach($allSchools as $s)
 					<div class="d-flex between fvc mb-1 card">
 						<div class="d-flex fvc gap-2">
@@ -1068,7 +1025,7 @@
 					</div>
 					@endforeach
 					<div class="mt-2">
-						<a href="{{ route('volleyball_school.create') }}" class="btn btn-secondary">+ Создать для организатора</a>
+						<a href="{{ route('volleyball_school.create') }}" class="btn btn-secondary">{{ __('profile.schools_admin_create_btn') }}</a>
 					</div>
 					
 					@elseif($mySchools->isNotEmpty())
@@ -1077,59 +1034,59 @@
 						@if($sLogo)<img src="{{ $sLogo }}" alt="logo" style="width:4rem;height:4rem;border-radius:50%;object-fit:cover">@endif
 						<div>
 							<div class="b-600">{{ $s->name }}</div>
-							<div class="f-14 mt-05" style="opacity:.6">{{ $s->is_published ? '✅ Опубликовано' : '⏸ Скрыто' }}</div>
+							<div class="f-14 mt-05" style="opacity:.6">{{ $s->is_published ? __('profile.schools_published') : __('profile.schools_hidden') }}</div>
 						</div>
 					</div>
 					<div class="d-flex gap-1">
-						<a href="{{ route('volleyball_school.show', $s->slug) }}" class="btn btn-secondary">Открыть</a>
-						<a href="{{ route('volleyball_school.edit') }}?id={{ $s->id }}" class="btn btn-secondary">Редактировать</a>
+						<a href="{{ route('volleyball_school.show', $s->slug) }}" class="btn btn-secondary">{{ __('profile.schools_open_btn') }}</a>
+						<a href="{{ route('volleyball_school.edit') }}?id={{ $s->id }}" class="btn btn-secondary">{{ __('profile.schools_edit_btn') }}</a>
 					</div>
 					
 					@else
-					<p>Создайте публичную страницу вашей школы или волейбольного сообщества — там будут отображаться ваши мероприятия, описание и контакты.</p>
-					<a href="{{ route('volleyball_school.create') }}" class="btn">Создать страницу школы</a>
+					<p>{{ __('profile.schools_lead') }}</p>
+					<a href="{{ route('volleyball_school.create') }}" class="btn">{{ __('profile.schools_create_btn') }}</a>
 					@endif
 				</div>
 				@endif
 				
 				<div class="ramka">
 					@php $activePremium = auth()->user()->activePremium(); @endphp
-					<h2 class="-mt-05">👑 Premium подписка</h2>
+					<h2 class="-mt-05">{{ __('profile.sec_premium') }}</h2>
 					<div class="card">
 						@if($activePremium)
 						<div class="d-flex between fvc">
 							<div>
-								<div class="f-18 b-600" style="color:#f5c842;">👑 Premium активен</div>
+								<div class="f-18 b-600" style="color:#f5c842;">{{ __('profile.premium_active') }}</div>
 								<div class="f-15 mt-05" style="opacity:.6;">
-									До {{ $activePremium->expires_at->format('d.m.Y') }}
+									{{ __('profile.premium_until', ['date' => $activePremium->expires_at->format('d.m.Y')]) }}
 									· {{ match($activePremium->plan) {
-									'trial'   => 'Пробный период',
-									'month'   => '1 месяц',
-									'quarter' => '3 месяца',
-									'year'    => 'Год',
+									'trial'   => __('profile.premium_plan_trial'),
+									'month'   => __('profile.premium_plan_month'),
+									'quarter' => __('profile.premium_plan_quarter'),
+									'year'    => __('profile.premium_plan_year'),
 									} }}
 								</div>
 							</div>
 							<div class="d-flex gap-1">
-								<a href="{{ route('premium.settings') }}" class="btn btn-secondary">⚙️ Настройки</a>
-								<a href="{{ route('premium.index') }}" class="btn btn-secondary">Продлить</a>
+								<a href="{{ route('premium.settings') }}" class="btn btn-secondary">{{ __('profile.premium_settings_btn') }}</a>
+								<a href="{{ route('premium.index') }}" class="btn btn-secondary">{{ __('profile.premium_renew_btn') }}</a>
 							</div>
 						</div>
 						@else
 						<div class="row row2">
 							<div class="col-md-8">
-								<div class="f-17 b-600 mb-1">Откройте возможности Premium</div>
+								<div class="f-17 b-600 mb-1">{{ __('profile.premium_offer_title') }}</div>
 								<ul class="list f-15">
-									<li>👑 Золотой аватар — выделяйтесь среди игроков</li>
-									<li>🥇 Приоритет в очереди резерва</li>
-									<li>👥 Друзья и гости профиля</li>
-									<li>📊 Детальная история игр и аналитика</li>
-									<li>🔔 Недельная сводка игр в вашем городе</li>
+									<li>{{ __('profile.premium_offer_li_1') }}</li>
+									<li>{{ __('profile.premium_offer_li_2') }}</li>
+									<li>{{ __('profile.premium_offer_li_3') }}</li>
+									<li>{{ __('profile.premium_offer_li_4') }}</li>
+									<li>{{ __('profile.premium_offer_li_5') }}</li>
 								</ul>
 							</div>
 							<div class="col-md-4 text-center" style="display:flex;flex-direction:column;justify-content:center;gap:1rem;">
-								<a href="{{ route('premium.index') }}" class="btn">👑 Подключить Premium</a>
-								<div class="f-14" style="opacity:.5;">от 199₽ / месяц</div>
+								<a href="{{ route('premium.index') }}" class="btn">{{ __('profile.premium_subscribe_btn') }}</a>
+								<div class="f-14" style="opacity:.5;">{{ __('profile.premium_price_from') }}</div>
 							</div>
 						</div>
 						@endif
@@ -1140,7 +1097,7 @@
 					
 					{{-- ✅ Приватность --}}
 					
-					<h2 class="-mt-05">Приватность</h2>
+					<h2 class="-mt-05">{{ __('profile.sec_privacy') }}</h2>
 					
 					<form class="form" method="POST" action="{{ route('profile.contact_privacy.update') }}">
 						@csrf
@@ -1157,17 +1114,17 @@
 							@checked((bool)($u->allow_user_contact ?? true))>
 							
 							<div class="custom-checkbox"></div>
-							<span>Разрешить другим пользователям писать вам в Telegram/VK со страницы профиля.</span>
+							<span>{{ __('profile.privacy_allow_text') }}</span>
 						</label>
 						
 						
 						
-						<p>Кнопки “Написать” видны только авторизованным пользователям и только если вы включили этот переключатель.</p>									
+						<p>{{ __('profile.privacy_lead') }}</p>									
 						
 						
 						<div class="mt-2 m-center">
 							<button type="submit" class="btn">
-								Сохранить
+								{{ __('profile.btn_save') }}
 							</button>
 						</div>
 						
@@ -1180,20 +1137,20 @@
 				@auth
 				@if (($user->role ?? 'user') === 'user')
 				<div class="ramka form">  	
-					<h2 class="-mt-05">Хочу стать организатором мероприятий</h2>
+					<h2 class="-mt-05">{{ __('profile.sec_organizer_request') }}</h2>
 					
-					<p>Организатор может создавать мероприятия, управлять участниками и назначать помощников.</p>
+					<p>{{ __('profile.org_request_lead') }}</p>
 					
 					@if (!empty($hasPendingOrganizerRequest))
-					<div class="alert alert-info">Ваша заявка уже отправлена и ожидает рассмотрения.</div>
+					<div class="alert alert-info">{{ __('profile.org_request_pending') }}</div>
 					@else
 					<form method="POST" action="{{ route('organizer.request') }}">
 						@csrf
 						<div class="mb-1">
-							<label>Комментарий (необязательно)</label>
-							<textarea name="message" rows="3" placeholder="Например: регулярно организую игры и хочу делать это через Volley"></textarea>
+							<label>{{ __('profile.org_request_comment_label') }}</label>
+							<textarea name="message" rows="3" placeholder="{{ __('profile.org_request_comment_ph') }}"></textarea>
 						</div>
-						<button type="submit" class="btn">Отправить заявку</button>
+						<button type="submit" class="btn">{{ __('profile.org_request_submit') }}</button>
 					</form>
 					@endif
 				</div>
@@ -1204,20 +1161,20 @@
 				
 				<div class="ramka" id="delete-account">
 
-					<h2 class="mt-0">Удаление аккаунта</h2>
+					<h2 class="mt-0">{{ __('profile.sec_delete') }}</h2>
 
-					<p class="f-15" style="opacity:.8">После удаления все ваши данные будут безвозвратно удалены. У вас будет <strong id="grace-period-display">{{ $deletionDelay }}</strong> сек чтобы передумать и отменить действие.</p>
+					<p class="f-15" style="opacity:.8">{!! __('profile.delete_lead_html', ['n' => $deletionDelay]) !!}</p>
 
 					<form method="POST" action="{{ route('account.delete.request') }}" id="form-delete-account" style="display:none">
 						@csrf
 					</form>
 
 					<button type="button" class="btn btn-danger" id="btn-delete-account">
-						Удалить аккаунт
+						{{ __('profile.delete_btn') }}
 					</button>
 
 					<button type="button" class="btn btn-warning" id="btn-cancel-deletion" style="display:none">
-						Отменить удаление (<span id="countdown-seconds">0</span> сек)
+						{!! __('profile.delete_cancel_btn_html') !!}
 					</button>
 
 				</div>
@@ -1237,37 +1194,37 @@
 
 		deleteBtn.addEventListener('click', function () {
 			swal({
-				title: 'Вы уверены?',
-				text: 'После удаления все ваши данные будут безвозвратно удалены. У вас будет ' + deletionDelay + ' секунд чтобы передумать.',
+				title: @json(__('profile.delete_swal_q_title')),
+				text: @json(__('profile.delete_swal_q_text', ['n' => '_N_'])).replace('_N_', deletionDelay),
 				icon: 'warning',
 				dangerMode: true,
 				buttons: {
-					cancel: { text: 'Отмена', visible: true, closeModal: true },
-					confirm: { text: 'Да, хочу удалить', className: 'swal-button--danger' }
+					cancel: { text: @json(__('profile.delete_swal_cancel')), visible: true, closeModal: true },
+					confirm: { text: @json(__('profile.delete_swal_confirm_q')), className: 'swal-button--danger' }
 				}
 			}).then(function (confirmed) {
 				if (!confirmed) return;
 
 				swal({
-					title: 'Последнее предупреждение',
-					text: 'Введите слово УДАЛИТЬ для подтверждения',
+					title: @json(__('profile.delete_swal_w_title')),
+					text: @json(__('profile.delete_swal_w_text')),
 					dangerMode: true,
 					content: {
 						element: 'input',
 						attributes: {
-							placeholder: 'УДАЛИТЬ',
+							placeholder: @json(__('profile.delete_confirm_word')),
 							type: 'text',
 							style: 'color:#333;border:1px solid #ccc;font-size:16px;padding:8px;width:100%;box-sizing:border-box;'
 						}
 					},
 					buttons: {
-						cancel: { text: 'Отмена', visible: true, closeModal: true },
-						confirm: { text: 'Подтвердить', className: 'swal-button--danger' }
+						cancel: { text: @json(__('profile.delete_swal_cancel')), visible: true, closeModal: true },
+						confirm: { text: @json(__('profile.delete_swal_confirm_btn')), className: 'swal-button--danger' }
 					}
 				}).then(function (value) {
 					if (value === null) return;
-					if (value !== 'УДАЛИТЬ') {
-						swal({ title: 'Неверно', text: 'Нужно ввести слово УДАЛИТЬ', icon: 'error', timer: 2000, buttons: false });
+					if (value !== @json(__('profile.delete_confirm_word'))) {
+						swal({ title: @json(__('profile.delete_swal_wrong_title')), text: @json(__('profile.delete_swal_wrong_text')), icon: 'error', timer: 2000, buttons: false });
 						return;
 					}
 					startCountdown();
@@ -1282,7 +1239,7 @@
 			}
 			cancelBtn.style.display = 'none';
 			deleteBtn.style.display = '';
-			swal({ title: 'Удаление отменено', icon: 'info', timer: 1500, buttons: false });
+			swal({ title: @json(__('profile.delete_swal_cancelled')), icon: 'info', timer: 1500, buttons: false });
 		});
 
 		function startCountdown() {
@@ -1320,8 +1277,8 @@
 					});
 
 					swal({
-						title: 'Аккаунт удалён',
-						text: 'Ваш аккаунт был успешно удалён. Все данные будут анонимизированы.',
+						title: @json(__('profile.delete_swal_done_title')),
+						text: @json(__('profile.delete_swal_done_text')),
 						icon: 'success',
 						button: 'OK'
 					}).then(function() {
@@ -1331,7 +1288,7 @@
 					});
 				},
 				error: function() {
-					swal({ title: 'Ошибка', text: 'Не удалось удалить аккаунт', icon: 'error' });
+					swal({ title: @json(__('profile.delete_swal_err_title')), text: @json(__('profile.delete_swal_err_text')), icon: 'error' });
 					cancelBtn.style.display = 'none';
 					deleteBtn.style.display = '';
 				}
@@ -1399,12 +1356,12 @@
 							data = await res.json();
 							} catch (e) {
 							console.error('Invalid JSON response', e);
-							alert('Сервер вернул некорректный ответ');
+							alert(@json(__('profile.bind_invalid_response')));
 							return;
 						}
 						
 						if (!res.ok || !data?.ok) {
-							alert(data?.message || 'Не удалось создать ссылку');
+							alert(data?.message || @json(__('profile.bind_link_error')));
 							return;
 						}
 						
@@ -1443,7 +1400,7 @@
 						}
 						} catch (e) {
 						console.error(e);
-						alert('Ошибка запроса при создании ссылки');
+						alert(@json(__('profile.bind_request_error')));
 						} finally {
 						button.disabled = false;
 					}
@@ -1499,23 +1456,23 @@
 			try {
 				var avail = await NativeBiometric.isAvailable();
 				if (!avail.isAvailable) {
-					if (statusEl) statusEl.textContent = 'Face ID / Touch ID недоступен на этом устройстве.';
+					if (statusEl) statusEl.textContent = @json(__('profile.face_unavailable'));
 					return;
 				}
 				try {
 					var creds = await NativeBiometric.getCredentials({ server: 'volleyplay.club' });
 					if (creds && creds.password) {
-						if (statusEl) statusEl.textContent = '✅ Face ID включён.';
+						if (statusEl) statusEl.textContent = @json(__('profile.face_enabled_status'));
 						if (disableBtn) disableBtn.style.display = '';
 						if (enableBtn) enableBtn.style.display = 'none';
 						return;
 					}
 				} catch (e) { /* нет credentials */ }
-				if (statusEl) statusEl.textContent = 'Face ID не настроен.';
+				if (statusEl) statusEl.textContent = @json(__('profile.face_not_setup'));
 				if (disableBtn) disableBtn.style.display = 'none';
 				if (enableBtn) enableBtn.style.display = '';
 			} catch (e) {
-				if (statusEl) statusEl.textContent = 'Не удалось проверить статус.';
+				if (statusEl) statusEl.textContent = @json(__('profile.face_status_error'));
 			}
 		}
 
@@ -1534,7 +1491,7 @@
 					await NativeBiometric.deleteCredentials({ server: 'volleyplay.club' });
 					await refreshStatus();
 				} catch (e) {
-					alert('Ошибка при отключении Face ID');
+					alert(@json(__('profile.face_disable_error')));
 				} finally {
 					disableBtn.disabled = false;
 				}
@@ -1546,7 +1503,7 @@
 				enableBtn.disabled = true;
 				try {
 					var avail = await NativeBiometric.isAvailable();
-					if (!avail.isAvailable) { alert('Face ID недоступен.'); return; }
+					if (!avail.isAvailable) { alert(@json(__('profile.face_unavailable_alert'))); return; }
 
 					var token = crypto.randomUUID();
 					var resp = await fetch('/api/biometric/register', {
@@ -1569,7 +1526,7 @@
 						await refreshStatus();
 					}
 				} catch (e) {
-					alert('Ошибка при включении Face ID');
+					alert(@json(__('profile.face_enable_error')));
 				} finally {
 					enableBtn.disabled = false;
 				}

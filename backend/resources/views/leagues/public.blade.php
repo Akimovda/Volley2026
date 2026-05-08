@@ -1,27 +1,27 @@
 <x-voll-layout body_class="leagues-page">
-	<x-slot name="title">Лиги</x-slot>
-	<x-slot name="h1">Лиги</x-slot>
+	<x-slot name="title">{{ __('seasons.leagues_show_breadcrumb') }}</x-slot>
+	<x-slot name="h1">{{ __('seasons.leagues_show_breadcrumb') }}</x-slot>
 
 	<x-slot name="canonical">{{ route('leagues.public') }}</x-slot>
 
 	<x-slot name="breadcrumbs">
 		<li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
 			<a href="{{ route('leagues.public') }}" itemprop="item">
-				<span itemprop="name">Лиги</span>
+				<span itemprop="name">{{ __('seasons.leagues_show_breadcrumb') }}</span>
 			</a>
 			<meta itemprop="position" content="2">
 		</li>
 	</x-slot>
 
 	<x-slot name="t_description">
-		Турнирные лиги с сезонами, рейтингами и системой промоушена.
+		{{ __('seasons.leagues_public_description') }}
 	</x-slot>
 
 	<div class="container">
 		<div class="ramka">
 			@if($leagues->isEmpty())
 				<div class="alert alert-info">
-					Пока нет активных лиг.
+					{{ __('seasons.leagues_public_empty') }}
 				</div>
 			@else
 				<div class="row">
@@ -40,7 +40,7 @@
 								</div>
 
 								<div class="f-16 mb-1">
-									{{ $league->direction === 'beach' ? 'Пляжный' : 'Классический' }}
+									{{ $league->direction === 'beach' ? __('seasons.leagues_dir_beach_short') : __('seasons.leagues_dir_classic_short') }}
 								</div>
 
 								@if($league->description)
@@ -48,15 +48,15 @@
 								@endif
 
 								<div class="f-16 mb-1 cd">
-									Организатор: {{ trim(($league->organizer->first_name ?? '') . ' ' . ($league->organizer->last_name ?? '')) ?: $league->organizer->name }}
+									{{ __('seasons.leagues_organizer_label') }} {{ trim(($league->organizer->first_name ?? '') . ' ' . ($league->organizer->last_name ?? '')) ?: $league->organizer->name }}
 								</div>
 
 								<div class="f-16 mb-1 cd">
-									Активных сезонов: {{ $league->seasons->count() }}
+									{{ __('seasons.leagues_active_seasons') }} {{ $league->seasons->count() }}
 								</div>
 
 								<div class="mt-auto" style="margin-top:auto">
-									<a href="{{ route('leagues.show.slug', $league->slug) }}" class="btn btn-secondary f-13" style="padding:6px 14px">Подробнее</a>
+									<a href="{{ route('leagues.show.slug', $league->slug) }}" class="btn btn-secondary f-13" style="padding:6px 14px">{{ __('seasons.btn_details') }}</a>
 								</div>
 							</div>
 						</div>

@@ -1,6 +1,6 @@
 <x-voll-layout body_class="coupons-org-page">
-    <x-slot name="title">Купоны</x-slot>
-    <x-slot name="h1">Выданные купоны</x-slot>
+    <x-slot name="title">{{ __('subscriptions.coupon_org_title') }}</x-slot>
+    <x-slot name="h1">{{ __('subscriptions.coupon_org_h1') }}</x-slot>
     <div class="container">
     <div class="row row2">
         <div class="col-lg-4 col-xl-3 order-2 d-none d-lg-block">
@@ -19,11 +19,11 @@
         @endif
         <div class="ramka">
             @if($coupons->isEmpty())
-                <div class="alert alert-info">Купонов пока нет.</div>
+                <div class="alert alert-info">{{ __('subscriptions.coupon_org_empty') }}</div>
             @else
             <div class="table-scrollable">
                 <table class="table f-16">
-                    <thead><tr><th>Код</th><th>Игрок</th><th>Шаблон</th><th>Скидка</th><th>Использований</th><th>Статус</th><th>Истекает</th></tr></thead>
+                    <thead><tr><th>{{ __('subscriptions.coupon_col_code') }}</th><th>{{ __('subscriptions.coupon_col_player') }}</th><th>{{ __('subscriptions.coupon_col_tpl') }}</th><th>{{ __('subscriptions.coupon_col_discount') }}</th><th>{{ __('subscriptions.coupon_col_uses') }}</th><th>{{ __('subscriptions.coupon_col_status') }}</th><th>{{ __('subscriptions.coupon_col_expires') }}</th></tr></thead>
                     <tbody>
                         @foreach($coupons as $c)
                         <tr>

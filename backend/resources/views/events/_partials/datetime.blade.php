@@ -14,18 +14,18 @@
     Источник $tz и $startsLocal — контроллер (не вычисляется в @php шаблона).
 --}}
 <div class="ramka">
-    <h2 class="-mt-05">Дата и время</h2>
+    <h2 class="-mt-05">{{ __('events.occ_datetime_title') }}</h2>
     <div class="row">
         <div class="col-md-6">
             <div class="card">
-                <label>Начало ({{ $tz }})</label>
+                <label>{{ __('events.occ_starts_at_tz', ['tz' => $tz]) }}</label>
                 <input type="datetime-local" name="starts_at_local" value="{{ old('starts_at_local', $startsLocal) }}" required>
                 @error('starts_at_local') <div class="f-13" style="margin-top:4px">{{ $message }}</div> @enderror
             </div>
         </div>
         <div class="col-md-3">
             <div class="card">
-                <label>Длительность (ч)</label>
+                <label>{{ __('events.occ_duration_h') }}</label>
                 <select name="duration_hours">
                     @for($h = 0; $h <= 12; $h++)
                         <option value="{{ $h }}" @selected(old('duration_hours', $durH) == $h)>{{ $h }}</option>
@@ -35,7 +35,7 @@
         </div>
         <div class="col-md-3">
             <div class="card">
-                <label>Минуты</label>
+                <label>{{ __('events.occ_duration_m') }}</label>
                 <select name="duration_minutes">
                     @foreach([0,10,15,20,30,40,45,50] as $m)
                         <option value="{{ $m }}" @selected(old('duration_minutes', $durM) == $m)>{{ $m }}</option>

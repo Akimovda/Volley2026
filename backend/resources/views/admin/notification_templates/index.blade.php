@@ -1,10 +1,10 @@
 {{--  body_class - класс для body --}}
 <x-voll-layout body_class="note-page">
 
-    <x-slot name="title">Шаблоны уведомлений</x-slot>
-    <x-slot name="description">Шаблоны уведомлений</x-slot>
-    <x-slot name="h1">Шаблоны уведомлений</x-slot>
-    <x-slot name="t_description">{{ $templates->count() }} шаблонов · {{ $templates->where('is_active', true)->count() }} активных</x-slot>
+    <x-slot name="title">{{ __('admin.nt_title') }}</x-slot>
+    <x-slot name="description">{{ __('admin.nt_t_description') }}</x-slot>
+    <x-slot name="h1">{{ __('admin.nt_title') }}</x-slot>
+    <x-slot name="t_description">{{ $templates->count() }} {{ __('admin.nt_templates_count') }} · {{ $templates->where('is_active', true)->count() }} {{ __('admin.nt_active_count') }}</x-slot>
 
     <x-slot name="breadcrumbs">
         <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">

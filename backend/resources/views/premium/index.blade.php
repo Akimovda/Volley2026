@@ -1,6 +1,6 @@
 <x-voll-layout body_class="premium-page">
 
-    <x-slot name="title">Premium подписка — Volley</x-slot>
+    <x-slot name="title">{{ __('profile.premium_title') }}</x-slot>
 
     <x-slot name="description">
         Приоритет записи, друзья, аналитика и умные уведомления для волейболистов
@@ -139,7 +139,7 @@
         </style>
     </x-slot>
 
-    <x-slot name="h1">Premium подписка 👑</x-slot>
+    <x-slot name="h1">{{ __('profile.premium_h1') }}</x-slot>
 
     <x-slot name="t_description">
         Больше возможностей для игры, общения и роста

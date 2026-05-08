@@ -1,14 +1,14 @@
 <x-voll-layout body_class="org-analytics-page">
-<x-slot name="title">Аналитика турниров</x-slot>
-<x-slot name="h1">Аналитика турниров</x-slot>
+<x-slot name="title">{{ __('profile.dash_orgt_title') }}</x-slot>
+<x-slot name="h1">{{ __('profile.dash_orgt_title') }}</x-slot>
 
 <x-slot name="breadcrumbs">
     <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
-        <a href="{{ route('org.dashboard') }}" itemprop="item"><span itemprop="name">Панель организатора</span></a>
+        <a href="{{ route('org.dashboard') }}" itemprop="item"><span itemprop="name">{{ __('profile.dash_orgt_breadcrumb_dash') }}</span></a>
         <meta itemprop="position" content="2">
     </li>
     <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
-        <span itemprop="name">Аналитика турниров</span>
+        <span itemprop="name">{{ __('profile.dash_orgt_breadcrumb_self') }}</span>
         <meta itemprop="position" content="3">
     </li>
 </x-slot>
@@ -21,25 +21,25 @@
         <div class="col-6 col-md-3 mb-3">
             <div class="card text-center p-3">
                 <div class="f-28 fw-bold">{{ $totalTournaments }}</div>
-                <div class="text-muted f-14">Турниров</div>
+                <div class="text-muted f-14">{{ __('profile.dash_orgt_tournaments') }}</div>
             </div>
         </div>
         <div class="col-6 col-md-3 mb-3">
             <div class="card text-center p-3">
                 <div class="f-28 fw-bold">{{ $totalMatches }}</div>
-                <div class="text-muted f-14">Матчей сыграно</div>
+                <div class="text-muted f-14">{{ __('profile.dash_orgt_matches') }}</div>
             </div>
         </div>
         <div class="col-6 col-md-3 mb-3">
             <div class="card text-center p-3">
                 <div class="f-28 fw-bold">{{ $uniquePlayers }}</div>
-                <div class="text-muted f-14">Уникальных игроков</div>
+                <div class="text-muted f-14">{{ __('profile.dash_orgt_unique_players') }}</div>
             </div>
         </div>
         <div class="col-6 col-md-3 mb-3">
             <div class="card text-center p-3">
                 <div class="f-28 fw-bold">{{ $totalTeams }}</div>
-                <div class="text-muted f-14">Команд</div>
+                <div class="text-muted f-14">{{ __('profile.dash_orgt_teams') }}</div>
             </div>
         </div>
     </div>
@@ -48,9 +48,9 @@
     <div class="row mb-4">
         <div class="col-md-4 mb-3">
             <div class="card p-3">
-                <div class="f-14 text-muted mb-1">Средняя заполняемость</div>
+                <div class="f-14 text-muted mb-1">{{ __('profile.dash_orgt_avg_fill') }}</div>
                 <div class="f-22 fw-bold">{{ $avgFillRate ? number_format($avgFillRate, 0) . '%' : '—' }}</div>
-                <div class="f-12 text-muted">% команд от максимума</div>
+                <div class="f-12 text-muted">{{ __('profile.dash_orgt_avg_fill_sub') }}</div>
             </div>
         </div>
         <div class="col-md-4 mb-3">

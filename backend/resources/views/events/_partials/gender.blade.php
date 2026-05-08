@@ -32,20 +32,20 @@
     if (!is_array($selectedPositions)) $selectedPositions = [];
 @endphp
 <div class="ramka">
-    <h2 class="-mt-05">Гендерные ограничения</h2>
+    <h2 class="-mt-05">{{ __('events.occ_gender_title') }}</h2>
     <div class="row">
         <div class="col-md-6">
             <div class="card">
-                <label>Политика</label>
+                <label>{{ __('events.occ_gender_policy_label') }}</label>
                 <select name="gender_policy" id="occ_gender_policy" class="w-full rounded-lg border-gray-200">
-                    <option value="mixed_open" @selected(old('gender_policy', $genderPolicyVal) === 'mixed_open')>М/Ж (без ограничений)</option>
+                    <option value="mixed_open" @selected(old('gender_policy', $genderPolicyVal) === 'mixed_open')>{{ __('events.gender_mixed_open') }}</option>
                     @if($dir === 'beach')
-                        <option value="mixed_5050" @selected(old('gender_policy', $genderPolicyVal) === 'mixed_5050')>Микс 50/50</option>
+                        <option value="mixed_5050" @selected(old('gender_policy', $genderPolicyVal) === 'mixed_5050')>{{ __('events.gender_5050') }}</option>
                     @endif
-                    <option value="only_male" @selected(old('gender_policy', $genderPolicyVal) === 'only_male')>Только М</option>
-                    <option value="only_female" @selected(old('gender_policy', $genderPolicyVal) === 'only_female')>Только Ж</option>
+                    <option value="only_male" @selected(old('gender_policy', $genderPolicyVal) === 'only_male')>{{ __('events.gender_only_male') }}</option>
+                    <option value="only_female" @selected(old('gender_policy', $genderPolicyVal) === 'only_female')>{{ __('events.gender_only_female') }}</option>
                     @if($dir === 'classic')
-                        <option value="mixed_limited" @selected(old('gender_policy', $genderPolicyVal) === 'mixed_limited')>М/Ж (с ограничениями)</option>
+                        <option value="mixed_limited" @selected(old('gender_policy', $genderPolicyVal) === 'mixed_limited')>{{ __('events.gender_mixed_limited') }}</option>
                     @endif
                 </select>
             </div>
@@ -57,22 +57,22 @@
         <div class="row mt-1">
             <div class="col-md-4">
                 <div class="card">
-                    <label>Кого ограничиваем</label>
+                    <label>{{ __('events.gender_limited_who') }}</label>
                     <label class="radio-item">
                         <input type="radio" name="gender_limited_side" value="female" @checked(old('gender_limited_side', $genderLimitedSideVal) === 'female')>
                         <div class="custom-radio"></div>
-                        <span>Женщин</span>
+                        <span>{{ __('events.gender_limited_female') }}</span>
                     </label>
                     <label class="radio-item">
                         <input type="radio" name="gender_limited_side" value="male" @checked(old('gender_limited_side', $genderLimitedSideVal) === 'male')>
                         <div class="custom-radio"></div>
-                        <span>Мужчин</span>
+                        <span>{{ __('events.gender_limited_male') }}</span>
                     </label>
                 </div>
             </div>
             <div class="col-md-4">
                 <div class="card">
-                    <label>Макс. мест для ограничиваемых</label>
+                    <label>{{ __('events.gender_limited_max_label') }}</label>
                     <select name="gender_limited_max">
                         <option value="">—</option>
                         @for($n = 0; $n <= 10; $n++)
@@ -83,7 +83,7 @@
             </div>
             <div class="col-md-4">
                 <div class="card">
-                    <label>Позиции, доступные ограничиваемому полу</label>
+                    <label>{{ __('events.gender_limited_positions') }}</label>
                     <div id="occ_positions_box" data-reserve-max="{{ (int) ($event->gameSettings?->reserve_players_max ?? 0) }}"></div>
                     <input type="hidden" id="occ_positions_old_json" value="{{ e(json_encode(array_values($selectedPositions))) }}">
                 </div>

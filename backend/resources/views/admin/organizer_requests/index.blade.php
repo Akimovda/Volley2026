@@ -1,18 +1,18 @@
 <x-voll-layout body_class="admin-organizer-requests-page">
 	
-    <x-slot name="title">Заявки на организатора</x-slot>
-    <x-slot name="description">Управление заявками пользователей на роль организатора</x-slot>
+    <x-slot name="title">{{ __('admin.org_req_title') }}</x-slot>
+    <x-slot name="description">{{ __('admin.org_req_t_description') }}</x-slot>
     <x-slot name="canonical">{{ route('admin.organizer_requests.index') }}</x-slot>
-    <x-slot name="h1">Заявки на организатора</x-slot>
-    <x-slot name="t_description">Управление заявками пользователей на роль организатора</x-slot>
+    <x-slot name="h1">{{ __('admin.org_req_title') }}</x-slot>
+    <x-slot name="t_description">{{ __('admin.org_req_t_description') }}</x-slot>
 	
     <x-slot name="breadcrumbs">
         <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
-            <a href="{{ route('admin.dashboard') }}" itemprop="item"><span itemprop="name">Админ-панель</span></a>
+            <a href="{{ route('admin.dashboard') }}" itemprop="item"><span itemprop="name">{{ __('admin.breadcrumb_dashboard') }}</span></a>
             <meta itemprop="position" content="2">
 		</li>
         <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
-            <a href="{{ route('admin.organizer_requests.index') }}" itemprop="item"><span itemprop="name">Заявки на организатора</span></a>
+            <a href="{{ route('admin.organizer_requests.index') }}" itemprop="item"><span itemprop="name">{{ __('admin.org_req_title') }}</span></a>
             <meta itemprop="position" content="3">
 		</li>
 	</x-slot>
@@ -25,7 +25,7 @@
 		
 		@if ($requests->isEmpty())
 		<div class="ramka">
-			<div class="alert alert-info">📭 Заявок пока нет.</div>
+			<div class="alert alert-info">📭 {{ __('admin.org_req_empty') }}</div>
 		</div>
 		@else
 		<div class="ramka">
@@ -36,13 +36,13 @@
 					<thead>
 						<tr>
 							<th>#</th>
-							<th>Пользователь</th>
-							<th>Роль</th>
-							<th>Статус</th>
-							<th>Комментарий</th>
-							<th>Дата</th>
-							<th>Рассмотрел</th>
-							<th>Действия</th>
+							<th>{{ __('admin.org_req_col_user') }}</th>
+							<th>{{ __('admin.col_role') }}</th>
+							<th>{{ __('admin.org_req_col_status') }}</th>
+							<th>{{ __('admin.org_req_col_message') }}</th>
+							<th>{{ __('admin.org_req_col_created') }}</th>
+							<th>{{ __('admin.org_req_col_reviewer') }}</th>
+							<th>{{ __('admin.org_req_col_actions') }}</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -61,11 +61,11 @@
 							</td>
 							<td>
 								@if ($r->status === 'pending')
-								<span class="cs nowrap" style="color:#f5a623">⏳ Ожидает</span>
+								<span class="cs nowrap" style="color:#f5a623">⏳ {{ __('admin.org_req_status_pending') }}</span>
 								@elseif ($r->status === 'approved')
-								<span class="cs nowrap">✅ Одобрена</span>
+								<span class="cs nowrap">✅ {{ __('admin.org_req_status_approved') }}</span>
 								@elseif ($r->status === 'rejected')
-								<span class="cd nowrap">❌ Отклонена</span>
+								<span class="cd nowrap">❌ {{ __('admin.org_req_status_rejected') }}</span>
 								@else
 								<span>{{ $r->status }}</span>
 								@endif
@@ -92,16 +92,16 @@
 								@if ($r->status === 'pending')
 								<form class="w-100" method="POST" action="{{ route('admin.organizer_requests.approve', $r->id) }}" class="d-inline">
 									@csrf
-									<button class="btn btn-small w-100 mb-1" type="submit">Одобрить</button>
+									<button class="btn btn-small w-100 mb-1" type="submit">{{ __('admin.org_req_btn_approve') }}</button>
 								</form>
 								<form class="w-100" method="POST" action="{{ route('admin.organizer_requests.reject', $r->id) }}" class="d-inline ml-1">
 									@csrf
 									<button class="btn-alert btn btn-small btn-danger" 
-										data-title="Отменить заявку?"
+										data-title="{{ __('admin.org_req_confirm_reject') }}"
 										data-icon="warning"
-										data-confirm-text="Да, отменить"
-										data-cancel-text="Отмена"									
-									type="submit">Отклонить</button>
+										data-confirm-text="{{ __('admin.org_req_btn_reject') }}"
+										data-cancel-text="{{ __('admin.btn_cancel') }}"									
+									type="submit">{{ __('admin.org_req_btn_reject') }}</button>
 								</form>
 								@else
 								<span>—</span>
@@ -113,7 +113,7 @@
 				</table>
 			</div>
 			<p>
-				Одобрение переводит пользователя в роль <b>organizer</b>. Отклонение оставляет роль без изменений.
+				{!! __('admin.org_req_approve_hint') !!}
 			</p>	
 		</div>
 	</div>

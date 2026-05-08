@@ -1,17 +1,17 @@
 {{-- resources/views/payment/settings.blade.php --}}
 <x-voll-layout body_class="payment-settings-page">
 
-    <x-slot name="title">Настройка платежей</x-slot>
-    <x-slot name="h1">Настройка платежей</x-slot>
-    <x-slot name="t_description">Настройте способы приёма оплаты за ваши мероприятия</x-slot>
+    <x-slot name="title">{{ __('profile.pay_settings_title') }}</x-slot>
+    <x-slot name="h1">{{ __('profile.pay_settings_title') }}</x-slot>
+    <x-slot name="t_description">{{ __('profile.pay_settings_t_description') }}</x-slot>
 
     <x-slot name="breadcrumbs">
         <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
-            <a href="{{ route('profile.show') }}" itemprop="item"><span itemprop="name">Профиль</span></a>
+            <a href="{{ route('profile.show') }}" itemprop="item"><span itemprop="name">{{ __('profile.nch_breadcrumb') }}</span></a>
             <meta itemprop="position" content="2">
         </li>
         <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
-            <span itemprop="name">Настройка платежей</span>
+            <span itemprop="name">{{ __('profile.pay_settings_title') }}</span>
             <meta itemprop="position" content="3">
         </li>
     </x-slot>
@@ -24,7 +24,7 @@
         @if($errors->any())
             <div class="ramka">
                 <div class="alert alert-error">
-                    <div class="alert-title">Проверьте поля</div>
+                    <div class="alert-title">{{ __('profile.check_fields') }}</div>
                     <ul class="list">
                         @foreach($errors->all() as $err)<li>{{ $err }}</li>@endforeach
                     </ul>

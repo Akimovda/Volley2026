@@ -5,7 +5,7 @@
 	<x-slot name="breadcrumbs">
 		<li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
 			<a href="{{ route('leagues.public') }}" itemprop="item">
-				<span itemprop="name">Лиги</span>
+				<span itemprop="name">{{ __('seasons.leagues_show_breadcrumb') }}</span>
 			</a>
 			<meta itemprop="position" content="2">
 		</li>
@@ -18,7 +18,7 @@
 
 
 	<x-slot name="t_description">
-		{{ $league->direction === 'beach' ? 'Пляжный' : 'Классический' }}
+		{{ $league->direction === 'beach' ? __('seasons.leagues_dir_beach_short') : __('seasons.leagues_dir_classic_short') }}
 		@if($league->description)
 			· {{ $league->description }}
 		@endif
@@ -40,7 +40,7 @@
 
 			<div class="row row2">
 				<div class="col-sm-6 col-md-6 col-lg-12">
-					<h2 class="-mt-05">Контакты</h2>
+					<h2 class="-mt-05">{{ __('seasons.leagues_contacts_h2') }}</h2>
 					@if($league->phone)
 					<div class="provider-card__header icon-light">
 						<span class="provider-card__icon icon-tel"></span>
@@ -79,14 +79,14 @@
 						</a>
 						@endif
 						@if(!$league->phone && !$league->website && !$league->vk && !$league->telegram && !$league->max_messenger)
-						<div class="alert alert-error">Не указаны</div>
+						<div class="alert alert-error">{{ __('seasons.leagues_no_contacts') }}</div>
 						@endif
 					</div>
 				</div>
 
 				@if($league->organizer)
 				<div class="col-12">
-					<h2 class="mt-1">Организатор</h2>
+					<h2 class="mt-1">{{ __('seasons.leagues_organizer_h2') }}</h2>
 					<div class="provider-card__header">
 						<span class="provider-card__icon"><img src="{{ $league->organizer->profile_photo_url }}" alt="{{ $league->organizer->first_name }}" style="border-radius:50%;object-fit:cover"></span>
 						<span class="provider-card__title"><a href="{{ route('users.show', $league->organizer->id) }}">{{ trim($league->organizer->first_name . ' ' . $league->organizer->last_name) }}</a></span>
@@ -102,7 +102,7 @@
 
 		{{-- Нативная кнопка Share --}}
 		<div class="native-actions">
-			<button type="button" class="btn btn-secondary btn-haptic" id="btn-share-league">Поделиться</button>
+			<button type="button" class="btn btn-secondary btn-haptic" id="btn-share-league">{{ __('seasons.btn_share') }}</button>
 		</div>
 
 		{{-- Сезоны --}}
@@ -115,9 +115,9 @@
 					</h2>
 					@php
 						$statusColors = [
-							'active' => ['bg' => 'rgba(16,185,129,.15)', 'color' => '#10b981', 'label' => 'Активен'],
-							'completed' => ['bg' => 'rgba(128,128,128,.15)', 'color' => '#6b7280', 'label' => 'Завершён'],
-							'draft' => ['bg' => 'rgba(231,97,47,.15)', 'color' => '#E7612F', 'label' => 'Черновик'],
+							'active' => ['bg' => 'rgba(16,185,129,.15)', 'color' => '#10b981', 'label' => __('seasons.status_active')],
+							'completed' => ['bg' => 'rgba(128,128,128,.15)', 'color' => '#6b7280', 'label' => __('seasons.status_completed')],
+							'draft' => ['bg' => 'rgba(231,97,47,.15)', 'color' => '#E7612F', 'label' => __('seasons.status_draft')],
 						];
 						$st = $statusColors[$season->status] ?? $statusColors['draft'];
 					@endphp
@@ -128,7 +128,7 @@
 
 				<div class="f-16 mb-1 cd">
 					{{ $season->starts_at?->format('d.m.Y') ?? '—' }} — {{ $season->ends_at?->format('d.m.Y') ?? '...' }}
-					· Туров: {{ $season->seasonEvents->count() }}
+					· {{ __('seasons.rounds_label') }} {{ $season->seasonEvents->count() }}
 				</div>
 
 				{{-- Ссылки на турниры сезона --}}
@@ -142,7 +142,7 @@
 					@foreach($seasonEventLinks as $seEvent)
 					<a href="{{ route('events.show', $seEvent) }}" class="blink f-15 d-inline-block mr-2">🏆 {{ $seEvent->title }}</a>
 					@if(auth()->check() && (auth()->user()->role === 'admin' || (int)$seEvent->organizer_id === auth()->id()))
-					<a href="{{ route('tournament.setup', $seEvent) }}" class="btn btn-primary btn-sm f-13">⚙️ Управление</a>
+					<a href="{{ route('tournament.setup', $seEvent) }}" class="btn btn-primary btn-sm f-13">⚙️ {{ __('seasons.btn_manage') }}</a>
 					@endif
 					@endforeach
 				</div>
@@ -157,9 +157,9 @@
 							<thead>
 								<tr>
 									<th style="width:30px">#</th>
-									<th>Игрок</th>
-									<th class="text-center">Матчей</th>
-									<th class="text-center">Побед</th>
+									<th>{{ __('seasons.col_player') }}</th>
+									<th class="text-center">{{ __('seasons.col_matches') }}</th>
+									<th class="text-center">{{ __('seasons.col_wins') }}</th>
 									<th class="text-center">WinRate</th>
 								</tr>
 							</thead>
@@ -181,14 +181,14 @@
 						</table>
 					</div>
 					<div class="mt-1">
-						<a href="{{ route('seasons.show.slug', [$season->league?->slug ?? 'league', $season->slug]) }}" class="blink f-16">Полный рейтинг и подробности →</a>
+						<a href="{{ route('seasons.show.slug', [$season->league?->slug ?? 'league', $season->slug]) }}" class="blink f-16">{{ __('seasons.full_ranking_link') }} →</a>
 					</div>
 				@endif
 			</div>
 			@endforeach
 		@else
 			<div class="ramka">
-				<div class="alert alert-info">В этой лиге пока нет сезонов.</div>
+				<div class="alert alert-info">{{ __('seasons.leagues_show_no_seasons') }}</div>
 			</div>
 		@endif
 
@@ -205,7 +205,7 @@
 		btn.addEventListener('click', function () {
 			window.VolleyNative.share({
 				title: @json($league->name ?? ''),
-				text: 'Лига на VolleyPlay',
+				text: @json(__('seasons.share_text')),
 				url: window.location.href
 			});
 		});

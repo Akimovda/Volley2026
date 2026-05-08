@@ -14,7 +14,7 @@
       - occ_rem_h/m → occ_rem_min
 --}}
 <div class="ramka">
-    <h2 class="-mt-05">Напоминание</h2>
+    <h2 class="-mt-05">{{ __('events.occ_remind_title') }}</h2>
     <div class="row">
         <div class="col-md-4">
             <div class="card">
@@ -22,13 +22,13 @@
                 <label class="checkbox-item">
                     <input type="checkbox" name="remind_registration_enabled" value="1" @checked(old('remind_registration_enabled', $remEnabled))>
                     <div class="custom-checkbox"></div>
-                    <span>Напоминание включено</span>
+                    <span>{{ __('events.occ_remind_enabled') }}</span>
                 </label>
             </div>
         </div>
         <div class="col-md-4">
             <div class="card">
-                <label>За сколько до начала</label>
+                <label>{{ __('events.occ_remind_when') }}</label>
                 <input type="hidden" name="remind_registration_minutes_before" id="occ_rem_min" value="{{ old('remind_registration_minutes_before', $remMin) }}">
                 <div class="d-flex" style="gap:.5rem">
                     <select id="occ_rem_h" style="width:auto">

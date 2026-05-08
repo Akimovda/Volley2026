@@ -30,8 +30,8 @@
 		</script>
 		<meta name="csrf-token" content="{{ csrf_token() }}">
 		@auth<meta name="user-authenticated" content="true">@endauth
-		<title>{{ $title ?? 'Волейбольный сервис Your Volley Club!' }}</title>
-		<meta name="description" content="{{ $description ?? 'Волейбольный сервис Your Volley Club!' }}">
+		<title>{{ $title ?? __('ui.site_title') }}</title>
+		<meta name="description" content="{{ $description ?? __('ui.site_description') }}">
 		<link rel="icon" type="image/png" href="/icons/favicon-96x96.png" sizes="96x96" />
 		<link rel="icon" type="image/svg+xml" href="/icons/favicon.svg" />
 		<link rel="shortcut icon" href="/icons/favicon.ico" />
@@ -70,9 +70,33 @@
 			body.has-app-banner .fix-header { top: var(--app-banner-h, 0px) !important; }
 			/* Нативное приложение — скрыть веб-элементы */
 			.is-app footer,
-			.is-app .fix-header-btn-theme {
+			.is-app .fix-header-btn-theme,
+			.is-app .fix-header-btn-lang {
 			display: none !important;
 			}
+			/* Переключатель языка */
+			.fix-header-btn-lang {
+			display: inline-flex;
+			align-items: center;
+			gap: 4px;
+			margin-right: 8px;
+			font-size: 13px;
+			line-height: 1;
+			user-select: none;
+			}
+			.fix-header-btn-lang form { display: inline; margin: 0; padding: 0; }
+			.fix-header-btn-lang button {
+			background: none;
+			border: none;
+			padding: 4px 6px;
+			font-size: 13px;
+			color: inherit;
+			cursor: pointer;
+			opacity: .55;
+			text-transform: uppercase;
+			}
+			.fix-header-btn-lang button.is-active { font-weight: 700; opacity: 1; }
+			.fix-header-btn-lang .sep { opacity: .35; }
 		</style>
 		@if(isset($style))
         {{ $style }}
@@ -104,18 +128,18 @@
 					banner.innerHTML =
 					'<a href="' + STORE_URL + '" style="display:flex;align-items:center;flex:1;min-width:0;text-decoration:none;color:inherit;">' +
 					'<img src="/icons/app-logo.png" style="width:20px;height:20px;border-radius:5px;margin-right:8px;flex-shrink:0;" alt="">' +
-					'<div style="font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">VolleyClub — волейбольный сервис</div>' +
+					'<div style="font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + @json(__('ui.app_banner_title')) + '</div>' +
 					'</a>' +
-					'<a href="' + STORE_URL + '" style="margin-left:10px;flex-shrink:0;background:#F97316;color:#fff;font-size:13px;font-weight:600;padding:6px 14px;border-radius:20px;text-decoration:none;white-space:nowrap;">Открыть</a>' +
-					'<button id="app-banner-close" style="margin-left:10px;flex-shrink:0;background:none;border:none;font-size:20px;line-height:1;cursor:pointer;opacity:.5;padding:4px 6px;" aria-label="Закрыть">×</button>';
+					'<a href="' + STORE_URL + '" style="margin-left:10px;flex-shrink:0;background:#F97316;color:#fff;font-size:13px;font-weight:600;padding:6px 14px;border-radius:20px;text-decoration:none;white-space:nowrap;">' + @json(__('ui.app_banner_open')) + '</a>' +
+					'<button id="app-banner-close" style="margin-left:10px;flex-shrink:0;background:none;border:none;font-size:20px;line-height:1;cursor:pointer;opacity:.5;padding:4px 6px;" aria-label="' + @json(__('ui.app_banner_close')) + '">×</button>';
 					} else {
 					banner.innerHTML =
 					'<a href="' + STORE_URL + '" style="display:flex;align-items:center;flex:1;min-width:0;text-decoration:none;color:inherit;">' +
 					'<img src="/icons/app-logo.png" style="width:20px;height:20px;border-radius:5px;margin-right:8px;flex-shrink:0;" alt="">' +
-					'<div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">VolleyClub — волейбольный сервис</div>' +
+					'<div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + @json(__('ui.app_banner_title')) + '</div>' +
 					'</a>' +
-					'<a href="' + STORE_URL + '" style="margin-left:10px;flex-shrink:0;background:#F97316;color:#fff;font-size:12px;font-weight:600;padding:5px 12px;border-radius:20px;text-decoration:none;white-space:nowrap;">Открыть</a>' +
-					'<button id="app-banner-close" style="margin-left:8px;flex-shrink:0;background:none;border:none;font-size:18px;line-height:1;cursor:pointer;opacity:.5;padding:4px 6px;" aria-label="Закрыть">×</button>';
+					'<a href="' + STORE_URL + '" style="margin-left:10px;flex-shrink:0;background:#F97316;color:#fff;font-size:12px;font-weight:600;padding:5px 12px;border-radius:20px;text-decoration:none;white-space:nowrap;">' + @json(__('ui.app_banner_open')) + '</a>' +
+					'<button id="app-banner-close" style="margin-left:8px;flex-shrink:0;background:none;border:none;font-size:18px;line-height:1;cursor:pointer;opacity:.5;padding:4px 6px;" aria-label="' + @json(__('ui.app_banner_close')) + '">×</button>';
 				}
 				
 				banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;display:flex;align-items:center;padding:0 12px;height:' + HEIGHT + 'px;box-shadow:0 2px 8px rgba(0,0,0,.15);box-sizing:border-box;';
@@ -199,9 +223,9 @@
 								@if($isAuth && !empty($user->first_name) && !empty($user->last_name))
 								{{ $user->first_name }}<br><span class="fix-header-user-fio">{{ $user->last_name }}</span>
 								@elseif($isAuth)
-								Пользователь<br><span class="fix-header-user-fio">#{{ $user->id }}</span>
+								{{ __('ui.user_fallback') }}<br><span class="fix-header-user-fio">#{{ $user->id }}</span>
 								@else
-								Вход
+								{{ __('ui.entrance') }}
 								@endif
 							</div>
 							
@@ -245,6 +269,18 @@
 							<span class="icon-hamm"><svg enable-background="new 0 0 512 512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><path d="m256 .001c-141.158 0-255.999 114.841-255.999 255.999s114.841 255.999 255.999 255.999 255.999-114.841 255.999-255.999-114.841-255.999-255.999-255.999zm0 479.998c-123.513 0-223.999-100.485-223.999-223.999s100.486-223.999 223.999-223.999 223.999 100.485 223.999 223.999-100.486 223.999-223.999 223.999zm141-223.999c0 8.837-7.164 16-16 16h-250c-8.836 0-16-7.163-16-16s7.164-16 16-16h250c8.836 0 16 7.163 16 16zm0-99c0 8.837-7.164 16-16 16h-250c-8.836 0-16-7.163-16-16s7.164-16 16-16h250c8.836 0 16 7.163 16 16zm0 198c0 8.837-7.164 16-16 16h-250c-8.836 0-16-7.163-16-16s7.164-16 16-16h250c8.836 0 16 7.163 16 16z"/></svg></span>
 							<span class="icon-close"></span>
 						</div>
+						@php $__currentLocale = app()->getLocale(); @endphp
+						<div class="fix-header-btn-lang" aria-label="{{ __('ui.language') }}">
+							<form method="POST" action="{{ url('/lang/ru') }}">
+								@csrf
+								<button type="submit" class="{{ $__currentLocale === 'ru' ? 'is-active' : '' }}" aria-label="{{ __('ui.lang_ru') }}">RU</button>
+							</form>
+							<span class="sep">|</span>
+							<form method="POST" action="{{ url('/lang/en') }}">
+								@csrf
+								<button type="submit" class="{{ $__currentLocale === 'en' ? 'is-active' : '' }}" aria-label="{{ __('ui.lang_en') }}">EN</button>
+							</form>
+						</div>
 						<div class="fix-header-btn-theme">
 							<span class="icon-theme">
 								<svg class="theme-icon sun" enable-background="new 0 0 512 512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><path d="m256 402.026c80.52 0 146.026-65.507 146.026-146.026s-65.506-146.026-146.026-146.026-146.026 65.506-146.026 146.026 65.507 146.026 146.026 146.026zm0-260.052c62.874 0 114.026 51.152 114.026 114.026s-51.151 114.026-114.026 114.026-114.026-51.152-114.026-114.026 51.152-114.026 114.026-114.026zm0-48c-8.837 0-16-7.163-16-16v-61.972c0-8.837 7.163-16 16-16s16 7.163 16 16v61.972c0 8.837-7.163 16-16 16zm81.013 21.708c-7.652-4.418-10.274-14.204-5.856-21.856l30.986-53.67c4.418-7.653 14.204-10.275 21.856-5.856 7.652 4.418 10.274 14.204 5.856 21.856l-30.986 53.67c-2.964 5.133-8.342 8.003-13.871 8.003-2.714-.001-5.465-.692-7.985-2.147zm59.306 59.305c-4.418-7.652-1.796-17.438 5.856-21.856l53.67-30.986c7.652-4.414 17.438-1.796 21.856 5.856s1.796 17.438-5.856 21.856l-53.67 30.986c-2.52 1.454-5.271 2.146-7.985 2.146-5.529.001-10.907-2.869-13.871-8.002zm115.68 81.013c0 8.837-7.163 16-16 16h-61.973c-8.837 0-16-7.163-16-16s7.163-16 16-16h61.973c8.836 0 16 7.163 16 16zm-34.297 127.999c-2.964 5.133-8.342 8.003-13.871 8.003-2.715 0-5.466-.691-7.985-2.146l-53.67-30.986c-7.652-4.418-10.274-14.204-5.856-21.856 4.419-7.653 14.204-10.275 21.856-5.856l53.67 30.986c7.652 4.417 10.274 14.203 5.856 21.855zm-87.846 71.846c4.418 7.652 1.796 17.438-5.856 21.856-2.52 1.454-5.271 2.146-7.985 2.146-5.529 0-10.907-2.87-13.871-8.003l-30.986-53.67c-4.418-7.652-1.796-17.438 5.856-21.856 7.651-4.414 17.438-1.796 21.856 5.856zm-117.856-21.819v61.972c0 8.837-7.163 16-16 16s-16-7.163-16-16v-61.972c0-8.837 7.163-16 16-16s16 7.163 16 16zm-91.156-15.851-30.986 53.67c-2.964 5.133-8.342 8.003-13.871 8.003-2.715 0-5.466-.691-7.985-2.146-7.652-4.418-10.274-14.204-5.856-21.856l30.986-53.67c4.419-7.653 14.205-10.276 21.856-5.856 7.652 4.416 10.274 14.202 5.856 21.855zm-65.162-81.162c4.418 7.652 1.796 17.438-5.856 21.856l-53.67 30.986c-2.52 1.454-5.271 2.146-7.985 2.146-5.529 0-10.907-2.87-13.871-8.003-4.418-7.652-1.796-17.438 5.856-21.856l53.67-30.986c7.652-4.415 17.437-1.796 21.856 5.857zm-37.708-65.013h-61.973c-8.837 0-16-7.163-16-16s7.163-16 16-16h61.973c8.837 0 16 7.163 16 16s-7.163 16-16 16zm37.708-97.013c-2.964 5.133-8.342 8.003-13.871 8.003-2.715 0-5.466-.691-7.985-2.146l-53.67-30.986c-7.652-4.418-10.274-14.204-5.856-21.856 4.418-7.653 14.204-10.276 21.856-5.856l53.67 30.986c7.652 4.417 10.274 14.203 5.856 21.855zm37.449-65.162-30.986-53.67c-4.418-7.652-1.796-17.438 5.856-21.856 7.652-4.415 17.438-1.796 21.856 5.856l30.986 53.67c4.418 7.652 1.796 17.438-5.856 21.856-2.52 1.454-5.271 2.146-7.985 2.146-5.529.001-10.907-2.869-13.871-8.002z"/></svg>
@@ -273,8 +309,8 @@
 										@if($isAuth)
 										{{ $user->name }}
 										@else
-										Вход
-										@endif								
+										{{ __('ui.entrance') }}
+										@endif
 									</div>
 									
 									@php
@@ -283,10 +319,10 @@
 									$roleClass = '';
 									
 									if($role == 'admin') {
-									$roleText = 'Администратор';
+									$roleText = __('ui.role_admin');
 									$roleClass = 'role-admin';
 									} elseif($role == 'organizer') {
-									$roleText = 'Организатор';
+									$roleText = __('ui.role_organizer');
 									$roleClass = 'role-organizer';
 									} else {
 									$roleText = '';
@@ -306,29 +342,29 @@
 							<nav class="menu-nav">
 								
 								<a href="{{ route('notifications.index') }}" class="menu-item">
-									<span class="menu-text">Уведомления</span>
+									<span class="menu-text">{{ __('ui.menu_notifications') }}</span>
 								</a>
 								<a href="{{ route('player.my-events') }}" class="menu-item">
-									<span class="menu-text">Мои мероприятия</span>
+									<span class="menu-text">{{ __('ui.menu_my_events') }}</span>
 								</a>
 								<a href="/user/profile" class="menu-item">
-									<span class="menu-text">Мой профиль</span>
+									<span class="menu-text">{{ __('ui.menu_my_profile') }}</span>
 								</a>
 								<a href="/profile/complete" class="menu-item">
-									<span class="menu-text">Редактировать профиль</span>
+									<span class="menu-text">{{ __('ui.menu_edit_profile') }}</span>
 								</a>
 								<a href="/user/photos" class="menu-item">
-									<span class="menu-text">Мои фотографии</span>
-								</a>	
+									<span class="menu-text">{{ __('ui.menu_my_photos') }}</span>
+								</a>
 								<a href="/wallet" class="menu-item">
-									<span class="menu-text">Мой кошелёк</span>
-								</a>	
+									<span class="menu-text">{{ __('ui.menu_my_wallet') }}</span>
+								</a>
 								<a href="/profile/transactions" class="menu-item">
-									<span class="menu-text">Транзакции</span>
-								</a>									
+									<span class="menu-text">{{ __('ui.menu_transactions') }}</span>
+								</a>
 								<form method="POST" action="{{ route('logout') }}" class="logout-form" id="logout-form">
 									@csrf
-									<button type="button" class="menu-item" onclick="document.getElementById('logout-form').submit()">Выйти</button>
+									<button type="button" class="menu-item" onclick="document.getElementById('logout-form').submit()">{{ __('ui.logout') }}</button>
 								</form>
 							</nav>
 						</div>
@@ -337,34 +373,34 @@
 						<div class="menu-column column-secondary">
 							<nav class="menu-nav">
 								<div class="menu-item-title">
-									<span class="menu-text">Меню организатора</span>
+									<span class="menu-text">{{ __('ui.org_menu_title') }}</span>
 								</div>
 								<a href="/org/dashboard" class="menu-item">
-									<span class="menu-text">Панель организатора</span>
-								</a>								
+									<span class="menu-text">{{ __('ui.org_dashboard') }}</span>
+								</a>
 								<a href="/events/create/event_management" class="menu-item">
-									<span class="menu-text">Управление мероприятиями</span>
-								</a>								
+									<span class="menu-text">{{ __('ui.org_events_management') }}</span>
+								</a>
 								<a href="/events/create" class="menu-item">
-									<span class="menu-text">Создать мероприятие</span>
+									<span class="menu-text">{{ __('ui.org_create_event') }}</span>
 								</a>
 								<a href="/subscriptions/templates" class="menu-item">
-									<span class="menu-text">Абонементы</span>
+									<span class="menu-text">{{ __('ui.org_subscriptions') }}</span>
 								</a>
 								<a href="/coupons/templates" class="menu-item">
-									<span class="menu-text">Купоны</span>
+									<span class="menu-text">{{ __('ui.org_coupons') }}</span>
 								</a>
 								<a href="/leagues" class="menu-item">
-									<span class="menu-text">🏆 Мои лиги и сезоны</span>
+									<span class="menu-text">{{ __('ui.org_my_leagues') }}</span>
 								</a>
 								<a href="/user/profile/notification-channels" class="menu-item">
-									<span class="menu-text">Каналы уведомлений</span>
+									<span class="menu-text">{{ __('ui.org_notif_channels') }}</span>
 								</a>
 								<a href="/profile/widget" class="menu-item">
-									<span class="menu-text">🌐 Виджет на сайт</span>
+									<span class="menu-text">{{ __('ui.org_widget') }}</span>
 								</a>
 								<a href="/organizer-pro" class="menu-item">
-									<span class="menu-text">⭐ Организатор Pro</span>
+									<span class="menu-text">{{ __('ui.org_pro') }}</span>
 								</a>
 							</nav>
 						</div>	
@@ -372,31 +408,31 @@
 						<div class="menu-column column-admin">		
 							<nav class="menu-nav">
 								<div class="menu-item-title admin">
-									<span class="menu-text">Меню администратора</span>
-								</div>							
+									<span class="menu-text">{{ __('ui.admin_menu_title') }}</span>
+								</div>
 								<a href="/admin/dashboard" class="menu-item">
-									<span class="menu-text">Панель администратора</span>
+									<span class="menu-text">{{ __('ui.admin_dashboard') }}</span>
 								</a>
 								<a href="/admin/users" class="menu-item">
-									<span class="menu-text">Пользователи</span>
+									<span class="menu-text">{{ __('ui.admin_users') }}</span>
 								</a>
 								<a href="/admin/locations" class="menu-item">
-									<span class="menu-text">Локации</span>
-								</a>	
+									<span class="menu-text">{{ __('ui.admin_locations') }}</span>
+								</a>
 								<a href="/admin/locations/create" class="menu-item">
-									<span class="menu-text">Создать локацию</span>
+									<span class="menu-text">{{ __('ui.admin_create_location') }}</span>
 								</a>
 								<a href="/admin/notification-templates" class="menu-item">
-									<span class="menu-text">Шаблоны уведомлений</span>
-								</a>								
+									<span class="menu-text">{{ __('ui.admin_notification_templates') }}</span>
+								</a>
 								<a href="/admin/broadcasts/create" class="menu-item">
-									<span class="menu-text">Новая рассылка</span>
-								</a>								
+									<span class="menu-text">{{ __('ui.admin_new_broadcast') }}</span>
+								</a>
 								<a href="/admin/broadcasts/" class="menu-item">
-									<span class="menu-text">Рассылки</span>
+									<span class="menu-text">{{ __('ui.admin_broadcasts') }}</span>
 								</a>
 								<a href="{{ route('admin.impersonate.index') }}" class="menu-item">
-									<span class="menu-text">👁 Войти как...</span>
+									<span class="menu-text">{{ __('ui.admin_impersonate') }}</span>
 								</a>
 								
 							</nav>
@@ -419,7 +455,7 @@
 									<path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
 								</svg>
 							</span>
-							<span class="auth-text">Войти через Apple</span>
+							<span class="auth-text">{{ __('ui.auth_apple') }}</span>
 						</a>
 						@endunless
 						
@@ -428,7 +464,7 @@
 							<span class="auth-icon-circle">
 								<span class="icon-vk"></span>
 							</span>
-							<span class="auth-text">Войти через ВКонтакте</span>
+							<span class="auth-text">{{ __('ui.auth_vk') }}</span>
 						</div>
 						
 						<!-- Кнопка Яндекс -->
@@ -436,14 +472,14 @@
 							<span class="auth-icon-circle">
 								<span class="icon-yandex"></span>
 							</span>
-							<span class="auth-text">Войти с Яндекс ID</span>
+							<span class="auth-text">{{ __('ui.auth_yandex') }}</span>
 						</div>
 						
 						<div data-href="{{ route('auth.telegram.redirect', ['return' => url()->full()]) }}" class="auth-btn auth-btn-telegram">
 							<span class="auth-icon-circle">
 								<span class="icon-tg"></span>
 							</span>
-							<span class="auth-text">Войти через Telegram</span>
+							<span class="auth-text">{{ __('ui.auth_telegram') }}</span>
 						</div>
 						
 						
@@ -458,7 +494,7 @@
 									<path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
 								</svg>
 							</span>
-							<span class="auth-text">Войти через Google</span>
+							<span class="auth-text">{{ __('ui.auth_google') }}</span>
 						</a>
 						@endunless
 						
@@ -499,12 +535,12 @@
 						@if($notificationsUnread > 5)
 						
 						<div class="text-right menu-text f-18 pr-2">
-							и еще <strong class="cd">{{ $notificationsUnread - 5 }}</strong> непрочитанных...
+							{!! __('ui.notifications_more', ['count' => $notificationsUnread - 5]) !!}
 						</div>
 						@endif
 						@else
 						<div class="menu-item" style="cursor: default;">
-							<div class="menu-text text-muted">Новых уведомлений нет</div>
+							<div class="menu-text text-muted">{{ __('ui.no_unread_notifications') }}</div>
 						</div>
 						@endif
 					</div>			
@@ -512,12 +548,12 @@
 					
 					<nav class="menu-nav mt-1">
 						<a href="{{ route('notifications.index') }}" class="menu-item">
-							<span class="menu-text">Все уведомления</span>
+							<span class="menu-text">{{ __('ui.all_notifications') }}</span>
 						</a>
 					</nav>				
 					
 					@else
-					Войдите или зарегистрируйтесь <br>чтобы пользоваться всеми возможностями сайта
+					{!! __('ui.login_or_register_prompt') !!}
 					@endif					
 					
 				</div>						
@@ -532,19 +568,19 @@
 						<div class="menu-column column-first">
 							<nav class="menu-nav">							
 								<a href="/events" class="menu-item">
-									<span class="menu-text">Игры и тренировки</span>
+									<span class="menu-text">{{ __('ui.nav_games_trainings') }}</span>
 								</a>
 								<a href="/locations" class="menu-item">
-									<span class="menu-text">Локации</span>
+									<span class="menu-text">{{ __('ui.nav_locations') }}</span>
 								</a>
 								<a href="/volleyball_school" class="menu-item">
-									<span class="menu-text">Школы волейбола</span>
+									<span class="menu-text">{{ __('ui.nav_schools') }}</span>
 								</a>
 								<a href="/leagues/all" class="menu-item">
-									<span class="menu-text">Лиги и сезоны</span>
+									<span class="menu-text">{{ __('ui.nav_leagues') }}</span>
 								</a>
 								<a href="/users" class="menu-item">
-									<span class="menu-text">Игроки</span>
+									<span class="menu-text">{{ __('ui.nav_players') }}</span>
 								</a>								
 							</nav>
 						</div>
@@ -552,16 +588,16 @@
 						<div class="menu-column column-two">
 							<nav class="menu-nav">
 								<a href="/help" class="menu-item">
-									<span class="menu-text">Помощь</span>
+									<span class="menu-text">{{ __('ui.nav_help') }}</span>
 								</a>							
 								<a href="/rules" class="menu-item">
-									<span class="menu-text">Правила сервиса</span>
+									<span class="menu-text">{{ __('ui.nav_rules') }}</span>
 								</a>								
 								<a href="/level_players" class="menu-item">
-									<span class="menu-text">Уровни игроков</span>
+									<span class="menu-text">{{ __('ui.nav_levels') }}</span>
 								</a>	
 								<a href="/about" class="menu-item">
-									<span class="menu-text">О сервисе</span>
+									<span class="menu-text">{{ __('ui.nav_about') }}</span>
 								</a>																						
 							</nav>
 						</div>
@@ -586,7 +622,7 @@
 						@if(isset($breadcrumbs))
 						<ul data-aos="fade-up"  itemscope="" itemtype="http://schema.org/BreadcrumbList" class="breadcrumbs">
 							<li itemprop="itemListElement" itemscope="" itemtype="http://schema.org/ListItem">
-								<a href="/" itemprop="item"><span itemprop="name">Главная</span></a>
+								<a href="/" itemprop="item"><span itemprop="name">{{ __('ui.breadcrumb_home') }}</span></a>
 								<meta itemprop="position" content="1">
 							</li>
 							{{ $breadcrumbs }}
@@ -642,43 +678,43 @@
 					<div class="row">
 						<div class="col-3 m-center">
 							<a href="/"><span class="icon-logo"><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="297px" height="88px" viewBox="0 0 297 88" version="1.1"><defs><linearGradient x1="73.168378%" y1="4.69814595%" x2="73.168378%" y2="105.568873%" id="w5fy10"><stop stop-color="#FFB171" offset="0%"></stop><stop stop-color="#E7612F" offset="100%"></stop></linearGradient></defs><g id="l64alb" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd"><g id="h5ywid" transform="translate(0.529457, 0.168880)"><path class="logo-path" d="M20.4616712,21.2653614 C43.5995828,11.4565515 63.9873842,14.9226858 77.3336873,19.9599868 L77.7359609,20.1131011 L79.9411208,20.957837 C81.612304,25.1583828 82.6757033,29.479172 83.1255988,33.8256509 C73.2484161,29.7775841 55.6173261,25.8306724 35.2544697,35.7139277 C28.7394221,31.3463466 23.9393424,26.3940322 20.4616712,21.2653614 Z M15.9816651,83.2785026 C25.6226037,75.5385008 36.1868466,62.3236963 37.7048912,41.2399692 C45.8708331,37.2453017 53.5149691,35.732692 60.3198675,35.6202698 C56.532537,60.6769039 42.9725819,76.5578623 31.8465358,85.6089348 L31.5101404,85.8811215 L30.179405,86.94998 C25.2859047,86.4551262 20.5042122,85.2107275 15.9816651,83.2785026 Z M25.8189366,62.0328424 C2.04683068,43.8434466 -0.223921947,18.8783035 0.015479381,8.40402649 L0.101491241,5.21520633 C1.90384389,3.34284074 3.86809204,1.59368609 5.99889661,-7.10542736e-15 C7.53094883,10.6345296 13.0290472,28.0658987 31.684203,40.6549873 C31.0946364,49.1383987 28.8821205,56.189305 25.8189366,62.0328424 Z" id="tqq7d2" fill="url(#w5fy10)"></path><path d="M80.99,72 C82.4933333,72 83.532,71.262 84.106,69.786 L84.106,69.786 L94.643,43.71 L85.295,43.71 L79.145,61.955 C78.9536667,62.529 78.776,63.103 78.612,63.677 C78.448,64.251 78.3113333,64.8523333 78.202,65.481 L78.202,65.481 L77.136,65.481 C77.1633333,64.8796667 77.1838333,64.2646667 77.1975,63.636 C77.2111667,63.0073333 77.1906667,62.3923333 77.136,61.791 L77.136,61.791 L76.152,43.71 L67.214,43.71 L70.412,69.458 C70.494,70.1686667 70.7946667,70.77 71.314,71.262 C71.8333333,71.754 72.4756667,72 73.241,72 L73.241,72 L80.99,72 Z M102.392,72.492 C105.125333,72.492 107.339333,72.164 109.034,71.508 C110.728667,70.852 112.033833,69.7655 112.9495,68.2485 C113.865167,66.7315 114.500667,64.6883333 114.856,62.119 C115.238667,59.3856667 115.115667,57.2058333 114.487,55.5795 C113.858333,53.9531667 112.7035,52.771 111.0225,52.033 C109.3415,51.295 107.134333,50.926 104.401,50.926 C101.667667,50.926 99.44,51.2608333 97.718,51.9305 C95.996,52.6001667 94.684,53.7003333 93.782,55.231 C92.88,56.7616667 92.2376667,58.839 91.855,61.463 C91.4723333,64.1416667 91.609,66.2873333 92.265,67.9 C92.921,69.5126667 94.0963333,70.6811667 95.791,71.4055 C97.4856667,72.1298333 99.686,72.492 102.392,72.492 Z M102.72,66.67 C102.009333,66.67 101.483167,66.5538333 101.1415,66.3215 C100.799833,66.0891667 100.622167,65.645 100.6085,64.989 C100.594833,64.333 100.67,63.3763333 100.834,62.119 C101.052667,60.6156667 101.285,59.4813333 101.531,58.716 C101.777,57.9506667 102.105,57.4313333 102.515,57.158 C102.925,56.8846667 103.499,56.748 104.237,56.748 C104.920333,56.748 105.412333,56.871 105.713,57.117 C106.013667,57.363 106.177667,57.8208333 106.205,58.4905 C106.232333,59.1601667 106.150333,60.151 105.959,61.463 C105.740333,62.8843333 105.514833,63.9708333 105.2825,64.7225 C105.050167,65.4741667 104.742667,65.9866667 104.36,66.26 C103.977333,66.5333333 103.430667,66.67 102.72,66.67 Z M123.753,72.574 C124.217667,72.574 124.825833,72.5398333 125.5775,72.4715 C126.329167,72.4031667 127.080833,72.3006667 127.8325,72.164 C128.584167,72.0273333 129.178667,71.836 129.616,71.59 L129.616,71.59 L129.124,66.014 L127.484,66.014 C126.746,66.014 126.267667,65.9251667 126.049,65.7475 C125.830333,65.5698333 125.775667,65.2213333 125.885,64.702 L125.885,64.702 L128.96,43.3 L120.391,43.3 L117.07,66.67 C116.851333,68.474 117.3365,69.909 118.5255,70.975 C119.7145,72.041 121.457,72.574 123.753,72.574 Z M138.513,72.574 C138.977667,72.574 139.585833,72.5398333 140.3375,72.4715 C141.089167,72.4031667 141.840833,72.3006667 142.5925,72.164 C143.344167,72.0273333 143.938667,71.836 144.376,71.59 L144.376,71.59 L143.884,66.014 L142.244,66.014 C141.506,66.014 141.027667,65.9251667 140.809,65.7475 C140.590333,65.5698333 140.535667,65.2213333 140.645,64.702 L140.645,64.702 L143.72,43.3 L135.151,43.3 L131.83,66.67 C131.611333,68.474 132.0965,69.909 133.2855,70.975 C134.4745,72.041 136.217,72.574 138.513,72.574 Z M157.373,72.492 C158.466333,72.492 159.573333,72.4373333 160.694,72.328 C161.814667,72.2186667 162.921667,72.0273333 164.015,71.754 C165.108333,71.4806667 166.133333,71.1253333 167.09,70.688 L167.09,70.688 L166.516,65.44 C165.696,65.522 164.7325,65.5971667 163.6255,65.6655 C162.5185,65.7338333 161.466167,65.7885 160.4685,65.8295 C159.470833,65.8705 158.685,65.891 158.111,65.891 C157.181667,65.891 156.484667,65.7885 156.02,65.5835 C155.555333,65.3785 155.288833,64.948 155.2205,64.292 C155.214806,64.2373333 155.210108,64.180294 155.206406,64.1208819 L155.202,64.021 L160.325,63.636 C162.028778,63.5107222 163.462686,63.3050579 164.626726,63.0190069 L164.9375,62.939 C166.153833,62.611 167.103667,62.1053333 167.787,61.422 C168.470333,60.7386667 168.894,59.782 169.058,58.552 C169.304,56.8846667 169.1605,55.4906667 168.6275,54.37 C168.0945,53.2493333 167.049,52.3951667 165.491,51.8075 C163.933,51.2198333 161.732667,50.926 158.89,50.926 C157.058667,50.926 155.418667,51.0763333 153.97,51.377 C152.521333,51.6776667 151.277667,52.2106667 150.239,52.976 C149.200333,53.7413333 148.353,54.821 147.697,56.215 C147.041,57.609 146.603667,59.3993333 146.385,61.586 C146.166333,63.9093333 146.330333,65.8841667 146.877,67.5105 C147.423667,69.1368333 148.530667,70.3736667 150.198,71.221 C151.865333,72.0683333 154.257,72.492 157.373,72.492 Z M155.728,59.814 L155.761508,59.6622031 C155.826211,59.3764844 155.891875,59.11575 155.9585,58.88 C156.136167,58.2513333 156.348,57.7661667 156.594,57.4245 C156.84,57.0828333 157.154333,56.8368333 157.537,56.6865 C157.919667,56.5361667 158.398,56.461 158.972,56.461 C159.546,56.4336667 159.969667,56.461 160.243,56.543 C160.516333,56.625 160.694,56.7616667 160.776,56.953 C160.858,57.1443333 160.885333,57.3903333 160.858,57.691 C160.803333,58.2103333 160.659833,58.593 160.4275,58.839 C160.195167,59.085 159.887667,59.2558333 159.505,59.3515 C159.122333,59.4471667 158.644,59.5223333 158.07,59.577 L158.07,59.577 L155.728,59.814 Z M172.174,80.446 C174.497333,80.5553333 176.615667,80.3025 178.529,79.6875 C180.442333,79.0725 182.1985,78.0885 183.7975,76.7355 C185.3965,75.3825 186.838333,73.6946667 188.123,71.672 C188.451,71.18 188.867833,70.4078333 189.3735,69.3555 C189.879167,68.3031667 190.425833,67.0731667 191.0135,65.6655 C191.601167,64.2578333 192.182,62.7476667 192.756,61.135 C193.33,59.5223333 193.8425,57.8891667 194.2935,56.2355 C194.7445,54.5818333 195.065667,53.0033333 195.257,51.5 L195.257,51.5 L186.032,51.5 C185.676667,53.96 185.287167,56.174 184.8635,58.142 C184.439833,60.11 183.947833,61.9208333 183.3875,63.5745 C183.06731,64.5194524 182.709187,65.4487857 182.313133,66.3625 L182.102,66.834 L181.112,66.834 C180.714424,66.834 180.497565,66.6532837 180.461421,66.2918512 L180.456,66.178 L180.128,51.5 L170.698,51.5 L173.24,69.827 C173.322,70.4283333 173.595333,70.9408333 174.06,71.3645 C174.524667,71.7881667 175.098667,72 175.782,72 L175.782,72 L179.013,72 L178.866289,72.1601563 C178.308945,72.7495313 177.74007,73.2312813 177.159664,73.6054063 L176.8685,73.7835 C176.0895,74.2345 175.2695,74.5966667 174.4085,74.87 C173.5475,75.1433333 172.625,75.4576667 171.641,75.813 L171.641,75.813 L172.174,80.446 Z M207.844,72.492 C209.921333,72.492 211.698,72.3895 213.174,72.1845 C214.65,71.9795 216.139667,71.6446667 217.643,71.18 L217.643,71.18 L217.315,64.661 C216.003,64.7703333 214.677333,64.8523333 213.338,64.907 C211.998667,64.9616667 210.304,64.989 208.254,64.989 C207.242667,64.989 206.532,64.8113333 206.122,64.456 C205.712,64.1006667 205.513833,63.431 205.5275,62.447 C205.541167,61.463 205.671,60.0416667 205.917,58.183 C206.135667,56.5156667 206.361167,55.1831667 206.5935,54.1855 C206.825833,53.1878333 207.112833,52.443 207.4545,51.951 C207.796167,51.459 208.213,51.131 208.705,50.967 C209.197,50.803 209.812,50.721 210.55,50.721 C211.807333,50.721 212.900667,50.7278333 213.83,50.7415 C214.759333,50.7551667 215.6545,50.762 216.5155,50.762 C217.3765,50.762 218.299,50.7756667 219.283,50.803 L219.283,50.803 L220.308,44.366 C219.406,44.0926667 218.510833,43.874 217.6225,43.71 C216.734167,43.546 215.763833,43.423 214.7115,43.341 C213.659167,43.259 212.422333,43.218 211.001,43.218 C208.650333,43.218 206.648167,43.4366667 204.9945,43.874 C203.340833,44.3113333 201.974167,45.0561667 200.8945,46.1085 C199.814833,47.1608333 198.940167,48.6163333 198.2705,50.475 C197.600833,52.3336667 197.061,54.6843333 196.651,57.527 C196.131667,61.2443333 196.172667,64.1963333 196.774,66.383 C197.375333,68.5696667 198.584833,70.1345 200.4025,71.0775 C202.220167,72.0205 204.700667,72.492 207.844,72.492 Z M227.114,72.164 C229.464667,72.164 231.842667,72.1366667 234.248,72.082 C236.653333,72.0273333 238.799,71.877 240.685,71.631 L240.685,71.631 L240.849,64.948 L231.501,64.948 C230.872333,64.948 230.4555,64.825 230.2505,64.579 C230.0455,64.333 229.970333,63.9093333 230.025,63.308 L230.025,63.308 L232.936,43.71 L223.998,43.71 L220.964,65.563 C220.772667,66.8203333 220.916167,67.9478333 221.3945,68.9455 C221.872833,69.9431667 222.604,70.729 223.588,71.303 C224.572,71.877 225.747333,72.164 227.114,72.164 Z M254.994,72.574 C258.000667,72.574 260.412833,72.1913333 262.2305,71.426 C264.048167,70.6606667 265.442167,69.3965 266.4125,67.6335 C267.382833,65.8705 268.073,63.4856667 268.483,60.479 L268.483,60.479 L270.902,43.71 L262.005,43.71 L259.668,60.151 C259.422,61.6543333 259.1555,62.8296667 258.8685,63.677 C258.5815,64.5243333 258.157833,65.1188333 257.5975,65.4605 C257.037167,65.8021667 256.237667,65.973 255.199,65.973 C254.215,65.973 253.490667,65.8158333 253.026,65.5015 C252.561333,65.1871667 252.301667,64.6268333 252.247,63.8205 C252.192333,63.0141667 252.274333,61.9003333 252.493,60.479 L252.493,60.479 L254.871,43.71 L246.015,43.71 L243.637,60.151 C243.254333,63.1576667 243.425167,65.5698333 244.1495,67.3875 C244.873833,69.2051667 246.144833,70.524 247.9625,71.344 C249.780167,72.164 252.124,72.574 254.994,72.574 Z M270.943,72 L272.2755,72.0774444 C273.159278,72.126037 274.033944,72.1685556 274.8995,72.205 C276.197833,72.2596667 277.632833,72.2938333 279.2045,72.3075 C280.461833,72.3184333 281.898473,72.3249933 283.51442,72.32718 L284.76,72.328 C287.110667,72.328 289.0445,72.1366667 290.5615,71.754 C292.0785,71.3713333 293.247,70.6675 294.067,69.6425 C294.887,68.6175 295.42,67.162 295.666,65.276 C295.994,62.9253333 295.761667,61.0803333 294.969,59.741 C294.176333,58.4016667 292.659333,57.6363333 290.418,57.445 L290.418,57.445 L290.459,57.199 C292.427,57.035 293.821,56.461 294.641,55.477 C295.461,54.493 296.007667,53.0306667 296.281,51.09 C296.554333,49.0946667 296.3835,47.5366667 295.7685,46.416 C295.1535,45.2953333 294.0875,44.5095 292.5705,44.0585 C291.0535,43.6075 289.037667,43.382 286.523,43.382 C284.883,43.382 283.407,43.3888333 282.095,43.4025 C280.783,43.4161667 279.553,43.4435 278.405,43.4845 C277.257,43.5255 276.095333,43.6006667 274.92,43.71 L274.92,43.71 L270.943,72 Z M282.794,49.532 L286.236,49.532 C286.728,49.532 287.097,49.6003333 287.343,49.737 C287.589,49.8736667 287.746167,50.0991667 287.8145,50.4135 C287.882833,50.7278333 287.876,51.1583333 287.794,51.705 C287.684667,52.525 287.5275,53.1468333 287.3225,53.5705 C287.1175,53.9941667 286.823667,54.2811667 286.441,54.4315 C286.058333,54.5818333 285.511667,54.657 284.801,54.657 L284.801,54.657 L282.073,54.657 L282.794,49.532 Z M283.038,66.178 C282.2672,66.178 281.52223,66.17677 280.80309,66.17431 L280.454,66.174 L281.318,60.028 L284.637,60.028 C285.234917,60.028 285.702039,60.0855495 286.038367,60.2006484 L286.1745,60.2535 C286.516167,60.4038333 286.728,60.6771667 286.81,61.0735 C286.892,61.4698333 286.878333,62.0506667 286.769,62.816 C286.632333,63.7453333 286.441,64.4491667 286.195,64.9275 C285.949,65.4058333 285.58,65.7338333 285.088,65.9115 C284.596,66.0891667 283.912667,66.178 283.038,66.178 Z" id="mxln0g" fill="#2967BA" fill-rule="nonzero"></path></g></g></svg></span></a>
-							<p>Сервис для игроков в волейбол и организаторов волейбольных мероприятий</p>
+							<p>{{ __('ui.footer_tagline') }}</p>
 							<div class="footer-social-icon">
 								<a target="_blank" href="https://vk.com/volleyplay.club"><span class="icon-vk"></span></a>
 								<a target="_blank" href="https://t.me/+YAwpAjUdXR0zY2Ji"><span class="icon-tg"></span></a>
 							</div>  
-							<p><a href="/personal_data_agreement">Согласие на обработку персональных данных</a></p>
-							<p><a href="/user_agreement">Пользовательское соглашение</a></p>
+							<p><a href="/personal_data_agreement">{{ __('ui.footer_personal_data') }}</a></p>
+							<p><a href="/user_agreement">{{ __('ui.footer_user_agreement') }}</a></p>
 						</div>
 						
 						<div class="col-3">
 							<nav class="footer-menu">                 
 								<a href="/events">
-									<span class="footer-menu-text">Игры и тренировки</span>
+									<span class="footer-menu-text">{{ __('ui.nav_games_trainings') }}</span>
 								</a>
 								<a href="/locations">
-									<span class="footer-menu-text">Локации</span>
+									<span class="footer-menu-text">{{ __('ui.nav_locations') }}</span>
 								</a>
 								<a href="/volleyball_school">
-									<span class="footer-menu-text">Школы волейбола</span>
+									<span class="footer-menu-text">{{ __('ui.nav_schools') }}</span>
 								</a>              
 								<a href="/leagues/all">
-									<span class="footer-menu-text">Лиги и сезоны</span>
+									<span class="footer-menu-text">{{ __('ui.nav_leagues') }}</span>
 								</a>
 								<a href="/users">
-									<span class="footer-menu-text">Игроки</span>
+									<span class="footer-menu-text">{{ __('ui.nav_players') }}</span>
 								</a>  
 								<a href="/help">
-									<span class="footer-menu-text">Помощь</span>
+									<span class="footer-menu-text">{{ __('ui.nav_help') }}</span>
 								</a>                 
 								<a href="/rules">
-									<span class="footer-menu-text">Правила сервиса</span>
+									<span class="footer-menu-text">{{ __('ui.nav_rules') }}</span>
 								</a>
 								<a href="/level_players">
-									<span class="footer-menu-text">Уровни игроков</span>
+									<span class="footer-menu-text">{{ __('ui.nav_levels') }}</span>
 								</a>
 								<a href="/about">
-									<span class="footer-menu-text">О сервисе</span>
+									<span class="footer-menu-text">{{ __('ui.nav_about') }}</span>
 								</a>  								
 							</nav>
 						</div>
@@ -695,7 +731,7 @@
 							</div>
 							--}}
 							<div class="footer-app">
-								<div class="h4 title-h">Приложения</div>
+								<div class="h4 title-h">{{ __('ui.footer_apps_title') }}</div>
 								<div class="app-links">
 									<div class="row">
 										<div class="col-6">
@@ -709,7 +745,7 @@
 							</div>
 							
 							<div class="footer-copyright">
-								<p>© VolleyPlay 2026. Все права защищены.</p>
+								<p>{{ __('ui.footer_copyright', ['year' => '2026']) }}</p>
 							</div>
 							
 						</div>        
@@ -944,8 +980,8 @@
 					try {
 						await Promise.race([
 						NativeBiometric.verifyIdentity({
-							reason: 'Войти в VolleyPlay',
-							title: 'Вход по Face ID',
+							reason: @json(__('ui.biometric_login_reason')),
+							title: @json(__('ui.biometric_login_title')),
 						}),
 						new Promise(function(_, reject) {
 							setTimeout(function() { reject(new Error('timeout')); }, 5000);
@@ -1027,12 +1063,12 @@
 						sessionStorage.setItem('biometric_offered', 'true');
 						
 						var result = await swal({
-							title: 'Быстрый вход',
-							text: 'Хотите входить по Face ID?',
+							title: @json(__('ui.biometric_setup_title')),
+							text: @json(__('ui.biometric_setup_text')),
 							icon: 'info',
 							buttons: {
-								cancel: 'Позже',
-								confirm: 'Включить'
+								cancel: @json(__('ui.biometric_setup_later')),
+								confirm: @json(__('ui.biometric_setup_enable'))
 							}
 						});
 						if (!result) return;
@@ -1058,7 +1094,7 @@
 								password: token,
 								server: 'volleyplay.club'
 							});
-							swal('Готово!', 'Face ID включён. В следующий раз вы войдёте мгновенно.', 'success');
+							swal(@json(__('ui.biometric_done_title')), @json(__('ui.biometric_done_text')), 'success');
 						}
 						} catch (e) {
 						console.log('BIOMETRIC: ERROR', e);
@@ -1082,7 +1118,7 @@
 			}
 		</script>
 		
-		<button id="app-back-btn" onclick="window.history.back()" aria-label="Назад">
+		<button id="app-back-btn" onclick="window.history.back()" aria-label="{{ __('ui.back') }}">
 			<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
 				<polyline points="15 18 9 12 15 6"></polyline>
 			</svg>

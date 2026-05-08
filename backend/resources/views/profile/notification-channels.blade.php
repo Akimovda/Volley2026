@@ -1,18 +1,18 @@
 {{-- resources/views/profile/notification-channels.blade.php --}}
 <x-voll-layout body_class="profile-page">
 
-    <x-slot name="title">Каналы уведомлений</x-slot>
-    <x-slot name="h1">Каналы уведомлений</x-slot>
-    <x-slot name="h2">Подключённые каналы для анонсов</x-slot>
-    <x-slot name="t_description">Telegram, VK и MAX каналы для рассылки анонсов мероприятий.</x-slot>
+    <x-slot name="title">{{ __('profile.nch_title') }}</x-slot>
+    <x-slot name="h1">{{ __('profile.nch_title') }}</x-slot>
+    <x-slot name="h2">{{ __('profile.nch_h2') }}</x-slot>
+    <x-slot name="t_description">{{ __('profile.nch_t_description') }}</x-slot>
 
     <x-slot name="breadcrumbs">
         <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
-            <a href="{{ route('profile.show') }}" itemprop="item"><span itemprop="name">Профиль</span></a>
+            <a href="{{ route('profile.show') }}" itemprop="item"><span itemprop="name">{{ __('profile.nch_breadcrumb') }}</span></a>
             <meta itemprop="position" content="2">
         </li>
         <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
-            <span itemprop="name">Каналы уведомлений</span>
+            <span itemprop="name">{{ __('profile.nch_breadcrumb_self') }}</span>
             <meta itemprop="position" content="3">
         </li>
     </x-slot>
@@ -22,7 +22,7 @@
         {{-- ======= ИНСТРУКЦИЯ ======= --}}
         <div class="ramka">
             <div class="alert alert-info mb-2">
-                <div class="alert-title b-700 f-17">❓ Что такое каналы уведомлений?</div>
+                <div class="alert-title b-700 f-17">{{ __('profile.nch_help_title') }}</div>
                 <p class="mt-1 mb-0">
                     Это ваш чат или канал в <strong>Telegram</strong> / <strong>MAX</strong>,
                     куда наш бот автоматически отправляет анонсы ваших мероприятий.
@@ -31,13 +31,13 @@
                 </p>
             </div>
 
-            <h3 class="mt-0">📋 Telegram и MAX — как подключить</h3>
+            <h3 class="mt-0">{{ __('profile.nch_howto_h3') }}</h3>
 
             <div class="row">
                 <div class="col-md-4">
                     <div class="card h-100">
                         <div class="f-30 text-center mb-05">1️⃣</div>
-                        <div class="b-700 f-16 text-center mb-05">Создайте ссылку привязки</div>
+                        <div class="b-700 f-16 text-center mb-05">{{ __('profile.nch_step1_title') }}</div>
                         <p class="f-14 mb-0">
                             В блоке <strong>«Подключить канал»</strong> выберите платформу
                             (Telegram или MAX), придумайте название — и нажмите кнопку.
@@ -48,7 +48,7 @@
                 <div class="col-md-4">
                     <div class="card h-100">
                         <div class="f-30 text-center mb-05">2️⃣</div>
-                        <div class="b-700 f-16 text-center mb-05">Добавьте бота в чат</div>
+                        <div class="b-700 f-16 text-center mb-05">{{ __('profile.nch_step2_title') }}</div>
                         <p class="f-14 mb-0">
                             Нажмите кнопку «Открыть» — откроется мессенджер.
                             Выберите свою группу или канал и добавьте бота
@@ -59,7 +59,7 @@
                 <div class="col-md-4">
                     <div class="card h-100">
                         <div class="f-30 text-center mb-05">3️⃣</div>
-                        <div class="b-700 f-16 text-center mb-05">Канал подтверждён</div>
+                        <div class="b-700 f-16 text-center mb-05">{{ __('profile.nch_step3_title') }}</div>
                         <p class="f-14 mb-0">
                             Бот автоматически отметит канал как подтверждённый.
                             Обновите страницу — увидите его в списке с бейджем
@@ -70,7 +70,7 @@
             </div>
 
             {{-- Пошаговки для Telegram и MAX --}}
-            <h3>🧭 Инструкции по платформам</h3>
+            <h3>{{ __('profile.nch_platforms_h3') }}</h3>
 
             <div class="tabs-content">
                 <div class="tabs">

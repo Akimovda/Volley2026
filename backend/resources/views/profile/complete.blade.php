@@ -42,15 +42,9 @@
 		return true;
 		};
 
-		$lockHint = 'Поле уже заполнено. Изменить может только администратор.';
+		$lockHint = __('profile.cp_lock_hint');
 		
-		$posMap = [
-		'setter'   => 'Связующий',
-		'outside'  => 'Доигровщик',
-		'opposite' => 'Диагональный',
-		'middle'   => 'Центральный блокирующий',
-		'libero'   => 'Либеро',
-		];
+		$posMap = __('profile.pos_long');
 		
 		// Амплуа / позиции
 		$classicPrimary = optional($user?->classicPositions)->firstWhere('is_primary', true)?->position;
@@ -118,11 +112,11 @@
 			
 			<x-slot name="title">
 				@if(($mode ?? 'self') === 'admin_other')
-				Редактирование профиля пользователя #{{ $user->id }}
+				{{ __('profile.cp_title_admin_other', ['id' => $user->id]) }}
 				@elseif(($mode ?? 'self') === 'organizer_other')
-				Настройка уровней игрока #{{ $user->id }}
+				{{ __('profile.cp_title_organizer', ['id' => $user->id]) }}
 				@else
-				Редактирование данных вашего профиля
+				{{ __('profile.cp_title_self') }}
 				@endif
 			</x-slot>
 			
@@ -134,13 +128,13 @@
 				@if(!empty($labelName))
 				{{ $labelName }}
 				@else
-				Пользователь #{{ $user->id }}
+				{{ __('profile.cp_breadcrumb_user_n', ['id' => $user->id]) }}
 				@endif
                 
 				@if(($mode ?? 'self') === 'admin_other')
-				— режим администратора
+				{{ __('profile.cp_desc_admin_suffix') }}
 				@elseif(($mode ?? 'self') === 'organizer_other')
-				— режим организатора (только уровни/дата рождения)
+				{{ __('profile.cp_desc_organizer_suffix') }}
 				@endif
 			</x-slot>
 			
@@ -152,11 +146,11 @@
 				<li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
 					@if(!$isEditingOther)
 					<a href="{{ route('profile.show') }}" itemprop="item">
-						<span itemprop="name">Ваш профиль</span>
+						<span itemprop="name">{{ __('profile.cp_breadcrumb_self') }}</span>
 					</a>
 					@else
 					<a href="{{ route('users.show', ['user' => $user->id]) }}" itemprop="item">
-						<span itemprop="name">Пользователь #{{ $user->id }}</span>
+						<span itemprop="name">{{ __('profile.cp_breadcrumb_user_n', ['id' => $user->id]) }}</span>
 					</a>
 					@endif
 					<meta itemprop="position" content="2">
@@ -164,24 +158,24 @@
                 
 				<li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
 					<a href="{{ $isEditingOther ? url('/profile/complete?user_id='.$user->id) : url('/profile/complete') }}" itemprop="item">
-						<span itemprop="name">Редактирование данных</span>
+						<span itemprop="name">{{ __('profile.cp_breadcrumb_edit') }}</span>
 					</a>
 					<meta itemprop="position" content="3">
 				</li>
 			</x-slot>
 			
-			<x-slot name="h1">Редактирование профиля</x-slot>
+			<x-slot name="h1">{{ __('profile.cp_h1') }}</x-slot>
 			
 			<x-slot name="h2">
 				@if(!empty($user->first_name) || !empty($user->last_name))
 				{{ trim($user->first_name . ' ' . $user->last_name) }}
 				@else
-				Пользователь #{{ $user->id }}
+				{{ __('profile.cp_breadcrumb_user_n', ['id' => $user->id]) }}
 				@endif
 			</x-slot>
 			
 			<x-slot name="t_description">
-				Заполните ключевые поля — после первого сохранения часть данных сможет менять только администратор.
+				{{ __('profile.cp_t_description') }}
 			</x-slot>
 			
 			<x-slot name="style">
@@ -306,20 +300,19 @@
 				@if ($isFirstCompletion)
 				<div class="ramka" style="border-left: 4px solid var(--c-primary, #2563eb);">
 					<div class="text-center">
-						<h3 class="mt-0">Добро пожаловать на VolleyPlay.Club! 🏐</h3>
-						<p>Заполните анкету — это займёт меньше минуты.<br>
-						После сохранения персональные данные нельзя будет изменить самостоятельно.</p>
+						<h3 class="mt-0">{{ __('profile.cp_welcome_first_title') }}</h3>
+						<p>{!! __('profile.cp_welcome_first_lead') !!}</p>
 						@if($user?->first_name || $user?->last_name)
-						<p class="f-14" style="color: var(--c-muted, #6b7280);">Имя и фамилия подтянулись из вашего аккаунта — проверьте и при необходимости исправьте.</p>
+						<p class="f-14" style="color: var(--c-muted, #6b7280);">{{ __('profile.cp_welcome_first_hint') }}</p>
 						@endif
 					</div>
 				</div>
 				@elseif (session('welcome'))
 				<div class="ramka">
 					<div class="text-center">
-						<h3 class="mt-0">Добро пожаловать на VolleyPlay.Club!</h3>
-						<p>Надеемся, Вам понравится наш сервис.<br>Для Вашего удобства заполните данные профиля — это займёт меньше минуты.</p>
-						<p class="cd b-600 f-20">Удачных игр и тренировок! 💪</p>
+						<h3 class="mt-0">{{ __('profile.cp_welcome_session_title') }}</h3>
+						<p>{!! __('profile.cp_welcome_session_lead') !!}</p>
+						<p class="cd b-600 f-20">{{ __('profile.cp_welcome_session_motto') }}</p>
 					</div>
 				</div>
 				@endif
@@ -340,7 +333,7 @@
 				@if ($errors->any())
 				<div class="ramka">		
 					<div class="alert alert-error">
-						<div class="alert-title">Проверьте поля</div>
+						<div class="alert-title">{{ __('profile.cp_errors_title') }}</div>
 						<ul class="list">
 							@foreach ($errors->all() as $err)
 							<li>{{ $err }}</li>
@@ -354,20 +347,20 @@
 				@if (!empty($requiredKeys))
 				<div class="ramka">			
 					<div class="alert alert-error">
-						<div class="alert-title">Перед записью заполните:</div>
+						<div class="alert-title">{{ __('profile.cp_required_title') }}</div>
 						<ul class="list">
 							@foreach ($requiredKeys as $key)
 							<li>
 								@switch($key)
-								@case('full_name') Фамилия и имя @break
-								@case('patronymic') Отчество @break
-								@case('phone') Телефон @break
-								@case('city') Город @break
-								@case('birth_date') Дата рождения @break
-								@case('gender') Пол @break
-								@case('height_cm') Рост @break
-								@case('classic_level') Уровень (классика) @break
-								@case('beach_level') Уровень (пляж) @break
+								@case('full_name') {{ __('profile.cp_required_full_name') }} @break
+								@case('patronymic') {{ __('profile.cp_required_patronymic') }} @break
+								@case('phone') {{ __('profile.cp_required_phone') }} @break
+								@case('city') {{ __('profile.cp_required_city') }} @break
+								@case('birth_date') {{ __('profile.cp_required_birth') }} @break
+								@case('gender') {{ __('profile.cp_required_gender') }} @break
+								@case('height_cm') {{ __('profile.cp_required_height') }} @break
+								@case('classic_level') {{ __('profile.cp_required_classic') }} @break
+								@case('beach_level') {{ __('profile.cp_required_beach') }} @break
 								@default {{ $key }}
 								@endswitch
 							</li>
@@ -376,7 +369,7 @@
 					</div>
 					@if (!empty($eventId))
 					<div class="mb-1">
-						После сохранения профиля мы попробуем автоматически записать вас на мероприятие.
+						{{ __('profile.cp_required_event_hint') }}
 					</div>
 					@endif
 				</div>
@@ -405,7 +398,7 @@
 									@if($organizerLimitedView)
 									<div class="ramka">		
 									<div class="alert alert-info">
-										Вы редактируете профиль пользователя как организатор: доступны только дата рождения, амплуа/зона в пляжке и классике и уровни игры.
+										{{ __('profile.cp_organizer_view_info') }}
 									</div>
 									</div>
 									@endif
@@ -423,7 +416,7 @@
 									
 									
 									
-									<h2 class="-mt-05">Персональные данные</h2>
+									<h2 class="-mt-05">{{ __('profile.cp_sec_personal') }}</h2>
 									<div class="row">
 										{{-- -------- Фамилия -------- --}}
 										@php $lockedLast = !$canEditProtected && $filled($user?->last_name); @endphp
@@ -431,8 +424,8 @@
 										<div class="col-sm-6">
 											<div class="card">
 												<label>
-													<div>Фамилия</div>
-													<div class="f-16 b-500">Видно всем пользователям</div>
+													<div>{{ __('profile.cp_lbl_last') }}</div>
+													<div class="f-16 b-500">{{ __('profile.cp_visible_all') }}</div>
 												</label>
 												<input
 												name="last_name"
@@ -444,7 +437,7 @@
 												>
 												<ul class="list f-16 mt-1">
 													@error('last_name')<li class="red b-600">{{ $message }}</li>@enderror
-													<li>Кириллица, ≥2 символов, с заглавной</li>
+													<li>{{ __('profile.cp_hint_cyr_name') }}</li>
 													@if($lockedLast)<li>{{ $lockHint }}</li>@endif
 												</ul>
 											</div>
@@ -456,8 +449,8 @@
 										<div class="col-sm-6">
 											<div class="card">
 												<label>
-													<div>Имя</div>
-													<div class="f-16 b-500">Видно всем пользователям</div>
+													<div>{{ __('profile.cp_lbl_first') }}</div>
+													<div class="f-16 b-500">{{ __('profile.cp_visible_all') }}</div>
 												</label>
 												
 												<input
@@ -470,7 +463,7 @@
 												>
 												<ul class="list f-16 mt-1">
 													@error('first_name')<li class="red b-600">{{ $message }}</li>@enderror
-													<li>Кириллица, ≥2 символов, с заглавной</li>
+													<li>{{ __('profile.cp_hint_cyr_name') }}</li>
 													@if($lockedFirst)<li>{{ $lockHint }}</li>@endif
 												</ul>												
 											</div>
@@ -482,8 +475,8 @@
 										<div class="col-sm-6">
 											<div class="card">
 												<label>
-													<div>Отчество</div>
-													<div class="cd f-16 b-500">Видно только организаторам</div>
+													<div>{{ __('profile.cp_lbl_patronym') }}</div>
+													<div class="cd f-16 b-500">{{ __('profile.cp_visible_org') }}</div>
 												</label>
 												
 												<input
@@ -496,7 +489,7 @@
 												>
 												<ul class="list f-16 mt-1">
 													@error('patronymic')<li class="red b-600">{{ $message }}</li>@enderror
-													<li>Кириллица, ≥2 символов, с заглавной</li>
+													<li>{{ __('profile.cp_hint_cyr_name') }}</li>
 													@if($lockedPat)<li>{{ $lockHint }}</li>@endif
 												</ul>													
 											</div>
@@ -508,8 +501,8 @@
 										<div class="col-sm-6">
 											<div class="card">
 												<label>
-													<div>Телефон</div>
-													<div class="cd f-16 b-500">Видно только организаторам</div>
+													<div>{{ __('profile.cp_lbl_phone') }}</div>
+													<div class="cd f-16 b-500">{{ __('profile.cp_visible_org') }}</div>
 												</label>
 												<input
 												name="phone_masked"
@@ -541,8 +534,8 @@
 										<div class="col-sm-6">
 											<div class="card">
 												<label>
-													<div>Дата рождения</div>
-													<div class="f-16 b-500">Видно всем пользователям в формате: "30 лет"</div>
+													<div>{{ __('profile.cp_lbl_birth') }}</div>
+													<div class="f-16 b-500">{{ __('profile.cp_visible_age_fmt') }}</div>
 												</label>													
 												
 												@php
@@ -560,7 +553,7 @@
 													<select id="birth_day" style="width:80px"
 														class="{{ $errors->has('birth_date') ? 'input-error' : '' }}"
 														@disabled($lockedBirth)>
-														<option value="">День</option>
+														<option value="">{{ __('profile.cp_birth_day_ph') }}</option>
 														@for($d = 1; $d <= 31; $d++)
 														<option value="{{ $d }}" @selected($birthDay === $d)>{{ $d }}</option>
 														@endfor
@@ -568,15 +561,15 @@
 													<select id="birth_month" style="flex:1"
 														class="{{ $errors->has('birth_date') ? 'input-error' : '' }}"
 														@disabled($lockedBirth)>
-														<option value="">Месяц</option>
-														@foreach(['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'] as $mi => $mn)
+														<option value="">{{ __('profile.cp_birth_month_ph') }}</option>
+														@foreach(__('profile.cp_months') as $mi1 => $mn) @php $mi = $mi1 - 1; @endphp
 														<option value="{{ $mi + 1 }}" @selected($birthMonth === $mi + 1)>{{ $mn }}</option>
 														@endforeach
 													</select>
 													<select id="birth_year" style="width:100px"
 														class="{{ $errors->has('birth_date') ? 'input-error' : '' }}"
 														@disabled($lockedBirth)>
-														<option value="">Год</option>
+														<option value="">{{ __('profile.cp_birth_year_ph') }}</option>
 														@for($y = 2015; $y >= 1945; $y--)
 														<option value="{{ $y }}" @selected($birthYear === $y)>{{ $y }}</option>
 														@endfor
@@ -594,7 +587,7 @@
                                                     id="hide_age_checkbox"
                                                     @checked(old('hide_age', $user?->hide_age ?? false))>
                                                 <div class="custom-checkbox"></div>
-                                                <span>Скрыть мой возраст от других пользователей</span>
+                                                <span>{{ __('profile.cp_hide_age') }}</span>
                                             </label>
                                         </div>
 											</div>
@@ -606,8 +599,8 @@
 										<div class="col-sm-6">
 											<div class="card">
 												<label>
-													<div>Город</div>
-													<div class="f-16 b-500">Видно всем пользователям</div>
+													<div>{{ __('profile.cp_lbl_city') }}</div>
+													<div class="f-16 b-500">{{ __('profile.cp_visible_all') }}</div>
 												</label>												
 												
 												{{-- То, что реально сохраняем --}}
@@ -622,7 +615,7 @@
 													<input
 													type="text"
 													id="city_search"
-													placeholder="Начните вводить город…"
+													placeholder="{{ __('profile.cp_city_search_ph') }}"
 													value="{{ old('city_search', $selectedCityLabel) }}"
 													autocomplete="off"
 													@disabled($lockedCity)
@@ -634,7 +627,7 @@
 												</div>
 												<ul class="list f-16 mt-1">
 													@error('city_id')<li class="red b-600">{{ $message }}</li>@enderror
-													@if($lockedCity)<li>{{ $lockHint }}</li>@else <li>Введите минимум 2 символа для поиска.</li> @endif
+													@if($lockedCity)<li>{{ $lockHint }}</li>@else <li>{{ __('profile.cp_city_search_hint') }}</li> @endif
 												</ul>
 											</div>
 										</div>
@@ -644,13 +637,13 @@
 										<div class="col-sm-6">
 											<div class="card">
 												<label>
-													<div>Пол</div>
-													<div class="f-16 b-500">Видно всем пользователям</div>
+													<div>{{ __('profile.cp_lbl_gender') }}</div>
+													<div class="f-16 b-500">{{ __('profile.cp_visible_all') }}</div>
 												</label>	
 												<select name="gender" class="{{ $errors->has('gender') ? 'input-error' : '' }}">
-													<option value="">— не указан —</option>
-													<option value="m" @selected(old('gender', $user?->gender) === 'm')>Мужчина</option>
-													<option value="f" @selected(old('gender', $user?->gender) === 'f')>Женщина</option>
+													<option value="">{{ __('profile.cp_gender_none') }}</option>
+													<option value="m" @selected(old('gender', $user?->gender) === 'm')>{{ __('profile.cp_gender_male') }}</option>
+													<option value="f" @selected(old('gender', $user?->gender) === 'f')>{{ __('profile.cp_gender_female') }}</option>
 												</select>
 												
 												<ul class="list f-16 mt-1">
@@ -665,8 +658,8 @@
 										<div class="col-sm-6">
 											<div class="card">
 												<label>
-													<div>Рост (см)</div>
-													<div class="f-16 b-500">Видно всем пользователям</div>
+													<div>{{ __('profile.cp_lbl_height') }}</div>
+													<div class="f-16 b-500">{{ __('profile.cp_visible_all') }}</div>
 												</label>	
 												<input
 												type="number"
@@ -678,7 +671,7 @@
 												>
 												<ul class="list f-16 mt-1">
 													@error('height_cm')<li class="red b-600">{{ $message }}</li>@enderror
-													<li>Допустимый диапазон: 40–230 см.</li>
+													<li>{{ __('profile.cp_hint_height_range') }}</li>
 												</ul>													
 											</div>
 										</div>
@@ -705,11 +698,11 @@
 								$ageRestrictionMessage = '';
 								
 								if (!$birthDate) {
-								$ageRestrictionMessage = 'Сначала укажите дату рождения';
+								$ageRestrictionMessage = __('profile.cp_age_msg_no_birth');
 								$availableLevels = []; // ничего не доступно
 								} elseif ($age < 18) {
 								$availableLevels = [1,2,4]; // только эти для младше 18
-								$ageRestrictionMessage = 'Доступны только уровни 1, 2, 4';
+								$ageRestrictionMessage = __('profile.cp_age_msg_under_18');
 								}
 								
 								
@@ -740,13 +733,13 @@
 										
 										{{-- -------- Classic -------- --}}
 										
-										<h2 class="-mt-05">Классический волейбол</h2>
+										<h2 class="-mt-05">{{ __('profile.cp_sec_classic') }}</h2>
 										<div class="row">		
 											<div class="col-12">		
 												<div class="hideselect">									
 													<label>
-														<div>Уровень</div>
-														<div class="f-16 b-500">Видно всем пользователям</div>
+														<div>{{ __('profile.cp_lvl_label') }}</div>
+														<div class="f-16 b-500">{{ __('profile.cp_visible_all') }}</div>
 													</label>	
 													
 													{{-- Скрытый оригинальный select --}}
@@ -756,13 +749,13 @@
 													style="display: none;"
 													@disabled($lockedClassic)
 													>
-														<option value="">— выберите —</option>
+														<option value="">{{ __('profile.cp_select_pick') }}</option>
 														@foreach($levels as $lvl)
 														<option value="{{ $lvl }}" @selected((string)$currentClassicLevel === (string)$lvl)>{{ $lvl }}</option>
 														@endforeach
 													</select>
 													<ul class="list f-16 mt-1">
-														<li><a href="/level_players">Подробная информация об уровнях игроков</a></li>
+														<li><a href="/level_players">{{ __('profile.cp_lvl_link') }}</a></li>
 													</ul>
 													{{-- Кнопки уровней --}}
 													<div class="swiper levelmark-row" id="levelmark-wrap-classic" data-type="classic">
@@ -807,7 +800,7 @@
 														@else
 														@if($lockedClassic)
 														<li>{{ $lockHint }}</li>
-														<li>Ваш уровень: <strong class="cd">{{ $user->classic_level }}</strong></li>
+														<li>{{ __('profile.cp_lvl_yours') }} <strong class="cd">{{ $user->classic_level }}</strong></li>
 														@elseif($ageRestrictionMessage)
 														<li class="level-mes">{{ $ageRestrictionMessage }}</li> {{-- Если не заблокировано и есть возрастные ограничения --}}
 														@else
@@ -820,7 +813,7 @@
 											
 											<div class="col-sm-6">
 												<div class="card">
-													<label>Основное амплуа</label>
+													<label>{{ __('profile.cp_role_primary') }}</label>
 													<div class="space-y-1">
 														@foreach($posMap as $key => $label)
 														<label class="radio-item">
@@ -837,7 +830,7 @@
 											
 											<div class="col-sm-6">
 												<div class="card">
-													<label>Дополнительное амплуа</label>
+													<label>{{ __('profile.cp_role_extra') }}</label>
 													@php $primaryNow = old('classic_primary_position', $classicPrimary); @endphp
 													<div class="space-y-1">
 														@foreach($posMap as $key => $label)
@@ -850,7 +843,7 @@
 															@checked($checked) @disabled($disabled)>
 															<div class="custom-checkbox"></div>
 															<span>{{ $label }}
-																@if($disabled)<span class="f-15">(основное)</span>@endif
+																@if($disabled)<span class="f-15">{{ __('profile.cp_role_primary_tag') }}</span>@endif
 															</span>
 														</label>
 														@endforeach
@@ -862,11 +855,11 @@
 									</div>
 									<div class="ramka">		
 										
-										<h2 class="-mt-05">Пляжный волейбол</h2>
+										<h2 class="-mt-05">{{ __('profile.cp_sec_beach') }}</h2>
 										
 										<label>
-											<div>Уровень</div>
-											<div class="f-16 b-500">Видно всем пользователям</div>
+											<div>{{ __('profile.cp_lvl_label') }}</div>
+											<div class="f-16 b-500">{{ __('profile.cp_visible_all') }}</div>
 										</label>
 										
 										{{-- -------- Beach -------- --}}
@@ -880,14 +873,14 @@
 													style="display: none;"
 													@disabled($lockedBeach)
 													>
-														<option value="">— выберите —</option>
+														<option value="">{{ __('profile.cp_select_pick') }}</option>
 														@foreach($levels as $lvl)
 														<option value="{{ $lvl }}" @selected((string)$currentBeachLevel === (string)$lvl)>{{ $lvl }}</option>
 														@endforeach
 													</select>
 													
 													<ul class="list f-16 mt-1">
-														<li><a href="/level_players">Подробная информация об уровнях игроков</a></li>
+														<li><a href="/level_players">{{ __('profile.cp_lvl_link') }}</a></li>
 													</ul>
 													
 													{{-- Кнопки уровней --}}
@@ -934,7 +927,7 @@
 														@else
 														@if($lockedBeach)
 														<li>{{ $lockHint }}</li> 
-														<li>Ваш уровень: <strong class="cd">{{ $user->beach_level }}</strong></li>
+														<li>{{ __('profile.cp_lvl_yours') }} <strong class="cd">{{ $user->beach_level }}</strong></li>
 														@elseif($ageRestrictionMessage)
 														<li class="level-mes">{{ $ageRestrictionMessage }}</li> {{-- Если не заблокировано и есть возрастные ограничения --}}
 														@else
@@ -947,24 +940,24 @@
 											
 											<div class="col-sm-12">
 												<div class="card">
-													<label>В какой зоне вы играете: 2, 4 или вы универсал?</label>
+													<label>{{ __('profile.cp_beach_mode_q') }}</label>
 													
 													<label class="radio-item">
 														<input type="radio" name="beach_mode" value="2" @checked(old('beach_mode', $beachModeCurrent) === '2')>
 														<div class="custom-radio"></div>
-														<span>Зона 2</span>
+														<span>{{ __('profile.cp_beach_zone_2') }}</span>
 													</label>
 													<label class="radio-item">
 														<input type="radio" name="beach_mode" value="4" @checked(old('beach_mode', $beachModeCurrent) === '4')>
 														<div class="custom-radio"></div>
-														<span>Зона 4</span>
+														<span>{{ __('profile.cp_beach_zone_4') }}</span>
 													</label>
 													<label class="radio-item">
 														<input type="radio" name="beach_mode" value="universal" @checked(old('beach_mode', $beachModeCurrent) === 'universal')>
 														<div class="custom-radio"></div>
-														<span>Универсал</span>
+														<span>{{ __('profile.cp_beach_universal') }}</span>
 													</label>
-													<div class="f-16 b-500">Если выбран "Универсал", отметим зоны 2 и 4 и поставим пометку "универсальный игрок".</div>
+													<div class="f-16 b-500">{{ __('profile.cp_beach_universal_hint') }}</div>
 													
 												</div>
 											</div>	
@@ -972,7 +965,7 @@
 									</div>
 									
 									<div class="card-ramka mb-2 text-center">	
-										<button type="submit" class="btn">Сохранить</button>
+										<button type="submit" class="btn">{{ __('profile.cp_btn_save') }}</button>
 									</div>
 								</form>
 								
@@ -1008,10 +1001,10 @@
 					<script>
 					document.addEventListener('DOMContentLoaded', function() {
 						swal({
-							title: 'Приветствую! 👋',
-							text: 'Заполните обязательные поля: Ваше ФИО, номер сотового и город проживания!',
+							title: @json(__('profile.cp_swal_prompt_title')),
+							text: @json(__('profile.cp_swal_prompt_text')),
 							icon: 'info',
-							button: 'Хорошо',
+							button: @json(__('profile.cp_swal_prompt_btn')),
 						});
 					});
 					</script>
@@ -1143,12 +1136,12 @@
 								
 								if (!birthValue) {
 									available = [];
-									message = 'Сначала укажите дату рождения';
+									message = @json(__('profile.cp_age_msg_no_birth'));
 									} else {
 									const age = calculateAge(birthValue);
 									if (age < 18) {
 										available = [1,2,4];
-										message = 'Доступны только уровни 1, 2, 4';
+										message = @json(__('profile.cp_age_msg_under_18'));
 									}
 								}
 								
@@ -1246,7 +1239,7 @@
 									var y = parseInt(yearEl.value) || 0;
 									var maxDay = m ? daysInMonth(m, y) : 31;
 									var cur = parseInt(dayEl.value) || 0;
-									var html = '<option value="">День</option>';
+									var html = '<option value="">{{ __('profile.cp_birth_day_ph') }}</option>';
 									for (var d = 1; d <= maxDay; d++) {
 										html += '<option value="' + d + '"' + (cur === d ? ' selected' : '') + '>' + d + '</option>';
 									}

@@ -1,10 +1,10 @@
 <x-voll-layout body_class="leagues-page">
-	<x-slot name="title">{{ $league->name }} — Управление</x-slot>
+	<x-slot name="title">{{ $league->name }} — {{ __('seasons.leagues_edit_title') }}</x-slot>
 	<x-slot name="h1">{{ $league->name }}</x-slot>
 
 	<x-slot name="breadcrumbs">
 		<li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
-			<a href="{{ route('leagues.index') }}" itemprop="item"><span itemprop="name">Мои лиги</span></a>
+			<a href="{{ route('leagues.index') }}" itemprop="item"><span itemprop="name">{{ __('seasons.leagues_idx_breadcrumb') }}</span></a>
 			<meta itemprop="position" content="2">
 		</li>
 		<li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
@@ -14,11 +14,11 @@
 	</x-slot>
 
 	<x-slot name="h2">
-		{{ $league->direction === 'beach' ? 'Пляжный' : 'Классический' }}
+		{{ $league->direction === 'beach' ? __('seasons.leagues_dir_beach_short') : __('seasons.leagues_dir_classic_short') }}
 	</x-slot>
 
 	<x-slot name="t_description">
-		Публичная ссылка: <a class="blink" href="{{ route('leagues.show.slug', $league->slug) }}" target="_blank">/l/{{ $league->slug }}</a>
+		{{ __('seasons.leagues_public_link_label') }} <a class="blink" href="{{ route('leagues.show.slug', $league->slug) }}" target="_blank">/l/{{ $league->slug }}</a>
 	</x-slot>
 
 	<div class="container">
@@ -38,50 +38,50 @@
 			<div class="col-lg-4">
 				{{-- Настройки лиги --}}
 				<div class="ramka">
-					<h2 class="-mt-05">Настройки лиги</h2>
+					<h2 class="-mt-05">{{ __('seasons.leagues_settings_h2') }}</h2>
 					<form action="{{ route('leagues.update.league', $league) }}" method="POST" enctype="multipart/form-data">
 						@csrf @method('PUT')
 
 						<div class="card mb-2">
-							<label>Название</label>
+							<label>{{ __('seasons.leagues_label_name_short') }}</label>
 							<input type="text" name="name" value="{{ $league->name }}" required>
 						</div>
 
 						<div class="card mb-2">
-							<label>Направление</label>
+							<label>{{ __('seasons.leagues_label_direction') }}</label>
 							<select name="direction">
-								<option value="beach" {{ $league->direction === 'beach' ? 'selected' : '' }}>Пляжный</option>
-								<option value="classic" {{ $league->direction === 'classic' ? 'selected' : '' }}>Классический</option>
+								<option value="beach" {{ $league->direction === 'beach' ? 'selected' : '' }}>{{ __('seasons.leagues_dir_beach_short') }}</option>
+								<option value="classic" {{ $league->direction === 'classic' ? 'selected' : '' }}>{{ __('seasons.leagues_dir_classic_short') }}</option>
 							</select>
 						</div>
 
 						<div class="card mb-2">
-							<label>Описание</label>
+							<label>{{ __('seasons.leagues_label_description_short') }}</label>
 							<textarea name="description" rows="3">{{ $league->description }}</textarea>
 						</div>
 
 						<div class="card mb-2">
-							<label>Статус</label>
+							<label>{{ __('seasons.label_status') }}</label>
 							<select name="status">
-								<option value="active" {{ $league->status === 'active' ? 'selected' : '' }}>Активна</option>
-								<option value="archived" {{ $league->status === 'archived' ? 'selected' : '' }}>Архив</option>
+								<option value="active" {{ $league->status === 'active' ? 'selected' : '' }}>{{ __('seasons.leagues_status_active') }}</option>
+								<option value="archived" {{ $league->status === 'archived' ? 'selected' : '' }}>{{ __('seasons.leagues_status_archived') }}</option>
 							</select>
 						</div>
 
 						<div class="card mb-2">
-							<label>Логотип</label>
+							<label>{{ __('seasons.leagues_section_logo') }}</label>
 							@if($league->logo_url)
 								<div class="mb-1">
-									<img src="{{ $league->logo_url }}" alt="Логотип" style="max-width:100px;border-radius:8px">
+									<img src="{{ $league->logo_url }}" alt="{{ __('seasons.leagues_section_logo') }}" style="max-width:100px;border-radius:8px">
 								</div>
 								<label class="checkbox-item">
 									<input type="checkbox" name="remove_logo" value="1">
 									<div class="custom-checkbox"></div>
-									<span class="f-13">Удалить логотип</span>
+									<span class="f-13">{{ __('seasons.leagues_remove_logo') }}</span>
 								</label>
 							@endif
 							<input type="file" name="logo" accept="image/*">
-							<div class="f-13 cd mt-1">JPG, PNG, WebP. Макс. 2 МБ.</div>
+							<div class="f-13 cd mt-1">{{ __('seasons.leagues_logo_hint') }}</div>
 						</div>
 
 						<div class="card mb-2">
@@ -94,18 +94,18 @@
 						</div>
 						<div class="card mb-2">
 							<label>MAX</label>
-							<input type="text" name="max_messenger" value="{{ $league->max_messenger }}" placeholder="Ссылка на MAX">
+							<input type="text" name="max_messenger" value="{{ $league->max_messenger }}" placeholder="{{ __('seasons.leagues_ph_max') }}">
 						</div>
 						<div class="card mb-2">
-							<label>Сайт</label>
+							<label>{{ __('seasons.leagues_label_website') }}</label>
 							<input type="text" name="website" value="{{ $league->website }}" placeholder="https://...">
 						</div>
 						<div class="card mb-2">
-							<label>Телефон</label>
+							<label>{{ __('seasons.leagues_label_phone') }}</label>
 							<input type="text" name="phone" value="{{ $league->phone }}" placeholder="+7 999 123-45-67">
 						</div>
 
-						<button type="submit" class="btn btn-primary w-100">Сохранить</button>
+						<button type="submit" class="btn btn-primary w-100">{{ __('seasons.btn_save') }}</button>
 					</form>
 				</div>
 			</div>
@@ -114,13 +114,13 @@
 				{{-- Сезоны лиги --}}
 				<div class="ramka">
 					<div class="d-flex between fvc mb-2">
-						<h2 class="-mt-05 mb-0">Сезоны</h2>
-						<a href="{{ route('seasons.create', $league) }}" class="btn btn-primary f-13" style="padding:6px 14px">Добавить сезон</a>
+						<h2 class="-mt-05 mb-0">{{ __('seasons.leagues_section_seasons') }}</h2>
+						<a href="{{ route('seasons.create', $league) }}" class="btn btn-primary f-13" style="padding:6px 14px">{{ __('seasons.leagues_btn_add_season') }}</a>
 					</div>
 
 					@if($league->seasons->isEmpty())
 						<div class="alert alert-info">
-							Нет сезонов. Создайте первый сезон для лиги.
+							{{ __('seasons.leagues_no_seasons_extended') }}
 						</div>
 					@else
 						@foreach($league->seasons as $season)
@@ -129,9 +129,9 @@
 									<div class="b-600">{{ $season->name }}</div>
 									@php
 										$statusColors = [
-											'active' => ['bg' => 'rgba(16,185,129,.15)', 'color' => '#10b981', 'label' => 'Активен'],
-											'completed' => ['bg' => 'rgba(128,128,128,.15)', 'color' => '#6b7280', 'label' => 'Завершён'],
-											'draft' => ['bg' => 'rgba(231,97,47,.15)', 'color' => '#E7612F', 'label' => 'Черновик'],
+											'active' => ['bg' => 'rgba(16,185,129,.15)', 'color' => '#10b981', 'label' => __('seasons.status_active')],
+											'completed' => ['bg' => 'rgba(128,128,128,.15)', 'color' => '#6b7280', 'label' => __('seasons.status_completed')],
+											'draft' => ['bg' => 'rgba(231,97,47,.15)', 'color' => '#E7612F', 'label' => __('seasons.status_draft')],
 										];
 										$st = $statusColors[$season->status] ?? $statusColors['draft'];
 									@endphp
@@ -146,21 +146,21 @@
 
 								@if($season->leagues->isNotEmpty())
 									<div class="f-16 mb-1 cd">
-										Дивизионы: {{ $season->leagues->pluck('name')->implode(', ') }}
+										{{ __('seasons.divisions_label') }} {{ $season->leagues->pluck('name')->implode(', ') }}
 									</div>
 								@endif
 
 								<div class="f-16 mb-1 cd">
-									Туров: {{ $season->seasonEvents->count() }}
+									{{ __('seasons.rounds_label') }} {{ $season->seasonEvents->count() }}
 								</div>
 
 								<div class="d-flex" style="gap:8px">
-									<a href="{{ route('seasons.edit', $season) }}" class="btn btn-primary f-13" style="padding:6px 14px">Управление</a>
+									<a href="{{ route('seasons.edit', $season) }}" class="btn btn-primary f-13" style="padding:6px 14px">{{ __('seasons.btn_manage') }}</a>
 									@php $seasonEvent = $season->seasonEvents->unique('event_id')->first(); @endphp
 									@if($seasonEvent && $seasonEvent->event)
-										<a href="{{ route('tournament.setup', $seasonEvent->event) }}" class="btn btn-primary f-13" style="padding:6px 14px;background:#E7612F;border-color:#E7612F">Турнир</a>
+										<a href="{{ route('tournament.setup', $seasonEvent->event) }}" class="btn btn-primary f-13" style="padding:6px 14px;background:#E7612F;border-color:#E7612F">{{ __('seasons.btn_tournament_short') }}</a>
 									@endif
-									<a href="{{ route('seasons.show.slug', [$season->league?->slug ?? 'league', $season->slug]) }}" class="btn btn-secondary f-13" style="padding:6px 14px">Публичная</a>
+									<a href="{{ route('seasons.show.slug', [$season->league?->slug ?? 'league', $season->slug]) }}" class="btn btn-secondary f-13" style="padding:6px 14px">{{ __('seasons.btn_public') }}</a>
 								</div>
 							</div>
 						@endforeach

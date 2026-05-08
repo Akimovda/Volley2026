@@ -1,6 +1,6 @@
 <x-voll-layout body_class="rating-page">
-<x-slot name="title">Рейтинг игроков</x-slot>
-<x-slot name="h1">Рейтинг игроков</x-slot>
+<x-slot name="title">{{ __('profile.rating_title') }}</x-slot>
+<x-slot name="h1">{{ __('profile.rating_title') }}</x-slot>
 
 <div class="container">
 <div class="ramka">
@@ -8,16 +8,16 @@
     {{-- Фильтры --}}
     <form method="GET" action="{{ route('players.rating') }}" class="row g-2 mb-4 align-items-end">
         <div class="col-sm-3">
-            <label class="form-label">Направление</label>
+            <label class="form-label">{{ __('profile.rating_label_dir') }}</label>
             <select name="direction" class="form-select" onchange="this.form.submit()">
-                <option value="classic" {{ $direction === 'classic' ? 'selected' : '' }}>Классический</option>
-                <option value="beach" {{ $direction === 'beach' ? 'selected' : '' }}>Пляжный</option>
+                <option value="classic" {{ $direction === 'classic' ? 'selected' : '' }}>{{ __('profile.rating_dir_classic') }}</option>
+                <option value="beach" {{ $direction === 'beach' ? 'selected' : '' }}>{{ __('profile.rating_dir_beach') }}</option>
             </select>
         </div>
         <div class="col-sm-3">
-            <label class="form-label">Сезон</label>
+            <label class="form-label">{{ __('profile.rating_label_season') }}</label>
             <select name="season_id" class="form-select" onchange="this.form.submit()">
-                <option value="">Карьерный (все)</option>
+                <option value="">{{ __('profile.rating_career_all') }}</option>
                 @foreach($seasons as $s)
                     <option value="{{ $s->id }}" {{ $seasonId == $s->id ? 'selected' : '' }}>
                         {{ $s->name }}
@@ -26,22 +26,22 @@
             </select>
         </div>
         <div class="col-sm-3">
-            <label class="form-label">Сортировка</label>
+            <label class="form-label">{{ __('profile.rating_label_sort') }}</label>
             <select name="sort" class="form-select" onchange="this.form.submit()">
                 <option value="match_win_rate" {{ $sort === 'match_win_rate' ? 'selected' : '' }}>WinRate</option>
                 <option value="elo_rating" {{ $sort === 'elo_rating' ? 'selected' : '' }}>Elo</option>
-                <option value="matches_played" {{ $sort === 'matches_played' ? 'selected' : '' }}>Матчей</option>
+                <option value="matches_played" {{ $sort === 'matches_played' ? 'selected' : '' }}>{{ __('profile.rating_sort_matches') }}</option>
             </select>
         </div>
         <div class="col-sm-3">
-            <button type="submit" class="btn btn-outline-primary w-100">Обновить</button>
+            <button type="submit" class="btn btn-outline-primary w-100">{{ __('profile.rating_btn_apply') }}</button>
         </div>
     </form>
 
     {{-- Таблица рейтинга --}}
     @if($players->isEmpty())
         <div class="alert alert-info">
-            Нет данных для отображения. Рейтинг формируется после завершения турниров.
+            {{ __('profile.rating_no_data') }}
         </div>
     @else
         <div class="table-responsive">
@@ -49,19 +49,19 @@
                 <thead>
                     <tr>
                         <th>#</th>
-                        <th>Игрок</th>
+                        <th>{{ __('profile.rating_col_player') }}</th>
                         @if($seasonId)
-                            <th>Лига</th>
-                            <th>Туров</th>
+                            <th>{{ __('profile.rating_col_league') }}</th>
+                            <th>{{ __('profile.rating_col_rounds') }}</th>
                         @endif
-                        <th>Матчей</th>
-                        <th>Побед</th>
+                        <th>{{ __('profile.rating_col_matches') }}</th>
+                        <th>{{ __('profile.rating_col_wins') }}</th>
                         <th>WinRate</th>
-                        <th>Сеты</th>
-                        <th>Очки ±</th>
+                        <th>{{ __('profile.rating_col_sets') }}</th>
+                        <th>{{ __('profile.rating_col_pts_diff') }}</th>
                         @if(!$seasonId)
                             <th>Elo</th>
-                            <th>Турниров</th>
+                            <th>{{ __('profile.rating_col_tournaments') }}</th>
                         @else
                             <th>Streak</th>
                         @endif
@@ -86,7 +86,7 @@
                                 @if($user)
                                     <a href="{{ route('users.show', $user->id) }}">{{ $user->name }}</a>
                                 @else
-                                    Игрок #{{ $stat->user_id }}
+                                    {{ __('profile.rating_player_n', ['id' => $stat->user_id]) }}
                                 @endif
                             </td>
                             @if($isSeasonMode)

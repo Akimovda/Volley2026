@@ -1,6 +1,6 @@
 <x-voll-layout body_class="subscription-template-edit-page">
-    <x-slot name="title">Редактировать шаблон абонемента</x-slot>
-    <x-slot name="h1">Редактировать шаблон абонемента</x-slot>
+    <x-slot name="title">{{ __('subscriptions.tpl_edit_title') }}</x-slot>
+    <x-slot name="h1">{{ __('subscriptions.tpl_edit_title') }}</x-slot>
     <x-slot name="h2">{{ $subscriptionTemplate->name }}</x-slot>
 
     <div class="container">
@@ -22,11 +22,11 @@
             @method('PUT')
 
             <div class="ramka">
-                <h2 class="-mt-05">Основное</h2>
+                <h2 class="-mt-05">{{ __('subscriptions.tpl_section_main') }}</h2>
                 <div class="row row2">
                     <div class="col-md-6">
                         <div class="card">
-                            <label>Название *</label>
+                            <label>{{ __('subscriptions.tpl_label_name') }}</label>
                             <input type="text" name="name"
                                    value="{{ old('name', $subscriptionTemplate->name) }}"
                                    required maxlength="150">
@@ -34,7 +34,7 @@
                     </div>
                     <div class="col-md-3">
                         <div class="card">
-                            <label>Посещений *</label>
+                            <label>{{ __('subscriptions.tpl_label_visits_short') }}</label>
                             <input type="number" name="visits_total"
                                    value="{{ old('visits_total', $subscriptionTemplate->visits_total) }}"
                                    min="1" max="1000" required>
@@ -42,17 +42,17 @@
                     </div>
                     <div class="col-md-3">
                         <div class="card">
-                            <label>Статус</label>
+                            <label>{{ __('subscriptions.tpl_label_status') }}</label>
                             <label class="d-flex fvc gap-1">
                                 <input type="checkbox" name="is_active" value="1"
                                        @checked(old('is_active', $subscriptionTemplate->is_active))>
-                                <span>Активен</span>
+                                <span>{{ __('subscriptions.tpl_status_active_short') }}</span>
                             </label>
                         </div>
                     </div>
                     <div class="col-md-12">
                         <div class="card">
-                            <label>Описание</label>
+                            <label>{{ __('subscriptions.tpl_label_description') }}</label>
                             <textarea name="description" rows="3" maxlength="1000">{{ old('description', $subscriptionTemplate->description) }}</textarea>
                         </div>
                     </div>
@@ -60,9 +60,9 @@
             </div>
 
             <div class="ramka">
-                <h2 class="-mt-05">Мероприятия</h2>
+                <h2 class="-mt-05">{{ __('subscriptions.tpl_section_events') }}</h2>
                 <div class="card">
-                    <label>Привязать к мероприятиям (необязательно)</label>
+                    <label>{{ __('subscriptions.tpl_events_link_label') }}</label>
                     <div style="max-height:20rem;overflow-y:auto;">
                         @foreach($events as $event)
                         <label class="d-flex fvc gap-1 mb-05">
@@ -76,14 +76,14 @@
             </div>
 
             <div class="ramka">
-                <h2 class="-mt-05">Срок действия</h2>
+                <h2 class="-mt-05">{{ __('subscriptions.tpl_section_term') }}</h2>
                 <div class="card mb-2 f-14" style="opacity:.7;">
-                    Срок считается с момента покупки или выдачи. Оставьте пустыми — бессрочный.
+                    {{ __('subscriptions.tpl_term_hint_short') }}
                 </div>
                 <div class="row row2">
                     <div class="col-md-6">
                         <div class="card">
-                            <label>Месяцев</label>
+                            <label>{{ __('subscriptions.tpl_label_months') }}</label>
                             <input type="number" name="duration_months"
                                    value="{{ old('duration_months', $subscriptionTemplate->duration_months ?? 0) }}"
                                    min="0" max="36" placeholder="0">
@@ -91,7 +91,7 @@
                     </div>
                     <div class="col-md-6">
                         <div class="card">
-                            <label>Дней (дополнительно)</label>
+                            <label>{{ __('subscriptions.tpl_label_days_extra') }}</label>
                             <input type="number" name="duration_days"
                                    value="{{ old('duration_days', $subscriptionTemplate->duration_days ?? 0) }}"
                                    min="0" max="365" placeholder="0">
@@ -101,20 +101,20 @@
             </div>
 
             <div class="ramka">
-                <h2 class="-mt-05">Стоимость и продажа</h2>
+                <h2 class="-mt-05">{{ __('subscriptions.tpl_section_price') }}</h2>
                 <div class="row row2">
                     <div class="col-md-4">
                         <div class="card">
-                            <label>Цена (рубли) *</label>
+                            <label>{{ __('subscriptions.tpl_label_price_rub') }}</label>
                             <input type="number" name="price_rub"
                                    value="{{ old('price_rub', round($subscriptionTemplate->price_minor / 100)) }}"
                                    min="0" step="1" required>
-                            <ul class="list f-13 mt-1"><li>0 = бесплатно</li></ul>
+                            <ul class="list f-13 mt-1"><li>{{ __('subscriptions.tpl_hint_price_zero') }}</li></ul>
                         </div>
                     </div>
                     <div class="col-md-4">
                         <div class="card">
-                            <label>Валюта</label>
+                            <label>{{ __('subscriptions.tpl_label_currency') }}</label>
                             <select name="currency">
                                 <option value="RUB" @selected(old('currency', $subscriptionTemplate->currency)==='RUB')>RUB ₽</option>
                                 <option value="USD" @selected(old('currency', $subscriptionTemplate->currency)==='USD')>USD $</option>
@@ -124,11 +124,11 @@
                     </div>
                     <div class="col-md-4">
                         <div class="card">
-                            <label>Лимит продаж</label>
+                            <label>{{ __('subscriptions.tpl_label_sale_limit') }}</label>
                             <input type="number" name="sale_limit"
                                    value="{{ old('sale_limit', $subscriptionTemplate->sale_limit) }}"
                                    min="1">
-                            <ul class="list f-13 mt-1"><li>Пусто — безлимит</li></ul>
+                            <ul class="list f-13 mt-1"><li>{{ __('subscriptions.tpl_hint_sale_unlimited_short') }}</li></ul>
                         </div>
                     </div>
                     <div class="col-md-4">
@@ -136,7 +136,7 @@
                             <label class="d-flex fvc gap-1">
                                 <input type="checkbox" name="sale_enabled" value="1"
                                        @checked(old('sale_enabled', $subscriptionTemplate->sale_enabled))>
-                                <span>Доступен для продажи на сайте</span>
+                                <span>{{ __('subscriptions.tpl_sale_enabled') }}</span>
                             </label>
                         </div>
                     </div>
@@ -144,11 +144,11 @@
             </div>
 
             <div class="ramka">
-                <h2 class="-mt-05">Дополнительно</h2>
+                <h2 class="-mt-05">{{ __('subscriptions.tpl_section_extra') }}</h2>
                 <div class="row row2">
                     <div class="col-md-4">
                         <div class="card">
-                            <label>Отмена за (часов)</label>
+                            <label>{{ __('subscriptions.tpl_label_cancel_short') }}</label>
                             <input type="number" name="cancel_hours_before"
                                    value="{{ old('cancel_hours_before', $subscriptionTemplate->cancel_hours_before) }}"
                                    min="0">
@@ -159,7 +159,7 @@
                             <label class="d-flex fvc gap-1">
                                 <input type="checkbox" name="transfer_enabled" value="1"
                                        @checked(old('transfer_enabled', $subscriptionTemplate->transfer_enabled))>
-                                <span>🔄 Передача разрешена</span>
+                                <span>{{ __('subscriptions.tpl_transfer_short') }}</span>
                             </label>
                         </div>
                     </div>
@@ -168,7 +168,7 @@
                             <label class="d-flex fvc gap-1">
                                 <input type="checkbox" name="auto_booking_enabled" value="1"
                                        @checked(old('auto_booking_enabled', $subscriptionTemplate->auto_booking_enabled))>
-                                <span>Авто-бронирование</span>
+                                <span>{{ __('subscriptions.tpl_auto_booking_short') }}</span>
                             </label>
                         </div>
                     </div>
@@ -178,13 +178,13 @@
                                 <input type="checkbox" name="freeze_enabled" value="1"
                                        id="freeze_toggle"
                                        @checked(old('freeze_enabled', $subscriptionTemplate->freeze_enabled))>
-                                <span>❄️ Заморозка разрешена</span>
+                                <span>{{ __('subscriptions.tpl_freeze_short') }}</span>
                             </label>
                         </div>
                     </div>
                     <div class="col-md-4" id="freeze_fields" style="{{ old('freeze_enabled', $subscriptionTemplate->freeze_enabled) ? '' : 'display:none' }}">
                         <div class="card">
-                            <label>Макс. недель заморозки</label>
+                            <label>{{ __('subscriptions.tpl_label_freeze_weeks_short') }}</label>
                             <input type="number" name="freeze_max_weeks"
                                    value="{{ old('freeze_max_weeks', $subscriptionTemplate->freeze_max_weeks) }}"
                                    min="0">
@@ -192,7 +192,7 @@
                     </div>
                     <div class="col-md-4" id="freeze_fields2" style="{{ old('freeze_enabled', $subscriptionTemplate->freeze_enabled) ? '' : 'display:none' }}">
                         <div class="card">
-                            <label>Макс. месяцев заморозки</label>
+                            <label>{{ __('subscriptions.tpl_label_freeze_months_short') }}</label>
                             <input type="number" name="freeze_max_months"
                                    value="{{ old('freeze_max_months', $subscriptionTemplate->freeze_max_months) }}"
                                    min="0">
@@ -202,8 +202,8 @@
             </div>
 
             <div class="ramka text-center">
-                <a href="{{ route('subscription_templates.index') }}" class="btn btn-secondary mr-2">← Назад</a>
-                <button type="submit" class="btn">💾 Сохранить</button>
+                <a href="{{ route('subscription_templates.index') }}" class="btn btn-secondary mr-2">{{ __('subscriptions.tpl_btn_back') }}</a>
+                <button type="submit" class="btn">{{ __('subscriptions.tpl_btn_save') }}</button>
             </div>
         </form>
         </div>

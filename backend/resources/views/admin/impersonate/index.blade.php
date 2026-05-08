@@ -1,14 +1,14 @@
 {{-- resources/views/admin/impersonate/index.blade.php --}}
 <x-voll-layout body_class="admin-impersonate-page">
 
-    <x-slot name="title">Войти от имени пользователя — Админ</x-slot>
-    <x-slot name="h1">Войти от имени пользователя</x-slot>
-    <x-slot name="t_description">Режим просмотра от имени пользователя</x-slot>
+    <x-slot name="title">{{ __('admin.imp_title') }} — {{ __('admin.breadcrumb_dashboard') }}</x-slot>
+    <x-slot name="h1">{{ __('admin.imp_title') }}</x-slot>
+    <x-slot name="t_description">{{ __('admin.imp_t_description') }}</x-slot>
 
     <x-slot name="breadcrumbs">
         <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
             <a itemprop="item" href="{{ route('admin.dashboard') }}">
-                <span itemprop="name">Админ-панель</span>
+                <span itemprop="name">{{ __('admin.breadcrumb_dashboard') }}</span>
             </a>
             <meta itemprop="position" content="2">
         </li>
@@ -32,13 +32,13 @@
         @endif
 
         <div class="ramka">
-            <h2 class="-mt-05">Поиск пользователя</h2>
-            <p>Введите имя или email. Опасные действия (платежи, отвязка аккаунтов, удаление) будут заблокированы.</p>
+            <h2 class="-mt-05">{{ __('admin.imp_search_label') }}</h2>
+            <p>{{ __('admin.imp_search_hint') }}</p>
 
             {{-- Поиск --}}
             <div style="position:relative; max-width: 50rem;" class="form mt-2" id="imp-ac-wrap">
                 <input type="text" id="imp-ac-input" autocomplete="off" class="form-control"
-                       placeholder="Введите имя или email пользователя…">
+                       placeholder="{{ __('admin.imp_search_ph') }}">
                 <div id="imp-ac-dd" class="form-select-dropdown trainer_dd"></div>
             </div>
 
@@ -62,7 +62,7 @@
         function esc(s)   { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
         function renderUser(item) {
-            var roleLabel = item.role === 'admin' ? ' [Администратор]' : (item.role === 'organizer' ? ' [Организатор]' : '');
+            var roleLabel = item.role === 'admin' ? ' [' + @json(__('admin.role_admin')) + ']' : (item.role === 'organizer' ? ' [' + @json(__('admin.role_organizer')) + ']' : '');
             var roleColor = item.role === 'admin' ? 'color:#c0392b' : (item.role === 'organizer' ? 'color:#2980b9' : '');
             var html = '<div class="card mt-2 d-flex fvc" style="gap:12px;">' +
                 '<div style="flex:1">' +
@@ -74,10 +74,10 @@
                 html += '<form method="POST" action="/admin/impersonate/start/' + item.id + '" style="margin:0">' +
                     '<input type="hidden" name="_token" value="{{ csrf_token() }}">' +
                     '<button type="submit" class="btn btn-primary btn-small btn-imp-confirm" ' +
-                    'data-name="' + esc(item.label || item.name) + '">Войти как</button>' +
+                    'data-name="' + esc(item.label || item.name) + '">' + @json(__('admin.imp_btn_start')) + '</button>' +
                 '</form>';
             } else {
-                html += '<span class="text-muted f-16">Запрещено</span>';
+                html += '<span class="text-muted f-16">' + @json(__('admin.imp_forbidden')) + '</span>';
             }
 
             html += '</div>';
@@ -92,7 +92,7 @@
                 results.innerHTML = '';
                 return;
             }
-            dd.innerHTML = '<div class="city-message">Поиск…</div>';
+            dd.innerHTML = '<div class="city-message">' + @json(__('admin.users_search_searching')) + '</div>';
             showDd();
             timer = setTimeout(function () {
                 jQuery.ajax({
@@ -104,7 +104,7 @@
                         dd.innerHTML = '';
                         var items = data.items || [];
                         if (!items.length) {
-                            results.innerHTML = '<p class="text-muted f-14">Ничего не найдено.</p>';
+                            results.innerHTML = '<p class="text-muted f-14">' + @json(__('admin.users_search_no_results')) + '.</p>';
                             return;
                         }
                         var html = '';
@@ -115,7 +115,7 @@
                     },
                     error: function () {
                         hideDd();
-                        results.innerHTML = '<p class="text-danger f-14">Ошибка загрузки.</p>';
+                        results.innerHTML = '<p class="text-danger f-14">' + @json(__('admin.imp_load_error')) + '</p>';
                     }
                 });
             }, 200);
@@ -135,11 +135,11 @@
             var form = btn.closest('form');
             var name = btn.dataset.name || '';
             swal({
-                title: 'Войти от имени: ' + name + '?',
+                title: @json(__('admin.imp_confirm_title', ['name' => '__NAME__'])).replace('__NAME__', name),
                 icon: 'warning',
                 buttons: {
-                    cancel: { text: 'Отмена', value: null, visible: true, closeModal: true },
-                    confirm: { text: 'Войти', value: true, visible: true, closeModal: true }
+                    cancel: { text: @json(__('admin.btn_cancel')), value: null, visible: true, closeModal: true },
+                    confirm: { text: @json(__('admin.imp_confirm_yes')), value: true, visible: true, closeModal: true }
                 }
             }).then(function (value) {
                 if (value && form) form.submit();

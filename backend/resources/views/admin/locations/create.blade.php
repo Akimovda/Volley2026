@@ -1,11 +1,11 @@
 {{-- resources/views/admin/locations/create.blade.php --}}
 <x-voll-layout body_class="admin-page admin-locations-create">
     <x-slot name="title">
-        Создать локацию (admin)
+        {{ __('admin.loc_create_title') }}
 	</x-slot>	
 	
     <x-slot name="description">
-        Страница создания новой локации в административной панели
+        {{ __('admin.loc_create_title') }}
 	</x-slot>
 	
     <x-slot name="canonical">
@@ -14,28 +14,28 @@
 	
 	
     <x-slot name="h1">
-        Создать локацию
+        {{ __('admin.loc_create_title') }}
 	</x-slot>
 	
     <x-slot name="h2">
-        Административная панель
+        {{ __('admin.breadcrumb_dashboard') }}
 	</x-slot>
 	
     <x-slot name="t_description">
-        Заполните форму для создания новой локации. Поля, отмеченные *, обязательны для заполнения.
+        {{ __('admin.loc_create_t_description') }}
 	</x-slot>
 	
     <x-slot name="breadcrumbs">
         <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
-            <a href="{{ route('admin.dashboard') }}" itemprop="item"><span itemprop="name">Админ-панель</span></a>
+            <a href="{{ route('admin.dashboard') }}" itemprop="item"><span itemprop="name">{{ __('admin.breadcrumb_dashboard') }}</span></a>
             <meta itemprop="position" content="2">
 		</li>
         <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
-            <a href="{{ route('admin.locations.index') }}" itemprop="item"><span itemprop="name">Локации</span></a>
+            <a href="{{ route('admin.locations.index') }}" itemprop="item"><span itemprop="name">{{ __('admin.loc_breadcrumb') }}</span></a>
             <meta itemprop="position" content="3">
 		</li>
         <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
-            <span itemprop="name">Создание</span>
+            <span itemprop="name">{{ __('admin.loc_breadcrumb_create') }}</span>
             <meta itemprop="position" content="4">
 		</li>
 	</x-slot>
@@ -69,7 +69,7 @@
                 if (photos) {
                     photos.addEventListener('change', () => {
                         if ((photos.files || []).length > 5) {
-                            alert('Можно выбрать максимум 5 файлов.');
+                            alert(@json(__('admin.loc_max_5_files_alert')));
                             photos.value = '';
 						}
 					});
@@ -92,7 +92,7 @@
 		@if ($errors->any())
 		<div class="ramka">
 			<div class="alert alert-danger">
-				<div class="font-semibold mb-2">Ошибки:</div>
+				<div class="font-semibold mb-2">{{ __('admin.errors_title') }}</div>
 				<ul class="list-disc ml-5 space-y-1">
 					@foreach ($errors->all() as $err)
 					<li>{{ $err }}</li>
@@ -102,7 +102,7 @@
 		</div>	
 		@endif
 		<div class="ramka">
-		<h2 class="-mt-05">Данные локации</h2>
+		<h2 class="-mt-05">{{ __('admin.loc_form_title') }}</h2>
             <form method="POST" action="{{ route('admin.locations.store') }}" enctype="multipart/form-data" class="form">
                 @csrf
 				
@@ -110,7 +110,7 @@
                     {{-- NAME --}}
                     <div class="col-12">
 						<div class="card">
-							<label>Название <span class="text-danger">*</span></label>
+							<label>{{ __('admin.loc_label_name') }} <span class="text-danger">*</span></label>
 							<input
 							type="text"
 							name="name"
@@ -127,7 +127,7 @@
 					
 					<div class="col-md-4">
 						<div class="card">
-							<label>Город *</label>
+							<label>{{ __('admin.loc_label_city') }} *</label>
 							
 							{{-- То, что реально сохраняем --}}
 							<input type="hidden" name="city_id" id="city_id" value="{{ old('city_id') }}" required>
@@ -136,7 +136,7 @@
 							<div class="city-autocomplete" id="city-autocomplete" data-search-url="{{ route('cities.search') }}">
 								<input type="text"
 								id="city_search"
-								placeholder="Начните вводить город…"
+								placeholder="{{ __('admin.loc_search_city_ph') }}"
 								value="{{ old('city_label') }}"
 								autocomplete="off"
 								@error('city_id') class="error" @enderror>
@@ -153,7 +153,7 @@
                     {{-- ADDRESS --}}
                     <div class="col-md-8">
 						<div class="card">
-							<label>Адрес</label>
+							<label>{{ __('admin.loc_label_address') }}</label>
 							<input
 							type="text"
 							name="address"
@@ -170,7 +170,7 @@
                     {{-- SHORT_TEXT --}}
                     <div class="col-12">
 						<div class="card">
-							<label>Description</label>
+							<label>{{ __('admin.loc_label_short_text') }}</label>
 							<input
 							type="text"
 							name="short_text"
@@ -184,7 +184,7 @@
                     {{-- LONG_TEXT (Trix) --}}
                     <div class="col-12">
 						<div class="card">
-							<label>Короткое иписание (только для превью)</label>
+							<label>{{ __('admin.loc_label_short_text_preview') }}</label>
 							<input id="long_text" type="hidden" name="long_text" value="{{ old('long_text') }}">
 							<trix-editor
 							input="long_text"
@@ -197,7 +197,7 @@
                     {{-- LONG_TEXT_FULL (Trix) --}}
                     <div class="col-12">
 						<div class="card">
-							<label>Полное иписание</label>
+							<label>{{ __('admin.loc_label_long_text') }}</label>
 							<input id="long_text_full" type="hidden" name="long_text_full" value="{{ old('long_text_full') }}">
 							<trix-editor
 							input="long_text_full"
@@ -210,7 +210,7 @@
                     {{-- COORDS --}}
                     <div class="col-md-6">
 						<div class="card">
-							<label>Широта (lat)</label>
+							<label>{{ __('admin.loc_label_lat') }} (lat)</label>
 							<input
 							type="number"
 							name="lat"
@@ -224,7 +224,7 @@
 					</div>
                     <div class="col-md-6">
 						<div class="card">
-							<label>Долгота (lng)</label>
+							<label>{{ __('admin.loc_label_lng') }} (lng)</label>
 							<input
 							type="number"
 							name="lng"
@@ -242,7 +242,7 @@
                     {{-- PHOTOS --}}
                     <div class="col-12">
 						<div class="card">
-							<label>Фото локации (до 5)</label>
+							<label>{{ __('admin.loc_label_photos_5') }}</label>
 							<input
 							id="loc_photos"
 							type="file"
@@ -252,7 +252,7 @@
 							class="@error('photos') is-invalid @enderror"
 							>
 							<div class="f-16 b-500 mt-1">
-								jpg/jpeg/png/webp, до 5MB каждое, максимум 5 файлов
+								{{ __('admin.loc_photos_hint') }}
 							</div>
 							@error('photos')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
 							@error('photos.*')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
@@ -262,7 +262,7 @@
                     {{-- NOTE --}}
                     <div class="col-12">
 						<div class="card">
-							<label>Примечание</label>
+							<label>{{ __('admin.loc_label_note') }}</label>
 							<input
 							type="text"
 							name="note"
@@ -277,7 +277,7 @@
 				</div>
 				
                 <div class="mt-2 text-center">
-                    <button type="submit" class="btn btn-primary">Сохранить</button>
+                    <button type="submit" class="btn btn-primary">{{ __('admin.btn_save') }}</button>
 				</div>
 			</form>
 		</div>

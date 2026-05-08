@@ -17,14 +17,14 @@ $canUploadSchool = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
     
     <x-slot name="title">
 		@if(!$isEditingOther)
-        Мои фотографии
+        {{ __('profile.photos_h1_self') }}
 		@else
-		Редактирование фотографий профиля
+		{{ __('profile.photos_h1_other') }}
 		@endif	
 	</x-slot>
     
     <x-slot name="description">
-        Управление фотографиями пользователя
+        {{ __('profile.photos_t_desc') }}
 	</x-slot>
     
     <x-slot name="canonical">
@@ -276,9 +276,9 @@ $canUploadSchool = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
     
     <x-slot name="h1">
 		@if(!$isEditingOther)
-        Мои фотографии
+        {{ __('profile.photos_h1_self') }}
 		@else
-		Редактирование фотографий
+		{{ __('profile.photos_h1_other_short') }}
 		@endif		
 	</x-slot>
     
@@ -286,29 +286,29 @@ $canUploadSchool = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
         @if(!empty($user->first_name) || !empty($user->last_name))
         {{ trim($user->first_name . ' ' . $user->last_name) }}
         @else
-        Пользователь #{{ $user->id }}
+        {{ __('profile.photos_user_n', ['id' => $user->id]) }}
         @endif
 	</x-slot>
     
     <x-slot name="t_description">
-        Загружайте и управляйте своими фотографиями
+        {{ __('profile.photos_t_desc') }}
 	</x-slot>
     
     <x-slot name="breadcrumbs">
         <li itemprop="itemListElement" itemscope="" itemtype="http://schema.org/ListItem">
             <a href="{{ route('profile.show') }}" itemprop="item">
-                <span itemprop="name">Мой профиль</span>
+                <span itemprop="name">{{ __('profile.photos_breadcrumb_my_profile') }}</span>
 			</a>
             <meta itemprop="position" content="2">
 		</li>
 		@if(!$isEditingOther)
         <li itemprop="itemListElement" itemscope="" itemtype="http://schema.org/ListItem">
-            <span itemprop="name">Мои фотографии</span>
+            <span itemprop="name">{{ __('profile.photos_h1_self') }}</span>
             <meta itemprop="position" content="3">
 		</li>
 		@else
         <li itemprop="itemListElement" itemscope="" itemtype="http://schema.org/ListItem">
-            <span itemprop="name">Редактирование фотографий</span>
+            <span itemprop="name">{{ __('profile.photos_h1_other_short') }}</span>
             <meta itemprop="position" content="3">
 		</li>
 		@endif		
@@ -357,8 +357,8 @@ $canUploadSchool = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
                 allowMultiple: false,
                 instantUpload: false,
                 allowProcess: false,
-                labelIdle: 'Перетащи фото или <span class="btn mt-1 mb-1">выбери файл</span> <span>Допустимые форматы: <b class="d-inline-block">JPEG, PNG, WEBP, AVIF</b></span>',
-                labelButtonRemoveItem: 'Удалить',
+                labelIdle: @json(__('profile.photos_filepond_idle')),
+                labelButtonRemoveItem: @json(__('profile.photos_filepond_remove')),
                 allowImageTransform: false,
                 allowImageCrop: false,
                 allowImageResize: false,
@@ -390,9 +390,9 @@ $canUploadSchool = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
                 if (!file.file.type.startsWith('image/')) {
                     swal({
                         icon: 'error',
-                        title: 'Неподдерживаемый формат',
-                        text: 'Можно загружать только изображения\n(JPEG, PNG, WEBP, AVIF)',
-                        confirmButtonText: 'Понятно'
+                        title: @json(__('profile.photos_err_format_title')),
+                        text: @json(__('profile.photos_err_format_text')),
+                        confirmButtonText: @json(__('profile.photos_err_understand'))
 					});
                     pond.removeFile(file.id);
                     return;
@@ -402,9 +402,9 @@ $canUploadSchool = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
                 if (file.file.size > maxSize) {
                     swal({
                         icon: 'error',
-                        title: 'Файл слишком большой',
-                        text: 'Максимальный размер: 15 МБ',
-                        confirmButtonText: 'Понятно'
+                        title: @json(__('profile.photos_err_size_title')),
+                        text: @json(__('profile.photos_err_size_text')),
+                        confirmButtonText: @json(__('profile.photos_err_understand'))
 					});
                     pond.removeFile(file.id);
                     return;
@@ -450,12 +450,12 @@ $canUploadSchool = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
 						} else {
                         const modal = document.querySelector('.cropper-modal-overlay');
                         if (modal) modal.remove();
-                        swal({ title: "Ошибка", text: data.error || 'Ошибка загрузки', icon: "error", button: "Понятно" });
+                        swal({ title: @json(__('profile.photos_err_title')), text: data.error || @json(__('profile.photos_err_upload')), icon: "error", button: @json(__('profile.photos_err_understand')) });
 					}
 					}).catch(() => {
                     const modal = document.querySelector('.cropper-modal-overlay');
                     if (modal) modal.remove();
-                    swal({ title: "Ошибка", text: "Проблема с соединением", icon: "error", button: "Понятно" });
+                    swal({ title: @json(__('profile.photos_err_title')), text: @json(__('profile.photos_err_network')), icon: "error", button: @json(__('profile.photos_err_understand')) });
 				});
 			}
             
@@ -464,7 +464,7 @@ $canUploadSchool = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
                 modal.className = 'cropper-modal-overlay';
                 const aspectRatio = currentAspectRatio;
                 const isWide = aspectRatio > 1;
-                const titleText = isWide ? 'Выберите область' : 'Выберите область';
+                const titleText = @json(__('profile.photos_crop_title'));
                 
                 const container = document.createElement('div');
                 container.className = 'cropper-modal-container';
@@ -478,10 +478,10 @@ $canUploadSchool = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
                 const buttonContainer = document.createElement('div');
                 buttonContainer.className = 'cropper-buttons';
                 const saveBtn = document.createElement('button');
-                saveBtn.textContent = 'Загрузить';
+                saveBtn.textContent = @json(__('profile.photos_crop_save'));
                 saveBtn.className = 'btn';
                 const cancelBtn = document.createElement('button');
-                cancelBtn.textContent = 'Отмена';
+                cancelBtn.textContent = @json(__('profile.photos_crop_cancel'));
                 cancelBtn.className = 'btn btn-secondary';
                 buttonContainer.appendChild(saveBtn);
                 buttonContainer.appendChild(cancelBtn);
@@ -591,7 +591,7 @@ $canUploadSchool = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
         
         @if(request()->get('upload') == 'success')
         <div class="ramka">    
-            <div class="alert alert-success">Фото добавлено ✅</div>
+            <div class="alert alert-success">{{ __('profile.photos_added_success') }}</div>
 		</div>
         <script>window.history.replaceState({}, document.title, window.location.pathname);</script>       
         @endif      
@@ -611,7 +611,7 @@ $canUploadSchool = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
         @if ($errors->any())
         <div class="ramka">        
             <div class="alert alert-danger">
-                <div class="b-600 mb-1">Ошибки:</div>
+                <div class="b-600 mb-1">{{ __('profile.photos_errors_title') }}</div>
                 <ul class="list">
                     @foreach ($errors->all() as $e)
                     <li>{{ $e }}</li>
@@ -635,7 +635,7 @@ $canUploadSchool = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
 			</div>
             <div class="col-lg-8 col-xl-9 order-1">    
                 <div class="ramka" style="z-index:10">      
-                    <h2 class="-mt-05">Загрузить фото</h2>
+                    <h2 class="-mt-05">{{ __('profile.photos_upload_h2') }}</h2>
                     <div class="form">
                         <form id="photoUploadForm"
 						action="{{ route('user.photos.store') }}"
@@ -656,14 +656,14 @@ $canUploadSchool = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
                                 <input type="radio" name="photo_type_radio" value="photos" checked
 								onchange="setPhotoType('photos', 0, 1)">
                                 <div class="custom-radio"></div>
-                                <span>В галерею</span>
+                                <span>{{ __('profile.photos_radio_gallery') }}</span>
 							</label>
 							
                             <label class="radio-item mb-1">
                                 <input type="radio" name="photo_type_radio" value="photos_avatar"
 								onchange="setPhotoType('photos', 1, 1)">
                                 <div class="custom-radio"></div>
-                                <span>Сделать аватаром</span>
+                                <span>{{ __('profile.photos_radio_avatar') }}</span>
 							</label>
 							
                             @if($canUploadEventPhotos)
@@ -671,7 +671,7 @@ $canUploadSchool = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
                                 <input type="radio" name="photo_type_radio" value="event_photos"
 								onchange="setPhotoType('event_photos', 0, 16/9)">
                                 <div class="custom-radio"></div>
-                                <span>Фото для мероприятий</span>
+                                <span>{{ __('profile.photos_radio_event') }}</span>
 							</label>
 							
                             @if($hasSchool ?? false)
@@ -679,21 +679,21 @@ $canUploadSchool = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
                             <label class="radio-item mb-1">
                                 <input type="radio" name="" value="" disabled>
                                 <div class="custom-radio"></div>
-                                <span>Логотип школы уже загружен, сначала удали старый</span>
+                                <span>{{ __('profile.photos_radio_school_logo_disabled') }}</span>
 							</label>
 							@else
                             <label class="radio-item mb-1">
                                 <input type="radio" name="photo_type_radio" value="school_logo"
 								onchange="setPhotoType('school_logo', 0, 1)">
                                 <div class="custom-radio"></div>
-                                <span>Логотип школы</span>
+                                <span>{{ __('profile.photos_radio_school_logo') }}</span>
 							</label>							
 							@endif
                             <label class="radio-item mb-1">
                                 <input type="radio" name="photo_type_radio" value="school_cover"
 								onchange="setPhotoType('school_cover', 0, 16/9)">
                                 <div class="custom-radio"></div>
-                                <span>Фотографии школы</span>
+                                <span>{{ __('profile.photos_radio_school_cover') }}</span>
 							</label>
                             @endif {{-- hasSchool --}}
                             @endif
@@ -706,12 +706,12 @@ $canUploadSchool = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
 				</div>
 				
                 <div class="ramka">        
-                    <h2 class="-mt-05">Галерея</h2>
-                    <p>Всего: <strong class="cd">{{ $photos->count() }}</strong> фото</p>
+                    <h2 class="-mt-05">{{ __('profile.photos_gallery_h2') }}</h2>
+                    <p>{{ __('profile.photos_total_prefix') }} <strong class="cd">{{ $photos->count() }}</strong> {{ __('profile.photos_total_suffix') }}</p>
                     <div class="form mt-2">
                         @if($photos->isEmpty())
                         <div class="alert alert-info">
-                            Фотографий нет, загрузите первое — и оно станет аватаром автоматически.
+                            {{ __('profile.photos_empty_first') }}
 						</div>
                         @else
                         <div class="swiper photo-swiper">
@@ -733,22 +733,22 @@ $canUploadSchool = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
 									</div>                              
                                     <div class="mt-1 d-flex between fvc">
                                         @if($isAvatar)
-                                        <span class="cd f-16 l-11 b-600">Аватар</span>
+                                        <span class="cd f-16 l-11 b-600">{{ __('profile.photos_avatar_label') }}</span>
                                         @else
                                         <form method="POST" action="{{ route('user.photos.setAvatar', ['media' => $m->id]) }}">
                                             @csrf
                                             <span onclick="event.preventDefault(); this.closest('form').submit();" class="blink f-16 l-11">
-                                                Сделать фото<br>аватаром
+                                                {!! __('profile.photos_make_avatar') !!}
 											</span>
 										</form>
                                         @endif          
                                         <form method="POST" action="{{ route('user.photos.destroy', ['media' => $m->id]) }}"
-										onsubmit="return confirm('Удалить фото?')">
+										onsubmit="return confirm({!! json_encode(__('profile.photos_confirm_delete')) !!})">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="icon-delete btn-alert btn btn-danger btn-svg"
-											data-title="Удалить фото?" data-icon="warning"
-											data-confirm-text="Да, удалить" data-cancel-text="Отмена">
+											data-title="{{ __('profile.photos_confirm_delete') }}" data-icon="warning"
+											data-confirm-text="{{ __('profile.photos_btn_delete_yes_short') }}" data-cancel-text="{{ __('profile.photos_crop_cancel') }}">
 											</button>                               
 										</form>
 									</div>                              
@@ -764,11 +764,11 @@ $canUploadSchool = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
                 {{-- Фото для мероприятий --}}
                 @if($canUploadEventPhotos && (!$isEditingOther || auth()->user()?->isAdmin()))
                 <div class="ramka">        
-                    <h2 class="-mt-05">Фото для мероприятий</h2>
-                    <p>Всего: <strong class="cd">{{ isset($eventPhotos) ? $eventPhotos->count() : 0 }}</strong> фото</p>
+                    <h2 class="-mt-05">{{ __('profile.photos_event_h2') }}</h2>
+                    <p>{{ __('profile.photos_total_prefix') }} <strong class="cd">{{ isset($eventPhotos) ? $eventPhotos->count() : 0 }}</strong> {{ __('profile.photos_total_suffix') }}</p>
                     <div class="form mt-2">
                         @if(!isset($eventPhotos) || $eventPhotos->isEmpty())
-                        <div class="alert alert-info">Нет фото для мероприятий. Загрузите фото с выбором «Фото для мероприятий».</div>
+                        <div class="alert alert-info">{{ __('profile.photos_event_empty') }}</div>
                         @else
                         <div class="swiper event-photo-swiper">
                             <div class="swiper-wrapper">
@@ -784,12 +784,12 @@ $canUploadSchool = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
                                     <div class="mt-1 d-flex between fvc">
                                         <div></div>
                                         <form method="POST" action="{{ route('user.photos.destroyEventPhoto', ['media' => $m->id]) }}"
-										onsubmit="return confirm('Удалить фото?')">
+										onsubmit="return confirm({!! json_encode(__('profile.photos_confirm_delete')) !!})">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="icon-delete btn-alert btn btn-danger btn-svg"
-											data-title="Удалить фото?" data-icon="warning"
-											data-confirm-text="Да, удалить" data-cancel-text="Отмена">
+											data-title="{{ __('profile.photos_confirm_delete') }}" data-icon="warning"
+											data-confirm-text="{{ __('profile.photos_btn_delete_yes_short') }}" data-cancel-text="{{ __('profile.photos_crop_cancel') }}">
 											</button>
 										</form>
 									</div>
@@ -805,10 +805,10 @@ $canUploadSchool = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
                 @if($hasSchool ?? false)
                 {{-- Логотипы школы --}}
                 <div class="ramka">
-                    <h2 class="-mt-05">Логотип школы</h2>
+                    <h2 class="-mt-05">{{ __('profile.photos_school_logo_h2') }}</h2>
                     <div class="form mt-2">
                         @if(!isset($schoolLogos) || $schoolLogos->isEmpty())
-                        <div class="alert alert-info">Нет логотипов. Загрузите фото с выбором «Логотип школы».</div>
+                        <div class="alert alert-info">{{ __('profile.photos_school_logo_empty') }}</div>
                         @else
 						<div class="row row2">
 							@foreach($schoolLogos as $m)
@@ -827,14 +827,14 @@ $canUploadSchool = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
 								
 								@if(isset($schoolLogos) && $schoolLogos->count() >= 1)
 								<div class="alert alert-info">
-									Логотип уже загружен. Чтобы заменить — удалите текущий и загрузите новый.
+									{{ __('profile.photos_school_logo_replace') }}
 									<div class="text-right">
 										<form method="POST" action="{{ route('user.photos.destroy', $m->id) }}"
-										onsubmit="return confirm('Удалить логотип?')">
+										onsubmit="return confirm({!! json_encode(__('profile.photos_confirm_delete_logo')) !!})">
 											@csrf @method('DELETE')
                                             <button type="submit" class="icon-delete btn-alert btn btn-danger btn-svg"
-											data-title="Удалить логотип?" data-icon="warning"
-											data-confirm-text="Да, удалить" data-cancel-text="Отмена">
+											data-title="{{ __('profile.photos_delete_logo_title') }}" data-icon="warning"
+											data-confirm-text="{{ __('profile.photos_btn_delete_yes_short') }}" data-cancel-text="{{ __('profile.photos_crop_cancel') }}">
 											</button>
 										</form>					
 									</div>
@@ -853,11 +853,11 @@ $canUploadSchool = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
 				
                 {{-- Обложки школы --}}
                 <div class="ramka">
-                    <h2 class="-mt-05">Фотографии школы</h2>
-                    <p>Всего: <strong class="cd">{{ isset($schoolCovers) ? $schoolCovers->count() : 0 }}</strong> фото</p>
+                    <h2 class="-mt-05">{{ __('profile.photos_school_cover_h2') }}</h2>
+                    <p>{{ __('profile.photos_total_prefix') }} <strong class="cd">{{ isset($schoolCovers) ? $schoolCovers->count() : 0 }}</strong> {{ __('profile.photos_total_suffix') }}</p>
                     <div class="form mt-2">
                         @if(!isset($schoolCovers) || $schoolCovers->isEmpty())
-                        <div class="alert alert-info">Нет фото. Загрузите фото с выбором «Фотографии школы».</div>
+                        <div class="alert alert-info">{{ __('profile.photos_school_cover_empty') }}</div>
                         @else
                         <div class="swiper school-cover-swiper">
                             <div class="swiper-wrapper">
@@ -880,20 +880,20 @@ $canUploadSchool = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
 										<form method="POST" action="{{ route('user.photos.setMainCover', $m->id) }}">
                                             @csrf
                                             <span onclick="event.preventDefault(); this.closest('form').submit();" class="blink f-16 l-11">
-                                                Сделать фото<br>основным
+                                                {!! __('profile.photos_make_main_cover') !!}
 											</span>
 										</form>							
 										
                                         @else
-										<span class="cd f-16 l-11 b-600">Основное фото</span>
+										<span class="cd f-16 l-11 b-600">{{ __('profile.photos_main_cover_label') }}</span>
                                         @endif          
 										<form method="POST" action="{{ route('user.photos.destroy', $m->id) }}"
-										onsubmit="return confirm('Удалить фото?')">
+										onsubmit="return confirm({!! json_encode(__('profile.photos_confirm_delete')) !!})">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="icon-delete btn-alert btn btn-danger btn-svg"
-											data-title="Удалить фото?" data-icon="warning"
-											data-confirm-text="Да, удалить" data-cancel-text="Отмена">
+											data-title="{{ __('profile.photos_confirm_delete') }}" data-icon="warning"
+											data-confirm-text="{{ __('profile.photos_btn_delete_yes_short') }}" data-cancel-text="{{ __('profile.photos_crop_cancel') }}">
 											</button>                               
 										</form>
 									</div> 										

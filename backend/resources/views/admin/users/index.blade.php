@@ -4,11 +4,11 @@
 <x-voll-layout body_class="admin-users-page"> 
 	
     <x-slot name="title">
-		Пользователи сайта
+		{{ __('admin.users_title') }}
 	</x-slot>
 	
     <x-slot name="description">
-		Администрирование пользователей сайта
+		{{ __('admin.users_description') }}
 	</x-slot>
 	
     <x-slot name="canonical">
@@ -24,29 +24,29 @@
 	</x-slot>
 	
     <x-slot name="h1">
-        Пользователи сайта
+        {{ __('admin.users_title') }}
 	</x-slot>
 	
 	
     <x-slot name="t_description">
-		Администрирование пользователей сайта
+		{{ __('admin.users_description') }}
 	</x-slot>
 	
     <x-slot name="breadcrumbs">
 		{{-- Крошки в шапку, например  --}} 
 		<li itemprop="itemListElement" itemscope="" itemtype="http://schema.org/ListItem">
-			<a href="{{ route('admin.dashboard') }}" itemprop="item"><span itemprop="name">Админ-панель</span></a>
+			<a href="{{ route('admin.dashboard') }}" itemprop="item"><span itemprop="name">{{ __('admin.breadcrumb_dashboard') }}</span></a>
 			<meta itemprop="position" content="2">
 		</li>		
 		<li itemprop="itemListElement" itemscope="" itemtype="http://schema.org/ListItem">
-			<a href="{{ route('admin.users.index') }}" itemprop="item"><span itemprop="name">Администрирование пользователей</span></a>
+			<a href="{{ route('admin.users.index') }}" itemprop="item"><span itemprop="name">{{ __('admin.users_breadcrumb_users') }}</span></a>
 			<meta itemprop="position" content="3">
 		</li>
 	</x-slot>	
 	
 	<x-slot name="d_description">
 		<div data-aos-delay="250" data-aos="fade-up">
-			<button class="btn ufilter-btn mt-2">Фильтр</button>
+			<button class="btn ufilter-btn mt-2">{{ __('admin.users_filter_btn') }}</button>
 		</div>
 	</x-slot>
 	
@@ -63,7 +63,7 @@
     function hideDd() { dd.classList.remove('form-select-dropdown--active'); }
     function render(items) {
         dd.innerHTML = '';
-        if (!items.length) { dd.innerHTML = '<div class="city-message">Ничего не найдено</div>'; showDd(); return; }
+        if (!items.length) { dd.innerHTML = '<div class="city-message">' + @json(__('admin.users_search_no_results')) + '</div>'; showDd(); return; }
         items.slice(0,8).forEach(function(u) {
             var div = document.createElement('div');
             div.className = 'trainer-item form-select-option';
@@ -78,7 +78,7 @@
         clearTimeout(timer);
         var q = inp.value.trim();
         if (q.length < 2) { hideDd(); return; }
-        dd.innerHTML = '<div class="city-message">Поиск…</div>'; showDd();
+        dd.innerHTML = '<div class="city-message">' + @json(__('admin.users_search_searching')) + '</div>'; showDd();
         timer = setTimeout(function() {
             fetch('/api/users/search?q=' + encodeURIComponent(q))
                 .then(function(r){ return r.json(); })
@@ -105,7 +105,7 @@
 									name="q"
 									id="admin-users-search-q"
 									value="{{ $q ?? '' }}"
-									placeholder="Акимов Дмитрий / email / telegram"
+									placeholder="{{ __('admin.users_search_ph') }}"
 									autocomplete="off"/>
 								<div id="admin-users-search-dd" class="form-select-dropdown trainer_dd"></div>
 							</div>
@@ -114,7 +114,7 @@
 							<div class="col-12 col-md-2">
 								{{-- Role --}}
 								<select name="role">
-									<option value="">Все роли</option>
+									<option value="">{{ __('admin.users_role_all') }}</option>
 									@foreach (($roles ?? []) as $r)
 									<option value="{{ $r }}" @selected(($role ?? null) === $r)>{{ $r }}</option>
 									@endforeach
@@ -125,9 +125,9 @@
 								@php
 								// Safety fallback (чтобы никогда не падало, даже если контроллер забыли обновить)
 								$restrictedOptions = $restrictedOptions ?? [
-								'all' => 'Все',
-								'restricted' => 'Только с блокировками (events)',
-								'not_restricted' => 'Только без блокировок',
+								'all' => __('admin.restricted_all'),
+								'restricted' => __('admin.restricted_restricted'),
+								'not_restricted' => __('admin.restricted_not_restricted'),
 								];
 								$restricted = $restricted ?? 'all';
 								@endphp
@@ -140,14 +140,14 @@
 							</div>
 							
 							<div class="col-12 text-right m-center">
-								<button class="btn" type="submit">Найти</button>
+								<button class="btn" type="submit">{{ __('admin.btn_search') }}</button>
                 <a href="{{ route('admin.users.duplicates') }}" class="btn btn-secondary" style="position:relative">
-                    Дубли игроков
+                    {{ __('admin.users_btn_duplicates') }}
                     @if($dupCount > 0)
                     <span style="position:absolute;top:-6px;right:-6px;background:#e74c3c;color:#fff;border-radius:50%;width:18px;height:18px;font-size:11px;display:flex;align-items:center;justify-content:center;font-weight:700">{{ $dupCount }}</span>
                     @endif
                 </a>
-								<a href="{{ route('admin.users.index') }}" class="btn btn-secondary">Сброс</a>
+								<a href="{{ route('admin.users.index') }}" class="btn btn-secondary">{{ __('admin.btn_reset') }}</a>
 							</div>
 						</div>
 					</form>
@@ -161,15 +161,15 @@
 			<table class="table">
 				<thead class="text-gray-600">
 					<tr>
-						<th>ID</th>
-						<th>Пользователь</th>
-						<th>Роль</th>
-						<th>TG</th>
-						<th>VK</th>
-						<th>Yandex</th>
-						<th>Apple</th>
-						<th>Google</th>
-						<th>Регистрация</th>
+						<th>{{ __('admin.col_id') }}</th>
+						<th>{{ __('admin.col_user') }}</th>
+						<th>{{ __('admin.col_role') }}</th>
+						<th>{{ __('admin.col_tg') }}</th>
+						<th>{{ __('admin.col_vk') }}</th>
+						<th>{{ __('admin.col_yandex') }}</th>
+						<th>{{ __('admin.col_apple') }}</th>
+						<th>{{ __('admin.col_google') }}</th>
+						<th>{{ __('admin.col_registration') }}</th>
 					</tr>
 				</thead>
 				
@@ -178,7 +178,7 @@
 					<tr>
 						<td data-label="ID">{{ $u->id }}</td>
 						
-						<td data-label="Пользователь">
+						<td data-label="{{ __('admin.col_user') }}">
 <a class="blink b-600" href="{{ route('admin.users.show', $u) }}">
 @if($u->last_name || $u->first_name)
     {{ trim(($u->last_name ?? '') . ' ' . ($u->first_name ?? '')) }}
@@ -191,13 +191,13 @@
 @endif
 						</td>
 						
-						<td data-label="Роль">{{ $u->role ?? 'user' }}</td>
+						<td data-label="{{ __('admin.col_role') }}">{{ $u->role ?? 'user' }}</td>
 						<td data-label="Telegram" class="text-center">{{ $u->telegram_id ? '✅' : '—' }}</td>
 						<td data-label="VK" class="text-center">{{ $u->vk_id ? '✅' : '—' }}</td>
-						<td data-label="Яндекс" class="text-center">{{ $u->yandex_id ? '✅' : '—' }}</td>
+						<td data-label="{{ __('admin.col_yandex') }}" class="text-center">{{ $u->yandex_id ? '✅' : '—' }}</td>
 						<td data-label="Apple" class="text-center">{{ $u->apple_id ? '✅' : '—' }}</td>
 						<td data-label="Google" class="text-center">{{ $u->google_id ? '✅' : '—' }}</td>
-						<td data-label="Регистрация" class="text-center">{{ $u->created_at?->format('Y-m-d') }}</td>
+						<td data-label="{{ __('admin.col_registration') }}" class="text-center">{{ $u->created_at?->format('Y-m-d') }}</td>
 					</tr>
 					@endforeach
 				</tbody>

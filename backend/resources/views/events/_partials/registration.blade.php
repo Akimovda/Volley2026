@@ -19,22 +19,22 @@
       - occ_cancel_h/m   → occ_cancel_min
 --}}
 <div class="ramka">
-    <h2 class="-mt-05">Регистрация</h2>
+    <h2 class="-mt-05">{{ __('events.occ_reg_title') }}</h2>
     <div class="row">
         <div class="col-md-3">
             <div class="card">
-                <label>Регистрация</label>
+                <label>{{ __('events.col_registration') }}</label>
                 <input type="hidden" name="allow_registration" value="0">
                 <label class="checkbox-item">
                     <input type="checkbox" name="allow_registration" value="1" @checked(old('allow_registration', $allowReg))>
                     <div class="custom-checkbox"></div>
-                    <span>Включена</span>
+                    <span>{{ __('events.occ_reg_enabled') }}</span>
                 </label>
             </div>
         </div>
         <div class="col-md-3">
             <div class="card">
-                <label>Начало рег. (дней до)</label>
+                <label>{{ __('events.occ_reg_starts_days') }}</label>
                 <select name="reg_starts_days_before">
                     @for($d = 0; $d <= 90; $d++)
                         <option value="{{ $d }}" @selected(old('reg_starts_days_before', $regStartsDays) == $d)>{{ $d }}</option>
@@ -44,7 +44,7 @@
         </div>
         <div class="col-md-3">
             <div class="card">
-                <label>Конец рег. (до начала)</label>
+                <label>{{ __('events.occ_reg_ends_label') }}</label>
                 <input type="hidden" name="reg_ends_minutes_before" id="occ_reg_ends_min" value="{{ old('reg_ends_minutes_before', $regEndsMin) }}">
                 <div class="d-flex" style="gap:.5rem">
                     <select id="occ_reg_ends_h" style="width:auto">
@@ -62,7 +62,7 @@
         </div>
         <div class="col-md-3">
             <div class="card">
-                <label>Запрет отмены (до начала)</label>
+                <label>{{ __('events.occ_cancel_label') }}</label>
                 <input type="hidden" name="cancel_lock_minutes_before" id="occ_cancel_min" value="{{ old('cancel_lock_minutes_before', $cancelMin) }}">
                 <div class="d-flex" style="gap:.5rem">
                     <select id="occ_cancel_h" style="width:auto">

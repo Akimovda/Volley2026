@@ -18,11 +18,11 @@
         вынесется вместе при рефакторинге create.
 --}}
 <div class="ramka">
-    <h2 class="-mt-05">Название и описание</h2>
+    <h2 class="-mt-05">{{ __('events.occ_titledesc_title') }}</h2>
     <div class="row">
         <div class="col-md-12">
             <div class="card">
-                <label>Название (для этой даты)</label>
+                <label>{{ __('events.occ_title_for_date') }}</label>
                 <input type="text" name="title" maxlength="255" value="{{ old('title', $titleVal) }}">
                 @error('title') <div class="f-13" style="margin-top:4px">{{ $message }}</div> @enderror
             </div>
@@ -31,7 +31,7 @@
     <div class="row">
         <div class="col-md-12">
             <div class="card">
-                <label>Описание</label>
+                <label>{{ __('events.occ_description') }}</label>
                 <input id="occ_desc_input" type="hidden" name="description_html" value="{{ old('description_html', $descVal) }}">
                 <trix-editor input="occ_desc_input"></trix-editor>
             </div>

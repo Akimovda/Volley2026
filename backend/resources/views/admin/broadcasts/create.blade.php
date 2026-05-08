@@ -2,11 +2,11 @@
 <x-voll-layout body_class="broadcasts-create-page">
     
     <x-slot name="title">
-        Новая рассылка
+        {{ __('admin.bc_btn_create') }}
     </x-slot>
     
     <x-slot name="description">
-        Создание новой рассылки
+        {{ __('admin.bc_create_t_description') }}
     </x-slot>
     
     <x-slot name="canonical">
@@ -118,12 +118,12 @@
     </x-slot>
     
     <x-slot name="h1">
-        Новая рассылка
+        {{ __('admin.bc_btn_create') }}
     </x-slot>
     
     
     <x-slot name="t_description">
-        Заполните форму для создания новой рассылки
+        {{ __('admin.bc_create_form_hint') }}
     </x-slot>
     
     <x-slot name="breadcrumbs">

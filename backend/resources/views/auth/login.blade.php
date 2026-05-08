@@ -1,30 +1,30 @@
 {{-- resources/views/auth/login.blade.php --}}
 <x-voll-layout body_class="auth-page auth-login">
     <x-slot name="title">
-        Вход в аккаунт
+        {{ __('auth.login_title') }}
 	</x-slot>
 	
     <x-slot name="description">
-        Войдите в свой аккаунт через Telegram, ВКонтакте, Яндекс или по email
+        {{ __('auth.login_description') }}
 	</x-slot>
 	
     <x-slot name="h1">
-        Вход
+        {{ __('auth.login_h1') }}
 	</x-slot>
 	
     <x-slot name="h2">
-        Добро пожаловать
+        {{ __('auth.login_h2') }}
 	</x-slot>
 	
     <x-slot name="breadcrumbs">
         <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
-            <span itemprop="name">Вход</span>
+            <span itemprop="name">{{ __('auth.login_breadcrumb') }}</span>
             <meta itemprop="position" content="1">
 		</li>
 	</x-slot>
 	
     <x-slot name="t_description">
-        Войдите, чтобы продолжить
+        {{ __('auth.login_t_description') }}
 	</x-slot>	
 	
     <x-slot name="style">
@@ -57,7 +57,7 @@
 									<path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
 								</svg>
 							</span>
-							<span class="auth-text">Войти через Apple</span>
+							<span class="auth-text">{{ __('ui.auth_apple') }}</span>
 						</a>
 						@endunless
 
@@ -66,7 +66,7 @@
 							<span class="auth-icon-circle">
 								<span class="icon-vk"></span>
 							</span>
-							<span class="auth-text">Войти через ВКонтакте</span>
+							<span class="auth-text">{{ __('ui.auth_vk') }}</span>
 						</div>
 						
 						<!-- Кнопка Яндекс -->
@@ -74,14 +74,14 @@
 							<span class="auth-icon-circle">
 								<span class="icon-yandex"></span>
 							</span>
-							<span class="auth-text">Войти с Яндекс ID</span>
+							<span class="auth-text">{{ __('ui.auth_yandex') }}</span>
 						</div>
 						
 <a href="{{ route('auth.telegram.redirect', ['return' => url()->full()]) }}" class="auth-btn auth-btn-telegram">
 <span class="auth-icon-circle">
 <span class="icon-tg"></span>
 </span>
-<span class="auth-text">Войти через Telegram</span>
+<span class="auth-text">{{ __('ui.auth_telegram') }}</span>
 </a>
 
 						@unless($isApple)
@@ -95,7 +95,7 @@
 									<path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
 								</svg>
 							</span>
-							<span class="auth-text">Войти через Google</span>
+							<span class="auth-text">{{ __('ui.auth_google') }}</span>
 						</a>
 						@endunless
 

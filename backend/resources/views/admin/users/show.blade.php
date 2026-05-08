@@ -5,7 +5,7 @@
 	ЗАГОЛОВКИ И МЕТАДАННЫЕ
     ========================== --}}
     <x-slot name="title">
-        Редактирование пользователя #{{ $user->id }} — {{ $user->name }}
+        {{ __('admin.show_title') }} #{{ $user->id }} — {{ $user->name }}
 	</x-slot>
     
     <x-slot name="h1">
@@ -15,17 +15,17 @@
 		#{{ $user->id }}
 	</x-slot>
 	<x-slot name="t_description">
-        Редактирование пользователя
+        {{ __('admin.show_breadcrumb') }}
 	</x-slot>   
     {{-- Крошки --}}
     <x-slot name="breadcrumbs">
 		<li itemprop="itemListElement" itemscope="" itemtype="http://schema.org/ListItem">
-			<a href="{{ route('admin.dashboard') }}" itemprop="item"><span itemprop="name">Админ-панель</span></a>
+			<a href="{{ route('admin.dashboard') }}" itemprop="item"><span itemprop="name">{{ __('admin.breadcrumb_dashboard') }}</span></a>
 			<meta itemprop="position" content="2">
 		</li>	
         <li itemprop="itemListElement" itemscope="" itemtype="http://schema.org/ListItem">
             <a href="{{ route('admin.users.index') }}" itemprop="item">
-                <span itemprop="name">Пользователи</span>
+                <span itemprop="name">{{ __('admin.users_breadcrumb_users') }}</span>
 			</a>
             <meta itemprop="position" content="3">
 		</li>
@@ -56,7 +56,7 @@
         @if (session('error'))
 		<div class="ramka">	
             <div class="alert alert-error">
-                <strong>Ошибка:</strong> {{ session('error') }}
+                <strong>{{ __('admin.show_error_label') }}</strong> {{ session('error') }}
 			</div>
 		</div>	
         @endif
@@ -64,7 +64,7 @@
         @if ($errors->any())
 		<div class="ramka">	
             <div class="alert alert-error">
-                <strong>Ошибки:</strong>
+                <strong>{{ __('admin.errors_title') }}</strong>
                 <ul class="mt-2 mb-0">
                     @foreach ($errors->all() as $e)
 					<li>{{ $e }}</li>

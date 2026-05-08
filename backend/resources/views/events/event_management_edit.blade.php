@@ -37,14 +37,14 @@
 
 <x-voll-layout>
 
-    <x-slot name="title">Редактирование мероприятия #{{ (int)$event->id }}</x-slot>
-    <x-slot name="h1">Редактирование мероприятия</x-slot>
+    <x-slot name="title">{{ __('events.edit_title', ['id' => (int)$event->id]) }}</x-slot>
+    <x-slot name="h1">{{ __('events.edit_title_h1') }}</x-slot>
     <x-slot name="h2">{{ $event->title }}</x-slot>
 
     <x-slot name="breadcrumbs">
         <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
             <a href="{{ route('events.create.event_management') }}" itemprop="item">
-                <span itemprop="name">Управление мероприятиями</span>
+                <span itemprop="name">{{ __('events.mgmt_breadcrumb') }}</span>
             </a>
             <meta itemprop="position" content="2">
         </li>
@@ -55,14 +55,14 @@
             <meta itemprop="position" content="3">
         </li>
         <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
-            <span itemprop="name">Редактировать</span>
+            <span itemprop="name">{{ __('events.edit_breadcrumb') }}</span>
             <meta itemprop="position" content="4">
         </li>
     </x-slot>
 
     <x-slot name="t_description">
-        Активных записей: <strong>{{ (int)$activeRegs }}</strong>.
-        Изменения не удаляют существующие записи.
+        {{ __('events.edit_active_regs') }} <strong>{{ (int)$activeRegs }}</strong>.
+        {{ __('events.edit_active_note') }}
     </x-slot>
 
     <x-slot name="style">
@@ -78,10 +78,10 @@
 @if(($event->format ?? '') === 'tournament')
 <div class="alert alert-info mb-4 d-flex justify-content-between align-items-center">
     <div>
-        <strong>Турнирная система</strong> — настройка стадий, жеребьёвка, ввод счёта
+        <strong>{{ __('events.tournament_redirect_title') }}</strong> {{ __('events.tournament_redirect_text') }}
     </div>
     <a href="{{ route('tournament.setup', $event) }}" class="btn btn-primary btn-sm">
-        Управление турниром →
+        {{ __('events.tournament_redirect_btn') }}
     </a>
 </div>
 @endif
@@ -97,7 +97,7 @@
         @if ($errors->any())
             <div class="ramka">
                 <div class="alert alert-error">
-                    <div class="alert-title">Проверьте поля</div>
+                    <div class="alert-title">{{ __('events.edit_check_fields') }}</div>
                     <ul class="list">
                         @foreach ($errors->all() as $err)
                             <li>{{ $err }}</li>
@@ -116,16 +116,16 @@
 
                 {{-- ===== БЛОК 1: Основные настройки ===== --}}
                 <div class="ramka">
-                    <h2 class="-mt-05">Основные настройки</h2>
+                    <h2 class="-mt-05">{{ __('events.main_settings') }}</h2>
                     <div class="row">
 
                         <div class="col-md-6">
                             <div class="card">
-                                <label>Название мероприятия</label>
+                                <label>{{ __('events.event_title') }}</label>
                                 <input
                                     name="title"
                                     value="{{ old('title', (string)$event->title) }}"
-                                    placeholder="Название мероприятия"
+                                    placeholder="{{ __('events.event_title') }}"
                                     required
                                 >
                                 @error('title')
@@ -136,25 +136,25 @@
 
                         <div class="col-md-3">
                             <div class="card">
-                                <label>Направление</label>
+                                <label>{{ __('events.direction') }}</label>
                                 <select name="direction" id="direction_edit">
-                                    <option value="classic" @selected(old('direction', $event->direction) === 'classic')>Классика</option>
-                                    <option value="beach" @selected(old('direction', $event->direction) === 'beach')>Пляжка</option>
+                                    <option value="classic" @selected(old('direction', $event->direction) === 'classic')>{{ __('events.card_dir_classic') }}</option>
+                                    <option value="beach" @selected(old('direction', $event->direction) === 'beach')>{{ __('events.card_dir_beach') }}</option>
                                 </select>
                             </div>
                         </div>
 
                         <div class="col-md-3">
                             <div class="card">
-                                <label>Тип мероприятия</label>
+                                <label>{{ __('events.event_type') }}</label>
                                 <select name="format">
                                     @foreach([
-                                        'game' => 'Игра',
-                                        'training' => 'Тренировка',
-                                        'training_game' => 'Тренировка + Игра',
-                                        'coach_student' => 'Тренер + ученик',
-                                        'tournament' => 'Турнир',
-                                        'camp' => 'КЕМП',
+                                        'game' => __('events.fmt_game'),
+                                        'training' => __('events.fmt_training'),
+                                        'training_game' => __('events.fmt_training_game'),
+                                        'coach_student' => __('events.fmt_coach_student'),
+                                        'tournament' => __('events.fmt_tournament'),
+                                        'camp' => __('events.fmt_camp_caps'),
                                     ] as $k => $label)
                                         <option value="{{ $k }}" @selected(old('format', $event->format) === $k)>{{ $label }}</option>
                                     @endforeach
@@ -164,7 +164,7 @@
 
                         <div class="col-md-4">
                             <div class="card">
-                                <label>Начало (UTC)</label>
+                                <label>{{ __('events.starts_utc') }}</label>
                                 <input
                                     name="starts_at"
                                     type="datetime-local"
@@ -179,10 +179,10 @@
 
                         <div class="col-md-4">
                             <div class="card">
-                                <label>Длительность</label>
+                                <label>{{ __('events.duration_label_short') }}</label>
                                 <div class="row row2">
                                     <div class="col-4">
-                                        <label>Часы</label>
+                                        <label>{{ __('events.duration_h') }}</label>
                                         <select name="duration_hours">
                                             @for($h = 0; $h <= 23; $h++)
                                                 <option value="{{ $h }}" @selected((old('duration_hours', $event->duration_sec ? (int)floor($event->duration_sec / 3600) : 0)) == $h)>{{ $h }}</option>
@@ -191,7 +191,7 @@
                                             
                                     </div>
                                     <div class="col-4">
-                                        <label>Мин</label>
+                                        <label>{{ __('events.duration_m') }}</label>
                                         <select name="duration_minutes">
                                             @foreach([0,15,30,45] as $m)
                                                 <option value="{{ $m }}" @selected((old('duration_minutes', $event->duration_sec ? (int)(($event->duration_sec % 3600) / 60) : 0)) == $m)>{{ $m }}</option>
@@ -207,7 +207,7 @@
 
                         <div class="col-md-4">
                             <div class="card">
-                                <label>Timezone</label>
+                                <label>{{ __('events.tz_label') }}</label>
                                 <input
                                     name="timezone"
                                     value="{{ old('timezone', (string)$event->timezone) }}"
@@ -215,7 +215,7 @@
                                     required
                                 >
                                 <ul class="list f-16 mt-1">
-                                    <li>Напр. Europe/Moscow, Asia/Novosibirsk</li>
+                                    <li>{{ __('events.tz_hint') }}</li>
                                 </ul>
                             </div>
                         </div>
@@ -225,20 +225,20 @@
 
                 {{-- ===== БЛОК 2: Локация ===== --}}
                 <div class="ramka">
-                    <h2 class="-mt-05">Локация</h2>
+                    <h2 class="-mt-05">{{ __('events.location_section') }}</h2>
                     <div class="row">
                         <div class="col-md-12">
                             <div class="card">
                                 <div class="d-flex between">
-                                    <label>Локация</label>
+                                    <label>{{ __('events.location_label') }}</label>
                                     @if($isAdmin)
                                         <a href="{{ route('admin.locations.create') }}"
-                                           class="f-16 cd b-600">+ Создать локацию</a>
+                                           class="f-16 cd b-600">{{ __('events.location_create_btn') }}</a>
                                     @endif
                                 </div>
 
                                 <select name="location_id" id="location_id_edit" class="w-full rounded-lg border-gray-200" required>
-                                    <option value="">— выбрать —</option>
+                                    <option value="">{{ __('events.tournament_choose') }}</option>
                                     @foreach(($locations ?? []) as $loc)
                                         @php
                                             $thumb = $loc->getFirstMediaUrl('photos', 'thumb');
@@ -287,12 +287,12 @@
 
                 {{-- ===== БЛОК 3: Игровые настройки ===== --}}
                 <div class="ramka">
-                    <h2 class="-mt-05">Игровые настройки</h2>
+                    <h2 class="-mt-05">{{ __('events.game_settings_section') }}</h2>
                     <div class="row">
 
                         <div class="col-md-3">
                             <div class="card">
-                                <label>Подтип игры</label>
+                                <label>{{ __('events.game_subtype') }}</label>
                                 <select name="game_subtype">
                                     @foreach(['4x4' => '4×4', '4x2' => '4×2', '5x1' => '5×1'] as $k => $l)
                                         <option value="{{ $k }}"
@@ -306,7 +306,7 @@
 
                         <div class="col-md-3">
                             <div class="card">
-                                <label>Команды</label>
+                                <label>{{ __('events.team_n') }}</label>
                                 <input type="number" name="teams_count" min="2" max="200"
                                     value="{{ old('teams_count', $event->gameSettings?->teams_count ?? 2) }}">
                             </div>
@@ -314,7 +314,7 @@
 
                         <div class="col-md-3">
                             <div class="card">
-                                <label>Мин. игроков</label>
+                                <label>{{ __('events.min_players') }}</label>
                                 <input type="number" name="game_min_players" min="0" max="99"
                                     value="{{ old('game_min_players', $event->gameSettings?->min_players ?? 0) }}">
                             </div>
@@ -322,7 +322,7 @@
 
                         <div class="col-md-3">
                             <div class="card">
-                                <label>Макс. игроков</label>
+                                <label>{{ __('events.max_players') }}</label>
                                 <input type="number" name="game_max_players" min="0" max="99"
                                     value="{{ old('game_max_players', $event->gameSettings?->max_players ?? 0) }}">
                             </div>
@@ -330,14 +330,14 @@
 
                         <div class="col-md-6">
                             <div class="card">
-                                <label>Гендерные ограничения</label>
+                                <label>{{ __('events.gender_label') }}</label>
                                 <select name="game_gender_policy">
                                     @foreach([
-                                        'mixed_open' => 'М/Ж (без ограничений)',
-                                        'mixed_5050' => 'Микс 50/50',
-                                        'only_male' => 'Только М',
-                                        'only_female' => 'Только Ж',
-                                        'mixed_limited' => 'М/Ж (с ограничениями)',
+                                        'mixed_open' => __('events.gender_mixed_open'),
+                                        'mixed_5050' => __('events.gender_5050'),
+                                        'only_male' => __('events.gender_only_male'),
+                                        'only_female' => __('events.gender_only_female'),
+                                        'mixed_limited' => __('events.gender_mixed_limited'),
                                     ] as $k => $l)
                                         <option value="{{ $k }}"
                                             @selected(old('game_gender_policy', $event->gameSettings?->gender_policy) === $k)>
@@ -350,14 +350,14 @@
 
                         <div class="col-md-6">
                             <div class="card">
-                                <label>Ограничиваемый пол: начало регистрации (дней до)</label>
+                                <label>{{ __('events.gender_limited_reg_label') }}</label>
                                 <input type="number"
                                     name="game_gender_limited_reg_starts_days_before"
                                     min="0" max="365"
                                     value="{{ old('game_gender_limited_reg_starts_days_before', $event->gameSettings?->gender_limited_reg_starts_days_before) }}"
-                                    placeholder="например, 1">
+                                    placeholder="{{ __('events.gender_limited_reg_ph') }}">
                                 <ul class="list f-14 mt-1">
-                                    <li>Только при «М/Ж (с ограничениями)». Если пусто — действует общее «Начало регистрации».</li>
+                                    <li>{{ __('events.gender_limited_reg_hint') }}</li>
                                 </ul>
                             </div>
                         </div>
@@ -365,16 +365,16 @@
 @if(($event->direction ?? 'classic') === 'classic')
                         <div class="col-md-6">
                             <div class="card">
-                                <label>Уровень допуска (классика)</label>
+                                <label>{{ __('events.level_classic_short') }}</label>
                                 <div class="row row2">
                                     <div class="col-6">
-                                        <label>От</label>
+                                        <label>{{ __('events.level_from') }}</label>
                                         <input type="number" name="classic_level_min" min="1" max="7"
                                             value="{{ old('classic_level_min', $event->classic_level_min) }}"
                                             placeholder="—">
                                     </div>
                                     <div class="col-6">
-                                        <label>До</label>
+                                        <label>{{ __('events.level_to') }}</label>
                                         <input type="number" name="classic_level_max" min="1" max="7"
                                             value="{{ old('classic_level_max', $event->classic_level_max) }}"
                                             placeholder="—">
@@ -387,16 +387,16 @@
                         @if(($event->direction ?? 'classic') === 'beach')
                         <div class="col-md-6">
                             <div class="card">
-                                <label>Уровень допуска (пляж)</label>
+                                <label>{{ __('events.level_beach_short') }}</label>
                                 <div class="row row2">
                                     <div class="col-6">
-                                        <label>От</label>
+                                        <label>{{ __('events.level_from') }}</label>
                                         <input type="number" name="beach_level_min" min="1" max="7"
                                             value="{{ old('beach_level_min', $event->beach_level_min) }}"
                                             placeholder="—">
                                     </div>
                                     <div class="col-6">
-                                        <label>До</label>
+                                        <label>{{ __('events.level_to') }}</label>
                                         <input type="number" name="beach_level_max" min="1" max="7"
                                             value="{{ old('beach_level_max', $event->beach_level_max) }}"
                                             placeholder="—">
@@ -408,22 +408,22 @@
 
                         <div class="col-md-6">
                             <div class="card">
-                                <label>Возрастные ограничения</label>
+                                <label>{{ __('events.age_policy_label') }}</label>
                                 @php $agePolicy = old('age_policy', $event->age_policy ?? 'adult'); @endphp
                                 <label class="radio-item">
                                     <input type="radio" name="age_policy" value="adult" @checked($agePolicy === 'adult')>
                                     <div class="custom-radio"></div>
-                                    <span>Для взрослых</span>
+                                    <span>{{ __('events.age_policy_adult') }}</span>
                                 </label>
                                 <label class="radio-item">
                                     <input type="radio" name="age_policy" value="child" @checked($agePolicy === 'child')>
                                     <div class="custom-radio"></div>
-                                    <span>Для детей</span>
+                                    <span>{{ __('events.age_policy_child') }}</span>
                                 </label>
                                 <label class="radio-item">
                                     <input type="radio" name="age_policy" value="any" @checked($agePolicy === 'any')>
                                     <div class="custom-radio"></div>
-                                    <span>Без ограничений</span>
+                                    <span>{{ __('events.age_policy_any') }}</span>
                                 </label>
                             </div>
                         </div>
@@ -433,38 +433,38 @@
 
                 {{-- ===== БЛОК 4: Регистрация ===== --}}
                 <div class="ramka">
-                    <h2 class="-mt-05">Регистрация</h2>
+                    <h2 class="-mt-05">{{ __('events.reg_section') }}</h2>
                     <div class="row">
 
                         <div class="col-md-4">
                             <div class="card">
-                                <label>Регистрация игроков через сервис</label>
+                                <label>{{ __('events.reg_via_service') }}</label>
                                 @php $allowRegVal = old('allow_registration', (int)((bool)$event->allow_registration)); @endphp
                                 <label class="radio-item">
                                     <input type="radio" name="allow_registration" value="1" @checked((string)$allowRegVal === '1')>
                                     <div class="custom-radio"></div>
-                                    <span>Да</span>
+                                    <span>{{ __('events.yes') }}</span>
                                 </label>
                                 <label class="radio-item">
                                     <input type="radio" name="allow_registration" value="0" @checked((string)$allowRegVal === '0')>
                                     <div class="custom-radio"></div>
-                                    <span>Нет</span>
+                                    <span>{{ __('events.no') }}</span>
                                 </label>
                             </div>
                         </div>
 
                         <div class="col-md-4">
                             <div class="card" style="overflow:visible">
-                                <label>Начало регистрации (дней до)</label>
+                                <label>{{ __('events.reg_starts_days') }}</label>
                                 <div class="d-flex" style="gap:.5rem;align-items:center">
                                     <select name="reg_starts_days_before" id="mgmt_reg_starts_d" style="width:auto">
                                         @for($d = 0; $d <= 90; $d++)
-                                            <option value="{{ $d }}" @selected((old('reg_starts_days_before', $regStartsDaysSaved)) == $d)>{{ $d }} д</option>
+                                            <option value="{{ $d }}" @selected((old('reg_starts_days_before', $regStartsDaysSaved)) == $d)>{{ $d }} {{ __(\'events.dur_d_short\') }}</option>
                                         @endfor
                                     </select>
                                     <select name="reg_starts_hours_before" id="mgmt_reg_starts_h" style="width:auto">
                                         @for($h = 0; $h <= 23; $h++)
-                                            <option value="{{ $h }}" @selected((old('reg_starts_hours_before', $regStartsHoursSaved)) == $h)>{{ $h }} ч</option>
+                                            <option value="{{ $h }}" @selected((old('reg_starts_hours_before', $regStartsHoursSaved)) == $h)>{{ $h }} {{ __(\'events.dur_h_short\') }}</option>
                                         @endfor
                                     </select>
                                 </div>
@@ -473,60 +473,60 @@
 
                         <div class="col-md-4">
                             <div class="card">
-                                <label>Окончание регистрации (до начала)</label>
+                                <label>{{ __('events.reg_ends_until_start') }}</label>
                                 <input type="hidden" name="reg_ends_minutes_before" id="mgmt_reg_ends_min" value="{{ $regEndsMinCurrent }}">
                                 <div class="d-flex" style="gap:.5rem;align-items:center">
                                     <select id="mgmt_reg_ends_h" style="width:auto">
                                         @for ($h = 0; $h <= 24; $h++)
-                                            <option value="{{ $h }}" @selected($regEndsHours == $h)>{{ $h }} ч</option>
+                                            <option value="{{ $h }}" @selected($regEndsHours == $h)>{{ $h }} {{ __(\'events.dur_h_short\') }}</option>
                                         @endfor
                                     </select>
                                     <select id="mgmt_reg_ends_m" style="width:auto">
                                         @foreach([0,10,15,20,30,40,50] as $m)
-                                            <option value="{{ $m }}" @selected($regEndsMins == $m)>{{ $m }} мин</option>
+                                            <option value="{{ $m }}" @selected($regEndsMins == $m)>{{ $m }} {{ __(\'events.dur_m_short\') }}</option>
                                         @endforeach
                                     </select>
                                 </div>
                                 <ul class="list f-16 mt-1">
-                                    <li>По умолчанию: 15 минут.</li>
+                                    <li>{{ __('events.reg_ends_default') }}</li>
                                 </ul>
                             </div>
                         </div>
 
                         <div class="col-md-4">
                             <div class="card">
-                                <label>Запрет отмены записи (до начала)</label>
+                                <label>{{ __('events.cancel_lock_until_start') }}</label>
                                 <input type="hidden" name="cancel_lock_minutes_before" id="mgmt_cancel_min" value="{{ $cancelMinCurrent }}">
                                 <div class="d-flex" style="gap:.5rem;align-items:center">
                                     <select id="mgmt_cancel_h" style="width:auto">
                                         @for ($h = 0; $h <= 24; $h++)
-                                            <option value="{{ $h }}" @selected($cancelHours == $h)>{{ $h }} ч</option>
+                                            <option value="{{ $h }}" @selected($cancelHours == $h)>{{ $h }} {{ __(\'events.dur_h_short\') }}</option>
                                         @endfor
                                     </select>
                                     <select id="mgmt_cancel_m" style="width:auto">
                                         @foreach([0,10,15,20,30,40,50] as $m)
-                                            <option value="{{ $m }}" @selected($cancelMins == $m)>{{ $m }} мин</option>
+                                            <option value="{{ $m }}" @selected($cancelMins == $m)>{{ $m }} {{ __(\'events.dur_m_short\') }}</option>
                                         @endforeach
                                     </select>
                                 </div>
                                 <ul class="list f-16 mt-1">
-                                    <li>По умолчанию: 1 час.</li>
+                                    <li>{{ __('events.cancel_lock_default') }}</li>
                                 </ul>
                             </div>
                         </div>
 
                         <div class="col-md-4">
                             <div class="card">
-                                <label>Персональные данные при записи</label>
+                                <label>{{ __('events.personal_data_section') }}</label>
                                 <label class="checkbox-item">
                                     <input type="hidden" name="requires_personal_data" value="0">
                                     <input type="checkbox" name="requires_personal_data" value="1"
                                         @checked(old('requires_personal_data', $event->requires_personal_data ?? false))>
                                     <div class="custom-checkbox"></div>
-                                    <span>Запрашивать личные данные</span>
+                                    <span>{{ __('events.personal_data_request') }}</span>
                                 </label>
                                 <ul class="list f-16 mt-1">
-                                    <li>Игрок при записи должен заполнить профиль (имя, телефон).</li>
+                                    <li>{{ __('events.personal_data_hint_2') }}</li>
                                 </ul>
                             </div>
                         </div>
@@ -536,7 +536,7 @@
 
                 {{-- ===== БЛОК 5: Доступность ===== --}}
                 <div class="ramka">
-                    <h2 class="-mt-05">Доступность и оплата</h2>
+                    <h2 class="-mt-05">{{ __('events.access_pay_section') }}</h2>
                     <div class="row">
 
                         <div class="col-md-4">
@@ -546,7 +546,7 @@
                                     <input type="checkbox" name="is_private" value="1"
                                         @checked(old('is_private', $event->is_private ?? false))>
                                     <div class="custom-checkbox"></div>
-                                    <span>Приватное (только по ссылке)</span>
+                                    <span>{{ __('events.private_short') }}</span>
                                 </label>
                             </div>
                         </div>
@@ -558,21 +558,21 @@
                                     <input type="checkbox" name="is_paid" value="1" id="is_paid_edit"
                                         @checked(old('is_paid', $event->is_paid ?? false))>
                                     <div class="custom-checkbox"></div>
-                                    <span>Платное</span>
+                                    <span>{{ __('events.paid_label') }}</span>
                                 </label>
 
                                 <div class="row row2 mt-1" id="price_wrap_edit">
                                     <div class="col-7">
-                                        <label>Стоимость</label>
+                                        <label>{{ __('events.price_label') }}</label>
                                         <input type="number" name="price_amount" min="10" max="500000" step="0.01"
                                             value="{{ old('price_amount', $event->price_minor ? $event->price_minor / 100 : '') }}"
-                                            placeholder="Напр. 500">
+                                            placeholder="{{ __('events.price_ph_500') }}">
                                         @error('price_amount')
                                             <div class="text-xs text-red-600 mt-1">{{ $message }}</div>
                                         @enderror
                                     </div>
                                     <div class="col-5">
-                                        <label>Валюта</label>
+                                        <label>{{ __('events.currency_label') }}</label>
                                         <select name="price_currency">
                                             @foreach(['RUB' => '₽ RUB', 'USD' => '$ USD', 'EUR' => '€ EUR', 'KZT' => '₸ KZT'] as $code => $label)
                                                 <option value="{{ $code }}"
@@ -585,13 +585,13 @@
                                 </div>
                                 
                                 <div class="mt-2">
-                                    <label>Способ оплаты</label>
+                                    <label>{{ __('events.pay_method_label') }}</label>
                                     <select name="payment_method">
                                         @foreach([
-                                            'cash' => '💵 Наличные (на месте)',
-                                            'tbank_link' => '🏦 Перевод Т-Банк (по ссылке)',
-                                            'sber_link' => '💚 Перевод Сбер (по ссылке)',
-                                            'yoomoney' => '🟡 ЮКасса (автоматическая оплата)'
+                                            'cash' => __('events.pay_method_cash'),
+                                            'tbank_link' => __('events.pay_method_tbank'),
+                                            'sber_link' => __('events.pay_method_sber'),
+                                            'yoomoney' => __('events.pay_method_yookassa')
                                         ] as $method => $label)
                                             <option value="{{ $method }}" 
                                                 @selected(old('payment_method', $event->payment_method ?? 'cash') === $method)>
@@ -602,7 +602,7 @@
                                 </div>
 
                                 <div class="mt-2" id="payment-link-block" style="display:none">
-                                    <label>Ссылка на оплату</label>
+                                    <label>{{ __('events.pay_link_label2') }}</label>
                                     <input type="text" name="payment_link" class="form-control"
                                         placeholder="https://..."
                                         value="{{ old('payment_link', $event->payment_link ?? '') }}">
@@ -611,17 +611,17 @@
                                 {{-- Режим оплаты турнира --}}
                                 @if($event->format === 'tournament')
                                 <div class="mt-2" id="tournament_payment_mode_edit_wrap">
-                                    <label>Кто оплачивает участие</label>
+                                    <label>{{ __('events.tournament_pay_mode') }}</label>
                                     @php
                                         $tpmEdit = old('tournament_payment_mode', $event->tournament_settings->payment_mode ?? 'team');
                                     @endphp
                                     <select name="tournament_payment_mode" id="tournament_payment_mode_edit">
-                                        <option value="team" @selected($tpmEdit === 'team')>👑 Капитан за всю команду</option>
-                                        <option value="per_player" @selected($tpmEdit === 'per_player')>👤 Каждый игрок сам за себя</option>
+                                        <option value="team" @selected($tpmEdit === 'team')>{{ __('events.tournament_pay_team') }}</option>
+                                        <option value="per_player" @selected($tpmEdit === 'per_player')>{{ __('events.tournament_pay_per') }}</option>
                                     </select>
                                     <ul class="list f-14 mt-1">
-                                        <li id="hint_team_edit" style="{{ $tpmEdit === 'team' ? '' : 'display:none' }}">Капитан оплачивает участие команды целиком</li>
-                                        <li id="hint_pp_edit" style="{{ $tpmEdit === 'per_player' ? '' : 'display:none' }}">Каждый участник платит отдельно</li>
+                                        <li id="hint_team_edit" style="{{ $tpmEdit === 'team' ? '' : 'display:none' }}">{{ __('events.tournament_pay_team_short') }}</li>
+                                        <li id="hint_pp_edit" style="{{ $tpmEdit === 'per_player' ? '' : 'display:none' }}">{{ __('events.tournament_pay_per_short') }}</li>
                                     </ul>
                                 </div>
                                 @endif
@@ -630,17 +630,17 @@
 
                         <div class="col-md-4">
                             <div class="card">
-                                <label>Показывать список записавшихся</label>
+                                <label>{{ __('events.show_participants_label') }}</label>
                                 @php $showParts = old('show_participants', $event->show_participants ?? true); @endphp
                                 <label class="radio-item">
                                     <input type="radio" name="show_participants" value="1" @checked($showParts)>
                                     <div class="custom-radio"></div>
-                                    <span>Да</span>
+                                    <span>{{ __('events.yes') }}</span>
                                 </label>
                                 <label class="radio-item">
                                     <input type="radio" name="show_participants" value="0" @checked(!$showParts)>
                                     <div class="custom-radio"></div>
-                                    <span>Нет</span>
+                                    <span>{{ __('events.no') }}</span>
                                 </label>
                             </div>
                         </div>
@@ -650,24 +650,24 @@
 
                 {{-- ===== БЛОК 6: Уведомления ===== --}}
                 <div class="ramka">
-                    <h2 class="-mt-05">Уведомления</h2>
+                    <h2 class="-mt-05">{{ __('events.notify_section') }}</h2>
                     <div class="row">
 
                         <div class="col-md-6">
                             <div class="card">
-                                <label>Напоминание игроку о записи</label>
+                                <label>{{ __('events.remind_label') }}</label>
                                 <label class="checkbox-item">
                                     <input type="hidden" name="remind_registration_enabled" value="0">
                                     <input type="checkbox" name="remind_registration_enabled" value="1"
                                         @checked(old('remind_registration_enabled', $event->remind_registration_enabled ?? true))>
                                     <div class="custom-checkbox"></div>
-                                    <span>Включено</span>
+                                    <span>{{ __('events.remind_enabled') }}</span>
                                 </label>
                                 <div class="mt-2">
-                                    <label>За сколько до начала</label>
+                                    <label>{{ __('events.remind_when') }}</label>
                                     <div class="row row2">
                                         <div class="col-6">
-                                            <label>Часы</label>
+                                            <label>{{ __('events.duration_h') }}</label>
                                             <select id="remind_hours_edit">
                                                 @for($h = 0; $h <= 12; $h++)
                                                     <option value="{{ $h }}" @selected((int) floor($remMin / 60) == $h)>{{ $h }}</option>
@@ -675,7 +675,7 @@
                                             </select>
                                         </div>
                                         <div class="col-6">
-                                            <label>Минуты</label>
+                                            <label>{{ __('events.remind_minutes') }}</label>
                                             <select id="remind_minutes_edit">
                                                 @foreach([0,5,10,15,20,25,30,35,40,45,50,55,60] as $m)
                                                     <option value="{{ $m }}" @selected(($remMin % 60) == $m)>{{ $m }}</option>
@@ -686,7 +686,7 @@
                                     <input type="hidden" name="remind_registration_minutes_before"
                                         id="remind_hidden_edit" value="{{ $remMin }}">
                                     <ul class="list f-16 mt-1">
-                                        <li>Пример: 10 часов 0 минут = напоминание за 10 часов до начала.</li>
+                                        <li>{{ __('events.remind_example') }}</li>
                                     </ul>
                                 </div>
                             </div>
@@ -698,7 +698,7 @@
                 @if(!in_array($event->registration_mode ?? 'single', ['team', 'team_classic', 'team_beach'], true) && ($event->format ?? 'game') !== 'tournament')
                 {{-- ===== БЛОК 7: Помощник записи 🤖 ===== --}}
                 <div class="ramka">
-                    <h2 class="-mt-05">Помощник записи <span id="bot_icon_edit" style="color:{{ ($event->bot_assistant_enabled ?? false) ? '#10b981' : '#9ca3af' }}">🤖</span></h2>
+                    <h2 class="-mt-05">{{ __('events.bot_title_short') }} <span id="bot_icon_edit" style="color:{{ ($event->bot_assistant_enabled ?? false) ? '#10b981' : '#9ca3af' }}">🤖</span></h2>
                     <div class="row">
                         <div class="col-md-12">
                             <div class="card">
@@ -708,11 +708,11 @@
                                         id="bot_assistant_enabled_edit"
                                         @checked(old('bot_assistant_enabled', $event->bot_assistant_enabled ?? false))>
                                     <div class="custom-checkbox"></div>
-                                    <span>Включить помощника записи</span>
+                                    <span>{{ __('events.bot_enable') }}</span>
                                 </label>
                                 <ul class="list f-16 mt-1">
-                                    <li>Боты занимают места если живых игроков меньше порога. Уходят по мере прихода реальных игроков.</li>
-                                    <li>Видно только организатору и администратору.</li>
+                                    <li>{{ __('events.bot_squeeze_hint') }}</li>
+                                    <li>{{ __('events.bot_visibility_hint') }}</li>
                                 </ul>
                             </div>
                         </div>
@@ -720,7 +720,7 @@
                         <div class="col-md-6" id="bot_settings_edit"
                              @if(!old('bot_assistant_enabled', $event->bot_assistant_enabled ?? false)) style="display:none" @endif>
                             <div class="card">
-                                <label>Порог запуска:
+                                <label>{{ __('events.bot_threshold_short') }}
                                     <strong id="bot_threshold_val_edit" class="cd">
                                         {{ old('bot_assistant_threshold', $event->bot_assistant_threshold ?? 10) }}%
                                     </strong>
@@ -729,14 +729,14 @@
                                     min="5" max="30" step="5"
                                     value="{{ old('bot_assistant_threshold', $event->bot_assistant_threshold ?? 10) }}"
                                     oninput="document.getElementById('bot_threshold_val_edit').textContent = this.value + '%'">
-                                <ul class="list f-16 mt-1"><li>Диапазон: 5–30%.</li></ul>
+                                <ul class="list f-16 mt-1"><li>{{ __('events.bot_threshold_range_short') }}</li></ul>
                             </div>
                         </div>
 
                         <div class="col-md-6" id="bot_fill_edit"
                              @if(!old('bot_assistant_enabled', $event->bot_assistant_enabled ?? false)) style="display:none" @endif>
                             <div class="card">
-                                <label>Макс. заполнение ботами:
+                                <label>{{ __('events.bot_fill_short') }}
                                     <strong id="bot_fill_val_edit" class="cd">
                                         {{ old('bot_assistant_max_fill_pct', $event->bot_assistant_max_fill_pct ?? 40) }}%
                                     </strong>
@@ -745,7 +745,7 @@
                                     min="10" max="60" step="10"
                                     value="{{ old('bot_assistant_max_fill_pct', $event->bot_assistant_max_fill_pct ?? 40) }}"
                                     oninput="document.getElementById('bot_fill_val_edit').textContent = this.value + '%'">
-                                <ul class="list f-16 mt-1"><li>Диапазон: 10–60%.</li></ul>
+                                <ul class="list f-16 mt-1"><li>{{ __('events.bot_fill_range_short') }}</li></ul>
                             </div>
                         </div>
                     </div>
@@ -755,7 +755,7 @@
 
                 {{-- ===== БЛОК 8: Описание ===== --}}
                 <div class="ramka">
-                    <h2 class="-mt-05">Фото мероприятия</h2>
+                    <h2 class="-mt-05">{{ __('events.photo_only_title') }}</h2>
                     <div class="row">
                         <div class="col-md-12">
                             @php
@@ -764,7 +764,7 @@
                             @endphp
                             @if($userEventPhotos->count() > 0)
                             <div class="card">
-                                <label>Фотографии для мероприятия</label>
+                                <label>{{ __('events.photos_label') }}</label>
                                 <div class="event-photos-selector-edit"
                                      data-selected='{{ json_encode(old('event_photos_edit') ? json_decode(old('event_photos_edit'), true) : $currentEventPhotos) }}'>
                                     <div class="swiper eventPhotosSwiperEdit">
@@ -778,7 +778,7 @@
                                                     <label class="checkbox-item mb-0">
                                                         <input type="checkbox" class="photo-select-edit" value="{{ $photo->id }}">
                                                         <div class="custom-checkbox"></div>
-                                                        <span>Выбрать</span>
+                                                        <span>{{ __('events.photo_select') }}</span>
                                                     </label>
                                                     <div class="photo-order-badge-edit f-16 b-600 cd"></div>
                                                 </div>
@@ -788,8 +788,8 @@
                                         <div class="swiper-pagination"></div>
                                     </div>
                                     <ul class="list f-16 mt-1">
-                                        <li>Выберите фото для мероприятия. Первое отмеченное фото будет главным.</li>
-                                        <li>Фотографии можно добавить (с галочкой "Для мероприятий") в разделе <a target="_blank" href="{{ route('user.photos') }}">Ваши фотографии</a></li>
+                                        <li>{{ __('events.photo_select_hint_1') }}</li>
+                                        <li>{{ __('events.photo_select_hint_2_pre') }} <a target="_blank" href="{{ route('user.photos') }}">{{ __('events.photo_select_hint_2_link') }}</a></li>
                                     </ul>
                                     <input type="hidden" name="event_photos" id="event_photos_input_edit" value="">
                                 </div>
@@ -815,7 +815,7 @@
                                         var badge = checkbox.closest('.swiper-slide').querySelector('.photo-order-badge-edit');
                                         if (isSelected) {
                                             var order = selectedPhotos.indexOf(id) + 1;
-                                            badge.textContent = order === 1 ? '★ Главное' : 'Фото: ' + order;
+                                            badge.textContent = order === 1 ? @json(__('events.photo_main')) : @json(__('events.photo_pos_n', ['n' => ''])) + order;
                                         } else {
                                             badge.textContent = '';
                                         }
@@ -841,8 +841,8 @@
                             </script>
                             @else
                             <div class="alert alert-info">
-                                <p>У вас нет фото для мероприятий.</p>
-                                <p>Фотографии можно добавить (с галочкой "Для мероприятий") в разделе <a target="_blank" href="{{ route('user.photos') }}">Ваши фотографии</a></p>
+                                <p>{{ __('events.photo_empty_p1') }}</p>
+                                <p>{{ __('events.photo_select_hint_2_pre') }} <a target="_blank" href="{{ route('user.photos') }}">{{ __('events.photo_select_hint_2_link') }}</a></p>
                             </div>
                             @endif
                         </div>
@@ -850,7 +850,7 @@
                 </div>
 
                 <div class="ramka">
-                    <h2 class="-mt-05">Описание мероприятия</h2>
+                    <h2 class="-mt-05">{{ __('events.desc_only_title') }}</h2>
                     <div class="row">
                         <div class="col-md-12">
                             <div class="card">
@@ -867,8 +867,8 @@
 
                 {{-- КНОПКИ --}}
                 <div class="ramka text-center">
-                    <a href="{{ route('events.create.event_management') }}" class="btn btn-secondary mr-2">← Отмена</a>
-                    <button type="submit" class="btn">Сохранить изменения</button>
+                    <a href="{{ route('events.create.event_management') }}" class="btn btn-secondary mr-2">{{ __('events.btn_cancel_back') }}</a>
+                    <button type="submit" class="btn">{{ __('events.btn_save_changes') }}</button>
                 </div>
 
             </form>

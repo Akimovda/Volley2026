@@ -3,9 +3,9 @@
     $direction = $event->direction ?? 'classic';
     $isBeach = $direction === 'beach';
 	@endphp
-	<x-slot name="title">Управление турниром — {{ $event->title }}</x-slot>
+	<x-slot name="title">{{ __('tournaments.setup_title_with', ['title' => $event->title]) }}</x-slot>
 	
-    <x-slot name="h1">Управление турниром: {{ $event->title }}</x-slot>
+    <x-slot name="h1">{{ __('tournaments.setup_title_with', ['title' => $event->title]) }}</x-slot>
 	
 	
 {{-- Активный тур --}}
@@ -15,7 +15,7 @@ $occDate = \Carbon\Carbon::parse($selectedOccurrence->starts_at)->setTimezone($e
 $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selectedOccurrence->id) + 1;
 @endphp
 <x-slot name="h2">
-		Тур {{ $tourNumber }} ({{ $occDate->format('d.m.Y') }})
+		{{ __('tournaments.setup_round_n', ['n' => $tourNumber, 'date' => $occDate->format('d.m.Y')]) }}
 </x-slot>
 @endif	
 	
@@ -23,7 +23,7 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 	
     <x-slot name="t_description">
 				{{ $seasonData['season']->name }}
-				/ {{ $seasonData['league']->name ?? 'Лига' }}  
+				/ {{ $seasonData['league']->name ?? __('tournaments.setup_league_default') }}  
 	</x-slot>	
 	
 	
@@ -35,7 +35,7 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 			<meta itemprop="position" content="2">
 		</li>
 		<li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
-			<span itemprop="name">Управление турниром</span>
+			<span itemprop="name">{{ __('tournaments.setup_breadcrumb') }}</span>
 			<meta itemprop="position" content="3">
 		</li>
 	</x-slot>
@@ -43,11 +43,11 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 	<x-slot name="d_description">
 		<div class="d-flex flex-wrap gap-1 m-center">
 			<div class="mt-2" data-aos-delay="250" data-aos="fade-up">
-				<button class="btn ufilter-btn">Выбрать тур</button>
+				<button class="btn ufilter-btn">{{ __('tournaments.setup_pick_round') }}</button>
 			</div>
 			<!--
 			<div class="mt-2" data-aos-delay="350" data-aos="fade-up">
-				<a href="/" class="btn btn-secondary">тут ссылка вернуться</a>
+				
 			</div>	
 			-->
 		</div>
@@ -58,7 +58,7 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 			<div class="ramka">	
 				{{-- Выбор тура --}}
 				@if($seasonData['occurrences']->count() > 1)
-				<h2 class="-mt-05">Тур:</h2>
+				<h2 class="-mt-05">{{ __('tournaments.setup_round_label') }}</h2>
 				<div class="d-flex text-center" style="gap:1rem; flex-wrap:wrap;">
 					@foreach($seasonData['occurrences'] as $occ)
 					@php
@@ -81,10 +81,10 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 		{{-- ========================= ЗАЯВКИ ========================= --}}
 		@if(($applicationMode ?? 'manual') === 'manual' && isset($pendingApplications) && $pendingApplications->count())
 		<div class="ramka">
-			<h2 class="-mt-05">Заявки на участие ({{ $pendingApplications->count() }})</h2>
+			<h2 class="-mt-05">{{ __('tournaments.apps_h2', ['n' => $pendingApplications->count()]) }}</h2>
 			
 			<div class="alert alert-info mb-2">
-				Режим: <b>ручное одобрение</b>. Одобрите или отклоните заявки команд.
+				{!! __('tournaments.apps_mode_manual') !!}
 			</div>
 			
 			@foreach($pendingApplications as $app)
@@ -93,15 +93,15 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 					<div>
 						<div class="b-700 f-17">{{ $app->team->name ?? '?' }}</div>
 						<div class="f-13" style="opacity:.6">
-							Капитан: 
+							{{ __('tournaments.apps_captain') }} 
 							<a class="blink" href="{{ route('users.show', $app->team->captain_user_id) }}">
 								{{ trim(($app->team->captain->last_name ?? '') . ' ' . ($app->team->captain->first_name ?? '')) ?: $app->team->captain->name ?? '?' }}
 							</a>
-							&middot; Подана: {{ $app->applied_at?->format('d.m.Y H:i') }}
+							&middot; {{ __('tournaments.apps_applied_at') }} {{ $app->applied_at?->format('d.m.Y H:i') }}
 						</div>
 						@if($app->team->members->count())
 						<div class="f-13 mt-05">
-							Состав: 
+							{{ __('tournaments.setup_apps_lineup') }} 
 							@foreach($app->team->members as $m)
 							<a class="blink" href="{{ route('users.show', $m->user_id) }}">{{ trim(($m->user->last_name ?? '') . ' ' . ($m->user->first_name ?? '')) ?: $m->user->name ?? '?' }}</a>@if(!$loop->last), @endif
 							@endforeach
@@ -111,11 +111,11 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 					<div class="d-flex" style="gap:.5rem">
 						<form method="POST" action="{{ route('tournament.application.approve', [$event, $app]) }}">
 							@csrf
-							<button type="submit" class="btn btn-small btn-primary btn-alert" data-title="Одобрить заявку?" data-icon="question" data-confirm-text="Да, одобрить" data-cancel-text="Отмена">✅ Одобрить</button>
+							<button type="submit" class="btn btn-small btn-primary btn-alert" data-title="{{ __('tournaments.apps_confirm_approve') }}" data-icon="question" data-confirm-text="{{ __('tournaments.setup_apps_yes') }}" data-cancel-text="{{ __('tournaments.btn_cancel') }}">{{ __('tournaments.setup_apps_btn_approve') }}</button>
 						</form>
 						<form method="POST" action="{{ route('tournament.application.reject', [$event, $app]) }}">
 							@csrf
-							<button type="submit" class="btn btn-small btn-secondary btn-alert" data-title="Отклонить заявку?" data-icon="warning" data-confirm-text="Да, отклонить" data-cancel-text="Отмена">❌ Отклонить</button>
+							<button type="submit" class="btn btn-small btn-secondary btn-alert" data-title="{{ __('tournaments.apps_confirm_reject') }}" data-icon="warning" data-confirm-text="{{ __('tournaments.setup_apps_no') }}" data-cancel-text="{{ __('tournaments.btn_cancel') }}">{{ __('tournaments.setup_apps_btn_reject') }}</button>
 						</form>
 					</div>
 				</div>
@@ -125,7 +125,7 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 		@elseif(($applicationMode ?? 'manual') === 'auto')
 		<div class="ramka">
 			<div class="alert alert-success">
-				✅ Режим: <b>автоматическое одобрение</b>. Заявки одобряются автоматически при подаче.
+				{!! __('tournaments.setup_apps_auto_mode') !!}
 			</div>
 		</div>
 		@endif
@@ -138,7 +138,7 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 				if (typeof Swal !== 'undefined') {
 					Swal.fire({
 						icon: '{{ session("success") ? "success" : "error" }}',
-						title: '{{ session("success") ? "Готово" : "Ошибка" }}',
+						title: @json(session("success") ? __('tournaments.setup_swal_done') : __('tournaments.setup_swal_error')),
 						text: {!! json_encode(session('success') ?: session('error')) !!},
 						timer: 3000,
 						showConfirmButton: false,
@@ -162,7 +162,7 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 		
 		
 		{{-- ============================================================
-		Серия турниров — управление составом лиги
+		{{ __('tournaments.setup_series_h2') }}
 		============================================================ --}}
 		@if($seasonData)
 		<div class="ramka" id="season_league_management">
@@ -204,11 +204,11 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 			@if($leagueTeams->count())
 			<div class="">
 				<h2 class="-mt-05">
-					Состав лиги: 
+					{{ __('tournaments.setup_series_lineup') }} 
 					<span class="cd">
-						— {{ $leagueTeams->where('status', 'active')->count() }} акт.
+						— {{ $leagueTeams->where('status', 'active')->count() }} {{ __('tournaments.setup_series_active') }}
 						@if($leagueTeams->where('status', 'reserve')->count())
-						/ {{ $leagueTeams->where('status', 'reserve')->count() }} рез.
+						/ {{ $leagueTeams->where('status', 'reserve')->count() }} {{ __('tournaments.setup_series_reserve') }}
 						@endif
 					</span>
 				</h2>
@@ -218,9 +218,9 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 						<thead>
 							<tr>
 								<th style="width:30px">#</th>
-								<th>Команда</th>
-								<th>Статус</th>
-								<th>Действие</th>
+								<th>{{ __('tournaments.setup_col_team') }}</th>
+								<th>{{ __('tournaments.setup_col_status') }}</th>
+								<th>{{ __('tournaments.setup_col_action') }}</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -247,11 +247,11 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 								</td>
 								<td class="text-center">
 									@if($lt->status === 'active')
-									<span class="alert-success p-1 pt-05 pb-05">Активен</span>
+									<span class="alert-success p-1 pt-05 pb-05">{{ __('tournaments.setup_st_active') }}</span>
 									@elseif($lt->status === 'reserve')
-									<span class="alert-warning p-1 pt-05 pb-05">Резерв #{{ $lt->reserve_position }}</span>
+									<span class="alert-warning p-1 pt-05 pb-05">{{ __('tournaments.setup_st_reserve_n', ['n' => $lt->reserve_position]) }}</span>
 									@elseif($lt->status === 'pending_confirmation')
-									<span class="alert-info p-1 pt-05 pb-05">Ожидает</span>
+									<span class="alert-info p-1 pt-05 pb-05">{{ __('tournaments.setup_st_pending') }}</span>
 									@else
 									<span class="league-badge">{{ $lt->status }}</span>
 									@endif
@@ -260,12 +260,12 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 									@if($lt->status === 'active')
 									<form method="POST" action="{{ route('divisions.teams.toReserve', $lt) }}" style="display:inline">
 										@csrf
-										<button type="submit" class="btn btn-secondary btn-alert btn-small" data-title="Перевести в резерв?" data-icon="warning" data-confirm-text="Да" data-cancel-text="Отмена">🔴&nbsp;В&nbsp;резерв</button>
+										<button type="submit" class="btn btn-secondary btn-alert btn-small" data-title="{{ __('tournaments.setup_to_reserve_title') }}" data-icon="warning" data-confirm-text="{{ __('tournaments.yes') }}" data-cancel-text="{{ __('tournaments.btn_cancel') }}">{{ __('tournaments.setup_btn_to_reserve') }}</button>
 									</form>
 									@elseif($lt->status === 'reserve')
 									<form method="POST" action="{{ route('divisions.teams.activate', $lt) }}" style="display:inline">
 										@csrf
-										<button type="submit" class="btn btn-secondary btn-alert btn-small" data-title="Активировать команду?" data-icon="info" data-confirm-text="Да" data-cancel-text="Отмена">🟢&nbsp;Активировать</button>
+										<button type="submit" class="btn btn-secondary btn-alert btn-small" data-title="{{ __('tournaments.setup_activate_title') }}" data-icon="info" data-confirm-text="{{ __('tournaments.yes') }}" data-cancel-text="{{ __('tournaments.btn_cancel') }}">{{ __('tournaments.setup_btn_activate') }}</button>
 									</form>
 									@endif
 								</td>
@@ -276,23 +276,23 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 				</div>
 			</div>
 			@else
-			<div class="alert alert-info">В лиге пока нет команд. Команды добавятся после регистрации на турнир.</div>
+			<div class="alert alert-info">{{ __('tournaments.setup_no_teams_in_league') }}</div>
 			@endif
 			
 			@php
 			$_tourAllCompleted = $stages->isNotEmpty() && $stages->every(fn($s) => $s->status === 'completed');
 			@endphp
 			<div class="mt-2 d-flex text-center gap-1 flex-wrap">
-				<a class="btn" href="{{ route('seasons.show', $seasonData['season']) }}">Страница сезона</a>
+				<a class="btn" href="{{ route('seasons.show', $seasonData['season']) }}">{{ __('tournaments.setup_btn_season_page') }}</a>
 				<form method="POST" action="{{ route('tournament.syncLeague', $event) }}" style="margin:0">
 					@csrf
-					<button type="submit" class="btn">Синхронизировать команды в лигу</button>
+					<button type="submit" class="btn">{{ __('tournaments.setup_btn_sync_teams') }}</button>
 				</form>
 				@if($_tourAllCompleted)
 				<form method="POST" action="{{ route('tournament.applyPromotion', $event) }}" style="margin:0">
 					@csrf
-					<button type="submit" class="btn btn-alert" data-title="Применить продвижение?" data-icon="info" data-confirm-text="Да, перенести" data-cancel-text="Отмена">
-						Перенести составы на следующий тур
+					<button type="submit" class="btn btn-alert" data-title="{{ __('tournaments.setup_promote_title') }}" data-icon="info" data-confirm-text="{{ __('tournaments.setup_promote_yes') }}" data-cancel-text="{{ __('tournaments.btn_cancel') }}">
+						{{ __('tournaments.setup_btn_promote') }}
 					</button>
 				</form>
 				@endif
@@ -305,9 +305,9 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 		Команды
 		============================================================ --}}
 		<div class="ramka">
-			<h2 class="-mt-05">Команды ({{ $teams->count() }})</h2>
+			<h2 class="-mt-05">{{ __('tournaments.setup_teams_h2', ['n' => $teams->count()]) }}</h2>
 			@if($teams->isEmpty())
-			<div class="alert alert-info">Нет подтверждённых команд.</div>
+			<div class="alert alert-info">{{ __('tournaments.setup_teams_empty') }}</div>
 			@else
 			<div class="row">
 				@foreach($teams as $team)
@@ -325,13 +325,13 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 						@foreach($members->take(2) as $m)
 						<div>{{ trim(($m->user->last_name ?? '') . ' ' . ($m->user->first_name ?? '')) ?: $m->user->name ?? '?' }}</div>
 						@endforeach
-						<div style="font-style:italic">и другие...</div>
+						<div style="font-style:italic">{{ __('tournaments.setup_team_others') }}</div>
 						@endif
 						<div class="mt-1 d-flex between fvc">
-							<div class="mt-05 cd b-600">{{ $members->count() }} чел.</div>
+							<div class="mt-05 cd b-600">{{ __('tournaments.setup_team_persons', ['n' => $members->count()]) }}</div>
 							<form method="POST" action="{{ route('tournamentTeams.destroy', [$event, $team]) }}" class="mt-1">
 								@csrf @method('DELETE')
-								<button type="submit" class="icon-delete btn-alert btn btn-danger btn-svg" data-title="Удалить команду {{ $team->name }}?" data-icon="warning" data-confirm-text="Да, удалить" data-cancel-text="Отмена">
+								<button type="submit" class="icon-delete btn-alert btn btn-danger btn-svg" data-title="{{ __('tournaments.setup_team_delete_title', ['name' => $team->name]) }}" data-icon="warning" data-confirm-text="{{ __('tournaments.btn_delete') }}" data-cancel-text="{{ __('tournaments.btn_cancel') }}">
 								</button>
 							</form>
 						</div>
@@ -344,29 +344,29 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 			{{-- Создать команду организатором --}}
 			<div class="mt-1">
 				<details>
-					<summary class="btn btn-secondary">➕ Создать команду</summary>
+					<summary class="btn btn-secondary">{{ __('tournaments.setup_btn_create_team') }}</summary>
                     <form method="POST" action="{{ route('tournamentTeams.store', $event) }}">
                         @csrf
 						<div class="mt-2">
 							<div class="row">
 								<div class="col-md-6">
 									<div class="card">
-										<label>Название команды</label>
-										<input type="text" name="name" placeholder="Название (авто по фамилии капитана)">
+										<label>{{ __('tournaments.setup_team_label_name') }}</label>
+										<input type="text" name="name" placeholder="{{ __('tournaments.setup_team_ph_name') }}">
 									</div>
 								</div>
 								<div class="col-md-6">
 									<div class="card">
-										<label>Капитан (поиск)</label>
+										<label>{{ __('tournaments.setup_team_label_captain') }}</label>
 										<div style="position:relative" id="org-captain-ac-wrap">
-											<input type="text" id="org-captain-search" placeholder="Имя или ID..." autocomplete="off">
+											<input type="text" id="org-captain-search" placeholder="{{ __('tournaments.setup_team_ph_captain') }}" autocomplete="off">
 											<input type="hidden" name="captain_user_id" id="org-captain-id">
 											<div id="org-captain-dd" class="form-select-dropdown trainer_dd"></div>
 										</div>
 									</div>
 								</div>
 								<div class="col-md-12 text-center">
-									<button type="submit" class="btn">Создать</button>
+									<button type="submit" class="btn">{{ __('tournaments.setup_btn_create') }}</button>
 								</div>
 							</div>
 						</div>
@@ -384,8 +384,8 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 		============================================================ --}}
 		@php $hasStages = $event->tournamentStages->isNotEmpty(); @endphp
 		<div class="ramka">
-			<h2 class="-mt-05">Добавить стадию</h2>
-			<div class="btn btn-secondary" style="cursor:pointer" onclick="var b=this.nextElementSibling;b.style.display=b.style.display==='none'?'':'none';this.querySelector('.toggle-icon').textContent=b.style.display==='none'?'+':'-'">➕ Добавить стадию			
+			<h2 class="-mt-05">{{ __('tournaments.setup_add_stage_h2') }}</h2>
+			<div class="btn btn-secondary" style="cursor:pointer" onclick="var b=this.nextElementSibling;b.style.display=b.style.display==='none'?'':'none';this.querySelector('.toggle-icon').textContent=b.style.display==='none'?'+':'-'">{{ __('tournaments.setup_btn_add_stage') }}			
 			</div>
 			<div style="{{ $hasStages ? 'display:none' : '' }}">
 				<form class="mt-2" method="POST" action="{{ route('tournament.stages.store', $event) }}">
@@ -396,25 +396,25 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 					<div class="row">
 						<div class="col-md-6">
 							<div class="card">
-								<label>Тип</label>
+								<label>{{ __('tournaments.setup_stage_type') }}</label>
 								<select name="type" id="stage_type_select">
-									<option value="round_robin">Круговая система (Round Robin)</option>
-									<option value="groups_playoff">Группы + плей-офф</option>
-									<option value="single_elim">Олимпийка</option>
-									<option value="swiss">Швейцарская</option>
-									<option value="double_elim">Двойное выбывание (Double Elimination)</option>
-									<option value="king_of_court">Король площадки (King of the Court)</option>
-									<option value="thai">Тайский формат</option>
+									<option value="round_robin">{{ __('tournaments.setup_stage_round_robin') }}</option>
+									<option value="groups_playoff">{{ __('tournaments.setup_stage_groups_playoff') }}</option>
+									<option value="single_elim">{{ __('tournaments.setup_stage_single_elim') }}</option>
+									<option value="swiss">{{ __('tournaments.setup_stage_swiss') }}</option>
+									<option value="double_elim">{{ __('tournaments.setup_stage_double_elim') }}</option>
+									<option value="king_of_court">{{ __('tournaments.setup_stage_king_of_court') }}</option>
+									<option value="thai">{{ __('tournaments.setup_stage_thai') }}</option>
 								</select>
-								<a href="{{ route('tournament_formats') }}" target="_blank" class="f-16 blink mt-1">Шпаргалка по форматам →</a>
+								<a href="{{ route('tournament_formats') }}" target="_blank" class="f-16 blink mt-1">{{ __('tournaments.setup_stage_formats_link') }}</a>
 								
-								<label class="mt-2">Название</label>
-								<input name="name" value="{{ old('name', 'Групповой этап') }}" required>
+								<label class="mt-2">{{ __('tournaments.setup_stage_label_name') }}</label>
+								<input name="name" value="{{ old('name', __('tournaments.setup_stage_default_name')) }}" required>
 							</div>
 						</div>
 						<div class="col-md-6">
 							<div class="card">
-								<label>Формат матча</label>
+								<label>{{ __('tournaments.setup_stage_match_format') }}</label>
 								<select name="match_format" id="match_format_select">
 									<option value="bo3">Best of 3 (Bo3)</option>
 									<option value="bo1">Best of 1 (Bo1)</option>
@@ -426,9 +426,9 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 								<script>
 									(function(){
 										var hints = {
-											bo1: 'Играют 1 сет. Кто выиграл сет — выиграл матч. Быстрый формат для пулов.',
-											bo3: 'Играют до 2 побед в сетах. Максимум 3 сета (2:0 или 2:1). Стандарт для пляжки и групповых этапов.',
-											bo5: 'Играют до 3 побед в сетах. Максимум 5 сетов. Обычно только для финалов классики 6×6.'
+											bo1: @json(__('tournaments.setup_stage_bo1_hint')),
+											bo3: @json(__('tournaments.setup_stage_bo3_hint')),
+											bo5: @json(__('tournaments.setup_stage_bo5_hint'))
 										};
 										var sel = document.getElementById('match_format_select');
 										var hint = document.getElementById('match_format_hint');
@@ -445,17 +445,17 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 								
 								<div class="row row2">
 									<div class="col-md-6">
-										<label class="mt-2">Очки в сете</label>
+										<label class="mt-2">{{ __('tournaments.setup_stage_set_pts') }}</label>
 										<select name="set_points">
 											@if(!$isBeach)
-											<option value="25" selected>25 (классика)</option>
+											<option value="25" selected>{{ __('tournaments.setup_stage_set_pts_25') }}</option>
 											@endif
-											<option value="21" @if($isBeach) selected @endif>21 (пляж)</option>
-											<option value="15">15 (мини)</option>
+											<option value="21" @if($isBeach) selected @endif>{{ __('tournaments.setup_stage_set_pts_21') }}</option>
+											<option value="15">{{ __('tournaments.setup_stage_set_pts_15') }}</option>
 										</select>
 									</div>
 									<div class="col-md-6" id="deciding_set_wrap">
-										<label class="mt-2">Решающий сет</label>
+										<label class="mt-2">{{ __('tournaments.setup_stage_deciding_set') }}</label>
 										<select name="deciding_set_points">
 											<option value="15" selected>15</option>
 											@if(!$isBeach)
@@ -471,26 +471,26 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 					<div class="mt-2" id="group_fields">
 						<div class="row">
 							<div class="col-lg-3 col-md-6">
-								<div class="card"><label>Кол-во групп</label>
+								<div class="card"><label>{{ __('tournaments.setup_stage_groups_count') }}</label>
 									<input name="groups_count" type="number" value="2" min="1" max="16">
 								</div>
 							</div>
 							<div class="col-lg-3 col-md-6">
-								<div class="card"><label>Выходят из группы</label>
+								<div class="card"><label>{{ __('tournaments.setup_stage_groups_advance') }}</label>
 									<input name="advance_count" type="number" value="2" min="1" max="8">
 								</div>
 							</div>
 							<div class="col-lg-3 col-md-6">
-								<div class="card"><label>Матч за 3-е место</label>
+								<div class="card"><label>{{ __('tournaments.setup_stage_third_place') }}</label>
 									<select name="third_place_match">
-										<option value="0">Нет</option>
-										<option value="1">Да</option>
+										<option value="0">{{ __('tournaments.no') }}</option>
+										<option value="1">{{ __('tournaments.yes') }}</option>
 									</select>
 								</div>
 							</div>
 							<div class="col-lg-3 col-md-6">
 								<div class="card">
-									<label>Кол-во площадок</label>
+									<label>{{ __('tournaments.setup_stage_courts_count') }}</label>
 									<select name="courts_count" id="courts_count_select">
 										<option value="0">—</option>
 										<option value="1">1</option>
@@ -522,7 +522,7 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 						{{-- Назначение кортов группам (динамическое) --}}
 						<div class="mt-2" id="courts_group_assign" style="display:none">
 							<div class="card">
-								<label>Площадки для групп</label>
+								<label>{{ __('tournaments.setup_stage_courts_for_groups') }}</label>
 								<hr class="mb-1">
 								<div id="courts_group_boxes" class="row"></div>
 							</div>	
@@ -531,11 +531,11 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 						<div class="row mt-2">
 							<div class="col-xl-3">
 								<div class="card">
-									<label>Жеребьёвка</label>
+									<label>{{ __('tournaments.setup_stage_seed') }}</label>
 									<select name="draw_mode" id="draw_mode_select">
-										<option value="random">Случайная</option>
-										<option value="seeded">По рейтингу (seed)</option>
-										<option value="manual">Ручная</option>
+										<option value="random">{{ __('tournaments.setup_stage_seed_random') }}</option>
+										<option value="seeded">{{ __('tournaments.setup_stage_seed_seeded') }}</option>
+										<option value="manual">{{ __('tournaments.setup_stage_seed_manual') }}</option>
 									</select>
 								</div>
 							</div>
@@ -544,24 +544,24 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 								{{-- Расписание (опционально) --}}
 								<div id="schedule_fields">
 									<div class="card">
-										<label>Расписание (опционально)</label>
+										<label>{{ __('tournaments.setup_stage_schedule') }}</label>
 										<hr class="mb-1">
 										<div class="row">
 											<div class="col-md-4">
-												<label>Начало</label>
+												<label>{{ __('tournaments.setup_stage_start') }}</label>
 												<input type="datetime-local" name="schedule_start" value="">
 											</div>
 											<div class="col-md-4">
-												<label>Матч (мин)</label>
+												<label>{{ __('tournaments.setup_stage_match_min') }}</label>
 												<input type="number" name="schedule_match_duration" value="30" min="15" max="180">
 											</div>
 											<div class="col-md-4">
-												<label>Перерыв (мин)</label>
+												<label>{{ __('tournaments.setup_stage_break_min') }}</label>
 												<input type="number" name="schedule_break_duration" value="5" min="0" max="60">
 											</div>
 										</div>
 										<ul class="list f-16 mt-1">
-											<li>Если указать время начала — матчи автоматически получат расписание.</li>
+											<li>{{ __('tournaments.setup_stage_schedule_hint') }}</li>
 										</ul>										
 										
 									</div>
@@ -572,16 +572,16 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 						{{-- Ручное распределение --}}
 						<div class="mt-2" id="manual_draw_block" style="display:none">
 							<div class="card">
-								<label>Ручное распределение по группам</label>
-								<p>Выберите группу для каждой команды.</p>
+								<label>{{ __('tournaments.setup_stage_manual_distribution') }}</label>
+								<p>{{ __('tournaments.setup_stage_manual_pick_group') }}</p>
 								@if($teams->isNotEmpty())
 								<div class="table-scrollable no-overflow">
 									<div class="table-drag-indicator"></div>				
 									<table class="table">
 										<thead>
 											<tr>
-												<th>Команда</th>
-												<th>Группа</th>
+												<th>{{ __('tournaments.setup_col_team') }}</th>
+												<th>{{ __('tournaments.setup_stage_col_group') }}</th>
 											</tr>
 										</thead>
 										<tbody>
@@ -596,8 +596,8 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 												<td class="text-center">
 													<select name="manual_teams[{{ $team->id }}]" class="manual-group-select" >
 														<option value="">—</option>
-														<option value="A">Группа A</option>
-														<option value="B">Группа B</option>
+														<option value="A">{{ __('tournaments.setup_stage_group_letter', ['l' => 'A']) }}</option>
+														<option value="B">{{ __('tournaments.setup_stage_group_letter', ['l' => 'B']) }}</option>
 													</select>
 												</td>
 											</tr>
@@ -606,14 +606,14 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 									</table>
 								</div>
 								@else
-								<div class="alert alert-info">Нет команд для распределения</div>
+								<div class="alert alert-info">{{ __('tournaments.setup_stage_no_teams_distribute') }}</div>
 								@endif
 							</div>
 						</div>
 						
 						
 						<div class="text-center">
-							<button type="submit" class="btn btn-primary mt-2">Создать стадию и провести жеребьёвку</button>
+							<button type="submit" class="btn btn-primary mt-2">{{ __('tournaments.setup_stage_btn_create_seed') }}</button>
 						</div>
 						<script>
 							(function(){
@@ -628,7 +628,7 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 									var g = parseInt(groupsSel ? groupsSel.value : 0) || 0;
 									
 									var names = [];
-									for (var i = 1; i <= n; i++) names.push("Корт " + i);
+									for (var i = 1; i <= n; i++) names.push(@json(__('tournaments.setup_court_n', ['n' => 'X'])).replace('X', i));
 									hidden.value = names.join(", ");
 									
 									if (n === 0 || g === 0) {
@@ -648,7 +648,7 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 									var html = "";
 									groupLabels.forEach(function(label) {
 										html += '<div class="col-md-' + colSize + ' mb-2">';
-										html += '<label>Группа ' + label + ':</label>';
+										html += '<label>' + @json(__('tournaments.setup_group_label', ['label' => 'X'])).replace('X', label) + '</label>';
 										html += '<div class="d-flex" style="flex-wrap:wrap;gap:1rem">';
 										names.forEach(function(court) {
 											html += '<label class="checkbox-item f-13" style="min-width: 12rem; margin:0">';
@@ -699,11 +699,11 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 		@endphp
 		@if($allCompleted && $participants->isNotEmpty())
 		<div class="ramka">
-			<h2 class="-mt-05">MVP турнира</h2>
+			<h2 class="-mt-05">{{ __('tournaments.setup_mvp_h2') }}</h2>
 			@if($event->tournament_mvp_user_id)
 			@php $currentMvp = \App\Models\User::find($event->tournament_mvp_user_id); @endphp
 			<div class="card" style="text-align:center;background:rgba(231,97,47,.06);border:1px solid rgba(231,97,47,.2)">
-				<div class="f-13 b-600 mb-1">Текущий MVP</div>
+				<div class="f-13 b-600 mb-1">{{ __('tournaments.setup_mvp_current') }}</div>
 				<div class="f-20 b-800">⭐
 					<a href="{{ route('users.show', $currentMvp) }}" class="blink">
 						{{ trim(($currentMvp->last_name ?? '') . ' ' . ($currentMvp->first_name ?? '')) ?: $currentMvp->name ?? '?' }}
@@ -714,15 +714,15 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 			<form method="POST" action="{{ route('tournament.mvp', $event) }}">
 				@csrf
 				<div class="card p-3">
-					<label class="f-13 b-600 mb-2 d-block">Выберите MVP</label>
+					<label class="f-13 b-600 mb-2 d-block">{{ __('tournaments.setup_mvp_pick') }}</label>
 					<table style="width:100%;border-collapse:collapse;font-size:14px">
 						<thead>
 							<tr style="border-bottom:2px solid rgba(128,128,128,.2)">
 								<th class="p-1" style="width:30px"></th>
-								<th class="p-1" style="text-align:left">Игрок</th>
+								<th class="p-1" style="text-align:left">{{ __('tournaments.setup_mvp_col_player') }}</th>
 								<th class="p-1" style="text-align:center">WinRate</th>
-								<th class="p-1" style="text-align:center">Матчи</th>
-								<th class="p-1" style="text-align:center">Сеты</th>
+								<th class="p-1" style="text-align:center">{{ __('tournaments.setup_mvp_col_matches') }}</th>
+								<th class="p-1" style="text-align:center">{{ __('tournaments.setup_mvp_col_sets') }}</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -744,7 +744,7 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 						</tbody>
 					</table>
 					<div class="text-center mt-2">
-						<button type="submit" class="btn btn-primary">Назначить MVP</button>
+						<button type="submit" class="btn btn-primary">{{ __('tournaments.setup_mvp_btn_assign') }}</button>
 					</div>
 				</div>
 			</form>
@@ -754,7 +754,7 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 		{{-- Фото турнира --}}
 		@if($allCompleted)
 		<div class="ramka">
-			<h2 class="-mt-05">Фото турнира</h2>
+			<h2 class="-mt-05">{{ __('tournaments.setup_photos_h2') }}</h2>
 			
 			@php
 			$tournamentPhotos = $event->getMedia('tournament_photos');
@@ -770,10 +770,10 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 						@csrf @method('DELETE')
 						<button type="submit" 
 						class="icon-delete btn-alert btn btn-danger btn-svg"
-						data-title="Удалить фотографию?"
+						data-title="{{ __('tournaments.setup_photos_delete_title') }}"
 						data-icon="warning"
-						data-confirm-text="Да, удалить"
-						data-cancel-text="Отмена">
+						data-confirm-text="{{ __('tournaments.btn_delete') }}"
+						data-cancel-text="{{ __('tournaments.btn_cancel') }}">
 						</button>										
 					</form>
 				</div>
@@ -783,7 +783,7 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 			
 			@if(($userEventPhotos ?? collect())->count() > 0)
 			<div class="card">
-				<label>Выберите фото из вашей галереи</label>
+				<label>{{ __('tournaments.setup_photos_pick') }}</label>
 				
 				<div class="event-photos-selector" id="tournament-photos-selector"
 				data-selected='{{ json_encode($currentPhotoIds) }}'>
@@ -798,7 +798,7 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 									<label class="checkbox-item mb-0">
 										<input type="checkbox" class="t-photo-select" value="{{ $photo->id }}">
 										<div class="custom-checkbox"></div>
-										<span>Выбрать</span>
+										<span>{{ __('tournaments.setup_photos_select') }}</span>
 									</label>
 									<div class="photo-order-badge f-16 b-600 cd"></div>
 								</div>
@@ -809,8 +809,8 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 					</div>
 					
 					<ul class="list f-16 mt-1">
-						<li>Выберите фото для турнира. Первое отмеченное фото будет главным.</li>
-						<li>Фотографии можно добавить в разделе <a target="_blank" href="{{ route('user.photos') }}">Ваши фотографии</a> (с галочкой «Для мероприятий»)</li>
+						<li>{{ __('tournaments.setup_photos_hint_1') }}</li>
+						<li>{{ __('tournaments.setup_photos_hint_2', ['link' => '<a target="_blank" href="' . route('user.photos') . '">' . __('tournaments.setup_photos_hint_2_link') . '</a>']) }}</li>
 					</ul>
 				</div>
 			</div>	
@@ -818,12 +818,12 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 				<form method="POST" action="{{ route('tournament.photos.store', $event) }}" id="tournament-photos-form" class="mt-2">
 					@csrf
 					<input type="hidden" name="photo_ids" id="tournament_photos_input" value="">
-					<button type="submit" class="btn btn-primary" id="tournament-photos-submit" style="display:none">Сохранить фото</button>
+					<button type="submit" class="btn btn-primary" id="tournament-photos-submit" style="display:none">{{ __('tournaments.setup_photos_save') }}</button>
 				</form>
 			</div>
 			@else
 			<div class="alert alert-info">
-				Нет фото в галерее. <a href="{{ route('user.photos') }}" target="_blank">Загрузите фото</a> с пометкой «Для мероприятий».
+				{{ __('tournaments.setup_photos_empty', ['link' => '<a href="' . route('user.photos') . '" target="_blank">' . __('tournaments.setup_photos_empty_link') . '</a>']) }}
 			</div>
 			@endif
 		</div>
@@ -841,39 +841,39 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 					<h2 class="-mt-05">
 						{{ $stage->name }}
 						@if($stage->isCompleted())
-						<span class="f-18 alert-warning pt-05 pb-05 p-1">Завершена</span>
+						<span class="f-18 alert-warning pt-05 pb-05 p-1">{{ __('tournaments.setup_st_completed') }}</span>
 						@elseif($stage->isInProgress())
-						<span class="f-18 alert-success pt-05 pb-05 p-1">В процессе</span>
+						<span class="f-18 alert-success pt-05 pb-05 p-1">{{ __('tournaments.setup_st_in_progress') }}</span>
 						@else
-						<span class="f-18 alert-info pt-05 pb-05 p-1">Ожидание</span>
+						<span class="f-18 alert-info pt-05 pb-05 p-1">{{ __('tournaments.setup_st_waiting') }}</span>
 						@endif
 					</h2>
 					<p>
 						@php
 						$stageTypeLabels = [
-						'round_robin' => 'Круговая система',
-						'groups_playoff' => 'Группы + плей-офф',
-						'single_elim' => 'Олимпийка',
-						'swiss' => 'Швейцарская',
-						'double_elim' => 'Двойное выбывание',
-						'king_of_court' => 'Король площадки',
-						'thai' => 'Тайский формат',
+						'round_robin' => __('tournaments.setup_stage_lbl_round_robin'),
+						'groups_playoff' => __('tournaments.setup_stage_lbl_groups_playoff'),
+						'single_elim' => __('tournaments.setup_stage_lbl_single_elim'),
+						'swiss' => __('tournaments.setup_stage_lbl_swiss'),
+						'double_elim' => __('tournaments.setup_stage_lbl_double_elim'),
+						'king_of_court' => __('tournaments.setup_stage_lbl_king_of_court'),
+						'thai' => __('tournaments.setup_stage_lbl_thai'),
 						];
 						$matchFormatLabels = ['bo1' => 'Best of 1', 'bo3' => 'Best of 3', 'bo5' => 'Best of 5'];
 						@endphp
-						{{ $stageTypeLabels[$stage->type] ?? $stage->type }} · {{ $matchFormatLabels[$stage->matchFormat()] ?? strtoupper($stage->matchFormat()) }} · до {{ $stage->setPoints() }} очков
+						{{ $stageTypeLabels[$stage->type] ?? $stage->type }} · {{ $matchFormatLabels[$stage->matchFormat()] ?? strtoupper($stage->matchFormat()) }} · {{ __('tournaments.score_to_pts') }} {{ $stage->setPoints() }} {{ __('tournaments.pub_pts_label') }}
 					</p>
 				</div>
 				<div class="d-flex" style="gap:6px">
 					@if($stage->isInProgress() || $stage->isCompleted())
 					<form method="POST" action="{{ route('tournament.stages.revert', $stage) }}">
 						@csrf
-						<button class="btn btn-secondary f-12 btn-alert" data-title="Откатить стадию?" data-icon="warning" data-confirm-text="Да, откатить" data-cancel-text="Отмена">Откатить</button>
+						<button class="btn btn-secondary f-12 btn-alert" data-title="{{ __('tournaments.setup_rollback_title') }}" data-icon="warning" data-confirm-text="{{ __('tournaments.setup_rollback_yes') }}" data-cancel-text="{{ __('tournaments.btn_cancel') }}">{{ __('tournaments.setup_btn_rollback') }}</button>
 					</form>
 					@endif
 					<form method="POST" action="{{ route('tournament.stages.destroy', $stage) }}">
 						@csrf @method('DELETE')
-						<button class="btn btn-danger f-12 btn-alert" data-title="Удалить стадию и все её матчи?" data-icon="warning" data-confirm-text="Да, удалить" data-cancel-text="Отмена">Удалить</button>
+						<button class="btn btn-danger f-12 btn-alert" data-title="{{ __('tournaments.setup_delete_stage_title') }}" data-icon="warning" data-confirm-text="{{ __('tournaments.btn_delete') }}" data-cancel-text="{{ __('tournaments.btn_cancel') }}">{{ __('tournaments.setup_btn_delete_stage') }}</button>
 					</form>
 				</div>
 			</div>
@@ -898,13 +898,13 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 							<table class="table">
 								<thead>
 									<tr style="border-bottom:2px solid rgba(128,128,128,.2)">
-										<th class="p-1" style="text-align:center;width:30px">Место</th>
-										<th class="p-1" style="text-align:left">Команда</th>
-										<th class="p-1" style="text-align:center">И</th>
-										<th class="p-1" style="text-align:center">В</th>
-										<th class="p-1" style="text-align:center">П</th>
-										<th class="p-1" style="text-align:center">Очки</th>
-										<th class="p-1" style="text-align:center" title="Чистая (без матчей с аутсайдерами) / Полная">Разн.</th>
+										<th class="p-1" style="text-align:center;width:30px">{{ __('tournaments.setup_standings_col_pos') }}</th>
+										<th class="p-1" style="text-align:left">{{ __('tournaments.standings_col_team') }}</th>
+										<th class="p-1" style="text-align:center">{{ __('tournaments.standings_col_played') }}</th>
+										<th class="p-1" style="text-align:center">{{ __('tournaments.standings_col_w') }}</th>
+										<th class="p-1" style="text-align:center">{{ __('tournaments.standings_col_l') }}</th>
+										<th class="p-1" style="text-align:center">{{ __('tournaments.setup_standings_col_pts') }}</th>
+										<th class="p-1" style="text-align:center" title="{{ __('tournaments.setup_standings_col_diff_title') }}">{{ __('tournaments.tv_diff_col') }}</th>
 									</tr>
 								</thead>
 								<tbody>
@@ -924,7 +924,7 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 									<tr>
 										<td style="text-align:center">{{ $standing->rank }}</td>
 										<td>
-											<div class="b-600 cd">{{ $standing->team->name ?? '—' }}@if($isOutsider) <span class="f-16">· аутсайдер</span>@endif</div>
+											<div class="b-600 cd">{{ $standing->team->name ?? '—' }}@if($isOutsider) <span class="f-16">{{ __('tournaments.setup_outsider_label') }}</span>@endif</div>
 											@if($standing->team && $standing->team->members->count())
 											<div class="f-16">{{ $standing->team->members->map(fn($m) => $m->user->last_name ?? '?')->implode(' / ') }}</div>
 											@endif
@@ -933,7 +933,7 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 										<td style="text-align:center;"><span class="b-600 alert-success pt-05 pb-05 p-1">{{ $standing->wins }}</span></td>
 										<td style="text-align:center;"><span class="b-600 alert-danger pt-05 pb-05 p-1">{{ $standing->losses }}</span></td>
 										<td class="b-600" style="text-align:center">{{ $standing->rating_points }}</td>
-										<td style="text-align:center" title="Чистая / Полная">
+										<td style="text-align:center" title="{{ __('tournaments.setup_standings_col_diff_short_title') }}">
 											@if($cleanDiff === $fullDiff)
 											{{ $fmtDiff($fullDiff) }}
 											@else
@@ -963,7 +963,7 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 						
 						@if($pendingSets->isNotEmpty())
 						<div class="mb-2 alert alert-info">
-							<div class="b-600 mb-1">Необходим тайбрейк</div>
+							<div class="b-600 mb-1">{{ __('tournaments.setup_tb_required') }}</div>
 							@foreach($pendingSets as $tset)
 							@php
 							$tids = array_map('intval', $tset->team_ids ?? []);
@@ -973,33 +973,33 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 							<div class="b-600 mb-1">{{ implode(' = ', $labels) }}</div>
 							
 							@if($tset->method === 'match')
-							<p>🏐 Тайбрейк-матчи созданы. Введите счёт ниже — когда все матчи завершатся, порядок определится автоматически.</p>
+							<p>{{ __('tournaments.setup_tb_match_created') }}</p>
 							@php $ms = $tset->match_settings ?? []; @endphp
-							<p>Правила: до {{ $ms['points_to_win'] ?? '?' }} очк.{!! !empty($ms['two_point_margin']) ? ', разница в 2' : '' !!}</p>
+							<p>{{ __('tournaments.setup_tb_rules', ['pts' => $ms['points_to_win'] ?? '?', 'margin' => !empty($ms['two_point_margin']) ? __('tournaments.setup_tb_two_point_margin') : '']) }}</p>
 							@else
-							<p>Команды равны по всем критериям. Выберите способ:</p>
+							<p>{{ __('tournaments.setup_tb_choose_method') }}</p>
 							<div class="d-flex" style="gap:8px;flex-wrap:wrap;align-items:flex-start">
 								{{-- Вариант 1: учесть матчи с аутсайдером (full diff) --}}
 								<form method="POST" action="{{ route('tournament.tiebreaker.set.fullDiff', $tset) }}" style="display:inline">
 									@csrf
 									<input type="hidden" name="occurrence_id" value="{{ $selectedOccurrence?->id }}">
 									<button type="submit" class="btn btn-secondary btn-alert"
-									data-title="Учесть матчи с аутсайдером?" data-icon="info"
-									data-confirm-text="Применить" data-cancel-text="Отмена">
-										🟰 Полная разница
+									data-title="{{ __('tournaments.setup_tb_full_diff_title') }}" data-icon="info"
+									data-confirm-text="{{ __('tournaments.setup_tb_btn_apply') }}" data-cancel-text="{{ __('tournaments.btn_cancel') }}">
+										{{ __('tournaments.setup_tb_btn_full_diff') }}
 									</button>
 								</form>
 								
 								{{-- Вариант 2: сыграть мини-матчи --}}
 								<button type="button" class="btn btn-secondary"
 								onclick="document.getElementById('tbset-match-{{ $tset->id }}').style.display='block';this.style.display='none'">
-									🏐 Сыграть матчи
+									{{ __('tournaments.setup_tb_btn_match') }}
 								</button>
 								
 								{{-- Вариант 3: жребий --}}
 								<button type="button" class="btn btn-secondary"
 								onclick="document.getElementById('tbset-lot-{{ $tset->id }}').style.display='block';this.style.display='none'">
-									🎲 Жребий
+									{{ __('tournaments.setup_tb_btn_lottery') }}
 								</button>
 							</div>
 							
@@ -1008,15 +1008,15 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 								<form method="POST" action="{{ route('tournament.tiebreaker.set.matches', $tset) }}" class="d-flex" style="gap:8px;align-items:center;flex-wrap:wrap">
 									@csrf
 									<input type="hidden" name="occurrence_id" value="{{ $selectedOccurrence?->id }}">
-									<label class="f-12 fvc" style="gap:4px">До
+									<label class="f-12 fvc" style="gap:4px">{{ __('tournaments.setup_tb_to') }}
 										<input type="number" name="points_to_win" value="15" min="1" max="30" class="form-control f-13" style="width:70px;padding:2px 6px" required>
-									очк.</label>
+									{{ __('tournaments.setup_tb_pts_short') }}</label>
 									<label class="fvc" style="gap:4px">
-										<input type="checkbox" name="two_point_margin" value="1"> разница 2
+										<input type="checkbox" name="two_point_margin" value="1"> {{ __('tournaments.setup_tb_two_pt') }}
 									</label>
-									<button type="submit" class="btn btn-primary">Создать матчи</button>
+									<button type="submit" class="btn btn-primary">{{ __('tournaments.setup_tb_btn_create_matches') }}</button>
 								</form>
-								<div class="f-11 mt-1" style="opacity:.6">Будет создано {{ count($tids) * (count($tids) - 1) / 2 }} матч(ей) — round-robin между командами.</div>
+								<div class="f-11 mt-1" style="opacity:.6">{{ __('tournaments.setup_tb_match_count', ['n' => count($tids) * (count($tids) - 1) / 2]) }}</div>
 							</div>
 							
 							{{-- Форма жребия --}}
@@ -1024,16 +1024,16 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 								<form method="POST" action="{{ route('tournament.tiebreaker.set.lottery', $tset) }}" class="d-flex" style="gap:6px;align-items:center;flex-wrap:wrap">
 									@csrf
 									<input type="hidden" name="occurrence_id" value="{{ $selectedOccurrence?->id }}">
-									<span class="f-12" style="opacity:.7">Порядок:</span>
+									<span class="f-12" style="opacity:.7">{{ __('tournaments.setup_tb_order') }}</span>
 									@foreach($tids as $i => $tid)
 									<select name="order[]" class="form-control f-12" style="width:auto;min-width:120px;padding:2px 6px" required>
-										<option value="">— {{ $i + 1 }} место —</option>
+										<option value="">{{ __('tournaments.setup_tb_place_n', ['n' => $i + 1]) }}</option>
 										@foreach($tids as $tid2)
 										<option value="{{ $tid2 }}">{{ $teamNames[$tid2] ?? ('#' . $tid2) }}</option>
 										@endforeach
 									</select>
 									@endforeach
-									<button type="submit" class="btn btn-primary f-12" style="padding:4px 12px">Подтвердить</button>
+									<button type="submit" class="btn btn-primary f-12" style="padding:4px 12px">{{ __('tournaments.setup_tb_btn_confirm') }}</button>
 								</form>
 							</div>
 							@endif
@@ -1048,9 +1048,9 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 							@php
 							$order  = $rset->resolved_order ?: [];
 							$labels = array_map(fn($tid) => $teamNames[(int) $tid] ?? ('#' . $tid), $order);
-							$methodLabel = ['full_diff' => 'полная разница', 'match' => 'матчи', 'lottery' => 'жребий'][$rset->method] ?? $rset->method;
+							$methodLabel = ['full_diff' => __('tournaments.setup_tb_method_full_diff'), 'match' => __('tournaments.setup_tb_method_match'), 'lottery' => __('tournaments.setup_tb_method_lottery')][$rset->method] ?? $rset->method;
 							@endphp
-							<p>Тайбрейк ({{ $methodLabel }}): {{ implode(' → ', $labels) }}</p>
+							<p>{{ __('tournaments.setup_tb_resolved', ['method' => $methodLabel, 'order' => implode(' → ', $labels)]) }}</p>
 							@endforeach
 						</div>
 						@endif
@@ -1073,7 +1073,7 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 				<div class="tabs">
 					@foreach($matchesByGroup as $groupId => $groupMatches)
 					@php $groupName = $stage->groups->firstWhere('id', $groupId)?->name ?? ''; @endphp
-					<div class="tab" data-tab="matches-group{{ $groupId }}">{{ $groupName ? 'Матчи ' . $groupName : 'Матчи' }}</div>
+					<div class="tab" data-tab="matches-group{{ $groupId }}">{{ $groupName ? __('tournaments.setup_tab_matches_group', ['name' => $groupName]) : __('tournaments.setup_tab_matches') }}</div>
 					@endforeach
 					<div class="tab-highlight"></div>
 				</div>
@@ -1090,14 +1090,14 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 									<thead>
 										<tr style="border-bottom:2px solid rgba(128,128,128,.2)">
 											<th class="p-1" style="text-align:left">#</th>
-											<th class="p-1" style="text-align:left">Тур</th>
-											<th class="p-1" style="text-align:left">Дома</th>
-											<th class="p-1" style="text-align:left">Гости</th>
-											<th class="p-1" style="text-align:center">Сеты</th>
-											<th class="p-1" style="text-align:center">Счёт</th>
-											<th class="p-1" style="text-align:center">Время</th>
-											<th class="p-1" style="text-align:center">Корт</th>
-											<th class="p-1" style="text-align:center">Статус</th>
+											<th class="p-1" style="text-align:left">{{ __('tournaments.setup_matches_col_round') }}</th>
+											<th class="p-1" style="text-align:left">{{ __('tournaments.setup_matches_col_home') }}</th>
+											<th class="p-1" style="text-align:left">{{ __('tournaments.setup_matches_col_away') }}</th>
+											<th class="p-1" style="text-align:center">{{ __('tournaments.setup_mvp_col_sets') }}</th>
+											<th class="p-1" style="text-align:center">{{ __('tournaments.setup_matches_col_score') }}</th>
+											<th class="p-1" style="text-align:center">{{ __('tournaments.setup_matches_col_time') }}</th>
+											<th class="p-1" style="text-align:center">{{ __('tournaments.setup_matches_col_court') }}</th>
+											<th class="p-1" style="text-align:center">{{ __('tournaments.setup_matches_col_status') }}</th>
 											<th class="p-1"></th>
 										</tr>
 									</thead>
@@ -1127,23 +1127,23 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 													@if($match->isCompleted())
 													<span class="b-600 alert-success pt-05 pb-05 p-1">✓</span>
 													@if(!$stageHasDivDistribution)
-													<a href="{{ route('tournament.matches.score.form', $match) }}?edit=1" class="btn icon-edit btn-svg btn-secondary" title="Исправить счёт"></a>
+													<a href="{{ route('tournament.matches.score.form', $match) }}?edit=1" class="btn icon-edit btn-svg btn-secondary" title="{{ __('tournaments.setup_match_fix_title') }}"></a>
 													@endif
 													@elseif($match->status === 'live')
 													<span class="b-600 alert-danger pt-05 pb-05 p-1">LIVE</span>
 													@else
-													<span class="b-600 alert-warning pt-05 pb-05 p-1">ожидание</span>
+													<span class="b-600 alert-warning pt-05 pb-05 p-1">{{ __('tournaments.setup_match_pending') }}</span>
 													@endif
 												</div>	
 											</td>
 											<td class="p-1">
 												@if($match->isScheduled() && $match->hasTeams())
 												<a href="{{ route('tournament.matches.score.form', $match) }}" class="btn btn-primary btn-small">
-													Счёт
+													{{ __('tournaments.setup_match_btn_score') }}
 												</a>
 												@endif
 												@if($match->isCompleted())
-												<a href="{{ route('tournament.matches.player_stats.form', $match) }}" class="btn btn-secondary btn-small" title="Статистика игроков">
+												<a href="{{ route('tournament.matches.player_stats.form', $match) }}" class="btn btn-secondary btn-small" title="{{ __('tournaments.setup_match_player_stats_title') }}">
 													📊
 												</a>
 												@endif
@@ -1167,7 +1167,7 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 			@if($hasUnplayed)
 			<div class="mt-2 mb-3" style="text-align:center">
 				<a href="{{ route('tournament.start_scoring', $event) }}" class="btn btn-primary p-3 f-16" style="display:inline-block">
-					▶ Приступить к заполнению результатов
+					{{ __('tournaments.setup_btn_start_results') }}
 				</a>
 			</div>
 			@endif
@@ -1179,9 +1179,9 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 				<form method="POST" action="{{ route('tournament.stages.nextRound', $stage) }}" class="d-flex fvc" style="gap:10px">
 					@csrf
 					<div class="b-600">
-						{{ $stage->type === 'swiss' ? 'Сгенерировать следующий тур' : 'Следующий матч King of the Court' }}
+						{{ $stage->type === 'swiss' ? __('tournaments.setup_btn_swiss_next') : __('tournaments.setup_btn_koc_next') }}
 					</div>
-					<button type="submit" class="btn btn-primary">Далее →</button>
+					<button type="submit" class="btn btn-primary">{{ __('tournaments.setup_btn_next_arrow') }}</button>
 				</form>
 			</div>
 			@endif
@@ -1197,7 +1197,7 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 		@php $hasDivStages = $stages->filter(fn($s) => str_starts_with($s->name, 'Группа '))->isNotEmpty(); @endphp
 		<div class="ramka">
 			<div class="d-flex between fvc" style="cursor:pointer" onclick="var b=this.nextElementSibling;b.style.display=b.style.display==='none'?'':'none';this.querySelector('.toggle-icon').textContent=b.style.display==='none'?'+':'-'">
-				<h2 class="-mt-05">Формирование групп</h2>
+				<h2 class="-mt-05">{{ __('tournaments.setup_groups_h2') }}</h2>
 				<span class="toggle-icon b-600 f-20">{{ $hasDivStages ? '+' : '-' }}</span>
 			</div>
 			<div style="{{ $hasDivStages ? 'display:none' : '' }}">
@@ -1213,7 +1213,7 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 				@endphp
 				
 				<p>
-					По результатам группового этапа команды распределяются в {{ count($divisionNames) }} групп{{ count($divisionNames) > 2 ? 'а' : '' }}:
+					{{ __('tournaments.setup_groups_redistribute', ['n' => count($divisionNames), 'plural' => count($divisionNames) > 2 ? '' : '']) }}
 					<strong>{{ implode(', ', $divisionNames) }}</strong>
 				</p>
 				
@@ -1224,17 +1224,17 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 					<div class="row">
 						<div class="col-md-3 mb-2">
 							<div class="card">
-								<label>Выходят в Hard</label>
+								<label>{{ __('tournaments.setup_groups_advance_to_div', ['name' => 'Hard']) }}</label>
 								<input name="advance_per_group" type="number" value="{{ $advanceCount }}" min="1" max="8" style="width:70px">
-								<p>из каждой группы</p>
+								<p>{{ __('tournaments.setup_groups_per_group') }}</p>
 							</div>	
 						</div>
 						@foreach($divisionNames as $dn)
 						<div class="col-md-3 mb-2">
 							<div class="card">
-								<label>Формат {{ $dn }}</label>
+								<label>{{ __('tournaments.setup_groups_format_for', ['name' => $dn]) }}</label>
 								<select name="div_format_{{ strtolower($dn) }}" class="f-13" style="width:100%">
-									<option value="">как в группах</option>
+									<option value="">{{ __('tournaments.setup_groups_format_default') }}</option>
 									<option value="bo1">Bo1</option>
 									<option value="bo3">Bo3</option>
 								</select>
@@ -1246,7 +1246,7 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 					{{-- Ряд 2: Площадки --}}
 					@if(count($availCourts) > 0)
 					<div class="card mb-2">
-						<label>Площадки для групп</label>
+						<label>{{ __('tournaments.setup_stage_courts_for_groups') }}</label>
 						<hr class="mb-1">
 						<div class="row">
 							@foreach($divisionNames as $dn)
@@ -1269,26 +1269,26 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 					
 					{{-- Расписание --}}
 					<div class="card mb-2">
-						<label>Расписание (опционально)</label>
-						<p>Если указать время начала — матчи автоматически получат расписание и площадки.</p>
+						<label>{{ __('tournaments.setup_stage_schedule') }}</label>
+						<p>{{ __('tournaments.setup_groups_schedule_hint') }}</p>
 						<hr class="mb-1">
 						<div class="d-flex" style="gap:12px;flex-wrap:wrap;align-items:flex-end">
 							<div>
-								<label>Начало</label>
+								<label>{{ __('tournaments.setup_stage_start') }}</label>
 								<input type="datetime-local" name="schedule_start" value="{{ \Carbon\Carbon::now($event->timezone ?? 'Europe/Moscow')->format('Y-m-d\TH:i') }}">
 							</div>
 							<div>
-								<label>Матч (мин)</label>
+								<label>{{ __('tournaments.setup_stage_match_min') }}</label>
 								<input type="number" name="schedule_match_duration" value="30" min="15" max="180">
 							</div>
 							<div>
-								<label>Перерыв (мин)</label>
+								<label>{{ __('tournaments.setup_stage_break_min') }}</label>
 								<input type="number" name="schedule_break_duration" value="5" min="0" max="60">
 							</div>
 						</div>
 					</div>
 					
-					<button type="submit" class="btn btn-primary btn-alert" data-title="Сформировать группы?" data-icon="question" data-confirm-text="Да, сформировать" data-cancel-text="Отмена">Сформировать группы</button>
+					<button type="submit" class="btn btn-primary btn-alert" data-title="{{ __('tournaments.setup_groups_create_title') }}" data-icon="question" data-confirm-text="{{ __('tournaments.setup_groups_create_yes') }}" data-cancel-text="{{ __('tournaments.btn_cancel') }}">{{ __('tournaments.setup_groups_btn_create') }}</button>
 				</form>
 			</div>
 		</div>
@@ -1297,11 +1297,11 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 		@php $nextStages = $stages->where('type', 'single_elim')->where('status', 'pending'); @endphp
 		@if($nextStages->isNotEmpty())
 		<div class="p-3 mt-2" style="background:rgba(41,103,186,.08);border-radius:10px">
-			<div class="b-700 mb-2">Продвижение в плей-офф</div>
+			<div class="b-700 mb-2">{{ __('tournaments.setup_promote_to_playoff') }}</div>
 			<form method="POST" action="{{ route('tournament.stages.advance', $stage) }}" class="d-flex fvc" style="gap:10px;flex-wrap:wrap">
 				@csrf
 				<div>
-					<label class="f-13 b-600 mb-1 d-block">Стадия</label>
+					<label class="f-13 b-600 mb-1 d-block">{{ __('tournaments.setup_promote_stage') }}</label>
 					<select name="playoff_stage_id">
 						@foreach($nextStages as $ns)
 						<option value="{{ $ns->id }}">{{ $ns->name }}</option>
@@ -1309,10 +1309,10 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 					</select>
 				</div>
 				<div>
-					<label class="f-13 b-600 mb-1 d-block">Выходят</label>
+					<label class="f-13 b-600 mb-1 d-block">{{ __('tournaments.setup_promote_advance') }}</label>
 					<input name="advance_per_group" type="number" value="{{ $stage->cfg('advance_count', 2) }}" min="1" max="8" style="width:120px">
 				</div>
-				<button type="submit" class="btn btn-primary">Продвинуть</button>
+				<button type="submit" class="btn btn-primary">{{ __('tournaments.setup_promote_btn') }}</button>
 			</form>
 		</div>
 		@endif
@@ -1331,14 +1331,13 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 		@endphp
 		@if($allDivsCompleted)
 		<div class="ramka">
-			<h3 style="margin:0 0 8px">✅ Все группы завершены</h3>
+			<h3 style="margin:0 0 8px">{{ __('tournaments.setup_groups_completed_h3') }}</h3>
 			<p class="f-14" style="color:#6b7280;margin-bottom:12px">
-				По правилам сезона: все команды Hard остаются, из Lite — top-2 остаются{{ $hasMedium ? ', из Medium — top-3 остаются' : '' }}, остальные уходят в резерв.
-				Освободившиеся места заполняются из резерва.
+				{{ __('tournaments.setup_groups_completed_text', ['medium' => $hasMedium ? __('tournaments.setup_groups_with_medium') : '']) }}
 			</p>
 			<form method="POST" action="{{ route('tournament.applyPromotion', $event) }}">
 				@csrf
-				<button type="submit" class="btn btn-primary btn-alert" data-title="Применить промоушен?" data-icon="question" data-confirm-text="Да, применить" data-cancel-text="Отмена">Применить промоушен</button>
+				<button type="submit" class="btn btn-primary btn-alert" data-title="{{ __('tournaments.setup_groups_apply_promotion_title') }}" data-icon="question" data-confirm-text="{{ __('tournaments.setup_groups_apply_yes') }}" data-cancel-text="{{ __('tournaments.btn_cancel') }}">{{ __('tournaments.setup_groups_apply_promotion') }}</button>
 			</form>
 		</div>
 		@endif
@@ -1347,7 +1346,7 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 		@if($divStages->isNotEmpty())
 		<div class="ramka" style="text-align:center">
 			<a href="{{ route('tournament.public.show', $event) }}{{ $selectedOccurrence ? '?occurrence_id=' . $selectedOccurrence->id : '' }}" class="btn btn-primary p-3 f-16" style="display:inline-block">
-				📊 Посмотреть результаты тура
+				{{ __('tournaments.setup_btn_round_results') }}
 			</a>
 		</div>
 		@endif
@@ -1356,8 +1355,8 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 		
 		@if($stages->isEmpty())
 		<div class="ramka" style="text-align:center">
-			<p class="f-18 b-600">Турнир пока не настроен</p>
-			<p>Создайте первую стадию выше, затем проведите жеребьёвку.</p>
+			<p class="f-18 b-600">{{ __('tournaments.setup_empty_h2') }}</p>
+			<p>{{ __('tournaments.setup_empty_text') }}</p>
 		</div>
 		@endif
 		
@@ -1412,7 +1411,7 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 				clearTimeout(timer);
 				var q = inp.value.trim();
 				if (q.length < 2) { hideDd(); dd.innerHTML = ''; return; }
-				dd.innerHTML = '<div class="city-message">Поиск…</div>';
+				dd.innerHTML = '<div class="city-message">' + @json(__('tournaments.setup_search_loading')) + '</div>';
 				showDd();
 				timer = setTimeout(function() {
 					fetch('/api/users/search?q=' + encodeURIComponent(q), {
@@ -1424,7 +1423,7 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 						dd.innerHTML = '';
 						var items = data.items || data || [];
 						if (!items.length) {
-							dd.innerHTML = '<div class="city-message">Ничего не найдено</div>';
+							dd.innerHTML = '<div class="city-message">' + @json(__('tournaments.setup_search_no_results')) + '</div>';
 							showDd();
 							return;
 						}
@@ -1443,7 +1442,7 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 						showDd();
 					})
 					.catch(function() {
-						dd.innerHTML = '<div class="city-message">Ошибка загрузки</div>';
+						dd.innerHTML = '<div class="city-message">' + @json(__('tournaments.setup_search_load_err')) + '</div>';
 						showDd();
 					});
 				}, 250);
@@ -1487,7 +1486,7 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 							var badge = cb.closest('.swiper-slide').querySelector('.photo-order-badge');
 							if (isSelected) {
 								var order = selectedPhotos.indexOf(id) + 1;
-								badge.textContent = order === 1 ? '★ Главное' : 'Фото: ' + order;
+								badge.textContent = order === 1 ? @json(__('tournaments.setup_photo_main')) : (@json(__('tournaments.setup_photo_pos_n', ['n' => ''])) + order);
 								} else {
 								badge.textContent = '';
 							}

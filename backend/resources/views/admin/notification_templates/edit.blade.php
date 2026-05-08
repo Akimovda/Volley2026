@@ -2,11 +2,11 @@
 <x-voll-layout body_class="notification-templates-page">
     
     <x-slot name="title">
-        Редактирование шаблона уведомлений
+        {{ __('admin.nt_edit_title') }}
 	</x-slot>
     
     <x-slot name="description">
-        Редактирование шаблона уведомления {{ $template->name }}
+        {{ __('admin.nt_edit_title') }} {{ $template->name }}
 	</x-slot>
     
     <x-slot name="canonical">
@@ -20,32 +20,32 @@
 	</x-slot>
     
     <x-slot name="h1">
-        Редактирование шаблона
+        {{ __('admin.nt_edit_title') }}
 	</x-slot>
 
     <x-slot name="breadcrumbs">
         <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
-            <a href="{{ route('admin.dashboard') }}" itemprop="item"><span itemprop="name">Админ-панель</span></a>
+            <a href="{{ route('admin.dashboard') }}" itemprop="item"><span itemprop="name">{{ __('admin.breadcrumb_dashboard') }}</span></a>
             <meta itemprop="position" content="2">
 		</li>	
         <li itemprop="itemListElement" itemscope="" itemtype="http://schema.org/ListItem">
             <a href="{{ route('admin.notification_templates.index') }}" itemprop="item">
-                <span itemprop="name">Шаблоны уведомлений</span>
+                <span itemprop="name">{{ __('admin.nt_breadcrumb') }}</span>
 			</a>
             <meta itemprop="position" content="3">
 		</li>
         <li itemprop="itemListElement" itemscope="" itemtype="http://schema.org/ListItem">
-            <span itemprop="name">Редактирование</span>
+            <span itemprop="name">{{ __('admin.bc_breadcrumb_edit') }}</span>
             <meta itemprop="position" content="4">
 		</li>
 	</x-slot>
     
     <x-slot name="t_description">
         <div class="f-22 b-600">
-			Код: <span class="cd">{{ $template->code }}</span>
+			{{ __('admin.nt_code_label') }} <span class="cd">{{ $template->code }}</span>
 		</div>		
         <div class="f-22 b-600">
-			Канал: <span class="cd">{{ $template->channel ?: 'общий' }}</span>
+			{{ __('admin.nt_channel_label') }} <span class="cd">{{ $template->channel ?: __('admin.nt_channel_general') }}</span>
 		</div>	
 	</x-slot>
     

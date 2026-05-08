@@ -4,24 +4,24 @@
 	$user = auth()->user();
 	@endphp	
 	
-    <x-slot name="title">Уведомления</x-slot>
-    <x-slot name="h1">Уведомления</x-slot>
-	
+    <x-slot name="title">{{ __('notifications.page_title') }}</x-slot>
+    <x-slot name="h1">{{ __('notifications.page_title') }}</x-slot>
+
 	<x-slot name="breadcrumbs">
         <li itemprop="itemListElement" itemscope="" itemtype="http://schema.org/ListItem">
             <a href="{{ route('profile.show') }}" itemprop="item">
-                <span itemprop="name">Ваши профиль</span>
+                <span itemprop="name">{{ __('notifications.breadcrumb_profile') }}</span>
 			</a>
             <meta itemprop="position" content="2">
-		</li>	
+		</li>
 		<li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
 			<a href="{{ route('notifications.index') }}" itemprop="item">
-				<span itemprop="name">Уведомления</span>
+				<span itemprop="name">{{ __('notifications.breadcrumb_self') }}</span>
 			</a>
 			<meta itemprop="position" content="3">
 		</li>
 	</x-slot>
-	<x-slot name="t_description">Непрочитанных: <strong class="cd">{{ $unreadCount }}</strong></x-slot>
+	<x-slot name="t_description">{{ __('notifications.unread_count') }} <strong class="cd">{{ $unreadCount }}</strong></x-slot>
 	
 	
 	
@@ -32,7 +32,7 @@
 			<form method="POST" action="{{ route('notifications.read_all') }}">
 				@csrf
 				<button type="submit" class="mt-2 btn btn-outline-secondary">
-					Прочитать все
+					{{ __('notifications.mark_all_read') }}
 				</button>
 			</form>
 		</div>		
@@ -73,7 +73,7 @@
 				
 				
 				<div class="ramka">
-					<h2 class="-mt-05">Входящие уведомления</h2>
+					<h2 class="-mt-05">{{ __('notifications.inbox_h2') }}</h2>
 					@forelse($notifications as $notification)
 					@php
 					$payload = is_array($notification->payload) ? $notification->payload : [];
@@ -115,7 +115,7 @@
 								$message = $notification->body; // или откуда берётся текст
 								$message = preg_replace(
 								'/(https?:\/\/[^\s]+)/',
-								'<a href="$1" rel="nofollow">перейти по ссылке</a>',
+								'<a href="$1" rel="nofollow">' . __('notifications.follow_link') . '</a>',
 								e($message) // экранируем для безопасности
 								);
 								@endphp
@@ -128,14 +128,14 @@
 								@if($type === 'group_invite' && $eventId > 0 && $inviteId > 0)
 								<div class="mt-2 d-flex gap-2 flex-wrap">
 									<a href="/events/{{ $eventId }}{{ $occurrenceId ? '?occurrence=' . $occurrenceId : '' }}" class="btn btn-outline-primary">
-										Открыть мероприятие
+										{{ __('notifications.btn_open_event') }}
 									</a>
 									
 									@if(!$autoJoin)
 									<form method="POST" action="{{ route('events.group.accept', ['event' => $eventId, 'invite' => $inviteId]) }}">
 										@csrf
 										<button type="submit" class="btn">
-											Принять
+											{{ __('notifications.btn_accept') }}
 										</button>
 									</form>
 									@endif
@@ -143,14 +143,14 @@
 									<form method="POST" action="{{ route('events.group.decline', ['event' => $eventId, 'invite' => $inviteId]) }}">
 										@csrf
 										<button type="submit" class="btn btn-outline-secondary">
-											Отклонить
+											{{ __('notifications.btn_decline') }}
 										</button>
 									</form>
 								</div>
 								
 								@if($autoJoin)
 								<div class="alert alert-info mt-2 mb-0">
-									Сначала зарегистрируйтесь в системе и запишитесь на мероприятие, затем вернитесь и примите приглашение.
+									{{ __('notifications.auto_join_hint') }}
 								</div>
 								@endif
 								@endif						
@@ -174,10 +174,10 @@
 									@method('DELETE')
 									<button type="button" 
 									class="icon-delete btn-alert btn btn-danger btn-svg"
-									data-title="Удалить сообщение?"
+									data-title="{{ __('notifications.delete_title') }}"
 									data-icon="warning"
-									data-confirm-text="Да, удалить"
-									data-cancel-text="Отмена">
+									data-confirm-text="{{ __('notifications.btn_delete_yes') }}"
+									data-cancel-text="{{ __('notifications.btn_delete_no') }}">
 									</button>                                        
 								</form>
 							</div>						
@@ -189,7 +189,7 @@
 					@empty
 					
 					<div class="alert alert-info">
-						Уведомлений пока нет.
+						{{ __('notifications.empty_list') }}
 					</div>
 					
 					@endforelse

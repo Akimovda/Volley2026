@@ -1,6 +1,6 @@
 <x-voll-layout body_class="tournament-public-page">
-	<x-slot name="title">{{ $event->title }} — Турнир</x-slot>
-	<x-slot name="description">{{ $event->title }} — турнирная сетка, результаты матчей, статистика команд и игроков</x-slot>
+	<x-slot name="title">{{ $event->title }} — {{ __('tournaments.pub_title') }}</x-slot>
+	<x-slot name="description">{{ $event->title }} — {{ __('tournaments.pub_description') }}</x-slot>
 	<x-slot name="canonical">{{ route('tournament.public.show', $event) }}</x-slot>
 	<x-slot name="h1">{{ $event->title }}</x-slot>
 
@@ -17,7 +17,7 @@ $tourNumber = $occurrences->search(fn($occ) => $occ->id === $selectedOccurrence-
 
 	<x-slot name="breadcrumbs">
 		<li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
-			<a href="{{ route('events.index') }}" itemprop="item"><span itemprop="name">Мероприятия</span></a>
+			<a href="{{ route('events.index') }}" itemprop="item"><span itemprop="name">{{ __('events.index_title') }}</span></a>
 			<meta itemprop="position" content="2">
 		</li>
 		<li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
@@ -25,7 +25,7 @@ $tourNumber = $occurrences->search(fn($occ) => $occ->id === $selectedOccurrence-
 			<meta itemprop="position" content="3">
 		</li>
 		<li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
-			<span itemprop="name">Турнир</span>
+			<span itemprop="name">{{ __('tournaments.pub_title') }}</span>
 			<meta itemprop="position" content="4">
 		</li>
 	</x-slot>
@@ -33,16 +33,16 @@ $tourNumber = $occurrences->search(fn($occ) => $occ->id === $selectedOccurrence-
 		<x-slot name="t_description">
 			{{-- Мета --}}
 			<div class="d-flex gap-1">
-				<span class="p-1 pt-05 pb-05 alert-info">{{ $event->direction === 'beach' ? 'Пляжка' : 'Классика' }}</span>
-				<span class="p-1 pt-05 pb-05 alert-success">{{ $totalTeams }} команд</span>
-				<span class="p-1 pt-05 pb-05 alert-warning">{{ $totalMatches }} матчей сыграно</span>
+				<span class="p-1 pt-05 pb-05 alert-info">{{ $event->direction === 'beach' ? __('locations.tournaments_dir_beach') : __('locations.tournaments_dir_classic') }}</span>
+				<span class="p-1 pt-05 pb-05 alert-success">{{ $totalTeams }} {{ __('tournaments.pub_teams_count_short') }}</span>
+				<span class="p-1 pt-05 pb-05 alert-warning">{{ $totalMatches }} {{ __('tournaments.pub_matches_played') }}</span>
 			</div>	
 		</x-slot>
 	
 	<x-slot name="d_description">
 		<div class="d-flex flex-wrap gap-1 m-center">
 			<div class="mt-2" data-aos-delay="250" data-aos="fade-up">
-				<button class="btn ufilter-btn">Выбрать тур</button>
+				<button class="btn ufilter-btn">{{ __('tournaments.setup_pick_round') }}</button>
 			</div>
 			<!--
 				<div class="mt-2" data-aos-delay="350" data-aos="fade-up">
@@ -88,16 +88,16 @@ $tourNumber = $occurrences->search(fn($occ) => $occ->id === $selectedOccurrence-
 					📺 TV Mode
 				</a>
 				<a href="{{ route('tournament.pdf.schedule', $event) }}" class="btn btn-secondary f-13" style="padding:6px 12px">
-					📄 PDF Расписание
+					📄 {{ __('tournaments.pub_pdf_schedule_short') }}
 				</a>
 				<a href="{{ route('tournament.pdf.results', $event) }}" class="btn btn-secondary f-13" style="padding:6px 12px">
-					📊 PDF Результаты
+					📊 {{ __('tournaments.pub_pdf_results_short') }}
 				</a>
 				@auth
 				@if(auth()->user()->role === 'admin' || (int)($event->organizer_id ?? 0) === auth()->id())
 				<a href="{{ route('tournament.setup', [$event, 'occurrence_id' => $selectedOccurrence?->id]) }}"
 				class="btn btn-primary f-13" style="padding:6px 12px">
-					⚙️ Настроить турнир
+					⚙️ {{ __('tournaments.pub_setup_btn') }}
 				</a>
 				@endif
 				@endauth
@@ -107,19 +107,19 @@ $tourNumber = $occurrences->search(fn($occ) => $occ->id === $selectedOccurrence-
 			@php
 			$hasBracketStages = $stages->whereIn('type', ['single_elim', 'double_elim'])->isNotEmpty();
 			$tabs = [
-            'overview' => 'Обзор',
-            'groups'   => 'Группы',
+            'overview' => __('tournaments.pub_tab_overview'),
+            'groups'   => __('tournaments.pub_tab_groups'),
 			];
 			if ($hasBracketStages) {
-            $tabs['bracket'] = 'Сетка';
+            $tabs['bracket'] = __('tournaments.pub_tab_bracket');
 			}
 			$tabs += [
-            'results'  => 'Результаты',
-            'stats'    => 'Статистика',
-            'photos'   => 'Фото',
+            'results'  => __('tournaments.pub_tab_results'),
+            'stats'    => __('tournaments.pub_tab_stats'),
+            'photos'   => __('tournaments.pub_tab_photos'),
 			];
 			if ($event->season_id) {
-            $tabs['season'] = 'Итоги сезона';
+            $tabs['season'] = __('tournaments.pub_tab_season');
 			}
 			@endphp
 			
@@ -141,11 +141,11 @@ $tourNumber = $occurrences->search(fn($occ) => $occ->id === $selectedOccurrence-
             <div class="card p-3 mb-3">
                 <div class="b-700 f-16 mb-1">{{ $stage->name }}</div>
                 <div class="f-13 mb-2" style="opacity:.5">
-                    {{ $stage->type }} · {{ strtoupper($stage->matchFormat()) }} · до {{ $stage->setPoints() }} очков
+                    {{ $stage->type }} · {{ strtoupper($stage->matchFormat()) }} · {{ __('tournaments.score_to_pts') }} {{ $stage->setPoints() }} {{ __('tournaments.pub_pts_label') }}
                     ·
-                    @if($stage->isCompleted()) ✅ Завершена
-                    @elseif($stage->isInProgress()) 🔄 В процессе
-                    @else ⏳ Ожидание
+                    @if($stage->isCompleted()) ✅ {{ __('tournaments.stages_status_completed') }}
+                    @elseif($stage->isInProgress()) 🔄 {{ __('tournaments.stages_status_in_progress') }}
+                    @else ⏳ {{ __('tournaments.stages_status_pending') }}
                     @endif
 				</div>
 				
@@ -165,7 +165,7 @@ $tourNumber = $occurrences->search(fn($occ) => $occ->id === $selectedOccurrence-
 								<div class="f-11" style="color:#6b7280">{{ $s->team->members->map(fn($m) => $m->user->last_name ?? '?')->implode(' / ') }}</div>
 								@endif
 							</span>
-							<span style="opacity:.5;margin-left:auto">{{ $s->wins }}В {{ $s->losses }}П</span>
+							<span style="opacity:.5;margin-left:auto">{{ $s->wins }}{{ __('tournaments.tv_w_short') }} {{ $s->losses }}{{ __('tournaments.tv_l_short') }}</span>
 						</div>
 						@endforeach
 						@else
@@ -182,7 +182,7 @@ $tourNumber = $occurrences->search(fn($occ) => $occ->id === $selectedOccurrence-
                 @php $recent = $stage->matches->where('status', 'completed')->sortByDesc('scored_at')->take(3); @endphp
                 @if($recent->isNotEmpty())
 				<div class="mt-2">
-					<div class="f-13 b-600 mb-1" style="opacity:.6">Последние результаты</div>
+					<div class="f-13 b-600 mb-1" style="opacity:.6">{{ __('tournaments.pub_recent_results') }}</div>
 					@foreach($recent as $m)
 					<div class="f-13 d-flex" style="gap:6px;padding:3px 0;border-bottom:1px solid rgba(128,128,128,.08)">
 						<span class="{{ $m->winner_team_id === $m->team_home_id ? 'b-700' : '' }}">{{ $m->teamHome->name ?? '?' }}</span>
@@ -197,7 +197,7 @@ $tourNumber = $occurrences->search(fn($occ) => $occ->id === $selectedOccurrence-
 			@endforeach
 			
 			@if($stages->isEmpty())
-            <div style="text-align:center;opacity:.5;padding:30px 0">Турнир пока не настроен.</div>
+            <div style="text-align:center;opacity:.5;padding:30px 0">{{ __('tournaments.pub_not_setup') }}</div>
 			@endif
 			
 			{{-- ============================================================
@@ -230,13 +230,13 @@ $tourNumber = $occurrences->search(fn($occ) => $occ->id === $selectedOccurrence-
 								<thead>
 									<tr style="border-bottom:2px solid rgba(128,128,128,.2)">
 										<th class="p-1" style="text-align:left">#</th>
-										<th class="p-1" style="text-align:left">Команда</th>
-										<th class="p-1" style="text-align:center">И</th>
-										<th class="p-1" style="text-align:center">В</th>
-										<th class="p-1" style="text-align:center">П</th>
-										<th class="p-1" style="text-align:center">Сеты</th>
-										<th class="p-1" style="text-align:center">Разн.</th>
-										<th class="p-1" style="text-align:center">Оч.</th>
+										<th class="p-1" style="text-align:left">{{ __('tournaments.standings_col_team') }}</th>
+										<th class="p-1" style="text-align:center">{{ __('tournaments.standings_col_played') }}</th>
+										<th class="p-1" style="text-align:center">{{ __('tournaments.standings_col_w') }}</th>
+										<th class="p-1" style="text-align:center">{{ __('tournaments.standings_col_l') }}</th>
+										<th class="p-1" style="text-align:center">{{ __('tournaments.pub_sets_col') }}</th>
+										<th class="p-1" style="text-align:center">{{ __('tournaments.tv_diff_col') }}</th>
+										<th class="p-1" style="text-align:center">{{ __('tournaments.tv_pts_col') }}</th>
 									</tr>
 								</thead>
 								<tbody>
@@ -262,7 +262,7 @@ $tourNumber = $occurrences->search(fn($occ) => $occ->id === $selectedOccurrence-
 							</table>
 							@if($groupTbs->where('status', 'pending')->isNotEmpty())
 							<div class="mt-2 f-12" style="color:#d97706">
-								🎲 Ожидается жеребьёвка между командами с равными показателями
+								🎲 {{ __('tournaments.pub_tiebreak_pending') }}
 							</div>
 							@endif
 							@endif
@@ -322,7 +322,7 @@ $tourNumber = $occurrences->search(fn($occ) => $occ->id === $selectedOccurrence-
 			
 			@php $hasBracket = $stages->whereIn('type', ['single_elim', 'double_elim'])->isNotEmpty(); @endphp
 			@if(!$hasBracket)
-            <div style="text-align:center;opacity:.5;padding:30px 0">Нет стадий плей-офф для отображения сетки.</div>
+            <div style="text-align:center;opacity:.5;padding:30px 0">{{ __('tournaments.pub_no_playoff') }}</div>
 			@endif
 			
 			{{-- ============================================================
@@ -376,7 +376,7 @@ $tourNumber = $occurrences->search(fn($occ) => $occ->id === $selectedOccurrence-
             @else
             {{-- Обычный турнир без дивизионов --}}
             <div class="card p-3 mb-3">
-                <div class="b-700 f-16 mb-2">🏆 Итоговая классификация</div>
+                <div class="b-700 f-16 mb-2">🏆 {{ __('tournaments.pub_final_standings') }}</div>
                 @foreach($classification as $c)
 				@php
 				$team = \App\Models\EventTeam::with('members.user')->find($c['team_id']);
@@ -405,7 +405,7 @@ $tourNumber = $occurrences->search(fn($occ) => $occ->id === $selectedOccurrence-
 			@php $mvp = \App\Models\User::find($event->tournament_mvp_user_id); @endphp
 			@if($mvp)
 			<div class="card p-3 mb-3" style="text-align:center">
-				<div class="f-13 b-600 mb-1" style="opacity:.5">MVP турнира</div>
+				<div class="f-13 b-600 mb-1" style="opacity:.5">{{ __('tournaments.tv_mvp') }}</div>
 				<div class="f-20 b-800">⭐ {{ $mvp->displayName() }}</div>
 			</div>
 			@endif
@@ -438,7 +438,7 @@ $tourNumber = $occurrences->search(fn($occ) => $occ->id === $selectedOccurrence-
                 @endforeach
 				
                 @if($stage->matches->where('status', 'completed')->isEmpty())
-				<div class="f-13" style="opacity:.5">Нет завершённых матчей.</div>
+				<div class="f-13" style="opacity:.5">{{ __('tournaments.pub_no_finished_matches') }}</div>
                 @endif
 			</div>
 			@endforeach
@@ -452,10 +452,10 @@ $tourNumber = $occurrences->search(fn($occ) => $occ->id === $selectedOccurrence-
 			@endphp
 			
 			<div class="card p-3 mb-3">
-				<div class="b-700 f-16 mb-2">Рейтинг игроков</div>
+				<div class="b-700 f-16 mb-2">{{ __('tournaments.pub_player_ranking') }}</div>
 				
 				@if($topPlayers->isNotEmpty())
-                <div class="d-none-desktop f-12 mb-1" style="opacity:.4;display:none">👆 Свайпайте таблицу влево</div>
+                <div class="d-none-desktop f-12 mb-1" style="opacity:.4;display:none">👆 {{ __('tournaments.pub_swipe_left_hint') }}</div>
                 <style>
                     @media (max-width:768px) { .d-none-desktop { display:block !important; } }
 				</style>
@@ -464,13 +464,13 @@ $tourNumber = $occurrences->search(fn($occ) => $occ->id === $selectedOccurrence-
 						<thead>
 							<tr style="border-bottom:2px solid rgba(128,128,128,.2)">
 								<th class="p-1" style="text-align:left">#</th>
-								<th class="p-1" style="text-align:left">Игрок</th>
-								<th class="p-1" style="text-align:left">Команда</th>
+								<th class="p-1" style="text-align:left">{{ __('tournaments.stats_col_player') }}</th>
+								<th class="p-1" style="text-align:left">{{ __('tournaments.standings_col_team') }}</th>
 								<th class="p-1" style="text-align:center">Матчи</th>
 								<th class="p-1" style="text-align:center">Победы</th>
 								<th class="p-1" style="text-align:center">WinRate</th>
-								<th class="p-1" style="text-align:center">Сеты</th>
-								<th class="p-1" style="text-align:center">Разн.</th>
+								<th class="p-1" style="text-align:center">{{ __('tournaments.pub_sets_col') }}</th>
+								<th class="p-1" style="text-align:center">{{ __('tournaments.tv_diff_col') }}</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -534,12 +534,12 @@ $tourNumber = $occurrences->search(fn($occ) => $occ->id === $selectedOccurrence-
 						<thead>
 							<tr style="border-bottom:2px solid rgba(128,128,128,.2)">
 								<th class="p-1" style="text-align:left">#</th>
-								<th class="p-1" style="text-align:left">Игрок</th>
+								<th class="p-1" style="text-align:left">{{ __('tournaments.stats_col_player') }}</th>
 								<th class="p-1" style="text-align:center">Туров</th>
 								<th class="p-1" style="text-align:center">Матчей</th>
 								<th class="p-1" style="text-align:center">Побед</th>
 								<th class="p-1" style="text-align:center">WinRate</th>
-								<th class="p-1" style="text-align:center">Сеты</th>
+								<th class="p-1" style="text-align:center">{{ __('tournaments.pub_sets_col') }}</th>
 								<th class="p-1" style="text-align:center">Разн. оч.</th>
 								<th class="p-1" style="text-align:center">Серия</th>
 							</tr>

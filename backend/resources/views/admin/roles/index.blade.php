@@ -14,13 +14,13 @@
 
             <div class="v-card">
                 <div class="v-card__body">
-                    <div class="text-lg font-semibold mb-2">Доступные роли</div>
+                    <div class="text-lg font-semibold mb-2">{{ __('admin.roles_available') }}</div>
                     <div class="text-sm text-gray-700 font-mono">
                         {{ implode(', ', $roles) }}
                     </div>
 
                     <div class="text-sm text-gray-600 mt-3">
-                        Назначение роли делаем из карточки пользователя (следующий файл) или через POST endpoint.
+                        {{ __('admin.roles_assign_hint') }}
                     </div>
                 </div>
             </div>

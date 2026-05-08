@@ -8,7 +8,7 @@
       - $reqPersonal (bool) — значение с override-логикой
 --}}
 <div class="ramka">
-    <h2 class="-mt-05">Персональные данные</h2>
+    <h2 class="-mt-05">{{ __('events.occ_personal_title') }}</h2>
     <div class="row">
         <div class="col-md-12">
             <div class="card">
@@ -16,7 +16,7 @@
                 <label class="checkbox-item">
                     <input type="checkbox" name="requires_personal_data" value="1" @checked(old('requires_personal_data', $reqPersonal))>
                     <div class="custom-checkbox"></div>
-                    <span>Требовать согласие на обработку ПД при записи</span>
+                    <span>{{ __('events.occ_personal_request') }}</span>
                 </label>
             </div>
         </div>

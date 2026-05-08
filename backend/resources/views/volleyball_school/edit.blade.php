@@ -5,7 +5,7 @@
 <x-voll-layout body_class="volleyball-school-edit-page">
 	
     <x-slot name="title">Редактировать — {{ $school->name }}</x-slot>
-    <x-slot name="h1">Редактировать страницу школы</x-slot>
+    <x-slot name="h1">{{ __('profile.school_edit_title') }}</x-slot>
     <x-slot name="h2">{{ $school->name }}</x-slot>
 	
     <x-slot name="breadcrumbs">

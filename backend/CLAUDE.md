@@ -8,6 +8,16 @@
 - Telegram/VK/MAX бот интеграции
 - Сервер: /var/www/volley-bot/backend (dev), /var/www/volleyplay/backend (prod)
 
+## Локализация (i18n)
+- Сайт двуязычный: RU (по умолчанию) и EN
+- Все строки интерфейса через `{{ __('файл.ключ') }}`, не хардкодом в blade
+- При добавлении нового текста — обязательно добавлять перевод в `lang/ru/*.php` И `lang/en/*.php`
+- Языковые файлы: `ui`, `auth`, `events`, `profile`, `locations`, `subscriptions`, `notifications`, `admin`, `tournaments`, `seasons`, `pages`, `welcome`
+- Контент пользователей (названия событий, описания, имена, города) НЕ переводится
+- HTML в переводах выводить через `{!! __('файл.ключ') !!}`
+- Подстановки: `__('events.foo', ['name' => $value])` → ключ содержит `:name`
+- Locale переключается через `SetLocale` middleware + `LocaleController`; кука/сессия хранят выбор пользователя
+
 ## Серверные особенности
 - php artisan tinker --execute НЕ работает
 - Использовать: cat > /tmp/file.php + php -r с bootstrap

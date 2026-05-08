@@ -1,10 +1,10 @@
 						<div class="ramka" style="z-index:5">
-							<h2 class="-mt-05">Выбор локации,времени и ограничений записи</h2>		
+							<h2 class="-mt-05">{{ __('events.step2_title') }}</h2>		
 							<div class="row">
 								
 								<div class="col-lg-4">
 									<div class="card">
-										<label>Начало (локальное)</label>
+										<label>{{ __('events.starts_local') }}</label>
 										@php
 										$minDate = now()->format('Y-m-d\TH:i');
 										$maxDate = now()->addYear()->format('Y-m-d\TH:i');
@@ -28,7 +28,7 @@
 								{{-- ✅ CITY (autocomplete -> hidden city_id) --}}
 								<div class="col-lg-8">
 									<div class="card">
-										<label>Город</label>
+										<label>{{ __('events.city_label') }}</label>
 										
 										<div
 										style="max-width: 40rem"
@@ -49,7 +49,7 @@
 											value="{{ auth()->user()->city 
 											? auth()->user()->city->name.' ('.auth()->user()->city->country_code.', '.auth()->user()->city->region.')' 
 											: '' }}"
-											placeholder="Начните вводить город…"
+											placeholder="{{ __('events.city_search_ph') }}"
 											autocomplete="off"
 											>
 											
@@ -68,17 +68,17 @@
                                         @enderror
 										
 										<div class="d-flex between mt-2">
-											<label>Локация</label>
+											<label>{{ __('events.location_label') }}</label>
 											@if($isAdmin)
 											<a href="{{ route('admin.locations.create') }}"
 											class="text-sm font-semibold text-blue-600 hover:text-blue-700">
-												+ Создать локацию
+												{{ __('events.location_create_btn') }}
 											</a>
 											@endif
 										</div>
 										
 										<select name="location_id" id="location_id" class="w-full rounded-lg border-gray-200">
-											<option value="">— выбрать локацию —</option>
+											<option value="">{{ __('events.location_choose') }}</option>
 										</select>
 										@error('location_id')
 										<div class="text-xs text-red-600 mt-1">{{ $message }}</div>
@@ -116,7 +116,7 @@
 										
 										@if(!$isAdmin)
 										<ul class="list f-16 mt-1">
-											<li>Локации создаёт администратор. Если нужной локации нет — напишите админу.</li>
+											<li>{{ __('events.location_admin_only_hint') }}</li>
 										</ul>											
 										@endif
 									</div>									
@@ -125,27 +125,27 @@
 								
 								<div class="col-lg-4">
 									<div class="card">
-										<label>Длительность мероприятия</label>
+										<label>{{ __('events.duration_label') }}</label>
 										<hr class="mb-1">
 										<div class="row">
 											<div class="col-4">
-												<label>Дни:</label>
+												<label>{{ __('events.duration_days') }}</label>
 												<select name="duration_days" class="w-full rounded-lg border-gray-200">
-												<option value="0" {{ old('duration_days', 0) == 0 ? 'selected' : '' }}>0 дн.</option><option value="1" {{ old('duration_days', 0) == 1 ? 'selected' : '' }}>1 дн.</option><option value="2" {{ old('duration_days', 0) == 2 ? 'selected' : '' }}>2 дн.</option><option value="3" {{ old('duration_days', 0) == 3 ? 'selected' : '' }}>3 дн.</option><option value="4" {{ old('duration_days', 0) == 4 ? 'selected' : '' }}>4 дн.</option><option value="5" {{ old('duration_days', 0) == 5 ? 'selected' : '' }}>5 дн.</option><option value="6" {{ old('duration_days', 0) == 6 ? 'selected' : '' }}>6 дн.</option><option value="7" {{ old('duration_days', 0) == 7 ? 'selected' : '' }}>7 дн.</option><option value="8" {{ old('duration_days', 0) == 8 ? 'selected' : '' }}>8 дн.</option><option value="9" {{ old('duration_days', 0) == 9 ? 'selected' : '' }}>9 дн.</option><option value="10" {{ old('duration_days', 0) == 10 ? 'selected' : '' }}>10 дн.</option><option value="11" {{ old('duration_days', 0) == 11 ? 'selected' : '' }}>11 дн.</option><option value="12" {{ old('duration_days', 0) == 12 ? 'selected' : '' }}>12 дн.</option><option value="13" {{ old('duration_days', 0) == 13 ? 'selected' : '' }}>13 дн.</option><option value="14" {{ old('duration_days', 0) == 14 ? 'selected' : '' }}>14 дн.</option><option value="15" {{ old('duration_days', 0) == 15 ? 'selected' : '' }}>15 дн.</option><option value="16" {{ old('duration_days', 0) == 16 ? 'selected' : '' }}>16 дн.</option><option value="17" {{ old('duration_days', 0) == 17 ? 'selected' : '' }}>17 дн.</option><option value="18" {{ old('duration_days', 0) == 18 ? 'selected' : '' }}>18 дн.</option><option value="19" {{ old('duration_days', 0) == 19 ? 'selected' : '' }}>19 дн.</option><option value="20" {{ old('duration_days', 0) == 20 ? 'selected' : '' }}>20 дн.</option><option value="21" {{ old('duration_days', 0) == 21 ? 'selected' : '' }}>21 дн.</option><option value="22" {{ old('duration_days', 0) == 22 ? 'selected' : '' }}>22 дн.</option><option value="23" {{ old('duration_days', 0) == 23 ? 'selected' : '' }}>23 дн.</option><option value="24" {{ old('duration_days', 0) == 24 ? 'selected' : '' }}>24 дн.</option><option value="25" {{ old('duration_days', 0) == 25 ? 'selected' : '' }}>25 дн.</option><option value="26" {{ old('duration_days', 0) == 26 ? 'selected' : '' }}>26 дн.</option><option value="27" {{ old('duration_days', 0) == 27 ? 'selected' : '' }}>27 дн.</option><option value="28" {{ old('duration_days', 0) == 28 ? 'selected' : '' }}>28 дн.</option><option value="29" {{ old('duration_days', 0) == 29 ? 'selected' : '' }}>29 дн.</option><option value="30" {{ old('duration_days', 0) == 30 ? 'selected' : '' }}>30 дн.</option>
+												<option value="0" {{ old('duration_days', 0) == 0 ? 'selected' : '' }}>0 {{ __(\'events.dur_d_short\') }}</option><option value="1" {{ old('duration_days', 0) == 1 ? 'selected' : '' }}>1 {{ __(\'events.dur_d_short\') }}</option><option value="2" {{ old('duration_days', 0) == 2 ? 'selected' : '' }}>2 {{ __(\'events.dur_d_short\') }}</option><option value="3" {{ old('duration_days', 0) == 3 ? 'selected' : '' }}>3 {{ __(\'events.dur_d_short\') }}</option><option value="4" {{ old('duration_days', 0) == 4 ? 'selected' : '' }}>4 {{ __(\'events.dur_d_short\') }}</option><option value="5" {{ old('duration_days', 0) == 5 ? 'selected' : '' }}>5 {{ __(\'events.dur_d_short\') }}</option><option value="6" {{ old('duration_days', 0) == 6 ? 'selected' : '' }}>6 {{ __(\'events.dur_d_short\') }}</option><option value="7" {{ old('duration_days', 0) == 7 ? 'selected' : '' }}>7 {{ __(\'events.dur_d_short\') }}</option><option value="8" {{ old('duration_days', 0) == 8 ? 'selected' : '' }}>8 {{ __(\'events.dur_d_short\') }}</option><option value="9" {{ old('duration_days', 0) == 9 ? 'selected' : '' }}>9 {{ __(\'events.dur_d_short\') }}</option><option value="10" {{ old('duration_days', 0) == 10 ? 'selected' : '' }}>10 {{ __(\'events.dur_d_short\') }}</option><option value="11" {{ old('duration_days', 0) == 11 ? 'selected' : '' }}>11 {{ __(\'events.dur_d_short\') }}</option><option value="12" {{ old('duration_days', 0) == 12 ? 'selected' : '' }}>12 {{ __(\'events.dur_d_short\') }}</option><option value="13" {{ old('duration_days', 0) == 13 ? 'selected' : '' }}>13 {{ __(\'events.dur_d_short\') }}</option><option value="14" {{ old('duration_days', 0) == 14 ? 'selected' : '' }}>14 {{ __(\'events.dur_d_short\') }}</option><option value="15" {{ old('duration_days', 0) == 15 ? 'selected' : '' }}>15 {{ __(\'events.dur_d_short\') }}</option><option value="16" {{ old('duration_days', 0) == 16 ? 'selected' : '' }}>16 {{ __(\'events.dur_d_short\') }}</option><option value="17" {{ old('duration_days', 0) == 17 ? 'selected' : '' }}>17 {{ __(\'events.dur_d_short\') }}</option><option value="18" {{ old('duration_days', 0) == 18 ? 'selected' : '' }}>18 {{ __(\'events.dur_d_short\') }}</option><option value="19" {{ old('duration_days', 0) == 19 ? 'selected' : '' }}>19 {{ __(\'events.dur_d_short\') }}</option><option value="20" {{ old('duration_days', 0) == 20 ? 'selected' : '' }}>20 {{ __(\'events.dur_d_short\') }}</option><option value="21" {{ old('duration_days', 0) == 21 ? 'selected' : '' }}>21 {{ __(\'events.dur_d_short\') }}</option><option value="22" {{ old('duration_days', 0) == 22 ? 'selected' : '' }}>22 {{ __(\'events.dur_d_short\') }}</option><option value="23" {{ old('duration_days', 0) == 23 ? 'selected' : '' }}>23 {{ __(\'events.dur_d_short\') }}</option><option value="24" {{ old('duration_days', 0) == 24 ? 'selected' : '' }}>24 {{ __(\'events.dur_d_short\') }}</option><option value="25" {{ old('duration_days', 0) == 25 ? 'selected' : '' }}>25 {{ __(\'events.dur_d_short\') }}</option><option value="26" {{ old('duration_days', 0) == 26 ? 'selected' : '' }}>26 {{ __(\'events.dur_d_short\') }}</option><option value="27" {{ old('duration_days', 0) == 27 ? 'selected' : '' }}>27 {{ __(\'events.dur_d_short\') }}</option><option value="28" {{ old('duration_days', 0) == 28 ? 'selected' : '' }}>28 {{ __(\'events.dur_d_short\') }}</option><option value="29" {{ old('duration_days', 0) == 29 ? 'selected' : '' }}>29 {{ __(\'events.dur_d_short\') }}</option><option value="30" {{ old('duration_days', 0) == 30 ? 'selected' : '' }}>30 {{ __(\'events.dur_d_short\') }}</option>
 												</select>
 											</div>
 
 											<div class="col-4">
-												<label>Часы:</label>
+												<label>{{ __('events.duration_hours') }}</label>
 												<select name="duration_hours" class="w-full rounded-lg border-gray-200">
-												<option value="0" {{ old('duration_hours', 0) == 0 ? 'selected' : '' }}>0 ч.</option><option value="1" {{ old('duration_hours', 0) == 1 ? 'selected' : '' }}>1 ч.</option><option value="2" {{ old('duration_hours', 0) == 2 ? 'selected' : '' }}>2 ч.</option><option value="3" {{ old('duration_hours', 0) == 3 ? 'selected' : '' }}>3 ч.</option><option value="4" {{ old('duration_hours', 0) == 4 ? 'selected' : '' }}>4 ч.</option><option value="5" {{ old('duration_hours', 0) == 5 ? 'selected' : '' }}>5 ч.</option><option value="6" {{ old('duration_hours', 0) == 6 ? 'selected' : '' }}>6 ч.</option><option value="7" {{ old('duration_hours', 0) == 7 ? 'selected' : '' }}>7 ч.</option><option value="8" {{ old('duration_hours', 0) == 8 ? 'selected' : '' }}>8 ч.</option><option value="9" {{ old('duration_hours', 0) == 9 ? 'selected' : '' }}>9 ч.</option><option value="10" {{ old('duration_hours', 0) == 10 ? 'selected' : '' }}>10 ч.</option><option value="11" {{ old('duration_hours', 0) == 11 ? 'selected' : '' }}>11 ч.</option><option value="12" {{ old('duration_hours', 0) == 12 ? 'selected' : '' }}>12 ч.</option><option value="13" {{ old('duration_hours', 0) == 13 ? 'selected' : '' }}>13 ч.</option><option value="14" {{ old('duration_hours', 0) == 14 ? 'selected' : '' }}>14 ч.</option><option value="15" {{ old('duration_hours', 0) == 15 ? 'selected' : '' }}>15 ч.</option><option value="16" {{ old('duration_hours', 0) == 16 ? 'selected' : '' }}>16 ч.</option><option value="17" {{ old('duration_hours', 0) == 17 ? 'selected' : '' }}>17 ч.</option><option value="18" {{ old('duration_hours', 0) == 18 ? 'selected' : '' }}>18 ч.</option><option value="19" {{ old('duration_hours', 0) == 19 ? 'selected' : '' }}>19 ч.</option><option value="20" {{ old('duration_hours', 0) == 20 ? 'selected' : '' }}>20 ч.</option><option value="21" {{ old('duration_hours', 0) == 21 ? 'selected' : '' }}>21 ч.</option><option value="22" {{ old('duration_hours', 0) == 22 ? 'selected' : '' }}>22 ч.</option><option value="23" {{ old('duration_hours', 0) == 23 ? 'selected' : '' }}>23 ч.</option>
+												<option value="0" {{ old('duration_hours', 0) == 0 ? 'selected' : '' }}>0 {{ __(\'events.dur_h_short\') }}</option><option value="1" {{ old('duration_hours', 0) == 1 ? 'selected' : '' }}>1 {{ __(\'events.dur_h_short\') }}</option><option value="2" {{ old('duration_hours', 0) == 2 ? 'selected' : '' }}>2 {{ __(\'events.dur_h_short\') }}</option><option value="3" {{ old('duration_hours', 0) == 3 ? 'selected' : '' }}>3 {{ __(\'events.dur_h_short\') }}</option><option value="4" {{ old('duration_hours', 0) == 4 ? 'selected' : '' }}>4 {{ __(\'events.dur_h_short\') }}</option><option value="5" {{ old('duration_hours', 0) == 5 ? 'selected' : '' }}>5 {{ __(\'events.dur_h_short\') }}</option><option value="6" {{ old('duration_hours', 0) == 6 ? 'selected' : '' }}>6 {{ __(\'events.dur_h_short\') }}</option><option value="7" {{ old('duration_hours', 0) == 7 ? 'selected' : '' }}>7 {{ __(\'events.dur_h_short\') }}</option><option value="8" {{ old('duration_hours', 0) == 8 ? 'selected' : '' }}>8 {{ __(\'events.dur_h_short\') }}</option><option value="9" {{ old('duration_hours', 0) == 9 ? 'selected' : '' }}>9 {{ __(\'events.dur_h_short\') }}</option><option value="10" {{ old('duration_hours', 0) == 10 ? 'selected' : '' }}>10 {{ __(\'events.dur_h_short\') }}</option><option value="11" {{ old('duration_hours', 0) == 11 ? 'selected' : '' }}>11 {{ __(\'events.dur_h_short\') }}</option><option value="12" {{ old('duration_hours', 0) == 12 ? 'selected' : '' }}>12 {{ __(\'events.dur_h_short\') }}</option><option value="13" {{ old('duration_hours', 0) == 13 ? 'selected' : '' }}>13 {{ __(\'events.dur_h_short\') }}</option><option value="14" {{ old('duration_hours', 0) == 14 ? 'selected' : '' }}>14 {{ __(\'events.dur_h_short\') }}</option><option value="15" {{ old('duration_hours', 0) == 15 ? 'selected' : '' }}>15 {{ __(\'events.dur_h_short\') }}</option><option value="16" {{ old('duration_hours', 0) == 16 ? 'selected' : '' }}>16 {{ __(\'events.dur_h_short\') }}</option><option value="17" {{ old('duration_hours', 0) == 17 ? 'selected' : '' }}>17 {{ __(\'events.dur_h_short\') }}</option><option value="18" {{ old('duration_hours', 0) == 18 ? 'selected' : '' }}>18 {{ __(\'events.dur_h_short\') }}</option><option value="19" {{ old('duration_hours', 0) == 19 ? 'selected' : '' }}>19 {{ __(\'events.dur_h_short\') }}</option><option value="20" {{ old('duration_hours', 0) == 20 ? 'selected' : '' }}>20 {{ __(\'events.dur_h_short\') }}</option><option value="21" {{ old('duration_hours', 0) == 21 ? 'selected' : '' }}>21 {{ __(\'events.dur_h_short\') }}</option><option value="22" {{ old('duration_hours', 0) == 22 ? 'selected' : '' }}>22 {{ __(\'events.dur_h_short\') }}</option><option value="23" {{ old('duration_hours', 0) == 23 ? 'selected' : '' }}>23 {{ __(\'events.dur_h_short\') }}</option>
 												</select>
 											</div>
 
 											<div class="col-4">
-												<label>Минуты:</label>
+												<label>{{ __('events.duration_minutes') }}</label>
 												<select name="duration_minutes" class="w-full rounded-lg border-gray-200">
-												<option value="0" {{ old('duration_minutes', 0) == 0 ? 'selected' : '' }}>0 мин.</option><option value="5" {{ old('duration_minutes', 0) == 5 ? 'selected' : '' }}>5 мин.</option><option value="10" {{ old('duration_minutes', 0) == 10 ? 'selected' : '' }}>10 мин.</option><option value="15" {{ old('duration_minutes', 0) == 15 ? 'selected' : '' }}>15 мин.</option><option value="20" {{ old('duration_minutes', 0) == 20 ? 'selected' : '' }}>20 мин.</option><option value="25" {{ old('duration_minutes', 0) == 25 ? 'selected' : '' }}>25 мин.</option><option value="30" {{ old('duration_minutes', 0) == 30 ? 'selected' : '' }}>30 мин.</option><option value="35" {{ old('duration_minutes', 0) == 35 ? 'selected' : '' }}>35 мин.</option><option value="40" {{ old('duration_minutes', 0) == 40 ? 'selected' : '' }}>40 мин.</option><option value="45" {{ old('duration_minutes', 0) == 45 ? 'selected' : '' }}>45 мин.</option><option value="50" {{ old('duration_minutes', 0) == 50 ? 'selected' : '' }}>50 мин.</option><option value="55" {{ old('duration_minutes', 0) == 55 ? 'selected' : '' }}>55 мин.</option>
+												<option value="0" {{ old('duration_minutes', 0) == 0 ? 'selected' : '' }}>0 {{ __(\'events.dur_m_short\') }}</option><option value="5" {{ old('duration_minutes', 0) == 5 ? 'selected' : '' }}>5 {{ __(\'events.dur_m_short\') }}</option><option value="10" {{ old('duration_minutes', 0) == 10 ? 'selected' : '' }}>10 {{ __(\'events.dur_m_short\') }}</option><option value="15" {{ old('duration_minutes', 0) == 15 ? 'selected' : '' }}>15 {{ __(\'events.dur_m_short\') }}</option><option value="20" {{ old('duration_minutes', 0) == 20 ? 'selected' : '' }}>20 {{ __(\'events.dur_m_short\') }}</option><option value="25" {{ old('duration_minutes', 0) == 25 ? 'selected' : '' }}>25 {{ __(\'events.dur_m_short\') }}</option><option value="30" {{ old('duration_minutes', 0) == 30 ? 'selected' : '' }}>30 {{ __(\'events.dur_m_short\') }}</option><option value="35" {{ old('duration_minutes', 0) == 35 ? 'selected' : '' }}>35 {{ __(\'events.dur_m_short\') }}</option><option value="40" {{ old('duration_minutes', 0) == 40 ? 'selected' : '' }}>40 {{ __(\'events.dur_m_short\') }}</option><option value="45" {{ old('duration_minutes', 0) == 45 ? 'selected' : '' }}>45 {{ __(\'events.dur_m_short\') }}</option><option value="50" {{ old('duration_minutes', 0) == 50 ? 'selected' : '' }}>50 {{ __(\'events.dur_m_short\') }}</option><option value="55" {{ old('duration_minutes', 0) == 55 ? 'selected' : '' }}>55 {{ __(\'events.dur_m_short\') }}</option>
 												</select>
 											</div>
 											<input type="hidden" name="duration_sec" id="duration_sec" value="0">
@@ -155,9 +155,9 @@
 										</div>
 										
 										<ul class="list f-16 mt-1">
-											<li>Дни — для кемпов и турниров</li>
-											<li>Часы — для тренировок и игр  </li>
-											<li>Минуты — точная настройка длительности</li>
+											<li>{{ __('events.duration_hint_camps') }}</li>
+											<li>{{ __('events.duration_hint_games') }}</li>
+											<li>{{ __('events.duration_hint_min') }}</li>
 										</ul>										
 									</div>
 								</div>
@@ -198,28 +198,28 @@
 								{{-- ✅ Registration timings (Step 2) --}}
 								<div class="col-lg-8" id="reg_timing_box" data-show-if="allow_registration=1">
 									<div class="card">
-										<label>Окно регистрации</label>
+										<label>{{ __('events.reg_window_title') }}</label>
 										<hr class="mb-1">
 										<div class="row">
 											<div class="col-sm-4">
-												<label>Начало регистрации</label>
+												<label>{{ __('events.reg_starts_label') }}</label>
 												<input type="hidden" name="reg_starts_days_before" id="reg_starts_days_before" value="{{ $oldRegStartsDaysBefore }}">
 										<input type="hidden" name="reg_starts_hours_before" id="reg_starts_hours_before" value="{{ old('reg_starts_hours_before', 0) }}">
 												<div class="d-flex" style="gap:.5rem;align-items:center">
 												<select id="reg_starts_days_sel" name="reg_starts_d" style="width:auto">
 													@for ($d = 0; $d <= 90; $d++)
-														<option value="{{ $d }}" @selected($oldRegStartsDaysBefore == $d)>{{ $d }} д</option>
+														<option value="{{ $d }}" @selected($oldRegStartsDaysBefore == $d)>{{ $d }} {{ __(\'events.dur_d_short\') }}</option>
 													@endfor
 												</select>
 												<select id="reg_starts_hours_sel" name="reg_starts_h" style="width:auto">
 													@for ($h = 0; $h <= 23; $h++)
-														<option value="{{ $h }}" @selected(($oldRegStartsHoursBefore ?? 0) == $h)>{{ $h }} ч</option>
+														<option value="{{ $h }}" @selected(($oldRegStartsHoursBefore ?? 0) == $h)>{{ $h }} {{ __(\'events.dur_h_short\') }}</option>
 													@endfor
 												</select>
 												</div>
 												<ul class="list f-16 mt-1">
-													<li>До начала мероприятия.</li>
-													<li>По умолчанию: 3 дня.</li>
+													<li>{{ __('events.until_event_start') }}</li>
+													<li>{{ __('events.reg_starts_default') }}</li>
 												</ul>
 												<div id="reg_starts_hint" class="f-13 mt-1 b-600" style="color:var(--green)"></div>
 												<script>
@@ -240,12 +240,12 @@ if (hiddenH) hiddenH.value = h;
 																var start = new Date(startsInput.value);
 																start.setDate(start.getDate() - d);
 																start.setHours(start.getHours() - h);
-																var days = ['вс','пн','вт','ср','чт','пт','сб'];
+																var days = @json([__('events.dow_short.7'),__('events.dow_short.1'),__('events.dow_short.2'),__('events.dow_short.3'),__('events.dow_short.4'),__('events.dow_short.5'),__('events.dow_short.6')]);
 																var dd = String(start.getDate()).padStart(2,'0');
 																var mm = String(start.getMonth()+1).padStart(2,'0');
 																var hh = String(start.getHours()).padStart(2,'0');
 																var mi = String(start.getMinutes()).padStart(2,'0');
-																hint.textContent = 'Регистрация начнется: ' + dd + '.' + mm + ' ' + days[start.getDay()] + '. в ' + hh + ':' + mi;
+																hint.textContent = @json(__('events.reg_starts_hint')) + dd + '.' + mm + ' ' + days[start.getDay()] + '. ' + hh + ':' + mi;
 															} catch(e) { hint.textContent = ''; }
 														}
 													}
@@ -257,54 +257,54 @@ if (hiddenH) hiddenH.value = h;
 												</script>
 											</div>
 											<div class="col-sm-4">
-												<label>Окончание регистрации</label>
+												<label>{{ __('events.reg_ends_label') }}</label>
 												<input type="hidden" name="reg_ends_minutes_before" id="reg_ends_minutes_before" value="{{ $oldRegEndsMinutesBefore }}">
 												<div class="d-flex" style="gap:.5rem;align-items:center">
 												<select id="reg_ends_hours" name="reg_ends_h" style="width:auto">
 												@for ($h = 0; $h <= 24; $h++)
-													<option value="{{ $h }}" @selected($regEndsHours == $h)>{{ $h }} ч</option>
+													<option value="{{ $h }}" @selected($regEndsHours == $h)>{{ $h }} {{ __(\'events.dur_h_short\') }}</option>
 												@endfor
 												</select>
 												<select id="reg_ends_mins" name="reg_ends_m" style="width:auto">
 												@foreach ([0,10,15,20,30,40,50] as $m)
-													<option value="{{ $m }}" @selected($regEndsMinutes == $m)>{{ $m }} мин</option>
+													<option value="{{ $m }}" @selected($regEndsMinutes == $m)>{{ $m }} {{ __(\'events.dur_m_short\') }}</option>
 												@endforeach
 												</select>
 												</div>
 												<ul class="list f-16 mt-1">
-													<li>До начала мероприятия.</li>
-													<li>По умолчанию: 15 минут.</li>
+													<li>{{ __('events.until_event_start') }}</li>
+													<li>{{ __('events.reg_ends_default') }}</li>
 												</ul>
 											</div>
 											
 											<div class="col-sm-4">
-												<label>Запрет отмены записи</label>
+												<label>{{ __('events.cancel_lock_label') }}</label>
 												<input type="hidden" name="cancel_lock_minutes_before" id="cancel_lock_minutes_before" value="{{ $oldCancelLockMinutesBefore }}">
 												<div class="d-flex" style="gap:.5rem;align-items:center">
 												<select id="cancel_lock_hours" name="cancel_lock_h" style="width:auto">
 												@for ($h = 0; $h <= 24; $h++)
-													<option value="{{ $h }}" @selected($cancelLockHours == $h)>{{ $h }} ч</option>
+													<option value="{{ $h }}" @selected($cancelLockHours == $h)>{{ $h }} {{ __(\'events.dur_h_short\') }}</option>
 												@endfor
 												</select>
 												<select id="cancel_lock_mins" name="cancel_lock_m" style="width:auto">
 												@foreach ([0,10,15,20,30,40,50] as $m)
-													<option value="{{ $m }}" @selected($cancelLockMinutes == $m)>{{ $m }} мин</option>
+													<option value="{{ $m }}" @selected($cancelLockMinutes == $m)>{{ $m }} {{ __(\'events.dur_m_short\') }}</option>
 												@endforeach
 												</select>
 												</div>
 												<ul class="list f-16 mt-1">
-													<li>До начала мероприятия.</li>
-													<li>По умолчанию: 1 час.</li>
+													<li>{{ __('events.until_event_start') }}</li>
+													<li>{{ __('events.cancel_lock_default') }}</li>
 												</ul>
 											</div>
 										</div>
 										
 										<ul class="list f-16 mt-1">
 											{{--
-											<li>Эти настройки применяются только если в шаге 1 выбрано “Регистрация игроков через сервис: Да”.</li>
+											<li>{{ __('events.step2_extra_hint') }}</li>
 											--}}	
-											<li>Время считается от <span class="f-600">начала мероприятия</span>.</li>
-											<li>Пример: “Запрет отмены 60 минут” → за час до начала кнопка отмены станет недоступной.</li>
+											<li>{!! __('events.reg_window_note_1') !!}</li>
+											<li>{{ __('events.reg_window_note_2') }}</li>
 										</ul>									
 
 										{{-- Отдельное начало регистрации для ограничиваемого пола --}}
@@ -313,10 +313,10 @@ if (hiddenH) hiddenH.value = h;
 											<div class="row">
 												<div class="col-sm-6">
 													<label>
-														<span id="gender_limited_reg_label">Ограничиваемый пол</span>: начало регистрации
+														<span id="gender_limited_reg_label">{{ __('events.gender_limited_neutral') }}</span>{{ __('events.gender_limited_reg_starts') }}
 													</label>
 													<select name="game_gender_limited_reg_starts_days_before" id="game_gender_limited_reg_starts_days_before">
-														<option value="">— не задано —</option>
+														<option value="">{{ __('events.gender_limited_reg_unset') }}</option>
 														@for ($d = 0; $d <= 90; $d++)
 															<option value="{{ $d }}" 
 																@selected(old('game_gender_limited_reg_starts_days_before', $prefill['game_gender_limited_reg_starts_days_before'] ?? '') == $d)>
@@ -325,9 +325,9 @@ if (hiddenH) hiddenH.value = h;
 														@endfor
 													</select>
 													<ul class="list f-16 mt-1">
-														<li class="b-600">Дней до</li>
-														<li>Если пусто — действует общее «Начало регистрации».</li>
-														<li>Значение должно быть меньше или равно общему.</li>
+														<li class="b-600">{{ __('events.gender_limited_days_to') }}</li>
+														<li>{{ __('events.gender_limited_reg_hint1') }}</li>
+														<li>{{ __('events.gender_limited_reg_hint2') }}</li>
 													</ul>
 												</div>
 											</div>
@@ -338,7 +338,7 @@ if (hiddenH) hiddenH.value = h;
 							</div>
 						</div>
 						<div class="ramka" data-show-if="allow_registration=1">
-							<h2 class="-mt-05">Повторение мероприятия</h2>		
+							<h2 class="-mt-05">{{ __('events.recurrence_title') }}</h2>		
 							
 							{{-- ✅ Повторение перенесено сюда (Step 2) --}}
 							<div id="recurrence_box">
@@ -348,11 +348,11 @@ if (hiddenH) hiddenH.value = h;
 										<input type="hidden" name="is_recurring" value="0">
 										<input type="checkbox" name="is_recurring" value="1" id="is_recurring">
 										<div class="custom-checkbox"></div>
-										<span>Повторяющееся мероприятие</span>
+										<span>{{ __('events.recurrence_toggle') }}</span>
 									</label>	
 									
 									<ul class="list f-16 mt-1" id="recurrence_disabled_hint">
-										<li>Повторы доступны только при включённой регистрации игроков.</li>
+										<li>{{ __('events.recurrence_disabled_hint') }}</li>
 									</ul>										
 									
 								</div>
@@ -362,30 +362,30 @@ if (hiddenH) hiddenH.value = h;
 									{{-- type --}}
 									<div class="col-md-4">
 										<div class="card">
-											<label>Тип повторения</label>
+											<label>{{ __('events.recurrence_type') }}</label>
 											<select name="recurrence_type" id="recurrence_type">
-												<option value="">— выбрать —</option>
-												<option value="daily">Ежедневно</option>
-												<option value="weekly">Еженедельно</option>
-												<option value="monthly">Ежемесячно</option>
+												<option value="">{{ __('events.tournament_choose') }}</option>
+												<option value="daily">{{ __('events.recurrence_daily') }}</option>
+												<option value="weekly">{{ __('events.recurrence_weekly') }}</option>
+												<option value="monthly">{{ __('events.recurrence_monthly') }}</option>
 											</select>
 											
 											{{-- WEEKDAYS --}}
 											<div class="mt-2" id="weekdays_wrap" style="display:none;">
 												
 												<label>
-													Дни недели
+													{{ __('events.recurrence_weekdays') }}
 												</label>
 												
 												<div class="row row2">
 													@foreach([
-													1 => 'Понедельник',
-													2 => 'Вторник', 
-													3 => 'Среда',
-													4 => 'Четверг',
-													5 => 'Пятница',
-													6 => 'Суббота',
-													7 => 'Воскресенье'
+													1 => __('events.weekdays.1'),
+													2 => __('events.weekdays.2'), 
+													3 => __('events.weekdays.3'),
+													4 => __('events.weekdays.4'),
+													5 => __('events.weekdays.5'),
+													6 => __('events.weekdays.6'),
+													7 => __('events.weekdays.7')
 													] as $num => $label)
 													<div class="col-6">
 														<label class="checkbox-item">
@@ -407,20 +407,20 @@ if (hiddenH) hiddenH.value = h;
 									<div class="col-md-4">
 										<div class="card">
 											<label>
-												Окончание повторов
+												{{ __('events.recurrence_end') }}
 											</label>
 											
 											<div class="flex flex-col gap-2">
 												<label class="radio-item">
 													<input checked type="radio" name="recurrence_end_type" value="none">
 													<div class="custom-radio"></div>
-													<span>Без окончания</span>
+													<span>{{ __('events.recurrence_end_none') }}</span>
 												</label>
 												
 												<label class="radio-item">
 													<input type="radio" name="recurrence_end_type" value="until">
 													<div class="custom-radio"></div>
-													<span>До даты</span>
+													<span>{{ __('events.recurrence_end_until') }}</span>
 												</label>
 												<div class="mb-1">
 													<input type="date" name="recurrence_end_until">
@@ -428,13 +428,13 @@ if (hiddenH) hiddenH.value = h;
 												<label class="radio-item">
 													<input type="radio" name="recurrence_end_type" value="count">
 													<div class="custom-radio"></div>
-													<span>По количеству</span>
+													<span>{{ __('events.recurrence_end_count') }}</span>
 												</label>
 												
 												<input type="number"
 												min="1"
 												name="recurrence_end_count"
-												placeholder="например 10">
+												placeholder="{{ __('events.recurrence_count_ph') }}">
 												<div class="pb-05"></div>												
 											</div>
 										</div>									
@@ -444,7 +444,7 @@ if (hiddenH) hiddenH.value = h;
 									{{-- interval --}}
 									<div class="col-md-4">
 										<div class="card">
-											<label>Интервал</label>
+											<label>{{ __('events.recurrence_interval') }}</label>
 											<input type="number"
 											min="1" max="365"
 											id="recurrence_interval"
@@ -452,8 +452,8 @@ if (hiddenH) hiddenH.value = h;
 											value="1">
 											
 											<ul class="list f-16 mt-1">
-												<li>1 = каждый раз</li>
-												<li>2 = через раз</li>
+												<li>{{ __('events.recurrence_int_1') }}</li>
+												<li>{{ __('events.recurrence_int_2') }}</li>
 											</ul>										
 										</div>
 									</div>
@@ -593,18 +593,18 @@ if (hiddenH) hiddenH.value = h;
 						{{-- СЕРИЯ ТУРНИРОВ (Season / League) --}}
 						{{-- ══════════════════════════════════════════════════ --}}
 						<div class="ramka" id="season_league_box" style="display:none;">
-							<h2 class="-mt-05">Серия турниров</h2>
+							<h2 class="-mt-05">{{ __('events.season_title') }}</h2>
 
 							<label class="checkbox-item">
 								<input type="hidden" name="create_season" value="0">
 								<input type="checkbox" name="create_season" value="1" id="create_season">
 								<div class="custom-checkbox"></div>
-								<span>Создать как серию турниров Лиги</span>
+								<span>{{ __('events.season_create') }}</span>
 							</label>
 
 							<ul class="list f-16 mt-1 mb-2" id="season_hint">
-								<li>Команды переносятся между турами, накопительный рейтинг и статистика.</li>
-								<li>Каждая дата повторения = отдельный тур серии.</li>
+								<li>{{ __('events.season_hint_1') }}</li>
+								<li>{{ __('events.season_hint_2') }}</li>
 							</ul>
 
 							<div id="season_fields" class="mt-2">
@@ -613,11 +613,11 @@ if (hiddenH) hiddenH.value = h;
 								<div class="row">
 									<div class="col-md-6">
 										<div class="card">
-											<label>Лига</label>
+											<label>{{ __('events.season_league_label') }}</label>
 											<select name="season_league_mode" id="season_league_mode">
-												<option value="new">Создать новую лигу</option>
+												<option value="new">{{ __('events.season_league_new') }}</option>
 												@if(isset($organizerSeasons) && $organizerSeasons->count())
-													<option value="existing">Выбрать существующую</option>
+													<option value="existing">{{ __('events.season_league_existing') }}</option>
 												@endif
 											</select>
 										</div>
@@ -628,12 +628,12 @@ if (hiddenH) hiddenH.value = h;
 								<div class="row mt-2" id="new_league_fields">
 									<div class="col-md-6">
 										<div class="card">
-											<label for="new_league_name">Название лиги</label>
+											<label for="new_league_name">{{ __('events.season_league_name') }}</label>
 											<input type="text"
 												id="new_league_name"
 												name="new_league_name"
-												value="{{ old('new_league_name', 'Основная лига') }}"
-												placeholder="Например: Лига Hard"
+												value="{{ old('new_league_name', __('events.season_league_default')) }}"
+												placeholder="{{ __('events.season_league_ph') }}"
 												class="w-full rounded-lg border-gray-200">
 										</div>
 									</div>
@@ -643,16 +643,16 @@ if (hiddenH) hiddenH.value = h;
 								<div class="row mt-2" id="existing_league_fields" style="display:none;">
 									<div class="col-md-4">
 										<div class="card">
-											<label>Лига</label>
+											<label>{{ __('events.season_league_label') }}</label>
 											<select id="top_league_select">
-												<option value="">— выбрать лигу —</option>
+												<option value="">{{ __('events.season_league_choose') }}</option>
 												@if(isset($organizerSeasons))
 													@php
 													$topLeaguesForSelect = [];
 													foreach($organizerSeasons as $s) {
 														$lid = $s->league_id;
 														if ($lid && !isset($topLeaguesForSelect[$lid])) {
-															$topLeaguesForSelect[$lid] = $s->league?->name ?? ('Лига #'.$lid);
+															$topLeaguesForSelect[$lid] = $s->league?->name ?? (__('events.season_league_n', ['id' => $lid]));
 														}
 													}
 													@endphp
@@ -666,18 +666,18 @@ if (hiddenH) hiddenH.value = h;
 									{{-- Сезон — показывается после выбора лиги --}}
 									<div class="col-md-4" id="season_col" style="display:none;">
 										<div class="card">
-											<label>Сезон</label>
+											<label>{{ __('events.season_label') }}</label>
 											<select name="existing_season_id" id="existing_season_id">
-												<option value="">— выбрать сезон —</option>
+												<option value="">{{ __('events.season_choose') }}</option>
 											</select>
 										</div>
 									</div>
 									{{-- Дивизион — показывается после выбора сезона --}}
 									<div class="col-md-4" id="division_col" style="display:none;">
 										<div class="card">
-											<label>Дивизион</label>
+											<label>{{ __('events.division_label') }}</label>
 											<select name="existing_league_id" id="existing_league_id">
-												<option value="">— выбрать дивизион —</option>
+												<option value="">{{ __('events.division_choose') }}</option>
 											</select>
 										</div>
 									</div>
@@ -708,7 +708,7 @@ if (hiddenH) hiddenH.value = h;
 									$lid = $s->league_id;
 									if (!$lid) continue;
 									if (!isset($leaguesJs[$lid])) {
-										$lname = $s->league?->name ?? ('Лига #'.$lid);
+										$lname = $s->league?->name ?? (__('events.season_league_n', ['id' => $lid]));
 										$leaguesJs[$lid] = ['id' => $lid, 'name' => $lname, 'seasons' => []];
 									}
 									$divs = [];
@@ -746,8 +746,8 @@ if (hiddenH) hiddenH.value = h;
 
 							function populateSeasons() {
 								const lid = parseInt(topLeagueSelect ? topLeagueSelect.value : 0);
-								seasonSelect.innerHTML = '<option value="">— выбрать сезон —</option>';
-								leagueSelect.innerHTML = '<option value="">— выбрать дивизион —</option>';
+								seasonSelect.innerHTML = '<option value="">{{ __('events.season_choose') }}</option>';
+								leagueSelect.innerHTML = '<option value="">{{ __('events.division_choose') }}</option>';
 								divisionCol.style.display = 'none';
 								if (!lid) { seasonCol.style.display = 'none'; return; }
 
@@ -766,7 +766,7 @@ if (hiddenH) hiddenH.value = h;
 							function populateDivisions() {
 								const lid    = parseInt(topLeagueSelect ? topLeagueSelect.value : 0);
 								const sid    = parseInt(seasonSelect.value);
-								leagueSelect.innerHTML = '<option value="">— выбрать дивизион —</option>';
+								leagueSelect.innerHTML = '<option value="">{{ __('events.division_choose') }}</option>';
 								divisionCol.style.display = 'none';
 								if (!lid || !sid) return;
 
@@ -802,9 +802,9 @@ if (hiddenH) hiddenH.value = h;
 
 						<div class="ramka text-center">
 							<button type="button" class="btn btn-secondary" data-back>
-								Назад
+								{{ __('events.btn_back') }}
 							</button>
 							<button type="button" class="btn" data-next>
-								Дальше
+								{{ __('events.btn_next') }}
 							</button>
 						</div>							

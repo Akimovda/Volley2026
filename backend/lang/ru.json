@@ -1,0 +1,11 @@
+{
+    "Name": "Имя",
+    "Email": "Email",
+    "Password": "Пароль",
+    "Confirm Password": "Подтвердите пароль",
+    "Already registered?": "Уже зарегистрированы?",
+    "Register": "Зарегистрироваться",
+    "Terms of Service": "Условия использования",
+    "Privacy Policy": "Политика конфиденциальности",
+    "I agree to the :terms_of_service and :privacy_policy": "Я принимаю :terms_of_service и :privacy_policy"
+}
