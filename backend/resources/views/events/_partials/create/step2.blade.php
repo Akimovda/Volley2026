@@ -240,7 +240,8 @@ if (hiddenH) hiddenH.value = h;
 																var start = new Date(startsInput.value);
 																start.setDate(start.getDate() - d);
 																start.setHours(start.getHours() - h);
-																var days = @json([__('events.dow_short.7'),__('events.dow_short.1'),__('events.dow_short.2'),__('events.dow_short.3'),__('events.dow_short.4'),__('events.dow_short.5'),__('events.dow_short.6')]);
+																@php $jsDows = [__('events.dow_short.7'), __('events.dow_short.1'), __('events.dow_short.2'), __('events.dow_short.3'), __('events.dow_short.4'), __('events.dow_short.5'), __('events.dow_short.6')]; @endphp
+																var days = {!! json_encode($jsDows) !!};
 																var dd = String(start.getDate()).padStart(2,'0');
 																var mm = String(start.getMonth()+1).padStart(2,'0');
 																var hh = String(start.getHours()).padStart(2,'0');
