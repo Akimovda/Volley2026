@@ -70,8 +70,7 @@
 			body.has-app-banner .fix-header { top: var(--app-banner-h, 0px) !important; }
 			/* Нативное приложение — скрыть веб-элементы */
 			.is-app footer,
-			.is-app .fix-header-btn-theme,
-			.is-app .fix-header-btn-lang {
+			.is-app .fix-header-btn-theme {
 			display: none !important;
 			}
 			/* Переключатель языка */
