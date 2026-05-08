@@ -52,7 +52,9 @@ $mins = $starts->diffInMinutes($ends);
 $h = intdiv($mins, 60);
 $m = $mins % 60;
 
-$durationLabel = ($h > 0 ? "{$h}ч " : '') . ($m > 0 ? "{$m}м" : ($h > 0 ? '' : "{$mins}м"));
+$dHr = __('events.dur_hours_short');
+$dMn = __('events.dur_min_short');
+$durationLabel = ($h > 0 ? "{$h}{$dHr} " : '') . ($m > 0 ? "{$m}{$dMn}" : ($h > 0 ? '' : "{$mins}{$dMn}"));
 }
 
 // =========================
@@ -124,7 +126,7 @@ $hasCoords =
 		@if (session('private_link'))
         <div class="ramka">
 			<div class="alert alert-info">
-				<div class="b-600 mb-1">🔗 Приватная ссылка</div>
+				<div class="b-600 mb-1">{{ __('events.show_private_link_title') }}</div>
 				<a
                 class="blink"
                 href="{{ session('private_link') }}"
@@ -143,7 +145,7 @@ $hasCoords =
 		<x-slot name="breadcrumbs">
 			<li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
 				<a href="{{ route('events.index') }}" itemprop="item">
-					<span itemprop="name">Мероприятия</span>
+					<span itemprop="name">{{ __('events.index_title') }}</span>
 				</a>
 				<meta itemprop="position" content="2">
 			</li>
@@ -251,61 +253,61 @@ $hasCoords =
 					{{-- Блок оплаты для организатора --}}
 					@if($isOwner && $adStatus === 'pending' && $adPrice > 0)
 					<div class="ramka">
-						<h2 class="-mt-05">💰 Оплата размещения</h2>
-						<p class="f-15">Для публикации рекламного мероприятия необходимо оплатить размещение.</p>
+						<h2 class="-mt-05">{{ __('events.show_ad_payment_title') }}</h2>
+						<p class="f-15">{{ __('events.show_ad_payment_lead') }}</p>
 						<div class="alert alert-warning">
-							Стоимость: <strong>{{ $adPrice }} ₽</strong><br>
+							{{ __('events.show_ad_price_label') }} <strong>{{ $adPrice }} ₽</strong><br>
 							@if($adExpires)
-							⏰ Оплатите до: <strong>{{ \Carbon\Carbon::parse($adExpires)->format('d.m.Y H:i') }}</strong>
+							{{ __('events.show_ad_pay_until') }} <strong>{{ \Carbon\Carbon::parse($adExpires)->format('d.m.Y H:i') }}</strong>
 							@endif
 						</div>
 						
 						@if($adMethod === 'tbank_link' && $platPaySettings?->tbank_link)
 						<a href="{{ $platPaySettings->tbank_link }}" target="_blank" class="btn w-100 mb-1">
-							💳 Оплатить через Т-Банк
+							{{ __('events.show_ad_pay_tbank') }}
 						</a>
 						@elseif($adMethod === 'sber_link' && $platPaySettings?->sber_link)
 						<a href="{{ $platPaySettings->sber_link }}" target="_blank" class="btn w-100 mb-1">
-							💳 Оплатить через Сбербанк
+							{{ __('events.show_ad_pay_sber') }}
 						</a>
 						@elseif($adMethod === 'yoomoney')
 						@if($event->ad_yookassa_payment_url)
 						<a href="{{ $event->ad_yookassa_payment_url }}" target="_blank" class="btn w-100 mb-1">
-							💳 Оплатить через ЮKassa
+							{{ __('events.show_ad_pay_yookassa') }}
 						</a>
-						<p class="f-13 mt-1" style="opacity:.6">После оплаты мероприятие будет опубликовано автоматически.</p>
+						<p class="f-13 mt-1" style="opacity:.6">{{ __('events.show_ad_pay_yookassa_note') }}</p>
 						@else
-						<div class="alert alert-danger f-14">Ошибка создания платежа. Обратитесь к администратору.</div>
+						<div class="alert alert-danger f-14">{{ __('events.show_ad_pay_error') }}</div>
 						@endif
 						@endif
 						
 						@if(in_array($adMethod, ['tbank_link', 'sber_link']))
 						@if($event->ad_organizer_notified ?? false)
-						<div class="alert alert-info mt-2">⏳ Ожидаем подтверждения от администратора.</div>
+						<div class="alert alert-info mt-2">{{ __('events.show_ad_waiting_admin') }}</div>
 						@else
 						<form method="POST" action="{{ route('events.ad.paid', $event) }}">
 							@csrf
-							<button type="submit" class="btn btn-secondary w-100 mt-1">✅ Я оплатил — уведомить администратора</button>
+							<button type="submit" class="btn btn-secondary w-100 mt-1">{{ __('events.show_ad_paid_btn') }}</button>
 						</form>
 						@endif
 						@endif
 					</div>
 					@elseif($adStatus === 'pending')
 					<div class="ramka">
-						<div class="alert alert-warning">⏳ Мероприятие ожидает подтверждения оплаты.</div>
+						<div class="alert alert-warning">{{ __('events.show_ad_status_pending') }}</div>
 					</div>
 					@endif
 					
 					{{-- Блок организатора --}}
 					<div class="ramka">
-						<h2 class="-mt-05">📣 Рекламное мероприятие</h2>
-						<p class="f-15">Запись осуществляется напрямую через организатора.</p>
+						<h2 class="-mt-05">{{ __('events.show_ad_section_title') }}</h2>
+						<p class="f-15">{{ __('events.show_ad_section_lead') }}</p>
 						@if($event->organizer)
 						@php $org = $event->organizer; @endphp
 						<div class="d-flex fvc gap-1 mt-2">
 							<img src="{{ $org->profile_photo_url }}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;">
 							<div>
-								<div class="f-13" style="opacity:.6">Организатор</div>
+								<div class="f-13" style="opacity:.6">{{ __('events.show_organizer_label') }}</div>
 								<a class="blink b-600" href="{{ route('users.show', $org->id) }}">
 									{{ trim(($org->last_name ?? '') . ' ' . ($org->first_name ?? $org->name)) }}
 								</a>
@@ -313,7 +315,7 @@ $hasCoords =
 						</div>
 						@if($org->phone)
 						<div class="mt-2">
-							<a href="tel:{{ $org->phone }}" class="btn btn-secondary w-100">📞 Позвонить организатору</a>
+							<a href="tel:{{ $org->phone }}" class="btn btn-secondary w-100">{{ __('events.show_call_organizer') }}</a>
 						</div>
 						@endif
 						@endif
@@ -342,19 +344,19 @@ $hasCoords =
 						if (window.VolleyNative && window.VolleyNative.isApp) {
 							window.VolleyNative.share({
 								title: @json($event->title ?? ''),
-								text: 'Присоединяйся к игре на VolleyPlay!',
+								text: @json(__('events.show_share_text')),
 								url: window.location.href
 							});
 						} else if (navigator.share) {
 							navigator.share({
 								title: @json($event->title ?? ''),
-								text: 'Присоединяйся к игре на VolleyPlay!',
+								text: @json(__('events.show_share_text')),
 								url: window.location.href
 							}).catch(function() {});
 						} else {
 							navigator.clipboard.writeText(window.location.href).then(function() {
-								shareBtn.textContent = '✅ Ссылка скопирована';
-								setTimeout(function() { shareBtn.textContent = '🤝 Поделиться'; }, 2000);
+								shareBtn.textContent = @json(__('events.show_link_copied'));
+								setTimeout(function() { shareBtn.textContent = @json(__('events.show_share_btn')); }, 2000);
 							}).catch(function() {});
 						}
 					});
@@ -364,13 +366,13 @@ $hasCoords =
 					calBtn.addEventListener('click', function () {
 						if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.VolleyCalendar) {
 							window.Capacitor.Plugins.VolleyCalendar.addEvent({
-								title: @json($event->title ?? 'Волейбол'),
+								title: @json($event->title ?? __('events.show_calendar_default_title')),
 								location: @json($event->location->name ?? ''),
 								notes: @json(strip_tags($event->description ?? '')),
 								startDate: @json($event->starts_at?->toIso8601String() ?? ''),
 								endDate: @json($event->ends_at?->toIso8601String() ?? '')
 							}).then(function(r) {
-								swal('Готово', 'Событие добавлено в календарь', 'success');
+								swal(@json(__('events.show_calendar_done_title')), @json(__('events.show_calendar_done_text')), 'success');
 							}).catch(function(e) {
 								console.log('[Calendar] error:', e);
 							});

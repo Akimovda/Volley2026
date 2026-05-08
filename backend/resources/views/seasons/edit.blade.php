@@ -1,10 +1,10 @@
 <x-voll-layout body_class="seasons-page">
-	<x-slot name="title">{{ $season->name }} — Управление</x-slot>
+	<x-slot name="title">{{ $season->name }} — {{ __('seasons.btn_manage') }}</x-slot>
 	<x-slot name="h1">{{ $season->name }}</x-slot>
 	
 	<x-slot name="breadcrumbs">
 		<li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
-			<a href="{{ route('leagues.index') }}" itemprop="item"><span itemprop="name">Мои лиги</span></a>
+			<a href="{{ route('leagues.index') }}" itemprop="item"><span itemprop="name">{{ __('seasons.leagues_idx_breadcrumb') }}</span></a>
 			<meta itemprop="position" content="2">
 		</li>
 		@if($season->league)
@@ -19,7 +19,7 @@
 		</li>
 	</x-slot>
 	<x-slot name="h2">
-		{{ $season->direction === 'beach' ? 'Пляжный' : 'Классический' }}
+		{{ $season->direction === 'beach' ? __('seasons.leagues_dir_beach_short') : __('seasons.leagues_dir_classic_short') }}
 		
 	</x-slot>	
 	<x-slot name="t_description">
@@ -34,7 +34,7 @@
 			substr($season->status, 0, 1) === 'a' ? 'success' : 
 			(substr($season->status, 0, 1) === 'c' ? 'danger' : 'warning')
 			}}">
-				{{ $season->status === 'active' ? 'Активен' : ($season->status === 'completed' ? 'Завершён' : 'Черновик') }}
+				{{ $season->status === 'active' ? __('seasons.status_active') : ($season->status === 'completed' ? __('seasons.status_completed') : __('seasons.status_draft')) }}
 			</span>
 		</div>		
 	
@@ -58,27 +58,27 @@
 			<div class="col-lg-4">
 				{{-- Настройки --}}
 				<div class="ramka">
-					<h2 class="-mt-05">Настройки</h2>
+					<h2 class="-mt-05">{{ __('seasons.edit_settings_h2') }}</h2>
 					<form action="{{ route('seasons.update', $season) }}" method="POST">
 						@csrf @method('PUT')
 						
 						<div class="card mb-2">
-							<label>Название</label>
+							<label>{{ __('seasons.leagues_label_name_short') }}</label>
 							<input type="text" name="name" value="{{ $season->name }}" required>
 						</div>
 						
 
 						
 						<div class="card mb-2">
-							<label>Начало</label>
+							<label>{{ __('seasons.label_start') }}</label>
 							<input type="date" name="starts_at" value="{{ $season->starts_at?->format('Y-m-d') }}">
 						</div>
 						<div class="card mb-2">
-							<label>Конец</label>
+							<label>{{ __('seasons.edit_label_end_short') }}</label>
 							<input type="date" name="ends_at" value="{{ $season->ends_at?->format('Y-m-d') }}">
 						</div>
 						
-						<button type="submit" class="btn btn-primary w-100">Сохранить</button>
+						<button type="submit" class="btn btn-primary w-100">{{ __('seasons.btn_save') }}</button>
 					</form>
 				</div>
 				
@@ -88,29 +88,29 @@
 						@if($season->isDraft())
 						<form action="{{ route('seasons.activate', $season) }}" method="POST" style="flex:1">
 							@csrf
-							<button class="btn w-100">Активировать</button>
+							<button class="btn w-100">{{ __('seasons.btn_activate') }}</button>
 						</form>
 						<form action="{{ route('seasons.destroy', $season) }}" method="POST" style="flex:1"
-						onsubmit="return confirm('Удалить сезон?')">
+						onsubmit="return confirm({!! json_encode(__('seasons.confirm_delete_season')) !!})">
 							@csrf @method('DELETE')
 							<button class="btn btn-danger btn-alert w-100"
-							data-title="Удалить сезон?"
-							data-text="Все дивизионы также будут удалены. Отменить нельзя!"
+							data-title="{{ __('seasons.confirm_delete_season') }}"
+							data-text="{{ __('seasons.delete_season_text') }}"
 							data-icon="warning"
-							data-confirm-text="Да, удалить"
-							data-cancel-text="Отмена">Удалить</button>
+							data-confirm-text="{{ __('seasons.btn_delete') }}"
+							data-cancel-text="{{ __('seasons.btn_cancel') }}">{{ __('seasons.btn_delete') }}</button>
 						</form>
 						@elseif($season->isActive())
 						<form action="{{ route('seasons.complete', $season) }}" method="POST" style="flex:1"
-						onsubmit="return confirm('Завершить сезон?')">
+						onsubmit="return confirm({!! json_encode(__('seasons.confirm_complete_season')) !!})">
 							@csrf
-							<button class="btn btn-secondary w-100">Завершить сезон</button>
+							<button class="btn btn-secondary w-100">{{ __('seasons.btn_complete_season') }}</button>
 						</form>
 						@endif
 					</div>
 					
 					<div class="mt-2">
-						Публичная ссылка: <br><a class="blink" href="{{ route('seasons.show.slug', [$season->league?->slug ?? 'league', $season->slug]) }}" target="_blank">/l/{{ $season->league?->slug ?? 'league' }}/s/{{ $season->slug }}</a>
+						{{ __('seasons.leagues_public_link_label') }} <br><a class="blink" href="{{ route('seasons.show.slug', [$season->league?->slug ?? 'league', $season->slug]) }}" target="_blank">/l/{{ $season->league?->slug ?? 'league' }}/s/{{ $season->slug }}</a>
 					</div>
 				</div>
 				
@@ -119,25 +119,25 @@
 				
 				{{-- Добавить лигу --}}
 				<div class="ramka">
-					<h2 class="-mt-05">Добавить дивизион</h2>
+					<h2 class="-mt-05">{{ __('seasons.add_division_h2') }}</h2>
 					<form action="{{ route('seasons.divisions.store', $season) }}" method="POST">
 						@csrf
 						<div class="row">
 							<div class="col-md-8">
 								<div class="card">
-									<label>Название дивизиона</label>
+									<label>{{ __('seasons.label_division_name') }}</label>
 									<input type="text" name="name" placeholder="Hard / Medium / Lite" required>
 								</div>
 							</div>
 							<div class="col-md-4">
 								<div class="card">
-									<label>Макс. команд</label>
+									<label>{{ __('seasons.label_max_teams') }}</label>
 									<input type="number" name="max_teams" min="2" placeholder="—">
 								</div>
 							</div>
 						</div>	
 						<div class="text-center mt-2">
-							<button type="submit" class="btn btn-primary">Добавить</button>
+							<button type="submit" class="btn btn-primary">{{ __('seasons.btn_add') }}</button>
 						</div>
 					</form>
 				</div>
@@ -147,12 +147,12 @@
 				@forelse($season->leagues as $league)
 				<div class="ramka">
 					<div class="d-flex between fvc mb-2">
-						<h2 class="-mt-05 mb-0">Дивизион: {{ $league->name }}</h2>
+						<h2 class="-mt-05 mb-0">{{ __('seasons.division_label') }} {{ $league->name }}</h2>
 						<div>
-							<strong class="cd">{{ $league->activeTeams->count() }}</strong> команд {!! $league->max_teams ? ' / макс. <strong class="cd">' . $league->max_teams . '</strong>' : '' !!}
+							<strong class="cd">{{ $league->activeTeams->count() }}</strong> {{ __('seasons.teams_short') }} {!! $league->max_teams ? ' / ' . __('seasons.max_short') . ' <strong class="cd">' . $league->max_teams . '</strong>' : '' !!}
 							
 							@if($league->reserveTeams->count() > 0)
-							· резерв: <strong class="cd">{{ $league->reserveTeams->count() }}</strong>
+							· {{ __('seasons.reserve_label') }} <strong class="cd">{{ $league->reserveTeams->count() }}</strong>
 							@endif
 						</div>
 					</div>
@@ -172,24 +172,24 @@
 							@endif
 						</div>
 						<form action="{{ route('divisions.teams.destroy', $lt) }}" method="POST"
-						onsubmit="return confirm('Убрать из дивизиона?')">
+						onsubmit="return confirm({!! json_encode(__('seasons.confirm_remove_team')) !!})">
 							@csrf @method('DELETE')
 							<button class="icon-delete btn btn-danger btn-alert btn-svg"
-							data-title="Убрать из дивизиона?"
+							data-title="{{ __('seasons.confirm_remove_team') }}"
 							data-icon="warning"
-							data-confirm-text="Да, убрать"
-							data-cancel-text="Отмена"></button>
+							data-confirm-text="{{ __('seasons.btn_remove_yes') }}"
+							data-cancel-text="{{ __('seasons.btn_cancel') }}"></button>
 						</form>
 					</div>
 					@endforeach
 					@else
-					<div class="alert alert-info">Нет команд</div>
+					<div class="alert alert-info">{{ __('seasons.no_teams') }}</div>
 					@endif
 					
 					{{-- Резерв --}}
 					@if($league->reserveTeams->isNotEmpty())
 					<div class="mt-2 p-2" style="background:rgba(128,128,128,.06);border-radius:8px">
-						<span class="f-13 b-600">Резерв:</span>
+						<span class="f-13 b-600">{{ __('seasons.reserve_label_short') }}</span>
 						@foreach($league->reserveTeams as $lt)
 						<span class="f-13 ml-1 px-2 py-1" style="background:rgba(128,128,128,.12);border-radius:6px;display:inline-block;margin:2px">
 							#{{ $lt->reserve_position }} {{ $lt->team?->name ?? $lt->user?->name ?? '—' }}
@@ -200,58 +200,58 @@
 					
 					<div class="d-flex between fvc mt-1">
 						<span>
-							Повышение: <strong class="cd">{{ $league->promoteCount() }}</strong> · Вылет: <strong class="cd">{{ $league->eliminateCount() }}</strong>
+							{{ __('seasons.promotion_label') }} <strong class="cd">{{ $league->promoteCount() }}</strong> · {{ __('seasons.relegation_label') }} <strong class="cd">{{ $league->eliminateCount() }}</strong>
 						</span>
 						<form action="{{ route('divisions.destroy', $league) }}" method="POST"
-						onsubmit="return confirm('Удалить дивизион «{{ $league->name }}»?')">
+						onsubmit="return confirm({!! json_encode(__('seasons.confirm_delete_division', ['name' => '__N__'])) !!}.replace('__N__', @json($league->name)))">
 							@csrf @method('DELETE')
 							<button class="btn btn-danger btn-alert w-100"
-							data-title="Удалить дивизион?"
+							data-title="{{ __('seasons.delete_division_title') }}"
 							data-icon="warning"
-							data-confirm-text="Да, удалить"
-							data-cancel-text="Отмена">Удалить</button>
+							data-confirm-text="{{ __('seasons.btn_delete') }}"
+							data-cancel-text="{{ __('seasons.btn_cancel') }}">{{ __('seasons.btn_delete') }}</button>
 						</form>
 					</div>
 				</div>
 				@empty
 				<div class="ramka">
-					<h2 class="-mt-05">Дивизионы сезона</h2>					
+					<h2 class="-mt-05">{{ __('seasons.divisions_section_h2') }}</h2>					
 					<div class="alert alert-info">
-						Добавьте дивизионы для сезона
+						{{ __('seasons.divisions_add_hint') }}
 					</div>
 				</div>
 				@endforelse
 				
 				{{-- Привязанные турниры --}}
 				<div class="ramka">
-					<h2 class="-mt-05">Турниры сезона</h2>
+					<h2 class="-mt-05">{{ __('seasons.tournaments_section_h2') }}</h2>
 					
 					@if($season->seasonEvents->isNotEmpty())
 					@foreach($season->seasonEvents->sortBy('round_number') as $se)
 					<div class="card d-flex between fvc mb-1" style="padding:8px 12px;flex-wrap:wrap;gap:8px">
 						<div>
-							<span class="b-600">Тур {{ $se->round_number }}</span>
+							<span class="b-600">{{ __('seasons.round_n_short', ['n' => $se->round_number]) }}</span>
 							<a href="{{ route('events.show', $se->event) }}" class="blink ml-1">{{ $se->event->title }}</a>
 							<span class="f-16 ml-1">· {{ $se->league->name }}</span>
 						</div>
 						<div class="d-flex fvc" style="gap:1rem">
 							<span style="padding: 0.5rem 1rem;border-radius: 1rem;" class="f-15 b-600 {{ $se->isCompleted() ? 'alert-success' : 'alert-info' }}">
-								{!! $se->isCompleted() ? '&#10003; Завершён' : 'Ожидает' !!}
+								{!! $se->isCompleted() ? '&#10003; ' . __('seasons.tournament_completed') : __('seasons.tournament_pending') !!}
 							</span>
 							<form action="{{ route('seasons.events.detach', [$season, $se->event]) }}" method="POST"
-							onsubmit="return confirm('Отвязать турнир?')">
+							onsubmit="return confirm({!! json_encode(__('seasons.confirm_unlink_tournament')) !!})">
 								@csrf @method('DELETE')
 							<button class="icon-delete btn btn-danger btn-alert btn-svg"
-							data-title="Отвязать турнир?"
+							data-title="{{ __('seasons.confirm_unlink_tournament') }}"
 							data-icon="warning"
-							data-confirm-text="Да, отвязать"
-							data-cancel-text="Отмена"></button>
+							data-confirm-text="{{ __('seasons.btn_unlink_yes') }}"
+							data-cancel-text="{{ __('seasons.btn_cancel') }}"></button>
 							</form>
 						</div>
 					</div>
 					@endforeach
 					@else
-					<div class="alert alert-info">Нет привязанных турниров</div>
+					<div class="alert alert-info">{{ __('seasons.no_linked_tournaments') }}</div>
 					@endif
 					
 					{{-- Привязать новый --}}
@@ -261,16 +261,16 @@
 							@csrf
 							<div class="d-flex" style="gap:10px;flex-wrap:wrap;align-items:flex-end">
 								<div style="flex:2">
-									<label class="f-13 b-600 mb-1">Турнир</label>
+									<label class="f-13 b-600 mb-1">{{ __('seasons.btn_tournament_short') }}</label>
 									<select name="event_id" required>
-										<option value="">Выберите...</option>
+										<option value="">{{ __('seasons.opt_choose') }}</option>
 										@foreach($availableEvents as $ev)
 										<option value="{{ $ev->id }}">{{ $ev->title }}</option>
 										@endforeach
 									</select>
 								</div>
 								<div style="flex:1">
-									<label class="f-13 b-600 mb-1">Лига</label>
+									<label class="f-13 b-600 mb-1">{{ __('seasons.label_league') }}</label>
 									<select name="league_id" required>
 										@foreach($season->leagues as $lg)
 										<option value="{{ $lg->id }}">{{ $lg->name }}</option>
@@ -278,11 +278,11 @@
 									</select>
 								</div>
 								<div style="width:70px">
-									<label class="f-13 b-600 mb-1">Тур #</label>
+									<label class="f-13 b-600 mb-1">{{ __('seasons.label_round_n') }}</label>
 									<input type="number" name="round_number" min="1" value="{{ $season->currentRound() + 1 }}">
 								</div>
 								<div>
-									<button type="submit" class="btn btn-primary" style="padding:8px 16px">Привязать</button>
+									<button type="submit" class="btn btn-primary" style="padding:8px 16px">{{ __('seasons.btn_link') }}</button>
 								</div>
 							</div>
 						</form>

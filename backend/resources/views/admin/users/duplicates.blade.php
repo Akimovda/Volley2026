@@ -1,6 +1,6 @@
 <x-voll-layout body_class="admin-duplicates-page">
-<x-slot name="title">Дубли игроков</x-slot>
-<x-slot name="h1">👥 Дубли игроков</x-slot>
+<x-slot name="title">{{ __('admin.dupes_title') }}</x-slot>
+<x-slot name="h1">👥 {{ __('admin.dupes_title') }}</x-slot>
 
 <x-slot name="breadcrumbs">
     <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">

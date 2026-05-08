@@ -2,11 +2,11 @@
 <x-voll-layout body_class="broadcasts-page">
     
     <x-slot name="title">
-        Рассылки
+        {{ __('admin.bc_title') }}
 	</x-slot>
     
     <x-slot name="description">
-        Управление рассылками
+        {{ __('admin.bc_t_description') }}
 	</x-slot>
     
     <x-slot name="canonical">
@@ -20,22 +20,22 @@
 	</x-slot>
     
     <x-slot name="h1">
-        Рассылки
+        {{ __('admin.bc_title') }}
 	</x-slot>
     
 	
     
     <x-slot name="t_description">
-        Список всех созданных рассылок
+        {{ __('admin.bc_idx_t_description') }}
 	</x-slot>
     
     <x-slot name="breadcrumbs">
         <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
-            <a href="{{ route('admin.dashboard') }}" itemprop="item"><span itemprop="name">Админ-панель</span></a>
+            <a href="{{ route('admin.dashboard') }}" itemprop="item"><span itemprop="name">{{ __('admin.breadcrumb_dashboard') }}</span></a>
             <meta itemprop="position" content="2">
 		</li>	
         <li itemprop="itemListElement" itemscope="" itemtype="http://schema.org/ListItem">
-            <span itemprop="name">Рассылки</span>
+            <span itemprop="name">{{ __('admin.bc_breadcrumb') }}</span>
             <meta itemprop="position" content="3">
 		</li>
 	</x-slot>
@@ -44,7 +44,7 @@
 	
 		<div data-aos-delay="250" data-aos="fade-up">
 			<a href="{{ route('admin.broadcasts.create') }}" class="btn mt-2">
-				Новая рассылка
+				{{ __('admin.bc_btn_create') }}
 			</a>
 		</div>	
 

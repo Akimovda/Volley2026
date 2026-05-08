@@ -1,40 +1,40 @@
 {{-- resources/views/admin/locations/index.blade.php --}}
 <x-voll-layout body_class="admin-page admin-locations-index">
     <x-slot name="title">
-        Локации (админ-панель)
+        {{ __('admin.loc_index_title') }} ({{ __('admin.breadcrumb_dashboard') }})
 	</x-slot>
 	
     <x-slot name="description">
-        Управление локациями в административной панели
+        {{ __('admin.loc_index_t_description') }}
 	</x-slot>
 	
     <x-slot name="h1">
-        Локации
+        {{ __('admin.loc_index_title') }}
 	</x-slot>
 	
     <x-slot name="h2">
-        Административная панель
+        {{ __('admin.breadcrumb_dashboard') }}
 	</x-slot>
 	
     <x-slot name="breadcrumbs">
         <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
-            <a href="{{ route('admin.dashboard') }}" itemprop="item"><span itemprop="name">Админ-панель</span></a>
+            <a href="{{ route('admin.dashboard') }}" itemprop="item"><span itemprop="name">{{ __('admin.breadcrumb_dashboard') }}</span></a>
             <meta itemprop="position" content="1">
 		</li>
         <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
-            <span itemprop="name">Локации</span>
+            <span itemprop="name">{{ __('admin.loc_breadcrumb') }}</span>
             <meta itemprop="position" content="2">
 		</li>
 	</x-slot>
 	
     <x-slot name="t_description">
-        Управление локациями
+        {{ __('admin.loc_index_t_description') }}
 	</x-slot>	
 	
     <x-slot name="d_description">
 		<div data-aos-delay="250" data-aos="fade-up">
 			<a href="{{ route('admin.locations.create') }}" class="btn mt-2">
-				Добавить локацию
+				{{ __('admin.loc_btn_create') }}
 			</a>
 		</div>
 	</x-slot>
@@ -66,11 +66,11 @@
 				<table class="table">
                     <thead>
                         <tr>
-                            <th>ID</th>
-                            <th style="min-width: 20rem">Город</th>
-                            <th style="min-width: 24rem">Название</th>
-                            <th style="min-width: 24rem">Адрес</th>
-                            <th style="min-width: 10rem">Действия</th>
+                            <th>{{ __('admin.col_id') }}</th>
+                            <th style="min-width: 20rem">{{ __('admin.loc_col_city') }}</th>
+                            <th style="min-width: 24rem">{{ __('admin.loc_col_name') }}</th>
+                            <th style="min-width: 24rem">{{ __('admin.loc_col_address') }}</th>
+                            <th style="min-width: 10rem">{{ __('admin.loc_col_actions') }}</th>
 						</tr>
 					</thead>
                     <tbody>
@@ -114,11 +114,11 @@
                                         @method('DELETE')
 										<button type="submit" 
 										class="icon-delete btn-alert btn btn-danger btn-svg"
-										data-title="Удалить локацию?"
-										data-text="Все фото локации также будут удалены. Отменить нельзя!"
+										data-title="{{ __('admin.loc_confirm_delete') }}"
+										data-text="{{ __('admin.loc_delete_text') }}"
 										data-icon="warning"
-										data-confirm-text="Да, удалить"
-										data-cancel-text="Отмена">
+										data-confirm-text="{{ __('admin.btn_delete') }}"
+										data-cancel-text="{{ __('admin.btn_cancel') }}">
 										</button>										
 										
 										

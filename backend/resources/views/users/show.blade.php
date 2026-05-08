@@ -1,7 +1,7 @@
 {{-- resources/views/users/show.blade.php --}}
 <x-voll-layout body_class="user-show-page">
-<x-slot name="title">{{ ($u ?? $user)?->name ?? 'Игрок' }} — профиль игрока</x-slot>
-<x-slot name="description">Профиль игрока {{ ($u ?? $user)?->name ?? '' }} на VolleyPlay.Club — статистика, позиции, турниры</x-slot>
+<x-slot name="title">{{ ($u ?? $user)?->name ?? __('profile.pub_title_fallback') }} {{ __('profile.pub_title_suffix') }}</x-slot>
+<x-slot name="description">{{ __('profile.pub_description', ['name' => ($u ?? $user)?->name ?? '']) }}</x-slot>
 <x-slot name="canonical">{{ route('users.show', ($u ?? $user)?->id) }}</x-slot>
 
     <div class="v-container py-6">
@@ -16,11 +16,11 @@
                     }
 
                     $posMap = [
-                        'setter'   => 'Связующий',
-                        'outside'  => 'Доигровщик',
-                        'opposite' => 'Диагональный',
-                        'middle'   => 'Центральный блокирующий',
-                        'libero'   => 'Либеро',
+                        'setter'   => __('profile.positions.setter'),
+                        'outside'  => __('profile.positions.outside'),
+                        'opposite' => __('profile.positions.opposite'),
+                        'middle'   => __('profile.positions.middle'),
+                        'libero'   => __('profile.positions.libero'),
                     ];
 
                     $classicPrimary = optional($u?->classicPositions)->firstWhere('is_primary', true)?->position;
@@ -53,7 +53,7 @@
                             : ('https://vk.com/' . $vkIdRaw);
                     }
 
-                    $genderLabel = $u?->gender === 'm' ? 'Мужчина' : ($u?->gender === 'f' ? 'Женщина' : '—');
+                    $genderLabel = $u?->gender === 'm' ? __('profile.idx_gender_m') : ($u?->gender === 'f' ? __('profile.idx_gender_f') : '—');
                     $age = ($u && method_exists($u, 'ageYears')) ? $u->ageYears() : null;
 
                     $cityLabel = $u?->city
@@ -62,15 +62,15 @@
 
                     $headerMeta = array_values(array_filter([
                         $cityLabel,
-                        !is_null($age) ? (($u->gender === 'f' && $u->hide_age) ? '🤷‍♀️' : ($age . ' лет')) : null,
+                        !is_null($age) ? (($u->gender === 'f' && $u->hide_age) ? '🤷‍♀️' : __('profile.card_age_years', ['n' => $age])) : null,
                         $genderLabel !== '—' ? $genderLabel : null,
-                        !empty($u?->height_cm) ? ($u->height_cm . ' см') : null,
+                        !empty($u?->height_cm) ? __('profile.card_height_cm', ['n' => $u->height_cm]) : null,
                     ]));
                 @endphp
 
                 @if(!$u)
                     <div class="v-alert v-alert--warn">
-                        <div class="v-alert__text">Игрок не найден.</div>
+                        <div class="v-alert__text">{{ __('profile.pub_not_found') }}</div>
                     </div>
                 @else
                     {{-- Header --}}
@@ -99,8 +99,8 @@
                             @endif
 
                             <div class="v-actions mt-4 flex flex-wrap gap-2">
-                                <a class="v-btn v-btn--secondary" href="{{ route('users.index') }}">← К списку игроков</a>
-                                <a class="v-btn v-btn--secondary" href="/events">К мероприятиям</a>
+                                <a class="v-btn v-btn--secondary" href="{{ route('users.index') }}">{{ __('profile.pub_back_to_list') }}</a>
+                                <a class="v-btn v-btn--secondary" href="/events">{{ __('profile.pub_to_events') }}</a>
                             </div>
                         </div>
                     </div>
@@ -108,21 +108,21 @@
                     {{-- Contacts --}}
                     <div class="mt-6 v-card">
                         <div class="v-card__body">
-                            <div class="font-semibold text-lg mb-2">Связаться</div>
+                            <div class="font-semibold text-lg mb-2">{{ __('profile.pub_contact_title') }}</div>
 
                             @auth
                                 @if(auth()->id() === $u->id)
                                     <div class="v-alert v-alert--info">
                                         <div class="v-alert__text">
-                                            Это ваш профиль. Разрешение “могут ли со мной связаться” настраивается в
-                                            <a class="underline" href="{{ route('profile.show') }}">Аккаунт</a>.
+                                            {{ __('profile.pub_contact_self') }}
+                                            <a class="underline" href="{{ route('profile.show') }}">{{ __('profile.pub_contact_self_link') }}</a>.
                                         </div>
                                     </div>
                                 @else
                                     @if(!$allowContact)
                                         <div class="v-alert v-alert--info">
                                             <div class="v-alert__text">
-                                                Пользователь запретил связываться с ним.
+                                                {{ __('profile.pub_contact_blocked') }}
                                             </div>
                                         </div>
                                     @else
@@ -146,7 +146,7 @@
                                             @if(!$hasTgLink && !$hasVkLink)
                                                 <div class="v-alert v-alert--info">
                                                     <div class="v-alert__text">
-                                                        У пользователя не указаны публичные контакты (Telegram/VK).
+                                                        {{ __('profile.pub_contact_no_links') }}
                                                     </div>
                                                 </div>
                                             @endif
@@ -154,7 +154,7 @@
 
                                         @if(($u->telegram_id ?? null) && !$hasTgLink)
                                             <div class="text-xs text-gray-500 mt-2 break-words">
-                                                Telegram привязан, но нет username — ссылку на чат показать нельзя.
+                                                {{ __('profile.pub_contact_tg_no_username') }}
                                             </div>
                                         @endif
                                     @endif
@@ -162,7 +162,7 @@
                             @else
                                 <div class="v-alert v-alert--info">
                                     <div class="v-alert__text">
-                                        Чтобы написать пользователю, нужно войти в аккаунт.
+                                        {{ __('profile.pub_contact_login_required') }}
                                     </div>
                                 </div>
                             @endauth
@@ -172,52 +172,52 @@
                     {{-- Personal data --}}
                     <div class="mt-6 v-card">
                         <div class="v-card__body">
-                            <div class="font-semibold text-lg mb-3">Персональные данные</div>
+                            <div class="font-semibold text-lg mb-3">{{ __('profile.pub_personal_title') }}</div>
 
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                                 <div class="rounded-lg border border-gray-100 bg-gray-50 p-3">
-                                    <div class="text-xs text-gray-500">Фамилия</div>
+                                    <div class="text-xs text-gray-500">{{ __('profile.pub_field_lastname') }}</div>
                                     <div class="font-semibold text-gray-900 break-words">{{ $u->last_name ?? '—' }}</div>
                                 </div>
 
                                 <div class="rounded-lg border border-gray-100 bg-gray-50 p-3">
-                                    <div class="text-xs text-gray-500">Имя</div>
+                                    <div class="text-xs text-gray-500">{{ __('profile.pub_field_firstname') }}</div>
                                     <div class="font-semibold text-gray-900 break-words">{{ $u->first_name ?? '—' }}</div>
                                 </div>
 
                                 @can('view-sensitive-profile', $u)
                                     <div class="rounded-lg border border-gray-100 bg-gray-50 p-3">
-                                        <div class="text-xs text-gray-500">Отчество</div>
+                                        <div class="text-xs text-gray-500">{{ __('profile.pub_field_patronymic') }}</div>
                                         <div class="font-semibold text-gray-900 break-words">{{ $u->patronymic ?? '—' }}</div>
                                     </div>
 
                                     <div class="rounded-lg border border-gray-100 bg-gray-50 p-3">
-                                        <div class="text-xs text-gray-500">Телефон</div>
+                                        <div class="text-xs text-gray-500">{{ __('profile.pub_field_phone') }}</div>
                                         <div class="font-semibold text-gray-900 break-words">{{ $u->phone ?? '—' }}</div>
                                     </div>
                                 @endcan
 
                                 <div class="rounded-lg border border-gray-100 bg-gray-50 p-3">
-                                    <div class="text-xs text-gray-500">Пол</div>
+                                    <div class="text-xs text-gray-500">{{ __('profile.pub_field_gender') }}</div>
                                     <div class="font-semibold text-gray-900">{{ $genderLabel }}</div>
                                 </div>
 
                                 <div class="rounded-lg border border-gray-100 bg-gray-50 p-3">
-                                    <div class="text-xs text-gray-500">Город</div>
+                                    <div class="text-xs text-gray-500">{{ __('profile.pub_field_city') }}</div>
                                     <div class="font-semibold text-gray-900 break-words">
                                         {{ $cityLabel ?? '—' }}
                                     </div>
                                 </div>
 
                                 <div class="rounded-lg border border-gray-100 bg-gray-50 p-3">
-                                    <div class="text-xs text-gray-500">Рост</div>
+                                    <div class="text-xs text-gray-500">{{ __('profile.pub_field_height') }}</div>
                                     <div class="font-semibold text-gray-900">
-                                        {{ !empty($u->height_cm) ? ($u->height_cm.' см') : '—' }}
+                                        {{ !empty($u->height_cm) ? __('profile.card_height_cm', ['n' => $u->height_cm]) : '—' }}
                                     </div>
                                 </div>
 
                                 <div class="rounded-lg border border-gray-100 bg-gray-50 p-3">
-                                    <div class="text-xs text-gray-500">Дата рождения</div>
+                                    <div class="text-xs text-gray-500">{{ __('profile.pub_field_birthdate') }}</div>
                                     <div class="font-semibold text-gray-900">
                                         {{ $u->birth_date?->format('Y-m-d') ?? '—' }}
                                     </div>
@@ -228,25 +228,25 @@
 
                     {{-- Skills --}}
                     <div class="mt-6">
-                        <div class="font-semibold text-lg mb-3">Навыки в волейболе</div>
+                        <div class="font-semibold text-lg mb-3">{{ __('profile.pub_skills_title') }}</div>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div class="v-card">
                                 <div class="v-card__body space-y-2">
-                                    <div class="font-semibold text-gray-900">Классический волейбол</div>
+                                    <div class="font-semibold text-gray-900">{{ __('profile.pub_skills_classic') }}</div>
 
                                     <div class="text-sm">
-                                        Уровень:
+                                        {{ __('profile.pub_skills_level') }}
                                         <span class="font-semibold">{{ $u->classic_level ?? '—' }}</span>
                                     </div>
 
                                     <div class="text-sm break-words">
-                                        Амплуа:
+                                        {{ __('profile.pub_skills_role') }}
                                         <span class="font-semibold">
                                             @if($classicPrimary)
-                                                Основное: {{ $posMap[$classicPrimary] ?? $classicPrimary }}
+                                                {{ __('profile.pub_skills_primary') }} {{ $posMap[$classicPrimary] ?? $classicPrimary }}
                                                 @if(!empty($classicExtras))
-                                                    ; Доп.: {{ collect($classicExtras)->map(fn($p)=>$posMap[$p] ?? $p)->join(', ') }}
+                                                    ; {{ __('profile.pub_skills_extra') }} {{ collect($classicExtras)->map(fn($p)=>$posMap[$p] ?? $p)->join(', ') }}
                                                 @endif
                                             @else
                                                 —
@@ -258,22 +258,22 @@
 
                             <div class="v-card">
                                 <div class="v-card__body space-y-2">
-                                    <div class="font-semibold text-gray-900">Пляжный волейбол</div>
+                                    <div class="font-semibold text-gray-900">{{ __('profile.pub_skills_beach') }}</div>
 
                                     <div class="text-sm">
-                                        Уровень:
+                                        {{ __('profile.pub_skills_level') }}
                                         <span class="font-semibold">{{ $u->beach_level ?? '—' }}</span>
                                     </div>
 
                                     <div class="text-sm break-words">
-                                        Зона:
+                                        {{ __('profile.pub_skills_zone') }}
                                         <span class="font-semibold">
                                             @if($u->beach_universal)
-                                                Универсал (2 и 4)
+                                                {{ __('profile.pub_beach_universal') }}
                                             @elseif(!is_null($beachPrimaryZone))
-                                                Основная: {{ $beachPrimaryZone }}
+                                                {{ __('profile.pub_skills_primary_zone') }} {{ $beachPrimaryZone }}
                                                 @if(!empty($beachExtras))
-                                                    ; Доп.: {{ collect($beachExtras)->join(', ') }}
+                                                    ; {{ __('profile.pub_skills_extra') }} {{ collect($beachExtras)->join(', ') }}
                                                 @endif
                                             @else
                                                 —

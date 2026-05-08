@@ -1,11 +1,11 @@
 {{-- resources/views/volleyball_school/index.blade.php --}}
 <x-voll-layout body_class="volleyball-school-page">
 
-    <x-slot name="title">Школы волейбола</x-slot>
-    <x-slot name="description">Школы и сообщества волейбола — тренировки, обучение, команды</x-slot>
+    <x-slot name="title">{{ __('profile.school_idx_title') }}</x-slot>
+    <x-slot name="description">{{ __('profile.school_idx_description') }}</x-slot>
     <x-slot name="canonical">{{ route('volleyball_school.index') }}</x-slot>
-    <x-slot name="h1">Школы волейбола</x-slot>
-    <x-slot name="t_description">Школы, клубы и волейбольные сообщества</x-slot>
+    <x-slot name="h1">{{ __('profile.school_idx_title') }}</x-slot>
+    <x-slot name="t_description">{{ __('profile.school_idx_t_description') }}</x-slot>
 
     <x-slot name="breadcrumbs">
         <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">

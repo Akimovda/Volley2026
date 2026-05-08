@@ -1,7 +1,7 @@
 <x-voll-layout body_class="tournament-score-page">
 @php $isEdit = request()->query('edit') === '1' && $match->isCompleted(); @endphp
-<x-slot name="title">{{ $isEdit ? 'Исправить счёт' : 'Ввод счёта' }} — {{ $event->title }}</x-slot>
-<x-slot name="h1">{{ $isEdit ? 'Исправить счёт' : 'Ввод счёта' }}</x-slot>
+<x-slot name="title">{{ $isEdit ? __('tournaments.score_h1_edit') : __('tournaments.score_h1') }} — {{ $event->title }}</x-slot>
+<x-slot name="h1">{{ $isEdit ? __('tournaments.score_h1_edit') : __('tournaments.score_h1') }}</x-slot>
 
 <x-slot name="breadcrumbs">
     <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
@@ -9,7 +9,7 @@
         <meta itemprop="position" content="2">
     </li>
     <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
-        <span itemprop="name">Счёт матча #{{ $match->match_number }}</span>
+        <span itemprop="name">{{ __('tournaments.score_match_n', ['n' => $match->match_number]) }}</span>
         <meta itemprop="position" content="3">
     </li>
 </x-slot>
@@ -33,7 +33,7 @@
     {{-- Шапка матча --}}
     <div class="card p-3 mb-3" style="text-align:center">
         <div class="f-13 mb-2" style="opacity:.6">
-            Матч #{{ $match->match_number }} · Тур {{ $match->round }} · {{ strtoupper($stage->matchFormat()) }} · до {{ $stage->setPoints() }}@if($match->group) · {{ $match->group->name }}@endif
+            {{ __('tournaments.score_match_header', ['n' => $match->match_number, 'r' => $match->round]) }} · {{ strtoupper($stage->matchFormat()) }} · {{ __('tournaments.score_to_pts') }} {{ $stage->setPoints() }}@if($match->group) · {{ $match->group->name }}@endif
         </div>
         <div class="d-flex between fvc">
             <div style="flex:1;text-align:center">
@@ -78,7 +78,7 @@
 
         @if($isEdit)
         <div class="p-2 mb-3 f-13" style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:8px;color:#92400e">
-            ⚠️ Исправление счёта пересчитает турнирную таблицу
+            {{ __('tournaments.score_edit_warn') }}
         </div>
         @endif
 
@@ -86,7 +86,7 @@
             @for($i = 0; $i < $maxSets; $i++)
                 <div class="card p-3 mb-3 set-row" data-set="{{ $i }}" style="{{ $i >= $existingSetsCount && !isset($existingHome[$i]) ? 'display:none;' : '' }}">
                     <div class="d-flex between fvc">
-                        <span class="b-700 f-14">Сет {{ $i + 1 }}</span>
+                        <span class="b-700 f-14">{{ __('tournaments.score_set_n', ['n' => $i + 1]) }}</span>
                         <div class="d-flex fvc" style="gap:10px">
                             <select name="sets[{{ $i }}][0]" class="score-select" data-set="{{ $i }}" data-side="home"
                                     style="width:60px;text-align:center;font-size:1.2rem;font-weight:700;padding:6px 2px">
@@ -111,23 +111,23 @@
 
         <div class="mt-2 mb-3" style="text-align:center">
             <span id="score_summary" class="f-24 b-800">0 : 0</span>
-            <div class="f-12" style="opacity:.5">по сетам</div>
+            <div class="f-12" style="opacity:.5">{{ __('tournaments.score_by_sets') }}</div>
         </div>
 
         <button type="submit" class="btn btn-primary w-100 p-3 f-16" id="submitBtn" {{ $isEdit ? '' : 'disabled' }}>
-            {{ $isEdit ? 'Сохранить исправленный счёт' : 'Записать счёт' }}
+            {{ $isEdit ? __('tournaments.score_btn_save_edit') : __('tournaments.score_btn_save_new') }}
         </button>
 
         @php
             $backOccId = $match->stage->occurrence_id;
         @endphp
         <a href="{{ route('tournament.setup', $event) }}{{ $backOccId ? '?occurrence_id=' . $backOccId : '' }}" class="btn btn-secondary w-100 p-2 f-14 mt-2" style="text-align:center;display:block">
-            ← Назад
+            {{ __('tournaments.btn_back') }}
         </a>
 
         @if($match->isCompleted())
         <a href="{{ route('tournament.matches.player_stats.form', $match) }}" class="btn btn-secondary w-100 p-2 f-14 mt-2" style="text-align:center;display:block;border:1px solid rgba(37,99,235,.3)">
-            📊 Заполнить статистику игроков
+            📊 {{ __('tournaments.score_fill_stats') }}
         </a>
         @endif
     </form>

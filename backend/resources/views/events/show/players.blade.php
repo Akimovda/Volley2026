@@ -27,7 +27,7 @@
 				<div class="swiper-slide">
 					<div class="hover-image">
 						<a href="{{ $media->getUrl() }}" class="fancybox" data-fancybox="event-gallery">
-							<img src="{{ $media->getUrl('event_thumb') }}" alt="Фото мероприятия {{ $index + 1 }}" loading="lazy">
+							<img src="{{ $media->getUrl('event_thumb') }}" alt="{{ __('events.sp_event_photo_alt', ['n' => $index + 1]) }}" loading="lazy">
 							<span></span>
 							<div class="hover-image-circle"></div>
 						</a>
@@ -41,13 +41,13 @@
 	@else
 	{{-- Фото есть в массиве, но все удалены --}}
 	<div class="hover-image">
-		<img src="/img/{{ $event->direction === 'beach' ? 'beach.webp' : 'classic.webp' }}" alt="Фото мероприятия">
+		<img src="/img/{{ $event->direction === 'beach' ? 'beach.webp' : 'classic.webp' }}" alt="{{ __('events.sp_event_photo_alt_simple') }}">
 	</div>
 	@endif
     @else
 	{{-- Нет фото в галерее --}}
 	<div class="hover-image">
-		<img src="/img/{{ $event->direction === 'beach' ? 'beach.webp' : 'classic.webp' }}" alt="Фото мероприятия">
+		<img src="/img/{{ $event->direction === 'beach' ? 'beach.webp' : 'classic.webp' }}" alt="{{ __('events.sp_event_photo_alt_simple') }}">
 	</div>
     @endif
 </div>
@@ -55,7 +55,7 @@
 
 
 <div class="ramka" style="z-index:5">
-    <h2 class="-mt-05">Запись на мероприятие</h2>
+    <h2 class="-mt-05">{{ __('events.sp_h2') }}</h2>
 	
     @php
 	$maxPlayers    = $occurrence->effectiveMaxPlayers();
@@ -63,16 +63,16 @@
 	$totalCapacity = $maxPlayers + $reserveMax;
 
 	$teamStatusMap = [
-		'approved'        => ['label' => 'Подтверждена',       'color' => '#166534', 'bg' => '#f0fdf4'],
-		'confirmed'       => ['label' => 'Подтверждена',       'color' => '#166534', 'bg' => '#f0fdf4'],
-		'ready'           => ['label' => 'Готова',             'color' => '#166534', 'bg' => '#f0fdf4'],
-		'submitted'       => ['label' => 'Заявка подана',      'color' => '#1e40af', 'bg' => '#dbeafe'],
-		'draft'           => ['label' => 'Формируется',        'color' => '#6b7280', 'bg' => '#f3f4f6'],
-		'pending'         => ['label' => 'Ожидает',            'color' => '#92400e', 'bg' => '#fff7e6'],
-		'pending_members' => ['label' => 'Ожидает участников', 'color' => '#92400e', 'bg' => '#fff7e6'],
-		'incomplete'      => ['label' => 'Неполная',           'color' => '#9f1239', 'bg' => '#fff1f2'],
-		'cancelled'       => ['label' => 'Отменена',           'color' => '#9f1239', 'bg' => '#fff1f2'],
-		'rejected'        => ['label' => 'Отклонена',          'color' => '#9f1239', 'bg' => '#fff1f2'],
+		'approved'        => ['label' => __('events.sp_status_approved'),       'color' => '#166534', 'bg' => '#f0fdf4'],
+		'confirmed'       => ['label' => __('events.sp_status_approved'),       'color' => '#166534', 'bg' => '#f0fdf4'],
+		'ready'           => ['label' => __('events.sp_status_ready'),             'color' => '#166534', 'bg' => '#f0fdf4'],
+		'submitted'       => ['label' => __('events.sp_status_submitted'),      'color' => '#1e40af', 'bg' => '#dbeafe'],
+		'draft'           => ['label' => __('events.sp_status_draft'),        'color' => '#6b7280', 'bg' => '#f3f4f6'],
+		'pending'         => ['label' => __('events.sp_status_pending'),            'color' => '#92400e', 'bg' => '#fff7e6'],
+		'pending_members' => ['label' => __('events.sp_status_pending_members'), 'color' => '#92400e', 'bg' => '#fff7e6'],
+		'incomplete'      => ['label' => __('events.sp_status_incomplete'),           'color' => '#9f1239', 'bg' => '#fff1f2'],
+		'cancelled'       => ['label' => __('events.sp_status_cancelled'),           'color' => '#9f1239', 'bg' => '#fff1f2'],
+		'rejected'        => ['label' => __('events.sp_status_rejected'),          'color' => '#9f1239', 'bg' => '#fff1f2'],
 	];
     @endphp
 	
@@ -93,19 +93,19 @@
 	$playersMax = $teamsMax * $teamSize;
 	@endphp
 	<div class="text-muted small mb-1">
-		👥 Команд: <strong>{{ $teamsRegistered }}</strong> / {{ $teamsMax }}
+		{{ __('events.sp_teams_count') }} <strong>{{ $teamsRegistered }}</strong> / {{ $teamsMax }}
 	</div>
 	<div class="text-muted small mb-1">
-		👤 Свободных мест: <strong>{{ max(0, $playersMax - $playersRegistered) }}</strong> / {{ $playersMax }}
+		{{ __('events.sp_free_spots') }} <strong>{{ max(0, $playersMax - $playersRegistered) }}</strong> / {{ $playersMax }}
 	</div>
 	@if(auth()->check() && (auth()->user()->role === 'admin' || (int)($event->organizer_id ?? 0) === auth()->id()))
 	<div class="mt-1 mb-1">
-		<a href="{{ route('tournament.setup', $event) }}" class="btn btn-primary btn-sm">⚙️ Управление турниром →</a>
+		<a href="{{ route('tournament.setup', $event) }}" class="btn btn-primary btn-sm">{{ __('events.sp_setup_btn') }}</a>
 	</div>
 	@endif
     @elseif(!is_null($registeredTotal))
 	<div class="text-muted small mb-1">
-		Свободных мест:
+		{{ __('events.sp_free_spots_label') }}
 		<span id="players-count">{{ $totalCapacity > 0 ? max(0, $totalCapacity - $registeredTotal) : $registeredTotal }}</span>
 		@if($totalCapacity)
 		/ {{ $totalCapacity }}
@@ -147,17 +147,17 @@
     =============================== --}}
     @if($occurrence->isCancelled())
 	<div class="alert alert-danger">
-		⛔️ Отменено❗️ Мероприятие не состоится в связи с отсутствием кворума.
+		{{ __('events.sp_status_no_quorum') }}
 	</div>
 	
     @elseif($occurrence->isFinished())
 	<div class="alert alert-info">
-		🏁 Мероприятие завершено!
+		{{ __('events.sp_status_finished') }}
 	</div>
 	
     @elseif($occurrence->isRunning())
 	<div class="alert alert-warning">
-		⚠️ Мероприятие уже идет!
+		{{ __('events.sp_status_in_progress') }}
 	</div>
 	
     @else
@@ -168,9 +168,9 @@
 		=============================== --}}
 		@if ($isRegistered)
 		<div class="alert alert-success">
-			Вы уже записаны
+			{{ __('events.sp_already_registered') }}
 			@if($userPosition)
-			<div><span class="f-16">позиция:</span> {{ $userPosition }}</div>
+			<div><span class="f-16">{{ __('events.sp_position_label') }}</span> {{ $userPosition }}</div>
 			@endif
 		</div>
 		
@@ -186,16 +186,16 @@
 		@endphp
 		@if($myReg && $myReg->subscription_id && $myReg->auto_booked && !$myReg->confirmed_at)
 		<div class="alert alert-warning mt-1">
-			⏰ <strong>Подтвердите участие</strong> по абонементу до
+			{{ __('events.sp_confirm_subscription') }}
 			{{ \Carbon\Carbon::parse($occurrence->starts_at)->subHours(12)->format('d.m H:i') }}
-			— иначе запись будет отменена автоматически.
+			{{ __('events.sp_confirm_or_cancel') }}
 		</div>
 		<form method="POST" action="{{ route('registrations.confirm', $myReg->id) }}">
 			@csrf
-			<button type="submit" class="btn w-100 mt-1">✅ Подтвердить участие</button>
+			<button type="submit" class="btn w-100 mt-1">{{ __('events.sp_btn_confirm') }}</button>
 		</form>
 		@elseif($myReg && $myReg->subscription_id && $myReg->auto_booked && $myReg->confirmed_at)
-		<div class="alert alert-success mt-1">✅ Участие подтверждено</div>
+		<div class="alert alert-success mt-1">{{ __('events.sp_confirmed') }}</div>
 		@endif
 		@php
 	    $myPayment = null;
@@ -210,7 +210,7 @@
 		@if($myPayment && $myPayment->status === 'pending')
 	    @if(in_array($myPayment->method, ['tbank_link', 'sber_link']))
 		<div class="alert alert-warning mt-1">
-			⏳ Ожидаем оплату — <strong>{{ number_format($myPayment->amount_minor/100, 2) }} ₽</strong>
+			{{ __('events.sp_pay_pending') }} <strong>{{ number_format($myPayment->amount_minor/100, 2) }} ₽</strong>
 		</div>
 		@php
 		$payLinkUrl = null;
@@ -221,22 +221,22 @@
 		}
 		@endphp
 		@if($payLinkUrl)
-		<a href="{{ $payLinkUrl }}" target="_blank" class="btn w-100 mt-1">💳 Перейти к оплате</a>
+		<a href="{{ $payLinkUrl }}" target="_blank" class="btn w-100 mt-1">{{ __('events.sp_pay_btn_link') }}</a>
 		@endif
 		@if(!$myPayment->user_confirmed)
 		<form method="POST" action="{{ route('payments.user_confirm', $myPayment->id) }}">
 			@csrf
-			<button type="submit" class="btn btn-secondary w-100 mt-1">✅ Я оплатил</button>
+			<button type="submit" class="btn btn-secondary w-100 mt-1">{{ __('events.sp_pay_btn_paid') }}</button>
 		</form>
 		@else
-		<div class="alert alert-info mt-1">👀 Ждём подтверждения от организатора</div>
+		<div class="alert alert-info mt-1">{{ __('events.sp_pay_awaiting_admin') }}</div>
 		@endif
 	    @elseif($myPayment->method === 'yoomoney' && $myPayment->yoomoney_confirmation_url)
-		<div class="alert alert-warning mt-1">⏳ Место зарезервировано до {{ $myPayment->expires_at?->format('H:i') }}</div>
-		<a href="{{ $myPayment->yoomoney_confirmation_url }}" target="_blank" class="btn w-100 mt-1">🟡 Оплатить через ЮМани</a>
+		<div class="alert alert-warning mt-1">{{ __('events.sp_pay_seat_reserved', ['time' => $myPayment->expires_at?->format('H:i')]) }}</div>
+		<a href="{{ $myPayment->yoomoney_confirmation_url }}" target="_blank" class="btn w-100 mt-1">{{ __('events.sp_pay_btn_yoomoney') }}</a>
 	    @endif
 		@elseif($myPayment && $myPayment->status === 'paid')
-	    <div class="alert alert-success mt-1">✅ Оплачено — {{ number_format($myPayment->amount_minor/100, 2) }} ₽</div>
+	    <div class="alert alert-success mt-1">{{ __('events.sp_pay_paid') }} {{ number_format($myPayment->amount_minor/100, 2) }} ₽</div>
 		@endif
 		{{-- ======= КОНЕЦ БЛОКА ОПЛАТЫ ======= --}}
 		
@@ -245,12 +245,12 @@
 			@csrf
 			@method('DELETE')
 			<button type="submit" class="mt-1 btn btn-danger w-100">
-				Отменить запись
+				{{ __('events.sp_btn_cancel_reg') }}
 			</button>
 		</form>
 		@else
 		<div class="alert alert-warning mt-1">
-			{{ $cancel->message ?? $cancel->errors[0] ?? 'Отмена записи недоступна.' }}
+			{{ $cancel->message ?? $cancel->errors[0] ?? __('events.sp_cancel_default') }}
 		</div>
 		@endif
 		
@@ -260,7 +260,7 @@
 		@elseif (! $join->allowed)
 		{{-- 
 		<button class="btn btn-primary w-100" disabled>
-			Записаться
+			{{ __('events.sp_btn_register') }}
 		</button>
 		--}}
 		@if (!empty($join->errors))
@@ -268,7 +268,7 @@
 			{{ $join->errors[0] }}
 			@if (!empty($join->meta['profile_required']))
 			<div class="mt-1">
-				<a href="{{ route('profile.complete') }}" class="btn btn-small btn-primary">Заполнить профиль</a>
+				<a href="{{ route('profile.complete') }}" class="btn btn-small btn-primary">{{ __('events.sp_btn_complete_profile') }}</a>
 			</div>
 			@endif
 		</div>
@@ -287,7 +287,7 @@
 		@if ($isTeamClassic || $isTeamBeach)
 		{{-- ===== КОМАНДНАЯ ЗАПИСЬ ===== --}}
 		<div class="alert alert-info">
-			Для этого мероприятия используется командная запись.
+			{{ __('events.sp_team_mode_hint') }}
 		</div>
 		@php
         $myTeams = $myTournamentTeams ?? collect();
@@ -300,12 +300,12 @@
         <div class="card mt-1">
             <div class="b-600 cd">{{ $myTeam->name }}</div>
             <div class="f-16">
-                Статус:
+                {{ __('events.sp_team_status') }}
                 <span style="display:inline-block;padding:1px 8px;border-radius:10px;font-size:13px;font-weight:600;background:{{ $myTeamStatusInfo['bg'] }};color:{{ $myTeamStatusInfo['color'] }}">{{ $myTeamStatusInfo['label'] }}</span>
-                · Игроков: {{ $myTeam->members->count() }}
+                {{ __('events.sp_team_players') }} {{ $myTeam->members->count() }}
             </div>
             <a href="{{ route('tournamentTeams.show', [$event, $myTeam]) }}" class="btn btn-small btn-secondary mt-1">
-                Открыть команду
+                {{ __('events.sp_btn_open_team') }}
 			</a>
 		</div>
         @endforeach
@@ -316,33 +316,33 @@
 		@endphp
 		@if($tournamentTeamsFull)
 		<div class="alert alert-warning mt-1">
-			⚠️ Все командные места заняты. Вы можете подать заявку в <strong>резерв</strong> — организатор уведомит вас если освободится место.
+			{!! __('events.sp_team_full_warn') !!}
 		</div>
 		@endif
 		<form method="POST" action="{{ route('tournamentTeams.store', $event) }}" class="form mt-1">
 			@csrf
-			<input type="text" name="name" class="form-control mb-1" placeholder="Название команды" required>
+			<input type="text" name="name" class="form-control mb-1" placeholder="{{ __('events.sp_team_name_ph') }}" required>
 			<input type="hidden" name="occurrence_id" value="{{ $occurrence->id }}">
 			<input type="hidden" name="team_kind" value="{{ $isTeamBeach ? 'beach_pair' : 'classic_team' }}">
 			@if($isTeamClassic)
 			<select name="captain_position_code" class="form-select mb-1" required>
-				<option value="">— ваша позиция в команде —</option>
-				<option value="setter">Связующий</option>
-				<option value="outside">Доигровщик</option>
-				<option value="opposite">Диагональный</option>
-				<option value="middle">Центральный</option>
-				<option value="libero">Либеро</option>
+				<option value="">{{ __('events.sp_position_in_team_ph') }}</option>
+				<option value="setter">{{ __('events.positions.setter') }}</option>
+				<option value="outside">{{ __('events.positions.outside') }}</option>
+				<option value="opposite">{{ __('events.positions.opposite') }}</option>
+				<option value="middle">{{ __('profile.positions.middle_full') }}</option>
+				<option value="libero">{{ __('events.positions.libero') }}</option>
 			</select>
 			@endif
 			<button type="submit" class="btn mt-1 {{ $tournamentTeamsFull ? 'btn-secondary' : 'btn-primary' }} w-100">
-				{{ $tournamentTeamsFull ? '📋 Подать заявку в резерв' : 'Создать команду' }}
+				{{ $tournamentTeamsFull ? __('events.sp_btn_apply_reserve') : __('events.sp_btn_create_team') }}
 			</button>
 		</form>
 		@endif
 		
 		@elseif (empty($freePositions))
 		<div class="alert alert-warning">
-			Свободных мест нет.
+			{{ __('events.sp_no_spots') }}
 		</div>
 		@else
 		@php
@@ -359,7 +359,7 @@
 		@endphp
 		@if($activeSubscription)
 		<div class="alert alert-success mt-1 mb-2">
-			🎫 <strong>Абонемент:</strong> {{ $activeSubscription->template->name }}
+			{!! __('events.sp_subscription_label') !!} {{ $activeSubscription->template->name }}
 			— осталось <strong>{{ $activeSubscription->visits_remaining }}</strong> посещений
 		</div>
 		@elseif($activeCoupon)

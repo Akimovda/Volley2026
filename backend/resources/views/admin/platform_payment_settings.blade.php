@@ -1,8 +1,8 @@
 <x-voll-layout body_class="admin-page">
 
-    <x-slot name="title">Настройка оплаты Premium — Admin</x-slot>
-    <x-slot name="h1">💳 Оплата Premium и рекламы</x-slot>
-    <x-slot name="t_description">Настройте приём платежей за Premium-подписки и рекламные размещения</x-slot>
+    <x-slot name="title">{{ __('admin.pps_title_premium') }}</x-slot>
+    <x-slot name="h1">💳 {{ __('admin.pps_premium_h1') }}</x-slot>
+    <x-slot name="t_description">{{ __('admin.pps_premium_t_description') }}</x-slot>
 
     <div class="container">
 

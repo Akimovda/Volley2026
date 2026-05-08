@@ -2,11 +2,11 @@
 <x-voll-layout body_class="broadcasts-edit-page">
     
     <x-slot name="title">
-        Редактирование рассылки
+        {{ __('admin.bc_edit_title') }}
     </x-slot>
     
     <x-slot name="description">
-        Редактирование рассылки {{ $broadcast->name }}
+        {{ __('admin.bc_edit_title') }} {{ $broadcast->name }}
     </x-slot>
     
     <x-slot name="canonical">
@@ -20,7 +20,7 @@
     </x-slot>
     
     <x-slot name="h1">
-        Редактирование рассылки
+        {{ __('admin.bc_edit_title') }}
     </x-slot>
 
     <x-slot name="t_description">
@@ -28,24 +28,24 @@
 			ID: <span class="cd">{{ $broadcast->id }}</span>
 		</div>		
         <div class="f-22 b-600">
-			Название: <span class="cd">{{ $broadcast->name }}</span>
+			{{ __('admin.bc_label_name_label') }} <span class="cd">{{ $broadcast->name }}</span>
 		</div>	
 	</x-slot>
 
 
     <x-slot name="breadcrumbs">
         <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
-            <a href="{{ route('admin.dashboard') }}" itemprop="item"><span itemprop="name">Админ-панель</span></a>
+            <a href="{{ route('admin.dashboard') }}" itemprop="item"><span itemprop="name">{{ __('admin.breadcrumb_dashboard') }}</span></a>
             <meta itemprop="position" content="2">
 		</li>		
         <li itemprop="itemListElement" itemscope="" itemtype="http://schema.org/ListItem">
             <a href="{{ route('admin.broadcasts.index') }}" itemprop="item">
-                <span itemprop="name">Рассылки</span>
+                <span itemprop="name">{{ __('admin.bc_breadcrumb') }}</span>
             </a>
             <meta itemprop="position" content="3">
         </li>
         <li itemprop="itemListElement" itemscope="" itemtype="http://schema.org/ListItem">
-            <span itemprop="name">Редактирование</span>
+            <span itemprop="name">{{ __('admin.bc_breadcrumb_edit') }}</span>
             <meta itemprop="position" content="4">
         </li>
     </x-slot>

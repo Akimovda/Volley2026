@@ -1336,3 +1336,12 @@ Route::get('/ajax/users/search', [UserSearchController::class, 'search'])
     ->middleware(['web', 'auth'])
     ->name('ajax.users.search');
 
+/*
+|--------------------------------------------------------------------------
+| Locale switch (доступен всем — гостям и авторизованным)
+|--------------------------------------------------------------------------
+*/
+Route::post('/lang/{locale}', [\App\Http\Controllers\LocaleController::class, 'switch'])
+    ->whereIn('locale', ['ru', 'en'])
+    ->name('locale.switch');
+

@@ -1,5 +1,5 @@
 <x-voll-layout body_class="team-stats-page">
-<x-slot name="title">{{ $team->name }} — Статистика</x-slot>
+<x-slot name="title">{{ $team->name }} — {{ __('profile.team_stats_title') }}</x-slot>
 <x-slot name="h1">{{ $team->name }}</x-slot>
 
 <x-slot name="breadcrumbs">
@@ -20,15 +20,15 @@
     <div class="row mb-4">
         <div class="col-6 col-md-3 text-center mb-3">
             <div class="f-28 fw-bold">{{ $teamStats['matches_played'] }}</div>
-            <div class="text-muted f-14">Матчей</div>
+            <div class="text-muted f-14">{{ __('profile.team_stats_matches') }}</div>
         </div>
         <div class="col-6 col-md-3 text-center mb-3">
             <div class="f-28 fw-bold text-success">{{ $teamStats['wins'] }}</div>
-            <div class="text-muted f-14">Побед</div>
+            <div class="text-muted f-14">{{ __('profile.team_stats_wins') }}</div>
         </div>
         <div class="col-6 col-md-3 text-center mb-3">
             <div class="f-28 fw-bold text-danger">{{ $teamStats['losses'] }}</div>
-            <div class="text-muted f-14">Поражений</div>
+            <div class="text-muted f-14">{{ __('profile.team_stats_losses') }}</div>
         </div>
         <div class="col-6 col-md-3 text-center mb-3">
             <div class="f-28 fw-bold">{{ $teamStats['match_win_rate'] }}%</div>
@@ -38,22 +38,22 @@
 
     <div class="row mb-4">
         <div class="col-md-4 text-center">
-            <span class="f-14 text-muted">Сеты:</span>
+            <span class="f-14 text-muted">{{ __('profile.team_stats_sets') }}</span>
             <strong>{{ $teamStats['sets_won'] }}:{{ $teamStats['sets_lost'] }}</strong>
         </div>
         <div class="col-md-4 text-center">
-            <span class="f-14 text-muted">Очки:</span>
+            <span class="f-14 text-muted">{{ __('profile.team_stats_points') }}</span>
             <strong>{{ $teamStats['points_scored'] }}:{{ $teamStats['points_conceded'] }}</strong>
         </div>
         <div class="col-md-4 text-center">
             @php $pd = $teamStats['points_scored'] - $teamStats['points_conceded']; @endphp
-            <span class="f-14 text-muted">Разница:</span>
+            <span class="f-14 text-muted">{{ __('profile.team_stats_diff') }}</span>
             <strong class="{{ $pd >= 0 ? 'text-success' : 'text-danger' }}">{{ $pd >= 0 ? '+' : '' }}{{ $pd }}</strong>
         </div>
     </div>
 
     {{-- Состав команды --}}
-    <h3 class="f-18 fw-bold mb-3">Состав</h3>
+    <h3 class="f-18 fw-bold mb-3">{{ __('profile.team_stats_lineup') }}</h3>
     <div class="row mb-4">
         @foreach($team->members as $member)
             <div class="col-6 col-md-3 mb-2">
@@ -61,10 +61,10 @@
                     @if($member->user)
                         <a href="{{ route('users.show', $member->user->id) }}">{{ $member->user->name }}</a>
                     @else
-                        Игрок #{{ $member->user_id }}
+                        {{ __('profile.team_stats_player_n', ['id' => $member->user_id]) }}
                     @endif
                     @if($member->user_id === $team->captain_user_id)
-                        <span class="badge bg-warning text-dark">К</span>
+                        <span class="badge bg-warning text-dark">{{ __('profile.team_stats_captain_short') }}</span>
                     @endif
                 </div>
             </div>
@@ -73,11 +73,11 @@
 
     {{-- Индивидуальная статистика --}}
     @if($playerStats->isNotEmpty())
-        <h3 class="f-18 fw-bold mb-3">Статистика игроков</h3>
+        <h3 class="f-18 fw-bold mb-3">{{ __('profile.team_stats_player_stats') }}</h3>
         <div class="table-responsive mb-4">
             <table class="table table-sm table-hover">
                 <thead>
-                    <tr><th>Игрок</th><th>Матчей</th><th>Побед</th><th>WinRate</th><th>Сеты</th><th>Очки ±</th></tr>
+                    <tr><th>{{ __('profile.rating_col_player') }}</th><th>{{ __('profile.team_stats_matches') }}</th><th>{{ __('profile.team_stats_wins') }}</th><th>{{ __('profile.team_stats_winrate') }}</th><th>{{ __('profile.team_stats_sets') }}</th><th>{{ __('profile.rating_col_pts_diff') }}</th></tr>
                 </thead>
                 <tbody>
                     @foreach($playerStats as $ps)
@@ -86,7 +86,7 @@
                                 @if($ps->user)
                                     <a href="{{ route('users.show', $ps->user->id) }}">{{ $ps->user->name }}</a>
                                 @else
-                                    Игрок #{{ $ps->user_id }}
+                                    {{ __('profile.team_stats_player_n', ['id' => $ps->user_id]) }}
                                 @endif
                             </td>
                             <td>{{ $ps->matches_played }}</td>
@@ -105,11 +105,11 @@
 
     {{-- История матчей --}}
     @if($matches->isNotEmpty())
-        <h3 class="f-18 fw-bold mb-3">История матчей</h3>
+        <h3 class="f-18 fw-bold mb-3">{{ __('profile.team_stats_match_history') }}</h3>
         <div class="table-responsive mb-4">
             <table class="table table-sm">
                 <thead>
-                    <tr><th>Стадия</th><th>Соперник</th><th>Счёт</th><th>Подробно</th><th>Результат</th></tr>
+                    <tr><th>{{ __('profile.team_stats_col_stage') }}</th><th>{{ __('profile.team_stats_col_opp') }}</th><th>{{ __('profile.team_stats_col_score') }}</th><th>{{ __('profile.team_stats_col_details') }}</th><th>{{ __('profile.team_stats_col_result') }}</th></tr>
                 </thead>
                 <tbody>
                     @foreach($matches as $m)
@@ -125,7 +125,7 @@
                             <td class="f-14">{{ $m->detailedScore() }}</td>
                             <td>
                                 <span class="badge bg-{{ $won ? 'success' : 'danger' }}">
-                                    {{ $won ? 'Победа' : ($m->status === 'forfeit' ? 'Техн.' : 'Поражение') }}
+                                    {{ $won ? __('profile.team_stats_won') : ($m->status === 'forfeit' ? __('profile.team_stats_tech') : __('profile.team_stats_lost')) }}
                                 </span>
                             </td>
                         </tr>
@@ -137,11 +137,11 @@
 
     {{-- Турнирные таблицы --}}
     @if($standings->isNotEmpty())
-        <h3 class="f-18 fw-bold mb-3">Позиции в турнирах</h3>
+        <h3 class="f-18 fw-bold mb-3">{{ __('profile.team_stats_positions') }}</h3>
         <div class="table-responsive">
             <table class="table table-sm">
                 <thead>
-                    <tr><th>Стадия</th><th>Группа</th><th>Место</th><th>И</th><th>В</th><th>П</th><th>Сеты</th><th>Очки</th></tr>
+                    <tr><th>{{ __('profile.team_stats_col_stage') }}</th><th>{{ __('profile.team_stats_col_group') }}</th><th>{{ __('profile.team_stats_col_pos') }}</th><th>{{ __('tournaments.standings_col_played') }}</th><th>{{ __('tournaments.standings_col_w') }}</th><th>{{ __('tournaments.standings_col_l') }}</th><th>{{ __('profile.rating_col_sets') }}</th><th>{{ __('tournaments.tv_pts_col') }}</th></tr>
                 </thead>
                 <tbody>
                     @foreach($standings as $s)
@@ -165,7 +165,7 @@
     @if($team->event)
         <div class="mt-4">
             <a href="{{ route('tournament.excel.results', $team->event) }}" class="btn btn-outline-success">
-                📥 Скачать результаты турнира (CSV)
+                {{ __('profile.team_stats_btn_csv') }}
             </a>
         </div>
     @endif

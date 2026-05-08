@@ -18,24 +18,24 @@ $registrationMode = old('registration_mode', $prefill['registration_mode'] ?? 's
 
 $registrationModeLabels = [
 'classic' => [
-'single' => 'Одиночная запись игроков',
-'team' => 'Командная запись',
+'single' => __('events.reg_mode_single'),
+'team' => __('events.reg_mode_team'),
 ],
 'beach' => [
-'single' => 'Одиночная запись игроков',
-'mixed_group' => 'Групповая / смешанная запись',
+'single' => __('events.reg_mode_single'),
+'mixed_group' => __('events.reg_mode_mixed_group'),
 ],
 ];
 @endphp
 @php
 
 $formats = [
-'game' => 'Игра',
-'training' => 'Тренировка',
-'training_game' => 'Тренировка + Игра',
-'coach_student' => 'Тренер + ученик (только пляж)',
-'tournament' => 'Турнир',
-'camp' => 'КЕМП',
+'game' => __('events.fmt_game'),
+'training' => __('events.fmt_training'),
+'training_game' => __('events.fmt_training_game'),
+'coach_student' => __('events.fmt_coach_student_beach'),
+'tournament' => __('events.fmt_tournament'),
+'camp' => __('events.fmt_camp_caps'),
 ];
 // ✅ Timezones groups приходят из контроллера: $tzGroups + $tzDefault
 $timezoneGroups  = $tzGroups ?? (array) config('event_timezones.groups', []);
@@ -133,10 +133,7 @@ if ($initialStep < 1 || $initialStep > 3) {
     }
 	
     // --- other precomputed helpers ---
-    $monthsMap = [
-	1=>'Янв',2=>'Фев',3=>'Мар',4=>'Апр',5=>'Май',6=>'Июн',
-	7=>'Июл',8=>'Авг',9=>'Сен',10=>'Окт',11=>'Ноя',12=>'Дек'
-    ];
+    $monthsMap = __('events.month_short');
 	
     $oldMonths = old('recurrence_months', $prefill['recurrence_months'] ?? []);
     if (is_string($oldMonths)) $oldMonths = [$oldMonths];
@@ -213,11 +210,11 @@ if ($initialStep < 1 || $initialStep > 3) {
 	</x-slot>		
 		
 		<x-slot name="title">
-			Создание мероприятия
+			{{ __('events.create_title') }}
 		</x-slot>
 		
 		<x-slot name="description">
-			Создание мероприятия
+			{{ __('events.create_title') }}
 		</x-slot>
 		
 		<x-slot name="canonical">
@@ -226,23 +223,23 @@ if ($initialStep < 1 || $initialStep > 3) {
 		</x-slot>
 		
 		<x-slot name="h1">
-			Создание мероприятия
+			{{ __('events.create_title') }}
 		</x-slot>
 		
 		
 		
 		<x-slot name="t_description">
-			<h2 class="-mt-1">Шаг <span id="wizard_step_num">1</span> из 3</h2>	
+			<h2 class="-mt-1">{{ __('events.create_step_short_pre') }} <span id="wizard_step_num">1</span> {{ __('events.create_step_short_of') }}</h2>	
 			<div class="mt-1">
-				<div class="wizard-pill" id="pill_1">Настройка мероприятия</div>
-				<div class="wizard-pill" id="pill_2">Выбор локации,времени и ограничений записи</div>
-				<div class="wizard-pill" id="pill_3">Доступность, описание и др.</div>			
+				<div class="wizard-pill" id="pill_1">{{ __('events.create_pill_1') }}</div>
+				<div class="wizard-pill" id="pill_2">{{ __('events.create_pill_2') }}</div>
+				<div class="wizard-pill" id="pill_3">{{ __('events.create_pill_3') }}</div>			
 			</div>
 		</x-slot>
 		
 		<x-slot name="breadcrumbs">
 			<li itemprop="itemListElement" itemscope="" itemtype="http://schema.org/ListItem">
-				<a href="{{ route('events.create') }}" itemprop="item"><span itemprop="name">Создание мероприятия</span></a>
+				<a href="{{ route('events.create') }}" itemprop="item"><span itemprop="name">{{ __('events.create_title') }}</span></a>
 				<meta itemprop="position" content="2">
 			</li>
 		</x-slot>	
@@ -264,10 +261,9 @@ if ($initialStep < 1 || $initialStep > 3) {
 		<div class="container">
     {{-- Детект встроенного браузера MAX/Telegram/VK --}}
     <div id="inapp-browser-warning" style="display:none;background:#fff3cd;border:1px solid #ffc107;border-radius:.75rem;padding:1rem 1.25rem;margin-bottom:1rem;">
-        ⚠️ <b>Вы используете встроенный браузер</b> — некоторые функции могут не работать.<br>
-        Для создания мероприятия откройте страницу в <b>обычном браузере</b> (Safari, Chrome).
+        {!! __('events.create_inapp_warn') !!}
         <br><br>
-        <a href="{{ url()->current() }}" target="_blank" class="btn btn-secondary btn-small">🌐 Открыть в браузере</a>
+        <a href="{{ url()->current() }}" target="_blank" class="btn btn-secondary btn-small">{{ __('events.create_open_browser') }}</a>
     </div>
     <script>
     (function(){
@@ -286,7 +282,7 @@ if ($initialStep < 1 || $initialStep > 3) {
 			
 			<div class="ramka">	
 				<div class="alert alert-info">
-					<div class="b-600">Ссылка на приватное мероприятие:</div>
+					<div class="b-600">{{ __('events.create_private_link_label') }}</div>
 					<div class="mt-1">
 						<a class="text-blue-700 underline break-all" href="{{ session('private_link') }}">
 							{{ session('private_link') }}
@@ -318,7 +314,7 @@ if ($initialStep < 1 || $initialStep > 3) {
 			@if ($errors->any())
 			<div class="ramka">		
 				<div class="alert alert-error">
-					<div class="alert-title">Проверьте поля</div>
+					<div class="alert-title">{{ __('events.create_check_fields') }}</div>
 					<ul class="list">
 						@foreach ($errors->all() as $err)
 						<li>{{ $err }}</li>
@@ -330,7 +326,7 @@ if ($initialStep < 1 || $initialStep > 3) {
 			@if (session('wizard_errors'))
 			<div class="ramka">
 				<div class="alert alert-error">
-					<div class="alert-title">Проверьте поля</div>
+					<div class="alert-title">{{ __('events.create_check_fields') }}</div>
 					<ul class="list">
 						@foreach (session('wizard_errors') as $field => $messages)
 						@foreach ((array) $messages as $msg)
@@ -514,9 +510,9 @@ if ($initialStep < 1 || $initialStep > 3) {
 			var $label = $('#gender_limited_reg_label');
 			if (policy === 'mixed_limited') {
 				$box.show();
-				if (side === 'male') $label.text('Мужчины');
-				else if (side === 'female') $label.text('Девушки');
-				else $label.text('Ограничиваемый пол');
+				if (side === 'male') $label.text(@json(__('events.gender_limited_male')));
+				else if (side === 'female') $label.text(@json(__('events.gender_limited_female')));
+				else $label.text(@json(__('events.gender_limited_neutral')));
 			} else {
 				$box.hide();
 				$('#game_gender_limited_reg_starts_days_before').val('');

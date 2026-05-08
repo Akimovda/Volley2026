@@ -26,11 +26,11 @@
     @endphp
 	
     <x-slot name="title">
-        {{ $location->name }} — локация
+        {{ $location->name }} {{ __('locations.show_title_suffix') }}
 	</x-slot>
 	
     <x-slot name="description">
-        {{ $location->short_text ? strip_tags($location->short_text) : 'Информация о локации ' . $location->name }}
+        {{ $location->short_text ? strip_tags($location->short_text) : __('locations.show_description_default', ['name' => $location->name]) }}
 	</x-slot>
 	
     <x-slot name="canonical">
@@ -79,14 +79,14 @@
 	</x-slot>
 	
     <x-slot name="h2">
-		г. {{ $cityName }}@if($regionName), {{ $regionName }}@endif
+		{{ __('locations.show_h2_city_prefix') }} {{ $cityName }}@if($regionName), {{ $regionName }}@endif
 	</x-slot>
     <x-slot name="t_description">@if($location->address && $location->address !== $cityName){{ $location->address }}@endif</x-slot>	
 
 
     <x-slot name="breadcrumbs">
         <li itemprop="itemListElement" itemscope="" itemtype="http://schema.org/ListItem">
-            <a href="{{ route('locations.index') }}" itemprop="item"><span itemprop="name">Локации</span></a>
+            <a href="{{ route('locations.index') }}" itemprop="item"><span itemprop="name">{{ __('locations.breadcrumb_index') }}</span></a>
             <meta itemprop="position" content="2">
 		</li>
         <li itemprop="itemListElement" itemscope="" itemtype="http://schema.org/ListItem">
@@ -178,12 +178,12 @@
 						frameborder="0"
 						allowfullscreen="true"
 						loading="lazy"
-						title="Карта локации {{ $location->name }}"
+						title="{{ __('locations.map_iframe_title', ['name' => $location->name]) }}"
 						></iframe>
 					</div>
 					@else
 					<div class="alert alert-info">
-						Для отображения карты нужны координаты. Сейчас они не указаны.
+						{{ __('locations.map_no_coords') }}
 					</div>
 					@endif
 				</div>
@@ -205,7 +205,7 @@
 
         @if($locationTournaments->isNotEmpty())
         <div class="ramka">
-            <h2 class="-mt-05">Турниры</h2>
+            <h2 class="-mt-05">{{ __('locations.tournaments_section') }}</h2>
             @foreach($locationTournaments as $tourn)
                 @php
                     $matchesCount = $tourn->tournamentStages->sum('matches_count');
@@ -218,14 +218,14 @@
                         </a>
                         <div class="f-12" style="opacity:.5">
                             {{ $tourn->starts_at ? $tourn->starts_at->format('d.m.Y') : '' }}
-                            · {{ $tourn->direction === 'beach' ? 'Пляжка' : 'Классика' }}
+                            · {{ $tourn->direction === 'beach' ? __('locations.tournaments_dir_beach') : __('locations.tournaments_dir_classic') }}
                         </div>
                     </div>
                     <span class="f-12 p-1 px-2 b-600" style="background:rgba(41,103,186,.15);border-radius:6px">
-                        {{ $matchesCount }} матчей
+                        {{ $matchesCount }} {{ __('locations.tournaments_matches_short') }}
                     </span>
                     @if($isActive)
-                        <span class="f-12 p-1 px-2 b-600" style="background:rgba(16,185,129,.15);border-radius:6px;color:#10b981">LIVE</span>
+                        <span class="f-12 p-1 px-2 b-600" style="background:rgba(16,185,129,.15);border-radius:6px;color:#10b981">{{ __('locations.tournaments_live') }}</span>
                     @endif
                 </div>
             @endforeach
@@ -233,7 +233,7 @@
         @endif
 
 <div class="ramka">
-            <h2 class="-mt-05">Мероприятия в этой локации</h2>
+            <h2 class="-mt-05">{{ __('locations.events_section') }}</h2>
         
         @php
         $nowUtc         = \Illuminate\Support\Carbon::now('UTC');
@@ -283,7 +283,7 @@
         @endphp
         
             @if($futureOcc->isEmpty())
-                <div class="alert alert-info">Пока нет ближайших мероприятий для этой локации.</div>
+                <div class="alert alert-info">{{ __('locations.events_empty') }}</div>
             @else
                 <div class="row mb-0">
                     @foreach($futureOcc as $occ)
@@ -298,7 +298,7 @@
                 <div class="join-modal" style="max-width:720px;width:100%;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.25);">
                     <div class="p-3 border-bottom d-flex align-items-start justify-content-between gap-3">
                         <div>
-                            <div id="jmTitle" class="fw-semibold fs-5">Запись</div>
+                            <div id="jmTitle" class="fw-semibold fs-5">{{ __('locations.join_modal_title') }}</div>
                             <div id="jmMeta" class="text-muted small mt-1"></div>
                             <div id="jmAddr" class="text-muted small mt-1"></div>
                         </div>
@@ -306,10 +306,10 @@
                     </div>
                     <div class="p-3">
                         <div id="jmError" class="alert alert-danger d-none mb-2"></div>
-                        <div class="text-muted small mb-2">Выбери позицию (показаны только свободные):</div>
-                        <div id="jmLoading" class="text-muted small d-none mb-2">Загружаю доступные позиции…</div>
+                        <div class="text-muted small mb-2">{{ __('locations.join_choose_position') }}</div>
+                        <div id="jmLoading" class="text-muted small d-none mb-2">{{ __('locations.join_loading_positions') }}</div>
                         <div id="jmPositions" class="row g-2"></div>
-                        <div class="mt-3 text-muted small">После выбора позиции вы сразу будете записаны.</div>
+                        <div class="mt-3 text-muted small">{{ __('locations.join_after_choice') }}</div>
                     </div>
                 </div>
             </div>
@@ -355,7 +355,7 @@
 
             function openModal(payload) {
                 clearError(); setLoading(true);
-                titleEl.textContent = payload.title || 'Запись';
+                titleEl.textContent = payload.title || @json(__('locations.join_modal_title'));
                 metaEl.textContent  = [payload.date, payload.time, payload.tz ? '('+payload.tz+')' : ''].filter(Boolean).join(' ');
                 addrEl.textContent  = payload.address || '';
                 posWrap.innerHTML   = '';
@@ -369,7 +369,7 @@
             function renderPositions(occurrenceId, freePositions) {
                 posWrap.innerHTML = '';
                 if (!Array.isArray(freePositions) || !freePositions.length) {
-                    showError('Свободных мест больше нет.'); return;
+                    showError(@json(__('locations.join_no_free'))); return;
                 }
                 freePositions.forEach(p => {
                     const col = document.createElement('div');
@@ -394,7 +394,7 @@
                 let data = null;
                 try { data = await res.json(); } catch(e) {}
                 if (!res.ok || !data || data.ok === false) {
-                    showError((data?.message) || 'Не удалось получить данные.'); return null;
+                    showError((data?.message) || @json(__('locations.join_data_error'))); return null;
                 }
                 return data;
             }

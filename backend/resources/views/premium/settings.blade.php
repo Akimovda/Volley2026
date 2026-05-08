@@ -1,9 +1,9 @@
 <x-voll-layout body_class="premium-settings-page">
 
-    <x-slot name="title">Настройки Premium — Volley</x-slot>
+    <x-slot name="title">{{ __('profile.premium_settings_title') }}</x-slot>
     <x-slot name="canonical">{{ route('premium.settings') }}</x-slot>
-    <x-slot name="h1">Настройки Premium 👑</x-slot>
-    <x-slot name="t_description">Управляйте уведомлениями и фильтрами</x-slot>
+    <x-slot name="h1">{{ __('profile.premium_settings_h1') }}</x-slot>
+    <x-slot name="t_description">{{ __('profile.premium_settings_t_description') }}</x-slot>
 
     <x-slot name="breadcrumbs">
         <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">

@@ -95,7 +95,7 @@
                     @endphp
                     <a href="{{ route('tournament.tv', $event) }}?occurrence_id={{ $occ->id }}"
                        style="padding:4px 12px;border-radius:6px;font-size:13px;font-weight:600;text-decoration:none;{{ $isSelected ? 'background:#E7612F;color:#fff' : 'background:rgba(255,255,255,.1);color:#9ca3af' }}">
-                        Тур {{ $loop->iteration }} ({{ $occDate->format('d.m') }})
+                        {{ __('tournaments.tv_round_n_short', ['n' => $loop->iteration, 'date' => $occDate->format('d.m')]) }}
                     </a>
                 @endforeach
             </div>
@@ -107,7 +107,7 @@
             @endif
             <div class="tv-qr">
                 <img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data={{ urlencode(route('tournament.public.show', $event)) }}" alt="QR">
-                <div>Открыть на телефоне</div>
+                <div>{{ __('tournaments.tv_open_phone') }}</div>
             </div>
         </div>
     </div>
@@ -150,8 +150,8 @@
                                 <div style="font-size:13px;opacity:.5">{{ $members }}</div>
                             </div>
                             <div style="text-align:right;font-size:14px">
-                                <div class="b-700" style="color:#E7612F">{{ $c['rating_points'] ?? 0 }} оч.</div>
-                                <div style="opacity:.5;font-size:12px">{{ $c['wins'] ?? 0 }}В {{ $c['losses'] ?? 0 }}П &middot; {{ $c['points_scored'] ?? 0 }}:{{ $c['points_conceded'] ?? 0 }}</div>
+                                <div class="b-700" style="color:#E7612F">{{ $c['rating_points'] ?? 0 }} {{ __('tournaments.tv_pts_short') }}</div>
+                                <div style="opacity:.5;font-size:12px">{{ $c['wins'] ?? 0 }}{{ __('tournaments.tv_w_short') }} {{ $c['losses'] ?? 0 }}{{ __('tournaments.tv_l_short') }} &middot; {{ $c['points_scored'] ?? 0 }}:{{ $c['points_conceded'] ?? 0 }}</div>
                             </div>
                         </div>
                     @endforeach
@@ -159,7 +159,7 @@
                 @endforeach
             @else
                 <div class="tv-panel" style="flex:2">
-                    <h3>🏆 Итоги турнира</h3>
+                    <h3>🏆 {{ __('tournaments.tv_results') }}</h3>
                     @foreach($classification as $c)
                         @php
                             $team = \App\Models\EventTeam::with('members.user')->find($c['team_id']);
@@ -174,8 +174,8 @@
                                 <div style="font-size:13px;opacity:.5">{{ $members }}</div>
                             </div>
                             <div style="text-align:right;font-size:14px">
-                                <div class="b-700" style="color:#E7612F">{{ $c['rating_points'] ?? 0 }} оч.</div>
-                                <div style="opacity:.5;font-size:12px">{{ $c['wins'] ?? 0 }}В {{ $c['losses'] ?? 0 }}П &middot; {{ $c['points_scored'] ?? 0 }}:{{ $c['points_conceded'] ?? 0 }}</div>
+                                <div class="b-700" style="color:#E7612F">{{ $c['rating_points'] ?? 0 }} {{ __('tournaments.tv_pts_short') }}</div>
+                                <div style="opacity:.5;font-size:12px">{{ $c['wins'] ?? 0 }}{{ __('tournaments.tv_w_short') }} {{ $c['losses'] ?? 0 }}{{ __('tournaments.tv_l_short') }} &middot; {{ $c['points_scored'] ?? 0 }}:{{ $c['points_conceded'] ?? 0 }}</div>
                             </div>
                         </div>
                     @endforeach
@@ -186,7 +186,7 @@
             @if($event->tournament_mvp_user_id)
                 @php $mvp = \App\Models\User::find($event->tournament_mvp_user_id); @endphp
                 <div class="tv-panel" style="flex:0.5;text-align:center;display:flex;flex-direction:column;justify-content:center">
-                    <div style="font-size:14px;opacity:.5;margin-bottom:8px">MVP турнира</div>
+                    <div style="font-size:14px;opacity:.5;margin-bottom:8px">{{ __('tournaments.tv_mvp') }}</div>
                     <div style="font-size:48px;margin-bottom:8px">⭐</div>
                     <div style="font-size:22px;font-weight:800;color:#E7612F">{{ $mvp?->last_name }} {{ $mvp?->first_name }}</div>
                 </div>
@@ -203,12 +203,12 @@
                                 <thead>
                                     <tr>
                                         <th>#</th>
-                                        <th>Команда</th>
-                                        <th class="tc">И</th>
-                                        <th class="tc">В</th>
-                                        <th class="tc">П</th>
-                                        <th class="tc">Оч.</th>
-                                        <th class="tc">Разн.</th>
+                                        <th>{{ __('tournaments.standings_col_team') }}</th>
+                                        <th class="tc">{{ __('tournaments.standings_col_played') }}</th>
+                                        <th class="tc">{{ __('tournaments.standings_col_w') }}</th>
+                                        <th class="tc">{{ __('tournaments.standings_col_l') }}</th>
+                                        <th class="tc">{{ __('tournaments.tv_pts_col') }}</th>
+                                        <th class="tc">{{ __('tournaments.tv_diff_col') }}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -297,7 +297,7 @@
             <div class="tv-panel" style="flex:1;text-align:center;display:flex;align-items:center;justify-content:center">
                 <div>
                     <div style="font-size:48px;margin-bottom:16px">🏐</div>
-                    <div style="font-size:22px;font-weight:700">Турнир скоро начнётся</div>
+                    <div style="font-size:22px;font-weight:700">{{ __('tournaments.tv_starting_soon') }}</div>
                 </div>
             </div>
         @endif

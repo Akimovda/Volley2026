@@ -8,8 +8,8 @@
 */
 
 $tabs = [
-'archive' => 'Архив',
-'mine'    => 'Мои',
+'archive' => __('events.tab_archive'),
+'mine'    => __('events.tab_mine'),
 ];
 
 // ✅ ROOT дата (events.starts_at/ends_at) — может быть в прошлом у recurring
@@ -37,7 +37,7 @@ if ($last) {
 return $first->format('d.m.Y') . ' — ' . $last->format('d.m.Y') . ' (' . $tz . ')';
 }
 
-return 'с ' . $first->format('d.m.Y') . ' (' . $tz . ')';
+return __('events.from_date_short', ['date' => $first->format('d.m.Y'), 'tz' => $tz]);
 };
 
 $fmtLocation = function ($event) {
@@ -54,14 +54,14 @@ $max = (int)($event->max_players ?? 0);
 $registered = (int)($event->active_regs ?? 0);
 
 if (!(bool)$event->allow_registration) {
-return ['label' => 'Регистрация выключена', 'free' => null, 'max' => null, 'registered' => $registered];
+return ['label' => __('events.reg_off'), 'free' => null, 'max' => null, 'registered' => $registered];
 }
 if ($max <= 0) {
-return ['label' => 'Мест: —', 'free' => null, 'max' => null, 'registered' => $registered];
+return ['label' => __('events.seats_dash'), 'free' => null, 'max' => null, 'registered' => $registered];
     }
     
     $free = max(0, $max - $registered);
-    return ['label' => "Мест: {$free}/{$max}", 'free' => $free, 'max' => $max, 'registered' => $registered];
+    return ['label' => __('events.seats_n_of_m', ['free' => $free, 'max' => $max]), 'free' => $free, 'max' => $max, 'registered' => $registered];
 	};
 	
 	// ✅ Исправленный детектор повторяющихся мероприятий
@@ -75,24 +75,24 @@ return ['label' => 'Мест: —', 'free' => null, 'max' => null, 'registered' 
 	@endphp
 	
 	<x-voll-layout>
-		<x-slot name="title">Управление мероприятиями</x-slot>
-		<x-slot name="h1">Управление мероприятиями</x-slot>
+		<x-slot name="title">{{ __('events.mgmt_title') }}</x-slot>
+		<x-slot name="h1">{{ __('events.mgmt_title') }}</x-slot>
 		
 		<x-slot name="breadcrumbs">
 			<li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
 				<a href="{{ route('events.create.event_management') }}" itemprop="item">
-					<span itemprop="name">Управление мероприятиями</span>
+					<span itemprop="name">{{ __('events.mgmt_breadcrumb') }}</span>
 				</a>
 				<meta itemprop="position" content="2">
 			</li>
 		</x-slot>    
 		
-		<x-slot name="t_description">Быстрое создание копии ("Создать копию"), а также доступ к регистрации.</x-slot>    
+		<x-slot name="t_description">{{ __('events.mgmt_t_description') }}</x-slot>    
 		
 		<x-slot name="d_description">
 			<div data-aos-delay="250" data-aos="fade-up">
 				<a href="{{ route('events.create') }}" class="mt-2 btn btn-outline-secondary">
-					Создать новое
+					{{ __('events.mgmt_btn_create_new') }}
 				</a>
 			</div>        
 		</x-slot>    
@@ -136,9 +136,9 @@ return ['label' => 'Мест: —', 'free' => null, 'max' => null, 'registered' 
 							<div class="card mb-2">
 								<form method="GET" action="{{ route('events.create.event_management') }}">
 									<input type="hidden" name="tab" value="{{ $tab }}">
-									<label>Организатор:</label>
+									<label>{{ __('events.mgmt_organizer_label') }}</label>
 									<select name="organizer_id" onchange="this.form.submit()">
-										<option value="0">Все</option>
+										<option value="0">{{ __('events.mgmt_org_all') }}</option>
 										@foreach(($organizers ?? []) as $o)
 										<option value="{{ (int)$o->id }}" {{ $organizerFilter === (int)$o->id ? 'selected' : '' }}>
 											#{{ (int)$o->id }} — {{ $o->name ?: $o->email }}
@@ -148,7 +148,7 @@ return ['label' => 'Мест: —', 'free' => null, 'max' => null, 'registered' 
 									
 									@if($organizerFilter > 0)
 									<a href="{{ route('events.create.event_management', ['tab' => $tab]) }}" class="mt-1 blink">
-										Сбросить
+										{{ __('events.mgmt_org_reset') }}
 									</a>
 									@endif
 								</form>
@@ -161,9 +161,9 @@ return ['label' => 'Мест: —', 'free' => null, 'max' => null, 'registered' 
 				@if($events->isEmpty())
 				<div class="alert alert-info">
 					@if($tab === 'mine')
-					Актуальных мероприятий нет — проверь вкладку «Архив».
+					{{ __('events.mgmt_empty_mine') }}
 					@else
-					Здесь пока пусто.
+					{{ __('events.mgmt_empty_archive') }}
 					@endif
 				</div>
 				@else
@@ -173,14 +173,14 @@ return ['label' => 'Мест: —', 'free' => null, 'max' => null, 'registered' 
 						<label class="checkbox-item">
 							<input type="checkbox" id="bulkSelectAll">
 							<div class="custom-checkbox"></div>
-							<span>Выбрать всё на странице (выбрано: <span id="bulkSelectedCount" class="cd b-600">0</span>)</span>
+							<span>{{ __('events.mgmt_select_all') }}<span id="bulkSelectedCount" class="cd b-600">0</span>)</span>
 						</label>
 					</div>
 					<div class="col-md-6 text-right mb-1">
-						<button type="button" id="bulkCancelBtn" class="btn btn-small" disabled>Отменить выбранные</button>
+						<button type="button" id="bulkCancelBtn" class="btn btn-small" disabled>{{ __('events.mgmt_bulk_cancel') }}</button>
 						
 						@if($isAdmin)
-						<button type="button" id="bulkForceDeleteBtn" class="btn btn-small" disabled>Удалить навсегда</button>
+						<button type="button" id="bulkForceDeleteBtn" class="btn btn-small" disabled>{{ __('events.mgmt_bulk_force') }}</button>
 						@endif
 					</div>
 				</div>
@@ -203,14 +203,14 @@ return ['label' => 'Мест: —', 'free' => null, 'max' => null, 'registered' 
 						<thead class="bg-gray-50 text-gray-600">
 							<tr>
 								<th></th>
-								<th>ID</th>
-								<th>Название</th>
-								<th>Местоположение</th>
-								<th>Дата и время</th>
+								<th>{{ __('events.col_id') }}</th>
+								<th>{{ __('events.col_title') }}</th>
+								<th>{{ __('events.col_location') }}</th>
+								<th>{{ __('events.col_date_time') }}</th>
 								@if($isAdmin)
-								<th>Организатор</th>
+								<th>{{ __('events.col_organizer') }}</th>
 								@endif
-								<th>Действия</th>
+								<th>{{ __('events.col_actions') }}</th>
 							</tr>
 						</thead>
 						
@@ -244,7 +244,7 @@ return ['label' => 'Мест: —', 'free' => null, 'max' => null, 'registered' 
 								<td class="align-top">
 									<div class="d-flex">
 										@if($isRecurring)
-										<span class="emo" title="Повторяющееся мероприятие">🔁</span>
+										<span class="emo" title="{{ __('events.recurring_title') }}">🔁</span>
 										@endif    
 										<div>
 											<a class="blink" href="{{ url('/events/' . (int)$event->id) }}">{{ $event->title }}</a>
@@ -268,14 +268,14 @@ return ['label' => 'Мест: —', 'free' => null, 'max' => null, 'registered' 
                                     <div>{{ $fmtSeriesDt($event) }}</div>
                                     @if($nextLocal)
                                     <div class="mt-1">
-                                        Следующее: {{ $nextLocal->format('d.m.Y · H:i') }} ({{ $tz }})
+                                        {{ __('events.next_occ') }} {{ $nextLocal->format('d.m.Y · H:i') }} ({{ $tz }})
 									</div>
                                     @endif
 									@else
                                     <div class="break-words">{{ $fmtRootDt($event) }}</div>
                                     @if($tab === 'mine' && $nextLocal)
                                     <div class="mt-1">
-                                        Следующее: {{ $nextLocal->format('d.m.Y · H:i') }} ({{ $tz }})
+                                        {{ __('events.next_occ') }} {{ $nextLocal->format('d.m.Y · H:i') }} ({{ $tz }})
 									</div>
                                     @endif
 									@endif
@@ -310,18 +310,18 @@ return ['label' => 'Мест: —', 'free' => null, 'max' => null, 'registered' 
                                             class="btn btn-svg event-bot-toggle"
                                             data-url="{{ route('events.event_management.toggle-bot', ['event' => (int)$event->id]) }}"
                                             data-enabled="{{ $botOn ? '1' : '0' }}"
-                                            title="{{ $botOn ? 'Бот включён для всех дат (нажми чтобы выключить)' : 'Бот выключен (нажми чтобы включить)' }}"
+                                            title="{{ $botOn ? __('events.bot_on_series') : __('events.bot_off_series') }}"
                                             @if($botOn) style="background:#10b981;border-color:#10b981;color:#fff" @endif>🤖</button>
                                         @endif
 	                                        {{-- Для recurring: изменить серию, открыть даты, отменить всю серию --}}
                                         <a href="{{ route('events.event_management.edit', ['event' => (int)$event->id]) }}"
 										class="icon-edit btn btn-svg"
-										title="Изменить серию"></a>
+										title="{{ __('events.edit_series') }}"></a>
                                         
 										{{-- Для recurring: Создать копию тоже нужно --}}
                                         <a href="{{ url('/events/create?from_event_id=' . (int)$event->id) }}"
 										class="icon-copy btn btn-svg"
-										title="Создать копию"></a>										
+										title="{{ __('events.create_copy') }}"></a>										
 										
 										
                                         <form method="POST"
@@ -332,10 +332,10 @@ return ['label' => 'Мест: —', 'free' => null, 'max' => null, 'registered' 
                                             <input type="hidden" name="delete_mode" value="series">
                                             <button type="submit"
 											class="btn-alert btn btn-danger btn-svg icon-stop"
-											data-title="Отменить всю серию?"
-											data-text="Все даты серии будут отменены. История сохранится."
-											data-confirm-text="Да, отменить"
-											data-cancel-text="Отмена">
+											data-title="{{ __('events.cancel_series_title') }}"
+											data-text="{{ __('events.cancel_series_text') }}"
+											data-confirm-text="{{ __('events.cancel_yes') }}"
+											data-cancel-text="{{ __('events.cancel_no') }}">
 											</button>
 										</form>
                                         
@@ -349,17 +349,17 @@ return ['label' => 'Мест: —', 'free' => null, 'max' => null, 'registered' 
                                             <input type="hidden" name="delete_mode" value="force">
                                             <button type="submit"
 											class="btn-alert btn btn-danger btn-svg icon-delete"
-											data-title="Удалить всю серию навсегда?"
-											data-text="Будут удалены все даты серии без возможности восстановления."
-											data-confirm-text="Да, удалить"
-											data-cancel-text="Отмена">
+											data-title="{{ __('events.force_series_title') }}"
+											data-text="{{ __('events.force_series_text') }}"
+											data-confirm-text="{{ __('events.force_yes') }}"
+											data-cancel-text="{{ __('events.cancel_no') }}">
 											</button>
 										</form>
                                         @endif
 									</div>
 									<a href="{{ route('events.event_management.occurrences', ['event' => (int)$event->id]) }}"
 									class="mt-1 w-100 btn btn-secondary btn-small"
-									>Открыть даты</a>										
+									>{{ __('events.open_dates') }}</a>										
 									@else
 									<div class="d-flex gap-1">
                                         @if($showBotBtn)
@@ -367,17 +367,17 @@ return ['label' => 'Мест: —', 'free' => null, 'max' => null, 'registered' 
                                             class="btn btn-svg event-bot-toggle"
                                             data-url="{{ route('events.event_management.toggle-bot', ['event' => (int)$event->id]) }}"
                                             data-enabled="{{ $botOn ? '1' : '0' }}"
-                                            title="{{ $botOn ? 'Бот включён (нажми чтобы выключить)' : 'Бот выключен (нажми чтобы включить)' }}"
+                                            title="{{ $botOn ? __('events.bot_on') : __('events.bot_off') }}"
                                             @if($botOn) style="background:#10b981;border-color:#10b981;color:#fff" @endif>🤖</button>
                                         @endif
 	                                        {{-- Для single: изменить, копировать, отменить --}}
                                         <a href="{{ route('events.event_management.edit', ['event' => (int)$event->id]) }}"
 										class="icon-edit btn btn-svg"
-										title="Изменить"></a>
+										title="{{ __('events.edit_single') }}"></a>
                                         
                                         <a href="{{ url('/events/create?from_event_id=' . (int)$event->id) }}"
 										class="icon-copy btn btn-svg"
-										title="Создать копию"></a>
+										title="{{ __('events.create_copy') }}"></a>
 										
                                         
                                         <form method="POST"
@@ -388,10 +388,10 @@ return ['label' => 'Мест: —', 'free' => null, 'max' => null, 'registered' 
                                             <input type="hidden" name="delete_mode" value="single">
                                             <button type="submit"
 											class="btn-alert btn btn-danger btn-svg icon-stop"
-											data-title="Отменить мероприятие?"
-											data-text="История сохранится, событие исчезнет из списка."
-											data-confirm-text="Да, отменить"
-											data-cancel-text="Отмена">
+											data-title="{{ __('events.cancel_single_title') }}"
+											data-text="{{ __('events.cancel_single_text') }}"
+											data-confirm-text="{{ __('events.cancel_yes') }}"
+											data-cancel-text="{{ __('events.cancel_no') }}">
 											</button>
 										</form>
                                         
@@ -404,10 +404,10 @@ return ['label' => 'Мест: —', 'free' => null, 'max' => null, 'registered' 
                                             <input type="hidden" name="delete_mode" value="force">
                                             <button type="submit"
 											class="btn-alert btn btn-danger btn-svg icon-delete"
-											data-title="Удалить навсегда?"
-											data-text="Данные будут удалены без возможности восстановления. Только для тестовых данных."
-											data-confirm-text="Да, удалить"
-											data-cancel-text="Отмена">
+											data-title="{{ __('events.force_single_title') }}"
+											data-text="{{ __('events.force_single_text') }}"
+											data-confirm-text="{{ __('events.force_yes') }}"
+											data-cancel-text="{{ __('events.cancel_no') }}">
 											</button>
 										</form>
                                         @endif
@@ -415,7 +415,7 @@ return ['label' => 'Мест: —', 'free' => null, 'max' => null, 'registered' 
 									@if((bool)$event->allow_registration)
 									<a href="{{ route('events.registrations.index', ['event' => (int)$event->id]) }}"
 									class="mt-1 w-100 btn btn-secondary btn-small"
-									title="Регистрации">Регистрации</a>
+									title="{{ __('events.registrations_btn') }}">{{ __('events.registrations_btn') }}</a>
 									@endif
 									@endif
 									
@@ -494,7 +494,7 @@ return ['label' => 'Мест: —', 'free' => null, 'max' => null, 'registered' 
 				// Обработка bulk-кнопок
 				if (cancelBtn) {
 					cancelBtn.addEventListener('click', () => {
-						if (confirm('Отменить выбранные мероприятия? История будет сохранена, события исчезнут из списка.')) {
+						if (confirm({!! json_encode(__('events.bulk_cancel_confirm')) !!})) {
 							submitBulk('cancel');
 						}
 					});
@@ -502,7 +502,7 @@ return ['label' => 'Мест: —', 'free' => null, 'max' => null, 'registered' 
 				
 				if (forceDeleteBtn) {
 					forceDeleteBtn.addEventListener('click', () => {
-						if (confirm('Удалить выбранные навсегда? Данные будут удалены без возможности восстановления.')) {
+						if (confirm({!! json_encode(__('events.bulk_force_confirm')) !!})) {
 							submitBulk('force');
 						}
 					});
@@ -559,19 +559,19 @@ return ['label' => 'Мест: —', 'free' => null, 'max' => null, 'registered' 
                         btn.css({'background': '', 'border-color': '', 'color': ''});
                     }
                     btn.attr('title', on
-                        ? 'Бот включён для всех дат (нажми чтобы выключить)'
-                        : 'Бот выключен (нажми чтобы включить)');
+                        ? @json(__('events.bot_on_series'))
+                        : @json(__('events.bot_off_series')));
                     swal({
-                        title: on ? '🤖 Бот включён' : '🤖 Бот выключен',
+                        title: on ? @json(__('events.bot_on_title')) : @json(__('events.bot_off_title')),
                         text: on
-                            ? 'Помощник записи активирован для всех дат мероприятия'
-                            : 'Помощник записи деактивирован для всех дат мероприятия',
+                            ? @json(__('events.bot_on_text_series'))
+                            : @json(__('events.bot_off_text_series')),
                         icon: on ? 'success' : 'info',
                         button: 'OK',
                     });
                 },
                 error: function() {
-                    swal({ title: 'Ошибка', text: 'Не удалось изменить статус бота', icon: 'error', button: 'OK' });
+                    swal({ title: @json(__('ui.error_title')), text: @json(__('events.bot_change_error')), icon: 'error', button: 'OK' });
                 },
                 complete: function() {
                     btn.prop('disabled', false);

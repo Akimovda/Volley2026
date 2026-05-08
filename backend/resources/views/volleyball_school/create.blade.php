@@ -9,9 +9,9 @@ $organizers = $isAdmin
 
 <x-voll-layout body_class="volleyball-school-create-page">
 	
-    <x-slot name="title">Создать страницу школы</x-slot>
-    <x-slot name="h1">Создать страницу школы</x-slot>
-    <x-slot name="t_description">Расскажите о вашей школе или волейбольном сообществе</x-slot>
+    <x-slot name="title">{{ __('profile.school_create_title') }}</x-slot>
+    <x-slot name="h1">{{ __('profile.school_create_title') }}</x-slot>
+    <x-slot name="t_description">{{ __('profile.school_create_t_description') }}</x-slot>
 	
     <x-slot name="breadcrumbs">
         <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">

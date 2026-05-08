@@ -1,5 +1,5 @@
 						<div class="ramka" style="z-index: 5" data-show-if="allow_registration=1">
-							<h2 class="-mt-05">Доступность</h2>		
+							<h2 class="-mt-05">{{ __('events.access_title') }}</h2>		
 							<div class="row">
 								<div class="col-md-4">
 									<div class="card">
@@ -7,10 +7,10 @@
 											<input type="hidden" name="is_private" value="0">
 											<input type="checkbox" name="is_private" value="1" id="is_private">
 											<div class="custom-checkbox"></div>
-											<span>Приватное (доступно только по ссылке)</span>
+											<span>{{ __('events.private_label') }}</span>
 										</label>
 										<ul class="list f-16 mt-1">
-											<li>Будет сгенерирован токен ссылки (public_token) для приватного.</li>
+											<li>{{ __('events.private_hint') }}</li>
 										</ul>											
 									</div>
 								</div>
@@ -26,18 +26,18 @@
 											@checked((bool) old('is_paid', $prefill['is_paid'] ?? false))
                                             >
                                             <div class="custom-checkbox"></div>
-                                            <span>Платное</span>
+                                            <span>{{ __('events.paid_label') }}</span>
 										</label>
 										
                                         <div class="row mt-2" id="price_wrap">
                                             <div class="col-md-6">
-                                                <label class="form-label">Стоимость</label>
+                                                <label class="form-label">{{ __('events.price_label') }}</label>
                                                 <input
 												type="number"
 												name="price_amount"
 												class="form-input"
 												value="{{ old('price_amount', $prefill['price_amount'] ?? '') }}"
-												placeholder="Например: 134"
+												placeholder="{{ __('events.price_ph') }}"
 												min="10"
 												max="500000"
 												step="0.01"
@@ -49,23 +49,23 @@
 											</div>
 											
                                             <div class="col-md-6">
-                                                <label class="form-label">Валюта</label>
+                                                <label class="form-label">{{ __('events.currency_label') }}</label>
                                                 <select name="price_currency" class="form-select">
                                                     @php
 													$currencyOptions = [
-													'RUB' => 'RUB — Российский рубль (₽)',
-													'USD' => 'USD — Доллар США ($)',
-													'EUR' => 'EUR — Евро (€)',
-													'KZT' => 'KZT — Тенге (₸)',
-													'KGS' => 'KGS — Киргизский сом',
-													'BYN' => 'BYN — Белорусский рубль',
-													'UZS' => 'UZS — Узбекский сум',
-													'AMD' => 'AMD — Армянский драм (֏)',
-													'AZN' => 'AZN — Азербайджанский манат (₼)',
-													'TJS' => 'TJS — Сомони',
-													'TMT' => 'TMT — Туркменский манат',
-													'GEL' => 'GEL — Лари (₾)',
-													'MDL' => 'MDL — Молдавский лей',
+													'RUB' => __('events.cur_RUB'),
+													'USD' => __('events.cur_USD'),
+													'EUR' => __('events.cur_EUR'),
+													'KZT' => __('events.cur_KZT'),
+													'KGS' => __('events.cur_KGS'),
+													'BYN' => __('events.cur_BYN'),
+													'UZS' => __('events.cur_UZS'),
+													'AMD' => __('events.cur_AMD'),
+													'AZN' => __('events.cur_AZN'),
+													'TJS' => __('events.cur_TJS'),
+													'TMT' => __('events.cur_TMT'),
+													'GEL' => __('events.cur_GEL'),
+													'MDL' => __('events.cur_MDL'),
 													];
 													
 													$selectedCurrency = old('price_currency', $prefill['price_currency'] ?? 'RUB');
@@ -84,7 +84,7 @@
 										</div>
 										 {{-- СПОСОБ ОПЛАТЫ --}}
                                         <div id="payment_method_wrap" class="mt-2">
-                                            <label>Способ оплаты</label>
+                                            <label>{{ __('events.pay_method_label') }}</label>
                                             @php
                                                 $pm = old('payment_method', $prefill['payment_method'] ?? 'cash');
                                                 $orgPaySettings = auth()->check()
@@ -92,71 +92,71 @@
                                                     : null;
                                             @endphp
                                             <select name="payment_method" id="payment_method">
-                                                <option value="cash" @selected($pm === 'cash')>💵 Наличные (на месте)</option>
-                                                <option value="tbank_link" @selected($pm === 'tbank_link')>🏦 Перевод Т-Банк (по ссылке)</option>
-                                                <option value="sber_link" @selected($pm === 'sber_link')>💚 Перевод Сбер (по ссылке)</option>
+                                                <option value="cash" @selected($pm === 'cash')>{{ __('events.pay_method_cash') }}</option>
+                                                <option value="tbank_link" @selected($pm === 'tbank_link')>{{ __('events.pay_method_tbank') }}</option>
+                                                <option value="sber_link" @selected($pm === 'sber_link')>{{ __('events.pay_method_sber') }}</option>
                                                 @if($orgPaySettings?->yoomoney_verified)
-                                                <option value="yoomoney" @selected($pm === 'yoomoney')>🟡 ЮМани (автооплата)</option>
+                                                <option value="yoomoney" @selected($pm === 'yoomoney')>{{ __('events.pay_method_yoomoney') }}</option>
                                                 @endif
                                             </select>
 
                                             {{-- Ссылка для перевода --}}
                                             <div id="payment_link_wrap" class="mt-1" style="display:none">
-                                                <label>Ссылка для перевода</label>
+                                                <label>{{ __('events.pay_link_label') }}</label>
                                                 <input type="url" name="payment_link"
                                                     value="{{ old('payment_link', $prefill['payment_link'] ?? ($pm === 'tbank_link' ? $orgPaySettings?->tbank_link : ($pm === 'sber_link' ? $orgPaySettings?->sber_link : ''))) }}"
                                                     placeholder="https://...">
                                                 <ul class="list f-14 mt-1">
-                                                    <li>Из настроек профиля подставится автоматически</li>
+                                                    <li>{{ __('events.pay_link_auto') }}</li>
                                                 </ul>
                                             </div>
 
                                             <ul class="list f-14 mt-1" id="payment_method_hint">
-                                                <li id="hint_cash">Игроки платят на месте, запись без ограничений</li>
-                                                <li id="hint_link" style="display:none">Игрок нажимает "Я оплатил", вы подтверждаете вручную</li>
-                                                <li id="hint_yoomoney" style="display:none">Место резервируется на {{ $orgPaySettings?->payment_hold_minutes ?? 15 }} мин. Запись подтверждается после оплаты автоматически</li>
+                                                <li id="hint_cash">{{ __('events.pay_hint_cash') }}</li>
+                                                <li id="hint_link" style="display:none">{{ __('events.pay_hint_link') }}</li>
+                                                <li id="hint_yoomoney" style="display:none">{{ __('events.pay_hint_yoomoney', ['n' => $orgPaySettings?->payment_hold_minutes ?? 15]) }}</li>
                                             </ul>
                                         </div>
 
                                         {{-- РЕЖИМ ОПЛАТЫ ТУРНИРА (только для format=tournament) --}}
                                         <div class="mt-2" id="tournament_payment_mode_wrap" style="display:none">
-                                            <label>Кто оплачивает участие</label>
+                                            <label>{{ __('events.tournament_pay_mode') }}</label>
                                             @php
                                                 $tpm = old('tournament_payment_mode', $prefill['tournament_payment_mode'] ?? 'team');
                                             @endphp
                                             <select name="tournament_payment_mode" id="tournament_payment_mode">
-                                                <option value="team" @selected($tpm === 'team')>👑 Капитан за всю команду</option>
-                                                <option value="per_player" @selected($tpm === 'per_player')>👤 Каждый игрок сам за себя</option>
+                                                <option value="team" @selected($tpm === 'team')>{{ __('events.tournament_pay_team') }}</option>
+                                                <option value="per_player" @selected($tpm === 'per_player')>{{ __('events.tournament_pay_per') }}</option>
                                             </select>
 
                                             <ul class="list f-14 mt-1" id="tournament_payment_mode_hints">
-                                                <li id="hint_team_pay">Капитан оплачивает участие команды целиком. Команда допускается к турниру после оплаты.</li>
-                                                <li id="hint_per_player_pay" style="display:none">Каждый участник команды оплачивает своё участие отдельно. Команда допускается когда все оплатили.</li>
+                                                <li id="hint_team_pay">{{ __('events.tournament_pay_team_hint') }}</li>
+                                                <li id="hint_per_player_pay" style="display:none">{{ __('events.tournament_pay_per_hint') }}</li>
                                             </ul>
                                         </div>
 
                                         {{-- ПОЛИТИКА ВОЗВРАТА (только для платных) --}}
                                         <div class="mt-2" id="refund_wrap" style="display:none">
-                                            <label>Политика возврата</label>
+                                            <label>{{ __('events.refund_title') }}</label>
                                             <div class="row row2">
                                                 <div class="col-4">
-                                                    <label class="f-14">100% за (часов)</label>
+                                                    <label class="f-14">{{ __('events.refund_full_hours') }}</label>
                                                     <input type="number" name="refund_hours_full" min="0" max="720"
                                                         value="{{ old('refund_hours_full', $prefill['refund_hours_full'] ?? $orgPaySettings?->refund_hours_full ?? 48) }}">
                                                 </div>
                                                 <div class="col-4">
-                                                    <label class="f-14">Частично за (часов)</label>
+                                                    <label class="f-14">{{ __('events.refund_partial_hours') }}</label>
                                                     <input type="number" name="refund_hours_partial" min="0" max="720"
                                                         value="{{ old('refund_hours_partial', $prefill['refund_hours_partial'] ?? $orgPaySettings?->refund_hours_partial ?? 24) }}">
                                                 </div>
                                                 <div class="col-4">
-                                                    <label class="f-14">Частичный %</label>
+                                                    <label class="f-14">{{ __('events.refund_partial_pct') }}</label>
                                                     <input type="number" name="refund_partial_pct" min="0" max="100"
                                                         value="{{ old('refund_partial_pct', $prefill['refund_partial_pct'] ?? $orgPaySettings?->refund_partial_pct ?? 50) }}">
                                                 </div>
                                             </div>
                                             <ul class="list f-14 mt-1">
-                                                <li>При отмене по кворуму — всегда 100% на виртуальный счёт</li>
+                                                <li>{{ __('events.refund_quorum_hint') }}</li>
                                             </ul>
                                         </div>
 									</div>
@@ -169,10 +169,10 @@
 											<input type="hidden" name="requires_personal_data" value="0">
 											<input type="checkbox" name="requires_personal_data" value="1">
 											<div class="custom-checkbox"></div>
-											<span class="text-sm font-semibold">Требовать персональные данные</span>
+											<span class="text-sm font-semibold">{{ __('events.personal_data_label') }}</span>
 										</label>
 										<ul class="list f-16 mt-1">
-											<li>Если включено — при записи будем просить дополнительные данные.</li>
+											<li>{{ __('events.personal_data_hint') }}</li>
 										</ul>										
 									</div>
 								</div>
@@ -181,7 +181,7 @@
 						{{-- ===== Помощник записи 🤖 =====--}}
 						
                         <div class="ramka" data-show-if="allow_registration=1" data-hide-if="registration_mode=team,team_classic,team_beach|format=tournament" id="bot_assistant_block">
-                            <h2 class="-mt-05">Помощник записи 🤖</h2>
+                            <h2 class="-mt-05">{{ __('events.bot_title') }}</h2>
                             <div class="row">
                                 <div class="col-md-12">
                                     <div class="card">
@@ -195,22 +195,22 @@
 											@checked((bool) old('bot_assistant_enabled', $prefill['bot_assistant_enabled'] ?? false))
                                             >
                                             <div class="custom-checkbox"></div>
-                                            <span>Включить помощника записи</span>
+                                            <span>{{ __('events.bot_enable') }}</span>
 										</label>
 										
                                         <ul class="list f-16 mt-1">
-                                            <li>Если за первые сутки после открытия записи зарегистрировалось меньше <strong>порога</strong> — боты начнут постепенно занимать места.</li>
-                                            <li>По мере прихода живых игроков боты уходят и освобождают места.</li>
-                                            <li>Видно только организатору и администратору.</li>
-                                            <li>Боты не занимают последнее свободное место.</li>
-                                            <li>Активность ботов замораживается за 3 часа до начала.</li>
+                                            <li>{!! __('events.bot_hint_1') !!}</li>
+                                            <li>{{ __('events.bot_hint_2') }}</li>
+                                            <li>{{ __('events.bot_hint_3') }}</li>
+                                            <li>{{ __('events.bot_hint_4') }}</li>
+                                            <li>{{ __('events.bot_hint_5') }}</li>
 										</ul>
 									</div>
 								</div>
 								
                                 <div class="col-md-6" id="bot_assistant_settings" @if(!old('bot_assistant_enabled', $prefill['bot_assistant_enabled'] ?? false)) style="display:none" @endif>
                                     <div class="card">
-                                        <label>Порог запуска (%)</label>
+                                        <label>{{ __('events.bot_threshold_label') }}</label>
                                         <div class="d-flex fvc gap-2 mt-1">
                                             <input
 											type="range"
@@ -228,15 +228,15 @@
 											</strong>
 										</div>
                                         <ul class="list f-16 mt-1">
-                                            <li>Если через сутки записалось меньше <strong id="bot_threshold_hint">{{ old('bot_assistant_threshold', $prefill['bot_assistant_threshold'] ?? 10) }}%</strong> от максимума — боты включаются.</li>
-                                            <li>Диапазон: 5–30%.</li>
+                                            <li>{!! __('events.bot_threshold_hint', ['id' => 'bot_threshold_hint', 'val' => old('bot_assistant_threshold', $prefill['bot_assistant_threshold'] ?? 10)]) !!}</li>
+                                            <li>{{ __('events.bot_threshold_range') }}</li>
 										</ul>
 									</div>
 								</div>
 								
                                 <div class="col-md-6" id="bot_assistant_fill" @if(!old('bot_assistant_enabled', $prefill['bot_assistant_enabled'] ?? false)) style="display:none" @endif>
                                     <div class="card">
-                                        <label>Макс. заполнение ботами (%)</label>
+                                        <label>{{ __('events.bot_fill_label') }}</label>
                                         <div class="d-flex fvc gap-2 mt-1">
                                             <input
 											type="range"
@@ -254,15 +254,15 @@
 											</strong>
 										</div>
                                         <ul class="list f-16 mt-1">
-                                            <li>Боты не займут больше <strong id="bot_fill_hint">{{ old('bot_assistant_max_fill_pct', $prefill['bot_assistant_max_fill_pct'] ?? 40) }}%</strong> мест одновременно.</li>
-                                            <li>Минимум 2 места всегда остаются свободными для живых игроков.</li>
+                                            <li>{!! __('events.bot_fill_hint', ['id' => 'bot_fill_hint', 'val' => old('bot_assistant_max_fill_pct', $prefill['bot_assistant_max_fill_pct'] ?? 40)]) !!}</li>
+                                            <li>{{ __('events.bot_fill_safe') }}</li>
 										</ul>
 									</div>
 								</div>
 							</div>
 						</div>
 						<div class="ramka" data-show-if="allow_registration=1">
-							<h2 class="-mt-05">Уведомления и видимость</h2>		
+							<h2 class="-mt-05">{{ __('events.notify_title') }}</h2>		
 							<div class="row">
 								
 								{{-- ✅ Notifications + participants visibility --}}
@@ -276,20 +276,20 @@
 								
 								<div class="col-md-4">
                                     <div class="card">
-                                        <label>Напоминание игроку о записи</label>
+                                        <label>{{ __('events.remind_label') }}</label>
                                 
                                         <label class="checkbox-item">
                                             <input type="hidden" name="remind_registration_enabled" value="0">
                                             <input checked type="checkbox" name="remind_registration_enabled" value="1" id="remind_registration_enabled">
                                             <div class="custom-checkbox"></div>
-                                            <span>Включено</span>
+                                            <span>{{ __('events.remind_enabled') }}</span>
                                         </label>
                                 
                                         <div class="mt-2">
-                                            <label>За сколько до начала</label>
+                                            <label>{{ __('events.remind_when') }}</label>
                                             <div class="row row2">
                                                 <div class="col-6">
-                                                    <label>Часы</label>
+                                                    <label>{{ __('events.remind_hours') }}</label>
                                                     <select
                                                         id="remind_hours_input"
                                                         class="w-full rounded-lg border-gray-200"
@@ -303,7 +303,7 @@
                                                     </select>
                                                 </div>
                                                 <div class="col-6">
-                                                    <label>Минуты</label>
+                                                    <label>{{ __('events.remind_minutes') }}</label>
                                                     <select
                                                         id="remind_minutes_input"
                                                         class="w-full rounded-lg border-gray-200"
@@ -326,7 +326,7 @@
                                             >
                                 
                                             <ul class="list f-16 mt-1">
-                                                <li>Пример: 10 часов 0 минут = напоминание за 10 часов до начала.</li>
+                                                <li>{{ __('events.remind_example') }}</li>
                                             </ul>
                                         </div>
                                     </div>
@@ -372,18 +372,18 @@
                                 
                                 <div class="col-md-4">
                                     <div class="card">
-                                        <label>Анонс в каналы</label>
+                                        <label>{{ __('events.channels_label') }}</label>
 										
                                         <ul class="list f-16 mb-2">
-                                            <li>При открытии регистрации сообщение отправится в выбранные каналы</li>
-                                            <li>Для повторяющихся мероприятий анонс будет отправляться для каждой новой даты</li>
+                                            <li>{{ __('events.channels_hint_1') }}</li>
+                                            <li>{{ __('events.channels_hint_2') }}</li>
 										</ul>
 										
                                         @if($userChannels->isEmpty())
 										<div class="f-16">
-											Нет подключенных каналов —
+											{{ __('events.channels_none_pre') }}
 											<a href="{{ route('profile.notification_channels') }}" class="link">
-												подключить
+												{{ __('events.channels_none_link') }}
 											</a>
 										</div>
                                         @else
@@ -396,7 +396,7 @@
 												@checked(in_array((string) $channel->id, array_map('strval', $selectedChannels), true))>
 												<div class="custom-checkbox"></div>
 												<span>
-													{{ strtoupper($channel->platform) }} — {{ $channel->title ?: 'Без названия' }}
+													{{ strtoupper($channel->platform) }} — {{ $channel->title ?: __('events.channels_no_title') }}
 													<span class="text-muted">({{ $channel->chat_id }})</span>
 												</span>
 											</label>
@@ -408,28 +408,28 @@
 												<input type="hidden" name="channel_silent" value="0">
 												<input type="checkbox" name="channel_silent" value="1" @checked($channelSilent)>
 												<div class="custom-checkbox"></div>
-												<span>Тихое обновление</span>
+												<span>{{ __('events.channels_silent') }}</span>
 											</label>
 											
 											<label class="checkbox-item">
 												<input type="hidden" name="channel_update_message" value="0">
 												<input type="checkbox" name="channel_update_message" value="1" @checked($channelUpdateMessage)>
 												<div class="custom-checkbox"></div>
-												<span>Обновлять сообщение</span>
+												<span>{{ __('events.channels_update_msg') }}</span>
 											</label>
 											
 											<label class="checkbox-item">
 												<input type="hidden" name="channel_include_image" value="0">
 												<input type="checkbox" name="channel_include_image" value="1" @checked($channelIncludeImage)>
 												<div class="custom-checkbox"></div>
-												<span>Добавлять картинку</span>
+												<span>{{ __('events.channels_with_image') }}</span>
 											</label>
 											
 											<label class="checkbox-item">
 												<input type="hidden" name="channel_include_registered" value="0">
 												<input type="checkbox" name="channel_include_registered" value="1" @checked($channelIncludeRegistered)>
 												<div class="custom-checkbox"></div>
-												<span>Показывать список игроков</span>
+												<span>{{ __('events.channels_with_players') }}</span>
 											</label>
 										</div>
                                         @endif
@@ -437,20 +437,20 @@
 								</div>
 								<div class="col-md-4">
 									<div class="card">
-										<label>Показывать список записавшихся</label>
+										<label>{{ __('events.show_participants_label') }}</label>
 										<label class="radio-item">
 											<input type="radio" name="show_participants" value="1" @checked($showParts)>
 											<div class="custom-radio"></div>
-											<span>Да</span>
+											<span>{{ __('events.yes') }}</span>
 										</label>
 										<label class="radio-item">
 											<input type="radio" name="show_participants" value="0" @checked(!$showParts)>
 											<div class="custom-radio"></div>
-											<span>Нет</span>
+											<span>{{ __('events.no') }}</span>
 										</label>
 										
 										<ul class="list f-16 mt-1">
-											<li>Если “Нет” — на странице события список участников не показываем.</li>
+											<li>{{ __('events.show_participants_hint') }}</li>
 										</ul>											
 										
 									</div>
@@ -458,7 +458,7 @@
 							</div>
 						</div>
 						<div class="ramka" style="z-index:6">
-							<h2 class="-mt-05">Фото и описание</h2>		
+							<h2 class="-mt-05">{{ __('events.photo_desc_title') }}</h2>		
 							
 							<div class="row">
 								
@@ -494,7 +494,7 @@
 										@if($userEventPhotos->count() > 0)
 										<div class="card">	
 										<div>
-											<label>Фотографии для мероприятия</label>
+											<label>{{ __('events.photos_label') }}</label>
 											
 											
 											
@@ -513,7 +513,7 @@
 											<label class="checkbox-item mb-0">
 												<input type="checkbox" class="photo-select" value="{{ $photo->id }}">
 												<div class="custom-checkbox"></div>
-												<span>Выбрать</span>
+												<span>{{ __('events.photo_select') }}</span>
 											</label>    
 											<div class="photo-order-badge f-16 b-600 cd"></div>
 										</div>
@@ -524,8 +524,8 @@
 							</div>
 							
 							<ul class="list f-16 mt-1">
-								<li>Выберите фото для мероприятия. Первое отмеченное фото будет главным.</li>
-								<li>Фотографии можно добавить (с галочкой "Для мероприятий") в разделе <a target="_blank" href="{{ route('user.photos') }}">Ваши фотографии</a></li>
+								<li>{{ __('events.photo_select_hint_1') }}</li>
+								<li>{{ __('events.photo_select_hint_2_pre') }} <a target="_blank" href="{{ route('user.photos') }}">{{ __('events.photo_select_hint_2_link') }}</a></li>
 							</ul>														
 							
 							<input type="hidden" name="event_photos" id="event_photos_input" value="">
@@ -554,7 +554,7 @@
 									const badge = checkbox.closest('.swiper-slide').querySelector('.photo-order-badge');
 									if (isSelected) {
 										const order = selectedPhotos.indexOf(id) + 1;
-										badge.textContent = order === 1 ? '★ Главное' : `Фото: ${order}`;
+										badge.textContent = order === 1 ? @json(__('events.photo_main')) : (@json(__('events.photo_pos_n', ['n' => ''])) + order);
 										} else {
 										badge.textContent = '';
 									}
@@ -585,8 +585,8 @@
 					@else
 
 						<div class="alert alert-info">
-							<p>У вас нет фото для мероприятий.</p> 
-							<p>Фотографии можно добавить (с галочкой "Для мероприятий") в разделе <a target="_blank" href="{{ route('user.photos') }}">Ваши фотографии</a></p>
+							<p>{{ __('events.photo_empty_p1') }}</p> 
+							<p>{{ __('events.photo_select_hint_2_pre') }} <a target="_blank" href="{{ route('user.photos') }}">{{ __('events.photo_select_hint_2_link') }}</a></p>
 						</div>
 
 					@endif
@@ -599,7 +599,7 @@
 								{{-- STEP 3: Описание мероприятия --}}
 								<div class="col-md-8">
 									<div class="card">
-										<label>Описание мероприятия</label>
+										<label>{{ __('events.desc_label') }}</label>
 										
 										{{-- Важно: hidden input + trix-editor --}}
 										<input id="description_html" type="hidden" name="description_html">
@@ -634,7 +634,7 @@ document.addEventListener('trix-paste', function(e) {
 	</div>
 	<div class="ramka text-center">
 		<button type="button" class="btn btn-secondary" data-back>
-			Назад
+			{{ __('events.btn_back') }}
 		</button>
-		<button type="submit" class="btn">Создать</button>
+		<button type="submit" class="btn">{{ __('events.btn_create') }}</button>
 	</div>							

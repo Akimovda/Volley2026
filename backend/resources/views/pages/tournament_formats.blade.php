@@ -1,12 +1,12 @@
 <x-voll-layout body_class="tournament-formats-page">
-<x-slot name="title">Форматы турниров — Шпаргалка организатора</x-slot>
-<x-slot name="description">Обзор форматов волейбольных турниров: круговая система, олимпийка, швейцарская система, King of the Court, тайский формат и другие.</x-slot>
+<x-slot name="title">{{ __('pages.tf_title') }}</x-slot>
+<x-slot name="description">{{ __('pages.tf_description') }}</x-slot>
 <x-slot name="canonical">{{ route('tournament_formats') }}</x-slot>
-<x-slot name="h1">Форматы турниров</x-slot>
+<x-slot name="h1">{{ __('pages.tf_h1') }}</x-slot>
 
 <x-slot name="breadcrumbs">
     <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
-        <span itemprop="name">Форматы турниров</span>
+        <span itemprop="name">{{ __('pages.tf_breadcrumb') }}</span>
         <meta itemprop="position" content="2">
     </li>
 </x-slot>

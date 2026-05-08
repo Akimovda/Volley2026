@@ -80,8 +80,8 @@ $groupedByDate[$dateKey] = ['date' => $date, 'occurrences' => []];
 	}
     }
 	
-    $months = [1=>'янв',2=>'фев',3=>'мар',4=>'апр',5=>'май',6=>'июн',7=>'июл',8=>'авг',9=>'сен',10=>'окт',11=>'ноя',12=>'дек'];
-    $daysOfWeek = [1=>'пн',2=>'вт',3=>'ср',4=>'чт',5=>'пт',6=>'сб',7=>'вс'];
+    $months = __('events.month_short');
+    $daysOfWeek = __('events.dow_short');
 	
     $formatOptions = [];
     $levelOptions  = [];
@@ -104,20 +104,20 @@ $groupedByDate[$dateKey] = ['date' => $date, 'occurrences' => []];
 	@endphp
 	
 	<x-voll-layout body_class="events-page">
-		<x-slot name="title">Мероприятия</x-slot>
-		<x-slot name="description">Мероприятия</x-slot>
+		<x-slot name="title">{{ __('events.index_title') }}</x-slot>
+		<x-slot name="description">{{ __('events.index_title') }}</x-slot>
 		<x-slot name="canonical">{{ route('events.index') }}</x-slot>
 		
 		<x-slot name="breadcrumbs">
 			<li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
 				<a href="{{ route('events.index') }}" itemprop="item">
-					<span itemprop="name">Мероприятия</span>
+					<span itemprop="name">{{ __('events.index_title') }}</span>
 				</a>
 				<meta itemprop="position" content="2">
 			</li>
 		</x-slot>
 		
-		<x-slot name="h1">Мероприятия</x-slot>
+		<x-slot name="h1">{{ __('events.index_h1') }}</x-slot>
 		
 		<x-slot name="h2">
             @if($hasOcc && !empty($groupedByDate))
@@ -132,16 +132,16 @@ $groupedByDate[$dateKey] = ['date' => $date, 'occurrences' => []];
 		</x-slot>
 		
 		<x-slot name="t_description">
-			Игры и тренеровки на нашей платформе
+			{{ __('events.index_t_description') }}
 		</x-slot>
 		
 		<x-slot name="d_description">
 			<div class="d-flex flex-wrap gap-1 m-center">
 				<div class="mt-2" data-aos-delay="250" data-aos="fade-up">
-					<button class="btn ufilter-btn">Фильтр</button>
+					<button class="btn ufilter-btn">{{ __('events.btn_filter') }}</button>
 				</div>
 				<div class="mt-2" data-aos-delay="350" data-aos="fade-up">
-					<button type="button" id="btn-toggle-all-imgs" class="btn btn-secondary" onclick="toggleAllImgs(this)">Скрыть фото</button>
+					<button type="button" id="btn-toggle-all-imgs" class="btn btn-secondary" onclick="toggleAllImgs(this)">{{ __('events.btn_hide_photos') }}</button>
 				</div>						
 			</div>
 		</x-slot>
@@ -174,32 +174,32 @@ $groupedByDate[$dateKey] = ['date' => $date, 'occurrences' => []];
 $fCity     = request('city', '');
 						
 						$formatLabels = [
-						'game'               => 'Игра',
-						'training'           => 'Тренировка',
-						'training_game'      => 'Тренировка + игра',
-						'training_pro_am'    => 'Про-ам тренировка',
-						'coach_student'      => 'Тренер + ученик',
-						'tournament'         => 'Турнир',
-						'tournament_classic' => 'Турнир (классика)',
-						'tournament_beach'   => 'Турнир (пляж)',
-						'camp'               => 'Кемп',
+						'game'               => __('events.fmt_game'),
+						'training'           => __('events.fmt_training'),
+						'training_game'      => __('events.fmt_training_game'),
+						'training_pro_am'    => __('events.fmt_training_pro_am'),
+						'coach_student'      => __('events.fmt_coach_student'),
+						'tournament'         => __('events.fmt_tournament'),
+						'tournament_classic' => __('events.fmt_tournament_classic'),
+						'tournament_beach'   => __('events.fmt_tournament_beach'),
+						'camp'               => __('events.fmt_camp'),
 						];
 						@endphp
 						<form method="GET" action="{{ route('events.index') }}">
 							<div class="row g-2">
 								<div class="col-12 col-md-3">
-									<label class="form-label mb-1">Направление</label>
+									<label class="form-label mb-1">{{ __('events.filter_direction') }}</label>
 									<select name="direction" class="form-select">
-										<option value="" {{ $fDir==='' ? 'selected' : '' }}>Все</option>
-										<option value="classic" {{ $fDir==='classic' ? 'selected' : '' }}>🏐 Классика</option>
-										<option value="beach" {{ $fDir==='beach' ? 'selected' : '' }}>🏖 Пляжка</option>
+										<option value="" {{ $fDir==='' ? 'selected' : '' }}>{{ __('events.filter_any') }}</option>
+										<option value="classic" {{ $fDir==='classic' ? 'selected' : '' }}>{{ __('events.filter_classic') }}</option>
+										<option value="beach" {{ $fDir==='beach' ? 'selected' : '' }}>{{ __('events.filter_beach') }}</option>
 									</select>
 								</div>
 								
 								<div class="col-12 col-md-3">
-									<label class="form-label mb-1">Тип мероприятия</label>
+									<label class="form-label mb-1">{{ __('events.filter_event_type') }}</label>
 									<select name="format" class="form-select">
-										<option value="" {{ $fFormat==='' ? 'selected' : '' }}>Все</option>
+										<option value="" {{ $fFormat==='' ? 'selected' : '' }}>{{ __('events.filter_any') }}</option>
 										@foreach($formatLabels as $k => $lbl)
 										<option value="{{ $k }}" {{ $fFormat===$k ? 'selected' : '' }}>{{ $lbl }}</option>
 										@endforeach
@@ -207,9 +207,9 @@ $fCity     = request('city', '');
 								</div>
 								
 								<div class="col-12 col-md-2">
-									<label class="form-label mb-1">Уровень</label>
+									<label class="form-label mb-1">{{ __('events.filter_level') }}</label>
 									<select name="level" class="form-select">
-										<option value="" {{ $fLevel==='' ? 'selected' : '' }}>Любой</option>
+										<option value="" {{ $fLevel==='' ? 'selected' : '' }}>{{ __('events.filter_any_level') }}</option>
 										@foreach(($levelOptions ?? []) as $lv)
 										<option value="{{ (int)$lv }}" {{ (string)$fLevel===(string)$lv ? 'selected' : '' }}>{{ (int)$lv }}</option>
 										@endforeach
@@ -217,11 +217,11 @@ $fCity     = request('city', '');
 								</div>
 								
                                 <div class="col-12 col-md-4">
-                                    <label class="form-label mb-1">Локация</label>
+                                    <label class="form-label mb-1">{{ __('events.filter_location') }}</label>
                                     <input type="text"
 									name="location"
 									class="form-control"
-									placeholder="Название или адрес…"
+									placeholder="{{ __('events.filter_location_ph') }}"
 									value="{{ e($fLocation) }}"
 									id="filter-location-input"
 									autocomplete="off"
@@ -236,12 +236,12 @@ $fCity     = request('city', '');
 <label class="checkbox-item">
 <input type="checkbox" name="city" value="all" {{ $fCity === 'all' ? 'checked' : '' }}>
 <div class="custom-checkbox"></div>
-<span>Все города</span>
+<span>{{ __('events.filter_all_cities') }}</span>
 </label>
 @endif
 @endauth
-									<button type="submit" class="btn">Применить</button>
-									<a href="{{ route('events.index') }}" class="btn btn-secondary">Сброс</a>
+									<button type="submit" class="btn">{{ __('events.filter_apply') }}</button>
+									<a href="{{ route('events.index') }}" class="btn btn-secondary">{{ __('events.filter_reset') }}</a>
 								</div>
 							</div>
 						</form>
@@ -254,7 +254,7 @@ $fCity     = request('city', '');
 				<div class="alert alert-success">
 					{{ session('status') }}
 					@if (session('private_link'))
-					<strong>Приватная ссылка 🔗:</strong>
+					<strong>{{ __('events.private_link') }}</strong>
 					<a class="text-decoration-underline" href="{{ session('private_link') }}" target="_blank" rel="noopener">
 						{{ session('private_link') }}
 					</a>
@@ -318,16 +318,16 @@ $fCity     = request('city', '');
                             @if($currentOffset > 0)
                             <a href="{{ route('events.index', array_merge($baseParams, ['offset' => $prevOffset])) }}"
 							class="no-highlight day-chip last-tab tab">
-                                <div class="dc-dow">Предыдущие</div>
-                                <div class="dc-date">10 дней</div>
+                                <div class="dc-dow">{{ __('events.days_prev') }}</div>
+                                <div class="dc-date">{{ __('events.days_n_days') }}</div>
 							</a>
                             @endif
 							
                             @if(count($groupedByDate) >= 10)
                             <a href="{{ route('events.index', array_merge($baseParams, ['offset' => $nextOffset])) }}"
 							class="no-highlight day-chip last-tab tab">
-                                <div class="dc-dow">Следующие</div>
-                                <div class="dc-date">10 дней</div>
+                                <div class="dc-dow">{{ __('events.days_next') }}</div>
+                                <div class="dc-date">{{ __('events.days_n_days') }}</div>
 							</a>
                             @endif
                             @endif
@@ -354,20 +354,20 @@ $fCity     = request('city', '');
 			@else
 			<div class="ramka">
 				<div class="alert alert-info">
-					Пока мероприятий нет. Но скоро появятся 🙂
+					{{ __('events.empty_list') }}
 				</div>
 			</div>
 			@endif
 			
 			{{-- JOIN MODAL (Fancybox inline) --}}
 			<div id="joinModalContent" style="display:none; max-width: 56rem">
-				<h2 id="jmTitle" class="title-h -mt-05">Запись на мероприятие</h2>
+				<h2 id="jmTitle" class="title-h -mt-05">{{ __('events.join_title') }}</h2>
 				<div id="jmMeta" class="mb-05"></div>
 				<div id="jmAddr" class="mb-2"></div>
 				<div id="jmError" class="alert alert-danger" style="display:none"></div>
-				<div id="jmLoading" class="mb-1" style="display:none;">Загружаю позиции…</div>
+				<div id="jmLoading" class="mb-1" style="display:none;">{{ __('events.join_loading') }}</div>
 				<div id="jmPositions"></div>
-				<div class="f-16 mt-2">После выбора позиции вы сразу будете записаны.</div>
+				<div class="f-16 mt-2">{{ __('events.join_after_choice') }}</div>
 			</div>
 			
 			<form id="joinForm" method="POST" action="" style="display:none">
@@ -380,14 +380,7 @@ $fCity     = request('city', '');
 			<script src="/assets/fas.js"></script>
 			<script>
 				
-				const positionNames = {
-					outside:  'Доигровщик',
-					opposite: 'Диагональный',
-					middle:   'ЦБ',
-					setter:   'Связующий',
-					libero:   'Либеро',
-					player:   'Игрок',
-				};
+				const positionNames = @json(__('events.positions'));
 				
 				const titleEl   = document.getElementById('jmTitle');
 				const metaEl    = document.getElementById('jmMeta');
@@ -417,7 +410,7 @@ $fCity     = request('city', '');
 					clearError();
 					setLoading(true);
 					posWrap.innerHTML = '';
-					titleEl.textContent = payload.title || 'Запись на мероприятие';
+					titleEl.textContent = payload.title || @json(__('events.join_title'));
 					metaEl.textContent  = [payload.date, payload.time, payload.tz ? '('+payload.tz+')' : ''].filter(Boolean).join(' ');
 					addrEl.textContent  = payload.address || '';
                     
@@ -432,7 +425,7 @@ $fCity     = request('city', '');
 					posWrap.innerHTML = '';
 					setLoading(false);
 					if (!Array.isArray(freePositions) || freePositions.length === 0) {
-						showError('Свободных мест нет или нет доступных позиций.');
+						showError(@json(__('events.join_no_free')));
 						return;
 					}
 					freePositions.forEach(p => {
@@ -442,7 +435,7 @@ $fCity     = request('city', '');
 						const btn   = document.createElement('button');
 						btn.type      = 'button';
 						btn.className = 'd-flex between btn btn-primary w-100 mb-1';
-						btn.innerHTML = label + '<span><span class="pl-1 pr-1 f-11">Свободно:</span>' + free + '</span>';
+						btn.innerHTML = label + '<span><span class="pl-1 pr-1 f-11">' + @json(__('events.join_free_label')) + '</span>' + free + '</span>';
 						btn.addEventListener('click', () => {
 							joinForm.action   = '/occurrences/' + occurrenceId + '/join';
 							joinPos.value     = key;
@@ -464,12 +457,12 @@ $fCity     = request('city', '');
 						const data = await res.json();
 						if (data && data.redirect_url) { window.location = data.redirect_url; return null; }
 						if (!res.ok || data.ok === false) {
-							showError((data && data.message) ? data.message : 'Ошибка загрузки.');
+							showError((data && data.message) ? data.message : @json(__('events.join_load_error')));
 							return null;
 						}
 						return data;
                         } catch (e) {
-						showError('Ошибка сети.');
+						showError(@json(__('events.join_net_error')));
 						return null;
 					}
 				}
@@ -585,7 +578,7 @@ $fCity     = request('city', '');
 					var target = Date.parse(iso);
 					if (isNaN(target)) return;
 					var diff = target - Date.now();
-					if (diff <= 0) { el.textContent = 'Регистрация доступна — обнови страницу'; return; }
+					if (diff <= 0) { el.textContent = @json(__('events.countdown_open')); return; }
 					var totalMin = Math.floor(diff / 60000);
 					var days = Math.floor(totalMin / (60*24));
 					var minsLeft = totalMin - days*60*24;
@@ -625,7 +618,7 @@ $fCity     = request('city', '');
 					});
 					
 					var btn = document.getElementById('btn-toggle-all-imgs');
-					if (btn) btn.textContent = hidden ? 'Показать фото' : 'Скрыть фото';
+					if (btn) btn.textContent = hidden ? @json(__('events.btn_show_photos')) : @json(__('events.btn_hide_photos'));
 					localStorage.setItem('eventImgHidden', JSON.stringify({ hidden: hidden }));
 					_allHidden = hidden;
 				}

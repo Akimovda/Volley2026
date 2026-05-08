@@ -1,16 +1,16 @@
 {{-- resources/views/pages/about.blade.php --}}
 <x-voll-layout body_class="about">
-<x-slot name="title">О сервисе — VolleyPlay.Club</x-slot>
-<x-slot name="description">VolleyPlay.Club — сервис для игроков, организаторов, тренеров и спортивных центров. Удобная запись на волейбольные мероприятия, управление командами и уведомления.</x-slot>
-<x-slot name="t_description">О проекте VolleyPlay.Club</x-slot>
+<x-slot name="title">{{ __('pages.about_title') }}</x-slot>
+<x-slot name="description">{{ __('pages.about_description') }}</x-slot>
+<x-slot name="t_description">{{ __('pages.about_t_description') }}</x-slot>
 <x-slot name="canonical">{{ route('about') }}</x-slot>
 <x-slot name="breadcrumbs">
 <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
-<a href="{{ route('about') }}" itemprop="item"><span itemprop="name">О сервисе</span></a>
+<a href="{{ route('about') }}" itemprop="item"><span itemprop="name">{{ __('pages.about_breadcrumb') }}</span></a>
 <meta itemprop="position" content="2">
 </li>
 </x-slot>
-<x-slot name="h1">О сервисе</x-slot>
+<x-slot name="h1">{{ __('pages.about_h1') }}</x-slot>
 
 <div class="container">
 

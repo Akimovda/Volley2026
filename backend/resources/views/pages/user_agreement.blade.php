@@ -1,19 +1,19 @@
 {{-- resources/views/pages/user_agreement.blade.php --}}
 <x-voll-layout body_class="politic">
-<x-slot name="title">Пользовательское соглашение — VolleyPlay.Club</x-slot>
+<x-slot name="title">{{ __('pages.ua_title') }} — VolleyPlay.Club</x-slot>
 
-<x-slot name="description">Пользовательское соглашение сервиса VolleyPlay.Club. Условия использования платформы, Premium-подписки и дополнительных услуг.</x-slot>
+<x-slot name="description">{{ __('pages.ua_description') }}</x-slot>
 
 <x-slot name="canonical">{{ route('user_agreement') }}</x-slot>
 
 <x-slot name="breadcrumbs">
 <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
-<a href="{{ route('user_agreement') }}" itemprop="item"><span itemprop="name">Пользовательское соглашение</span></a>
+<a href="{{ route('user_agreement') }}" itemprop="item"><span itemprop="name">{{ __('pages.ua_breadcrumb') }}</span></a>
 <meta itemprop="position" content="2">
 </li>
 </x-slot>
 
-<x-slot name="h1">Пользовательское соглашение</x-slot>
+<x-slot name="h1">{{ __('pages.ua_h1') }}</x-slot>
 
 <div class="container">
 <div class="ramka">

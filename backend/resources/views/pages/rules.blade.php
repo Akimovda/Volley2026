@@ -1,15 +1,15 @@
 {{-- resources/views/pages/rules.blade.php --}}
 <x-voll-layout body_class="rules">
 	<x-slot name="title">
-		Правила сервиса VolleyPlay.Club
+		{{ __('pages.rules_title') }}
 	</x-slot>
 
 	<x-slot name="description">
-		Правила пользования сервисом VolleyPlay.Club для игроков и организаторов.
+		{{ __('pages.rules_description') }}
 	</x-slot>
 
 	<x-slot name="t_description">
-		Редакция для игроков и организаторов
+		{{ __('pages.rules_t_description') }}
 	</x-slot>
 
 	<x-slot name="canonical">
@@ -18,13 +18,13 @@
 
 	<x-slot name="breadcrumbs">
 		<li itemprop="itemListElement" itemscope="" itemtype="http://schema.org/ListItem">
-			<a href="{{ route('rules') }}" itemprop="item"><span itemprop="name">Правила сервиса</span></a>
+			<a href="{{ route('rules') }}" itemprop="item"><span itemprop="name">{{ __('pages.rules_breadcrumb') }}</span></a>
 			<meta itemprop="position" content="2">
 		</li>
 	</x-slot>
 
 	<x-slot name="h1">
-		Правила пользования сервисом
+		{{ __('pages.rules_h1') }}
 	</x-slot>
 
     <x-slot name="image">

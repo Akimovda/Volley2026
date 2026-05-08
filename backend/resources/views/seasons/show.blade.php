@@ -5,7 +5,7 @@
 	<x-slot name="breadcrumbs">
 		<li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
 			<a href="{{ route('leagues.public') }}" itemprop="item">
-				<span itemprop="name">Лиги</span>
+				<span itemprop="name">{{ __('seasons.leagues_show_breadcrumb') }}</span>
 			</a>
 			<meta itemprop="position" content="2">
 		</li>
@@ -23,7 +23,7 @@
 		</li>
 	</x-slot>
 	<x-slot name="h2">
-		Организатор: {{ trim(($season->organizer->first_name ?? '') . ' ' . ($season->organizer->last_name ?? '')) ?: $season->organizer->name }}
+		{{ __('seasons.leagues_organizer_label') }} {{ trim(($season->organizer->first_name ?? '') . ' ' . ($season->organizer->last_name ?? '')) ?: $season->organizer->name }}
 	</x-slot>
 	<x-slot name="style">
 		<style>
@@ -50,7 +50,7 @@
 	
     <x-slot name="t_description">
 		<div class="d-flex">
-			{!! $season->direction === 'beach' ? '<span class="emo" style="flex: 0 0 4rem">🏖</span> Пляжный' : '🏐 Классический' !!}
+			{!! $season->direction === 'beach' ? '<span class="emo" style="flex: 0 0 4rem">🏖</span> ' . __('seasons.leagues_dir_beach_short') : '🏐 ' . __('seasons.leagues_dir_classic_short') !!}
 		</div>			
 		<div class="d-flex">				
 			@if($season->starts_at)	
@@ -65,7 +65,7 @@
 			substr($season->status, 0, 1) === 'a' ? 'success' : 
 			(substr($season->status, 0, 1) === 'c' ? 'danger' : 'warning')
 			}}">
-				{{ $season->status === 'active' ? 'Активен' : ($season->status === 'completed' ? 'Завершён' : 'Черновик') }}
+				{{ $season->status === 'active' ? __('seasons.status_active') : ($season->status === 'completed' ? __('seasons.status_completed') : __('seasons.status_draft')) }}
 			</span>
 		</div>		
 	</x-slot>	
@@ -74,22 +74,22 @@
 
 		{{-- Нативная кнопка Share --}}
 		<div class="native-actions">
-			<button type="button" class="btn btn-secondary btn-haptic" id="btn-share-season">Поделиться</button>
+			<button type="button" class="btn btn-secondary btn-haptic" id="btn-share-season">{{ __('seasons.btn_share') }}</button>
 		</div>
 
 		{{-- Расписание туров --}}
 		@if(isset($occurrences) && $occurrences->count())
 		<div class="ramka">	
-			<h2 class="-mt-05">Расписание туров</h2>
+			<h2 class="-mt-05">{{ __('seasons.show_rounds_h2') }}</h2>
 			<div class="table-scrollable mb-0">
 				<div class="table-drag-indicator"></div>
 				<table class="table">
 					<thead>
 						<tr>
-							<th style="width:40px">Тур</th>
-							<th>Дата</th>
-							<th class="text-center">Время</th>
-							<th style="width:10rem">Статус</th>
+							<th style="width:40px">{{ __('seasons.col_round') }}</th>
+							<th>{{ __('seasons.col_date') }}</th>
+							<th class="text-center">{{ __('seasons.col_time') }}</th>
+							<th style="width:10rem">{{ __('seasons.col_status') }}</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -114,13 +114,13 @@
 							<td class="text-center">{{ $dt->format('H:i') }}</td>
 							<td>
 								@if($hasStages)
-								<span class="ts alert-success">✓ Сыгран</span>
+								<span class="ts alert-success">✓ {{ __('seasons.round_played') }}</span>
 								@elseif($isToday)
-								<span class="ts alert-info">Сегодня</span>
+								<span class="ts alert-info">{{ __('seasons.round_today') }}</span>
 								@elseif($isPast)
 								<span class="ts alert-warning">—</span>
 								@else
-								<span class="ts alert-info">Предстоит</span>
+								<span class="ts alert-info">{{ __('seasons.round_upcoming') }}</span>
 								@endif
 							</td>
 						</tr>
@@ -137,9 +137,9 @@
 			<div class="d-flex between">
 				<h2 class="-mt-05">{{ $league->name }}</h2>
 				<span class="b-600 cd">
-					— {{ $league->activeTeams->count() }} команд
+					— {{ $league->activeTeams->count() }} {{ __('seasons.teams_short') }}
 					@if($league->reserveTeams->count())
-					/ {{ $league->reserveTeams->count() }} в резерве
+					/ {{ $league->reserveTeams->count() }} {{ __('seasons.teams_reserve') }}
 					@endif
 				</span>				
 			</div>
@@ -151,8 +151,8 @@
 					<thead>
 						<tr>
 							<th style="width:30px">#</th>
-							<th>Команда</th>
-							<th>Игроки</th>
+							<th>{{ __('tournaments.standings_col_team') }}</th>
+							<th>{{ __('seasons.col_players') }}</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -181,7 +181,7 @@
 					</table>
 				</div>
 				@else
-				<div class="alert alert-info">Нет команд</div>
+				<div class="alert alert-info">{{ __('seasons.no_teams') }}</div>
 				@endif
 			</div>
 			@endforeach
@@ -189,19 +189,19 @@
 			{{-- Рейтинг игроков --}}
 			@if($season->stats->isNotEmpty())
 			<div class="ramka">	
-				<h2 class="-mt-05">Рейтинг игроков</h2>
+				<h2 class="-mt-05">{{ __('seasons.show_player_rating') }}</h2>
 				<div class="table-scrollable mb-0">
 					<div class="table-drag-indicator"></div>
 					<table class="table">
 						<thead>
 							<tr>
 								<th style="width:30px">#</th>
-								<th>Игрок</th>
-								<th>Матчей</th>
-								<th>Побед</th>
+								<th>{{ __('seasons.col_player') }}</th>
+								<th>{{ __('seasons.col_matches') }}</th>
+								<th>{{ __('seasons.col_wins') }}</th>
 								<th>WinRate</th>
-								<th class="hm">Сеты</th>
-								<th class="hm">Очки ±</th>
+								<th class="hm">{{ __('tournaments.pub_sets_col') }}</th>
+								<th class="hm">{{ __('seasons.col_points_diff') }}</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -237,7 +237,7 @@
 		btn.addEventListener('click', function () {
 			window.VolleyNative.share({
 				title: @json($season->name ?? ''),
-				text: 'Сезон на VolleyPlay',
+				text: @json(__('seasons.share_season_text')),
 				url: window.location.href
 			});
 		});

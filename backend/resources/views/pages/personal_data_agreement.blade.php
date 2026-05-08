@@ -1,88 +1,73 @@
 {{-- resources/views/pages/personal_data_agreement.blade.php --}}
 <x-voll-layout body_class="politic">
 	<x-slot name="title">
-        Согласие на обработку персональных данных
+        {{ __('pages.pda_title') }}
 	</x-slot>
-	
+
     <x-slot name="description">
-		Настоящее согласие действует при использовании сервиса Volley (регистрация, вход, профиль, участие в мероприятиях).
+		{{ __('pages.pda_description') }}
 	</x-slot>
-	
+
     <x-slot name="t_description">
-		Настоящее согласие действует при использовании сервиса Volley (регистрация, вход, профиль, участие в мероприятиях).
+		{{ __('pages.pda_description') }}
 	</x-slot>
-	
+
     <x-slot name="canonical">
         {{ route('personal_data_agreement') }}
 	</x-slot>
-	
+
     <x-slot name="breadcrumbs">
 		<li itemprop="itemListElement" itemscope="" itemtype="http://schema.org/ListItem">
-			<a href="{{ route('personal_data_agreement') }}" itemprop="item"><span itemprop="name">Соглашение о персональных данных</span></a>
+			<a href="{{ route('personal_data_agreement') }}" itemprop="item"><span itemprop="name">{{ __('pages.pda_breadcrumb') }}</span></a>
 			<meta itemprop="position" content="2">
 		</li>
-	</x-slot>	
+	</x-slot>
     <x-slot name="h1">
-        Согласие на обработку персональных данных
-	</x-slot>	
-	
+        {{ __('pages.pda_title') }}
+	</x-slot>
+
     <div class="container">
         <div class="ramka">
 			<div class="alert alert-info mb-3">
-				Если вы не согласны с условиями — пожалуйста, не используйте сервис и не передавайте нам персональные данные.
+				{{ __('pages.pda_warning') }}
 			</div>
-			
-			<div class="title-h h3"><span>1.</span> Кто обрабатывает данные</div>
-			<p>
-				Оператор персональных данных: сервис Volley (далее — «Оператор»).
-				Контакт для обращений: администратор сервиса (через форму/контакты на сайте).
-			</p>
-			
-			<div class="title-h h3"><span>2.</span> Какие данные могут обрабатываться</div>
+
+			<div class="title-h h3">{{ __('pages.pda_h_1') }}</div>
+			<p>{{ __('pages.pda_p_1') }}</p>
+
+			<div class="title-h h3">{{ __('pages.pda_h_2') }}</div>
 			<ul class="list">
-				<li>идентификаторы внешних провайдеров: Telegram ID, VK ID, Yandex ID</li>
-				<li>публичные данные профиля провайдера: имя/фамилия, username (если есть), аватар (если предоставлен)</li>
-				<li>контактные данные: телефон, email (в т.ч. служебный email, если провайдер не возвращает email)</li>
-				<li>данные анкеты игрока: уровни (классика/пляж), позиции/зоны, город, рост, дата рождения (если заполнены)</li>
-				<li>технические данные: cookies/сессия, IP, логи действий для безопасности</li>
+				<li>{{ __('pages.pda_2_1') }}</li>
+				<li>{{ __('pages.pda_2_2') }}</li>
+				<li>{{ __('pages.pda_2_3') }}</li>
+				<li>{{ __('pages.pda_2_4') }}</li>
+				<li>{{ __('pages.pda_2_5') }}</li>
 			</ul>
-			<div class="title-h h3"><span>3.</span> Цели обработки</div>
+
+			<div class="title-h h3">{{ __('pages.pda_h_3') }}</div>
 			<ul class="list">
-				<li>регистрация и аутентификация пользователя</li>
-				<li>ведение профиля игрока и отображение в сервисе</li>
-				<li>запись на мероприятия и управление участием</li>
-				<li>обеспечение безопасности (предотвращение злоупотреблений, аудит действий)</li>
-				<li>обратная связь и уведомления, связанные с работой сервиса</li>
+				<li>{{ __('pages.pda_3_1') }}</li>
+				<li>{{ __('pages.pda_3_2') }}</li>
+				<li>{{ __('pages.pda_3_3') }}</li>
+				<li>{{ __('pages.pda_3_4') }}</li>
+				<li>{{ __('pages.pda_3_5') }}</li>
 			</ul>
-			<div class="title-h h3"><span>4.</span> Действия с данными</div>
-			<p>
-				Оператор вправе осуществлять: сбор, запись, систематизацию, хранение, уточнение, использование,
-				передачу (в объёме, необходимом для работы провайдеров авторизации), обезличивание, блокирование,
-				удаление и уничтожение персональных данных.
-			</p>
-			<div class="title-h h3"><span>5.</span> Передача третьим лицам</div>
-			<p>
-				Данные могут передаваться только в объёме, необходимом для работы авторизации и инфраструктуры сервиса
-				(например, провайдерам входа Telegram/VK/Yandex, хостингу и сервисам хранения), а также в случаях,
-				предусмотренных законодательством.
-			</p>
-			<div class="title-h h3"><span>6.</span> Срок хранения</div>
-			<p>
-				Данные хранятся в течение срока использования сервиса и/или до достижения целей обработки,
-				либо до отзыва согласия, если иное не требуется по закону.
-			</p>
-			<div class="title-h h3"><span>7.</span> Отзыв согласия</div>
-			<p>
-				Вы можете отозвать согласие на обработку персональных данных, обратившись к Оператору.
-				Отзыв согласия может привести к невозможности дальнейшего использования сервиса
-				(например, входа и участия в мероприятиях).
-			</p>
-			<div class="title-h h3"><span>8.</span>  Подтверждение согласия</div>
-			<p>
-				Нажимая «Войти» через Telegram/VK/Yandex и/или заполняя профиль в сервисе Volley,
-				вы подтверждаете, что ознакомились с условиями и даёте согласие на обработку персональных данных.
-			</p>
-			
+
+			<div class="title-h h3">{{ __('pages.pda_h_4') }}</div>
+			<p>{{ __('pages.pda_p_4') }}</p>
+
+			<div class="title-h h3">{{ __('pages.pda_h_5') }}</div>
+			<p>{{ __('pages.pda_p_5') }}</p>
+
+			<div class="title-h h3">{{ __('pages.pda_h_6') }}</div>
+			<p>{{ __('pages.pda_p_6') }}</p>
+
+			<div class="title-h h3">{{ __('pages.pda_h_7') }}</div>
+			<p>{{ __('pages.pda_p_7') }}</p>
+
+			<div class="title-h h3">{{ __('pages.pda_h_8') }}</div>
+			<p>{{ __('pages.pda_p_8') }}</p>
+
 		</div>
 	</div>
 </x-voll-layout>

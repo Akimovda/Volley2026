@@ -28,18 +28,18 @@
     }
 @endphp
 <div class="ramka">
-    <h2 class="-mt-05">Тренеры</h2>
+    <h2 class="-mt-05">{{ __('events.occ_trainers_title') }}</h2>
     <div class="row">
         <div class="col-md-12">
             <div class="card">
-                <label>Тренеры занятия</label>
+                <label>{{ __('events.occ_trainers_label') }}</label>
 
                 @if($trainerInherited && $trainers->count() > 0)
-                    <div class="f-13">Сейчас тренеры наследуются от серии. Измени список — сохранится как override для этого занятия.</div>
+                    <div class="f-13">{{ __('events.occ_trainers_inherited_with') }}</div>
                 @elseif($trainerInherited && $trainers->count() === 0)
-                    <div class="f-13">В серии тренеры не указаны. Добавь — сохранится только для этого занятия.</div>
+                    <div class="f-13">{{ __('events.occ_trainers_inherited_empty') }}</div>
                 @else
-                    <div class="f-13">Override: список отличается от серии. Верни его в точности как в серии, чтобы снова наследовать.</div>
+                    <div class="f-13">{{ __('events.occ_trainers_override') }}</div>
                 @endif
 
                 <div class="ac-box" data-users-search-url="{{ route('api.users.search') }}">
@@ -55,7 +55,7 @@
 
                     <input type="text"
                            id="occ_trainer_search"
-                           placeholder="Начни вводить имя или фамилию"
+                           placeholder="{{ __('events.trainers_search_ph') }}"
                            value=""
                            autocomplete="off">
 
@@ -63,8 +63,8 @@
                 </div>
 
                 <ul class="list f-16 mt-1">
-                    <li>Можно выбрать несколько тренеров.</li>
-                    <li><a onclick="return false;" href="#" type="button" id="occ_trainer_clear" class="f-16 blink">Сбросить все</a></li>
+                    <li>{{ __('events.trainers_multi_hint') }}</li>
+                    <li><a onclick="return false;" href="#" type="button" id="occ_trainer_clear" class="f-16 blink">{{ __('events.trainers_clear') }}</a></li>
                 </ul>
             </div>
         </div>

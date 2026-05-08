@@ -1,28 +1,25 @@
 {{-- resources/views/welcome.blade.php --}}
 <x-voll-layout body_class="main-page">
 	
-    <x-slot name="title">Your Volley Club — волейбольный сервис</x-slot>
-    <x-slot name="description">Платформа для волейболистов, тренеров, организаторов и спортивных центров. Записывайтесь на игры, находите партнёров, управляйте мероприятиями.</x-slot>
+    <x-slot name="title">{{ __('welcome.meta_title') }}</x-slot>
+    <x-slot name="description">{{ __('welcome.meta_description') }}</x-slot>
     <x-slot name="canonical">{{ url('/') }}</x-slot>
     <x-slot name="h1">Your Volley Club</x-slot>
-    <x-slot name="h2">Волейбольный сервис</x-slot>
-    <x-slot name="t_description">Объединяем волейбольное сообщество — от любителей до профессионалов</x-slot>
+    <x-slot name="h2">{{ __('welcome.h2') }}</x-slot>
+    <x-slot name="t_description">{{ __('welcome.tagline') }}</x-slot>
 	
     <x-slot name="d_description">
         <div class="d-flex flex-wrap gap-1 m-center">
             @guest			
 			<div class="mt-2" data-aos-delay="350" data-aos="fade-up">
-				<a href="{{ route('events.index') }}" class="btn btn-secondary">Смотреть игры</a>
+				<a href="{{ route('events.index') }}" class="btn btn-secondary">{{ __('welcome.cta_view_games') }}</a>
 			</div>			
             @else
 			<div class="mt-2" data-aos-delay="250" data-aos="fade-up">
-				<a href="{{ route('events.index') }}" class="btn">Найти игру</a>
+				<a href="{{ route('events.index') }}" class="btn">{{ __('welcome.cta_find_game') }}</a>
 			</div>
 			<div class="mt-2" data-aos-delay="350" data-aos="fade-up">
-			{{--	
-				<a href="{{ route('dashboard') }}" class="btn btn-secondary">Мой профиль</a>
-			--}}	
-			</div>					
+			</div>
             @endguest
 		</div>
 	</x-slot>
@@ -542,25 +539,25 @@ border:1rem solid #fff;
 			<div class="col-6 col-md-3">
 				<div class="ramka" data-aos="fade-up" data-aos-delay="0">
 					<div class="stat-number cd">{{ number_format($usersCount) }}</div>
-					<div class="stat-label">игроков в сообществе</div>
+					<div class="stat-label">{{ __('welcome.stat_players') }}</div>
 				</div>
 			</div>
 			<div class="col-6 col-md-3">
 				<div class="ramka" data-aos="fade-up" data-aos-delay="100">
 					<div class="stat-number cd">{{ number_format($eventsCount) }}</div>
-					<div class="stat-label">мероприятий создано</div>
+					<div class="stat-label">{{ __('welcome.stat_events') }}</div>
 				</div>
 			</div>
 			<div class="col-6 col-md-3">
 				<div class="ramka" data-aos="fade-up" data-aos-delay="200">
 					<div class="stat-number cd">{{ number_format($locationsCount) }}</div>
-					<div class="stat-label">площадок и кортов</div>
+					<div class="stat-label">{{ __('welcome.stat_locations') }}</div>
 				</div>
 			</div>
 			<div class="col-6 col-md-3">
 				<div class="ramka" data-aos="fade-up" data-aos-delay="300">
 					<div class="stat-number cd">{{ number_format($citiesCount) }}</div>
-					<div class="stat-label">городов</div>
+					<div class="stat-label">{{ __('welcome.stat_cities') }}</div>
 				</div>
 			</div>
 		</div>
@@ -568,7 +565,7 @@ border:1rem solid #fff;
 		
         {{-- ===== ДЛЯ КОГО ===== --}}
         <div class="ramka">
-            <h2 class="-mt-05">Для кого это создано</h2>
+            <h2 class="-mt-05">{{ __('welcome.audience_title') }}</h2>
 			
 <div class="sgroup-container">
 	<div class="sgroup-circle">
@@ -578,8 +575,8 @@ border:1rem solid #fff;
 	</div> 	
 	<div class="sgroup sgroup-1">
 		<div class="close-sgroup">&times;</div>
-		<div class="img-box"><img data-light="/img/main/bg-1.png" data-dark="/img/main/bg-1-d.png" alt="Игрокам" src="/img/pixel.png"></div>
-		<div class="title-box">Игрокам</div>
+		<div class="img-box"><img data-light="/img/main/bg-1.png" data-dark="/img/main/bg-1-d.png" alt="{{ __('welcome.players_alt') }}" src="/img/pixel.png"></div>
+		<div class="title-box">{{ __('welcome.players_title') }}</div>
 		<div class="info-box">
 			<div class="row row2">
 				<div class="col-md-6">
@@ -590,24 +587,24 @@ border:1rem solid #fff;
 									🏐										
 								</div>												
 								<div class="audience-title">
-									<div class="f-20 b-600 cd">Для игроков</div>
-									Играйте больше, находите партнёров, развивайтесь.
+									<div class="f-20 b-600 cd">{{ __('welcome.players_card_title') }}</div>
+									{{ __('welcome.players_card_lead') }}
 								</div>									
 							</div>	
 							
 							<ul class="list f-16">
-								<li>Находите игры и тренировки рядом с домом</li>
-								<li>Записывайтесь онлайн в один клик</li>
-								<li>Классика и пляжный волейбол — любой формат</li>
-								<li>Оценивайте уровень других игроков</li>
-								<li>Отмечайте тех, с кем приятно играть ❤️</li>
-								<li>Профиль с вашим уровнем, амплуа и статистикой</li>
-								<li>Получайте уведомления в Telegram, VK и MAX</li>
-								<li>Резервный список — займёте место, если кто-то отменит</li>
+								<li>{{ __('welcome.players_li_1') }}</li>
+								<li>{{ __('welcome.players_li_2') }}</li>
+								<li>{{ __('welcome.players_li_3') }}</li>
+								<li>{{ __('welcome.players_li_4') }}</li>
+								<li>{{ __('welcome.players_li_5') }}</li>
+								<li>{{ __('welcome.players_li_6') }}</li>
+								<li>{{ __('welcome.players_li_7') }}</li>
+								<li>{{ __('welcome.players_li_8') }}</li>
 							</ul>
 						</div>
 						<div class="mt-1 text-center">
-							<a href="{{ route('events.index') }}" class="btn">Найти игру</a>
+							<a href="{{ route('events.index') }}" class="btn">{{ __('welcome.cta_find_game') }}</a>
 						</div>
 					</div>
 				</div>
@@ -619,20 +616,20 @@ border:1rem solid #fff;
 									👪
 								</div>											
 								<div class="audience-title">
-									<div class="f-20 b-600 cd">Найдите своих</div>
-									Сообщество игроков вашего уровня.
+									<div class="f-20 b-600 cd">{{ __('welcome.community_title') }}</div>
+									{{ __('welcome.community_lead') }}
 								</div>										
 							</div>
 							<ul class="list f-16">
-								<li>Каталог игроков с уровнем и амплуа</li>
-								<li>Фильтр по городу, уровню, направлению</li>
-								<li>Пляжные пары и командная запись</li>
-								<li>Приглашайте партнёров на мероприятия</li>
-								<li>Авторизация через Telegram, VK или Яндекс</li>
+								<li>{{ __('welcome.community_li_1') }}</li>
+								<li>{{ __('welcome.community_li_2') }}</li>
+								<li>{{ __('welcome.community_li_3') }}</li>
+								<li>{{ __('welcome.community_li_4') }}</li>
+								<li>{{ __('welcome.community_li_5') }}</li>
 							</ul>
 						</div>
 						<div class="mt-1 text-center">
-							<a href="{{ route('users.index') }}" class="btn">Каталог игроков</a>
+							<a href="{{ route('users.index') }}" class="btn">{{ __('welcome.community_btn') }}</a>
 						</div>
 					</div>
 				</div>
@@ -641,8 +638,8 @@ border:1rem solid #fff;
 	</div>
 	<div class="sgroup sgroup-2">
 		<div class="close-sgroup">&times;</div>
-		<div class="img-box"><img data-light="/img/main/bg-2.png" data-dark="/img/main/bg-2-d.png" alt="Тренерам" src="/img/pixel.png"></div>
-		<div class="title-box">Тренерам</div>
+		<div class="img-box"><img data-light="/img/main/bg-2.png" data-dark="/img/main/bg-2-d.png" alt="{{ __('welcome.coaches_alt') }}" src="/img/pixel.png"></div>
+		<div class="title-box">{{ __('welcome.coaches_title') }}</div>
 		<div class="info-box">
 			<div class="row row2">
 				<div class="col-md-6">
@@ -653,24 +650,24 @@ border:1rem solid #fff;
 									🎓										
 								</div>												
 								<div class="audience-title">
-									<div class="f-20 b-600 cd">Для тренеров</div>
-									Организуйте тренировки и развивайте учеников
+									<div class="f-20 b-600 cd">{{ __('welcome.coaches_card_title') }}</div>
+									{{ __('welcome.coaches_card_lead') }}
 								</div>									
 							</div>																	
 							<ul class="list f-16">
-								<li>Создавайте тренировки и тренировки+игра</li>
-								<li>Формат «Тренер + ученик» (пляж)</li>
-								<li>Повторяющиеся занятия по расписанию</li>
-								<li>Управление списком участников</li>
-								<li>Автоматические напоминания ученикам</li>
-								<li>Анонсы тренировок в Telegram и VK каналы</li>
-								<li>Ваш профиль тренера виден всем игрокам</li>
-								<li>Создайте страницу своей школы волейбола</li>
-								<li>Првайте абонементы и ведите их учет</li>
+								<li>{{ __('welcome.coaches_li_1') }}</li>
+								<li>{{ __('welcome.coaches_li_2') }}</li>
+								<li>{{ __('welcome.coaches_li_3') }}</li>
+								<li>{{ __('welcome.coaches_li_4') }}</li>
+								<li>{{ __('welcome.coaches_li_5') }}</li>
+								<li>{{ __('welcome.coaches_li_6') }}</li>
+								<li>{{ __('welcome.coaches_li_7') }}</li>
+								<li>{{ __('welcome.coaches_li_8') }}</li>
+								<li>{{ __('welcome.coaches_li_9') }}</li>
 							</ul>
 						</div>
 						<div class="mt-1 text-center">
-							<a href="{{ route('volleyball_school.index') }}" class="btn">Школы волейбола</a>
+							<a href="{{ route('volleyball_school.index') }}" class="btn">{{ __('welcome.coaches_btn') }}</a>
 						</div>
 					</div>
 				</div>
@@ -682,22 +679,22 @@ border:1rem solid #fff;
 									📋									
 								</div>												
 								<div class="audience-title">
-									<div class="f-20 b-600 cd">Станьте организатором</div>
-									Хотите проводить тренировки через сервис?
+									<div class="f-20 b-600 cd">{{ __('welcome.become_org_title') }}</div>
+									{{ __('welcome.become_org_lead') }}
 								</div>									
 							</div>								
 							<ul class="list f-16">
-								<li>Подайте заявку на статус организатора</li>
-								<li>Бесплатный доступ к инструментам</li>
-								<li>Ваши мероприятия — в общем каталоге</li>
-								<li>Поддержка команды платформы</li>
+								<li>{{ __('welcome.become_org_li_1') }}</li>
+								<li>{{ __('welcome.become_org_li_2') }}</li>
+								<li>{{ __('welcome.become_org_li_3') }}</li>
+								<li>{{ __('welcome.become_org_li_4') }}</li>
 							</ul>
 						</div>
 						<div class="mt-1 text-center">
 							@guest
-							<a href="{{ route('register') }}" class="btn">Зарегистрироваться</a>
+							<a href="{{ route('register') }}" class="btn">{{ __('welcome.become_org_btn_register') }}</a>
 							@else
-							<a href="{{ route('profile.complete') }}" class="btn">Мой профиль</a>
+							<a href="{{ route('profile.complete') }}" class="btn">{{ __('welcome.become_org_btn_profile') }}</a>
 							@endguest
 						</div>
 					</div>
@@ -707,8 +704,8 @@ border:1rem solid #fff;
 	</div>  
 	<div class="sgroup sgroup-3">
 		<div class="close-sgroup">&times;</div>
-		<div class="img-box"><img data-light="/img/main/bg-3.png" data-dark="/img/main/bg-3-d.png" alt="Организаторам" src="/img/pixel.png"></div>
-		<div class="title-box">Организаторам</div>
+		<div class="img-box"><img data-light="/img/main/bg-3.png" data-dark="/img/main/bg-3-d.png" alt="{{ __('welcome.org_alt') }}" src="/img/pixel.png"></div>
+		<div class="title-box">{{ __('welcome.org_title') }}</div>
 		<div class="info-box">
 			<div class="row row2">
 				<div class="col-md-6">
@@ -719,24 +716,24 @@ border:1rem solid #fff;
 									📣									
 								</div>												
 								<div class="audience-title">
-									<div class="f-20 b-600 cd">Для организаторов</div>
-									Проводите игры, турниры и лиги.
+									<div class="f-20 b-600 cd">{{ __('welcome.org_card_title') }}</div>
+									{{ __('welcome.org_card_lead') }}
 								</div>									
 							</div>								
 							<ul class="list f-16">								
-								<li>Создавайте мероприятия любого формата</li>
-								<li>Игры, тренировки, турниры, кемпы</li>
-								<li>Классика и пляжный волейбол</li>
-								<li>Повторяющиеся мероприятия по расписанию</li>
-								<li>Гендерные ограничения и уровни допуска</li>
-								<li>Управление списком участников вручную</li>
-								<li>Автоотмена при нехватке кворума</li>
-								<li>Подключите своих ботов - скоро!</li>
-								<li>Помощник записи - платформа поможет наполнить мероприятие</li>
+								<li>{{ __('welcome.org_li_1') }}</li>
+								<li>{{ __('welcome.org_li_2') }}</li>
+								<li>{{ __('welcome.org_li_3') }}</li>
+								<li>{{ __('welcome.org_li_4') }}</li>
+								<li>{{ __('welcome.org_li_5') }}</li>
+								<li>{{ __('welcome.org_li_6') }}</li>
+								<li>{{ __('welcome.org_li_7') }}</li>
+								<li>{{ __('welcome.org_li_8') }}</li>
+								<li>{{ __('welcome.org_li_9') }}</li>
 							</ul>
 						</div>
 						<div class="mt-1 text-center">
-							<a href="{{ route('events.create.event_management') }}" class="btn">Управление играми</a>
+							<a href="{{ route('events.create.event_management') }}" class="btn">{{ __('welcome.org_btn') }}</a>
 						</div>
 					</div>
 				</div>
@@ -748,21 +745,21 @@ border:1rem solid #fff;
 									📢								
 								</div>												
 								<div class="audience-title">
-									<div class="f-20 b-600 cd">Анонсы и уведомления</div>
-									Держите игроков в курсе автоматически.
+									<div class="f-20 b-600 cd">{{ __('welcome.announce_title') }}</div>
+									{{ __('welcome.announce_lead') }}
 								</div>									
 							</div>								
 							<ul class="list f-16">										
-								<li>Анонсы в Telegram и VK каналы</li>
-								<li>Уведомления о записи и отмене</li>
-								<li>Напоминания за N часов до начала</li>
-								<li>Личные уведомления каждому игроку</li>
-								<li>Настраиваемые шаблоны сообщений</li>
-								<li>Приватные мероприятия по ссылке</li>
+								<li>{{ __('welcome.announce_li_1') }}</li>
+								<li>{{ __('welcome.announce_li_2') }}</li>
+								<li>{{ __('welcome.announce_li_3') }}</li>
+								<li>{{ __('welcome.announce_li_4') }}</li>
+								<li>{{ __('welcome.announce_li_5') }}</li>
+								<li>{{ __('welcome.announce_li_6') }}</li>
 							</ul>
 						</div>
 						<div class="mt-1 text-center">
-							<a href="{{ route('events.create') }}" class="btn">Создать мероприятие</a>
+							<a href="{{ route('events.create') }}" class="btn">{{ __('welcome.announce_btn') }}</a>
 						</div>
 					</div>
 				</div>
@@ -771,8 +768,8 @@ border:1rem solid #fff;
 	</div>
 	<div class="sgroup sgroup-4">
 		<div class="close-sgroup">&times;</div>
-		<div class="img-box"><img data-light="/img/main/bg-4.png" data-dark="/img/main/bg-4-d.png" alt="Спортцентрам" src="/img/pixel.png"></div>
-		<div class="title-box">Спортцентрам</div>
+		<div class="img-box"><img data-light="/img/main/bg-4.png" data-dark="/img/main/bg-4-d.png" alt="{{ __('welcome.venues_alt') }}" src="/img/pixel.png"></div>
+		<div class="title-box">{{ __('welcome.venues_title') }}</div>
 		<div class="info-box">
 			<div class="row row2">
 				<div class="col-md-6">
@@ -783,21 +780,21 @@ border:1rem solid #fff;
 									🏟️							
 								</div>												
 								<div class="audience-title">
-									<div class="f-20 b-600 cd">Для спортивных центров</div>
-									Привлекайте игроков и наполняйте залы.
+									<div class="f-20 b-600 cd">{{ __('welcome.venues_card_title') }}</div>
+									{{ __('welcome.venues_card_lead') }}
 								</div>									
 							</div>								
 							<ul class="list f-16">									
-								<li>Страница вашей локации с фото и картой</li>
-								<li>Игроки находят вас через каталог площадок</li>
-								<li>Все мероприятия на вашей площадке — в одном месте</li>
-								<li>Фильтр «Только с активными играми»</li>
-								<li>Карта локаций для удобного поиска</li>
-								<li>Страница школы/сообщества для вашего бренда</li>
+								<li>{{ __('welcome.venues_li_1') }}</li>
+								<li>{{ __('welcome.venues_li_2') }}</li>
+								<li>{{ __('welcome.venues_li_3') }}</li>
+								<li>{{ __('welcome.venues_li_4') }}</li>
+								<li>{{ __('welcome.venues_li_5') }}</li>
+								<li>{{ __('welcome.venues_li_6') }}</li>
 							</ul>
 						</div>
 						<div class="mt-1 text-center">
-							<a href="{{ route('locations.index') }}" class="btn">Каталог локаций</a>
+							<a href="{{ route('locations.index') }}" class="btn">{{ __('welcome.venues_btn') }}</a>
 						</div>
 					</div>
 				</div>
@@ -809,21 +806,21 @@ border:1rem solid #fff;
 									🏫						
 								</div>												
 								<div class="audience-title">
-									<div class="f-20 b-600 cd">Школа волейбола</div>
-									Создайте публичную страницу вашей школы.
+									<div class="f-20 b-600 cd">{{ __('welcome.school_title') }}</div>
+									{{ __('welcome.school_lead') }}
 								</div>									
 							</div>								
 							<ul class="list f-16">									
-								<li>Логотип, обложка, описание, контакты</li>
-								<li>Все ваши мероприятия на одной странице</li>
-								<li>Профиль организатора / тренера</li>
-								<li>Ваш бренд в каталоге школ волейбола</li>
-								<li>Классика и пляжный — любое направление</li>
-								<li>Абонементы и купоны</li>
+								<li>{{ __('welcome.school_li_1') }}</li>
+								<li>{{ __('welcome.school_li_2') }}</li>
+								<li>{{ __('welcome.school_li_3') }}</li>
+								<li>{{ __('welcome.school_li_4') }}</li>
+								<li>{{ __('welcome.school_li_5') }}</li>
+								<li>{{ __('welcome.school_li_6') }}</li>
 							</ul>
 						</div>
 						<div class="mt-1 text-center">
-							<a href="{{ route('volleyball_school.index') }}" class="btn">Школы волейбола</a>
+							<a href="{{ route('volleyball_school.index') }}" class="btn">{{ __('welcome.coaches_btn') }}</a>
 						</div>
 					</div>
 				</div>
@@ -941,7 +938,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		
 		{{-- ===== КАК ЭТО РАБОТАЕТ ===== --}}
 		<div class="ramka">
-			<h2 class="-mt-05">Как это работает</h2>
+			<h2 class="-mt-05">{{ __('welcome.how_title') }}</h2>
 			
   <style>
 .steps ul {
@@ -1112,9 +1109,9 @@ body.dark .step-number svg text {
           <circle cx="30" cy="30" r="26" stroke="currentColor" fill="none"/>
           <text x="30" y="32" fill="currentColor" font-size="22" font-weight="700" text-anchor="middle" dominant-baseline="middle">01</text>
         </svg></div>
-            <div class="step-title">Регистрация <span class="d-inline-block">без пароля</span></div>
+            <div class="step-title">{!! __('welcome.step1_title') !!}</div>
 		</div>	
-            <div class="step-desc">Войдите через Telegram, VK или Яндекс. Заполните профиль — укажите уровень, амплуа и город.</div>
+            <div class="step-desc">{{ __('welcome.step1_desc') }}</div>
       </li>
       <li data-aos="fade-right" data-aos-delay="100">
 	  <div class="desc-top">
@@ -1122,9 +1119,9 @@ body.dark .step-number svg text {
           <circle cx="30" cy="30" r="26" stroke="currentColor" fill="none"/>
           <text x="30" y="32" fill="currentColor" font-size="22" font-weight="700" text-anchor="middle" dominant-baseline="middle">02</text>
         </svg></div>
-            <div class="step-title">Найдите игру</div>
+            <div class="step-title">{{ __('welcome.step2_title') }}</div>
 			</div>
-            <div class="step-desc">Откройте каталог мероприятий. Фильтруйте по городу, уровню, дате и формату — классика или пляж.</div>
+            <div class="step-desc">{{ __('welcome.step2_desc') }}</div>
 			
       </li>
       <li data-aos="fade-right" data-aos-delay="200">
@@ -1133,9 +1130,9 @@ body.dark .step-number svg text {
           <circle cx="30" cy="30" r="26" stroke="currentColor" fill="none"/>
           <text x="30" y="32" fill="currentColor" font-size="22" font-weight="700" text-anchor="middle" dominant-baseline="middle">03</text>
         </svg></div>
-            <div class="step-title">Запишитесь</div>
+            <div class="step-title">{{ __('welcome.step3_title') }}</div>
 			</div>
-            <div class="step-desc">Выберите позицию и нажмите «Записаться». Получите подтверждение и напоминание в мессенджер.</div>
+            <div class="step-desc">{{ __('welcome.step3_desc') }}</div>
       </li>
       <li data-aos="fade-right" data-aos-delay="300">
 	  <div class="desc-top">
@@ -1143,9 +1140,9 @@ body.dark .step-number svg text {
           <circle cx="30" cy="30" r="26" stroke="currentColor" fill="none"/>
           <text x="30" y="32" fill="currentColor" font-size="22" font-weight="700" text-anchor="middle" dominant-baseline="middle">04</text>
         </svg></div>
-            <div class="step-title">Играйте!</div>
+            <div class="step-title">{{ __('welcome.step4_title') }}</div>
 			</div>
-            <div class="step-desc">Приходите на игру, знакомьтесь с новыми партнёрами и оценивайте уровень друг друга.</div>
+            <div class="step-desc">{{ __('welcome.step4_desc') }}</div>
       </li>
     </ul>
   </div>
@@ -1443,8 +1440,8 @@ body.dark .rusmap path[data-color]:hover{
 
 		<div class="ramka">
 			<div class="d-flex between fvc mb-2">
-				<h2 class="-mt-05">Площадки и корты</h2>
-				<a href="{{ route('locations.index') }}" class="d-none d-sm-inline-block btn btn-secondary">Все локации</a>
+				<h2 class="-mt-05">{{ __('welcome.map_title') }}</h2>
+				<a href="{{ route('locations.index') }}" class="d-none d-sm-inline-block btn btn-secondary">{{ __('welcome.map_all_locations') }}</a>
 			</div>
 			
 			<div class="rf-map">
@@ -1473,11 +1470,10 @@ body.dark .rusmap path[data-color]:hover{
 				<div class="rusmap" data-aos="fade-up"></div>
 			</div>							
 			<div class="text-right m-center">
-				{{ \DB::table('locations')->whereNull('organizer_id')->count() }} площадок
-				в {{ \DB::table('locations')->whereNull('organizer_id')->distinct('city_id')->count('city_id') }} городах России
+				{{ __('welcome.map_summary', ['locations' => \DB::table('locations')->whereNull('organizer_id')->count(), 'cities' => \DB::table('locations')->whereNull('organizer_id')->distinct('city_id')->count('city_id')]) }}
 			</div>
 				<div class="mt-1 d-sm-none text-center">
-					<a href="{{ route('locations.index') }}" class="btn btn-secondary">Все локации</a>
+					<a href="{{ route('locations.index') }}" class="btn btn-secondary">{{ __('welcome.map_all_locations') }}</a>
 				</div>				
 		</div>
 		
@@ -1485,12 +1481,12 @@ body.dark .rusmap path[data-color]:hover{
 		@guest
 		<div class="ramka" data-aos="fade-up">
 			<div class="cta-block">
-				<div class="f-32 mb-1">🏐 Готовы играть?</div>
+				<div class="f-32 mb-1">{{ __('welcome.cta_title') }}</div>
 				<div class="f-18 mb-3">
-					Присоединяйтесь к сообществу волейболистов — бесплатно и без лишних шагов.
+					{{ __('welcome.cta_lead') }}
 				</div>
 				<div class="d-flex flex-wrap gap-2" style="justify-content:center">
-					<a href="{{ route('events.index') }}" class="btn">Смотреть игры</a>
+					<a href="{{ route('events.index') }}" class="btn">{{ __('welcome.cta_btn') }}</a>
 				</div>
 			</div>
 		</div>

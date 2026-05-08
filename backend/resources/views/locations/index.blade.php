@@ -1,15 +1,15 @@
 {{-- resources/views/locations/index.blade.php --}}
 <x-voll-layout body_class="locations-page">
 
-    <x-slot name="title">Локации для волейбола</x-slot>
-    <x-slot name="description">Спортивные площадки и залы для волейбола — фото, адреса, карта и расписание мероприятий</x-slot>
+    <x-slot name="title">{{ __('locations.index_title') }}</x-slot>
+    <x-slot name="description">{{ __('locations.index_description') }}</x-slot>
     <x-slot name="canonical">{{ route('locations.index') }}</x-slot>
-    <x-slot name="h1">Локации</x-slot>
-    <x-slot name="t_description">Площадки и залы для волейбола</x-slot>
+    <x-slot name="h1">{{ __('locations.index_h1') }}</x-slot>
+    <x-slot name="t_description">{{ __('locations.index_t_description') }}</x-slot>
 
     <x-slot name="breadcrumbs">
         <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
-            <a href="{{ route('locations.index') }}" itemprop="item"><span itemprop="name">Локации</span></a>
+            <a href="{{ route('locations.index') }}" itemprop="item"><span itemprop="name">{{ __('locations.breadcrumb_index') }}</span></a>
             <meta itemprop="position" content="2">
 		</li>
 	</x-slot>
@@ -25,32 +25,32 @@
 			<div class="mt-2" data-aos-delay="250" data-aos="fade-up">
 				<a href="{{ request()->fullUrlWithQuery(array_merge($base, ['view' => 'cards'])) }}"
 				class="btn {{ $mode === 'cards' ? '' : 'btn-secondary' }}">
-					Карточки
+					{{ __('locations.view_cards') }}
 				</a>
 			</div>
 			<div class="mt-2" data-aos-delay="300" data-aos="fade-up">
 				<a href="{{ request()->fullUrlWithQuery(array_merge($base, ['view' => 'card', 'page' => 1])) }}"
 				class="btn {{ $mode === 'card' ? '' : 'btn-secondary' }}">
-					По страницам
+					{{ __('locations.view_card') }}
 				</a>
 			</div>
 			<div class="mt-2" data-aos-delay="350" data-aos="fade-up">
 				<a href="{{ request()->fullUrlWithQuery(array_merge($base, ['view' => 'rows'])) }}"
 				class="btn {{ $mode === 'rows' ? '' : 'btn-secondary' }}">
-					Список
+					{{ __('locations.view_rows') }}
 				</a>
 			</div>
 			<div class="mt-2" data-aos-delay="450" data-aos="fade-up">
 				<a href="{{ request()->fullUrlWithQuery(array_merge($base, ['view' => 'map'])) }}"
 				class="btn {{ $mode === 'map' ? '' : 'btn-secondary' }}">
-					Карта
+					{{ __('locations.view_map') }}
 				</a>
 			</div>
 		</div>
 		<div class="d-flex m-center mt-1" data-aos="fade-up" data-aos-delay="550">
 			<a href="{{ request()->fullUrlWithQuery(array_merge($base, ['active' => $active ? 0 : 1])) }}"
 			class="btn btn-secondary">
-                {{ $active ? 'Показать все' : 'Только с событиями' }}
+                {{ $active ? __('locations.show_all') : __('locations.only_with_events') }}
 			</a>
 		</div>
 
@@ -97,7 +97,7 @@
 
         @if(!in_array($mode, ['map', 'card']) && (!$cities || $cities->isEmpty()))
 		<div class="ramka">
-			<div class="alert alert-info">Локации не найдены.</div>
+			<div class="alert alert-info">{{ __('locations.empty_list') }}</div>
 		</div>
         @endif
 
@@ -114,7 +114,7 @@
 					<span class="pl-05 f-16 b-500">({{ $city->region }})</span>
 					@endif
 				</h2>
-				<span><span class="cd b-600 pr-05">{{ $items->count() }}</span>{{ trans_choice('локация|локации|локаций', $items->count()) }}</span>
+				<span><span class="cd b-600 pr-05">{{ $items->count() }}</span>{{ trans_choice(__('locations.count_plural'), $items->count()) }}</span>
 			</div>
 
 			<div class="row">
@@ -141,7 +141,7 @@
 					<span class="pl-05 f-16 b-500">({{ $city->region }})</span>
 					@endif
 				</h2>
-				<span><span class="cd b-600 pr-05">{{ $items->count() }}</span>{{ trans_choice('локация|локации|локаций', $items->count()) }}</span>
+				<span><span class="cd b-600 pr-05">{{ $items->count() }}</span>{{ trans_choice(__('locations.count_plural'), $items->count()) }}</span>
 			</div>
 
 			<ul class="list loclist">
@@ -175,14 +175,14 @@
 		</div>
 		@elseif($mode === 'card' && (!isset($locationsPaginated) || !$locationsPaginated || $locationsPaginated->isEmpty()))
 		<div class="ramka">
-			<div class="alert alert-info">Локации не найдены.</div>
+			<div class="alert alert-info">{{ __('locations.empty_list') }}</div>
 		</div>
 		@endif
 
 		{{-- ===== MAP MODE ===== --}}
 		@if($mode === 'map')
 		<div class="ramka">
-			<h2 class="-mt-05">Карта локаций</h2>
+			<h2 class="-mt-05">{{ __('locations.map_section') }}</h2>
 
 			@auth
 			<div id="ymap" style="height: 56rem; width: 100%; border-radius: 1rem; overflow: hidden; opacity: 0; transition: opacity 0.5s;"></div>
@@ -300,7 +300,7 @@
 					// Загружаем API с нужной темой
 					var theme = getTheme();
 					var script = document.createElement('script');
-					script.src = 'https://api-maps.yandex.ru/2.1/?apikey={{ config('services.yandex_maps.key') }}&lang=ru_RU&theme=' + theme;
+					script.src = 'https://api-maps.yandex.ru/2.1/?apikey={{ config('services.yandex_maps.key') }}&lang={{ __('locations.yandex_lang') }}&theme=' + theme;
 					script.onload = function() { ymaps.ready(init); };
 					document.head.appendChild(script);
 
@@ -315,10 +315,10 @@
 			</script>
 			@else
 			<div class="text-center pt-4 pb-4">
-				<div class="f-18 b-500 mb-2">Войдите, чтобы увидеть карту площадок</div>
+				<div class="f-18 b-500 mb-2">{{ __('locations.login_to_see_map') }}</div>
 				<div class="d-flex gap-1 m-center">
-					<a href="{{ route('login') }}" class="btn">Войти</a>
-					<a href="{{ route('register') }}" class="btn btn-secondary">Зарегистрироваться</a>
+					<a href="{{ route('login') }}" class="btn">{{ __('locations.btn_login') }}</a>
+					<a href="{{ route('register') }}" class="btn btn-secondary">{{ __('locations.btn_register') }}</a>
 				</div>
 			</div>
 			@endauth

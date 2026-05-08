@@ -3,25 +3,25 @@
 	$user = auth()->user();
 	@endphp	
 
-    <x-slot name="title">Моя статистика</x-slot>
-    <x-slot name="h1">Моя статистика</x-slot>
+    <x-slot name="title">{{ __('profile.dash_player_title') }}</x-slot>
+    <x-slot name="h1">{{ __('profile.dash_player_title') }}</x-slot>
     <x-slot name="h2">
         @if(!empty($user->first_name) || !empty($user->last_name))
         {{ trim($user->first_name . ' ' . $user->last_name) }}
         @else
-        Пользователь #{{ $user->id }}
+        {{ __('profile.dash_player_user_n', ['id' => $user->id]) }}
         @endif
 	</x-slot>	
 
-    <x-slot name="t_description">Ваша активность на площадке</x-slot>
+    <x-slot name="t_description">{{ __('profile.dash_player_t_description') }}</x-slot>
 
     <x-slot name="breadcrumbs">
         <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
-            <a href="{{ route('profile.show') }}" itemprop="item"><span itemprop="name">Мой профиль</span></a>
+            <a href="{{ route('profile.show') }}" itemprop="item"><span itemprop="name">{{ __('profile.dash_player_breadcrumb_my') }}</span></a>
             <meta itemprop="position" content="2">
         </li>
         <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
-            <span itemprop="name">Моя статистика</span>
+            <span itemprop="name">{{ __('profile.dash_player_breadcrumb_self') }}</span>
             <meta itemprop="position" content="3">
         </li>
     </x-slot>
@@ -43,29 +43,29 @@
 
         {{-- СВОДКА --}}
         <div class="ramka">
-            <h2 class="-mt-05">Активность</h2>
+            <h2 class="-mt-05">{{ __('profile.dash_player_h2_activity') }}</h2>
             <div class="row">
                 <div class="col-6 col-md-3">
                     <div class="card text-center">
-                        <div class="">Всего игр</div>
+                        <div class="">{{ __('profile.dash_player_total_games') }}</div>
                         <div style="font-size: 3rem" class="b-600 cd">{{ $totalVisits }}</div>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="card text-center">
-                        <div class="">В этом месяце</div>
+                        <div class="">{{ __('profile.dash_player_this_month') }}</div>
                         <div style="font-size: 3rem" class="f-36 b-600 cd">{{ $visitsThisMonth }}</div>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="card text-center">
-                        <div class="">Отмен</div>
+                        <div class="">{{ __('profile.dash_player_cancellations') }}</div>
                         <div style="font-size: 3rem" class="f-36 b-600 cd">{{ $totalCancellations }}</div>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="card text-center">
-                        <div class="">Серия недель</div>
+                        <div class="">{{ __('profile.dash_player_streak') }}</div>
                         <div style="font-size: 3rem" class="f-36 b-600 cd">{{ $streak }}</div>
                     </div>
                 </div>
@@ -74,32 +74,32 @@
 
         {{-- РЕЙТИНГ И ОЦЕНКИ --}}
         <div class="ramka">
-            <h2 class="-mt-05">Рейтинг и оценки</h2>
+            <h2 class="-mt-05">{{ __('profile.dash_player_h2_rating') }}</h2>
             <div class="row">
                 <div class="col-6 col-md-3">
                     <div class="card text-center">
-                        <div>Оценок уровня</div>
+                        <div>{{ __('profile.dash_player_lvl_votes') }}</div>
                         <div style="font-size: 3rem" class="f-36 b-600 cd">{{ $totalVotes }}</div>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="card text-center">
-                        <div>Средний уровень</div>
+                        <div>{{ __('profile.dash_player_lvl_avg') }}</div>
                         <div style="font-size: 3rem" class="f-36 b-600 cd">{{ $avgLevel ? round($avgLevel, 1) : '—' }}</div>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="card text-center">
-                        <div>Нравится</div>
+                        <div>{{ __('profile.dash_player_likes') }}</div>
                         <div style="font-size: 3rem" class="f-36 b-600 cd">{{ $likesCount }}</div>
-						<div class="f-16">c вами играть</div>
+						<div class="f-16">{{ __('profile.dash_player_likes_sub') }}</div>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="card text-center">
-                        <div>Топ активности</div>
+                        <div>{{ __('profile.dash_player_top_act') }}</div>
                         <div style="font-size: 3rem" class="f-36 b-600 cd">{{ $percentile }}%</div>
-                        <div class="f-16">игроков</div>
+                        <div class="f-16">{{ __('profile.dash_player_top_act_sub') }}</div>
                     </div>
                 </div>
             </div>
@@ -107,17 +107,17 @@
 
         {{-- ПРОСМОТРЫ ПРОФИЛЯ --}}
         <div class="ramka">
-            <h2 class="-mt-05">Просмотры профиля</h2>
+            <h2 class="-mt-05">{{ __('profile.dash_player_h2_views') }}</h2>
             <div class="row">
                 <div class="col-6">
                     <div class="card text-center">
-                        <div>За все время</div>
+                        <div>{{ __('profile.dash_player_views_all') }}</div>
                         <div style="font-size: 3rem" class="f-36 b-600 cd">{{ $profileViews }}</div>
                     </div>
                 </div>
                 <div class="col-6">
                     <div class="card text-center">
-                        <div>За последние 30 дней</div>
+                        <div>{{ __('profile.dash_player_views_30d') }}</div>
                         <div style="font-size: 3rem" class="f-36 b-600 cd">{{ $profileViews30d }}</div>
                     </div>
                 </div>
@@ -126,7 +126,7 @@
 
         {{-- ДИНАМИКА --}}
         <div class="ramka">
-            <h2 class="-mt-05">Активность по месяцам</h2>
+            <h2 class="-mt-05">{{ __('profile.dash_player_h2_monthly') }}</h2>
             <div class="card">
                 <canvas id="playerMonthlyChart" height="80"></canvas>
             </div>
@@ -138,14 +138,14 @@
                 {{-- Позиции --}}
                 <div class="col-sm-4">
 				<div class="ramka">
-                    <h2 class="-mt-05">Позиции</h2>
+                    <h2 class="-mt-05">{{ __('profile.dash_player_h2_positions') }}</h2>
                         @forelse($positions as $pos)
                         <div class="d-flex between fvc py-1">
                             <span>{{ position_name($pos->position) }}</span>
                             <span class="f-16 b-600">{{ $pos->cnt }}</span>
                         </div>
                         @empty
-						<div class="alert alert-info">Нет данных</div>
+						<div class="alert alert-info">{{ __('profile.dash_player_no_data') }}</div>
                         @endforelse
                     </div>
                 </div>
@@ -153,7 +153,7 @@
                 {{-- Локации --}}
                 <div class="col-sm-4">
 				<div class="ramka">
-                    <h2 class="-mt-05">Площадки</h2>
+                    <h2 class="-mt-05">{{ __('profile.dash_player_h2_locations') }}</h2>
                         @forelse($topLocations as $i => $loc)
                         <div class="d-flex between fvc py-1 {{ $i > 0 ? 'border-top' : '' }}">
                             <a href="{{ route('locations.show', [$loc->id, \Illuminate\Support\Str::slug($loc->name)]) }}" class="blink">
@@ -162,7 +162,7 @@
                             <span class="f-16 b-600">{{ $loc->visits }}</span>
                         </div>
                         @empty
-                        <div class="alert alert-info">Нет данных</div>
+                        <div class="alert alert-info">{{ __('profile.dash_player_no_data') }}</div>
                         @endforelse
                     </div>
                 </div>
@@ -179,7 +179,7 @@
                             <span class="f-16 b-600">{{ $org->visits }}</span>
                         </div>
                         @empty
-                        <div class="alert alert-info">Нет данных</div>
+                        <div class="alert alert-info">{{ __('profile.dash_player_no_data') }}</div>
                         @endforelse
                     </div>
                 </div>

@@ -1,25 +1,25 @@
 <x-voll-layout body_class="org-dashboard-page">
 
-    <x-slot name="title">Панель организатора</x-slot>
-    <x-slot name="h1">Панель организатора</x-slot>
-    <x-slot name="t_description">Аналитика ваших мероприятий</x-slot>
+    <x-slot name="title">{{ __('profile.dash_org_title') }}</x-slot>
+    <x-slot name="h1">{{ __('profile.dash_org_title') }}</x-slot>
+    <x-slot name="t_description">{{ __('profile.dash_org_t_description') }}</x-slot>
 
     <x-slot name="breadcrumbs">
         <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
-            <a href="{{ route('profile.show') }}" itemprop="item"><span itemprop="name">Профиль</span></a>
+            <a href="{{ route('profile.show') }}" itemprop="item"><span itemprop="name">{{ __('profile.nch_breadcrumb') }}</span></a>
             <meta itemprop="position" content="2">
         </li>
         <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
-            <span itemprop="name">Панель организатора</span>
+            <span itemprop="name">{{ __('profile.dash_org_breadcrumb_self') }}</span>
             <meta itemprop="position" content="3">
         </li>
     </x-slot>
 
     <x-slot name="d_description">
         <div class="d-flex gap-2 mt-2 flex-wrap">
-            <a href="{{ route('events.create.event_management') }}" class="btn btn-secondary">📋 Мои мероприятия</a>
-            <a href="{{ route('profile.payment_settings') }}" class="btn btn-secondary">💳 Настройки оплаты</a>
-            <a href="{{ route('profile.transactions') }}" class="btn btn-secondary">💰 Транзакции</a>
+            <a href="{{ route('events.create.event_management') }}" class="btn btn-secondary">{{ __('profile.dash_org_btn_my_events') }}</a>
+            <a href="{{ route('profile.payment_settings') }}" class="btn btn-secondary">{{ __('profile.dash_org_btn_pay_settings') }}</a>
+            <a href="{{ route('profile.transactions') }}" class="btn btn-secondary">{{ __('profile.dash_org_btn_transactions') }}</a>
         </div>
     </x-slot>
 
@@ -27,29 +27,29 @@
 
         {{-- СВОДКА --}}
         <div class="ramka">
-            <h2 class="-mt-05">📊 Сводка</h2>
+            <h2 class="-mt-05">{{ __('profile.dash_org_h2_summary') }}</h2>
             <div class="row row2">
                 <div class="col-6 col-md-3">
                     <div class="card text-center">
-                        <div class="f-13" style="opacity:.6">Всего мероприятий</div>
+                        <div class="f-13" style="opacity:.6">{{ __('profile.dash_org_total_events') }}</div>
                         <div class="f-36 b-700">{{ $totalEvents }}</div>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="card text-center">
-                        <div class="f-13" style="opacity:.6">Активных</div>
+                        <div class="f-13" style="opacity:.6">{{ __('profile.dash_org_active_events') }}</div>
                         <div class="f-36 b-700 cs">{{ $activeEvents }}</div>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="card text-center">
-                        <div class="f-13" style="opacity:.6">Регулярных</div>
+                        <div class="f-13" style="opacity:.6">{{ __('profile.dash_org_recurring') }}</div>
                         <div class="f-36 b-700 cd">{{ $recurringEvents }}</div>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="card text-center">
-                        <div class="f-13" style="opacity:.6">Разовых</div>
+                        <div class="f-13" style="opacity:.6">{{ __('profile.dash_org_one_time') }}</div>
                         <div class="f-36 b-700">{{ $oneTimeEvents }}</div>
                     </div>
                 </div>
@@ -58,31 +58,31 @@
 
         {{-- ИГРОКИ --}}
         <div class="ramka">
-            <h2 class="-mt-05">👥 Игроки</h2>
+            <h2 class="-mt-05">{{ __('profile.dash_org_h2_players') }}</h2>
             <div class="row row2">
                 <div class="col-6 col-md-3">
                     <div class="card text-center">
-                        <div class="f-13" style="opacity:.6">Уникальных игроков</div>
+                        <div class="f-13" style="opacity:.6">{{ __('profile.dash_org_unique_players') }}</div>
                         <div class="f-36 b-700">{{ $playersStats->unique_players ?? 0 }}</div>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="card text-center">
-                        <div class="f-13" style="opacity:.6">Всего записей</div>
+                        <div class="f-13" style="opacity:.6">{{ __('profile.dash_org_total_regs') }}</div>
                         <div class="f-36 b-700">{{ $playersStats->total_registrations ?? 0 }}</div>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="card text-center">
-                        <div class="f-13" style="opacity:.6">Новых за 30 дней</div>
+                        <div class="f-13" style="opacity:.6">{{ __('profile.dash_org_new_30d') }}</div>
                         <div class="f-36 b-700 cs">{{ $newPlayers ?? 0 }}</div>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="card text-center">
-                        <div class="f-13" style="opacity:.6">Просмотров страниц (30д)</div>
+                        <div class="f-13" style="opacity:.6">{{ __('profile.dash_org_pageviews_30d') }}</div>
                         <div class="f-36 b-700">{{ $pageViews }}</div>
-                        <div class="f-12" style="opacity:.5">профиля: {{ $profileViews }}</div>
+                        <div class="f-12" style="opacity:.5">{{ __('profile.dash_org_profile_views') }} {{ $profileViews }}</div>
                     </div>
                 </div>
             </div>
@@ -90,7 +90,7 @@
 
         {{-- ДИНАМИКА ПО МЕСЯЦАМ --}}
         <div class="ramka">
-            <h2 class="-mt-05">📈 Динамика записей (12 месяцев)</h2>
+            <h2 class="-mt-05">{{ __('profile.dash_org_h2_dynamics') }}</h2>
             <div class="card">
                 <canvas id="monthlyChart" height="80"></canvas>
             </div>
@@ -99,7 +99,7 @@
         {{-- ЗАГРУЗКА МЕРОПРИЯТИЙ --}}
         @if($occurrenceLoad->count() > 0)
         <div class="ramka">
-            <h2 class="-mt-05">🏐 Загрузка мероприятий (последние 3 месяца)</h2>
+            <h2 class="-mt-05">{{ __('profile.dash_org_h2_load') }}</h2>
             <div class="card">
                 <canvas id="loadChart" height="100"></canvas>
             </div>
@@ -107,10 +107,10 @@
                 <table class="table f-16">
                     <thead>
                         <tr>
-                            <th>Мероприятие</th>
-                            <th>Повторов</th>
-                            <th>Всего записей</th>
-                            <th>Средняя загрузка</th>
+                            <th>{{ __('profile.dash_org_col_event') }}</th>
+                            <th>{{ __('profile.dash_org_col_repeats') }}</th>
+                            <th>{{ __('profile.dash_org_col_total_regs') }}</th>
+                            <th>{{ __('profile.dash_org_col_avg_load') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -314,7 +314,7 @@
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="card text-center">
-                        <div class="f-13" style="opacity:.6">Активных</div>
+                        <div class="f-13" style="opacity:.6">{{ __('profile.dash_org_active_events') }}</div>
                         <div class="f-32 b-700 cs">{{ $subStats->active }}</div>
                     </div>
                 </div>
@@ -371,7 +371,7 @@
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="card text-center">
-                        <div class="f-13" style="opacity:.6">Активных</div>
+                        <div class="f-13" style="opacity:.6">{{ __('profile.dash_org_active_events') }}</div>
                         <div class="f-32 b-700 cs">{{ $couponStats->active }}</div>
                     </div>
                 </div>

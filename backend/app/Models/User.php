@@ -58,6 +58,7 @@
         'profile_completed_at',
         'biometric_token',
         'google_id',
+        'locale',
 		];
 		
 		protected $hidden = [

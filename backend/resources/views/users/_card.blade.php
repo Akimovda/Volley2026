@@ -3,7 +3,7 @@
     $gender = (string)($u->gender ?? '');
     $genderClass = $gender === 'm' ? 'icon-male' : ($gender === 'f' ? 'icon-female' : '');
     
-    $genderLabel = $gender === 'm' ? 'Мужчина' : ($gender === 'f' ? 'Женщина' : null);
+    $genderLabel = $gender === 'm' ? __('profile.idx_gender_m') : ($gender === 'f' ? __('profile.idx_gender_f') : null);
 
     $cityLabel = null;
     if ($u->city) {
@@ -12,9 +12,9 @@
 
     $metaParts = array_values(array_filter([
         $cityLabel,
-        !is_null($age) ? ($age . ' лет') : null,
+        !is_null($age) ? __('profile.card_age_years', ['n' => $age]) : null,
         $genderLabel,
-        !empty($u->height_cm) ? ($u->height_cm . ' см') : null,
+        !empty($u->height_cm) ? __('profile.card_height_cm', ['n' => $u->height_cm]) : null,
     ]));
 
     $classic = $u->classic_level ?? null;
@@ -42,7 +42,7 @@
                 @if(!empty($u->first_name) && !empty($u->last_name))
                     {{ $u->last_name }}<br>{{ $u->first_name }}
                 @else
-                    Пользователь<br>#{{ $u->id }}
+                    {{ __('profile.card_user_n') }}<br>#{{ $u->id }}
                 @endif
             </span>
         </a>
@@ -56,9 +56,9 @@
             $cityText = '';
             
             foreach($metaParts as $part) {
-                if ($part === 'Мужчина' || $part === 'Женщина') {
+                if ($part === __('profile.idx_gender_m') || $part === __('profile.idx_gender_f')) {
                     $genderText = $part;
-                } elseif (str_ends_with($part, ' лет')) {
+                } elseif (str_contains($part, __('profile.card_age_years', ['n' => '']))) {
                     $ageText = $part;
                 } elseif (str_contains($part, '(') && str_contains($part, ')')) {
                     $cityText = $part;
@@ -92,7 +92,7 @@
 @if($u->isPremium())
 	    <div class="user-meta-list">
     <div class="user-meta-item mt-05">
-        <span class="premium-badge-card"><span class="user-meta-icon">👑</span>  <span class="user-meta-text f-16">Premium</span></span>
+        <span class="premium-badge-card"><span class="user-meta-icon">👑</span>  <span class="user-meta-text f-16">{{ __('profile.card_premium') }}</span></span>
     </div>
 	 </div>
 @endif
@@ -127,7 +127,7 @@
     
     <div class="user-levels">
         <div class="user-level">
-            <div class="user-level-label">Классика</div>
+            <div class="user-level-label">{{ __('profile.card_lvl_classic') }}</div>
             <div class="user-level-value">
                 @if($classicLevel)
                     <span class="levelmark level-{{ $classicLevel }}">{{ $classic }}</span>
@@ -137,7 +137,7 @@
             </div>
         </div>
         <div class="user-level">
-            <div class="user-level-label">Пляжка</div>
+            <div class="user-level-label">{{ __('profile.card_lvl_beach') }}</div>
             <div class="user-level-value">
                 @if($beachLevel)
                     <span class="levelmark level-{{ $beachLevel }}">{{ $beach }}</span>

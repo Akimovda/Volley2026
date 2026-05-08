@@ -1,18 +1,18 @@
 {{-- resources/views/profile/widget.blade.php --}}
 <x-voll-layout body_class="profile-page">
 
-    <x-slot name="title">Виджет на сайт</x-slot>
-    <x-slot name="h1">🌐 Виджет на сайт</x-slot>
-    <x-slot name="h2">Организатор Pro</x-slot>
-    <x-slot name="t_description">Встройте список ваших мероприятий на любой внешний сайт.</x-slot>
+    <x-slot name="title">{{ __('profile.widget_title') }}</x-slot>
+    <x-slot name="h1">{{ __('profile.widget_h1') }}</x-slot>
+    <x-slot name="h2">{{ __('profile.widget_h2') }}</x-slot>
+    <x-slot name="t_description">{{ __('profile.widget_t_description') }}</x-slot>
 
     <x-slot name="breadcrumbs">
         <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
-            <a href="{{ route('profile.show') }}" itemprop="item"><span itemprop="name">Профиль</span></a>
+            <a href="{{ route('profile.show') }}" itemprop="item"><span itemprop="name">{{ __('profile.nch_breadcrumb') }}</span></a>
             <meta itemprop="position" content="2">
         </li>
         <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
-            <span itemprop="name">Виджет</span>
+            <span itemprop="name">{{ __('profile.widget_breadcrumb') }}</span>
             <meta itemprop="position" content="3">
         </li>
     </x-slot>
@@ -30,7 +30,7 @@
         {{-- ===== ЗАБЛОКИРОВАНО — НЕТ ПОДПИСКИ ===== --}}
         <div class="ramka text-center" style="padding:4rem 2rem">
             <div style="font-size:5rem;margin-bottom:1.5rem">🔒</div>
-            <h2 class="-mt-05">Доступно в Организатор Pro</h2>
+            <h2 class="-mt-05">{{ __('profile.widget_pro_section_h2') }}</h2>
             <div class="f-16 mb-3" style="opacity:.7;max-width:48rem;margin:0 auto 2rem">
                 Виджет для встройки мероприятий на внешний сайт — часть подписки <strong>Организатор Pro</strong>.
                 Активируйте подписку чтобы получить API-ключ и код для вставки.

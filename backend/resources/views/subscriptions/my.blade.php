@@ -1,6 +1,6 @@
 <x-voll-layout body_class="subscriptions-my-page">
-    <x-slot name="title">Мои абонементы</x-slot>
-    <x-slot name="h1">Мои абонементы</x-slot>
+    <x-slot name="title">{{ __('subscriptions.my_title') }}</x-slot>
+    <x-slot name="h1">{{ __('subscriptions.my_title') }}</x-slot>
 
     <div class="container">
     <div class="row row2">
@@ -24,7 +24,7 @@
 
         @if($subs->isEmpty())
             <div class="ramka">
-                <div class="alert alert-info">У вас нет абонементов.</div>
+                <div class="alert alert-info">{{ __('subscriptions.my_empty') }}</div>
             </div>
         @else
             @foreach($subs as $sub)
@@ -38,7 +38,7 @@
                                 ? (($org->last_name || $org->first_name)
                                     ? trim(($org->last_name ?? '') . ' ' . ($org->first_name ?? ''))
                                     : $org->name)
-                                : 'Организатор';
+                                : __('subscriptions.my_organizer_fallback');
                             // Мероприятия из event_ids шаблона
                             $tmplEventIds = $sub->template->event_ids ?? [];
                             $tmplEvents = !empty($tmplEventIds)
@@ -46,7 +46,7 @@
                                 : collect();
                         @endphp
                         <div class="f-14 mb-05" style="opacity:.7">
-                            Организатор:
+                            {{ __('subscriptions.my_organizer') }}
                             @if($org)
                                 <a href="{{ route('users.show', $org->id) }}" class="cd b-600">{{ $orgName }}</a>
                             @else
@@ -55,26 +55,26 @@
                         </div>
                         @if($tmplEvents->isNotEmpty())
                         <div class="f-13" style="opacity:.6">
-                            Мероприятия:
+                            {{ __('subscriptions.my_events_label') }}
                             @foreach($tmplEvents as $ev)
                                 <a href="{{ route('events.show', $ev->id) }}" class="cd">{{ $ev->title }}</a>@if(!$loop->last), @endif
                             @endforeach
                         </div>
                         @elseif($org)
                         <div class="f-13" style="opacity:.5">
-                            Действует на все мероприятия организатора
+                            {{ __('subscriptions.my_all_events') }}
                         </div>
                         @endif
                     </div>
                     <div class="text-right">
                         @if($sub->status === 'active')
-                            <span class="cs b-600 f-18">✅ Активен</span>
+                            <span class="cs b-600 f-18">{{ __('subscriptions.status_active') }}</span>
                         @elseif($sub->status === 'frozen')
-                            <span class="cd b-600 f-18">❄️ Заморожен</span>
+                            <span class="cd b-600 f-18">{{ __('subscriptions.status_frozen') }}</span>
                         @elseif($sub->status === 'expired')
-                            <span style="opacity:.5" class="f-18">⌛ Истёк</span>
+                            <span style="opacity:.5" class="f-18">{{ __('subscriptions.status_expired') }}</span>
                         @elseif($sub->status === 'exhausted')
-                            <span style="opacity:.5" class="f-18">📭 Исчерпан</span>
+                            <span style="opacity:.5" class="f-18">{{ __('subscriptions.status_exhausted') }}</span>
                         @endif
                     </div>
                 </div>
@@ -82,16 +82,16 @@
                 <div class="row row2">
                     <div class="col-6 col-md-3">
                         <div class="card text-center">
-                            <div class="f-13" style="opacity:.6">Осталось посещений</div>
+                            <div class="f-13" style="opacity:.6">{{ __('subscriptions.my_visits_left') }}</div>
                             <div class="f-32 b-700 {{ $sub->visits_remaining > 0 ? 'cs' : 'red' }}">
                                 {{ $sub->visits_remaining }}
                             </div>
-                            <div class="f-13" style="opacity:.5">из {{ $sub->visits_total }}</div>
+                            <div class="f-13" style="opacity:.5">{{ __('subscriptions.my_visits_of', ['n' => $sub->visits_total]) }}</div>
                         </div>
                     </div>
                     <div class="col-6 col-md-3">
                         <div class="card text-center">
-                            <div class="f-13" style="opacity:.6">Действует до</div>
+                            <div class="f-13" style="opacity:.6">{{ __('subscriptions.my_valid_until') }}</div>
                             <div class="f-18 b-600">
                                 {{ $sub->expires_at ? $sub->expires_at->format('d.m.Y') : '∞' }}
                             </div>
@@ -100,7 +100,7 @@
                     @if($sub->status === 'frozen')
                     <div class="col-6 col-md-3">
                         <div class="card text-center">
-                            <div class="f-13" style="opacity:.6">Заморожен до</div>
+                            <div class="f-13" style="opacity:.6">{{ __('subscriptions.my_frozen_until') }}</div>
                             <div class="f-18 b-600 cd">{{ $sub->frozen_until?->format('d.m.Y') }}</div>
                         </div>
                     </div>
@@ -113,31 +113,31 @@
                     <div style="background:#eee;border-radius:8px;height:10px">
                         <div style="width:{{ $pct }}%;background:{{ $pct > 50 ? '#28a745' : ($pct > 20 ? '#fd7e14' : '#dc3545') }};height:10px;border-radius:8px;transition:width .3s"></div>
                     </div>
-                    <div class="f-13 mt-05 text-right" style="opacity:.6">{{ $pct }}% осталось</div>
+                    <div class="f-13 mt-05 text-right" style="opacity:.6">{{ __('subscriptions.my_pct_left', ['pct' => $pct]) }}</div>
                 </div>
 
                 {{-- Действия --}}
                 <div class="d-flex gap-2 flex-wrap mt-2">
                     <a href="{{ route('subscriptions.usages', $sub) }}" class="btn btn-secondary btn-small">
-                        📋 История посещений
+                        {{ __('subscriptions.my_btn_history') }}
                     </a>
 
                     @if($sub->status === 'active' && $sub->template->freeze_enabled)
                     <button class="btn btn-secondary btn-small" onclick="toggleFreeze({{ $sub->id }})">
-                        ❄️ Заморозить
+                        {{ __('subscriptions.my_btn_freeze') }}
                     </button>
                     @endif
 
                     @if($sub->status === 'frozen')
                     <form method="POST" action="{{ route('subscriptions.unfreeze', $sub) }}">
                         @csrf
-                        <button class="btn btn-small">🔥 Разморозить</button>
+                        <button class="btn btn-small">{{ __('subscriptions.my_btn_unfreeze') }}</button>
                     </form>
                     @endif
 
                     @if($sub->status === 'active' && $sub->template->transfer_enabled)
                     <button class="btn btn-secondary btn-small" onclick="toggleTransfer({{ $sub->id }})">
-                        🔄 Передать
+                        {{ __('subscriptions.my_btn_transfer') }}
                     </button>
                     @endif
                 </div>
@@ -150,7 +150,7 @@
                             <input type="date" name="until" min="{{ now()->addDay()->toDateString() }}"
                                 max="{{ now()->addMonths($sub->template->freeze_max_months ?: 3)->toDateString() }}"
                                 style="max-width:200px">
-                            <button type="submit" class="btn btn-small">❄️ Заморозить до</button>
+                            <button type="submit" class="btn btn-small">{{ __('subscriptions.my_btn_freeze_until') }}</button>
                         </div>
                     </form>
                 </div>
@@ -163,14 +163,14 @@
                         <div style="position:relative" class="mb-1">
                             <input type="text" id="transfer_ac_{{ $sub->id }}"
                                 autocomplete="off"
-                                placeholder="Введите имя игрока…"
+                                placeholder="{{ __('subscriptions.my_transfer_ph') }}"
                                 class="w-100">
                             <div id="transfer_dd_{{ $sub->id }}" class="form-select-dropdown trainer_dd"></div>
                         </div>
                         <div id="transfer_selected_{{ $sub->id }}" class="f-14 mb-1" style="opacity:.7"></div>
                         <button type="submit" id="transfer_btn_{{ $sub->id }}" class="btn btn-small" disabled
-                            data-title="Передать абонемент?" data-text="Это действие необратимо." data-confirm-text="Передать" data-cancel-text="Отмена" class="btn btn-small btn-alert">
-                            🔄 Передать
+                            data-title="{{ __('subscriptions.my_transfer_title') }}" data-text="{{ __('subscriptions.my_transfer_text') }}" data-confirm-text="{{ __('subscriptions.my_transfer_yes') }}" data-cancel-text="{{ __('subscriptions.cancel') }}" class="btn btn-small btn-alert">
+                            {{ __('subscriptions.my_btn_transfer') }}
                         </button>
                     </form>
                 </div>
@@ -209,7 +209,7 @@
             function pick(id, label) {
                 hidden.value = id;
                 input.value = label;
-                selected.textContent = '✅ Выбран: ' + label;
+                selected.textContent = @json(__('subscriptions.my_user_selected', ['label' => ''])) + label;
                 btn.disabled = false;
                 hideDd();
             }
@@ -221,7 +221,7 @@
                 selected.textContent = '';
                 var q = input.value.trim();
                 if (q.length < 2) { hideDd(); return; }
-                dd.innerHTML = '<div class="city-message">Поиск…</div>';
+                dd.innerHTML = '<div class="city-message">' + @json(__('subscriptions.my_search_searching')) + '</div>';
                 showDd();
                 timer = setTimeout(function() {
                     fetch('/api/users/search?q=' + encodeURIComponent(q), {
@@ -233,7 +233,7 @@
                         dd.innerHTML = '';
                         var items = data.items || [];
                         if (!items.length) {
-                            dd.innerHTML = '<div class="city-message">Ничего не найдено</div>';
+                            dd.innerHTML = '<div class="city-message">' + @json(__('subscriptions.my_search_no_results')) + '</div>';
                             showDd(); return;
                         }
                         items.forEach(function(item) {

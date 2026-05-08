@@ -1,16 +1,16 @@
 {{-- resources/views/pages/help.blade.php --}}
 <x-voll-layout body_class="help">
-<x-slot name="title">Помощь — VolleyPlay.Club</x-slot>
-<x-slot name="description">Ответы на частые вопросы для игроков и организаторов VolleyPlay.Club</x-slot>
-<x-slot name="t_description">Ответы на частые вопросы и поддержка</x-slot>
+<x-slot name="title">{{ __('pages.help_title') }}</x-slot>
+<x-slot name="description">{{ __('pages.help_description') }}</x-slot>
+<x-slot name="t_description">{{ __('pages.help_t_description') }}</x-slot>
 <x-slot name="canonical">{{ route('help') }}</x-slot>
 <x-slot name="breadcrumbs">
 <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
-<a href="{{ route('help') }}" itemprop="item"><span itemprop="name">Помощь</span></a>
+<a href="{{ route('help') }}" itemprop="item"><span itemprop="name">{{ __('pages.help_breadcrumb') }}</span></a>
 <meta itemprop="position" content="2">
 </li>
 </x-slot>
-<x-slot name="h1">Помощь</x-slot>
+<x-slot name="h1">{{ __('pages.help_h1') }}</x-slot>
 
 <div class="container">
 <div class="row row2">
