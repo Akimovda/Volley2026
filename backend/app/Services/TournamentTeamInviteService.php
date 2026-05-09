@@ -24,7 +24,7 @@ final class TournamentTeamInviteService
         string $teamRole = 'player',
         ?string $positionCode = null
     ): EventTeamInvite {
-        return DB::transaction(function () use ($team, $invitedUserId, $invitedByUserId, $teamRole, $positionCode) {
+        $invite = DB::transaction(function () use ($team, $invitedUserId, $invitedByUserId, $teamRole, $positionCode) {
             if ((int) $team->captain_user_id === $invitedUserId) {
                 throw new DomainException('Капитану не нужно отправлять приглашение самому себе.');
             }
