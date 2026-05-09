@@ -214,10 +214,33 @@ if ($role === 'admin') {
             ->orderBy('name')
             ->get();
 
+        // Каналы для анонсов: список каналов организатора + текущие подключения
+        $userChannels = \App\Models\UserNotificationChannel::query()
+            ->verified()
+            ->where('user_id', (int) $event->organizer_id)
+            ->orderBy('platform')
+            ->orderBy('title')
+            ->get();
+
+        $eventChannels = \App\Models\EventNotificationChannel::query()
+            ->where('event_id', (int) $event->id)
+            ->get();
+        $selectedChannelIds = $eventChannels->pluck('channel_id')->map(fn ($v) => (string) $v)->all();
+        $first = $eventChannels->first();
+        $channelSettings = [
+            'silent'                  => (bool) ($first->silent ?? false),
+            'update_message'          => (bool) ($first->update_message ?? true),
+            'include_image'           => (bool) ($first->include_image ?? true),
+            'include_registered_list' => (bool) ($first->include_registered_list ?? true),
+        ];
+
         return view('events.event_management_edit', [
             'event' => $event,
             'activeRegs' => (int) $activeRegs,
             'locations' => $locations,
+            'userChannels' => $userChannels,
+            'selectedChannelIds' => $selectedChannelIds,
+            'channelSettings' => $channelSettings,
         ]);
     }
     public function occurrences(\App\Models\Event $event)
@@ -657,6 +680,13 @@ if ($role === 'admin') {
             'bot_assistant_enabled'      => ['sometimes', 'boolean'],
             'bot_assistant_threshold'    => ['sometimes', 'integer', 'min:5', 'max:30'],
             'bot_assistant_max_fill_pct' => ['sometimes', 'integer', 'min:10', 'max:60'],
+            'channels'                   => ['sometimes', 'array'],
+            'channels.*'                 => ['integer', 'min:1'],
+            'channel_silent'             => ['sometimes', 'boolean'],
+            'channel_update_message'     => ['sometimes', 'boolean'],
+            'channel_include_image'      => ['sometimes', 'boolean'],
+            'channel_include_registered' => ['sometimes', 'boolean'],
+            'channel_use_private_link'   => ['sometimes', 'boolean'],
         ]);
     
         DB::transaction(function () use ($event, $data) {
@@ -838,13 +868,16 @@ if ($role === 'admin') {
                 );
             }
         });
-    
+
         $event->refresh();
-    
+
+        // Каналы анонсов: пересохраняем привязки (delete-then-insert)
+        app(\App\Services\EventNotificationChannelService::class)->updateChannels($event, $request);
+
         if ((bool) $event->is_recurring && trim((string) $event->recurrence_rule) !== '') {
             ExpandEventOccurrencesJob::dispatch((int) $event->id, 90, 500);
         }
-    
+
         return redirect()
             ->route('events.create.event_management', ['tab' => 'mine'])
             ->with('status', 'Мероприятие обновлено. Активные записи сохранены.');
