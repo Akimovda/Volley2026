@@ -132,7 +132,7 @@ class TournamentTeamInviteController extends Controller
 
         try {
             $service->revokeInvite((int) $invite->id, (int) $user->id);
-            return back()->with('success', 'Приглашение отозвано.');
+            return back()->with('success', __('events.tinv_msg_revoked'));
         } catch (DomainException $e) {
             return back()->withErrors(['invite_revoke' => $e->getMessage()]);
         }

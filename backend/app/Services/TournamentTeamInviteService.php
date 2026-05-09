@@ -174,18 +174,18 @@ final class TournamentTeamInviteService
                 ->first();
 
             if (!$invite) {
-                throw new DomainException('Приглашение не найдено.');
+                throw new DomainException(__('events.tinv_err_not_found'));
             }
 
             $isCaptain = (int) $invite->team->captain_user_id === $byUserId;
             $isInviter = (int) $invite->invited_by_user_id === $byUserId;
 
             if (!$isCaptain && !$isInviter) {
-                throw new DomainException('Отозвать приглашение может только капитан команды.');
+                throw new DomainException(__('events.tinv_err_only_captain'));
             }
 
             if ($invite->status !== 'pending') {
-                throw new DomainException('Можно отозвать только активное приглашение.');
+                throw new DomainException(__('events.tinv_err_only_pending'));
             }
 
             $invite->update([

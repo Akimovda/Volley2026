@@ -185,10 +185,10 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌'];
                 <a href="{{ $invUrl }}" target="_blank" class="btn btn-small btn-secondary">🔗 Открыть ссылку</a>
                 @if($inv->status === 'pending')
                 <form method="POST" action="{{ route('tournamentTeamInvites.revoke', [$event, $team, $inv]) }}"
-                      onsubmit="return confirm('Отозвать приглашение?')">
+                      onsubmit="return confirm(@json(__('events.tinv_revoke_confirm')))">
                     @csrf
                     @method('DELETE')
-                    <button type="submit" class="btn btn-small btn-danger">✕ Отозвать</button>
+                    <button type="submit" class="btn btn-small btn-danger">{{ __('events.tinv_revoke_btn') }}</button>
                 </form>
                 @endif
             </div>
