@@ -114,6 +114,48 @@
                 @csrf
                 @method('PUT')
 
+                @if(($event->format ?? '') === 'tournament' && !empty($seasonInfo))
+                {{-- ===== БЛОК 0: Серия турниров (read-only) ===== --}}
+                <div class="ramka">
+                    <h2 class="-mt-05">{{ __('events.season_title') }}</h2>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="card">
+                                <label>{{ __('events.season_league_label') }}</label>
+                                <div class="b-600 f-15">
+                                    @if(!empty($seasonInfo['league_url']))
+                                        <a href="{{ $seasonInfo['league_url'] }}" class="link">{{ $seasonInfo['league_name'] ?? '—' }}</a>
+                                    @else
+                                        {{ $seasonInfo['league_name'] ?? '—' }}
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card">
+                                <label>{{ __('events.season_label') }}</label>
+                                <div class="b-600 f-15">
+                                    @if(!empty($seasonInfo['season_url']))
+                                        <a href="{{ $seasonInfo['season_url'] }}" class="link">{{ $seasonInfo['season_name'] ?? '—' }}</a>
+                                    @else
+                                        {{ $seasonInfo['season_name'] ?? '—' }}
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card">
+                                <label>{{ __('events.division_label') }}</label>
+                                <div class="b-600 f-15">{{ $seasonInfo['division_name'] ?? '—' }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <ul class="list f-13 mt-1" style="opacity:.7">
+                        <li>{{ __('events.edit_season_readonly_hint') ?? 'Привязка к лиге, сезону и дивизиону задаётся при создании турнира и здесь не меняется.' }}</li>
+                    </ul>
+                </div>
+                @endif
+
                 {{-- ===== БЛОК 1: Основные настройки ===== --}}
                 <div class="ramka">
                     <h2 class="-mt-05">{{ __('events.main_settings') }}</h2>
@@ -290,6 +332,107 @@
                     <h2 class="-mt-05">{{ __('events.game_settings_section') }}</h2>
                     <div class="row">
 
+                    @if(($event->format ?? 'game') === 'tournament')
+                        @php
+                            $ts = $event->tournamentSetting;
+                            $isBeach = ($event->direction ?? 'classic') === 'beach';
+                            $tournamentSchemes = $isBeach
+                                ? ['2x2' => '2×2', '3x3' => '3×3', '4x4' => '4×4']
+                                : ['4x4' => '4×4', '4x2' => '4×2', '5x1' => '5×1'];
+                        @endphp
+
+                        <div class="col-md-3">
+                            <div class="card" style="overflow:visible">
+                                <label>{{ __('events.game_subtype') }}</label>
+                                <select name="tournament_game_scheme">
+                                    @foreach($tournamentSchemes as $k => $l)
+                                        <option value="{{ $k }}" @selected(old('tournament_game_scheme', $ts?->game_scheme) === $k)>{{ $l }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="card" style="overflow:visible">
+                                <label>{{ __('events.team_n') }}</label>
+                                <input type="number" name="teams_count" min="2" max="200"
+                                    value="{{ old('teams_count', $ts?->teams_count ?? 4) }}">
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="card" style="overflow:visible">
+                                <label>{{ __('events.tournament_team_size_label') ?? 'Состав команды' }}</label>
+                                <input type="number" name="tournament_team_size_min" min="1" max="20"
+                                    value="{{ old('tournament_team_size_min', $ts?->team_size_min ?? ($isBeach ? 2 : 6)) }}">
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="card" style="overflow:visible">
+                                <label>{{ __('events.tournament_reserve_label') ?? 'Запасных' }}</label>
+                                <input type="number" name="tournament_reserve_players_max" min="0" max="20"
+                                    value="{{ old('tournament_reserve_players_max', $ts?->reserve_players_max ?? 0) }}">
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="card" style="overflow:visible">
+                                <label>{{ __('events.gender_label') }}</label>
+                                <select name="game_gender_policy">
+                                    @foreach([
+                                        'mixed_open' => __('events.gender_mixed_open'),
+                                        'mixed_5050' => __('events.gender_5050'),
+                                        'only_male' => __('events.gender_only_male'),
+                                        'only_female' => __('events.gender_only_female'),
+                                        'mixed_limited' => __('events.gender_mixed_limited'),
+                                    ] as $k => $l)
+                                        <option value="{{ $k }}"
+                                            @selected(old('game_gender_policy', $event->gameSettings?->gender_policy) === $k)>
+                                            {{ $l }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="card" style="overflow:visible">
+                                <label>{{ __('events.tournament_application_mode_label') ?? 'Режим заявок' }}</label>
+                                <select name="tournament_application_mode">
+                                    <option value="manual" @selected(old('tournament_application_mode', $ts?->application_mode ?? 'manual') === 'manual')>{{ __('events.tournament_app_mode_manual') ?? 'Ручное одобрение' }}</option>
+                                    <option value="auto" @selected(old('tournament_application_mode', $ts?->application_mode) === 'auto')>{{ __('events.tournament_app_mode_auto') ?? 'Автоматическое' }}</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="card" style="overflow:visible">
+                                <label>{{ __('events.tournament_notifs') }}</label>
+                                <label class="checkbox-item">
+                                    <input type="hidden" name="tournament_captain_confirms_members" value="0">
+                                    <input type="checkbox" name="tournament_captain_confirms_members" value="1"
+                                        @checked(old('tournament_captain_confirms_members', $ts?->captain_confirms_members ?? true))>
+                                    <div class="custom-checkbox"></div>
+                                    <span>{{ __('events.tournament_captain_confirms') }}</span>
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="hidden" name="tournament_auto_submit_when_ready" value="0">
+                                    <input type="checkbox" name="tournament_auto_submit_when_ready" value="1"
+                                        @checked(old('tournament_auto_submit_when_ready', $ts?->auto_submit_when_ready ?? false))>
+                                    <div class="custom-checkbox"></div>
+                                    <span>{{ __('events.tournament_auto_submit') }}</span>
+                                </label>
+                                <label class="checkbox-item">
+                                    <input type="hidden" name="tournament_allow_incomplete_application" value="0">
+                                    <input type="checkbox" name="tournament_allow_incomplete_application" value="1"
+                                        @checked(old('tournament_allow_incomplete_application', $ts?->allow_incomplete_application ?? false))>
+                                    <div class="custom-checkbox"></div>
+                                    <span>{{ __('events.tournament_allow_incomplete') }}</span>
+                                </label>
+                            </div>
+                        </div>
+                    @else
                         <div class="col-md-3">
                             <div class="card" style="overflow:visible">
                                 <label>{{ __('events.game_subtype') }}</label>
@@ -347,6 +490,7 @@
                                 </select>
                             </div>
                         </div>
+                    @endif
 
                         <div class="col-md-6">
                             <div class="card" style="overflow:visible">
