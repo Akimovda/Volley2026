@@ -97,7 +97,10 @@ class PublishOccurrenceAnnouncementService
                 $oldMessageKind = data_get($record->meta, 'message_kind');
 
                 // Платформа поддерживает редактирование и есть message_id → редактируем
+                // MAX: PUT удаляет фото из сообщения — photo-анонсы не редактируем
+                $maxPhotoSkip = $channel->platform === 'max' && $oldMessageKind === 'photo';
                 if (
+                    !$maxPhotoSkip &&
                     $link->update_message &&
                     $publisher->supportsUpdate() &&
                     !empty($record->external_message_id) &&
