@@ -1005,19 +1005,32 @@
 
 			// Данные команд для турнира
 			if ((string)($occurrence->event->format ?? '') === 'tournament') {
-				$teamsMax = (int)($occurrence->event->tournament_teams_count ?? 0);
+				$teamsMax  = (int)($occurrence->event->tournament_teams_count ?? 0);
+				$regMode   = (string)($occurrence->event->registration_mode ?? '');
 				$gsSubtype = (string)($occurrence->event->gameSettings?->subtype ?? '');
 				$teamSize  = preg_match('/^(\d+)x\d+$/i', $gsSubtype, $m) ? (int)$m[1] : 2;
-				// Считаем пары/группы по group_key; если нет групп — делим игроков на teamSize
-				$byGroup = \Illuminate\Support\Facades\DB::table('event_registrations')
-					->where('occurrence_id', $occurrence->id)
-					->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
-					->whereNotNull('group_key')
-					->distinct('group_key')
-					->count('group_key');
-				$teamsRegistered = $byGroup > 0
-					? $byGroup
-					: (int) ceil($registeredTotal / max(1, $teamSize));
+
+				// Для командного турнира (team_beach / team_classic) регистрации
+				// хранятся в event_teams, а не в event_registrations.
+				if (in_array($regMode, ['team_beach', 'team_classic', 'team'], true)) {
+					$teamsRegistered = \App\Models\EventTeam::where('event_id', $occurrence->event_id)
+						->where(fn($q) => $q->where('occurrence_id', $occurrence->id)
+							->orWhereNull('occurrence_id'))
+						->whereIn('status', ['ready','pending_members','submitted','confirmed','approved'])
+						->count();
+				} else {
+					// Обычный турнир — считаем через group_key в регистрациях
+					$byGroup = \Illuminate\Support\Facades\DB::table('event_registrations')
+						->where('occurrence_id', $occurrence->id)
+						->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
+						->whereNotNull('group_key')
+						->distinct('group_key')
+						->count('group_key');
+					$teamsRegistered = $byGroup > 0
+						? $byGroup
+						: (int) ceil($registeredTotal / max(1, $teamSize));
+				}
+
 				$meta['tournament_teams_max']        = $teamsMax;
 				$meta['tournament_teams_registered'] = $teamsRegistered;
 				$meta['tournament_teams_remaining']  = max(0, $teamsMax - $teamsRegistered);
