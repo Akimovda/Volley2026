@@ -64,10 +64,11 @@
         function renderUser(item) {
             var roleLabel = item.role === 'admin' ? ' [' + @json(__('admin.role_admin')) + ']' : (item.role === 'organizer' ? ' [' + @json(__('admin.role_organizer')) + ']' : '');
             var roleColor = item.role === 'admin' ? 'color:#c0392b' : (item.role === 'organizer' ? 'color:#2980b9' : '');
+            var botBadge = item.is_bot ? '<span style="display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600;background:#fef3c7;color:#92400e;margin-left:.5rem">🤖 бот</span>' : '';
             var html = '<div class="card mt-2 d-flex fvc" style="gap:12px;">' +
                 '<div style="flex:1">' +
                     '<strong>' + esc(item.label || item.name) + '</strong>' +
-                    '<strong class="f-16" style="' + roleColor + ';margin-left:6px;">' + esc(roleLabel) + '</strong><br>' +
+                    '<strong class="f-16" style="' + roleColor + ';margin-left:6px;">' + esc(roleLabel) + '</strong>' + botBadge + '<br>' +
                 '</div>';
 
             if (item.role !== 'admin') {

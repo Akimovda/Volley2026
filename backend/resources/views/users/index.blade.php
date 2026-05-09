@@ -209,7 +209,8 @@
             var div = document.createElement('div');
             div.className = 'trainer-item form-select-option';
             div.setAttribute('data-name', u.label || '');
-            div.innerHTML = '<div class="text-sm text-gray-900">' + esc(u.label || '') + '</div>';
+            var botBadge = u.is_bot ? '<span style="display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600;background:#fef3c7;color:#92400e;margin-left:.5rem">🤖 бот</span>' : '';
+            div.innerHTML = '<div class="text-sm text-gray-900">' + esc(u.label || '') + botBadge + '</div>';
             
             div.addEventListener('click', function() {
                 inp.value = div.getAttribute('data-name');
