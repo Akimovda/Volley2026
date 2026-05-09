@@ -265,6 +265,7 @@
             'tournament_captain_confirms_members' => ['nullable', 'boolean'],
 
             'tournament_auto_submit_when_ready' => ['nullable', 'boolean'],
+            'tournament_allow_incomplete_application' => ['nullable', 'boolean'],
             'tournament_application_mode' => ['nullable', 'string', 'in:auto,manual'],
 
             'tournament_payment_mode' => ['nullable', 'string', 'in:team,per_player'],
