@@ -727,14 +727,18 @@ function updateCustomSelect($select, $wrapper) {
 function initCustomSelects() {
 	$('.form select').each(function() {
 		const $select = $(this);
-		
-		// Проверяем, не инициализирован ли уже этот селект
+
+		// Защита от двойной инициализации: если flag сброшен (например, после
+		// removeData) но wrapper всё ещё в DOM — это не «новый» select, а тот же.
+		// Без этой проверки повторный init создаст вторую обёртку рядом с первой.
+		if ($select.prev('.form-select-wrapper').length) {
+			$select.data('custom-initialized', true);
+			return;
+		}
+
 		if ($select.data('custom-initialized')) return;
-		
-		// Создаём кастомный селект
+
 		createCustomSelect($select);
-		
-		// Помечаем как инициализированный
 		$select.data('custom-initialized', true);
 	});
 }
