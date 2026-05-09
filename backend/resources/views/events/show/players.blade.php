@@ -83,11 +83,12 @@
 	@php
 	$teamsMax = $event->tournament_teams_count ?: ($event->tournamentSetting?->teams_count ?? 0);
 	$teamSize = $event->tournamentSetting?->team_size_min ?? 2;
+	// pending_members — неполные команды (досрочная заявка) тоже считаются как «занятые» слоты
 	$teamsRegistered = \App\Models\EventTeam::where('event_id', $event->id)
-	->where('occurrence_id', $occurrence->id)
-	->whereIn('status', ['ready','pending','submitted','confirmed','approved'])
+	->where(fn($q) => $q->where('occurrence_id', $occurrence->id)->orWhereNull('occurrence_id'))
+	->whereIn('status', ['ready','pending','pending_members','submitted','confirmed','approved'])
 	->count();
-	$playersRegistered = \App\Models\EventTeamMember::whereHas('team', fn($q) => $q->where('event_id', $event->id)->where('occurrence_id', $occurrence->id)->whereIn('status', ['ready','pending','submitted','confirmed','approved']))
+	$playersRegistered = \App\Models\EventTeamMember::whereHas('team', fn($q) => $q->where('event_id', $event->id)->where(fn($q2) => $q2->where('occurrence_id', $occurrence->id)->orWhereNull('occurrence_id'))->whereIn('status', ['ready','pending','pending_members','submitted','confirmed','approved']))
 	->where('confirmation_status', 'confirmed')
 	->count();
 	$playersMax = $teamsMax * $teamSize;
@@ -728,7 +729,7 @@ $showWaitlist = !$isTournament && !$eventStarted && $isFull && auth()->check();
 			@if($event->format === 'tournament')
 			@php
             $tournamentTeams = \App\Models\EventTeam::where('event_id', $event->id)
-			->where('occurrence_id', $occurrence->id)
+			->where(fn($q) => $q->where('occurrence_id', $occurrence->id)->orWhereNull('occurrence_id'))
 			->whereIn('status', ['ready','pending_members','draft','submitted','confirmed','approved','incomplete'])
 			->with(['captain', 'members.user'])
 			->orderByRaw("CASE WHEN status IN ('ready','submitted','confirmed','approved') THEN 0 ELSE 1 END")
