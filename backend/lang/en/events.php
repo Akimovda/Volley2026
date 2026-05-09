@@ -14,7 +14,7 @@ return [
     // Filter
     'filter_direction'   => 'Discipline',
     'filter_any'         => 'All',
-    'filter_classic'     => '🏐 Indoor',
+    'filter_classic'     => '🏐 Classic',
     'filter_beach'       => '🏖 Beach',
     'filter_event_type'  => 'Event type',
     'filter_level'       => 'Level',
@@ -33,7 +33,7 @@ return [
     'fmt_coach_student'      => 'Coach + student',
     'fmt_coach_student_beach' => 'Coach + student (beach only)',
     'fmt_tournament'         => 'Tournament',
-    'fmt_tournament_classic' => 'Tournament (indoor)',
+    'fmt_tournament_classic' => 'Tournament (classic)',
     'fmt_tournament_beach'   => 'Tournament (beach)',
     'fmt_camp'               => 'Camp',
     'fmt_camp_caps'          => 'CAMP',
@@ -76,7 +76,7 @@ return [
     'countdown_open' => 'Registration is open — refresh the page',
 
     // Event card
-    'card_dir_classic'   => 'Indoor',
+    'card_dir_classic'   => 'Classic',
     'card_dir_beach'     => 'Beach',
     'card_dir_dash'      => '—',
     'card_private_title' => 'Private event',
@@ -270,7 +270,7 @@ return [
 
     'event_setup'           => 'Event setup',
     'direction'             => 'Discipline',
-    'direction_classic'     => 'Indoor volleyball',
+    'direction_classic'     => 'Classic volleyball',
     'direction_beach'       => 'Beach volleyball',
     'event_title'           => 'Event title',
     'event_title_ph'        => 'e.g. Evening 6×6 game',
@@ -302,7 +302,7 @@ return [
     'reg_mode_single'        => 'Individual player sign-up',
     'reg_mode_team'          => 'Team registration',
     'reg_mode_mixed_group'   => 'Group / mixed registration',
-    'reg_mode_hint_classic'  => 'Indoor: either individual sign-up or full team registration.',
+    'reg_mode_hint_classic'  => 'Classic: either individual sign-up or full team registration.',
     'reg_mode_hint_beach'    => 'Beach: either individual sign-up or grouping players by game subtype.',
 
     'tournament_settings'    => 'Tournament settings',
@@ -351,12 +351,12 @@ return [
     'gender_limited_positions' => 'Positions available to the limited side',
     'gender_limited_neutral' => 'Limited side',
 
-    'level_classic_title' => 'Level (indoor volleyball)',
+    'level_classic_title' => 'Level (classic volleyball)',
     'level_beach_title'   => 'Level (beach volleyball)',
-    'level_classic_short' => 'Level (indoor)',
+    'level_classic_short' => 'Level (classic)',
     'level_beach_short'   => 'Level (beach)',
-    'level_min_classic'   => 'Min level (indoor)',
-    'level_max_classic'   => 'Max level (indoor)',
+    'level_min_classic'   => 'Min level (classic)',
+    'level_max_classic'   => 'Max level (classic)',
     'level_min_beach'     => 'Min level (beach)',
     'level_max_beach'     => 'Max level (beach)',
     'level_from'          => 'From',
@@ -668,7 +668,7 @@ return [
     'regs_title'             => 'Registration management — :title',
     'regs_h1'                => 'Registration management',
     'regs_beach'             => '🏖 Beach volleyball',
-    'regs_classic'           => '🏐 Indoor',
+    'regs_classic'           => '🏐 Classic',
     'regs_breadcrumb_my'     => 'My events',
     'regs_breadcrumb_reg'    => 'Registration',
 

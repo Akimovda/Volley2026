@@ -30,7 +30,7 @@ return [
     'tournaments_section'      => 'Tournaments',
     'tournaments_matches_short' => 'matches',
     'tournaments_dir_beach'    => 'Beach',
-    'tournaments_dir_classic'  => 'Indoor',
+    'tournaments_dir_classic'  => 'Classic',
     'tournaments_live'         => 'LIVE',
 
     'events_section'           => 'Events at this venue',

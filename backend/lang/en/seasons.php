@@ -26,7 +26,7 @@ return [
     'status_draft'       => 'Draft',
 
     'dir_beach'          => '🏖 Beach',
-    'dir_classic'        => '🏐 Indoor',
+    'dir_classic'        => '🏐 Classic',
 
     'leagues_label'      => 'Leagues:',
     'rounds_label'       => 'Rounds:',
@@ -93,7 +93,7 @@ return [
     'leagues_status_active'   => 'Active',
     'leagues_status_archived' => 'Archive',
     'leagues_dir_beach'       => '🏖 Beach league',
-    'leagues_dir_classic'     => '🏐 Indoor league',
+    'leagues_dir_classic'     => '🏐 Classic league',
     'leagues_seasons_label'   => 'Seasons:',
     'leagues_organizer_label' => 'Organizer:',
 
@@ -112,7 +112,7 @@ return [
     'leagues_ph_name'         => 'e.g. Moscow Beach League',
     'leagues_label_direction' => 'Discipline',
     'leagues_opt_beach'       => 'Beach (2x2 / 3x3 / 4x4)',
-    'leagues_opt_classic'     => 'Indoor (6x6)',
+    'leagues_opt_classic'     => 'Classic (6x6)',
     'leagues_label_organizer' => 'Organizer',
     'leagues_opt_self_organizer' => '— Me (:name)',
 
@@ -148,7 +148,7 @@ return [
     'leagues_show_no_seasons' => 'No seasons in this league yet.',
 
     'leagues_dir_beach_short' => 'Beach',
-    'leagues_dir_classic_short' => 'Indoor',
+    'leagues_dir_classic_short' => 'Classic',
     'leagues_public_link_label' => 'Public link:',
     'leagues_settings_h2' => 'League settings',
     'leagues_label_name_short' => 'Name',

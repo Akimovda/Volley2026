@@ -14,7 +14,7 @@ return [
     'pda_2_1' => 'external provider identifiers: Telegram ID, VK ID, Yandex ID',
     'pda_2_2' => 'public provider profile data: first/last name, username (if any), avatar (if provided)',
     'pda_2_3' => 'contact data: phone, email (incl. service email if the provider does not return one)',
-    'pda_2_4' => 'player profile data: levels (indoor/beach), positions/zones, city, height, birth date (if filled)',
+    'pda_2_4' => 'player profile data: levels (classic/beach), positions/zones, city, height, birth date (if filled)',
     'pda_2_5' => 'technical data: cookies/session, IP, action logs for security',
 
     'pda_h_3' => '3. Processing purposes',
@@ -45,7 +45,7 @@ return [
     'lp_t_description' => 'Definitions from <span class="bold">volleymsk.ru</span> forum + our additions to the "Confident continuing amateur" level.',
     'lp_breadcrumb'   => 'Player levels',
 
-    'lp_tab_classic'  => 'Indoor',
+    'lp_tab_classic'  => 'Classic',
     'lp_tab_beach'    => 'Beach',
     'lp_tab_child'    => 'Teens',
     'lp_tab_old'      => 'Adults',
