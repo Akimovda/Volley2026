@@ -81,13 +81,34 @@
                 <div class="tab-panes">
 
                     <div class="tab-pane active" id="howto-tg">
+                        @php $tgBot = '@' . config('services.telegram.bot_username', 'VolleyEvents_bot'); @endphp
+                        <p class="f-14 mb-1">
+                            <strong>Наш бот:</strong>
+                            <a href="https://t.me/{{ ltrim($tgBot, '@') }}" target="_blank" rel="noopener" class="link b-700">{{ $tgBot }}</a>
+                        </p>
+
+                        <div class="b-700 f-15 mt-1 mb-05">Способ 1 — для группы / супергруппы (быстрый)</div>
                         <ol class="list">
-                            <li>Создайте или откройте свою <strong>группу / супергруппу / канал</strong> в Telegram.</li>
+                            <li>Создайте или откройте свою <strong>группу / супергруппу</strong> в Telegram.</li>
                             <li>В блоке ниже выберите <strong>Telegram</strong>, укажите название и нажмите <strong>«Создать ссылку привязки»</strong>.</li>
-                            <li>Появится кнопка <strong>«Подключить Telegram»</strong> — нажмите её.</li>
-                            <li>Telegram предложит выбрать чат — выберите нужный. Бот добавится автоматически.</li>
+                            <li>Нажмите кнопку <strong>«Подключить Telegram»</strong> — откроется список ваших чатов.</li>
+                            <li>Выберите нужную группу — бот добавится автоматически.</li>
                             <li>⚠️ Дайте боту права <strong>администратора</strong> — иначе он не сможет публиковать сообщения.</li>
                             <li>Бот пришлёт подтверждение в чат. Обновите эту страницу.</li>
+                        </ol>
+
+                        <div class="b-700 f-15 mt-2 mb-05">Способ 2 — для канала (ручное добавление)</div>
+                        <p class="f-13 mb-1" style="opacity:.8">
+                            Telegram часто <strong>не показывает каналы</strong> в списке выбора при нажатии на ссылку привязки —
+                            это особенность Telegram. Используйте этот способ:
+                        </p>
+                        <ol class="list">
+                            <li>Откройте свой <strong>канал</strong> → ⚙️ Управление каналом → <strong>Администраторы</strong> → «Добавить администратора».</li>
+                            <li>Найдите бота по имени <strong>{{ $tgBot }}</strong> и добавьте его. Обязательно включите право <strong>«Публикация сообщений»</strong>.</li>
+                            <li>В блоке ниже выберите <strong>Telegram</strong>, укажите название и нажмите <strong>«Создать ссылку привязки»</strong>.</li>
+                            <li>Скопируйте из созданной ссылки часть <code>bind_…</code> (после <code>=</code>) — это ваш токен привязки.</li>
+                            <li>В <strong>самом канале</strong> опубликуйте сообщение: <code>/start bind_ВАШ_ТОКЕН</code>.</li>
+                            <li>Бот ответит «✅ Telegram-чат подключён». Обновите эту страницу.</li>
                         </ol>
                     </div>
 
