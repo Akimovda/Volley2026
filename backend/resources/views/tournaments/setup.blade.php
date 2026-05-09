@@ -81,15 +81,32 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 	<div class="container form">
 		
 		{{-- ========================= ЗАЯВКИ ========================= --}}
-		@if(($applicationMode ?? 'manual') === 'manual' && isset($pendingApplications) && $pendingApplications->count())
+		{{-- Показываем блок если:
+		     - application_mode=manual: все pending+incomplete заявки
+		     - application_mode=auto: только incomplete (висят без auto-approval до сбора состава) --}}
+		@php
+			$mode = $applicationMode ?? 'manual';
+			$visibleApps = isset($pendingApplications)
+				? ($mode === 'manual'
+					? $pendingApplications
+					: $pendingApplications->where('status', 'incomplete'))
+				: collect();
+		@endphp
+		@if($visibleApps->count())
 		<div class="ramka">
-			<h2 class="-mt-05">{{ __('tournaments.apps_h2', ['n' => $pendingApplications->count()]) }}</h2>
-			
+			<h2 class="-mt-05">{{ __('tournaments.apps_h2', ['n' => $visibleApps->count()]) }}</h2>
+
+			@if($mode === 'manual')
 			<div class="alert alert-info mb-2">
 				{!! __('tournaments.apps_mode_manual') !!}
 			</div>
+			@else
+			<div class="alert alert-warning mb-2">
+				{{ __('events.tapp_incomplete_body', ['team' => '—', 'event' => $event->title]) }}
+			</div>
+			@endif
 			
-			@foreach($pendingApplications as $app)
+			@foreach($visibleApps as $app)
 			@php $isIncomplete = $app->status === 'incomplete'; @endphp
 			<div class="card mb-1">
 				<div class="d-flex fvc" style="justify-content:space-between;flex-wrap:wrap;gap:.5rem">
