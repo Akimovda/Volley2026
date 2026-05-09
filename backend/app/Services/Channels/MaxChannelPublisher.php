@@ -122,9 +122,37 @@ class MaxChannelPublisher implements ChannelPublisher
 
         $body = ['text' => $message->text];
 
-        // Добавляем inline кнопку если есть
+        $attachments = [];
+
+        // Если предыдущее сообщение было с фото — передаём photo_id обратно,
+        // чтобы MAX не удалил вложение при редактировании.
+        // Ищем сначала в явно сохранённом saved_image_attachment (из предыдущего update),
+        // затем в raw ответе бота (из первоначального send).
+        $imageAttachment = data_get($previousMeta, 'saved_image_attachment');
+        if (!$imageAttachment) {
+            $prevAttachments = data_get($previousMeta, 'raw.raw.message.body.attachments', []);
+            foreach ($prevAttachments as $att) {
+                if (($att['type'] ?? '') === 'image' && isset($att['payload']['photo_id'])) {
+                    $imageAttachment = [
+                        'type'    => 'image',
+                        'payload' => [
+                            'photo_id' => $att['payload']['photo_id'],
+                            'token'    => $att['payload']['token'] ?? null,
+                        ],
+                    ];
+                    break;
+                }
+            }
+        }
+
+        if ($imageAttachment) {
+            $attachments[] = $imageAttachment;
+        }
+
+        $hasPhoto = !empty($attachments);
+
         if ($message->buttonUrl) {
-            $body['attachments'] = [[
+            $attachments[] = [
                 'type'    => 'inline_keyboard',
                 'payload' => [
                     'buttons' => [[
@@ -135,7 +163,11 @@ class MaxChannelPublisher implements ChannelPublisher
                         ],
                     ]],
                 ],
-            ]];
+            ];
+        }
+
+        if (!empty($attachments)) {
+            $body['attachments'] = $attachments;
         }
 
         $response = Http::timeout(20)
@@ -147,11 +179,17 @@ class MaxChannelPublisher implements ChannelPublisher
             ->throw()
             ->json();
 
+        $meta = ['message_kind' => $hasPhoto ? 'photo' : 'text'];
+        if ($imageAttachment) {
+            // Явно сохраняем вложение, чтобы следующий update тоже мог его передать
+            $meta['saved_image_attachment'] = $imageAttachment;
+        }
+
         return [
             'external_chat_id'    => $chatId,
-            'external_message_id' => $messageId, // остаётся тем же
+            'external_message_id' => $messageId,
             'raw'                 => $response ?? [],
-            'meta'                => ['message_kind' => 'text'],
+            'meta'                => $meta,
         ];
     }
 
