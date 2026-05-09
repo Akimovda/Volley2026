@@ -433,11 +433,17 @@
                             </div>
                         </div>
                     @else
+                        @php
+                            $isBeachGame = ($event->direction ?? 'classic') === 'beach';
+                            $gameSubtypes = $isBeachGame
+                                ? ['2x2' => '2×2', '3x3' => '3×3', '4x4' => '4×4']
+                                : ['4x4' => '4×4', '4x2' => '4×2', '5x1' => '5×1'];
+                        @endphp
                         <div class="col-md-3">
                             <div class="card" style="overflow:visible">
                                 <label>{{ __('events.game_subtype') }}</label>
                                 <select name="game_subtype">
-                                    @foreach(['4x4' => '4×4', '4x2' => '4×2', '5x1' => '5×1'] as $k => $l)
+                                    @foreach($gameSubtypes as $k => $l)
                                         <option value="{{ $k }}"
                                             @selected(old('game_subtype', $event->gameSettings?->subtype) === $k)>
                                             {{ $l }}
