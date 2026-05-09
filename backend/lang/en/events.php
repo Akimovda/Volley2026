@@ -259,6 +259,14 @@ return [
     'show_pl_js_send_invites'     => 'Send invitations',
     'show_pl_js_selected_prefix'  => '✅ Selected:',
 
+    // Revoke team invitation (team page)
+    'tinv_revoke_btn'         => '✕ Revoke',
+    'tinv_revoke_confirm'     => 'Revoke this invitation?',
+    'tinv_msg_revoked'        => 'Invitation revoked.',
+    'tinv_err_not_found'      => 'Invitation not found.',
+    'tinv_err_only_captain'   => 'Only the team captain can revoke an invitation.',
+    'tinv_err_only_pending'   => 'Only a pending invitation can be revoked.',
+
     // ===== Event management =====
     'mgmt_title'           => 'Event management',
     'mgmt_t_description'   => 'Quickly create a copy ("Create a copy") and access registrations.',

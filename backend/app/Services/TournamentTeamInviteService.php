@@ -164,6 +164,37 @@ final class TournamentTeamInviteService
         });
     }
 
+    public function revokeInvite(int $inviteId, int $byUserId): void
+    {
+        DB::transaction(function () use ($inviteId, $byUserId) {
+            $invite = EventTeamInvite::query()
+                ->with('team')
+                ->where('id', $inviteId)
+                ->lockForUpdate()
+                ->first();
+
+            if (!$invite) {
+                throw new DomainException(__('events.tinv_err_not_found'));
+            }
+
+            $isCaptain = (int) $invite->team->captain_user_id === $byUserId;
+            $isInviter = (int) $invite->invited_by_user_id === $byUserId;
+
+            if (!$isCaptain && !$isInviter) {
+                throw new DomainException(__('events.tinv_err_only_captain'));
+            }
+
+            if ($invite->status !== 'pending') {
+                throw new DomainException(__('events.tinv_err_only_pending'));
+            }
+
+            $invite->update([
+                'status' => 'revoked',
+                'revoked_at' => now(),
+            ]);
+        });
+    }
+
     public function declineInvite(string $token, int $userId): void
     {
         DB::transaction(function () use ($token, $userId) {

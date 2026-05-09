@@ -293,6 +293,10 @@ Route::post('/auth/tma-exchange', [TmaAuthController::class, 'exchange'])->name(
 		// Создание ссылки-приглашения в команду
 		Route::post('/events/{event}/teams/{team}/invites', [TournamentTeamInviteController::class, 'store'])
         ->name('tournamentTeamInvites.store');
+
+		// Отзыв приглашения капитаном
+		Route::delete('/events/{event}/teams/{team}/invites/{invite}', [TournamentTeamInviteController::class, 'revoke'])
+        ->name('tournamentTeamInvites.revoke');
 		
 		Route::get('/team-invites/{token}', [TournamentTeamInviteController::class, 'show'])
         ->name('tournamentTeamInvites.show');
