@@ -22,7 +22,8 @@ class VkWallPublisher implements ChannelPublisher
         // chatId = owner_id (отрицательный для сообщества, напр. -123456)
         $ownerId = (int) $chatId;
 
-        $text = $message->title . "\n\n" . $message->text;
+        // text уже содержит заголовок в первой строке (см. OccurrenceAnnouncementMessageBuilder::buildText)
+        $text = $message->text;
         if ($message->buttonUrl) {
             $text .= "\n\n" . ($message->buttonText ?: 'Подробнее') . ': ' . $message->buttonUrl;
         }
@@ -35,7 +36,10 @@ class VkWallPublisher implements ChannelPublisher
             'access_token' => $this->accessToken,
         ];
 
-        // Если есть картинка — загружаем
+        // Картинка: пробуем загрузить (uploadPhoto работает только с user-token
+        // со scope=photos; для community access_token VK даёт error 27).
+        // При неудаче — публикуем без attachments, VK обычно подтягивает
+        // link-preview из URL внутри текста через OG-метатеги сайта.
         if ($message->imageUrl) {
             try {
                 $attachId = $this->uploadPhoto($ownerId, $message->imageUrl);
@@ -72,7 +76,7 @@ class VkWallPublisher implements ChannelPublisher
     {
         $ownerId = (int) $chatId;
 
-        $text = $message->title . "\n\n" . $message->text;
+        $text = $message->text;
         if ($message->buttonUrl) {
             $text .= "\n\n" . ($message->buttonText ?: 'Подробнее') . ': ' . $message->buttonUrl;
         }
@@ -104,7 +108,9 @@ class VkWallPublisher implements ChannelPublisher
         ];
     }
 
-    public function supportsUpdate(): bool { return true; }
+    // wall.edit недоступен с community access_token (VK error 27: Group authorization failed).
+    // Update требует user-token со scope=wall, поэтому для community-flow отключаем.
+    public function supportsUpdate(): bool { return false; }
     public function supportsSilent(): bool { return false; }
 
     private function uploadPhoto(int $ownerId, string $imageUrl): ?string
