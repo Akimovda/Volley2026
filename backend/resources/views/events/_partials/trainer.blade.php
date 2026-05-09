@@ -145,7 +145,8 @@
                 var dis=ex[u.id]?';opacity:.4;pointer-events:none':'';
                 var lbl=String(u.label).replace(/</g,'&lt;').replace(/"/g,'&quot;');
                 var meta=u.meta?'<div style="font-size:1.3rem;color:#888">'+String(u.meta).replace(/</g,'&lt;')+'</div>':'';
-                return '<div class="trainer-item" data-id="'+u.id+'" data-label="'+lbl+'" style="padding:.6rem 1rem;cursor:pointer;border-bottom:1px solid #eee;color:#222'+dis+'">'+lbl+meta+'</div>';
+                var botBadge=u.is_bot?'<span style="display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600;background:#fef3c7;color:#92400e;margin-left:.5rem">🤖 бот</span>':'';
+                return '<div class="trainer-item" data-id="'+u.id+'" data-label="'+lbl+'" style="padding:.6rem 1rem;cursor:pointer;border-bottom:1px solid #eee;color:#222'+dis+'">'+lbl+botBadge+meta+'</div>';
             }).join('');
             pos();
             dd.querySelectorAll('.trainer-item').forEach(function(it){

@@ -1460,7 +1460,8 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 							var label = u.label || u.name || '#' + u.id;
 							var div = document.createElement('div');
 							div.className = 'trainer-item form-select-option';
-							div.innerHTML = '<div class="text-sm">' + esc(label) + '</div>';
+							var botBadge = u.is_bot ? '<span style="display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600;background:#fef3c7;color:#92400e;margin-left:.5rem">🤖 бот</span>' : '';
+							div.innerHTML = '<div class="text-sm">' + esc(label) + botBadge + '</div>';
 							div.addEventListener('click', function() {
 								inp.value = label;
 								hidden.value = String(u.id);

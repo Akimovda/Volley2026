@@ -410,9 +410,10 @@
 										}
 										results.innerHTML = data.items.slice(0, 8).map(u => {
 											const name = u.full_name || u.label || u.name || ('#' + u.id);
+											const botBadge = u.is_bot ? '<span style="display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600;background:#fef3c7;color:#92400e;margin-left:.5rem">🤖 бот</span>' : '';
 											return '<div class="org-pick-item" data-id="' + u.id + '" data-name="' + name + '"'
 											+ ' style="padding:.8rem 1.2rem;cursor:pointer;border-bottom:.1rem solid var(--border-color,#eee);">'
-											+ '<div class="b-600">' + name + '</div>'
+											+ '<div class="b-600">' + name + botBadge + '</div>'
 											+ '<div class="f-13" style="opacity:.6;">#' + u.id + ' · ' + u.role + '</div>'
 											+ '</div>';
 										}).join('');
