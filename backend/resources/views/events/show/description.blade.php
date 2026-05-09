@@ -1,24 +1,24 @@
 
 <div class="ramka">
 	
-	<h2 class="-mt-05">Описание</h2>
-	
-				
+	<h2 class="-mt-05">{{ __('events.show_desc_h2') }}</h2>
+
+
 				{{-- ТЕКСТ ОПИСАНИЯ --}}
 				@if(!empty($event->description_html))
 				<div class="mb-2">
 					{!! $event->description_html !!}
 				</div>
 				@endif
-				
-				
+
+
 				{{-- КРАТКАЯ СВОДКА СОБЫТИЯ --}}
 				@php
-				
+
 				$dirLabel = match($event->direction) {
-				'classic' => '🏐 Классика',
-				'beach' => '🏖 Пляжка',
-				default => '🏐 Волейбол'
+				'classic' => __('events.show_desc_dir_classic'),
+				'beach' => __('events.show_desc_dir_beach'),
+				default => __('events.show_desc_dir_default')
 				};
 				
 				$levels = [
@@ -43,7 +43,7 @@
         <img src="{{ $orgAvatar }}" alt="{{ $org->name }}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;flex-shrink:0;">
     </a>
     <div>
-        <div class="f-13" style="opacity:.6">Организатор</div>
+        <div class="f-13" style="opacity:.6">{{ __('events.show_desc_organizer') }}</div>
         <a class="blink b-600" href="{{ route('users.show', $org->id) }}">
             {{ trim(($org->last_name ?? '') . ' ' . ($org->first_name ?? $org->name)) }}
         </a>
@@ -74,7 +74,7 @@
 				<div class="d-flex">	
 					<span class="emo">‍👨‍🏫‍</span>
 					<div>
-						<div class="b-600">Тренер</div>
+						<div class="b-600">{{ __('events.show_desc_coach') }}</div>
 						
 						
 						@foreach($event->trainers as $trainer)
@@ -104,14 +104,14 @@
 					<div class="event-summary">
 						
 						<div class="event-row">
-							<span class="b-600">⚔️ Направление:</span>
+							<span class="b-600">{{ __('events.show_desc_direction_label') }}</span>
 							<span>{{ $dirLabel }}</span>
 						</div>
 						
 						
 						@if($event->gameSettings->subtype)
 						<div class="event-row">
-							<span class="b-600">🏐 Формат:</span>
+							<span class="b-600">{{ __('events.show_desc_format_label') }}</span>
 							<span>{{ $event->gameSettings->subtype }}</span>
 						</div>
 						@endif
@@ -119,7 +119,7 @@
 						
 						@if($event->gameSettings->min_players && $event->gameSettings->max_players)
 						<div class="event-row">
-							<span class="b-600">👥 Игроков:</span>
+							<span class="b-600">{{ __('events.show_desc_players_label') }}</span>
 							<span>
 								{{ $event->gameSettings->min_players }}
 								–
@@ -130,7 +130,7 @@
 
 						@if($event->format === 'tournament' && $event->tournament_teams_count)
 						<div class="event-row">
-							<span class="b-600">🏆 Команд:</span>
+							<span class="b-600">{{ __('events.show_desc_teams_label') }}</span>
 							<span>{{ $event->tournament_teams_count }}</span>
 						</div>
 						@endif
@@ -150,7 +150,7 @@
 						
 						@if($levelMin || $levelMax)
 						<div class="event-row between" style="flex-wrap: wrap;gap:.5rem;">
-							<span class="b-600">📈 Уровень:</span>
+							<span class="b-600">{{ __('events.show_desc_level_label') }}</span>
 							<span>
 								@if($levelMin)
 								<span class="level-color-badge" style="color:{{ level_color((int)$levelMin) }};font-weight:700;">{{ level_name($levelMin) }}</span>
@@ -169,12 +169,12 @@
 						{{-- ОПЛАТА --}}
 						@if(!is_null($event->price_minor))
 						<div class="event-row">
-							<span class="b-600">💵 Оплата:</span>
+							<span class="b-600">{{ __('events.show_desc_payment_label') }}</span>
 							<span>{{ money_human($event->price_minor, $event->price_currency) }}</span>
 						</div>
 						@elseif(!empty($event->price_text))
 						<div class="event-row">
-							<span class="b-600">💵 Оплата:</span>
+							<span class="b-600">{{ __('events.show_desc_payment_label') }}</span>
 							<span>{{ $event->price_text }}</span>
 						</div>
 						@endif
@@ -187,27 +187,27 @@
 					<div class="event-summary">
 
 					<div class="event-row">
-					<span class="b-600">⚔️ Направление:</span>
+					<span class="b-600">{{ __('events.show_desc_direction_label') }}</span>
 					<span>{{ $dirLabel }}</span>
 					</div>
 
 					@if($tSetting->game_scheme)
 					<div class="event-row">
-					<span class="b-600">🏐 Формат:</span>
+					<span class="b-600">{{ __('events.show_desc_format_label') }}</span>
 					<span>{{ $tSetting->game_scheme }}</span>
 					</div>
 					@endif
 
 					@if($tSetting->team_size_min || $tSetting->team_size_max)
 					<div class="event-row">
-					<span class="b-600">👥 Состав:</span>
+					<span class="b-600">{{ __('events.show_desc_lineup_label') }}</span>
 					<span>{{ $tSetting->team_size_min ?? '?' }} – {{ $tSetting->team_size_max ?? '?' }}</span>
 					</div>
 					@endif
 
 					@if($tSetting->teams_count)
 					<div class="event-row">
-					<span class="b-600">🏆 Команд:</span>
+					<span class="b-600">{{ __('events.show_desc_teams_label') }}</span>
 					<span>{{ $tSetting->teams_count }}</span>
 					</div>
 					@endif
@@ -219,7 +219,7 @@
 					@endphp
 					@if($levelMin || $levelMax)
 					<div class="event-row" style="flex-direction:column;gap:.5rem;">
-					<span class="b-600">📈 Уровень:</span>
+					<span class="b-600">{{ __('events.show_desc_level_label') }}</span>
 					<span>
 					@if($levelMin)
 					<span class="level-color-badge" style="color:{{ level_color((int)$levelMin) }};font-weight:700;">{{ level_name($levelMin) }}</span>
@@ -235,12 +235,12 @@
 
 					@if(!is_null($event->price_minor))
 					<div class="event-row">
-					<span class="b-600">💵 Оплата:</span>
+					<span class="b-600">{{ __('events.show_desc_payment_label') }}</span>
 					<span>{{ money_human($event->price_minor, $event->price_currency) }}</span>
 					</div>
 					@elseif(!empty($event->price_text))
 					<div class="event-row">
-					<span class="b-600">💵 Оплата:</span>
+					<span class="b-600">{{ __('events.show_desc_payment_label') }}</span>
 					<span>{{ $event->price_text }}</span>
 					</div>
 					@endif
@@ -263,20 +263,14 @@
 					$effectiveAgePolicy = (string) $event->age_policy;
 					}
 					
-					$genderLabels = [
-					'mixed_open'    => 'Микс',
-					'mixed_limited' => 'Микс (ограничение)',
-					'mixed_5050'    => 'Микс 50/50',
-					'only_male'     => 'Только мужчины',
-					'only_female'   => 'Только девушки',
-					];
+					$genderLabels = __('events.show_desc_genders');
 					
 					$positionLabels = [
-					'setter'   => 'Связующий',
-					'outside'  => 'Доигровщик',
-					'opposite' => 'Диагональный',
-					'middle'   => 'Центральный',
-					'libero'   => 'Либеро',
+					'setter'   => __('events.positions.setter'),
+					'outside'  => __('events.positions.outside'),
+					'opposite' => __('events.positions.opposite'),
+					'middle'   => __('events.positions.middle_full'),
+					'libero'   => __('events.positions.libero'),
 					];
 					
 					$limitedPositions = $event->gameSettings?->gender_limited_positions;
@@ -309,7 +303,7 @@
 					<div class="event-summary">
 						
 						<div class="event-row d-block">
-							<span class="b-600">🚧 Ограничения:</span>
+							<span class="b-600">{{ __('events.show_desc_restrictions_label') }}</span>
 							
 							
 							
@@ -319,27 +313,27 @@
 								
 								@if(($event->age_policy ?? '') === 'child')
 								<div class="text-muted small mt-1">
-									👶 Для детей
+									{{ __('events.show_desc_for_kids') }}
 									@if(!is_null($event->child_age_min) && !is_null($event->child_age_max))
-									от {{ (int)$event->child_age_min }} до {{ (int)$event->child_age_max }} лет
+									{{ __('events.show_desc_age_range', ['min' => (int)$event->child_age_min, 'max' => (int)$event->child_age_max]) }}
 									@endif
 								</div>
                                 @endif
 								@if($effectiveAgePolicy === 'adult')
-								<li>Только взрослые (18+)</li>
+								<li>{{ __('events.show_desc_only_adults') }}</li>
 								@elseif($effectiveAgePolicy === 'child')
-								<li>Только дети</li>
+								<li>{{ __('events.show_desc_only_kids') }}</li>
 								@else
-								<li>Без ограничений (по возрасту)</li>
+								<li>{{ __('events.show_desc_no_age_limits') }}</li>
 								@endif
 								
 								
 								{{-- ЛИБЕРО --}}
 								@if($event->gameSettings?->libero_mode)
 								<li>
-									Либеро:
+									{{ __('events.show_desc_libero') }}
 									<strong>
-										{{ $event->gameSettings->libero_mode === 'with_libero' ? 'да' : 'нет' }}
+										{{ $event->gameSettings->libero_mode === 'with_libero' ? __('events.show_desc_yes') : __('events.show_desc_no') }}
 									</strong>
 								</li>
 								@endif
@@ -350,7 +344,7 @@
 								
 								@if($event->gameSettings?->gender_policy)
 								<li>
-									Пол:
+									{{ __('events.show_desc_gender_label') }}
 									<strong>
 										{{ $genderLabels[$event->gameSettings->gender_policy] ?? $event->gameSettings->gender_policy }}
 									</strong>
@@ -370,23 +364,23 @@
 								$limit = $event->gameSettings->gender_limited_max;
 								
 								$label = $side === 'female'
-								? '🙎‍♀️ Девушки'
-								: '🙎‍♂️ Мужчины';
+								? __('events.show_desc_girls')
+								: __('events.show_desc_men');
 								@endphp
 								
 								<li>
 									{{ $label }}:
-									<strong>до {{ $limit }}</strong>
+									<strong>{{ __('events.show_desc_gender_limit_to', ['limit' => $limit]) }}</strong>
 								</li>
 
 								@if($event->gameSettings?->gender_limited_reg_starts_days_before !== null)
 									@php
 										$regDays = (int) $event->gameSettings->gender_limited_reg_starts_days_before;
-										$regLabel = $side === 'female' ? '🙎‍♀️ Девушки' : '🙎‍♂️ Мужчины';
+										$regLabel = $side === 'female' ? __('events.show_desc_girls') : __('events.show_desc_men');
 									@endphp
 									<li>
-										{{ $regLabel }}: начало регистрации —
-										<strong>за {{ $regDays }} {{ trans_choice('день|дня|дней', $regDays) }} до начала</strong>
+										{{ $regLabel }}: {{ __('events.show_desc_gender_reg_starts') }}
+										<strong>{{ trans_choice('events.show_desc_days_before_start', $regDays, ['count' => $regDays]) }}</strong>
 									</li>
 								@endif
 								
@@ -398,18 +392,18 @@
 								!empty($limitedPositions)
 								)
 								<li>
-									Позиции ограничений:
+									{{ __('events.show_desc_positions_limited') }}
 									{{ implode(', ', $limitedPositions) }}
 								</li>
 								@endif
 								
 								
 								@if($event->is_private)
-								<li>Приватное мероприятие</li>
+								<li>{{ __('events.show_desc_private') }}</li>
 								@endif
 								
 								@if($event->requires_personal_data)
-								<li>Требуются персональные данные</li>
+								<li>{{ __('events.show_desc_personal_data') }}</li>
 								@endif
 								
 							</ul>

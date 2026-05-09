@@ -16,7 +16,7 @@
     @if($hasStages)
         <div class="ramka" style="text-align:center">
             <a href="{{ route('tournament.public.show', $event) }}" class="btn btn-primary">
-                📊 Таблицы и результаты турнира
+                {{ __('events.show_tournament_results_btn') }}
             </a>
         </div>
     @endif
