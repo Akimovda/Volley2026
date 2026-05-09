@@ -159,24 +159,27 @@
 						@foreach($league->activeTeams as $i => $lt)
 						<tr>
 							<td>{{ $i + 1 }}</td>
-							
 							@if($lt->team)
-							<td><strong>{{ $lt->team->name }}</strong></td>
-							<td>
-								
-								@foreach($lt->team->members as $mi => $m)
-								@if($m->user)
-								<a class="blink" href="{{ route('users.show', $m->user) }}">{{ $m->user->last_name }} {{ $m->user->first_name }}</a>{{ $mi < $lt->team->members->count() - 1 ? ' / ' : '' }}
-									@endif
+								<td><strong>{{ $lt->team->name }}</strong></td>
+								<td>
+									@foreach($lt->team->members as $mi => $m)
+										@if($m->user)
+											<a class="blink" href="{{ route('users.show', $m->user) }}">{{ $m->user->last_name }} {{ $m->user->first_name }}</a>{{ $mi < $lt->team->members->count() - 1 ? ' / ' : '' }}
+										@endif
 									@endforeach
-									
-									@elseif($lt->user)
-									<a class="blink" href="{{ route('users.show', $lt->user) }}">{{ $lt->user->first_name }} {{ $lt->user->last_name }}</a>
-								</td>		
-								@endif
-								
-							</tr>
-							@endforeach
+								</td>
+							@elseif($lt->user)
+								<td>
+									<a class="blink" href="{{ route('users.show', $lt->user) }}">
+										<strong>{{ $lt->user->last_name }} {{ $lt->user->first_name }}</strong>
+									</a>
+								</td>
+								<td class="text-muted">{{ __('seasons.col_solo_player') }}</td>
+							@else
+								<td colspan="2" class="text-muted">—</td>
+							@endif
+						</tr>
+						@endforeach
 						</tbody>
 					</table>
 				</div>

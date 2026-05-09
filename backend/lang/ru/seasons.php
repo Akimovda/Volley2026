@@ -192,6 +192,7 @@ return [
     'teams_short' => 'команд',
     'teams_reserve' => 'в резерве',
     'col_players' => 'Игроки',
+    'col_solo_player' => 'Личная заявка',
     'no_teams' => 'Нет команд',
     'show_player_rating' => 'Рейтинг игроков',
     'col_points_diff' => 'Очки ±',
