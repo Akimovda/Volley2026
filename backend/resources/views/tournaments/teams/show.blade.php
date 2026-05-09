@@ -366,15 +366,14 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
                 </form>
             @else
                 @php
-                    $confirmedReady = $team->members->where('confirmation_status','confirmed')->count();
                     $hasCaptain = (bool) $team->captain_user_id;
                     $allowIncomplete = (bool) ($settings?->allow_incomplete_application ?? false);
-                    $canEarlySubmit = $allowIncomplete && $hasCaptain && $confirmedReady >= 2;
+                    $canEarlySubmit = $allowIncomplete && $hasCaptain;
                 @endphp
                 <div class="alert alert-warning f-14 mb-2">
                     ⚠️ Состав ещё не готов — обычная подача недоступна.
                 </div>
-                @if($allowIncomplete && $canEarlySubmit)
+                @if($canEarlySubmit)
                     <div class="f-13 mb-1" style="opacity:.7">{{ __('events.tapp_submit_early_warn') }}</div>
                     <form method="POST" action="{{ route('tournamentTeams.submit',[$event,$team]) }}"
                           onsubmit="return confirm(@json(__('events.tapp_submit_early_btn') . '?'))">
@@ -382,8 +381,6 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
                         <input type="hidden" name="allow_incomplete" value="1">
                         <button type="submit" class="btn btn-secondary">{{ __('events.tapp_submit_early_btn') }}</button>
                     </form>
-                @elseif($allowIncomplete)
-                    <div class="f-13" style="opacity:.6">Для досрочной подачи нужны капитан и хотя бы один подтверждённый игрок.</div>
                 @endif
             @endif
         @else
