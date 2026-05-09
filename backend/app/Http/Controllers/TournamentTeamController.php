@@ -152,14 +152,37 @@ class TournamentTeamController extends Controller
         abort_unless((int) $team->event_id === (int) $event->id, 404);
         abort_unless((int) $team->captain_user_id === (int) $request->user()->id, 403);
 
+        $allowIncomplete = (bool) $request->input('allow_incomplete', false);
+
         try {
-            $service->submitApplication($team, $request->user());
+            $service->submitApplication($team, $request->user(), $allowIncomplete);
 
             return back()->with('success', 'Заявка на турнир подана ✅');
         } catch (DomainException $e) {
             return back()->withErrors([
                 'application' => $e->getMessage(),
             ]);
+        }
+    }
+
+    public function revokeApplication(
+        Request $request,
+        Event $event,
+        EventTeam $team,
+        TournamentTeamService $service
+    ): RedirectResponse {
+        abort_unless((int) $team->event_id === (int) $event->id, 404);
+
+        $user = $request->user();
+        $isCaptain = (int) $team->captain_user_id === (int) $user->id;
+        $isAdmin = ($user->role ?? null) === 'admin';
+        abort_unless($isCaptain || $isAdmin, 403);
+
+        try {
+            $service->revokeApplication($team, $user);
+            return back()->with('success', __('events.tapp_revoked_msg'));
+        } catch (DomainException $e) {
+            return back()->withErrors(['application' => $e->getMessage()]);
         }
     }
 

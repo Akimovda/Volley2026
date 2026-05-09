@@ -328,9 +328,13 @@ Route::post('/auth/tma-exchange', [TmaAuthController::class, 'exchange'])->name(
         ->name("events.occurrences.update");
     Route::post("/events/{event}/occurrences/{occurrence}/toggle-bot", [EventManagementController::class, "toggleBotOccurrence"])
         ->name("events.occurrences.toggle-bot");
-		// Подача заявки команды на турнир
+		// Подача заявки команды на турнир (поддерживает allow_incomplete=1 для early-submit)
 		Route::post('/events/{event}/teams/{team}/submit', [TournamentTeamController::class, 'submitApplication'])
         ->name('tournamentTeams.submit');
+
+		// Отзыв заявки капитаном (статусы: incomplete, pending)
+		Route::delete('/events/{event}/teams/{team}/application', [TournamentTeamController::class, 'revokeApplication'])
+        ->name('tournamentTeams.revokeApplication');
 
     Route::delete('/events/{event}/teams/{team}', [TournamentTeamController::class, 'destroy'])
         ->name('tournamentTeams.destroy');
