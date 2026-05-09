@@ -128,6 +128,117 @@ return [
     'ua_breadcrumb'    => 'Terms of use',
     'ua_h1'            => 'Terms of use',
 
+    'ua_last_updated'  => 'Last updated: April 29, 2026',
+
+    'ua_general_h2' => 'General provisions',
+    'ua_general_p1' => 'These Terms of Use (the “Agreement”) govern the relationship between <strong>Individual Entrepreneur Pirogova Valentina Evgenyevna</strong>, INN: 503406890699, OGRNIP 319508100190340 dated 20 August 2019, operating under the <strong>VolleyPlay.Club</strong> brand (the “Service”, “we”, “our”), and the user (“you”, “user”), arising from access to and use of the <strong>VolleyPlay.Club</strong> platform and related services.',
+    'ua_general_p2' => 'The Service is a platform for organizing and managing volleyball events that provides tools for organizers and participants, as well as additional paid services (Premium subscription and extended functionality).',
+    'ua_general_p3' => 'By using the Service, you confirm that you have read this Agreement, accept its terms and undertake to comply with them. If you do not agree with the terms — please stop using the Service.',
+    'ua_general_p4' => 'You must be at least <strong>18 years old</strong> to use the Service. If you are a minor, you may use the Service only with the consent of a parent or legal guardian.',
+
+    'ua_account_h2' => '1. User account',
+    'ua_account_1'  => '<strong>1.1.</strong> Most features of the Service require an account. Registration is available via third-party platforms (Telegram, VK, Yandex ID). When using third-party platforms, you must comply with their terms of use.',
+    'ua_account_2'  => '<strong>1.2.</strong> You are responsible for keeping your credentials safe and for all actions performed in your account. Do not share account access with third parties.',
+    'ua_account_3'  => '<strong>1.3.</strong> The account is personal. Rights to the account and any related purchases cannot be transferred to another person.',
+    'ua_account_4'  => '<strong>1.4.</strong> We may restrict, suspend or delete an account in case of a violation of this Agreement. We will notify you in advance of significant restrictions, except in cases of gross violations.',
+
+    'ua_usage_h2'      => '2. Use of the service',
+    'ua_usage_1'       => '<strong>2.1.</strong> Subject to your compliance with this Agreement, we grant you a limited, non-exclusive, non-transferable license to use the Service for personal, non-commercial purposes.',
+    'ua_usage_2_intro' => '<strong>2.2.</strong> You may use the Service to:',
+    'ua_usage_2_li1'   => 'find and sign up for volleyball events;',
+    'ua_usage_2_li2'   => 'create and manage events (for organizers);',
+    'ua_usage_2_li3'   => 'purchase a Premium subscription and additional services;',
+    'ua_usage_2_li4'   => 'interact with other platform participants.',
+    'ua_usage_3'       => '<strong>2.3.</strong> We may at any time change the functionality of the Service, add or remove features, and carry out maintenance work. Where possible, we will notify users of changes in advance.',
+
+    'ua_restrictions_h2'    => '3. Use restrictions',
+    'ua_restrictions_intro' => '<strong>3.1.</strong> When using the Service, the following is prohibited:',
+    'ua_restrictions_li1'   => 'using the Service for purposes not provided for by this Agreement or contrary to the laws of the Russian Federation;',
+    'ua_restrictions_li2'   => 'copying, reproducing, selling or otherwise commercially exploiting the Service without our written consent;',
+    'ua_restrictions_li3'   => 'reverse engineering, decompiling or disassembling the source code of the Service;',
+    'ua_restrictions_li4'   => 'creating automated tools (bots, scripts) to interact with the Service without our permission;',
+    'ua_restrictions_li5'   => 'removing or altering copyright and trademark notices;',
+    'ua_restrictions_li6'   => 'taking actions that violate the rights of other users or third parties.',
+
+    'ua_ip_h2' => '4. Intellectual property',
+    'ua_ip_1'  => '<strong>4.1.</strong> All rights to the Service, including design, code, logos, texts, graphics and other materials, belong to Individual Entrepreneur Pirogova Valentina Evgenyevna or are used on lawful grounds. This Agreement does not transfer to you ownership rights to the Service.',
+    'ua_ip_2'  => '<strong>4.2.</strong> User-generated content (profile photos, descriptions, comments) remains your property. By posting content on the platform, you grant us the right to use it for the purpose of operating the Service.',
+    'ua_ip_3'  => '<strong>4.3.</strong> You warrant that the content you post does not infringe third-party rights and is not contrary to applicable law. We may remove content that violates this requirement without prior notice.',
+
+    'ua_paid_h2'      => '5. Paid services and Premium subscription',
+    'ua_paid_5_1_t'   => '<strong>5.1. Types of paid services</strong>',
+    'ua_paid_5_1_li1' => 'Premium subscription for users (extended profile, special features, priority support);',
+    'ua_paid_5_1_li2' => 'extended tools for event organizers;',
+    'ua_paid_5_1_li3' => 'other additional services described on the relevant pages of the Service.',
+    'ua_paid_5_2_t'   => '<strong>5.2. Premium subscription</strong>',
+    'ua_paid_5_2_1'   => '<strong>5.2.1.</strong> The Premium subscription is provided on a paid basis for a specific period (month, year and other options).',
+    'ua_paid_5_2_2'   => '<strong>5.2.2.</strong> By purchasing a subscription, you gain access to the extended functionality for the entire paid period. After it expires, access to Premium features ends unless the subscription is renewed.',
+    'ua_paid_5_2_3'   => '<strong>5.2.3.</strong> You may cancel automatic renewal of the subscription at any time. The already-paid period of use is preserved.',
+    'ua_paid_5_2_4'   => '<strong>5.2.4.</strong> Rights to the Premium subscription are personal and cannot be transferred to another user.',
+    'ua_paid_5_3_t'   => '<strong>5.3. Pricing and payment</strong>',
+    'ua_paid_5_3_1'   => '<strong>5.3.1.</strong> Current prices for the Service are listed on the corresponding pages of the platform. We may change prices with prior notice to users.',
+    'ua_paid_5_3_2'   => '<strong>5.3.2.</strong> Payment is processed via third-party payment systems (YooKassa and others). By making a payment, you accept the terms of the relevant payment service.',
+    'ua_paid_5_3_3'   => '<strong>5.3.3.</strong> When making a payment, you must provide accurate and up-to-date payment details.',
+
+    'ua_refund_h2'    => '6. Refunds',
+    'ua_refund_1'     => '<strong>6.1.</strong> All purchases are final. Refunds are issued in the following cases:',
+    'ua_refund_1_li1' => 'a technical failure that made it impossible to provide the paid service;',
+    'ua_refund_1_li2' => 'a duplicate charge;',
+    'ua_refund_1_li3' => 'other cases provided for by Russian consumer-protection law.',
+    'ua_refund_2'     => '<strong>6.2.</strong> To request a refund, contact us at <a href="mailto:akimovda@inbox.ru">akimovda@inbox.ru</a> within 14 days of payment. Attach payment confirmation and a description of the issue.',
+    'ua_refund_3'     => '<strong>6.3.</strong> A refund is processed within 10 business days after the request is confirmed as valid. Funds are returned via the same method that was used for payment.',
+    'ua_refund_4'     => '<strong>6.4.</strong> A partial refund for the unused subscription period is issued on a pro-rata basis, provided that the request is submitted within 14 days of payment. No refund is provided if the Premium functionality has been actively used.',
+
+    'ua_conduct_h2'    => '7. Code of conduct',
+    'ua_conduct_1'     => '<strong>7.1.</strong> When using the Service, you undertake to comply with generally accepted standards of conduct and the laws of the Russian Federation.',
+    'ua_conduct_2'     => '<strong>7.2.</strong> The following is prohibited on the platform:',
+    'ua_conduct_2_li1' => 'posting offensive, discriminatory, threatening or unlawful content;',
+    'ua_conduct_2_li2' => 'spam, sending advertisements without our consent, trolling;',
+    'ua_conduct_2_li3' => 'posting personal data of other users without their consent;',
+    'ua_conduct_2_li4' => 'intentional disruption of the Service;',
+    'ua_conduct_2_li5' => 'fraudulent actions when registering for events or making payments.',
+    'ua_conduct_3'     => '<strong>7.3.</strong> We may take action against violators, including warning, temporary restriction or permanent blocking of the account.',
+
+    'ua_liability_h2' => '8. Liability and warranties',
+    'ua_liability_1'  => '<strong>8.1.</strong> The Service is provided “as is”. We make reasonable efforts to ensure smooth operation of the platform but do not guarantee the absence of failures or errors.',
+    'ua_liability_2'  => '<strong>8.2.</strong> To the maximum extent permitted by Russian law, our liability for any losses arising in connection with the use of the Service is limited to the amount paid by you over the last 6 months.',
+    'ua_liability_3'  => '<strong>8.3.</strong> We are not responsible for the actions of third parties (other users, event organizers, payment systems), nor for the content of events held on the platform.',
+    'ua_liability_4'  => '<strong>8.4.</strong> This Agreement does not limit your rights as a consumer provided for by Russian consumer-protection law.',
+
+    'ua_changes_h2' => '9. Changes to the agreement',
+    'ua_changes_1'  => '<strong>9.1.</strong> We may amend this Agreement at any time. We will notify users of changes by publishing a new version on the website and/or by sending a notification.',
+    'ua_changes_2'  => '<strong>9.2.</strong> Changes take effect 30 days after publication.',
+    'ua_changes_3'  => '<strong>9.3.</strong> Continued use of the Service after the changes take effect constitutes your acceptance of the new version of the Agreement.',
+
+    'ua_termination_h2' => '10. Termination',
+    'ua_termination_1'  => '<strong>10.1.</strong> You may stop using the Service at any time by submitting an account-deletion request through your profile settings or by email.',
+    'ua_termination_2'  => '<strong>10.2.</strong> When the account is deleted, all related data is irrevocably lost. Refunds for the unused period of a Premium subscription are issued in accordance with section 6.',
+    'ua_termination_3'  => '<strong>10.3.</strong> We may restrict or terminate access to the Service in case of a violation of this Agreement. If the Service is discontinued as a whole, we will notify users at least 30 days in advance.',
+
+    'ua_law_h2' => '11. Governing law and disputes',
+    'ua_law_1'  => '<strong>11.1.</strong> This Agreement is governed by the laws of the Russian Federation.',
+    'ua_law_2'  => '<strong>11.2.</strong> All disputes are resolved through negotiation. If pre-trial settlement is impossible, the dispute is referred to court in accordance with Russian law.',
+    'ua_law_3'  => '<strong>11.3.</strong> Claims should be sent to <a href="mailto:akimovda@inbox.ru">akimovda@inbox.ru</a>. Review period — 30 days.',
+
+    'ua_privacy_h2' => '12. Data privacy',
+    'ua_privacy_1'  => '<strong>12.1.</strong> The collection, storage and processing of personal data is governed by the <a href="/personal_data_agreement">Privacy Policy</a>.',
+    'ua_privacy_2'  => '<strong>12.2.</strong> By using the Service, you consent to the processing of your personal data in accordance with the Privacy Policy.',
+
+    'ua_contacts_h2'    => '13. Contact information and details',
+    'ua_contacts_block' => '<strong>Individual Entrepreneur Pirogova Valentina Evgenyevna</strong><br>
+OGRNIP: 319508100190340 dated 20 August 2019<br>
+INN: 503406890699<br>
+Address: Moscow Region, Orekhovo-Zuevo, Lenin Street 49, apt./office 112<br>
+Account number: 40802810202360001947<br>
+Currency: RUR<br>
+Bank: JSC “Alfa-Bank”<br>
+BIC: 044525593<br>
+Correspondent account: 30101810200000000593<br>
+Email: <a href="mailto:akimovda@inbox.ru">akimovda@inbox.ru</a><br>
+Website: <a href="https://volleyplay.club">volleyplay.club</a>',
+
+    'ua_footer' => 'By using the Service, you confirm that you have read, understood and accepted the terms of this Agreement.',
+
     'tf_title'         => 'Tournament formats',
     'tf_description'   => 'Volleyball tournament formats and schemes: round robin, single elimination, swiss and others.',
     'tf_t_description' => 'Volleyball tournament formats and schemes',
