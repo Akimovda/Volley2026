@@ -48,6 +48,7 @@ class VkWallPublisher implements ChannelPublisher
         }
 
         $response = Http::timeout(20)
+            ->asForm()
             ->post(self::API_BASE . 'wall.post', $params)
             ->json();
 
@@ -85,6 +86,7 @@ class VkWallPublisher implements ChannelPublisher
         ];
 
         $response = Http::timeout(20)
+            ->asForm()
             ->post(self::API_BASE . 'wall.edit', $params)
             ->json();
 
@@ -140,6 +142,7 @@ class VkWallPublisher implements ChannelPublisher
 
         // Шаг 4: сохраняем фото
         $saved = Http::timeout(10)
+            ->asForm()
             ->post(self::API_BASE . 'photos.saveWallPhoto', [
                 'group_id'     => abs($ownerId),
                 'server'       => $uploaded['server'],
