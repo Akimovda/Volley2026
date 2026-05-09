@@ -275,6 +275,31 @@ return [
     'tjr_body_action'   => '👉 Accept or decline: :url',
     'tjr_btn_open_team' => 'Open team',
 
+    // Tournament application (early-submit / auto-promotion / auto-reject)
+    'tapp_received_title'    => 'New tournament application',
+    'tapp_received_body'     => 'Team «:team» submitted an application for tournament «:event». Approve or decline.',
+    'tapp_incomplete_title'  => 'Application with incomplete lineup',
+    'tapp_incomplete_body'   => 'Team «:team» submitted an application for tournament «:event» before completing the lineup. If the lineup is not finalised by the application deadline, the application will be auto-rejected.',
+    'tapp_completed_title'   => 'Team has completed its lineup',
+    'tapp_completed_body'    => 'Team «:team» finalised its lineup. The application for tournament «:event» is awaiting your decision.',
+    'tapp_auto_rejected_title' => 'Application auto-rejected',
+    'tapp_auto_rejected_body'  => 'Team «:team» application for tournament «:event» was auto-rejected: the lineup was not completed before the application deadline.',
+    'tapp_action_open'       => '👉 Open management page: :url',
+    'tapp_btn_manage'        => 'Manage tournament',
+    'tapp_btn_open_team'     => 'Open team',
+
+    // Team page UI
+    'tapp_submit_btn'         => 'Submit application',
+    'tapp_submit_early_btn'   => 'Submit application with incomplete lineup',
+    'tapp_submit_early_warn'  => 'If the lineup is not completed by the application deadline, the application will be auto-rejected.',
+    'tapp_revoke_btn'         => '✕ Revoke application',
+    'tapp_revoke_confirm'     => 'Revoke team application?',
+    'tapp_revoked_msg'        => 'Application revoked.',
+    'tapp_status_incomplete'  => 'Awaiting lineup completion',
+    'tapp_err_no_app'         => 'Application not found.',
+    'tapp_err_only_captain'   => 'Only the team captain can revoke an application.',
+    'tapp_err_only_pending'   => 'Only an active application can be revoked.',
+
     // ===== Event management =====
     'mgmt_title'           => 'Event management',
     'mgmt_t_description'   => 'Quickly create a copy ("Create a copy") and access registrations.',

@@ -156,11 +156,20 @@ final class TournamentTeamService
                 ->where('event_team_id', $team->id)
                 ->where('user_id', $user->id)
                 ->first();
-    
+
             if ($existing) {
                 throw new DomainException('Пользователь уже есть в составе команды.');
             }
-    
+
+            // Проверка соответствия игрока требованиям мероприятия
+            $event = $team->event ?: $team->event()->first();
+            if ($event) {
+                $issues = app(MemberEligibilityService::class)->checkMember($user, $event);
+                if (!empty($issues)) {
+                    throw new DomainException('Игрок не соответствует требованиям мероприятия: ' . implode('; ', $issues));
+                }
+            }
+
             if ($teamRole === 'captain') {
                 $hasCaptain = EventTeamMember::query()
                     ->where('event_team_id', $team->id)
@@ -412,22 +421,38 @@ final class TournamentTeamService
         });
     }
     
-    public function submitApplication(EventTeam $team, User $submittedBy): EventTeamApplication
+    public function submitApplication(EventTeam $team, User $submittedBy, bool $allowIncomplete = false): EventTeamApplication
     {
-        return DB::transaction(function () use ($team, $submittedBy) {
-            // НЕ вызываем refreshTeamState() здесь — он уже вызван в refreshTeamState->submitApplication
-            // Иначе бесконечная рекурсия: refreshTeamState → submitApplication → refreshTeamState → ...
-            $team = $team->fresh(['members.user', 'event.tournamentSetting']);
+        $application = DB::transaction(function () use ($team, $submittedBy, $allowIncomplete) {
+            $team = $team->fresh(['members.user', 'event.tournamentSetting', 'event.gameSettings']);
 
-            if (!$team->is_complete || $team->status !== 'ready') {
-                throw new DomainException('Команда ещё не готова к подаче заявки.');
+            if (!$allowIncomplete) {
+                if (!$team->is_complete || $team->status !== 'ready') {
+                    throw new DomainException('Команда ещё не готова к подаче заявки.');
+                }
+            } else {
+                // Early submit: минимум — капитан + ≥1 confirmed player
+                $confirmedCount = $team->members()
+                    ->where('confirmation_status', 'confirmed')
+                    ->count();
+                $hasCaptain = (bool) $team->captain_user_id;
+                if (!$hasCaptain || $confirmedCount < 2) {
+                    throw new DomainException('Для подачи заявки нужны капитан и хотя бы один подтверждённый игрок.');
+                }
             }
 
-            // === Проверка уровня всех членов команды ===
-            $this->validateTeamMembersLevel($team);
+            // === Проверка соответствия УЖЕ добавленных игроков требованиям мероприятия ===
+            $eligibility = app(MemberEligibilityService::class);
+            $issues = $eligibility->checkTeamMembers($team);
+            if (!empty($issues)) {
+                throw new DomainException('Не соответствует требованиям мероприятия: ' . implode('; ', $issues));
+            }
 
-            // === Проверка гендерных ограничений ===
-            $this->validateTeamGender($team);
+            // === Гендерные ограничения команды (mixed_5050 / mixed_limited / max_rating_sum) ===
+            // При early-submit пропускаем строгие правила состава, проверяем только лимиты на игрока (already in eligibility)
+            if (!$allowIncomplete) {
+                $this->validateTeamGender($team);
+            }
 
             $existing = EventTeamApplication::query()
                 ->where('event_team_id', $team->id)
@@ -437,12 +462,18 @@ final class TournamentTeamService
                 throw new DomainException('Заявка уже существует.');
             }
 
-            // Определяем режим одобрения
             $settings = \App\Models\EventTournamentSetting::where('event_id', $team->event_id)->first();
             $isAutoApproval = ($settings->application_mode ?? 'manual') === 'auto';
 
-            $applicationStatus = $isAutoApproval ? 'approved' : 'pending';
-            $teamStatus = $isAutoApproval ? 'submitted' : 'pending';
+            if ($allowIncomplete) {
+                $applicationStatus = 'incomplete';
+                $teamStatus = 'pending_members';
+                $decisionComment = null;
+            } else {
+                $applicationStatus = $isAutoApproval ? 'approved' : 'pending';
+                $teamStatus = $isAutoApproval ? 'submitted' : 'pending';
+                $decisionComment = $isAutoApproval ? 'Автоматическое одобрение' : null;
+            }
 
             $application = EventTeamApplication::query()->create([
                 'event_id' => $team->event_id,
@@ -450,11 +481,11 @@ final class TournamentTeamService
                 'status' => $applicationStatus,
                 'submitted_by_user_id' => $submittedBy->id,
                 'applied_at' => now(),
-                'reviewed_by_user_id' => $isAutoApproval ? null : null,
-                'reviewed_at' => $isAutoApproval ? now() : null,
+                'reviewed_by_user_id' => null,
+                'reviewed_at' => (!$allowIncomplete && $isAutoApproval) ? now() : null,
                 'rejection_reason' => null,
-                'decision_comment' => $isAutoApproval ? 'Автоматическое одобрение' : null,
-                'meta' => null,
+                'decision_comment' => $decisionComment,
+                'meta' => $allowIncomplete ? ['allow_incomplete' => true] : null,
             ]);
 
             $team->update([
@@ -463,7 +494,7 @@ final class TournamentTeamService
 
             $this->audit(
                 team: $team,
-                action: 'application_submitted',
+                action: $allowIncomplete ? 'application_submitted_incomplete' : 'application_submitted',
                 performedByUserId: $submittedBy->id,
                 newValue: [
                     'application_id' => $application->id,
@@ -474,25 +505,36 @@ final class TournamentTeamService
             return $application;
         });
 
-        // Уведомляем организатора о новой заявке (после коммита транзакции)
-        if ($application->status === 'pending') {
+        // Уведомление организатору (после коммита транзакции).
+        // - 'pending'    — обычная заявка с полным составом, ждёт одобрения
+        // - 'incomplete' — early-submit: команда ещё доукомплектовывается
+        if (in_array($application->status, ['pending', 'incomplete'], true)) {
             try {
-                $event = $team->event;
+                $event = $team->event ?: $team->event()->first();
                 $organizerId = (int) $event->organizer_id;
                 $setupUrl = route('tournament.setup', $event);
 
+                $isIncomplete = $application->status === 'incomplete';
+                $type = $isIncomplete ? 'tournament_application_incomplete' : 'tournament_application_received';
+                $title = $isIncomplete
+                    ? __('events.tapp_incomplete_title')
+                    : __('events.tapp_received_title');
+                $body = $isIncomplete
+                    ? __('events.tapp_incomplete_body', ['team' => $team->name, 'event' => $event->title])
+                    : __('events.tapp_received_body', ['team' => $team->name, 'event' => $event->title]);
+
                 app(\App\Services\UserNotificationService::class)->create(
                     userId: $organizerId,
-                    type: 'tournament_application_received',
-                    title: 'Новая заявка на турнир',
-                    body: "Команда «{$team->name}» подала заявку на турнир «{$event->title}». Одобрите или отклоните заявку.",
+                    type: $type,
+                    title: $title,
+                    body: $body . "\n\n" . __('events.tapp_action_open', ['url' => $setupUrl]),
                     payload: [
                         'event_id' => $event->id,
                         'team_id' => $team->id,
                         'application_id' => $application->id,
                         'team_name' => $team->name,
                         'event_title' => $event->title,
-                        'button_text' => 'Управление турниром',
+                        'button_text' => __('events.tapp_btn_manage'),
                         'button_url' => $setupUrl,
                     ],
                     channels: ['in_app', 'telegram', 'vk', 'max']
@@ -503,6 +545,51 @@ final class TournamentTeamService
         }
 
         return $application;
+    }
+
+    /**
+     * Отзыв заявки капитаном или админом.
+     * Доступно для статусов 'incomplete' и 'pending'.
+     */
+    public function revokeApplication(EventTeam $team, User $byUser): void
+    {
+        DB::transaction(function () use ($team, $byUser) {
+            $application = EventTeamApplication::query()
+                ->where('event_team_id', $team->id)
+                ->lockForUpdate()
+                ->first();
+
+            if (!$application) {
+                throw new DomainException('Заявка не найдена.');
+            }
+
+            $isCaptain = (int) $team->captain_user_id === (int) $byUser->id;
+            $isAdmin = ($byUser->role ?? null) === 'admin';
+
+            if (!$isCaptain && !$isAdmin) {
+                throw new DomainException('Отозвать заявку может только капитан команды.');
+            }
+
+            if (!in_array($application->status, ['incomplete', 'pending'], true)) {
+                throw new DomainException('Можно отозвать только активную заявку (ожидающую решения).');
+            }
+
+            $application->delete();
+
+            // Возвращаем команду в одно из состояний до подачи заявки
+            $check = $this->checkRequirements($team->fresh(['members.user']));
+            $newStatus = $check['valid']
+                ? 'ready'
+                : ($check['has_pending_members'] ? 'pending_members' : 'draft');
+            $team->update(['status' => $newStatus]);
+
+            $this->audit(
+                team: $team,
+                action: 'application_revoked',
+                performedByUserId: $byUser->id,
+                newValue: ['team_status' => $newStatus],
+            );
+        });
     }
 
     public function refreshTeamState(EventTeam $team): EventTeam
@@ -529,6 +616,7 @@ final class TournamentTeamService
 
         $settings = $this->getSettings($team->event);
 
+        // Auto-submit при сборе ready-команды (если включено в настройках)
         if (
             $settings?->auto_submit_when_ready &&
             $team->fresh()->status === 'ready' &&
@@ -537,7 +625,85 @@ final class TournamentTeamService
             $this->submitApplication($team->fresh(), $team->captain);
         }
 
+        // Auto-promotion: если есть incomplete-заявка и команда стала valid →
+        // переводим заявку в pending/approved (зависит от application_mode)
+        if ($check['valid']) {
+            $existingApp = EventTeamApplication::query()
+                ->where('event_team_id', $team->id)
+                ->where('status', 'incomplete')
+                ->first();
+            if ($existingApp) {
+                $this->promoteIncompleteApplication($team->fresh(), $existingApp);
+            }
+        }
+
         return $team->fresh(['members.user', 'application', 'event.tournamentSetting']);
+    }
+
+    /**
+     * Переводит incomplete-заявку в активное состояние, когда команда укомплектована.
+     */
+    private function promoteIncompleteApplication(EventTeam $team, EventTeamApplication $application): void
+    {
+        // Финальная проверка eligibility / gender
+        $eligibility = app(MemberEligibilityService::class);
+        $issues = $eligibility->checkTeamMembers($team);
+        if (!empty($issues)) {
+            return; // нельзя promote, оставляем incomplete
+        }
+        try {
+            $this->validateTeamGender($team);
+        } catch (DomainException $e) {
+            return;
+        }
+
+        $settings = \App\Models\EventTournamentSetting::where('event_id', $team->event_id)->first();
+        $isAutoApproval = ($settings->application_mode ?? 'manual') === 'auto';
+
+        $newAppStatus = $isAutoApproval ? 'approved' : 'pending';
+        $newTeamStatus = $isAutoApproval ? 'submitted' : 'pending';
+
+        DB::transaction(function () use ($team, $application, $newAppStatus, $newTeamStatus, $isAutoApproval) {
+            $application->update([
+                'status' => $newAppStatus,
+                'reviewed_at' => $isAutoApproval ? now() : null,
+                'decision_comment' => $isAutoApproval ? 'Автоматическое одобрение после доукомплектования' : null,
+            ]);
+            $team->update(['status' => $newTeamStatus]);
+
+            $this->audit(
+                team: $team,
+                action: 'application_completed',
+                newValue: ['application_id' => $application->id, 'status' => $newAppStatus],
+            );
+        });
+
+        // Уведомление организатору в manual-режиме
+        if (!$isAutoApproval) {
+            try {
+                $event = $team->event ?: $team->event()->first();
+                $setupUrl = route('tournament.setup', $event);
+                app(\App\Services\UserNotificationService::class)->create(
+                    userId: (int) $event->organizer_id,
+                    type: 'tournament_application_completed',
+                    title: __('events.tapp_completed_title'),
+                    body: __('events.tapp_completed_body', ['team' => $team->name, 'event' => $event->title])
+                        . "\n\n" . __('events.tapp_action_open', ['url' => $setupUrl]),
+                    payload: [
+                        'event_id' => $event->id,
+                        'team_id' => $team->id,
+                        'application_id' => $application->id,
+                        'team_name' => $team->name,
+                        'event_title' => $event->title,
+                        'button_text' => __('events.tapp_btn_manage'),
+                        'button_url' => $setupUrl,
+                    ],
+                    channels: ['in_app', 'telegram', 'vk', 'max']
+                );
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
     }
 
     public function checkRequirements(EventTeam $team): array
@@ -883,6 +1049,15 @@ final class TournamentTeamService
             ->exists();
         if ($alreadyHere) {
             throw new DomainException('Вы уже подали заявку или состоите в этой паре.');
+        }
+
+        // Соответствие игрока требованиям мероприятия
+        $event = $team->event ?: $team->event()->first();
+        if ($event) {
+            $issues = app(MemberEligibilityService::class)->checkMember($user, $event);
+            if (!empty($issues)) {
+                throw new DomainException('Вы не соответствуете требованиям мероприятия: ' . implode('; ', $issues));
+            }
         }
 
         // Не должен быть в другой активной команде на это мероприятие

@@ -37,10 +37,10 @@ $stBg     = ['confirmed'=>'#f0fdf4','joined'=>'#fff7e6','invited'=>'#dbeafe','de
 $invStLabels = ['pending'=>'Ожидает','accepted'=>'Принято','declined'=>'Отклонено','revoked'=>'Отозвано','expired'=>'Истекло'];
 $invStColor  = ['accepted'=>'#166534','declined'=>'#9f1239','revoked'=>'#6b7280','expired'=>'#6b7280','pending'=>'#92400e'];
 $invStBg     = ['accepted'=>'#f0fdf4','declined'=>'#fff1f2','revoked'=>'#f3f4f6','expired'=>'#f3f4f6','pending'=>'#fff7e6'];
-$appStLabels = ['pending'=>'На рассмотрении','approved'=>'Принята','rejected'=>'Отклонена'];
-$appStBg     = ['pending'=>'#fff7e6','approved'=>'#f0fdf4','rejected'=>'#fff1f2'];
-$appStColor  = ['pending'=>'#92400e','approved'=>'#166534','rejected'=>'#9f1239'];
-$appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌'];
+$appStLabels = ['pending'=>'На рассмотрении','approved'=>'Принята','rejected'=>'Отклонена','incomplete'=>__('events.tapp_status_incomplete')];
+$appStBg     = ['pending'=>'#fff7e6','approved'=>'#f0fdf4','rejected'=>'#fff1f2','incomplete'=>'#fef9c3'];
+$appStColor  = ['pending'=>'#92400e','approved'=>'#166534','rejected'=>'#9f1239','incomplete'=>'#854d0e'];
+$appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete'=>'🟡'];
 @endphp
 
 <div class="container">
@@ -253,6 +253,15 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌'];
                 </div>
             </div>
 
+            @if($canManage && in_array($appSt, ['incomplete','pending'], true))
+                <form method="POST" action="{{ route('tournamentTeams.revokeApplication',[$event,$team]) }}"
+                      onsubmit="return confirm(@json(__('events.tapp_revoke_confirm')))" class="mb-2">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="btn btn-small btn-danger">{{ __('events.tapp_revoke_btn') }}</button>
+                </form>
+            @endif
+
             {{-- Блок оплаты (после подачи заявки) --}}
             @php
                 $payService = app(\App\Services\TournamentPaymentService::class);
@@ -348,11 +357,34 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌'];
 
         @elseif($canManage)
             <div class="f-15 mb-2" style="opacity:.6">Если состав готов — подайте заявку на турнир.</div>
-            <form method="POST" action="{{ route('tournamentTeams.submit',[$event,$team]) }}"
-                  onsubmit="return confirm('Подать заявку команды на турнир?')">
-                @csrf
-                <button type="submit" class="btn">Подать заявку</button>
-            </form>
+
+            @if($team->is_complete && $team->status === 'ready')
+                <form method="POST" action="{{ route('tournamentTeams.submit',[$event,$team]) }}"
+                      onsubmit="return confirm('Подать заявку команды на турнир?')">
+                    @csrf
+                    <button type="submit" class="btn">{{ __('events.tapp_submit_btn') }}</button>
+                </form>
+            @else
+                @php
+                    $confirmedReady = $team->members->where('confirmation_status','confirmed')->count();
+                    $hasCaptain = (bool) $team->captain_user_id;
+                    $canEarlySubmit = $hasCaptain && $confirmedReady >= 2;
+                @endphp
+                <div class="alert alert-warning f-14 mb-2">
+                    ⚠️ Состав ещё не готов — обычная подача недоступна.
+                </div>
+                @if($canEarlySubmit)
+                    <div class="f-13 mb-1" style="opacity:.7">{{ __('events.tapp_submit_early_warn') }}</div>
+                    <form method="POST" action="{{ route('tournamentTeams.submit',[$event,$team]) }}"
+                          onsubmit="return confirm(@json(__('events.tapp_submit_early_btn') . '?'))">
+                        @csrf
+                        <input type="hidden" name="allow_incomplete" value="1">
+                        <button type="submit" class="btn btn-secondary">{{ __('events.tapp_submit_early_btn') }}</button>
+                    </form>
+                @else
+                    <div class="f-13" style="opacity:.6">Для досрочной подачи нужны капитан и хотя бы один подтверждённый игрок.</div>
+                @endif
+            @endif
         @else
             <div class="f-15" style="opacity:.5">Заявка ещё не подана</div>
         @endif

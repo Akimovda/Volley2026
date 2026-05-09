@@ -68,3 +68,10 @@ Schedule::command('sitemap:generate')
 Schedule::command('events:publish-pending-announcements --limit=100')
     ->everyMinute()
     ->withoutOverlapping();
+
+// Автоотклонение неполных заявок команд (каждые 30 минут):
+// находит EventTeamApplication со статусом 'incomplete' у которых
+// дедлайн ближайшего occurrence (registration_ends_at) уже наступил.
+Schedule::command('tournaments:auto-reject-incomplete-applications')
+    ->everyThirtyMinutes()
+    ->withoutOverlapping();
