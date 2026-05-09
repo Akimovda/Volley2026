@@ -183,6 +183,7 @@ return [
     'teams_short' => 'teams',
     'teams_reserve' => 'reserve',
     'col_players' => 'Players',
+    'col_solo_player' => 'Solo entry',
     'no_teams' => 'No teams',
     'show_player_rating' => 'Player ranking',
     'col_points_diff' => 'Points ±',
