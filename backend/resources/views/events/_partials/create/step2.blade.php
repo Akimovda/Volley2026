@@ -593,7 +593,7 @@ if (hiddenH) hiddenH.value = h;
 						{{-- ══════════════════════════════════════════════════ --}}
 						{{-- СЕРИЯ ТУРНИРОВ (Season / League) --}}
 						{{-- ══════════════════════════════════════════════════ --}}
-						<div class="ramka" id="season_league_box" style="display:none;">
+						<div class="ramka" id="season_league_box" style="display:none; position:relative; z-index:9; overflow:visible;">
 							<h2 class="-mt-05">{{ __('events.season_title') }}</h2>
 
 							<label class="checkbox-item">
@@ -643,7 +643,7 @@ if (hiddenH) hiddenH.value = h;
 								{{-- Существующая лига (иерархия: Лига → Сезон → Дивизион) --}}
 								<div class="row mt-2" id="existing_league_fields" style="display:none;">
 									<div class="col-md-4">
-										<div class="card">
+										<div class="card" style="overflow:visible">
 											<label>{{ __('events.season_league_label') }}</label>
 											<select id="top_league_select">
 												<option value="">{{ __('events.season_league_choose') }}</option>
@@ -666,7 +666,7 @@ if (hiddenH) hiddenH.value = h;
 									</div>
 									{{-- Сезон — показывается после выбора лиги --}}
 									<div class="col-md-4" id="season_col" style="display:none;">
-										<div class="card">
+										<div class="card" style="overflow:visible">
 											<label>{{ __('events.season_label') }}</label>
 											<select name="existing_season_id" id="existing_season_id">
 												<option value="">{{ __('events.season_choose') }}</option>
@@ -675,7 +675,7 @@ if (hiddenH) hiddenH.value = h;
 									</div>
 									{{-- Дивизион — показывается после выбора сезона --}}
 									<div class="col-md-4" id="division_col" style="display:none;">
-										<div class="card">
+										<div class="card" style="overflow:visible">
 											<label>{{ __('events.division_label') }}</label>
 											<select name="existing_league_id" id="existing_league_id">
 												<option value="">{{ __('events.division_choose') }}</option>
@@ -745,12 +745,30 @@ if (hiddenH) hiddenH.value = h;
 								existingFields.style.display = (mode === 'existing') ? '' : 'none';
 							}
 
+							// createCustomSelect оборачивает <select>, и после программного добавления
+							// <option> кастомный dropdown надо пересобрать: destroy + initCustomSelects.
+							function rebuildCustomSelect(selectEl) {
+								if (!selectEl || !window.jQuery || typeof window.customSelect === 'undefined') return;
+								try {
+									window.customSelect.destroy(selectEl.id);
+									window.jQuery(selectEl).removeData('custom-initialized');
+									if (typeof window.initCustomSelects === 'function') {
+										window.initCustomSelects();
+									}
+								} catch (_) {}
+							}
+
 							function populateSeasons() {
 								const lid = parseInt(topLeagueSelect ? topLeagueSelect.value : 0);
 								seasonSelect.innerHTML = '<option value="">{{ __('events.season_choose') }}</option>';
 								leagueSelect.innerHTML = '<option value="">{{ __('events.division_choose') }}</option>';
 								divisionCol.style.display = 'none';
-								if (!lid) { seasonCol.style.display = 'none'; return; }
+								if (!lid) {
+									seasonCol.style.display = 'none';
+									rebuildCustomSelect(seasonSelect);
+									rebuildCustomSelect(leagueSelect);
+									return;
+								}
 
 								const league = leaguesData.find(l => l.id === lid);
 								if (league && league.seasons.length > 0) {
@@ -762,6 +780,8 @@ if (hiddenH) hiddenH.value = h;
 									});
 								}
 								seasonCol.style.display = '';
+								rebuildCustomSelect(seasonSelect);
+								rebuildCustomSelect(leagueSelect);
 							}
 
 							function populateDivisions() {
@@ -769,7 +789,10 @@ if (hiddenH) hiddenH.value = h;
 								const sid    = parseInt(seasonSelect.value);
 								leagueSelect.innerHTML = '<option value="">{{ __('events.division_choose') }}</option>';
 								divisionCol.style.display = 'none';
-								if (!lid || !sid) return;
+								if (!lid || !sid) {
+									rebuildCustomSelect(leagueSelect);
+									return;
+								}
 
 								const league  = leaguesData.find(l => l.id === lid);
 								const season  = league && league.seasons.find(s => s.id === sid);
@@ -783,6 +806,7 @@ if (hiddenH) hiddenH.value = h;
 									if (season.divisions.length === 1) leagueSelect.value = season.divisions[0].id;
 									divisionCol.style.display = '';
 								}
+								rebuildCustomSelect(leagueSelect);
 							}
 
 							if (formatSelect) {
