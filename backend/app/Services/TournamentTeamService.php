@@ -143,6 +143,70 @@ final class TournamentTeamService
     /**
      * Пригласить или добавить участника в команду
      */
+    /**
+     * Организатор/админ напрямую добавляет игрока в команду без invite-flow.
+     * Игрок сразу confirmed, получает уведомление «Организатор добавил вас в команду».
+     */
+    public function addMemberByOrganizer(
+        EventTeam $team,
+        User $player,
+        User $organizer,
+        string $teamRole = 'player',
+        ?string $positionCode = null
+    ): EventTeamMember {
+        $isAdmin     = ($organizer->role ?? null) === 'admin';
+        $isEventOrg  = $team->event?->organizer_id
+            ? (int) $team->event->organizer_id === (int) $organizer->id
+            : false;
+
+        if (!$isAdmin && !$isEventOrg) {
+            throw new DomainException('Добавить игрока напрямую может только организатор мероприятия или администратор.');
+        }
+
+        // Используем inviteOrJoinMember с autoConfirm=true (содержит все проверки)
+        $member = $this->inviteOrJoinMember(
+            team: $team,
+            user: $player,
+            invitedByUserId: $organizer->id,
+            teamRole: $teamRole,
+            positionCode: $positionCode,
+            autoConfirm: true,
+        );
+
+        // Уведомление игроку
+        try {
+            $event   = $team->event ?: $team->event()->first();
+            $teamUrl = route('tournamentTeams.show', [$team->event_id, $team->id]);
+
+            $isPair  = (string) $team->team_kind === 'beach_pair';
+            $title   = __($isPair ? 'events.org_added_title_pair' : 'events.org_added_title_team');
+            $body    = __('events.org_added_body', [
+                'team'  => $team->name,
+                'event' => $event?->title ?? '',
+            ]);
+            $bodyAction = __('events.tapp_action_open', ['url' => $teamUrl]);
+
+            app(\App\Services\UserNotificationService::class)->create(
+                userId: (int) $player->id,
+                type:   'tournament_organizer_added',
+                title:  $title,
+                body:   $body . "\n\n" . $bodyAction,
+                payload: [
+                    'event_id'    => $team->event_id,
+                    'team_id'     => $team->id,
+                    'team_url'    => $teamUrl,
+                    'button_text' => __('events.tinv_revoke_btn') !== '✕ Отозвать' ? 'Открыть' : 'Открыть',
+                    'button_url'  => route('events.show', ['event' => $team->event_id]),
+                ],
+                channels: ['in_app', 'telegram', 'vk', 'max']
+            );
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
+        return $member;
+    }
+
     public function inviteOrJoinMember(
         EventTeam $team,
         User $user,

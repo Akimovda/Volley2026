@@ -143,6 +143,48 @@ class TournamentTeamController extends Controller
         }
     }
 
+    /**
+     * Организатор/админ добавляет игрока в команду напрямую (без invite).
+     */
+    public function addMemberByOrganizer(
+        Request $request,
+        Event $event,
+        EventTeam $team,
+        TournamentTeamService $service
+    ): RedirectResponse {
+        abort_unless((int) $team->event_id === (int) $event->id, 404);
+
+        $user    = $request->user();
+        $isAdmin = ($user->role ?? null) === 'admin';
+        $isOrg   = (int) $event->organizer_id === (int) $user->id;
+        abort_unless($isAdmin || $isOrg, 403);
+
+        $positionRules = (string) $team->team_kind === 'classic_team'
+            ? ['nullable', 'string', 'in:setter,outside,opposite,middle,libero']
+            : ['nullable'];
+
+        $data = $request->validate([
+            'user_id'       => ['required', 'integer', 'exists:users,id'],
+            'team_role'     => ['required', 'string', 'in:player,reserve'],
+            'position_code' => $positionRules,
+        ]);
+
+        $player = \App\Models\User::findOrFail((int) $data['user_id']);
+
+        try {
+            $service->addMemberByOrganizer(
+                team:         $team,
+                player:       $player,
+                organizer:    $user,
+                teamRole:     (string) $data['team_role'],
+                positionCode: $data['position_code'] ?? null,
+            );
+            return back()->with('success', 'Игрок добавлен в команду ✅');
+        } catch (DomainException $e) {
+            return back()->withErrors(['add_member' => $e->getMessage()]);
+        }
+    }
+
     public function submitApplication(
         Request $request,
         Event $event,

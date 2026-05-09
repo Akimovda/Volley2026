@@ -328,6 +328,10 @@ Route::post('/auth/tma-exchange', [TmaAuthController::class, 'exchange'])->name(
         ->name("events.occurrences.update");
     Route::post("/events/{event}/occurrences/{occurrence}/toggle-bot", [EventManagementController::class, "toggleBotOccurrence"])
         ->name("events.occurrences.toggle-bot");
+		// Прямое добавление игрока организатором (без invite)
+		Route::post('/events/{event}/teams/{team}/members/add-by-organizer', [TournamentTeamController::class, 'addMemberByOrganizer'])
+        ->name('tournamentTeams.addMemberByOrganizer');
+
 		// Подача заявки команды на турнир (поддерживает allow_incomplete=1 для early-submit)
 		Route::post('/events/{event}/teams/{team}/submit', [TournamentTeamController::class, 'submitApplication'])
         ->name('tournamentTeams.submit');
