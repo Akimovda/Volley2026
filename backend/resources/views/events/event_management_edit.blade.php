@@ -692,6 +692,82 @@
                             </div>
                         </div>
 
+                        {{-- ===== Каналы анонсов ===== --}}
+                        @php
+                        $selChannels = old('channels', $selectedChannelIds ?? []);
+                        if (!is_array($selChannels)) { $selChannels = []; }
+                        $cs = $channelSettings ?? ['silent' => false, 'update_message' => true, 'include_image' => true, 'include_registered_list' => true];
+                        $chSilent     = (bool) old('channel_silent', $cs['silent']);
+                        $chUpdateMsg  = (bool) old('channel_update_message', $cs['update_message']);
+                        $chIncImg     = (bool) old('channel_include_image', $cs['include_image']);
+                        $chIncReg     = (bool) old('channel_include_registered', $cs['include_registered_list']);
+                        @endphp
+                        <div class="col-md-6">
+                            <div class="card">
+                                <label>{{ __('events.channels_label') }}</label>
+
+                                <ul class="list f-16 mb-2">
+                                    <li>{{ __('events.channels_hint_1') }}</li>
+                                    <li>{{ __('events.channels_hint_2') }}</li>
+                                </ul>
+
+                                @if(($userChannels ?? collect())->isEmpty())
+                                <div class="f-16">
+                                    {{ __('events.channels_none_pre') }}
+                                    <a href="{{ route('profile.notification_channels') }}" class="link">
+                                        {{ __('events.channels_none_link') }}
+                                    </a>
+                                </div>
+                                @else
+                                <div class="mt-2">
+                                    @foreach($userChannels as $channel)
+                                    <label class="checkbox-item">
+                                        <input type="checkbox"
+                                            name="channels[]"
+                                            value="{{ $channel->id }}"
+                                            @checked(in_array((string) $channel->id, array_map('strval', $selChannels), true))>
+                                        <div class="custom-checkbox"></div>
+                                        <span>
+                                            {{ strtoupper($channel->platform) }} — {{ $channel->title ?: __('events.channels_no_title') }}
+                                            <span class="text-muted">({{ $channel->chat_id }})</span>
+                                        </span>
+                                    </label>
+                                    @endforeach
+                                </div>
+
+                                <div class="mt-2">
+                                    <label class="checkbox-item">
+                                        <input type="hidden" name="channel_silent" value="0">
+                                        <input type="checkbox" name="channel_silent" value="1" @checked($chSilent)>
+                                        <div class="custom-checkbox"></div>
+                                        <span>{{ __('events.channels_silent') }}</span>
+                                    </label>
+
+                                    <label class="checkbox-item">
+                                        <input type="hidden" name="channel_update_message" value="0">
+                                        <input type="checkbox" name="channel_update_message" value="1" @checked($chUpdateMsg)>
+                                        <div class="custom-checkbox"></div>
+                                        <span>{{ __('events.channels_update_msg') }}</span>
+                                    </label>
+
+                                    <label class="checkbox-item">
+                                        <input type="hidden" name="channel_include_image" value="0">
+                                        <input type="checkbox" name="channel_include_image" value="1" @checked($chIncImg)>
+                                        <div class="custom-checkbox"></div>
+                                        <span>{{ __('events.channels_with_image') }}</span>
+                                    </label>
+
+                                    <label class="checkbox-item">
+                                        <input type="hidden" name="channel_include_registered" value="0">
+                                        <input type="checkbox" name="channel_include_registered" value="1" @checked($chIncReg)>
+                                        <div class="custom-checkbox"></div>
+                                        <span>{{ __('events.channels_with_players') }}</span>
+                                    </label>
+                                </div>
+                                @endif
+                            </div>
+                        </div>
+
                     </div>
                 </div>
 
