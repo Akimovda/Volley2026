@@ -738,6 +738,7 @@ $showWaitlist = !$isTournament && !$eventStarted && $isFull && auth()->check();
 			// Определяем команду текущего пользователя (confirmed/joined)
 			$myTeamIdOnEvent = null;
 			$myPendingRequestTeamIds = collect();
+			$myPendingInvitesByTeam  = collect(); // pending-приглашения: event_team_id → invite
 			if (auth()->check()) {
 				$myMemberships = \App\Models\EventTeamMember::whereHas('team', fn($q) => $q->where('event_id', $event->id))
 					->where('user_id', auth()->id())
@@ -745,6 +746,14 @@ $showWaitlist = !$isTournament && !$eventStarted && $isFull && auth()->check();
 					->get();
 				$myTeamIdOnEvent = $myMemberships->whereIn('confirmation_status', ['confirmed','joined'])->first()?->event_team_id;
 				$myPendingRequestTeamIds = $myMemberships->where('confirmation_status', 'requested')->pluck('event_team_id');
+
+				// Pending-приглашения в команды этого мероприятия
+				$myPendingInvitesByTeam = \App\Models\EventTeamInvite::query()
+					->where('event_id', $event->id)
+					->where('invited_user_id', auth()->id())
+					->where('status', 'pending')
+					->get()
+					->keyBy('event_team_id');
 			}
 			@endphp
 			@if($tournamentTeams->isEmpty())
@@ -757,9 +766,10 @@ $showWaitlist = !$isTournament && !$eventStarted && $isFull && auth()->check();
 				$hasVacancy  = $isBeachPair && $confirmedMembers->count() < 2;
 				$iMyTeam     = (int)$myTeamIdOnEvent === (int)$tTeam->id;
 				$iAlreadyRequested = $myPendingRequestTeamIds->contains($tTeam->id);
+				$myInvite    = $myPendingInvitesByTeam->get($tTeam->id); // pending-приглашение именно в эту команду
 				$cancelUntil = $occurrence->effectiveCancelSelfUntil();
 				$joinOpen    = !$cancelUntil || now('UTC')->lessThanOrEqualTo($cancelUntil);
-				$canJoin     = $hasVacancy && auth()->check() && !$iMyTeam && !$iAlreadyRequested && !$myTeamIdOnEvent && $joinOpen;
+				$canJoin     = $hasVacancy && auth()->check() && !$iMyTeam && !$iAlreadyRequested && !$myTeamIdOnEvent && $joinOpen && !$myInvite;
 				$statusInfo = $teamStatusMap[$tTeam->status] ?? ['label' => $tTeam->status, 'color' => '#6b7280', 'bg' => '#f3f4f6'];
 			@endphp
 			<div class="card mb-1" style="padding: 0.5rem 0.8rem{{ $iMyTeam ? ';border:1.5px solid #2563eb' : '' }}">
@@ -797,7 +807,13 @@ $showWaitlist = !$isTournament && !$eventStarted && $isFull && auth()->check();
 					<span class="f-13 text-muted" style="width:16px;text-align:right;flex-shrink:0;">2.</span>
 					<div style="width:34px;height:34px;border-radius:50%;background:var(--bg2,#f5f5f5);flex-shrink:0;display:flex;align-items:center;justify-content:center;border:2px dashed #ccc;font-size:1.8rem;color:#aaa;">?</div>
 					<span style="width:10px;height:10px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0;"></span>
-					@if($canJoin)
+					@if($myInvite)
+					{{-- Игроку отправлено персональное приглашение → кнопка принятия --}}
+					<a href="{{ route('tournamentTeamInvites.show', ['token' => $myInvite->token]) }}"
+					   class="btn btn-primary btn-small" style="font-size:1.2rem;padding:3px 10px">
+						✅ {{ __('events.show_pl_accept_invite') }}
+					</a>
+					@elseif($canJoin)
 					<form method="POST" action="{{ route('tournamentTeams.joinRequest', [$event, $tTeam]) }}">
 						@csrf
 						<button class="btn btn-small" style="font-size:1.2rem;padding:3px 10px">{{ __('events.show_pl_join_pair') }}</button>

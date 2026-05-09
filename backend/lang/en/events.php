@@ -241,6 +241,7 @@ return [
     'show_pl_my_team'             => 'Your team',
     'show_pl_seek_partner'        => 'Looking for a partner',
     'show_pl_join_pair'           => 'Join pair',
+    'show_pl_accept_invite'       => 'Accept invitation',
     'show_pl_request_sent'        => 'Request sent',
     'show_pl_my_pair'             => 'Your pair',
     'show_pl_seat_free'           => 'Seat free',

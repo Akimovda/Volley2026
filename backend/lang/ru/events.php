@@ -242,6 +242,7 @@ return [
     'show_pl_my_team'             => 'Ваша команда',
     'show_pl_seek_partner'        => 'Ищет партнёра',
     'show_pl_join_pair'           => 'Войти в пару',
+    'show_pl_accept_invite'       => 'Принять приглашение',
     'show_pl_request_sent'        => 'Заявка отправлена',
     'show_pl_my_pair'             => 'Ваша пара',
     'show_pl_seat_free'           => 'Место свободно',
