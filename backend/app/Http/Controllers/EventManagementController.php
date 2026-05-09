@@ -783,7 +783,10 @@ if ($role === 'admin') {
             $event->show_participants = (bool) ($data['show_participants'] ?? false);
             $event->requires_personal_data             = (bool) ($data['requires_personal_data'] ?? false);
             $event->remind_registration_enabled        = (bool) ($data['remind_registration_enabled'] ?? false);
-            $event->remind_registration_minutes_before = $data['remind_registration_minutes_before'] ?? null;
+            // Fallback: если hidden-поле не пришло (JS не отработал) — оставляем текущее значение
+            $event->remind_registration_minutes_before = $data['remind_registration_minutes_before']
+                ?? $event->remind_registration_minutes_before
+                ?? 600;
 
             if (array_key_exists('description_html', $data) && $data['description_html'] !== null) {
                 $event->description_html = $data['description_html'];
