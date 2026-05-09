@@ -917,12 +917,28 @@ final class TournamentTeamService
             ]);
 
             $memberName = trim(($user->last_name ?? '') . ' ' . ($user->first_name ?? '')) ?: $user->name;
+
+            $isPair = (string) $team->team_kind === 'beach_pair';
+            $teamUrl = route('tournamentTeams.show', [$team->event_id, $team->id]);
+            $title = __($isPair ? 'events.tjr_title_pair' : 'events.tjr_title_team');
+            $bodyMain = __(
+                $isPair ? 'events.tjr_body_pair' : 'events.tjr_body_team',
+                ['name' => $memberName, 'team' => $team->name]
+            );
+            $bodyAction = __('events.tjr_body_action', ['url' => $teamUrl]);
+
             $this->notifyUser(
                 userId: (int) $team->captain_user_id,
                 type: 'team_join_request',
-                title: 'Запрос на вступление в пару',
-                body: "{$memberName} хочет вступить в вашу пару «{$team->name}».",
-                payload: ['team_id' => $team->id, 'event_id' => $team->event_id],
+                title: $title,
+                body: $bodyMain . "\n\n" . $bodyAction,
+                payload: [
+                    'team_id'     => $team->id,
+                    'event_id'    => $team->event_id,
+                    'team_url'    => $teamUrl,
+                    'button_text' => __('events.tjr_btn_open_team'),
+                    'button_url'  => $teamUrl,
+                ],
             );
 
             return $member;

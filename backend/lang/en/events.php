@@ -267,6 +267,14 @@ return [
     'tinv_err_only_captain'   => 'Only the team captain can revoke an invitation.',
     'tinv_err_only_pending'   => 'Only a pending invitation can be revoked.',
 
+    // Team/pair join request (captain notification)
+    'tjr_title_pair'    => 'Pair join request',
+    'tjr_title_team'    => 'Team join request',
+    'tjr_body_pair'     => ':name wants to join your pair «:team».',
+    'tjr_body_team'     => ':name wants to join your team «:team».',
+    'tjr_body_action'   => '👉 Accept or decline: :url',
+    'tjr_btn_open_team' => 'Open team',
+
     // ===== Event management =====
     'mgmt_title'           => 'Event management',
     'mgmt_t_description'   => 'Quickly create a copy ("Create a copy") and access registrations.',
