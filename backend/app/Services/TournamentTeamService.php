@@ -431,6 +431,10 @@ final class TournamentTeamService
                     throw new DomainException('Команда ещё не готова к подаче заявки.');
                 }
             } else {
+                $eventSettings = \App\Models\EventTournamentSetting::where('event_id', $team->event_id)->first();
+                if (!($eventSettings?->allow_incomplete_application)) {
+                    throw new DomainException('Досрочная подача заявки на этом турнире не разрешена организатором.');
+                }
                 // Early submit: минимум — капитан + ≥1 confirmed player
                 $confirmedCount = $team->members()
                     ->where('confirmation_status', 'confirmed')

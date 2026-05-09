@@ -443,6 +443,19 @@
 													<div class="custom-checkbox"></div>
 													<span>{{ __('events.tournament_auto_submit') }}</span>
 												</label>
+
+												<label class="checkbox-item">
+													<input type="hidden" name="tournament_allow_incomplete_application" value="0">
+													<input
+													type="checkbox"
+													name="tournament_allow_incomplete_application"
+													value="1"
+													@checked($tournamentAllowIncompleteApplication ?? false)
+													>
+													<div class="custom-checkbox"></div>
+													<span>{{ __('events.tournament_allow_incomplete') }}</span>
+												</label>
+												<ul class="list f-13 mt-1" style="opacity:.7"><li>{{ __('events.tournament_allow_incomplete_hint') }}</li></ul>
 											</div>
 										</div>
 									</div>	

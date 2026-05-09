@@ -168,6 +168,7 @@ class EventGameSettingsService
                 'allow_reserves' => ((int)($data['tournament_reserve_players_max'] ?? 0) > 0),
                 'captain_confirms_members' => (bool)($data['tournament_captain_confirms_members'] ?? true),
                 'auto_submit_when_ready' => (bool)($data['tournament_auto_submit_when_ready'] ?? false),
+                'allow_incomplete_application' => (bool)($data['tournament_allow_incomplete_application'] ?? false),
                 'seeding_mode' => $data['tournament_seeding_mode'] ?? null,
         
                 'meta' => [

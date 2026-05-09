@@ -23,6 +23,7 @@ class EventTournamentSetting extends Model
         'allow_reserves',
         'captain_confirms_members',
         'auto_submit_when_ready',
+        'allow_incomplete_application',
         'seeding_mode',
         'application_mode',
 
@@ -41,6 +42,7 @@ class EventTournamentSetting extends Model
         'allow_reserves' => 'boolean',
         'captain_confirms_members' => 'boolean',
         'auto_submit_when_ready' => 'boolean',
+        'allow_incomplete_application' => 'boolean',
         'application_mode' => 'string',
 
         'team_size_min' => 'integer',

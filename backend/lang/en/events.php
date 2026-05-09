@@ -483,6 +483,8 @@ return [
     'tournament_notifs'      => 'Notifications',
     'tournament_captain_confirms' => 'Captain confirms members',
     'tournament_auto_submit' => 'Auto-submit application when roster is ready',
+    'tournament_allow_incomplete' => 'Allow early application (with incomplete lineup)',
+    'tournament_allow_incomplete_hint' => 'The captain may submit an application with at least themselves + one confirmed player. If the lineup is not completed by the application deadline, the application will be auto-rejected.',
 
     'restrictions_title'  => 'Restrictions',
     'age_policy_label'    => 'Age restrictions',
