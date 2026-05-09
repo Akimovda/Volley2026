@@ -240,6 +240,102 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
     </div>
     @endif
 
+    {{-- Добавить игрока напрямую (только для организатора/админа) --}}
+    @if($isOrganizer)
+    <div class="ramka">
+        <h2 class="-mt-05">➕ {{ __('events.org_add_player_h2') }}</h2>
+        <div class="f-14 mb-2" style="opacity:.6">{{ __('events.org_add_player_hint') }}</div>
+        @error('add_member')<div class="alert alert-error mb-2">{{ $message }}</div>@enderror
+        <form method="POST" action="{{ route('tournamentTeams.addMemberByOrganizer',[$event,$team]) }}" class="form" id="org-add-form">
+            @csrf
+            <div class="row row2">
+                <div class="col-md-5">
+                    <label>{{ __('events.show_pl_group_search_ph') }}</label>
+                    <div style="position:relative" id="org-add-wrap">
+                        <input type="text" id="org-add-input" autocomplete="off" class="form-control"
+                            placeholder="{{ __('events.org_add_player_ph') }}">
+                        <input type="hidden" name="user_id" id="org-add-user-id" value="">
+                        <div id="org-add-dd" class="form-select-dropdown trainer_dd"></div>
+                    </div>
+                    <div id="org-add-selected" class="f-13 mt-05" style="color:#4caf50;display:none"></div>
+                </div>
+                <div class="col-md-3">
+                    <label>Роль</label>
+                    <select name="team_role">
+                        <option value="player">Основной</option>
+                        <option value="reserve">Запасной</option>
+                    </select>
+                </div>
+                @if($team->team_kind === 'classic_team')
+                <div class="col-md-4">
+                    <label>Позиция</label>
+                    <select name="position_code">
+                        <option value="">— без —</option>
+                        @foreach($positionOptions ?? [] as $code => $label)
+                        <option value="{{ $code }}">{{ $label }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                @endif
+            </div>
+            <button type="submit" id="org-add-btn" class="btn mt-1" disabled>{{ __('events.org_add_player_btn') }}</button>
+        </form>
+    </div>
+    <script>
+    (function(){
+        var input = document.getElementById('org-add-input');
+        var dd    = document.getElementById('org-add-dd');
+        var hidden = document.getElementById('org-add-user-id');
+        var sel   = document.getElementById('org-add-selected');
+        var btn   = document.getElementById('org-add-btn');
+        var timer = null;
+        if (!input) return;
+        function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+        function showDd(){ dd.classList.add('form-select-dropdown--active'); }
+        function hideDd(){ dd.classList.remove('form-select-dropdown--active'); }
+        function pick(id, label){
+            hidden.value = String(id);
+            input.value  = label;
+            sel.textContent = '✅ ' + label;
+            sel.style.display = 'block';
+            btn.disabled = false;
+            hideDd();
+        }
+        function reset(){ hidden.value=''; btn.disabled=true; sel.style.display='none'; }
+        input.addEventListener('input', function(){
+            reset();
+            clearTimeout(timer);
+            var q = input.value.trim();
+            if (q.length < 2){ hideDd(); return; }
+            dd.innerHTML = '<div class="city-message">{{ __("events.show_pl_js_searching") }}</div>';
+            showDd();
+            timer = setTimeout(function(){
+                fetch('/api/users/search?q=' + encodeURIComponent(q), {
+                    headers:{'Accept':'application/json'}, credentials:'same-origin'
+                }).then(function(r){ return r.json(); }).then(function(data){
+                    var items = data.items || [];
+                    dd.innerHTML = '';
+                    if (!items.length){ dd.innerHTML='<div class="city-message">{{ __("events.show_pl_js_not_found") }}</div>'; showDd(); return; }
+                    items.forEach(function(u){
+                        var div = document.createElement('div');
+                        div.className = 'trainer-item form-select-option';
+                        var botBadge = u.is_bot ? '<span style="display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600;background:#fef3c7;color:#92400e;margin-left:.5rem">🤖 бот</span>' : '';
+                        div.innerHTML = '<div class="text-sm text-gray-900">'+esc(u.label||u.name)+botBadge+'</div>';
+                        div.addEventListener('click', function(){ pick(u.id, u.label||u.name); });
+                        dd.appendChild(div);
+                    });
+                    showDd();
+                }).catch(function(){ dd.innerHTML='<div class="city-message">{{ __("events.show_pl_js_error") }}</div>'; showDd(); });
+            }, 250);
+        });
+        document.addEventListener('click', function(e){
+            if (!input.contains(e.target) && !dd.contains(e.target)) hideDd();
+        });
+        input.addEventListener('keydown', function(e){ if (e.key==='Escape') hideDd(); });
+    })();
+    </script>
+    @endif
+
     {{-- Заявка --}}
     <div class="ramka">
         <h2 class="-mt-05">📋 Подача заявки</h2>

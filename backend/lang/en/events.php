@@ -267,6 +267,15 @@ return [
     'tinv_err_only_captain'   => 'Only the team captain can revoke an invitation.',
     'tinv_err_only_pending'   => 'Only a pending invitation can be revoked.',
 
+    // Direct add by organizer
+    'org_added_title_pair'   => 'You have been added to the pair',
+    'org_added_title_team'   => 'You have been added to the team',
+    'org_added_body'         => 'The organizer added you to team «:team» for the tournament «:event».',
+    'org_add_player_h2'      => 'Add player (organizer)',
+    'org_add_player_hint'    => 'The player will be added directly without sending an invite link. They will receive a notification.',
+    'org_add_player_btn'     => 'Add to team',
+    'org_add_player_ph'      => 'Enter name, surname or email…',
+
     // Team/pair join request (captain notification)
     'tjr_title_pair'    => 'Pair join request',
     'tjr_title_team'    => 'Team join request',
