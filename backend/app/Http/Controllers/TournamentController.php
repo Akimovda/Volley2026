@@ -53,8 +53,11 @@ class TournamentController extends Controller
             ->with('captain')
             ->get();
 
+        // Все «активные» заявки: ожидающие модерации (pending) + неполные (incomplete).
+        // Incomplete показываем для информации — кнопку «Одобрить» не покажем (нечего одобрять),
+        // но «Отклонить» доступна. После доукомплектования refreshTeamState переведёт заявку в pending.
         $pendingApplications = EventTeamApplication::where('event_id', $event->id)
-            ->where('status', 'pending')
+            ->whereIn('status', ['pending', 'incomplete'])
             ->with(['team.captain', 'team.members.user', 'submittedBy'])
             ->get();
 
@@ -1319,7 +1322,7 @@ class TournamentController extends Controller
     {
         $this->authorizeOrganizer($request, $event);
         abort_unless((int) $application->event_id === (int) $event->id, 404);
-        abort_unless($application->status === 'pending', 422, 'Заявка уже обработана.');
+        abort_unless(in_array($application->status, ['pending', 'incomplete'], true), 422, 'Заявка уже обработана.');
 
         $validated = $request->validate([
             'rejection_reason' => ['nullable', 'string', 'max:500'],
