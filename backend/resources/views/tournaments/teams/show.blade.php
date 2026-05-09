@@ -480,7 +480,7 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
         if(q.length<2){dd.style.display='none';return;}
         dd.innerHTML='<div style="padding:1rem 1.6rem;opacity:.5;font-size:1.5rem">Поиск…</div>';dd.style.display='block';
         timer=setTimeout(function(){
-            fetch('/api/users/search?q='+encodeURIComponent(q),{headers:{'Accept':'application/json'},credentials:'same-origin'})
+            fetch('/api/users/search?exclude_bots=1&q='+encodeURIComponent(q),{headers:{'Accept':'application/json'},credentials:'same-origin'})
             .then(function(r){return r.json();}).then(function(data){
                 var items=data.items||[];dd.innerHTML='';
                 if(!items.length){dd.innerHTML='<div style="padding:1rem 1.6rem;opacity:.5;font-size:1.5rem">Ничего не найдено</div>';return;}

@@ -23,14 +23,19 @@ class UserSearchController extends Controller
             $q = trim(mb_substr($q, 1));
         }
 
-        // Кто запрашивает: только админ может видеть ботов в результатах поиска.
-        // Для обычных пользователей и организаторов — реальные пользователи только.
         $authUser = $request->user();
         $isAdmin  = ($authUser?->role ?? null) === 'admin';
 
-        // Спецпоиск ботов по ключевому слову — доступен только админу
+        // Явный фильтр ботов для контекста командных/групповых приглашений.
+        // Frontend передаёт exclude_bots=1 на формах invite-в-команду / group-invite,
+        // чтобы ботов нельзя было пригласить от имени игрока. Для остальных
+        // контекстов (личное приглашение организатором, поиск тренера и т.п.)
+        // боты остаются доступны.
+        $excludeBots = $request->boolean('exclude_bots') && !$isAdmin;
+
+        // Спецпоиск ботов по ключевому слову — недоступен если запрошен фильтр ботов
         if (in_array(mb_strtolower($q), ['bot', 'бот', 'боты', 'bots'], true)) {
-            if (!$isAdmin) {
+            if ($excludeBots) {
                 return response()->json(['ok' => true, 'items' => []]);
             }
             $items = DB::table('users')
@@ -66,8 +71,8 @@ class UserSearchController extends Controller
             ->where(function ($q2) {
                 $q2->whereNull('is_hidden')->orWhere('is_hidden', false);
             })
-            // Не-админы не видят ботов в поиске игроков для приглашений
-            ->when(!$isAdmin, fn ($q2) => $q2->where(function ($w) {
+            // Командные/групповые приглашения: фильтр ботов по запросу клиента
+            ->when($excludeBots, fn ($q2) => $q2->where(function ($w) {
                 $w->whereNull('is_bot')->orWhere('is_bot', false);
             }))
             ->when($rolesFilter, fn($q2) => $q2->whereIn('role', $rolesFilter))

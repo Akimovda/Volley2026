@@ -1105,7 +1105,7 @@ $showWaitlist = !$isTournament && !$eventStarted && $isFull && auth()->check();
 					showDd();
 					
 					timer = setTimeout(function() {
-						fetch('/api/users/search?q=' + encodeURIComponent(q), {
+						fetch('/api/users/search?exclude_bots=1&q=' + encodeURIComponent(q), {
 							headers: { 'Accept': 'application/json' },
 							credentials: 'same-origin'
 						})
