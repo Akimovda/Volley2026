@@ -22,9 +22,17 @@ class UserSearchController extends Controller
         if (mb_substr($q, 0, 1) === '@') {
             $q = trim(mb_substr($q, 1));
         }
- 
-        // Спецпоиск ботов по ключевому слову
+
+        // Кто запрашивает: только админ может видеть ботов в результатах поиска.
+        // Для обычных пользователей и организаторов — реальные пользователи только.
+        $authUser = $request->user();
+        $isAdmin  = ($authUser?->role ?? null) === 'admin';
+
+        // Спецпоиск ботов по ключевому слову — доступен только админу
         if (in_array(mb_strtolower($q), ['bot', 'бот', 'боты', 'bots'], true)) {
+            if (!$isAdmin) {
+                return response()->json(['ok' => true, 'items' => []]);
+            }
             $items = DB::table('users')
                 ->select(['id', 'first_name', 'last_name', 'name', 'telegram_username', 'is_bot'])
                 ->where('is_bot', true)
@@ -33,7 +41,7 @@ class UserSearchController extends Controller
                 ->get()
                 ->map(fn ($u) => $this->mapUserRow($u))
                 ->values()->all();
- 
+
             return response()->json(['ok' => true, 'items' => $items]);
         }
  
@@ -58,6 +66,10 @@ class UserSearchController extends Controller
             ->where(function ($q2) {
                 $q2->whereNull('is_hidden')->orWhere('is_hidden', false);
             })
+            // Не-админы не видят ботов в поиске игроков для приглашений
+            ->when(!$isAdmin, fn ($q2) => $q2->where(function ($w) {
+                $w->whereNull('is_bot')->orWhere('is_bot', false);
+            }))
             ->when($rolesFilter, fn($q2) => $q2->whereIn('role', $rolesFilter))
             ->where(function ($w) use ($likes, $q) {
                 if (ctype_digit($q) && (int) $q > 0) {
