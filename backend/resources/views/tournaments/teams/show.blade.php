@@ -181,7 +181,17 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌'];
                 {{ $channels->isNotEmpty() ? 'Отправлено: '.$channels->join(', ') : 'Ссылка создана' }}
                 · {{ $inv->created_at?->format('d.m.Y H:i') }}
             </div>
-            <a href="{{ $invUrl }}" target="_blank" class="btn btn-small btn-secondary">🔗 Открыть ссылку</a>
+            <div class="d-flex gap-1" style="flex-wrap:wrap">
+                <a href="{{ $invUrl }}" target="_blank" class="btn btn-small btn-secondary">🔗 Открыть ссылку</a>
+                @if($inv->status === 'pending')
+                <form method="POST" action="{{ route('tournamentTeamInvites.revoke', [$event, $team, $inv]) }}"
+                      onsubmit="return confirm('Отозвать приглашение?')">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="btn btn-small btn-danger">✕ Отозвать</button>
+                </form>
+                @endif
+            </div>
         </div>
         @empty
         <div class="f-15" style="opacity:.5">Приглашений пока нет</div>

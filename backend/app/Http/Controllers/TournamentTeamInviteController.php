@@ -116,6 +116,28 @@ class TournamentTeamInviteController extends Controller
         }
     }
 
+    public function revoke(
+        Request $request,
+        Event $event,
+        EventTeam $team,
+        \App\Models\EventTeamInvite $invite,
+        TournamentTeamInviteService $service
+    ): RedirectResponse {
+        abort_unless((int) $team->event_id === (int) $event->id, 404);
+        abort_unless((int) $invite->event_team_id === (int) $team->id, 404);
+
+        $user = $request->user();
+        abort_unless($user, 403);
+        abort_unless((int) $team->captain_user_id === (int) $user->id, 403);
+
+        try {
+            $service->revokeInvite((int) $invite->id, (int) $user->id);
+            return back()->with('success', 'Приглашение отозвано.');
+        } catch (DomainException $e) {
+            return back()->withErrors(['invite_revoke' => $e->getMessage()]);
+        }
+    }
+
     public function decline(
         Request $request,
         string $token,
