@@ -984,8 +984,9 @@ $showWaitlist = !$isTournament && !$eventStarted && $isFull && auth()->check();
 						if (already) div.style.opacity = '0.4';
 						div.setAttribute('data-id', id);
 						div.setAttribute('data-label', item.label || item.name);
-						
-						div.innerHTML = '<div class="text-sm text-gray-900">' + esc(item.label || item.name) + '</div>';
+
+						var botBadge = item.is_bot ? '<span style="display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600;background:#fef3c7;color:#92400e;margin-left:.5rem">🤖 бот</span>' : '';
+						div.innerHTML = '<div class="text-sm text-gray-900">' + esc(item.label || item.name) + botBadge + '</div>';
 						
 						if (!already) {
 							div.addEventListener('click', function() {
@@ -1086,7 +1087,8 @@ $showWaitlist = !$isTournament && !$eventStarted && $isFull && auth()->check();
 					items.forEach(function(item) {
 						var div = document.createElement('div');
 						div.className = 'trainer-item form-select-option';
-						div.innerHTML = '<div class="text-sm">' + esc(item.label || item.name) + '</div>';
+						var botBadge = item.is_bot ? '<span style="display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600;background:#fef3c7;color:#92400e;margin-left:.5rem">🤖 бот</span>' : '';
+						div.innerHTML = '<div class="text-sm">' + esc(item.label || item.name) + botBadge + '</div>';
 						div.addEventListener('click', function() {
 							pick(item.id, item.label || item.name);
 						});
