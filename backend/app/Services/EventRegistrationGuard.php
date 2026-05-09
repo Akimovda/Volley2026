@@ -77,6 +77,19 @@
 
 				// Регистрация открыта — оставляем allowed=true и подсказку про команду.
 				$result->errors[] = 'На турнир можно записаться только в составе команды.';
+
+				// Заполняем meta по командам ДО раннего return — иначе JS не получит счётчик
+				$teamsMax = (int)($event->tournament_teams_count ?? $event->tournamentSetting?->teams_count ?? 0);
+				$teamsReg = \App\Models\EventTeam::where('event_id', $occurrence->event_id)
+					->where(fn($q) => $q->where('occurrence_id', $occurrence->id)->orWhereNull('occurrence_id'))
+					->whereIn('status', ['ready','pending_members','submitted','confirmed','approved'])
+					->count();
+				$result->data['meta'] = [
+					'tournament_teams_max'        => $teamsMax,
+					'tournament_teams_registered' => $teamsReg,
+					'tournament_teams_remaining'  => max(0, $teamsMax - $teamsReg),
+				];
+
 				return $result;
 			}
 
