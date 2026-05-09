@@ -360,18 +360,18 @@
 		@if($activeSubscription)
 		<div class="alert alert-success mt-1 mb-2">
 			{!! __('events.sp_subscription_label') !!} {{ $activeSubscription->template->name }}
-			— осталось <strong>{{ $activeSubscription->visits_remaining }}</strong> посещений
+			{!! __('events.show_pl_subscription_visits_left', ['count' => $activeSubscription->visits_remaining]) !!}
 		</div>
 		@elseif($activeCoupon)
 		<div class="alert alert-warning mt-1 mb-2">
-			🎟 <strong>Купон:</strong> {{ $activeCoupon->template->name }}
-			— скидка <strong>{{ $activeCoupon->getDiscountPct() }}%</strong>
+			{!! __('events.show_pl_coupon_label') !!} {{ $activeCoupon->template->name }}
+			{!! __('events.show_pl_coupon_discount', ['pct' => $activeCoupon->getDiscountPct()]) !!}
 		</div>
 		@endif
 		@php $hasOnlyReserve = count($freePositions) === 1 && ($freePositions[0]['key'] ?? '') === 'reserve'; @endphp
 		@if($hasOnlyReserve)
 		<div class="alert alert-warning mb-1">
-			Основные места заняты. Вы можете записаться как запасной игрок.
+			{{ __('events.show_pl_only_reserve') }}
 		</div>
 		@endif
 		@foreach ($freePositions as $pos)
@@ -394,7 +394,7 @@
 			{{ $free <= 0 ? 'disabled' : '' }}>
 				{{ position_name($key) }}
 				<span>
-					<span class="pl-1 pr-1 f-11">Свободно:</span> {{ $free }}
+					<span class="pl-1 pr-1 f-11">{{ __('events.show_pl_free_label') }}</span> {{ $free }}
 				</span>
 			</button>
 		</form>
@@ -402,7 +402,7 @@
 
 		@if(!$hasOnlyReserve)
 		<div class="text-muted small">
-			Выбери позицию<br>(показаны только свободные).
+			{!! __('events.show_pl_pick_position') !!}
 		</div>
 		@endif
 		@endif
@@ -464,23 +464,23 @@ $showWaitlist = !$isTournament && !$eventStarted && $isFull && auth()->check();
 
 @if(!$isTournament && !$eventStarted && $isFull)
 <div class="ramka">
-    <h2 class="-mt-05">Резерв</h2>
+    <h2 class="-mt-05">{{ __('events.show_pl_waitlist_h2') }}</h2>
 	
     @if(!auth()->check())
-	<div class="text-muted small">🔐 Войдите на сайт чтобы записаться в резерв.</div>
+	<div class="text-muted small">{{ __('events.show_pl_waitlist_login') }}</div>
 	
     @elseif($myWaitlist)
 	{{-- Уже в резерве --}}
 	<div class="alert alert-success">
-		✅ Вы в резерве. Мы уведомим вас когда освободится место.
+		{{ __('events.show_pl_waitlist_in') }}
 		@if($isClassic && !empty($myWaitlist->positions))
 		<div class="mt-1 small">
-			Ваши позиции: <strong>{{ implode(', ', array_map('position_name', $myWaitlist->positions)) }}</strong>
+			{{ __('events.show_pl_waitlist_positions') }} <strong>{{ implode(', ', array_map('position_name', $myWaitlist->positions)) }}</strong>
 		</div>
 		@endif
 		@if($myWaitlist->notification_expires_at && $myWaitlist->notification_expires_at->isFuture())
 		<div class="mt-1 small text-warning">
-			⏳ Место зарезервировано для вас до {{ $myWaitlist->notification_expires_at->setTimezone($userTz ?? 'UTC')->format('H:i') }}
+			{{ __('events.show_pl_waitlist_reserved_until', ['time' => $myWaitlist->notification_expires_at->setTimezone($userTz ?? 'UTC')->format('H:i')]) }}
 		</div>
 		@endif
 	</div>
@@ -488,18 +488,18 @@ $showWaitlist = !$isTournament && !$eventStarted && $isFull && auth()->check();
 	<form method="POST" action="{{ route('occurrences.waitlist.leave', $occurrence) }}" class="mt-1">
 		@csrf
 		@method('DELETE')
-		<button type="submit" class="btn btn-outline-secondary">Покинуть резерв</button>
+		<button type="submit" class="btn btn-outline-secondary">{{ __('events.show_pl_waitlist_leave') }}</button>
 	</form>
 	
     @else
 	{{-- Форма записи в резерв --}}
 	<div class="text-muted small mb-2">
-		Все места заняты. Запишитесь в резерв — мы уведомим вас первым когда освободится место.
+		{{ __('events.show_pl_waitlist_full') }}
 	</div>
 	
 	@if($waitlistCount > 0)
 	<div class="text-muted small mb-2">
-		В резерве: <strong>{{ $waitlistCount }}</strong> {{ $waitlistCount == 1 ? 'человек' : ($waitlistCount < 5 ? 'человека' : 'человек') }}
+		{!! trans_choice('events.show_pl_waitlist_count', $waitlistCount, ['count' => $waitlistCount]) !!}
         </div>
 			@endif
 			
@@ -508,7 +508,7 @@ $showWaitlist = !$isTournament && !$eventStarted && $isFull && auth()->check();
 				
 				@if($isClassic && !empty($allPositions))
 				<div class="mb-2 form">
-					<label>Выберите позиции (можно несколько):</label>
+					<label>{{ __('events.show_pl_waitlist_pick_pos') }}</label>
 					<div class="d-flex flex-wrap gap-2">
 						@foreach($allPositions as $key => $label)
 						<label class="checkbox-item mb-0">
@@ -519,12 +519,12 @@ $showWaitlist = !$isTournament && !$eventStarted && $isFull && auth()->check();
 						@endforeach
 					</div>
 					<div class="text-muted small mt-1">
-						Если не выбрать позиции — уведомим при освобождении любого места.
+						{{ __('events.show_pl_waitlist_no_pick') }}
 					</div>
 				</div>
 				@endif
 				
-				<button type="submit" class="btn btn-primary">Записаться в резерв</button>
+				<button type="submit" class="btn btn-primary">{{ __('events.show_pl_waitlist_join') }}</button>
 			</form>
 			@endif
 			
@@ -538,7 +538,7 @@ $showWaitlist = !$isTournament && !$eventStarted && $isFull && auth()->check();
             ->get();
 			@endphp
 			<div class="mt-3">
-				<div class="b-500 mb-1">Список резерва:</div>
+				<div class="b-500 mb-1">{{ __('events.show_pl_waitlist_list') }}</div>
 				@foreach($waitlistEntries as $i => $entry)
 				<div class="d-flex align-items-center gap-1 small py-1 border-bottom">
 					<span class="text-muted">{{ $i + 1 }}.</span>
@@ -547,7 +547,7 @@ $showWaitlist = !$isTournament && !$eventStarted && $isFull && auth()->check();
 					<span class="text-muted">({{ implode(', ', array_map('position_name', $entry->positions)) }})</span>
 					@endif
 					@if($entry->isNotificationActive())
-					<span class="badge bg-warning text-dark ms-auto">⏳ уведомлён</span>
+					<span class="badge bg-warning text-dark ms-auto">{{ __('events.show_pl_waitlist_notified') }}</span>
 					@endif
 				</div>
 				@endforeach
@@ -568,28 +568,24 @@ $showWaitlist = !$isTournament && !$eventStarted && $isFull && auth()->check();
 		$gs              = $event->gameSettings ?? null;
 		$subtype         = (string)($gs->subtype ?? '');
 		$isPair          = $subtype === '2x2';
-		$inviteLabel     = $isPair ? 'в пару' : 'в команду';
+		$inviteLabel     = $isPair ? __('events.show_pl_invite_mode_pair') : __('events.show_pl_invite_mode_team');
 		@endphp
 	
 		<div class="ramka" id="invite-players-block" style="z-index:5;display:{{ $isRegistered ? '' : 'none' }}">
-			<h2 class="-mt-05">Пригласить игрока</h2>
-			
-			@if(session('status') && str_contains(session('status'), 'Приглашение'))
-			<div class="alert alert-success">{{ session('status') }}</div>
-			@endif
-			
+			<h2 class="-mt-05">{{ __('events.show_pl_invite_h2') }}</h2>
+
 			{{-- Радио-переключатель типа приглашения --}}
 			@if($hasGroupUi && !empty($groupUi['registration']))
 			<div class="d-flex gap-3 mb-2 form">
                 <label class="radio-item">
 					<input type="radio" name="invite_mode" value="game" id="invite-mode-game" checked>
 					<div class="custom-radio"></div>
-					<span>На игру</span>
+					<span>{{ __('events.show_pl_invite_mode_game') }}</span>
 				</label>
 				<label class="radio-item">
 					<input type="radio" name="invite_mode" value="group" id="invite-mode-group">
 					<div class="custom-radio"></div>
-					<span>{{ $isPair ? 'В пару' : 'В команду' }}</span>
+					<span>{{ $isPair ? __('events.show_pl_invite_mode_pair') : __('events.show_pl_invite_mode_team') }}</span>
 				</label>
 			</div>
 			@endif
@@ -597,7 +593,7 @@ $showWaitlist = !$isTournament && !$eventStarted && $isFull && auth()->check();
 			{{-- === БЛОК: Пригласить на игру === --}}
 			<div id="invite-game-block">
 				<div class="text-muted small mb-2">
-					Игрок получит уведомление с информацией о мероприятии и ссылкой для записи.
+					{{ __('events.show_pl_invite_game_hint') }}
 				</div>
 				<form class="form w-100" method="POST" action="{{ $inviteAction }}" id="invite-player-form">
 					@csrf
@@ -606,11 +602,11 @@ $showWaitlist = !$isTournament && !$eventStarted && $isFull && auth()->check();
 						<div id="invite-selected-list" class="mb-2"></div>
 						<div style="position:relative" class="mb-2" id="invite-ac-wrap">
 							<input type="text" id="invite-ac-input" autocomplete="off" class="form-control"
-							placeholder="Введите имя или email игрока…">
+							placeholder="{{ __('events.show_pl_invite_search_ph') }}">
 							<div id="invite-ac-dd" class="form-select-dropdown trainer_dd"></div>
 						</div>
 						<button type="submit" id="invite-submit-btn" class="btn btn-primary w-100" disabled>
-							Отправить приглашения
+							{{ __('events.show_pl_invite_send') }}
 						</button>
 					</div>
 				</form>
@@ -624,8 +620,8 @@ $showWaitlist = !$isTournament && !$eventStarted && $isFull && auth()->check();
 				@if(!empty($groupUi['group_key']))
 				<div class="mb-2">
 					@php
-					$groupLabel = $isPair ? 'Состав пары' : 'Состав команды';
-					$leaveLabel = $isPair ? 'Выйти из пары' : 'Выйти из команды';
+					$groupLabel = $isPair ? __('events.show_pl_group_pair_lineup') : __('events.show_pl_group_team_lineup');
+					$leaveLabel = $isPair ? __('events.show_pl_group_pair_leave') : __('events.show_pl_group_team_leave');
 					@endphp
 					<div class="fw-bold mb-2">{{ $groupLabel }}</div>
 					@if(!empty($groupUi['group_members']) && $groupUi['group_members']->count())
@@ -634,13 +630,13 @@ $showWaitlist = !$isTournament && !$eventStarted && $isFull && auth()->check();
 						<li>
 							{{ $member->name ?: $member->email ?: ('#'.$member->user_id) }}
 							@if((int)$member->user_id === (int)auth()->id())
-							<strong>(Вы)</strong>
+							<strong>{{ __('events.show_pl_group_you') }}</strong>
 							@endif
 						</li>
 						@endforeach
 					</ul>
 					@else
-					<div class="text-muted small mb-2">Пока {{ $isPair ? 'в паре только вы' : 'в команде только вы' }}.</div>
+					<div class="text-muted small mb-2">{{ $isPair ? __('events.show_pl_group_pair_alone') : __('events.show_pl_group_team_alone') }}</div>
 					@endif
 					<form method="POST" action="{{ route('events.group.leave', ['event' => $event->id]) }}" class="mb-2">
 						@csrf
@@ -651,43 +647,43 @@ $showWaitlist = !$isTournament && !$eventStarted && $isFull && auth()->check();
 				{{-- Нет группы — кнопка объединиться --}}
 				<form method="POST" action="{{ route('events.group.create', ['event' => $event->id]) }}" class="mb-2 w-100">
 					@csrf
-					<button type="submit" class="btn btn-outline-primary w-100">Объединиться</button>
+					<button type="submit" class="btn btn-outline-primary w-100">{{ __('events.show_pl_group_unite') }}</button>
 				</form>
 				@endif
 				
 				{{-- Форма поиска и приглашения --}}
-				<div class="text-muted small mb-2">{{ $isPair ? 'Пригласить игрока в пару' : 'Пригласить игрока в команду' }}</div>
+				<div class="text-muted small mb-2">{{ $isPair ? __('events.show_pl_group_invite_pair') : __('events.show_pl_group_invite_team') }}</div>
 				<form class="w-100 form" method="POST" action="{{ route('events.group.invite', ['event' => $event->id]) }}" id="group-invite-form">
 					@csrf
 					<input type="hidden" name="to_user_id" id="group-invite-user-id" value="">
 					<div style="position:relative" class="mb-2" id="group-invite-ac-wrap">
 						<input type="text" id="group-invite-ac-input" autocomplete="off" class="form-control"
-						placeholder="Введите имя, фамилию или ник…">
+						placeholder="{{ __('events.show_pl_group_search_ph') }}">
 						<div id="group-invite-ac-dd" class="form-select-dropdown trainer_dd"></div>
 					</div>
 					<div id="group-invite-selected" class="mb-2 text-muted small"></div>
 					<button type="submit" id="group-invite-btn" class="btn btn-outline-primary w-100" disabled>
-						{{ $isPair ? 'Пригласить в пару' : 'Пригласить в команду' }}
+						{{ $isPair ? __('events.show_pl_group_invite_pair_btn') : __('events.show_pl_group_invite_team_btn') }}
 					</button>
 				</form>
 				
 				{{-- Входящие приглашения --}}
 				@if(!empty($groupUi['pending_invites']) && $groupUi['pending_invites']->count())
 				<div class="mt-3">
-					<div class="fw-bold mb-2">Входящие приглашения</div>
+					<div class="fw-bold mb-2">{{ __('events.show_pl_group_inbox') }}</div>
 					@foreach($groupUi['pending_invites'] as $invite)
 					<div class="border rounded p-3 mb-2">
 						<div class="text-sm mb-2">
-							Приглашение от <strong>{{ $invite->from_user_name ?: $invite->from_user_email ?: ('#'.$invite->from_user_id) }}</strong>
+							{!! __('events.show_pl_group_inv_from', ['name' => '<strong>'.e($invite->from_user_name ?: $invite->from_user_email ?: ('#'.$invite->from_user_id)).'</strong>']) !!}
 						</div>
 						<div class="d-flex gap-2 flex-wrap">
 							<form method="POST" action="{{ route('events.group.accept', ['event' => $event->id, 'invite' => $invite->id]) }}">
 								@csrf
-								<button type="submit" class="btn btn-primary btn-sm">Принять</button>
+								<button type="submit" class="btn btn-primary btn-sm">{{ __('events.show_pl_group_accept') }}</button>
 							</form>
 							<form method="POST" action="{{ route('events.group.decline', ['event' => $event->id, 'invite' => $invite->id]) }}">
 								@csrf
-								<button type="submit" class="btn btn-outline-secondary btn-sm">Отклонить</button>
+								<button type="submit" class="btn btn-outline-secondary btn-sm">{{ __('events.show_pl_group_decline') }}</button>
 							</form>
 						</div>
 					</div>
@@ -727,7 +723,7 @@ $showWaitlist = !$isTournament && !$eventStarted && $isFull && auth()->check();
 		@if($showParticipants)
 		
 		<div class="ramka">
-			<h2 class="-mt-05">{{ $event->format === 'tournament' ? 'Записанные игроки/команды' : 'Записанные игроки' }}</h2>
+			<h2 class="-mt-05">{{ $event->format === 'tournament' ? __('events.show_pl_list_h2_tournament') : __('events.show_pl_list_h2') }}</h2>
 			
 			@if($event->format === 'tournament')
 			@php
@@ -751,7 +747,7 @@ $showWaitlist = !$isTournament && !$eventStarted && $isFull && auth()->check();
 			}
 			@endphp
 			@if($tournamentTeams->isEmpty())
-            <div class="alert alert-info">Пока нет команд</div>
+            <div class="alert alert-info">{{ __('events.show_pl_no_teams') }}</div>
 			@else
             @foreach($tournamentTeams as $tTeam)
 			@php
@@ -770,11 +766,11 @@ $showWaitlist = !$isTournament && !$eventStarted && $isFull && auth()->check();
 					<a href="{{ route('tournamentTeams.show', [$event, $tTeam]) }}" class="blink f-16 b-600">{{ $tTeam->name }}</a>
 					<div class="d-flex fvc" style="gap:0.4rem;flex-wrap:wrap;justify-content:flex-end">
 						@if($iMyTeam)
-						<span class="f-12 b-600" style="color:#2563eb">Ваша команда</span>
+						<span class="f-12 b-600" style="color:#2563eb">{{ __('events.show_pl_my_team') }}</span>
 						@endif
 						<span style="display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600;background:{{ $statusInfo['bg'] }};color:{{ $statusInfo['color'] }}">{{ $statusInfo['label'] }}</span>
 						@if($hasVacancy && !$iMyTeam)
-						<span class="f-12 b-600" style="color:#f97316">Ищет партнёра</span>
+						<span class="f-12 b-600" style="color:#f97316">{{ __('events.show_pl_seek_partner') }}</span>
 						@endif
 					</div>
 				</div>
@@ -803,14 +799,14 @@ $showWaitlist = !$isTournament && !$eventStarted && $isFull && auth()->check();
 					@if($canJoin)
 					<form method="POST" action="{{ route('tournamentTeams.joinRequest', [$event, $tTeam]) }}">
 						@csrf
-						<button class="btn btn-small" style="font-size:1.2rem;padding:3px 10px">Войти в пару</button>
+						<button class="btn btn-small" style="font-size:1.2rem;padding:3px 10px">{{ __('events.show_pl_join_pair') }}</button>
 					</form>
 					@elseif($iAlreadyRequested)
-					<span class="f-13" style="color:#f97316;font-style:italic">Заявка отправлена</span>
+					<span class="f-13" style="color:#f97316;font-style:italic">{{ __('events.show_pl_request_sent') }}</span>
 					@elseif($iMyTeam)
-					<span class="f-13" style="opacity:.4;font-style:italic">Ваша пара</span>
+					<span class="f-13" style="opacity:.4;font-style:italic">{{ __('events.show_pl_my_pair') }}</span>
 					@else
-					<span class="f-13" style="opacity:.4;font-style:italic">Место свободно</span>
+					<span class="f-13" style="opacity:.4;font-style:italic">{{ __('events.show_pl_seat_free') }}</span>
 					@endif
 				</div>
 				@endif
@@ -824,7 +820,7 @@ $showWaitlist = !$isTournament && !$eventStarted && $isFull && auth()->check();
 			<div id="players-list"></div>
 			@if($reserveMax > 0)
 			<div id="reserve-players-section" style="display:none;margin-top:1rem;">
-				<div class="text-muted small b-600 mb-05">🔄 Запасные игроки</div>
+				<div class="text-muted small b-600 mb-05">{{ __('events.show_pl_reserve_players') }}</div>
 				<div id="reserve-players-list"></div>
 			</div>
 			@endif
@@ -845,7 +841,7 @@ $showWaitlist = !$isTournament && !$eventStarted && $isFull && auth()->check();
 		@endphp
 		@if($_reserveLeagueTeams->count() > 0)
 		<div class="ramka">
-			<h2 class="-mt-05">🔁 В резерве</h2>
+			<h2 class="-mt-05">{{ __('events.show_pl_reserve_league_h2') }}</h2>
 			@foreach($_reserveLeagueTeams as $_lt)
 			<div class="card mb-1" style="padding: 0.5rem 0.8rem">
 				<div class="d-flex between fvc">
@@ -856,7 +852,7 @@ $showWaitlist = !$isTournament && !$eventStarted && $isFull && auth()->check();
 						<span class="f-16 b-600">{{ $loop->iteration }}. {{ trim(($_lt->user?->last_name ?? '') . ' ' . ($_lt->user?->first_name ?? '')) ?: ($_lt->user?->name ?? '—') }}</span>
 						@endif
 						@if($_lt->status === 'pending_confirmation')
-						<span class="f-13 text-warning ms-2">⏳ ожидает подтверждения</span>
+						<span class="f-13 text-warning ms-2">{{ __('events.show_pl_pending_confirm') }}</span>
 						@endif
 					</div>
 					<span class="f-13 text-muted">#{{ $_lt->reserve_position }}</span>
@@ -873,7 +869,17 @@ $showWaitlist = !$isTournament && !$eventStarted && $isFull && auth()->check();
 		</div>
 		@endif
 		@endif
+		@php
+		$showPlJsI18n = [
+			'searching' => __('events.show_pl_js_searching'),
+			'not_found' => __('events.show_pl_js_not_found'),
+			'error' => __('events.show_pl_js_error'),
+			'send_invites' => __('events.show_pl_js_send_invites'),
+			'selected_prefix' => __('events.show_pl_js_selected_prefix'),
+		];
+		@endphp
 		<script>
+			const i18n = @json($showPlJsI18n);
 			(function(){
 				var input   = document.getElementById('invite-ac-input');
 				var dd      = document.getElementById('invite-ac-dd');
@@ -942,8 +948,8 @@ $showWaitlist = !$isTournament && !$eventStarted && $isFull && auth()->check();
 					var count = Object.keys(selected).length;
 					btn.disabled = count === 0;
 					btn.textContent = count > 0
-					? 'Отправить приглашения (' + count + ')'
-					: 'Отправить приглашения';
+					? i18n.send_invites + ' (' + count + ')'
+					: i18n.send_invites;
 				}
 				
 				function pick(id, label) {
@@ -965,7 +971,7 @@ $showWaitlist = !$isTournament && !$eventStarted && $isFull && auth()->check();
 				function render(items) {
 					dd.innerHTML = '';
 					if (!items.length) {
-						dd.innerHTML = '<div class="city-message">Ничего не найдено</div>';
+						dd.innerHTML = '<div class="city-message">' + i18n.not_found + '</div>';
 						showDd();
 						return;
 					}
@@ -1001,7 +1007,7 @@ $showWaitlist = !$isTournament && !$eventStarted && $isFull && auth()->check();
 						return;
 					}
 					
-					dd.innerHTML = '<div class="city-message">Поиск…</div>';
+					dd.innerHTML = '<div class="city-message">' + i18n.searching + '</div>';
 					showDd();
 					
 					timer = setTimeout(function() {
@@ -1014,7 +1020,7 @@ $showWaitlist = !$isTournament && !$eventStarted && $isFull && auth()->check();
 							render(data.items || []);
 						})
 						.catch(function() {
-							dd.innerHTML = '<div class="city-message">Ошибка загрузки</div>';
+							dd.innerHTML = '<div class="city-message">' + i18n.error + '</div>';
 							showDd();
 						});
 					}, 250);
@@ -1057,7 +1063,7 @@ $showWaitlist = !$isTournament && !$eventStarted && $isFull && auth()->check();
 				
 				function pick(id, label) {
 					hidden.value = String(id);
-					selected.textContent = '✅ Выбран: ' + label;
+					selected.textContent = i18n.selected_prefix + ' ' + label;
 					btn.disabled = false;
 					hideDd();
 					dd.innerHTML = '';
@@ -1073,7 +1079,7 @@ $showWaitlist = !$isTournament && !$eventStarted && $isFull && auth()->check();
 				function render(items) {
 					dd.innerHTML = '';
 					if (!items.length) {
-						dd.innerHTML = '<div class="city-message">Ничего не найдено</div>';
+						dd.innerHTML = '<div class="city-message">' + i18n.not_found + '</div>';
 						showDd();
 						return;
 					}
@@ -1095,7 +1101,7 @@ $showWaitlist = !$isTournament && !$eventStarted && $isFull && auth()->check();
 					var q = input.value.trim();
 					if (q.length < 2) { hideDd(); return; }
 					
-					dd.innerHTML = '<div class="city-message">Поиск…</div>';
+					dd.innerHTML = '<div class="city-message">' + i18n.searching + '</div>';
 					showDd();
 					
 					timer = setTimeout(function() {
@@ -1106,7 +1112,7 @@ $showWaitlist = !$isTournament && !$eventStarted && $isFull && auth()->check();
 						.then(function(r) { return r.json(); })
 						.then(function(data) { render(data.items || []); })
 						.catch(function() {
-							dd.innerHTML = '<div class="city-message">Ошибка загрузки</div>';
+							dd.innerHTML = '<div class="city-message">' + i18n.error + '</div>';
 							showDd();
 						});
 					}, 250);
