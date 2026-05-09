@@ -487,7 +487,8 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
                 items.forEach(function(item){
                     var div=document.createElement('div');
                     div.style='padding:1rem 1.6rem;cursor:pointer;font-size:1.5rem;border-bottom:.1rem solid var(--border-color,#eee)';
-                    div.innerHTML='<span class="b-600">'+esc(item.label||item.name)+'</span>';
+                    var botBadge = item.is_bot ? '<span style="display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600;background:#fef3c7;color:#92400e;margin-left:.5rem">🤖 бот</span>' : '';
+                    div.innerHTML='<span class="b-600">'+esc(item.label||item.name)+'</span>'+botBadge;
                     div.addEventListener('mouseover',function(){this.style.background='var(--bg2,#f5f5f5)';});
                     div.addEventListener('mouseout',function(){this.style.background='';});
                     div.addEventListener('click',function(){

@@ -268,7 +268,8 @@
                         list.slice(0,10).forEach(function(u) {
                             var nm = (u.first_name||'') + ' ' + (u.last_name||'');
                             nm = nm.trim() || u.name || ('#'+u.id);
-                            html += '<div class="occ-trainer-opt" data-id="'+u.id+'" data-name="'+nm.replace(/"/g,'&quot;')+'" style="padding:.5rem;cursor:pointer;border-bottom:1px solid rgba(0,0,0,.05)">'+nm+'</div>';
+                            var botBadge = u.is_bot ? '<span style="display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600;background:#fef3c7;color:#92400e;margin-left:.5rem">🤖 бот</span>' : '';
+                            html += '<div class="occ-trainer-opt" data-id="'+u.id+'" data-name="'+nm.replace(/"/g,'&quot;')+'" style="padding:.5rem;cursor:pointer;border-bottom:1px solid rgba(0,0,0,.05)">'+nm+botBadge+'</div>';
                         });
                         html += '</div>';
                         trainerResults.innerHTML = html;
