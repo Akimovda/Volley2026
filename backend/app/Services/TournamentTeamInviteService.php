@@ -185,10 +185,15 @@ final class TournamentTeamInviteService
                 throw new DomainException(__('events.tinv_err_not_found'));
             }
 
+            $byUser    = User::find($byUserId);
             $isCaptain = (int) $invite->team->captain_user_id === $byUserId;
             $isInviter = (int) $invite->invited_by_user_id === $byUserId;
+            $isAdmin   = ($byUser?->role ?? null) === 'admin';
+            $isOrg     = $invite->team->event?->organizer_id
+                ? (int) $invite->team->event->organizer_id === $byUserId
+                : false;
 
-            if (!$isCaptain && !$isInviter) {
+            if (!$isCaptain && !$isInviter && !$isAdmin && !$isOrg) {
                 throw new DomainException(__('events.tinv_err_only_captain'));
             }
 

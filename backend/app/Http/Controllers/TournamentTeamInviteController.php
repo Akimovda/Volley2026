@@ -22,7 +22,10 @@ class TournamentTeamInviteController extends Controller
 
         $user = $request->user();
         abort_unless($user, 403);
-        abort_unless((int) $team->captain_user_id === (int) $user->id, 403);
+        $isCaptain = (int) $team->captain_user_id === (int) $user->id;
+        $isAdmin   = ($user->role ?? null) === 'admin';
+        $isOrg     = (int) $event->organizer_id === (int) $user->id;
+        abort_unless($isCaptain || $isAdmin || $isOrg, 403);
 
         $positionRules = (string) $team->team_kind === 'classic_team'
             ? ['nullable', 'string', 'in:setter,outside,opposite,middle,libero']
@@ -128,7 +131,10 @@ class TournamentTeamInviteController extends Controller
 
         $user = $request->user();
         abort_unless($user, 403);
-        abort_unless((int) $team->captain_user_id === (int) $user->id, 403);
+        $isCaptainR = (int) $team->captain_user_id === (int) $user->id;
+        $isAdminR   = ($user->role ?? null) === 'admin';
+        $isOrgR     = (int) $event->organizer_id === (int) $user->id;
+        abort_unless($isCaptainR || $isAdminR || $isOrgR, 403);
 
         try {
             $service->revokeInvite((int) $invite->id, (int) $user->id);
