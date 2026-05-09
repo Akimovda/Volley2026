@@ -116,6 +116,14 @@
 - MAX dev: /opt/volley-max-bot/bot.py (порт 8091)
 - VK dev: /opt/vk-bot/bot/index.php (PHP)
 
+## MAX API — редактирование сообщений с фото
+- PUT /messages удаляет фото если не передать photo_id обратно в attachments
+- `MaxChannelPublisher::update()` извлекает photo_id из `previousMeta`:
+  - сначала из `saved_image_attachment` (сохраняется после каждого update)
+  - затем из `raw.raw.message.body.attachments` (raw ответа бота при первом send)
+- После PUT сохраняет `saved_image_attachment` в meta для следующих обновлений
+- `message_kind` остаётся `photo` если photo_id был передан
+
 ## Деплой (dev к prod)
 cd /var/www/volleyplay/backend
 git fetch origin && git merge origin/main --no-edit
