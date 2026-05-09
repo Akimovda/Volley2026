@@ -321,7 +321,7 @@
 		@endif
 		<form method="POST" action="{{ route('tournamentTeams.store', $event) }}" class="form mt-1">
 			@csrf
-			<input type="text" name="name" class="form-control mb-1" placeholder="{{ __('events.sp_team_name_ph') }}" required>
+			<input type="text" name="name" class="form-control mb-1" placeholder="{{ __('events.sp_team_name_ph') }}">
 			<input type="hidden" name="occurrence_id" value="{{ $occurrence->id }}">
 			<input type="hidden" name="team_kind" value="{{ $isTeamBeach ? 'beach_pair' : 'classic_team' }}">
 			@if($isTeamClassic)
