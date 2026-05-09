@@ -435,13 +435,10 @@ final class TournamentTeamService
                 if (!($eventSettings?->allow_incomplete_application)) {
                     throw new DomainException('Досрочная подача заявки на этом турнире не разрешена организатором.');
                 }
-                // Early submit: минимум — капитан + ≥1 confirmed player
-                $confirmedCount = $team->members()
-                    ->where('confirmation_status', 'confirmed')
-                    ->count();
+                // Early submit: достаточно капитана
                 $hasCaptain = (bool) $team->captain_user_id;
-                if (!$hasCaptain || $confirmedCount < 2) {
-                    throw new DomainException('Для подачи заявки нужны капитан и хотя бы один подтверждённый игрок.');
+                if (!$hasCaptain) {
+                    throw new DomainException('Для подачи заявки нужен капитан команды.');
                 }
             }
 
@@ -627,6 +624,22 @@ final class TournamentTeamService
             !$team->application()->exists()
         ) {
             $this->submitApplication($team->fresh(), $team->captain);
+        }
+
+        // Auto-submit early: оба флага включены, application нет, есть капитан →
+        // подаём «неполную» заявку автоматически. Если состав потом соберётся —
+        // promoteIncompleteApplication сама переведёт в pending/approved.
+        if (
+            $settings?->auto_submit_when_ready &&
+            $settings?->allow_incomplete_application &&
+            !$team->fresh()->application()->exists() &&
+            $team->captain_user_id
+        ) {
+            try {
+                $this->submitApplication($team->fresh(), $team->captain, true);
+            } catch (DomainException $e) {
+                // Eligibility issues / другие — оставляем команду в текущем статусе
+            }
         }
 
         // Auto-promotion: если есть incomplete-заявка и команда стала valid →
