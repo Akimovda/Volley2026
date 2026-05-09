@@ -109,10 +109,17 @@
 						</div>
 						
 						
-						@if($event->gameSettings->subtype)
+						@php
+						// Для турниров схему берём из tournamentSetting (2x2, 3x3...),
+						// для обычных мероприятий — из gameSettings.subtype (4x2, 5x1...)
+						$formatLabel = ($event->format === 'tournament' && $event->tournamentSetting?->game_scheme)
+							? $event->tournamentSetting->game_scheme
+							: $event->gameSettings->subtype;
+						@endphp
+						@if($formatLabel)
 						<div class="event-row">
 							<span class="b-600">{{ __('events.show_desc_format_label') }}</span>
-							<span>{{ $event->gameSettings->subtype }}</span>
+							<span>{{ $formatLabel }}</span>
 						</div>
 						@endif
 						
