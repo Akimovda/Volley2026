@@ -120,7 +120,7 @@
                     <div class="row">
 
                         <div class="col-md-6">
-                            <div class="card">
+                            <div class="card" style="overflow:visible">
                                 <label>{{ __('events.event_title') }}</label>
                                 <input
                                     name="title"
@@ -135,7 +135,7 @@
                         </div>
 
                         <div class="col-md-3">
-                            <div class="card">
+                            <div class="card" style="overflow:visible">
                                 <label>{{ __('events.direction') }}</label>
                                 <select name="direction" id="direction_edit">
                                     <option value="classic" @selected(old('direction', $event->direction) === 'classic')>{{ __('events.card_dir_classic') }}</option>
@@ -145,7 +145,7 @@
                         </div>
 
                         <div class="col-md-3">
-                            <div class="card">
+                            <div class="card" style="overflow:visible">
                                 <label>{{ __('events.event_type') }}</label>
                                 <select name="format">
                                     @foreach([
@@ -163,7 +163,7 @@
                         </div>
 
                         <div class="col-md-4">
-                            <div class="card">
+                            <div class="card" style="overflow:visible">
                                 <label>{{ __('events.starts_utc') }}</label>
                                 <input
                                     name="starts_at"
@@ -178,7 +178,7 @@
                         </div>
 
                         <div class="col-md-4">
-                            <div class="card">
+                            <div class="card" style="overflow:visible">
                                 <label>{{ __('events.duration_label_short') }}</label>
                                 <div class="row row2">
                                     <div class="col-4">
@@ -206,7 +206,7 @@
                         </div>
 
                         <div class="col-md-4">
-                            <div class="card">
+                            <div class="card" style="overflow:visible">
                                 <label>{{ __('events.tz_label') }}</label>
                                 <input
                                     name="timezone"
@@ -228,7 +228,7 @@
                     <h2 class="-mt-05">{{ __('events.location_section') }}</h2>
                     <div class="row">
                         <div class="col-md-12">
-                            <div class="card">
+                            <div class="card" style="overflow:visible">
                                 <div class="d-flex between">
                                     <label>{{ __('events.location_label') }}</label>
                                     @if($isAdmin)
@@ -291,7 +291,7 @@
                     <div class="row">
 
                         <div class="col-md-3">
-                            <div class="card">
+                            <div class="card" style="overflow:visible">
                                 <label>{{ __('events.game_subtype') }}</label>
                                 <select name="game_subtype">
                                     @foreach(['4x4' => '4×4', '4x2' => '4×2', '5x1' => '5×1'] as $k => $l)
@@ -305,7 +305,7 @@
                         </div>
 
                         <div class="col-md-3">
-                            <div class="card">
+                            <div class="card" style="overflow:visible">
                                 <label>{{ __('events.team_n') }}</label>
                                 <input type="number" name="teams_count" min="2" max="200"
                                     value="{{ old('teams_count', $event->gameSettings?->teams_count ?? 2) }}">
@@ -313,7 +313,7 @@
                         </div>
 
                         <div class="col-md-3">
-                            <div class="card">
+                            <div class="card" style="overflow:visible">
                                 <label>{{ __('events.min_players') }}</label>
                                 <input type="number" name="game_min_players" min="0" max="99"
                                     value="{{ old('game_min_players', $event->gameSettings?->min_players ?? 0) }}">
@@ -321,7 +321,7 @@
                         </div>
 
                         <div class="col-md-3">
-                            <div class="card">
+                            <div class="card" style="overflow:visible">
                                 <label>{{ __('events.max_players') }}</label>
                                 <input type="number" name="game_max_players" min="0" max="99"
                                     value="{{ old('game_max_players', $event->gameSettings?->max_players ?? 0) }}">
@@ -329,7 +329,7 @@
                         </div>
 
                         <div class="col-md-6">
-                            <div class="card">
+                            <div class="card" style="overflow:visible">
                                 <label>{{ __('events.gender_label') }}</label>
                                 <select name="game_gender_policy">
                                     @foreach([
@@ -349,7 +349,7 @@
                         </div>
 
                         <div class="col-md-6">
-                            <div class="card">
+                            <div class="card" style="overflow:visible">
                                 <label>{{ __('events.gender_limited_reg_label') }}</label>
                                 <input type="number"
                                     name="game_gender_limited_reg_starts_days_before"
@@ -364,7 +364,7 @@
 
 @if(($event->direction ?? 'classic') === 'classic')
                         <div class="col-md-6">
-                            <div class="card">
+                            <div class="card" style="overflow:visible">
                                 <label>{{ __('events.level_classic_short') }}</label>
                                 <div class="row row2">
                                     <div class="col-6">
@@ -386,7 +386,7 @@
 
                         @if(($event->direction ?? 'classic') === 'beach')
                         <div class="col-md-6">
-                            <div class="card">
+                            <div class="card" style="overflow:visible">
                                 <label>{{ __('events.level_beach_short') }}</label>
                                 <div class="row row2">
                                     <div class="col-6">
@@ -407,7 +407,7 @@
                         @endif
 
                         <div class="col-md-6">
-                            <div class="card">
+                            <div class="card" style="overflow:visible">
                                 <label>{{ __('events.age_policy_label') }}</label>
                                 @php $agePolicy = old('age_policy', $event->age_policy ?? 'adult'); @endphp
                                 <label class="radio-item">
@@ -437,7 +437,7 @@
                     <div class="row">
 
                         <div class="col-md-4">
-                            <div class="card">
+                            <div class="card" style="overflow:visible">
                                 <label>{{ __('events.reg_via_service') }}</label>
                                 @php $allowRegVal = old('allow_registration', (int)((bool)$event->allow_registration)); @endphp
                                 <label class="radio-item">
@@ -472,7 +472,7 @@
                         </div>
 
                         <div class="col-md-4">
-                            <div class="card">
+                            <div class="card" style="overflow:visible">
                                 <label>{{ __('events.reg_ends_until_start') }}</label>
                                 <input type="hidden" name="reg_ends_minutes_before" id="mgmt_reg_ends_min" value="{{ $regEndsMinCurrent }}">
                                 <div class="d-flex" style="gap:.5rem;align-items:center">
@@ -494,7 +494,7 @@
                         </div>
 
                         <div class="col-md-4">
-                            <div class="card">
+                            <div class="card" style="overflow:visible">
                                 <label>{{ __('events.cancel_lock_until_start') }}</label>
                                 <input type="hidden" name="cancel_lock_minutes_before" id="mgmt_cancel_min" value="{{ $cancelMinCurrent }}">
                                 <div class="d-flex" style="gap:.5rem;align-items:center">
@@ -516,7 +516,7 @@
                         </div>
 
                         <div class="col-md-4">
-                            <div class="card">
+                            <div class="card" style="overflow:visible">
                                 <label>{{ __('events.personal_data_section') }}</label>
                                 <label class="checkbox-item">
                                     <input type="hidden" name="requires_personal_data" value="0">
@@ -540,7 +540,7 @@
                     <div class="row">
 
                         <div class="col-md-4">
-                            <div class="card">
+                            <div class="card" style="overflow:visible">
                                 <label class="checkbox-item">
                                     <input type="hidden" name="is_private" value="0">
                                     <input type="checkbox" name="is_private" value="1"
@@ -552,7 +552,7 @@
                         </div>
 
                         <div class="col-md-4">
-                            <div class="card">
+                            <div class="card" style="overflow:visible">
                                 <label class="checkbox-item">
                                     <input type="hidden" name="is_paid" value="0">
                                     <input type="checkbox" name="is_paid" value="1" id="is_paid_edit"
@@ -629,7 +629,7 @@
                         </div>
 
                         <div class="col-md-4">
-                            <div class="card">
+                            <div class="card" style="overflow:visible">
                                 <label>{{ __('events.show_participants_label') }}</label>
                                 @php $showParts = old('show_participants', $event->show_participants ?? true); @endphp
                                 <label class="radio-item">
@@ -654,7 +654,7 @@
                     <div class="row">
 
                         <div class="col-md-6">
-                            <div class="card">
+                            <div class="card" style="overflow:visible">
                                 <label>{{ __('events.remind_label') }}</label>
                                 <label class="checkbox-item">
                                     <input type="hidden" name="remind_registration_enabled" value="0">
@@ -703,7 +703,7 @@
                         $chIncReg     = (bool) old('channel_include_registered', $cs['include_registered_list']);
                         @endphp
                         <div class="col-md-6">
-                            <div class="card">
+                            <div class="card" style="overflow:visible">
                                 <label>{{ __('events.channels_label') }}</label>
 
                                 <ul class="list f-16 mb-2">
@@ -777,7 +777,7 @@
                     <h2 class="-mt-05">{{ __('events.bot_title_short') }} <span id="bot_icon_edit" style="color:{{ ($event->bot_assistant_enabled ?? false) ? '#10b981' : '#9ca3af' }}">🤖</span></h2>
                     <div class="row">
                         <div class="col-md-12">
-                            <div class="card">
+                            <div class="card" style="overflow:visible">
                                 <label class="checkbox-item">
                                     <input type="hidden" name="bot_assistant_enabled" value="0">
                                     <input type="checkbox" name="bot_assistant_enabled" value="1"
@@ -795,7 +795,7 @@
 
                         <div class="col-md-6" id="bot_settings_edit"
                              @if(!old('bot_assistant_enabled', $event->bot_assistant_enabled ?? false)) style="display:none" @endif>
-                            <div class="card">
+                            <div class="card" style="overflow:visible">
                                 <label>{{ __('events.bot_threshold_short') }}
                                     <strong id="bot_threshold_val_edit" class="cd">
                                         {{ old('bot_assistant_threshold', $event->bot_assistant_threshold ?? 10) }}%
@@ -811,7 +811,7 @@
 
                         <div class="col-md-6" id="bot_fill_edit"
                              @if(!old('bot_assistant_enabled', $event->bot_assistant_enabled ?? false)) style="display:none" @endif>
-                            <div class="card">
+                            <div class="card" style="overflow:visible">
                                 <label>{{ __('events.bot_fill_short') }}
                                     <strong id="bot_fill_val_edit" class="cd">
                                         {{ old('bot_assistant_max_fill_pct', $event->bot_assistant_max_fill_pct ?? 40) }}%
@@ -839,7 +839,7 @@
                                 $currentEventPhotos = $event->event_photos ?? [];
                             @endphp
                             @if($userEventPhotos->count() > 0)
-                            <div class="card">
+                            <div class="card" style="overflow:visible">
                                 <label>{{ __('events.photos_label') }}</label>
                                 <div class="event-photos-selector-edit"
                                      data-selected='{{ json_encode(old('event_photos_edit') ? json_decode(old('event_photos_edit'), true) : $currentEventPhotos) }}'>
@@ -929,7 +929,7 @@
                     <h2 class="-mt-05">{{ __('events.desc_only_title') }}</h2>
                     <div class="row">
                         <div class="col-md-12">
-                            <div class="card">
+                            <div class="card" style="overflow:visible">
                                 <input id="description_html_edit" type="hidden" name="description_html"
                                     value="{{ old('description_html', $event->description_html ?? '') }}">
                                 <trix-editor input="description_html_edit" class="trix-content"></trix-editor>
