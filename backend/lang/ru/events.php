@@ -486,6 +486,12 @@ return [
     'tournament_auto_submit' => 'Автоматически подавать заявку, когда состав готов',
     'tournament_allow_incomplete' => 'Разрешить досрочную подачу заявки (без полного состава)',
     'tournament_allow_incomplete_hint' => 'Капитан сможет подать заявку, имея минимум себя + одного подтверждённого игрока. Если состав не будет собран к окончанию приёма заявок — заявка будет отклонена автоматически.',
+    'tournament_team_size_label'   => 'Состав команды',
+    'tournament_reserve_label'     => 'Запасных в команде',
+    'tournament_application_mode_label' => 'Режим заявок',
+    'tournament_app_mode_manual'   => 'Ручное одобрение',
+    'tournament_app_mode_auto'     => 'Автоматическое',
+    'edit_season_readonly_hint'    => 'Привязка к лиге, сезону и дивизиону задаётся при создании турнира и здесь не меняется.',
 
     'restrictions_title'  => 'Ограничения',
     'age_policy_label'    => 'Возрастные ограничения',

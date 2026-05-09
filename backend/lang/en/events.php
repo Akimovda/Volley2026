@@ -485,6 +485,12 @@ return [
     'tournament_auto_submit' => 'Auto-submit application when roster is ready',
     'tournament_allow_incomplete' => 'Allow early application (with incomplete lineup)',
     'tournament_allow_incomplete_hint' => 'The captain may submit an application with at least themselves + one confirmed player. If the lineup is not completed by the application deadline, the application will be auto-rejected.',
+    'tournament_team_size_label'   => 'Team size',
+    'tournament_reserve_label'     => 'Reserves per team',
+    'tournament_application_mode_label' => 'Application mode',
+    'tournament_app_mode_manual'   => 'Manual approval',
+    'tournament_app_mode_auto'     => 'Automatic',
+    'edit_season_readonly_hint'    => 'League, season and division are set when creating the tournament and cannot be changed here.',
 
     'restrictions_title'  => 'Restrictions',
     'age_policy_label'    => 'Age restrictions',

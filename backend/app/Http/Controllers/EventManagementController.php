@@ -185,7 +185,31 @@ if ($role === 'admin') {
         if ($role === 'organizer' && (int) $event->organizer_id !== (int) $user->id) abort(403);
         if ($role === 'staff' && (int) $event->organizer_id !== (int) $organizerIdForStaff) abort(403);
 
-        $event->load(['location', 'gameSettings']);
+        $event->load(['location', 'gameSettings', 'tournamentSetting']);
+
+        // Информация о связанных лиге/сезоне/дивизионе для tournament-формата
+        $seasonInfo = null;
+        if ($event->season_id) {
+            $season = \App\Models\TournamentSeason::with('league')->find($event->season_id);
+            if ($season) {
+                $division = DB::table('tournament_season_events')
+                    ->join('tournament_leagues', 'tournament_leagues.id', '=', 'tournament_season_events.league_id')
+                    ->where('tournament_season_events.event_id', $event->id)
+                    ->select('tournament_leagues.id', 'tournament_leagues.name')
+                    ->first();
+                $seasonInfo = [
+                    'league_name'   => $season->league?->name,
+                    'season_name'   => $season->name,
+                    'division_name' => $division?->name,
+                    'league_url'    => $season->league
+                        ? '/l/' . $season->league->slug
+                        : null,
+                    'season_url'    => $season->league && $season->slug
+                        ? '/l/' . $season->league->slug . '/s/' . $season->slug
+                        : null,
+                ];
+            }
+        }
 
         $activeRegs = 0;
         if (Schema::hasTable('event_registrations')) {
@@ -241,6 +265,7 @@ if ($role === 'admin') {
             'userChannels' => $userChannels,
             'selectedChannelIds' => $selectedChannelIds,
             'channelSettings' => $channelSettings,
+            'seasonInfo' => $seasonInfo,
         ]);
     }
     public function occurrences(\App\Models\Event $event)
@@ -687,6 +712,15 @@ if ($role === 'admin') {
             'channel_include_image'      => ['sometimes', 'boolean'],
             'channel_include_registered' => ['sometimes', 'boolean'],
             'channel_use_private_link'   => ['sometimes', 'boolean'],
+
+            // Турнирные настройки (только при format=tournament)
+            'tournament_game_scheme'              => ['nullable', 'string', 'max:16'],
+            'tournament_team_size_min'            => ['nullable', 'integer', 'min:1', 'max:20'],
+            'tournament_reserve_players_max'      => ['nullable', 'integer', 'min:0', 'max:20'],
+            'tournament_application_mode'         => ['nullable', 'string', 'in:auto,manual'],
+            'tournament_captain_confirms_members' => ['sometimes', 'boolean'],
+            'tournament_auto_submit_when_ready'   => ['sometimes', 'boolean'],
+            'tournament_allow_incomplete_application' => ['sometimes', 'boolean'],
         ]);
     
         DB::transaction(function () use ($event, $data) {
@@ -813,11 +847,29 @@ if ($role === 'admin') {
     
             $event->load('gameSettings');
 
-            // Обновляем payment_mode в tournament settings (если турнир)
+            // Обновляем настройки турнира (если турнир): схема, состав, заявки и пр.
             if ($event->format === 'tournament') {
+                $isBeach = ($event->direction ?? 'classic') === 'beach';
+                $defaultScheme = $isBeach ? '2x2' : '5x1';
                 $payMode = $event->is_paid ? ($data['tournament_payment_mode'] ?? 'team') : 'free';
-                \App\Models\EventTournamentSetting::where('event_id', $event->id)
-                    ->update(['payment_mode' => $payMode]);
+
+                $tsPayload = array_filter([
+                    'game_scheme'                  => $data['tournament_game_scheme'] ?? $defaultScheme,
+                    'team_size_min'                => isset($data['tournament_team_size_min']) ? (int) $data['tournament_team_size_min'] : null,
+                    'team_size_max'                => isset($data['tournament_team_size_min']) ? (int) $data['tournament_team_size_min'] : null,
+                    'reserve_players_max'          => isset($data['tournament_reserve_players_max']) ? (int) $data['tournament_reserve_players_max'] : null,
+                    'teams_count'                  => isset($data['teams_count']) ? (int) $data['teams_count'] : null,
+                    'application_mode'             => $data['tournament_application_mode'] ?? 'manual',
+                    'captain_confirms_members'     => array_key_exists('tournament_captain_confirms_members', $data) ? (bool) $data['tournament_captain_confirms_members'] : null,
+                    'auto_submit_when_ready'       => array_key_exists('tournament_auto_submit_when_ready', $data) ? (bool) $data['tournament_auto_submit_when_ready'] : null,
+                    'allow_incomplete_application' => array_key_exists('tournament_allow_incomplete_application', $data) ? (bool) $data['tournament_allow_incomplete_application'] : null,
+                    'payment_mode'                 => $payMode,
+                ], static fn ($v) => $v !== null);
+
+                \App\Models\EventTournamentSetting::updateOrCreate(
+                    ['event_id' => (int) $event->id],
+                    $tsPayload
+                );
             }
     
             if (Schema::hasTable('event_occurrences') && $event->starts_at) {
