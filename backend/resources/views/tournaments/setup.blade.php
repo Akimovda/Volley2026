@@ -21,10 +21,12 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 	
 	
 	
+	@if($seasonData)
     <x-slot name="t_description">
 				{{ $seasonData['season']->name }}
-				/ {{ $seasonData['league']->name ?? __('tournaments.setup_league_default') }}  
-	</x-slot>	
+				/ {{ $seasonData['league']->name ?? __('tournaments.setup_league_default') }}
+	</x-slot>
+	@endif
 	
 	
 	
@@ -57,7 +59,7 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 		<div class="container">
 			<div class="ramka">	
 				{{-- Выбор тура --}}
-				@if($seasonData['occurrences']->count() > 1)
+				@if($seasonData && $seasonData['occurrences']->count() > 1)
 				<h2 class="-mt-05">{{ __('tournaments.setup_round_label') }}</h2>
 				<div class="d-flex text-center" style="gap:1rem; flex-wrap:wrap;">
 					@foreach($seasonData['occurrences'] as $occ)
