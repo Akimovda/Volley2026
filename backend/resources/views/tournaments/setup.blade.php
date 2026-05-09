@@ -90,12 +90,20 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 			</div>
 			
 			@foreach($pendingApplications as $app)
+			@php $isIncomplete = $app->status === 'incomplete'; @endphp
 			<div class="card mb-1">
 				<div class="d-flex fvc" style="justify-content:space-between;flex-wrap:wrap;gap:.5rem">
 					<div>
-						<div class="b-700 f-17">{{ $app->team->name ?? '?' }}</div>
+						<div class="d-flex fvc" style="gap:.5rem;flex-wrap:wrap">
+							<div class="b-700 f-17">{{ $app->team->name ?? '?' }}</div>
+							@if($isIncomplete)
+							<span style="display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600;background:#fef9c3;color:#854d0e">
+								{{ __('events.tapp_status_incomplete') }}
+							</span>
+							@endif
+						</div>
 						<div class="f-13" style="opacity:.6">
-							{{ __('tournaments.apps_captain') }} 
+							{{ __('tournaments.apps_captain') }}
 							<a class="blink" href="{{ route('users.show', $app->team->captain_user_id) }}">
 								{{ trim(($app->team->captain->last_name ?? '') . ' ' . ($app->team->captain->first_name ?? '')) ?: $app->team->captain->name ?? '?' }}
 							</a>
@@ -103,7 +111,7 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 						</div>
 						@if($app->team->members->count())
 						<div class="f-13 mt-05">
-							{{ __('tournaments.setup_apps_lineup') }} 
+							{{ __('tournaments.setup_apps_lineup') }}
 							@foreach($app->team->members as $m)
 							<a class="blink" href="{{ route('users.show', $m->user_id) }}">{{ trim(($m->user->last_name ?? '') . ' ' . ($m->user->first_name ?? '')) ?: $m->user->name ?? '?' }}</a>@if(!$loop->last), @endif
 							@endforeach
@@ -111,10 +119,12 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 						@endif
 					</div>
 					<div class="d-flex" style="gap:.5rem">
+						@unless($isIncomplete)
 						<form method="POST" action="{{ route('tournament.application.approve', [$event, $app]) }}">
 							@csrf
 							<button type="submit" class="btn btn-small btn-primary btn-alert" data-title="{{ __('tournaments.apps_confirm_approve') }}" data-icon="question" data-confirm-text="{{ __('tournaments.setup_apps_yes') }}" data-cancel-text="{{ __('tournaments.btn_cancel') }}">{{ __('tournaments.setup_apps_btn_approve') }}</button>
 						</form>
+						@endunless
 						<form method="POST" action="{{ route('tournament.application.reject', [$event, $app]) }}">
 							@csrf
 							<button type="submit" class="btn btn-small btn-secondary btn-alert" data-title="{{ __('tournaments.apps_confirm_reject') }}" data-icon="warning" data-confirm-text="{{ __('tournaments.setup_apps_no') }}" data-cancel-text="{{ __('tournaments.btn_cancel') }}">{{ __('tournaments.setup_apps_btn_reject') }}</button>
