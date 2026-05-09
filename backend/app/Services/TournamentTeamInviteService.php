@@ -29,6 +29,14 @@ final class TournamentTeamInviteService
                 throw new DomainException('Капитану не нужно отправлять приглашение самому себе.');
             }
 
+            // Только админ может приглашать ботов в команду
+            $invitedUser = User::find($invitedUserId);
+            $byUser      = User::find($invitedByUserId);
+            $byIsAdmin   = ($byUser?->role ?? null) === 'admin';
+            if ($invitedUser && (bool) ($invitedUser->is_bot ?? false) && !$byIsAdmin) {
+                throw new DomainException('Бота можно добавить в команду только администратором.');
+            }
+
             $alreadyInTeam = $team->members()
                 ->where('user_id', $invitedUserId)
                 ->exists();

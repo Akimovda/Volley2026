@@ -52,7 +52,14 @@ final class EventRegistrationGroupService
                 if (!$toUser) {
                     throw new DomainException('Приглашаемый пользователь не найден.');
                 }
-        
+
+                // Только админ может приглашать ботов в группу/пару
+                $fromUser = User::query()->find($fromUserId);
+                $fromIsAdmin = ($fromUser?->role ?? null) === 'admin';
+                if ((bool) ($toUser->is_bot ?? false) && !$fromIsAdmin) {
+                    throw new DomainException('Бота можно добавить только администратором.');
+                }
+
                 $event = $this->getEvent($eventId);
                 $this->assertBeachMixedGroupEvent($event);
         
