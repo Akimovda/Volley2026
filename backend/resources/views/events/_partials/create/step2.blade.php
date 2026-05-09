@@ -746,16 +746,20 @@ if (hiddenH) hiddenH.value = h;
 							}
 
 							// createCustomSelect оборачивает <select>, и после программного добавления
-							// <option> кастомный dropdown надо пересобрать: destroy + initCustomSelects.
+							// <option> кастомный dropdown надо пересобрать. window.customSelect.destroy
+							// удаляет только один ближайший wrapper через prev() — если успели
+							// накопиться дубли (повторные re-init), остатки попадают в DOM.
+							// Поэтому вычищаем ВСЕ соседние .form-select-wrapper перед <select>.
 							function rebuildCustomSelect(selectEl) {
-								if (!selectEl || !window.jQuery || typeof window.customSelect === 'undefined') return;
-								try {
-									window.customSelect.destroy(selectEl.id);
-									window.jQuery(selectEl).removeData('custom-initialized');
-									if (typeof window.initCustomSelects === 'function') {
-										window.initCustomSelects();
-									}
-								} catch (_) {}
+								if (!selectEl || !window.jQuery) return;
+								const $sel = window.jQuery(selectEl);
+								while ($sel.prev('.form-select-wrapper').length) {
+									$sel.prev('.form-select-wrapper').remove();
+								}
+								$sel.removeData('custom-initialized');
+								if (typeof window.initCustomSelects === 'function') {
+									window.initCustomSelects();
+								}
 							}
 
 							function populateSeasons() {
