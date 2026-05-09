@@ -68,7 +68,7 @@ return [
 
     // Skills
     'sec_skills'        => 'Volleyball skills',
-    'skill_classic'     => 'Indoor volleyball',
+    'skill_classic'     => 'Classic volleyball',
     'skill_beach'       => 'Beach volleyball',
     'skill_level'       => 'Level:',
     'skill_role'        => 'Player role:',
@@ -312,12 +312,12 @@ return [
     'cp_required_birth'      => 'Date of birth',
     'cp_required_gender'     => 'Gender',
     'cp_required_height'     => 'Height',
-    'cp_required_classic'    => 'Level (indoor)',
+    'cp_required_classic'    => 'Level (classic)',
     'cp_required_beach'      => 'Level (beach)',
     'cp_required_event_hint' => 'After saving, we\'ll try to sign you up for the event automatically.',
 
     // Organizer view info
-    'cp_organizer_view_info' => 'You\'re editing this user as an organizer: only date of birth, position/zone (indoor and beach), and play levels are available.',
+    'cp_organizer_view_info' => 'You\'re editing this user as an organizer: only date of birth, position/zone (classic and beach), and play levels are available.',
 
     // Personal data
     'cp_sec_personal'  => 'Personal info',
@@ -359,7 +359,7 @@ return [
     'cp_gender_female' => 'Female',
 
     // Skills
-    'cp_sec_classic' => 'Indoor volleyball',
+    'cp_sec_classic' => 'Classic volleyball',
     'cp_sec_beach'   => 'Beach volleyball',
     'cp_lvl_label'   => 'Level',
     'cp_select_pick' => '— pick —',
@@ -409,7 +409,7 @@ return [
     'idx_label_gender'      => 'Gender',
     'idx_gender_m'          => 'Male',
     'idx_gender_f'          => 'Female',
-    'idx_label_classic_lvl' => 'Level (indoor)',
+    'idx_label_classic_lvl' => 'Level (classic)',
     'idx_label_beach_lvl'   => 'Level (beach)',
     'idx_label_age'         => 'Age',
     'idx_ph_age_min'        => 'from, e.g. 18',
@@ -428,7 +428,7 @@ return [
     'card_age_years'       => ':n y.o.',
     'card_height_cm'       => ':n cm',
     'card_premium'         => 'Premium',
-    'card_lvl_classic'     => 'Indoor',
+    'card_lvl_classic'     => 'Classic',
     'card_lvl_beach'       => 'Beach',
 
     // === Public profile ===
@@ -459,7 +459,7 @@ return [
     'pub_dash'             => '—',
 
     'pub_skills_title'     => 'Volleyball skills',
-    'pub_skills_classic'   => 'Indoor volleyball',
+    'pub_skills_classic'   => 'Classic volleyball',
     'pub_skills_beach'     => 'Beach volleyball',
     'pub_skills_level'     => 'Level:',
     'pub_skills_role'      => 'Role:',
@@ -709,7 +709,7 @@ return [
 
     'rating_title'         => 'Player ranking',
     'rating_label_dir'     => 'Discipline',
-    'rating_dir_classic'   => 'Indoor',
+    'rating_dir_classic'   => 'Classic',
     'rating_dir_beach'     => 'Beach',
     'rating_label_season'  => 'Season',
     'rating_career_all'    => 'Career (all)',
