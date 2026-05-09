@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\League;
 use Illuminate\Http\Request;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class LeagueController extends Controller
@@ -218,12 +219,38 @@ class LeagueController extends Controller
     {
         $this->authorizeLeague($request, $league);
 
-        if ($league->seasons()->where('status', 'active')->exists()) {
-            return back()->with('error', 'Нельзя удалить лигу с активными сезонами. Сначала завершите их.');
+        $seasonIds = $league->seasons()->pluck('id');
+        $tlIds = DB::table('tournament_leagues')->whereIn('season_id', $seasonIds)->pluck('id');
+
+        $hasEvents = $seasonIds->isNotEmpty()
+            && DB::table('events')->whereIn('season_id', $seasonIds)->exists();
+        $hasTeams = $tlIds->isNotEmpty()
+            && DB::table('tournament_league_teams')->whereIn('league_id', $tlIds)->exists();
+
+        // Лигу можно удалить только если у неё нет событий и нет команд в дивизионах.
+        // Активные «пустые» сезоны (создаются автоматически при создании лиги) каскадно удаляем вместе с лигой.
+        if ($hasEvents || $hasTeams) {
+            $msg = 'Нельзя удалить лигу: ';
+            if ($hasEvents) {
+                $msg .= 'у неё есть мероприятия';
+            }
+            if ($hasEvents && $hasTeams) {
+                $msg .= ' и ';
+            }
+            if ($hasTeams) {
+                $msg .= 'в дивизионах есть команды';
+            }
+            $msg .= '. Сначала удалите или перенесите их.';
+            return back()->with('error', $msg);
         }
 
-        $league->clearMediaCollection('logo');
-        $league->delete();
+        DB::transaction(function () use ($league, $seasonIds, $tlIds) {
+            DB::table('tournament_league_teams')->whereIn('league_id', $tlIds)->delete();
+            DB::table('tournament_leagues')->whereIn('id', $tlIds)->delete();
+            DB::table('tournament_seasons')->whereIn('id', $seasonIds)->delete();
+            $league->clearMediaCollection('logo');
+            $league->delete();
+        });
 
         return redirect()->route('leagues.index')->with('success', 'Лига удалена.');
     }
