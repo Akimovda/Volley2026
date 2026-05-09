@@ -102,6 +102,20 @@ class TournamentController extends Controller
             }
         }
 
+        // Fallback: если occurrence не выбран через серию — берём ближайший upcoming occurrence события.
+        // Это нужно чтобы формы создания команды/стадии всегда передавали occurrence_id.
+        if (!$selectedOccurrence) {
+            $selectedOccurrence = $event->occurrences()
+                ->whereNull('cancelled_at')
+                ->where('starts_at', '>=', now('UTC'))
+                ->orderBy('starts_at')
+                ->first()
+                ?? $event->occurrences()
+                    ->whereNull('cancelled_at')
+                    ->orderByDesc('starts_at')
+                    ->first();
+        }
+
         // Фильтруем стадии по выбранному туру (occurrence)
         if ($selectedOccurrence) {
             $stages = $stages->filter(fn($s) => $s->occurrence_id === null || $s->occurrence_id === $selectedOccurrence->id);

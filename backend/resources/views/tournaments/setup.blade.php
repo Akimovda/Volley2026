@@ -376,6 +376,9 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 					<summary class="btn btn-secondary">{{ __('tournaments.setup_btn_create_team') }}</summary>
                     <form method="POST" action="{{ route('tournamentTeams.store', $event) }}">
                         @csrf
+						@if($selectedOccurrence)
+						<input type="hidden" name="occurrence_id" value="{{ $selectedOccurrence->id }}">
+						@endif
 						<div class="mt-2">
 							<div class="row">
 								<div class="col-md-6">
