@@ -357,6 +357,18 @@
 		->findActiveForEvent(auth()->id(), $event->id);
         }
 		}
+		// Занятые основные позиции классики — нужны для disabled-кнопок и ссылки на waitlist
+		$btnDirection    = (string)($event->direction ?? 'classic');
+		$btnOccupied = [];
+		if ($btnDirection === 'classic' && $event->gameSettings) {
+		    $btnAllSlots = app(\App\Services\EventRoleSlotService::class)->getSlots($event);
+		    $btnFreeKeys = collect($freePositions)->pluck('key')->toArray();
+		    foreach ($btnAllSlots as $btnSlot) {
+		        if ($btnSlot->role !== 'reserve' && !in_array($btnSlot->role, $btnFreeKeys)) {
+		            $btnOccupied[$btnSlot->role] = position_name($btnSlot->role);
+		        }
+		    }
+		}
 		@endphp
 		@if($activeSubscription)
 		<div class="alert alert-success mt-1 mb-2">
@@ -401,7 +413,20 @@
 		</form>
 		@endforeach
 
-		@if(!$hasOnlyReserve)
+		{{-- Занятые позиции: показываем disabled + ссылка на waitlist --}}
+		@if(!empty($btnOccupied) && auth()->check())
+		@foreach ($btnOccupied as $occKey => $occLabel)
+		<div class="d-flex between w-100 mb-1" style="padding:8px 14px;border-radius:8px;border:1px solid var(--bs-border-color,#dee2e6);opacity:.55;cursor:default">
+			{{ $occLabel }}
+			<span class="f-11">{{ __('events.show_pl_occupied_label') }}</span>
+		</div>
+		@endforeach
+		<div class="text-muted small mt-1 mb-1">
+			<a href="#waitlist-section">{{ __('events.show_pl_waitlist_pos_taken') }}</a>
+		</div>
+		@endif
+
+		@if(!$hasOnlyReserve && empty($btnOccupied))
 		<div class="text-muted small">
 			{!! __('events.show_pl_pick_position') !!}
 		</div>
@@ -431,14 +456,21 @@ $direction     = (string)($event->direction ?? 'classic');
 $isBeach       = $direction === 'beach';
 $isClassic     = $direction === 'classic';
 
-// Позиции для резерва (из game settings)
-$gs            = $event->gameSettings ?? null;
-$allPositions  = [];
+// Все позиции и занятые для чекбоксов waitlist (getSlots кешируется — лишнего SQL нет)
+$gs           = $event->gameSettings ?? null;
+$allPositions = [];
+$occupiedPositions = [];
 if ($isClassic && $gs) {
-$slots = app(\App\Services\EventRoleSlotService::class)->getSlots($event);
-foreach ($slots as $slot) {
-$allPositions[$slot->role] = position_name($slot->role);
-}
+    $wlSlots    = app(\App\Services\EventRoleSlotService::class)->getSlots($event);
+    $wlFreeKeys = collect($freePositions)->pluck('key')->toArray();
+    foreach ($wlSlots as $wlSlot) {
+        if ($wlSlot->role !== 'reserve') {
+            $allPositions[$wlSlot->role] = position_name($wlSlot->role);
+            if (!in_array($wlSlot->role, $wlFreeKeys)) {
+                $occupiedPositions[$wlSlot->role] = position_name($wlSlot->role);
+            }
+        }
+    }
 }
 
 // Текущий пользователь в резерве?
@@ -460,16 +492,19 @@ $waitlistCount = \App\Models\OccurrenceWaitlist::query()
 ->where('occurrence_id', $occurrence->id)
 ->count();
 
-$showWaitlist = !$isTournament && !$eventStarted && $isFull && auth()->check();
+// Показываем блок waitlist при полном заполнении ИЛИ когда заняты классические позиции
+$showWaitlist = !$isTournament && !$eventStarted && auth()->check() && (
+    $isFull || ($isClassic && !empty($occupiedPositions))
+);
 @endphp
 
-@if(!$isTournament && !$eventStarted && $isFull)
-<div class="ramka">
+@if($showWaitlist)
+<div class="ramka" id="waitlist-section">
     <h2 class="-mt-05">{{ __('events.show_pl_waitlist_h2') }}</h2>
-	
+
     @if(!auth()->check())
 	<div class="text-muted small">{{ __('events.show_pl_waitlist_login') }}</div>
-	
+
     @elseif($myWaitlist)
 	{{-- Уже в резерве --}}
 	<div class="alert alert-success">
@@ -495,39 +530,45 @@ $showWaitlist = !$isTournament && !$eventStarted && $isFull && auth()->check();
     @else
 	{{-- Форма записи в резерв --}}
 	<div class="text-muted small mb-2">
-		{{ __('events.show_pl_waitlist_full') }}
+		{{ $isFull ? __('events.show_pl_waitlist_full') : __('events.show_pl_waitlist_pos_taken') }}
 	</div>
-	
+
 	@if($waitlistCount > 0)
 	<div class="text-muted small mb-2">
 		{!! trans_choice('events.show_pl_waitlist_count', $waitlistCount, ['count' => $waitlistCount]) !!}
-        </div>
-			@endif
-			
-			<form method="POST" action="{{ route('occurrences.waitlist.join', $occurrence) }}">
-				@csrf
-				
-				@if($isClassic && !empty($allPositions))
-				<div class="mb-2 form">
-					<label>{{ __('events.show_pl_waitlist_pick_pos') }}</label>
-					<div class="d-flex flex-wrap gap-2">
-						@foreach($allPositions as $key => $label)
-						<label class="checkbox-item mb-0">
-							<input type="checkbox" name="positions[]" value="{{ $key }}">
-							<div class="custom-checkbox"></div>
-							<span>{{ $label }}</span>
-						</label>
-						@endforeach
-					</div>
-					<div class="text-muted small mt-1">
-						{{ __('events.show_pl_waitlist_no_pick') }}
-					</div>
-				</div>
-				@endif
-				
-				<button type="submit" class="btn btn-primary">{{ __('events.show_pl_waitlist_join') }}</button>
-			</form>
-			@endif
+	</div>
+	@endif
+
+	<form method="POST" action="{{ route('occurrences.waitlist.join', $occurrence) }}">
+		@csrf
+
+		@if($isClassic)
+		@php
+		// При $isFull все заняты → все позиции. Иначе — только занятые.
+		$wlCheckboxPositions = !empty($occupiedPositions) ? $occupiedPositions : $allPositions;
+		@endphp
+		@if(!empty($wlCheckboxPositions))
+		<div class="mb-2 form">
+			<label>{{ __('events.show_pl_waitlist_pick_pos') }}</label>
+			<div class="d-flex flex-wrap gap-2">
+				@foreach($wlCheckboxPositions as $wlKey => $wlLabel)
+				<label class="checkbox-item mb-0">
+					<input type="checkbox" name="positions[]" value="{{ $wlKey }}">
+					<div class="custom-checkbox"></div>
+					<span>{{ $wlLabel }}</span>
+				</label>
+				@endforeach
+			</div>
+			<div class="text-muted small mt-1">
+				{{ __('events.show_pl_waitlist_no_pick') }}
+			</div>
+		</div>
+		@endif
+		@endif
+
+		<button type="submit" class="btn btn-primary">{{ __('events.show_pl_waitlist_join') }}</button>
+	</form>
+	@endif
 			
 			{{-- Список резерва для организатора --}}
 			@if($isOrganizer && $waitlistCount > 0)
