@@ -206,6 +206,7 @@ return [
     'show_pl_waitlist_leave'      => 'Leave waitlist',
     'show_pl_occupied_label'      => 'taken',
     'show_pl_waitlist_full'       => 'All spots are taken. Join the waitlist — we will notify you first when a spot opens.',
+    'show_pl_waitlist_full_beach' => 'All spots are taken. Join the queue — as soon as a spot opens, we will register you automatically.',
     'show_pl_waitlist_pos_taken'  => 'Your position is taken? Join the queue — as soon as it opens up, we will register you automatically.',
     'show_pl_waitlist_count'      => '{1} On waitlist: <strong>:count</strong> person|[0,2,*] On waitlist: <strong>:count</strong> people',
     'show_pl_waitlist_pick_pos'   => 'Pick positions (multiple allowed):',

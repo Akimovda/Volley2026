@@ -530,7 +530,13 @@ $showWaitlist = !$isTournament && !$eventStarted && auth()->check() && (
     @else
 	{{-- Форма записи в резерв --}}
 	<div class="text-muted small mb-2">
-		{{ $isFull ? __('events.show_pl_waitlist_full') : __('events.show_pl_waitlist_pos_taken') }}
+		@if($isBeach)
+			{{ __('events.show_pl_waitlist_full_beach') }}
+		@elseif($isFull)
+			{{ __('events.show_pl_waitlist_full') }}
+		@else
+			{{ __('events.show_pl_waitlist_pos_taken') }}
+		@endif
 	</div>
 
 	@if($waitlistCount > 0)
