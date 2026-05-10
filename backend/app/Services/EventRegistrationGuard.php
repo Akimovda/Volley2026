@@ -249,7 +249,13 @@
 
 			if ($hasOthers) {
 				$result->meta['waitlist_only'] = true;
-				$result->errors[] = 'На мероприятии есть лист ожидания. Запись в основной состав закрыта — доступна только запись в резерв.';
+				$result->errors[] = 'На мероприятии есть лист ожидания. Запись закрыта — доступна только запись в лист ожидания.';
+				// Убираем reserve из freePositions — резерв тоже нельзя занять в обход очереди
+				if (isset($result->data['free_positions'])) {
+					$result->data['free_positions'] = array_values(
+						array_filter($result->data['free_positions'], fn($p) => ($p['key'] ?? '') !== 'reserve')
+					);
+				}
 			}
 		}
 		
@@ -756,6 +762,18 @@
 			$this->checkPersonalData($user, $occurrence, $event, $result);
 			$this->checkAgePolicy($user, $occurrence, $event, $agePolicy, $result);
 			$this->checkLevelPolicy($user, $occurrence, $event, $result);
+
+			// Гендерная политика — нужна чтобы autoBookNext не записал неподходящий пол
+			if ($user && empty($result->errors)) {
+				$settings   = $event->gameSettings;
+				$maxPlayers = (int) ($settings?->max_players ?? 0);
+				$registrations = \App\Models\EventRegistration::with('user')
+					->where('occurrence_id', $occurrence->id)
+					->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
+					->whereRaw("(status IS NULL OR status != 'cancelled')")
+					->get();
+				$this->applyGenderPolicy($user, $settings, $registrations, $maxPlayers, $result);
+			}
 
 			return $result;
 		}

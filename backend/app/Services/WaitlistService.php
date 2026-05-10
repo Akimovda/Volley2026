@@ -139,9 +139,19 @@ class WaitlistService
                 ->lockForUpdate()
                 ->get();
 
-            $guard = app(EventRegistrationGuard::class);
+            $guard    = app(EventRegistrationGuard::class);
+            $attempts = 0;
 
             foreach ($entries as $entry) {
+                if ($attempts >= 20) {
+                    Log::warning("Waitlist autoBook: достигнут лимит 20 итераций", [
+                        'occurrence' => $occurrence->id,
+                        'position'   => $position,
+                    ]);
+                    break;
+                }
+                $attempts++;
+
                 // Позиция должна подходить (для пляжки positions=[] → подходит любая)
                 if (!$entry->subscribedToPosition($position)) {
                     continue;
