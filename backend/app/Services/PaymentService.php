@@ -110,12 +110,13 @@ class PaymentService
             DB::transaction(function () use ($payment, &$count) {
                 $payment->update(['status' => 'expired']);
 
-                if ($payment->registration_id) {
-                    EventRegistration::where('id', $payment->registration_id)->update([
-                        'payment_status' => 'expired',
-                        'is_cancelled'   => true,
-                        'cancelled_at'   => now(),
-                    ]);
+                // save() а не Query Builder update() — иначе Observer не сработает и waitlist не обработается
+                $reg = $payment->registration;
+                if ($reg) {
+                    $reg->payment_status = 'expired';
+                    $reg->is_cancelled   = true;
+                    $reg->cancelled_at   = now();
+                    $reg->save();
                 }
                 $count++;
             });
