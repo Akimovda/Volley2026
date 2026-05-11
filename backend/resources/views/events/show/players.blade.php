@@ -268,12 +268,38 @@
 		GUARD ЗАПРЕЩАЕТ
 		=============================== --}}
 		@elseif (! $join->allowed)
-		{{-- 
+		{{--
 		<button class="btn btn-primary w-100" disabled>
 			{{ __('events.sp_btn_register') }}
 		</button>
 		--}}
-		@if (!empty($join->errors))
+		@if (!empty($missingProfileFields))
+		@php
+			$_fieldLabels = [
+				'birth_date'    => 'дату рождения',
+				'gender'        => 'пол',
+				'classic_level' => 'игровой уровень (классика)',
+				'beach_level'   => 'игровой уровень (пляж)',
+				'full_name'     => 'имя и фамилию',
+				'patronymic'    => 'отчество',
+				'phone'         => 'телефон',
+				'city'          => 'город',
+			];
+			$_missingLabels = collect($missingProfileFields)
+				->map(fn($k) => $_fieldLabels[$k] ?? $k)
+				->implode(', ');
+			$_profileUrl = route('profile.complete') . '?' . http_build_query([
+				'missing'   => implode(',', $missingProfileFields),
+				'return_to' => request()->fullUrl(),
+			]);
+		@endphp
+		<div class="alert alert-info mt-1">
+			Для записи на это мероприятие укажи в профиле: {{ $_missingLabels }}.
+			<div class="mt-1">
+				<a href="{{ $_profileUrl }}" class="btn btn-small btn-primary">{{ __('events.sp_btn_complete_profile') }}</a>
+			</div>
+		</div>
+		@elseif (!empty($join->errors))
 		<div class="alert alert-info mt-1">
 			{{ $join->errors[0] }}
 			@if (!empty($join->meta['profile_required']))
