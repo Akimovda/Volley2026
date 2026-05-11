@@ -51,6 +51,23 @@ class TournamentTeamController extends Controller
                 ? \App\Models\User::findOrFail($data['captain_user_id'])
                 : $request->user();
 
+            // Проверка незаполненных полей профиля капитана
+            $occurrence = !empty($data['occurrence_id'])
+                ? \App\Models\EventOccurrence::find((int) $data['occurrence_id'])
+                : null;
+            $missingFields = $captainUser->getMissingFieldsForEvent($event, $occurrence);
+            if (!empty($missingFields)) {
+                $returnTo = route('events.show', array_filter([
+                    'event' => (int) $event->id,
+                    'occurrence' => $occurrence ? (int) $occurrence->id : null,
+                ]));
+                $profileUrl = route('profile.complete') . '?' . http_build_query([
+                    'missing'   => implode(',', $missingFields),
+                    'return_to' => $returnTo,
+                ]);
+                return redirect($profileUrl);
+            }
+
             // Авто-название по фамилии капитана если пустое
             $teamName = trim($data['name'] ?? '');
             if (empty($teamName)) {
@@ -269,6 +286,21 @@ class TournamentTeamController extends Controller
         abort_unless((int) $team->event_id === (int) $event->id, 404);
         $user = $request->user();
         abort_unless($user, 403);
+
+        // Проверка незаполненных полей профиля
+        $occurrence = $team->occurrence_id ? \App\Models\EventOccurrence::find($team->occurrence_id) : null;
+        $missingFields = $user->getMissingFieldsForEvent($event, $occurrence);
+        if (!empty($missingFields)) {
+            $returnTo = route('events.show', array_filter([
+                'event' => (int) $event->id,
+                'occurrence' => $occurrence ? (int) $occurrence->id : null,
+            ]));
+            $profileUrl = route('profile.complete') . '?' . http_build_query([
+                'missing'   => implode(',', $missingFields),
+                'return_to' => $returnTo,
+            ]);
+            return redirect($profileUrl);
+        }
 
         try {
             $service->joinRequest($team, $user);
