@@ -148,11 +148,10 @@ class ProfileExtraController extends Controller
         // 1.5) Групповая валидация: ФИО + телефон — всё или ничего
         // =========================
         if (in_array('last_name', $allowed, true)) {
-            $groupFields = ['last_name', 'first_name', 'patronymic', 'phone'];
+            $groupFields = ['last_name', 'first_name', 'phone'];
             $groupLabels = [
                 'last_name'  => 'Фамилия',
                 'first_name' => 'Имя',
-                'patronymic' => 'Отчество',
                 'phone'      => 'Телефон',
             ];
             $effective = [];
@@ -166,7 +165,7 @@ class ProfileExtraController extends Controller
                 $errs = [];
                 foreach ($groupFields as $f) {
                     if (!$effective[$f]) {
-                        $errs[$f] = "Заполните все поля группы: Фамилия, Имя, Отчество и Телефон.";
+                        $errs[$f] = "Заполните все поля группы: Фамилия, Имя и Телефон.";
                     }
                 }
                 return back()->withErrors($errs)->withInput();
@@ -181,7 +180,7 @@ class ProfileExtraController extends Controller
             $protected = [
                 'first_name', 'last_name', 'patronymic',
                 'phone', 'birth_date', 'city_id',
-                'classic_level', 'beach_level',
+                'classic_level', 'beach_level', 'gender',
             ];
 
             foreach ($protected as $field) {
@@ -353,8 +352,20 @@ class ProfileExtraController extends Controller
                 }
             }
 
-            $redirect = redirect()->route('events.index')
-                ->with('success', 'Профиль заполнен! Добро пожаловать 🏐');
+            $returnTo = (string) $request->input('return_to', '');
+            if (empty($returnTo)) {
+                $returnTo = (string) $request->session()->pull('profile_return_to', '');
+            } else {
+                $request->session()->forget('profile_return_to');
+            }
+
+            if (!empty($returnTo)) {
+                $redirect = redirect($returnTo)
+                    ->with('success', 'Профиль обновлён. Попробуйте записаться снова.');
+            } else {
+                $redirect = redirect()->route('events.index')
+                    ->with('success', 'Профиль заполнен! Добро пожаловать 🏐');
+            }
 
             if ($duplicateWarning) {
                 $redirect = $redirect->with('duplicate_user_id', $duplicateWarning);

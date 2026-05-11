@@ -135,14 +135,10 @@ class AppleAuthController extends Controller
                 $safeEmail = 'apple_' . Str::random(8) . '@apple.local';
             }
 
-            $nameParts = $rawName !== '' ? explode(' ', $rawName, 2) : [];
-
             $user = new User();
             $user->email      = $safeEmail;
             $user->password   = Hash::make(Str::random(32));
             $user->name       = $rawName ?: 'Apple User';
-            $user->first_name = $nameParts[0] ?? '';
-            $user->last_name  = $nameParts[1] ?? '';
             $user->apple_id   = $appleId;
             $user->save();
         }

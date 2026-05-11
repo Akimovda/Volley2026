@@ -343,13 +343,16 @@
 				</div>
 				@endif
 				
-				{{-- ========================= REQUIRED KEYS ========================= --}}
-				@if (!empty($requiredKeys))
-				<div class="ramka">			
+				{{-- ========================= MISSING FOR EVENT ========================= --}}
+				@php $allMissingKeys = array_unique(array_merge($missingKeys ?? [], $requiredKeys ?? [])); @endphp
+				@if (!empty($allMissingKeys))
+				<div class="ramka">
 					<div class="alert alert-error">
-						<div class="alert-title">{{ __('profile.cp_required_title') }}</div>
+						<div class="alert-title">
+							{{ !empty($missingKeys ?? []) ? __('profile.cp_missing_for_event') : __('profile.cp_required_title') }}
+						</div>
 						<ul class="list">
-							@foreach ($requiredKeys as $key)
+							@foreach ($allMissingKeys as $key)
 							<li>
 								@switch($key)
 								@case('full_name') {{ __('profile.cp_required_full_name') }} @break
@@ -367,13 +370,17 @@
 							@endforeach
 						</ul>
 					</div>
-					@if (!empty($eventId))
+					@if (!empty($returnTo ?? ''))
+					<div class="mb-1">
+						<a href="{{ $returnTo }}" class="btn btn-small btn-secondary">← {{ __('profile.cp_return_to_event') }}</a>
+					</div>
+					@elseif (!empty($eventId))
 					<div class="mb-1">
 						{{ __('profile.cp_required_event_hint') }}
 					</div>
 					@endif
 				</div>
-				@endif				
+				@endif
 				
 				
 				
@@ -393,6 +400,9 @@
 						<div class="form">
 							<form id="profile-complete-form" method="POST" action="{{ route('profile.extra.update') }}">
         <input type="hidden" name="from_complete" value="1">
+        @if (!empty($returnTo ?? ''))
+        <input type="hidden" name="return_to" value="{{ $returnTo }}">
+        @endif
 								@csrf
 								
 									@if($organizerLimitedView)
@@ -1504,6 +1514,39 @@
 							});
 						})();
 					</script>
-				</x-slot>	
+					@if (!empty($missingKeys ?? []))
+					<script>
+					(function() {
+						var missingKeys = @json($missingKeys);
+						var fieldMap = {
+							'full_name':     ['input[name="last_name"]', 'input[name="first_name"]'],
+							'patronymic':    ['input[name="patronymic"]'],
+							'phone':         ['#phone_masked'],
+							'birth_date':    ['#birth_day', '#birth_month', '#birth_year'],
+							'gender':        ['select[name="gender"]'],
+							'classic_level': ['#classic_level_select'],
+							'beach_level':   ['#beach_level_select'],
+							'city':          ['#city_search'],
+						};
+						var firstEl = null;
+						missingKeys.forEach(function(key) {
+							var selectors = fieldMap[key] || [];
+							selectors.forEach(function(sel) {
+								var el = document.querySelector(sel);
+								if (el && !el.disabled) {
+									el.classList.add('input-error');
+									if (!firstEl) firstEl = el;
+								}
+							});
+						});
+						if (firstEl && typeof firstEl.scrollIntoView === 'function') {
+							setTimeout(function() {
+								firstEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+							}, 300);
+						}
+					})();
+					</script>
+					@endif
+				</x-slot>
 			</x-voll-layout>
 				

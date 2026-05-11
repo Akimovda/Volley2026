@@ -108,6 +108,10 @@ public static function isUser(User $user): bool
             'patronymic',
             'phone',
             'city_id',
+            'birth_date',
+            'gender',
+            'classic_level',
+            'beach_level',
         ];
 
         foreach ($protectedOnce as $field) {

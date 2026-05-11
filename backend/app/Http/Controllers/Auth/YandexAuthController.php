@@ -160,16 +160,6 @@ class YandexAuthController extends Controller
             $user->password  = Hash::make(Str::random(32));
             $user->name      = trim(($yaUser->getName() ?: '') ?: 'Пользователь');
             $user->yandex_id = $yandexId;
-            if ($yandexPhone) {
-                $user->phone        = $yandexPhone;
-                $user->yandex_phone = $yandexPhone;
-            }
-
-            // Сохраняем только пол
-            if (!empty($raw['sex'])) {
-                $g = $raw['sex'] === 'male' ? 'm' : ($raw['sex'] === 'female' ? 'f' : null);
-                if ($g) $user->gender = $g;
-            }
 
             $user->save();
         } else {
