@@ -299,6 +299,30 @@ if (hiddenH) hiddenH.value = h;
 												</ul>
 											</div>
 										</div>
+
+										<div class="row mt-1">
+											<div class="col-sm-8">
+												<label>{{ __('events.cancel_lock_waitlist_label') }}</label>
+												<input type="hidden" name="cancel_lock_waitlist_minutes_before" id="cancel_lock_waitlist_minutes_before" value="{{ $oldCancelLockWaitlistMinutesBefore }}">
+												<div class="d-flex" style="gap:.5rem;align-items:center">
+												<select id="cancel_lock_waitlist_hours" name="cancel_lock_waitlist_h" style="width:auto">
+												<option value="0" @selected($cancelLockWaitlistHours == 0)>0 {{ __('events.dur_h_short') }}</option>
+												@for ($h = 1; $h <= 24; $h++)
+													<option value="{{ $h }}" @selected($cancelLockWaitlistHours == $h)>{{ $h }} {{ __('events.dur_h_short') }}</option>
+												@endfor
+												</select>
+												<select id="cancel_lock_waitlist_mins" name="cancel_lock_waitlist_m" style="width:auto">
+												@foreach ([0,10,15,20,30,40,50] as $m)
+													<option value="{{ $m }}" @selected($cancelLockWaitlistMinutes == $m)>{{ $m }} {{ __('events.dur_m_short') }}</option>
+												@endforeach
+												</select>
+												</div>
+												<ul class="list f-16 mt-1">
+													<li>{{ __('events.cancel_lock_waitlist_hint') }}</li>
+													<li>{{ __('events.cancel_lock_waitlist_zero_hint') }}</li>
+												</ul>
+											</div>
+										</div>
 										
 										<ul class="list f-16 mt-1">
 											{{--

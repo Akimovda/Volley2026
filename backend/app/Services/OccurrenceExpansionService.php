@@ -51,9 +51,10 @@ final class OccurrenceExpansionService
         $horizonUtc = $nowUtc->addDays(max(1, $horizonDays))->endOfDay();
 
         // Derive registration offsets from the reference occurrence (first occurrence)
-        $regStartsSecBefore = 3 * 86400; // default: 3 days
-        $endsMinBefore      = 15;
-        $cancelMinBefore    = 60;
+        $regStartsSecBefore        = 3 * 86400; // default: 3 days
+        $endsMinBefore             = 15;
+        $cancelMinBefore           = 60;
+        $cancelWaitlistMinBefore   = null;
 
         $eventStartUtc = CarbonImmutable::parse($event->starts_at, 'UTC');
         $refUniq = "event:{$event->id}:" . $eventStartUtc->format('YmdHis');
@@ -68,6 +69,11 @@ final class OccurrenceExpansionService
             $regStartsSecBefore = max(0, $eventStartUtc->timestamp - $refStart->timestamp);
             $endsMinBefore      = max(1, (int) round(($eventStartUtc->timestamp - $refEnd->timestamp) / 60));
             $cancelMinBefore    = max(1, (int) round(($eventStartUtc->timestamp - $refCancel->timestamp) / 60));
+
+            if ($refOcc->cancel_self_until_waitlist) {
+                $refCancelWaitlist = CarbonImmutable::parse($refOcc->cancel_self_until_waitlist, 'UTC');
+                $cancelWaitlistMinBefore = max(1, (int) round(($eventStartUtc->timestamp - $refCancelWaitlist->timestamp) / 60));
+            }
         }
 
         // snapshot max_players
@@ -117,6 +123,7 @@ final class OccurrenceExpansionService
                 regStartsSecBefore: $regStartsSecBefore,
                 endsMinBefore: $endsMinBefore,
                 cancelMinBefore: $cancelMinBefore,
+                cancelWaitlistMinBefore: $cancelWaitlistMinBefore,
                 maxPlayersSnapshot: $maxPlayersSnapshot
             );
 
@@ -148,6 +155,7 @@ final class OccurrenceExpansionService
         int $regStartsSecBefore,
         int $endsMinBefore,
         int $cancelMinBefore,
+        ?int $cancelWaitlistMinBefore,
         ?int $maxPlayersSnapshot
     ): bool {
 
@@ -157,15 +165,19 @@ final class OccurrenceExpansionService
         $nowUtc   = CarbonImmutable::now('UTC');
 
         // ---- registration windows ----
-        $regStarts = null;
-        $regEnds   = null;
-        $cancelTil = null;
+        $regStarts       = null;
+        $regEnds         = null;
+        $cancelTil       = null;
+        $cancelTilWaitlist = null;
 
         if ($allowReg) {
 
             $regStarts = $occStartUtc->subSeconds(max(0, $regStartsSecBefore));
             $regEnds   = $occStartUtc->subMinutes(max(0, $endsMinBefore));
             $cancelTil = $occStartUtc->subMinutes(max(0, $cancelMinBefore));
+            if ($cancelWaitlistMinBefore !== null) {
+                $cancelTilWaitlist = $occStartUtc->subMinutes(max(0, $cancelWaitlistMinBefore));
+            }
 
             if ($regEnds->greaterThanOrEqualTo($occStartUtc)) {
                 $regEnds = $occStartUtc->subMinutes(15);
@@ -205,9 +217,10 @@ final class OccurrenceExpansionService
                 'beach_level_max' => $event->beach_level_max,
                 'max_players' => $maxPlayersSnapshot,
                 'duration_sec' => $durationSec,
-                'registration_starts_at' => $allowReg ? $regStarts : null,
-                'registration_ends_at'   => $allowReg ? $regEnds   : null,
-                'cancel_self_until'      => $allowReg ? $cancelTil : null,
+                'registration_starts_at'    => $allowReg ? $regStarts : null,
+                'registration_ends_at'      => $allowReg ? $regEnds   : null,
+                'cancel_self_until'         => $allowReg ? $cancelTil : null,
+                'cancel_self_until_waitlist' => $allowReg ? $cancelTilWaitlist : null,
                 'age_policy' => Schema::hasColumn('event_occurrences', 'age_policy')
                     ? (string)($event->age_policy ?? 'any')
                     : null,
@@ -233,9 +246,10 @@ final class OccurrenceExpansionService
             'classic_level_max' => $event->classic_level_max,
             'beach_level_min' => $event->beach_level_min,
             'beach_level_max' => $event->beach_level_max,
-            'registration_starts_at' => $allowReg ? $regStarts : null,
-            'registration_ends_at'   => $allowReg ? $regEnds   : null,
-            'cancel_self_until'      => $allowReg ? $cancelTil : null,
+            'registration_starts_at'    => $allowReg ? $regStarts : null,
+            'registration_ends_at'      => $allowReg ? $regEnds   : null,
+            'cancel_self_until'         => $allowReg ? $cancelTil : null,
+            'cancel_self_until_waitlist' => $allowReg ? $cancelTilWaitlist : null,
             'age_policy' => Schema::hasColumn('event_occurrences', 'age_policy')
                 ? (string)($event->age_policy ?? 'any')
                 : null,

@@ -26,6 +26,11 @@
         $cancelMinSaved = (int) abs($evStartsAt->diffInMinutes(\Carbon\Carbon::parse($event->cancel_self_until, 'UTC')));
     }
 
+    $cancelWaitlistMinSaved = 0;
+    if ($evStartsAt && $event->cancel_self_until_waitlist) {
+        $cancelWaitlistMinSaved = (int) abs($evStartsAt->diffInMinutes(\Carbon\Carbon::parse($event->cancel_self_until_waitlist, 'UTC')));
+    }
+
     $regEndsMinCurrent = (int) old('reg_ends_minutes_before', $regEndsMinSaved);
     $regEndsHours      = (int) floor($regEndsMinCurrent / 60);
     $regEndsMins       = $regEndsMinCurrent % 60;
@@ -33,6 +38,10 @@
     $cancelMinCurrent = (int) old('cancel_lock_minutes_before', $cancelMinSaved);
     $cancelHours      = (int) floor($cancelMinCurrent / 60);
     $cancelMins       = $cancelMinCurrent % 60;
+
+    $cancelWaitlistMinCurrent = (int) old('cancel_lock_waitlist_minutes_before', $cancelWaitlistMinSaved);
+    $cancelWaitlistHours      = (int) floor($cancelWaitlistMinCurrent / 60);
+    $cancelWaitlistMins       = $cancelWaitlistMinCurrent % 60;
 @endphp
 
 <x-voll-layout>
@@ -667,6 +676,30 @@
 
                         <div class="col-md-4">
                             <div class="card" style="overflow:visible">
+                                <label>{{ __('events.cancel_lock_waitlist_label') }}</label>
+                                <input type="hidden" name="cancel_lock_waitlist_minutes_before" id="mgmt_cancel_waitlist_min" value="{{ $cancelWaitlistMinCurrent }}">
+                                <div class="d-flex" style="gap:.5rem;align-items:center">
+                                    <select id="mgmt_cancel_waitlist_h" style="width:auto">
+                                        <option value="0" @selected($cancelWaitlistHours == 0)>0 {{ __('events.dur_h_short') }}</option>
+                                        @for ($h = 1; $h <= 24; $h++)
+                                            <option value="{{ $h }}" @selected($cancelWaitlistHours == $h)>{{ $h }} {{ __('events.dur_h_short') }}</option>
+                                        @endfor
+                                    </select>
+                                    <select id="mgmt_cancel_waitlist_m" style="width:auto">
+                                        @foreach([0,10,15,20,30,40,50] as $m)
+                                            <option value="{{ $m }}" @selected($cancelWaitlistMins == $m)>{{ $m }} {{ __('events.dur_m_short') }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <ul class="list f-16 mt-1">
+                                    <li>{{ __('events.cancel_lock_waitlist_hint') }}</li>
+                                    <li>{{ __('events.cancel_lock_waitlist_zero_hint') }}</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="card" style="overflow:visible">
                                 <label>{{ __('events.personal_data_section') }}</label>
                                 <label class="checkbox-item">
                                     <input type="hidden" name="requires_personal_data" value="0">
@@ -1183,18 +1216,28 @@
                 if (total < 1) total = 1;
                 hidden.value = total;
             }
+            function syncRegHMAllowZero(hSel, mSel, hidden) {
+                if (!hSel || !mSel || !hidden) return;
+                hidden.value = parseInt(hSel.value) * 60 + parseInt(mSel.value);
+            }
             var regEndsH   = document.getElementById('mgmt_reg_ends_h');
             var regEndsM   = document.getElementById('mgmt_reg_ends_m');
             var regEndsHid = document.getElementById('mgmt_reg_ends_min');
             var cancelH    = document.getElementById('mgmt_cancel_h');
             var cancelM    = document.getElementById('mgmt_cancel_m');
             var cancelHid  = document.getElementById('mgmt_cancel_min');
+            var cancelWH   = document.getElementById('mgmt_cancel_waitlist_h');
+            var cancelWM   = document.getElementById('mgmt_cancel_waitlist_m');
+            var cancelWHid = document.getElementById('mgmt_cancel_waitlist_min');
             regEndsH?.addEventListener('change', function() { syncRegHM(regEndsH, regEndsM, regEndsHid); });
             regEndsM?.addEventListener('change', function() { syncRegHM(regEndsH, regEndsM, regEndsHid); });
             cancelH?.addEventListener('change',  function() { syncRegHM(cancelH,  cancelM,  cancelHid); });
             cancelM?.addEventListener('change',  function() { syncRegHM(cancelH,  cancelM,  cancelHid); });
+            cancelWH?.addEventListener('change', function() { syncRegHMAllowZero(cancelWH, cancelWM, cancelWHid); });
+            cancelWM?.addEventListener('change', function() { syncRegHMAllowZero(cancelWH, cancelWM, cancelWHid); });
             syncRegHM(regEndsH, regEndsM, regEndsHid);
             syncRegHM(cancelH,  cancelM,  cancelHid);
+            syncRegHMAllowZero(cancelWH, cancelWM, cancelWHid);
 
             // --- Бот-ассистент toggle ---
             const botChk = document.getElementById('bot_assistant_enabled_edit');

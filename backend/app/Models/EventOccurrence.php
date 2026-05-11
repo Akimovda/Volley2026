@@ -37,6 +37,7 @@ class EventOccurrence extends Model
         'registration_starts_at',
         'registration_ends_at',
         'cancel_self_until',
+        'cancel_self_until_waitlist',
 
         'remind_registration_enabled',
         'remind_registration_minutes_before',
@@ -85,6 +86,7 @@ class EventOccurrence extends Model
         'registration_starts_at' => 'datetime',
         'registration_ends_at' => 'datetime',
         'cancel_self_until' => 'datetime',
+        'cancel_self_until_waitlist' => 'datetime',
 
         'age_policy' => 'string',
         'child_age_min' => 'integer',
@@ -278,6 +280,13 @@ class EventOccurrence extends Model
         return $this->cancel_self_until
             ?? $this->event?->cancel_self_until;
     }
+
+    public function effectiveCancelSelfUntilWaitlist(): ?Carbon
+    {
+        return $this->cancel_self_until_waitlist
+            ?? $this->event?->cancel_self_until_waitlist;
+    }
+
     /* ===================== Status helpers ===================== */
 
     public function isStarted(): bool
