@@ -220,10 +220,70 @@
 		{
 			return !empty($this->first_name)
 				&& !empty($this->last_name)
-				&& !empty($this->patronymic)
-				&& !empty($this->birth_date)
-				&& !empty($this->phone)
-				&& !empty($this->city_id);
+				&& !empty($this->phone);
+		}
+
+		public function getMissingFieldsForEvent(\App\Models\Event $event, ?\App\Models\EventOccurrence $occurrence = null): array
+		{
+			$missing = [];
+
+			// 1. Возрастное ограничение → нужна дата рождения
+			$agePolicy = ($occurrence?->age_policy) ?? $event->age_policy ?? 'any';
+			if ($agePolicy !== 'any' && empty($this->birth_date)) {
+				$missing[] = 'birth_date';
+			}
+
+			$direction = (string) ($event->direction ?? 'classic');
+
+			// 2. Ограничение по уровню классики → нужен classic_level
+			if ($direction === 'classic') {
+				$lvMin = $occurrence ? $occurrence->effectiveClassicLevelMin() : $event->classic_level_min;
+				$lvMax = $occurrence ? $occurrence->effectiveClassicLevelMax() : $event->classic_level_max;
+				if ((!is_null($lvMin) || !is_null($lvMax)) && is_null($this->classic_level)) {
+					$missing[] = 'classic_level';
+				}
+			}
+
+			// 3. Ограничение по уровню пляжки → нужен beach_level
+			if ($direction === 'beach') {
+				$lvMin = $occurrence ? $occurrence->effectiveBeachLevelMin() : $event->beach_level_min;
+				$lvMax = $occurrence ? $occurrence->effectiveBeachLevelMax() : $event->beach_level_max;
+				if ((!is_null($lvMin) || !is_null($lvMax)) && is_null($this->beach_level)) {
+					$missing[] = 'beach_level';
+				}
+			}
+
+			// 4. Гендерная политика → нужен пол
+			$gameSettings = $event->gameSettings;
+			$genderPolicy = $gameSettings?->gender_policy ?? 'mixed_open';
+			if ($genderPolicy !== 'mixed_open' && empty($this->gender)) {
+				$missing[] = 'gender';
+			}
+
+			// 5. Требование персональных данных → все личные поля
+			$requiresPersonalData = ($occurrence !== null && !is_null($occurrence->requires_personal_data))
+				? (bool) $occurrence->requires_personal_data
+				: (bool) ($event->requires_personal_data ?? false);
+
+			if ($requiresPersonalData) {
+				if (empty($this->first_name) || empty($this->last_name)) {
+					$missing[] = 'full_name';
+				}
+				if (empty($this->patronymic)) {
+					$missing[] = 'patronymic';
+				}
+				if (empty($this->phone)) {
+					$missing[] = 'phone';
+				}
+				if (empty($this->gender) && !in_array('gender', $missing, true)) {
+					$missing[] = 'gender';
+				}
+				if (empty($this->birth_date) && !in_array('birth_date', $missing, true)) {
+					$missing[] = 'birth_date';
+				}
+			}
+
+			return array_values(array_unique($missing));
 		}
 
 		public function isAdmin(): bool

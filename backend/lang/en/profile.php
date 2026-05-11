@@ -315,6 +315,8 @@ return [
     'cp_required_classic'    => 'Level (classic)',
     'cp_required_beach'      => 'Level (beach)',
     'cp_required_event_hint' => 'After saving, we\'ll try to sign you up for the event automatically.',
+    'cp_missing_for_event'   => 'To sign up for this event, please fill in:',
+    'cp_return_to_event'     => 'Return to event',
 
     // Organizer view info
     'cp_organizer_view_info' => 'You\'re editing this user as an organizer: only date of birth, position/zone (classic and beach), and play levels are available.',

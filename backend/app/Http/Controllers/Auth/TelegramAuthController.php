@@ -399,14 +399,10 @@ class TelegramAuthController extends Controller
                 $email = "tg_{$tgId}_" . now()->timestamp . "@telegram.local";
             }
 
-            $nameParts = explode(' ', trim($name), 2);
-
             $user = new User();
             $user->email      = $email;
             $user->password   = Hash::make(Str::random(32));
             $user->name       = trim($name) ?: 'Пользователь';
-            $user->first_name = $nameParts[0] ?? '';
-            $user->last_name  = $nameParts[1] ?? '';
             $user->telegram_id = $tgId;
 
             if (!empty($username)) {
@@ -532,14 +528,10 @@ class TelegramAuthController extends Controller
             if (User::where('email', $email)->exists()) {
                 $email = "tg_{$tgId}_" . now()->timestamp . "@telegram.local";
             }
-            $nameParts = explode(' ', trim($name), 2);
-
             $user             = new User();
             $user->email      = $email;
             $user->password   = Hash::make(Str::random(32));
             $user->name       = trim($name) ?: 'Пользователь';
-            $user->first_name = $nameParts[0] ?? '';
-            $user->last_name  = $nameParts[1] ?? '';
             $user->telegram_id = $tgId;
             if (!empty($username)) {
                 $user->telegram_username = $username;

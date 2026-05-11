@@ -49,16 +49,31 @@
 			}
 			
 			// -------------------------------------------------
-			// 4. required / section / event_id
+			// 4. required / section / event_id / missing / return_to
 			// -------------------------------------------------
 			$requiredRaw = (string) $request->query('required', '');
 			$section     = (string) $request->query('section', '');
 			$eventId     = $request->query('event_id');
-			
+
+			// Контекстное заполнение: missing поля + URL возврата на мероприятие
+			$missingRaw = (string) $request->query('missing', '');
+			$returnTo   = (string) $request->query('return_to', '');
+
+			$missingKeys = collect(explode(',', $missingRaw))
+				->map(fn ($s) => trim((string) $s))
+				->filter()
+				->unique()
+				->values()
+				->all();
+
+			if (!empty($returnTo)) {
+				$request->session()->put('profile_return_to', $returnTo);
+			}
+
 			if (!empty($eventId)) {
 				$request->session()->put('pending_event_join', (int) $eventId);
 			}
-			
+
 			$required = collect(explode(',', $requiredRaw))
             ->map(fn ($s) => trim((string) $s))
             ->filter()
@@ -73,7 +88,7 @@
 
 			// Профиль уже заполнен, нет специальных требований, просматривает свой профиль → редирект
 			// Админы и организаторы могут редактировать свой профиль без ограничений
-			if (empty($requiredKeys) && empty($section) && empty($eventId)
+			if (empty($requiredKeys) && empty($section) && empty($eventId) && empty($missingKeys)
 				&& $target->id === $actor->id && $target->isProfileComplete()
 				&& !ProfileUpdateGuard::isAdmin($actor) && !ProfileUpdateGuard::isOrganizer($actor)) {
 				return redirect('/user/profile')->with('status', 'Ваш профиль уже заполнен ✅');
@@ -106,6 +121,8 @@
             'actorId'           => $actor->id,
             'targetId'          => $target->id,
             'requiredKeys'      => $requiredKeys,
+            'missingKeys'       => $missingKeys,
+            'returnTo'          => $returnTo ?: ($request->session()->get('profile_return_to', '')),
             'eventId'           => $eventId,
             'section'           => $section,
             'cities'            => $cities,
@@ -176,9 +193,25 @@
 			// -------------------------------------------------
 			// 5. Redirect
 			// -------------------------------------------------
+			$returnTo = (string) $request->input('return_to', '');
+			if (empty($returnTo)) {
+				$returnTo = (string) $request->session()->pull('profile_return_to', '');
+			} else {
+				$request->session()->forget('profile_return_to');
+			}
+
 			if ($isFirstCompletion) {
+				if (!empty($returnTo)) {
+					return redirect($returnTo)
+						->with('success', 'Профиль заполнен! Теперь вы можете записаться на мероприятие.');
+				}
 				return redirect()->route('events.index')
 					->with('success', 'Профиль заполнен! Добро пожаловать 🏐');
+			}
+
+			if (!empty($returnTo)) {
+				return redirect($returnTo)
+					->with('success', 'Профиль обновлён. Попробуйте записаться снова.');
 			}
 
 			return redirect()

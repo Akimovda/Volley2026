@@ -116,6 +116,24 @@ class EventRegistrationController extends Controller
 
         $event = $occurrence->event;
 
+        // Проверка незаполненных полей профиля до вызова Guard
+        $missingFields = $user->getMissingFieldsForEvent($event, $occurrence);
+        if (!empty($missingFields)) {
+            $returnTo = route('events.show', ['event' => (int) $event->id, 'occurrence' => (int) $occurrence->id]);
+            $profileUrl = route('profile.complete') . '?' . http_build_query([
+                'missing'   => implode(',', $missingFields),
+                'return_to' => $returnTo,
+            ]);
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'ok'       => false,
+                    'message'  => 'Для записи на мероприятие необходимо заполнить данные в профиле.',
+                    'redirect' => $profileUrl,
+                ], 422);
+            }
+            return redirect($profileUrl);
+        }
+
         $result = app(EventRegistrationGuard::class)->check(
             $user,
             $occurrence,
