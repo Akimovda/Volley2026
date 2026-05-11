@@ -42,6 +42,7 @@
                         @endforeach
                     </select>
                 </div>
+                <div id="occ_rem_fire_hint" class="f-16 cd b-600 mt-1"></div>
             </div>
         </div>
     </div>

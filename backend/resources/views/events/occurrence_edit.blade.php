@@ -194,6 +194,52 @@
             }
         });
 
+        // ===== Подсказка: фактическое время отправки напоминания =====
+        (function() {
+            var occTz = @json($tz ?? '');
+            var remH  = document.getElementById('occ_rem_h');
+            var remM  = document.getElementById('occ_rem_m');
+            var hint  = document.getElementById('occ_rem_fire_hint');
+            var startsInput = document.querySelector('input[name="starts_at_local"]');
+            if (!remH || !remM || !hint || !startsInput || !occTz) return;
+
+            function localEventTimeToUTC(val, tz) {
+                try {
+                    var naiveUTC = new Date(val + ':00Z');
+                    var parts = new Intl.DateTimeFormat('en-CA', {
+                        timeZone: tz, hour12: false,
+                        year: 'numeric', month: '2-digit', day: '2-digit',
+                        hour: '2-digit', minute: '2-digit'
+                    }).formatToParts(naiveUTC);
+                    var get = function(t) { return parts.find(function(p){return p.type===t;}).value; };
+                    var tzMs = new Date(get('year')+'-'+get('month')+'-'+get('day')+'T'+get('hour')+':'+get('minute')+':00Z').getTime();
+                    return new Date(naiveUTC.getTime() - (tzMs - naiveUTC.getTime()));
+                } catch(e) { return null; }
+            }
+
+            function updateHint() {
+                var h = Math.max(0, parseInt(remH.value || 0, 10));
+                var m = Math.max(0, parseInt(remM.value || 0, 10));
+                var startsVal = startsInput.value;
+                if (!startsVal) { hint.textContent = ''; return; }
+                var startsUTC = localEventTimeToUTC(startsVal, occTz);
+                if (!startsUTC) { hint.textContent = ''; return; }
+                var fireUTC = new Date(startsUTC.getTime() - (h * 60 + m) * 60000);
+                try {
+                    var fmt = new Intl.DateTimeFormat('ru-RU', {
+                        timeZone: occTz, day: '2-digit', month: '2-digit',
+                        hour: '2-digit', minute: '2-digit', hour12: false
+                    });
+                    hint.textContent = '→ Напоминание придёт ~' + fmt.format(fireUTC) + ' (' + occTz + ')';
+                } catch(e) { hint.textContent = ''; }
+            }
+
+            remH.addEventListener('change', updateHint);
+            remM.addEventListener('change', updateHint);
+            startsInput.addEventListener('change', updateHint);
+            updateHint();
+        })();
+
         // ===== Платное/бесплатное — показ блока оплаты =====
         var isPaid = document.getElementById('occ_is_paid');
         var priceWrap = document.getElementById('occ_price_wrap');
