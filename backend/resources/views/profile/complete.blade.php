@@ -1443,6 +1443,11 @@
 							const phoneRe = /^\+7\d{10}$/;
 							
 							form.addEventListener('submit', (e) => {
+								// Сбросить старые подсветки (в т.ч. от missingKeys при загрузке)
+								form.querySelectorAll('.input-error').forEach(function(el) {
+									el.classList.remove('input-error');
+								});
+
 								let ok = true;
 								
 								// Names
@@ -1536,6 +1541,13 @@
 								if (el && !el.disabled) {
 									el.classList.add('input-error');
 									if (!firstEl) firstEl = el;
+									// Снимать подсветку когда пользователь заполняет поле
+									el.addEventListener('change', function() {
+										if (this.value) this.classList.remove('input-error');
+									});
+									el.addEventListener('input', function() {
+										if (this.value) this.classList.remove('input-error');
+									});
 								}
 							});
 						});
