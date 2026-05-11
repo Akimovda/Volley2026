@@ -293,6 +293,7 @@ class EventStoreService
         $data['registration_starts_at'] = $windows['regStartsUtc'];
         $data['registration_ends_at'] = $windows['regEndsUtc'];
         $data['cancel_self_until'] = $windows['cancelUntilUtc'];
+        $data['cancel_self_until_waitlist'] = $windows['cancelUntilWaitlistUtc'];
 
 
         /*

@@ -4,6 +4,7 @@
 	
 	use App\Models\User;
 	use App\Models\EventOccurrence;
+	use App\Models\OccurrenceWaitlist;
 	use Illuminate\Support\Carbon;
 	
 	final class EventCancellationGuard
@@ -41,13 +42,27 @@
 				|-----------------------------------------
 			*/
 			$cancelUntil = null;
-			
+
 			if (!empty($occurrence->cancel_self_until)) {
 				$cancelUntil = Carbon::parse($occurrence->cancel_self_until, 'UTC');
 				} elseif (!empty($event->cancel_self_until)) {
 				$cancelUntil = Carbon::parse($event->cancel_self_until, 'UTC');
 			}
-			
+
+			// Если есть лист ожидания — применить более ранний запрет отмены
+			$cancelUntilWaitlist = null;
+			$hasWaitlist = OccurrenceWaitlist::where('occurrence_id', $occurrence->id)->exists();
+			if ($hasWaitlist) {
+				$raw = $occurrence->cancel_self_until_waitlist ?? $event->cancel_self_until_waitlist ?? null;
+				if ($raw) {
+					$cancelUntilWaitlist = Carbon::parse($raw, 'UTC');
+					// Используем только если строже основного лимита
+					if ($cancelUntil === null || $cancelUntilWaitlist->greaterThan($cancelUntil)) {
+						$cancelUntil = $cancelUntilWaitlist;
+					}
+				}
+			}
+
 			if ($cancelUntil && $nowUtc->greaterThanOrEqualTo($cancelUntil)) {
 				$local = $cancelUntil->copy()->setTimezone($tz)->format('d.m.Y H:i');
 				return GuardResult::deny("Отмена записи недоступна после {$local}.");

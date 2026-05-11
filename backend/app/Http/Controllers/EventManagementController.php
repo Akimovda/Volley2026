@@ -441,7 +441,8 @@ if ($role === 'admin') {
             'reg_starts_days_before'           => 'nullable|integer|min:0|max:365',
             'reg_starts_hours_before'          => 'nullable|integer|min:0|max:23',
             'reg_ends_minutes_before'          => 'nullable|integer|min:0|max:10080',
-            'cancel_lock_minutes_before'       => 'nullable|integer|min:0|max:10080',
+            'cancel_lock_minutes_before'          => 'nullable|integer|min:0|max:10080',
+            'cancel_lock_waitlist_minutes_before' => 'nullable|integer|min:0|max:10080',
             'remind_registration_enabled'      => 'sometimes|boolean',
             'remind_registration_minutes_before' => 'nullable|integer|min:0|max:10080',
 
@@ -675,7 +676,8 @@ if ($role === 'admin') {
             'reg_starts_days_before'   => ['nullable', 'integer', 'min:0', 'max:365'],
             'reg_starts_hours_before'  => ['nullable', 'integer', 'min:0', 'max:23'],
             'reg_ends_minutes_before'  => ['nullable', 'integer', 'min:0', 'max:10080'],
-            'cancel_lock_minutes_before' => ['nullable', 'integer', 'min:0', 'max:10080'],
+            'cancel_lock_minutes_before'          => ['nullable', 'integer', 'min:0', 'max:10080'],
+            'cancel_lock_waitlist_minutes_before' => ['nullable', 'integer', 'min:0', 'max:10080'],
             'game_max_players'             => ['nullable', 'integer', 'min:0'],
             'game_min_players'             => ['nullable', 'integer', 'min:0'],
             'game_reserve_players_max'     => ['nullable', 'integer', 'min:0', 'max:20'],
@@ -742,6 +744,9 @@ if ($role === 'admin') {
             $hoursBefore = (int) ($data['reg_starts_hours_before'] ?? 0);
             $endsMinBefore = (int) ($data['reg_ends_minutes_before'] ?? 15);
             $cancelMinBefore = (int) ($data['cancel_lock_minutes_before'] ?? 60);
+            $cancelWaitlistMinBefore = isset($data['cancel_lock_waitlist_minutes_before']) && (int)$data['cancel_lock_waitlist_minutes_before'] > 0
+                ? (int) $data['cancel_lock_waitlist_minutes_before']
+                : null;
     
             $event->title = $data['title'];
             $event->timezone = $tz;
@@ -801,10 +806,14 @@ if ($role === 'admin') {
                 $event->registration_starts_at = $startsUtc->copy()->subDays($daysBefore)->subHours($hoursBefore);
                 $event->registration_ends_at = $startsUtc->copy()->subMinutes($endsMinBefore);
                 $event->cancel_self_until = $startsUtc->copy()->subMinutes($cancelMinBefore);
+                $event->cancel_self_until_waitlist = $cancelWaitlistMinBefore !== null
+                    ? $startsUtc->copy()->subMinutes($cancelWaitlistMinBefore)
+                    : null;
             } else {
                 $event->registration_starts_at = null;
                 $event->registration_ends_at = null;
                 $event->cancel_self_until = null;
+                $event->cancel_self_until_waitlist = null;
             }
     
             $event->save();
@@ -917,7 +926,8 @@ if ($role === 'admin') {
                         'max_players' => $event->gameSettings?->max_players ?? null,
                         'registration_starts_at' => $event->registration_starts_at ?? null,
                         'registration_ends_at' => $event->registration_ends_at ?? null,
-                        'cancel_self_until' => $event->cancel_self_until ?? null,
+                        'cancel_self_until'         => $event->cancel_self_until ?? null,
+                        'cancel_self_until_waitlist' => $event->cancel_self_until_waitlist ?? null,
                         'age_policy' => $event->age_policy ?? null,
                         'is_snow' => $event->is_snow ?? null,
                     ]

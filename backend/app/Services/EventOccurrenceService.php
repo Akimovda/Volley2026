@@ -217,12 +217,14 @@ if ($endType === 'until') {
 			$regStartsUtc = null;
 			$regEndsUtc = null;
 			$cancelUntilUtc = null;
-			
+			$cancelUntilWaitlistUtc = null;
+
 			if (!$startsUtc || !$allowReg) {
 				return compact(
                 'regStartsUtc',
                 'regEndsUtc',
-                'cancelUntilUtc'
+                'cancelUntilUtc',
+                'cancelUntilWaitlistUtc'
 				);
 			}
 			
@@ -245,15 +247,34 @@ if ($endType === 'until') {
 			} else {
 				$cancelLockMinutesBefore = (int)($data['cancel_lock_minutes_before'] ?? 60);
 			}
-			
+
+			// Запрет отмены при наличии листа ожидания
+			$cancelLockWaitlistMinutesBefore = null;
+			if (array_key_exists('cancel_lock_waitlist_h', $data) || array_key_exists('cancel_lock_waitlist_m', $data)) {
+				$wh = (int)($data['cancel_lock_waitlist_h'] ?? 0);
+				$wm = (int)($data['cancel_lock_waitlist_m'] ?? 0);
+				if ($wh > 0 || $wm > 0) {
+					$cancelLockWaitlistMinutesBefore = max(1, $wh * 60 + $wm);
+				}
+			} elseif (array_key_exists('cancel_lock_waitlist_minutes_before', $data)) {
+				$raw = (int)($data['cancel_lock_waitlist_minutes_before'] ?? 0);
+				if ($raw > 0) {
+					$cancelLockWaitlistMinutesBefore = $raw;
+				}
+			}
+
 			$regStartsUtc = $startsUtc->subDays($regStartsDaysBefore)->subHours($regStartsHoursBefore);
 			$regEndsUtc = $startsUtc->subMinutes($regEndsMinutesBefore);
 			$cancelUntilUtc = $startsUtc->subMinutes($cancelLockMinutesBefore);
-			
+			$cancelUntilWaitlistUtc = $cancelLockWaitlistMinutesBefore !== null
+				? $startsUtc->subMinutes($cancelLockWaitlistMinutesBefore)
+				: null;
+
 			return compact(
             'regStartsUtc',
             'regEndsUtc',
-            'cancelUntilUtc'
+            'cancelUntilUtc',
+            'cancelUntilWaitlistUtc'
 			);
 		}
 		

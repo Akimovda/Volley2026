@@ -772,6 +772,7 @@ use App\Services\StaffLogService;
             'reg_starts_days_before',
             'reg_ends_minutes_before',
             'cancel_lock_minutes_before',
+            'cancel_lock_waitlist_minutes_before',
 			];
 			
 			$step3 = [

@@ -183,6 +183,10 @@ class EventPersistenceService
                 $event->cancel_self_until = $allowReg ? ($reg['cancelUntilUtc'] ?? null) : null;
             }
 
+            if (Schema::hasColumn('events', 'cancel_self_until_waitlist')) {
+                $event->cancel_self_until_waitlist = $allowReg ? ($reg['cancelUntilWaitlistUtc'] ?? null) : null;
+            }
+
             $firstTrainerId = (int)($trainerIds[0] ?? 0);
 
             if (Schema::hasColumn('events', 'trainer_user_id')) {

@@ -192,9 +192,22 @@ if ($initialStep < 1 || $initialStep > 3) {
         $cancelLockMinutes = 0;
     }
 
+    if (old('cancel_lock_waitlist_h') !== null || old('cancel_lock_waitlist_m') !== null) {
+        $cancelLockWaitlistHours   = max(0, (int) old('cancel_lock_waitlist_h', 0));
+        $cancelLockWaitlistMinutes = max(0, (int) old('cancel_lock_waitlist_m', 0));
+    } elseif (old('cancel_lock_waitlist_minutes_before') !== null) {
+        $tmp = (int) old('cancel_lock_waitlist_minutes_before');
+        $cancelLockWaitlistHours   = intdiv($tmp, 60);
+        $cancelLockWaitlistMinutes = $tmp % 60;
+    } else {
+        $cancelLockWaitlistHours   = 0;
+        $cancelLockWaitlistMinutes = 0;
+    }
+
     // Computed totals for hidden fallback fields
-    $oldRegEndsMinutesBefore    = $regEndsHours * 60 + $regEndsMinutes;
-    $oldCancelLockMinutesBefore = $cancelLockHours * 60 + $cancelLockMinutes;
+    $oldRegEndsMinutesBefore           = $regEndsHours * 60 + $regEndsMinutes;
+    $oldCancelLockMinutesBefore        = $cancelLockHours * 60 + $cancelLockMinutes;
+    $oldCancelLockWaitlistMinutesBefore = $cancelLockWaitlistHours * 60 + $cancelLockWaitlistMinutes;
 	@endphp
 	
 	
@@ -562,8 +575,20 @@ document.addEventListener('DOMContentLoaded', function() {
         sync();
     }
 
+    function syncMinutesAllowZero(hoursId, minsId, hiddenId) {
+        var hSel = document.getElementById(hoursId);
+        var mSel = document.getElementById(minsId);
+        var hidden = document.getElementById(hiddenId);
+        if (!hSel || !mSel || !hidden) return;
+        function sync() { hidden.value = parseInt(hSel.value) * 60 + parseInt(mSel.value); }
+        hSel.addEventListener('change', sync);
+        mSel.addEventListener('change', sync);
+        sync();
+    }
+
     syncMinutes('reg_ends_hours', 'reg_ends_mins', 'reg_ends_minutes_before');
     syncMinutes('cancel_lock_hours', 'cancel_lock_mins', 'cancel_lock_minutes_before');
+    syncMinutesAllowZero('cancel_lock_waitlist_hours', 'cancel_lock_waitlist_mins', 'cancel_lock_waitlist_minutes_before');
 });
 </script>
 
