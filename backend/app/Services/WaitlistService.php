@@ -296,6 +296,9 @@ class WaitlistService
 
                 Log::info("Waitlist auto-booked: user #{$user->id} → occurrence #{$occurrence->id} pos='{$position}'");
 
+                // Обновляем счётчик статистики — persistRegistration его не вызывает при autoBook
+                app(\App\Services\EventOccurrenceStatsService::class)->increment($occurrence->id);
+
                 return true;
             }
 
