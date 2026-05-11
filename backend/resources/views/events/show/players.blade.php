@@ -361,6 +361,33 @@
 			{!! __('events.sp_team_full_warn') !!}
 		</div>
 		@endif
+		@if (!empty($missingProfileFields))
+		@php
+			$_tmFieldLabels = [
+				'birth_date'    => 'дату рождения',
+				'gender'        => 'пол',
+				'classic_level' => 'игровой уровень (классика)',
+				'beach_level'   => 'игровой уровень (пляж)',
+				'full_name'     => 'имя и фамилию',
+				'patronymic'    => 'отчество',
+				'phone'         => 'телефон',
+				'city'          => 'город',
+			];
+			$_tmMissingLabels = collect($missingProfileFields)
+				->map(fn($k) => $_tmFieldLabels[$k] ?? $k)
+				->implode(', ');
+			$_tmProfileUrl = route('profile.complete') . '?' . http_build_query([
+				'missing'   => implode(',', $missingProfileFields),
+				'return_to' => request()->fullUrl(),
+			]);
+		@endphp
+		<div class="alert alert-info mt-1">
+			Для записи укажи в профиле: {{ $_tmMissingLabels }}.
+			<div class="mt-1">
+				<a href="{{ $_tmProfileUrl }}" class="btn btn-small btn-primary">{{ __('events.sp_btn_complete_profile') }}</a>
+			</div>
+		</div>
+		@else
 		<form method="POST" action="{{ route('tournamentTeams.store', $event) }}" class="form mt-1">
 			@csrf
 			<input type="text" name="name" class="form-control mb-1" placeholder="{{ __('events.sp_team_name_ph') }}">
@@ -380,8 +407,9 @@
 				{{ $tournamentTeamsFull ? __('events.sp_btn_apply_reserve') : __('events.sp_btn_create_team') }}
 			</button>
 		</form>
-		@endif
-		
+		@endif {{-- missingProfileFields @else --}}
+		@endif {{-- auth()->check() --}}
+
 		@elseif (empty($freePositions))
 		<div class="alert alert-warning">
 			{{ __('events.sp_no_spots') }}
