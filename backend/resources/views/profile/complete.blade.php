@@ -1306,6 +1306,14 @@
 								if (!el) return;
 								if (isInvalid) el.classList.add('input-error');
 								else el.classList.remove('input-error');
+								// Для select: синхронизировать кастомный wrapper (видим на десктопе)
+								if (el.tagName === 'SELECT') {
+									var prev = el.previousElementSibling;
+									if (prev && prev.classList.contains('form-select-wrapper')) {
+										if (isInvalid) prev.classList.add('input-error');
+										else prev.classList.remove('input-error');
+									}
+								}
 							}
 							
 							// ---------- Translit + name normalize ----------
@@ -1540,13 +1548,32 @@
 								var el = document.querySelector(sel);
 								if (el && !el.disabled) {
 									el.classList.add('input-error');
-									if (!firstEl) firstEl = el;
+									// Для select: подсветить кастомный wrapper (видим на десктопе)
+									var wrapper = (el.tagName === 'SELECT') ? el.previousElementSibling : null;
+									if (wrapper && wrapper.classList.contains('form-select-wrapper')) {
+										wrapper.classList.add('input-error');
+										if (!firstEl) firstEl = wrapper; // скроллим к видимому wrapper
+									} else {
+										if (!firstEl) firstEl = el;
+									}
 									// Снимать подсветку когда пользователь заполняет поле
 									el.addEventListener('change', function() {
-										if (this.value) this.classList.remove('input-error');
+										if (this.value) {
+											this.classList.remove('input-error');
+											var wr = this.previousElementSibling;
+											if (wr && wr.classList.contains('form-select-wrapper')) {
+												wr.classList.remove('input-error');
+											}
+										}
 									});
 									el.addEventListener('input', function() {
-										if (this.value) this.classList.remove('input-error');
+										if (this.value) {
+											this.classList.remove('input-error');
+											var wr = this.previousElementSibling;
+											if (wr && wr.classList.contains('form-select-wrapper')) {
+												wr.classList.remove('input-error');
+											}
+										}
 									});
 								}
 							});
