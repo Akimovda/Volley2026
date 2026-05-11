@@ -66,6 +66,24 @@
 				->values()
 				->all();
 
+			// Убираем поля, которые уже заполнены у пользователя — URL-параметр мог устареть после сохранения
+			if (!empty($missingKeys)) {
+				$missingKeys = array_values(array_filter($missingKeys, function (string $key) use ($target): bool {
+					return match ($key) {
+						'gender'        => empty($target->gender),
+						'birth_date'    => empty($target->birth_date),
+						'classic_level' => is_null($target->classic_level),
+						'beach_level'   => is_null($target->beach_level),
+						'phone'         => empty($target->phone),
+						'full_name'     => empty($target->first_name) || empty($target->last_name),
+						'patronymic'    => empty($target->patronymic),
+						'city'          => empty($target->city_id),
+						'height_cm'     => empty($target->height_cm),
+						default         => true,
+					};
+				}));
+			}
+
 			if (!empty($returnTo)) {
 				$request->session()->put('profile_return_to', $returnTo);
 			}

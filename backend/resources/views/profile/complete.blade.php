@@ -1546,14 +1546,15 @@
 							selectors.forEach(function(sel) {
 								var el = document.querySelector(sel);
 								if (el && !el.disabled) {
-									el.classList.add('input-error');
+									var isEmpty = !el.value;
+									if (isEmpty) el.classList.add('input-error');
 									// Для select: подсветить кастомный wrapper (видим на десктопе)
 									var wrapper = (el.tagName === 'SELECT') ? el.previousElementSibling : null;
 									if (wrapper && wrapper.classList.contains('form-select-wrapper')) {
-										wrapper.classList.add('input-error');
-										if (!firstEl) firstEl = wrapper; // скроллим к видимому wrapper
+										if (isEmpty) wrapper.classList.add('input-error');
+										if (isEmpty && !firstEl) firstEl = wrapper; // скроллим к видимому wrapper
 									} else {
-										if (!firstEl) firstEl = el;
+										if (isEmpty && !firstEl) firstEl = el;
 									}
 									// Снимать подсветку когда пользователь заполняет поле
 									el.addEventListener('change', function() {
