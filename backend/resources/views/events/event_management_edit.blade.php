@@ -836,6 +836,7 @@
                                     <input type="hidden" name="remind_registration_minutes_before"
                                         id="remind_hidden_edit" value="{{ $remMin }}">
                                     <ul class="list f-16 mt-1">
+                                        <li id="remind_fire_at_hint_edit" class="cd b-600"></li>
                                         <li>{{ __('events.remind_example') }}</li>
                                     </ul>
                                 </div>
@@ -1125,13 +1126,54 @@
             const rH = document.getElementById('remind_hours_edit');
             const rM = document.getElementById('remind_minutes_edit');
             const rHid = document.getElementById('remind_hidden_edit');
+            const rHint = document.getElementById('remind_fire_at_hint_edit');
+
+            // Конвертирует datetime-local строку + timezone в UTC Date.
+            // startsVal = "2026-05-13T19:30" (локальное время мероприятия), tzName = "Asia/Novosibirsk"
+            function localEventTimeToUTC(startsVal, tzName) {
+                if (!startsVal || !tzName) return null;
+                try {
+                    // Временно трактуем как UTC, чтобы узнать смещение timezone
+                    const naiveUTC = new Date(startsVal + ':00Z');
+                    const parts = new Intl.DateTimeFormat('en-CA', {
+                        timeZone: tzName, hour12: false,
+                        year: 'numeric', month: '2-digit', day: '2-digit',
+                        hour: '2-digit', minute: '2-digit'
+                    }).formatToParts(naiveUTC);
+                    const get = t => parts.find(p => p.type === t).value;
+                    const tzMs = new Date(get('year')+'-'+get('month')+'-'+get('day')+'T'+get('hour')+':'+get('minute')+':00Z').getTime();
+                    const offsetMs = tzMs - naiveUTC.getTime(); // смещение tz в мс
+                    return new Date(naiveUTC.getTime() - offsetMs); // корректный UTC
+                } catch(e) { return null; }
+            }
+
             function syncRemind() {
                 const h = Math.max(0, parseInt(rH?.value || 0, 10));
                 const m = Math.max(0, Math.min(59, parseInt(rM?.value || 0, 10)));
                 if (rHid) rHid.value = h * 60 + m;
+
+                if (rHint) {
+                    const startsVal = document.querySelector('input[name="starts_at"]')?.value || '';
+                    const tz = document.querySelector('input[name="timezone"]')?.value || '';
+                    if (startsVal && tz) {
+                        const startsUTC = localEventTimeToUTC(startsVal, tz);
+                        if (startsUTC) {
+                            const fireUTC = new Date(startsUTC.getTime() - (h * 60 + m) * 60000);
+                            try {
+                                const fmt = new Intl.DateTimeFormat('ru-RU', {
+                                    timeZone: tz, day: '2-digit', month: '2-digit',
+                                    hour: '2-digit', minute: '2-digit', hour12: false
+                                });
+                                rHint.textContent = '→ Напоминание придёт ~' + fmt.format(fireUTC) + ' (' + tz + ')';
+                            } catch(e) { rHint.textContent = ''; }
+                        } else { rHint.textContent = ''; }
+                    } else { rHint.textContent = ''; }
+                }
             }
             rH?.addEventListener('input', syncRemind);
             rM?.addEventListener('input', syncRemind);
+            document.querySelector('input[name="starts_at"]')?.addEventListener('input', syncRemind);
+            document.querySelector('input[name="timezone"]')?.addEventListener('input', syncRemind);
             syncRemind();
 
             // --- Окно регистрации (часы+минуты → hidden total минут) ---
