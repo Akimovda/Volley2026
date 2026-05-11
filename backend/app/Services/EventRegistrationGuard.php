@@ -250,12 +250,10 @@
 			if ($hasOthers) {
 				$result->meta['waitlist_only'] = true;
 				$result->errors[] = 'На мероприятии есть лист ожидания. Запись закрыта — доступна только запись в лист ожидания.';
-				// Убираем reserve из freePositions — резерв тоже нельзя занять в обход очереди
-				if (isset($result->data['free_positions'])) {
-					$result->data['free_positions'] = array_values(
-						array_filter($result->data['free_positions'], fn($p) => ($p['key'] ?? '') !== 'reserve')
-					);
-				}
+				// reserve (запасной игрок) НЕ убираем: это отдельная роль (скамейка),
+				// а не обход очереди на основные позиции.
+				// autoBookNext для reserve не срабатывает при пустых слотах (нет отменённых),
+				// поэтому блокировка приводила к постоянной недоступности запасных мест.
 			}
 		}
 		
