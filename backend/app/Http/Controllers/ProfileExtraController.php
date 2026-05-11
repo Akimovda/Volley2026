@@ -343,6 +343,13 @@ class ProfileExtraController extends Controller
         }
 
         // Если пришли со страницы завершения профиля — фиксируем первое заполнение и редиректим
+        \Illuminate\Support\Facades\Log::info('[ProfileExtra] save', [
+            'user'         => $target->id,
+            'from_complete'=> $request->boolean('from_complete'),
+            'return_to'    => $request->input('return_to'),
+            'saved_gender' => $target->fresh()->gender,
+            'saved_data_keys' => array_keys($data),
+        ]);
         if ($request->boolean('from_complete')) {
             if (!$isEditingOther) {
                 $target->refresh();
