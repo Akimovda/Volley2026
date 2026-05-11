@@ -9,84 +9,60 @@ use Illuminate\Database\Eloquent\Collection;
 
 class EventRoleSlotService
 {
-    /**
-     * Cache key
-     */
     protected function cacheKey(Event $event): string
     {
         return "event_role_slots_{$event->id}";
     }
 
-    /**
-     * Get slots (cached)
-     */
     public function getSlots(Event $event): Collection
     {
         return Cache::remember(
             $this->cacheKey($event),
             now()->addMinutes(1),
-            fn () => $event
-                ->roleSlots()
-                ->orderBy('role')
-                ->get()
+            fn () => $event->roleSlots()->orderBy('role')->get()
         );
     }
 
-    /**
-     * Sync role slots (safe rebuild)
-     */
     public function syncRoleSlots(Event $event, array $roles): void
-        {
-            if (empty($roles)) {
-                $this->clear($event);
-                return;
-            }
-        
-            $existing = EventRoleSlot::where('event_id', $event->id)
-                ->get()
-                ->keyBy('role');
-        
-            foreach ($roles as $role => $count) {
-        
-                $count = max(0, (int)$count);
-        
-                if ($existing->has($role)) {
-        
-                    $slot = $existing[$role];
-        
-                    $slot->max_slots = $count;
-        
-                    $slot->save();
-        
-                } else {
-        
-                    EventRoleSlot::create([
-                        'event_id' => $event->id,
-                        'role' => $role,
-                        'max_slots' => $count,
-                        'taken_slots' => 0,
-                    ]);
-        
-                }
-            }
-        
-            /*
-            |--------------------------------------------------------------------------
-            | REMOVE OLD ROLES
-            |--------------------------------------------------------------------------
-            */
-        
-            EventRoleSlot::where('event_id', $event->id)
-                ->whereNotIn('role', array_keys($roles))
-                ->delete();
-        
+    {
+        if (empty($roles)) {
             $this->clear($event);
+            return;
         }
 
+        $existing = EventRoleSlot::where('event_id', $event->id)
+            ->get()
+            ->keyBy('role');
+
+        foreach ($roles as $role => $count) {
+            $count = max(0, (int) $count);
+
+            if ($existing->has($role)) {
+                $slot = $existing[$role];
+                $slot->max_slots = $count;
+                $slot->save();
+            } else {
+                EventRoleSlot::create([
+                    'event_id'    => $event->id,
+                    'role'        => $role,
+                    'max_slots'   => $count,
+                    'taken_slots' => 0,
+                ]);
+            }
+        }
+
+        EventRoleSlot::where('event_id', $event->id)
+            ->whereNotIn('role', array_keys($roles))
+            ->delete();
+
+        $this->clear($event);
+    }
+
     /**
-     * Try to take slot (atomic)
-     * Counts actual active registrations per occurrence — not the stale taken_slots counter.
-     * Safe because the caller holds pg_advisory_xact_lock for (occurrence_id, roleKey).
+     * Try to take slot (atomic).
+     * Uses actual registration count per occurrence — not the stale taken_slots counter.
+     * Caller must hold pg_advisory_xact_lock(occurrence_id, roleKey) before calling.
+     * Updates taken_slots to actual+1 so the counter stays in sync.
      */
     public function tryTakeSlot(Event $event, string $role, int $occurrenceId): bool
     {
@@ -109,52 +85,37 @@ class EventRoleSlotService
             return false;
         }
 
+        // Синхронизируем счётчик: taken + 1 (регистрация создаётся в той же транзакции)
+        \DB::table('event_role_slots')
+            ->where('event_id', $event->id)
+            ->where('role', $role)
+            ->update(['taken_slots' => $taken + 1]);
+
         $this->clear($event);
         return true;
     }
 
     /**
-     * Release slot (when user cancels registration)
+     * Resync taken_slots to the actual count for a given occurrence.
+     * Call after cancellation or any out-of-band change.
      */
-    public function releaseSlot(Event $event, string $role): void
+    public function resyncTakenSlots(Event $event, string $role, int $occurrenceId): void
     {
-        EventRoleSlot::where('event_id', $event->id)
+        $actual = \DB::table('event_registrations')
+            ->where('occurrence_id', $occurrenceId)
+            ->where('position', $role)
+            ->whereNull('cancelled_at')
+            ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
+            ->count();
+
+        \DB::table('event_role_slots')
+            ->where('event_id', $event->id)
             ->where('role', $role)
-            ->where('taken_slots', '>', 0)
-            ->decrement('taken_slots');
+            ->update(['taken_slots' => $actual]);
 
         $this->clear($event);
     }
 
-    /**
-     * Get availability info for UI / API
-     */
-    public function getAvailability(Event $event): array
-    {
-        $slots = $this->getSlots($event);
-
-        $result = [];
-
-        foreach ($slots as $slot) {
-
-            $free = max(
-                0,
-                $slot->max_slots - $slot->taken_slots
-            );
-
-            $result[$slot->role] = [
-                'max' => (int)$slot->max_slots,
-                'taken' => (int)$slot->taken_slots,
-                'free' => (int)$free,
-            ];
-        }
-
-        return $result;
-    }
-
-    /**
-     * Clear cached slots
-     */
     public function clear(Event $event): void
     {
         Cache::forget($this->cacheKey($event));
