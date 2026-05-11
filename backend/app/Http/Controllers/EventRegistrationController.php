@@ -439,6 +439,27 @@ class EventRegistrationController extends Controller
 
         app(EventOccurrenceStatsService::class)->increment($occurrence->id);
 
+        // Если есть свободные запасные места и кто-то в листе ожидания — авто-записываем в reserve.
+        // Триггер нужен при новой регистрации (а не только при отмене), т.к. reserve-слоты
+        // изначально пусты и onSpotFreed для них никогда не срабатывал.
+        if ($created && (string)($occurrence->event->format ?? '') !== 'tournament') {
+            $reserveMax = (int)($occurrence->event->gameSettings?->reserve_players_max ?? 0);
+            if ($reserveMax > 0) {
+                $reserveTaken = \DB::table('event_registrations')
+                    ->where('occurrence_id', $occurrence->id)
+                    ->where('position', 'reserve')
+                    ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
+                    ->whereNull('cancelled_at')
+                    ->count();
+                $hasWaitlist = \DB::table('occurrence_waitlist')
+                    ->where('occurrence_id', $occurrence->id)
+                    ->exists();
+                if ($reserveTaken < $reserveMax && $hasWaitlist) {
+                    app(\App\Services\WaitlistService::class)->autoBookNext($occurrence, 'reserve');
+                }
+            }
+        }
+
         event(new \App\Events\PlayerJoinedOccurrence(
             $occurrence->id,
             $user->name,
