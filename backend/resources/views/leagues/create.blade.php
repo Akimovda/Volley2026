@@ -21,7 +21,7 @@
 		<form action="{{ route('leagues.store') }}" method="POST" enctype="multipart/form-data">
 			@csrf
 
-			<div class="ramka">
+			<div class="ramka" style="z-index:5">
 				<h2 class="-mt-05">{{ __('seasons.leagues_section_main') }}</h2>
 				<div class="row">
 					<div class="col-md-6">
@@ -43,10 +43,9 @@
 							</select>
 						</div>
 					</div>
-				</div>
+				
 
 				@if(auth()->user()->isAdmin() && $organizers->isNotEmpty())
-				<div class="row">
 					<div class="col-md-6">
 						<div class="card">
 							<label>{{ __('seasons.leagues_label_organizer') }}</label>
@@ -60,10 +59,10 @@
 							</select>
 						</div>
 					</div>
-				</div>
+
 				@endif
 			</div>
-
+</div>
 			<div class="ramka">
 				<h2 class="-mt-05">{{ __('seasons.leagues_section_description') }}</h2>
 				<div class="card">

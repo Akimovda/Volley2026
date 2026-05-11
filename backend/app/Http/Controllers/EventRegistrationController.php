@@ -165,6 +165,19 @@ class EventRegistrationController extends Controller
                 ->with('error', implode(' ', $result->errors));
         }
 
+        // Нельзя записаться в состав если уже в листе ожидания
+        $inWaitlist = \App\Models\OccurrenceWaitlist::where('occurrence_id', $occurrence->id)
+            ->where('user_id', $user->id)
+            ->exists();
+        if ($inWaitlist) {
+            $msg = 'Вы уже в листе ожидания. Сначала покиньте резерв, чтобы записаться в состав.';
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['ok' => false, 'message' => $msg], 422);
+            }
+            return redirect()->route('events.show', ['event' => (int)$event->id, 'occurrence' => (int)$occurrence->id])
+                ->with('error', $msg);
+        }
+
         $position       = $request->input('position');
         $subscriptionId = $request->input('subscription_id');
         $couponCode     = $request->input('coupon_code');

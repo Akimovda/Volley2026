@@ -24,6 +24,15 @@ class OccurrenceWaitlistController extends Controller
             return back()->with('error', 'Резерв недоступен для турниров.');
         }
 
+        // Нельзя встать в резерв если уже записан в состав (включая запасные места)
+        $alreadyRegistered = \App\Models\EventRegistration::where('user_id', $user->id)
+            ->where('occurrence_id', $occurrence->id)
+            ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
+            ->exists();
+        if ($alreadyRegistered) {
+            return back()->with('error', 'Вы уже записаны на это мероприятие. Сначала отмените запись, чтобы встать в резерв.');
+        }
+
         // Проверяем возраст, уровень и прочие условия допуска
         $eligibility = app(EventRegistrationGuard::class)->checkEligibility($user, $occurrence);
         if (!$eligibility->allowed) {
