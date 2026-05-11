@@ -197,7 +197,7 @@
 								
 								{{-- ✅ Registration timings (Step 2) --}}
 								<div class="col-lg-8" id="reg_timing_box" data-show-if="allow_registration=1">
-									<div class="card">
+									<div class="card" style="overflow:visible">
 										<label>{{ __('events.reg_window_title') }}</label>
 										<hr class="mb-1">
 										<div class="row">
