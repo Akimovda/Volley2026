@@ -617,6 +617,24 @@ $showWaitlist = !$isTournament && !$eventStarted && auth()->check() && !$isRegis
 		@php
 		// При $isFull все заняты → все позиции. Иначе — только занятые.
 		$wlCheckboxPositions = !empty($occupiedPositions) ? $occupiedPositions : $allPositions;
+
+		// Фильтруем позиции по гендерной политике: показываем только те,
+		// на которые текущий пользователь может претендовать.
+		if ($gs && $gs->gender_policy === 'mixed_limited' && auth()->check()) {
+		    $wlUserGender    = strtolower((string)(auth()->user()->gender ?? ''));
+		    $wlSide          = $gs->gender_limited_side ?? '';
+		    $wlLimitedPos    = $gs->gender_limited_positions ?? [];
+		    if (is_string($wlLimitedPos)) $wlLimitedPos = json_decode($wlLimitedPos, true) ?: [];
+		    $wlTargetGender  = match($wlSide) { 'male' => 'm', 'female' => 'f', default => '' };
+		    if ($wlTargetGender && $wlUserGender && $wlUserGender[0] === $wlTargetGender) {
+		        // Пользователь относится к ограниченной стороне — оставляем только разрешённые позиции
+		        $wlCheckboxPositions = array_filter(
+		            $wlCheckboxPositions,
+		            fn($key) => in_array($key, $wlLimitedPos, true),
+		            ARRAY_FILTER_USE_KEY
+		        );
+		    }
+		}
 		@endphp
 		@if(!empty($wlCheckboxPositions))
 		<div class="mb-2 form">
