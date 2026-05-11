@@ -844,6 +844,10 @@ body.dark input[type="datetime-local"]::-webkit-calendar-picker-indicator {
     box-shadow: 0 0.4rem 1.2rem rgba(0, 0, 0, 0.08);
     background-color: rgba(0, 0, 0, 0.01) !important;
 }
+.form-select-wrapper.input-error .form-select-custom {
+    border-color: #ef4444 !important;
+    background-color: rgba(239, 68, 68, 0.02) !important;
+}
 .form-select-custom--disabled {
     opacity: 0.6;
     cursor: not-allowed;
