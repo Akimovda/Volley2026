@@ -459,27 +459,27 @@
 						@endunless
 						
 						<!-- Кнопка VK -->
-						<div data-href="{{ route('auth.vk.redirect', ['return' => $returnUrl]) }}" class="auth-btn auth-btn-vk">
+						<a href="{{ route('auth.vk.redirect', ['return' => $returnUrl]) }}" data-href="{{ route('auth.vk.redirect', ['return' => $returnUrl]) }}" class="auth-btn auth-btn-vk">
 							<span class="auth-icon-circle">
 								<span class="icon-vk"></span>
 							</span>
 							<span class="auth-text">{{ __('ui.auth_vk') }}</span>
-						</div>
-						
+						</a>
+
 						<!-- Кнопка Яндекс -->
-						<div data-href="{{ route('auth.yandex.redirect', ['return' => $returnUrl]) }}" class="auth-btn auth-btn-yandex">
+						<a href="{{ route('auth.yandex.redirect', ['return' => $returnUrl]) }}" data-href="{{ route('auth.yandex.redirect', ['return' => $returnUrl]) }}" class="auth-btn auth-btn-yandex">
 							<span class="auth-icon-circle">
 								<span class="icon-yandex"></span>
 							</span>
 							<span class="auth-text">{{ __('ui.auth_yandex') }}</span>
-						</div>
-						
-						<div data-href="{{ route('auth.telegram.redirect', ['return' => url()->full()]) }}" class="auth-btn auth-btn-telegram">
+						</a>
+
+						<a href="{{ route('auth.telegram.redirect', ['return' => url()->full()]) }}" data-href="{{ route('auth.telegram.redirect', ['return' => url()->full()]) }}" class="auth-btn auth-btn-telegram">
 							<span class="auth-icon-circle">
 								<span class="icon-tg"></span>
 							</span>
 							<span class="auth-text">{{ __('ui.auth_telegram') }}</span>
-						</div>
+						</a>
 						
 						
 						@unless(str_contains(request()->userAgent() ?? '', 'iPhone') || str_contains(request()->userAgent() ?? '', 'iPad') || str_contains(request()->userAgent() ?? '', 'Macintosh'))
