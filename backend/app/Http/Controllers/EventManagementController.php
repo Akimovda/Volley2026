@@ -702,6 +702,7 @@ if ($role === 'admin') {
             'remind_registration_minutes_before'  => ['nullable', 'integer', 'min:0'],
             'description_html'         => ['nullable', 'string'],
             'event_photos'             => ['nullable', 'string'],
+            'requires_personal_data'     => ['sometimes', 'boolean'],
             'bot_assistant_enabled'      => ['sometimes', 'boolean'],
             'bot_assistant_threshold'    => ['sometimes', 'integer', 'min:5', 'max:30'],
             'bot_assistant_max_fill_pct' => ['sometimes', 'integer', 'min:10', 'max:60'],
