@@ -1480,7 +1480,6 @@
 									const grp = [
 										document.querySelector('input[name="last_name"]'),
 										document.querySelector('input[name="first_name"]'),
-										document.querySelector('input[name="patronymic"]'),
 										phoneMasked,
 									].filter(Boolean);
 									if (grp.length > 0) {
