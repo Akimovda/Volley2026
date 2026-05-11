@@ -201,7 +201,7 @@ return [
     'show_pl_pick_position'       => 'Выбери позицию<br>(показаны только свободные).',
     'show_pl_waitlist_h2'         => 'Резерв',
     'show_pl_waitlist_login'      => '🔐 Войдите на сайт чтобы записаться в резерв.',
-    'show_pl_waitlist_in'         => '✅ Вы в резерве. Мы уведомим вас когда освободится место.',
+    'show_pl_waitlist_in'         => '✅ Вы в резерве. Мы уведомим вас когда освободится место. И запишем вас автоматически!',
     'show_pl_waitlist_positions'  => 'Ваши позиции:',
     'show_pl_waitlist_reserved_until' => '⏳ Место зарезервировано для вас до :time',
     'show_pl_waitlist_leave'      => 'Покинуть резерв',

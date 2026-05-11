@@ -200,7 +200,7 @@ return [
     'show_pl_pick_position'       => 'Pick a position<br>(only free shown).',
     'show_pl_waitlist_h2'         => 'Waitlist',
     'show_pl_waitlist_login'      => '🔐 Sign in to join the waitlist.',
-    'show_pl_waitlist_in'         => '✅ You are on the waitlist. We will notify you when a spot opens.',
+    'show_pl_waitlist_in'         => '✅ You are on the waitlist. We will notify you when a spot opens and register you automatically!',
     'show_pl_waitlist_positions'  => 'Your positions:',
     'show_pl_waitlist_reserved_until' => '⏳ Spot reserved for you until :time',
     'show_pl_waitlist_leave'      => 'Leave waitlist',
