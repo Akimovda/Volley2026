@@ -70,6 +70,9 @@ class EventShowService
         $page['join'] = $join;
         $page['cancel'] = $cancel;
         $page['freePositions'] = $join->data['free_positions'] ?? [];
+        $page['missingProfileFields'] = $user
+            ? $user->getMissingFieldsForEvent($page['event'], $page['occurrence'])
+            : [];
 
         // ===== Occurrence overrides on event (in-memory, after cache) =====
         $occ = $page['occurrence'];
