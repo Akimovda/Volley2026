@@ -162,8 +162,17 @@
 	</div>
 	
     @else
+	@php
+	$myWaitlist = null;
+	if (auth()->check()) {
+	    $myWaitlist = \App\Models\OccurrenceWaitlist::query()
+	        ->where('occurrence_id', $occurrence->id)
+	        ->where('user_id', auth()->id())
+	        ->first();
+	}
+	@endphp
 	<div id="join-registration-block">
-		
+
 		{{-- ===============================
 		УЖЕ ЗАПИСАН
 		=============================== --}}
@@ -279,12 +288,18 @@
 		МОЖНО ЗАПИСАТЬСЯ
 		=============================== --}}
 		@else
+		@if($myWaitlist)
+		{{-- Уже в листе ожидания — скрываем кнопки записи в состав --}}
+		<div class="alert alert-info">
+			{{ __('events.show_pl_in_waitlist_hint') }}
+		</div>
+		@else
 		@php
         $regMode = $registrationMode ?? 'single';
         $isTeamClassic = in_array($regMode, ['team_classic', 'team']);
         $isTeamBeach   = $regMode === 'team_beach';
 		@endphp
-		
+
 		@if ($isTeamClassic || $isTeamBeach)
 		{{-- ===== КОМАНДНАЯ ЗАПИСЬ ===== --}}
 		<div class="alert alert-info">
@@ -432,6 +447,7 @@
 		</div>
 		@endif
 		@endif
+		@endif {{-- @if($myWaitlist) --}}
 		@endif
 	</div>{{-- /join-registration-block --}}		
 		@endif
@@ -473,14 +489,8 @@ if ($isClassic && $gs) {
     }
 }
 
-// Текущий пользователь в резерве?
-$myWaitlist = null;
-if (auth()->check()) {
-$myWaitlist = \App\Models\OccurrenceWaitlist::query()
-->where('occurrence_id', $occurrence->id)
-->where('user_id', auth()->id())
-->first();
-}
+// $myWaitlist вычислена выше (в @else event-not-started); если событие отменено/завершено — null
+$myWaitlist = $myWaitlist ?? null;
 
 // Список резерва для организатора
 $isOrganizer = auth()->check() && (
@@ -493,7 +503,8 @@ $waitlistCount = \App\Models\OccurrenceWaitlist::query()
 ->count();
 
 // Показываем блок waitlist при полном заполнении ИЛИ когда заняты классические позиции
-$showWaitlist = !$isTournament && !$eventStarted && auth()->check() && (
+// Скрываем если пользователь уже записан в состав (включая запасные места)
+$showWaitlist = !$isTournament && !$eventStarted && auth()->check() && !$isRegistered && (
     $isFull || ($isClassic && !empty($occupiedPositions))
 );
 @endphp

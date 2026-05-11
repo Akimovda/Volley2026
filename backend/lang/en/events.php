@@ -212,6 +212,7 @@ return [
     'show_pl_waitlist_pick_pos'   => 'Pick positions (multiple allowed):',
     'show_pl_waitlist_no_pick'    => 'If no positions are picked — we will notify you when any spot opens.',
     'show_pl_waitlist_join'       => 'Join waitlist',
+    'show_pl_in_waitlist_hint'    => 'You are already on the waitlist. To register as a participant, leave the waitlist first.',
     'show_pl_waitlist_list'       => 'Waitlist:',
     'show_pl_waitlist_notified'   => '⏳ notified',
     'show_pl_invite_h2'           => 'Invite a player',

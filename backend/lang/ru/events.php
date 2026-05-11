@@ -213,6 +213,7 @@ return [
     'show_pl_waitlist_pick_pos'   => 'Выберите позиции (можно несколько):',
     'show_pl_waitlist_no_pick'    => 'Если не выбрать позиции — уведомим при освобождении любого места.',
     'show_pl_waitlist_join'       => 'Записаться в резерв',
+    'show_pl_in_waitlist_hint'    => 'Вы уже в листе ожидания. Чтобы записаться в состав, сначала покиньте резерв.',
     'show_pl_waitlist_list'       => 'Список резерва:',
     'show_pl_waitlist_notified'   => '⏳ уведомлён',
     'show_pl_invite_h2'           => 'Пригласить игрока',
