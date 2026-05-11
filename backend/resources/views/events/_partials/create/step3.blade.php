@@ -326,6 +326,7 @@
                                             >
                                 
                                             <ul class="list f-16 mt-1">
+                                                <li id="remind_fire_at_hint_create" class="cd b-600"></li>
                                                 <li>{{ __('events.remind_example') }}</li>
                                             </ul>
                                         </div>
@@ -336,15 +337,51 @@
                                         const hoursInput   = document.getElementById('remind_hours_input');
                                         const minutesInput = document.getElementById('remind_minutes_input');
                                         const hidden       = document.getElementById('remind_registration_minutes_before');
-                                
-                                        function syncRemind() {
-                                            const h = Math.max(0, parseInt(hoursInput.value || 0, 10));
-                                            const m = Math.max(0, Math.min(59, parseInt(minutesInput.value || 0, 10)));
-                                            hidden.value = h * 60 + m;
+                                        const hint         = document.getElementById('remind_fire_at_hint_create');
+
+                                        function localEventTimeToUTC(startsVal, tzName) {
+                                            if (!startsVal || !tzName) return null;
+                                            try {
+                                                const naiveUTC = new Date(startsVal + ':00Z');
+                                                const parts = new Intl.DateTimeFormat('en-CA', {
+                                                    timeZone: tzName, hour12: false,
+                                                    year: 'numeric', month: '2-digit', day: '2-digit',
+                                                    hour: '2-digit', minute: '2-digit'
+                                                }).formatToParts(naiveUTC);
+                                                const get = t => parts.find(p => p.type === t).value;
+                                                const tzMs = new Date(get('year')+'-'+get('month')+'-'+get('day')+'T'+get('hour')+':'+get('minute')+':00Z').getTime();
+                                                return new Date(naiveUTC.getTime() - (tzMs - naiveUTC.getTime()));
+                                            } catch(e) { return null; }
                                         }
-                                
-                                        hoursInput.addEventListener('change', syncRemind);
-                                        minutesInput.addEventListener('change', syncRemind);
+
+                                        function syncRemind() {
+                                            const h = Math.max(0, parseInt(hoursInput?.value || 0, 10));
+                                            const m = Math.max(0, Math.min(59, parseInt(minutesInput?.value || 0, 10)));
+                                            if (hidden) hidden.value = h * 60 + m;
+
+                                            if (hint) {
+                                                const startsVal = document.getElementById('starts_at_local')?.value || '';
+                                                const tz = document.getElementById('event_timezone_hidden')?.value || '';
+                                                if (startsVal && tz) {
+                                                    const startsUTC = localEventTimeToUTC(startsVal, tz);
+                                                    if (startsUTC) {
+                                                        const fireUTC = new Date(startsUTC.getTime() - (h * 60 + m) * 60000);
+                                                        try {
+                                                            const fmt = new Intl.DateTimeFormat('ru-RU', {
+                                                                timeZone: tz, day: '2-digit', month: '2-digit',
+                                                                hour: '2-digit', minute: '2-digit', hour12: false
+                                                            });
+                                                            hint.textContent = '→ Напоминание придёт ~' + fmt.format(fireUTC) + ' (' + tz + ')';
+                                                        } catch(e) { hint.textContent = ''; }
+                                                    } else { hint.textContent = ''; }
+                                                } else { hint.textContent = ''; }
+                                            }
+                                        }
+
+                                        hoursInput?.addEventListener('change', syncRemind);
+                                        minutesInput?.addEventListener('change', syncRemind);
+                                        document.getElementById('starts_at_local')?.addEventListener('change', syncRemind);
+                                        document.getElementById('event_timezone_hidden')?.addEventListener('change', syncRemind);
                                         syncRemind();
                                     });
                                 </script>
