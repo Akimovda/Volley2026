@@ -50,6 +50,25 @@ class WaitlistService
             'positions' => $positions,
         ]);
 
+        // Если reserve свободен и пользователь подходит — авто-записываем сразу.
+        // Триггер нужен здесь т.к. reserve-слоты изначально пусты и onSpotFreed для них
+        // не срабатывает (нет отмены). Без этого reserve мог оставаться незаполненным
+        // пока кто-то не сделает новую регистрацию (триггер в persistRegistration).
+        if ($entry->wasRecentlyCreated && (string)($occurrence->event->format ?? '') !== 'tournament') {
+            $reserveMax = (int)($occurrence->event->gameSettings?->reserve_players_max ?? 0);
+            if ($reserveMax > 0 && $entry->subscribedToPosition('reserve')) {
+                $reserveTaken = \DB::table('event_registrations')
+                    ->where('occurrence_id', $occurrence->id)
+                    ->where('position', 'reserve')
+                    ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
+                    ->whereNull('cancelled_at')
+                    ->count();
+                if ($reserveTaken < $reserveMax) {
+                    $this->autoBookNext($occurrence, 'reserve');
+                }
+            }
+        }
+
         return $entry;
     }
 
