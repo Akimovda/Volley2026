@@ -203,6 +203,22 @@ class WaitlistService
                     continue;
                 }
 
+                // Position-specific gender check: mixed_limited может ограничивать
+                // конкретные позиции для одного пола. checkEligibility не принимает
+                // позицию и не проверяет это — делаем здесь явно.
+                if ($position !== '' && $direction === 'classic') {
+                    $gs = $event->gameSettings;
+                    if ($gs && $gs->gender_policy === 'mixed_limited' && $user->gender) {
+                        $side = $gs->gender_limited_side ?? '';
+                        $limitedPos = $gs->gender_limited_positions ?? [];
+                        if (is_string($limitedPos)) $limitedPos = json_decode($limitedPos, true) ?: [];
+                        $targetGender = match ($side) { 'male' => 'm', 'female' => 'f', default => null };
+                        if ($targetGender && $user->gender[0] === $targetGender && !in_array($position, $limitedPos, true)) {
+                            continue; // позиция запрещена гендерной политикой
+                        }
+                    }
+                }
+
                 // Захват слота для классических основных позиций
                 $isReserve = $position === 'reserve';
                 if ($direction === 'classic' && $position !== '' && !$isReserve) {
