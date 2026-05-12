@@ -40,6 +40,11 @@
 </head>
 <body>
 @php
+    $fields       = $fields ?? ['name', 'phone', 'position'];
+    $showName     = in_array('name',     $fields, true);
+    $showPhone    = in_array('phone',    $fields, true);
+    $showPosition = in_array('position', $fields, true);
+
     $posLabels = [
         'setter'   => 'Связующий',
         'outside'  => 'Доигровщик',
@@ -75,24 +80,32 @@
     <thead>
         <tr>
             <th style="width:24px">#</th>
-            <th>Имя</th>
-            <th style="width:105px">Телефон</th>
-            <th style="width:90px">Позиция</th>
+            @if($showName)<th>ФИО</th>@endif
+            @if($showPhone)<th style="width:105px">Телефон</th>@endif
+            @if($showPosition)<th style="width:90px">Амплуа</th>@endif
             <th>Комментарий</th>
         </tr>
     </thead>
     <tbody>
         @forelse($registrations as $i => $r)
+        @php
+            $fullName = trim(implode(' ', array_filter([
+                $r->last_name  ?? '',
+                $r->first_name ?? '',
+                $r->patronymic ?? '',
+            ])));
+            $displayName = $fullName ?: ($r->name ?: ('User #' . $r->user_id));
+        @endphp
         <tr>
             <td class="num">{{ $i + 1 }}</td>
-            <td>{{ $r->name ?: ('User #' . $r->user_id) }}@if(!empty($r->is_bot)) (бот)@endif</td>
-            <td>{{ $r->phone ?: '—' }}</td>
-            <td class="pos">{{ $posLabels[$r->position ?? ''] ?? ($r->position ?: '—') }}</td>
+            @if($showName)<td>{{ $displayName }}@if(!empty($r->is_bot)) (бот)@endif</td>@endif
+            @if($showPhone)<td>{{ $r->phone ?: '—' }}</td>@endif
+            @if($showPosition)<td class="pos">{{ $posLabels[$r->position ?? ''] ?? ($r->position ?: '—') }}</td>@endif
             <td class="note">{{ $r->organizer_note ?: '' }}</td>
         </tr>
         @empty
         <tr>
-            <td colspan="5" style="text-align:center;color:#999;padding:12px;">Нет активных регистраций</td>
+            <td colspan="{{ 2 + (int)$showName + (int)$showPhone + (int)$showPosition }}" style="text-align:center;color:#999;padding:12px;">Нет активных регистраций</td>
         </tr>
         @endforelse
     </tbody>

@@ -904,6 +904,11 @@ return [
     'regs_history_hint'      => 'Последние :n событий. Данные до запуска лога восстановлены из записей.',
     'regs_org_note_ph'       => 'Заметка…',
 
+    'regs_export_title'      => 'Выгрузка списка',
+    'regs_export_hint'       => 'Выберите данные для включения в файл:',
+    'regs_export_field_name' => 'Фамилия, Имя, Отчество',
+    'regs_export_field_phone'=> 'Телефон',
+    'regs_export_field_pos'  => 'Амплуа',
     'regs_export_pdf'        => '⬇ Скачать PDF',
     'regs_export_txt'        => '⬇ Скачать TXT',
 

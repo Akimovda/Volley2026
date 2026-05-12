@@ -903,6 +903,11 @@ return [
     'regs_history_hint'      => 'Last :n events. Data before the log was launched is restored from registrations.',
     'regs_org_note_ph'       => 'Note…',
 
+    'regs_export_title'      => 'Export list',
+    'regs_export_hint'       => 'Choose which fields to include in the file:',
+    'regs_export_field_name' => 'Last name, First name, Patronymic',
+    'regs_export_field_phone'=> 'Phone',
+    'regs_export_field_pos'  => 'Position',
     'regs_export_pdf'        => '⬇ Download PDF',
     'regs_export_txt'        => '⬇ Download TXT',
 

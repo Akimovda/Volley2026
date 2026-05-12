@@ -232,7 +232,11 @@ $actionLabel = fn(string $a) => match($a) {
 				<tbody>
 					@foreach($registrations as $r)
 					@php
-					$fullName = trim(($r->last_name ?? '') . ' ' . ($r->first_name ?? ''));
+					$fullName = trim(implode(' ', array_filter([
+						$r->last_name  ?? '',
+						$r->first_name ?? '',
+						$r->patronymic ?? '',
+					])));
 					$name     = $fullName !== '' ? $fullName : ($r->name ?: ($r->email ?: ('User_' . $r->user_id)));
 					$phone    = $r->phone ?: '—';
 					$posKey   = $r->position ?: '';
@@ -444,17 +448,39 @@ $actionLabel = fn(string $a) => match($a) {
 
 	{{-- Экспорт --}}
 	@php
-	$exportQuery = ($occurrenceId ?? null) ? '?occurrence=' . $occurrenceId : '';
+	$exportOccurrenceParam = ($occurrenceId ?? null) ? 'occurrence=' . $occurrenceId . '&' : '';
+	$exportBasePdf = route('events.registrations.pdf', ['event' => $event->id]) . '?' . $exportOccurrenceParam;
+	$exportBaseTxt = route('events.registrations.txt', ['event' => $event->id]) . '?' . $exportOccurrenceParam;
 	@endphp
-	<div class="ramka d-flex gap-2 justify-content-center flex-wrap">
-		<a href="{{ route('events.registrations.pdf', ['event' => $event->id]) . $exportQuery }}"
-		class="btn btn-secondary">
-			{{ __('events.regs_export_pdf') }}
-		</a>
-		<a href="{{ route('events.registrations.txt', ['event' => $event->id]) . $exportQuery }}"
-		class="btn btn-secondary">
-			{{ __('events.regs_export_txt') }}
-		</a>
+	<div class="ramka">
+		<h2 class="-mt-05">{{ __('events.regs_export_title') }}</h2>
+		<p class="mb-2">{{ __('events.regs_export_hint') }}</p>
+		<div class="d-flex gap-2 flex-wrap mb-3">
+			<label class="d-flex fvc gap-1" style="cursor:pointer;font-size:1.5rem;">
+				<input type="checkbox" id="exp-field-name" checked style="width:1.6rem;height:1.6rem;cursor:pointer;">
+				{{ __('events.regs_export_field_name') }}
+			</label>
+			<label class="d-flex fvc gap-1" style="cursor:pointer;font-size:1.5rem;">
+				<input type="checkbox" id="exp-field-phone" checked style="width:1.6rem;height:1.6rem;cursor:pointer;">
+				{{ __('events.regs_export_field_phone') }}
+			</label>
+			<label class="d-flex fvc gap-1" style="cursor:pointer;font-size:1.5rem;">
+				<input type="checkbox" id="exp-field-position" checked style="width:1.6rem;height:1.6rem;cursor:pointer;">
+				{{ __('events.regs_export_field_pos') }}
+			</label>
+		</div>
+		<div class="d-flex gap-2 justify-content-center flex-wrap">
+			<a id="exp-pdf-link"
+			href="{{ $exportBasePdf }}fields=name,phone,position"
+			class="btn btn-secondary">
+				{{ __('events.regs_export_pdf') }}
+			</a>
+			<a id="exp-txt-link"
+			href="{{ $exportBaseTxt }}fields=name,phone,position"
+			class="btn btn-secondary">
+				{{ __('events.regs_export_txt') }}
+			</a>
+		</div>
 	</div>
 	
 </div>
@@ -572,6 +598,33 @@ $actionLabel = fn(string $a) => match($a) {
 			});
 		})();
 		
+		// --- Обновление ссылок экспорта при смене чекбоксов ---
+		(function() {
+			var basePdf = @json($exportBasePdf);
+			var baseTxt = @json($exportBaseTxt);
+			var cbName  = document.getElementById('exp-field-name');
+			var cbPhone = document.getElementById('exp-field-phone');
+			var cbPos   = document.getElementById('exp-field-position');
+			var lPdf    = document.getElementById('exp-pdf-link');
+			var lTxt    = document.getElementById('exp-txt-link');
+
+			if (!cbName || !lPdf) return;
+
+			function updateLinks() {
+				var f = [];
+				if (cbName.checked)  f.push('name');
+				if (cbPhone.checked) f.push('phone');
+				if (cbPos.checked)   f.push('position');
+				var qs = 'fields=' + (f.length ? f.join(',') : 'name');
+				lPdf.href = basePdf + qs;
+				lTxt.href = baseTxt + qs;
+			}
+
+			[cbName, cbPhone, cbPos].forEach(function(cb) {
+				cb.addEventListener('change', updateLinks);
+			});
+		})();
+
 		// --- Авторасширение textarea ---
 		function autoResize(el) { el.style.height = '2.4rem'; if (el.scrollHeight > el.offsetHeight) el.style.height = el.scrollHeight + 'px'; }
 		$(document).on('input', '.org-note-input', function() { autoResize(this); });
