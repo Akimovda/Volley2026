@@ -103,14 +103,16 @@ final class PushNotificationService
             ? 'https://api.push.apple.com'
             : 'https://api.sandbox.push.apple.com';
 
-        $payload = json_encode([
-            'aps' => [
-                'alert' => ['title' => $title, 'body' => $body],
-                'sound' => 'default',
-                'badge' => $badge,
+        $payload = json_encode(array_merge(
+            [
+                'aps' => [
+                    'alert' => ['title' => $title, 'body' => $body],
+                    'sound' => 'default',
+                    'badge' => $badge,
+                ],
             ],
-            'data' => $data,
-        ], JSON_UNESCAPED_UNICODE);
+            $data
+        ), JSON_UNESCAPED_UNICODE);
 
         $ch = curl_init("{$host}/3/device/{$token}");
         curl_setopt_array($ch, [

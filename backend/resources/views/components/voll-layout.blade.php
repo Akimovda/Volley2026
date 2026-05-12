@@ -910,7 +910,9 @@
 					});
 				});
 				Capacitor.Plugins.PushNotifications.addListener('pushNotificationActionPerformed', function(action) {
-					var data = (action.notification && action.notification.data) || {};
+					var raw = (action.notification && action.notification.data) || {};
+					// payload может быть плоским {event_id:...} или обёрнутым {data:{event_id:...}}
+					var data = (raw.data && typeof raw.data === 'object') ? raw.data : raw;
 					var eventId = data.event_id;
 					var occurrenceId = data.occurrence_id;
 					var buttonUrl = data.button_url;
