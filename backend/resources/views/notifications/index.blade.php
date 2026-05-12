@@ -83,6 +83,8 @@
 					$occurrenceId = (int) ($payload['occurrence_id'] ?? 0);
 					$inviteId = (int) ($payload['invite_id'] ?? 0);
 					$autoJoin = (bool) ($payload['auto_join_after_registration'] ?? false);
+					$buttonUrl = (string) ($payload['button_url'] ?? '');
+					$buttonText = (string) ($payload['button_text'] ?? '');
 					@endphp
 					
 					
@@ -130,7 +132,7 @@
 									<a href="/events/{{ $eventId }}{{ $occurrenceId ? '?occurrence=' . $occurrenceId : '' }}" class="btn btn-outline-primary">
 										{{ __('notifications.btn_open_event') }}
 									</a>
-									
+
 									@if(!$autoJoin)
 									<form method="POST" action="{{ route('events.group.accept', ['event' => $eventId, 'invite' => $inviteId]) }}">
 										@csrf
@@ -139,7 +141,7 @@
 										</button>
 									</form>
 									@endif
-									
+
 									<form method="POST" action="{{ route('events.group.decline', ['event' => $eventId, 'invite' => $inviteId]) }}">
 										@csrf
 										<button type="submit" class="btn btn-outline-secondary">
@@ -147,12 +149,26 @@
 										</button>
 									</form>
 								</div>
-								
+
 								@if($autoJoin)
 								<div class="alert alert-info mt-2 mb-0">
 									{{ __('notifications.auto_join_hint') }}
 								</div>
 								@endif
+
+								@elseif($eventId > 0)
+								<div class="mt-2">
+									<a href="/events/{{ $eventId }}{{ $occurrenceId ? '?occurrence=' . $occurrenceId : '' }}" class="btn btn-outline-primary">
+										{{ $buttonText ?: __('notifications.btn_open_event') }}
+									</a>
+								</div>
+
+								@elseif($buttonUrl !== '')
+								<div class="mt-2">
+									<a href="{{ $buttonUrl }}" class="btn btn-outline-primary">
+										{{ $buttonText ?: __('notifications.btn_open_event') }}
+									</a>
+								</div>
 								@endif						
 								
 								
