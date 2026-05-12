@@ -117,6 +117,7 @@ class EventRegistrationsManagementController extends Controller
                 $hasOrgNote ? 'er.organizer_note' : DB::raw("NULL::text as organizer_note"),
                 'u.first_name',
                 'u.last_name',
+                'u.patronymic',
                 'u.name',
                 'u.email',
                 'u.phone',
@@ -852,8 +853,12 @@ class EventRegistrationsManagementController extends Controller
 
         [$tz, $startsLocal, $endsLocal, $registrations, $location] = $this->resolveExportContext($request, $event, withCreatedAt: true);
 
+        $rawFields    = $request->query('fields', 'name,phone,position');
+        $fields       = array_filter(explode(',', is_array($rawFields) ? implode(',', $rawFields) : (string) $rawFields));
+        if (empty($fields)) $fields = ['name', 'phone', 'position'];
+
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('events.registrations.pdf', compact(
-            'event', 'registrations', 'startsLocal', 'endsLocal', 'tz', 'location'
+            'event', 'registrations', 'startsLocal', 'endsLocal', 'tz', 'location', 'fields'
         ))->setPaper('a4', 'portrait');
 
         $filename = 'registrations-' . $event->id . '-' . now()->format('Ymd') . '.pdf';
@@ -885,6 +890,13 @@ class EventRegistrationsManagementController extends Controller
             'reserve'  => 'Резерв',
         ];
 
+        $rawFields    = $request->query('fields', 'name,phone,position');
+        $fields       = array_filter(explode(',', is_array($rawFields) ? implode(',', $rawFields) : (string) $rawFields));
+        if (empty($fields)) $fields = ['name', 'phone', 'position'];
+        $showName     = in_array('name',     $fields, true);
+        $showPhone    = in_array('phone',    $fields, true);
+        $showPosition = in_array('position', $fields, true);
+
         $dateLine = '—';
         if ($startsLocal) {
             $dateLine = $startsLocal->format('d.m.Y') . ' · ' . $startsLocal->format('H:i');
@@ -907,17 +919,24 @@ class EventRegistrationsManagementController extends Controller
         $lines[] = '';
 
         foreach ($registrations as $i => $r) {
-            $name     = $r->name ?: ('User #' . $r->user_id);
+            $fullName = trim(implode(' ', array_filter([
+                $r->last_name  ?? '',
+                $r->first_name ?? '',
+                $r->patronymic ?? '',
+            ])));
+            $name = $fullName ?: ($r->name ?: ('User #' . $r->user_id));
             if (!empty($r->is_bot)) $name .= ' (бот)';
+
             $phone    = $r->phone ?: '—';
             $posKey   = $r->position ?? '';
             $posLabel = $posKey ? ($posLabels[$posKey] ?? $posKey) : '—';
             $note     = $r->organizer_note ?? '';
 
-            $line = ($i + 1) . '. ' . $name;
-            $line .= '  |  ' . $phone;
-            $line .= '  |  ' . $posLabel;
-            if ($note !== '') $line .= '  |  ' . $note;
+            $line = ($i + 1) . '.';
+            if ($showName)     $line .= ' ' . $name;
+            if ($showPhone)    $line .= '  |  ' . $phone;
+            if ($showPosition) $line .= '  |  ' . $posLabel;
+            if ($note !== '')  $line .= '  |  ' . $note;
             $lines[] = $line;
         }
 
@@ -961,6 +980,9 @@ class EventRegistrationsManagementController extends Controller
             'er.position',
             $hasOrgNote ? 'er.organizer_note' : DB::raw("NULL::text as organizer_note"),
             'u.name',
+            'u.first_name',
+            'u.last_name',
+            'u.patronymic',
             'u.phone',
             'u.is_bot',
         ];
