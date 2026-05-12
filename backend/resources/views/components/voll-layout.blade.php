@@ -909,6 +909,26 @@
 						body: JSON.stringify({ platform: 'ios', token: token.value })
 					});
 				});
+				Capacitor.Plugins.PushNotifications.addListener('pushNotificationActionPerformed', function(action) {
+					var data = (action.notification && action.notification.data) || {};
+					var eventId = data.event_id;
+					var occurrenceId = data.occurrence_id;
+					var buttonUrl = data.button_url;
+
+					if (eventId) {
+						var url = '/events/' + eventId;
+						if (occurrenceId) url += '?occurrence=' + occurrenceId;
+						window.location.href = url;
+					} else if (buttonUrl) {
+						try {
+							var u = new URL(buttonUrl);
+							window.location.href = u.pathname + u.search;
+						} catch(e) {
+							window.location.href = buttonUrl;
+						}
+					}
+				});
+
 				Capacitor.Plugins.PushNotifications.requestPermissions().then(function(result) {
 					if (result.receive === 'granted') {
 						Capacitor.Plugins.PushNotifications.register();
