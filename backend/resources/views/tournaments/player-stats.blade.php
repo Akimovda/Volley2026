@@ -14,40 +14,42 @@
 </x-slot>
 
 <div class="container">
-<div class="ramka" style="max-width:720px;margin:0 auto">
-
+	
     @if(session('error'))
-        <div class="p-3 mb-3" style="background:rgba(220,38,38,.1);border:1px solid rgba(220,38,38,.3);border-radius:10px;color:#dc2626">
+         <div class="alert alert-error">
             {{ session('error') }}
         </div>
     @endif
     @if(session('success'))
-        <div class="p-3 mb-3" style="background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);border-radius:10px;color:#16a34a">
+         <div class="alert alert-error">
             {{ session('success') }}
         </div>
-    @endif
+    @endif	
+	
+	
+<div class="ramka">
 
     {{-- Шапка матча --}}
-    <div class="card p-3 mb-3" style="text-align:center">
-        <div class="f-13 mb-1" style="opacity:.6">
+    <div class="card mb-3" style="text-align:center">
+        <div class="mb-1">
             {{ __('tournaments.stats_match_header', ['n' => $match->match_number]) }} · {{ $match->setsScore() }} ({{ $match->detailedScore() }})
         </div>
         <div class="d-flex between fvc">
-            <div style="flex:1"><span class="b-700 f-16">{{ $match->teamHome->name ?? 'TBD' }}</span></div>
-            <div class="px-2 f-18 b-700" style="opacity:.4">VS</div>
-            <div style="flex:1"><span class="b-700 f-16">{{ $match->teamAway->name ?? 'TBD' }}</span></div>
+            <div style="flex:1"><span class="b-600">{{ $match->teamHome->name ?? 'TBD' }}</span></div>
+            <div class="px-2 f-20 b-600">VS</div>
+            <div style="flex:1"><span class="b-600">{{ $match->teamAway->name ?? 'TBD' }}</span></div>
         </div>
     </div>
 
     {{-- Табы: по сетам + итого --}}
-    <div class="d-flex mb-3" style="gap:6px;flex-wrap:wrap" id="setTabs">
+    <div class="d-flex gap-1 text-center" style="flex-wrap:wrap" id="setTabs">
         @for($s = 1; $s <= $setsCount; $s++)
-            <button type="button" class="btn {{ $s === 1 ? 'btn-primary' : 'btn-secondary' }} set-tab f-13 px-3 py-2"
+            <button type="button" class="btn {{ $s === 1 ? 'btn-primary' : 'btn-secondary' }} set-tab"
                     data-set="{{ $s }}" onclick="switchSet({{ $s }})">
                 {{ __('tournaments.score_set_n', ['n' => $s]) }}
             </button>
         @endfor
-        <button type="button" class="btn btn-secondary set-tab f-13 px-3 py-2"
+        <button type="button" class="btn btn-secondary"
                 data-set="0" onclick="switchSet(0)">
             {{ __('tournaments.stats_total') }}
         </button>
@@ -76,17 +78,20 @@
             ];
         @endphp
 
+</div>
+
         {{-- Контент по сетам --}}
         @for($s = 0; $s <= $setsCount; $s++)
             <div class="set-content" data-set="{{ $s }}" style="{{ $s !== 1 && $s !== 0 ? 'display:none;' : '' }}{{ $s === 0 ? 'display:none;' : '' }}">
                 @foreach($teams as $team)
-                    <div class="card p-3 mb-3">
-                        <div class="b-700 f-15 mb-2">{{ $team['name'] }}</div>
+                    <div class="ramka">
+                        <h2 class="-mt-05">{{ $team['name'] }}</h2>
 
                         @foreach($team['players'] as $player)
-                            <div class="mb-3 pb-3" style="border-bottom:1px solid rgba(128,128,128,.15)">
-                                <div class="b-600 f-14 mb-2">{{ $player['name'] }}</div>
+                            <div class="mb-3">
+                                <div class="b-600 mb-2">{{ $player['name'] }}</div>
                                 <div class="stats-grid">
+								 
                                     @foreach($statFields as $field)
                                         @php
                                             $inputName = "stats[{$team['id']}][{$player['id']}][{$s}][{$field}]";
@@ -104,8 +109,9 @@
                                                 }
                                             }
                                         @endphp
-                                        <div class="stat-cell">
-                                            <label class="f-11" style="opacity:.7;display:block;text-align:center;margin-bottom:2px"
+										<div class="card">
+                                        <div class="form stat-cell">
+                                            <label class="f-16 b-300"
                                                    title="{{ $fieldLabels[$field]['label'] }}">
                                                 {{ $fieldLabels[$field]['short'] }}
                                             </label>
@@ -114,63 +120,53 @@
                                                    class="stat-input"
                                                    inputmode="numeric">
                                         </div>
+										 </div>
                                     @endforeach
                                 </div>
-                            </div>
+								</div>
+                           
                         @endforeach
                     </div>
                 @endforeach
             </div>
         @endfor
-
-        <button type="submit" class="btn btn-primary w-100 p-3 f-16 mb-2">
+ <div class="ramka text-center">
+        <button type="submit" class="btn btn-primary">
             💾 {{ __('tournaments.stats_btn_save') }}
         </button>
 
-        <a href="{{ route('tournament.setup', $event) }}" class="btn btn-secondary w-100 p-2 f-14" style="text-align:center;display:block">
+        <a href="{{ route('tournament.setup', $event) }}" class="btn btn-secondary">
             {{ __('tournaments.btn_back') }}
         </a>
+</div>		
     </form>
 
-</div>
+
 </div>
 
 <style>
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(6, 1fr);
-    gap: 4px;
+    gap: 1rem;
+}
+@media (max-width: 991px) {
+    .stats-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
 }
 @media (max-width: 576px) {
     .stats-grid {
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(2, 1fr);
     }
 }
 .stat-cell {
     text-align: center;
 }
 .stat-input {
-    width: 100%;
     text-align: center;
-    font-size: 1rem;
-    font-weight: 600;
-    padding: 6px 2px;
-    border: 1px solid rgba(128,128,128,.3);
-    border-radius: 8px;
-    background: var(--bg-secondary, #f9fafb);
-    color: var(--text-primary, #111);
-    -moz-appearance: textfield;
 }
-.stat-input::-webkit-outer-spin-button,
-.stat-input::-webkit-inner-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
-}
-.stat-input:focus {
-    outline: none;
-    border-color: var(--primary, #2563eb);
-    box-shadow: 0 0 0 2px rgba(37,99,235,.2);
-}
+
 .set-tab.active, .set-tab.btn-primary {
     font-weight: 700;
 }
