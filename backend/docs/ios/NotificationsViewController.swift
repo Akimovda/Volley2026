@@ -298,7 +298,10 @@ extension NotificationsViewController: UITableViewDataSource {
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: NotificationCell.reuseId, for: indexPath) as! NotificationCell
-        cell.configure(with: items[indexPath.row])
+        let n = items[indexPath.row]
+        cell.configure(with: n, onOpen: n.url != nil ? { [weak self] in
+            self?.navigate(to: n.url)
+        } : nil)
         return cell
     }
 }
@@ -322,14 +325,22 @@ extension NotificationsViewController: UITableViewDelegate {
             refreshBadge()
         }
 
-        if let path = n.url, !path.isEmpty, let url = URL(string: baseURL + path) {
-            dismiss(animated: true) { [weak self] in
-                self?.webView?.evaluateJavaScript(
-                    "window.location.href = '\(url.absoluteString)';",
-                    completionHandler: nil
-                )
-            }
+        // Tap on row also navigates (same as "Открыть" button)
+        navigate(to: n.url)
+    }
+
+    func navigate(to path: String?) {
+        guard let path = path, !path.isEmpty,
+              let url = URL(string: baseURL + path) else { return }
+        let js = "window.location.href = \(escapeForJS(url.absoluteString));"
+        dismiss(animated: true) { [weak self] in
+            self?.webView?.evaluateJavaScript(js, completionHandler: nil)
         }
+    }
+
+    // Wraps a string in single quotes with internal single quotes escaped
+    private func escapeForJS(_ s: String) -> String {
+        "'" + s.replacingOccurrences(of: "'", with: "\\'") + "'"
     }
 
     func tableView(
@@ -366,10 +377,14 @@ class NotificationCell: UITableViewCell {
 
     static let reuseId = "NotificationCell"
 
-    private let titleLabel = UILabel()
-    private let bodyLabel = UILabel()
-    private let timeLabel = UILabel()
-    private let unreadDot = UIView()
+    // Called by ViewController when the Open button is tapped
+    var onOpenTapped: (() -> Void)?
+
+    private let titleLabel  = UILabel()
+    private let bodyLabel   = UILabel()
+    private let timeLabel   = UILabel()
+    private let unreadDot   = UIView()
+    private let openButton  = UIButton(type: .system)
 
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
@@ -396,10 +411,18 @@ class NotificationCell: UITableViewCell {
         timeLabel.textColor = .tertiaryLabel
         timeLabel.translatesAutoresizingMaskIntoConstraints = false
 
+        openButton.setTitle("Открыть →", for: .normal)
+        openButton.titleLabel?.font = .systemFont(ofSize: 13, weight: .medium)
+        openButton.setTitleColor(.systemOrange, for: .normal)
+        openButton.contentHorizontalAlignment = .leading
+        openButton.translatesAutoresizingMaskIntoConstraints = false
+        openButton.addTarget(self, action: #selector(openTapped), for: .touchUpInside)
+
         contentView.addSubview(unreadDot)
         contentView.addSubview(titleLabel)
         contentView.addSubview(bodyLabel)
         contentView.addSubview(timeLabel)
+        contentView.addSubview(openButton)
 
         NSLayoutConstraint.activate([
             unreadDot.widthAnchor.constraint(equalToConstant: 8),
@@ -418,16 +441,27 @@ class NotificationCell: UITableViewCell {
             bodyLabel.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
             bodyLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
             bodyLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 4),
-            bodyLabel.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -12),
+
+            openButton.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
+            openButton.topAnchor.constraint(equalTo: bodyLabel.bottomAnchor, constant: 6),
+            openButton.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -10),
         ])
     }
 
-    func configure(with n: VolleyNotification) {
+    @objc private func openTapped() {
+        onOpenTapped?()
+    }
+
+    func configure(with n: VolleyNotification, onOpen: (() -> Void)?) {
         titleLabel.text = n.title
         bodyLabel.text = n.body
         timeLabel.text = n.createdAtHuman
         unreadDot.isHidden = n.isRead
         titleLabel.textColor = n.isRead ? .secondaryLabel : .label
         backgroundColor = n.isRead ? .systemBackground : .systemBlue.withAlphaComponent(0.04)
+
+        // Show "Открыть →" only when URL is available
+        openButton.isHidden = (n.url == nil || n.url?.isEmpty == true)
+        onOpenTapped = onOpen
     }
 }
