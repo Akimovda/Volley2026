@@ -80,6 +80,14 @@ class NotificationsApiController extends Controller
             }
         }
 
+        // Fallback: build URL from event_id + occurrence_id when button_url is absent
+        if (!$actionUrl && !empty($payload['event_id'])) {
+            $actionUrl = '/events/' . $payload['event_id'];
+            if (!empty($payload['occurrence_id'])) {
+                $actionUrl .= '?occurrence=' . $payload['occurrence_id'];
+            }
+        }
+
         return [
             'id'               => $n->id,
             'type'             => $n->type,
