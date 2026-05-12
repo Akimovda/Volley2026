@@ -91,6 +91,7 @@ class NotificationsApiController extends Controller
             'created_at'       => $n->created_at->toIso8601String(),
             'created_at_human' => $n->created_at->diffForHumans(),
             'action_url'       => $actionUrl,
+            'url'              => $actionUrl,
         ];
     }
 
