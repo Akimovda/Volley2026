@@ -333,8 +333,9 @@ extension NotificationsViewController: UITableViewDelegate {
         guard let path = path, !path.isEmpty,
               let url = URL(string: baseURL + path) else { return }
         let js = "window.location.href = \(escapeForJS(url.absoluteString));"
-        dismiss(animated: true) { [weak self] in
-            self?.webView?.evaluateJavaScript(js, completionHandler: nil)
+        let wv = webView  // strong capture before dismiss — self is deallocated after dismiss
+        dismiss(animated: true) {
+            wv?.evaluateJavaScript(js, completionHandler: nil)
         }
     }
 
