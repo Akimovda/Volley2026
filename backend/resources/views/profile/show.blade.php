@@ -155,9 +155,9 @@
 	}
     }
     
-    // fallback 2: если определить нельзя, но входы есть
-    if (!$provider && ($hasTg || $hasVk || $hasYa || $hasApple || $hasGoogle)) {
-	$provider = 'unknown';
+    // fallback 2: если определить нельзя — вход через email/пароль
+    if (!$provider) {
+	$provider = 'password';
     }
 
     $linkedCount = (int)$hasTg + (int)$hasVk + (int)$hasYa + (int)$hasApple + (int)$hasGoogle;
@@ -200,6 +200,9 @@
 	}
 	if ($p === 'google') {
 	return '<span class="'.$base.'"><span class="'.$dot.'" style="background:#4285F4;"></span><span class="'.$txt.'">Google</span></span>';
+	}
+	if ($p === 'password') {
+	return '<span class="'.$base.'"><span class="'.$dot.'" style="background:#6B7280;"></span><span class="'.$txt.'">Email / Пароль</span></span>';
 	}
 	return '<span class="'.$base.'"><span class="'.$dot.'" style="background:#9CA3AF;"></span><span class="'.$txt.'">'.e(__('profile.providers_unknown')).'</span></span>';
     };
