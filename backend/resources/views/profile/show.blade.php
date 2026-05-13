@@ -996,6 +996,38 @@
 				@endif
 				
 				
+				{{-- ===== МОИ КОМАНДЫ ===== --}}
+				@php $myUserTeams = \App\Models\UserTeam::where('user_id', auth()->id())->withCount('members')->orderByDesc('created_at')->limit(10)->get(); @endphp
+				<div class="ramka">
+					<div class="d-flex between fvc -mt-05 mb-2">
+						<h2 class="mb-0">Мои команды</h2>
+					</div>
+					@if($myUserTeams->isNotEmpty())
+					@foreach($myUserTeams as $ut)
+					<div class="card mb-1 d-flex between fvc">
+						<div>
+							<div class="b-600">{{ $ut->name }}</div>
+							<div class="f-14 mt-05" style="opacity:.6">
+								{{ $ut->direction === 'beach' ? 'Пляжный' : 'Классический' }}
+								@if($ut->subtype) · {{ $ut->subtype }}@endif
+								· {{ $ut->members_count }} {{ $ut->members_count === 1 ? 'игрок' : ($ut->members_count < 5 ? 'игрока' : 'игроков') }}
+							</div>
+						</div>
+						<div class="d-flex gap-1">
+							<a href="{{ route('user.teams.edit', $ut->id) }}" class="btn btn-small btn-secondary">Изменить</a>
+							<form method="POST" action="{{ route('user.teams.destroy', $ut->id) }}"
+								onsubmit="return confirm('Удалить команду «{{ addslashes($ut->name) }}»?')">
+								@csrf @method('DELETE')
+								<button class="btn btn-small btn-danger">✕</button>
+							</form>
+						</div>
+					</div>
+					@endforeach
+					@else
+					<p class="f-15" style="opacity:.7">Сохранённых команд нет. Создайте команду при записи на турнир и сохраните её в профиль.</p>
+					@endif
+				</div>
+
 				@if(auth()->check() && (auth()->user()->isOrganizer() || auth()->user()->isAdmin()))
 				@php
 				$mySchools = \App\Models\VolleyballSchool::where('organizer_id', auth()->id())->get();

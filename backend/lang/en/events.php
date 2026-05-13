@@ -138,6 +138,7 @@ return [
         'setter'   => 'Setter',
         'libero'   => 'Libero',
         'player'   => 'Player',
+        'reserve'  => 'Reserve',
     ],
 
     // ===== events/show/tournament.blade.php =====

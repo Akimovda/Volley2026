@@ -237,6 +237,19 @@ Route::get('/logout', fn () => redirect('/'));
 Route::get('/user/profile', [\App\Http\Controllers\UserProfileController::class, 'show'])
     ->middleware(['auth', config('jetstream.auth_session'), 'verified'])
     ->name('profile.show');
+
+Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified'])->group(function () {
+    Route::get('/user/teams', [\App\Http\Controllers\UserTeamController::class, 'index'])
+        ->name('user.teams.index');
+    Route::post('/user/teams', [\App\Http\Controllers\UserTeamController::class, 'store'])
+        ->name('user.teams.store');
+    Route::get('/user/teams/{team}/edit', [\App\Http\Controllers\UserTeamController::class, 'edit'])
+        ->name('user.teams.edit');
+    Route::put('/user/teams/{team}', [\App\Http\Controllers\UserTeamController::class, 'update'])
+        ->name('user.teams.update');
+    Route::delete('/user/teams/{team}', [\App\Http\Controllers\UserTeamController::class, 'destroy'])
+        ->name('user.teams.destroy');
+});
 	
 	/*
 		|--------------------------------------------------------------------------
@@ -290,6 +303,14 @@ Route::post('/auth/tma-exchange', [TmaAuthController::class, 'exchange'])->name(
 		// Создание команды
 		Route::post('/events/{event}/teams', [TournamentTeamController::class, 'store'])
         ->name('tournamentTeams.store');
+
+		// Создание команды из сохранённого шаблона (должно быть ДО {team} роутов)
+		Route::post('/events/{event}/teams/from-saved', [TournamentTeamController::class, 'fromSaved'])
+        ->name('tournamentTeams.fromSaved');
+
+		// Сохранение команды в профиль
+		Route::post('/events/{event}/teams/{team}/save-to-profile', [TournamentTeamController::class, 'saveToProfile'])
+        ->name('tournamentTeams.saveToProfile');
 		// Создание ссылки-приглашения в команду
 		Route::post('/events/{event}/teams/{team}/invites', [TournamentTeamInviteController::class, 'store'])
         ->name('tournamentTeamInvites.store');

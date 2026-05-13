@@ -633,6 +633,16 @@
 				setInterval(pollLive, pollInterval);
 				@endif
 			})();
+
+			// Android WebView не скачивает файлы по Content-Disposition: attachment
+			if (window.Capacitor && window.Capacitor.getPlatform() === 'android') {
+				document.querySelectorAll('a[href*="/pdf/"]').forEach(function(link) {
+					link.addEventListener('click', function(e) {
+						e.preventDefault();
+						window.open(this.href, '_system');
+					});
+				});
+			}
 		</script>
 	</x-slot>
 	

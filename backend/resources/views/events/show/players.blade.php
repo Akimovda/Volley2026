@@ -388,6 +388,45 @@
 			</div>
 		</div>
 		@else
+		@php
+		$captainSavedTeams = auth()->check()
+		    ? \App\Models\UserTeam::where('user_id', auth()->id())
+		        ->where('direction', $event->direction ?? 'classic')
+		        ->withCount('members')
+		        ->orderByDesc('created_at')
+		        ->limit(10)
+		        ->get()
+		    : collect();
+		@endphp
+		@if($captainSavedTeams->isNotEmpty())
+		<div class="mb-2">
+			<div class="f-15 b-600 mb-1">Использовать сохранённую команду:</div>
+			<form method="POST" action="{{ route('tournamentTeams.fromSaved', $event) }}" id="saved-team-form">
+				@csrf
+				<input type="hidden" name="occurrence_id" value="{{ $occurrence->id }}">
+				<select name="user_team_id" id="saved-team-select" class="mb-1">
+					<option value="">— выбрать команду из профиля —</option>
+					@foreach($captainSavedTeams as $st)
+					<option value="{{ $st->id }}">{{ $st->name }} ({{ $st->members_count }} чел.)</option>
+					@endforeach
+				</select>
+				@if($isTeamClassic)
+				<select name="captain_position_code" id="saved-team-pos" class="mb-1">
+					<option value="">{{ __('events.sp_position_in_team_ph') }}</option>
+					<option value="setter">{{ __('events.positions.setter') }}</option>
+					<option value="outside">{{ __('events.positions.outside') }}</option>
+					<option value="opposite">{{ __('events.positions.opposite') }}</option>
+					<option value="middle">{{ __('profile.positions.middle_full') }}</option>
+					<option value="libero">{{ __('events.positions.libero') }}</option>
+				</select>
+				@endif
+				<button type="submit" id="saved-team-btn" class="btn btn-secondary w-100" disabled>
+					Зарегистрировать эту команду
+				</button>
+			</form>
+			<div class="f-14 mt-1 mb-2" style="opacity:.6">или создайте новую команду:</div>
+		</div>
+		@endif
 		<form method="POST" action="{{ route('tournamentTeams.store', $event) }}" class="form mt-1">
 			@csrf
 			<input type="text" name="name" class="form-control mb-1" placeholder="{{ __('events.sp_team_name_ph') }}">
@@ -1297,4 +1336,21 @@ $showWaitlist = !$isTournament && !$eventStarted && auth()->check() && !$isRegis
 					}
 				});
 			})();
-		</script>		
+
+			// Saved teams form enable/disable button
+			(function() {
+				var sel = document.getElementById('saved-team-select');
+				var btn = document.getElementById('saved-team-btn');
+				var posSelect = document.getElementById('saved-team-pos');
+				if (!sel || !btn) return;
+				function syncBtn() {
+					var hasTeam = !!sel.value;
+					var hasPos = !posSelect || !!posSelect.value;
+					btn.disabled = !(hasTeam && hasPos);
+					btn.style.opacity = (hasTeam && hasPos) ? '1' : '.4';
+				}
+				sel.addEventListener('change', syncBtn);
+				if (posSelect) posSelect.addEventListener('change', syncBtn);
+				syncBtn();
+			})();
+		</script>
