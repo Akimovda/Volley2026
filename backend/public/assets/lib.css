@@ -1437,6 +1437,11 @@ body.dark .swal-overlay:after {
 	visibility: visible;
 	opacity: 1;
 }
+
+.is-app .fancybox-navigation .fancybox-button {
+	margin-top: env(safe-area-inset-top, 0px);
+}
+
 @media screen and (min-width:479px) {
 	.fancybox-navigation .fancybox-button {
 		visibility: hidden;
