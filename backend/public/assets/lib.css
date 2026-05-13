@@ -1439,7 +1439,7 @@ body.dark .swal-overlay:after {
 }
 
 .is-app .fancybox-navigation .fancybox-button {
-	margin-top: env(safe-area-inset-top, 0px);
+	margin-top: max(0px, calc(env(safe-area-inset-top, 0px) + 3px));
 }
 
 @media screen and (min-width:479px) {
