@@ -102,7 +102,7 @@ if (! function_exists('position_name')) {
             'setter'   => 'Связующий',
             'libero'   => 'Либеро',
             'player'   => 'Игрок',
-            'reserve'  => 'Запасной',
+            'reserve'  => 'Запасной игрок',
 
         ];
 

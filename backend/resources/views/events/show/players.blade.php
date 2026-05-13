@@ -534,10 +534,24 @@ if ($isClassic && $gs) {
     $wlSlots    = app(\App\Services\EventRoleSlotService::class)->getSlots($event);
     $wlFreeKeys = collect($freePositions)->pluck('key')->toArray();
     foreach ($wlSlots as $wlSlot) {
-        if ($wlSlot->role !== 'reserve') {
-            $allPositions[$wlSlot->role] = position_name($wlSlot->role);
-            if (!in_array($wlSlot->role, $wlFreeKeys)) {
-                $occupiedPositions[$wlSlot->role] = position_name($wlSlot->role);
+        $allPositions[$wlSlot->role] = position_name($wlSlot->role);
+        if (!in_array($wlSlot->role, $wlFreeKeys)) {
+            $occupiedPositions[$wlSlot->role] = position_name($wlSlot->role);
+        }
+    }
+    // reserve не хранится в event_role_slots (в game_settings.reserve_players_max) — добавляем отдельно
+    $wlReserveMax = (int)($gs->reserve_players_max ?? 0);
+    if ($wlReserveMax > 0) {
+        $allPositions['reserve'] = position_name('reserve');
+        if (!in_array('reserve', $wlFreeKeys)) {
+            $wlReserveTaken = \DB::table('event_registrations')
+                ->where('occurrence_id', $occurrence->id)
+                ->where('position', 'reserve')
+                ->whereNull('cancelled_at')
+                ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
+                ->count();
+            if ($wlReserveTaken >= $wlReserveMax) {
+                $occupiedPositions['reserve'] = position_name('reserve');
             }
         }
     }
