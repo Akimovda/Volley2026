@@ -303,7 +303,7 @@ class UserMergeService
         }
 
         // 2. По совпадению имя + фамилия (исключая уже найденных по телефону)
-        $excludeIds = empty($seenIds) ? [0] : array_keys($seenIds);
+        $excludeIds   = empty($seenIds) ? [0] : array_keys($seenIds);
         $placeholders = implode(',', $excludeIds);
 
         // Вычисляемое имя: first+last если заполнены, иначе поле name (как в User::getNameAttribute)
@@ -335,6 +335,10 @@ class UserMergeService
             $ids   = array_map('intval', explode(',', trim($g->user_ids, '{}')));
             $users = User::whereIn('id', $ids)->orderBy('id')->get();
 
+            foreach ($ids as $id) {
+                $seenIds[$id] = true;
+            }
+
             [$statsMap, $recommendedPrimaryId] = $this->buildGroupStats($users);
 
             $conflictsMap = [];
@@ -347,6 +351,76 @@ class UserMergeService
             $result[] = [
                 'level'               => 'yellow',
                 'label'               => 'Имя + Фамилия',
+                'phone'               => null,
+                'users'               => $users,
+                'stats'               => $statsMap,
+                'recommended_primary' => $recommendedPrimaryId,
+                'conflicts'           => $conflictsMap,
+            ];
+        }
+
+        // 3. Перепутаны местами имя и фамилия (first_name одного = last_name другого и наоборот)
+        $excludeIds3  = empty($seenIds) ? [0] : array_keys($seenIds);
+        $placeholders3 = implode(',', $excludeIds3);
+
+        $swappedPairs = DB::select("
+            SELECT LEAST(a.id, b.id) AS id1, GREATEST(a.id, b.id) AS id2
+            FROM users a
+            JOIN users b
+                ON  LOWER(TRIM(a.first_name)) = LOWER(TRIM(b.last_name))
+                AND LOWER(TRIM(a.last_name))  = LOWER(TRIM(b.first_name))
+                AND a.id < b.id
+                AND TRIM(COALESCE(a.first_name,'')) != ''
+                AND TRIM(COALESCE(a.last_name,''))  != ''
+                AND TRIM(COALESCE(b.first_name,'')) != ''
+                AND TRIM(COALESCE(b.last_name,''))  != ''
+            WHERE a.is_bot = false AND a.deleted_at IS NULL AND a.merged_into_user_id IS NULL
+              AND b.is_bot = false AND b.deleted_at IS NULL AND b.merged_into_user_id IS NULL
+              AND a.id NOT IN ({$placeholders3})
+              AND b.id NOT IN ({$placeholders3})
+        ");
+
+        // Объединяем пары в группы (один человек может совпасть с несколькими)
+        $swapGroups = [];
+        foreach ($swappedPairs as $pair) {
+            $id1 = (int) $pair->id1;
+            $id2 = (int) $pair->id2;
+            $placed = false;
+            foreach ($swapGroups as &$grp) {
+                if (in_array($id1, $grp, true) || in_array($id2, $grp, true)) {
+                    $grp = array_unique(array_merge($grp, [$id1, $id2]));
+                    $placed = true;
+                    break;
+                }
+            }
+            unset($grp);
+            if (!$placed) {
+                $swapGroups[] = [$id1, $id2];
+            }
+        }
+
+        foreach ($swapGroups as $ids) {
+            // Пропускаем если кто-то из пары уже попал в seenIds
+            if (array_intersect($ids, array_keys($seenIds))) continue;
+
+            $users = User::whereIn('id', $ids)->orderBy('id')->get();
+
+            foreach ($ids as $id) {
+                $seenIds[$id] = true;
+            }
+
+            [$statsMap, $recommendedPrimaryId] = $this->buildGroupStats($users);
+
+            $conflictsMap = [];
+            foreach ($users as $u) {
+                if ($u->id !== $recommendedPrimaryId) {
+                    $conflictsMap[$u->id] = $this->upcomingConflicts($recommendedPrimaryId, $u->id);
+                }
+            }
+
+            $result[] = [
+                'level'               => 'yellow',
+                'label'               => 'Имя ↔ Фамилия переставлены',
                 'phone'               => null,
                 'users'               => $users,
                 'stats'               => $statsMap,
