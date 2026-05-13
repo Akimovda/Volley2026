@@ -380,12 +380,20 @@ class UserMergeService
             ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
             ->count();
 
-        $upcoming = DB::table('event_registrations as er')
+        $cancelledRegistrations = DB::table('event_registrations')
+            ->where('user_id', $userId)
+            ->whereRaw('(is_cancelled = true OR status = \'cancelled\')')
+            ->count();
+
+        $upcomingRows = DB::table('event_registrations as er')
             ->join('event_occurrences as eo', 'eo.id', '=', 'er.occurrence_id')
+            ->join('events as e', 'e.id', '=', 'er.event_id')
             ->where('er.user_id', $userId)
             ->whereRaw('(er.is_cancelled IS NULL OR er.is_cancelled = false)')
             ->where('eo.starts_at', '>', now('UTC'))
-            ->count();
+            ->orderBy('eo.starts_at')
+            ->select('e.id as event_id', 'eo.id as occurrence_id', 'e.title', 'eo.starts_at', 'er.position')
+            ->get();
 
         $lastRegAt = DB::table('event_registrations')
             ->where('user_id', $userId)
@@ -396,6 +404,11 @@ class UserMergeService
             ->where('user_id', $userId)
             ->count();
 
+        $cancelledPayments = DB::table('payments')
+            ->where('user_id', $userId)
+            ->where('status', 'cancelled')
+            ->count();
+
         $walletBalance = DB::table('virtual_wallets')
             ->where('user_id', $userId)
             ->sum('balance_minor');
@@ -404,12 +417,15 @@ class UserMergeService
         $profileComplete = !is_null($user?->profile_completed_at);
 
         return [
-            'registrations'    => $registrations,
-            'upcoming'         => $upcoming,
-            'last_reg_at'      => $lastRegAt,
-            'payments'         => $payments,
-            'wallet_balance'   => (int) $walletBalance,
-            'profile_complete' => $profileComplete,
+            'registrations'          => $registrations,
+            'cancelled_registrations' => $cancelledRegistrations,
+            'upcoming'               => $upcomingRows->count(),
+            'upcoming_rows'          => $upcomingRows,
+            'last_reg_at'            => $lastRegAt,
+            'payments'               => $payments,
+            'cancelled_payments'     => $cancelledPayments,
+            'wallet_balance'         => (int) $walletBalance,
+            'profile_complete'       => $profileComplete,
         ];
     }
 

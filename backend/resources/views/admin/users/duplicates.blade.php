@@ -164,15 +164,22 @@
                     @endif
                     @if($primary->vk_id)<span class="prov">VK #{{ $primary->vk_id }}</span>@endif
                     @if($primary->yandex_id)<span class="prov">YA #{{ $primary->yandex_id }}</span>@endif
+                    @if($primary->google_id)<span class="prov">Google</span>@endif
+                    @if($primary->apple_id)<span class="prov">Apple</span>@endif
                 </div>
                 <div class="dup-stat">
-                    Записей: <strong>{{ $pStat['registrations'] }}</strong> ·
-                    Платежей: <strong>{{ $pStat['payments'] }}</strong>
+                    Записей: <strong>{{ $pStat['registrations'] }}</strong>@if($pStat['cancelled_registrations'] > 0)<span style="color:#9ca3af;"> + {{ $pStat['cancelled_registrations'] }} отм.</span>@endif ·
+                    Платежей: <strong>{{ $pStat['payments'] }}</strong>@if($pStat['cancelled_payments'] > 0)<span style="color:#9ca3af;"> ({{ $pStat['cancelled_payments'] }} отм.)</span>@endif
                     @if($pStat['wallet_balance'] > 0)
                         · Кошелёк: <strong>{{ number_format($pStat['wallet_balance'] / 100, 0, '.', ' ') }} ₽</strong>
                     @endif
                     @if(($pStat['upcoming'] ?? 0) > 0)
-                        <br><span style="color:#0d6efd;">📅 Предстоящих: <strong>{{ $pStat['upcoming'] }}</strong></span>
+                        <br><span style="color:#0d6efd;">📅 Предстоящие записи:</span>
+                        @foreach($pStat['upcoming_rows'] as $ur)
+                        <br>&nbsp;&nbsp;→ <a href="/events/{{ $ur->event_id }}?occurrence={{ $ur->occurrence_id }}" target="_blank" class="text-primary">
+                            {{ $ur->title }} · {{ \Carbon\Carbon::parse($ur->starts_at)->format('d.m H:i') }}
+                        </a>
+                        @endforeach
                     @endif
                     @if($pLastReg)
                         <br>🗓 Последняя запись: <strong>{{ $pLastReg }}</strong>
@@ -212,15 +219,22 @@
                     @endif
                     @if($sec->vk_id)<span class="prov">VK #{{ $sec->vk_id }}</span>@endif
                     @if($sec->yandex_id)<span class="prov">YA #{{ $sec->yandex_id }}</span>@endif
+                    @if($sec->google_id)<span class="prov">Google</span>@endif
+                    @if($sec->apple_id)<span class="prov">Apple</span>@endif
                 </div>
                 <div class="dup-stat">
-                    Записей: <strong>{{ $sStat['registrations'] }}</strong> ·
-                    Платежей: <strong>{{ $sStat['payments'] }}</strong>
+                    Записей: <strong>{{ $sStat['registrations'] }}</strong>@if($sStat['cancelled_registrations'] > 0)<span style="color:#9ca3af;"> + {{ $sStat['cancelled_registrations'] }} отм.</span>@endif ·
+                    Платежей: <strong>{{ $sStat['payments'] }}</strong>@if($sStat['cancelled_payments'] > 0)<span style="color:#9ca3af;"> ({{ $sStat['cancelled_payments'] }} отм.)</span>@endif
                     @if($sStat['wallet_balance'] > 0)
                         · Кошелёк: <strong>{{ number_format($sStat['wallet_balance'] / 100, 0, '.', ' ') }} ₽</strong>
                     @endif
                     @if(($sStat['upcoming'] ?? 0) > 0)
-                        <br><span style="color:#0d6efd;">📅 Предстоящих: <strong>{{ $sStat['upcoming'] }}</strong></span>
+                        <br><span style="color:#0d6efd;">📅 Предстоящие записи:</span>
+                        @foreach($sStat['upcoming_rows'] as $ur)
+                        <br>&nbsp;&nbsp;→ <a href="/events/{{ $ur->event_id }}?occurrence={{ $ur->occurrence_id }}" target="_blank" class="text-primary">
+                            {{ $ur->title }} · {{ \Carbon\Carbon::parse($ur->starts_at)->format('d.m H:i') }}
+                        </a>
+                        @endforeach
                     @endif
                     @if($conflicts > 0)
                         <br><span style="color:#dc2626;">⚠️ Конфликт с осн.: <strong>{{ $conflicts }}</strong> зап. будут отменены</span>
