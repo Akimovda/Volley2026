@@ -20,6 +20,7 @@ class UserDirectoryController extends Controller
 
         $users = User::query()
             ->with('city')
+            ->whereNotNull('profile_completed_at')
             ->where(function ($q2) {
                 $q2->whereNull('is_hidden')->orWhere('is_hidden', false);
             })
