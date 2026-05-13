@@ -166,7 +166,7 @@
                 @endif
 
                 {{-- ===== БЛОК 1: Основные настройки ===== --}}
-                <div class="ramka">
+                <div class="ramka"  style="z-index: 6">
                     <h2 class="-mt-05">{{ __('events.main_settings') }}</h2>
                     <div class="row">
 
@@ -256,29 +256,48 @@
                             </div>
                         </div>
 
-                        <div class="col-md-4">
-                            <div class="card" style="overflow:visible">
-                                <label>{{ __('events.tz_label') }}</label>
-                                <input
-                                    name="timezone"
-                                    value="{{ old('timezone', (string)$event->timezone) }}"
-                                    placeholder="Europe/Moscow"
-                                    required
-                                >
-                                <ul class="list f-16 mt-1">
-                                    <li>{{ __('events.tz_hint') }}</li>
-                                </ul>
-                            </div>
-                        </div>
+                        <input type="hidden" name="timezone" id="mgmt_timezone_hidden"
+                            value="{{ old('timezone', (string)$event->timezone) }}">
 
                     </div>
                 </div>
 
                 {{-- ===== БЛОК 2: Локация ===== --}}
-                <div class="ramka">
+                <div class="ramka" style="z-index: 5">
                     <h2 class="-mt-05">{{ __('events.location_section') }}</h2>
                     <div class="row">
-                        <div class="col-md-12">
+
+                        {{-- Город --}}
+                        <div class="col-md-4">
+                            <div class="card" style="overflow:visible">
+                                <label>{{ __('events.city_label') }}</label>
+                                <div id="edit-city-ac-wrap" style="position:relative"
+                                    data-search-url="{{ route('cities.search') }}"
+                                    data-locations-url="{{ route('ajax.locations.byCity') }}"
+                                    data-city-meta-url="{{ route('ajax.cities.meta') }}"
+                                >
+                                    @php
+                                        $cityLabel = '';
+                                        if ($currentCity) {
+                                            $parts = array_filter([$currentCity->country_code ?? null, $currentCity->region ?? null]);
+                                            $cityLabel = $currentCity->name . ($parts ? ' (' . implode(', ', $parts) . ')' : '');
+                                        }
+                                    @endphp
+                                    <input type="text" id="edit_city_q" autocomplete="off"
+                                        class="form-control"
+                                        value="{{ $cityLabel }}"
+                                        placeholder="{{ __('events.city_search_ph') }}">
+                                    <div id="edit_city_dd" class="form-select-dropdown trainer_dd"></div>
+                                </div>
+                                <input type="hidden" id="edit_city_id" value="{{ $currentCity?->id ?? '' }}">
+                                <div id="edit_tz_label" class="f-16 mt-1" style="opacity:.65">
+                                    @if($event->timezone){{ $event->timezone }}@endif
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Локация --}}
+                        <div class="col-md-8">
                             <div class="card" style="overflow:visible">
                                 <div class="d-flex between">
                                     <label>{{ __('events.location_label') }}</label>
@@ -312,6 +331,11 @@
                                 @error('location_id')
                                     <div class="text-xs text-red-600 mt-1">{{ $message }}</div>
                                 @enderror
+                                @if(!$isAdmin)
+                                <ul class="list f-16 mt-1">
+                                    <li>{{ __('events.location_admin_only_hint') }}</li>
+                                </ul>
+                                @endif
 
                                 {{-- preview --}}
                                 <div id="location_preview_edit" class="mt-2 hidden">
@@ -333,6 +357,7 @@
                                 </div>
                             </div>
                         </div>
+
                     </div>
                 </div>
 
@@ -591,7 +616,7 @@
                 </div>
 
                 {{-- ===== БЛОК 4: Регистрация ===== --}}
-                <div class="ramka">
+                <div class="ramka"  style="z-index: 4">
                     <h2 class="-mt-05">{{ __('events.reg_section') }}</h2>
                     <div class="row">
 
@@ -1206,7 +1231,6 @@
             rH?.addEventListener('input', syncRemind);
             rM?.addEventListener('input', syncRemind);
             document.querySelector('input[name="starts_at"]')?.addEventListener('input', syncRemind);
-            document.querySelector('input[name="timezone"]')?.addEventListener('input', syncRemind);
             syncRemind();
 
             // --- Окно регистрации (часы+минуты → hidden total минут) ---
@@ -1288,7 +1312,143 @@
             sel?.addEventListener('change', updatePreview);
             updatePreview();
 
+            // --- City autocomplete + dynamic locations ---
+            (function() {
+                var cityWrap   = document.getElementById('edit-city-ac-wrap');
+                var cityInput  = document.getElementById('edit_city_q');
+                var cityIdEl   = document.getElementById('edit_city_id');
+                var tzHidden   = document.getElementById('mgmt_timezone_hidden');
+                var tzLabel    = document.getElementById('edit_tz_label');
+                var locSel     = document.getElementById('location_id_edit');
+                var timer      = null;
 
+                if (!cityWrap || !cityInput) return;
+
+                var dd      = document.getElementById('edit_city_dd');
+                var locUrl  = cityWrap.getAttribute('data-locations-url') || '';
+                var metaUrl = cityWrap.getAttribute('data-city-meta-url') || '';
+                var srchUrl = cityWrap.getAttribute('data-search-url') || '';
+                var savedLocationId = {{ (int)old('location_id', (int)$event->location_id) }};
+
+                function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+                function showDd() { dd && dd.classList.add('form-select-dropdown--active'); }
+                function hideDd() { dd && dd.classList.remove('form-select-dropdown--active'); }
+
+                function fetchJson(url, cb) {
+                    var xhr = new XMLHttpRequest();
+                    xhr.open('GET', url);
+                    xhr.setRequestHeader('Accept', 'application/json');
+                    xhr.onload = function() { try { cb(JSON.parse(xhr.responseText)); } catch(e) { cb(null); } };
+                    xhr.onerror = function() { cb(null); };
+                    xhr.send();
+                }
+
+                function fillLocations(items, preselect) {
+                    if (!locSel) return;
+                    var current = preselect != null ? preselect : parseInt(locSel.value || 0);
+                    locSel.innerHTML = '<option value="">{{ __("events.tournament_choose") }}</option>';
+                    (items || []).forEach(function(loc) {
+                        var opt = document.createElement('option');
+                        opt.value = loc.id;
+                        opt.textContent = loc.name + (loc.address ? ' — ' + loc.address : '');
+                        opt.setAttribute('data-name', loc.name || '');
+                        opt.setAttribute('data-city', '');
+                        opt.setAttribute('data-address', loc.address || '');
+                        opt.setAttribute('data-lat', loc.lat || '');
+                        opt.setAttribute('data-lng', loc.lng || '');
+                        opt.setAttribute('data-thumb', loc.thumb || '');
+                        if (loc.id === current) opt.selected = true;
+                        locSel.appendChild(opt);
+                    });
+                    if (window.jQuery && typeof window.initCustomSelects === 'function') {
+                        try {
+                            var $sel = window.jQuery(locSel);
+                            while ($sel.prev('.form-select-wrapper').length) $sel.prev('.form-select-wrapper').remove();
+                            $sel.removeData('custom-initialized');
+                            window.initCustomSelects();
+                        } catch(e) {}
+                    }
+                    if (typeof updatePreview === 'function') updatePreview();
+                }
+
+                function loadLocations(cityId, preselect) {
+                    if (!locUrl || !cityId) return;
+                    fetchJson(locUrl + '?city_id=' + encodeURIComponent(cityId), function(data) {
+                        fillLocations(data && data.ok ? (data.items || []) : [], preselect);
+                    });
+                }
+
+                function loadCityMeta(cityId) {
+                    if (!metaUrl || !cityId) return;
+                    fetchJson(metaUrl + '?city_id=' + encodeURIComponent(cityId), function(data) {
+                        if (!data || !data.ok) return;
+                        if (tzHidden && data.timezone) tzHidden.value = data.timezone;
+                        if (tzLabel) tzLabel.textContent = data.timezone || '';
+                        // syncRemind находится в DOMContentLoaded, не глобальна — hint обновится при следующем изменении remind полей
+                    });
+                }
+
+                function applyCity(id, label) {
+                    if (cityIdEl) cityIdEl.value = id ? String(id) : '';
+                    if (cityInput) cityInput.value = label || '';
+                    hideDd();
+                    if (id) {
+                        loadLocations(id, null);
+                        loadCityMeta(id);
+                    }
+                }
+
+                function renderResults(items) {
+                    if (!dd) return;
+                    dd.innerHTML = '';
+                    if (!items.length) {
+                        dd.innerHTML = '<div class="city-message">Ничего не найдено</div>';
+                        showDd(); return;
+                    }
+                    items.forEach(function(item) {
+                        var div = document.createElement('div');
+                        div.className = 'trainer-item form-select-option';
+                        var sub = [];
+                        if (item.country_code) sub.push(item.country_code);
+                        if (item.region) sub.push(item.region);
+                        if (item.timezone) sub.push(item.timezone);
+                        div.innerHTML = '<div class="text-sm" style="font-weight:600">' + esc(item.name) + '</div>'
+                            + (sub.length ? '<div class="f-14" style="opacity:.6">' + esc(sub.join(' · ')) + '</div>' : '');
+                        div.addEventListener('click', function() {
+                            var label = item.name + (sub.length ? ' (' + [item.country_code, item.region].filter(Boolean).join(', ') + ')' : '');
+                            applyCity(item.id, label);
+                        });
+                        dd.appendChild(div);
+                    });
+                    showDd();
+                }
+
+                cityInput.addEventListener('input', function() {
+                    clearTimeout(timer);
+                    if (cityIdEl) cityIdEl.value = '';
+                    var q = cityInput.value.trim();
+                    if (q.length < 2) { hideDd(); return; }
+                    if (dd) { dd.innerHTML = '<div class="city-message">Поиск…</div>'; showDd(); }
+                    timer = setTimeout(function() {
+                        if (!srchUrl) return;
+                        var url = srchUrl + '?q=' + encodeURIComponent(q) + '&limit=20';
+                        fetchJson(url, function(data) {
+                            var items = Array.isArray(data) ? data : (data && data.items ? data.items : []);
+                            renderResults(items);
+                        });
+                    }, 250);
+                });
+
+                document.addEventListener('click', function(e) {
+                    var wrap = document.getElementById('edit-city-ac-wrap');
+                    if (wrap && !wrap.contains(e.target)) hideDd();
+                });
+
+                cityInput.addEventListener('keydown', function(e) { if (e.key === 'Escape') hideDd(); });
+
+                // При загрузке — если есть текущий город, локации уже отрендерены сервером (статика).
+                // Ничего дополнительно не нужно.
+            })();
 
         });
 

@@ -185,7 +185,7 @@ if ($role === 'admin') {
         if ($role === 'organizer' && (int) $event->organizer_id !== (int) $user->id) abort(403);
         if ($role === 'staff' && (int) $event->organizer_id !== (int) $organizerIdForStaff) abort(403);
 
-        $event->load(['location', 'gameSettings', 'tournamentSetting']);
+        $event->load(['location.city', 'gameSettings', 'tournamentSetting']);
 
         // Информация о связанных лиге/сезоне/дивизионе для tournament-формата
         $seasonInfo = null;
@@ -233,9 +233,13 @@ if ($role === 'admin') {
             $activeRegs = (int) $r->count();
         }
 
+        $currentCity = $event->location?->city;
+        $currentCityId = $currentCity?->id;
+
         $locations = Location::query()
-            ->with('media')
+            ->with(['media', 'city'])
             ->orderBy('name')
+            ->when($currentCityId, fn ($q) => $q->where('city_id', $currentCityId))
             ->get();
 
         // Каналы для анонсов: список каналов организатора + текущие подключения
@@ -262,6 +266,7 @@ if ($role === 'admin') {
             'event' => $event,
             'activeRegs' => (int) $activeRegs,
             'locations' => $locations,
+            'currentCity' => $currentCity,
             'userChannels' => $userChannels,
             'selectedChannelIds' => $selectedChannelIds,
             'channelSettings' => $channelSettings,

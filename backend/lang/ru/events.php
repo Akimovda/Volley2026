@@ -139,6 +139,7 @@ return [
         'setter'   => 'Связующий',
         'libero'   => 'Либеро',
         'player'   => 'Игрок',
+        'reserve'  => 'Запасной',
     ],
 
     // ===== events/show/tournament.blade.php =====
