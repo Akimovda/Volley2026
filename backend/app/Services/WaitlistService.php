@@ -181,16 +181,21 @@ class WaitlistService
                     continue;
                 }
 
-                // Уже записан в этом occurrence (страховка)
-                $alreadyRegistered = EventRegistration::query()
+                // Проверяем любую существующую запись (включая отменённые).
+                // Уникальный constraint (occurrence_id, user_id) не учитывает is_cancelled,
+                // поэтому нельзя делать INSERT если есть даже отменённая запись.
+                $existingReg = EventRegistration::query()
                     ->where('user_id', $user->id)
                     ->where('occurrence_id', $occurrence->id)
-                    ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
-                    ->whereRaw("(status IS NULL OR status != 'cancelled')")
-                    ->exists();
-                if ($alreadyRegistered) {
-                    $entry->delete();
-                    continue;
+                    ->first();
+                if ($existingReg) {
+                    $isCancelled = $existingReg->is_cancelled || $existingReg->status === 'cancelled';
+                    if (!$isCancelled) {
+                        // Уже активно зарегистрирован — убираем из waitlist
+                        $entry->delete();
+                        continue;
+                    }
+                    // Есть отменённая запись — реактивируем её ниже вместо INSERT
                 }
 
                 // Eligibility (без проверки мест) — уровень/возраст/гендер/окно
@@ -253,14 +258,15 @@ class WaitlistService
                     if ($maxPlayers > 0 && $registered >= $maxPlayers) return false;
                 }
 
-                // Создаём регистрацию — через свойства, чтобы записать поля вне $fillable
-                // (auto_booked, is_cancelled, payment_status и т.п.)
-                $reg = new EventRegistration();
+                // Создаём или реактивируем регистрацию через свойства,
+                // чтобы записать поля вне $fillable (auto_booked и т.п.)
+                $reg = $existingReg ?? new EventRegistration();
                 $reg->user_id       = $user->id;
                 $reg->event_id      = $occurrence->event_id;
                 $reg->occurrence_id = $occurrence->id;
                 $reg->status        = 'confirmed';
                 $reg->is_cancelled  = false;
+                $reg->cancelled_at  = null;
                 $reg->position      = $position !== '' ? $position : null;
                 $reg->auto_booked   = true;
                 $reg->save();
