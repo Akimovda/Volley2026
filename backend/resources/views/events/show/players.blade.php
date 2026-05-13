@@ -673,7 +673,7 @@ $showWaitlist = !$isTournament && !$eventStarted && auth()->check() && !$isRegis
 				@foreach($waitlistEntries as $i => $entry)
 				<div class="d-flex align-items-center gap-1 small py-1 border-bottom">
 					<span class="text-muted">{{ $i + 1 }}.</span>
-					<span>{{ $entry->user->name ?? '#'.$entry->user_id }}</span>
+					<span>{{ trim(($entry->user->last_name ?? '') . ' ' . ($entry->user->first_name ?? '')) ?: ($entry->user->name ?? '#'.$entry->user_id) }}</span>
 					@if(!empty($entry->positions))
 					<span class="text-muted">({{ implode(', ', array_map('position_name', $entry->positions)) }})</span>
 					@endif
