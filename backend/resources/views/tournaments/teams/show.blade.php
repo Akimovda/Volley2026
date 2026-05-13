@@ -57,6 +57,17 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
 </div>
 @endif
 
+@if($isCaptain && !\App\Models\UserTeam::where('user_id', auth()->id())->where('name', $team->name)->exists())
+<div class="alert alert-info mb-2 d-flex between fvc" style="flex-wrap:wrap;gap:1rem">
+    <div class="f-15">Сохраните эту команду в профиль, чтобы быстро использовать её на других турнирах.</div>
+    <form method="POST" action="{{ route('tournamentTeams.saveToProfile', [$event, $team]) }}">
+        @csrf
+        <input type="hidden" name="team_name" value="{{ $team->name }}">
+        <button class="btn btn-secondary btn-small">Сохранить в профиль</button>
+    </form>
+</div>
+@endif
+
 <div class="row row2">
 <div class="col-lg-8">
 

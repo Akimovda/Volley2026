@@ -9,6 +9,7 @@ use App\Services\TournamentTeamService;
 use DomainException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -308,6 +309,128 @@ class TournamentTeamController extends Controller
         } catch (DomainException $e) {
             return back()->withErrors(['join' => $e->getMessage()]);
         }
+    }
+
+    /**
+     * Капитан сохраняет текущую команду как шаблон в профиль.
+     */
+    public function saveToProfile(Request $request, Event $event, EventTeam $team): RedirectResponse
+    {
+        $user = $request->user();
+        if (!$user) return redirect()->route('login');
+        abort_unless((int) $team->captain_user_id === (int) $user->id, 403);
+
+        $team->load('members.user');
+        $name = $request->input('team_name', $team->name);
+
+        $direction = (string) ($event->direction ?? 'classic');
+        $subtype   = (string) ($event->gameSettings?->subtype ?? '');
+
+        DB::beginTransaction();
+        try {
+            $userTeam = \App\Models\UserTeam::create([
+                'user_id'   => $user->id,
+                'name'      => $name,
+                'direction' => $direction,
+                'subtype'   => $subtype ?: null,
+            ]);
+
+            foreach ($team->members as $member) {
+                \App\Models\UserTeamMember::create([
+                    'user_team_id'  => $userTeam->id,
+                    'user_id'       => (int) $member->user_id,
+                    'role_code'     => $member->team_role ?: $member->role_code ?: 'player',
+                    'position_code' => $member->position_code ?: null,
+                ]);
+            }
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Не удалось сохранить команду: ' . $e->getMessage());
+        }
+
+        return back()->with('success', 'Команда «' . e($name) . '» сохранена в профиле ✅');
+    }
+
+    /**
+     * Создать EventTeam из сохранённого шаблона UserTeam.
+     */
+    public function fromSaved(Request $request, Event $event, TournamentTeamService $service): RedirectResponse
+    {
+        $user = $request->user();
+        if (!$user) return redirect()->route('login');
+
+        $data = $request->validate([
+            'user_team_id'          => ['required', 'integer', 'exists:user_teams,id'],
+            'occurrence_id'         => ['nullable', 'integer', 'exists:event_occurrences,id'],
+            'captain_position_code' => ['nullable', 'string', 'in:setter,outside,opposite,middle,libero'],
+        ]);
+
+        $userTeam = \App\Models\UserTeam::with('members.user')->find((int) $data['user_team_id']);
+        if (!$userTeam || (int) $userTeam->user_id !== (int) $user->id) abort(403);
+
+        $event->loadMissing(['gameSettings', 'tournamentSetting']);
+
+        // Проверка размера команды
+        $validationSvc = app(\App\Services\UserTeamValidationService::class);
+        $sizeError = $validationSvc->checkTeamSize($userTeam, $event);
+        if ($sizeError) {
+            return redirect()->route('user.teams.edit', $userTeam->id)
+                ->with('team_size_error', $sizeError)
+                ->withInput(['event_id' => $event->id])
+                ->with('return_event_id', $event->id);
+        }
+
+        // Валидация участников
+        $occurrence = null;
+        if (!empty($data['occurrence_id'])) {
+            $occurrence = \App\Models\EventOccurrence::find((int) $data['occurrence_id']);
+        }
+        $memberErrors = $validationSvc->validateForEvent($userTeam, $event, $occurrence);
+
+        if ($memberErrors) {
+            return redirect()
+                ->route('user.teams.edit', ['team' => $userTeam->id, 'event_id' => $event->id])
+                ->with('team_validation_errors', $memberErrors)
+                ->with('return_event_id', $event->id);
+        }
+
+        // Позиция капитана
+        $captainPos = $data['captain_position_code']
+            ?? $userTeam->members->firstWhere('user_id', $user->id)?->position_code;
+
+        try {
+            $team = $service->createTeam(
+                event: $event,
+                captain: $user,
+                name: $userTeam->name,
+                occurrenceId: !empty($data['occurrence_id']) ? (int) $data['occurrence_id'] : null,
+                teamKind: $event->direction === 'beach' ? 'beach_pair' : 'classic_team',
+                captainPositionCode: $captainPos,
+            );
+
+            // Приглашаем остальных участников
+            foreach ($userTeam->members as $member) {
+                if ((int) $member->user_id === (int) $user->id) continue;
+                if (!$member->user) continue;
+                try {
+                    app(\App\Services\TournamentTeamInviteService::class)->createInvite(
+                        team: $team,
+                        invitedUserId: (int) $member->user_id,
+                        invitedByUserId: (int) $user->id,
+                        teamRole: $member->role_code ?: 'player',
+                        positionCode: $member->position_code ?: null,
+                    );
+                } catch (\Exception $e) {
+                    // Пропускаем ошибки приглашения (игрок уже в команде и т.д.)
+                }
+            }
+        } catch (DomainException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return redirect()->route('tournamentTeams.show', [$event, $team])
+            ->with('success', 'Команда создана из шаблона ✅ Участники получили приглашения.');
     }
 
     /**
