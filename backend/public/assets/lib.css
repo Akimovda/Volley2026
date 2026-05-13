@@ -1309,7 +1309,7 @@ body.dark .fancybox-toolbar {
 }
 .is-app .fancybox-toolbar {
 	top: 0;
-	padding-top: env(safe-area-inset-top, 0px);
+	margin-top: env(safe-area-inset-top, 0px);
 }
 
 
