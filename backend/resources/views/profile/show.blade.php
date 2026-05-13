@@ -202,7 +202,7 @@
 	return '<span class="'.$base.'"><span class="'.$dot.'" style="background:#4285F4;"></span><span class="'.$txt.'">Google</span></span>';
 	}
 	if ($p === 'password') {
-	return '<span class="'.$base.'"><span class="'.$dot.'" style="background:#6B7280;"></span><span class="'.$txt.'">Объединённый аккаунт</span></span>';
+	return '<span class="'.$base.'"><span class="'.$dot.'" style="background:#6B7280;"></span><span class="'.$txt.'">Успешный вход 🤝</span></span>';
 	}
 	return '<span class="'.$base.'"><span class="'.$dot.'" style="background:#9CA3AF;"></span><span class="'.$txt.'">'.e(__('profile.providers_unknown')).'</span></span>';
     };
