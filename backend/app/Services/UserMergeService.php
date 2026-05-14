@@ -237,7 +237,29 @@ class UserMergeService
             // 15. Device tokens
             DB::table('device_tokens')->where('user_id', $secondary->id)->update(['user_id' => $primary->id]);
 
-            // 16. Помечаем вторичный аккаунт
+            // 16. Пляжные зоны — без дублей по zone
+            $primaryZones = DB::table('user_beach_zones')
+                ->where('user_id', $primary->id)
+                ->pluck('zone')
+                ->toArray();
+            DB::table('user_beach_zones')
+                ->where('user_id', $secondary->id)
+                ->whereNotIn('zone', $primaryZones)
+                ->update(['user_id' => $primary->id]);
+            DB::table('user_beach_zones')->where('user_id', $secondary->id)->delete();
+
+            // 17. Классические позиции — без дублей по position
+            $primaryPositions = DB::table('user_classic_positions')
+                ->where('user_id', $primary->id)
+                ->pluck('position')
+                ->toArray();
+            DB::table('user_classic_positions')
+                ->where('user_id', $secondary->id)
+                ->whereNotIn('position', $primaryPositions)
+                ->update(['user_id' => $primary->id]);
+            DB::table('user_classic_positions')->where('user_id', $secondary->id)->delete();
+
+            // 18. Помечаем вторичный аккаунт
             $secondary->merged_into_user_id = $primary->id;
             $secondary->save();
 
