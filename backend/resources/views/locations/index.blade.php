@@ -87,8 +87,14 @@
 			body.dark .location-card-footer {
 			background: rgba(255,255,255,0.03);
 			}
+
 			.ymaps-2-1-79-balloon__content {
-			font: unset!important;
+				font: unset!important;
+			}
+			/* CSS dark mode для карты (yandex#dark не существует в API 2.1) */
+			body.dark #ymap {
+				filter: invert(0.93) hue-rotate(180deg) brightness(1.05);
+				transition: filter 0.3s;
 			}
 		</style>
 	</x-slot>
@@ -198,40 +204,23 @@
 						return localStorage.getItem('theme') === 'dark' ? 'dark' : 'light';
 					}
 
-					function getMapType(theme) {
-						return theme === 'dark' ? 'yandex#dark' : 'yandex#map';
-					}
-
-					function getIconPresets(theme) {
-						return theme === 'dark'
-							? { cluster: 'islands#orangeClusterIcons', object: 'islands#orangeIcon' }
-							: { cluster: 'islands#blueClusterIcons',   object: 'islands#blueIcon'   };
-					}
-
 					function showMap() {
 						var mapDiv = document.getElementById('ymap');
 						if (mapDiv && mapDiv.style.opacity !== '1') mapDiv.style.opacity = '1';
 					}
 
-					window.updateLocationsMapTheme = function() {
-						var theme = getTheme();
-						if (currentMap) currentMap.setType(getMapType(theme));
-						if (currentObjectManager) {
-							var p = getIconPresets(theme);
-							currentObjectManager.clusters.options.set({ preset: p.cluster });
-							currentObjectManager.objects.options.set({ preset: p.object });
-						}
-					};
+					// Тёмная тема — через CSS filter на #ymap (body.dark #ymap).
+					// setType('yandex#dark') не существует в API 2.1 и бросает ошибку.
+					window.updateLocationsMapTheme = function() {};
 
 					function init() {
 						var pts = Array.isArray(window.__LOC_POINTS__) ? window.__LOC_POINTS__ : [];
-						var theme = getTheme();
 
 						if (!pts.length) {
 							currentMap = new ymaps.Map('ymap', {
 								center: [55.751244, 37.618423],
-								zoom: 4,
-								type: getMapType(theme),
+								zoom: 6,
+								type: 'yandex#map',
 								controls: ['zoomControl', 'fullscreenControl']
 							});
 							showMap();
@@ -246,7 +235,7 @@
 						var map = new ymaps.Map('ymap', {
 							center: [centerLat, centerLng],
 							zoom: 10,
-							type: getMapType(theme),
+							type: 'yandex#map',
 							controls: ['zoomControl', 'fullscreenControl']
 						});
 						currentMap = map;
@@ -254,8 +243,11 @@
 						map.setBounds(
 							[[Math.min.apply(null, lats), Math.min.apply(null, lngs)],
 							 [Math.max.apply(null, lats), Math.max.apply(null, lngs)]],
-							{ checkZoomRange: true, zoomMargin: 50 }
-						).then(showMap).catch(showMap);
+							{ checkZoomRange: true, zoomMargin: 50, duration: 0 }
+						).then(function() {
+							if (currentMap.getZoom() < 5) currentMap.setZoom(5);
+							showMap();
+						}).catch(showMap);
 						setTimeout(showMap, 500);
 
 						var objectManager = new ymaps.ObjectManager({
@@ -266,9 +258,8 @@
 						});
 						currentObjectManager = objectManager;
 
-						var p = getIconPresets(theme);
-						objectManager.objects.options.set({ preset: p.object });
-						objectManager.clusters.options.set({ preset: p.cluster });
+						objectManager.objects.options.set({ preset: 'islands#blueIcon' });
+						objectManager.clusters.options.set({ preset: 'islands#blueClusterIcons' });
 
 						var features = pts.map(function(loc, index) {
 							function esc(s) {
@@ -297,10 +288,8 @@
 						map.geoObjects.add(objectManager);
 					}
 
-					// Загружаем API с нужной темой
-					var theme = getTheme();
 					var script = document.createElement('script');
-					script.src = 'https://api-maps.yandex.ru/2.1/?apikey={{ config('services.yandex_maps.key') }}&lang={{ __('locations.yandex_lang') }}&theme=' + theme;
+					script.src = 'https://api-maps.yandex.ru/2.1/?apikey={{ config('services.yandex_maps.key') }}&lang={{ __('locations.yandex_lang') }}';
 					script.onload = function() { ymaps.ready(init); };
 					document.head.appendChild(script);
 
