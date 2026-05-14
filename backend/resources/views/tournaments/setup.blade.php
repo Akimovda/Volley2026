@@ -1112,10 +1112,23 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 				
 				<div class="tab-panes">
 					@foreach($matchesByGroup as $groupId => $groupMatches)
-					@php $groupName = $stage->groups->firstWhere('id', $groupId)?->name ?? ''; @endphp
+					@php
+					$groupName       = $stage->groups->firstWhere('id', $groupId)?->name ?? '';
+					$groupForCross   = $stage->groups->firstWhere('id', $groupId);
+					$crossClean      = $cleanStatsByGroup[$groupId] ?? [];
+					$crossOutsiders  = $outsidersByGroup[$groupId] ?? [];
+					$hasCrosstable   = $groupForCross && $groupForCross->standings->isNotEmpty();
+					@endphp
 					<div class="tab-pane" id="matches-group{{ $groupId }}">
-						<div class="">
-							
+
+						@if($hasCrosstable)
+						<div class="d-flex fvc mb-2" style="gap:6px">
+							<button class="btn btn-small btn-secondary ct-view-btn ct-view-btn--active" data-group="{{ $groupId }}" data-view="list" style="font-size:12px">📋 {{ __('tournaments.view_list') }}</button>
+							<button class="btn btn-small btn-secondary ct-view-btn" data-group="{{ $groupId }}" data-view="crosstable" style="font-size:12px">📊 {{ __('tournaments.view_crosstable') }}</button>
+						</div>
+						@endif
+
+						<div class="ct-view-list" data-group="{{ $groupId }}">
 							<div class="table-scrollable">
 								<div class="table-drag-indicator"></div>
 								<table class="table">
@@ -1186,6 +1199,18 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 								</table>
 							</div>
 						</div>
+
+						@if($hasCrosstable)
+						<div class="ct-view-crosstable" data-group="{{ $groupId }}" style="display:none">
+							@include('tournaments._partials.group_crosstable', [
+								'group'          => $groupForCross,
+								'groupMatches'   => $groupMatches,
+								'groupClean'     => $crossClean,
+								'groupOutsiders' => $crossOutsiders,
+							])
+						</div>
+						@endif
+
 					</div>
 					@endforeach
 				</div>
@@ -1626,4 +1651,42 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 			updateGroupOptions();
 		})();
 	</script>
+	<script>
+		// Переключатель Список / Шахматка
+		(function () {
+			var LS_KEY = 'ct_view_pref';
+
+			function setView(groupId, view) {
+				var listEl  = document.querySelector('.ct-view-list[data-group="' + groupId + '"]');
+				var crossEl = document.querySelector('.ct-view-crosstable[data-group="' + groupId + '"]');
+				var btns    = document.querySelectorAll('.ct-view-btn[data-group="' + groupId + '"]');
+				if (!listEl) return;
+				listEl.style.display  = view === 'list'       ? '' : 'none';
+				if (crossEl) crossEl.style.display = view === 'crosstable' ? '' : 'none';
+				btns.forEach(function (b) {
+					b.classList.toggle('ct-view-btn--active', b.dataset.view === view);
+				});
+				try { localStorage.setItem(LS_KEY, view); } catch(e) {}
+			}
+
+			// Восстановить сохранённый вид
+			var savedView = 'list';
+			try { savedView = localStorage.getItem(LS_KEY) || 'list'; } catch(e) {}
+			if (savedView === 'crosstable') {
+				document.querySelectorAll('.ct-view-list[data-group]').forEach(function (el) {
+					setView(el.dataset.group, 'crosstable');
+				});
+			}
+
+			document.addEventListener('click', function (e) {
+				var btn = e.target.closest('.ct-view-btn');
+				if (!btn) return;
+				setView(btn.dataset.group, btn.dataset.view);
+			});
+		})();
+	</script>
+	<style>
+		.ct-view-btn { opacity: .55; }
+		.ct-view-btn--active { opacity: 1; }
+	</style>
 </x-voll-layout>

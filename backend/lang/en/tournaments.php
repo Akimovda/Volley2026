@@ -562,4 +562,16 @@ return [
 
     'setup_photo_main'      => '★ Main',
     'setup_photo_pos_n'     => 'Photo: :n',
+
+    // Cross-table
+    'view_list'             => 'List',
+    'view_crosstable'       => 'Cross-table',
+    'matches_short'         => 'M',
+    'wins_short'            => 'W',
+    'sets_short'            => 'Sets',
+    'points_short'          => 'Pts',
+    'place_short'           => 'Place',
+    'balls_ratio'           => 'Balls',
+    'crosstable_matches'    => 'Matches',
+    'crosstable_wins'       => 'Wins',
 ];
