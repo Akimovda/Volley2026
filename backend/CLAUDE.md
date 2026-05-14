@@ -95,6 +95,22 @@
 - Зарегистрированных команд: COUNT(DISTINCT group_key), fallback ceil(registered_total / team_size)
 - Карточка: data-is-tournament="1", label " команд" через `<span data-seat-unit>`
 
+## Индивидуальная запись на турнир (tournament_individual)
+- `registration_mode = 'tournament_individual'` — игроки записываются по амплуа, не командами
+- Чекбокс `tournament_individual_reg` в форме создания (step1.blade.php) в блоке `#tournament_settings_block`
+- Role slots создаются как для обычной игры: позиции × teams_count; резерв = reserve_per_team × teams_count
+- EventGameSettingsService: при `tournament_individual_reg=1` → `game_subtype = tournament_game_scheme`, `teams_count = tournament_teams_count`
+- Guard: `tournament_individual` НЕ требует команду (team_classic/team_beach блокируют прямую запись)
+- Waitlist: для `tournament_individual` включён (как обычная игра); командные турниры по-прежнему пропускаются
+- players.blade.php: `$isIndividualTournament = format=tournament && registration_mode=tournament_individual`
+  - показывает счётчик игроков (не команд); форму выбора позиции (не командную)
+  - для организатора: кнопка "Распределить случайно" → POST /events/{id}/distribute-individual
+- TournamentTeamDistributionService::distributeRandom() — создаёт EventTeam из event_registrations
+  - round-robin по позициям: игрок[i] → команда[i % N]; первый участник команды = капитан
+  - проверяет наличие существующих команд (не перезаписывает)
+- WaitlistService: `tournament_individual` идёт в autoBookNext (как обычная игра)
+- EventRegistrationController: `tournament_individual` включён в блок авто-бука reserve-слотов
+
 ## Dark mode (body.dark)
 - Inline style="color:..." нельзя переопределить CSS-классом
 - Решение для тёмных цветов: добавить класс на элемент + text-shadow с белым glow в `body.dark .class`
@@ -137,7 +153,7 @@ php artisan view:clear && php artisan view:cache
 sudo supervisorctl restart volleyplay-queue:* volleyplay-reverb
 sudo systemctl reload php8.3-fpm   # ← обязательно при изменении PHP-классов/config (opcache)
 
-## Текущая версия: v1.9.3
+## Текущая версия: v1.9.4
 
 ## Правила работы
 - В конце каждой сессии обновляй этот файл: добавляй новые находки, баги, паттерны

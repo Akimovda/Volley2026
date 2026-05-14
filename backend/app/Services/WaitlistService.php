@@ -54,7 +54,9 @@ class WaitlistService
         // Триггер нужен здесь т.к. reserve-слоты изначально пусты и onSpotFreed для них
         // не срабатывает (нет отмены). Без этого reserve мог оставаться незаполненным
         // пока кто-то не сделает новую регистрацию (триггер в persistRegistration).
-        if ($entry->wasRecentlyCreated && (string)($occurrence->event->format ?? '') !== 'tournament') {
+        $isIndividualTournament = (string)($occurrence->event->format ?? '') === 'tournament'
+            && (string)($occurrence->event->registration_mode ?? '') === 'tournament_individual';
+        if ($entry->wasRecentlyCreated && ((string)($occurrence->event->format ?? '') !== 'tournament' || $isIndividualTournament)) {
             $reserveMax = (int)($occurrence->event->gameSettings?->reserve_players_max ?? 0);
             if ($reserveMax > 0 && $entry->subscribedToPosition('reserve')) {
                 $reserveTaken = \DB::table('event_registrations')
@@ -108,11 +110,15 @@ class WaitlistService
             return;
         }
 
-        // Турниры — оставляем старую логику с уведомлением (командная регистрация ≠ позиции)
+        // Командные турниры — старая логика с уведомлением (командная регистрация ≠ позиции)
+        // Для tournament_individual — обычная автозапись как для индивидуальных мероприятий
         $event = $occurrence->event ?: $occurrence->loadMissing('event')->event;
         if ($event && (string) $event->format === 'tournament') {
-            $this->notifyNext($occurrence->id, $position);
-            return;
+            $isIndividualTournamentForWaitlist = (string)($event->registration_mode ?? '') === 'tournament_individual';
+            if (!$isIndividualTournamentForWaitlist) {
+                $this->notifyNext($occurrence->id, $position);
+                return;
+            }
         }
 
         // Индивидуальная регистрация — автозапись первого подходящего из очереди.
@@ -133,8 +139,9 @@ class WaitlistService
         $event = $occurrence->event ?: $occurrence->loadMissing('event')->event;
         if (!$event) return false;
 
-        // Турниры в эту ветку не идут — защита на случай прямого вызова
-        if ((string) $event->format === 'tournament') {
+        // Командные турниры в эту ветку не идут — защита на случай прямого вызова
+        if ((string) $event->format === 'tournament'
+            && (string)($event->registration_mode ?? '') !== 'tournament_individual') {
             return false;
         }
 

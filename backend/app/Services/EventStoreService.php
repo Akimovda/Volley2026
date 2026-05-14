@@ -331,8 +331,13 @@ class EventStoreService
             $event->title = $data['title'];
             $event->direction = $data['direction'];
             $event->format = $format;
+            $isTournamentIndividual = $isTournament && !empty($data['tournament_individual_reg']);
             $event->registration_mode = $isTournament
-                ? ($data['direction'] === 'beach' ? 'team_beach' : 'team_classic')
+                ? (
+                    $isTournamentIndividual
+                        ? 'tournament_individual'
+                        : ($data['direction'] === 'beach' ? 'team_beach' : 'team_classic')
+                )
                 : ($data['registration_mode'] ?? 'single');
 
             $event->organizer_id =
@@ -506,6 +511,19 @@ class EventStoreService
                 }
 
                 $data = $game['data'];
+            } elseif ($isTournamentIndividual) {
+                // Для индивидуального турнира пробрасываем параметры схемы в game settings,
+                // чтобы createGameSettings() создал корректные role slots (позиции × кол-во команд).
+                $scheme = (string)($data['tournament_game_scheme'] ?? '');
+                $teamsCount = (int)($data['tournament_teams_count'] ?? 4);
+                $reservePerTeam = (int)($data['tournament_reserve_players_max'] ?? 0);
+
+                $data['game_subtype']            = $scheme ?: (($data['direction'] === 'beach') ? '2x2' : '4x2');
+                $data['teams_count']             = $teamsCount;
+                $data['game_reserve_players_max'] = $reservePerTeam * $teamsCount;
+
+                $game['isGameClassic'] = ($data['direction'] === 'classic');
+                $game['isGameBeach']   = ($data['direction'] === 'beach');
             }
 
             /*

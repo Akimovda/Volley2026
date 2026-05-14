@@ -47,7 +47,10 @@ class EventGameSettingsService
             ];
         }
     
-        $registrationMode = $isTournamentBeach ? 'team_beach' : 'team_classic';
+        $isIndividual = !empty($data['tournament_individual_reg']);
+        $registrationMode = $isIndividual
+            ? 'tournament_individual'
+            : ($isTournamentBeach ? 'team_beach' : 'team_classic');
         $data['tournament_registration_mode'] = $registrationMode;
     
         $scheme = (string)($data['tournament_game_scheme'] ?? '');

@@ -15,6 +15,7 @@ $tournamentAutoSubmitWhenReady = old('tournament_auto_submit_when_ready',
 'tournament_application_mode', $prefill['tournament_auto_submit_when_ready'] ?? false);
 $tournamentAllowIncompleteApplication = old('tournament_allow_incomplete_application',
 $prefill['tournament_allow_incomplete_application'] ?? false);
+$tournamentIndividualReg = (bool) old('tournament_individual_reg', $prefill['tournament_individual_reg'] ?? false);
 @endphp
 @php
 $registrationMode = old('registration_mode', $prefill['registration_mode'] ?? 'single');
@@ -62,6 +63,7 @@ $step1Fields = [
 'tournament_captain_confirms_members',
 'tournament_auto_submit_when_ready',
 'tournament_allow_incomplete_application',
+'tournament_individual_reg',
 'tournament_application_mode',
 // ✅ trainer
 'trainer_user_ids',      // новое

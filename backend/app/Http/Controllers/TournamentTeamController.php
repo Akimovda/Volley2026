@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Event;
 use App\Models\EventTeam;
 use App\Models\EventTeamMember;
+use App\Models\EventOccurrence;
 use App\Services\TournamentTeamService;
+use App\Services\TournamentTeamDistributionService;
 use DomainException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -456,6 +458,32 @@ class TournamentTeamController extends Controller
         } catch (DomainException $e) {
             return back()->withErrors(['leave' => $e->getMessage()]);
         }
+    }
+
+    /**
+     * Случайное распределение индивидуально записавшихся по командам.
+     * Доступно только организатору / администратору.
+     */
+    public function distributeIndividual(
+        Request $request,
+        Event $event,
+        TournamentTeamDistributionService $service
+    ): \Illuminate\Http\JsonResponse {
+        $user = $request->user();
+        abort_unless($user, 403);
+        abort_unless(
+            $user->role === 'admin' || (int)$event->organizer_id === (int)$user->id,
+            403
+        );
+
+        $occurrenceId = (int)$request->input('occurrence_id', 0);
+        $occurrence   = $occurrenceId
+            ? EventOccurrence::where('event_id', $event->id)->findOrFail($occurrenceId)
+            : EventOccurrence::where('event_id', $event->id)->orderBy('starts_at')->firstOrFail();
+
+        $result = $service->distributeRandom($event, $occurrence);
+
+        return response()->json($result, $result['ok'] ? 200 : 422);
     }
 
     /**

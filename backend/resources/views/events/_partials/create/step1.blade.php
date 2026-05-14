@@ -458,12 +458,38 @@
 												<ul class="list f-13 mt-1" style="opacity:.7"><li>{{ __('events.tournament_allow_incomplete_hint') }}</li></ul>
 											</div>
 										</div>
-									</div>	
+									</div>
+
+									{{-- Индивидуальная запись игроков --}}
+									<div class="row mt-2">
+										<div class="col-md-12">
+											<div class="card" style="background:var(--card-bg,#f9fafb)">
+												<input type="hidden" name="tournament_individual_reg" value="0">
+												<label class="checkbox-item">
+													<input
+													type="checkbox"
+													name="tournament_individual_reg"
+													id="tournament_individual_reg"
+													value="1"
+													@checked($tournamentIndividualReg ?? false)
+													>
+													<div class="custom-checkbox"></div>
+													<span class="b-500">{{ __('events.tournament_individual_reg_label') }}</span>
+												</label>
+												<ul class="list f-16 mt-1">
+													<li>{{ __('events.tournament_individual_reg_hint') }}</li>
+												</ul>
+												<div id="tournament_individual_reg_note" class="f-13 mt-1" style="opacity:.7;display:none;">
+													{{ __('events.tournament_individual_reg_note') }}
+												</div>
+											</div>
+										</div>
+									</div>
 								</div>
 							</div>
 							<div class="col-md-12">
 								<div class="ramka" style="z-index: 8">
-									<h2 class="-mt-05">{{ __('events.restrictions_title') }}</h2>	
+									<h2 class="-mt-05">{{ __('events.restrictions_title') }}</h2>
 									<div class="row">
 										
 										<div class="col-md-6" id="age_policy_block">
@@ -810,5 +836,22 @@
     close1.addEventListener('click', hide);
     close2.addEventListener('click', hide);
     modal.addEventListener('click', function(e){ if(e.target === modal) hide(); });
+})();
+(function(){
+    var cb = document.getElementById('tournament_individual_reg');
+    if (!cb) return;
+    var noteEl = document.getElementById('tournament_individual_reg_note');
+    // Cards that become irrelevant in individual mode: captain confirms, auto-submit, etc.
+    // They're inside col-md-4 which is the 3rd column in tournament_settings_block row.
+    // We just visually dim them and show a note — values are still submitted but ignored.
+    function apply(){
+        var on = cb.checked;
+        if (noteEl) noteEl.style.display = on ? '' : 'none';
+        // Dim the team-specific notifications card
+        var notifCard = cb.closest('.ramka') ? cb.closest('.ramka').querySelector('.col-md-4 .card') : null;
+        if (notifCard) notifCard.style.opacity = on ? '0.4' : '';
+    }
+    cb.addEventListener('change', apply);
+    apply();
 })();
 </script>							

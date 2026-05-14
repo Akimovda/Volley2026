@@ -79,7 +79,8 @@
     {{-- ===============================
     СТАТИСТИКА ИГРОКОВ
     =============================== --}}
-    @if($event->format === 'tournament')
+    @php $isIndividualTournament = $event->format === 'tournament' && $event->registration_mode === 'tournament_individual'; @endphp
+    @if($event->format === 'tournament' && !$isIndividualTournament)
 	@php
 	$teamsMax = $event->tournament_teams_count ?: ($event->tournamentSetting?->teams_count ?? 0);
 	$teamSize = $event->tournamentSetting?->team_size_min ?? 2;
@@ -104,6 +105,14 @@
 		<a href="{{ route('tournament.setup', $event) }}" class="btn btn-primary btn-sm">{{ __('events.sp_setup_btn') }}</a>
 	</div>
 	@endif
+    @elseif($isIndividualTournament && auth()->check() && (auth()->user()->role === 'admin' || (int)($event->organizer_id ?? 0) === auth()->id()))
+    {{-- Кнопка формирования команд для организатора --}}
+    <div class="mt-1 mb-1">
+        <button id="distribute-teams-btn" class="btn btn-primary btn-sm" data-event-id="{{ $event->id }}" data-occurrence-id="{{ $occurrence->id }}">
+            {{ __('events.tournament_distribute_random_btn') }}
+        </button>
+        <a href="{{ route('tournament.setup', $event) }}" class="btn btn-secondary btn-sm ml-1">{{ __('events.sp_setup_btn') }}</a>
+    </div>
     @elseif(!is_null($registeredTotal))
 	<div class="text-muted small mb-1">
 		{{ __('events.sp_free_spots_label') }}
@@ -115,8 +124,8 @@
     @endif
 
     @php
-    $pCount = ($event->format === 'tournament') ? ($teamsRegistered ?? 0) : ($registeredTotal ?? 0);
-    $pMax   = ($event->format === 'tournament') ? ($teamsMax ?? 0) : ($totalCapacity ?? 0);
+    $pCount = ($event->format === 'tournament' && !$isIndividualTournament) ? ($teamsRegistered ?? 0) : ($registeredTotal ?? 0);
+    $pMax   = ($event->format === 'tournament' && !$isIndividualTournament) ? ($teamsMax ?? 0) : ($totalCapacity ?? 0);
     $percent = ($pMax > 0) ? min(100, ($pCount / $pMax) * 100) : 0;
 	
 	$barClass = 'bg-danger';
@@ -325,6 +334,12 @@
         $isTeamClassic = in_array($regMode, ['team_classic', 'team']);
         $isTeamBeach   = $regMode === 'team_beach';
 		@endphp
+
+		@if($isIndividualTournament && !$isRegistered)
+		<div class="alert alert-info mb-1">
+			{{ __('events.sp_individual_tournament_hint') }}
+		</div>
+		@endif
 
 		@if ($isTeamClassic || $isTeamBeach)
 		{{-- ===== КОМАНДНАЯ ЗАПИСЬ ===== --}}
@@ -907,9 +922,9 @@ $showWaitlist = !$isTournament && !$eventStarted && auth()->check() && !$isRegis
 		@if($showParticipants)
 		
 		<div class="ramka">
-			<h2 class="-mt-05">{{ $event->format === 'tournament' ? __('events.show_pl_list_h2_tournament') : __('events.show_pl_list_h2') }}</h2>
-			
-			@if($event->format === 'tournament')
+			<h2 class="-mt-05">{{ ($event->format === 'tournament' && !$isIndividualTournament) ? __('events.show_pl_list_h2_tournament') : __('events.show_pl_list_h2') }}</h2>
+
+			@if($event->format === 'tournament' && !$isIndividualTournament)
 			@php
             $tournamentTeams = \App\Models\EventTeam::where('event_id', $event->id)
 			->where(fn($q) => $q->where('occurrence_id', $occurrence->id)->orWhereNull('occurrence_id'))
@@ -1352,5 +1367,43 @@ $showWaitlist = !$isTournament && !$eventStarted && auth()->check() && !$isRegis
 				sel.addEventListener('change', syncBtn);
 				if (posSelect) posSelect.addEventListener('change', syncBtn);
 				syncBtn();
+			})();
+
+			// Кнопка случайного распределения команд (individual tournament)
+			(function() {
+				var btn = document.getElementById('distribute-teams-btn');
+				if (!btn) return;
+				btn.addEventListener('click', function() {
+					var eventId = btn.dataset.eventId;
+					var occurrenceId = btn.dataset.occurrenceId;
+					if (!confirm('{{ __('events.tournament_distribute_random_btn') }}?')) return;
+					btn.disabled = true;
+					btn.textContent = '...';
+					fetch('/events/' + eventId + '/distribute-individual', {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+							'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+							'Accept': 'application/json',
+						},
+						body: JSON.stringify({ occurrence_id: parseInt(occurrenceId) }),
+						credentials: 'same-origin',
+					})
+					.then(function(r) { return r.json(); })
+					.then(function(data) {
+						if (data.ok) {
+							location.reload();
+						} else {
+							alert(data.message || 'Ошибка');
+							btn.disabled = false;
+							btn.textContent = '{{ __('events.tournament_distribute_random_btn') }}';
+						}
+					})
+					.catch(function() {
+						alert('Ошибка соединения');
+						btn.disabled = false;
+						btn.textContent = '{{ __('events.tournament_distribute_random_btn') }}';
+					});
+				});
 			})();
 		</script>
