@@ -11,11 +11,13 @@ class PremiumSubscription extends Model
         'user_id', 'plan', 'status', 'starts_at', 'expires_at',
         'referred_by', 'payment_id',
         'weekly_digest', 'notify_level_min', 'notify_level_max', 'notify_city_id',
+        'hide_from_followers',
     ];
 
     protected $casts = [
-        'starts_at'  => 'datetime',
-        'expires_at' => 'datetime',
+        'starts_at'           => 'datetime',
+        'expires_at'          => 'datetime',
+        'hide_from_followers' => 'boolean',
     ];
 
     public function user(): BelongsTo

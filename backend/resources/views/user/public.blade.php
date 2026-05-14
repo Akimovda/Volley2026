@@ -683,6 +683,22 @@ body.dark .gradient-marker-line,
                             <button class="btn btn-secondary">Добавить в друзья</button>
 						</form>
                         @endif
+
+                        {{-- Кнопка слежки за записями (только Premium + друг) --}}
+                        @if($canFollow)
+                            @if($isFollowing)
+                            <form class="d-inline-block mt-1" method="POST" action="{{ route('premium.follows.destroy', $user->id) }}">
+                                @csrf
+                                @method('DELETE')
+                                <button class="btn btn-small" style="font-size:13px" title="Вы следите за записями этого игрока">⭐ Слежу за записями</button>
+                            </form>
+                            @else
+                            <form class="d-inline-block mt-1" method="POST" action="{{ route('premium.follows.store', $user->id) }}">
+                                @csrf
+                                <button class="btn btn-secondary btn-small" style="font-size:13px">⭐ Следить за записями</button>
+                            </form>
+                            @endif
+                        @endif
                     @endif
 				</div>
 				</div>

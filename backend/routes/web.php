@@ -1341,6 +1341,12 @@ Route::middleware([
         ->name('premium.settings');
     Route::post('/premium/settings', [\App\Http\Controllers\PremiumSettingsController::class, 'update'])
         ->name('premium.settings.update');
+
+    // Подписки на записи игроков (Premium)
+    Route::post('/premium/follows/{user}', [\App\Http\Controllers\PlayerFollowController::class, 'store'])
+        ->name('premium.follows.store');
+    Route::delete('/premium/follows/{user}', [\App\Http\Controllers\PlayerFollowController::class, 'destroy'])
+        ->name('premium.follows.destroy');
 });
 
 /*

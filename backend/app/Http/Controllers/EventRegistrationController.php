@@ -17,6 +17,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use App\Services\PaymentService;
+use App\Services\PlayerFollowService;
 use App\Services\SubscriptionService;
 use App\Services\CouponService;
 use App\Models\Payment;
@@ -504,6 +505,13 @@ class EventRegistrationController extends Controller
                 }
             } catch (\Throwable $e) {
                 \Illuminate\Support\Facades\Log::warning('friend_joined notification error: ' . $e->getMessage());
+            }
+
+            // Уведомляем премиум-подписчиков (следят за записями этого игрока)
+            try {
+                app(PlayerFollowService::class)->notifyFollowers($user, $occurrence);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('follow notification error: ' . $e->getMessage());
             }
         }
 

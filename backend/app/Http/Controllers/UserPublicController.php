@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\PlayerFollow;
 use App\Models\User;
 use App\Models\UserLevelVote;
 use App\Models\UserPlayLike;
@@ -55,6 +56,19 @@ class UserPublicController extends Controller
             $user->recordVisit((int) auth()->id());
         }
 
+        // Кнопка "Следить" — только для премиум-пользователей у которых этот игрок в друзьях
+        $canFollow  = false;
+        $isFollowing = false;
+        if (auth()->check() && !$isSelf && $authId) {
+            $viewer = auth()->user();
+            if ($viewer->isPremium() && $viewer->isFriendWith($user->id)) {
+                $canFollow   = true;
+                $isFollowing = PlayerFollow::where('follower_user_id', $authId)
+                    ->where('followed_user_id', $user->id)
+                    ->exists();
+            }
+        }
+
         return view('user.public', [
             'user'          => $user,
             'isSelf'        => $isSelf,
@@ -67,6 +81,8 @@ class UserPublicController extends Controller
             'myBeachVote'   => $myBeachVote,
             'likes'         => $likes,
             'iLiked'        => $iLiked,
+            'canFollow'     => $canFollow,
+            'isFollowing'   => $isFollowing,
         ]);
     }
 }

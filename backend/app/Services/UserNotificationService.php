@@ -345,6 +345,38 @@ final class UserNotificationService
             channels: ['in_app', 'telegram', 'vk', 'max', 'push']
         );
     }
+    public function createFollowedPlayerRegisteredNotification(
+        int $userId,
+        int $followedId,
+        string $followedName,
+        int $eventId,
+        ?int $occurrenceId,
+        string $eventTitle,
+        bool $isPrivate,
+    ): UserNotification {
+        if ($isPrivate) {
+            $body = "«{$followedName}» записался(ась) на приватное мероприятие. Хотите попасть — спросите у него ссылку для записи.";
+        } else {
+            $body = "«{$followedName}» записался(ась) на «{$eventTitle}».";
+        }
+
+        return $this->create(
+            userId: $userId,
+            type: 'followed_player_registered',
+            title: '⭐ Подписка: запись на мероприятие',
+            body: $body,
+            payload: [
+                'followed_id'   => $followedId,
+                'followed_name' => $followedName,
+                'event_id'      => $isPrivate ? null : $eventId,
+                'occurrence_id' => $isPrivate ? null : $occurrenceId,
+                'event_title'   => $isPrivate ? null : $eventTitle,
+                'is_private'    => $isPrivate,
+            ],
+            channels: ['in_app', 'telegram', 'vk', 'max', 'push']
+        );
+    }
+
     public function createRegistrationCancelledNotification(
         int $userId,
         int $eventId,
