@@ -581,4 +581,16 @@ return [
 
     'setup_photo_main'      => '★ Главное',
     'setup_photo_pos_n'     => 'Фото: :n',
+
+    // Шахматка (кросс-таблица)
+    'view_list'             => 'Список',
+    'view_crosstable'       => 'Шахматка',
+    'matches_short'         => 'М',
+    'wins_short'            => 'В',
+    'sets_short'            => 'Сеты',
+    'points_short'          => 'Очки',
+    'place_short'           => 'Место',
+    'balls_ratio'           => 'Мячи',
+    'crosstable_matches'    => 'Матчи',
+    'crosstable_wins'       => 'Победы',
 ];
