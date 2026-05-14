@@ -975,4 +975,19 @@ return [
 
     'sp_no_spots'           => 'Свободных мест нет.',
     'sp_subscription_label' => '🎫 <strong>Абонемент:</strong>',
+
+    // Индивидуальная запись на турнир
+    'tournament_individual_reg_label'  => 'Индивидуальная запись игроков',
+    'tournament_individual_reg_hint'   => 'Игроки записываются по амплуа, команды формирует организатор вручную или через автораспределение.',
+    'tournament_individual_reg_note'   => 'Режим командной записи отключён. Настройки подтверждения капитана не применяются.',
+    'tournament_distribute_btn'        => 'Сформировать команды',
+    'tournament_distribute_random_btn' => 'Распределить случайно',
+    'tournament_distribute_confirm'    => 'Сформировать :n команд из :p записавшихся игроков?',
+    'tournament_distribute_success'    => 'Команды сформированы.',
+    'tournament_distribute_error_no_players'  => 'Нет записавшихся игроков для формирования команд.',
+    'tournament_distribute_error_exists'      => 'Команды уже сформированы. Сначала удалите существующие команды.',
+    'tournament_distribute_not_individual'    => 'Этот турнир не поддерживает индивидуальную запись.',
+    'tournament_individual_players_h2'        => 'Участники',
+    'tournament_individual_no_players'        => 'Нет записавшихся игроков.',
+    'sp_individual_tournament_hint'           => 'Турнир с индивидуальной записью. Выберите амплуа и запишитесь.',
 ];

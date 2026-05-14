@@ -442,7 +442,9 @@ class EventRegistrationController extends Controller
         // Если есть свободные запасные места и кто-то в листе ожидания — авто-записываем в reserve.
         // Триггер нужен при новой регистрации (а не только при отмене), т.к. reserve-слоты
         // изначально пусты и onSpotFreed для них никогда не срабатывал.
-        if ($created && (string)($occurrence->event->format ?? '') !== 'tournament') {
+        $isIndividualTournament = (string)($occurrence->event->format ?? '') === 'tournament'
+            && (string)($occurrence->event->registration_mode ?? '') === 'tournament_individual';
+        if ($created && ((string)($occurrence->event->format ?? '') !== 'tournament' || $isIndividualTournament)) {
             $reserveMax = (int)($occurrence->event->gameSettings?->reserve_players_max ?? 0);
             if ($reserveMax > 0) {
                 $reserveTaken = \DB::table('event_registrations')

@@ -917,4 +917,19 @@ return [
     'regs_search_error'      => 'Search error',
     'regs_search_select'     => 'Pick a player from the list.',
     'regs_user_selected'     => '✅ Selected: :label',
+
+    // Individual tournament registration
+    'tournament_individual_reg_label'  => 'Individual player registration',
+    'tournament_individual_reg_hint'   => 'Players register by position; teams are formed by the organizer manually or via random distribution.',
+    'tournament_individual_reg_note'   => 'Team registration mode is disabled. Captain confirmation settings do not apply.',
+    'tournament_distribute_btn'        => 'Form teams',
+    'tournament_distribute_random_btn' => 'Distribute randomly',
+    'tournament_distribute_confirm'    => 'Form :n teams from :p registered players?',
+    'tournament_distribute_success'    => 'Teams formed.',
+    'tournament_distribute_error_no_players'  => 'No registered players to form teams from.',
+    'tournament_distribute_error_exists'      => 'Teams already exist. Delete existing teams first.',
+    'tournament_distribute_not_individual'    => 'This tournament does not support individual registration.',
+    'tournament_individual_players_h2'        => 'Participants',
+    'tournament_individual_no_players'        => 'No registered players.',
+    'sp_individual_tournament_hint'           => 'Individual registration tournament. Choose your position and sign up.',
 ];

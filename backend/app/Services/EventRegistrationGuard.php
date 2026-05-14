@@ -234,7 +234,10 @@
 			$event,
 			GuardResult $result
 		): void {
-			if ((string) ($event->format ?? '') === 'tournament') {
+			if (
+                (string) ($event->format ?? '') === 'tournament' &&
+                in_array((string)($event->registration_mode ?? ''), ['team_classic', 'team_beach'], true)
+            ) {
 				return;
 			}
 
@@ -1040,8 +1043,11 @@
 				'gender_blocked'   => $genderBlocked
 			];
 
-			// Данные команд для турнира
-			if ((string)($occurrence->event->format ?? '') === 'tournament') {
+			// Данные команд для командного турнира (не individual)
+			if (
+                (string)($occurrence->event->format ?? '') === 'tournament' &&
+                in_array((string)($occurrence->event->registration_mode ?? ''), ['team_classic', 'team_beach', 'team'], true)
+            ) {
 				$teamsMax  = (int)($occurrence->event->tournament_teams_count ?? 0);
 				$regMode   = (string)($occurrence->event->registration_mode ?? '');
 				$gsSubtype = (string)($occurrence->event->gameSettings?->subtype ?? '');
