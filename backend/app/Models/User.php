@@ -81,7 +81,6 @@
 			return [
             'birth_date'                  => 'date',
             'profile_completed_at'        => 'datetime',
-            'email_verified_at'           => 'datetime',
             'phone_verified_at'           => 'datetime',
             'beach_universal'             => 'boolean',
             'allow_user_contact'          => 'boolean',

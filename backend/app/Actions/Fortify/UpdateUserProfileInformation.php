@@ -5,7 +5,6 @@ namespace App\Actions\Fortify;
 use App\Models\Event;
 use App\Models\User;
 use App\Services\EventRegistrationRequirements;
-use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -30,36 +29,10 @@ class UpdateUserProfileInformation implements UpdatesUserProfileInformation
             $user->updateProfilePhoto($input['photo']);
         }
 
-        if (
-            $input['email'] !== $user->email &&
-            $user instanceof MustVerifyEmail
-        ) {
-            $this->updateVerifiedUser($user, $input);
-        } else {
-            $user->forceFill([
-                'name'  => $input['name'],
-                'email' => $input['email'],
-            ])->save();
-        }
-
-        // === Автозапись на мероприятие после сохранения профиля ===
-        $this->autoJoinPendingEventIfPossible($user);
-    }
-
-    /**
-     * Update the given verified user's profile information.
-     *
-     * @param  array<string, string>  $input
-     */
-    protected function updateVerifiedUser(User $user, array $input): void
-    {
         $user->forceFill([
-            'name'              => $input['name'],
-            'email'             => $input['email'],
-            'email_verified_at' => null,
+            'name'  => $input['name'],
+            'email' => $input['email'],
         ])->save();
-
-        $user->sendEmailVerificationNotification();
 
         // === Автозапись на мероприятие после сохранения профиля ===
         $this->autoJoinPendingEventIfPossible($user);
