@@ -94,9 +94,6 @@
                                 <div class="fw-bold fs-5">{{ $user->name }}</div>
                                 <div class="text-muted">
                                     {{ $user->email }}
-                                    @if($user->email_verified_at)
-                                    <span class="text-success ms-1" title="Email подтверждён {{ $user->email_verified_at?->format('Y-m-d H:i') }}">✓</span>
-                                    @endif
 								</div>
                                 <div class="small text-muted mt-1">
                                     Регистрация: {{ $user->created_at?->format('Y-m-d H:i') ?? '—' }}
