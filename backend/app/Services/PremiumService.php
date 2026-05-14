@@ -63,8 +63,19 @@ class PremiumService
     /** Запускать по расписанию: premium:expire */
     public function expireAll(): int
     {
-        return PremiumSubscription::where('status', 'active')
+        $expiredUserIds = PremiumSubscription::where('status', 'active')
+            ->where('expires_at', '<=', now())
+            ->pluck('user_id');
+
+        $count = PremiumSubscription::where('status', 'active')
             ->where('expires_at', '<=', now())
             ->update(['status' => 'expired']);
+
+        // Удаляем подписки на игроков — фича только для активного премиума
+        if ($expiredUserIds->isNotEmpty()) {
+            \App\Models\PlayerFollow::whereIn('follower_user_id', $expiredUserIds)->delete();
+        }
+
+        return $count;
     }
 }
