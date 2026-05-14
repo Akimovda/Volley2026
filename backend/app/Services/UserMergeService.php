@@ -24,7 +24,7 @@ class UserMergeService
         DB::transaction(function () use ($primary, $secondary, &$result) {
 
             // 1. Провайдеры — уникальные поля: сначала обнуляем у secondary, потом ставим на primary
-            $uniqueProviderFields = ['telegram_id', 'vk_id', 'yandex_id'];
+            $uniqueProviderFields = ['telegram_id', 'vk_id', 'yandex_id', 'apple_id', 'google_id'];
             $toTransfer = [];
             foreach ($uniqueProviderFields as $f) {
                 if (empty($primary->$f) && !empty($secondary->$f)) {
