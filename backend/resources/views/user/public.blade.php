@@ -387,7 +387,7 @@ body.dark .gradient-marker-line,
 				
                 <div class="ramka">
                     <h2 class="-mt-05">Оценка уровня игроками</h2>
-                    <div class="row row2">
+                    <div class="row">
 						
                         {{-- КЛАССИКА --}}
                         <div class="col-md-6">

@@ -26,18 +26,15 @@
 	
 	
 	<x-slot name="d_description">
-		
+
 		@if($unreadCount > 0)
-		<div data-aos-delay="250" data-aos="fade-up">
-			<form method="POST" action="{{ route('notifications.read_all') }}">
-				@csrf
-				<button type="submit" class="mt-2 btn btn-outline-secondary">
-					{{ __('notifications.mark_all_read') }}
-				</button>
-			</form>
-		</div>		
+		<div data-aos-delay="250" data-aos="fade-up" id="notif-read-all-wrap">
+			<button type="button" data-notif-read-all class="mt-2 btn btn-outline-secondary">
+				{{ __('notifications.mark_all_read') }}
+			</button>
+		</div>
 		@endif
-		
+
 	</x-slot>	
 	
     <div class="container">
@@ -175,27 +172,20 @@
 							</div>	
 							
 							<div class="col-sm-2 text-right f-0">
-								
-								
+
 								@if($isUnread)
-								<form class="d-inline-block" method="POST" action="{{ route('notifications.read', ['notification' => $notification->id]) }}">
-									@csrf
-									<button type="submit" class="mr-1 icon-eye btn btn-svg"></button>
-								</form>
-								@endif	
-								
-								<form class="d-inline-block" method="POST"
-								action="{{ route('notifications.destroy', ['notification' => $notification->id]) }}">
-									@csrf
-									@method('DELETE')
-									<button type="button" 
-									class="icon-delete btn-alert btn btn-danger btn-svg"
+								<button type="button"
+									data-notif-read="{{ $notification->id }}"
+									class="mr-1 icon-eye btn btn-svg"></button>
+								@endif
+
+								<button type="button"
+									data-notif-delete="{{ $notification->id }}"
 									data-title="{{ __('notifications.delete_title') }}"
-									data-icon="warning"
-									data-confirm-text="{{ __('notifications.btn_delete_yes') }}"
-									data-cancel-text="{{ __('notifications.btn_delete_no') }}">
-									</button>                                        
-								</form>
+									data-confirm="{{ __('notifications.btn_delete_yes') }}"
+									data-cancel="{{ __('notifications.btn_delete_no') }}"
+									class="icon-delete btn btn-danger btn-svg"></button>
+
 							</div>						
 						</div>		
 						
@@ -215,4 +205,90 @@
 		</div> 		
 		{{ $notifications->links() }}
 	</div>
+
+<script>
+(function () {
+    function getXsrfToken() {
+        var m = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
+        return m ? decodeURIComponent(m[1]) : '';
+    }
+
+    function apiFetch(method, url, onSuccess) {
+        fetch(url, {
+            method: method,
+            credentials: 'same-origin',
+            headers: { 'Accept': 'application/json', 'X-XSRF-TOKEN': getXsrfToken() }
+        }).then(function (r) {
+            if (r.ok) onSuccess();
+        }).catch(function () {});
+    }
+
+    function refreshBadge() {
+        fetch('/api/notifications/unread-count', {
+            credentials: 'same-origin',
+            headers: { 'Accept': 'application/json' }
+        }).then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (d) {
+            if (!d) return;
+            var badge = document.querySelector('.notificationsUnread');
+            if (badge) {
+                if (d.count > 0) { badge.textContent = d.count > 99 ? '99+' : d.count; }
+                else { badge.style.display = 'none'; }
+            }
+            var cdEl = document.querySelector('.cd');
+            if (cdEl) cdEl.textContent = d.count;
+        }).catch(function () {});
+    }
+
+    // Прочитать одно уведомление
+    document.addEventListener('click', function (e) {
+        var btn = e.target.closest('[data-notif-read]');
+        if (!btn) return;
+        e.preventDefault();
+        var id = btn.getAttribute('data-notif-read');
+        apiFetch('POST', '/api/notifications/' + id + '/read', function () {
+            var card = document.getElementById('notification-' + id);
+            if (card) { var emo = card.querySelector('.emo'); if (emo) emo.remove(); }
+            btn.remove();
+            refreshBadge();
+        });
+    });
+
+    // Удалить уведомление
+    document.addEventListener('click', function (e) {
+        var btn = e.target.closest('[data-notif-delete]');
+        if (!btn) return;
+        e.preventDefault();
+        var id    = btn.getAttribute('data-notif-delete');
+        var title = btn.getAttribute('data-title')   || '';
+        var yes   = btn.getAttribute('data-confirm') || '{{ __('notifications.btn_delete_yes') }}';
+        var no    = btn.getAttribute('data-cancel')  || '{{ __('notifications.btn_delete_no') }}';
+        swal({ title: title, icon: 'warning',
+            buttons: { cancel: { text: no, value: null, visible: true },
+                       confirm: { text: yes, value: true, className: 'btn btn-danger' } }
+        }).then(function (ok) {
+            if (!ok) return;
+            apiFetch('DELETE', '/api/notifications/' + id, function () {
+                var card = document.getElementById('notification-' + id);
+                if (card) card.remove();
+                refreshBadge();
+            });
+        });
+    });
+
+    // Прочитать все
+    document.addEventListener('click', function (e) {
+        var btn = e.target.closest('[data-notif-read-all]');
+        if (!btn) return;
+        e.preventDefault();
+        apiFetch('POST', '/api/notifications/read-all', function () {
+            document.querySelectorAll('.emo').forEach(function (el) { el.remove(); });
+            document.querySelectorAll('[data-notif-read]').forEach(function (el) { el.remove(); });
+            var wrap = document.getElementById('notif-read-all-wrap');
+            if (wrap) wrap.remove();
+            refreshBadge();
+        });
+    });
+})();
+</script>
 </x-voll-layout>

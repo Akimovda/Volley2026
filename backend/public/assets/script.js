@@ -1043,7 +1043,7 @@ window.addEventListener('load', function() {
     document.body.classList.add('img-loaded');
 });
 $(document).ready(function() {
-    var $menuCol = $('.col-lg-4.col-xl-3');
+    var $menuCol = $('.col-lg-4.col-xl-3.d-none');
     var $menuSticky = $menuCol.find('.sticky');
     var $contentCol = $('.col-lg-8.col-xl-9');
     var $contentRamka = $contentCol.find('.ramka');
