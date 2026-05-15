@@ -784,6 +784,13 @@
 				$this->applyGenderPolicy($user, $settings, $registrations, $maxPlayers, $result);
 			}
 
+			// checkAuthAndWindow использует $result->errors[] = ... (без addError),
+			// поэтому allowed может остаться true даже при наличии ошибок окна.
+			// Приводим в соответствие здесь, как делает основной check().
+			if (!empty($result->errors)) {
+				$result->allowed = false;
+			}
+
 			return $result;
 		}
 		
