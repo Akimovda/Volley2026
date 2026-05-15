@@ -88,7 +88,7 @@
 								@if($school->email)    
 								<div class="provider-card__header icon-light">
 									<span class="provider-card__icon icon-mail"></span>
-									<span class="provider-card__title"><a href="mailto:{{ $school->email }}">{{ $school->email }}</a></span>
+									<span class="provider-card__title"><a style="word-break: break-word;" href="mailto:{{ $school->email }}">{{ $school->email }}</a></span>
 								</div>        
 								@endif        
 								

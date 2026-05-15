@@ -268,7 +268,7 @@
 								});
 							}
 							var balloon = '<div style="max-width:25rem">'
-								+ '<a href="' + esc(loc.url) + '" class="f-16 b-600 blink">' + esc(loc.name) + '</a>'
+								+ '<a href="' + esc(loc.url) + '" style="color: #666" class="f-16 b-600">' + esc(loc.name) + '</a>'
 								+ (loc.city    ? '<div class="f-13 mt-1">'  + esc(loc.city)    + '</div>' : '')
 								+ (loc.address ? '<div class="f-15 mt-05">' + esc(loc.address) + '</div>' : '')
 								+ '</div>';

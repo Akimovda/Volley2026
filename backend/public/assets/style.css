@@ -3873,6 +3873,25 @@ body.dark .user-sensitive-icon svg {
 	fill: #E7612F;
 }
 
+@media (max-width:575px) {
+.user-card {
+    padding: 1.4rem 18.5rem 1rem 1.5rem;
+}
+.user-levels {
+	top: 50%;
+	transform: translateY(-50%);
+	right: 1.5rem;
+	bottom: auto;
+	left: auto;
+	width: 16rem;
+	display: flex;
+	flex-wrap: wrap;
+}
+.user-level {
+padding: 0.4rem 1rem;
+width: 100%;
+}
+}
 /* Профиль пользователя */
 .provider-icon {
 	display: inline-flex;
