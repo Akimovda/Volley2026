@@ -69,6 +69,14 @@ Schedule::command('events:publish-pending-announcements --limit=100')
     ->everyMinute()
     ->withoutOverlapping();
 
+// Автозапись из waitlist при открытии гендерного окна (каждые 5 минут):
+// находит occurrences где gender_limited_reg_starts_days_before прошёл и
+// запускает autoBookNext для ожидающих пользователей ограничиваемого пола.
+Schedule::command('waitlist:process-gender-windows')
+    ->everyFiveMinutes()
+    ->withoutOverlapping()
+    ->runInBackground();
+
 // Автоотклонение неполных заявок команд (каждые 30 минут):
 // находит EventTeamApplication со статусом 'incomplete' у которых
 // дедлайн ближайшего occurrence (registration_ends_at) уже наступил.
