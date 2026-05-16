@@ -241,16 +241,67 @@
 				return;
 			}
 
-			$query = OccurrenceWaitlist::query()
-				->where('occurrence_id', $occurrence->id);
-			if ($user) {
-				$query->where('user_id', '!=', $user->id);
+			// Свободные основные позиции (без reserve — reserve не конкурирует с очередью)
+			$freeMainKeys = collect($result->data['free_positions'] ?? [])
+				->pluck('key')
+				->filter(fn($k) => $k !== 'reserve')
+				->values()
+				->toArray();
+
+			// Настройки гендерной политики — нужны чтобы понять, может ли
+			// конкретный участник очереди физически занять свободную позицию
+			$settings           = $event->gameSettings ?? null;
+			$genderPolicy       = (string)($settings?->gender_policy ?? 'mixed_open');
+			$genderLimitedSide  = (string)($settings?->gender_limited_side ?? '');
+			$genderLimitedPos   = $settings?->gender_limited_positions ?? [];
+			if (is_string($genderLimitedPos)) {
+				$genderLimitedPos = json_decode($genderLimitedPos, true) ?: [];
 			}
+			$targetGender = match($genderLimitedSide) {
+				'male'   => 'm',
+				'female' => 'f',
+				default  => null,
+			};
 
-			$hasOthers = $query->exists();
-			$result->meta['waitlist_has_others'] = $hasOthers;
+			// Загружаем записи очереди (с гендером участника для точной проверки)
+			$waitlistEntries = OccurrenceWaitlist::query()
+				->where('occurrence_id', $occurrence->id)
+				->when($user, fn($q) => $q->where('user_id', '!=', $user->id))
+				->when($genderPolicy === 'mixed_limited', fn($q) => $q->with('user:id,gender'))
+				->get();
 
-			if ($hasOthers) {
+			// Проверяем: есть ли в очереди хоть один, кто реально может занять
+			// одну из свободных основных позиций (учитывая гендерную политику)
+			$hasBlockingOthers = $waitlistEntries->contains(
+				function (OccurrenceWaitlist $entry) use ($freeMainKeys, $genderPolicy, $targetGender, $genderLimitedPos) {
+					if (empty($freeMainKeys)) {
+						return false;
+					}
+
+					// Какие из свободных позиций этот участник может занять по гендеру
+					$eligibleKeys = $freeMainKeys;
+					if ($genderPolicy === 'mixed_limited' && $targetGender && $entry->user) {
+						$g = strtolower((string)($entry->user->gender ?? ''));
+						if ($g && $g[0] === $targetGender) {
+							// Ограниченный пол — только разрешённые позиции
+							$eligibleKeys = array_values(
+								array_filter($freeMainKeys, fn($k) => in_array($k, $genderLimitedPos, true))
+							);
+						}
+					}
+
+					if (empty($eligibleKeys)) {
+						return false; // этот участник не может занять ни одну свободную позицию
+					}
+
+					// Совпадают ли позиции участника очереди с доступными для него свободными?
+					return collect($eligibleKeys)->contains(fn($k) => $entry->subscribedToPosition($k));
+				}
+			);
+
+			$result->meta['waitlist_has_others'] = $hasBlockingOthers;
+
+			if ($hasBlockingOthers) {
 				// Проверяем: есть ли свободные запасные места (reserve)?
 				$freeReserveEntry = collect($result->data['free_positions'] ?? [])
 					->firstWhere('key', 'reserve');
