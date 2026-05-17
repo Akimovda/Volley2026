@@ -278,16 +278,17 @@
 					'opposite' => __('events.positions.opposite'),
 					'middle'   => __('events.positions.middle_full'),
 					'libero'   => __('events.positions.libero'),
+					'reserve'  => __('events.positions.reserve'),
 					];
-					
+
 					$limitedPositions = $event->gameSettings?->gender_limited_positions;
-					
+
 					if (is_string($limitedPositions)) {
 					$limitedPositions = json_decode($limitedPositions, true) ?: [];
 					}
-					
+
 					$limitedPositions = collect($limitedPositions ?: [])
-					->map(fn ($p) => $positionLabels[$p] ?? $p)
+					->map(fn ($p) => $positionLabels[$p] ?? position_name($p))
 					->values()
 					->all();
 					@endphp
