@@ -624,10 +624,20 @@ $waitlistCount = \App\Models\OccurrenceWaitlist::query()
 ->where('occurrence_id', $occurrence->id)
 ->count();
 
+// Гендерное окно закрыто для текущего пользователя — он может встать только в очередь
+$genderWindowClosed    = (bool)($join->meta['gender_window_closed'] ?? false);
+$genderWindowPositions = $join->meta['gender_window_positions'] ?? [];
+$genderWindowOpensAt   = isset($join->meta['gender_window_opens_at'])
+    ? \Carbon\Carbon::parse($join->meta['gender_window_opens_at'])
+        ->setTimezone($userTz ?? 'Europe/Moscow')
+        ->format('d.m.Y H:i')
+    : null;
+
 // Показываем блок waitlist при полном заполнении ИЛИ когда заняты классические позиции
+// ИЛИ когда гендерное окно закрыто (встать в очередь разрешено до открытия окна)
 // Скрываем если пользователь уже записан в состав (включая запасные места)
 $showWaitlist = !$isTournament && !$eventStarted && auth()->check() && !$isRegistered && (
-    $isFull || ($isClassic && !empty($occupiedPositions))
+    $isFull || ($isClassic && !empty($occupiedPositions)) || $genderWindowClosed
 );
 @endphp
 
@@ -663,7 +673,9 @@ $showWaitlist = !$isTournament && !$eventStarted && auth()->check() && !$isRegis
     @else
 	{{-- Форма записи в резерв --}}
 	<div class="text-muted small mb-2">
-		@if($isBeach)
+		@if($genderWindowClosed)
+			{{ __('events.show_pl_waitlist_gender_window', ['opens_at' => $genderWindowOpensAt ?? '']) }}
+		@elseif($isBeach)
 			{{ __('events.show_pl_waitlist_full_beach') }}
 		@elseif($isFull)
 			{{ __('events.show_pl_waitlist_full') }}

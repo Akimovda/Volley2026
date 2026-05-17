@@ -209,6 +209,7 @@ return [
     'show_pl_waitlist_full'       => 'All spots are taken. Join the queue — as soon as a spot opens, we will register you automatically.',
     'show_pl_waitlist_full_beach' => 'All spots are taken. Join the queue — as soon as a spot opens, we will register you automatically.',
     'show_pl_waitlist_pos_taken'  => 'Your position is taken? Join the queue — as soon as it opens up, we will register you automatically.',
+    'show_pl_waitlist_gender_window' => 'Your registration window opens at :opens_at. Join the queue — you will be registered automatically as soon as the window opens.',
     'show_pl_waitlist_count'      => '{1} On waitlist: <strong>:count</strong> person|[0,2,*] On waitlist: <strong>:count</strong> people',
     'show_pl_waitlist_pick_pos'   => 'Pick positions (multiple allowed):',
     'show_pl_waitlist_no_pick'    => 'If no positions are picked — we will notify you when any spot opens.',

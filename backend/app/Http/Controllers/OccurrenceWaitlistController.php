@@ -33,10 +33,29 @@ class OccurrenceWaitlistController extends Controller
             return back()->with('error', 'Вы уже записаны на это мероприятие. Сначала отмените запись, чтобы встать в резерв.');
         }
 
-        // Проверяем возраст, уровень и прочие условия допуска
-        $eligibility = app(EventRegistrationGuard::class)->checkEligibility($user, $occurrence);
+        // Проверяем возраст, уровень и прочие условия допуска.
+        // Гендерное окно пропускаем — записаться в очередь до открытия окна разрешено;
+        // autoBookNext запустится только когда окно откроется (ProcessWaitlistGenderWindows).
+        $eligibility = app(EventRegistrationGuard::class)->checkEligibility($user, $occurrence, skipGenderWindow: true);
         if (!$eligibility->allowed) {
             return back()->with('error', implode(' ', $eligibility->errors));
+        }
+
+        $positions = $request->input('positions', []);
+        if (!is_array($positions)) $positions = [];
+
+        // Если гендерное окно закрыто — только разрешённые позиции
+        if ($eligibility->meta['gender_window_closed'] ?? false) {
+            $allowedPos = $eligibility->meta['gender_window_positions'] ?? [];
+            $invalidPos = array_filter($positions, fn($p) => !in_array($p, $allowedPos, true));
+            if (!empty($invalidPos)) {
+                $readableAllowed = implode(', ', array_map('position_name', $allowedPos));
+                return back()->with('error', 'Пока регистрация не открылась — доступны только позиции: ' . $readableAllowed . '.');
+            }
+            // Если позиции не выбраны — автоматически ставим разрешённые
+            if (empty($positions)) {
+                $positions = $allowedPos;
+            }
         }
 
         // Проверяем лимит резерва (не больше max_players)
@@ -49,9 +68,6 @@ class OccurrenceWaitlistController extends Controller
                 return back()->with('error', 'Резерв заполнен.');
             }
         }
-
-        $positions = $request->input('positions', []);
-        if (!is_array($positions)) $positions = [];
 
         app(WaitlistService::class)->join($occurrence, $user, $positions);
 

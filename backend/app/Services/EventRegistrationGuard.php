@@ -670,7 +670,8 @@
 			?User $user,
 			EventOccurrence $occurrence,
 			$event,
-			GuardResult $result
+			GuardResult $result,
+			bool $skipGenderWindow = false
 		): void {
 			
 			if (!$user) {
@@ -720,10 +721,21 @@
 						->subDays((int) $gs->gender_limited_reg_starts_days_before);
 
 					if ($nowUtc->lessThan($restrictedOpensAt)) {
-						$label = $side === 'female' ? 'девушек' : 'мужчин';
-						$result->errors[] = 'Регистрация для ' . $label . ' ещё не началась — откроется ' .
-							$restrictedOpensAt->copy()->setTimezone($occurrence->event?->timezone ?? 'Europe/Moscow')
-								->format('d.m.Y H:i') . '.';
+						$genderLimitedPositions = $gs->gender_limited_positions ?? [];
+						if (is_string($genderLimitedPositions)) {
+							$genderLimitedPositions = json_decode($genderLimitedPositions, true) ?: [];
+						}
+						// Всегда сохраняем мета — нужно для UI (показ waitlist) и валидации позиций в контроллере
+						$result->meta['gender_window_closed']    = true;
+						$result->meta['gender_window_positions'] = $genderLimitedPositions;
+						$result->meta['gender_window_opens_at']  = $restrictedOpensAt->toISOString();
+
+						if (!$skipGenderWindow) {
+							$label = $side === 'female' ? 'девушек' : 'мужчин';
+							$result->errors[] = 'Регистрация для ' . $label . ' ещё не началась — откроется ' .
+								$restrictedOpensAt->copy()->setTimezone($occurrence->event?->timezone ?? 'Europe/Moscow')
+									->format('d.m.Y H:i') . '.';
+						}
 					}
 				}
 			}
@@ -806,7 +818,7 @@
 		 * Проверяет право участника записаться/встать в резерв без проверки мест.
 		 * Используется в листе ожидания.
 		 */
-		public function checkEligibility(?User $user, EventOccurrence $occurrence): GuardResult
+		public function checkEligibility(?User $user, EventOccurrence $occurrence, bool $skipGenderWindow = false): GuardResult
 		{
 			$result = GuardResult::allow();
 			$event  = $occurrence->event;
@@ -818,7 +830,7 @@
 
 			$agePolicy = $occurrence->age_policy ?? $event->age_policy ?? 'any';
 
-			$this->checkAuthAndWindow($user, $occurrence, $event, $result);
+			$this->checkAuthAndWindow($user, $occurrence, $event, $result, $skipGenderWindow);
 			$this->checkPersonalData($user, $occurrence, $event, $result);
 			$this->checkAgePolicy($user, $occurrence, $event, $agePolicy, $result);
 			$this->checkLevelPolicy($user, $occurrence, $event, $result);

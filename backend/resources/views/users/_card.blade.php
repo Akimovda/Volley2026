@@ -40,9 +40,9 @@
             
             <span class="user-card-name">
                 @if(!empty($u->first_name) && !empty($u->last_name))
-                    {{ $u->last_name }}<br>{{ $u->first_name }}
+                    {{ $u->last_name }} {{ $u->first_name }}
                 @else
-                    {{ __('profile.card_user_n') }}<br>#{{ $u->id }}
+                    {{ __('profile.card_user_n') }} #{{ $u->id }}
                 @endif
             </span>
         </a>

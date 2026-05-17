@@ -365,6 +365,28 @@ body.dark .ramka h2:not(.tab)::after {
     list-style: none;
     padding-left: 0.4rem;
 }
+ol {
+    list-style: none; 
+    margin: 0;
+    padding-left: 0;
+} 
+ol li {
+    counter-increment: item; 
+    margin-bottom: .8rem;
+}
+  
+ol li::before {
+    content: counter(item) ".";
+    color: #2967BA; 
+    font-weight: 600;
+    margin-right: .2rem;
+    display: inline-block;
+    width: 2.4rem;  
+} 
+body.dark ol li::before {
+    color: #E7612F; 
+} 
+
 .list li {
     position: relative;
     padding-left: 1.5rem;
