@@ -256,6 +256,25 @@ class EventRegistrationsManagementController extends Controller
             $registrationLogs = $logsQuery->limit(200)->get();
         }
 
+        // Лист ожидания для текущей occurrence (с данными пользователя)
+        $waitlistEntries = collect();
+        if ($occurrenceId) {
+            $waitlistEntries = DB::table('occurrence_waitlist as ow')
+                ->join('users as u', 'u.id', '=', 'ow.user_id')
+                ->where('ow.occurrence_id', $occurrenceId)
+                ->orderBy('ow.sort_order')
+                ->orderBy('ow.created_at')
+                ->select([
+                    'ow.id',
+                    'ow.user_id',
+                    'ow.positions',
+                    'ow.sort_order',
+                    'ow.created_at',
+                    DB::raw("COALESCE(NULLIF(TRIM(CONCAT_WS(' ', u.last_name, u.first_name)), ''), u.name, u.email) as full_name"),
+                ])
+                ->get();
+        }
+
         return view('events.registrations.index', [
                     'event'              => $event,
                     'location'           => $location,
@@ -283,6 +302,7 @@ class EventRegistrationsManagementController extends Controller
                     'freePositionSlots'  => $freePositionSlots,
                     'hasOrgNote'         => $hasOrgNote,
                     'registrationLogs'   => $registrationLogs,
+                    'waitlistEntries'    => $waitlistEntries,
                 ]);
     }
 

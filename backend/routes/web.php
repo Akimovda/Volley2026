@@ -16,6 +16,7 @@ use App\Http\Controllers\YookassaWebhookController;
     use App\Http\Controllers\EventRegistrationInviteController;
 	use App\Http\Controllers\EventManagementController;
 	use App\Http\Controllers\EventRegistrationsManagementController;
+	use App\Http\Controllers\EventWaitlistManagementController;
 	use App\Http\Controllers\EventRegistrationGroupController;
 	use App\Http\Controllers\UserDirectoryController;
 	use App\Http\Controllers\UserPublicController;
@@ -596,6 +597,19 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
 		
 		Route::patch('/events/{event}/registrations/{registration}/group/leave', [EventRegistrationsManagementController::class, 'leaveGroup'])
         ->name('events.registrations.group.leave');
+
+		// Лист ожидания — управление организатором
+		Route::post('/events/{event}/waitlist/management', [EventWaitlistManagementController::class, 'store'])
+			->name('events.waitlist.management.store');
+
+		Route::delete('/events/{event}/waitlist/management/{entry}', [EventWaitlistManagementController::class, 'destroy'])
+			->name('events.waitlist.management.destroy');
+
+		Route::patch('/events/{event}/waitlist/management/{entry}/positions', [EventWaitlistManagementController::class, 'updatePositions'])
+			->name('events.waitlist.management.positions');
+
+		Route::post('/events/{event}/waitlist/management/{entry}/move', [EventWaitlistManagementController::class, 'move'])
+			->name('events.waitlist.management.move');
 	});
 	
 	/*
