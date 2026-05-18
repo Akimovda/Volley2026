@@ -906,6 +906,23 @@ return [
     'regs_history_hint'      => 'Последние :n событий. Данные до запуска лога восстановлены из записей.',
     'regs_org_note_ph'       => 'Заметка…',
 
+    // Лист ожидания — управление организатором
+    'waitlist_title'           => 'Лист ожидания',
+    'waitlist_add_btn'         => 'Добавить игрока в очередь',
+    'waitlist_add_cancel'      => 'Отмена',
+    'waitlist_add_submit'      => 'Добавить в очередь',
+    'waitlist_positions_label' => 'Позиции (можно несколько)',
+    'waitlist_positions_hint'  => 'Если не выбрать — игрок встаёт в очередь на любую позицию.',
+    'waitlist_col_positions'   => 'Позиции',
+    'waitlist_any_position'    => 'Любая',
+    'waitlist_beach_pos'       => 'Пляжка — без позиций',
+    'waitlist_move_up'         => 'Переместить вверх',
+    'waitlist_move_down'       => 'Переместить вниз',
+    'waitlist_delete_title'    => 'Удалить из очереди',
+    'waitlist_delete_text'     => 'Игрок будет удалён из листа ожидания.',
+    'waitlist_delete_confirm'  => 'Удалить игрока из листа ожидания?',
+    'waitlist_empty'           => 'Лист ожидания пуст.',
+
     'regs_export_title'      => 'Выгрузка списка',
     'regs_export_hint'       => 'Выберите данные для включения в файл:',
     'regs_export_field_name' => 'Фамилия, Имя, Отчество',

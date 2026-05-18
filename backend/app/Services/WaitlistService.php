@@ -37,6 +37,18 @@ class WaitlistService
                 'notification_expires_at'  => null,
             ]
         );
+
+        // Новой записи назначаем sort_order = max + 1 по occurrence
+        if ($entry->wasRecentlyCreated) {
+            $maxSort = (int) \DB::table('occurrence_waitlist')
+                ->where('occurrence_id', $occurrence->id)
+                ->where('id', '!=', $entry->id)
+                ->max('sort_order');
+            \DB::table('occurrence_waitlist')
+                ->where('id', $entry->id)
+                ->update(['sort_order' => $maxSort + 1]);
+            $entry->sort_order = $maxSort + 1;
+        }
         // ✅ Уведомление о записи в резерв
         app(\App\Services\UserNotificationService::class)->createWaitlistJoinedNotification(
             userId: $user->id,
@@ -163,7 +175,8 @@ class WaitlistService
         return DB::transaction(function () use ($occurrence, $event, $position, $direction) {
             $now = now();
 
-            // Очередь: премиум первыми, затем по created_at; lockForUpdate против гонок
+            // Очередь: премиум первыми, затем по sort_order (ручная расстановка орг-ром),
+            // затем created_at как fallback; lockForUpdate против гонок.
             // EXISTS subquery вместо LEFT JOIN — PostgreSQL не поддерживает FOR UPDATE на nullable стороне outer join
             $entries = OccurrenceWaitlist::query()
                 ->where('occurrence_id', $occurrence->id)
@@ -173,6 +186,7 @@ class WaitlistService
                       AND ps.status = ?
                       AND ps.expires_at > ?
                 ) THEN 0 ELSE 1 END', ['active', $now])
+                ->orderBy('sort_order')
                 ->orderBy('created_at')
                 ->lockForUpdate()
                 ->get();

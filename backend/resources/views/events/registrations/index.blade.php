@@ -357,6 +357,207 @@ $actionLabel = fn(string $a) => match($a) {
 		@endif
 	</div>
 	
+	{{-- Лист ожидания --}}
+	@if($occurrenceId && isset($waitlistEntries))
+	<div class="ramka">
+		<h2 class="-mt-05">
+			{{ __('events.waitlist_title') }}
+			@if($waitlistEntries->isNotEmpty())
+			<span style="font-size:1.4rem;font-weight:400;opacity:.6;margin-left:.5rem;">({{ $waitlistEntries->count() }})</span>
+			@endif
+		</h2>
+
+		{{-- Форма добавления --}}
+		<div style="margin-bottom:1.5rem;">
+			<button type="button" id="wl-add-toggle" class="btn btn-secondary btn-small">
+				+ {{ __('events.waitlist_add_btn') }}
+			</button>
+			<div id="wl-add-form-wrap" style="display:none;margin-top:1rem;">
+				<form method="POST"
+					action="{{ route('events.waitlist.management.store', $event->id) }}"
+					id="wl-add-form" class="form">
+					@csrf
+					<input type="hidden" name="occurrence_id" value="{{ $occurrenceId }}">
+					<div class="row">
+						<div class="col-md-6">
+							<div class="card" style="overflow:visible">
+								<label>{{ __('events.regs_player_label') }}</label>
+								<div style="position:relative;" id="wl-ac-wrap">
+									<input type="text" id="wl-ac-input" autocomplete="off" class="form-control"
+										placeholder="{{ __('events.regs_player_ph') }}">
+									<input type="hidden" name="user_id" id="wl-ac-userid">
+									<div id="wl-ac-dd" class="form-select-dropdown trainer_dd"></div>
+								</div>
+								<div id="wl-ac-selected" style="display:none;margin-top:.5rem;font-size:1.4rem;color:#4caf50;font-weight:600;"></div>
+							</div>
+						</div>
+						@if($hasPositions)
+						<div class="col-md-6">
+							<div class="card">
+								<label>{{ __('events.waitlist_positions_label') }}</label>
+								<div class="d-flex flex-wrap gap-1" style="margin-top:.4rem;">
+									@foreach($posLabels as $k => $lbl)
+									<label class="d-flex fvc gap-05" style="cursor:pointer;font-size:1.4rem;">
+										<input type="checkbox" name="positions[]" value="{{ $k }}"
+											style="width:1.5rem;height:1.5rem;cursor:pointer;">
+										{{ $lbl }}
+									</label>
+									@endforeach
+									<label class="d-flex fvc gap-05" style="cursor:pointer;font-size:1.4rem;">
+										<input type="checkbox" name="positions[]" value="reserve"
+											style="width:1.5rem;height:1.5rem;cursor:pointer;">
+										{{ __('events.positions.reserve') }}
+									</label>
+								</div>
+								<p class="f-13" style="opacity:.6;margin-top:.4rem;">{{ __('events.waitlist_positions_hint') }}</p>
+							</div>
+						</div>
+						@endif
+					</div>
+					<div class="text-center mt-2">
+						<button type="submit" id="wl-add-btn" disabled class="btn" style="opacity:.4;">
+							{{ __('events.waitlist_add_submit') }}
+						</button>
+					</div>
+				</form>
+			</div>
+		</div>
+
+		{{-- Таблица --}}
+		@if($waitlistEntries->isEmpty())
+		<div class="alert alert-info">{{ __('events.waitlist_empty') }}</div>
+		@else
+		<div class="table-scrollable mb-0">
+			<div class="table-drag-indicator"></div>
+			<table class="table" id="wl-table">
+				<thead>
+					<tr>
+						<th style="width:3rem">#</th>
+						<th>{{ __('events.col_player') }}</th>
+						<th>{{ __('events.waitlist_col_positions') }}</th>
+						<th style="white-space:nowrap">{{ __('events.col_date') }}</th>
+						<th class="text-center" style="min-width:130px">{{ __('events.col_actions') }}</th>
+					</tr>
+				</thead>
+				<tbody>
+					@foreach($waitlistEntries as $i => $wl)
+					@php
+						$wlPositions = is_string($wl->positions)
+							? (json_decode($wl->positions, true) ?: [])
+							: (array)($wl->positions ?? []);
+						$wlPosLabels = empty($wlPositions)
+							? [__('events.waitlist_any_position')]
+							: array_map(fn($p) => $posLabels[$p] ?? __('events.positions.'.$p, [], null) ?? $p, $wlPositions);
+						$wlDate = \Carbon\Carbon::parse($wl->created_at, 'UTC')->setTimezone($tz);
+					@endphp
+					<tr data-wl-id="{{ $wl->id }}">
+						<td class="f-15 b-600 cd">{{ $i + 1 }}</td>
+						<td>
+							<a href="{{ route('users.show', $wl->user_id) }}" class="b-600 blink">
+								{{ $wl->full_name }}
+							</a>
+							<p class="pt-1 f-13" style="opacity:.6">#{{ $wl->user_id }}</p>
+						</td>
+						<td>
+							{{-- Нормальный вид --}}
+							<div id="wl-pos-view-{{ $wl->id }}">
+								<span class="f-14">{{ implode(', ', $wlPosLabels) }}</span>
+								<button type="button"
+									class="btn btn-small btn-secondary"
+									style="margin-left:.5rem;padding:.2rem .6rem;font-size:1.2rem;"
+									onclick="wlToggleEdit({{ $wl->id }})">
+									✏️
+								</button>
+							</div>
+							{{-- Режим редактирования позиций --}}
+							<div id="wl-pos-edit-{{ $wl->id }}" style="display:none;">
+								<form method="POST"
+									action="{{ route('events.waitlist.management.positions', [$event->id, $wl->id]) }}"
+									class="d-flex flex-wrap gap-05 fvc">
+									@csrf @method('PATCH')
+									<input type="hidden" name="occurrence_id" value="{{ $occurrenceId }}">
+									@if($hasPositions)
+										@foreach($posLabels as $k => $lbl)
+										<label class="d-flex fvc gap-05" style="cursor:pointer;font-size:1.3rem;">
+											<input type="checkbox" name="positions[]" value="{{ $k }}"
+												{{ in_array($k, $wlPositions) ? 'checked' : '' }}
+												style="width:1.4rem;height:1.4rem;cursor:pointer;">
+											{{ $lbl }}
+										</label>
+										@endforeach
+										<label class="d-flex fvc gap-05" style="cursor:pointer;font-size:1.3rem;">
+											<input type="checkbox" name="positions[]" value="reserve"
+												{{ in_array('reserve', $wlPositions) ? 'checked' : '' }}
+												style="width:1.4rem;height:1.4rem;cursor:pointer;">
+											{{ __('events.positions.reserve') }}
+										</label>
+									@else
+										<span class="f-13" style="opacity:.6">{{ __('events.waitlist_beach_pos') }}</span>
+									@endif
+									<button type="submit" class="btn btn-small" style="padding:.25rem .7rem;">✓</button>
+									<button type="button" class="btn btn-small btn-secondary"
+										style="padding:.25rem .7rem;"
+										onclick="wlToggleEdit({{ $wl->id }})">✕</button>
+								</form>
+							</div>
+						</td>
+						<td class="f-14" style="white-space:nowrap;opacity:.75;">
+							<div>{{ $wlDate->format('d.m.Y') }}</div>
+							<div class="f-13">{{ $wlDate->format('H:i') }}</div>
+						</td>
+						<td>
+							<div class="d-flex gap-1 text-center fvc">
+								{{-- Вверх --}}
+								<form method="POST"
+									action="{{ route('events.waitlist.management.move', [$event->id, $wl->id]) }}">
+									@csrf
+									<input type="hidden" name="direction" value="up">
+									<input type="hidden" name="occurrence_id" value="{{ $occurrenceId }}">
+									<button type="submit"
+										class="btn btn-secondary btn-svg btn-small"
+										title="{{ __('events.waitlist_move_up') }}"
+										style="font-size:1.3rem;padding:.3rem .6rem;"
+										{{ $i === 0 ? 'disabled' : '' }}>↑</button>
+								</form>
+								{{-- Вниз --}}
+								<form method="POST"
+									action="{{ route('events.waitlist.management.move', [$event->id, $wl->id]) }}">
+									@csrf
+									<input type="hidden" name="direction" value="down">
+									<input type="hidden" name="occurrence_id" value="{{ $occurrenceId }}">
+									<button type="submit"
+										class="btn btn-secondary btn-svg btn-small"
+										title="{{ __('events.waitlist_move_down') }}"
+										style="font-size:1.3rem;padding:.3rem .6rem;"
+										{{ $i === $waitlistEntries->count() - 1 ? 'disabled' : '' }}>↓</button>
+								</form>
+								{{-- Удалить --}}
+								<form method="POST"
+									action="{{ route('events.waitlist.management.destroy', [$event->id, $wl->id]) }}"
+									onsubmit="return confirm({{ json_encode(__('events.waitlist_delete_confirm')) }});">
+									@csrf @method('DELETE')
+									<input type="hidden" name="occurrence_id" value="{{ $occurrenceId }}">
+									<button type="submit"
+										class="btn btn-danger btn-svg icon-delete btn-small btn-alert"
+										data-title="{{ __('events.waitlist_delete_title') }}"
+										data-text="{{ __('events.waitlist_delete_text') }}"
+										data-icon="warning"
+										data-confirm-text="{{ __('events.force_yes') }}"
+										data-cancel-text="{{ __('events.cancel_no') }}"
+										title="{{ __('events.waitlist_delete_title') }}">
+									</button>
+								</form>
+							</div>
+						</td>
+					</tr>
+					@endforeach
+				</tbody>
+			</table>
+		</div>
+		@endif
+	</div>
+	@endif
+
 	{{-- Группы (только пляжка) --}}
 	@if($isBeach)
 	<div class="ramka" style="z-index:6">
@@ -635,6 +836,101 @@ $actionLabel = fn(string $a) => match($a) {
 				});
 			}
 		})();
+
+		// --- Лист ожидания: toggle формы добавления ---
+		(function () {
+			var toggleBtn  = document.getElementById('wl-add-toggle');
+			var formWrap   = document.getElementById('wl-add-form-wrap');
+			var input      = document.getElementById('wl-ac-input');
+			var dd         = document.getElementById('wl-ac-dd');
+			var hidden     = document.getElementById('wl-ac-userid');
+			var sel        = document.getElementById('wl-ac-selected');
+			var addBtn     = document.getElementById('wl-add-btn');
+			var searchUrl  = '{{ $searchUrl }}';
+			var timer      = null;
+
+			if (!toggleBtn) return;
+
+			toggleBtn.addEventListener('click', function () {
+				var visible = formWrap.style.display !== 'none';
+				formWrap.style.display = visible ? 'none' : 'block';
+				toggleBtn.textContent  = visible
+					? '+ {{ __('events.waitlist_add_btn') }}'
+					: '✕ {{ __('events.waitlist_add_cancel') }}';
+			});
+
+			if (!input) return;
+
+			function showDd() { dd.classList.add('form-select-dropdown--active'); }
+			function hideDd() { dd.classList.remove('form-select-dropdown--active'); }
+			function esc(s)   { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+			function updateBtn() { addBtn.disabled = !hidden.value; addBtn.style.opacity = hidden.value ? '1' : '.4'; }
+
+			function setSel(id, label) {
+				hidden.value       = id;
+				sel.style.display  = 'block';
+				sel.textContent    = '✅ ' + label;
+				dd.innerHTML       = '';
+				hideDd();
+				input.value = label.replace(/^🤖\s*/, '');
+				updateBtn();
+			}
+
+			function render(items) {
+				dd.innerHTML = '';
+				if (!items.length) {
+					dd.innerHTML = '<div class="city-message">' + @json(__('events.regs_search_no_results')) + '</div>';
+					showDd(); return;
+				}
+				items.forEach(function (item) {
+					var div = document.createElement('div');
+					div.className = 'trainer-item form-select-option';
+					div.innerHTML = '<span class="b-500">' + (item.is_bot ? '🤖 ' : '') + esc(item.label || item.name) + '</span>' +
+						(item.meta ? '<span class="f-13" style="opacity:.5;">' + esc(item.meta) + '</span>' : '');
+					div.addEventListener('click', function () {
+						setSel(item.id, (item.is_bot ? '🤖 ' : '') + (item.label || item.name));
+					});
+					dd.appendChild(div);
+				});
+				showDd();
+			}
+
+			function search(q) {
+				fetch(searchUrl + '?q=' + encodeURIComponent(q), { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+					.then(function (r) { return r.json(); })
+					.then(function (d) { render(d.items || []); })
+					.catch(function () {
+						dd.innerHTML = '<div class="city-message">' + @json(__('events.regs_search_error')) + '</div>';
+						showDd();
+					});
+			}
+
+			input.addEventListener('input', function () {
+				hidden.value = ''; updateBtn(); sel.style.display = 'none';
+				clearTimeout(timer);
+				var q = input.value.trim();
+				if (q.length < 2) { hideDd(); return; }
+				dd.innerHTML = '<div class="city-message">' + @json(__('events.regs_search_searching')) + '</div>';
+				showDd();
+				timer = setTimeout(function () { search(q); }, 250);
+			});
+			input.addEventListener('keydown', function (e) { if (e.key === 'Escape') hideDd(); });
+			document.addEventListener('click', function (e) {
+				var wrap = document.getElementById('wl-ac-wrap');
+				if (wrap && !wrap.contains(e.target)) hideDd();
+			});
+		})();
+
+		// --- Лист ожидания: редактирование позиций inline ---
+		function wlToggleEdit(id) {
+			var view = document.getElementById('wl-pos-view-' + id);
+			var edit = document.getElementById('wl-pos-edit-' + id);
+			if (!view || !edit) return;
+			var editing = edit.style.display !== 'none';
+			view.style.display = editing ? '' : 'none';
+			edit.style.display = editing ? 'none' : '';
+		}
 
 		// --- Авторасширение textarea ---
 		function autoResize(el) { el.style.height = '2.4rem'; if (el.scrollHeight > el.offsetHeight) el.style.height = el.scrollHeight + 'px'; }

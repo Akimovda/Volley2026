@@ -905,6 +905,23 @@ return [
     'regs_history_hint'      => 'Last :n events. Data before the log was launched is restored from registrations.',
     'regs_org_note_ph'       => 'Note…',
 
+    // Waitlist — organizer management
+    'waitlist_title'           => 'Waitlist',
+    'waitlist_add_btn'         => 'Add player to waitlist',
+    'waitlist_add_cancel'      => 'Cancel',
+    'waitlist_add_submit'      => 'Add to waitlist',
+    'waitlist_positions_label' => 'Positions (multiple allowed)',
+    'waitlist_positions_hint'  => 'If none selected — player joins the queue for any position.',
+    'waitlist_col_positions'   => 'Positions',
+    'waitlist_any_position'    => 'Any',
+    'waitlist_beach_pos'       => 'Beach — no positions',
+    'waitlist_move_up'         => 'Move up',
+    'waitlist_move_down'       => 'Move down',
+    'waitlist_delete_title'    => 'Remove from waitlist',
+    'waitlist_delete_text'     => 'The player will be removed from the waitlist.',
+    'waitlist_delete_confirm'  => 'Remove player from waitlist?',
+    'waitlist_empty'           => 'The waitlist is empty.',
+
     'regs_export_title'      => 'Export list',
     'regs_export_hint'       => 'Choose which fields to include in the file:',
     'regs_export_field_name' => 'Last name, First name, Patronymic',
