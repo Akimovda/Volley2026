@@ -748,6 +748,9 @@ body.dark .gradient-marker-line,
                         @endif
 					</div>
 				</div>
+				
+				
+				@auth
                 <div class="ramka">        
                     {{-- Gallery --}}
                     <h2 class="-mt-05">Фотографии</h2>
@@ -792,7 +795,7 @@ body.dark .gradient-marker-line,
 					</div> 
 					--}}
 				</div>  				
-				
+				@endauth	
 				
 			</div>
 		</div>
