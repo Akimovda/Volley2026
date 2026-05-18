@@ -81,6 +81,7 @@ class EventRegistrationsManagementController extends Controller
         }
 
         // Запасные игроки: добавляем позицию 'reserve' если настроена или уже используется
+        $reserveMax = 0; // используется ниже для корректного расчёта вместимости
         if ($direction === 'classic') {
             $reserveSlot = $eventSlots?->firstWhere('role', 'reserve');
             $reserveMax  = $reserveSlot
@@ -118,6 +119,12 @@ class EventRegistrationsManagementController extends Controller
             $maxPlayers = (int) DB::table('event_game_settings')
                 ->where('event_id', (int) $event->id)
                 ->value('max_players');
+        }
+
+        // Включаем вместимость резерва в общий счётчик мест —
+        // иначе activeRegs > maxPlayers и показывается «0 свободных» при наличии запасных
+        if ($maxPlayers > 0 && $reserveMax > 0) {
+            $maxPlayers += $reserveMax;
         }
 
         $activeRegsQuery = DB::table('event_registrations')
