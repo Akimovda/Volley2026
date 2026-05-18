@@ -100,6 +100,28 @@ class EventWaitlistManagementController extends Controller
             ->where('id', $entry->id)
             ->update(['positions' => json_encode($positions)]);
 
+        // Если среди новых позиций есть свободные слоты — авто-бук сразу
+        $occurrence = $entry->occurrence()->with('event.gameSettings')->first();
+        if ($occurrence) {
+            $waitlist = app(WaitlistService::class);
+            foreach ($positions as $pos) {
+                if ($pos === 'reserve') {
+                    $reserveMax = (int)($occurrence->event->gameSettings?->reserve_players_max ?? 0);
+                    if ($reserveMax > 0) {
+                        $waitlist->autoBookNext($occurrence, 'reserve');
+                    }
+                } else {
+                    $slot = DB::table('event_role_slots')
+                        ->where('event_id', $event->id)
+                        ->where('role', $pos)
+                        ->first();
+                    if ($slot && ($slot->max_slots - $slot->taken_slots) > 0) {
+                        $waitlist->autoBookNext($occurrence, $pos);
+                    }
+                }
+            }
+        }
+
         return back()->with('status', 'Позиции обновлены.');
     }
 

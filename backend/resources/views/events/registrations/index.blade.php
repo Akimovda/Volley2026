@@ -397,17 +397,20 @@ $actionLabel = fn(string $a) => match($a) {
 								<label>{{ __('events.waitlist_positions_label') }}</label>
 								<div class="d-flex flex-wrap gap-1" style="margin-top:.4rem;">
 									@foreach($posLabels as $k => $lbl)
+									@if($k === 'reserve') @continue @endif
 									<label class="d-flex fvc gap-05" style="cursor:pointer;font-size:1.4rem;">
 										<input type="checkbox" name="positions[]" value="{{ $k }}"
 											style="width:1.5rem;height:1.5rem;cursor:pointer;">
 										{{ $lbl }}
 									</label>
 									@endforeach
+									@if(isset($posLabels['reserve']))
 									<label class="d-flex fvc gap-05" style="cursor:pointer;font-size:1.4rem;">
 										<input type="checkbox" name="positions[]" value="reserve"
 											style="width:1.5rem;height:1.5rem;cursor:pointer;">
-										{{ __('events.positions.reserve') }}
+										{{ $posLabels['reserve'] }}
 									</label>
+									@endif
 								</div>
 								<p class="f-13" style="opacity:.6;margin-top:.4rem;">{{ __('events.waitlist_positions_hint') }}</p>
 							</div>
@@ -478,6 +481,7 @@ $actionLabel = fn(string $a) => match($a) {
 									<input type="hidden" name="occurrence_id" value="{{ $occurrenceId }}">
 									@if($hasPositions)
 										@foreach($posLabels as $k => $lbl)
+										@if($k === 'reserve') @continue @endif
 										<label class="d-flex fvc gap-05" style="cursor:pointer;font-size:1.3rem;">
 											<input type="checkbox" name="positions[]" value="{{ $k }}"
 												{{ in_array($k, $wlPositions) ? 'checked' : '' }}
@@ -485,12 +489,14 @@ $actionLabel = fn(string $a) => match($a) {
 											{{ $lbl }}
 										</label>
 										@endforeach
+										@if(isset($posLabels['reserve']))
 										<label class="d-flex fvc gap-05" style="cursor:pointer;font-size:1.3rem;">
 											<input type="checkbox" name="positions[]" value="reserve"
 												{{ in_array('reserve', $wlPositions) ? 'checked' : '' }}
 												style="width:1.4rem;height:1.4rem;cursor:pointer;">
-											{{ __('events.positions.reserve') }}
+											{{ $posLabels['reserve'] }}
 										</label>
+										@endif
 									@else
 										<span class="f-13" style="opacity:.6">{{ __('events.waitlist_beach_pos') }}</span>
 									@endif
