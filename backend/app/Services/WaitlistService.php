@@ -69,6 +69,19 @@ class WaitlistService
                     $this->autoBookNext($occurrence, 'reserve');
                 }
             }
+
+            // Основные позиции: если слот уже свободен в момент вступления в очередь —
+            // запускаем авто-бук сразу (onSpotFreed не сработает если место не освобождалось)
+            foreach ($positions as $pos) {
+                if ($pos === 'reserve') continue;
+                $slot = \DB::table('event_role_slots')
+                    ->where('event_id', $occurrence->event_id)
+                    ->where('role', $pos)
+                    ->first();
+                if ($slot && ($slot->max_slots - $slot->taken_slots) > 0) {
+                    $this->autoBookNext($occurrence, $pos);
+                }
+            }
         }
 
         return $entry;
