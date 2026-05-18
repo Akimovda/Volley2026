@@ -109,7 +109,8 @@ return ['label' => __('events.seats_dash'), 'registered' => $registered];
 			@if($archived->isNotEmpty())
 			<div class="mb-2 d-flex" style="justify-content:flex-end;">
 				<button type="button" id="toggle-archive" class="btn btn-secondary btn-small"
-					onclick="var s=document.getElementById('archive-section');if(s){var h=s.style.display==='none'||s.style.display==='';s.style.display=h?'block':'none';this.textContent=h?@json(__('events.occ_archive_hide')):@json(__('events.occ_archive_btn', ['n' => $archived->count()]));}">
+					data-label-show="{{ __('events.occ_archive_btn', ['n' => $archived->count()]) }}"
+					data-label-hide="{{ __('events.occ_archive_hide') }}">
 					{{ __('events.occ_archive_btn', ['n' => $archived->count()]) }}
 				</button>
 			</div>
@@ -139,6 +140,15 @@ return ['label' => __('events.seats_dash'), 'registered' => $registered];
 		<x-slot name="script">
 			<script>
 				$(function() {
+					// Архивные даты — toggle
+					$('#toggle-archive').on('click', function() {
+						var btn = $(this);
+						var section = $('#archive-section');
+						var hidden = section.css('display') === 'none';
+						section.css('display', hidden ? 'block' : 'none');
+						btn.text(hidden ? btn.data('label-hide') : btn.data('label-show'));
+					});
+
 					$(document).on('click', '.occ-bot-toggle', function() {
 						var btn = $(this);
 						var url = btn.data('url');
