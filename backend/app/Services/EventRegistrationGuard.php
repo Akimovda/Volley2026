@@ -263,6 +263,16 @@
 				default  => null,
 			};
 
+			// Момент открытия окна регистрации для ограниченного пола
+			$genderWindowOpensAt = null;
+			if ($genderPolicy === 'mixed_limited' && $targetGender && $occurrence->starts_at) {
+				$daysBefore = $settings?->gender_limited_reg_starts_days_before ?? null;
+				if ($daysBefore !== null) {
+					$genderWindowOpensAt = \Carbon\Carbon::parse($occurrence->starts_at, 'UTC')
+						->subDays((int) $daysBefore);
+				}
+			}
+
 			// Загружаем записи очереди (с гендером участника для точной проверки)
 			$waitlistEntries = OccurrenceWaitlist::query()
 				->where('occurrence_id', $occurrence->id)
@@ -273,7 +283,7 @@
 			// Проверяем: есть ли в очереди хоть один, кто реально может занять
 			// одну из свободных основных позиций (учитывая гендерную политику)
 			$hasBlockingOthers = $waitlistEntries->contains(
-				function (OccurrenceWaitlist $entry) use ($freeMainKeys, $genderPolicy, $targetGender, $genderLimitedPos) {
+				function (OccurrenceWaitlist $entry) use ($freeMainKeys, $genderPolicy, $targetGender, $genderLimitedPos, $genderWindowOpensAt) {
 					if (empty($freeMainKeys)) {
 						return false;
 					}
@@ -283,6 +293,10 @@
 					if ($genderPolicy === 'mixed_limited' && $targetGender && $entry->user) {
 						$g = strtolower((string)($entry->user->gender ?? ''));
 						if ($g && $g[0] === $targetGender) {
+							// Окно ещё не открылось — ограниченный пол не может занять место прямо сейчас
+							if ($genderWindowOpensAt && now('UTC')->lessThan($genderWindowOpensAt)) {
+								return false;
+							}
 							// Ограниченный пол — только разрешённые позиции
 							$eligibleKeys = array_values(
 								array_filter($freeMainKeys, fn($k) => in_array($k, $genderLimitedPos, true))
