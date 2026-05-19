@@ -63,9 +63,9 @@ class NotifyOrganizerRegistrationJob implements ShouldQueue
                 return;
             }
             [$notifyUserId, $notificationType, $fallbackTitle] = match ($this->type) {
-                'org_registered' => [(int) $actor->id, 'organizer_registered_player', '✅ Вы записали'],
-                'org_cancelled'  => [(int) $actor->id, 'organizer_cancelled_player',  '⛔️ Вы отменили запись'],
-                default          => [(int) $actor->id, 'organizer_deleted_player',    '🗑 Вы удалили запись'],
+                'org_registered' => [(int) $actor->id, 'organizer_registered_player', 'Вы записали'],
+                'org_cancelled'  => [(int) $actor->id, 'organizer_cancelled_player',  'Вы отменили запись'],
+                default          => [(int) $actor->id, 'organizer_deleted_player',    'Вы удалили запись'],
             };
         } else {
             $organizer = $occurrence->event?->organizer;
@@ -73,12 +73,11 @@ class NotifyOrganizerRegistrationJob implements ShouldQueue
                 return;
             }
             $notifyUserId = (int) $organizer->id;
-            $notificationType = $this->type === 'registered'
-                ? 'organizer_player_registered'
-                : 'organizer_player_cancelled';
-            $fallbackTitle = $this->type === 'registered'
-                ? '✅ Регистрация подтверждена'
-                : '⛔️ Бронь отменена';
+            [$notificationType, $fallbackTitle] = match ($this->type) {
+                'registered'  => ['organizer_player_registered',  'Регистрация подтверждена'],
+                'auto_booked' => ['organizer_player_auto_booked', 'Авто-запись из листа ожидания'],
+                default       => ['organizer_player_cancelled',   'Бронь отменена'],
+            };
         }
 
         try {
