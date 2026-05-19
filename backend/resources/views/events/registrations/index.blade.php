@@ -398,17 +398,17 @@ $actionLabel = fn(string $a) => match($a) {
 								<div class="d-flex flex-wrap gap-1" style="margin-top:.4rem;">
 									@foreach($posLabels as $k => $lbl)
 									@if($k === 'reserve') @continue @endif
-									<label class="d-flex fvc gap-05" style="cursor:pointer;font-size:1.4rem;">
-										<input type="checkbox" name="positions[]" value="{{ $k }}"
-											style="width:1.5rem;height:1.5rem;cursor:pointer;">
-										{{ $lbl }}
+									<label class="checkbox-item">
+										<input type="checkbox" name="positions[]" value="{{ $k }}">
+										<div class="custom-checkbox"></div>
+										<span>{{ $lbl }}</span>
 									</label>
 									@endforeach
 									@if(isset($posLabels['reserve']))
-									<label class="d-flex fvc gap-05" style="cursor:pointer;font-size:1.4rem;">
-										<input type="checkbox" name="positions[]" value="reserve"
-											style="width:1.5rem;height:1.5rem;cursor:pointer;">
-										{{ $posLabels['reserve'] }}
+									<label class="checkbox-item">
+										<input type="checkbox" name="positions[]" value="reserve">
+										<div class="custom-checkbox"></div>
+										<span>{{ $posLabels['reserve'] }}</span>
 									</label>
 									@endif
 								</div>
@@ -661,18 +661,21 @@ $actionLabel = fn(string $a) => match($a) {
 	<div class="ramka">
 		<h2 class="-mt-05">{{ __('events.regs_export_title') }}</h2>
 		<p class="mb-2">{{ __('events.regs_export_hint') }}</p>
-		<div class="d-flex gap-2 flex-wrap mb-3">
-			<label class="d-flex fvc gap-1" style="cursor:pointer;font-size:1.5rem;">
-				<input type="checkbox" id="exp-field-name" checked style="width:1.6rem;height:1.6rem;cursor:pointer;">
-				{{ __('events.regs_export_field_name') }}
+		<div class="form d-flex gap-2 flex-wrap mb-3">
+			<label class="checkbox-item">
+				<input type="checkbox" id="exp-field-name" checked>
+				<div class="custom-checkbox"></div>
+				<span>{{ __('events.regs_export_field_name') }}</span>
 			</label>
-			<label class="d-flex fvc gap-1" style="cursor:pointer;font-size:1.5rem;">
-				<input type="checkbox" id="exp-field-phone" checked style="width:1.6rem;height:1.6rem;cursor:pointer;">
-				{{ __('events.regs_export_field_phone') }}
+			<label class="checkbox-item">
+				<input type="checkbox" id="exp-field-phone" checked>
+				<div class="custom-checkbox"></div>
+				<span>{{ __('events.regs_export_field_phone') }}</span>
 			</label>
-			<label class="d-flex fvc gap-1" style="cursor:pointer;font-size:1.5rem;">
-				<input type="checkbox" id="exp-field-position" checked style="width:1.6rem;height:1.6rem;cursor:pointer;">
-				{{ __('events.regs_export_field_pos') }}
+			<label class="checkbox-item">
+				<input type="checkbox" id="exp-field-position" checked>
+				<div class="custom-checkbox"></div>
+				<span>{{ __('events.regs_export_field_pos') }}</span>
 			</label>
 		</div>
 		<div class="d-flex gap-2 justify-content-center flex-wrap">
