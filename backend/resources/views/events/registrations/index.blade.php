@@ -474,7 +474,7 @@ $actionLabel = fn(string $a) => match($a) {
 							</div>
 							{{-- Режим редактирования позиций --}}
 							<div id="wl-pos-edit-{{ $wl->id }}" style="display:none;">
-								<form method="POST"
+								<form class="form" method="POST"
 									action="{{ route('events.waitlist.management.positions', [$event->id, $wl->id]) }}"
 									class="d-flex flex-wrap gap-05 fvc">
 									@csrf @method('PATCH')
@@ -482,19 +482,19 @@ $actionLabel = fn(string $a) => match($a) {
 									@if($hasPositions)
 										@foreach($posLabels as $k => $lbl)
 										@if($k === 'reserve') @continue @endif
-										<label class="d-flex fvc gap-05" style="cursor:pointer;font-size:1.3rem;">
+										 <label class="checkbox-item">
 											<input type="checkbox" name="positions[]" value="{{ $k }}"
-												{{ in_array($k, $wlPositions) ? 'checked' : '' }}
-												style="width:1.4rem;height:1.4rem;cursor:pointer;">
-											{{ $lbl }}
+												{{ in_array($k, $wlPositions) ? 'checked' : '' }}>
+												 <div class="custom-checkbox"></div>
+											<span>{{ $lbl }}</span>
 										</label>
 										@endforeach
 										@if(isset($posLabels['reserve']))
-										<label class="d-flex fvc gap-05" style="cursor:pointer;font-size:1.3rem;">
+										 <label class="checkbox-item">
 											<input type="checkbox" name="positions[]" value="reserve"
-												{{ in_array('reserve', $wlPositions) ? 'checked' : '' }}
-												style="width:1.4rem;height:1.4rem;cursor:pointer;">
-											{{ $posLabels['reserve'] }}
+												{{ in_array('reserve', $wlPositions) ? 'checked' : '' }}>
+												 <div class="custom-checkbox"></div>
+											<span>{{ $posLabels['reserve'] }}</span>
 										</label>
 										@endif
 									@else
@@ -502,7 +502,6 @@ $actionLabel = fn(string $a) => match($a) {
 									@endif
 									<button type="submit" class="btn btn-small" style="padding:.25rem .7rem;">✓</button>
 									<button type="button" class="btn btn-small btn-secondary"
-										style="padding:.25rem .7rem;"
 										onclick="wlToggleEdit({{ $wl->id }})">✕</button>
 								</form>
 							</div>
