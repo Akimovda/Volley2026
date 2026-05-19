@@ -43,9 +43,10 @@
                     <div class="col-md-3">
                         <div class="card">
                             <label>{{ __('subscriptions.tpl_label_status') }}</label>
-                            <label class="d-flex fvc gap-1">
+                            <label class="checkbox-item">
                                 <input type="checkbox" name="is_active" value="1"
                                        @checked(old('is_active', $subscriptionTemplate->is_active))>
+                                <div class="custom-checkbox"></div>
                                 <span>{{ __('subscriptions.tpl_status_active_short') }}</span>
                             </label>
                         </div>
@@ -65,9 +66,10 @@
                     <label>{{ __('subscriptions.tpl_events_link_label') }}</label>
                     <div style="max-height:20rem;overflow-y:auto;">
                         @foreach($events as $event)
-                        <label class="d-flex fvc gap-1 mb-05">
+                        <label class="checkbox-item mb-05">
                             <input type="checkbox" name="event_ids[]" value="{{ $event->id }}"
                                 @checked(in_array($event->id, old('event_ids', $subscriptionTemplate->event_ids ?? [])))>
+                            <div class="custom-checkbox"></div>
                             <span>{{ $event->title }} (#{{ $event->id }})</span>
                         </label>
                         @endforeach
@@ -133,9 +135,10 @@
                     </div>
                     <div class="col-md-4">
                         <div class="card">
-                            <label class="d-flex fvc gap-1">
+                            <label class="checkbox-item">
                                 <input type="checkbox" name="sale_enabled" value="1"
                                        @checked(old('sale_enabled', $subscriptionTemplate->sale_enabled))>
+                                <div class="custom-checkbox"></div>
                                 <span>{{ __('subscriptions.tpl_sale_enabled') }}</span>
                             </label>
                         </div>
@@ -156,28 +159,31 @@
                     </div>
                     <div class="col-md-4">
                         <div class="card">
-                            <label class="d-flex fvc gap-1">
+                            <label class="checkbox-item">
                                 <input type="checkbox" name="transfer_enabled" value="1"
                                        @checked(old('transfer_enabled', $subscriptionTemplate->transfer_enabled))>
+                                <div class="custom-checkbox"></div>
                                 <span>{{ __('subscriptions.tpl_transfer_short') }}</span>
                             </label>
                         </div>
                     </div>
                     <div class="col-md-4">
                         <div class="card">
-                            <label class="d-flex fvc gap-1">
+                            <label class="checkbox-item">
                                 <input type="checkbox" name="auto_booking_enabled" value="1"
                                        @checked(old('auto_booking_enabled', $subscriptionTemplate->auto_booking_enabled))>
+                                <div class="custom-checkbox"></div>
                                 <span>{{ __('subscriptions.tpl_auto_booking_short') }}</span>
                             </label>
                         </div>
                     </div>
                     <div class="col-md-4">
                         <div class="card">
-                            <label class="d-flex fvc gap-1">
+                            <label class="checkbox-item">
                                 <input type="checkbox" name="freeze_enabled" value="1"
                                        id="freeze_toggle"
                                        @checked(old('freeze_enabled', $subscriptionTemplate->freeze_enabled))>
+                                <div class="custom-checkbox"></div>
                                 <span>{{ __('subscriptions.tpl_freeze_short') }}</span>
                             </label>
                         </div>

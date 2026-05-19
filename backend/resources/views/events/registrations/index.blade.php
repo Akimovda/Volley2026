@@ -398,17 +398,17 @@ $actionLabel = fn(string $a) => match($a) {
 								<div class="d-flex flex-wrap gap-1" style="margin-top:.4rem;">
 									@foreach($posLabels as $k => $lbl)
 									@if($k === 'reserve') @continue @endif
-									<label class="d-flex fvc gap-05" style="cursor:pointer;font-size:1.4rem;">
-										<input type="checkbox" name="positions[]" value="{{ $k }}"
-											style="width:1.5rem;height:1.5rem;cursor:pointer;">
-										{{ $lbl }}
+									<label class="checkbox-item">
+										<input type="checkbox" name="positions[]" value="{{ $k }}">
+										<div class="custom-checkbox"></div>
+										<span>{{ $lbl }}</span>
 									</label>
 									@endforeach
 									@if(isset($posLabels['reserve']))
-									<label class="d-flex fvc gap-05" style="cursor:pointer;font-size:1.4rem;">
-										<input type="checkbox" name="positions[]" value="reserve"
-											style="width:1.5rem;height:1.5rem;cursor:pointer;">
-										{{ $posLabels['reserve'] }}
+									<label class="checkbox-item">
+										<input type="checkbox" name="positions[]" value="reserve">
+										<div class="custom-checkbox"></div>
+										<span>{{ $posLabels['reserve'] }}</span>
 									</label>
 									@endif
 								</div>
@@ -474,7 +474,7 @@ $actionLabel = fn(string $a) => match($a) {
 							</div>
 							{{-- Режим редактирования позиций --}}
 							<div id="wl-pos-edit-{{ $wl->id }}" style="display:none;">
-								<form method="POST"
+								<form class="form" method="POST"
 									action="{{ route('events.waitlist.management.positions', [$event->id, $wl->id]) }}"
 									class="d-flex flex-wrap gap-05 fvc">
 									@csrf @method('PATCH')
@@ -482,19 +482,19 @@ $actionLabel = fn(string $a) => match($a) {
 									@if($hasPositions)
 										@foreach($posLabels as $k => $lbl)
 										@if($k === 'reserve') @continue @endif
-										<label class="d-flex fvc gap-05" style="cursor:pointer;font-size:1.3rem;">
+										 <label class="checkbox-item">
 											<input type="checkbox" name="positions[]" value="{{ $k }}"
-												{{ in_array($k, $wlPositions) ? 'checked' : '' }}
-												style="width:1.4rem;height:1.4rem;cursor:pointer;">
-											{{ $lbl }}
+												{{ in_array($k, $wlPositions) ? 'checked' : '' }}>
+												 <div class="custom-checkbox"></div>
+											<span>{{ $lbl }}</span>
 										</label>
 										@endforeach
 										@if(isset($posLabels['reserve']))
-										<label class="d-flex fvc gap-05" style="cursor:pointer;font-size:1.3rem;">
+										 <label class="checkbox-item">
 											<input type="checkbox" name="positions[]" value="reserve"
-												{{ in_array('reserve', $wlPositions) ? 'checked' : '' }}
-												style="width:1.4rem;height:1.4rem;cursor:pointer;">
-											{{ $posLabels['reserve'] }}
+												{{ in_array('reserve', $wlPositions) ? 'checked' : '' }}>
+												 <div class="custom-checkbox"></div>
+											<span>{{ $posLabels['reserve'] }}</span>
 										</label>
 										@endif
 									@else
@@ -502,7 +502,6 @@ $actionLabel = fn(string $a) => match($a) {
 									@endif
 									<button type="submit" class="btn btn-small" style="padding:.25rem .7rem;">✓</button>
 									<button type="button" class="btn btn-small btn-secondary"
-										style="padding:.25rem .7rem;"
 										onclick="wlToggleEdit({{ $wl->id }})">✕</button>
 								</form>
 							</div>
@@ -662,18 +661,21 @@ $actionLabel = fn(string $a) => match($a) {
 	<div class="ramka">
 		<h2 class="-mt-05">{{ __('events.regs_export_title') }}</h2>
 		<p class="mb-2">{{ __('events.regs_export_hint') }}</p>
-		<div class="d-flex gap-2 flex-wrap mb-3">
-			<label class="d-flex fvc gap-1" style="cursor:pointer;font-size:1.5rem;">
-				<input type="checkbox" id="exp-field-name" checked style="width:1.6rem;height:1.6rem;cursor:pointer;">
-				{{ __('events.regs_export_field_name') }}
+		<div class="form d-flex gap-2 flex-wrap mb-3">
+			<label class="checkbox-item">
+				<input type="checkbox" id="exp-field-name" checked>
+				<div class="custom-checkbox"></div>
+				<span>{{ __('events.regs_export_field_name') }}</span>
 			</label>
-			<label class="d-flex fvc gap-1" style="cursor:pointer;font-size:1.5rem;">
-				<input type="checkbox" id="exp-field-phone" checked style="width:1.6rem;height:1.6rem;cursor:pointer;">
-				{{ __('events.regs_export_field_phone') }}
+			<label class="checkbox-item">
+				<input type="checkbox" id="exp-field-phone" checked>
+				<div class="custom-checkbox"></div>
+				<span>{{ __('events.regs_export_field_phone') }}</span>
 			</label>
-			<label class="d-flex fvc gap-1" style="cursor:pointer;font-size:1.5rem;">
-				<input type="checkbox" id="exp-field-position" checked style="width:1.6rem;height:1.6rem;cursor:pointer;">
-				{{ __('events.regs_export_field_pos') }}
+			<label class="checkbox-item">
+				<input type="checkbox" id="exp-field-position" checked>
+				<div class="custom-checkbox"></div>
+				<span>{{ __('events.regs_export_field_pos') }}</span>
 			</label>
 		</div>
 		<div class="d-flex gap-2 justify-content-center flex-wrap">
