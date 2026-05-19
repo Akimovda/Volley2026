@@ -325,7 +325,7 @@ class WaitlistService
                 // но делаем явно — это идемпотентно и надёжнее в транзакции
                 $entry->delete();
 
-                // Уведомление: «Вы записаны из резерва в основной состав»
+                // Уведомление игроку: «Вы записаны из резерва в основной состав»
                 app(UserNotificationService::class)->createWaitlistAutoBookedNotification(
                     userId: $user->id,
                     eventId: $event->id,
@@ -333,6 +333,15 @@ class WaitlistService
                     eventTitle: $event->title,
                     position: $position
                 );
+
+                // Уведомление организатору об авто-записи из листа ожидания
+                \App\Jobs\NotifyOrganizerRegistrationJob::dispatch(
+                    (int) $occurrence->id,
+                    (int) $user->id,
+                    'auto_booked',
+                    null,
+                    $position !== '' ? $position : null,
+                )->onQueue('default')->afterCommit();
 
                 Log::info("Waitlist auto-booked: user #{$user->id} → occurrence #{$occurrence->id} pos='{$position}'");
 

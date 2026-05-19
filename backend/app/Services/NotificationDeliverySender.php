@@ -304,8 +304,20 @@ final class NotificationDeliverySender
             'organizer_player_registered', 'organizer_registered_player' => '✅',
             'organizer_player_cancelled',  'organizer_cancelled_player'  => '⛔️',
             'organizer_deleted_player'                                   => '🗑',
+            'organizer_player_auto_booked'                               => '✅',
             default                                                      => '📢',
         };
+
+        // Организаторские уведомления о регистрации — структурированный формат
+        $organizerPlayerTypes = [
+            'organizer_player_registered', 'organizer_registered_player',
+            'organizer_player_cancelled',  'organizer_cancelled_player',
+            'organizer_deleted_player',
+            'organizer_player_auto_booked',
+        ];
+        if (in_array($type, $organizerPlayerTypes, true)) {
+            return $this->buildOrganizerPlayerText($emoji, $rich['title'], $payload, $type);
+        }
 
         $lines = [];
         $lines[] = $emoji . ' ' . $rich['title'];
@@ -333,6 +345,55 @@ final class NotificationDeliverySender
             $lines[] = '';
             $lines[] = $extra;
         }
+
+        return implode("\n", $lines);
+    }
+
+    private function buildOrganizerPlayerText(string $emoji, string $title, array $payload, string $type): string
+    {
+        $eventTitle = trim((string) ($payload['event_title'] ?? ''));
+        $header = $emoji . ' ' . $title;
+        if ($eventTitle !== '') {
+            $header .= ' 🏐 ' . $eventTitle;
+        }
+
+        $lines = [$header, ''];
+
+        $eventDate    = trim((string) ($payload['event_date'] ?? ''));
+        $eventTime    = trim((string) ($payload['event_time'] ?? ''));
+        $locationFull = trim((string) ($payload['location_full'] ?? $payload['location_address'] ?? ''));
+
+        $lines[] = 'Информация:';
+        if ($eventDate !== '')    $lines[] = '📆: ' . $eventDate;
+        if ($eventTime !== '')    $lines[] = '🕘: ' . $eventTime;
+        if ($locationFull !== '') $lines[] = '📍: ' . $locationFull;
+        $lines[] = '';
+
+        $bookedCount    = trim((string) ($payload['booked_count'] ?? ''));
+        $availableCount = trim((string) ($payload['available_count'] ?? ''));
+        if ($bookedCount !== '' || $availableCount !== '') {
+            $lines[] = "Сейчас {$bookedCount} мест(о) забронировано, а {$availableCount} доступно.";
+            $lines[] = '';
+        }
+
+        $playerName     = trim((string) ($payload['player_name'] ?? ''));
+        $playerPhone    = trim((string) ($payload['player_phone'] ?? ''));
+        $playerPosition = trim((string) ($payload['player_position'] ?? ''));
+
+        if ($playerName !== '' || $playerPhone !== '' || $playerPosition !== '') {
+            $detailsLabel = $type === 'organizer_player_auto_booked'
+                ? 'Детали авто-записи:'
+                : 'Детали записи:';
+            $lines[] = $detailsLabel;
+            $lines[] = '';
+            if ($playerName !== '')     $lines[] = '👤 : ' . $playerName;
+            if ($playerPhone !== '')    $lines[] = '☎️ : ' . $playerPhone;
+            if ($playerPosition !== '') $lines[] = '✅ : ' . $playerPosition;
+        }
+
+        $lines[] = '';
+        $lines[] = '--';
+        $lines[] = config('app.name', 'Volley Club');
 
         return implode("\n", $lines);
     }
