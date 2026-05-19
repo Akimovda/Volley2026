@@ -1,4 +1,9 @@
 <x-voll-layout body_class="tournament-team-page">
+@php
+$isCaptain   = auth()->check() && (int)$team->captain_user_id === (int)auth()->id();
+$isOrganizer = auth()->check() && ((int)$event->organizer_id === (int)auth()->id() || auth()->user()->isAdmin());
+$canManage   = $isCaptain || $isOrganizer;
+@endphp
 <x-slot name="title">{{ $team->name }} — команда</x-slot>
 <x-slot name="h1">{{ $team->name }}</x-slot>
 
