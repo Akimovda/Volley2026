@@ -20,6 +20,26 @@
         </div>
         <a href="{{ route('events.show', $event) }}" class="btn btn-secondary">← К турниру</a>
     </div>
+    @if($canManage)
+    <div class="mt-1" id="team-name-block">
+        <div id="team-name-display-wrap" class="d-flex fvc gap-1">
+            <span class="f-15 b-600">{{ $team->name }}</span>
+            <button type="button" class="btn btn-small btn-secondary" style="padding:.2rem .6rem;font-size:1.2rem"
+                onclick="document.getElementById('team-name-form').style.display='flex';document.getElementById('team-name-display-wrap').style.display='none';document.getElementById('team-name-input').focus()">
+                ✏️
+            </button>
+        </div>
+        <form id="team-name-form" method="POST" action="{{ route('tournamentTeams.update', [$event, $team]) }}"
+              class="form" style="display:none;align-items:center;flex-wrap:wrap;gap:.5rem;margin-top:.4rem">
+            @csrf @method('PATCH')
+            <input type="text" id="team-name-input" name="name" value="{{ $team->name }}"
+                   style="max-width:24rem" maxlength="255" required>
+            <button type="submit" class="btn btn-small">✓</button>
+            <button type="button" class="btn btn-small btn-secondary"
+                onclick="document.getElementById('team-name-form').style.display='none';document.getElementById('team-name-display-wrap').style.display=''">✕</button>
+        </form>
+    </div>
+    @endif
 </x-slot>
 
 @php

@@ -39,6 +39,28 @@ class TournamentTeamController extends Controller
         ]);
     }
 
+    public function update(Request $request, Event $event, EventTeam $team): RedirectResponse
+    {
+        abort_unless((int) $team->event_id === (int) $event->id, 404);
+
+        $user = $request->user();
+        $isCaptain    = (int) $team->captain_user_id === (int) $user->id;
+        $isOrganizer  = (int) $event->organizer_id  === (int) $user->id || $user->isAdmin();
+        abort_unless($isCaptain || $isOrganizer, 403);
+
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255',
+                Rule::unique('event_teams')->where('event_id', $event->id)->ignore($team->id),
+            ],
+        ]);
+
+        $team->update(['name' => trim($data['name'])]);
+
+        return redirect()
+            ->route('tournamentTeams.show', [$event, $team])
+            ->with('success', 'Название команды обновлено');
+    }
+
     public function store(Request $request, Event $event, TournamentTeamService $service): RedirectResponse
     {
         $data = $request->validate([

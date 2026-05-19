@@ -300,6 +300,9 @@ Route::post('/auth/tma-exchange', [TmaAuthController::class, 'exchange'])->name(
 		// Просмотр команды
 		Route::get('/events/{event}/teams/{team}', [TournamentTeamController::class, 'show'])
         ->name('tournamentTeams.show');
+
+		Route::patch('/events/{event}/teams/{team}', [TournamentTeamController::class, 'update'])
+        ->name('tournamentTeams.update');
 		
 		// Создание команды
 		Route::post('/events/{event}/teams', [TournamentTeamController::class, 'store'])
