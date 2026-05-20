@@ -82,7 +82,7 @@
 				$teamsMax = (int)($event->tournament_teams_count ?? $event->tournamentSetting?->teams_count ?? 0);
 				$teamsReg = \App\Models\EventTeam::where('event_id', $occurrence->event_id)
 					->where(fn($q) => $q->where('occurrence_id', $occurrence->id)->orWhereNull('occurrence_id'))
-					->whereIn('status', ['ready','pending_members','submitted','confirmed','approved'])
+					->whereIn('status', ['draft','ready','pending_members','submitted','confirmed','approved'])
 					->count();
 				$result->data['meta'] = [
 					'tournament_teams_max'        => $teamsMax,
@@ -1143,7 +1143,7 @@
 					$teamsRegistered = \App\Models\EventTeam::where('event_id', $occurrence->event_id)
 						->where(fn($q) => $q->where('occurrence_id', $occurrence->id)
 							->orWhereNull('occurrence_id'))
-						->whereIn('status', ['ready','pending_members','submitted','confirmed','approved'])
+						->whereIn('status', ['draft','ready','pending_members','submitted','confirmed','approved'])
 						->count();
 				} else {
 					// Обычный турнир — считаем через group_key в регистрациях
