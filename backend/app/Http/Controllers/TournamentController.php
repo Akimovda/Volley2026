@@ -1151,6 +1151,7 @@ class TournamentController extends Controller
         $this->authorizeOrganizer($request, $event);
 
         $name = $stage->name;
+        $divNames = '';
 
         // Если удаляем групповой этап — удалить и связанные группы Hard/Lite
         if (in_array($stage->type, ['round_robin', 'groups_playoff'])) {
