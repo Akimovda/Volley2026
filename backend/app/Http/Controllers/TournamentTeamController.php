@@ -110,6 +110,9 @@ class TournamentTeamController extends Controller
                 $teamName = 'Команда ' . $capName;
             }
 
+            $isOrganizerOrAdmin = (int) $event->organizer_id === (int) $request->user()->id
+                || $request->user()->isAdmin();
+
             $team = $service->createTeam(
                 event: $event,
                 captain: $captainUser,
@@ -117,6 +120,7 @@ class TournamentTeamController extends Controller
                 occurrenceId: !empty($data['occurrence_id']) ? (int) $data['occurrence_id'] : null,
                 teamKind: $data['team_kind'] ?? null,
                 captainPositionCode: $data['captain_position_code'] ?? null,
+                autoApprove: $isOrganizerOrAdmin,
             );
 
             return redirect()
