@@ -251,7 +251,7 @@ class CancelEventsByQuorum extends Command
         return (int) DB::table('event_teams')
             ->where('event_id', $eventId)
             ->where('occurrence_id', $occurrenceId)
-            ->where('status', 'approved')
+            ->whereIn('status', ['draft', 'pending_members', 'ready', 'submitted', 'confirmed', 'approved'])
             ->count();
     }
 
@@ -264,7 +264,7 @@ class CancelEventsByQuorum extends Command
         $teamIds = DB::table('event_teams')
             ->where('event_id', $eventId)
             ->where('occurrence_id', $occurrenceId)
-            ->where('status', 'approved')
+            ->whereIn('status', ['draft', 'pending_members', 'ready', 'submitted', 'confirmed', 'approved'])
             ->pluck('id');
 
         if ($teamIds->isEmpty()) {
