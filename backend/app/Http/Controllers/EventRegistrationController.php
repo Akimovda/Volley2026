@@ -676,6 +676,18 @@ class EventRegistrationController extends Controller
 
             $reg->save();
 
+            if (Schema::hasTable('event_registration_logs')) {
+                DB::table('event_registration_logs')->insert([
+                    'registration_id' => $reg->id,
+                    'event_id'        => (int) $occurrence->event_id,
+                    'occurrence_id'   => (int) $occurrence->id,
+                    'user_id'         => (int) $user->id,
+                    'actor_id'        => (int) $user->id,
+                    'action'          => 'cancelled_self',
+                    'created_at'      => now(),
+                ]);
+            }
+
             $cancelledPosition = $reg->position;
 
             DB::commit();

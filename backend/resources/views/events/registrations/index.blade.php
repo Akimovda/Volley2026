@@ -258,9 +258,24 @@ $actionLabel = fn(string $a) => match($a) {
 						<td>{{ $phone }}</td>
 						@if($hasPositions)
 						<td>
-							{{--
-							<div class="f-16 mb-05">{{ $posLabel }}</div>
-							--}}		
+							@if($st === __('events.regs_status_cancelled'))
+							{{-- Отменённый: выбор позиции + восстановление в один шаг --}}
+							<form class="d-flex gap-1 fvc" method="POST"
+							action="{{ route('events.registrations.cancel', ['event' => $event->id, 'registration' => $r->id]) }}">
+								@csrf @method('PATCH')
+								<select name="position">
+									@foreach($posLabels as $k => $lbl)
+									@php
+									$slotFree = array_key_exists($k, $freeSlots) ? (int)$freeSlots[$k] : null;
+									$isFull   = $slotFree !== null && $slotFree <= 0;
+									@endphp
+									<option value="{{ $k }}" @selected($posKey === $k) @disabled($isFull)>{{ $lbl }}@if($isFull) {{ __('events.regs_pos_full') }}@endif</option>
+									@endforeach
+								</select>
+								<button class="btn btn-svg icon-copy" type="submit" title="{{ __('events.regs_btn_restore') }}"></button>
+							</form>
+							@else
+							{{-- Активный: только смена позиции --}}
 							<form class="d-flex gap-1 fvc" method="POST"
 							action="{{ route('events.registrations.position', ['event' => $event->id, 'registration' => $r->id]) }}">
 								@csrf @method('PATCH')
@@ -278,6 +293,7 @@ $actionLabel = fn(string $a) => match($a) {
 								</select>
 								<button class="btn btn-secondary" type="submit">✓</button>
 							</form>
+							@endif
 						</td>
 						@endif
 						@if($isBeach)
@@ -326,14 +342,26 @@ $actionLabel = fn(string $a) => match($a) {
 						@endif
 						<td>
 							<div class="d-flex gap-1 text-center">
+								@if($st !== __('events.regs_status_cancelled'))
+								{{-- Активный: кнопка отмены --}}
 								<form method="POST"
 								action="{{ route('events.registrations.cancel', ['event' => $event->id, 'registration' => $r->id]) }}">
 									@csrf @method('PATCH')
-									
-									<button class="btn {{ $st === __('events.regs_status_cancelled') ? 'btn-svg icon-copy' : 'btn-danger btn-svg icon-stop' }}" 
-									title="{{ $st === __('events.regs_status_cancelled') ? __('events.regs_btn_restore') : __('events.regs_btn_reject') }}">
+									<button class="btn btn-danger btn-svg icon-stop"
+									title="{{ __('events.regs_btn_reject') }}">
 									</button>
 								</form>
+								@elseif(!$hasPositions)
+								{{-- Отменённый без позиций (пляжка): кнопка восстановления --}}
+								<form method="POST"
+								action="{{ route('events.registrations.cancel', ['event' => $event->id, 'registration' => $r->id]) }}">
+									@csrf @method('PATCH')
+									<button class="btn btn-svg icon-copy"
+									title="{{ __('events.regs_btn_restore') }}">
+									</button>
+								</form>
+								@endif
+								{{-- Отменённый с позициями (классика): restore уже в колонке позиций --}}
 								<form method="POST"
 								action="{{ route('events.registrations.destroy', ['event' => $event->id, 'registration' => $r->id]) }}"
 								onsubmit="return confirm({!! json_encode(__('events.regs_delete_full')) !!});">
