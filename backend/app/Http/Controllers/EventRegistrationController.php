@@ -446,12 +446,20 @@ class EventRegistrationController extends Controller
         $isIndividualTournament = (string)($occurrence->event->format ?? '') === 'tournament'
             && (string)($occurrence->event->registration_mode ?? '') === 'tournament_individual';
         if ($created && ((string)($occurrence->event->format ?? '') !== 'tournament' || $isIndividualTournament)) {
-            $hasWaitlist = \DB::table('occurrence_waitlist')
-                ->where('occurrence_id', $occurrence->id)
-                ->exists();
-            if ($hasWaitlist) {
-                // Capacity check выполняется внутри autoBookNext (включая legacy-reserve без лимита)
-                app(\App\Services\WaitlistService::class)->autoBookNext($occurrence, 'reserve');
+            $reserveMax = (int)($occurrence->event->gameSettings?->reserve_players_max ?? 0);
+            if ($reserveMax > 0) {
+                $reserveTaken = \DB::table('event_registrations')
+                    ->where('occurrence_id', $occurrence->id)
+                    ->where('position', 'reserve')
+                    ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
+                    ->whereNull('cancelled_at')
+                    ->count();
+                $hasWaitlist = \DB::table('occurrence_waitlist')
+                    ->where('occurrence_id', $occurrence->id)
+                    ->exists();
+                if ($reserveTaken < $reserveMax && $hasWaitlist) {
+                    app(\App\Services\WaitlistService::class)->autoBookNext($occurrence, 'reserve');
+                }
             }
         }
 

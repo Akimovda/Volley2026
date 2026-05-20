@@ -69,18 +69,15 @@ class WaitlistService
         $isIndividualTournament = (string)($occurrence->event->format ?? '') === 'tournament'
             && (string)($occurrence->event->registration_mode ?? '') === 'tournament_individual';
         if ($entry->wasRecentlyCreated && ((string)($occurrence->event->format ?? '') !== 'tournament' || $isIndividualTournament)) {
-            if ($entry->subscribedToPosition('reserve')) {
-                $reserveMax = (int)($occurrence->event->gameSettings?->reserve_players_max ?? 0);
+            $reserveMax = (int)($occurrence->event->gameSettings?->reserve_players_max ?? 0);
+            if ($reserveMax > 0 && $entry->subscribedToPosition('reserve')) {
                 $reserveTaken = \DB::table('event_registrations')
                     ->where('occurrence_id', $occurrence->id)
                     ->where('position', 'reserve')
                     ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
                     ->whereNull('cancelled_at')
                     ->count();
-                $hasRoom = $reserveMax > 0
-                    ? $reserveTaken < $reserveMax
-                    : $this->hasLegacyReserve($occurrence->id);
-                if ($hasRoom) {
+                if ($reserveTaken < $reserveMax) {
                     $this->autoBookNext($occurrence, 'reserve');
                 }
             }
@@ -274,19 +271,14 @@ class WaitlistService
                 // Резервная позиция: проверяем лимит резерва
                 if ($isReserve) {
                     $reserveMax = (int) ($event->gameSettings?->reserve_players_max ?? 0);
-                    if ($reserveMax > 0) {
-                        $reserveTaken = DB::table('event_registrations')
-                            ->where('occurrence_id', $occurrence->id)
-                            ->where('position', 'reserve')
-                            ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
-                            ->whereRaw("(status IS NULL OR status != 'cancelled')")
-                            ->count();
-                        if ($reserveTaken >= $reserveMax) return false;
-                    } elseif (!$this->hasLegacyReserve($occurrence->id)) {
-                        // Нет лимита и нет активных reserve-записей — reserve не используется
-                        return false;
-                    }
-                    // Legacy unlimited: лимит не применяем
+                    if ($reserveMax <= 0) return false;
+                    $reserveTaken = DB::table('event_registrations')
+                        ->where('occurrence_id', $occurrence->id)
+                        ->where('position', 'reserve')
+                        ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
+                        ->whereRaw("(status IS NULL OR status != 'cancelled')")
+                        ->count();
+                    if ($reserveTaken >= $reserveMax) return false;
                 }
 
                 // Пляжка: проверка по общему лимиту
@@ -467,17 +459,14 @@ class WaitlistService
             $reserveMax = (int)(DB::table('event_game_settings')
                 ->where('event_id', $event->id)
                 ->value('reserve_players_max') ?? 0);
-            if ($reserveMax > 0) {
-                $reserveTaken = DB::table('event_registrations')
-                    ->where('occurrence_id', $occurrence->id)
-                    ->where('position', 'reserve')
-                    ->whereNull('cancelled_at')
-                    ->where(fn($q) => $q->whereNull('status')->orWhere('status', 'confirmed'))
-                    ->count();
-                return $reserveTaken < $reserveMax;
-            }
-            // Legacy unlimited: нет лимита, но есть активные reserve-записи
-            return $this->hasLegacyReserve($occurrence->id);
+            if ($reserveMax <= 0) return false;
+            $reserveTaken = DB::table('event_registrations')
+                ->where('occurrence_id', $occurrence->id)
+                ->where('position', 'reserve')
+                ->whereNull('cancelled_at')
+                ->where(fn($q) => $q->whereNull('status')->orWhere('status', 'confirmed'))
+                ->count();
+            return $reserveTaken < $reserveMax;
         }
 
         // Для классики — проверяем конкретную позицию
@@ -498,24 +487,6 @@ class WaitlistService
             ->count();
 
         return $taken < $slot->max_slots;
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | LEGACY RESERVE — нет слота и нет reserve_players_max, но есть активные записи
-    |--------------------------------------------------------------------------
-    | Если организатор вручную добавил игроков на позицию reserve, не настраивая
-    | reserve_players_max, — считаем reserve "unlimited" (legacy-режим).
-    | Это позволяет autoBookNext работать из листа ожидания для таких мероприятий.
-    */
-    private function hasLegacyReserve(int $occurrenceId): bool
-    {
-        return DB::table('event_registrations')
-            ->where('occurrence_id', $occurrenceId)
-            ->where('position', 'reserve')
-            ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
-            ->whereNull('cancelled_at')
-            ->exists();
     }
 
     /*
