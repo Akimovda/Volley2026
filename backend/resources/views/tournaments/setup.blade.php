@@ -288,7 +288,7 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 										@csrf
 										<button type="submit" class="btn btn-secondary btn-alert btn-small" data-title="{{ __('tournaments.setup_to_reserve_title') }}" data-icon="warning" data-confirm-text="{{ __('tournaments.yes') }}" data-cancel-text="{{ __('tournaments.btn_cancel') }}">{{ __('tournaments.setup_btn_to_reserve') }}</button>
 									</form>
-									@elseif($lt->status === 'reserve')
+									@elseif($lt->status === 'reserve' || $lt->status === 'pending_confirmation')
 									<form method="POST" action="{{ route('divisions.teams.activate', $lt) }}" style="display:inline">
 										@csrf
 										<input type="hidden" name="occurrence_id" value="{{ $selectedOccurrence?->id }}">

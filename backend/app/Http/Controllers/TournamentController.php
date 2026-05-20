@@ -1373,13 +1373,15 @@ class TournamentController extends Controller
         }
 
         $occurrenceId = (int) $request->input('occurrence_id', 0);
+        $added = 0;
+        $linked = 0;
 
+        // Направление 1: EventTeam тура → Лига (добавляем новых участников)
         $teams = EventTeam::where('event_id', $event->id)
             ->when($occurrenceId > 0, fn($q) => $q->where('occurrence_id', $occurrenceId))
             ->whereIn('status', ['draft', 'submitted', 'approved', 'ready'])
             ->get();
 
-        $added = 0;
         foreach ($teams as $team) {
             $exists = \App\Models\TournamentLeagueTeam::where('league_id', $league->id)
                 ->where('team_id', $team->id)
@@ -1398,11 +1400,68 @@ class TournamentController extends Controller
             }
         }
 
-        if ($added === 0) {
-            return back()->with('success', 'Все команды уже в дивизионе.');
+        // Направление 2: Активные участники лиги → EventTeam тура (создаём если нет)
+        if ($occurrenceId > 0) {
+            $occurrence = \App\Models\EventOccurrence::find($occurrenceId);
+            if ($occurrence) {
+                $activeLeagueTeams = \App\Models\TournamentLeagueTeam::where('league_id', $league->id)
+                    ->whereIn('status', ['active', 'pending_confirmation'])
+                    ->with('team')
+                    ->get();
+
+                foreach ($activeLeagueTeams as $lt) {
+                    $captainId = $lt->team?->captain_user_id ?? $lt->user_id;
+                    if (!$captainId) continue;
+
+                    // Уже есть EventTeam для этого капитана в этом туре?
+                    $existing = EventTeam::where('event_id', $event->id)
+                        ->where('occurrence_id', $occurrenceId)
+                        ->where('captain_user_id', $captainId)
+                        ->first();
+
+                    if ($existing) {
+                        // Обновляем ссылку если нужно
+                        if ((int) $lt->team_id !== $existing->id) {
+                            $lt->update(['team_id' => $existing->id]);
+                        }
+                        continue;
+                    }
+
+                    // Создаём новый EventTeam
+                    $baseName = $lt->team?->name
+                        ?? (\App\Models\User::find($captainId)?->last_name ?? 'Команда');
+                    $name = $baseName;
+                    $i = 2;
+                    while (EventTeam::where('event_id', $event->id)
+                        ->where('occurrence_id', $occurrenceId)
+                        ->where('name', $name)->exists()) {
+                        $name = $baseName . ' ' . $i++;
+                    }
+
+                    $newTeam = EventTeam::create([
+                        'event_id'        => $event->id,
+                        'occurrence_id'   => $occurrenceId,
+                        'captain_user_id' => $captainId,
+                        'name'            => $name,
+                        'team_kind'       => $lt->team?->team_kind ?? 'beach_pair',
+                        'status'          => 'approved',
+                        'invite_code'     => \Illuminate\Support\Str::random(8),
+                        'is_complete'     => false,
+                        'last_checked_at' => now(),
+                        'confirmed_at'    => now(),
+                    ]);
+                    $lt->update(['team_id' => $newTeam->id, 'status' => 'active']);
+                    $linked++;
+                }
+            }
         }
 
-        return back()->with('success', "Синхронизация: добавлено {$added} команд в дивизион.");
+        $total = $added + $linked;
+        if ($total === 0) {
+            return back()->with('success', 'Все команды уже синхронизированы.');
+        }
+
+        return back()->with('success', "Синхронизация: добавлено в лигу {$added}, добавлено в тур {$linked}.");
     }
 
     private function syncTeamToLeague(Event $event, EventTeam $team): void
