@@ -636,14 +636,62 @@ class EventRegistrationsManagementController extends Controller
 
         $cancelledAt = $isCancelled ? null : now();
 
+        // При восстановлении принимаем новую позицию из формы (если передана и отличается)
+        $newPosition = null;
+        if ($isCancelled) {
+            $requestedPos = trim((string) $request->input('position', ''));
+            if ($requestedPos !== '' && $requestedPos !== (string)($row->position ?? '')) {
+                // Проверяем что позиция доступна и слот не полон
+                $occId = (int) ($row->occurrence_id ?? 0);
+                if ($occId) {
+                    $event->loadMissing('gameSettings');
+                    $direction    = (string)($event->direction ?? 'classic');
+                    $resMax       = (int)($event->gameSettings?->reserve_players_max ?? 0);
+                    $isReservePos = $requestedPos === 'reserve';
+
+                    if ($direction === 'classic') {
+                        if ($isReservePos) {
+                            $takenReserve = (int) DB::table('event_registrations')
+                                ->where('occurrence_id', $occId)
+                                ->whereNull('cancelled_at')
+                                ->where('position', 'reserve')
+                                ->count();
+                            if ($resMax > 0 && $takenReserve >= $resMax) {
+                                return back()->with('error', 'Позиция «Резерв» заполнена.');
+                            }
+                        } else {
+                            $slots = app(\App\Services\EventRoleSlotService::class)->getSlots($event);
+                            $slot  = $slots->firstWhere('role', $requestedPos);
+                            if ($slot) {
+                                $taken = (int) DB::table('event_registrations')
+                                    ->where('occurrence_id', $occId)
+                                    ->whereNull('cancelled_at')
+                                    ->where('position', $requestedPos)
+                                    ->count();
+                                if ($taken >= (int) $slot->max_slots) {
+                                    return back()->with('error', 'Выбранная позиция заполнена.');
+                                }
+                            }
+                        }
+                    }
+                    $newPosition = $requestedPos;
+                }
+            }
+        }
+
+        $upd = [
+            'cancelled_at'  => $cancelledAt,
+            'is_cancelled'  => $isCancelled ? false : true,
+            'status'        => $isCancelled ? 'confirmed' : 'cancelled',
+            'updated_at'    => now(),
+        ];
+        if ($newPosition !== null) {
+            $upd['position'] = $newPosition;
+        }
+
         DB::table('event_registrations')
             ->where('id', $registration)
-            ->update([
-                'cancelled_at'  => $cancelledAt,
-                'is_cancelled'  => $isCancelled ? false : true,
-                'status'        => $isCancelled ? 'confirmed' : 'cancelled',
-                'updated_at'    => now(),
-            ]);
+            ->update($upd);
 
         if (Schema::hasTable('event_registration_logs')) {
             DB::table('event_registration_logs')->insert([
@@ -684,7 +732,7 @@ class EventRegistrationsManagementController extends Controller
                     (int) $row->user_id,
                     'org_registered',
                     (int) $authUser->id,
-                    $row->position ?: null
+                    $newPosition ?? ($row->position ?: null)
                 )->onQueue('default')->afterCommit();
             }
 
