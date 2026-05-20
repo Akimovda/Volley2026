@@ -282,7 +282,7 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 									<span class="league-badge">{{ $lt->status }}</span>
 									@endif
 								</td>
-								<td class="text-center">
+								<td class="text-center" style="white-space:nowrap">
 									@if($lt->status === 'active')
 									<form method="POST" action="{{ route('divisions.teams.toReserve', $lt) }}" style="display:inline">
 										@csrf
@@ -291,9 +291,15 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 									@elseif($lt->status === 'reserve')
 									<form method="POST" action="{{ route('divisions.teams.activate', $lt) }}" style="display:inline">
 										@csrf
+										<input type="hidden" name="occurrence_id" value="{{ $selectedOccurrence?->id }}">
 										<button type="submit" class="btn btn-secondary btn-alert btn-small" data-title="{{ __('tournaments.setup_activate_title') }}" data-icon="info" data-confirm-text="{{ __('tournaments.yes') }}" data-cancel-text="{{ __('tournaments.btn_cancel') }}">{{ __('tournaments.setup_btn_activate') }}</button>
 									</form>
 									@endif
+									<form method="POST" action="{{ route('divisions.teams.destroy', $lt) }}" style="display:inline">
+										@csrf
+										@method('DELETE')
+										<button type="submit" class="btn btn-danger btn-alert btn-small" data-title="{{ __('tournaments.setup_team_delete_title', ['name' => $lt->team?->name ?? '—']) }}" data-icon="warning" data-confirm-text="{{ __('tournaments.btn_delete') }}" data-cancel-text="{{ __('tournaments.btn_cancel') }}">{{ __('tournaments.btn_delete') }}</button>
+									</form>
 								</td>
 							</tr>
 							@endforeach
@@ -312,6 +318,7 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 				<a class="btn" href="{{ route('seasons.show', $seasonData['season']) }}">{{ __('tournaments.setup_btn_season_page') }}</a>
 				<form method="POST" action="{{ route('tournament.syncLeague', $event) }}" style="margin:0">
 					@csrf
+					<input type="hidden" name="occurrence_id" value="{{ $selectedOccurrence?->id }}">
 					<button type="submit" class="btn">{{ __('tournaments.setup_btn_sync_teams') }}</button>
 				</form>
 				@if($_tourAllCompleted)

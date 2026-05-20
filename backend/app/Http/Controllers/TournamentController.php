@@ -1372,8 +1372,11 @@ class TournamentController extends Controller
             return back()->with('error', 'В сезоне нет дивизионов.');
         }
 
+        $occurrenceId = (int) $request->input('occurrence_id', 0);
+
         $teams = EventTeam::where('event_id', $event->id)
-            ->whereIn('status', ['submitted', 'approved', 'ready'])
+            ->when($occurrenceId > 0, fn($q) => $q->where('occurrence_id', $occurrenceId))
+            ->whereIn('status', ['draft', 'submitted', 'approved', 'ready'])
             ->get();
 
         $added = 0;

@@ -254,7 +254,68 @@ class TournamentSeasonController extends Controller
 
         $leagueTeam->activateFromReserve();
 
+        // Привязываем к текущему туру: создаём EventTeam если нужно
+        $occurrenceId = (int) $request->input('occurrence_id', 0);
+        if ($occurrenceId > 0) {
+            $this->ensureEventTeamForOccurrence($leagueTeam, $occurrenceId);
+        }
+
         return back()->with('success', 'Команда активирована.');
+    }
+
+    private function ensureEventTeamForOccurrence(TournamentLeagueTeam $leagueTeam, int $occurrenceId): void
+    {
+        $occurrence = \App\Models\EventOccurrence::find($occurrenceId);
+        if (!$occurrence) return;
+
+        $existingTeam = $leagueTeam->team;
+
+        // Уже правильный тур — ничего не делать
+        if ($existingTeam && (int) $existingTeam->occurrence_id === $occurrenceId) return;
+
+        // Определяем параметры новой команды
+        $captainId = $existingTeam?->captain_user_id ?? $leagueTeam->user_id;
+        if (!$captainId) return;
+
+        $captain = \App\Models\User::find($captainId);
+        if (!$captain) return;
+
+        $name = $existingTeam?->name
+            ?? ($captain->last_name ?: ($captain->first_name ?: $captain->name));
+
+        // Ищем уже существующую команду этого капитана для этого тура
+        $teamForOcc = \App\Models\EventTeam::where('event_id', $occurrence->event_id)
+            ->where('occurrence_id', $occurrenceId)
+            ->where('captain_user_id', $captainId)
+            ->first();
+
+        if (!$teamForOcc) {
+            // Создаём новую команду для тура
+            $baseName = $name;
+            $finalName = $baseName;
+            $i = 2;
+            while (\App\Models\EventTeam::where('event_id', $occurrence->event_id)
+                ->where('occurrence_id', $occurrenceId)
+                ->where('name', $finalName)->exists()) {
+                $finalName = $baseName . ' ' . $i++;
+            }
+
+            $teamForOcc = \App\Models\EventTeam::create([
+                'event_id'        => $occurrence->event_id,
+                'occurrence_id'   => $occurrenceId,
+                'captain_user_id' => $captainId,
+                'name'            => $finalName,
+                'team_kind'       => $existingTeam?->team_kind ?? 'beach_pair',
+                'status'          => 'approved',
+                'invite_code'     => \Illuminate\Support\Str::random(8),
+                'is_complete'     => false,
+                'last_checked_at' => now(),
+                'confirmed_at'    => now(),
+            ]);
+        }
+
+        // Обновляем ссылку в league team
+        $leagueTeam->update(['team_id' => $teamForOcc->id]);
     }
 
     /* ================================================================
