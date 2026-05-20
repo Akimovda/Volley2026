@@ -1314,7 +1314,7 @@ class TournamentController extends Controller
     {
         $this->authorizeOrganizer($request, $event);
         abort_unless((int) $application->event_id === (int) $event->id, 404);
-        abort_unless($application->status === 'pending', 422, 'Заявка уже обработана.');
+        abort_unless(in_array($application->status, ['pending', 'incomplete'], true), 422, 'Заявка уже обработана.');
 
         $application->update([
             'status' => 'approved',
