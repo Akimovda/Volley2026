@@ -136,6 +136,16 @@ class OccurrenceAnnouncementMessageBuilder
 
         $lines[] = '';
 
+        // ── Турнир / лига ─────────────────────────────────────────────────────
+        if ((string) ($event->format ?? '') === 'tournament') {
+            $leagueName = null;
+            if (!empty($event->season_id)) {
+                $season = $event->relationLoaded('season') ? $event->season : $event->season()->with('league')->first();
+                $leagueName = $season?->league?->name;
+            }
+            $lines[] = $leagueName ? "🏆 Турнир {$leagueName}" : '🏆 Турнир';
+        }
+
         // ── Формат ────────────────────────────────────────────────────────────
         $gameSettings = $this->loadGameSettings((int) $event->id);
         $subtype      = (string) ($gameSettings['subtype'] ?? '');
