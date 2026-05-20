@@ -42,18 +42,15 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 		</li>
 	</x-slot>
 	
+	@if($seasonData && $seasonData['occurrences']->count() > 1)
 	<x-slot name="d_description">
 		<div class="d-flex flex-wrap gap-1 m-center">
 			<div class="mt-2" data-aos-delay="250" data-aos="fade-up">
 				<button class="btn ufilter-btn">{{ __('tournaments.setup_pick_round') }}</button>
 			</div>
-			<!--
-			<div class="mt-2" data-aos-delay="350" data-aos="fade-up">
-				
-			</div>	
-			-->
 		</div>
-	</x-slot>	
+	</x-slot>
+	@endif	
 	
 	<div class="users-filter">
 		<div class="container">
