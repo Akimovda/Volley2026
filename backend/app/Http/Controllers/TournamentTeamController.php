@@ -50,7 +50,10 @@ class TournamentTeamController extends Controller
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255',
-                Rule::unique('event_teams')->where('event_id', $event->id)->ignore($team->id),
+                Rule::unique('event_teams')->where(function ($q) use ($event, $team) {
+                    $q->where('event_id', $event->id);
+                    $team->occurrence_id ? $q->where('occurrence_id', $team->occurrence_id) : $q->whereNull('occurrence_id');
+                })->ignore($team->id),
             ],
         ]);
 
@@ -63,8 +66,15 @@ class TournamentTeamController extends Controller
 
     public function store(Request $request, Event $event, TournamentTeamService $service): RedirectResponse
     {
+        $occurrenceId = (int) $request->input('occurrence_id', 0);
+
         $data = $request->validate([
-            'name' => ['nullable', 'string', 'max:255', \Illuminate\Validation\Rule::unique('event_teams')->where('event_id', $event->id)],
+            'name' => ['nullable', 'string', 'max:255',
+                \Illuminate\Validation\Rule::unique('event_teams')->where(function ($q) use ($event, $occurrenceId) {
+                    $q->where('event_id', $event->id);
+                    $occurrenceId > 0 ? $q->where('occurrence_id', $occurrenceId) : $q->whereNull('occurrence_id');
+                }),
+            ],
             'occurrence_id' => ['nullable', 'integer', 'exists:event_occurrences,id'],
             'team_kind' => ['nullable', 'string', 'in:classic_team,beach_pair'],
             'captain_position_code' => ['nullable', 'string', 'in:setter,outside,opposite,middle,libero'],
