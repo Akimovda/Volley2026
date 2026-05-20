@@ -229,9 +229,6 @@ class TournamentController extends Controller
                 }
             }
 
-            $payService = app(\App\Services\TournamentPaymentService::class);
-            $teams = $teams->filter(fn($t) => $payService->isTeamEligible($t))->values();
-
             if ($teams->count() >= 2) {
                 $groups = $stage->groups;
 
@@ -340,17 +337,6 @@ class TournamentController extends Controller
             ->with('event')
             ->get();
 
-        // Фильтруем неоплаченные команды (если турнир платный)
-        $payService = app(\App\Services\TournamentPaymentService::class);
-        $eligibleTeams = $teams->filter(fn($t) => $payService->isTeamEligible($t));
-
-        $unpaidCount = $teams->count() - $eligibleTeams->count();
-        if ($unpaidCount > 0) {
-            \Illuminate\Support\Facades\Log::info("Draw: {$unpaidCount} teams skipped (unpaid)");
-        }
-
-        $teams = $eligibleTeams->values();
-
         $groups = $stage->groups;
 
         // Для групп Hard/Lite: команды уже назначены — используем их
@@ -368,7 +354,7 @@ class TournamentController extends Controller
         }
 
         if ($teams->count() < 2) {
-            return back()->with('error', 'Нужно минимум 2 подтверждённых команды.' . ($unpaidCount > 0 ? " ({$unpaidCount} команд не оплатили участие)" : ''));
+            return back()->with('error', 'Нужно минимум 2 подтверждённых команды.');
         }
 
         if (in_array($stage->type, ['round_robin', 'groups_playoff'])) {
