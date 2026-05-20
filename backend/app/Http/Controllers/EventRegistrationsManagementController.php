@@ -59,6 +59,32 @@ class EventRegistrationsManagementController extends Controller
                 ->first(['id', 'max_players', 'starts_at', 'timezone']);
         }
 
+        // Если occurrence не задан — автоматически выбираем ближайшую предстоящую дату,
+        // а если все прошли — самую последнюю прошедшую
+        if (!$occurrenceId) {
+            $autoOcc = DB::table('event_occurrences')
+                ->where('event_id', (int) $event->id)
+                ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
+                ->whereNull('cancelled_at')
+                ->where('starts_at', '>=', now('UTC'))
+                ->orderBy('starts_at')
+                ->value('id');
+            if (!$autoOcc) {
+                $autoOcc = DB::table('event_occurrences')
+                    ->where('event_id', (int) $event->id)
+                    ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
+                    ->whereNull('cancelled_at')
+                    ->orderByDesc('starts_at')
+                    ->value('id');
+            }
+            if ($autoOcc) {
+                return redirect()->route('events.registrations.index', [
+                    'event' => $event->id,
+                    'occurrence' => $autoOcc,
+                ] + $request->except('occurrence'));
+            }
+        }
+
         // Свободные слоты по позициям (только для классики с конкретной датой)
         $freePositionSlots = []; // role => free_count
         $eventSlots = null;
@@ -68,6 +94,7 @@ class EventRegistrationsManagementController extends Controller
                 $takenByRole = DB::table('event_registrations')
                     ->where('occurrence_id', $occurrenceId)
                     ->whereNull('cancelled_at')
+                    ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
                     ->whereIn('position', $eventSlots->pluck('role')->all())
                     ->selectRaw('position, count(*) as cnt')
                     ->groupBy('position')
@@ -92,6 +119,7 @@ class EventRegistrationsManagementController extends Controller
             $hasReserveRegs = $occurrenceId && DB::table('event_registrations')
                 ->where('occurrence_id', $occurrenceId)
                 ->whereNull('cancelled_at')
+                ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
                 ->where('position', 'reserve')
                 ->exists();
 
@@ -102,6 +130,7 @@ class EventRegistrationsManagementController extends Controller
                     $takenReserve = (int) DB::table('event_registrations')
                         ->where('occurrence_id', $occurrenceId)
                         ->whereNull('cancelled_at')
+                        ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
                         ->where('position', 'reserve')
                         ->count();
                     if ($reserveMax > 0) {
@@ -129,7 +158,8 @@ class EventRegistrationsManagementController extends Controller
 
         $activeRegsQuery = DB::table('event_registrations')
             ->where('event_id', (int) $event->id)
-            ->whereNull('cancelled_at');
+            ->whereNull('cancelled_at')
+            ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)');
         if ($occurrenceId) {
             $activeRegsQuery->where('occurrence_id', $occurrenceId);
         }
@@ -383,6 +413,7 @@ class EventRegistrationsManagementController extends Controller
                 $taken = (int) DB::table('event_registrations')
                     ->where('occurrence_id', $occurrenceId)
                     ->whereNull('cancelled_at')
+                    ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
                     ->where('position', $pos)
                     ->count();
                 if ($taken >= $maxForPos) {
@@ -396,12 +427,14 @@ class EventRegistrationsManagementController extends Controller
             ->where('event_id', (int) $event->id)
             ->where('user_id', $userId)
             ->when($occurrenceId, fn($q) => $q->where('occurrence_id', $occurrenceId))
-            ->first(['id', 'cancelled_at']);
+            ->first(['id', 'cancelled_at', 'is_cancelled']);
 
         if ($existing) {
-            if (!empty($existing->cancelled_at)) {
+            $isCancelledReg = !empty($existing->cancelled_at) || !empty($existing->is_cancelled);
+            if ($isCancelledReg) {
                 $upd = [
                     'cancelled_at' => null,
+                    'is_cancelled' => false,
                     'occurrence_id' => $occurrenceId ?: null,
                     'updated_at' => now(),
                 ];
@@ -578,6 +611,7 @@ class EventRegistrationsManagementController extends Controller
                 $taken = (int) DB::table('event_registrations')
                     ->where('occurrence_id', $occId)
                     ->whereNull('cancelled_at')
+                    ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
                     ->where('position', $newPos)
                     ->count();
                 if ($taken >= $maxForPos) {
@@ -654,6 +688,7 @@ class EventRegistrationsManagementController extends Controller
                             $takenReserve = (int) DB::table('event_registrations')
                                 ->where('occurrence_id', $occId)
                                 ->whereNull('cancelled_at')
+                                ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
                                 ->where('position', 'reserve')
                                 ->count();
                             if ($resMax > 0 && $takenReserve >= $resMax) {
@@ -666,6 +701,7 @@ class EventRegistrationsManagementController extends Controller
                                 $taken = (int) DB::table('event_registrations')
                                     ->where('occurrence_id', $occId)
                                     ->whereNull('cancelled_at')
+                                    ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
                                     ->where('position', $requestedPos)
                                     ->count();
                                 if ($taken >= (int) $slot->max_slots) {
