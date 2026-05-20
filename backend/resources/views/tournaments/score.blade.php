@@ -176,10 +176,10 @@
 						
 						// Если другая ячейка пуста и введённое значение ≤ threshold → другая = target
 						if (otherSel.value === '' && num <= threshold && num >= 0) {
-							otherSel.value = target;
+							$(otherSel).val(target).trigger('change');
 						}
 						// Если введено ровно target → проигравший заполняется вручную
-						// Если введено ≥ threshold+1 → обе вручную (overtime)
+						// Если введое ≥ threshold+1 → обе вручную (overtime)
 					}
 					
 					function recalc() {
