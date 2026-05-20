@@ -6,6 +6,7 @@ use App\Models\Event;
 use App\Models\EventTeam;
 use App\Models\TournamentMatch;
 use App\Models\TournamentStage;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class TournamentNotificationService
@@ -33,11 +34,28 @@ class TournamentNotificationService
             $body .= " · {$match->court}";
         }
 
+        // Форматируем время матча в timezone события (перегружает дату события в шаблоне)
+        $tz = $event->timezone ?: 'Europe/Moscow';
+        $matchLocal = $match->scheduled_at
+            ? Carbon::parse($match->scheduled_at, 'UTC')->setTimezone($tz)
+            : null;
+
         $payload = [
             'type'     => 'tournament_match_upcoming',
             'event_id' => $event->id,
             'match_id' => $match->id,
             'url'      => route('tournament.public.show', $event),
+            'team_home' => $homeTeam->name,
+            'team_away' => $awayTeam->name,
+            'court'     => $match->court ?? '',
+            // Перегружаем дату события — показываем время матча, а не occurrence турнира
+            'occurrence_datetime'        => $matchLocal?->format('d.m.Y H:i'),
+            'occurrence_date'            => $matchLocal?->format('d.m.Y'),
+            'occurrence_time'            => $matchLocal?->format('H:i'),
+            'occurrence_starts_at_utc'   => $match->scheduled_at
+                ? Carbon::parse($match->scheduled_at, 'UTC')->format('Y-m-d H:i:s')
+                : null,
+            'occurrence_starts_at_local' => $matchLocal?->format('Y-m-d H:i:s'),
         ];
 
         $this->notifyTeamMembers($homeTeam, 'tournament_match_upcoming', $title, $body, $payload);

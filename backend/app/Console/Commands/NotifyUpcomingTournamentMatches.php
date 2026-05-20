@@ -23,7 +23,7 @@ class NotifyUpcomingTournamentMatches extends Command
             ->whereNotNull('team_home_id')
             ->whereNotNull('team_away_id')
             ->whereBetween('scheduled_at', [$from, $to])
-            ->whereNull('scored_at') // ещё не уведомляли
+            ->whereNull('notified_upcoming_at')
             ->with(['teamHome', 'teamAway', 'stage.event'])
             ->get();
 
@@ -31,6 +31,8 @@ class NotifyUpcomingTournamentMatches extends Command
         foreach ($matches as $match) {
             try {
                 $notificationService->notifyUpcomingMatch($match, $minutes);
+                $match->notified_upcoming_at = now();
+                $match->save();
                 $count++;
             } catch (\Throwable $e) {
                 $this->error("Match #{$match->id}: " . $e->getMessage());

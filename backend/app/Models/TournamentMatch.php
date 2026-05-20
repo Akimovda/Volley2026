@@ -35,14 +35,16 @@ class TournamentMatch extends Model
         'scored_by_user_id',
         'scored_at',
         'is_tiebreaker',
+        'notified_upcoming_at',
     ];
 
     protected $casts = [
-        'score_home'    => 'array',
-        'score_away'    => 'array',
-        'scheduled_at'  => 'datetime',
-        'scored_at'     => 'datetime',
-        'is_tiebreaker' => 'boolean',
+        'score_home'             => 'array',
+        'score_away'             => 'array',
+        'scheduled_at'           => 'datetime',
+        'scored_at'              => 'datetime',
+        'notified_upcoming_at'   => 'datetime',
+        'is_tiebreaker'          => 'boolean',
     ];
 
     public const STATUS_SCHEDULED = 'scheduled';
