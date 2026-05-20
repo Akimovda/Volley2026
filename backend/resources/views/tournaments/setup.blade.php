@@ -104,7 +104,10 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 			@endif
 			
 			@foreach($visibleApps as $app)
-			@php $isIncomplete = $app->status === 'incomplete'; @endphp
+			@php
+				$isIncomplete = $app->status === 'incomplete';
+				$canApproveIncomplete = $isIncomplete && ($app->team->is_complete ?? false);
+			@endphp
 			<div class="card mb-1">
 				<div class="d-flex fvc" style="justify-content:space-between;flex-wrap:wrap;gap:.5rem">
 					<div>
@@ -133,12 +136,12 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 						@endif
 					</div>
 					<div class="d-flex" style="gap:.5rem">
-						@unless($isIncomplete)
+						@if(!$isIncomplete || $canApproveIncomplete)
 						<form method="POST" action="{{ route('tournament.application.approve', [$event, $app]) }}">
 							@csrf
 							<button type="submit" class="btn btn-small btn-primary btn-alert" data-title="{{ __('tournaments.apps_confirm_approve') }}" data-icon="question" data-confirm-text="{{ __('tournaments.setup_apps_yes') }}" data-cancel-text="{{ __('tournaments.btn_cancel') }}">{{ __('tournaments.setup_apps_btn_approve') }}</button>
 						</form>
-						@endunless
+						@endif
 						<form method="POST" action="{{ route('tournament.application.reject', [$event, $app]) }}">
 							@csrf
 							<button type="submit" class="btn btn-small btn-secondary btn-alert" data-title="{{ __('tournaments.apps_confirm_reject') }}" data-icon="warning" data-confirm-text="{{ __('tournaments.setup_apps_no') }}" data-cancel-text="{{ __('tournaments.btn_cancel') }}">{{ __('tournaments.setup_apps_btn_reject') }}</button>
