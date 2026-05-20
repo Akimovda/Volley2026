@@ -48,25 +48,7 @@ class TournamentController extends Controller
             'matches.teamHome', 'matches.teamAway', 'matches.winner',
         ])->get();
 
-        $teams = EventTeam::where('event_id', $event->id)
-            ->whereIn('status', ['submitted', 'approved', 'ready'])
-            ->with('captain')
-            ->get();
-
-        // Все «активные» заявки: ожидающие модерации (pending) + неполные (incomplete).
-        // Incomplete показываем для информации — кнопку «Одобрить» не покажем (нечего одобрять),
-        // но «Отклонить» доступна. После доукомплектования refreshTeamState переведёт заявку в pending.
-        $pendingApplications = EventTeamApplication::where('event_id', $event->id)
-            ->whereIn('status', ['pending', 'incomplete'])
-            ->with(['team.captain', 'team.members.user', 'submittedBy'])
-            ->get();
-
-        $settings = $event->tournamentSetting;
-        $applicationMode = $settings->application_mode ?? 'manual';
-
-        $userEventPhotos = $request->user()->getMedia('event_photos')->sortByDesc('created_at');
-
-        // ── Season / League data ──
+        // ── Season / League data + selectedOccurrence (до загрузки teams!) ──
         $seasonData = null;
         $selectedOccurrence = null;
         $leagueTeams = collect();
@@ -84,7 +66,7 @@ class TournamentController extends Controller
                 $occId = (int) $request->query('occurrence_id', 0);
                 $selectedOccurrence = $occId > 0
                     ? $occurrences->firstWhere('id', $occId)
-                    : $occurrences->first(); // авто-выбор первого тура
+                    : $occurrences->first();
 
                 if ($league) {
                     $leagueTeams = $league->leagueTeams()
@@ -103,7 +85,6 @@ class TournamentController extends Controller
         }
 
         // Fallback: если occurrence не выбран через серию — берём ближайший upcoming occurrence события.
-        // Это нужно чтобы формы создания команды/стадии всегда передавали occurrence_id.
         if (!$selectedOccurrence) {
             $selectedOccurrence = $event->occurrences()
                 ->whereNull('cancelled_at')
@@ -115,6 +96,26 @@ class TournamentController extends Controller
                     ->orderByDesc('starts_at')
                     ->first();
         }
+
+        // Команды фильтруются по текущему туру — чтобы не смешивались команды разных туров
+        $teams = EventTeam::where('event_id', $event->id)
+            ->when($selectedOccurrence, fn($q) => $q->where('occurrence_id', $selectedOccurrence->id))
+            ->whereIn('status', ['draft', 'submitted', 'approved', 'ready'])
+            ->with('captain')
+            ->get();
+
+        // Все «активные» заявки: ожидающие модерации (pending) + неполные (incomplete).
+        // Incomplete показываем для информации — кнопку «Одобрить» не покажем (нечего одобрять),
+        // но «Отклонить» доступна. После доукомплектования refreshTeamState переведёт заявку в pending.
+        $pendingApplications = EventTeamApplication::where('event_id', $event->id)
+            ->whereIn('status', ['pending', 'incomplete'])
+            ->with(['team.captain', 'team.members.user', 'submittedBy'])
+            ->get();
+
+        $settings = $event->tournamentSetting;
+        $applicationMode = $settings->application_mode ?? 'manual';
+
+        $userEventPhotos = $request->user()->getMedia('event_photos')->sortByDesc('created_at');
 
         // Фильтруем стадии по выбранному туру (occurrence)
         if ($selectedOccurrence) {

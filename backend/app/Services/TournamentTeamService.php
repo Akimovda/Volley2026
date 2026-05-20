@@ -22,9 +22,10 @@ final class TournamentTeamService
         string $name,
         ?int $occurrenceId = null,
         ?string $teamKind = null,
-        ?string $captainPositionCode = null
+        ?string $captainPositionCode = null,
+        bool $autoApprove = false
     ): EventTeam {
-        return DB::transaction(function () use ($event, $captain, $name, $occurrenceId, $teamKind, $captainPositionCode) {
+        return DB::transaction(function () use ($event, $captain, $name, $occurrenceId, $teamKind, $captainPositionCode, $autoApprove) {
             $settings = $this->getSettings($event);
 
             $teamKind ??= $this->resolveTeamKindFromSettings($settings);
@@ -50,11 +51,11 @@ final class TournamentTeamService
                 'captain_user_id' => $captain->id,
                 'name' => trim($name),
                 'team_kind' => $teamKind,
-                'status' => 'draft',
+                'status' => $autoApprove ? 'approved' : 'draft',
                 'invite_code' => $this->generateInviteCode(),
                 'is_complete' => false,
                 'last_checked_at' => now(),
-                'confirmed_at' => null,
+                'confirmed_at' => $autoApprove ? now() : null,
                 'meta' => null,
             ]);
 
