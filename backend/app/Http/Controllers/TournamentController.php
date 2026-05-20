@@ -212,7 +212,9 @@ class TournamentController extends Controller
             // Автоматическая жеребьёвка
             $drawMode = $request->input('draw_mode', 'random');
             $teams = EventTeam::where('event_id', $event->id)
+                ->when($occurrenceId, fn($q) => $q->where('occurrence_id', (int) $occurrenceId))
                 ->whereIn('status', ['submitted', 'approved', 'ready'])
+                ->with('event')
                 ->get();
 
             // Фильтр резерва лиги
@@ -328,8 +330,14 @@ class TournamentController extends Controller
             ->where('event_id', $event->id)
             ->firstOrFail();
 
+        $occId = $stage->occurrence_id
+            ?? (int) $request->input('occurrence_id', 0)
+            ?: null;
+
         $teams = EventTeam::where('event_id', $event->id)
+            ->when($occId, fn($q) => $q->where('occurrence_id', $occId))
             ->whereIn('status', ['submitted', 'approved', 'ready'])
+            ->with('event')
             ->get();
 
         // Фильтруем неоплаченные команды (если турнир платный)
