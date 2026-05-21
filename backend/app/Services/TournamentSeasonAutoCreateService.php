@@ -200,6 +200,7 @@ final class TournamentSeasonAutoCreateService
     /**
      * Синхронизировать SeasonEvents для события после expansion occurrences.
      * Вызывается из OccurrenceExpansionService если event — tournament с season_id.
+     * Для каждого нового occurrence ищет правильный сезон по дате в той же лиге.
      */
     public function syncSeasonEventsAfterExpand(Event $event): void
     {
@@ -207,18 +208,265 @@ final class TournamentSeasonAutoCreateService
             return;
         }
 
-        $season  = TournamentSeason::find($event->season_id);
-        $league  = TournamentLeague::where('season_id', $event->season_id)->first();
+        $currentSeason = TournamentSeason::find($event->season_id);
 
-        if (!$season || !$league) {
+        // Если у сезона нет league_id — старая логика без date-routing
+        if (!$currentSeason || !$currentSeason->league_id) {
+            $league = TournamentLeague::where('season_id', $event->season_id)->first();
+            if ($currentSeason && $league) {
+                $this->createSeasonEventsForOccurrences($event, $currentSeason, $league);
+            }
             return;
         }
 
-        $this->createSeasonEventsForOccurrences($event, $season, $league);
+        $parentLeagueId = (int) $currentSeason->league_id;
+        $tz = $event->timezone ?: 'UTC';
+
+        $occurrences = $event->occurrences()
+            ->whereNull('cancelled_at')
+            ->orderBy('starts_at')
+            ->get();
+
+        foreach ($occurrences as $occ) {
+            // Уже привязан — не трогаем
+            if (TournamentSeasonEvent::where('occurrence_id', $occ->id)->exists()) {
+                continue;
+            }
+
+            $localDate = \Carbon\Carbon::parse($occ->starts_at, 'UTC')
+                ->setTimezone($tz)
+                ->toDateString();
+
+            $resolved = $this->resolveSeasonForDate($parentLeagueId, $localDate);
+
+            if (!$resolved) {
+                Log::info('syncSeasonEventsAfterExpand: no season for date, skipping', [
+                    'event_id'      => $event->id,
+                    'occurrence_id' => $occ->id,
+                    'date'          => $localDate,
+                ]);
+                continue;
+            }
+
+            ['season' => $targetSeason, 'league' => $targetLeague] = $resolved;
+
+            $nextRound = TournamentSeasonEvent::where('season_id', $targetSeason->id)
+                ->where('league_id', $targetLeague->id)
+                ->max('round_number') ?? 0;
+
+            TournamentSeasonEvent::create([
+                'season_id'     => $targetSeason->id,
+                'league_id'     => $targetLeague->id,
+                'event_id'      => $event->id,
+                'occurrence_id' => $occ->id,
+                'round_number'  => $nextRound + 1,
+                'status'        => TournamentSeasonEvent::STATUS_PENDING,
+            ]);
+        }
+
+        $this->updateEventSeasonId($event, $parentLeagueId);
     }
 
     /**
-     * Создать SeasonEvent для каждого occurrence.
+     * Полная перепривязка всех occurrences события к правильным сезонам по датам.
+     * Используется для backfill через artisan-команду и обратной силы.
+     *
+     * @return array{created: int, moved: int, skipped: int}
+     */
+    public function syncAllOccurrencesToCorrectSeasons(Event $event): array
+    {
+        if ($event->format !== 'tournament' || !$event->season_id) {
+            return ['created' => 0, 'moved' => 0, 'skipped' => 0];
+        }
+
+        $currentSeason = TournamentSeason::find($event->season_id);
+        if (!$currentSeason || !$currentSeason->league_id) {
+            return ['created' => 0, 'moved' => 0, 'skipped' => 0];
+        }
+
+        $parentLeagueId = (int) $currentSeason->league_id;
+        $tz = $event->timezone ?: 'UTC';
+
+        $occurrences = $event->occurrences()
+            ->whereNull('cancelled_at')
+            ->orderBy('starts_at')
+            ->get();
+
+        $created = 0;
+        $moved   = 0;
+        $skipped = 0;
+
+        foreach ($occurrences as $occ) {
+            $localDate = \Carbon\Carbon::parse($occ->starts_at, 'UTC')
+                ->setTimezone($tz)
+                ->toDateString();
+
+            $resolved = $this->resolveSeasonForDate($parentLeagueId, $localDate);
+
+            if (!$resolved) {
+                // Нет сезона на эту дату — удаляем существующую запись если есть
+                $deleted = TournamentSeasonEvent::where('occurrence_id', $occ->id)->delete();
+                if ($deleted) {
+                    Log::info('syncAllOccurrences: removed from season (no covering season)', [
+                        'event_id'      => $event->id,
+                        'occurrence_id' => $occ->id,
+                        'date'          => $localDate,
+                    ]);
+                }
+                $skipped++;
+                continue;
+            }
+
+            ['season' => $targetSeason, 'league' => $targetLeague] = $resolved;
+
+            $existing = TournamentSeasonEvent::where('occurrence_id', $occ->id)->first();
+
+            if ($existing) {
+                if ((int) $existing->season_id === (int) $targetSeason->id
+                    && (int) $existing->league_id === (int) $targetLeague->id) {
+                    // Уже правильно
+                    continue;
+                }
+                // Перемещаем в нужный сезон
+                $existing->update([
+                    'season_id' => $targetSeason->id,
+                    'league_id' => $targetLeague->id,
+                    'event_id'  => $event->id,
+                ]);
+                Log::info('syncAllOccurrences: moved occurrence to correct season', [
+                    'event_id'       => $event->id,
+                    'occurrence_id'  => $occ->id,
+                    'from_season_id' => $existing->getOriginal('season_id'),
+                    'to_season_id'   => $targetSeason->id,
+                ]);
+                $moved++;
+            } else {
+                TournamentSeasonEvent::create([
+                    'season_id'     => $targetSeason->id,
+                    'league_id'     => $targetLeague->id,
+                    'event_id'      => $event->id,
+                    'occurrence_id' => $occ->id,
+                    'round_number'  => 0,
+                    'status'        => TournamentSeasonEvent::STATUS_PENDING,
+                ]);
+                $created++;
+            }
+        }
+
+        // Перенумеровать раунды внутри каждого сезона
+        $this->renumberRounds($event);
+
+        // Обновить event.season_id на актуальный сезон
+        $this->updateEventSeasonId($event, $parentLeagueId);
+
+        return ['created' => $created, 'moved' => $moved, 'skipped' => $skipped];
+    }
+
+    /**
+     * Найти сезон и дивизион для заданной локальной даты в рамках лиги.
+     *
+     * @return array{season: TournamentSeason, league: TournamentLeague}|null
+     */
+    private function resolveSeasonForDate(int $parentLeagueId, string $localDateStr): ?array
+    {
+        $season = TournamentSeason::where('league_id', $parentLeagueId)
+            ->where('status', '!=', TournamentSeason::STATUS_DRAFT)
+            ->whereDate('starts_at', '<=', $localDateStr)
+            ->whereDate('ends_at', '>=', $localDateStr)
+            ->orderBy('starts_at', 'desc')
+            ->first();
+
+        if (!$season) {
+            return null;
+        }
+
+        $league = TournamentLeague::where('season_id', $season->id)
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->first();
+
+        if (!$league) {
+            return null;
+        }
+
+        return ['season' => $season, 'league' => $league];
+    }
+
+    /**
+     * Обновить event.season_id на сезон ближайшего предстоящего occurrence.
+     * Если предстоящих нет — берёт сезон последнего прошедшего.
+     */
+    private function updateEventSeasonId(Event $event, int $parentLeagueId): void
+    {
+        $tz = $event->timezone ?: 'UTC';
+
+        // Ближайший предстоящий
+        $nextOcc = $event->occurrences()
+            ->whereNull('cancelled_at')
+            ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
+            ->where('starts_at', '>=', now())
+            ->orderBy('starts_at')
+            ->first();
+
+        // Если нет — последний прошедший
+        $occ = $nextOcc ?? $event->occurrences()
+            ->whereNull('cancelled_at')
+            ->orderBy('starts_at', 'desc')
+            ->first();
+
+        if (!$occ) {
+            return;
+        }
+
+        $localDate = \Carbon\Carbon::parse($occ->starts_at, 'UTC')
+            ->setTimezone($tz)
+            ->toDateString();
+
+        $resolved = $this->resolveSeasonForDate($parentLeagueId, $localDate);
+        if (!$resolved) {
+            return;
+        }
+
+        $targetSeasonId = (int) $resolved['season']->id;
+        if ((int) $event->season_id !== $targetSeasonId) {
+            Log::info('updateEventSeasonId: season changed', [
+                'event_id'      => $event->id,
+                'old_season_id' => $event->season_id,
+                'new_season_id' => $targetSeasonId,
+            ]);
+            $event->season_id = $targetSeasonId;
+            $event->saveQuietly();
+        }
+    }
+
+    /**
+     * Перенумеровать round_number внутри каждого сезона+дивизиона для данного события
+     * по порядку дат occurrence.
+     */
+    private function renumberRounds(Event $event): void
+    {
+        $rows = \Illuminate\Support\Facades\DB::table('tournament_season_events as tse')
+            ->join('event_occurrences as eo', 'eo.id', '=', 'tse.occurrence_id')
+            ->where('tse.event_id', $event->id)
+            ->whereNotNull('tse.occurrence_id')
+            ->orderBy('tse.season_id')
+            ->orderBy('tse.league_id')
+            ->orderBy('eo.starts_at')
+            ->select('tse.id', 'tse.season_id', 'tse.league_id')
+            ->get();
+
+        $counters = [];
+        foreach ($rows as $row) {
+            $key = $row->season_id . ':' . $row->league_id;
+            $counters[$key] = ($counters[$key] ?? 0) + 1;
+            \Illuminate\Support\Facades\DB::table('tournament_season_events')
+                ->where('id', $row->id)
+                ->update(['round_number' => $counters[$key]]);
+        }
+    }
+
+    /**
+     * Создать SeasonEvent для каждого occurrence (старая логика без date-routing).
      */
     private function createSeasonEventsForOccurrences(Event $event, TournamentSeason $season, TournamentLeague $league): void
     {
