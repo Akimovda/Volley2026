@@ -16,6 +16,7 @@ use App\Services\TournamentMatchService;
 use App\Services\TournamentStandingsService;
 use App\Services\TournamentBracketService;
 use App\Services\TournamentKingService;
+use App\Services\TournamentKingBeachService;
 use App\Services\TournamentSwissService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -32,6 +33,7 @@ class TournamentController extends Controller
         private TournamentBracketService $bracketService,
         private TournamentSwissService $swissService,
         private TournamentKingService $kingService,
+        private TournamentKingBeachService $kingBeachService,
     ) {}
 
     /* ================================================================
@@ -168,6 +170,11 @@ class TournamentController extends Controller
     {
         $this->authorizeOrganizer($request, $event);
 
+        // King of the Beach: match_format принудительно bo1
+        if ($request->input('type') === TournamentStage::TYPE_KING_BEACH) {
+            $request->merge(['match_format' => 'bo1', 'deciding_set_points' => '15']);
+        }
+
         $validated = $request->validate([
             'type'        => 'required|in:' . implode(',', TournamentStage::TYPES),
             'name'        => 'required|string|max:100',
@@ -192,6 +199,8 @@ class TournamentController extends Controller
             'courts'             => $validated['courts']
                 ? array_map('trim', explode(',', $validated['courts']))
                 : [],
+            'draw_mode'          => $request->input('draw_mode', 'random'),
+            'round_number'       => 1,
         ];
 
         // occurrence_id из hidden field (если сезонный турнир)
@@ -415,6 +424,13 @@ class TournamentController extends Controller
 
             $this->kingService->initialize($stage, $teamIds);
             $this->kingService->generateNextMatch($stage);
+
+        } elseif ($stage->type === TournamentStage::TYPE_KING_BEACH) {
+            $playerIds = $this->resolveKingBeachPlayers($event, $occurrenceId, $request);
+            if (count($playerIds) < 4) {
+                return $this->redirectToSetup($event, 'Недостаточно игроков для King of the Beach (минимум 4).', true, "stage_{$stage->id}");
+            }
+            $this->kingBeachService->createRound($stage, $playerIds);
         }
 
         return $this->redirectToSetup($event, 'Жеребьёвка проведена, матчи сгенерированы.', false, "stage_{$stage->id}");
@@ -429,6 +445,11 @@ class TournamentController extends Controller
         $stage = $match->stage;
         $event = $stage->event;
         $this->authorizeOrganizer($request, $event);
+
+        // King of the Beach: отдельный обработчик (нет team_home/away_id)
+        if ($stage->type === TournamentStage::TYPE_KING_BEACH) {
+            return $this->scoreKingBeach($request, $match, $stage);
+        }
 
         // Собираем только заполненные сеты (фильтруем пустые)
         $rawSets = $request->input('sets', []);
@@ -559,6 +580,13 @@ class TournamentController extends Controller
         $stage = $match->stage;
         $event = $stage->event;
         $this->authorizeOrganizer($request, $event);
+
+        // King of the Beach: редактирование счёта через scoreKingBeach
+        if ($stage->type === TournamentStage::TYPE_KING_BEACH) {
+            // Сбрасываем статус чтобы scoreKingBeach мог принять (он проверяет только данные)
+            $match->update(['status' => TournamentMatch::STATUS_SCHEDULED]);
+            return $this->scoreKingBeach($request, $match, $stage);
+        }
 
         if (!$match->isCompleted()) {
             return back()->with('error', 'Матч не завершён — используйте обычный ввод счёта.');
@@ -1053,6 +1081,13 @@ class TournamentController extends Controller
                     return back()->with('error', 'Нет больше соперников в очереди.');
                 }
                 return $this->redirectToSetup($event, 'Следующий матч King of the Court создан.');
+
+            } elseif ($stage->type === TournamentStage::TYPE_KING_BEACH) {
+                $nextStage = $this->kingBeachService->advanceToNextRound($stage);
+                if (!$nextStage) {
+                    return back()->with('error', 'Недостаточно игроков для следующего раунда (нужно минимум 4).');
+                }
+                return $this->redirectToSetup($event, 'Следующий раунд King of the Beach создан.', false, "stage_{$nextStage->id}");
             }
 
             return back()->with('error', 'Действие недоступно для этого типа стадии.');
@@ -1070,6 +1105,12 @@ class TournamentController extends Controller
     {
         $event = $stage->event;
         $this->authorizeOrganizer($request, $event);
+
+        // King of the Beach: полный сброс (группы + матчи + standings)
+        if ($stage->type === TournamentStage::TYPE_KING_BEACH) {
+            $this->kingBeachService->revertStage($stage);
+            return $this->redirectToSetup($stage->event, 'Стадия King of the Beach сброшена.', false, "stage_{$stage->id}");
+        }
 
         DB::transaction(function () use ($stage) {
             // Удаляем связанные группы Hard/Lite (если это групповой этап)
@@ -1540,6 +1581,89 @@ class TournamentController extends Controller
         }
 
         return $redirect;
+    }
+
+    /**
+     * Получить список игроков для king_beach жеребьёвки.
+     * Приоритет: manual_player_ids из request → event_registrations.
+     */
+    private function resolveKingBeachPlayers(Event $event, ?int $occurrenceId, Request $request): array
+    {
+        // Ручная передача (тестирование / события без individual-регистрации)
+        $manual = array_filter(array_map('intval', (array) $request->input('manual_player_ids', [])));
+        if (!empty($manual)) {
+            return array_values($manual);
+        }
+
+        return DB::table('event_registrations')
+            ->where('event_id', $event->id)
+            ->when($occurrenceId, fn($q) => $q->where('occurrence_id', $occurrenceId))
+            ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
+            ->whereNotNull('user_id')
+            ->distinct()
+            ->pluck('user_id')
+            ->map(fn($id) => (int) $id)
+            ->toArray();
+    }
+
+    /**
+     * Ввод счёта партии king_beach (без team_home/away_id).
+     */
+    private function scoreKingBeach(Request $request, TournamentMatch $match, TournamentStage $stage): RedirectResponse
+    {
+        $rawSets   = $request->input('sets', []);
+        $homeScore = (int) ($rawSets[0][0] ?? 0);
+        $awayScore = (int) ($rawSets[0][1] ?? 0);
+
+        if ($homeScore === 0 && $awayScore === 0) {
+            return back()->with('error', 'Введите счёт партии.');
+        }
+        if ($homeScore === $awayScore) {
+            return back()->with('error', 'Ничья невозможна в king_beach партии.');
+        }
+
+        $target = $stage->setPoints();
+        $winner = max($homeScore, $awayScore);
+        $loser  = min($homeScore, $awayScore);
+
+        if ($winner < $target) {
+            return back()->with('error', "Победитель должен набрать минимум {$target} очков (сейчас {$winner}).");
+        }
+        if ($winner - $loser < 2) {
+            return back()->with('error', "Разница должна быть минимум 2 очка ({$homeScore}:{$awayScore}).");
+        }
+        if ($loser >= $target - 1 && $winner - $loser !== 2) {
+            return back()->with('error', "При тай-брейке разница должна быть ровно 2 очка ({$homeScore}:{$awayScore}).");
+        }
+        if ($loser < $target - 1 && $winner !== $target) {
+            return back()->with('error', "Победитель должен набрать ровно {$target}, а не {$winner}.");
+        }
+
+        DB::transaction(function () use ($match, $homeScore, $awayScore, $request) {
+            $match->update([
+                'score_home'        => [$homeScore],
+                'score_away'        => [$awayScore],
+                'sets_home'         => $homeScore > $awayScore ? 1 : 0,
+                'sets_away'         => $awayScore > $homeScore ? 1 : 0,
+                'total_points_home' => $homeScore,
+                'total_points_away' => $awayScore,
+                'status'            => TournamentMatch::STATUS_COMPLETED,
+                'scored_by_user_id' => $request->user()?->id,
+                'scored_at'         => now(),
+            ]);
+
+            if ($match->group_id) {
+                $this->kingBeachService->recalculateGroupStandings($match->group);
+                $this->checkStageCompletion($match->stage);
+            }
+        });
+
+        return $this->redirectToSetup(
+            $stage->event,
+            'Счёт сохранён.',
+            false,
+            "stage_{$stage->id}"
+        );
     }
 
             private function authorizeOrganizer(Request $request, Event $event): void

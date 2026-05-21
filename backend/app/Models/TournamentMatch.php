@@ -36,6 +36,7 @@ class TournamentMatch extends Model
         'scored_at',
         'is_tiebreaker',
         'notified_upcoming_at',
+        'meta',
     ];
 
     protected $casts = [
@@ -45,6 +46,7 @@ class TournamentMatch extends Model
         'scored_at'              => 'datetime',
         'notified_upcoming_at'   => 'datetime',
         'is_tiebreaker'          => 'boolean',
+        'meta'                   => 'array',
     ];
 
     public const STATUS_SCHEDULED = 'scheduled';
