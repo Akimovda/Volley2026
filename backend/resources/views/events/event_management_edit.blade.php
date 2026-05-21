@@ -431,7 +431,7 @@
                             <div class="card" style="overflow:visible">
                                 <label>{{ __('events.team_n') }}</label>
                                 <input type="number" name="teams_count" min="2" max="200"
-                                    value="{{ old('teams_count', $ts?->teams_count ?? 4) }}">
+                                    value="{{ old('teams_count', $event->tournament_teams_count ?? $ts?->teams_count ?? 4) }}">
                             </div>
                         </div>
 

@@ -32,6 +32,7 @@ class EventTournamentSetting extends Model
 
         // 🔥 НОВОЕ (ключевое)
         'game_scheme',
+        'teams_count',
         'reserve_players_max',
         'total_players_max',
         'payment_mode',

@@ -784,6 +784,9 @@ if ($role === 'admin') {
             if (array_key_exists('format', $data) && $data['format']) {
                 $event->format = $data['format'];
             }
+            if (isset($data['teams_count'])) {
+                $event->tournament_teams_count = (int) $data['teams_count'];
+            }
             if (array_key_exists('age_policy', $data)) {
                 $event->age_policy = $data['age_policy'] ?? 'adult';
             }
