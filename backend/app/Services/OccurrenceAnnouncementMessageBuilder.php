@@ -137,17 +137,13 @@ class OccurrenceAnnouncementMessageBuilder
         $lines[] = '';
 
         // ── Турнир / лига ─────────────────────────────────────────────────────
-        $isTournament = (string) ($event->format ?? '') === 'tournament';
-        $registrationMode = (string) ($event->registration_mode ?? '');
-        $isTeamTournament = $isTournament && in_array($registrationMode, ['team_classic', 'team_beach']);
-
-        if ($isTournament) {
+        if ((string) ($event->format ?? '') === 'tournament') {
             $leagueName = null;
             if (!empty($event->season_id)) {
                 $season = $event->relationLoaded('season') ? $event->season : $event->season()->with('league')->first();
                 $leagueName = $season?->league?->name;
             }
-            $lines[] = $leagueName ? "🏆 - Турнир {$leagueName}" : '🏆 - Турнир';
+            $lines[] = $leagueName ? "🏆 Турнир {$leagueName}" : '🏆 Турнир';
         }
 
         // ── Формат ────────────────────────────────────────────────────────────
@@ -175,17 +171,16 @@ class OccurrenceAnnouncementMessageBuilder
 
         $lines[] = '';
 
-        // ── Мест осталось ─────────────────────────────────────────────────────
-        if ($isTeamTournament) {
-            $maxTeams        = (int) ($gameSettings['teams_count'] ?? 0);
-            $registeredTeams = $this->countRegisteredTeams((int) $occurrence->id);
-            $freeTeams       = $maxTeams > 0 ? max(0, $maxTeams - $registeredTeams) : null;
+        // ── Мест / Команд ────────────────────────────────────────────────────
+        $isTournament         = (string) ($event->format ?? '') === 'tournament';
+        $isIndividualTournament = $isTournament
+            && (string) ($event->registration_mode ?? '') === 'tournament_individual';
 
-            if ($maxTeams > 0) {
-                $freeLabel = $freeTeams === 0
-                    ? "Мест нет 🔴"
-                    : ($freeTeams <= 2 ? "Осталось мест: {$freeTeams} из {$maxTeams} 🟡" : "Осталось мест: {$freeTeams} из {$maxTeams}!");
-                $lines[] = "🧑‍🧑‍🧒 {$freeLabel}";
+        if ($isTournament && !$isIndividualTournament) {
+            $teamsMax        = (int) ($event->tournament_teams_count ?? 0);
+            $teamsRegistered = $this->countRegisteredTeams((int) $occurrence->id);
+            if ($teamsMax > 0) {
+                $lines[] = "👥 Команд: {$teamsRegistered} / {$teamsMax}";
             }
         } else {
             $maxPlayers = (int) ($gameSettings['max_players'] ?? 0);
@@ -200,23 +195,19 @@ class OccurrenceAnnouncementMessageBuilder
             }
         }
 
-        // ── Список команд / игроков ───────────────────────────────────────────
+        // ── Список игроков / команд ───────────────────────────────────────────
         $includeList = (bool) ($options['include_registered_list'] ?? true);
         if ($includeList) {
-            if ($isTeamTournament) {
-                $registeredTeams ??= $this->countRegisteredTeams((int) $occurrence->id);
-                if ($registeredTeams > 0) {
-                    $showPositions = $registrationMode === 'team_classic';
-                    $teamList = $this->buildTeamList((int) $occurrence->id, $showPositions);
-                    if ($teamList !== '') {
-                        $lines[] = '';
-                        $lines[] = $this->bold($platform, 'Список команд:');
-                        $lines[] = $teamList;
-                    }
+            if ($isTournament && !$isIndividualTournament) {
+                $teamList = $this->buildTeamList((int) $occurrence->id, $direction);
+                if ($teamList !== '') {
+                    $lines[] = '';
+                    $lines[] = $this->bold($platform, 'Список команд:');
+                    $lines[] = $teamList;
                 }
             } else {
-                $registered ??= $this->countRegistered((int) $occurrence->id);
-                if ($registered > 0) {
+                $regCount = isset($registered) ? $registered : $this->countRegistered((int) $occurrence->id);
+                if ($regCount > 0) {
                     $playerList = $this->buildPlayerList((int) $occurrence->id);
                     if ($playerList !== '') {
                         $lines[] = '';
@@ -368,7 +359,7 @@ class OccurrenceAnnouncementMessageBuilder
             // Попытка дать короткий псевдоним
             $abbr = $dt->format('T');
             if (preg_match('/^[A-Z]{2,5}$/', $abbr)) {
-                return "{$abbr} ({$utc})";
+                return "{$abbr} {$utc}";
             }
 
             return $utc;
@@ -465,22 +456,31 @@ class OccurrenceAnnouncementMessageBuilder
 
     private function countRegisteredTeams(int $occurrenceId): int
     {
-        return (int) DB::table('event_teams')
+        return (int) DB::table('event_registrations')
             ->where('occurrence_id', $occurrenceId)
-            ->whereIn('status', ['submitted', 'approved'])
-            ->count();
+            ->whereNull('cancelled_at')
+            ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
+            ->whereNotNull('group_key')
+            ->distinct('group_key')
+            ->count('group_key');
     }
 
     /**
-     * Список команд для командного турнира.
-     * $showPositions=true  — классика (position_code виден)
-     * $showPositions=false — пляж/2×2 (имена без позиций)
+     * Список команд с игроками для командных турниров.
      */
-    private function buildTeamList(int $occurrenceId, bool $showPositions): string
+    private function buildTeamList(int $occurrenceId, string $direction): string
     {
+        $posLabels = [
+            'setter'   => 'связующий',
+            'outside'  => 'доигровщик',
+            'opposite' => 'диагональный',
+            'middle'   => 'центральный',
+            'libero'   => 'либеро',
+            'reserve'  => 'запасной',
+        ];
+
         $teams = DB::table('event_teams')
             ->where('occurrence_id', $occurrenceId)
-            ->whereIn('status', ['submitted', 'approved'])
             ->orderBy('id')
             ->limit(20)
             ->get(['id', 'name']);
@@ -489,43 +489,33 @@ class OccurrenceAnnouncementMessageBuilder
             return '';
         }
 
-        $posLabels = [
-            'setter'   => 'связующий',
-            'outside'  => 'доигровщик',
-            'opposite' => 'диагональный',
-            'middle'   => 'центральный',
-            'libero'   => 'либеро',
-            'reserve'  => 'запасной игрок',
-        ];
-
         $lines = [];
         foreach ($teams as $i => $team) {
+            $teamName = trim((string) ($team->name ?? ''));
+            if ($teamName === '') {
+                $teamName = 'Команда ' . ($i + 1);
+            }
+            $lines[] = ($i + 1) . '. ' . $teamName;
+
             $members = DB::table('event_team_members as etm')
                 ->join('users as u', 'u.id', '=', 'etm.user_id')
                 ->where('etm.event_team_id', $team->id)
+                ->whereIn('etm.confirmation_status', ['confirmed', 'joined'])
                 ->orderBy('etm.position_order')
-                ->get(['u.first_name', 'u.last_name', 'etm.position_code', 'etm.team_role']);
+                ->get(['u.first_name', 'u.last_name', 'u.name', 'etm.position_code']);
 
-            $teamName = trim((string) ($team->name ?? ''));
-            $lines[] = ($i + 1) . '. Команда ' . ($teamName ?: '—');
-
-            foreach ($members as $m) {
-                $firstName = trim((string) ($m->first_name ?? ''));
-                $lastName  = trim((string) ($m->last_name ?? ''));
+            foreach ($members as $member) {
+                $firstName = trim((string) ($member->first_name ?? ''));
+                $lastName  = trim((string) ($member->last_name ?? ''));
                 $fullName  = trim($lastName . ' ' . $firstName);
-                if ($fullName === '') {
-                    continue;
-                }
+                $name      = $fullName !== '' ? $fullName : trim((string) ($member->name ?? 'Игрок'));
 
-                if ($showPositions) {
-                    $pos      = (string) ($m->position_code ?? '');
-                    $posLabel = $posLabels[$pos] ?? ($pos !== '' ? $pos : null);
-                    $line     = '   ' . $fullName;
-                    if ($posLabel !== null) {
-                        $line .= ' - ' . $posLabel;
-                    }
-                } else {
-                    $line = '   ' . $fullName;
+                $posCode  = (string) ($member->position_code ?? '');
+                $posLabel = $posLabels[$posCode] ?? null;
+
+                $line = "    {$name}";
+                if ($direction !== 'beach' && $posLabel !== null) {
+                    $line .= ' - ' . $posLabel;
                 }
                 $lines[] = $line;
             }
@@ -538,7 +528,7 @@ class OccurrenceAnnouncementMessageBuilder
     {
         $row = DB::table('event_game_settings')
             ->where('event_id', $eventId)
-            ->first(['subtype', 'min_players', 'max_players', 'gender_policy', 'libero_mode', 'teams_count']);
+            ->first(['subtype', 'min_players', 'max_players', 'gender_policy', 'libero_mode']);
 
         return $row ? (array) $row : [];
     }
