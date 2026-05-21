@@ -848,7 +848,7 @@ if ($role === 'admin') {
             }
     
             $gsPayload = array_filter([
-                'subtype' => $data['game_subtype'] ?? null,
+                'subtype' => $data['game_subtype'] ?? $data['tournament_game_scheme'] ?? null,
                 'libero_mode' => $data['game_libero_mode'] ?? null,
                 'min_players' => $data['game_min_players'] ?? null,
                 'max_players' => $data['game_max_players'] ?? null,
@@ -960,6 +960,22 @@ if ($role === 'admin') {
         });
 
         $event->refresh();
+
+        // Обновляем анонсы в каналах если событие изменилось
+        $hasChannels = DB::table('event_notification_channels')
+            ->where('event_id', (int) $event->id)
+            ->exists();
+        if ($hasChannels) {
+            $occurrenceIds = DB::table('event_occurrences')
+                ->where('event_id', (int) $event->id)
+                ->where('starts_at', '>=', now())
+                ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
+                ->pluck('id');
+            foreach ($occurrenceIds as $occId) {
+                \App\Jobs\RefreshOccurrenceAnnouncementJob::dispatch((int) $occId)
+                    ->onQueue('default');
+            }
+        }
 
         // Каналы анонсов: пересохраняем привязки (delete-then-insert)
         app(\App\Services\EventNotificationChannelService::class)->updateChannels($event, $request);
