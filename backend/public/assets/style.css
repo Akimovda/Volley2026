@@ -2571,6 +2571,7 @@ body.dark .theme-icon {
 .fix-header-menu.open .auth-btn:nth-child(2) { animation-delay: 0.2s; }
 .fix-header-menu.open .auth-btn:nth-child(3) { animation-delay: 0.3s; }
 .fix-header-menu.open .auth-btn:nth-child(4) { animation-delay: 0.4s; }
+.fix-header-menu.open .auth-btn:nth-child(5) { animation-delay: 0.5s; }
 @keyframes fadeInUp {
 	from {
 		opacity: 0;
@@ -2705,12 +2706,10 @@ body.dark .theme-icon {
     background-color: #f5f9ff;            /* rgba(0, 122, 255, 0.05) */
     color: #007aff;                      /* основной синий Max */
 }
-
 .auth-btn-max:hover {
     border-color: #007aff;
     background-color: #ebf4ff;           /* rgba(0, 122, 255, 0.1) */
 }
-
 .auth-btn-max .auth-icon-circle {
     background: linear-gradient(135deg, #007aff, #8a2be2); /* градиент как на лого */
 }
@@ -2776,6 +2775,34 @@ body.dark  .auth-btn-telegram-widget-up {
 body.dark .auth-btn-apple {
     background: linear-gradient(135deg, #2b2b2e, #1c1c1e);
 }
+/* Google — цветной вариант */
+.auth-btn-google {
+    background-color: #ffffff;
+    border-color: #dadce0;
+    color: #3c4043;
+}
+.auth-btn-google:hover {
+    border-color: #d2d5d9;
+    background-color: #f8f9fa;
+}
+.auth-btn-google .auth-icon-circle {
+    background: conic-gradient(from -45deg, #4285f4 0deg 90deg, #ea4335 90deg 180deg, #fbbc04 180deg 270deg, #34a853 270deg 360deg);
+    background-color: transparent;
+}
+
+body.dark .auth-btn-google {
+    background: #1f1f1f;
+    border-color: #3c4043;
+    color: #e8eaed;
+}
+body.dark .auth-btn-google:hover {
+    background: #2d2d2d;
+    border-color: #5a5e66;
+}
+body.dark .auth-btn-google .auth-icon-circle {
+    background: conic-gradient(from -45deg, #8ab4f8 0deg 90deg, #f28b82 90deg 180deg, #fdd663 180deg 270deg, #81c995 270deg 360deg);
+}
+
 /* Эффект клика */
 @keyframes click-wave {
 	0% {

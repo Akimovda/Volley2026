@@ -58,6 +58,7 @@ class TournamentTeamController extends Controller
         ]);
 
         $team->update(['name' => trim($data['name'])]);
+        $this->dispatchAnnounceRefresh($event, $team->occurrence_id ? (int) $team->occurrence_id : null);
 
         return redirect()
             ->route('tournamentTeams.show', [$event, $team])
@@ -123,6 +124,8 @@ class TournamentTeamController extends Controller
                 autoApprove: $isOrganizerOrAdmin,
             );
 
+            $this->dispatchAnnounceRefresh($event, !empty($data['occurrence_id']) ? (int) $data['occurrence_id'] : null);
+
             return redirect()
                 ->route('tournamentTeams.show', [$event, $team])
                 ->with('success', 'Команда создана ✅');
@@ -146,6 +149,7 @@ class TournamentTeamController extends Controller
 
         try {
             $service->confirmMember($team, $member->id, $request->user());
+            $this->dispatchAnnounceRefresh($event, $team->occurrence_id ? (int) $team->occurrence_id : null);
 
             return back()->with('success', 'Игрок подтверждён ✅');
         } catch (DomainException $e) {
@@ -168,6 +172,7 @@ class TournamentTeamController extends Controller
 
         try {
             $service->declineMember($team, $member->id, $request->user());
+            $this->dispatchAnnounceRefresh($event, $team->occurrence_id ? (int) $team->occurrence_id : null);
 
             return back()->with('success', 'Игрок отклонён.');
         } catch (DomainException $e) {
@@ -190,6 +195,7 @@ class TournamentTeamController extends Controller
 
         try {
             $service->removeMember($team, $member->id, $request->user());
+            $this->dispatchAnnounceRefresh($event, $team->occurrence_id ? (int) $team->occurrence_id : null);
 
             return back()->with('success', 'Игрок удалён из команды.');
         } catch (DomainException $e) {
@@ -235,6 +241,7 @@ class TournamentTeamController extends Controller
                 teamRole:     (string) $data['team_role'],
                 positionCode: $data['position_code'] ?? null,
             );
+            $this->dispatchAnnounceRefresh($event, $team->occurrence_id ? (int) $team->occurrence_id : null);
             return back()->with('success', 'Игрок добавлен в команду ✅');
         } catch (DomainException $e) {
             return back()->withErrors(['add_member' => $e->getMessage()]);
@@ -295,6 +302,8 @@ class TournamentTeamController extends Controller
         $isOrganizer = (int) $event->organizer_id === (int) $user->id || $user->isAdmin();
         abort_unless($isOrganizer, 403, 'Только организатор может удалить команду.');
 
+        $occurrenceId = $team->occurrence_id ? (int) $team->occurrence_id : null;
+
         // Удаляем заявку
         \App\Models\EventTeamApplication::where('event_team_id', $team->id)->delete();
 
@@ -306,6 +315,8 @@ class TournamentTeamController extends Controller
 
         // Удаляем команду
         $team->delete();
+
+        $this->dispatchAnnounceRefresh($event, $occurrenceId);
 
         return redirect()
             ->route('tournament.setup', $event)
@@ -467,6 +478,8 @@ class TournamentTeamController extends Controller
             return back()->with('error', $e->getMessage());
         }
 
+        $this->dispatchAnnounceRefresh($event, !empty($data['occurrence_id']) ? (int) $data['occurrence_id'] : null);
+
         return redirect()->route('tournamentTeams.show', [$event, $team])
             ->with('success', 'Команда создана из шаблона ✅ Участники получили приглашения.');
     }
@@ -486,7 +499,9 @@ class TournamentTeamController extends Controller
         abort_unless($user, 403);
 
         try {
+            $occurrenceId = $team->occurrence_id ? (int) $team->occurrence_id : null;
             $service->leaveTeam($team, (int) $user->id);
+            $this->dispatchAnnounceRefresh($event, $occurrenceId);
 
             return redirect()
                 ->route('events.show', $event)
@@ -522,6 +537,35 @@ class TournamentTeamController extends Controller
         return response()->json($result, $result['ok'] ? 200 : 422);
     }
 
+    private function dispatchAnnounceRefresh(Event $event, ?int $occurrenceId): void
+    {
+        $hasChannels = DB::table('event_notification_channels')
+            ->where('event_id', (int) $event->id)
+            ->exists();
+        if (!$hasChannels) {
+            return;
+        }
+
+        if ($occurrenceId) {
+            \App\Jobs\RefreshOccurrenceAnnouncementJob::dispatch($occurrenceId)
+                ->onQueue('default')
+                ->afterCommit();
+            return;
+        }
+
+        $ids = DB::table('event_occurrences')
+            ->where('event_id', (int) $event->id)
+            ->where('starts_at', '>=', now())
+            ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
+            ->pluck('id');
+
+        foreach ($ids as $id) {
+            \App\Jobs\RefreshOccurrenceAnnouncementJob::dispatch((int) $id)
+                ->onQueue('default')
+                ->afterCommit();
+        }
+    }
+
     /**
      * Капитан расформировывает команду.
      */
@@ -537,7 +581,9 @@ class TournamentTeamController extends Controller
         abort_unless($user, 403);
 
         try {
+            $occurrenceId = $team->occurrence_id ? (int) $team->occurrence_id : null;
             $service->disbandTeam($team, (int) $user->id);
+            $this->dispatchAnnounceRefresh($event, $occurrenceId);
 
             return redirect()
                 ->route('events.show', $event)
