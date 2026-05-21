@@ -31,6 +31,7 @@ class TournamentStage extends Model
     public const TYPE_SWISS          = 'swiss';
     public const TYPE_KING_OF_COURT  = 'king_of_court';
     public const TYPE_THAI           = 'thai';
+    public const TYPE_KING_BEACH     = 'king_beach';
 
     public const STATUS_PENDING     = 'pending';
     public const STATUS_IN_PROGRESS = 'in_progress';
@@ -67,6 +68,7 @@ class TournamentStage extends Model
         self::TYPE_SWISS,
         self::TYPE_KING_OF_COURT,
         self::TYPE_THAI,
+        self::TYPE_KING_BEACH,
     ];
 
     /* ---------- relations ---------- */

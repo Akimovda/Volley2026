@@ -444,6 +444,7 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 									<option value="double_elim">{{ __('tournaments.setup_stage_double_elim') }}</option>
 									<option value="king_of_court">{{ __('tournaments.setup_stage_king_of_court') }}</option>
 									<option value="thai">{{ __('tournaments.setup_stage_thai') }}</option>
+									<option value="king_beach">{{ __('tournaments.setup_stage_king_beach') }}</option>
 								</select>
 								<a href="{{ route('tournament_formats') }}" target="_blank" class="f-16 blink mt-1">{{ __('tournaments.setup_stage_formats_link') }}</a>
 								
@@ -507,6 +508,34 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 						</div>
 						
 					</div>
+					{{-- King of the Beach: специфичные настройки --}}
+					<div class="mt-2" id="king_beach_fields" style="display:none">
+						<div class="row">
+							<div class="col-md-4">
+								<div class="card">
+									<label>{{ __('tournaments.setup_stage_kb_advance') }}</label>
+									<input name="kb_advance_count" type="number" value="2" min="1" max="4">
+									<p class="f-16">{{ __('tournaments.setup_stage_kb_advance_hint') }}</p>
+								</div>
+							</div>
+							<div class="col-md-4">
+								<div class="card">
+									<label>{{ __('tournaments.setup_stage_kb_draw') }}</label>
+									<select name="draw_mode" id="kb_draw_mode_select">
+										<option value="random">{{ __('tournaments.setup_stage_seed_random') }}</option>
+										<option value="seeded">{{ __('tournaments.setup_stage_seed_seeded') }}</option>
+									</select>
+								</div>
+							</div>
+							<div class="col-md-4">
+								<div class="card">
+									<label>{{ __('tournaments.setup_stage_kb_players') }}</label>
+									<p class="f-16">{{ __('tournaments.setup_stage_kb_players_hint') }}</p>
+								</div>
+							</div>
+						</div>
+					</div>
+
 					<div class="mt-2" id="group_fields">
 						<div class="row">
 							<div class="col-lg-3 col-md-6">
@@ -874,6 +903,11 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 		$_isDivStage = str_starts_with($stage->name, 'Группа ');
 		$stageHasDivDistribution = !$_isDivStage && $stages->contains(fn($s) => str_starts_with($s->name, 'Группа ') && $s->occurrence_id == $stage->occurrence_id);
 		@endphp
+		{{-- King of the Beach: отдельный рендеринг --}}
+		@if($stage->type === 'king_beach')
+		@include('tournaments._partials.king_beach_stage', ['stage' => $stage, 'event' => $event, 'selectedOccurrence' => $selectedOccurrence])
+		@continue
+		@endif
 		<div class="ramka" id="stage_{{ $stage->id }}">
 			<div class="d-flex between fvc" style="flex-wrap:wrap;gap:8px">
 				<div>
@@ -897,6 +931,7 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 						'double_elim' => __('tournaments.setup_stage_lbl_double_elim'),
 						'king_of_court' => __('tournaments.setup_stage_lbl_king_of_court'),
 						'thai' => __('tournaments.setup_stage_lbl_thai'),
+						'king_beach' => __('tournaments.setup_stage_lbl_king_beach'),
 						];
 						$matchFormatLabels = ['bo1' => 'Best of 1', 'bo3' => 'Best of 3', 'bo5' => 'Best of 5'];
 						@endphp
@@ -1431,10 +1466,14 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 		document.addEventListener('DOMContentLoaded', function() {
 			var typeSelect = document.getElementById('stage_type_select');
 			var groupFields = document.getElementById('group_fields');
-			if (typeSelect && groupFields) {
+			var kbFields = document.getElementById('king_beach_fields');
+			if (typeSelect) {
 				function toggle() {
 					var t = typeSelect.value;
-					groupFields.style.display = (t === 'round_robin' || t === 'groups_playoff' || t === 'thai') ? '' : 'none';
+					var showGroup = (t === 'round_robin' || t === 'groups_playoff' || t === 'thai');
+					var showKb = (t === 'king_beach');
+					if (groupFields) groupFields.style.display = showGroup ? '' : 'none';
+					if (kbFields) kbFields.style.display = showKb ? '' : 'none';
 				}
 				typeSelect.addEventListener('change', toggle);
 				toggle();

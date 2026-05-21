@@ -38,6 +38,25 @@
 				<div class="f-13 mb-2">
 					{{ __('tournaments.score_match_header', ['n' => $match->match_number, 'r' => $match->round]) }} · {{ strtoupper($stage->matchFormat()) }} · {{ __('tournaments.score_to_pts') }} {{ $stage->setPoints() }}@if($match->group) · {{ $match->group->name }}@endif
 				</div>
+				@php $kbMeta = ($stage->type === 'king_beach') ? ($match->meta ?? []) : null; @endphp
+				@if($kbMeta)
+				{{-- King of the Beach: показываем пары игроков --}}
+				@php
+				$kbUsers = \App\Models\User::whereIn('id', array_merge($kbMeta['home_players'] ?? [], $kbMeta['away_players'] ?? []))->get()->keyBy('id');
+				$kbNameOf = fn($uid) => trim(($kbUsers[$uid]->last_name ?? '') . ' ' . ($kbUsers[$uid]->first_name ?? '')) ?: '#'.$uid;
+				$kbHomeNames = array_map($kbNameOf, $kbMeta['home_players'] ?? []);
+				$kbAwayNames = array_map($kbNameOf, $kbMeta['away_players'] ?? []);
+				@endphp
+				<div class="d-flex between fvc">
+					<div style="flex:1;text-align:center">
+						<div class="b-700 f-18">{{ implode(' + ', $kbHomeNames) }}</div>
+					</div>
+					<div class="px-2 f-20 b-600">VS</div>
+					<div style="flex:1;text-align:center">
+						<div class="b-700 f-18">{{ implode(' + ', $kbAwayNames) }}</div>
+					</div>
+				</div>
+				@else
 				<div class="d-flex between fvc">
 					<div style="flex:1;text-align:center">
 						<div class="b-700 f-18">{{ $match->teamHome->name ?? 'TBD' }}</div>
@@ -61,7 +80,8 @@
 								@endif
 							</div>
 						</div>
-					</div>
+				@endif
+				</div>
 					
 					{{-- Форма счёта --}}
 					<form method="POST" action="{{ $isEdit ? route('tournament.matches.rescore', $match) : route('tournament.matches.score', $match) }}" id="scoreForm">
