@@ -42,6 +42,47 @@
     $cancelWaitlistMinCurrent = (int) old('cancel_lock_waitlist_minutes_before', $cancelWaitlistMinSaved);
     $cancelWaitlistHours      = (int) floor($cancelWaitlistMinCurrent / 60);
     $cancelWaitlistMins       = $cancelWaitlistMinCurrent % 60;
+
+    // Парсинг recurrence_rule → значения для формы
+    $recIsRecurring   = (bool) old('is_recurring', $event->is_recurring ?? false);
+    $recType          = old('recurrence_type', '');
+    $recInterval      = (int) old('recurrence_interval', 1);
+    $recEndType       = old('recurrence_end_type', 'none');
+    $recEndUntil      = old('recurrence_end_until', '');
+    $recEndCount      = (int) old('recurrence_end_count', 0);
+    $recWeekdays      = (array) old('recurrence_weekdays', []);
+
+    if (!old('_token') && trim((string) ($event->recurrence_rule ?? '')) !== '') {
+        $rrParts = [];
+        foreach (explode(';', $event->recurrence_rule) as $part) {
+            [$k, $v] = array_pad(explode('=', $part, 2), 2, '');
+            $rrParts[strtoupper(trim($k))] = trim($v);
+        }
+        $freqRevMap = ['DAILY' => 'daily', 'WEEKLY' => 'weekly', 'MONTHLY' => 'monthly'];
+        $recType     = $freqRevMap[$rrParts['FREQ'] ?? ''] ?? '';
+        $recInterval = max(1, (int) ($rrParts['INTERVAL'] ?? 1));
+        if (isset($rrParts['UNTIL'])) {
+            $recEndType  = 'until';
+            try {
+                $recEndUntil = \Carbon\Carbon::createFromFormat('Ymd\THis\Z', $rrParts['UNTIL'], 'UTC')
+                    ->setTimezone($event->timezone ?? 'UTC')
+                    ->format('Y-m-d');
+            } catch (\Throwable) {
+                $recEndUntil = '';
+            }
+        } elseif (isset($rrParts['COUNT'])) {
+            $recEndType  = 'count';
+            $recEndCount = (int) $rrParts['COUNT'];
+        }
+        if (isset($rrParts['BYDAY'])) {
+            $dayMap = ['MO' => 1, 'TU' => 2, 'WE' => 3, 'TH' => 4, 'FR' => 5, 'SA' => 6, 'SU' => 7];
+            foreach (explode(',', $rrParts['BYDAY']) as $d) {
+                if (isset($dayMap[strtoupper(trim($d))])) {
+                    $recWeekdays[] = $dayMap[strtoupper(trim($d))];
+                }
+            }
+        }
+    }
 @endphp
 
 <x-voll-layout>
@@ -215,7 +256,7 @@
 
                         <div class="col-md-4">
                             <div class="card" style="overflow:visible">
-                                <label>{{ __('events.starts_utc') }}</label>
+                                <label>{{ __('events.occ_starts_at_tz', ['tz' => $event->timezone ?? 'UTC']) }}</label>
                                 <input
                                     name="starts_at"
                                     type="datetime-local"
@@ -1147,6 +1188,120 @@
                                 @enderror
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                {{-- ===== БЛОК: Повторение мероприятия ===== --}}
+                <div class="ramka">
+                    <h2 class="-mt-05">{{ __('events.recurrence_title') }}</h2>
+                    <div id="recurrence_box">
+                        <div class="mb-1">
+                            <label class="checkbox-item">
+                                <input type="hidden" name="is_recurring" value="0">
+                                <input type="checkbox" name="is_recurring" value="1" id="is_recurring_edit"
+                                    @checked($recIsRecurring)>
+                                <div class="custom-checkbox"></div>
+                                <span>{{ __('events.recurrence_toggle') }}</span>
+                            </label>
+                        </div>
+
+                        <div class="row mt-2" id="recurrence_fields_edit" style="{{ $recIsRecurring ? '' : 'display:none;' }}">
+
+                            {{-- Тип повторения --}}
+                            <div class="col-md-4">
+                                <div class="card">
+                                    <label>{{ __('events.recurrence_type') }}</label>
+                                    <select name="recurrence_type" id="recurrence_type_edit">
+                                        <option value="">{{ __('events.tournament_choose') }}</option>
+                                        <option value="daily"   @selected($recType === 'daily')>{{ __('events.recurrence_daily') }}</option>
+                                        <option value="weekly"  @selected($recType === 'weekly')>{{ __('events.recurrence_weekly') }}</option>
+                                        <option value="monthly" @selected($recType === 'monthly')>{{ __('events.recurrence_monthly') }}</option>
+                                    </select>
+
+                                    {{-- Дни недели (только для weekly) --}}
+                                    <div class="mt-2" id="weekdays_wrap_edit" style="{{ $recType === 'weekly' ? '' : 'display:none;' }}">
+                                        <label>{{ __('events.recurrence_weekdays') }}</label>
+                                        <div class="row row2">
+                                            @foreach([1 => __('events.weekdays.1'), 2 => __('events.weekdays.2'), 3 => __('events.weekdays.3'), 4 => __('events.weekdays.4'), 5 => __('events.weekdays.5'), 6 => __('events.weekdays.6'), 7 => __('events.weekdays.7')] as $num => $label)
+                                                <div class="col-6">
+                                                    <label class="checkbox-item">
+                                                        <input type="checkbox" name="recurrence_weekdays[]"
+                                                            value="{{ $num }}" @checked(in_array($num, array_map('intval', $recWeekdays)))>
+                                                        <div class="custom-checkbox"></div>
+                                                        <span>{{ $label }}</span>
+                                                    </label>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {{-- Окончание --}}
+                            <div class="col-md-4">
+                                <div class="card">
+                                    <label>{{ __('events.recurrence_end') }}</label>
+                                    <div class="flex flex-col gap-2">
+                                        <label class="radio-item">
+                                            <input type="radio" name="recurrence_end_type" value="none" @checked($recEndType === 'none')>
+                                            <div class="custom-radio"></div>
+                                            <span>{{ __('events.recurrence_end_none') }}</span>
+                                        </label>
+                                        <label class="radio-item">
+                                            <input type="radio" name="recurrence_end_type" value="until" @checked($recEndType === 'until')>
+                                            <div class="custom-radio"></div>
+                                            <span>{{ __('events.recurrence_end_until') }}</span>
+                                        </label>
+                                        <div class="mb-1">
+                                            <input type="date" name="recurrence_end_until"
+                                                value="{{ $recEndUntil }}">
+                                        </div>
+                                        <label class="radio-item">
+                                            <input type="radio" name="recurrence_end_type" value="count" @checked($recEndType === 'count')>
+                                            <div class="custom-radio"></div>
+                                            <span>{{ __('events.recurrence_end_count') }}</span>
+                                        </label>
+                                        <input type="number" min="1" name="recurrence_end_count"
+                                            value="{{ $recEndCount ?: '' }}"
+                                            placeholder="{{ __('events.recurrence_count_ph') }}">
+                                        <div class="pb-05"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {{-- Интервал --}}
+                            <div class="col-md-4">
+                                <div class="card">
+                                    <label>{{ __('events.recurrence_interval') }}</label>
+                                    <input type="number" min="1" max="365"
+                                        id="recurrence_interval_edit"
+                                        name="recurrence_interval"
+                                        value="{{ $recInterval }}">
+                                    <ul class="list f-16 mt-1">
+                                        <li>{{ __('events.recurrence_int_1') }}</li>
+                                        <li>{{ __('events.recurrence_int_2') }}</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <script>
+                            document.addEventListener('DOMContentLoaded', () => {
+                                const cb       = document.getElementById('is_recurring_edit');
+                                const fields   = document.getElementById('recurrence_fields_edit');
+                                const typesel  = document.getElementById('recurrence_type_edit');
+                                const wdWrap   = document.getElementById('weekdays_wrap_edit');
+
+                                function sync() {
+                                    fields.style.display = cb.checked ? '' : 'none';
+                                    wdWrap.style.display  = (typesel.value === 'weekly') ? '' : 'none';
+                                }
+                                cb.addEventListener('change', sync);
+                                typesel.addEventListener('change', sync);
+                                sync();
+                            });
+                        </script>
                     </div>
                 </div>
 

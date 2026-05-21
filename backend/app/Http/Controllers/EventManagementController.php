@@ -721,6 +721,16 @@ if ($role === 'admin') {
             'channel_include_registered' => ['sometimes', 'boolean'],
             'channel_use_private_link'   => ['sometimes', 'boolean'],
 
+            // Повторение мероприятия
+            'is_recurring'          => ['sometimes', 'boolean'],
+            'recurrence_type'       => ['nullable', 'string', 'in:daily,weekly,monthly'],
+            'recurrence_weekdays'   => ['nullable', 'array'],
+            'recurrence_weekdays.*' => ['integer', 'between:1,7'],
+            'recurrence_end_type'   => ['nullable', 'string', 'in:none,until,count'],
+            'recurrence_end_until'  => ['nullable', 'string', 'max:20'],
+            'recurrence_end_count'  => ['nullable', 'integer', 'min:1', 'max:9999'],
+            'recurrence_interval'   => ['nullable', 'integer', 'min:1', 'max:365'],
+
             // Турнирные настройки (только при format=tournament)
             'tournament_game_scheme'              => ['nullable', 'string', 'max:16'],
             'tournament_team_size_min'            => ['nullable', 'integer', 'min:1', 'max:20'],
@@ -820,7 +830,16 @@ if ($role === 'admin') {
                 $event->cancel_self_until = null;
                 $event->cancel_self_until_waitlist = null;
             }
-    
+
+            // Повторение
+            $recResult = app(\App\Services\EventOccurrenceService::class)
+                ->normalizeRecurrenceRule($data, $allowReg, $tz);
+            if (!empty($recResult['errors'])) {
+                throw \Illuminate\Validation\ValidationException::withMessages($recResult['errors']);
+            }
+            $event->is_recurring    = $recResult['isRecurring'];
+            $event->recurrence_rule = $recResult['isRecurring'] ? $recResult['recRule'] : null;
+
             $event->save();
     
             $glp = $data['game_gender_limited_positions'] ?? null;
