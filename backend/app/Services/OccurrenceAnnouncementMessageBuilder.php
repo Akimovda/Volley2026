@@ -456,13 +456,9 @@ class OccurrenceAnnouncementMessageBuilder
 
     private function countRegisteredTeams(int $occurrenceId): int
     {
-        return (int) DB::table('event_registrations')
+        return (int) DB::table('event_teams')
             ->where('occurrence_id', $occurrenceId)
-            ->whereNull('cancelled_at')
-            ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
-            ->whereNotNull('group_key')
-            ->distinct('group_key')
-            ->count('group_key');
+            ->count();
     }
 
     /**
