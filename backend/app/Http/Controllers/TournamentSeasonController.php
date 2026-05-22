@@ -370,11 +370,13 @@ class TournamentSeasonController extends Controller
             'stats' => fn($q) => $q->orderByDesc('match_win_rate'),
         ]);
 
-        // Загружаем occurrences основного event
+        // Загружаем только те occurrences, которые привязаны к данному сезону
         $sourceEvent = $season->seasonEvents->first()?->event;
         $occurrences = collect();
         if ($sourceEvent) {
+            $seasonOccurrenceIds = $season->seasonEvents->pluck('occurrence_id')->filter();
             $occurrences = $sourceEvent->occurrences()
+                ->whereIn('id', $seasonOccurrenceIds)
                 ->whereNull('cancelled_at')
                 ->orderBy('starts_at')
                 ->get();
