@@ -83,3 +83,10 @@ Schedule::command('waitlist:process-gender-windows')
 Schedule::command('tournaments:auto-reject-incomplete-applications')
     ->everyThirtyMinutes()
     ->withoutOverlapping();
+
+// Перепривязка туров турниров к сезонам по датам (ежедневно в 03:30):
+// проверяет все recurring-турниры с season_id и раскладывает
+// occurrences по нужным сезонам лиги на основе дат.
+Schedule::command('tournaments:sync-season-routing')
+    ->dailyAt('03:30')
+    ->withoutOverlapping();
