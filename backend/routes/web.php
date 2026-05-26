@@ -561,13 +561,17 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
 		| Event Registrations management (auth + verified + restricted)
 		|--------------------------------------------------------------------------
 	*/
-	
+
 	Route::middleware([
     'auth:sanctum',
     config('jetstream.auth_session'),
     'verified',
     'user.restricted',
 	])->group(function () {
+		// ВАЖНО: статический роут должен стоять ДО параметрического {event}
+		Route::get('/events/registrations/manage', [\App\Http\Controllers\EventRegistrationsOverviewController::class, 'index'])
+        ->name('events.registrations.manage');
+
 		Route::get('/events/{event}/registrations', [EventRegistrationsManagementController::class, 'index'])
         ->name('events.registrations.index');
 		

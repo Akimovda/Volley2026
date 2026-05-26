@@ -24,6 +24,7 @@ return [
     'menu_logout'         => 'Выйти',
 
     'menu_org_dashboard'    => 'Панель организатора',
+    'menu_org_regs_manage'  => 'Управление регистрациями',
     'menu_org_create_event' => 'Создать мероприятие',
     'menu_org_subs'         => 'Абонементы (орг.)',
     'menu_org_sub_tpls'     => 'Шаблоны абонементов',

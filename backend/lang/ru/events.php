@@ -1008,4 +1008,20 @@ return [
     'tournament_individual_players_h2'        => 'Участники',
     'tournament_individual_no_players'        => 'Нет записавшихся игроков.',
     'sp_individual_tournament_hint'           => 'Турнир с индивидуальной записью. Выберите амплуа и запишитесь.',
+
+    // Обзор регистраций (overview)
+    'registrations_manage'    => 'Управление регистрациями',
+    'overview_sort_label'     => 'Сортировка',
+    'overview_sort_date'      => 'По дате',
+    'overview_sort_title'     => 'По названию',
+    'overview_sort_address'   => 'По адресу',
+    'overview_dir_asc'        => 'По возрастанию',
+    'overview_dir_desc'       => 'По убыванию',
+    'overview_show_past'      => 'Показать прошедшие',
+    'overview_empty'          => 'Нет мероприятий для отображения.',
+    'overview_col_date'       => 'Дата',
+    'overview_col_title'      => 'Название',
+    'overview_col_address'    => 'Адрес',
+    'overview_col_regs'       => 'Записи',
+    'overview_btn_manage'     => 'Управление записями',
 ];

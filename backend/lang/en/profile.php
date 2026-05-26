@@ -24,6 +24,7 @@ return [
     'menu_logout'         => 'Log out',
 
     'menu_org_dashboard'    => 'Organizer dashboard',
+    'menu_org_regs_manage'  => 'Registration Management',
     'menu_org_create_event' => 'Create event',
     'menu_org_subs'         => 'Subscriptions (org)',
     'menu_org_sub_tpls'     => 'Subscription templates',
