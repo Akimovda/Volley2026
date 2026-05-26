@@ -139,7 +139,7 @@ $baseQuery  = request()->except(['dir', 'page']);
                         <td class="f-14 text-muted">{{ $fmtAddress($row) }}</td>
                         <td class="f-14 text-center {{ $regsClass }}">{{ $regsStr }}</td>
                         <td class="text-center">
-                            <a href="{{ ($row->format ?? '') === 'tournament' ? url('/events/' . (int)$row->event_id . '/tournament/setup') : url('/events/' . (int)$row->event_id . '/registrations') . '?occurrence=' . (int)$row->occurrence_id }}"
+                            <a href="{{ ($row->format ?? '') === 'tournament' ? url('/events/' . (int)$row->event_id . '/tournament/setup') . '?occurrence_id=' . (int)$row->occurrence_id : url('/events/' . (int)$row->event_id . '/registrations') . '?occurrence=' . (int)$row->occurrence_id }}"
                                class="btn btn-small btn-secondary p-0 d-inline-flex align-items-center justify-content-center"
                                style="width:36px;height:36px;"
                                title="{{ __('events.overview_btn_manage') }}">
