@@ -1,13 +1,27 @@
 {{-- resources/views/events/registrations/overview.blade.php --}}
 @php
-$tz = auth()->user()?->timezone ?: 'UTC';
-
-$fmtDate = function ($startsAt) use ($tz) {
+$fmtDate = function ($startsAt, $tz) {
     if (!$startsAt) return '—';
+    $tz = $tz ?: 'UTC';
     $dt = \Carbon\Carbon::parse($startsAt, 'UTC')->setTimezone($tz);
     $days = ['Mon' => 'Пн', 'Tue' => 'Вт', 'Wed' => 'Ср', 'Thu' => 'Чт', 'Fri' => 'Пт', 'Sat' => 'Сб', 'Sun' => 'Вс'];
     $dow = $days[$dt->format('D')] ?? $dt->format('D');
     return $dt->translatedFormat('j M') . ', ' . $dow . ' · ' . $dt->format('H:i');
+};
+
+$fmtRegs = function ($row) {
+    $isTournament = ($row->format ?? '') === 'tournament';
+    if ($isTournament) {
+        $registered = (int) $row->active_teams;
+        $max        = (int) ($row->tournament_teams_count ?? 0);
+    } else {
+        $registered = (int) $row->active_regs;
+        $max        = (int) $row->max_players;
+        if (!(bool) $row->allow_registration) return ['str' => '—', 'full' => false];
+    }
+    $str  = $max > 0 ? "{$registered}/{$max}" : "{$registered}/—";
+    $full = $max > 0 && $registered >= $max;
+    return compact('str', 'full');
 };
 
 $fmtAddress = function ($row) {
@@ -111,13 +125,12 @@ $baseQuery  = request()->except(['dir', 'page']);
                 <tbody>
                     @foreach($occurrences as $row)
                     @php
-                        $regs    = (int) $row->active_regs;
-                        $max     = (int) $row->max_players;
-                        $regsStr = $row->allow_registration ? ($max > 0 ? "{$regs}/{$max}" : "{$regs}/—") : '—';
-                        $regsClass = ($max > 0 && $regs >= $max) ? 'text-danger b-600' : '';
+                        $regsInfo  = $fmtRegs($row);
+                        $regsStr   = $regsInfo['str'];
+                        $regsClass = $regsInfo['full'] ? 'text-danger b-600' : '';
                     @endphp
                     <tr>
-                        <td class="f-14" style="white-space:nowrap;">{{ $fmtDate($row->starts_at) }}</td>
+                        <td class="f-14" style="white-space:nowrap;">{{ $fmtDate($row->starts_at, $row->timezone) }}</td>
                         <td class="f-14">
                             <a href="{{ url('/events/' . (int)$row->event_id) }}" class="link-primary">
                                 {{ $row->title }}
@@ -148,15 +161,14 @@ $baseQuery  = request()->except(['dir', 'page']);
         <div class="d-md-none">
             @foreach($occurrences as $row)
             @php
-                $regs    = (int) $row->active_regs;
-                $max     = (int) $row->max_players;
-                $regsStr = $row->allow_registration ? ($max > 0 ? "{$regs}/{$max}" : "{$regs}/—") : '—';
-                $regsClass = ($max > 0 && $regs >= $max) ? 'text-danger b-600' : '';
+                $regsInfo  = $fmtRegs($row);
+                $regsStr   = $regsInfo['str'];
+                $regsClass = $regsInfo['full'] ? 'text-danger b-600' : '';
             @endphp
             <div class="ramka mb-2" style="padding:12px 14px;">
                 <div class="d-flex justify-content-between align-items-start gap-2">
                     <div style="flex:1;min-width:0;">
-                        <div class="f-13 text-muted mb-1" style="white-space:nowrap;">{{ $fmtDate($row->starts_at) }}</div>
+                        <div class="f-13 text-muted mb-1" style="white-space:nowrap;">{{ $fmtDate($row->starts_at, $row->timezone) }}</div>
                         <div class="f-15 b-600 mb-1">
                             <a href="{{ url('/events/' . (int)$row->event_id) }}" class="link-primary">
                                 {{ $row->title }}

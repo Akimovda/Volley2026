@@ -18,8 +18,8 @@ class EventRegistrationsOverviewController extends Controller
             abort(403);
         }
 
-        $sort    = $request->query('sort', 'date');
-        $dir     = $request->query('dir', 'asc') === 'desc' ? 'desc' : 'asc';
+        $sort     = $request->query('sort', 'date');
+        $dir      = $request->query('dir', 'asc') === 'desc' ? 'desc' : 'asc';
         $showPast = (bool) $request->query('past', 0);
 
         $sort = in_array($sort, ['date', 'title', 'address'], true) ? $sort : 'date';
@@ -35,44 +35,49 @@ class EventRegistrationsOverviewController extends Controller
 
         $today = Carbon::now('UTC')->startOfDay();
 
+        // Регистрации для обычных событий (по occurrence_id)
+        $regsSub = DB::table('event_registrations')
+            ->select('occurrence_id', DB::raw('COUNT(*)::int as active_regs'))
+            ->where(function ($w) {
+                $w->whereNull('is_cancelled')->orWhere('is_cancelled', false);
+            })
+            ->whereNull('cancelled_at')
+            ->whereNotNull('occurrence_id')
+            ->groupBy('occurrence_id');
+
+        // Заявки команд для турниров (по occurrence_id, статус не rejected)
+        $teamsSub = DB::table('event_teams')
+            ->select('occurrence_id', DB::raw('COUNT(*)::int as active_teams'))
+            ->where('status', '!=', 'rejected')
+            ->whereNotNull('occurrence_id')
+            ->groupBy('occurrence_id');
+
         $q = DB::table('event_occurrences as eo')
             ->join('events as e', 'e.id', '=', 'eo.event_id')
             ->leftJoin('locations as l', 'l.id', '=', 'e.location_id')
-            // кол-во активных регистраций на конкретный occurrence (через event_id)
-            ->leftJoinSub(
-                DB::table('event_registrations')
-                    ->select('occurrence_id', DB::raw('COUNT(*)::int as active_regs'))
-                    ->where(function ($w) {
-                        $w->whereNull('is_cancelled')->orWhere('is_cancelled', false);
-                    })
-                    ->whereNull('cancelled_at')
-                    ->whereNotNull('occurrence_id')
-                    ->groupBy('occurrence_id'),
-                'ar',
-                'ar.occurrence_id',
-                '=',
-                'eo.id'
-            )
+            ->leftJoinSub($regsSub, 'ar', 'ar.occurrence_id', '=', 'eo.id')
+            ->leftJoinSub($teamsSub, 'at', 'at.occurrence_id', '=', 'eo.id')
             ->select([
                 'eo.id as occurrence_id',
                 'eo.starts_at',
                 'eo.timezone',
                 'e.id as event_id',
                 'e.title',
+                'e.format',
+                'e.tournament_teams_count',
                 DB::raw('COALESCE(eo.max_players, 0) as max_players'),
                 DB::raw('COALESCE(eo.allow_registration, e.allow_registration) as allow_registration'),
                 'e.organizer_id',
                 'l.name as loc_name',
                 'l.address as loc_address',
                 DB::raw('COALESCE(ar.active_regs, 0) as active_regs'),
+                DB::raw('COALESCE(at.active_teams, 0) as active_teams'),
             ])
             ->where(function ($w) {
                 $w->whereNull('eo.is_cancelled')->orWhere('eo.is_cancelled', false);
             });
 
-        if ($showPast) {
-            // всё — без ограничения по дате
-        } else {
+        if (!$showPast) {
             $q->where('eo.starts_at', '>=', $today);
         }
 
@@ -83,7 +88,6 @@ class EventRegistrationsOverviewController extends Controller
             $q->where('e.organizer_id', (int) $user->id);
         } elseif ($role === 'staff') {
             if ($organizerIdForStaff > 0) {
-                // события своего организатора ИЛИ occurrences где этот staff — тренер
                 $q->where(function ($w) use ($user, $organizerIdForStaff) {
                     $w->where('e.organizer_id', $organizerIdForStaff)
                         ->orWhereExists(function ($sub) use ($user) {
@@ -94,7 +98,6 @@ class EventRegistrationsOverviewController extends Controller
                         });
                 });
             } else {
-                // нет организатора — только occurrences где тренер
                 $q->whereExists(function ($sub) use ($user) {
                     $sub->select(DB::raw(1))
                         ->from('event_occurrence_trainers as eot')
@@ -106,7 +109,6 @@ class EventRegistrationsOverviewController extends Controller
             $q->whereRaw('1=0');
         }
 
-        // Сортировка
         match ($sort) {
             'title'   => $q->orderBy('e.title', $dir)->orderBy('eo.starts_at', 'asc'),
             'address' => $q->orderByRaw("COALESCE(l.address, l.name, '') {$dir}")->orderBy('eo.starts_at', 'asc'),
