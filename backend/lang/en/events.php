@@ -950,4 +950,20 @@ return [
     'tournament_individual_players_h2'        => 'Participants',
     'tournament_individual_no_players'        => 'No registered players.',
     'sp_individual_tournament_hint'           => 'Individual registration tournament. Choose your position and sign up.',
+
+    // Registrations overview
+    'registrations_manage'    => 'Registration Management',
+    'overview_sort_label'     => 'Sort',
+    'overview_sort_date'      => 'By date',
+    'overview_sort_title'     => 'By title',
+    'overview_sort_address'   => 'By address',
+    'overview_dir_asc'        => 'Ascending',
+    'overview_dir_desc'       => 'Descending',
+    'overview_show_past'      => 'Show past',
+    'overview_empty'          => 'No events to display.',
+    'overview_col_date'       => 'Date',
+    'overview_col_title'      => 'Title',
+    'overview_col_address'    => 'Address',
+    'overview_col_regs'       => 'Registrations',
+    'overview_btn_manage'     => 'Manage registrations',
 ];

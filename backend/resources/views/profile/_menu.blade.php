@@ -167,6 +167,14 @@
                         <span class="menu-text">{{ __('profile.menu_my_events') }}</span>
                     @endif
                 </a>
+                <a href="{{ route('events.registrations.manage') }}"
+                   class="menu-item {{ $activeMenu === 'regs_manage' ? 'active' : '' }}">
+                    @if($activeMenu === 'regs_manage')
+                        <strong class="cd menu-text">{{ __('profile.menu_org_regs_manage') }}</strong>
+                    @else
+                        <span class="menu-text">{{ __('profile.menu_org_regs_manage') }}</span>
+                    @endif
+                </a>
                 <a href="{{ route('events.create') }}"
                    class="menu-item {{ $activeMenu === 'event_create' ? 'active' : '' }}">
                     @if($activeMenu === 'event_create')
