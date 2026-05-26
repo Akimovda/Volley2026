@@ -57,6 +57,7 @@ return [
     'org_menu_title'        => 'Organizer menu',
     'org_dashboard'         => 'Organizer dashboard',
     'org_events_management' => 'Event management',
+    'org_regs_manage'       => 'Registration Management',
     'org_create_event'      => 'Create event',
     'org_subscriptions'     => 'Subscriptions',
     'org_coupons'           => 'Coupons',

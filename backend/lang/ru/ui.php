@@ -57,6 +57,7 @@ return [
     'org_menu_title'        => 'Меню организатора',
     'org_dashboard'         => 'Панель организатора',
     'org_events_management' => 'Управление мероприятиями',
+    'org_regs_manage'       => 'Управление регистрациями',
     'org_create_event'      => 'Создать мероприятие',
     'org_subscriptions'     => 'Абонементы',
     'org_coupons'           => 'Купоны',
