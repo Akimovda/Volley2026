@@ -183,14 +183,16 @@ class OccurrenceAnnouncementMessageBuilder
                 $lines[] = "👥 Команд: {$teamsRegistered} / {$teamsMax}";
             }
         } else {
-            $maxPlayers = (int) ($gameSettings['max_players'] ?? 0);
-            $registered = $this->countRegistered((int) $occurrence->id);
-            $free       = $maxPlayers > 0 ? max(0, $maxPlayers - $registered) : null;
+            $maxPlayers  = (int) ($gameSettings['max_players'] ?? 0);
+            $reserveMax  = (int) ($gameSettings['reserve_players_max'] ?? 0);
+            $totalMax    = $maxPlayers + $reserveMax;
+            $registered  = $this->countRegistered((int) $occurrence->id);
+            $free        = $totalMax > 0 ? max(0, $totalMax - $registered) : null;
 
-            if ($maxPlayers > 0) {
+            if ($totalMax > 0) {
                 $freeLabel = $free === 0
                     ? "Мест нет 🔴"
-                    : ($free <= 3 ? "Осталось мест: {$free} из {$maxPlayers} 🟡" : "Осталось мест: {$free} из {$maxPlayers}!");
+                    : ($free <= 3 ? "Осталось мест: {$free} из {$totalMax} 🟡" : "Осталось мест: {$free} из {$totalMax}!");
                 $lines[] = "🧑‍🧑‍🧒 {$freeLabel}";
             }
         }
@@ -526,7 +528,7 @@ class OccurrenceAnnouncementMessageBuilder
     {
         $row = DB::table('event_game_settings')
             ->where('event_id', $eventId)
-            ->first(['subtype', 'min_players', 'max_players', 'gender_policy', 'libero_mode']);
+            ->first(['subtype', 'min_players', 'max_players', 'reserve_players_max', 'gender_policy', 'libero_mode']);
 
         return $row ? (array) $row : [];
     }
