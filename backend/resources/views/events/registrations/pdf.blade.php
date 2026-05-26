@@ -22,10 +22,16 @@
     font-style: normal;
 }
 @@page {
+    size: A4 portrait;
     margin: 20mm 30mm 20mm 30mm;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'DejaVu Sans', sans-serif; font-size: 11px; color: #222; }
+body {
+    font-family: 'DejaVu Sans', sans-serif;
+    font-size: 11px;
+    color: #222;
+    margin: 20mm 30mm;
+}
 
 /* Шапка */
 .header {
