@@ -369,6 +369,9 @@
 								<a href="/events/create/event_management" class="menu-item">
 									<span class="menu-text">{{ __('ui.org_events_management') }}</span>
 								</a>
+								<a href="/events/registrations/manage" class="menu-item">
+									<span class="menu-text">{{ __('ui.org_regs_manage') }}</span>
+								</a>
 								<a href="/events/create" class="menu-item">
 									<span class="menu-text">{{ __('ui.org_create_event') }}</span>
 								</a>
