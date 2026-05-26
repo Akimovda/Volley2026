@@ -458,6 +458,7 @@ class OccurrenceAnnouncementMessageBuilder
     {
         return (int) DB::table('event_teams')
             ->where('occurrence_id', $occurrenceId)
+            ->where('status', '!=', 'rejected')
             ->count();
     }
 
@@ -477,6 +478,7 @@ class OccurrenceAnnouncementMessageBuilder
 
         $teams = DB::table('event_teams')
             ->where('occurrence_id', $occurrenceId)
+            ->where('status', '!=', 'rejected')
             ->orderBy('id')
             ->limit(20)
             ->get(['id', 'name']);
