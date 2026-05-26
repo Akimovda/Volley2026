@@ -22,7 +22,7 @@
     font-style: normal;
 }
 @@page {
-    margin: 18mm 15mm 18mm 15mm;
+    margin: 20mm 30mm 20mm 30mm;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'DejaVu Sans', sans-serif; font-size: 11px; color: #222; }
