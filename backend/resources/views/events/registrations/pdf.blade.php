@@ -5,6 +5,8 @@
 @php
     $fontNormal = base_path('vendor/dompdf/dompdf/lib/fonts/DejaVuSans.ttf');
     $fontBold   = base_path('vendor/dompdf/dompdf/lib/fonts/DejaVuSans-Bold.ttf');
+    $logoPath   = public_path('icons/web-app-manifest-192x192.png');
+    $logoB64    = file_exists($logoPath) ? 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath)) : null;
 @endphp
 <style>
 @@font-face {
@@ -19,23 +21,56 @@
     font-weight: bold;
     font-style: normal;
 }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'DejaVu Sans', sans-serif; font-size: 11px; color: #222; }
-    .header { border-bottom: 2px solid #1a56db; padding-bottom: 10px; margin-bottom: 14px; }
-    .title { font-size: 18px; font-weight: bold; color: #1a56db; margin-bottom: 4px; }
-    .meta { font-size: 11px; color: #555; margin-bottom: 2px; }
-    .meta strong { color: #222; }
-    .stats { margin: 12px 0 16px; font-size: 11px; color: #444; }
-    table { width: 100%; border-collapse: collapse; margin-top: 4px; }
-    thead tr { background: #1a56db; color: #fff; }
-    thead th { padding: 7px 8px; text-align: left; font-weight: bold; font-size: 10px; }
-    tbody tr:nth-child(even) { background: #f4f7ff; }
-    tbody tr { border-bottom: 1px solid #e2e8f0; }
-    tbody td { padding: 6px 8px; vertical-align: top; font-size: 10px; }
-    .num { color: #999; }
-    .note { color: #555; font-style: italic; }
-    .pos { color: #444; }
-    .footer { margin-top: 18px; font-size: 9px; color: #aaa; border-top: 1px solid #e2e8f0; padding-top: 6px; }
+@@page {
+    margin: 18mm 15mm 18mm 15mm;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DejaVu Sans', sans-serif; font-size: 11px; color: #222; }
+
+/* Шапка */
+.header {
+    display: table;
+    width: 100%;
+    border-bottom: 2px solid #1a56db;
+    padding-bottom: 10px;
+    margin-bottom: 14px;
+}
+.header-logo {
+    display: table-cell;
+    width: 48px;
+    vertical-align: middle;
+    padding-right: 12px;
+}
+.header-logo img {
+    width: 40px;
+    height: 40px;
+}
+.header-info {
+    display: table-cell;
+    vertical-align: middle;
+}
+.header-brand {
+    font-size: 10px;
+    color: #1a56db;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+    margin-bottom: 3px;
+}
+.title { font-size: 16px; font-weight: bold; color: #1a56db; margin-bottom: 4px; }
+.meta { font-size: 11px; color: #555; margin-bottom: 2px; }
+.meta strong { color: #222; }
+
+.stats { margin: 10px 0 14px; font-size: 11px; color: #444; }
+table { width: 100%; border-collapse: collapse; margin-top: 4px; }
+thead tr { background: #1a56db; color: #fff; }
+thead th { padding: 7px 8px; text-align: left; font-weight: bold; font-size: 10px; }
+tbody tr:nth-child(even) { background: #f4f7ff; }
+tbody tr { border-bottom: 1px solid #e2e8f0; }
+tbody td { padding: 6px 8px; vertical-align: top; font-size: 10px; }
+.num { color: #999; }
+.note { color: #555; font-style: italic; }
+.pos { color: #444; }
+.footer { margin-top: 18px; font-size: 9px; color: #aaa; border-top: 1px solid #e2e8f0; padding-top: 6px; }
 </style>
 </head>
 <body>
@@ -67,9 +102,17 @@
 @endphp
 
 <div class="header">
-    <div class="title">{{ $event->title }}</div>
-    <div class="meta"><strong>Дата:</strong> {{ $dateLine }}</div>
-    <div class="meta"><strong>Место:</strong> {{ $locationLine }}</div>
+    @if($logoB64)
+    <div class="header-logo">
+        <img src="{{ $logoB64 }}" alt="logo">
+    </div>
+    @endif
+    <div class="header-info">
+        <div class="header-brand">VOLLEYPLAY.CLUB</div>
+        <div class="title">{{ $event->title }}</div>
+        <div class="meta"><strong>Дата:</strong> {{ $dateLine }}</div>
+        <div class="meta"><strong>Место:</strong> {{ $locationLine }}</div>
+    </div>
 </div>
 
 <div class="stats">
