@@ -41,6 +41,8 @@ class UserSearchController extends Controller
             $items = DB::table('users')
                 ->select(['id', 'first_name', 'last_name', 'name', 'telegram_username', 'is_bot'])
                 ->where('is_bot', true)
+                ->whereNull('deleted_at')
+                ->whereNull('merged_into_user_id')
                 ->orderBy('last_name')->orderBy('first_name')
                 ->limit(40)
                 ->get()
@@ -68,6 +70,8 @@ class UserSearchController extends Controller
                 'role',
                 'email',
             ])
+            ->whereNull('deleted_at')
+            ->whereNull('merged_into_user_id')
             ->where(function ($q2) {
                 $q2->whereNull('is_hidden')->orWhere('is_hidden', false);
             })
