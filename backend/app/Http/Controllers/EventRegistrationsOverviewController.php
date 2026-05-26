@@ -55,7 +55,6 @@ class EventRegistrationsOverviewController extends Controller
             ->select([
                 'eo.id as occurrence_id',
                 'eo.starts_at',
-                'eo.ends_at',
                 'eo.timezone',
                 'e.id as event_id',
                 'e.title',
