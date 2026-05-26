@@ -62,6 +62,12 @@ class WaitlistService
             'positions' => $positions,
         ]);
 
+        \App\Jobs\NotifyOrganizerWaitlistJob::dispatch(
+            (int) $occurrence->id,
+            (int) $user->id,
+            $positions,
+        );
+
         // Если reserve свободен и пользователь подходит — авто-записываем сразу.
         // Триггер нужен здесь т.к. reserve-слоты изначально пусты и onSpotFreed для них
         // не срабатывает (нет отмены). Без этого reserve мог оставаться незаполненным
