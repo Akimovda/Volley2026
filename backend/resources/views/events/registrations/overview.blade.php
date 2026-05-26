@@ -15,9 +15,9 @@ $fmtRegs = function ($row) {
         $registered = (int) $row->active_teams;
         $max        = (int) ($row->tournament_teams_count ?? 0);
     } else {
-        $registered = (int) $row->active_regs;
-        $max        = (int) $row->max_players;
         if (!(bool) $row->allow_registration) return ['str' => '—', 'full' => false];
+        $registered = (int) $row->active_regs;
+        $max        = (int) $row->max_players + (int) ($row->reserve_max ?? 0);
     }
     $str  = $max > 0 ? "{$registered}/{$max}" : "{$registered}/—";
     $full = $max > 0 && $registered >= $max;
@@ -132,14 +132,14 @@ $baseQuery  = request()->except(['dir', 'page']);
                     <tr>
                         <td class="f-14" style="white-space:nowrap;">{{ $fmtDate($row->starts_at, $row->timezone) }}</td>
                         <td class="f-14">
-                            <a href="{{ url('/events/' . (int)$row->event_id) }}" class="link-primary">
+                            <a href="{{ url('/events/' . (int)$row->event_id) . '?occurrence=' . (int)$row->occurrence_id }}" class="link-primary">
                                 {{ $row->title }}
                             </a>
                         </td>
                         <td class="f-14 text-muted">{{ $fmtAddress($row) }}</td>
                         <td class="f-14 text-center {{ $regsClass }}">{{ $regsStr }}</td>
                         <td class="text-center">
-                            <a href="{{ url('/events/' . (int)$row->event_id . '/registrations') }}"
+                            <a href="{{ url('/events/' . (int)$row->event_id . '/registrations') . '?occurrence=' . (int)$row->occurrence_id }}"
                                class="btn btn-small btn-secondary p-0 d-inline-flex align-items-center justify-content-center"
                                style="width:36px;height:36px;"
                                title="{{ __('events.overview_btn_manage') }}">
@@ -170,7 +170,7 @@ $baseQuery  = request()->except(['dir', 'page']);
                     <div style="flex:1;min-width:0;">
                         <div class="f-13 text-muted mb-1" style="white-space:nowrap;">{{ $fmtDate($row->starts_at, $row->timezone) }}</div>
                         <div class="f-15 b-600 mb-1">
-                            <a href="{{ url('/events/' . (int)$row->event_id) }}" class="link-primary">
+                            <a href="{{ url('/events/' . (int)$row->event_id) . '?occurrence=' . (int)$row->occurrence_id }}" class="link-primary">
                                 {{ $row->title }}
                             </a>
                         </div>
@@ -180,7 +180,7 @@ $baseQuery  = request()->except(['dir', 'page']);
                     </div>
                     <div class="d-flex flex-column align-items-end gap-1" style="flex-shrink:0;">
                         <span class="f-14 {{ $regsClass }}">{{ $regsStr }}</span>
-                        <a href="{{ url('/events/' . (int)$row->event_id . '/registrations') }}"
+                        <a href="{{ url('/events/' . (int)$row->event_id . '/registrations') . '?occurrence=' . (int)$row->occurrence_id }}"
                            class="btn btn-small btn-secondary p-0 d-inline-flex align-items-center justify-content-center"
                            style="width:36px;height:36px;"
                            title="{{ __('events.overview_btn_manage') }}">

@@ -52,11 +52,18 @@ class EventRegistrationsOverviewController extends Controller
             ->whereNotNull('occurrence_id')
             ->groupBy('occurrence_id');
 
+        // Резерв: event_role_slots.role='reserve' → max_slots; fallback из game_settings
+        $reserveSlotsSub = DB::table('event_role_slots')
+            ->select('event_id', DB::raw('max_slots as reserve_slots'))
+            ->where('role', 'reserve');
+
         $q = DB::table('event_occurrences as eo')
             ->join('events as e', 'e.id', '=', 'eo.event_id')
             ->leftJoin('locations as l', 'l.id', '=', 'e.location_id')
+            ->leftJoin('event_game_settings as egs', 'egs.event_id', '=', 'e.id')
             ->leftJoinSub($regsSub, 'ar', 'ar.occurrence_id', '=', 'eo.id')
             ->leftJoinSub($teamsSub, 'at', 'at.occurrence_id', '=', 'eo.id')
+            ->leftJoinSub($reserveSlotsSub, 'ers', 'ers.event_id', '=', 'e.id')
             ->select([
                 'eo.id as occurrence_id',
                 'eo.starts_at',
@@ -66,6 +73,7 @@ class EventRegistrationsOverviewController extends Controller
                 'e.format',
                 'e.tournament_teams_count',
                 DB::raw('COALESCE(eo.max_players, 0) as max_players'),
+                DB::raw('COALESCE(ers.reserve_slots, egs.reserve_players_max, 0) as reserve_max'),
                 DB::raw('COALESCE(eo.allow_registration, e.allow_registration) as allow_registration'),
                 'e.organizer_id',
                 'l.name as loc_name',
