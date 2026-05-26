@@ -41,16 +41,17 @@ class EventRegistrationsOverviewController extends Controller
             // кол-во активных регистраций на конкретный occurrence (через event_id)
             ->leftJoinSub(
                 DB::table('event_registrations')
-                    ->select('event_id', DB::raw('COUNT(*)::int as active_regs'))
+                    ->select('occurrence_id', DB::raw('COUNT(*)::int as active_regs'))
                     ->where(function ($w) {
                         $w->whereNull('is_cancelled')->orWhere('is_cancelled', false);
                     })
                     ->whereNull('cancelled_at')
-                    ->groupBy('event_id'),
+                    ->whereNotNull('occurrence_id')
+                    ->groupBy('occurrence_id'),
                 'ar',
-                'ar.event_id',
+                'ar.occurrence_id',
                 '=',
-                'e.id'
+                'eo.id'
             )
             ->select([
                 'eo.id as occurrence_id',
