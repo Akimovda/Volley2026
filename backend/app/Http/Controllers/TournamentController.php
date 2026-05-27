@@ -1445,7 +1445,7 @@ class TournamentController extends Controller
             if ($occurrence) {
                 $activeLeagueTeams = \App\Models\TournamentLeagueTeam::where('league_id', $league->id)
                     ->whereIn('status', ['active', 'pending_confirmation'])
-                    ->with('team')
+                    ->with('team.members')
                     ->get();
 
                 foreach ($activeLeagueTeams as $lt) {
@@ -1466,8 +1466,10 @@ class TournamentController extends Controller
                         continue;
                     }
 
+                    $oldTeam = $lt->team;
+
                     // Создаём новый EventTeam
-                    $baseName = $lt->team?->name
+                    $baseName = $oldTeam?->name
                         ?? (\App\Models\User::find($captainId)?->last_name ?? 'Команда');
                     $name = $baseName;
                     $i = 2;
@@ -1482,13 +1484,32 @@ class TournamentController extends Controller
                         'occurrence_id'   => $occurrenceId,
                         'captain_user_id' => $captainId,
                         'name'            => $name,
-                        'team_kind'       => $lt->team?->team_kind ?? 'beach_pair',
+                        'team_kind'       => $oldTeam?->team_kind ?? 'beach_pair',
                         'status'          => 'approved',
                         'invite_code'     => \Illuminate\Support\Str::random(8),
-                        'is_complete'     => false,
+                        'is_complete'     => (bool) $oldTeam?->is_complete,
                         'last_checked_at' => now(),
                         'confirmed_at'    => now(),
                     ]);
+
+                    // Копируем состав из предыдущего тура
+                    if ($oldTeam && $oldTeam->members->isNotEmpty()) {
+                        foreach ($oldTeam->members as $member) {
+                            \App\Models\EventTeamMember::create([
+                                'event_team_id'       => $newTeam->id,
+                                'user_id'             => $member->user_id,
+                                'role_code'           => $member->role_code,
+                                'team_role'           => $member->team_role,
+                                'position_code'       => $member->position_code,
+                                'position_order'      => $member->position_order,
+                                'confirmation_status' => 'confirmed',
+                                'joined_at'           => now(),
+                                'responded_at'        => now(),
+                                'confirmed_at'        => now(),
+                            ]);
+                        }
+                    }
+
                     $lt->update(['team_id' => $newTeam->id, 'status' => 'active']);
                     $linked++;
                 }
