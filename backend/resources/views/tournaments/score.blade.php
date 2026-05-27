@@ -59,25 +59,38 @@
 				@else
 				<div class="d-flex between fvc">
 					<div style="flex:1;text-align:center">
+						@php
+								$occId = $match->stage->occurrence_id;
+								$homeRoster = $match->teamHome && $occId
+									? app(\App\Services\TeamSubstitutionService::class)->getActualRoster($match->teamHome->id, $occId)
+									: collect();
+								$awayRoster = $match->teamAway && $occId
+									? app(\App\Services\TeamSubstitutionService::class)->getActualRoster($match->teamAway->id, $occId)
+									: collect();
+								@endphp
 						<div class="b-700 f-18">{{ $match->teamHome->name ?? 'TBD' }}</div>
-						@if($match->teamHome && $match->teamHome->members->count())
+						@if($match->teamHome && ($homeRoster->isNotEmpty() || $match->teamHome->members->count()))
 						<div class="f-16 team-members">
-							@foreach($match->teamHome->members as $mi => $m)
-							@if($m->user)<a href="{{ route('users.show', $m->user) }}" class="blink">{{ $m->user->last_name }} {{ $m->user->first_name }}</a>{{ $mi < $match->teamHome->members->count() - 1 ? ' / ' : '' }}@endif
-								@endforeach
-							</div>
+							@foreach(($homeRoster->isNotEmpty() ? $homeRoster : $match->teamHome->members->map(fn($m)=>['user'=>$m->user,'is_substitute'=>false,'original_user'=>null,'member'=>$m])) as $mi => $row)
+							@if($row['user'] ?? null)
+							<a href="{{ route('users.show', $row['user']) }}" class="blink">{{ $row['user']->last_name }} {{ $row['user']->first_name }}</a>@if($row['is_substitute'] ?? false) <span class="f-12" style="opacity:.6">({{ __('tournaments.sub_label') }})</span>@endif{{ $mi < count($homeRoster->isNotEmpty() ? $homeRoster->toArray() : $match->teamHome->members->toArray()) - 1 ? ' / ' : '' }}
 							@endif
+							@endforeach
+						</div>
+						@endif
 						</div>
 						<div class="px-2 f-20 b-600">VS</div>
 						<div style="flex:1;text-align:center">
 							<div class="b-700 f-18">{{ $match->teamAway->name ?? 'TBD' }}</div>
-							@if($match->teamAway && $match->teamAway->members->count())
+							@if($match->teamAway && ($awayRoster->isNotEmpty() || $match->teamAway->members->count()))
 							<div class="f-16 team-members">
-								@foreach($match->teamAway->members as $mi => $m)
-								@if($m->user)<a href="{{ route('users.show', $m->user) }}" class="blink">{{ $m->user->last_name }} {{ $m->user->first_name }}</a>{{ $mi < $match->teamAway->members->count() - 1 ? ' / ' : '' }}@endif
-									@endforeach
-								</div>
+								@foreach(($awayRoster->isNotEmpty() ? $awayRoster : $match->teamAway->members->map(fn($m)=>['user'=>$m->user,'is_substitute'=>false,'original_user'=>null,'member'=>$m])) as $mi => $row)
+								@if($row['user'] ?? null)
+								<a href="{{ route('users.show', $row['user']) }}" class="blink">{{ $row['user']->last_name }} {{ $row['user']->first_name }}</a>@if($row['is_substitute'] ?? false) <span class="f-12" style="opacity:.6">({{ __('tournaments.sub_label') }})</span>@endif{{ $mi < count($awayRoster->isNotEmpty() ? $awayRoster->toArray() : $match->teamAway->members->toArray()) - 1 ? ' / ' : '' }}
 								@endif
+								@endforeach
+							</div>
+							@endif
 							</div>
 						</div>
 				@endif

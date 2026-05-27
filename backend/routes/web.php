@@ -1040,6 +1040,16 @@ Route::middleware([
     Route::post('/divisions/{league}/create-and-add', [TournamentSeasonController::class, 'createAndAddToLeague'])
         ->name('divisions.createAndAdd');
 
+    // Замены в лиговых турнирах
+    Route::post('/leagues/{league}/substitutions', [\App\Http\Controllers\TeamSubstitutionController::class, 'store'])
+        ->name('leagues.substitutions.store');
+    Route::post('/leagues/{league}/substitutions/request', [\App\Http\Controllers\TeamSubstitutionController::class, 'requestAsSubstitute'])
+        ->name('leagues.substitutions.request');
+    Route::post('/substitutions/{substitution}/confirm', [\App\Http\Controllers\TeamSubstitutionController::class, 'confirm'])
+        ->name('substitutions.confirm');
+    Route::post('/substitutions/{substitution}/cancel', [\App\Http\Controllers\TeamSubstitutionController::class, 'cancel'])
+        ->name('substitutions.cancel');
+
     // Привязка турниров к сезону
     Route::post('/seasons/{season}/events', [TournamentSeasonController::class, 'attachEvent'])
         ->name('seasons.events.attach');

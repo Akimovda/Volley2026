@@ -738,22 +738,42 @@ class TournamentController extends Controller
             ->values()
             ->toArray();
 
+        // Штрафной дедлайн: ближайшая суббота 07:00 МСК
+        $penaltyExpiry = \Carbon\Carbon::now('Europe/Moscow')
+            ->next(\Carbon\Carbon::SATURDAY)->setTime(7, 0, 0)->utc();
+
         // Команды → резерв (Lite bottom-2, Medium bottom-1)
-        $reserveCaptainIds = [];
+        // relegatedTeams: [['team_id'=>X,'captain_id'=>Y,'substitution'=>?TeamSubstitution]]
+        $relegatedTeams    = [];
+        $reserveCaptainIds = [];  // капитаны со штрафом (идут в reserve)
+        $penaltyCaptainIds = [];  // те же, но нужен confirmation_expires_at
+
+        $collectRelegated = function (int $teamId) use ($occurrenceId, &$relegatedTeams, &$reserveCaptainIds, &$penaltyCaptainIds) {
+            $team = \App\Models\EventTeam::find($teamId);
+            if (!$team) return;
+            $cap = $team->captain_user_id;
+            if (!$cap) return;
+
+            $sub = $occurrenceId > 0
+                ? \App\Models\TeamSubstitution::where('team_id', $teamId)
+                    ->where('occurrence_id', $occurrenceId)
+                    ->where('status', 'confirmed')
+                    ->first()
+                : null;
+
+            $relegatedTeams[] = ['team_id' => $teamId, 'captain_id' => $cap, 'substitution' => $sub];
+            $reserveCaptainIds[] = $cap;
+            $penaltyCaptainIds[] = $cap;
+        };
+
         foreach ($stages->filter(fn($s) => str_contains($s->name, 'Lite')) as $stage) {
             foreach (\App\Models\TournamentStanding::where('stage_id', $stage->id)->orderBy('rank')->get() as $s) {
-                if ($s->rank > 2) {
-                    $cap = \App\Models\EventTeam::find($s->team_id)?->captain_user_id;
-                    if ($cap) $reserveCaptainIds[] = $cap;
-                }
+                if ($s->rank > 2) $collectRelegated($s->team_id);
             }
         }
         foreach ($stages->filter(fn($s) => str_contains($s->name, 'Medium')) as $stage) {
             foreach (\App\Models\TournamentStanding::where('stage_id', $stage->id)->orderBy('rank')->get() as $s) {
-                if ($s->rank > 3) {
-                    $cap = \App\Models\EventTeam::find($s->team_id)?->captain_user_id;
-                    if ($cap) $reserveCaptainIds[] = $cap;
-                }
+                if ($s->rank > 3) $collectRelegated($s->team_id);
             }
         }
 
@@ -781,48 +801,61 @@ class TournamentController extends Controller
             $active = 0; $reserve = 0;
 
             \Illuminate\Support\Facades\DB::transaction(function () use (
-                $nextLeague, $allCaptainIds, $reserveCaptainIds, &$active, &$reserve
+                $nextLeague, $allCaptainIds, $reserveCaptainIds, $penaltyCaptainIds,
+                $penaltyExpiry, $relegatedTeams, $currentLeague, &$active, &$reserve
             ) {
                 foreach ($allCaptainIds as $captainId) {
                     $isReserve = in_array($captainId, $reserveCaptainIds);
                     $targetStatus = $isReserve ? 'reserve' : 'active';
+                    $hasPenalty  = $isReserve && in_array($captainId, $penaltyCaptainIds);
 
-                    // Найти существующую запись в следующем дивизионе (по captain через team или user_id)
                     $existing = \App\Models\TournamentLeagueTeam::where('league_id', $nextLeague->id)
                         ->where(function ($q) use ($captainId) {
                             $q->where('user_id', $captainId)
                               ->orWhereHas('team', fn($tq) => $tq->where('captain_user_id', $captainId));
-                        })
-                        ->first();
+                        })->first();
 
-                    if ($existing) {
-                        // Обновить статус если нужно
-                        if ($existing->status !== $targetStatus) {
-                            $existing->update([
-                                'status'           => $targetStatus,
-                                'reserve_position' => $isReserve ? $nextLeague->nextReservePosition() : null,
-                                'left_at'          => $isReserve ? now() : null,
-                            ]);
-                        }
-                    } else {
-                        // Добавить в следующий дивизион
-                        \App\Models\TournamentLeagueTeam::create([
-                            'league_id'        => $nextLeague->id,
-                            'user_id'          => $captainId,
-                            'team_id'          => null,
-                            'status'           => $targetStatus,
-                            'joined_at'        => now(),
-                            'reserve_position' => $isReserve ? $nextLeague->nextReservePosition() : null,
-                        ]);
-                    }
+                    $attrs = [
+                        'status'                  => $targetStatus,
+                        'reserve_position'        => $isReserve ? $nextLeague->nextReservePosition() : null,
+                        'left_at'                 => $isReserve ? now() : null,
+                        'confirmation_expires_at' => $hasPenalty ? $penaltyExpiry : null,
+                    ];
+
+                    $existing ? $existing->update($attrs)
+                              : \App\Models\TournamentLeagueTeam::create(array_merge($attrs, [
+                                    'league_id' => $nextLeague->id,
+                                    'user_id'   => $captainId,
+                                    'team_id'   => null,
+                                    'joined_at' => now(),
+                                ]));
+
                     $isReserve ? $reserve++ : $active++;
+                }
+
+                // Отсутствовавший игрок (использовалась замена) → резерв БЕЗ штрафа
+                foreach ($relegatedTeams as $rt) {
+                    $sub = $rt['substitution'];
+                    if (!$sub) continue;
+                    $absentId = $sub->original_player_id;
+                    if ($absentId === $rt['captain_id']) continue; // замена была сам капитан
+                    \App\Models\TournamentLeagueTeam::firstOrCreate(
+                        ['league_id' => $nextLeague->id, 'user_id' => $absentId],
+                        [
+                            'team_id'                 => null,
+                            'status'                  => 'reserve',
+                            'joined_at'               => now(),
+                            'reserve_position'        => $nextLeague->nextReservePosition(),
+                            'confirmation_expires_at' => null,
+                        ]
+                    );
                 }
             });
 
             $waitlistAdded = $this->transferReserveToNextOccurrenceWaitlist(
                 $event, $occurrenceId, $existingReserveUserIds, $reserveCaptainIds
             );
-            $waitlistMsg = $waitlistAdded > 0 ? " + {$waitlistAdded} в лист ожидания тура " . ($occurrenceId > 0 ? '→' : '') : '';
+            $waitlistMsg = $waitlistAdded > 0 ? " + {$waitlistAdded} в лист ожидания тура →" : '';
 
             return back()->with('success',
                 "Промоушен в {$nextSeason->name}: {$active} в основном составе, {$reserve} в резерве.{$waitlistMsg}");
@@ -830,20 +863,44 @@ class TournamentController extends Controller
 
         // Fallback (нет следующего сезона): переводим в резерв текущего дивизиона
         $movedCount = 0;
-        \Illuminate\Support\Facades\DB::transaction(function () use ($currentLeague, $reserveCaptainIds, &$movedCount) {
+        \Illuminate\Support\Facades\DB::transaction(function () use (
+            $currentLeague, $reserveCaptainIds, $penaltyCaptainIds,
+            $penaltyExpiry, $relegatedTeams, &$movedCount
+        ) {
             foreach ($reserveCaptainIds as $captainId) {
+                $hasPenalty = in_array($captainId, $penaltyCaptainIds);
                 $lt = \App\Models\TournamentLeagueTeam::where('league_id', $currentLeague->id)
                     ->where(function ($q) use ($captainId) {
                         $q->where('user_id', $captainId)
                           ->orWhereHas('team', fn($tq) => $tq->where('captain_user_id', $captainId));
-                    })
-                    ->where('status', 'active')
-                    ->first();
+                    })->where('status', 'active')->first();
                 if ($lt) {
-                    $lt->update(['status' => 'reserve', 'left_at' => now(),
-                        'reserve_position' => $currentLeague->nextReservePosition()]);
+                    $lt->update([
+                        'status'                  => 'reserve',
+                        'left_at'                 => now(),
+                        'reserve_position'        => $currentLeague->nextReservePosition(),
+                        'confirmation_expires_at' => $hasPenalty ? $penaltyExpiry : null,
+                    ]);
                     $movedCount++;
                 }
+            }
+
+            // Отсутствовавший игрок → резерв БЕЗ штрафа
+            foreach ($relegatedTeams as $rt) {
+                $sub = $rt['substitution'];
+                if (!$sub) continue;
+                $absentId = $sub->original_player_id;
+                if ($absentId === $rt['captain_id']) continue;
+                \App\Models\TournamentLeagueTeam::firstOrCreate(
+                    ['league_id' => $currentLeague->id, 'user_id' => $absentId],
+                    [
+                        'team_id'                 => null,
+                        'status'                  => 'reserve',
+                        'joined_at'               => now(),
+                        'reserve_position'        => $currentLeague->nextReservePosition(),
+                        'confirmation_expires_at' => null,
+                    ]
+                );
             }
         });
 
