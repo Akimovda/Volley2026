@@ -229,6 +229,27 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 			</style>
 
 			
+			{{-- Загрузка замен для текущего тура --}}
+			@php
+			$occSubstitutions = collect();
+			$leagueForSubs = null;
+			if($selectedOccurrence && $leagueTeams->count()) {
+				$_seasonEvtForSubs = \App\Models\TournamentSeasonEvent::where('occurrence_id', $selectedOccurrence->id)->first();
+				if($_seasonEvtForSubs?->league_id) {
+					$leagueForSubs = \App\Models\TournamentLeague::find($_seasonEvtForSubs->league_id);
+					$_activeTeamIds = $leagueTeams->where('status','active')->pluck('team_id')->filter();
+					$occSubstitutions = \App\Models\TeamSubstitution::whereIn('team_id', $_activeTeamIds)
+						->where('occurrence_id', $selectedOccurrence->id)
+						->whereIn('status', ['pending','confirmed'])
+						->with(['originalPlayer:id,first_name,last_name','substitutePlayer:id,first_name,last_name'])
+						->get()->keyBy('team_id');
+					// Список резервистов для модалки
+					$_reserveForSubs = $leagueTeams->where('status','reserve')->filter(fn($lt)=>$lt->user_id);
+				}
+			}
+			$_tourStarted = $selectedOccurrence && now('UTC')->gte($selectedOccurrence->starts_at);
+			@endphp
+
 			{{-- Состав лиги --}}
 			@if($leagueTeams->count())
 			<div class="">
@@ -270,6 +291,39 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 										@endphp
 										{{ $members }}
 									</div>
+									@if($lt->status === 'active' && $leagueForSubs && !$_tourStarted)
+									@php $existingSub = $occSubstitutions[$lt->team_id] ?? null; @endphp
+									@if($existingSub)
+									<div class="f-12 mt-025 d-flex gap-1 align-items-center flex-wrap">
+										@if($existingSub->status === 'confirmed')
+										<span class="alert-success p-1 pt-025 pb-025">✓ {{ __('tournaments.substitution_confirmed') }}:</span>
+										@else
+										<span class="alert-warning p-1 pt-025 pb-025">⏳ {{ __('tournaments.awaiting_confirmation') }}:</span>
+										@endif
+										<span>{{ $existingSub->substitutePlayer->last_name }} {{ $existingSub->substitutePlayer->first_name }}</span>
+										<span style="opacity:.5">{{ __('tournaments.sub_instead_of', ['name' => $existingSub->originalPlayer->last_name.' '.$existingSub->originalPlayer->first_name]) }}</span>
+										@if($existingSub->status === 'pending')
+										<form method="POST" action="{{ route('substitutions.confirm', $existingSub) }}" style="display:inline">@csrf
+											<button type="submit" class="btn btn-small" style="padding:1px 6px;font-size:11px">✓</button>
+										</form>
+										@endif
+										<form method="POST" action="{{ route('substitutions.cancel', $existingSub) }}" style="display:inline">@csrf
+											<button type="submit" class="btn btn-small btn-secondary" style="padding:1px 6px;font-size:11px">✕</button>
+										</form>
+									</div>
+									@else
+									<div class="mt-025">
+										<button type="button" class="btn btn-small btn-secondary" style="font-size:11px;padding:2px 8px"
+											data-sub-team="{{ $lt->team_id }}"
+											data-sub-league="{{ $leagueForSubs->id }}"
+											data-sub-occurrence="{{ $selectedOccurrence->id }}"
+											data-sub-members="{{ $lt->team->members->filter(fn($m)=>$m->user)->map(fn($m)=>['id'=>$m->user_id,'name'=>($m->user->last_name.' '.$m->user->first_name)])->values()->toJson() }}"
+											onclick="openSubModal(this)">
+											{{ __('tournaments.btn_find_sub') }}
+										</button>
+									</div>
+									@endif
+									@endif
 									@elseif($lt->user)
 									<div class="team-name">{{ $lt->user->last_name }} {{ $lt->user->first_name }}</div>
 									<div class="f-12 cd mt-025">
@@ -412,8 +466,137 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 			</div>
 		</div>
 		@endif
-		
-		
+
+		{{-- ============================================================
+		Модалка замены
+		============================================================ --}}
+		@if($leagueForSubs && $selectedOccurrence && !$_tourStarted)
+		<div id="subModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center">
+			<div class="card p-3" style="max-width:480px;width:95%;max-height:90vh;overflow-y:auto;position:relative">
+				<button onclick="closeSubModal()" style="position:absolute;top:10px;right:12px;background:none;border:none;font-size:18px;cursor:pointer">✕</button>
+				<h3 class="-mt-05 mb-2" id="subModalTitle">{{ __('tournaments.find_substitute') }}</h3>
+
+				{{-- Шаг 1: выбор кого заменяем --}}
+				<div id="subStep1">
+					<div class="f-13 mb-2" style="opacity:.7">{{ __('tournaments.invite_substitute') }}:</div>
+					<div id="subMemberList"></div>
+				</div>
+
+				{{-- Шаг 2: кем заменяем --}}
+				<div id="subStep2" style="display:none">
+					<div class="f-13 mb-1" style="opacity:.5" id="subReplacingLabel"></div>
+
+					{{-- Вкладки --}}
+					<div class="d-flex gap-1 mb-2">
+						<button class="btn sub-tab-btn" data-tab="reserve" onclick="switchSubTab('reserve')">{{ __('tournaments.substitute_from_reserve') }}</button>
+						<button class="btn btn-secondary sub-tab-btn" data-tab="external" onclick="switchSubTab('external')">{{ __('tournaments.substitute_external') }}</button>
+					</div>
+
+					{{-- Из резерва --}}
+					<div id="subTabReserve">
+						@if(isset($_reserveForSubs) && $_reserveForSubs->isNotEmpty())
+						@foreach($_reserveForSubs as $rlt)
+						@if($rlt->user)
+						<div class="d-flex" style="padding:5px 0;border-bottom:1px solid rgba(128,128,128,.08);align-items:center;gap:8px">
+							<span style="flex:1">{{ $rlt->user->last_name }} {{ $rlt->user->first_name }}</span>
+							<button type="button" class="btn btn-small"
+								onclick="selectSubstitute({{ $rlt->user_id }}, '{{ addslashes($rlt->user->last_name.' '.$rlt->user->first_name) }}', 'reserve')">
+								{{ __('tournaments.invite_substitute') }}
+							</button>
+						</div>
+						@endif
+						@endforeach
+						@else
+						<div class="f-13" style="opacity:.5">Резерв пуст</div>
+						@endif
+					</div>
+
+					{{-- Поиск внешнего --}}
+					<div id="subTabExternal" style="display:none">
+						<input type="text" id="subSearchInput" class="form-control mb-1" placeholder="Поиск игрока..." autocomplete="off">
+						<div id="subSearchResults"></div>
+					</div>
+				</div>
+
+				{{-- Форма (скрытая) --}}
+				<form method="POST" id="subForm" action="{{ route('leagues.substitutions.store', $leagueForSubs) }}" style="display:none">
+					@csrf
+					<input type="hidden" name="occurrence_id" value="{{ $selectedOccurrence->id }}">
+					<input type="hidden" name="team_id" id="subTeamId">
+					<input type="hidden" name="original_player_id" id="subOriginalId">
+					<input type="hidden" name="substitute_player_id" id="subSubstituteId">
+					<input type="hidden" name="substitute_source" id="subSource">
+					<div class="mt-3 p-2" style="background:rgba(128,128,128,.08);border-radius:8px" id="subConfirmBlock">
+						<div class="f-13 mb-2" id="subConfirmText"></div>
+						<button type="submit" class="btn w-100">{{ __('tournaments.invite_substitute') }}</button>
+					</div>
+				</form>
+			</div>
+		</div>
+		<script>
+		var _subTeamId = null, _subOriginalId = null, _subOccurrenceId = {{ $selectedOccurrence->id }};
+		function openSubModal(btn) {
+			_subTeamId = btn.dataset.subTeam;
+			var members = JSON.parse(btn.dataset.subMembers || '[]');
+			var list = document.getElementById('subMemberList');
+			list.innerHTML = '';
+			members.forEach(function(m) {
+				var d = document.createElement('div');
+				d.style.cssText = 'padding:8px 0;border-bottom:1px solid rgba(128,128,128,.08);display:flex;align-items:center;gap:8px';
+				d.innerHTML = '<span style="flex:1">'+m.name+'</span><button type="button" class="btn btn-small" onclick="chooseOriginal('+m.id+',\''+m.name.replace(/'/g,"\\'")+'\')">' + '{{ __("tournaments.invite_substitute") }}' + '</button>';
+				list.appendChild(d);
+			});
+			document.getElementById('subTeamId').value = _subTeamId;
+			document.getElementById('subStep1').style.display = '';
+			document.getElementById('subStep2').style.display = 'none';
+			document.getElementById('subForm').style.display = 'none';
+			document.getElementById('subModal').style.display = 'flex';
+		}
+		function closeSubModal() { document.getElementById('subModal').style.display = 'none'; }
+		function chooseOriginal(id, name) {
+			_subOriginalId = id;
+			document.getElementById('subOriginalId').value = id;
+			document.getElementById('subReplacingLabel').textContent = '{{ __("tournaments.replacement_for", ["name" => ""]) }}' + name;
+			document.getElementById('subStep1').style.display = 'none';
+			document.getElementById('subStep2').style.display = '';
+			document.getElementById('subForm').style.display = 'none';
+			switchSubTab('reserve');
+		}
+		function switchSubTab(tab) {
+			document.querySelectorAll('.sub-tab-btn').forEach(function(b){ b.classList.toggle('btn-secondary', b.dataset.tab !== tab); });
+			document.getElementById('subTabReserve').style.display = tab==='reserve' ? '' : 'none';
+			document.getElementById('subTabExternal').style.display = tab==='external' ? '' : 'none';
+		}
+		function selectSubstitute(id, name, source) {
+			document.getElementById('subSubstituteId').value = id;
+			document.getElementById('subSource').value = source;
+			document.getElementById('subConfirmText').textContent = name;
+			document.getElementById('subForm').style.display = '';
+			document.getElementById('subConfirmBlock').style.display = '';
+		}
+		// Поиск внешнего игрока
+		(function(){
+			var t; document.getElementById('subSearchInput')?.addEventListener('input', function(){
+				clearTimeout(t); var q = this.value.trim();
+				if(q.length < 2) return;
+				t = setTimeout(function(){
+					jQuery.ajax({url:'/api/users/search', data:{q:q}, success:function(r){
+						var el = document.getElementById('subSearchResults'); el.innerHTML='';
+						(r.items||[]).forEach(function(u){
+							var d=document.createElement('div');
+							d.style.cssText='padding:5px 0;border-bottom:1px solid rgba(128,128,128,.08);display:flex;align-items:center;gap:8px;cursor:pointer';
+							d.innerHTML='<span style="flex:1">'+(u.label||u.name)+'</span><button type="button" class="btn btn-small" onclick="selectSubstitute('+u.id+',\''+(u.label||u.name).replace(/'/g,"\\'")+'\',\'external\')">{{ __("tournaments.invite_substitute") }}</button>';
+							el.appendChild(d);
+						});
+					}});
+				}, 300);
+			});
+		})();
+		document.getElementById('subModal').addEventListener('click', function(e){ if(e.target===this) closeSubModal(); });
+		</script>
+		@endif
+
+
 		{{-- ============================================================
 		Команды
 		============================================================ --}}
