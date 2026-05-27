@@ -56,19 +56,32 @@ class TournamentController extends Controller
         $leagueTeams = collect();
 
         if ($event->season_id) {
-            $season = $event->season()->with('leagues.leagueTeams.team.captain', 'leagues.leagueTeams.user', 'seasonEvents')->first();
+            $occurrences = $event->occurrences()
+                ->whereNull('cancelled_at')
+                ->orderBy('starts_at')
+                ->get();
+
+            $occId = (int) $request->query('occurrence_id', 0);
+            $selectedOccurrence = $occId > 0
+                ? $occurrences->firstWhere('id', $occId)
+                : $occurrences->first();
+
+            // Находим сезон/лигу по выбранному туру: тур может принадлежать другому сезону
+            $seasonEvtForOcc = $selectedOccurrence
+                ? \App\Models\TournamentSeasonEvent::where('occurrence_id', $selectedOccurrence->id)->first()
+                : null;
+
+            if ($seasonEvtForOcc?->season_id) {
+                $season = \App\Models\TournamentSeason::with('leagues.leagueTeams.team.captain', 'leagues.leagueTeams.user', 'seasonEvents')
+                    ->find($seasonEvtForOcc->season_id);
+            } else {
+                $season = $event->season()->with('leagues.leagueTeams.team.captain', 'leagues.leagueTeams.user', 'seasonEvents')->first();
+            }
 
             if ($season) {
-                $league = $season->leagues->first();
-                $occurrences = $event->occurrences()
-                    ->whereNull('cancelled_at')
-                    ->orderBy('starts_at')
-                    ->get();
-
-                $occId = (int) $request->query('occurrence_id', 0);
-                $selectedOccurrence = $occId > 0
-                    ? $occurrences->firstWhere('id', $occId)
-                    : $occurrences->first();
+                $league = ($seasonEvtForOcc?->league_id)
+                    ? ($season->leagues->firstWhere('id', $seasonEvtForOcc->league_id) ?? $season->leagues->first())
+                    : $season->leagues->first();
 
                 if ($league) {
                     $leagueTeams = $league->leagueTeams()
@@ -107,10 +120,12 @@ class TournamentController extends Controller
             ->get();
 
         // Все «активные» заявки: ожидающие модерации (pending) + неполные (incomplete).
-        // Incomplete показываем для информации — кнопку «Одобрить» не покажем (нечего одобрять),
-        // но «Отклонить» доступна. После доукомплектования refreshTeamState переведёт заявку в pending.
+        // Фильтруем по текущему туру — заявки других туров/сезонов не показываем.
         $pendingApplications = EventTeamApplication::where('event_id', $event->id)
             ->whereIn('status', ['pending', 'incomplete'])
+            ->when($selectedOccurrence, fn($q) => $q->whereHas(
+                'team', fn($tq) => $tq->where('occurrence_id', $selectedOccurrence->id)
+            ))
             ->with(['team.captain', 'team.members.user', 'submittedBy'])
             ->get();
 
