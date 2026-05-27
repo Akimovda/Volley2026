@@ -272,6 +272,13 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 									</div>
 									@elseif($lt->user)
 									<div class="team-name">{{ $lt->user->first_name }} {{ $lt->user->last_name }}</div>
+									<div class="f-12 cd mt-025">
+										<form method="POST" action="{{ route('tournament.syncLeague', $event) }}" style="display:inline">
+											@csrf
+											<input type="hidden" name="occurrence_id" value="{{ $selectedOccurrence?->id }}">
+											<button type="submit" class="btn btn-small btn-secondary" style="font-size:11px;padding:2px 8px">Создать команду</button>
+										</form>
+									</div>
 									@else
 									—
 									@endif
