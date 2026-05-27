@@ -731,6 +731,12 @@ final class UserNotificationService
 
     private function findRegistration(int $userId, ?int $eventId = null, ?int $occurrenceId = null): ?EventRegistration
     {
+        // Без event_id — не ищем: иначе вернётся случайная регистрация,
+        // и её дата/адрес попадут в уведомления, не связанные с конкретным событием.
+        if (!$eventId && !$occurrenceId) {
+            return null;
+        }
+
         $q = EventRegistration::query()->where('user_id', $userId);
 
         if ($eventId) {
