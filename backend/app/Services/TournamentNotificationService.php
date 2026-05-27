@@ -246,9 +246,13 @@ class TournamentNotificationService
         $body = "Команда {$team->name} переходит в резерв лиги «{$leagueName}» (позиция #{$reservePosition}) · {$event->title}";
 
         $payload = [
-            'type'     => 'season_elimination',
-            'event_id' => $event->id,
-            'url'      => route('tournament.public.show', $event),
+            'type'             => 'season_elimination',
+            'event_id'         => $event->id,
+            'url'              => route('tournament.public.show', $event),
+            'team_name'        => $team->name,
+            'league_name'      => $leagueName,
+            'reserve_position' => $reservePosition,
+            'event_title'      => $event->title,
         ];
 
         $this->notifyTeamMembers($team, 'season_elimination', $title, $body, $payload);
