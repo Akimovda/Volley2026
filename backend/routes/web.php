@@ -1030,6 +1030,8 @@ Route::middleware([
         ->name('divisions.teams.activate');
     Route::post('/division-teams/{leagueTeam}/move-reserve', [TournamentSeasonController::class, 'moveReserve'])
         ->name('divisions.teams.moveReserve');
+    Route::post('/divisions/{league}/create-and-add', [TournamentSeasonController::class, 'createAndAddToLeague'])
+        ->name('divisions.createAndAdd');
 
     // Привязка турниров к сезону
     Route::post('/seasons/{season}/events', [TournamentSeasonController::class, 'attachEvent'])

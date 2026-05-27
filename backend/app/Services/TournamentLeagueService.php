@@ -45,10 +45,14 @@ class TournamentLeagueService
     /**
      * Добавить команду в лигу.
      */
+    /**
+     * @param string|null $forceStatus 'active'|'reserve'|null — null = авто по вместимости
+     */
     public function addTeam(
         TournamentLeague $league,
         ?EventTeam $team = null,
         ?User $user = null,
+        ?string $forceStatus = null,
     ): TournamentLeagueTeam {
         if (!$team && !$user) {
             throw new InvalidArgumentException('Укажите team или user.');
@@ -73,8 +77,10 @@ class TournamentLeagueService
             $this->validateTeamLevel($team, $league);
         }
 
-        // Есть ли место?
-        if ($league->hasCapacity()) {
+        $toReserve = $forceStatus === 'reserve'
+            || ($forceStatus === null && !$league->hasCapacity());
+
+        if (!$toReserve) {
             return TournamentLeagueTeam::create([
                 'league_id' => $league->id,
                 'team_id'   => $team?->id,
@@ -84,7 +90,6 @@ class TournamentLeagueService
             ]);
         }
 
-        // В резерв
         return TournamentLeagueTeam::create([
             'league_id'        => $league->id,
             'team_id'          => $team?->id,

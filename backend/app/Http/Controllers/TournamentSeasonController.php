@@ -221,6 +221,74 @@ class TournamentSeasonController extends Controller
         }
     }
 
+    public function createAndAddToLeague(Request $request, TournamentLeague $league)
+    {
+        $this->authorizeSeason($request, $league->season);
+
+        $validated = $request->validate([
+            'captain_user_id' => 'required|exists:users,id',
+            'partner_user_id' => 'nullable|exists:users,id|different:captain_user_id',
+            'name'            => 'nullable|string|max:255',
+            'target_status'   => 'required|in:active,reserve',
+            'occurrence_id'   => 'nullable|integer|exists:event_occurrences,id',
+        ]);
+
+        $seasonEvent = \App\Models\TournamentSeasonEvent::where('season_id', $league->season_id)->first();
+        $event = $seasonEvent ? \App\Models\Event::find($seasonEvent->event_id) : null;
+
+        if (!$event) {
+            return back()->with('error', 'Событие не найдено.');
+        }
+
+        $captain = \App\Models\User::findOrFail($validated['captain_user_id']);
+        $occurrenceId = !empty($validated['occurrence_id']) ? (int) $validated['occurrence_id'] : null;
+
+        $teamName = trim($validated['name'] ?? '');
+        if (empty($teamName)) {
+            $teamName = 'Команда ' . ($captain->last_name ?: $captain->first_name ?: $captain->name);
+        }
+
+        try {
+            $teamService = app(\App\Services\TournamentTeamService::class);
+            $team = $teamService->createTeam(
+                event: $event,
+                captain: $captain,
+                name: $teamName,
+                occurrenceId: $occurrenceId,
+                autoApprove: true,
+            );
+
+            // Добавить партнёра (пляжный формат)
+            if (!empty($validated['partner_user_id'])) {
+                $partner = \App\Models\User::find($validated['partner_user_id']);
+                if ($partner) {
+                    \App\Models\EventTeamMember::create([
+                        'event_team_id'        => $team->id,
+                        'user_id'              => $partner->id,
+                        'role_code'            => 'player',
+                        'team_role'            => 'player',
+                        'confirmation_status'  => 'confirmed',
+                        'position_order'       => 2,
+                        'invited_by_user_id'   => $request->user()->id,
+                        'joined_at'            => now(),
+                        'responded_at'         => now(),
+                        'confirmed_at'         => now(),
+                    ]);
+                }
+            }
+
+            $entry = $this->leagueService->addTeam($league, $team, forceStatus: $validated['target_status']);
+
+            $msg = $entry->isReserve()
+                ? "Команда «{$team->name}» добавлена в резерв (позиция #{$entry->reserve_position})."
+                : "Команда «{$team->name}» добавлена в основной состав.";
+
+            return back()->with('success', $msg);
+        } catch (\Exception $e) {
+            return back()->with('error', $e->getMessage());
+        }
+    }
+
     public function removeTeamFromLeague(Request $request, TournamentLeagueTeam $leagueTeam)
     {
         $this->authorizeSeason($request, $leagueTeam->league->season);
