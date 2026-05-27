@@ -265,13 +265,13 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 										@php
 										$members = $lt->team->members->map(function($m) {
 										$u = $m->user;
-										return $u ? ($u->first_name . ' ' . $u->last_name) : '?';
+										return $u ? ($u->last_name . ' ' . $u->first_name) : '?';
 										})->implode(' / ');
 										@endphp
 										{{ $members }}
 									</div>
 									@elseif($lt->user)
-									<div class="team-name">{{ $lt->user->first_name }} {{ $lt->user->last_name }}</div>
+									<div class="team-name">{{ $lt->user->last_name }} {{ $lt->user->first_name }}</div>
 									<div class="f-12 cd mt-025">
 										<form method="POST" action="{{ route('tournament.syncLeague', $event) }}" style="display:inline">
 											@csrf
