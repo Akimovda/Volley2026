@@ -288,7 +288,22 @@ class TournamentStandingsService
             }
         }
 
-        $this->syncPendingTiebreakerSets($stage, $group, $ambiguousSets);
+        // Тайбрейк создаём только когда все матчи группы завершены
+        $totalMatches = TournamentMatch::where('stage_id', $stage->id)
+            ->where('group_id', $group->id)
+            ->where(fn($q) => $q->whereNull('is_tiebreaker')->orWhere('is_tiebreaker', false))
+            ->whereNotIn('status', [TournamentMatch::STATUS_CANCELLED])
+            ->count();
+
+        $completedMatches = TournamentMatch::where('stage_id', $stage->id)
+            ->where('group_id', $group->id)
+            ->where(fn($q) => $q->whereNull('is_tiebreaker')->orWhere('is_tiebreaker', false))
+            ->whereIn('status', [TournamentMatch::STATUS_COMPLETED, TournamentMatch::STATUS_FORFEIT])
+            ->count();
+
+        $allDone = $totalMatches > 0 && $completedMatches >= $totalMatches;
+
+        $this->syncPendingTiebreakerSets($stage, $group, $allDone ? $ambiguousSets : []);
     }
 
     /**
