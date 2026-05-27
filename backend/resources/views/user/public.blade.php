@@ -555,7 +555,9 @@ body.dark .gradient-marker-line,
                             ->get()
                         : collect();
                     // Загружаем медиа для аватарок партнёров
-                    $partnerStats->pluck('user')->filter()->unique('id')->load('media');
+                    (new \Illuminate\Database\Eloquent\Collection(
+                        $partnerStats->pluck('user')->filter()->unique('id')->values()->all()
+                    ))->load('media');
                     $partnerStatsByTeam = $partnerStats->groupBy('team_id');
 
                     $tStatsBeach   = $tStats->filter(fn($s) => $s->event?->direction === 'beach');
