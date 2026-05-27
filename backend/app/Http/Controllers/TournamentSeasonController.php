@@ -248,6 +248,38 @@ class TournamentSeasonController extends Controller
         return back()->with('success', 'Команда переведена в резерв.');
     }
 
+    public function moveReserve(Request $request, TournamentLeagueTeam $leagueTeam)
+    {
+        $this->authorizeSeason($request, $leagueTeam->league->season);
+
+        if ($leagueTeam->status !== 'reserve') {
+            return back();
+        }
+
+        $direction = $request->input('direction'); // 'up' | 'down'
+        $op        = $direction === 'up' ? '<' : '>';
+        $order     = $direction === 'up' ? 'desc' : 'asc';
+
+        $neighbor = TournamentLeagueTeam::where('league_id', $leagueTeam->league_id)
+            ->where('status', 'reserve')
+            ->where('reserve_position', $op, $leagueTeam->reserve_position)
+            ->orderBy('reserve_position', $order)
+            ->first();
+
+        if (!$neighbor) {
+            return back();
+        }
+
+        $myPos            = $leagueTeam->reserve_position;
+        $neighborPos      = $neighbor->reserve_position;
+        $leagueTeam->reserve_position = $neighborPos;
+        $neighbor->reserve_position   = $myPos;
+        $leagueTeam->save();
+        $neighbor->save();
+
+        return back();
+    }
+
     public function activateLeagueTeam(Request $request, TournamentLeagueTeam $leagueTeam)
     {
         $this->authorizeSeason($request, $leagueTeam->league->season);
