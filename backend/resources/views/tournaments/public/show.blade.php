@@ -11,7 +11,7 @@
 	$tourNumber = $occurrences->search(fn($occ) => $occ->id === $selectedOccurrence->id) + 1;
 	@endphp
 	<x-slot name="h2">
-		Тур {{ $tourNumber }} ({{ $occDate->format('d.m.Y') }})
+		@if($currentSeason){{ $currentSeason->name }} · @endif Тур {{ $tourNumber }} ({{ $occDate->format('d.m.Y') }})
 	</x-slot>
 	@endif
 	
