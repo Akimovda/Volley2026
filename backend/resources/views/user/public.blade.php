@@ -529,11 +529,15 @@ body.dark .gradient-marker-line,
                 @php
                     $tStats = \App\Models\PlayerTournamentStats::where('user_id', $user->id)
                         ->where('matches_played', '>', 0)
-                        ->with(['event', 'team'])
+                        ->with(['event', 'team.members.user'])
                         ->get();
                     $careerClassic = \App\Models\PlayerCareerStats::where('user_id', $user->id)->where('direction', 'classic')->first();
                     $careerBeach = \App\Models\PlayerCareerStats::where('user_id', $user->id)->where('direction', 'beach')->first();
                     $hasTournaments = $tStats->isNotEmpty() || $careerClassic || $careerBeach;
+                    // occurrence_id per event: берём из stats, fallback — из tournament_stages
+                    $occByEvent = \App\Models\TournamentStage::whereIn('event_id', $tStats->pluck('event_id')->unique())
+                        ->whereNotNull('occurrence_id')
+                        ->pluck('occurrence_id', 'event_id');
                 @endphp
 
                 @if($hasTournaments)
@@ -609,11 +613,22 @@ body.dark .gradient-marker-line,
                     @if($tStats->isNotEmpty())
                         <div class="b-600 f-14 mb-2">История турниров</div>
                         @foreach($tStats->groupBy('event_id') as $eventId => $stats)
-                            @php $firstStat = $stats->first(); @endphp
+                            @php
+                                $firstStat = $stats->first();
+                                $occId = $firstStat->occurrence_id ?? ($occByEvent[$eventId] ?? null);
+                                $tournamentUrl = route('tournament.public.show', $eventId)
+                                    . ($occId ? '?tab=overview&occurrence_id=' . $occId : '');
+                                $partners = $firstStat->team
+                                    ? $firstStat->team->members->where('user_id', '!=', $user->id)->map(fn($m) => $m->user)->filter()
+                                    : collect();
+                            @endphp
                             <div class="d-flex f-13" style="padding:6px 0;border-bottom:1px solid rgba(128,128,128,.08);gap:8px;align-items:center;flex-wrap:wrap">
-                                <a href="{{ route('tournament.public.show', $eventId) }}" class="blink b-600" style="flex:1;min-width:120px">
-                                    {{ $firstStat->event->title ?? 'Турнир' }}
-                                </a>
+                                <span style="flex:1;min-width:120px">
+                                    <a href="{{ $tournamentUrl }}" class="blink b-600">{{ $firstStat->event->title ?? 'Турнир' }}</a>
+                                    @if($partners->isNotEmpty())
+                                    <div class="f-12" style="opacity:.55">с {{ $partners->map(fn($p) => ($p->first_name ?? '') . ' ' . ($p->last_name ?? ''))->implode(', ') }}</div>
+                                    @endif
+                                </span>
                                 <span style="opacity:.5">{{ $firstStat->team->name ?? '—' }}</span>
                                 <span class="b-700" style="color:#E7612F">{{ $firstStat->match_win_rate }}%</span>
                                 <span>{{ $firstStat->matches_won }}В {{ $firstStat->matches_played - $firstStat->matches_won }}П</span>
