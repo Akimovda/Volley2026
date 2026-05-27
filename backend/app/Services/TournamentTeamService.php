@@ -2,7 +2,9 @@
 
 namespace App\Services;
 
+use App\Jobs\ExpireEventTeamReserveJob;
 use App\Models\Event;
+use App\Models\EventOccurrence;
 use App\Models\EventTeam;
 use App\Models\EventTeamApplication;
 use App\Models\EventTeamMember;
@@ -10,6 +12,7 @@ use App\Models\EventTeamMemberAudit;
 use App\Models\EventTournamentSetting;
 use App\Models\User;
 use DomainException;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use App\Services\TournamentPaymentService;
 use Illuminate\Support\Str;
@@ -45,13 +48,24 @@ final class TournamentTeamService
                 $captainPositionCode = null;
             }
 
+            // Для не-лиговых турниров: если слоты заняты и не autoApprove → резерв
+            $reservePos = null;
+            $initialStatus = $autoApprove ? 'approved' : 'draft';
+            if (!$autoApprove && $occurrenceId && !$event->season_id) {
+                if ($this->eventTournamentIsFull($event, $occurrenceId)) {
+                    $reservePos = $this->nextEventReservePosition($event->id, $occurrenceId);
+                    $initialStatus = 'submitted';
+                }
+            }
+
             $team = EventTeam::query()->create([
                 'event_id' => $event->id,
                 'occurrence_id' => $occurrenceId,
                 'captain_user_id' => $captain->id,
                 'name' => trim($name),
                 'team_kind' => $teamKind,
-                'status' => $autoApprove ? 'approved' : 'draft',
+                'status' => $initialStatus,
+                'reserve_position' => $reservePos,
                 'invite_code' => $this->generateInviteCode(),
                 'is_complete' => false,
                 'last_checked_at' => now(),
@@ -1255,8 +1269,19 @@ final class TournamentTeamService
         \App\Models\EventTeamInvite::where('event_team_id', $team->id)->delete();
         // Удаляем членов
         $team->members()->delete();
+
+        // Запоминаем данные для продвижения резерва ДО удаления команды
+        $wasMainSlot = $team->reserve_position === null && !$event->season_id && $occurrenceId !== null;
+        $disbandedEventId = $event->id;
+        $disbandedOccId   = $occurrenceId ?? (int) $team->occurrence_id;
+
         // Удаляем команду
         $team->delete();
+
+        // Продвигаем резерв если освободился основной слот
+        if ($wasMainSlot && $disbandedOccId) {
+            $this->fillFromEventReserve($disbandedEventId, $disbandedOccId);
+        }
 
         // Уведомляем всех участников
         foreach ($members as $m) {
@@ -1409,4 +1434,190 @@ final class TournamentTeamService
         }
     }
 
+    // ──────────────────────────────────────────────────────
+    // Резерв командного турнира (не-лигового)
+    // ──────────────────────────────────────────────────────
+
+    /**
+     * Есть ли свободные основные слоты в этом occurrence?
+     */
+    public function eventTournamentIsFull(Event $event, int $occurrenceId): bool
+    {
+        $max = (int) ($event->tournament_teams_count ?? 0);
+        if ($max <= 0) {
+            return false;
+        }
+        $main = EventTeam::where('event_id', $event->id)
+            ->where('occurrence_id', $occurrenceId)
+            ->whereNull('reserve_position')
+            ->whereIn('status', ['draft', 'ready', 'pending_members', 'submitted', 'confirmed', 'approved'])
+            ->count();
+        return $main >= $max;
+    }
+
+    /**
+     * Следующая позиция резерва для этого occurrence.
+     */
+    private function nextEventReservePosition(int $eventId, int $occurrenceId): int
+    {
+        $max = EventTeam::where('event_id', $eventId)
+            ->where('occurrence_id', $occurrenceId)
+            ->whereNotNull('reserve_position')
+            ->max('reserve_position');
+        return ($max ?? 0) + 1;
+    }
+
+    /**
+     * Пересчитать reserve_position (1,2,3…) по порядку.
+     */
+    public function reindexEventReserve(int $eventId, int $occurrenceId): void
+    {
+        $teams = EventTeam::where('event_id', $eventId)
+            ->where('occurrence_id', $occurrenceId)
+            ->whereNotNull('reserve_position')
+            ->orderBy('reserve_position')
+            ->get();
+
+        foreach ($teams as $i => $t) {
+            $t->update(['reserve_position' => $i + 1]);
+        }
+    }
+
+    /**
+     * Продвинуть команды из резерва в основной состав если есть слоты.
+     */
+    public function fillFromEventReserve(int $eventId, int $occurrenceId): void
+    {
+        $event = Event::find($eventId);
+        if (!$event || $event->season_id) {
+            return; // Лиговые турниры используют TournamentLeagueService
+        }
+
+        $max = (int) ($event->tournament_teams_count ?? 0);
+        if ($max <= 0) {
+            return;
+        }
+
+        $mainCount = EventTeam::where('event_id', $eventId)
+            ->where('occurrence_id', $occurrenceId)
+            ->whereNull('reserve_position')
+            ->whereIn('status', ['draft', 'ready', 'pending_members', 'submitted', 'confirmed', 'approved'])
+            ->count();
+
+        $available = $max - $mainCount;
+        if ($available <= 0) {
+            return;
+        }
+
+        // Берём первых N из резерва кому ещё не предложили место
+        $candidates = EventTeam::where('event_id', $eventId)
+            ->where('occurrence_id', $occurrenceId)
+            ->whereNotNull('reserve_position')
+            ->whereNull('confirmation_token')
+            ->whereIn('status', ['draft', 'submitted'])
+            ->orderBy('reserve_position')
+            ->limit($available)
+            ->get();
+
+        foreach ($candidates as $team) {
+            $this->offerEventReserveSpot($team);
+        }
+    }
+
+    /**
+     * Предложить команде место: отправить уведомление + поставить таймер 2ч.
+     */
+    public function offerEventReserveSpot(EventTeam $team): void
+    {
+        $token   = Str::random(64);
+        $expires = Carbon::now()->addHours(2);
+
+        $team->update([
+            'confirmation_token'    => $token,
+            'confirmation_expires_at' => $expires,
+        ]);
+
+        // Уведомление капитану
+        $event     = $team->event;
+        $occurrence = $team->occurrence;
+        $confirmUrl = route('tournamentTeams.reserveConfirm', ['event' => $event->id, 'team' => $team->id, 'token' => $token]);
+        $declineUrl = route('tournamentTeams.reserveDecline', ['event' => $event->id, 'team' => $team->id]);
+        $expiresStr = $expires->format('d.m.Y H:i');
+
+        try {
+            app(UserNotificationService::class)->create(
+                userId:   (int) $team->captain_user_id,
+                type:     'team_reserve_spot_offered',
+                title:    'Место в турнире для вашей команды!',
+                body:     "Для вашей команды «{$team->name}» освободилось место в турнире «{$event->title}». "
+                    . "Подтвердите участие до {$expiresStr}. "
+                    . "Если не подтвердите — место перейдёт следующей команде.",
+                payload:  [
+                    'event_id'    => $event->id,
+                    'team_id'     => $team->id,
+                    'team_name'   => $team->name,
+                    'expires_at'  => $expiresStr,
+                    'confirm_url' => $confirmUrl,
+                    'decline_url' => $declineUrl,
+                    'button_text' => 'Подтвердить участие',
+                    'button_url'  => $confirmUrl,
+                ],
+                channels: ['in_app', 'telegram', 'vk', 'max'],
+            );
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
+        // Job на истечение через 2 часа + 1 минута (небольшой буфер)
+        ExpireEventTeamReserveJob::dispatch($team->id, $token)->delay($expires->addMinute());
+    }
+
+    /**
+     * Капитан подтверждает место из резерва.
+     */
+    public function confirmEventReserveSpot(EventTeam $team, string $token): void
+    {
+        if ($team->confirmation_token !== $token) {
+            throw new DomainException('Неверная ссылка подтверждения.');
+        }
+
+        if ($team->confirmation_expires_at && $team->confirmation_expires_at->isPast()) {
+            throw new DomainException('Время подтверждения истекло.');
+        }
+
+        DB::transaction(function () use ($team) {
+            $team->update([
+                'status'                  => 'approved',
+                'reserve_position'        => null,
+                'confirmation_token'      => null,
+                'confirmation_expires_at' => null,
+                'confirmed_at'            => now(),
+            ]);
+        });
+    }
+
+    /**
+     * Капитан отказывается или истекает время → перемещаем в конец резерва.
+     */
+    public function expireEventReserveOffer(EventTeam $team): void
+    {
+        if ($team->confirmation_token === null) {
+            return; // Уже обработано
+        }
+
+        $event = $team->event;
+
+        DB::transaction(function () use ($team, $event) {
+            $newPos = $this->nextEventReservePosition($event->id, (int) $team->occurrence_id);
+            $team->update([
+                'confirmation_token'      => null,
+                'confirmation_expires_at' => null,
+                'reserve_position'        => $newPos,
+            ]);
+            $this->reindexEventReserve($event->id, (int) $team->occurrence_id);
+        });
+
+        // Предлагаем следующей команде
+        $this->fillFromEventReserve($event->id, (int) $team->occurrence_id);
+    }
 }

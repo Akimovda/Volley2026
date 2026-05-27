@@ -528,6 +528,46 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
 </div>
 <div class="col-lg-4">
 
+    {{-- Резерв: статус и кнопка подтверждения --}}
+    @if($team->isInReserve())
+    <div class="ramka">
+        @if($team->isReserveOfferPending())
+        <h2 class="-mt-05" style="color:#16a34a">🎉 Место предложено!</h2>
+        <div class="f-15 mb-1">Для вашей команды освободилось место в основном составе.</div>
+        <div class="f-14 mb-2" style="color:#dc2626">
+            ⏰ Подтвердите до <strong>{{ $team->confirmation_expires_at->format('d.m.Y H:i') }}</strong>
+        </div>
+        @if($canManage)
+        <form method="POST" action="{{ route('tournamentTeams.reserveConfirm', [$event, $team]) }}" class="mb-1">
+            @csrf
+            <input type="hidden" name="token" value="{{ $team->confirmation_token }}">
+            <button type="submit" class="btn w-100 btn-alert"
+                    data-title="Подтвердить участие?"
+                    data-icon="success"
+                    data-confirm-text="Да, подтверждаю"
+                    data-cancel-text="Отмена">
+                ✅ Подтвердить участие
+            </button>
+        </form>
+        <form method="POST" action="{{ route('tournamentTeams.reserveDecline', [$event, $team]) }}">
+            @csrf
+            <button type="submit" class="btn btn-secondary w-100 btn-alert"
+                    data-title="Отказаться от места?"
+                    data-icon="warning"
+                    data-confirm-text="Да, отказаться"
+                    data-cancel-text="Отмена">
+                ✗ Отказаться
+            </button>
+        </form>
+        @endif
+        @else
+        <h2 class="-mt-05">⏳ Лист ожидания</h2>
+        <div class="alert alert-warning">Позиция в очереди: <strong>#{{ $team->reserve_position }}</strong></div>
+        <div class="f-14" style="opacity:.7">Когда освободится место, вы получите уведомление и будете иметь 2 часа для подтверждения.</div>
+        @endif
+    </div>
+    @endif
+
     {{-- Статус --}}
     <div class="ramka">
         <h2 class="-mt-05">📊 Состав</h2>
