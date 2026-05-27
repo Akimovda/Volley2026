@@ -297,6 +297,18 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 										<input type="hidden" name="occurrence_id" value="{{ $selectedOccurrence?->id }}">
 										<button type="submit" class="btn btn-secondary btn-alert btn-small" data-title="{{ __('tournaments.setup_activate_title') }}" data-icon="info" data-confirm-text="{{ __('tournaments.yes') }}" data-cancel-text="{{ __('tournaments.btn_cancel') }}">{{ __('tournaments.setup_btn_activate') }}</button>
 									</form>
+									@if($lt->status === 'reserve')
+									<form method="POST" action="{{ route('divisions.teams.moveReserve', $lt) }}" style="display:inline">
+										@csrf
+										<input type="hidden" name="direction" value="up">
+										<button type="submit" class="btn btn-secondary btn-small" title="Вверх по очереди">↑</button>
+									</form>
+									<form method="POST" action="{{ route('divisions.teams.moveReserve', $lt) }}" style="display:inline">
+										@csrf
+										<input type="hidden" name="direction" value="down">
+										<button type="submit" class="btn btn-secondary btn-small" title="Вниз по очереди">↓</button>
+									</form>
+									@endif
 									@endif
 									<form method="POST" action="{{ route('divisions.teams.destroy', $lt) }}" style="display:inline">
 										@csrf
