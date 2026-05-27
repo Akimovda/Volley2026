@@ -22,6 +22,7 @@ class TournamentPublicController extends Controller
         // Occurrence selector для сезонных турниров
         $occurrences = collect();
         $selectedOccurrence = null;
+        $currentSeason = null;
         if ($event->season_id) {
             $occurrences = $event->occurrences()->orderBy('starts_at')->get();
 
@@ -32,6 +33,7 @@ class TournamentPublicController extends Controller
                     ->where('event_id', $event->id)
                     ->pluck('occurrence_id');
                 $occurrences = $occurrences->whereIn('id', $seasonOccIds->all())->values();
+                $currentSeason = \App\Models\TournamentSeason::find($seasonIdFilter);
             }
 
             $occId = $request->query('occurrence_id');
@@ -40,6 +42,16 @@ class TournamentPublicController extends Controller
             }
             if (!$selectedOccurrence && $occurrences->isNotEmpty()) {
                 $selectedOccurrence = $occurrences->first();
+            }
+
+            // Определяем сезон по occurrence если season_id не передан явно
+            if (!$currentSeason && $selectedOccurrence) {
+                $se = TournamentSeasonEvent::where('event_id', $event->id)
+                    ->where('occurrence_id', $selectedOccurrence->id)
+                    ->first();
+                if ($se) {
+                    $currentSeason = \App\Models\TournamentSeason::find($se->season_id);
+                }
             }
         }
 
@@ -75,7 +87,7 @@ class TournamentPublicController extends Controller
         }
 
         return view('tournaments.public.show', compact(
-            'event', 'stages', 'tab', 'setting', 'totalMatches', 'totalTeams', 'occurrences', 'selectedOccurrence', 'seasonStats'
+            'event', 'stages', 'tab', 'setting', 'totalMatches', 'totalTeams', 'occurrences', 'selectedOccurrence', 'seasonStats', 'currentSeason'
         ));
     }
 
