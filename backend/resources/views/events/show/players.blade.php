@@ -102,7 +102,7 @@
 	</div>
 	@if(auth()->check() && (auth()->user()->role === 'admin' || (int)($event->organizer_id ?? 0) === auth()->id()))
 	<div class="mt-1 mb-1">
-		<a href="{{ route('tournament.setup', $event) }}" class="btn btn-primary btn-sm">{{ __('events.sp_setup_btn') }}</a>
+		<a href="{{ route('tournament.setup', $event) . '?occurrence_id=' . $occurrence->id }}" class="btn btn-primary btn-sm">{{ __('events.sp_setup_btn') }}</a>
 	</div>
 	@endif
     @elseif($isIndividualTournament && auth()->check() && (auth()->user()->role === 'admin' || (int)($event->organizer_id ?? 0) === auth()->id()))
@@ -111,7 +111,7 @@
         <button id="distribute-teams-btn" class="btn btn-primary btn-sm" data-event-id="{{ $event->id }}" data-occurrence-id="{{ $occurrence->id }}">
             {{ __('events.tournament_distribute_random_btn') }}
         </button>
-        <a href="{{ route('tournament.setup', $event) }}" class="btn btn-secondary btn-sm ml-1">{{ __('events.sp_setup_btn') }}</a>
+        <a href="{{ route('tournament.setup', $event) . '?occurrence_id=' . $occurrence->id }}" class="btn btn-secondary btn-sm ml-1">{{ __('events.sp_setup_btn') }}</a>
     </div>
     @elseif(!is_null($registeredTotal))
 	<div class="text-muted small mb-1">
