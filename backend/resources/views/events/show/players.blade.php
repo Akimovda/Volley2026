@@ -1089,30 +1089,52 @@ $showWaitlist = !$isTournament && !$eventStarted && auth()->check() && !$isRegis
 				@foreach($tournamentTeamsReserve as $tTeam)
 				@php
 					$confirmedMembers = $tTeam->members->where('confirmation_status', 'confirmed')->sortBy(fn($m) => $m->role_code === 'captain' ? 0 : 1);
-					$iMyTeam     = (int)$myTeamIdOnEvent === (int)$tTeam->id;
+					$isBeachPair  = $tTeam->team_kind === 'beach_pair';
+					$hasVacancy   = $isBeachPair && $confirmedMembers->count() < 2;
+					$iMyTeam      = (int)$myTeamIdOnEvent === (int)$tTeam->id;
 					$offerPending = $tTeam->isReserveOfferPending();
 				@endphp
-				<div class="card mb-1" style="padding:0.5rem 0.8rem;opacity:.8{{ $iMyTeam ? ';border:1.5px solid #2563eb' : '' }}{{ $offerPending ? ';border:1.5px solid #16a34a' : '' }}">
+				<div class="card mb-1" style="padding:0.5rem 0.8rem;opacity:.85{{ $iMyTeam ? ';border:1.5px solid #2563eb' : '' }}{{ $offerPending ? ';border:1.5px solid #16a34a;opacity:1' : '' }}">
 					<div class="d-flex between fvc mb-05">
 						<div class="d-flex fvc" style="gap:.5rem">
-							@if($tTeam->reserve_position)<span class="f-12 text-muted">#{{ $tTeam->reserve_position }}</span>@endif
-							<a href="{{ route('tournamentTeams.show', [$event, $tTeam]) }}" class="blink f-16 b-600">{{ $tTeam->name }}</a>
+							@if($tTeam->reserve_position)
+							<span class="f-12" style="opacity:.45;font-weight:600;min-width:18px">#{{ $tTeam->reserve_position }}</span>
+							@endif
+							<a href="{{ route('tournamentTeams.show', [$event, $tTeam]) }}" class="blink f-15 b-600">{{ $tTeam->name }}</a>
 						</div>
-						<div class="d-flex fvc" style="gap:.4rem">
-							@if($iMyTeam)<span class="f-12 b-600" style="color:#2563eb">{{ __('events.show_pl_my_team') }}</span>@endif
-							@if($offerPending)<span class="f-12 b-600" style="color:#16a34a">🎉 Место предложено</span>@endif
+						<div class="d-flex fvc" style="gap:.4rem;flex-wrap:wrap;justify-content:flex-end">
+							@if($iMyTeam)
+							<span class="f-12 b-600" style="color:#2563eb">{{ __('events.show_pl_my_team') }}</span>
+							@endif
+							@if($offerPending)
+							<span style="display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600;background:#f0fdf4;color:#16a34a">🎉 Место предложено</span>
+							@endif
 						</div>
 					</div>
 					@foreach($confirmedMembers as $m)
 					@php
-						$mUser = $m->user;
-						$mName = trim(($mUser->last_name ?? '') . ' ' . ($mUser->first_name ?? '')) ?: ($mUser->name ?? '?');
+						$mUser  = $m->user;
+						$mLevel = (int)($mUser->beach_level ?? $mUser->classic_level ?? 0);
+						$mColor = $mLevel > 0 ? level_color($mLevel) : '#aaaaaa';
+						$mName  = trim(($mUser->last_name ?? '') . ' ' . ($mUser->first_name ?? '')) ?: ($mUser->name ?? '?');
 					@endphp
-					<div class="d-flex fvc" style="gap:0.5rem;margin-bottom:0.2rem">
+					<div class="d-flex fvc" style="gap:0.5rem;margin-bottom:0.3rem">
 						<span class="f-13 text-muted" style="width:16px;text-align:right;flex-shrink:0">{{ $loop->iteration }}.</span>
-						<a href="{{ route('users.show', $mUser) }}" class="f-14">{{ $mName }}</a>
+						<a href="{{ route('users.show', $mUser) }}">
+							<img src="{{ $mUser->profile_photo_url }}" alt="" style="width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0">
+						</a>
+						<span style="width:9px;height:9px;border-radius:50%;background:{{ $mColor }};display:inline-block;flex-shrink:0;border:1px solid rgba(0,0,0,.12)"></span>
+						<a href="{{ route('users.show', $mUser) }}" class="blink f-14">{{ $mName }}</a>
 					</div>
 					@endforeach
+					@if($hasVacancy)
+					<div class="d-flex fvc" style="gap:0.5rem;margin-bottom:0.2rem">
+						<span class="f-13 text-muted" style="width:16px;text-align:right;flex-shrink:0">2.</span>
+						<div style="width:32px;height:32px;border-radius:50%;background:var(--bg2,#f5f5f5);flex-shrink:0;display:flex;align-items:center;justify-content:center;border:2px dashed #ccc;font-size:1.6rem;color:#aaa">?</div>
+						<span style="width:9px;height:9px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
+						<span class="f-13" style="opacity:.5;font-style:italic">{{ __('events.show_pl_seek_partner') }}</span>
+					</div>
+					@endif
 				</div>
 				@endforeach
 			</div>
