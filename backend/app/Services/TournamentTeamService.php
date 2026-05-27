@@ -1236,9 +1236,9 @@ final class TournamentTeamService
     /**
      * Капитан расформировывает команду. Рефанд всем.
      */
-    public function disbandTeam(EventTeam $team, int $captainUserId): void
+    public function disbandTeam(EventTeam $team, int $captainUserId, bool $force = false): void
     {
-        if ((int) $team->captain_user_id !== $captainUserId) {
+        if (!$force && (int) $team->captain_user_id !== $captainUserId) {
             throw new DomainException('Только капитан может расформировать команду.');
         }
 

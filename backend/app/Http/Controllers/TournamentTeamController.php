@@ -191,7 +191,10 @@ class TournamentTeamController extends Controller
     ): RedirectResponse {
         abort_unless((int) $team->event_id === (int) $event->id, 404);
         abort_unless((int) $member->event_team_id === (int) $team->id, 404);
-        abort_unless((int) $team->captain_user_id === (int) $request->user()->id, 403);
+        $canRemove = (int) $team->captain_user_id === (int) $request->user()->id
+            || (int) $event->organizer_id === (int) $request->user()->id
+            || $request->user()->isAdmin();
+        abort_unless($canRemove, 403);
 
         try {
             $service->removeMember($team, $member->id, $request->user());
@@ -580,9 +583,13 @@ class TournamentTeamController extends Controller
         $user = $request->user();
         abort_unless($user, 403);
 
+        $isOrganizer = (int) $event->organizer_id === (int) $user->id || $user->isAdmin();
+        $isCaptain   = (int) $team->captain_user_id === (int) $user->id;
+        abort_unless($isCaptain || $isOrganizer, 403);
+
         try {
             $occurrenceId = $team->occurrence_id ? (int) $team->occurrence_id : null;
-            $service->disbandTeam($team, (int) $user->id);
+            $service->disbandTeam($team, (int) $user->id, force: $isOrganizer && !$isCaptain);
             $this->dispatchAnnounceRefresh($event, $occurrenceId);
 
             return redirect()
