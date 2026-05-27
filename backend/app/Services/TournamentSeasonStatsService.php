@@ -46,6 +46,8 @@ class TournamentSeasonStatsService
             ->where('confirmation_status', 'confirmed')
             ->pluck('user_id');
 
+        $eventIds = $season->seasonEvents()->pluck('event_id')->all();
+
         foreach ($memberUserIds as $userId) {
             $stat = TournamentSeasonStats::firstOrCreate([
                 'season_id' => $season->id,
@@ -78,7 +80,6 @@ class TournamentSeasonStatsService
             $stat->points_scored   += $side['scored'];
             $stat->points_conceded += $side['conceded'];
 
-            // Recalc rates
             $stat->match_win_rate = $stat->matches_played > 0
                 ? round($stat->matches_won / $stat->matches_played * 100, 2)
                 : 0;
@@ -88,8 +89,31 @@ class TournamentSeasonStatsService
                 ? round($stat->sets_won / $totalSets * 100, 2)
                 : 0;
 
+            $stat->rounds_played = $this->recalculateRoundsPlayed($stat, $eventIds);
+
             $stat->save();
         }
+    }
+
+    private function recalculateRoundsPlayed(TournamentSeasonStats $stat, array $eventIds): int
+    {
+        if (empty($eventIds)) return 0;
+
+        $teamIds = DB::table('event_team_members')
+            ->where('user_id', $stat->user_id)
+            ->pluck('event_team_id');
+
+        if ($teamIds->isEmpty()) return 0;
+
+        return (int) TournamentMatch::where('tournament_matches.status', 'completed')
+            ->join('tournament_stages', 'tournament_matches.stage_id', '=', 'tournament_stages.id')
+            ->whereIn('tournament_stages.event_id', $eventIds)
+            ->whereNotNull('tournament_stages.occurrence_id')
+            ->where(function ($q) use ($teamIds) {
+                $q->whereIn('tournament_matches.team_home_id', $teamIds)
+                  ->orWhereIn('tournament_matches.team_away_id', $teamIds);
+            })
+            ->count(DB::raw('DISTINCT tournament_stages.occurrence_id'));
     }
 
     /**
@@ -181,22 +205,10 @@ class TournamentSeasonStatsService
         }
 
         // Подсчёт rounds_played: кол-во уникальных occurrence, в которых игрок участвовал
-        $stats = TournamentSeasonStats::where('season_id', $season->id)->get();
-        foreach ($stats as $stat) {
-            $roundsPlayed = TournamentMatch::where('tournament_matches.status', 'completed')
-                ->whereHas('stage', fn($q) => $q->whereIn('event_id', $eventIds))
-                ->where(function($q) use ($stat) {
-                    $teamIds = \DB::table('event_team_members')
-                        ->where('user_id', $stat->user_id)
-                        ->pluck('event_team_id');
-                    $q->whereIn('team_home_id', $teamIds)
-                      ->orWhereIn('team_away_id', $teamIds);
-                })
-                ->join('tournament_stages', 'tournament_matches.stage_id', '=', 'tournament_stages.id')
-                ->distinct('tournament_stages.occurrence_id')
-                ->count('tournament_stages.occurrence_id');
-            
-            $stat->update(['rounds_played' => $roundsPlayed]);
-        }
+        $eventIdsArr = $eventIds->all();
+        TournamentSeasonStats::where('season_id', $season->id)
+            ->each(function ($stat) use ($eventIdsArr) {
+                $stat->update(['rounds_played' => $this->recalculateRoundsPlayed($stat, $eventIdsArr)]);
+            });
     }
 }
