@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Event;
+use App\Models\TournamentSeasonEvent;
 use App\Models\TournamentStage;
 use App\Models\TournamentMatch;
 use App\Models\TournamentStanding;
@@ -23,6 +24,16 @@ class TournamentPublicController extends Controller
         $selectedOccurrence = null;
         if ($event->season_id) {
             $occurrences = $event->occurrences()->orderBy('starts_at')->get();
+
+            // Фильтр по сезону (когда ссылка пришла со страницы конкретного сезона)
+            $seasonIdFilter = (int) $request->query('season_id');
+            if ($seasonIdFilter) {
+                $seasonOccIds = TournamentSeasonEvent::where('season_id', $seasonIdFilter)
+                    ->where('event_id', $event->id)
+                    ->pluck('occurrence_id');
+                $occurrences = $occurrences->whereIn('id', $seasonOccIds->all())->values();
+            }
+
             $occId = $request->query('occurrence_id');
             if ($occId) {
                 $selectedOccurrence = $occurrences->firstWhere('id', $occId);
