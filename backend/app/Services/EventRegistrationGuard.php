@@ -49,16 +49,32 @@
 				$nowUtc = Carbon::now('UTC');
 				$tz     = (string)($event?->timezone ?? 'Europe/Moscow');
 
+				// Счётчик команд вычисляем один раз — нужен во всех ранних возвратах
+				$teamsMax         = (int)($event->tournament_teams_count ?? $event->tournamentSetting?->teams_count ?? 0);
+				$leagueReserveIds = $this->getLeagueReserveTeamIds($occurrence);
+				$teamsReg         = \App\Models\EventTeam::where('event_id', $occurrence->event_id)
+					->where(fn($q) => $q->where('occurrence_id', $occurrence->id)->orWhereNull('occurrence_id'))
+					->whereIn('status', ['draft','ready','pending_members','submitted','confirmed','approved'])
+					->when($leagueReserveIds->isNotEmpty(), fn($q) => $q->whereNotIn('id', $leagueReserveIds))
+					->count();
+				$teamsMeta = [
+					'tournament_teams_max'        => $teamsMax,
+					'tournament_teams_registered' => $teamsReg,
+					'tournament_teams_remaining'  => max(0, $teamsMax - $teamsReg),
+				];
+
 				if (
 					$occurrence->starts_at &&
 					$nowUtc->greaterThanOrEqualTo(Carbon::parse($occurrence->starts_at, 'UTC'))
 				) {
 					$result->addError('Мероприятие уже началось.');
+					$result->data['meta'] = $teamsMeta;
 					return $result;
 				}
 
 				if (!$occurrence->effectiveAllowRegistration()) {
 					$result->addError('Регистрация на мероприятие выключена.');
+					$result->data['meta'] = $teamsMeta;
 					return $result;
 				}
 
@@ -66,31 +82,20 @@
 				if ($regStartsAt && $nowUtc->lessThan($regStartsAt)) {
 					$opens = $regStartsAt->copy()->setTimezone($tz)->locale('ru')->translatedFormat('d F в H:i');
 					$result->addError('Регистрация ещё не началась — откроется ' . $opens . '.');
+					$result->data['meta'] = $teamsMeta;
 					return $result;
 				}
 
 				$regEndsAt = $occurrence->effectiveRegistrationEndsAt();
 				if ($regEndsAt && $nowUtc->greaterThanOrEqualTo($regEndsAt)) {
 					$result->addError('Регистрация уже завершена.');
+					$result->data['meta'] = $teamsMeta;
 					return $result;
 				}
 
 				// Регистрация открыта — оставляем allowed=true и подсказку про команду.
 				$result->errors[] = 'На турнир можно записаться только в составе команды.';
-
-				// Заполняем meta по командам ДО раннего return — иначе JS не получит счётчик
-				$teamsMax = (int)($event->tournament_teams_count ?? $event->tournamentSetting?->teams_count ?? 0);
-				$leagueReserveIds = $this->getLeagueReserveTeamIds($occurrence);
-				$teamsReg = \App\Models\EventTeam::where('event_id', $occurrence->event_id)
-					->where(fn($q) => $q->where('occurrence_id', $occurrence->id)->orWhereNull('occurrence_id'))
-					->whereIn('status', ['draft','ready','pending_members','submitted','confirmed','approved'])
-					->when($leagueReserveIds->isNotEmpty(), fn($q) => $q->whereNotIn('id', $leagueReserveIds))
-					->count();
-				$result->data['meta'] = [
-					'tournament_teams_max'        => $teamsMax,
-					'tournament_teams_registered' => $teamsReg,
-					'tournament_teams_remaining'  => max(0, $teamsMax - $teamsReg),
-				];
+				$result->data['meta'] = $teamsMeta;
 
 				return $result;
 			}

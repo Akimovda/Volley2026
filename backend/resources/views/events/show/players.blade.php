@@ -961,12 +961,17 @@ $showWaitlist = !$isTournament && !$eventStarted && auth()->check() && !$isRegis
 
 			@if($event->format === 'tournament' && !$isIndividualTournament)
 			@php
-            $tournamentTeams = \App\Models\EventTeam::where('event_id', $event->id)
+            $allTournamentTeams = \App\Models\EventTeam::where('event_id', $event->id)
 			->where(fn($q) => $q->where('occurrence_id', $occurrence->id)->orWhereNull('occurrence_id'))
 			->whereIn('status', ['ready','pending_members','draft','submitted','confirmed','approved','incomplete'])
 			->with(['captain', 'members.user'])
 			->orderByRaw("CASE WHEN status IN ('ready','submitted','confirmed','approved') THEN 0 ELSE 1 END")
 			->get();
+			// Разделяем основной состав и резерв лиги
+			$tournamentTeams       = $allTournamentTeams->when($leagueReserveTeamIds->isNotEmpty(), fn($c) => $c->whereNotIn('id', $leagueReserveTeamIds->all()));
+			$tournamentTeamsReserve = $leagueReserveTeamIds->isNotEmpty()
+			    ? $allTournamentTeams->whereIn('id', $leagueReserveTeamIds->all())
+			    : collect();
 
 			// Определяем команду текущего пользователя (confirmed/joined)
 			$myTeamIdOnEvent = null;
@@ -1062,6 +1067,36 @@ $showWaitlist = !$isTournament && !$eventStarted && auth()->check() && !$isRegis
 				@endif
 			</div>
             @endforeach
+			@if($tournamentTeamsReserve->isNotEmpty())
+			<div class="mt-2">
+				<div class="text-muted small b-600 mb-05" style="opacity:.7">⏳ Лист ожидания ({{ $tournamentTeamsReserve->count() }})</div>
+				@foreach($tournamentTeamsReserve as $tTeam)
+				@php
+					$confirmedMembers = $tTeam->members->where('confirmation_status', 'confirmed')->sortBy(fn($m) => $m->role_code === 'captain' ? 0 : 1);
+					$isBeachPair = $tTeam->team_kind === 'beach_pair';
+					$iMyTeam     = (int)$myTeamIdOnEvent === (int)$tTeam->id;
+				@endphp
+				<div class="card mb-1" style="padding:0.5rem 0.8rem;opacity:.8{{ $iMyTeam ? ';border:1.5px solid #2563eb' : '' }}">
+					<div class="d-flex between fvc mb-05">
+						<a href="{{ route('tournamentTeams.show', [$event, $tTeam]) }}" class="blink f-16 b-600">{{ $tTeam->name }}</a>
+						@if($iMyTeam)
+						<span class="f-12 b-600" style="color:#2563eb">{{ __('events.show_pl_my_team') }}</span>
+						@endif
+					</div>
+					@foreach($confirmedMembers as $m)
+					@php
+						$mUser = $m->user;
+						$mName = trim(($mUser->last_name ?? '') . ' ' . ($mUser->first_name ?? '')) ?: ($mUser->name ?? '?');
+					@endphp
+					<div class="d-flex fvc" style="gap:0.5rem;margin-bottom:0.2rem">
+						<span class="f-13 text-muted" style="width:16px;text-align:right;flex-shrink:0">{{ $loop->iteration }}.</span>
+						<a href="{{ route('users.show', $mUser) }}" class="f-14">{{ $mName }}</a>
+					</div>
+					@endforeach
+				</div>
+				@endforeach
+			</div>
+			@endif
 			@if($errors->has('join'))
 			<div class="alert alert-danger mt-1">{{ $errors->first('join') }}</div>
 			@endif
