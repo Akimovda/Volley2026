@@ -258,7 +258,9 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 								<td>{{ $loop->iteration }}</td>
 								<td>
 									@if($lt->team)
-									<div class="team-name cd b-600">{{ $lt->team->name }}</div>
+									<div class="team-name b-600">
+										<a class="blink" href="{{ route('tournamentTeams.show', [$event, $lt->team]) }}">{{ $lt->team->name }}</a>
+									</div>
 									<div class="team-members">
 										@php
 										$members = $lt->team->members->map(function($m) {
