@@ -548,13 +548,15 @@ body.dark .gradient-marker-line,
                             ->pluck('best_rank', 'team_id')
                         : collect();
 
-                    $partnerStatsByTeam = $teamIds->isNotEmpty()
+                    $partnerStats = $teamIds->isNotEmpty()
                         ? \App\Models\PlayerTournamentStats::whereIn('team_id', $teamIds)
                             ->where('user_id', '!=', $user->id)
-                            ->with('user:id,first_name,last_name')
+                            ->with('user:id,first_name,last_name,avatar_media_id')
                             ->get()
-                            ->groupBy('team_id')
                         : collect();
+                    // Загружаем медиа для аватарок партнёров
+                    $partnerStats->pluck('user')->filter()->unique('id')->load('media');
+                    $partnerStatsByTeam = $partnerStats->groupBy('team_id');
 
                     $tStatsBeach   = $tStats->filter(fn($s) => $s->event?->direction === 'beach');
                     $tStatsClassic = $tStats->filter(fn($s) => $s->event?->direction === 'classic');
