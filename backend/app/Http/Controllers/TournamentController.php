@@ -1449,9 +1449,10 @@ class TournamentController extends Controller
         $linked = 0;
 
         // Направление 1: EventTeam тура → Лига (добавляем новых участников)
+        // Исключаем rejected — иначе отклонённые команды попадут в лигу
         $teams = EventTeam::where('event_id', $event->id)
             ->when($occurrenceId > 0, fn($q) => $q->where('occurrence_id', $occurrenceId))
-            ->whereIn('status', ['draft', 'submitted', 'approved', 'ready'])
+            ->whereIn('status', ['submitted', 'approved'])
             ->get();
 
         foreach ($teams as $team) {
