@@ -729,6 +729,15 @@ class TournamentController extends Controller
             return back()->with('error', 'Не все группы завершены.');
         }
 
+        // Существующие резервы ДО транзакции (для переноса в waitlist следующего тура)
+        $existingReserveUserIds = \App\Models\TournamentLeagueTeam::where('league_id', $currentLeague->id)
+            ->where('status', 'reserve')
+            ->orderBy('reserve_position')
+            ->pluck('user_id')
+            ->filter()
+            ->values()
+            ->toArray();
+
         // Команды → резерв (Lite bottom-2, Medium bottom-1)
         $reserveCaptainIds = [];
         foreach ($stages->filter(fn($s) => str_contains($s->name, 'Lite')) as $stage) {
@@ -810,8 +819,13 @@ class TournamentController extends Controller
                 }
             });
 
+            $waitlistAdded = $this->transferReserveToNextOccurrenceWaitlist(
+                $event, $occurrenceId, $existingReserveUserIds, $reserveCaptainIds
+            );
+            $waitlistMsg = $waitlistAdded > 0 ? " + {$waitlistAdded} в лист ожидания тура " . ($occurrenceId > 0 ? '→' : '') : '';
+
             return back()->with('success',
-                "Промоушен в {$nextSeason->name}: {$active} в основном составе, {$reserve} в резерве.");
+                "Промоушен в {$nextSeason->name}: {$active} в основном составе, {$reserve} в резерве.{$waitlistMsg}");
         }
 
         // Fallback (нет следующего сезона): переводим в резерв текущего дивизиона
@@ -833,7 +847,12 @@ class TournamentController extends Controller
             }
         });
 
-        return back()->with('success', "Промоушен применён: {$movedCount} команд в резерв.");
+        $waitlistAdded = $this->transferReserveToNextOccurrenceWaitlist(
+            $event, $occurrenceId, $existingReserveUserIds, $reserveCaptainIds
+        );
+        $waitlistMsg = $waitlistAdded > 0 ? " + {$waitlistAdded} в лист ожидания следующего тура." : '';
+
+        return back()->with('success', "Промоушен применён: {$movedCount} команд в резерв.{$waitlistMsg}");
     }
 
     public function formDivisions(Request $request, TournamentStage $stage)
@@ -2155,5 +2174,80 @@ class TournamentController extends Controller
         $this->standingsService->recalculateGroup($stage, $group);
 
         return $this->redirectToSetup($event, 'Жребий зафиксирован, таблица обновлена.');
+    }
+
+    /**
+     * Переносит резервные команды лиги в лист ожидания следующего тура.
+     * Существующие резервы идут первыми (по reserve_position),
+     * только что вылетевшие ($relegatedIds) — в конец.
+     */
+    private function transferReserveToNextOccurrenceWaitlist(
+        \App\Models\Event $event,
+        int $currentOccurrenceId,
+        array $existingReserveUserIds,
+        array $relegatedIds
+    ): int {
+        if ($currentOccurrenceId <= 0) return 0;
+
+        $currentOcc = \App\Models\EventOccurrence::find($currentOccurrenceId);
+        if (!$currentOcc) return 0;
+
+        $nextOcc = \App\Models\EventOccurrence::where('event_id', $event->id)
+            ->where('starts_at', '>', $currentOcc->starts_at)
+            ->orderBy('starts_at')
+            ->first();
+        if (!$nextOcc) return 0;
+
+        $maxSort = (int) \Illuminate\Support\Facades\DB::table('occurrence_waitlist')
+            ->where('occurrence_id', $nextOcc->id)
+            ->max('sort_order');
+
+        $order   = $maxSort + 1;
+        $now     = now();
+        $inserted = 0;
+
+        // Уже зарегистрированные на следующий тур — не добавляем в waitlist
+        $alreadyRegistered = \Illuminate\Support\Facades\DB::table('event_registrations')
+            ->where('occurrence_id', $nextOcc->id)
+            ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
+            ->pluck('user_id')
+            ->flip()
+            ->toArray();
+
+        // Уже в waitlist следующего тура — не дублируем
+        $alreadyInWaitlist = \Illuminate\Support\Facades\DB::table('occurrence_waitlist')
+            ->where('occurrence_id', $nextOcc->id)
+            ->pluck('user_id')
+            ->flip()
+            ->toArray();
+
+        $addToWaitlist = function (int $userId) use (
+            $nextOcc, &$order, $now, &$inserted,
+            $alreadyRegistered, $alreadyInWaitlist
+        ) {
+            if (isset($alreadyRegistered[$userId]) || isset($alreadyInWaitlist[$userId])) return;
+            \Illuminate\Support\Facades\DB::table('occurrence_waitlist')->insert([
+                'occurrence_id' => $nextOcc->id,
+                'user_id'       => $userId,
+                'positions'     => json_encode([]),
+                'sort_order'    => $order++,
+                'created_at'    => $now,
+                'updated_at'    => $now,
+            ]);
+            $alreadyInWaitlist[$userId] = true;
+            $inserted++;
+        };
+
+        // Существующие резервы — в начало
+        foreach ($existingReserveUserIds as $userId) {
+            if ($userId) $addToWaitlist((int) $userId);
+        }
+
+        // Только что вылетевшие — в конец
+        foreach (array_unique($relegatedIds) as $userId) {
+            if ($userId) $addToWaitlist((int) $userId);
+        }
+
+        return $inserted;
     }
 }
