@@ -84,18 +84,41 @@
 	@php
 	$teamsMax = $event->tournament_teams_count ?: ($event->tournamentSetting?->teams_count ?? 0);
 	$teamSize = $event->tournamentSetting?->team_size_min ?? 2;
-	// pending_members — неполные команды (досрочная заявка) тоже считаются как «занятые» слоты
-	$teamsRegistered = \App\Models\EventTeam::where('event_id', $event->id)
-	->where(fn($q) => $q->where('occurrence_id', $occurrence->id)->orWhereNull('occurrence_id'))
-	->whereIn('status', ['ready','pending','pending_members','submitted','confirmed','approved'])
-	->count();
-	$playersRegistered = \App\Models\EventTeamMember::whereHas('team', fn($q) => $q->where('event_id', $event->id)->where(fn($q2) => $q2->where('occurrence_id', $occurrence->id)->orWhereNull('occurrence_id'))->whereIn('status', ['ready','pending','pending_members','submitted','confirmed','approved']))
+
+	// Резервные команды лиги — не считаются основными участниками
+	$leagueReserveTeamIds = collect();
+	if ($event->season_id) {
+	    $seasonEvt = \App\Models\TournamentSeasonEvent::where('occurrence_id', $occurrence->id)->first();
+	    if ($seasonEvt?->league_id) {
+	        $leagueReserveTeamIds = \App\Models\TournamentLeagueTeam::where('league_id', $seasonEvt->league_id)
+	            ->where('status', 'reserve')
+	            ->pluck('team_id')
+	            ->filter();
+	    }
+	}
+
+	$teamStatuses = ['ready','pending','pending_members','submitted','confirmed','approved'];
+	$allTeamsQ = fn($q) => $q->where('event_id', $event->id)
+	    ->where(fn($q2) => $q2->where('occurrence_id', $occurrence->id)->orWhereNull('occurrence_id'))
+	    ->whereIn('status', $teamStatuses);
+
+	$teamsRegistered = \App\Models\EventTeam::where($allTeamsQ)
+	    ->when($leagueReserveTeamIds->isNotEmpty(), fn($q) => $q->whereNotIn('id', $leagueReserveTeamIds))
+	    ->count();
+	$teamsReserve = $leagueReserveTeamIds->isNotEmpty()
+	    ? \App\Models\EventTeam::where($allTeamsQ)->whereIn('id', $leagueReserveTeamIds)->count()
+	    : 0;
+
+	$playersRegistered = \App\Models\EventTeamMember::whereHas('team', fn($q) => $q->where('event_id', $event->id)->where(fn($q2) => $q2->where('occurrence_id', $occurrence->id)->orWhereNull('occurrence_id'))->whereIn('status', $teamStatuses)->when($leagueReserveTeamIds->isNotEmpty(), fn($q3) => $q3->whereNotIn('id', $leagueReserveTeamIds)))
 	->where('confirmation_status', 'confirmed')
 	->count();
 	$playersMax = $teamsMax * $teamSize;
 	@endphp
 	<div class="text-muted small mb-1">
 		{{ __('events.sp_teams_count') }} <strong>{{ $teamsRegistered }}</strong> / {{ $teamsMax }}
+		@if($teamsReserve > 0)
+		· <span style="opacity:.7">{{ $teamsReserve }} в резерве</span>
+		@endif
 	</div>
 	<div class="text-muted small mb-1">
 		{{ __('events.sp_free_spots') }} <strong>{{ max(0, $playersMax - $playersRegistered) }}</strong> / {{ $playersMax }}
