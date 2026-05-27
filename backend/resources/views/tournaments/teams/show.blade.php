@@ -143,11 +143,13 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
                     @endif
                 @endif
                 @if(($isCaptain || $isOrganizer) && (int)$member->user_id !== (int)$team->captain_user_id)
-                    <form method="POST" action="{{ route('tournamentTeams.members.destroy',[$event,$team,$member]) }}"
-                          class="btn-alert" data-title="Удалить из команды?" data-icon="warning"
-                          data-confirm-text="Да" data-cancel-text="Отмена">
+                    <form method="POST" action="{{ route('tournamentTeams.members.destroy',[$event,$team,$member]) }}">
                         @csrf @method('DELETE')
-                        <button type="submit" class="btn btn-small btn-secondary">🗑</button>
+                        <button type="submit" class="btn btn-small btn-secondary btn-alert"
+                                data-title="Удалить из команды?"
+                                data-icon="warning"
+                                data-confirm-text="Да"
+                                data-cancel-text="Отмена">🗑</button>
                     </form>
                 @endif
             </div>
