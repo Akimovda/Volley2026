@@ -1499,12 +1499,12 @@ class TournamentController extends Controller
             }
         }
 
-        // Направление 2: Активные участники лиги → EventTeam тура (создаём если нет)
+        // Направление 2: Участники лиги (active + reserve) → EventTeam тура (создаём если нет)
         if ($occurrenceId > 0) {
             $occurrence = \App\Models\EventOccurrence::find($occurrenceId);
             if ($occurrence) {
                 $activeLeagueTeams = \App\Models\TournamentLeagueTeam::where('league_id', $league->id)
-                    ->whereIn('status', ['active', 'pending_confirmation'])
+                    ->whereIn('status', ['active', 'pending_confirmation', 'reserve'])
                     ->with('team.members')
                     ->get();
 
