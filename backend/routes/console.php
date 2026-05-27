@@ -84,6 +84,16 @@ Schedule::command('tournaments:auto-reject-incomplete-applications')
     ->everyThirtyMinutes()
     ->withoutOverlapping();
 
+// Авто-завершение сезонов по ends_at (ежедневно в 03:20):
+// переводит active-сезоны в completed когда ends_at < сегодня.
+Schedule::call(function () {
+    $service = app(\App\Services\TournamentSeasonService::class);
+    \App\Models\TournamentSeason::where('status', \App\Models\TournamentSeason::STATUS_ACTIVE)
+        ->whereNotNull('ends_at')
+        ->where('ends_at', '<', now()->startOfDay())
+        ->each(fn ($season) => $service->complete($season));
+})->dailyAt('03:20')->name('seasons:auto-complete');
+
 // Перепривязка туров турниров к сезонам по датам (ежедневно в 03:30):
 // проверяет все recurring-турниры с season_id и раскладывает
 // occurrences по нужным сезонам лиги на основе дат.
