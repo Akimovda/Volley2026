@@ -87,6 +87,9 @@
 					<form method="POST" action="{{ $isEdit ? route('tournament.matches.rescore', $match) : route('tournament.matches.score', $match) }}" id="scoreForm">
 						@csrf
 						@method('PATCH')
+						@if($match->stage->occurrence_id)
+							<input type="hidden" name="occurrence_id" value="{{ $match->stage->occurrence_id }}">
+						@endif
 						
 						@php
 						$format = $stage->matchFormat();
