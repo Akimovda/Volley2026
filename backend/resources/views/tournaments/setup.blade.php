@@ -325,7 +325,62 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 			@else
 			<div class="alert alert-info">{{ __('tournaments.setup_no_teams_in_league') }}</div>
 			@endif
-			
+
+			{{-- Добавить команду вручную в дивизион --}}
+			<div class="mt-1">
+				<details id="add-to-league-details">
+					<summary class="btn btn-secondary">➕ Добавить в состав / резерв</summary>
+					<form method="POST" action="{{ route('divisions.createAndAdd', $seasonData['league']) }}" class="mt-2">
+						@csrf
+						@if($selectedOccurrence)
+						<input type="hidden" name="occurrence_id" value="{{ $selectedOccurrence->id }}">
+						@endif
+						<div class="row">
+							<div class="col-md-6">
+								<div class="card">
+									<label>Капитан / игрок</label>
+									<div style="position:relative" id="add-league-captain-wrap">
+										<input type="text" id="add-league-captain-search" placeholder="Поиск по имени..." autocomplete="off">
+										<input type="hidden" name="captain_user_id" id="add-league-captain-id">
+										<div id="add-league-captain-dd" class="form-select-dropdown trainer_dd"></div>
+									</div>
+								</div>
+							</div>
+							@if($isBeach)
+							<div class="col-md-6">
+								<div class="card">
+									<label>Партнёр</label>
+									<div style="position:relative" id="add-league-partner-wrap">
+										<input type="text" id="add-league-partner-search" placeholder="Поиск по имени..." autocomplete="off">
+										<input type="hidden" name="partner_user_id" id="add-league-partner-id">
+										<div id="add-league-partner-dd" class="form-select-dropdown trainer_dd"></div>
+									</div>
+								</div>
+							</div>
+							@endif
+							<div class="col-md-6">
+								<div class="card">
+									<label>Название команды <span class="cd">(необязательно)</span></label>
+									<input type="text" name="name" placeholder="Авто по фамилии капитана">
+								</div>
+							</div>
+							<div class="col-md-6">
+								<div class="card">
+									<label>Место</label>
+									<select name="target_status">
+										<option value="active">Основной состав</option>
+										<option value="reserve">Резерв</option>
+									</select>
+								</div>
+							</div>
+							<div class="col-md-12 text-center">
+								<button type="submit" class="btn">Добавить</button>
+							</div>
+						</div>
+					</form>
+				</details>
+			</div>
+
 			@php
 			$_tourAllCompleted = $stages->isNotEmpty() && $stages->every(fn($s) => $s->status === 'completed');
 			@endphp
@@ -1573,7 +1628,58 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 	</script>
 	
 	
-	<script src="/assets/fas.js"></script>  
+	<script>
+	(function(){
+		function makeAC(inputId, hiddenId, ddId, wrapId) {
+			var inp = document.getElementById(inputId);
+			var hidden = document.getElementById(hiddenId);
+			var dd = document.getElementById(ddId);
+			var wrap = document.getElementById(wrapId);
+			if (!inp || !dd || !hidden) return;
+			var timer = null;
+			function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+			function showDd() { dd.classList.add('form-select-dropdown--active'); }
+			function hideDd() { dd.classList.remove('form-select-dropdown--active'); }
+			inp.addEventListener('input', function() {
+				clearTimeout(timer);
+				hidden.value = '';
+				var q = inp.value.trim();
+				if (q.length < 2) { hideDd(); dd.innerHTML = ''; return; }
+				dd.innerHTML = '<div class="city-message">Загрузка...</div>';
+				showDd();
+				timer = setTimeout(function() {
+					fetch('/api/users/search?q=' + encodeURIComponent(q), {
+						headers: {'Accept':'application/json'}, credentials:'same-origin'
+					})
+					.then(function(r){ return r.json(); })
+					.then(function(data){
+						dd.innerHTML = '';
+						var items = data.items || data || [];
+						if (!items.length) { dd.innerHTML = '<div class="city-message">Не найдено</div>'; showDd(); return; }
+						items.slice(0,8).forEach(function(u) {
+							var label = u.label || u.name || '#'+u.id;
+							var div = document.createElement('div');
+							div.className = 'trainer-item form-select-option';
+							div.innerHTML = '<div class="text-sm">'+esc(label)+'</div>';
+							div.addEventListener('click', function() {
+								inp.value = label; hidden.value = String(u.id); hideDd();
+							});
+							dd.appendChild(div);
+						});
+						showDd();
+					})
+					.catch(function(){ dd.innerHTML = '<div class="city-message">Ошибка загрузки</div>'; showDd(); });
+				}, 250);
+			});
+			inp.addEventListener('keydown', function(e){ if(e.key==='Escape') hideDd(); });
+			document.addEventListener('click', function(e){ if(wrap && !wrap.contains(e.target)) hideDd(); });
+		}
+		makeAC('add-league-captain-search','add-league-captain-id','add-league-captain-dd','add-league-captain-wrap');
+		makeAC('add-league-partner-search','add-league-partner-id','add-league-partner-dd','add-league-partner-wrap');
+	})();
+	</script>
+
+	<script src="/assets/fas.js"></script>
 	<script>
 		document.addEventListener('DOMContentLoaded', function() {
 			// Tournament Photos Swiper
