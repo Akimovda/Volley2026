@@ -136,116 +136,68 @@
 		@if($tab === 'overview')
 		@foreach($stages as $stage)
 		<div class="ramka">
-			{{-- Заголовок стадии --}}
-			<div class="d-flex -mt-05 mb-1" style="align-items:center;flex-wrap:wrap;gap:8px">
-				<h2 class="mb-0">{{ $stage->name }}</h2>
-				@if($stage->isCompleted())
-				<span style="background:#d1fae5;color:#065f46;padding:2px 10px;border-radius:20px;font-size:12px;font-weight:600">✓ {{ __('tournaments.stages_status_completed') }}</span>
-				@elseif($stage->isInProgress())
-				<span style="background:#dbeafe;color:#1e3a8a;padding:2px 10px;border-radius:20px;font-size:12px;font-weight:600">● {{ __('tournaments.stages_status_in_progress') }}</span>
-				@else
-				<span style="background:rgba(128,128,128,.12);color:#6b7280;padding:2px 10px;border-radius:20px;font-size:12px;font-weight:600">⏳ {{ __('tournaments.stages_status_pending') }}</span>
+			<h2 class="-mt-05">{{ $stage->name }}</h2>
+			<div class="mb-2">
+				{{ $stage->type }} · {{ strtoupper($stage->matchFormat()) }} · {{ __('tournaments.score_to_pts') }} {{ $stage->setPoints() }} {{ __('tournaments.pub_pts_label') }}
+				·
+				@if($stage->isCompleted()) ✅ {{ __('tournaments.stages_status_completed') }}
+				@elseif($stage->isInProgress()) 🔄 {{ __('tournaments.stages_status_in_progress') }}
+				@else ⏳ {{ __('tournaments.stages_status_pending') }}
 				@endif
 			</div>
-			<div class="f-12 mb-3" style="opacity:.45">{{ strtoupper($stage->matchFormat()) }} · {{ __('tournaments.score_to_pts') }} {{ $stage->setPoints() }} {{ __('tournaments.pub_pts_label') }}</div>
-
-			{{-- Таблицы групп + матчи в две колонки --}}
+			
+			{{-- Мини-таблица групп --}}
 			@if($stage->groups->isNotEmpty())
 			<div class="row">
 				@foreach($stage->groups as $group)
-				@php $gMatches = $stage->matches->where('group_id', $group->id); @endphp
-				<div class="col-md-6 mb-3">
-					{{-- Standings --}}
-					<div class="card mb-2" style="padding:12px 14px">
-						<div class="b-700 f-14 mb-2 cd">{{ $group->name }}</div>
+				<div class="col-md-6">
+					<div class="card">
+						<div class="b-600 cd mb-1">{{ $group->name }}</div>
 						@if($group->standings->isNotEmpty())
-						@foreach($group->standings->sortBy('rank') as $s)
-						@php $medals = [1=>'🥇',2=>'🥈',3=>'🥉']; @endphp
-						<div class="d-flex" style="padding:5px 0;border-bottom:1px solid rgba(128,128,128,.07);gap:8px;align-items:center">
-							<span style="width:24px;text-align:center;font-size:{{ $s->rank<=3?'15px':'12px' }};font-weight:600">{{ $medals[$s->rank] ?? $s->rank.'.' }}</span>
-							<span style="flex:1">
-								<div class="f-14 {{ $s->rank<=3?'b-600':'' }}">{{ $s->team->name ?? '—' }}</div>
+						@foreach($group->standings->sortBy('rank')->take(3) as $s)
+						<div class="d-flex gap-1">
+							<span class="b-600" style="width:18px">{{ $s->rank }}.</span>
+							<span>
+								<div>{{ $s->team->name ?? '—' }}</div>
 								@if($s->team && $s->team->members->count())
-								<div class="f-11" style="color:#9ca3af">{{ $s->team->members->map(fn($m)=>$m->user->last_name??'?')->implode(' / ') }}</div>
+								<div class="f-13">{{ $s->team->members->map(fn($m) => $m->user->last_name ?? '?')->implode(' / ') }}</div>
 								@endif
 							</span>
-							<span class="f-12 b-600" style="color:#10b981">{{ $s->wins }}В</span>
-							<span class="f-12" style="opacity:.3">/</span>
-							<span class="f-12" style="color:#dc2626">{{ $s->losses }}П</span>
+							<span style="margin-left:auto">{{ $s->wins }}{{ __('tournaments.tv_w_short') }} {{ $s->losses }}{{ __('tournaments.tv_l_short') }}</span>
 						</div>
 						@endforeach
 						@else
-						<div class="f-13" style="opacity:.5">{{ $group->teams->pluck('name')->implode(', ') }}</div>
+						<div class="f-13">
+							{{ $group->teams->pluck('name')->implode(', ') }}
+						</div>
 						@endif
 					</div>
-
-					{{-- Матчи группы --}}
-					@if($gMatches->isNotEmpty())
-					<div class="card" style="padding:12px 14px">
-						<div class="b-700 f-13 mb-2" style="opacity:.5;text-transform:uppercase;letter-spacing:.5px">Матчи</div>
-						@foreach($gMatches->sortBy('round')->groupBy('round') as $round => $roundMatches)
-						<div class="f-11 b-600 mt-2 mb-1" style="opacity:.35;text-transform:uppercase;letter-spacing:.5px">Тур {{ $round }}</div>
-						@foreach($roundMatches->sortBy('match_number') as $m)
-						@php $done = $m->isCompleted(); $homeWon = $m->winner_team_id === $m->team_home_id; $awayWon = $m->winner_team_id === $m->team_away_id; @endphp
-						<div class="d-flex f-13" style="padding:5px 0;border-bottom:1px solid rgba(128,128,128,.06);gap:6px;align-items:center">
-							<span style="flex:1;text-align:right">
-								<div class="{{ $homeWon?'b-700':'' }}" style="{{ $homeWon?'color:#065f46':'' }}">{{ $m->teamHome->name??'TBD' }}</div>
-								@if($m->teamHome&&$m->teamHome->members->count())
-								<div class="f-10" style="color:#9ca3af">{{ $m->teamHome->members->map(fn($mm)=>$mm->user->last_name??'?')->implode(' / ') }}</div>
-								@endif
-							</span>
-							<span class="b-700" style="min-width:60px;text-align:center;{{ $done?'':'opacity:.3' }}">
-								{{ $done?$m->setsScore():'vs' }}
-								@if($done&&$m->detailedScore())
-								<div class="f-10 b-400" style="opacity:.55">{{ $m->detailedScore() }}</div>
-								@endif
-							</span>
-							<span style="flex:1">
-								<div class="{{ $awayWon?'b-700':'' }}" style="{{ $awayWon?'color:#065f46':'' }}">{{ $m->teamAway->name??'TBD' }}</div>
-								@if($m->teamAway&&$m->teamAway->members->count())
-								<div class="f-10" style="color:#9ca3af">{{ $m->teamAway->members->map(fn($mm)=>$mm->user->last_name??'?')->implode(' / ') }}</div>
-								@endif
-							</span>
-						</div>
-						@endforeach
-						@endforeach
-					</div>
-					@endif
 				</div>
 				@endforeach
 			</div>
 			@endif
-
-			{{-- Матчи плей-офф (без группы) --}}
-			@php $poMatches = $stage->matches->whereNull('group_id')->where('status','completed'); @endphp
-			@if($poMatches->isNotEmpty())
-			<div class="card mt-1" style="padding:12px 14px">
-				<div class="b-700 f-14 mb-2 cd">Плей-офф</div>
-				@foreach($poMatches->sortBy(['round','match_number']) as $m)
-				@php $homeWon = $m->winner_team_id===$m->team_home_id; $awayWon = $m->winner_team_id===$m->team_away_id; @endphp
-				<div class="d-flex f-13" style="padding:5px 0;border-bottom:1px solid rgba(128,128,128,.06);gap:6px;align-items:center">
-					<span style="flex:1;text-align:right">
-						<div class="{{ $homeWon?'b-700':'' }}" style="{{ $homeWon?'color:#065f46':'' }}">{{ $m->teamHome->name??'TBD' }}</div>
-					</span>
-					<span class="b-700" style="min-width:60px;text-align:center">
-						{{ $m->setsScore() }}
-						@if($m->detailedScore())
-						<div class="f-10 b-400" style="opacity:.55">{{ $m->detailedScore() }}</div>
-						@endif
-					</span>
-					<span style="flex:1">
-						<div class="{{ $awayWon?'b-700':'' }}" style="{{ $awayWon?'color:#065f46':'' }}">{{ $m->teamAway->name??'TBD' }}</div>
-					</span>
+			
+			{{-- Последние результаты --}}
+			@php $recent = $stage->matches->where('status', 'completed')->sortByDesc('scored_at')->take(3); @endphp
+			@if($recent->isNotEmpty())
+			<div class="mt-2">
+				<div class="cd b-600 mb-1">{{ __('tournaments.pub_recent_results') }}</div>
+				@foreach($recent as $m)
+				<div class="d-flex gap-1" style="padding:3px 0;border-bottom:1px solid rgba(128,128,128,.08)">
+					<span class="{{ $m->winner_team_id === $m->team_home_id ? 'b-600' : '' }}">{{ $m->teamHome->name ?? '?' }}</span>
+					<span>vs</span>
+					<span class="{{ $m->winner_team_id === $m->team_away_id ? 'b-600' : '' }}">{{ $m->teamAway->name ?? '?' }}</span>
+					<span style="margin-left:auto;">{{ $m->setsScore() }}</span>
 				</div>
 				@endforeach
 			</div>
 			@endif
 		</div>
 		@endforeach
-
+		
 		@if($stages->isEmpty())
 		<div class="ramka">
-			<div style="alert alert-info">{{ __('tournaments.pub_not_setup') }}</div>
+            <div style="alert alert-info">{{ __('tournaments.pub_not_setup') }}</div>
 		</div>
 		@endif
 		
