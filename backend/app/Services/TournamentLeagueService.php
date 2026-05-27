@@ -81,11 +81,13 @@ class TournamentLeagueService
         $toReserve = $forceStatus === 'reserve'
             || ($forceStatus === null && !$league->hasCapacity());
 
+        $userId = $user?->id ?? $team?->captain_user_id;
+
         if (!$toReserve) {
             return TournamentLeagueTeam::create([
                 'league_id' => $league->id,
                 'team_id'   => $team?->id,
-                'user_id'   => $user?->id,
+                'user_id'   => $userId,
                 'status'    => TournamentLeagueTeam::STATUS_ACTIVE,
                 'joined_at' => now(),
             ]);
@@ -94,7 +96,7 @@ class TournamentLeagueService
         return TournamentLeagueTeam::create([
             'league_id'        => $league->id,
             'team_id'          => $team?->id,
-            'user_id'          => $user?->id,
+            'user_id'          => $userId,
             'status'           => TournamentLeagueTeam::STATUS_RESERVE,
             'joined_at'        => now(),
             'reserve_position' => $league->nextReservePosition(),
@@ -376,7 +378,8 @@ class TournamentLeagueService
     {
         $season = $league->season;
         if (!$season) return;
-        $event = $season->events()->latest()->first();
+        $seasonEvent = $season->seasonEvents()->first();
+        $event = $seasonEvent ? \App\Models\Event::find($seasonEvent->event_id) : null;
         if (!$event) return;
 
         $members = $team->members()
@@ -410,7 +413,8 @@ class TournamentLeagueService
     {
         $season = $league->season;
         if (!$season) return;
-        $event = $season->events()->latest()->first();
+        $seasonEvent = $season->seasonEvents()->first();
+        $event = $seasonEvent ? \App\Models\Event::find($seasonEvent->event_id) : null;
         if (!$event) return;
 
         $error = $this->checkUserRequirements($user, $event);

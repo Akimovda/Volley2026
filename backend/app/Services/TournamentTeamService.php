@@ -110,7 +110,8 @@ final class TournamentTeamService
             $fresh = $this->refreshTeamState($team->fresh());
 
             // Для лиговых турниров: добавляем команду в дивизион (active если есть место, reserve если нет)
-            if (!$autoApprove && $occurrenceId && $event->season_id) {
+            // Работает и для autoApprove (организатор через setup), и для self-регистрации
+            if ($occurrenceId && $event->season_id) {
                 try {
                     $seasonEvt = \App\Models\TournamentSeasonEvent::where('occurrence_id', $occurrenceId)->first();
                     if ($seasonEvt?->league_id) {
@@ -123,10 +124,15 @@ final class TournamentTeamService
                         }
                     }
                 } catch (\InvalidArgumentException $e) {
-                    // Нарушение требований — удаляем только что созданную команду
-                    $fresh->members()->delete();
-                    $fresh->delete();
-                    throw new \DomainException($e->getMessage());
+                    if ($autoApprove) {
+                        // Организатор: команда уже в лиге (sync создаёт через addTeam отдельно) — ок
+                        report($e);
+                    } else {
+                        // Self-регистрация: нарушение требований → откат
+                        $fresh->members()->delete();
+                        $fresh->delete();
+                        throw new \DomainException($e->getMessage());
+                    }
                 }
             }
 
