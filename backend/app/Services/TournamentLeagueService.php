@@ -8,6 +8,7 @@ use App\Models\TournamentLeagueTeam;
 use App\Models\TournamentSeasonEvent;
 use App\Models\EventTeam;
 use App\Models\User;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use App\Services\UserNotificationService;
@@ -375,24 +376,8 @@ class TournamentLeagueService
     {
         $season = $league->season;
         if (!$season) return;
-
-        // Берём event из сезона для определения уровня
         $event = $season->events()->latest()->first();
         if (!$event) return;
-
-        $direction = $event->direction ?? 'classic';
-
-        if ($direction === 'beach') {
-            $lvMin = $event->beach_level_min;
-            $lvMax = $event->beach_level_max;
-            $levelField = 'beach_level';
-        } else {
-            $lvMin = $event->classic_level_min;
-            $lvMax = $event->classic_level_max;
-            $levelField = 'classic_level';
-        }
-
-        if (is_null($lvMin) && is_null($lvMax)) return;
 
         $members = $team->members()
             ->whereIn('confirmation_status', ['confirmed', 'self'])
@@ -401,23 +386,92 @@ class TournamentLeagueService
 
         $violations = [];
         foreach ($members as $member) {
-            $user = $member->user;
-            if (!$user) continue;
-
-            $userLevel = $user->{$levelField};
-            if (is_null($userLevel)) continue;
-
-            if ((!is_null($lvMin) && $userLevel < $lvMin) || (!is_null($lvMax) && $userLevel > $lvMax)) {
-                $name = trim(($user->last_name ?? '') . ' ' . ($user->first_name ?? ''));
-                $violations[] = $name ?: "Игрок #{$user->id}";
+            if (!$member->user) continue;
+            $v = $this->checkUserRequirements($member->user, $event);
+            if ($v) {
+                $name = trim(($member->user->last_name ?? '') . ' ' . ($member->user->first_name ?? ''))
+                    ?: "Игрок #{$member->user->id}";
+                $violations[] = "«{$name}»: {$v}";
             }
         }
 
         if (!empty($violations)) {
             throw new InvalidArgumentException(
-                'Игрок(и) ' . implode(', ', $violations) . ' не соответствуют требованиям по уровню лиги.'
+                'Состав не соответствует требованиям турнира: ' . implode('; ', $violations)
             );
         }
+    }
+
+    /**
+     * Проверяет одного пользователя на соответствие требованиям лиги.
+     * Выбрасывает InvalidArgumentException при нарушении.
+     */
+    public function validateUserForLeague(User $user, TournamentLeague $league): void
+    {
+        $season = $league->season;
+        if (!$season) return;
+        $event = $season->events()->latest()->first();
+        if (!$event) return;
+
+        $error = $this->checkUserRequirements($user, $event);
+        if ($error) {
+            $name = trim(($user->last_name ?? '') . ' ' . ($user->first_name ?? '')) ?: "Игрок #{$user->id}";
+            throw new InvalidArgumentException("«{$name}»: {$error}");
+        }
+    }
+
+    /**
+     * Возвращает описание нарушения требований для пользователя, или null если всё ок.
+     */
+    private function checkUserRequirements(User $user, \App\Models\Event $event): ?string
+    {
+        $direction = $event->direction ?? 'classic';
+        $settings  = $event->tournamentSetting ?? null;
+        $agePolicy = $event->age_policy ?? 'any';
+        $gender    = strtolower((string)($user->gender ?? ''));
+
+        // ── Уровень ──────────────────────────────────────────────────────────
+        if ($direction === 'beach') {
+            $lvMin = $event->beach_level_min;
+            $lvMax = $event->beach_level_max;
+            $level = $user->beach_level;
+        } else {
+            $lvMin = $event->classic_level_min;
+            $lvMax = $event->classic_level_max;
+            $level = $user->classic_level;
+        }
+        if (!is_null($level)) {
+            if (!is_null($lvMin) && $level < $lvMin) {
+                return "уровень ({$level}) ниже минимального ({$lvMin})";
+            }
+            if (!is_null($lvMax) && $level > $lvMax) {
+                return "уровень ({$level}) выше максимального ({$lvMax})";
+            }
+        }
+
+        // ── Возраст ───────────────────────────────────────────────────────────
+        if (in_array($agePolicy, ['adult', 'child'], true) && $user->birth_date) {
+            $age = Carbon::parse($user->birth_date)->diffInYears(now());
+            if ($agePolicy === 'adult' && $age < 18) {
+                return 'только для совершеннолетних (18+)';
+            }
+            if ($agePolicy === 'child' && $age >= 18) {
+                return 'только для несовершеннолетних';
+            }
+        }
+
+        // ── Пол ───────────────────────────────────────────────────────────────
+        if ($settings) {
+            $genderPolicy = (string)($settings->gender_policy ?? 'mixed_open');
+            if ($genderPolicy === 'male_only' && $gender !== 'm') {
+                return 'турнир только для мужчин';
+            }
+            if ($genderPolicy === 'female_only' && $gender !== 'f') {
+                return 'турнир только для женщин';
+            }
+        }
+
+        return null;
     }
 
 }
