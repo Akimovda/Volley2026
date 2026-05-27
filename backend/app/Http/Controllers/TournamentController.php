@@ -304,9 +304,10 @@ class TournamentController extends Controller
                 if ($scheduleStart) {
                     $scheduleService = app(\App\Services\TournamentScheduleService::class);
                     $courts = array_values(array_filter($config['courts'] ?? ['Корт 1']));
+                    $eventTz = $event->timezone ?: 'Europe/Moscow';
                     $scheduleService->generateSchedule(
                         $stage,
-                        \Carbon\Carbon::parse($scheduleStart),
+                        \Carbon\Carbon::parse($scheduleStart, $eventTz)->utc(),
                         (int) $request->input('schedule_match_duration', 30),
                         (int) $request->input('schedule_break_duration', 5),
                         $courts,
@@ -986,9 +987,10 @@ class TournamentController extends Controller
                 $scheduleStart = $request->input('schedule_start');
                 if ($scheduleStart) {
                     $courtsForSchedule = array_values($divCourts ?: $stage->cfg('courts', []));
+                    $eventTz = $event->timezone ?: 'Europe/Moscow';
                     app(\App\Services\TournamentScheduleService::class)->generateSchedule(
                         $divStage,
-                        \Carbon\Carbon::parse($scheduleStart),
+                        \Carbon\Carbon::parse($scheduleStart, $eventTz)->utc(),
                         (int) $request->input('schedule_match_duration', 30),
                         (int) $request->input('schedule_break_duration', 5),
                         $courtsForSchedule,
@@ -1252,9 +1254,10 @@ class TournamentController extends Controller
         $scheduleService = app(\App\Services\TournamentScheduleService::class);
         $courts = $stage->cfg('courts', ['Корт 1']);
 
+        $eventTz = $event->timezone ?: 'Europe/Moscow';
         $count = $scheduleService->generateSchedule(
             $stage,
-            \Carbon\Carbon::parse($validated['start_time']),
+            \Carbon\Carbon::parse($validated['start_time'], $eventTz)->utc(),
             (int) $validated['match_duration'],
             (int) $validated['break_duration'],
             $courts,
