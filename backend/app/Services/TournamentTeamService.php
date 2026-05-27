@@ -48,11 +48,16 @@ final class TournamentTeamService
                 $captainPositionCode = null;
             }
 
-            // Для не-лиговых турниров: если слоты заняты и не autoApprove → резерв
+            // Статус и позиция резерва при создании командой игроком (не autoApprove)
             $reservePos = null;
             $initialStatus = $autoApprove ? 'approved' : 'draft';
-            if (!$autoApprove && $occurrenceId && !$event->season_id) {
-                if ($this->eventTournamentIsFull($event, $occurrenceId)) {
+
+            if (!$autoApprove && $occurrenceId) {
+                if ($event->season_id) {
+                    // Лиговый турнир — статус submitted, лига добавляется ниже
+                    $initialStatus = 'submitted';
+                } elseif ($this->eventTournamentIsFull($event, $occurrenceId)) {
+                    // Не-лиговый полный турнир → резерв
                     $reservePos = $this->nextEventReservePosition($event->id, $occurrenceId);
                     $initialStatus = 'submitted';
                 }
@@ -102,7 +107,30 @@ final class TournamentTeamService
                 ],
             );
 
-            return $this->refreshTeamState($team->fresh());
+            $fresh = $this->refreshTeamState($team->fresh());
+
+            // Для лиговых турниров: добавляем команду в дивизион (active если есть место, reserve если нет)
+            if (!$autoApprove && $occurrenceId && $event->season_id) {
+                try {
+                    $seasonEvt = \App\Models\TournamentSeasonEvent::where('occurrence_id', $occurrenceId)->first();
+                    if ($seasonEvt?->league_id) {
+                        $league = \App\Models\TournamentLeague::find($seasonEvt->league_id);
+                        if ($league) {
+                            app(TournamentLeagueService::class)->addTeam(
+                                league: $league,
+                                team: $fresh,
+                            );
+                        }
+                    }
+                } catch (\InvalidArgumentException $e) {
+                    // Нарушение требований — удаляем только что созданную команду
+                    $fresh->members()->delete();
+                    $fresh->delete();
+                    throw new \DomainException($e->getMessage());
+                }
+            }
+
+            return $fresh;
         });
     }
 
