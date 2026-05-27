@@ -140,7 +140,7 @@
 				@if($seasonEventLinks->isNotEmpty())
 				<div class="mb-1">
 					@foreach($seasonEventLinks as $seEvent)
-					<a href="{{ route('events.show', $seEvent) }}" class="blink f-15 d-inline-block mr-2">🏆 {{ $seEvent->title }}</a>
+					<a href="{{ route('tournament.public.show', $seEvent) }}" class="blink f-15 d-inline-block mr-2">🏆 {{ $seEvent->title }}</a>
 					@if(auth()->check() && (auth()->user()->role === 'admin' || (int)$seEvent->organizer_id === auth()->id()))
 					<a href="{{ route('tournament.setup', $seEvent) }}" class="btn btn-primary btn-sm f-13">⚙️ {{ __('seasons.btn_manage') }}</a>
 					@endif
