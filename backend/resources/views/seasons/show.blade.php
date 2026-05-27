@@ -107,7 +107,7 @@
 						<tr>
 							<td class="b-600 text-center">{{ $loop->iteration }}</td>
 							<td>
-								<a href="{{ route('events.show', $sourceEvent) }}" class="blink" style="font-weight:500">
+								<a href="{{ $hasStages ? route('tournament.public.show', $sourceEvent) . '?tab=overview&occurrence_id=' . $occ->id : route('events.show', $sourceEvent) }}" class="blink" style="font-weight:500">
 									{{ $dt->translatedFormat('d M, l') }}
 								</a>
 							</td>
