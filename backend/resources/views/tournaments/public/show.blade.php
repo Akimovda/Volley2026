@@ -437,6 +437,9 @@
 				</span>
 				<span class="px-2 b-700" style="min-width:100px;text-align:center">
 					{{ $m->setsScore() }}
+					@if($m->detailedScore())
+					<div class="f-11 b-400" style="opacity:.6">{{ $m->detailedScore() }}</div>
+					@endif
 				</span>
 				<span style="flex:1" class="{{ $m->winner_team_id === $m->team_away_id ? 'b-700' : '' }}">
 					{{ $m->teamAway->name ?? '?' }}
