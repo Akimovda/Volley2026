@@ -694,11 +694,13 @@ final class TournamentTeamService
         // Auto-submit early: оба флага включены, application нет, есть капитан →
         // подаём «неполную» заявку автоматически. Если состав потом соберётся —
         // promoteIncompleteApplication сама переведёт в pending/approved.
+        // Пропускаем для approved/submitted/rejected — органайзер уже принял решение.
         if (
             $settings?->auto_submit_when_ready &&
             $settings?->allow_incomplete_application &&
             !$team->fresh()->application()->exists() &&
-            $team->captain_user_id
+            $team->captain_user_id &&
+            !in_array($team->status, ['approved', 'submitted', 'rejected'], true)
         ) {
             try {
                 $this->submitApplication($team->fresh(), $team->captain, true);

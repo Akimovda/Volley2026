@@ -233,7 +233,12 @@ class TournamentSeasonController extends Controller
             'occurrence_id'   => 'nullable|integer|exists:event_occurrences,id',
         ]);
 
-        $seasonEvent = \App\Models\TournamentSeasonEvent::where('season_id', $league->season_id)->first();
+        $occurrenceId = !empty($validated['occurrence_id']) ? (int) $validated['occurrence_id'] : null;
+
+        // Находим event через occurrence (точнее), fallback — первый event сезона
+        $seasonEvent = $occurrenceId
+            ? \App\Models\TournamentSeasonEvent::where('occurrence_id', $occurrenceId)->first()
+            : \App\Models\TournamentSeasonEvent::where('season_id', $league->season_id)->first();
         $event = $seasonEvent ? \App\Models\Event::find($seasonEvent->event_id) : null;
 
         if (!$event) {
@@ -241,7 +246,6 @@ class TournamentSeasonController extends Controller
         }
 
         $captain = \App\Models\User::findOrFail($validated['captain_user_id']);
-        $occurrenceId = !empty($validated['occurrence_id']) ? (int) $validated['occurrence_id'] : null;
 
         $teamName = trim($validated['name'] ?? '');
         if (empty($teamName)) {
@@ -274,6 +278,8 @@ class TournamentSeasonController extends Controller
                         'responded_at'         => now(),
                         'confirmed_at'         => now(),
                     ]);
+                    // Обновляем is_complete после добавления партнёра
+                    $team = $teamService->refreshTeamState($team->fresh());
                 }
             }
 
@@ -283,7 +289,9 @@ class TournamentSeasonController extends Controller
                 ? "Команда «{$team->name}» добавлена в резерв (позиция #{$entry->reserve_position})."
                 : "Команда «{$team->name}» добавлена в основной состав.";
 
-            return back()->with('success', $msg);
+            $setupUrl = route('tournament.setup', $event)
+                . ($occurrenceId ? '?occurrence_id=' . $occurrenceId : '');
+            return redirect($setupUrl)->with('success', $msg);
         } catch (\Exception $e) {
             return back()->with('error', $e->getMessage());
         }

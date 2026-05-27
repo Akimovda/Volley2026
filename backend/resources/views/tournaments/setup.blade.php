@@ -112,7 +112,7 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 				<div class="d-flex fvc" style="justify-content:space-between;flex-wrap:wrap;gap:.5rem">
 					<div>
 						<div class="d-flex fvc" style="gap:.5rem;flex-wrap:wrap">
-							<div class="b-700 f-17">{{ $app->team->name ?? '?' }}</div>
+							<a class="b-700 f-17 blink" href="{{ route('tournamentTeams.show', [$event, $app->team]) }}">{{ $app->team->name ?? '?' }}</a>
 							@if($isIncomplete)
 							<span style="display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600;background:#fef9c3;color:#854d0e">
 								{{ __('events.tapp_status_incomplete') }}
