@@ -80,9 +80,11 @@
 
 				// Заполняем meta по командам ДО раннего return — иначе JS не получит счётчик
 				$teamsMax = (int)($event->tournament_teams_count ?? $event->tournamentSetting?->teams_count ?? 0);
+				$leagueReserveIds = $this->getLeagueReserveTeamIds($occurrence);
 				$teamsReg = \App\Models\EventTeam::where('event_id', $occurrence->event_id)
 					->where(fn($q) => $q->where('occurrence_id', $occurrence->id)->orWhereNull('occurrence_id'))
 					->whereIn('status', ['draft','ready','pending_members','submitted','confirmed','approved'])
+					->when($leagueReserveIds->isNotEmpty(), fn($q) => $q->whereNotIn('id', $leagueReserveIds))
 					->count();
 				$result->data['meta'] = [
 					'tournament_teams_max'        => $teamsMax,
@@ -1140,10 +1142,12 @@
 				// Для командного турнира (team_beach / team_classic) регистрации
 				// хранятся в event_teams, а не в event_registrations.
 				if (in_array($regMode, ['team_beach', 'team_classic', 'team'], true)) {
+					$leagueReserveIds = $this->getLeagueReserveTeamIds($occurrence);
 					$teamsRegistered = \App\Models\EventTeam::where('event_id', $occurrence->event_id)
 						->where(fn($q) => $q->where('occurrence_id', $occurrence->id)
 							->orWhereNull('occurrence_id'))
 						->whereIn('status', ['draft','ready','pending_members','submitted','confirmed','approved'])
+						->when($leagueReserveIds->isNotEmpty(), fn($q) => $q->whereNotIn('id', $leagueReserveIds))
 						->count();
 				} else {
 					// Обычный турнир — считаем через group_key в регистрациях
@@ -1180,11 +1184,26 @@
 			}
 			
 			$p = trim($context['position']);
-			
+
 			if ($p === '' || mb_strlen($p) > 32) {
 				return null;
 			}
-			
+
 			return $p;
 		}
+
+	private function getLeagueReserveTeamIds(\App\Models\EventOccurrence $occurrence): \Illuminate\Support\Collection
+	{
+		if (!$occurrence->event->season_id) {
+			return collect();
+		}
+		$seasonEvt = \App\Models\TournamentSeasonEvent::where('occurrence_id', $occurrence->id)->first();
+		if (!$seasonEvt?->league_id) {
+			return collect();
+		}
+		return \App\Models\TournamentLeagueTeam::where('league_id', $seasonEvt->league_id)
+			->where('status', 'reserve')
+			->pluck('team_id')
+			->filter();
+	}
 	}
