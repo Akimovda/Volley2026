@@ -394,6 +394,7 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 				@if($_tourAllCompleted)
 				<form method="POST" action="{{ route('tournament.applyPromotion', $event) }}" style="margin:0">
 					@csrf
+					<input type="hidden" name="occurrence_id" value="{{ $selectedOccurrence?->id }}">
 					<button type="submit" class="btn btn-alert" data-title="{{ __('tournaments.setup_promote_title') }}" data-icon="info" data-confirm-text="{{ __('tournaments.setup_promote_yes') }}" data-cancel-text="{{ __('tournaments.btn_cancel') }}">
 						{{ __('tournaments.setup_btn_promote') }}
 					</button>
