@@ -1028,7 +1028,10 @@ $showWaitlist = !$isTournament && !$eventStarted && auth()->check() && !$isRegis
 			@endphp
 			<div class="card mb-1" style="padding: 0.5rem 0.8rem{{ $iMyTeam ? ';border:1.5px solid #2563eb' : '' }}">
 				<div class="d-flex between fvc mb-05">
-					<a href="{{ route('tournamentTeams.show', [$event, $tTeam]) }}" class="blink f-16 b-600">{{ $tTeam->name }}</a>
+					<div class="d-flex fvc" style="gap:.5rem">
+						<span style="min-width:26px;height:26px;border-radius:8px;background:var(--bg2,#f0f0f0);display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--text-muted,#888);flex-shrink:0;letter-spacing:-.3px">#{{ $loop->iteration }}</span>
+						<a href="{{ route('tournamentTeams.show', [$event, $tTeam]) }}" class="blink f-15 b-600">{{ $tTeam->name }}</a>
+					</div>
 					<div class="d-flex fvc" style="gap:0.4rem;flex-wrap:wrap;justify-content:flex-end">
 						@if($iMyTeam)
 						<span class="f-12 b-600" style="color:#2563eb">{{ __('events.show_pl_my_team') }}</span>
@@ -1097,9 +1100,9 @@ $showWaitlist = !$isTournament && !$eventStarted && auth()->check() && !$isRegis
 				<div class="card mb-1" style="padding:0.5rem 0.8rem;opacity:.85{{ $iMyTeam ? ';border:1.5px solid #2563eb' : '' }}{{ $offerPending ? ';border:1.5px solid #16a34a;opacity:1' : '' }}">
 					<div class="d-flex between fvc mb-05">
 						<div class="d-flex fvc" style="gap:.5rem">
-							@if($tTeam->reserve_position)
-							<span class="f-12" style="opacity:.45;font-weight:600;min-width:18px">#{{ $tTeam->reserve_position }}</span>
-							@endif
+							<span style="min-width:26px;height:26px;border-radius:8px;background:var(--bg2,#f0f0f0);display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--text-muted,#888);flex-shrink:0;letter-spacing:-.3px">
+								#{{ $tTeam->reserve_position ?? $loop->iteration }}
+							</span>
 							<a href="{{ route('tournamentTeams.show', [$event, $tTeam]) }}" class="blink f-15 b-600">{{ $tTeam->name }}</a>
 						</div>
 						<div class="d-flex fvc" style="gap:.4rem;flex-wrap:wrap;justify-content:flex-end">
