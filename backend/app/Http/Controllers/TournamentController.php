@@ -701,111 +701,137 @@ class TournamentController extends Controller
 
         $occurrenceId = (int) $request->input('occurrence_id', 0);
 
-        // Правильный league по туру
+        // Текущий сезон и дивизион по туру
         $seasonEvt = $occurrenceId > 0
             ? \App\Models\TournamentSeasonEvent::where('occurrence_id', $occurrenceId)->first()
             : null;
-        $league = $seasonEvt?->league_id
+        $currentLeague = $seasonEvt?->league_id
             ? \App\Models\TournamentLeague::find($seasonEvt->league_id)
             : $event->season?->leagues()->first();
 
-        if (!$league) {
-            return back()->with('error', 'Лига не найдена.');
+        if (!$currentLeague) {
+            return back()->with('error', 'Дивизион не найден.');
         }
 
+        // Стадии текущего тура (Hard/Lite/Medium группы)
         $stagesQuery = $event->tournamentStages()
             ->where('name', 'like', 'Группа %')
             ->where('name', '!=', 'Групповой этап');
-        // Фильтруем по туру если задан
         if ($occurrenceId > 0) {
             $stagesQuery->where('occurrence_id', $occurrenceId);
         }
         $stages = $stagesQuery->get();
 
         if ($stages->isEmpty()) {
-            return back()->with('error', 'Группы Hard/Lite не найдены. Сначала сформируйте группы через "Сформировать группы".');
+            return back()->with('error', 'Группы (Hard/Lite) не найдены. Сначала сформируйте группы.');
         }
-
-        $allCompleted = $stages->every(fn($s) => $s->status === 'completed');
-        if (!$allCompleted) {
+        if (!$stages->every(fn($s) => $s->status === 'completed')) {
             return back()->with('error', 'Не все группы завершены.');
         }
 
-        $liteStages = $stages->filter(fn($s) => str_contains($s->name, 'Lite'));
-        $mediumStages = $stages->filter(fn($s) => str_contains($s->name, 'Medium'));
-
-        $toReserve = [];
-
-        // Lite: top-2 остаются, остальные в резерв
-        foreach ($liteStages as $liteStage) {
-            $standings = \App\Models\TournamentStanding::where('stage_id', $liteStage->id)
-                ->orderBy('rank')->get();
-            foreach ($standings as $s) {
+        // Команды → резерв (Lite bottom-2, Medium bottom-1)
+        $reserveCaptainIds = [];
+        foreach ($stages->filter(fn($s) => str_contains($s->name, 'Lite')) as $stage) {
+            foreach (\App\Models\TournamentStanding::where('stage_id', $stage->id)->orderBy('rank')->get() as $s) {
                 if ($s->rank > 2) {
-                    $toReserve[] = $s->team_id;
+                    $cap = \App\Models\EventTeam::find($s->team_id)?->captain_user_id;
+                    if ($cap) $reserveCaptainIds[] = $cap;
                 }
             }
         }
-
-        // Medium: top-3 остаются, остальные в резерв
-        foreach ($mediumStages as $mediumStage) {
-            $standings = \App\Models\TournamentStanding::where('stage_id', $mediumStage->id)
-                ->orderBy('rank')->get();
-            foreach ($standings as $s) {
+        foreach ($stages->filter(fn($s) => str_contains($s->name, 'Medium')) as $stage) {
+            foreach (\App\Models\TournamentStanding::where('stage_id', $stage->id)->orderBy('rank')->get() as $s) {
                 if ($s->rank > 3) {
-                    $toReserve[] = $s->team_id;
+                    $cap = \App\Models\EventTeam::find($s->team_id)?->captain_user_id;
+                    if ($cap) $reserveCaptainIds[] = $cap;
                 }
             }
         }
 
-        // Hard: все остаются — ничего не делаем
+        // Все капитаны из standings
+        $allCaptainIds = $stages->flatMap(function ($stage) {
+            return \App\Models\TournamentStanding::where('stage_id', $stage->id)
+                ->join('event_teams', 'event_teams.id', '=', 'tournament_standings.team_id')
+                ->pluck('event_teams.captain_user_id');
+        })->unique()->filter()->values()->toArray();
 
+        // Следующий сезон для cross-season промоушена
+        $currentSeason = $seasonEvt?->season ?? $event->season;
+        $nextSeason = $currentSeason
+            ? \App\Models\TournamentSeason::where('league_id', $currentSeason->league_id)
+                ->where('id', '>', $currentSeason->id)
+                ->orderBy('id')
+                ->first()
+            : null;
+        $nextLeague = $nextSeason
+            ? \App\Models\TournamentLeague::where('season_id', $nextSeason->id)->first()
+            : null;
+
+        if ($nextLeague) {
+            // Cross-season: переносим команды в следующий сезон
+            $active = 0; $reserve = 0;
+
+            \Illuminate\Support\Facades\DB::transaction(function () use (
+                $nextLeague, $allCaptainIds, $reserveCaptainIds, &$active, &$reserve
+            ) {
+                foreach ($allCaptainIds as $captainId) {
+                    $isReserve = in_array($captainId, $reserveCaptainIds);
+                    $targetStatus = $isReserve ? 'reserve' : 'active';
+
+                    // Найти существующую запись в следующем дивизионе (по captain через team или user_id)
+                    $existing = \App\Models\TournamentLeagueTeam::where('league_id', $nextLeague->id)
+                        ->where(function ($q) use ($captainId) {
+                            $q->where('user_id', $captainId)
+                              ->orWhereHas('team', fn($tq) => $tq->where('captain_user_id', $captainId));
+                        })
+                        ->first();
+
+                    if ($existing) {
+                        // Обновить статус если нужно
+                        if ($existing->status !== $targetStatus) {
+                            $existing->update([
+                                'status'           => $targetStatus,
+                                'reserve_position' => $isReserve ? $nextLeague->nextReservePosition() : null,
+                                'left_at'          => $isReserve ? now() : null,
+                            ]);
+                        }
+                    } else {
+                        // Добавить в следующий дивизион
+                        \App\Models\TournamentLeagueTeam::create([
+                            'league_id'        => $nextLeague->id,
+                            'user_id'          => $captainId,
+                            'team_id'          => null,
+                            'status'           => $targetStatus,
+                            'joined_at'        => now(),
+                            'reserve_position' => $isReserve ? $nextLeague->nextReservePosition() : null,
+                        ]);
+                    }
+                    $isReserve ? $reserve++ : $active++;
+                }
+            });
+
+            return back()->with('success',
+                "Промоушен в {$nextSeason->name}: {$active} в основном составе, {$reserve} в резерве.");
+        }
+
+        // Fallback (нет следующего сезона): переводим в резерв текущего дивизиона
         $movedCount = 0;
-        $notifications = [];
-
-        \Illuminate\Support\Facades\DB::transaction(function () use ($league, $toReserve, $event, &$movedCount, &$notifications) {
-            foreach ($toReserve as $teamId) {
-                $lt = \App\Models\TournamentLeagueTeam::where('league_id', $league->id)
-                    ->where('team_id', $teamId)
+        \Illuminate\Support\Facades\DB::transaction(function () use ($currentLeague, $reserveCaptainIds, &$movedCount) {
+            foreach ($reserveCaptainIds as $captainId) {
+                $lt = \App\Models\TournamentLeagueTeam::where('league_id', $currentLeague->id)
+                    ->where(function ($q) use ($captainId) {
+                        $q->where('user_id', $captainId)
+                          ->orWhereHas('team', fn($tq) => $tq->where('captain_user_id', $captainId));
+                    })
                     ->where('status', 'active')
                     ->first();
-
                 if ($lt) {
-                    $nextPos = $league->nextReservePosition();
-                    $lt->update([
-                        'status' => 'reserve',
-                        'left_at' => now(),
-                        'reserve_position' => $nextPos,
-                    ]);
+                    $lt->update(['status' => 'reserve', 'left_at' => now(),
+                        'reserve_position' => $currentLeague->nextReservePosition()]);
                     $movedCount++;
-                    $notifications[] = ['team' => $lt->team, 'pos' => $nextPos];
-                }
-            }
-
-            // Активируем из резерва если есть
-            if ($movedCount > 0) {
-                $reserves = $league->reserveTeams()
-                    ->orderBy('reserve_position')
-                    ->limit($movedCount)
-                    ->get();
-
-                foreach ($reserves as $rt) {
-                    if (in_array($rt->team_id, $toReserve)) continue;
-                    $rt->activateFromReserve();
                 }
             }
         });
-
-        foreach ($notifications as $n) {
-            try {
-                if ($n['team']) {
-                    app(\App\Services\TournamentNotificationService::class)
-                        ->notifyElimination($n['team'], $event, $league->name, $n['pos']);
-                }
-            } catch (\Throwable $e) {
-                \Log::warning('Promotion notification failed: ' . $e->getMessage());
-            }
-        }
 
         return back()->with('success', "Промоушен применён: {$movedCount} команд в резерв.");
     }
