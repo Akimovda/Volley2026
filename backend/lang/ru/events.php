@@ -729,7 +729,9 @@ return [
     'channels_silent'        => 'Тихое обновление',
     'channels_update_msg'    => 'Обновлять сообщение',
     'channels_with_image'    => 'Добавлять картинку',
-    'channels_with_players'  => 'Показывать список игроков',
+    'channels_with_players'       => 'Показывать список игроков',
+    'channel_thread_placeholder'  => 'ID топика (необязательно)',
+    'channel_thread_hint'         => 'Топик в форуме Telegram',
 
     'show_participants_label' => 'Показывать список записавшихся',
     'yes'                    => 'Да',

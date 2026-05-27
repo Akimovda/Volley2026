@@ -198,13 +198,6 @@
                             @error('platform')<div class="red f-14 mt-05">{{ $message }}</div>@enderror
                         </div>
 
-                        <div class="card">
-                            <label class="f-15 b-600 mb-05">Название канала</label>
-                            <input type="text" name="title" value="{{ old('title') }}"
-                                   placeholder="Например: Основной Telegram канал" class="w-100">
-                            @error('title')<div class="red f-14 mt-05">{{ $message }}</div>@enderror
-                        </div>
-
                         <button type="submit" class="btn btn-primary w-100">
                             Создать ссылку привязки
                         </button>

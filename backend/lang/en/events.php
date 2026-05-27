@@ -728,7 +728,9 @@ return [
     'channels_silent'        => 'Silent update',
     'channels_update_msg'    => 'Update message',
     'channels_with_image'    => 'Add image',
-    'channels_with_players'  => 'Show players list',
+    'channels_with_players'       => 'Show players list',
+    'channel_thread_placeholder'  => 'Topic ID (optional)',
+    'channel_thread_hint'         => 'Telegram forum topic',
 
     'show_participants_label' => 'Show participants list',
     'yes'                    => 'Yes',

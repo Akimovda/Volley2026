@@ -53,7 +53,7 @@ class PublishOccurrenceAnnouncementService
                 $privateLink = $this->resolvePrivateLink($event, $occurrence) ?: $fallbackUrl;
             }
 
-            $threadId = data_get($channel->meta, 'message_thread_id');
+            $threadId = $link->message_thread_id ?? data_get($channel->meta, 'message_thread_id');
 
             $message = $this->builder->build($occurrence, [
                 'platform'                => $channel->platform,
