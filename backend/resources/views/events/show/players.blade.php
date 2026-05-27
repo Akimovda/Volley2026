@@ -102,12 +102,24 @@
 	    ->where(fn($q2) => $q2->where('occurrence_id', $occurrence->id)->orWhereNull('occurrence_id'))
 	    ->whereIn('status', $teamStatuses);
 
+	// Для не-лиговых турниров: команды в резерве (reserve_position IS NOT NULL)
+	$eventReserveTeamIds = !$event->season_id
+	    ? \App\Models\EventTeam::where('event_id', $event->id)
+	        ->where('occurrence_id', $occurrence->id)
+	        ->whereNotNull('reserve_position')
+	        ->pluck('id')
+	    : collect();
+
 	$teamsRegistered = \App\Models\EventTeam::where($allTeamsQ)
 	    ->when($leagueReserveTeamIds->isNotEmpty(), fn($q) => $q->whereNotIn('id', $leagueReserveTeamIds))
+	    ->when($eventReserveTeamIds->isNotEmpty(), fn($q) => $q->whereNotIn('id', $eventReserveTeamIds))
 	    ->count();
-	$teamsReserve = $leagueReserveTeamIds->isNotEmpty()
-	    ? \App\Models\EventTeam::where($allTeamsQ)->whereIn('id', $leagueReserveTeamIds)->count()
-	    : 0;
+	$teamsReserve = 0;
+	if ($leagueReserveTeamIds->isNotEmpty()) {
+	    $teamsReserve = \App\Models\EventTeam::where($allTeamsQ)->whereIn('id', $leagueReserveTeamIds)->count();
+	} elseif ($eventReserveTeamIds->isNotEmpty()) {
+	    $teamsReserve = $eventReserveTeamIds->count();
+	}
 
 	$playersRegistered = \App\Models\EventTeamMember::whereHas('team', fn($q) => $q->where('event_id', $event->id)->where(fn($q2) => $q2->where('occurrence_id', $occurrence->id)->orWhereNull('occurrence_id'))->whereIn('status', $teamStatuses)->when($leagueReserveTeamIds->isNotEmpty(), fn($q3) => $q3->whereNotIn('id', $leagueReserveTeamIds)))
 	->where('confirmation_status', 'confirmed')
@@ -967,10 +979,14 @@ $showWaitlist = !$isTournament && !$eventStarted && auth()->check() && !$isRegis
 			->with(['captain', 'members.user'])
 			->orderByRaw("CASE WHEN status IN ('ready','submitted','confirmed','approved') THEN 0 ELSE 1 END")
 			->get();
-			// Разделяем основной состав и резерв лиги
-			$tournamentTeams       = $allTournamentTeams->when($leagueReserveTeamIds->isNotEmpty(), fn($c) => $c->whereNotIn('id', $leagueReserveTeamIds->all()));
-			$tournamentTeamsReserve = $leagueReserveTeamIds->isNotEmpty()
-			    ? $allTournamentTeams->whereIn('id', $leagueReserveTeamIds->all())
+			// Разделяем основной состав и резерв (лига или event-резерв)
+			$allReserveIds = $leagueReserveTeamIds->merge($eventReserveTeamIds)->unique();
+			$tournamentTeams        = $allReserveIds->isNotEmpty()
+			    ? $allTournamentTeams->whereNotIn('id', $allReserveIds->all())
+			    : $allTournamentTeams;
+			$tournamentTeamsReserve = $allReserveIds->isNotEmpty()
+			    ? $allTournamentTeams->whereIn('id', $allReserveIds->all())
+			        ->sortBy(fn($t) => $t->reserve_position ?? 999)
 			    : collect();
 
 			// Определяем команду текущего пользователя (confirmed/joined)
@@ -1073,15 +1089,19 @@ $showWaitlist = !$isTournament && !$eventStarted && auth()->check() && !$isRegis
 				@foreach($tournamentTeamsReserve as $tTeam)
 				@php
 					$confirmedMembers = $tTeam->members->where('confirmation_status', 'confirmed')->sortBy(fn($m) => $m->role_code === 'captain' ? 0 : 1);
-					$isBeachPair = $tTeam->team_kind === 'beach_pair';
 					$iMyTeam     = (int)$myTeamIdOnEvent === (int)$tTeam->id;
+					$offerPending = $tTeam->isReserveOfferPending();
 				@endphp
-				<div class="card mb-1" style="padding:0.5rem 0.8rem;opacity:.8{{ $iMyTeam ? ';border:1.5px solid #2563eb' : '' }}">
+				<div class="card mb-1" style="padding:0.5rem 0.8rem;opacity:.8{{ $iMyTeam ? ';border:1.5px solid #2563eb' : '' }}{{ $offerPending ? ';border:1.5px solid #16a34a' : '' }}">
 					<div class="d-flex between fvc mb-05">
-						<a href="{{ route('tournamentTeams.show', [$event, $tTeam]) }}" class="blink f-16 b-600">{{ $tTeam->name }}</a>
-						@if($iMyTeam)
-						<span class="f-12 b-600" style="color:#2563eb">{{ __('events.show_pl_my_team') }}</span>
-						@endif
+						<div class="d-flex fvc" style="gap:.5rem">
+							@if($tTeam->reserve_position)<span class="f-12 text-muted">#{{ $tTeam->reserve_position }}</span>@endif
+							<a href="{{ route('tournamentTeams.show', [$event, $tTeam]) }}" class="blink f-16 b-600">{{ $tTeam->name }}</a>
+						</div>
+						<div class="d-flex fvc" style="gap:.4rem">
+							@if($iMyTeam)<span class="f-12 b-600" style="color:#2563eb">{{ __('events.show_pl_my_team') }}</span>@endif
+							@if($offerPending)<span class="f-12 b-600" style="color:#16a34a">🎉 Место предложено</span>@endif
+						</div>
 					</div>
 					@foreach($confirmedMembers as $m)
 					@php

@@ -17,6 +17,9 @@ class EventTeam extends Model
         'name',
         'team_kind',
         'status',
+        'reserve_position',
+        'confirmation_token',
+        'confirmation_expires_at',
         'invite_code',
         'is_complete',
         'last_checked_at',
@@ -30,8 +33,21 @@ class EventTeam extends Model
         'is_complete' => 'boolean',
         'last_checked_at' => 'datetime',
         'confirmed_at' => 'datetime',
+        'confirmation_expires_at' => 'datetime',
         'meta' => 'array',
     ];
+
+    public function isInReserve(): bool
+    {
+        return $this->reserve_position !== null;
+    }
+
+    public function isReserveOfferPending(): bool
+    {
+        return $this->confirmation_token !== null
+            && $this->confirmation_expires_at !== null
+            && $this->confirmation_expires_at->isFuture();
+    }
     public function invites(): HasMany
     {
         return $this->hasMany(EventTeamInvite::class, 'event_team_id');

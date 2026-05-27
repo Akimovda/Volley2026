@@ -374,6 +374,13 @@ Route::post('/auth/tma-exchange', [TmaAuthController::class, 'exchange'])->name(
     Route::post('/events/{event}/teams/{team}/disband', [TournamentTeamController::class, 'disbandTeam'])
         ->name('tournamentTeams.disband');
 
+    Route::get('/events/{event}/teams/{team}/confirm-reserve/{token}', [TournamentTeamController::class, 'reserveConfirmShow'])
+        ->name('tournamentTeams.reserveConfirmShow')->withoutMiddleware(['auth']);
+    Route::post('/events/{event}/teams/{team}/confirm-reserve', [TournamentTeamController::class, 'reserveConfirm'])
+        ->name('tournamentTeams.reserveConfirm');
+    Route::post('/events/{event}/teams/{team}/decline-reserve', [TournamentTeamController::class, 'reserveDecline'])
+        ->name('tournamentTeams.reserveDecline');
+
     Route::post('/events/{event}/teams/{team}/join-request', [TournamentTeamController::class, 'joinRequest'])
         ->name('tournamentTeams.joinRequest');
 

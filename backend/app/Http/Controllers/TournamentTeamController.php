@@ -569,6 +569,54 @@ class TournamentTeamController extends Controller
         }
     }
 
+    // ──────────────────────────────────────────────────────
+    // Подтверждение/отклонение места из резерва
+    // ──────────────────────────────────────────────────────
+
+    public function reserveConfirmShow(Request $request, Event $event, EventTeam $team, string $token)
+    {
+        abort_unless((int) $team->event_id === (int) $event->id, 404);
+        abort_unless($team->confirmation_token === $token, 404);
+        abort_unless($team->isInReserve(), 404);
+
+        $expired = $team->confirmation_expires_at?->isPast() ?? false;
+
+        return view('tournaments.teams.reserve_confirm', compact('event', 'team', 'token', 'expired'));
+    }
+
+    public function reserveConfirm(Request $request, Event $event, EventTeam $team, TournamentTeamService $service): RedirectResponse
+    {
+        abort_unless((int) $team->event_id === (int) $event->id, 404);
+        abort_unless($team->isInReserve(), 404);
+        $isCaptain = (int) $team->captain_user_id === (int) $request->user()?->id;
+        $isOrganizer = (int) $event->organizer_id === (int) $request->user()?->id || $request->user()?->isAdmin();
+        abort_unless($isCaptain || $isOrganizer, 403);
+
+        $token = $request->input('token', $team->confirmation_token ?? '');
+
+        try {
+            $service->confirmEventReserveSpot($team, $token);
+            $this->dispatchAnnounceRefresh($event, $team->occurrence_id ? (int) $team->occurrence_id : null);
+            return redirect()->route('tournamentTeams.show', [$event, $team])
+                ->with('success', 'Участие подтверждено! Ваша команда в основном составе.');
+        } catch (\DomainException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+    }
+
+    public function reserveDecline(Request $request, Event $event, EventTeam $team, TournamentTeamService $service): RedirectResponse
+    {
+        abort_unless((int) $team->event_id === (int) $event->id, 404);
+        abort_unless($team->isInReserve(), 404);
+        $isCaptain = (int) $team->captain_user_id === (int) $request->user()?->id;
+        $isOrganizer = (int) $event->organizer_id === (int) $request->user()?->id || $request->user()?->isAdmin();
+        abort_unless($isCaptain || $isOrganizer, 403);
+
+        $service->expireEventReserveOffer($team);
+        return redirect()->route('events.show', $event)
+            ->with('success', 'Место передано следующей команде в очереди.');
+    }
+
     /**
      * Капитан расформировывает команду.
      */
