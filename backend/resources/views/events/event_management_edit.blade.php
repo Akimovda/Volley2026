@@ -951,6 +951,7 @@
                         $chUpdateMsg  = (bool) old('channel_update_message', $cs['update_message']);
                         $chIncImg     = (bool) old('channel_include_image', $cs['include_image']);
                         $chIncReg     = (bool) old('channel_include_registered', $cs['include_registered_list']);
+                        $savedThreadIds = $savedThreadIds ?? [];
                         @endphp
                         <div class="col-md-6">
                             <div class="card" style="overflow:visible">
@@ -971,19 +972,50 @@
                                 @else
                                 <div class="mt-2">
                                     @foreach($userChannels as $channel)
-                                    <label class="checkbox-item">
+                                    @php
+                                        $chIsChecked = in_array((string) $channel->id, array_map('strval', $selChannels), true);
+                                        $chThreadVal = old('channel_thread_ids.' . $channel->id, $savedThreadIds[$channel->id] ?? '');
+                                    @endphp
+                                    <label class="checkbox-item" style="margin-bottom:2px">
                                         <input type="checkbox"
                                             name="channels[]"
                                             value="{{ $channel->id }}"
-                                            @checked(in_array((string) $channel->id, array_map('strval', $selChannels), true))>
+                                            class="channel-cb"
+                                            data-channel-id="{{ $channel->id }}"
+                                            @checked($chIsChecked)>
                                         <div class="custom-checkbox"></div>
                                         <span>
-                                            {{ strtoupper($channel->platform) }} — {{ $channel->title ?: __('events.channels_no_title') }}
-                                            <span class="text-muted">({{ $channel->chat_id }})</span>
+                                            {{ strtoupper($channel->platform) }}
+                                            @if($channel->title)
+                                                — {{ $channel->title }}
+                                            @endif
+                                            <span class="text-muted f-13">({{ $channel->chat_id }})</span>
                                         </span>
                                     </label>
+                                    @if($channel->platform === 'telegram')
+                                    <div id="channel-thread-wrap-{{ $channel->id }}"
+                                         style="{{ $chIsChecked ? '' : 'display:none' }}; margin-left:26px; margin-bottom:6px">
+                                        <input type="number"
+                                               name="channel_thread_ids[{{ $channel->id }}]"
+                                               value="{{ $chThreadVal }}"
+                                               placeholder="{{ __('events.channel_thread_placeholder') }}"
+                                               min="1"
+                                               style="width:180px; font-size:13px; padding:3px 6px">
+                                        <span class="text-muted f-12 ml-05">{{ __('events.channel_thread_hint') }}</span>
+                                    </div>
+                                    @endif
                                     @endforeach
                                 </div>
+                                <script>
+                                (function(){
+                                    document.querySelectorAll('.channel-cb').forEach(function(cb){
+                                        cb.addEventListener('change', function(){
+                                            var wrap = document.getElementById('channel-thread-wrap-' + this.dataset.channelId);
+                                            if (wrap) wrap.style.display = this.checked ? '' : 'none';
+                                        });
+                                    });
+                                })();
+                                </script>
 
                                 <div class="mt-2">
                                     <label class="checkbox-item">

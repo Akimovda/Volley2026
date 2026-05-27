@@ -37,20 +37,25 @@ class EventNotificationChannelService
         }
 
         $now = now();
+        $threadIds = $request->input('channel_thread_ids', []);
 
         $rows = [];
         foreach ($channels as $channel) {
+            $rawThread = $threadIds[$channel->id] ?? null;
+            $threadId = ($rawThread !== null && $rawThread !== '') ? (int) $rawThread : null;
+
             $rows[] = [
-                'event_id' => (int) $event->id,
-                'channel_id' => (int) $channel->id,
-                'notification_type' => 'registration_open',
-                'use_private_link' => $request->boolean('channel_use_private_link'),
-                'silent' => $request->boolean('channel_silent'),
-                'update_message' => $request->boolean('channel_update_message', true),
-                'include_image' => $request->boolean('channel_include_image', true),
-                'include_registered_list' => $request->boolean('channel_include_registered', true),
-                'created_at' => $now,
-                'updated_at' => $now,
+                'event_id'               => (int) $event->id,
+                'channel_id'             => (int) $channel->id,
+                'notification_type'      => 'registration_open',
+                'use_private_link'       => $request->boolean('channel_use_private_link'),
+                'silent'                 => $request->boolean('channel_silent'),
+                'update_message'         => $request->boolean('channel_update_message', true),
+                'include_image'          => $request->boolean('channel_include_image', true),
+                'include_registered_list'=> $request->boolean('channel_include_registered', true),
+                'message_thread_id'      => $threadId,
+                'created_at'             => $now,
+                'updated_at'             => $now,
             ];
         }
 

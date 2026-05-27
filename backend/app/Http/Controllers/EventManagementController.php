@@ -254,6 +254,7 @@ if ($role === 'admin') {
             ->where('event_id', (int) $event->id)
             ->get();
         $selectedChannelIds = $eventChannels->pluck('channel_id')->map(fn ($v) => (string) $v)->all();
+        $savedThreadIds = $eventChannels->pluck('message_thread_id', 'channel_id')->all();
         $first = $eventChannels->first();
         $channelSettings = [
             'silent'                  => (bool) ($first->silent ?? false),
@@ -269,6 +270,7 @@ if ($role === 'admin') {
             'currentCity' => $currentCity,
             'userChannels' => $userChannels,
             'selectedChannelIds' => $selectedChannelIds,
+            'savedThreadIds' => $savedThreadIds,
             'channelSettings' => $channelSettings,
             'seasonInfo' => $seasonInfo,
         ]);

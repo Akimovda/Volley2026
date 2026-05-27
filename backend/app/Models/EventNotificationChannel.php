@@ -16,14 +16,16 @@ class EventNotificationChannel extends Model
         'update_message',
         'include_image',
         'include_registered_list',
+        'message_thread_id',
     ];
 
     protected $casts = [
-        'use_private_link' => 'boolean',
-        'silent' => 'boolean',
-        'update_message' => 'boolean',
-        'include_image' => 'boolean',
+        'use_private_link'        => 'boolean',
+        'silent'                  => 'boolean',
+        'update_message'          => 'boolean',
+        'include_image'           => 'boolean',
         'include_registered_list' => 'boolean',
+        'message_thread_id'       => 'integer',
     ];
 
     public function event(): BelongsTo
