@@ -699,16 +699,28 @@ class TournamentController extends Controller
             return back()->with('error', 'Турнир не привязан к сезону.');
         }
 
-        $season = $event->season;
-        $league = $season->leagues()->first();
+        $occurrenceId = (int) $request->input('occurrence_id', 0);
+
+        // Правильный league по туру
+        $seasonEvt = $occurrenceId > 0
+            ? \App\Models\TournamentSeasonEvent::where('occurrence_id', $occurrenceId)->first()
+            : null;
+        $league = $seasonEvt?->league_id
+            ? \App\Models\TournamentLeague::find($seasonEvt->league_id)
+            : $event->season?->leagues()->first();
+
         if (!$league) {
             return back()->with('error', 'Лига не найдена.');
         }
 
-        $stages = $event->tournamentStages()
+        $stagesQuery = $event->tournamentStages()
             ->where('name', 'like', 'Группа %')
-            ->where('name', '!=', 'Групповой этап')
-            ->get();
+            ->where('name', '!=', 'Групповой этап');
+        // Фильтруем по туру если задан
+        if ($occurrenceId > 0) {
+            $stagesQuery->where('occurrence_id', $occurrenceId);
+        }
+        $stages = $stagesQuery->get();
 
         if ($stages->isEmpty()) {
             return back()->with('error', 'Группы Hard/Lite не найдены. Сначала сформируйте группы через "Сформировать группы".');
@@ -1420,13 +1432,19 @@ class TournamentController extends Controller
             return back()->with('error', 'Событие не привязано к сезону.');
         }
 
-        $season = $event->season;
-        $league = $season?->leagues()->first();
+        $occurrenceId = (int) $request->input('occurrence_id', 0);
+
+        // Правильный league — по туру (тур может принадлежать другому сезону)
+        $seasonEvt = $occurrenceId > 0
+            ? \App\Models\TournamentSeasonEvent::where('occurrence_id', $occurrenceId)->first()
+            : null;
+        $league = $seasonEvt?->league_id
+            ? \App\Models\TournamentLeague::find($seasonEvt->league_id)
+            : $event->season?->leagues()->first();
+
         if (!$league) {
             return back()->with('error', 'В сезоне нет дивизионов.');
         }
-
-        $occurrenceId = (int) $request->input('occurrence_id', 0);
         $added = 0;
         $linked = 0;
 
@@ -1541,10 +1559,13 @@ class TournamentController extends Controller
 
     private function syncTeamToLeague(Event $event, EventTeam $team): void
     {
-        $season = $event->season;
-        if (!$season) return;
-
-        $league = $season->leagues()->first();
+        // Правильный league — по occurrence команды (тур может принадлежать другому сезону)
+        $seasonEvt = $team->occurrence_id
+            ? \App\Models\TournamentSeasonEvent::where('occurrence_id', $team->occurrence_id)->first()
+            : null;
+        $league = $seasonEvt?->league_id
+            ? \App\Models\TournamentLeague::find($seasonEvt->league_id)
+            : $event->season?->leagues()->first();
         if (!$league) return;
 
         // Проверяем — уже есть?
