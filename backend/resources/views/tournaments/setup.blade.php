@@ -252,18 +252,25 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 
 			{{-- Состав лиги --}}
 			@if($leagueTeams->count())
+			@php
+				$_activeTeams  = $leagueTeams->where('status', 'active');
+				$_reserveTeams = $leagueTeams->whereIn('status', ['reserve', 'pending_confirmation'])
+				                             ->sortBy('reserve_position');
+			@endphp
 			<div class="">
 				<h2 class="-mt-05">
-					{{ __('tournaments.setup_series_lineup') }} 
+					{{ __('tournaments.setup_series_lineup') }}
 					<span class="cd">
-						— {{ $leagueTeams->where('status', 'active')->count() }} {{ __('tournaments.setup_series_active') }}
-						@if($leagueTeams->where('status', 'reserve')->count())
-						/ {{ $leagueTeams->where('status', 'reserve')->count() }} {{ __('tournaments.setup_series_reserve') }}
+						— {{ $_activeTeams->count() }} {{ __('tournaments.setup_series_active') }}
+						@if($_reserveTeams->count())
+						/ {{ $_reserveTeams->count() }} {{ __('tournaments.setup_series_reserve') }} ({{ __('tournaments.setup_series_waitlist_h2') }})
 						@endif
 					</span>
 				</h2>
+
+				{{-- ===== ОСНОВНОЙ СОСТАВ ===== --}}
 				<div class="table-scrollable">
-					<div class="table-drag-indicator"></div>				
+					<div class="table-drag-indicator"></div>
 					<table class="table">
 						<thead>
 							<tr>
@@ -274,7 +281,7 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 							</tr>
 						</thead>
 						<tbody>
-							@foreach($leagueTeams as $lt)
+							@foreach($_activeTeams as $lt)
 							<tr>
 								<td>{{ $loop->iteration }}</td>
 								<td>
@@ -291,7 +298,7 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 										@endphp
 										{{ $members }}
 									</div>
-									@if($lt->status === 'active' && $leagueForSubs && !$_tourStarted)
+									@if($leagueForSubs && !$_tourStarted)
 									@php $existingSub = $occSubstitutions[$lt->team_id] ?? null; @endphp
 									@if($existingSub)
 									<div class="f-12 mt-025 d-flex gap-1 align-items-center flex-wrap">
@@ -338,9 +345,72 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 									@endif
 								</td>
 								<td class="text-center">
-									@if($lt->status === 'active')
 									<span class="alert-success p-1 pt-05 pb-05">{{ __('tournaments.setup_st_active') }}</span>
-									@elseif($lt->status === 'reserve')
+								</td>
+								<td class="text-center" style="white-space:nowrap">
+									<form method="POST" action="{{ route('divisions.teams.toReserve', $lt) }}" style="display:inline">
+										@csrf
+										<button type="submit" class="btn btn-secondary btn-alert btn-small" data-title="{{ __('tournaments.setup_to_reserve_title') }}" data-icon="warning" data-confirm-text="{{ __('tournaments.yes') }}" data-cancel-text="{{ __('tournaments.btn_cancel') }}">{{ __('tournaments.setup_btn_to_reserve') }}</button>
+									</form>
+									<form method="POST" action="{{ route('divisions.teams.destroy', $lt) }}" style="display:inline">
+										@csrf
+										@method('DELETE')
+										<button type="submit" class="btn btn-danger btn-alert btn-small" data-title="{{ __('tournaments.setup_team_delete_title', ['name' => $lt->team?->name ?? '—']) }}" data-icon="warning" data-confirm-text="{{ __('tournaments.btn_delete') }}" data-cancel-text="{{ __('tournaments.btn_cancel') }}">{{ __('tournaments.btn_delete') }}</button>
+									</form>
+								</td>
+							</tr>
+							@endforeach
+						</tbody>
+					</table>
+				</div>
+
+				{{-- ===== ЛИСТ ОЖИДАНИЯ ===== --}}
+				@if($_reserveTeams->count())
+				<h3 class="mt-2 mb-05">⏳ {{ __('tournaments.setup_series_waitlist_h2') }} ({{ $_reserveTeams->count() }})</h3>
+				<div class="table-scrollable">
+					<div class="table-drag-indicator"></div>
+					<table class="table">
+						<thead>
+							<tr>
+								<th style="width:30px">#</th>
+								<th>{{ __('tournaments.setup_col_team') }}</th>
+								<th>{{ __('tournaments.setup_col_status') }}</th>
+								<th>{{ __('tournaments.setup_col_action') }}</th>
+							</tr>
+						</thead>
+						<tbody>
+							@foreach($_reserveTeams as $lt)
+							<tr>
+								<td>{{ $loop->iteration }}</td>
+								<td>
+									@if($lt->team)
+									<div class="team-name b-600">
+										<a class="blink" href="{{ route('tournamentTeams.show', [$event, $lt->team]) }}">{{ $lt->team->name }}</a>
+									</div>
+									<div class="team-members">
+										@php
+										$members = $lt->team->members->map(function($m) {
+										$u = $m->user;
+										return $u ? ($u->last_name . ' ' . $u->first_name) : '?';
+										})->implode(' / ');
+										@endphp
+										{{ $members }}
+									</div>
+									@elseif($lt->user)
+									<div class="team-name">{{ $lt->user->last_name }} {{ $lt->user->first_name }}</div>
+									<div class="f-12 cd mt-025">
+										<form method="POST" action="{{ route('tournament.syncLeague', $event) }}" style="display:inline">
+											@csrf
+											<input type="hidden" name="occurrence_id" value="{{ $selectedOccurrence?->id }}">
+											<button type="submit" class="btn btn-small btn-secondary" style="font-size:11px;padding:2px 8px">Создать команду</button>
+										</form>
+									</div>
+									@else
+									—
+									@endif
+								</td>
+								<td class="text-center">
+									@if($lt->status === 'reserve')
 									<span class="alert-warning p-1 pt-05 pb-05">{{ __('tournaments.setup_st_reserve_n', ['n' => $lt->reserve_position]) }}</span>
 									@elseif($lt->status === 'pending_confirmation')
 									<span class="alert-info p-1 pt-05 pb-05">{{ __('tournaments.setup_st_pending') }}</span>
@@ -349,12 +419,6 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 									@endif
 								</td>
 								<td class="text-center" style="white-space:nowrap">
-									@if($lt->status === 'active')
-									<form method="POST" action="{{ route('divisions.teams.toReserve', $lt) }}" style="display:inline">
-										@csrf
-										<button type="submit" class="btn btn-secondary btn-alert btn-small" data-title="{{ __('tournaments.setup_to_reserve_title') }}" data-icon="warning" data-confirm-text="{{ __('tournaments.yes') }}" data-cancel-text="{{ __('tournaments.btn_cancel') }}">{{ __('tournaments.setup_btn_to_reserve') }}</button>
-									</form>
-									@elseif($lt->status === 'reserve' || $lt->status === 'pending_confirmation')
 									<form method="POST" action="{{ route('divisions.teams.activate', $lt) }}" style="display:inline">
 										@csrf
 										<input type="hidden" name="occurrence_id" value="{{ $selectedOccurrence?->id }}">
@@ -372,7 +436,6 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 										<button type="submit" class="btn btn-secondary btn-small" title="Вниз по очереди">↓</button>
 									</form>
 									@endif
-									@endif
 									<form method="POST" action="{{ route('divisions.teams.destroy', $lt) }}" style="display:inline">
 										@csrf
 										@method('DELETE')
@@ -384,6 +447,7 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 						</tbody>
 					</table>
 				</div>
+				@endif
 			</div>
 			@else
 			<div class="alert alert-info">{{ __('tournaments.setup_no_teams_in_league') }}</div>
