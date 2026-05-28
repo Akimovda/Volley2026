@@ -32,8 +32,8 @@
                 'Платежи'      => ['payment_confirmed','payment_cancelled','payment_rejected','payment_user_confirmed'],
                 'Турниры'      => ['tournament_match_upcoming','tournament_match_result','tournament_advancement','tournament_completed','tournament_started','tournament_photos','tournament_application_incomplete','tournament_application_completed','tournament_application_auto_rejected'],
                 'Лиги и сезоны'=> ['season_promotion','season_elimination','season_reserve_activated','season_confirm_participation'],
-                'Социальное'   => ['user_level_voted','user_play_liked'],
-                'Уведомления организатору' => ['organizer_player_registered','organizer_player_cancelled','organizer_player_auto_booked','organizer_registered_player','organizer_cancelled_player','organizer_deleted_player'],
+                'Социальное'   => ['user_level_voted','user_play_liked','followed_player_registered'],
+                'Уведомления организатору' => ['organizer_player_registered','organizer_player_cancelled','organizer_player_auto_booked','organizer_player_waitlisted','organizer_registered_player','organizer_cancelled_player','organizer_deleted_player'],
             'Администрирование' => ['ad_event_payment_pending','admin_broadcast'],
             ];
 
