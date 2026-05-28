@@ -467,6 +467,8 @@ final class NotificationDeliverySender
         $body = preg_replace('/^(Дата|Дата и время|Date)\s*:.*$/mu', '', $body ?? '');
         $body = preg_replace('/^(Адрес|Address)\s*:.*$/mu', '', $body ?? '');
         $body = preg_replace('/^(Открыть|Подробнее|открыть)[^\n]*/mu', '', $body ?? '');
+        // Строки-действия с emoji (👉 Открыть ...), в т.ч. после вырезания URL
+        $body = preg_replace('/^👉[^\n]*(Открыть|открыть|Принять|открыть страницу)[^\n]*/mu', '', $body ?? '');
 
         // Схлопываем пустые строки
         $body = preg_replace('/\n{3,}/', "\n\n", $body ?? '');
