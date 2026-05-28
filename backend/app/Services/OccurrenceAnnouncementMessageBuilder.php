@@ -176,14 +176,17 @@ class OccurrenceAnnouncementMessageBuilder
         $isIndividualTournament = $isTournament
             && (string) ($event->registration_mode ?? '') === 'tournament_individual';
 
-        $reserveTeamIds = [];
+        $reserveTeamIds       = [];
+        $reserveTeamPositions = [];
         if ($isTournament && !$isIndividualTournament) {
-            $teamsMax       = (int) ($event->tournament_teams_count ?? 0);
-            $reserveTeamIds = $this->getReserveTeamIds(
+            $teamsMax        = (int) ($event->tournament_teams_count ?? 0);
+            $reserveData     = $this->getReserveTeamData(
                 (int) $occurrence->id,
                 (int) $event->id,
                 $event->season_id ? (int) $event->season_id : null
             );
+            $reserveTeamIds       = $reserveData['ids'];
+            $reserveTeamPositions = $reserveData['positions'];
             $teamsRegistered = $this->countRegisteredTeams((int) $occurrence->id, $reserveTeamIds);
             $teamsReserveCount = empty($reserveTeamIds) ? 0 : (int) DB::table('event_teams')
                 ->where('occurrence_id', $occurrence->id)
@@ -216,7 +219,7 @@ class OccurrenceAnnouncementMessageBuilder
         $includeList = (bool) ($options['include_registered_list'] ?? true);
         if ($includeList) {
             if ($isTournament && !$isIndividualTournament) {
-                [$mainList, $reserveList] = $this->buildTeamList((int) $occurrence->id, $direction, $reserveTeamIds);
+                [$mainList, $reserveList] = $this->buildTeamList((int) $occurrence->id, $direction, $reserveTeamIds, $reserveTeamPositions);
                 if ($mainList !== '') {
                     $lines[] = '';
                     $lines[] = $this->bold($platform, 'Список команд:');
@@ -487,37 +490,48 @@ class OccurrenceAnnouncementMessageBuilder
         return (int) $q->count();
     }
 
-    private function getReserveTeamIds(int $occurrenceId, int $eventId, ?int $seasonId): array
+    /**
+     * Возвращает ['ids' => int[], 'positions' => [team_id => reserve_position]].
+     */
+    private function getReserveTeamData(int $occurrenceId, int $eventId, ?int $seasonId): array
     {
         if ($seasonId) {
             $seasonEvt = DB::table('tournament_season_events')
                 ->where('occurrence_id', $occurrenceId)
                 ->first(['league_id']);
             if (!$seasonEvt) {
-                return [];
+                return ['ids' => [], 'positions' => []];
             }
-            return DB::table('tournament_league_teams')
+            $rows = DB::table('tournament_league_teams')
                 ->where('league_id', $seasonEvt->league_id)
                 ->where('status', 'reserve')
                 ->whereNotNull('team_id')
-                ->pluck('team_id')
-                ->map(fn($id) => (int) $id)
+                ->orderBy('reserve_position')
+                ->get(['team_id', 'reserve_position']);
+            $ids       = $rows->pluck('team_id')->map(fn($id) => (int) $id)->toArray();
+            $positions = $rows->pluck('reserve_position', 'team_id')
+                ->mapWithKeys(fn($pos, $id) => [(int) $id => (int) $pos])
                 ->toArray();
+            return ['ids' => $ids, 'positions' => $positions];
         }
-        return DB::table('event_teams')
+        $rows = DB::table('event_teams')
             ->where('event_id', $eventId)
             ->where('occurrence_id', $occurrenceId)
             ->whereNotNull('reserve_position')
-            ->pluck('id')
-            ->map(fn($id) => (int) $id)
+            ->orderBy('reserve_position')
+            ->get(['id', 'reserve_position']);
+        $ids       = $rows->pluck('id')->map(fn($id) => (int) $id)->toArray();
+        $positions = $rows->pluck('reserve_position', 'id')
+            ->mapWithKeys(fn($pos, $id) => [(int) $id => (int) $pos])
             ->toArray();
+        return ['ids' => $ids, 'positions' => $positions];
     }
 
     /**
      * Список команд с игроками для командных турниров.
      * Возвращает [mainList, reserveList] — строки для основного состава и листа ожидания.
      */
-    private function buildTeamList(int $occurrenceId, string $direction, array $reserveTeamIds = []): array
+    private function buildTeamList(int $occurrenceId, string $direction, array $reserveTeamIds = [], array $reservePositions = []): array
     {
         $posLabels = [
             'setter'   => 'связующий',
@@ -539,61 +553,47 @@ class OccurrenceAnnouncementMessageBuilder
             return ['', ''];
         }
 
-        $mainLines    = [];
-        $reserveLines = [];
-        $mainNum      = 0;
-        $reserveNum   = 0;
+        $mainTeams    = $teams->filter(fn($t) => !in_array((int) $t->id, $reserveTeamIds, true))->values();
+        $reserveTeams = $teams->filter(fn($t) => in_array((int) $t->id, $reserveTeamIds, true))
+            ->sortBy(fn($t) => $reservePositions[(int) $t->id] ?? ($t->reserve_position ?? 999))
+            ->values();
 
-        foreach ($teams as $team) {
-            $teamId   = (int) $team->id;
-            $isReserve = !empty($reserveTeamIds) && in_array($teamId, $reserveTeamIds, true);
+        $buildLines = function ($teamGroup) use ($direction, $posLabels): array {
+            $lines = [];
+            foreach ($teamGroup as $i => $team) {
+                $teamId   = (int) $team->id;
+                $teamName = trim((string) ($team->name ?? '')) ?: 'Команда';
+                $lines[]  = ($i + 1) . '. ' . $teamName;
 
-            $teamName = trim((string) ($team->name ?? ''));
-            if ($teamName === '') {
-                $teamName = 'Команда';
-            }
+                $members = DB::table('event_team_members as etm')
+                    ->join('users as u', 'u.id', '=', 'etm.user_id')
+                    ->where('etm.event_team_id', $teamId)
+                    ->whereIn('etm.confirmation_status', ['confirmed', 'joined'])
+                    ->orderBy('etm.position_order')
+                    ->get(['u.first_name', 'u.last_name', 'u.name', 'etm.position_code']);
 
-            if ($isReserve) {
-                $reserveNum++;
-                $num = $reserveNum;
-            } else {
-                $mainNum++;
-                $num = $mainNum;
-            }
+                foreach ($members as $member) {
+                    $firstName = trim((string) ($member->first_name ?? ''));
+                    $lastName  = trim((string) ($member->last_name ?? ''));
+                    $fullName  = trim($lastName . ' ' . $firstName);
+                    $name      = $fullName !== '' ? $fullName : trim((string) ($member->name ?? 'Игрок'));
 
-            $teamLines = ["{$num}. {$teamName}"];
-
-            $members = DB::table('event_team_members as etm')
-                ->join('users as u', 'u.id', '=', 'etm.user_id')
-                ->where('etm.event_team_id', $teamId)
-                ->whereIn('etm.confirmation_status', ['confirmed', 'joined'])
-                ->orderBy('etm.position_order')
-                ->get(['u.first_name', 'u.last_name', 'u.name', 'etm.position_code']);
-
-            foreach ($members as $member) {
-                $firstName = trim((string) ($member->first_name ?? ''));
-                $lastName  = trim((string) ($member->last_name ?? ''));
-                $fullName  = trim($lastName . ' ' . $firstName);
-                $name      = $fullName !== '' ? $fullName : trim((string) ($member->name ?? 'Игрок'));
-
-                $posCode  = (string) ($member->position_code ?? '');
-                $posLabel = $posLabels[$posCode] ?? null;
-
-                $line = "    {$name}";
-                if ($direction !== 'beach' && $posLabel !== null) {
-                    $line .= ' - ' . $posLabel;
+                    $posCode  = (string) ($member->position_code ?? '');
+                    $posLabel = $posLabels[$posCode] ?? null;
+                    $line     = "    {$name}";
+                    if ($direction !== 'beach' && $posLabel !== null) {
+                        $line .= ' - ' . $posLabel;
+                    }
+                    $lines[] = $line;
                 }
-                $teamLines[] = $line;
             }
+            return $lines;
+        };
 
-            if ($isReserve) {
-                array_push($reserveLines, ...$teamLines);
-            } else {
-                array_push($mainLines, ...$teamLines);
-            }
-        }
-
-        return [implode("\n", $mainLines), implode("\n", $reserveLines)];
+        return [
+            implode("\n", $buildLines($mainTeams)),
+            implode("\n", $buildLines($reserveTeams)),
+        ];
     }
 
     private function loadGameSettings(int $eventId): array

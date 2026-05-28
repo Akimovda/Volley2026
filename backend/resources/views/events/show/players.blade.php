@@ -87,13 +87,17 @@
 
 	// Резервные команды лиги — не считаются основными участниками
 	$leagueReserveTeamIds = collect();
+	$leagueReservePositions = collect(); // team_id → reserve_position
 	if ($event->season_id) {
 	    $seasonEvt = \App\Models\TournamentSeasonEvent::where('occurrence_id', $occurrence->id)->first();
 	    if ($seasonEvt?->league_id) {
-	        $leagueReserveTeamIds = \App\Models\TournamentLeagueTeam::where('league_id', $seasonEvt->league_id)
+	        $leagueReserveRows = \App\Models\TournamentLeagueTeam::where('league_id', $seasonEvt->league_id)
 	            ->where('status', 'reserve')
-	            ->pluck('team_id')
-	            ->filter();
+	            ->whereNotNull('team_id')
+	            ->orderBy('reserve_position')
+	            ->get(['team_id', 'reserve_position']);
+	        $leagueReserveTeamIds   = $leagueReserveRows->pluck('team_id');
+	        $leagueReservePositions = $leagueReserveRows->pluck('reserve_position', 'team_id');
 	    }
 	}
 
@@ -986,7 +990,7 @@ $showWaitlist = !$isTournament && !$eventStarted && auth()->check() && !$isRegis
 			    : $allTournamentTeams;
 			$tournamentTeamsReserve = $allReserveIds->isNotEmpty()
 			    ? $allTournamentTeams->whereIn('id', $allReserveIds->all())
-			        ->sortBy(fn($t) => $t->reserve_position ?? 999)
+			        ->sortBy(fn($t) => $leagueReservePositions->get($t->id) ?? ($t->reserve_position ?? 999))
 			    : collect();
 
 			// Определяем команду текущего пользователя (confirmed/joined)
