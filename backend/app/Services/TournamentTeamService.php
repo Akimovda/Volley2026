@@ -245,7 +245,7 @@ final class TournamentTeamService
                     'team_id'     => $team->id,
                     'team_url'    => $teamUrl,
                     'button_text' => __('events.tinv_revoke_btn') !== '✕ Отозвать' ? 'Открыть' : 'Открыть',
-                    'button_url'  => route('events.show', ['event' => $team->event_id]),
+                    'button_url'  => $teamUrl,
                 ],
                 channels: ['in_app', 'telegram', 'vk', 'max']
             );
