@@ -1018,7 +1018,8 @@ $showWaitlist = !$isTournament && !$eventStarted && auth()->check() && !$isRegis
 			$myPendingRequestTeamIds = collect();
 			$myPendingInvitesByTeam  = collect(); // pending-приглашения: event_team_id → invite
 			if (auth()->check()) {
-				$myMemberships = \App\Models\EventTeamMember::whereHas('team', fn($q) => $q->where('event_id', $event->id))
+				$myMemberships = \App\Models\EventTeamMember::whereHas('team', fn($q) => $q->where('event_id', $event->id)
+						->where(fn($q2) => $q2->where('occurrence_id', $occurrence->id)->orWhereNull('occurrence_id')))
 					->where('user_id', auth()->id())
 					->whereIn('confirmation_status', ['confirmed', 'joined', 'requested'])
 					->get();

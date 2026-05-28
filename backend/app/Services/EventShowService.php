@@ -303,6 +303,9 @@ class EventShowService
         if ($isTournament && $user) {
             $myTournamentTeams = EventTeam::query()
                 ->where('event_id', $event->id)
+                ->where(function ($q) use ($occurrence) {
+                    $q->where('occurrence_id', $occurrence->id)->orWhereNull('occurrence_id');
+                })
                 ->where(function ($q) use ($user) {
                     $q->where('captain_user_id', (int) $user->id)
                         ->orWhereHas('members', function ($mq) use ($user) {
