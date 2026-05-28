@@ -10,6 +10,7 @@ use App\Models\TournamentStanding;
 use App\Models\PlayerTournamentStats;
 use App\Models\PlayerCareerStats;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\App;
 
 class TournamentStatsService
 {
@@ -178,6 +179,34 @@ class TournamentStatsService
 
         foreach ($matches as $match) {
             $this->updateAfterMatch($match);
+        }
+    }
+
+    /**
+     * Полный пересчёт всей статистики события: PTS → career → season.
+     * Используется после каждого сохранения/изменения счёта матча.
+     */
+    public function rebuildAll(Event $event): void
+    {
+        // Собираем всех участников команд события (до пересчёта), чтобы обновить их career
+        $affectedUserIds = DB::table('event_team_members')
+            ->join('event_teams', 'event_teams.id', '=', 'event_team_members.event_team_id')
+            ->where('event_teams.event_id', $event->id)
+            ->pluck('event_team_members.user_id')
+            ->merge(PlayerTournamentStats::where('event_id', $event->id)->pluck('user_id'))
+            ->unique();
+
+        $this->rebuildTournamentStats($event);
+
+        foreach ($affectedUserIds as $userId) {
+            $this->rebuildCareerStats($userId);
+        }
+
+        if ($event->season_id) {
+            $season = $event->season;
+            if ($season) {
+                App::make(TournamentSeasonStatsService::class)->rebuildForSeason($season);
+            }
         }
     }
 

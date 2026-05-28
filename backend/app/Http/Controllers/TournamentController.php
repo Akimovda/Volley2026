@@ -492,28 +492,10 @@ class TournamentController extends Controller
                 $request->user(),
             );
 
-            // Обновляем статистику игроков после матча
             try {
-                $freshMatch = $match->fresh();
-                $statsService = app(\App\Services\TournamentStatsService::class);
-                $statsService->updateAfterMatch($freshMatch);
-
-                // Пересчитываем career stats для игроков обеих команд
-                if ($freshMatch->team_home_id) {
-                    $homeMembers = \App\Models\EventTeamMember::where('event_team_id', $freshMatch->team_home_id)->pluck('user_id');
-                    foreach ($homeMembers as $uid) { $statsService->rebuildCareerStats($uid); }
-                }
-                if ($freshMatch->team_away_id) {
-                    $awayMembers = \App\Models\EventTeamMember::where('event_team_id', $freshMatch->team_away_id)->pluck('user_id');
-                    foreach ($awayMembers as $uid) { $statsService->rebuildCareerStats($uid); }
-                }
-                // Обновляем сезонную статистику
-                if ($event->season_id) {
-                    app(\App\Services\TournamentSeasonStatsService::class)
-                        ->updateForMatch($freshMatch, $event);
-                }
+                app(\App\Services\TournamentStatsService::class)->rebuildAll($event);
             } catch (\Throwable $e) {
-                \Log::warning('Stats update failed: ' . $e->getMessage());
+                \Log::warning('Stats rebuild failed: ' . $e->getMessage());
             }
 
             // Если это тайбрейк-матч — разрезолвим тайбрейкер и пересчитаем standings
@@ -640,22 +622,9 @@ class TournamentController extends Controller
             });
 
             try {
-                $freshMatch = $match->fresh();
-                $statsService = app(\App\Services\TournamentStatsService::class);
-                $statsService->updateAfterMatch($freshMatch);
-                if ($freshMatch->team_home_id) {
-                    $homeMembers = \App\Models\EventTeamMember::where('event_team_id', $freshMatch->team_home_id)->pluck('user_id');
-                    foreach ($homeMembers as $uid) { $statsService->rebuildCareerStats($uid); }
-                }
-                if ($freshMatch->team_away_id) {
-                    $awayMembers = \App\Models\EventTeamMember::where('event_team_id', $freshMatch->team_away_id)->pluck('user_id');
-                    foreach ($awayMembers as $uid) { $statsService->rebuildCareerStats($uid); }
-                }
-                if ($event->season_id) {
-                    app(\App\Services\TournamentSeasonStatsService::class)->updateForMatch($freshMatch, $event);
-                }
+                app(\App\Services\TournamentStatsService::class)->rebuildAll($event);
             } catch (\Throwable $e) {
-                \Log::warning('Stats update after rescore failed: ' . $e->getMessage());
+                \Log::warning('Stats rebuild after rescore failed: ' . $e->getMessage());
             }
 
             $this->checkStageCompletion($stage);
