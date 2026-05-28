@@ -387,9 +387,13 @@
 		</div>
 		@php
         $myTeams = $myTournamentTeams ?? collect();
+        // Команды в лиговом резерве отображаются в секции «Лист ожидания» ниже — не дублируем здесь
+        $_leagueResIds = $leagueReserveTeamIds ?? collect();
+        $myActiveTeams  = $myTeams->filter(fn($t) => !$_leagueResIds->contains($t->id));
+        $myReserveTeams = $myTeams->filter(fn($t) =>  $_leagueResIds->contains($t->id));
 		@endphp
-		@if($myTeams->count() > 0)
-        @foreach($myTeams as $myTeam)
+		@if($myActiveTeams->count() > 0)
+        @foreach($myActiveTeams as $myTeam)
         @php
         $myTeamStatusInfo = $teamStatusMap[$myTeam->status] ?? ['label' => $myTeam->status, 'color' => '#6b7280', 'bg' => '#f3f4f6'];
         @endphp
@@ -406,7 +410,23 @@
 		</div>
         @endforeach
 		@endif
-		@if(auth()->check() && $myTeams->count() === 0)
+		@if($myReserveTeams->count() > 0 && $myActiveTeams->count() === 0)
+		{{-- Пользователь только в лиговом резерве — показываем пояснение без формы создания --}}
+		@foreach($myReserveTeams as $myTeam)
+		<div class="card mt-1">
+			<div class="b-600 cd">{{ $myTeam->name }}</div>
+			<div class="f-16">
+				<span style="display:inline-block;padding:1px 8px;border-radius:10px;font-size:13px;font-weight:600;background:#fff7e6;color:#92400e">
+					⏳ {{ __('events.sp_status_reserve') }}
+				</span>
+			</div>
+			<a href="{{ route('tournamentTeams.show', [$event, $myTeam]) }}" class="btn btn-small btn-secondary mt-1">
+				{{ __('events.sp_btn_open_team') }}
+			</a>
+		</div>
+		@endforeach
+		@endif
+		@if(auth()->check() && $myActiveTeams->count() === 0 && $myReserveTeams->count() === 0)
 		@php
 		$tournamentTeamsFull = isset($teamsMax, $teamsRegistered) && $teamsMax > 0 && $teamsRegistered >= $teamsMax;
 		@endphp

@@ -950,6 +950,7 @@ return [
     'sp_status_incomplete'  => 'Неполная',
     'sp_status_cancelled'   => 'Отменена',
     'sp_status_rejected'    => 'Отклонена',
+    'sp_status_reserve'     => 'В листе ожидания',
 
     'sp_event_photo_alt'    => 'Фото мероприятия :n',
     'sp_event_photo_alt_simple' => 'Фото мероприятия',
