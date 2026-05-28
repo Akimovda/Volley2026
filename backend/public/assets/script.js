@@ -603,10 +603,10 @@ function createCustomSelect($select) {
 	// Добавляем в кастомный селект
 	$customSelect.append($valueSpan, $arrow);
 	
-	// Создаём выпадающий список
-	const $dropdown = $('<div>', {
-		class: 'form-select-dropdown'
-	});
+const $dropdown = $('<div>', {
+	class: 'form-select-dropdown' + ($select.hasClass('dropdown-up') ? ' dropdown-up' : '')
+});
+
 	
 	// Собираем опции из оригинального селекта
 	$select.find('option').each(function() {

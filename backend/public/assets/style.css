@@ -929,6 +929,10 @@ body.dark input[type="datetime-local"]::-webkit-calendar-picker-indicator {
     transform: translateY(-1rem);
     transition: opacity 0.25s ease, transform 0.3s ease, visibility 0.25s;
 }
+.form-select-dropdown.dropdown-up {
+	top: auto;
+	bottom: calc(100% + 0.5rem);
+}
 .form-select-dropdown--active {
     opacity: 1;
     visibility: visible;
