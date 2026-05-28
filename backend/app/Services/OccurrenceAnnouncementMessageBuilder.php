@@ -176,11 +176,26 @@ class OccurrenceAnnouncementMessageBuilder
         $isIndividualTournament = $isTournament
             && (string) ($event->registration_mode ?? '') === 'tournament_individual';
 
+        $reserveTeamIds = [];
         if ($isTournament && !$isIndividualTournament) {
-            $teamsMax        = (int) ($event->tournament_teams_count ?? 0);
-            $teamsRegistered = $this->countRegisteredTeams((int) $occurrence->id);
+            $teamsMax       = (int) ($event->tournament_teams_count ?? 0);
+            $reserveTeamIds = $this->getReserveTeamIds(
+                (int) $occurrence->id,
+                (int) $event->id,
+                $event->season_id ? (int) $event->season_id : null
+            );
+            $teamsRegistered = $this->countRegisteredTeams((int) $occurrence->id, $reserveTeamIds);
+            $teamsReserveCount = empty($reserveTeamIds) ? 0 : (int) DB::table('event_teams')
+                ->where('occurrence_id', $occurrence->id)
+                ->whereIn('id', $reserveTeamIds)
+                ->where('status', '!=', 'rejected')
+                ->count();
             if ($teamsMax > 0) {
-                $lines[] = "👥 Команд: {$teamsRegistered} / {$teamsMax}";
+                $header = "👥 Команд: {$teamsRegistered} / {$teamsMax}";
+                if ($teamsReserveCount > 0) {
+                    $header .= " · {$teamsReserveCount} в резерве";
+                }
+                $lines[] = $header;
             }
         } else {
             $maxPlayers  = (int) ($gameSettings['max_players'] ?? 0);
@@ -201,11 +216,16 @@ class OccurrenceAnnouncementMessageBuilder
         $includeList = (bool) ($options['include_registered_list'] ?? true);
         if ($includeList) {
             if ($isTournament && !$isIndividualTournament) {
-                $teamList = $this->buildTeamList((int) $occurrence->id, $direction);
-                if ($teamList !== '') {
+                [$mainList, $reserveList] = $this->buildTeamList((int) $occurrence->id, $direction, $reserveTeamIds);
+                if ($mainList !== '') {
                     $lines[] = '';
                     $lines[] = $this->bold($platform, 'Список команд:');
-                    $lines[] = $teamList;
+                    $lines[] = $mainList;
+                }
+                if ($reserveList !== '') {
+                    $lines[] = '';
+                    $lines[] = $this->bold($platform, '⏳ Лист ожидания:');
+                    $lines[] = $reserveList;
                 }
             } else {
                 $regCount = isset($registered) ? $registered : $this->countRegistered((int) $occurrence->id);
@@ -456,18 +476,48 @@ class OccurrenceAnnouncementMessageBuilder
         return implode("\n", $lines);
     }
 
-    private function countRegisteredTeams(int $occurrenceId): int
+    private function countRegisteredTeams(int $occurrenceId, array $excludeIds = []): int
     {
-        return (int) DB::table('event_teams')
+        $q = DB::table('event_teams')
             ->where('occurrence_id', $occurrenceId)
-            ->where('status', '!=', 'rejected')
-            ->count();
+            ->where('status', '!=', 'rejected');
+        if (!empty($excludeIds)) {
+            $q->whereNotIn('id', $excludeIds);
+        }
+        return (int) $q->count();
+    }
+
+    private function getReserveTeamIds(int $occurrenceId, int $eventId, ?int $seasonId): array
+    {
+        if ($seasonId) {
+            $seasonEvt = DB::table('tournament_season_events')
+                ->where('occurrence_id', $occurrenceId)
+                ->first(['league_id']);
+            if (!$seasonEvt) {
+                return [];
+            }
+            return DB::table('tournament_league_teams')
+                ->where('league_id', $seasonEvt->league_id)
+                ->where('status', 'reserve')
+                ->whereNotNull('team_id')
+                ->pluck('team_id')
+                ->map(fn($id) => (int) $id)
+                ->toArray();
+        }
+        return DB::table('event_teams')
+            ->where('event_id', $eventId)
+            ->where('occurrence_id', $occurrenceId)
+            ->whereNotNull('reserve_position')
+            ->pluck('id')
+            ->map(fn($id) => (int) $id)
+            ->toArray();
     }
 
     /**
      * Список команд с игроками для командных турниров.
+     * Возвращает [mainList, reserveList] — строки для основного состава и листа ожидания.
      */
-    private function buildTeamList(int $occurrenceId, string $direction): string
+    private function buildTeamList(int $occurrenceId, string $direction, array $reserveTeamIds = []): array
     {
         $posLabels = [
             'setter'   => 'связующий',
@@ -482,24 +532,40 @@ class OccurrenceAnnouncementMessageBuilder
             ->where('occurrence_id', $occurrenceId)
             ->where('status', '!=', 'rejected')
             ->orderBy('id')
-            ->limit(20)
-            ->get(['id', 'name']);
+            ->limit(30)
+            ->get(['id', 'name', 'reserve_position']);
 
         if ($teams->isEmpty()) {
-            return '';
+            return ['', ''];
         }
 
-        $lines = [];
-        foreach ($teams as $i => $team) {
+        $mainLines    = [];
+        $reserveLines = [];
+        $mainNum      = 0;
+        $reserveNum   = 0;
+
+        foreach ($teams as $team) {
+            $teamId   = (int) $team->id;
+            $isReserve = !empty($reserveTeamIds) && in_array($teamId, $reserveTeamIds, true);
+
             $teamName = trim((string) ($team->name ?? ''));
             if ($teamName === '') {
-                $teamName = 'Команда ' . ($i + 1);
+                $teamName = 'Команда';
             }
-            $lines[] = ($i + 1) . '. ' . $teamName;
+
+            if ($isReserve) {
+                $reserveNum++;
+                $num = $reserveNum;
+            } else {
+                $mainNum++;
+                $num = $mainNum;
+            }
+
+            $teamLines = ["{$num}. {$teamName}"];
 
             $members = DB::table('event_team_members as etm')
                 ->join('users as u', 'u.id', '=', 'etm.user_id')
-                ->where('etm.event_team_id', $team->id)
+                ->where('etm.event_team_id', $teamId)
                 ->whereIn('etm.confirmation_status', ['confirmed', 'joined'])
                 ->orderBy('etm.position_order')
                 ->get(['u.first_name', 'u.last_name', 'u.name', 'etm.position_code']);
@@ -517,11 +583,17 @@ class OccurrenceAnnouncementMessageBuilder
                 if ($direction !== 'beach' && $posLabel !== null) {
                     $line .= ' - ' . $posLabel;
                 }
-                $lines[] = $line;
+                $teamLines[] = $line;
+            }
+
+            if ($isReserve) {
+                array_push($reserveLines, ...$teamLines);
+            } else {
+                array_push($mainLines, ...$teamLines);
             }
         }
 
-        return implode("\n", $lines);
+        return [implode("\n", $mainLines), implode("\n", $reserveLines)];
     }
 
     private function loadGameSettings(int $eventId): array
