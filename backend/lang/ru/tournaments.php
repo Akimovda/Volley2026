@@ -376,9 +376,10 @@ return [
     'setup_swal_error'      => 'Ошибка',
 
     'setup_series_h2'       => 'Серия турниров — управление составом лиги',
-    'setup_series_lineup'   => 'Состав лиги:',
-    'setup_series_active'   => 'акт.',
-    'setup_series_reserve'  => 'рез.',
+    'setup_series_lineup'       => 'Состав лиги:',
+    'setup_series_active'       => 'акт.',
+    'setup_series_reserve'      => 'рез.',
+    'setup_series_waitlist_h2'  => 'Лист ожидания',
 
     'setup_col_team'        => 'Команда',
     'setup_col_status'      => 'Статус',

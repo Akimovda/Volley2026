@@ -357,9 +357,10 @@ return [
     'setup_swal_error'      => 'Error',
 
     'setup_series_h2'       => 'Tournament series — manage league lineup',
-    'setup_series_lineup'   => 'League lineup:',
-    'setup_series_active'   => 'active',
-    'setup_series_reserve'  => 'reserve',
+    'setup_series_lineup'       => 'League lineup:',
+    'setup_series_active'       => 'active',
+    'setup_series_reserve'      => 'reserve',
+    'setup_series_waitlist_h2'  => 'Waitlist',
 
     'setup_col_team'        => 'Team',
     'setup_col_status'      => 'Status',
