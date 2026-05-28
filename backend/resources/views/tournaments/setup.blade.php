@@ -298,7 +298,7 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 										@endphp
 										{{ $members }}
 									</div>
-									@if($leagueForSubs && !$_tourStarted)
+									@if($leagueForSubs)
 									@php $existingSub = $occSubstitutions[$lt->team_id] ?? null; @endphp
 									@if($existingSub)
 									<div class="f-12 mt-025 d-flex gap-1 align-items-center flex-wrap">
@@ -309,6 +309,7 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 										@endif
 										<span>{{ $existingSub->substitutePlayer->last_name }} {{ $existingSub->substitutePlayer->first_name }}</span>
 										<span style="opacity:.5">{{ __('tournaments.sub_instead_of', ['name' => $existingSub->originalPlayer->last_name.' '.$existingSub->originalPlayer->first_name]) }}</span>
+										@if(!$_tourStarted)
 										@if($existingSub->status === 'pending')
 										<form method="POST" action="{{ route('substitutions.confirm', $existingSub) }}" style="display:inline">@csrf
 											<button type="submit" class="btn btn-small" style="padding:1px 6px;font-size:11px">✓</button>
@@ -317,8 +318,9 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 										<form method="POST" action="{{ route('substitutions.cancel', $existingSub) }}" style="display:inline">@csrf
 											<button type="submit" class="btn btn-small btn-secondary" style="padding:1px 6px;font-size:11px">✕</button>
 										</form>
+										@endif
 									</div>
-									@else
+									@elseif(!$_tourStarted)
 									<div class="mt-025">
 										<button type="button" class="btn btn-small btn-secondary" style="font-size:11px;padding:2px 8px"
 											data-sub-team="{{ $lt->team_id }}"
