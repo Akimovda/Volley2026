@@ -7,6 +7,8 @@ $canManage   = $isCaptain || $isOrganizer;
 <x-slot name="title">{{ $team->name }} — команда</x-slot>
 <x-slot name="h1">{{ $team->name }}</x-slot>
 
+<x-slot name="h2">{{ $team->team_kind === 'classic_team' ? 'Классическая команда' : 'Пляжная команда' }}</x-slot>
+
 <x-slot name="breadcrumbs">
     <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
         <a href="{{ route('events.show', $event) }}" itemprop="item"><span itemprop="name">{{ $event->title }}</span></a>
@@ -18,34 +20,37 @@ $canManage   = $isCaptain || $isOrganizer;
     </li>
 </x-slot>
 
-<x-slot name="d_description">
-    <div class="d-flex between fvc mt-1" style="flex-wrap:wrap;gap:1rem">
-        <div class="f-15" style="opacity:.6">
-            {{ $team->team_kind === 'classic_team' ? '🏐 Классическая команда' : '🏖 Пляжная команда' }}
-        </div>
-        <a href="{{ route('events.show', $event) }}" class="btn btn-secondary">← К турниру</a>
-    </div>
+    <x-slot name="d_description">
+
+			<div class="d-flex flex-wrap gap-1 m-center">
+				<div class="mt-2" data-aos-delay="250" data-aos="fade-up">
+					 <a href="{{ route('events.show', $event) }}" class="btn btn-secondary">← К турниру</a>
+				</div>
+				
+				
     @if($canManage)
-    <div class="mt-1" id="team-name-block">
+	<div class="mt-2" id="team-name-block" data-aos-delay="350" data-aos="fade-up">	
         <div id="team-name-display-wrap" class="d-flex fvc gap-1">
-            <span class="f-15 b-600">{{ $team->name }}</span>
-            <button type="button" class="btn btn-small btn-secondary" style="padding:.2rem .6rem;font-size:1.2rem"
-                onclick="document.getElementById('team-name-form').style.display='flex';document.getElementById('team-name-display-wrap').style.display='none';document.getElementById('team-name-input').focus()">
-                ✏️
+            <button type="button" class="btn btn-secondary" onclick="document.getElementById('team-name-form').style.display='flex';document.getElementById('team-name-display-wrap').style.display='none';document.getElementById('team-name-input').focus()">
+               Редактировать
             </button>
         </div>
         <form id="team-name-form" method="POST" action="{{ route('tournamentTeams.update', [$event, $team]) }}"
               class="form" style="display:none;align-items:center;flex-wrap:wrap;gap:.5rem;margin-top:.4rem">
             @csrf @method('PATCH')
+			<div class="card">
             <input type="text" id="team-name-input" name="name" value="{{ $team->name }}"
                    style="max-width:24rem" maxlength="255" required>
             <button type="submit" class="btn btn-small">✓</button>
             <button type="button" class="btn btn-small btn-secondary"
                 onclick="document.getElementById('team-name-form').style.display='none';document.getElementById('team-name-display-wrap').style.display=''">✕</button>
+			</div>	
         </form>
     </div>
-    @endif
-</x-slot>
+    @endif				
+		</div>		
+	</x-slot>
+
 
 @php
 $settings       = $team->event->tournamentSetting ?? null;
@@ -84,7 +89,7 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
 
 @if($isCaptain && !\App\Models\UserTeam::where('user_id', auth()->id())->where('name', $team->name)->exists())
 <div class="alert alert-info mb-2 d-flex between fvc" style="flex-wrap:wrap;gap:1rem">
-    <div class="f-15">Сохраните эту команду в профиль, чтобы быстро использовать её на других турнирах.</div>
+    <div class="f-16">Сохраните эту команду в профиль, чтобы быстро использовать её на других турнирах.</div>
     <form method="POST" action="{{ route('tournamentTeams.saveToProfile', [$event, $team]) }}">
         @csrf
         <input type="hidden" name="team_name" value="{{ $team->name }}">
@@ -99,7 +104,7 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
     {{-- Состав --}}
     <div class="ramka">
         <h2 class="-mt-05">👥 Состав команды</h2>
-        <div class="f-15 mb-2" style="opacity:.6">
+        <div class="f-16 mb-2">
             Капитан: <strong>{{ $team->captain->name ?? ('#'.$team->captain_user_id) }}</strong>
             @if($team->occurrence)
                 · {{ \Carbon\Carbon::parse($team->occurrence->starts_at)->format('d.m H:i') }}
@@ -116,7 +121,7 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
                 <img src="{{ $member->user->profile_photo_url ?? '' }}" alt="" style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;">
                 <div>
                     <div class="b-600 f-16">{{ $member->user->name ?? ('#'.$member->user_id) }}</div>
-                    <div class="f-13" style="opacity:.6">
+                    <div class="f-16">
                         {{ $roleLabels[$member->team_role] ?? $member->team_role }}
                         @if($team->team_kind==='classic_team' && $member->position_code)
                             · {{ $posLabels[$member->position_code] ?? $member->position_code }}
@@ -155,14 +160,14 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
             </div>
         </div>
         @empty
-        <div class="card text-center" style="padding:2rem;opacity:.5">Состав пока пуст</div>
+        <div class="card text-center">Состав пока пуст</div>
         @endforelse
 
         {{-- Вакантный слот (beach_pair) --}}
         @if($team->team_kind === 'beach_pair' && $activeMembers->where('confirmation_status','confirmed')->count() < 2)
-        <div class="card d-flex fvc mb-1" style="gap:.8rem;opacity:.55;border:2px dashed var(--border-color,#ddd)">
+        <div class="card d-flex fvc mb-1" style="gap:.8rem;border:2px dashed var(--border-color,#ddd)">
             <div style="width:36px;height:36px;border-radius:50%;background:var(--bg2,#f5f5f5);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:1.8rem;color:#aaa;">?</div>
-            <span class="f-15" style="font-style:italic">Место партнёра свободно</span>
+            <span class="f-16" style="font-style:italic">Место партнёра свободно</span>
         </div>
         @endif
     </div>
@@ -177,7 +182,7 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
                 <img src="{{ $member->user->profile_photo_url ?? '' }}" alt="" style="width:40px;height:40px;border-radius:50%;object-fit:cover;flex-shrink:0;">
                 <div>
                     <div class="b-600 f-16">{{ $member->user->name ?? ('#'.$member->user_id) }}</div>
-                    <div class="f-13" style="opacity:.6">{{ $member->joined_at?->format('d.m.Y H:i') }}</div>
+                    <div class="f-16">{{ $member->joined_at?->format('d.m.Y H:i') }}</div>
                 </div>
             </div>
             <div class="d-flex gap-1 fvc">
@@ -209,7 +214,7 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
             <div class="d-flex between fvc mb-05" style="flex-wrap:wrap;gap:.5rem">
                 <div>
                     <span class="b-600">{{ $inv->invitedUser->name ?? $inv->invitedUser->email ?? ('#'.$inv->invited_user_id) }}</span>
-                    <span class="f-13 ml-1" style="opacity:.6">
+                    <span class="f-16 ml-1">
                         {{ $roleLabels[$inv->team_role] ?? $inv->team_role }}
                         @if($inv->position_code) · {{ $posLabels[$inv->position_code] ?? $inv->position_code }} @endif
                     </span>
@@ -218,7 +223,7 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
                     {{ $invStLabels[$inv->status] ?? $inv->status }}
                 </span>
             </div>
-            <div class="f-13 mb-1" style="opacity:.5">
+            <div class="f-16 mb-1">
                 {{ $channels->isNotEmpty() ? 'Отправлено: '.$channels->join(', ') : 'Ссылка создана' }}
                 · {{ $inv->created_at?->format('d.m.Y H:i') }}
             </div>
@@ -235,16 +240,14 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
             </div>
         </div>
         @empty
-        <div class="f-15" style="opacity:.5">Приглашений пока нет</div>
+        <div class="f-16">Приглашений пока нет</div>
         @endforelse
     </div>
 
     {{-- Создать приглашение --}}
     <div class="ramka">
         <h2 class="-mt-05">➕ Создать ссылку-приглашение</h2>
-        <div class="f-15 mb-2" style="opacity:.6">
-            Игрок получит персональную ссылку с ролью и позицией.
-        </div>
+            <p>Игрок получит персональную ссылку с ролью и позицией. </p>
         <form method="POST" action="{{ route('tournamentTeamInvites.store',[$event,$team]) }}" class="form">
             @csrf
             <div class="row row2">
@@ -255,7 +258,7 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
                         <input type="hidden" name="invited_user_id" id="ti-userid">
                         <div id="ti-dd" style="display:none;position:absolute;left:0;right:0;top:100%;margin-top:.4rem;z-index:50;background:var(--bg-card,#fff);border:.1rem solid var(--border-color,#eee);border-radius:1.2rem;box-shadow:0 1rem 3rem rgba(0,0,0,.1);max-height:22rem;overflow-y:auto"></div>
                     </div>
-                    <div id="ti-selected" class="f-13 mt-05" style="color:#4caf50;display:none"></div>
+                    <div id="ti-selected" class="f-16 mt-05" style="color:#4caf50;display:none"></div>
                 </div>
                 <div class="col-md-3">
                     <label>Роль</label>
@@ -285,7 +288,7 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
     @if($isOrganizer)
     <div class="ramka">
         <h2 class="-mt-05">➕ {{ __('events.org_add_player_h2') }}</h2>
-        <div class="f-14 mb-2" style="opacity:.6">{{ __('events.org_add_player_hint') }}</div>
+        <div class="f-18 mb-2">{{ __('events.org_add_player_hint') }}</div>
         @error('add_member')<div class="alert alert-error mb-2">{{ $message }}</div>@enderror
         <form method="POST" action="{{ route('tournamentTeams.addMemberByOrganizer',[$event,$team]) }}" class="form" id="org-add-form">
             @csrf
@@ -298,7 +301,7 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
                         <input type="hidden" name="user_id" id="org-add-user-id" value="">
                         <div id="org-add-dd" class="form-select-dropdown trainer_dd"></div>
                     </div>
-                    <div id="org-add-selected" class="f-13 mt-05" style="color:#4caf50;display:none"></div>
+                    <div id="org-add-selected" class="f-16 mt-05" style="color:#4caf50;display:none"></div>
                 </div>
                 <div class="col-md-3">
                     <label>Роль</label>
@@ -385,8 +388,8 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
             <div class="d-flex fvc" style="gap:.6rem;margin-bottom:.75rem;padding:.6rem .9rem;border-radius:8px;background:{{ $appStBg[$appSt] ?? '#f8f9fa' }}">
                 <span style="font-size:1.1rem">{{ $appStIcon[$appSt] ?? '📋' }}</span>
                 <div>
-                    <span class="f-13" style="opacity:.6">Статус заявки</span>
-                    <div class="b-600 f-15" style="color:{{ $appStColor[$appSt] ?? '#333' }}">{{ $appStLabels[$appSt] ?? $appSt }}</div>
+                    <span class="f-16">Статус заявки</span>
+                    <div class="b-600 f-16" style="color:{{ $appStColor[$appSt] ?? '#333' }}">{{ $appStLabels[$appSt] ?? $appSt }}</div>
                 </div>
             </div>
 
@@ -411,18 +414,18 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
 
                     @if($payInfo['mode'] === 'team')
                         {{-- Режим: капитан за всю команду --}}
-                        <div class="f-14 mb-2">
+                        <div class="f-18 mb-2">
                             Стоимость: <strong>{{ number_format($payInfo['amount'] / 100, 0, ',', ' ') }} {{ $payInfo['currency'] }}</strong>
                             · Оплачивает капитан за всю команду
                         </div>
 
                         @if($payInfo['team_status'] === 'paid' || $payInfo['team_status'] === 'subscription')
-                            <div class="alert alert-success f-14">✅ Оплата подтверждена</div>
+                            <div class="alert alert-success f-18">✅ Оплата подтверждена</div>
                         @elseif($payInfo['team_status'] === 'link_pending')
-                            <div class="alert alert-warning f-14">⏳ Ожидает подтверждения организатором</div>
+                            <div class="alert alert-warning f-18">⏳ Ожидает подтверждения организатором</div>
                         @elseif($canManage)
                             @if($payInfo['method'] === 'cash')
-                                <div class="alert alert-info f-14">💵 Оплата наличными</div>
+                                <div class="alert alert-info f-18">💵 Оплата наличными</div>
                             @else
                                 @if($team->payment_id)
                                     <form method="POST" action="{{ route('payments.user_confirm', $team->payment_id) }}">
@@ -440,21 +443,21 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
                                 @endif
                             @endif
                         @else
-                            <div class="f-14" style="opacity:.6">Ожидаем оплату от капитана</div>
+                            <div class="f-18">Ожидаем оплату от капитана</div>
                         @endif
 
                     @elseif($payInfo['mode'] === 'per_player')
                         {{-- Режим: каждый сам --}}
-                        <div class="f-14 mb-2">
+                        <div class="f-18 mb-2">
                             Стоимость: <strong>{{ number_format($payInfo['amount'] / 100, 0, ',', ' ') }} {{ $payInfo['currency'] }}</strong> с каждого игрока
                         </div>
 
                         @if($payInfo['team_paid'])
-                            <div class="alert alert-success f-14">✅ Все участники оплатили</div>
+                            <div class="alert alert-success f-18">✅ Все участники оплатили</div>
                         @endif
 
                         @if(!empty($payInfo['members']))
-                            <table class="table table-sm f-14 mt-1">
+                            <table class="table table-sm f-18 mt-1">
                                 <tbody>
                                 @foreach($payInfo['members'] as $pm)
                                     <tr>
@@ -493,7 +496,7 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
             @endif
 
         @elseif($canManage)
-            <div class="f-15 mb-2" style="opacity:.6">Если состав готов — подайте заявку на турнир.</div>
+            <div class="f-16 mb-2">Если состав готов — подайте заявку на турнир.</div>
 
             @if($team->is_complete && $team->status === 'ready')
                 <form method="POST" action="{{ route('tournamentTeams.submit',[$event,$team]) }}"
@@ -507,11 +510,11 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
                     $allowIncomplete = (bool) ($settings?->allow_incomplete_application ?? false);
                     $canEarlySubmit = $allowIncomplete && $hasCaptain;
                 @endphp
-                <div class="alert alert-warning f-14 mb-2">
+                <div class="alert alert-warning f-18 mb-2">
                     ⚠️ Состав ещё не готов — обычная подача недоступна.
                 </div>
                 @if($canEarlySubmit)
-                    <div class="f-13 mb-1" style="opacity:.7">{{ __('events.tapp_submit_early_warn') }}</div>
+                    <div class="f-16 mb-1">{{ __('events.tapp_submit_early_warn') }}</div>
                     <form method="POST" action="{{ route('tournamentTeams.submit',[$event,$team]) }}"
                           onsubmit="return confirm(@json(__('events.tapp_submit_early_btn') . '?'))">
                         @csrf
@@ -521,20 +524,23 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
                 @endif
             @endif
         @else
-            <div class="f-15" style="opacity:.5">Заявка ещё не подана</div>
+            <div class="f-16">Заявка ещё не подана</div>
         @endif
     </div>
 
 </div>
 <div class="col-lg-4">
+<div class="sticky">
+
+
 
     {{-- Резерв: статус и кнопка подтверждения --}}
     @if($team->isInReserve())
     <div class="ramka">
         @if($team->isReserveOfferPending())
         <h2 class="-mt-05" style="color:#16a34a">🎉 Место предложено!</h2>
-        <div class="f-15 mb-1">Для вашей команды освободилось место в основном составе.</div>
-        <div class="f-14 mb-2" style="color:#dc2626">
+        <div class="f-16 mb-1">Для вашей команды освободилось место в основном составе.</div>
+        <div class="f-18 mb-2" style="color:#dc2626">
             ⏰ Подтвердите до <strong>{{ $team->confirmation_expires_at->format('d.m.Y H:i') }}</strong>
         </div>
         @if($canManage)
@@ -563,7 +569,7 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
         @else
         <h2 class="-mt-05">⏳ Лист ожидания</h2>
         <div class="alert alert-warning">Позиция в очереди: <strong>#{{ $team->reserve_position }}</strong></div>
-        <div class="f-14" style="opacity:.7">Когда освободится место, вы получите уведомление и будете иметь 2 часа для подтверждения.</div>
+        <div class="f-18">Когда освободится место, вы получите уведомление и будете иметь 2 часа для подтверждения.</div>
         @endif
     </div>
     @endif
@@ -572,11 +578,11 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
     <div class="ramka">
         <h2 class="-mt-05">📊 Состав</h2>
         <div class="card">
-            <div class="f-15 mb-05">Подтверждено: <strong>{{ $confirmedCount }}</strong></div>
-            <div class="f-15 mb-05">Ожидают: <strong>{{ $pendingCount }}</strong></div>
-            <div class="f-15 mb-1">Всего: <strong>{{ $team->members->count() }}</strong></div>
+            <div class="f-16 mb-05">Подтверждено: <strong>{{ $confirmedCount }}</strong></div>
+            <div class="f-16 mb-05">Ожидают: <strong>{{ $pendingCount }}</strong></div>
+            <div class="f-16 mb-1">Всего: <strong>{{ $team->members->count() }}</strong></div>
             @if($settings)
-            <div class="f-13" style="opacity:.6;line-height:1.8">
+            <div class="f-16">
                 Схема: <strong>{{ $settings->game_scheme ?? '—' }}</strong>
                 @if($team->team_kind === 'classic_team')
                 <br>Мин.: <strong>{{ $settings->team_size_min ?? '—' }}</strong> ·
@@ -635,7 +641,7 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
 
         </div>
     </div>
-
+</div>
 </div>
 </div>
 </div>
@@ -655,12 +661,12 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
         clearTimeout(timer);hid.value='';sel.style.display='none';
         var q=input.value.trim();
         if(q.length<2){dd.style.display='none';return;}
-        dd.innerHTML='<div style="padding:1rem 1.6rem;opacity:.5;font-size:1.5rem">Поиск…</div>';dd.style.display='block';
+        dd.innerHTML='<div style="padding:1rem 1.6rem;font-size:1.5rem">Поиск…</div>';dd.style.display='block';
         timer=setTimeout(function(){
             fetch('/api/users/search?exclude_bots=1&q='+encodeURIComponent(q),{headers:{'Accept':'application/json'},credentials:'same-origin'})
             .then(function(r){return r.json();}).then(function(data){
                 var items=data.items||[];dd.innerHTML='';
-                if(!items.length){dd.innerHTML='<div style="padding:1rem 1.6rem;opacity:.5;font-size:1.5rem">Ничего не найдено</div>';return;}
+                if(!items.length){dd.innerHTML='<div style="padding:1rem 1.6rem;font-size:1.5rem">Ничего не найдено</div>';return;}
                 items.forEach(function(item){
                     var div=document.createElement('div');
                     div.style='padding:1rem 1.6rem;cursor:pointer;font-size:1.5rem;border-bottom:.1rem solid var(--border-color,#eee)';
