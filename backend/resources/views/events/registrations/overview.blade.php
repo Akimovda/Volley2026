@@ -12,12 +12,13 @@ return $dt->translatedFormat('j M') . ', ' . $dow . ' · ' . $dt->format('H:i');
 $fmtRegs = function ($row) {
 $isTournament = ($row->format ?? '') === 'tournament';
 if ($isTournament) {
-$registered = (int) $row->active_teams;
-$max        = (int) ($row->tournament_teams_count ?? 0);
-$waitlist   = (int) ($row->waitlist_teams ?? 0);
-$str  = $max > 0 ? "{$registered}/{$max}" : "{$registered}/—";
+$total = (int) $row->active_teams;
+$max   = (int) ($row->tournament_teams_count ?? 0);
+$inSlots  = $max > 0 ? min($total, $max) : $total;
+$waitlist = $max > 0 ? max(0, $total - $max) : 0;
+$str  = $max > 0 ? "{$inSlots}/{$max}" : "{$total}/—";
 if ($waitlist > 0) $str .= ' · ⏳ ' . $waitlist;
-$full = $max > 0 && $registered >= $max;
+$full = $max > 0 && $inSlots >= $max;
 return compact('str', 'full');
 }
 if (!(bool) $row->allow_registration) return ['str' => '—', 'full' => false];

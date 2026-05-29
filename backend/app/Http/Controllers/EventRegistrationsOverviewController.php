@@ -45,17 +45,10 @@ class EventRegistrationsOverviewController extends Controller
             ->whereNotNull('occurrence_id')
             ->groupBy('occurrence_id');
 
-        // Подтверждённые команды для турниров (approved/confirmed)
+        // Все активные команды для турниров (не rejected)
         $teamsSub = DB::table('event_teams')
             ->select('occurrence_id', DB::raw('COUNT(*)::int as active_teams'))
-            ->whereIn('status', ['approved', 'confirmed'])
-            ->whereNotNull('occurrence_id')
-            ->groupBy('occurrence_id');
-
-        // Команды в листе ожидания турнира (submitted)
-        $teamsWaitlistSub = DB::table('event_teams')
-            ->select('occurrence_id', DB::raw('COUNT(*)::int as waitlist_teams'))
-            ->where('status', 'submitted')
+            ->where('status', '!=', 'rejected')
             ->whereNotNull('occurrence_id')
             ->groupBy('occurrence_id');
 
@@ -70,7 +63,6 @@ class EventRegistrationsOverviewController extends Controller
             ->leftJoin('event_game_settings as egs', 'egs.event_id', '=', 'e.id')
             ->leftJoinSub($regsSub, 'ar', 'ar.occurrence_id', '=', 'eo.id')
             ->leftJoinSub($teamsSub, 'at', 'at.occurrence_id', '=', 'eo.id')
-            ->leftJoinSub($teamsWaitlistSub, 'atw', 'atw.occurrence_id', '=', 'eo.id')
             ->leftJoinSub($reserveSlotsSub, 'ers', 'ers.event_id', '=', 'e.id')
             ->select([
                 'eo.id as occurrence_id',
@@ -88,7 +80,6 @@ class EventRegistrationsOverviewController extends Controller
                 'l.address as loc_address',
                 DB::raw('COALESCE(ar.active_regs, 0) as active_regs'),
                 DB::raw('COALESCE(at.active_teams, 0) as active_teams'),
-                DB::raw('COALESCE(atw.waitlist_teams, 0) as waitlist_teams'),
             ])
             ->where(function ($w) {
                 $w->whereNull('eo.is_cancelled')->orWhere('eo.is_cancelled', false);
