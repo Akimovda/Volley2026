@@ -3603,6 +3603,33 @@ body.dark .footer .app-link:hover {
 body.dark .footer-copyright {
 	border-top: 1px solid rgba(255, 255, 255, 0.1);	
 }
+.atuin-copyright {
+	font-size: 1.5rem;
+}
+.atuin-copyright a b {
+	font-weight: 900;
+}
+.atuin-copyright a span {
+    background: #2967BA;
+    color: #fff;
+	margin-left: 0.6rem;
+    width: 1.9rem;
+	font-weight: 900;
+	height: 1.9rem;
+	font-size: 1.5rem;
+    display: inline-flex;
+    flex-flow: column;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    border-radius: 50%;
+    text-align: center;
+    margin-right: 2px;
+    letter-spacing: normal;
+}
+body.dark .atuin-copyright a span {
+    background: #E7612F;
+}
 @media (max-width: 991px) {
 	.footer .h4 {
 		text-align: center;

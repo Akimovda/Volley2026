@@ -65,10 +65,10 @@
 							<span  class="event-direction f-13 b-600" style="left: 0.8rem; right:auto; background:{{ $st['bg'] }}; line-height: 1; color:#fff; left: 1rem; right:auto; padding: 6px 12px; font-size: 11px; border-radius: 6px;">
 								{{ $st['label'] }}
 							</span>								
-								
+								 
 								
 								<div class="event-direction {{ $league->direction === 'beach' ? 'beach-direction' : 'classic-direction' }}">
-									{{ $league->direction === 'beach' ? __('seasons.leagues_dir_beach') : __('seasons.leagues_dir_classic') }}					
+									{{ $league->direction === 'beach' ? __('seasons.leagues_dir_beach_short') : __('seasons.leagues_dir_classic_short') }}					
 								</div>	
 								
 							</a>
