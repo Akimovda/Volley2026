@@ -563,6 +563,10 @@ return [
     'photos_event_h2'        => 'Event photos',
     'photos_event_empty'     => 'No event photos. Upload a photo with "Event photos" selected.',
 
+    'photos_tournament_h2'       => 'Tournament album',
+    'photos_radio_tournament'    => 'Tournament album',
+    'photos_tournament_empty'    => 'No tournament photos. Upload with "Tournament album" selected.',
+
     'photos_school_logo_h2'  => 'School logo',
     'photos_school_logo_empty' => 'No logos. Upload a photo with "School logo" selected.',
     'photos_school_logo_replace' => 'Logo is already uploaded. To replace — delete the current one and upload a new one.',

@@ -125,6 +125,10 @@
 		// Обложка школы (16:9)
 		$this->addMediaCollection('school_cover')
 		->useDisk('public');
+
+		// Турнирный альбом организатора (16:9)
+		$this->addMediaCollection('tournament_photos')
+		->useDisk('public');
 		}
 		
 		public function registerMediaConversions(Media $media = null): void
@@ -157,7 +161,14 @@
 			->fit(Fit::Crop, 640, 360)
 			->nonQueued()
 			->performOnCollections('school_cover');
-			
+
+			// Турнирный альбом организатора (16:9)
+			$this->addMediaConversion('tournament_thumb')
+			->format($media && $media->mime_type === 'image/webp' ? 'webp' : 'jpg')
+			->fit(Fit::Crop, 640, 360)
+			->nonQueued()
+			->performOnCollections('tournament_photos');
+
 		}
 		
 		// --------------------------------------------------

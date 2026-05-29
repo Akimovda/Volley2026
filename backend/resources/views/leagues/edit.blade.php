@@ -74,14 +74,48 @@
 								<div class="mb-1">
 									<img src="{{ $league->logo_url }}" alt="{{ __('seasons.leagues_section_logo') }}" style="max-width:100px;border-radius:8px">
 								</div>
-								<label class="checkbox-item">
+								<label class="checkbox-item mb-2">
 									<input type="checkbox" name="remove_logo" value="1">
 									<div class="custom-checkbox"></div>
 									<span class="f-13">{{ __('seasons.leagues_remove_logo') }}</span>
 								</label>
 							@endif
-							<input type="file" name="logo" accept="image/*">
-							<div class="f-13 cd mt-1">{{ __('seasons.leagues_logo_hint') }}</div>
+
+							{{-- Табы: файл / из галереи --}}
+							<div class="d-flex gap-1 mb-1" id="logo-tabs">
+								<button type="button" class="btn btn-secondary f-13 logo-tab-btn logo-tab-active" data-tab="file" style="padding:4px 12px">{{ __('seasons.leagues_logo_tab_file') }}</button>
+								<button type="button" class="btn btn-secondary f-13 logo-tab-btn" data-tab="gallery" style="padding:4px 12px">{{ __('seasons.leagues_logo_tab_gallery') }}</button>
+							</div>
+
+							<div id="logo-tab-file">
+								<input type="file" name="logo" accept="image/*" id="logo-file-input">
+								<div class="f-13 cd mt-1">{{ __('seasons.leagues_logo_hint') }}</div>
+							</div>
+
+							<div id="logo-tab-gallery" style="display:none">
+								<input type="hidden" name="logo_media_id" id="logo_media_id_input" value="">
+								@if($eventPhotos->isEmpty())
+									<div class="alert alert-info f-14 mt-1">
+										{{ __('seasons.leagues_logo_no_event_photos') }}
+										<a href="{{ route('user.photos') }}" target="_blank" class="blink">{{ __('seasons.leagues_logo_no_event_link') }}</a>.
+									</div>
+								@else
+									<div class="swiper leagueLogoSwiper mt-1" style="padding-bottom:2.5rem">
+										<div class="swiper-wrapper">
+											@foreach($eventPhotos as $photo)
+											<div class="swiper-slide" style="cursor:pointer" data-media-id="{{ $photo->id }}" onclick="selectLeagueLogo(this)">
+												<div class="hover-image" style="position:relative">
+													<img src="{{ $photo->getUrl('event_thumb') }}" alt="" loading="lazy" style="border-radius:8px;aspect-ratio:16/9;object-fit:cover;width:100%">
+													<div class="league-logo-check" style="display:none;position:absolute;top:6px;right:6px;background:#2967BA;color:#fff;border-radius:50%;width:2.4rem;height:2.4rem;align-items:center;justify-content:center;font-size:1.4rem;font-weight:900">✓</div>
+												</div>
+											</div>
+											@endforeach
+										</div>
+										<div class="swiper-pagination"></div>
+									</div>
+									<div id="logo-gallery-selected" class="f-14 cd mt-05" style="display:none">✅ Фото выбрано</div>
+								@endif
+							</div>
 						</div>
 
 						<div class="card mb-2">
@@ -169,4 +203,54 @@
 			</div>
 		</div>
 	</div>
+
+	<x-slot name="script">
+		<script src="/assets/fas.js"></script>
+		<script>
+		(function() {
+			// Табы логотипа
+			document.querySelectorAll('.logo-tab-btn').forEach(function(btn) {
+				btn.addEventListener('click', function() {
+					document.querySelectorAll('.logo-tab-btn').forEach(function(b) { b.classList.remove('logo-tab-active', 'btn-primary'); b.classList.add('btn-secondary'); });
+					btn.classList.add('logo-tab-active', 'btn-primary');
+					btn.classList.remove('btn-secondary');
+					var tab = btn.dataset.tab;
+					document.getElementById('logo-tab-file').style.display    = tab === 'file'    ? '' : 'none';
+					document.getElementById('logo-tab-gallery').style.display = tab === 'gallery' ? '' : 'none';
+					if (tab === 'file') {
+						document.getElementById('logo_media_id_input').value = '';
+						document.querySelectorAll('.swiper-slide[data-media-id]').forEach(function(s) { s.querySelector('.league-logo-check').style.display = 'none'; s.style.outline = ''; });
+						var sel = document.getElementById('logo-gallery-selected');
+						if (sel) sel.style.display = 'none';
+					} else {
+						var inp = document.getElementById('logo-file-input');
+						if (inp) inp.value = '';
+					}
+				});
+			});
+		}());
+
+		function selectLeagueLogo(slide) {
+			document.querySelectorAll('.swiper-slide[data-media-id]').forEach(function(s) {
+				s.querySelector('.league-logo-check').style.display = 'none';
+				s.style.outline = '';
+			});
+			var check = slide.querySelector('.league-logo-check');
+			check.style.display = 'flex';
+			slide.style.outline = '2px solid #2967BA';
+			document.getElementById('logo_media_id_input').value = slide.dataset.mediaId;
+			var sel = document.getElementById('logo-gallery-selected');
+			if (sel) sel.style.display = '';
+		}
+
+		@if(isset($eventPhotos) && $eventPhotos->isNotEmpty())
+		new Swiper('.leagueLogoSwiper', {
+			slidesPerView: 2,
+			spaceBetween: 12,
+			pagination: { el: '.swiper-pagination', clickable: true },
+			breakpoints: { 640: { slidesPerView: 3 }, 1024: { slidesPerView: 2 } }
+		});
+		@endif
+		</script>
+	</x-slot>
 </x-voll-layout>

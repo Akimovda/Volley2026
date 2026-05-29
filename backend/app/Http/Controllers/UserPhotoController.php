@@ -25,6 +25,7 @@ class UserPhotoController extends Controller
 
         $photos = $user->getMedia('photos')->sortByDesc('created_at')->values();
         $eventPhotos = $user->getMedia('event_photos')->sortByDesc('created_at')->values();
+        $tournamentPhotos = $user->getMedia('tournament_photos')->sortByDesc('created_at')->values();
         $schoolLogos = $user->getMedia('school_logo')->sortByDesc('created_at')->values();
         $schoolCovers = $user->getMedia('school_cover')->sortByDesc('created_at')->values();
 
@@ -34,13 +35,14 @@ class UserPhotoController extends Controller
         $mainCoverMediaId = $school?->cover_media_id;
 
         return view('user.photos', [
-            'user'         => $user,
-            'photos'       => $photos,
-            'eventPhotos'  => $eventPhotos,
-            'schoolLogos'  => $schoolLogos,
-            'schoolCovers' => $schoolCovers,
-            'hasSchool'    => $hasSchool,
-            'mainCoverMediaId' => $mainCoverMediaId ?? null,
+            'user'              => $user,
+            'photos'            => $photos,
+            'eventPhotos'       => $eventPhotos,
+            'tournamentPhotos'  => $tournamentPhotos,
+            'schoolLogos'       => $schoolLogos,
+            'schoolCovers'      => $schoolCovers,
+            'hasSchool'         => $hasSchool,
+            'mainCoverMediaId'  => $mainCoverMediaId ?? null,
         ]);
     }
 
@@ -97,11 +99,11 @@ class UserPhotoController extends Controller
             $photoType  = $request->input('photo_type', 'photos');
             $orgOrAdmin = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
 
-            if (in_array($photoType, ['event_photos', 'school_logo', 'school_cover']) && !$orgOrAdmin) {
+            if (in_array($photoType, ['event_photos', 'tournament_photos', 'school_logo', 'school_cover']) && !$orgOrAdmin) {
                 return response()->json(['success' => false, 'error' => 'Нет прав для загрузки этого типа фото'], 403);
             }
 
-            $allowedTypes = ['photos', 'event_photos', 'school_logo', 'school_cover'];
+            $allowedTypes = ['photos', 'event_photos', 'tournament_photos', 'school_logo', 'school_cover'];
             if (!in_array($photoType, $allowedTypes)) {
                 return response()->json(['success' => false, 'error' => 'Неверный тип фото'], 422);
             }
@@ -127,10 +129,11 @@ class UserPhotoController extends Controller
 
             // 7. Путь к thumb в зависимости от типа
             $thumbConversion = match($collection) {
-                'event_photos' => 'event_thumb',
-                'school_logo'  => 'school_logo_thumb',
-                'school_cover' => 'school_cover_thumb',
-                default        => 'thumb',
+                'event_photos'       => 'event_thumb',
+                'tournament_photos'  => 'tournament_thumb',
+                'school_logo'        => 'school_logo_thumb',
+                'school_cover'       => 'school_cover_thumb',
+                default              => 'thumb',
             };
             $thumbPath = $media->getPath($thumbConversion);
 
@@ -234,6 +237,29 @@ class UserPhotoController extends Controller
             : back()->getTargetUrl();
 
         return redirect($redirectUrl)->with('status', 'Фото удалено ✅');
+    }
+
+    public function destroyTournamentPhoto(Request $request, Media $media)
+    {
+        $isOwner = (int) $media->model_id === (int) $request->user()->id;
+        $isAdmin = auth()->user()?->isAdmin();
+
+        if (!$isOwner && !$isAdmin) {
+            abort(403);
+        }
+
+        if ($media->collection_name !== 'tournament_photos') {
+            return back()->with('error', 'Это не турнирное фото ❌');
+        }
+
+        $user = User::find($media->model_id);
+        $media->delete();
+
+        $redirectUrl = $request->user()->isAdmin()
+            ? route('user.photos') . '?user_id=' . $user->id
+            : back()->getTargetUrl();
+
+        return redirect($redirectUrl)->with('status', 'Турнирное фото удалено ✅');
     }
 
     public function destroyEventPhoto(Request $request, Media $media)

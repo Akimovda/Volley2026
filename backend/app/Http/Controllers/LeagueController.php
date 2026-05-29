@@ -120,7 +120,9 @@ class LeagueController extends Controller
             'seasons.seasonEvents.event',
         ]);
 
-        return view('leagues.edit', compact('league'));
+        $eventPhotos = auth()->user()->getMedia('event_photos')->sortByDesc('created_at')->values();
+
+        return view('leagues.edit', compact('league', 'eventPhotos'));
     }
 
     /* ================================================================
@@ -143,14 +145,29 @@ class LeagueController extends Controller
             'status'         => 'nullable|in:active,archived',
             'logo'           => 'nullable|image|max:2048',
             'remove_logo'    => 'nullable|boolean',
+            'logo_media_id'  => 'nullable|integer',
         ]);
 
-        $league->update(collect($validated)->except(['logo', 'remove_logo'])->toArray());
+        $league->update(collect($validated)->except(['logo', 'remove_logo', 'logo_media_id'])->toArray());
 
         if ($request->boolean('remove_logo')) {
             $league->clearMediaCollection('logo');
         } elseif ($request->hasFile('logo')) {
+            $league->clearMediaCollection('logo');
             $league->addMediaFromRequest('logo')->toMediaCollection('logo');
+        } elseif ($request->filled('logo_media_id')) {
+            $media = \Spatie\MediaLibrary\MediaCollections\Models\Media::find($request->integer('logo_media_id'));
+            if ($media
+                && $media->model_type === \App\Models\User::class
+                && (int) $media->model_id === auth()->id()
+                && $media->collection_name === 'event_photos'
+            ) {
+                $league->clearMediaCollection('logo');
+                $league->addMedia($media->getPath())
+                    ->preservingOriginal()
+                    ->usingFileName($media->file_name)
+                    ->toMediaCollection('logo');
+            }
         }
 
         return back()->with('success', 'Лига обновлена.');
@@ -183,7 +200,11 @@ class LeagueController extends Controller
             'seasons.stats' => fn($q) => $q->orderByDesc('match_win_rate'),
         ]);
 
-        return view('leagues.show', compact('league'));
+        $organizerTournamentPhotos = $league->organizer
+            ? $league->organizer->getMedia('tournament_photos')->sortByDesc('created_at')->values()
+            : collect();
+
+        return view('leagues.show', compact('league', 'organizerTournamentPhotos'));
     }
 
     public function showBySlug(string $slug)

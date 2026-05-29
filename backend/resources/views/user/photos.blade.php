@@ -570,8 +570,21 @@ $canUploadSchool = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
                     1280: { slidesPerView: 3 }
 				}
 			});
-			
-			
+
+            @if(isset($tournamentPhotos) && $tournamentPhotos->isNotEmpty())
+            const tournamentSwiper = new Swiper('.tournament-photo-swiper', {
+                slidesPerView: 1,
+                spaceBetween: 20,
+                pagination: { el: '.swiper-pagination', clickable: true },
+                breakpoints: {
+                    640: { slidesPerView: 2 },
+                    768: { slidesPerView: 2 },
+                    1024: { slidesPerView: 2 },
+                    1280: { slidesPerView: 3 }
+				}
+			});
+            @endif
+
             const schoolCoverSwiper = new Swiper('.school-cover-swiper', {
                 slidesPerView: 1,
                 spaceBetween: 20,
@@ -584,7 +597,7 @@ $canUploadSchool = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
 				}
 			});
 		</script>
-        @endif  
+        @endif
 	</x-slot>
     
     <div class="container">
@@ -672,6 +685,13 @@ $canUploadSchool = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
 								onchange="setPhotoType('event_photos', 0, 16/9)">
                                 <div class="custom-radio"></div>
                                 <span>{{ __('profile.photos_radio_event') }}</span>
+							</label>
+
+                            <label class="radio-item mb-1">
+                                <input type="radio" name="photo_type_radio" value="tournament_photos"
+								onchange="setPhotoType('tournament_photos', 0, 16/9)">
+                                <div class="custom-radio"></div>
+                                <span>{{ __('profile.photos_radio_tournament') }}</span>
 							</label>
 							
                             @if($hasSchool ?? false)
@@ -802,6 +822,48 @@ $canUploadSchool = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
 					</div>
 				</div>
 				
+                {{-- Турнирный альбом --}}
+                @if($canUploadEventPhotos && (!$isEditingOther || auth()->user()?->isAdmin()))
+                <div class="ramka">
+                    <h2 class="-mt-05">{{ __('profile.photos_tournament_h2') }}</h2>
+                    <p>{{ __('profile.photos_total_prefix') }} <strong class="cd">{{ isset($tournamentPhotos) ? $tournamentPhotos->count() : 0 }}</strong> {{ __('profile.photos_total_suffix') }}</p>
+                    <div class="form mt-2">
+                        @if(!isset($tournamentPhotos) || $tournamentPhotos->isEmpty())
+                        <div class="alert alert-info">{{ __('profile.photos_tournament_empty') }}</div>
+                        @else
+                        <div class="swiper tournament-photo-swiper">
+                            <div class="swiper-wrapper">
+                                @foreach($tournamentPhotos as $m)
+                                <div class="swiper-slide">
+                                    <div class="hover-image">
+                                        <a href="{{ $m->getUrl() }}" class="fancybox" data-fancybox="tournament-gallery">
+                                            <img src="{{ $m->getUrl('tournament_thumb') }}" alt="tournament photo" loading="lazy"/>
+                                            <span></span>
+                                            <div class="hover-image-circle"></div>
+                                        </a>
+                                    </div>
+                                    <div class="mt-1 d-flex between fvc">
+                                        <div></div>
+                                        <form method="POST" action="{{ route('user.photos.destroyTournamentPhoto', ['media' => $m->id]) }}"
+                                        onsubmit="return confirm({!! json_encode(__('profile.photos_confirm_delete')) !!})">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="icon-delete btn-alert btn btn-danger btn-svg"
+                                            data-title="{{ __('profile.photos_confirm_delete') }}" data-icon="warning"
+                                            data-confirm-text="{{ __('profile.photos_btn_delete_yes_short') }}" data-cancel-text="{{ __('profile.photos_crop_cancel') }}">
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                                @endforeach
+                            </div>
+                            <div class="swiper-pagination"></div>
+                        </div>
+                        @endif
+                    </div>
+                </div>
+                @endif
+
                 @if($hasSchool ?? false)
                 {{-- Логотипы школы --}}
                 <div class="ramka">
