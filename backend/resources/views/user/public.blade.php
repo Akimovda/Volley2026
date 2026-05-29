@@ -43,7 +43,7 @@
 	
 	$hasAnyContact = (bool)($tgUrl || $vkUrl);
 	
-	$canShowContactButtons = $isAuthed && !$isSelf && $allowContact && $hasAnyContact;
+	$canShowContactButtons = $isAuthed  && $allowContact && $hasAnyContact;
 	
 	
 	$age = '—';
