@@ -135,9 +135,14 @@ return [
     'leagues_label_website'   => 'Сайт',
     'leagues_label_phone'     => 'Телефон',
 
-    'leagues_section_logo'    => 'Логотип',
-    'leagues_label_logo'      => 'Загрузить логотип лиги',
-    'leagues_logo_hint'       => 'JPG, PNG, WebP. Максимум 2 МБ.',
+    'leagues_section_logo'        => 'Логотип',
+    'leagues_label_logo'          => 'Загрузить логотип лиги',
+    'leagues_logo_hint'           => 'JPG, PNG, WebP. Максимум 2 МБ.',
+    'leagues_logo_tab_file'       => 'Загрузить файл',
+    'leagues_logo_tab_gallery'    => 'Из галереи фото',
+    'leagues_logo_no_event_photos' => 'Нет фотографий для выбора. Сначала загрузите фото в',
+    'leagues_logo_no_event_link'  => 'библиотеке фото',
+    'leagues_tournament_photos_h2' => 'Турнирные фото',
     'leagues_btn_create'      => 'Создать лигу',
 
     // === leagues/edit ===

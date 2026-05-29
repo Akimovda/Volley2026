@@ -192,11 +192,41 @@
 			</div>
 		@endif
 
+		{{-- Турнирный альбом организатора --}}
+		@if(isset($organizerTournamentPhotos) && $organizerTournamentPhotos->isNotEmpty())
+		<div class="ramka">
+			<h2 class="-mt-05">{{ __('seasons.leagues_tournament_photos_h2') }}</h2>
+			<div class="swiper leagueTournamentSwiper">
+				<div class="swiper-wrapper">
+					@foreach($organizerTournamentPhotos as $photo)
+					<div class="swiper-slide">
+						<a href="{{ $photo->getUrl() }}" class="fancybox" data-fancybox="league-tournament-gallery">
+							<img src="{{ $photo->getUrl('tournament_thumb') }}" alt="" loading="lazy" style="border-radius:8px;aspect-ratio:16/9;object-fit:cover;width:100%">
+						</a>
+					</div>
+					@endforeach
+				</div>
+				<div class="swiper-pagination"></div>
+			</div>
+		</div>
+		@endif
+
 		</div>{{-- /col-lg-8 --}}
 		</div>{{-- /row --}}
 	</div>
 
 	<x-slot name="script">
+	<script src="/assets/fas.js"></script>
+	<script>
+	@if(isset($organizerTournamentPhotos) && $organizerTournamentPhotos->isNotEmpty())
+	new Swiper('.leagueTournamentSwiper', {
+		slidesPerView: 1,
+		spaceBetween: 16,
+		pagination: { el: '.swiper-pagination', clickable: true },
+		breakpoints: { 640: { slidesPerView: 2 }, 1024: { slidesPerView: 3 } }
+	});
+	@endif
+	</script>
 	<script>
 	(function () {
 		if (!window.VolleyNative || !window.VolleyNative.isApp) return;

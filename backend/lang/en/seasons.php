@@ -128,9 +128,14 @@ return [
     'leagues_label_website'   => 'Website',
     'leagues_label_phone'     => 'Phone',
 
-    'leagues_section_logo'    => 'Logo',
-    'leagues_label_logo'      => 'Upload league logo',
-    'leagues_logo_hint'       => 'JPG, PNG, WebP. Max 2 MB.',
+    'leagues_section_logo'        => 'Logo',
+    'leagues_label_logo'          => 'Upload league logo',
+    'leagues_logo_hint'           => 'JPG, PNG, WebP. Max 2 MB.',
+    'leagues_logo_tab_file'       => 'Upload file',
+    'leagues_logo_tab_gallery'    => 'From photo gallery',
+    'leagues_logo_no_event_photos' => 'No photos available. Upload photos in your',
+    'leagues_logo_no_event_link'  => 'photo library',
+    'leagues_tournament_photos_h2' => 'Tournament photos',
     'leagues_btn_create'      => 'Create league',
 
     'leagues_edit_title'   => 'Edit league',
