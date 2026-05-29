@@ -14,11 +14,15 @@ $isTournament = ($row->format ?? '') === 'tournament';
 if ($isTournament) {
 $registered = (int) $row->active_teams;
 $max        = (int) ($row->tournament_teams_count ?? 0);
-} else {
+$waitlist   = (int) ($row->waitlist_teams ?? 0);
+$str  = $max > 0 ? "{$registered}/{$max}" : "{$registered}/—";
+if ($waitlist > 0) $str .= ' · ⏳ ' . $waitlist;
+$full = $max > 0 && $registered >= $max;
+return compact('str', 'full');
+}
 if (!(bool) $row->allow_registration) return ['str' => '—', 'full' => false];
 $registered = (int) $row->active_regs;
 $max        = (int) $row->max_players + (int) ($row->reserve_max ?? 0);
-}
 $str  = $max > 0 ? "{$registered}/{$max}" : "{$registered}/—";
 $full = $max > 0 && $registered >= $max;
 return compact('str', 'full');
@@ -204,7 +208,7 @@ $baseQuery  = request()->except(['dir', 'page']);
 							</div>
 							<div class="d-flex flex-column align-items-end gap-1" style="flex-shrink:0;">
 								<span class="f-14 {{ $regsClass }}">{{ $regsStr }}</span>
-								<a href="{{ url('/events/' . (int)$row->event_id . '/registrations') . '?occurrence=' . (int)$row->occurrence_id }}"
+								<a href="{{ ($row->format ?? '') === 'tournament' ? url('/events/' . (int)$row->event_id . '/tournament/setup') . '?occurrence_id=' . (int)$row->occurrence_id : url('/events/' . (int)$row->event_id . '/registrations') . '?occurrence=' . (int)$row->occurrence_id }}"
 								class="btn btn-small btn-secondary p-0 d-inline-flex align-items-center justify-content-center"
 								style="width:36px;height:36px;"
 								title="{{ __('events.overview_btn_manage') }}">
