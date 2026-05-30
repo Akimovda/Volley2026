@@ -94,12 +94,13 @@
 
 							<div id="logo-tab-gallery" style="display:none">
 								<input type="hidden" name="logo_media_id" id="logo_media_id_input" value="">
-								@if($eventPhotos->isEmpty())
-									<div class="alert alert-info f-14 mt-1">
-										{{ __('seasons.leagues_logo_no_event_photos') }}
-										<a href="{{ route('user.photos') }}" target="_blank" class="blink">{{ __('seasons.leagues_logo_no_event_link') }}</a>.
-									</div>
-								@else
+
+								<div id="no-event-photos-msg" class="alert alert-info f-14 mt-1" @if(!$eventPhotos->isEmpty()) style="display:none" @endif>
+									{{ __('seasons.leagues_logo_no_event_photos') }}
+									<a href="{{ route('user.photos') }}" target="_blank" class="blink">{{ __('seasons.leagues_logo_no_event_link') }}</a>.
+								</div>
+
+								<div id="league-logo-swiper-wrap" @if($eventPhotos->isEmpty()) style="display:none" @endif>
 									<div class="swiper leagueLogoSwiper mt-1" style="padding-bottom:2.5rem">
 										<div class="swiper-wrapper">
 											@foreach($eventPhotos as $photo)
@@ -114,7 +115,14 @@
 										<div class="swiper-pagination"></div>
 									</div>
 									<div id="logo-gallery-selected" class="f-14 cd mt-05" style="display:none">✅ Фото выбрано</div>
-								@endif
+								</div>
+
+								<div class="mt-1">
+									<input type="file" id="league-photo-upload" accept="image/*" style="display:none">
+									<button type="button" class="btn btn-secondary f-13" id="league-upload-photo-btn" style="padding:6px 14px">
+										+ {{ __('seasons.leagues_logo_add_photo') }}
+									</button>
+								</div>
 							</div>
 						</div>
 
@@ -204,8 +212,71 @@
 		</div>
 	</div>
 
+	<x-slot name="style">
+		<link href="/css/cropper.min.css" rel="stylesheet">
+		<style>
+			.cropper-modal-overlay {
+				position: fixed; top: 0; bottom: 0; left: 0; right: 0;
+				text-align: center; display: flex; flex-flow: column;
+				align-items: center; justify-content: center;
+				font-size: 0; overflow: hidden; z-index: 10000;
+				pointer-events: none; opacity: 0; transition: opacity 0.3s ease;
+			}
+			.cropper-modal-overlay--active { opacity: 1; pointer-events: auto; }
+			.cropper-modal-overlay:before, .cropper-modal-overlay:after {
+				content: ""; position: absolute; top: 100vh; width: 100%; height: 100%;
+				background: #fff; opacity: 0.8; transition-duration: 0.4s;
+				transition-property: all;
+				transition-timing-function: cubic-bezier(.47, 0, .74, .71);
+				clip-path: polygon(100% 80%, 100% 100%, 0% 100%, 0% 20%);
+			}
+			.cropper-modal-overlay:after {
+				clip-path: polygon(100% 0%, 100% 80%, 0% 20%, 0% 0%);
+				top: -100vh; opacity: 0.5;
+			}
+			.cropper-modal-overlay--active:before, .cropper-modal-overlay--active:after {
+				top: 0; left: 0;
+				transition-timing-function: cubic-bezier(.22, .61, .36, 1);
+			}
+			body.dark .cropper-modal-overlay:before, body.dark .cropper-modal-overlay:after { background: #000; }
+			.cropper-modal-container {
+				position: relative; z-index: 10001; background: #fff;
+				border-radius: 1.6rem; padding: 2rem; width: 90vw;
+				max-width: 100rem; max-height: 90vh; display: flex;
+				flex-direction: column;
+				box-shadow: rgba(0,0,0,.1) 0px 1rem 2.2rem, rgba(0,0,0,.05) 0px .5rem 1.2rem;
+				transform: scale(0.95); transition: transform 0.3s ease; overflow: hidden;
+			}
+			.cropper-modal-overlay--active .cropper-modal-container { transform: scale(1); }
+			body.dark .cropper-modal-container { background: #2a2b3a; color: #e9ecef; }
+			.cropper-image-wrapper {
+				background: #f5f5f5; border-radius: 8px; overflow: hidden;
+				margin-bottom: 1rem; flex: 1; min-height: 0;
+				display: flex; align-items: center; justify-content: center;
+			}
+			body.dark .cropper-image-wrapper { background: #1e1e2a; }
+			.cropper-image-wrapper img {
+				max-width: 100%; max-height: 100%; width: auto; height: auto;
+				display: block; margin: 0 auto; cursor: move;
+			}
+			.cropper-modal-container h3 {
+				margin: 0 0 2rem 0; text-align: center; flex-shrink: 0; font-size: 2rem;
+			}
+			.cropper-buttons {
+				display: flex; gap: 1rem; justify-content: center; flex-shrink: 0; margin-top: 1rem;
+			}
+			.cropper-modal-overlay .fancybox-loading {
+				position: absolute; top: calc(50% - 75px); left: calc(50% - 75px);
+				width: 150px; height: 150px; display: none; z-index: 10002;
+			}
+			.cropper-modal-overlay.loading .cropper-modal-container * { pointer-events: none; }
+			.cropper-modal-overlay.loading .fancybox-loading { display: block !important; }
+		</style>
+	</x-slot>
+
 	<x-slot name="script">
 		<script src="/assets/fas.js"></script>
+		<script src="/js/cropper.min.js"></script>
 		<script>
 		(function() {
 			// Табы логотипа
@@ -243,14 +314,215 @@
 			if (sel) sel.style.display = '';
 		}
 
+		var leagueLogoSwiper = null;
 		@if(isset($eventPhotos) && $eventPhotos->isNotEmpty())
-		new Swiper('.leagueLogoSwiper', {
+		leagueLogoSwiper = new Swiper('.leagueLogoSwiper', {
 			slidesPerView: 2,
 			spaceBetween: 12,
 			pagination: { el: '.swiper-pagination', clickable: true },
 			breakpoints: { 640: { slidesPerView: 3 }, 1024: { slidesPerView: 2 } }
 		});
 		@endif
+
+		// --- Загрузка фото с кропом ---
+		var leagueCropper = null;
+
+		function supportsWebPLeague() {
+			try {
+				var c = document.createElement('canvas');
+				return c.toDataURL('image/webp').indexOf('data:image/webp') === 0;
+			} catch(e) { return false; }
+		}
+
+		function processImageLeague(file, callback) {
+			var url = URL.createObjectURL(file);
+			var img = new Image();
+			img.onload = function() {
+				var w = img.width, h = img.height, maxSize = 1920;
+				if (w > maxSize || h > maxSize) {
+					var r = Math.min(maxSize / w, maxSize / h);
+					w = Math.round(w * r); h = Math.round(h * r);
+				}
+				var canvas = document.createElement('canvas');
+				canvas.width = w; canvas.height = h;
+				canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+				var fmt = supportsWebPLeague() ? 'image/webp' : 'image/jpeg';
+				canvas.toBlob(function(blob) { callback(blob, fmt); }, fmt, 0.85);
+			};
+			img.src = url;
+		}
+
+		function showLeagueCropperModal(imageUrl, onCropComplete) {
+			var modal = document.createElement('div');
+			modal.className = 'cropper-modal-overlay';
+
+			var container = document.createElement('div');
+			container.className = 'cropper-modal-container';
+
+			var title = document.createElement('h3');
+			title.textContent = 'Обрезать фото';
+
+			var imgWrapper = document.createElement('div');
+			imgWrapper.className = 'cropper-image-wrapper';
+
+			var img = document.createElement('img');
+			img.src = imageUrl;
+			imgWrapper.appendChild(img);
+
+			var btnContainer = document.createElement('div');
+			btnContainer.className = 'cropper-buttons';
+
+			var saveBtn = document.createElement('button');
+			saveBtn.textContent = 'Добавить';
+			saveBtn.type = 'button';
+			saveBtn.className = 'btn';
+
+			var cancelBtn = document.createElement('button');
+			cancelBtn.textContent = 'Отмена';
+			cancelBtn.type = 'button';
+			cancelBtn.className = 'btn btn-secondary';
+
+			btnContainer.appendChild(saveBtn);
+			btnContainer.appendChild(cancelBtn);
+
+			var loading = document.createElement('div');
+			loading.className = 'fancybox-loading';
+			loading.style.display = 'none';
+			modal.appendChild(loading);
+
+			container.appendChild(title);
+			container.appendChild(imgWrapper);
+			container.appendChild(btnContainer);
+			modal.appendChild(container);
+			document.body.appendChild(modal);
+
+			modal.offsetHeight;
+			requestAnimationFrame(function() { modal.classList.add('cropper-modal-overlay--active'); });
+
+			img.onload = function() {
+				if (leagueCropper) leagueCropper.destroy();
+				leagueCropper = new Cropper(img, {
+					aspectRatio: 16 / 9,
+					viewMode: 1,
+					background: true,
+					dragMode: 'crop',
+					autoCropArea: 0.8,
+					cropBoxMovable: true,
+					cropBoxResizable: true,
+					zoomable: true,
+					zoomOnWheel: true,
+					wheelZoomRatio: 0.1,
+					movable: true,
+					guides: true,
+					center: true,
+					highlight: true,
+					responsive: true,
+					restore: false,
+				});
+			};
+
+			saveBtn.onclick = function() {
+				if (!leagueCropper) return;
+				modal.classList.add('loading');
+				saveBtn.disabled = true;
+				cancelBtn.disabled = true;
+				var canvas = leagueCropper.getCroppedCanvas({ width: 640, height: 360 });
+				var fmt = supportsWebPLeague() ? 'image/webp' : 'image/jpeg';
+				canvas.toBlob(function(blob) { onCropComplete(blob, fmt); }, fmt, 0.90);
+			};
+
+			cancelBtn.onclick = function() {
+				modal.remove();
+				if (leagueCropper) { leagueCropper.destroy(); leagueCropper = null; }
+				document.getElementById('league-photo-upload').value = '';
+			};
+
+			modal.onclick = function(e) { if (e.target === modal) cancelBtn.onclick(); };
+		}
+
+		function sendLeaguePhoto(originalBlob, croppedBlob, format) {
+			var ext = format === 'image/webp' ? 'webp' : 'jpg';
+			var ts = (new Date()).getTime();
+			var formData = new FormData();
+			formData.append('photo_original', originalBlob, 'original_' + ts + '.' + ext);
+			formData.append('photo_cropped',  croppedBlob, 'thumb_' + ts + '.' + ext);
+			formData.append('photo_type', 'event_photos');
+			formData.append('make_avatar', '0');
+			formData.append('_token', document.querySelector('meta[name="csrf-token"]').content);
+
+			fetch('/user/photos', {
+				method: 'POST',
+				body: formData,
+			}).then(function(response) {
+				return response.json().then(function(data) {
+					var modal = document.querySelector('.cropper-modal-overlay');
+					if (response.ok && data.success) {
+						if (modal) modal.remove();
+						onLeaguePhotoUploaded(data.media_id, data.thumb_url);
+					} else {
+						if (modal) modal.remove();
+						swal({ title: 'Ошибка', text: data.error || 'Не удалось загрузить фото', icon: 'error', button: 'Понятно' });
+					}
+				});
+			}).catch(function() {
+				var modal = document.querySelector('.cropper-modal-overlay');
+				if (modal) modal.remove();
+				swal({ title: 'Ошибка', text: 'Ошибка сети. Попробуйте ещё раз.', icon: 'error', button: 'Понятно' });
+			});
+		}
+
+		function onLeaguePhotoUploaded(mediaId, thumbUrl) {
+			var slideHtml = '<div class="swiper-slide" style="cursor:pointer" data-media-id="' + mediaId + '" onclick="selectLeagueLogo(this)">' +
+				'<div class="hover-image" style="position:relative">' +
+				'<img src="' + thumbUrl + '" alt="" loading="lazy" style="border-radius:8px;aspect-ratio:16/9;object-fit:cover;width:100%">' +
+				'<div class="league-logo-check" style="display:none;position:absolute;top:6px;right:6px;background:#2967BA;color:#fff;border-radius:50%;width:2.4rem;height:2.4rem;align-items:center;justify-content:center;font-size:1.4rem;font-weight:900">✓</div>' +
+				'</div></div>';
+
+			document.getElementById('no-event-photos-msg').style.display = 'none';
+			document.getElementById('league-logo-swiper-wrap').style.display = '';
+
+			if (!leagueLogoSwiper) {
+				leagueLogoSwiper = new Swiper('.leagueLogoSwiper', {
+					slidesPerView: 2,
+					spaceBetween: 12,
+					pagination: { el: '.swiper-pagination', clickable: true },
+					breakpoints: { 640: { slidesPerView: 3 }, 1024: { slidesPerView: 2 } }
+				});
+			}
+
+			leagueLogoSwiper.prependSlide(slideHtml);
+			leagueLogoSwiper.slideTo(0);
+
+			var newSlide = document.querySelector('.swiper-slide[data-media-id="' + mediaId + '"]');
+			if (newSlide) selectLeagueLogo(newSlide);
+
+			document.getElementById('league-photo-upload').value = '';
+		}
+
+		document.getElementById('league-upload-photo-btn').addEventListener('click', function() {
+			document.getElementById('league-photo-upload').click();
+		});
+
+		document.getElementById('league-photo-upload').addEventListener('change', function(e) {
+			var file = e.target.files[0];
+			if (!file) return;
+			if (!file.type.startsWith('image/')) {
+				swal({ title: 'Ошибка', text: 'Пожалуйста, выберите изображение', icon: 'error', button: 'Понятно' });
+				this.value = '';
+				return;
+			}
+			if (file.size > 15 * 1024 * 1024) {
+				swal({ title: 'Ошибка', text: 'Файл слишком большой. Максимум 15 МБ.', icon: 'error', button: 'Понятно' });
+				this.value = '';
+				return;
+			}
+			processImageLeague(file, function(blob, fmt) {
+				var url = URL.createObjectURL(blob);
+				showLeagueCropperModal(url, function(croppedBlob, cropFmt) {
+					sendLeaguePhoto(blob, croppedBlob, cropFmt);
+				});
+			});
+		});
 		</script>
 	</x-slot>
 </x-voll-layout>

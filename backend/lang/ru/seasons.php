@@ -142,6 +142,7 @@ return [
     'leagues_logo_tab_gallery'    => 'Из галереи фото',
     'leagues_logo_no_event_photos' => 'Нет фотографий для выбора. Сначала загрузите фото в',
     'leagues_logo_no_event_link'  => 'библиотеке фото',
+    'leagues_logo_add_photo'      => 'Добавить фото',
     'leagues_tournament_photos_h2' => 'Турнирные фото',
     'leagues_btn_create'      => 'Создать лигу',
 

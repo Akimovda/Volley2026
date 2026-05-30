@@ -160,9 +160,10 @@ class UserPhotoController extends Controller
             }
 
             return response()->json([
-                'success'  => true,
-                'message'  => 'Фото добавлено',
-                'media_id' => $media->id,
+                'success'   => true,
+                'message'   => 'Фото добавлено',
+                'media_id'  => $media->id,
+                'thumb_url' => $media->getUrl($thumbConversion),
             ]);
 
         } catch (\Exception $e) {

@@ -273,7 +273,66 @@ if ($initialStep < 1 || $initialStep > 3) {
 		</x-slot>
 		
 		<x-slot name="style">
-			<link href="/assets/org.css" rel="stylesheet">		
+			<link href="/assets/org.css" rel="stylesheet">
+			<link href="/css/cropper.min.css" rel="stylesheet">
+			<style>
+				.cropper-modal-overlay {
+					position: fixed; top: 0; bottom: 0; left: 0; right: 0;
+					text-align: center; display: flex; flex-flow: column;
+					align-items: center; justify-content: center;
+					font-size: 0; overflow: hidden; z-index: 10000;
+					pointer-events: none; opacity: 0; transition: opacity 0.3s ease;
+				}
+				.cropper-modal-overlay--active { opacity: 1; pointer-events: auto; }
+				.cropper-modal-overlay:before, .cropper-modal-overlay:after {
+					content: ""; position: absolute; top: 100vh; width: 100%; height: 100%;
+					background: #fff; opacity: 0.8; transition-duration: 0.4s;
+					transition-property: all;
+					transition-timing-function: cubic-bezier(.47, 0, .74, .71);
+					clip-path: polygon(100% 80%, 100% 100%, 0% 100%, 0% 20%);
+				}
+				.cropper-modal-overlay:after {
+					clip-path: polygon(100% 0%, 100% 80%, 0% 20%, 0% 0%);
+					top: -100vh; opacity: 0.5;
+				}
+				.cropper-modal-overlay--active:before, .cropper-modal-overlay--active:after {
+					top: 0; left: 0;
+					transition-timing-function: cubic-bezier(.22, .61, .36, 1);
+				}
+				body.dark .cropper-modal-overlay:before, body.dark .cropper-modal-overlay:after { background: #000; }
+				.cropper-modal-container {
+					position: relative; z-index: 10001; background: #fff;
+					border-radius: 1.6rem; padding: 2rem; width: 90vw;
+					max-width: 100rem; max-height: 90vh; display: flex;
+					flex-direction: column;
+					box-shadow: rgba(0,0,0,.1) 0px 1rem 2.2rem, rgba(0,0,0,.05) 0px .5rem 1.2rem;
+					transform: scale(0.95); transition: transform 0.3s ease; overflow: hidden;
+				}
+				.cropper-modal-overlay--active .cropper-modal-container { transform: scale(1); }
+				body.dark .cropper-modal-container { background: #2a2b3a; color: #e9ecef; }
+				.cropper-image-wrapper {
+					background: #f5f5f5; border-radius: 8px; overflow: hidden;
+					margin-bottom: 1rem; flex: 1; min-height: 0;
+					display: flex; align-items: center; justify-content: center;
+				}
+				body.dark .cropper-image-wrapper { background: #1e1e2a; }
+				.cropper-image-wrapper img {
+					max-width: 100%; max-height: 100%; width: auto; height: auto;
+					display: block; margin: 0 auto; cursor: move;
+				}
+				.cropper-modal-container h3 {
+					margin: 0 0 2rem 0; text-align: center; flex-shrink: 0; font-size: 2rem;
+				}
+				.cropper-buttons {
+					display: flex; gap: 1rem; justify-content: center; flex-shrink: 0; margin-top: 1rem;
+				}
+				.cropper-modal-overlay .fancybox-loading {
+					position: absolute; top: calc(50% - 75px); left: calc(50% - 75px);
+					width: 150px; height: 150px; display: none; z-index: 10002;
+				}
+				.cropper-modal-overlay.loading .cropper-modal-container * { pointer-events: none; }
+				.cropper-modal-overlay.loading .fancybox-loading { display: block !important; }
+			</style>
 		</x-slot>			
 		
 		
