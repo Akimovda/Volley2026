@@ -459,6 +459,7 @@ return [
     'setup_photos_save'     => 'Save photos',
     'setup_photos_empty'    => 'No photos in your gallery. :link with the "For events" mark.',
     'setup_photos_empty_link' => 'Upload photos',
+    'setup_photos_add'      => 'Add photo',
 
     'setup_st_completed'    => 'Completed',
     'setup_st_in_progress'  => 'In progress',

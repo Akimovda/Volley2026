@@ -478,6 +478,7 @@ return [
     'setup_photos_save'     => 'Сохранить фото',
     'setup_photos_empty'    => 'Нет фото в галерее. :link с пометкой «Для мероприятий».',
     'setup_photos_empty_link' => 'Загрузите фото',
+    'setup_photos_add'      => 'Добавить фото',
 
     'setup_st_completed'    => 'Завершена',
     'setup_st_in_progress'  => 'В процессе',
