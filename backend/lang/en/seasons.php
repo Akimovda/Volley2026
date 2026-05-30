@@ -135,6 +135,7 @@ return [
     'leagues_logo_tab_gallery'    => 'From photo gallery',
     'leagues_logo_no_event_photos' => 'No photos available. Upload photos in your',
     'leagues_logo_no_event_link'  => 'photo library',
+    'leagues_logo_add_photo'      => 'Add photo',
     'leagues_tournament_photos_h2' => 'Tournament photos',
     'leagues_btn_create'      => 'Create league',
 

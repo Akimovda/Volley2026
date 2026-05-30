@@ -749,6 +749,7 @@ return [
     'photo_select_hint_2_pre' => 'Фотографии можно добавить (с галочкой «Для мероприятий») в разделе',
     'photo_select_hint_2_link' => 'Ваши фотографии',
     'photo_empty_p1'         => 'У вас нет фото для мероприятий.',
+    'photo_add_btn'          => 'Добавить фото',
     'desc_label'             => 'Описание мероприятия',
 
     // ===== Edit (event_management_edit.blade.php) =====

@@ -741,6 +741,7 @@ return [
     'photo_only_title'       => 'Event photos',
     'desc_only_title'        => 'Event description',
     'photos_label'           => 'Event photos',
+    'photo_add_btn'          => 'Add photo',
     'photo_select'           => 'Select',
     'photo_main'             => '★ Main',
     'photo_pos_n'            => 'Photo: :n',

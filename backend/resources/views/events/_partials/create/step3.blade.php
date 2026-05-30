@@ -503,135 +503,299 @@
 
 								
 								{{-- ✅ COVER --}}
-								
+
 								<div class="col-md-4">
-									
-										
-										{{--
-										
-										<p>
-											Можно загрузить файл или выбрать из вашей галереи. Если загружен файл — он важнее выбора из галереи.
-										</p>
-										
-										
-										<label>Загрузить с компьютера</label>
-										<input type="file" name="cover_upload" accept="image/*" class="w-full rounded-lg border-gray-200">
-										
-										<ul class="list f-16 mt-1">
-											<li>JPG / PNG / WebP, до 5MB.</li>
-										</ul>												
-										--}}	
-										
-										
-										
-										@php
-										$userEventPhotos = auth()->user()->getMedia('event_photos')->sortByDesc('created_at');
-										@endphp
-										
-										@if($userEventPhotos->count() > 0)
-										<div class="card">	
-										<div>
-											<label>{{ __('events.photos_label') }}</label>
-											
-											
-											
-											
-											<div class="event-photos-selector" 
-											data-selected='{{ json_encode(old('event_photos', $eventPhotos ?? [])) }}'>
-											
-											<div class="swiper eventPhotosSwiper">
-											<div class="swiper-wrapper">
-											@foreach($userEventPhotos as $photo)
-											<div class="swiper-slide">
-											<div class="hover-image mb-1">
-											<img src="{{ $photo->getUrl('event_thumb') }}" alt="event photo" loading="lazy"/>
+									@php
+									$userEventPhotos = auth()->user()->getMedia('event_photos')->sortByDesc('created_at');
+									@endphp
+
+									<div class="card">
+										<label>{{ __('events.photos_label') }}</label>
+
+										<div id="no-event-photos-msg" @if($userEventPhotos->count() > 0) style="display:none" @endif class="f-16 cd mb-1">
+											{{ __('events.photo_empty_p1') }}
 										</div>
-										<div class="mt-1 d-flex between fvc">
-											<label class="checkbox-item mb-0">
-												<input type="checkbox" class="photo-select" value="{{ $photo->id }}">
-												<div class="custom-checkbox"></div>
-												<span>{{ __('events.photo_select') }}</span>
-											</label>    
-											<div class="photo-order-badge f-16 b-600 cd"></div>
+
+										<div class="event-photos-selector"
+											data-selected='{{ json_encode(old('event_photos', $eventPhotos ?? [])) }}'
+											id="event-photos-swiper-wrap"
+											@if($userEventPhotos->count() === 0) style="display:none" @endif>
+											<div class="swiper eventPhotosSwiper">
+												<div class="swiper-wrapper">
+													@foreach($userEventPhotos as $photo)
+													<div class="swiper-slide">
+														<div class="hover-image mb-1">
+															<img src="{{ $photo->getUrl('event_thumb') }}" alt="event photo" loading="lazy"/>
+														</div>
+														<div class="mt-1 d-flex between fvc">
+															<label class="checkbox-item mb-0">
+																<input type="checkbox" class="photo-select" value="{{ $photo->id }}">
+																<div class="custom-checkbox"></div>
+																<span>{{ __('events.photo_select') }}</span>
+															</label>
+															<div class="photo-order-badge f-16 b-600 cd"></div>
+														</div>
+													</div>
+													@endforeach
+												</div>
+												<div class="swiper-pagination"></div>
+											</div>
+											<ul class="list f-16 mt-1">
+												<li>{{ __('events.photo_select_hint_1') }}</li>
+											</ul>
+											<input type="hidden" name="event_photos" id="event_photos_input" value="">
+										</div>
+
+										<div class="mt-1">
+											<input type="file" id="event-photo-upload" accept="image/*" style="display:none">
+											<button type="button" class="btn btn-secondary f-13" id="event-upload-photo-btn" style="padding:6px 14px">
+												+ {{ __('events.photo_add_btn') }}
+											</button>
+											<div class="f-13 cd mt-05">
+												{{ __('events.photo_select_hint_2_pre') }}
+												<a target="_blank" href="{{ route('user.photos') }}">{{ __('events.photo_select_hint_2_link') }}</a>
+											</div>
 										</div>
 									</div>
-									@endforeach
+
+									<script src="/js/cropper.min.js"></script>
+									<script>
+									document.addEventListener('DOMContentLoaded', function() {
+										let eventPhotosSwiper = null;
+										@if($userEventPhotos->count() > 0)
+										eventPhotosSwiper = new Swiper('.eventPhotosSwiper', {
+											slidesPerView: 1,
+											spaceBetween: 15,
+											pagination: { el: '.swiper-pagination', clickable: true },
+											breakpoints: { 640: { slidesPerView: 1 }, 768: { slidesPerView: 1 }, 1024: { slidesPerView: 1 } }
+										});
+										@endif
+
+										const selectorEl = document.querySelector('.event-photos-selector');
+										const savedPhotos = JSON.parse(selectorEl ? selectorEl.dataset.selected || '[]' : '[]');
+										let selectedPhotos = [...savedPhotos];
+										const photoSelectLabel = @json(__('events.photo_select'));
+										const photoMainLabel   = @json(__('events.photo_main'));
+										const photoPosLabel    = @json(__('events.photo_pos_n', ['n' => '']));
+
+										function updateUI() {
+											document.querySelectorAll('.photo-select').forEach(checkbox => {
+												const id = parseInt(checkbox.value);
+												const isSelected = selectedPhotos.includes(id);
+												checkbox.checked = isSelected;
+												const badge = checkbox.closest('.swiper-slide').querySelector('.photo-order-badge');
+												if (isSelected) {
+													const order = selectedPhotos.indexOf(id) + 1;
+													badge.textContent = order === 1 ? photoMainLabel : (photoPosLabel + order);
+												} else {
+													badge.textContent = '';
+												}
+											});
+											const inp = document.getElementById('event_photos_input');
+											if (inp) inp.value = JSON.stringify(selectedPhotos);
+										}
+
+										function bindCheckbox(checkbox) {
+											checkbox.addEventListener('change', function() {
+												const id = parseInt(this.value);
+												if (this.checked) {
+													selectedPhotos.push(id);
+												} else {
+													const index = selectedPhotos.indexOf(id);
+													if (index !== -1) selectedPhotos.splice(index, 1);
+												}
+												updateUI();
+											});
+										}
+
+										document.querySelectorAll('.photo-select').forEach(bindCheckbox);
+										updateUI();
+
+										// --- Upload with crop ---
+										let eventCropper = null;
+
+										function supportsWebPEvent() {
+											try {
+												const c = document.createElement('canvas');
+												return c.toDataURL('image/webp').indexOf('data:image/webp') === 0;
+											} catch(e) { return false; }
+										}
+
+										function processImageEvent(file, callback) {
+											const url = URL.createObjectURL(file);
+											const img = new Image();
+											img.onload = () => {
+												let w = img.width, h = img.height;
+												const maxSize = 1920;
+												if (w > maxSize || h > maxSize) {
+													const r = Math.min(maxSize / w, maxSize / h);
+													w = Math.round(w * r); h = Math.round(h * r);
+												}
+												const canvas = document.createElement('canvas');
+												canvas.width = w; canvas.height = h;
+												canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+												const fmt = supportsWebPEvent() ? 'image/webp' : 'image/jpeg';
+												canvas.toBlob(blob => callback(blob, fmt), fmt, 0.85);
+											};
+											img.src = url;
+										}
+
+										function showEventCropperModal(imageUrl, onCropComplete) {
+											const modal = document.createElement('div');
+											modal.className = 'cropper-modal-overlay';
+											const modalContainer = document.createElement('div');
+											modalContainer.className = 'cropper-modal-container';
+											const modalTitle = document.createElement('h3');
+											modalTitle.textContent = 'Обрезать фото';
+											const imgWrapper = document.createElement('div');
+											imgWrapper.className = 'cropper-image-wrapper';
+											const img = document.createElement('img');
+											img.src = imageUrl;
+											imgWrapper.appendChild(img);
+											const btnContainer = document.createElement('div');
+											btnContainer.className = 'cropper-buttons';
+											const saveBtn = document.createElement('button');
+											saveBtn.textContent = 'Добавить';
+											saveBtn.type = 'button';
+											saveBtn.className = 'btn';
+											const cancelBtn = document.createElement('button');
+											cancelBtn.textContent = 'Отмена';
+											cancelBtn.type = 'button';
+											cancelBtn.className = 'btn btn-secondary';
+											btnContainer.appendChild(saveBtn);
+											btnContainer.appendChild(cancelBtn);
+											const loading = document.createElement('div');
+											loading.className = 'fancybox-loading';
+											loading.style.display = 'none';
+											modal.appendChild(loading);
+											modalContainer.appendChild(modalTitle);
+											modalContainer.appendChild(imgWrapper);
+											modalContainer.appendChild(btnContainer);
+											modal.appendChild(modalContainer);
+											document.body.appendChild(modal);
+											modal.offsetHeight;
+											requestAnimationFrame(() => modal.classList.add('cropper-modal-overlay--active'));
+											img.onload = () => {
+												if (eventCropper) eventCropper.destroy();
+												eventCropper = new Cropper(img, {
+													aspectRatio: 16 / 9,
+													viewMode: 1, background: true, dragMode: 'crop',
+													autoCropArea: 0.8, cropBoxMovable: true, cropBoxResizable: true,
+													zoomable: true, zoomOnWheel: true, wheelZoomRatio: 0.1,
+													movable: true, guides: true, center: true, highlight: true,
+													responsive: true, restore: false,
+												});
+											};
+											saveBtn.onclick = () => {
+												if (!eventCropper) return;
+												modal.classList.add('loading');
+												saveBtn.disabled = true; cancelBtn.disabled = true;
+												const canvas = eventCropper.getCroppedCanvas({ width: 640, height: 360 });
+												const fmt = supportsWebPEvent() ? 'image/webp' : 'image/jpeg';
+												canvas.toBlob(blob => onCropComplete(blob, fmt), fmt, 0.90);
+											};
+											cancelBtn.onclick = () => {
+												modal.remove();
+												if (eventCropper) { eventCropper.destroy(); eventCropper = null; }
+												document.getElementById('event-photo-upload').value = '';
+											};
+											modal.onclick = e => { if (e.target === modal) cancelBtn.onclick(); };
+										}
+
+										function sendEventPhoto(originalBlob, croppedBlob, format) {
+											const ext = format === 'image/webp' ? 'webp' : 'jpg';
+											const ts = Date.now();
+											const formData = new FormData();
+											formData.append('photo_original', originalBlob, `original_${ts}.${ext}`);
+											formData.append('photo_cropped', croppedBlob, `thumb_${ts}.${ext}`);
+											formData.append('photo_type', 'event_photos');
+											formData.append('make_avatar', '0');
+											formData.append('_token', document.querySelector('meta[name="csrf-token"]').content);
+											fetch('/user/photos', { method: 'POST', body: formData })
+												.then(r => r.json().then(data => {
+													const modal = document.querySelector('.cropper-modal-overlay');
+													if (r.ok && data.success) {
+														if (modal) modal.remove();
+														onEventPhotoUploaded(data.media_id, data.thumb_url);
+													} else {
+														if (modal) modal.remove();
+														swal({ title: 'Ошибка', text: data.error || 'Не удалось загрузить фото', icon: 'error', button: 'Понятно' });
+													}
+												}))
+												.catch(() => {
+													const modal = document.querySelector('.cropper-modal-overlay');
+													if (modal) modal.remove();
+													swal({ title: 'Ошибка', text: 'Ошибка сети. Попробуйте ещё раз.', icon: 'error', button: 'Понятно' });
+												});
+										}
+
+										function onEventPhotoUploaded(mediaId, thumbUrl) {
+											const slideHtml = `<div class="swiper-slide">
+												<div class="hover-image mb-1">
+													<img src="${thumbUrl}" alt="event photo" loading="lazy"/>
+												</div>
+												<div class="mt-1 d-flex between fvc">
+													<label class="checkbox-item mb-0">
+														<input type="checkbox" class="photo-select" value="${mediaId}">
+														<div class="custom-checkbox"></div>
+														<span>${photoSelectLabel}</span>
+													</label>
+													<div class="photo-order-badge f-16 b-600 cd"></div>
+												</div>
+											</div>`;
+
+											document.getElementById('no-event-photos-msg').style.display = 'none';
+											document.getElementById('event-photos-swiper-wrap').style.display = '';
+
+											if (!eventPhotosSwiper) {
+												eventPhotosSwiper = new Swiper('.eventPhotosSwiper', {
+													slidesPerView: 1,
+													spaceBetween: 15,
+													pagination: { el: '.swiper-pagination', clickable: true },
+													breakpoints: { 640: { slidesPerView: 1 }, 768: { slidesPerView: 1 }, 1024: { slidesPerView: 1 } }
+												});
+											}
+
+											eventPhotosSwiper.prependSlide(slideHtml);
+											eventPhotosSwiper.slideTo(0);
+
+											const newCheckbox = document.querySelector(`.photo-select[value="${mediaId}"]`);
+											if (newCheckbox) {
+												bindCheckbox(newCheckbox);
+												selectedPhotos.unshift(mediaId);
+												updateUI();
+											}
+
+											document.getElementById('event-photo-upload').value = '';
+										}
+
+										document.getElementById('event-upload-photo-btn').addEventListener('click', () => {
+											document.getElementById('event-photo-upload').click();
+										});
+
+										document.getElementById('event-photo-upload').addEventListener('change', function(e) {
+											const file = e.target.files[0];
+											if (!file) return;
+											if (!file.type.startsWith('image/')) {
+												swal({ title: 'Ошибка', text: 'Пожалуйста, выберите изображение', icon: 'error', button: 'Понятно' });
+												this.value = '';
+												return;
+											}
+											if (file.size > 15 * 1024 * 1024) {
+												swal({ title: 'Ошибка', text: 'Файл слишком большой. Максимум 15 МБ.', icon: 'error', button: 'Понятно' });
+												this.value = '';
+												return;
+											}
+											processImageEvent(file, (blob, fmt) => {
+												const url = URL.createObjectURL(blob);
+												showEventCropperModal(url, (croppedBlob, cropFmt) => {
+													sendEventPhoto(blob, croppedBlob, cropFmt);
+												});
+											});
+										});
+									});
+									</script>
 								</div>
-								<div class="swiper-pagination"></div>
-							</div>
-							
-							<ul class="list f-16 mt-1">
-								<li>{{ __('events.photo_select_hint_1') }}</li>
-								<li>{{ __('events.photo_select_hint_2_pre') }} <a target="_blank" href="{{ route('user.photos') }}">{{ __('events.photo_select_hint_2_link') }}</a></li>
-							</ul>														
-							
-							<input type="hidden" name="event_photos" id="event_photos_input" value="">
-						</div>
-					</div>
-					<script>
-						document.addEventListener('DOMContentLoaded', function() {
-							// Инициализация Swiper
-							new Swiper('.eventPhotosSwiper', {
-								slidesPerView: 1,
-								spaceBetween: 15,
-								pagination: { el: '.swiper-pagination', clickable: true },
-								breakpoints: { 640: { slidesPerView: 1 }, 768: { slidesPerView: 1 }, 1024: { slidesPerView: 1 } }
-							});
-							
-							const container = document.querySelector('.event-photos-selector');
-							const savedPhotos = JSON.parse(container.dataset.selected || '[]');
-							let selectedPhotos = [...savedPhotos]; // копируем массив
-							
-							function updateUI() {
-								document.querySelectorAll('.photo-select').forEach(checkbox => {
-									const id = parseInt(checkbox.value);
-									const isSelected = selectedPhotos.includes(id);
-									checkbox.checked = isSelected;
-									
-									const badge = checkbox.closest('.swiper-slide').querySelector('.photo-order-badge');
-									if (isSelected) {
-										const order = selectedPhotos.indexOf(id) + 1;
-										badge.textContent = order === 1 ? @json(__('events.photo_main')) : (@json(__('events.photo_pos_n', ['n' => ''])) + order);
-										} else {
-										badge.textContent = '';
-									}
-								});
-								
-								document.getElementById('event_photos_input').value = JSON.stringify(selectedPhotos);
-							}
-							
-							document.querySelectorAll('.photo-select').forEach(checkbox => {
-								checkbox.addEventListener('change', function() {
-									const id = parseInt(this.value);
-									
-									if (this.checked) {
-										selectedPhotos.push(id);
-										} else {
-										const index = selectedPhotos.indexOf(id);
-										if (index !== -1) selectedPhotos.splice(index, 1);
-									}
-									
-									updateUI();
-								});
-							});
-							
-							updateUI();
-						});
-					</script>
-					</div>
-					@else
-
-						<div class="alert alert-info">
-							<p>{{ __('events.photo_empty_p1') }}</p> 
-							<p>{{ __('events.photo_select_hint_2_pre') }} <a target="_blank" href="{{ route('user.photos') }}">{{ __('events.photo_select_hint_2_link') }}</a></p>
-						</div>
-
-					@endif
-					
-					
-					
-				
-			</div>
 			
 								{{-- STEP 3: Описание мероприятия --}}
 								<div class="col-md-8">
