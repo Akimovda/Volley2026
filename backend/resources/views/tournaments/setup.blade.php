@@ -6,8 +6,70 @@
 	<x-slot name="title">{{ __('tournaments.setup_title_with', ['title' => $event->title]) }}</x-slot>
 	
     <x-slot name="h1">{{ __('tournaments.setup_title_with', ['title' => $event->title]) }}</x-slot>
-	
-	
+
+	<x-slot name="style">
+		<link href="/css/cropper.min.css" rel="stylesheet">
+		<style>
+			.cropper-modal-overlay {
+				position: fixed; top: 0; bottom: 0; left: 0; right: 0;
+				text-align: center; display: flex; flex-flow: column;
+				align-items: center; justify-content: center;
+				font-size: 0; overflow: hidden; z-index: 10000;
+				pointer-events: none; opacity: 0; transition: opacity 0.3s ease;
+			}
+			.cropper-modal-overlay--active { opacity: 1; pointer-events: auto; }
+			.cropper-modal-overlay:before, .cropper-modal-overlay:after {
+				content: ""; position: absolute; top: 100vh; width: 100%; height: 100%;
+				background: #fff; opacity: 0.8; transition-duration: 0.4s;
+				transition-property: all;
+				transition-timing-function: cubic-bezier(.47, 0, .74, .71);
+				clip-path: polygon(100% 80%, 100% 100%, 0% 100%, 0% 20%);
+			}
+			.cropper-modal-overlay:after {
+				clip-path: polygon(100% 0%, 100% 80%, 0% 20%, 0% 0%);
+				top: -100vh; opacity: 0.5;
+			}
+			.cropper-modal-overlay--active:before, .cropper-modal-overlay--active:after {
+				top: 0; left: 0;
+				transition-timing-function: cubic-bezier(.22, .61, .36, 1);
+			}
+			body.dark .cropper-modal-overlay:before, body.dark .cropper-modal-overlay:after { background: #000; }
+			.cropper-modal-container {
+				position: relative; z-index: 10001; background: #fff;
+				border-radius: 1.6rem; padding: 2rem; width: 90vw;
+				max-width: 100rem; max-height: 90vh; display: flex;
+				flex-direction: column;
+				box-shadow: rgba(0,0,0,.1) 0px 1rem 2.2rem, rgba(0,0,0,.05) 0px .5rem 1.2rem;
+				transform: scale(0.95); transition: transform 0.3s ease; overflow: hidden;
+			}
+			.cropper-modal-overlay--active .cropper-modal-container { transform: scale(1); }
+			body.dark .cropper-modal-container { background: #2a2b3a; color: #e9ecef; }
+			.cropper-image-wrapper {
+				background: #f5f5f5; border-radius: 8px; overflow: hidden;
+				margin-bottom: 1rem; flex: 1; min-height: 0;
+				display: flex; align-items: center; justify-content: center;
+			}
+			body.dark .cropper-image-wrapper { background: #1e1e2a; }
+			.cropper-image-wrapper img {
+				max-width: 100%; max-height: 100%; width: auto; height: auto;
+				display: block; margin: 0 auto; cursor: move;
+			}
+			.cropper-modal-container h3 {
+				margin: 0 0 2rem 0; text-align: center; flex-shrink: 0; font-size: 2rem;
+			}
+			.cropper-buttons {
+				display: flex; gap: 1rem; justify-content: center; flex-shrink: 0; margin-top: 1rem;
+			}
+			.cropper-modal-overlay .fancybox-loading {
+				position: absolute; top: calc(50% - 75px); left: calc(50% - 75px);
+				width: 150px; height: 150px; display: none; z-index: 10002;
+			}
+			.cropper-modal-overlay.loading .cropper-modal-container * { pointer-events: none; }
+			.cropper-modal-overlay.loading .fancybox-loading { display: block !important; }
+		</style>
+	</x-slot>
+
+
 {{-- Активный тур --}}
 @if($selectedOccurrence)
 @php
@@ -1175,51 +1237,58 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 			</div>
 			@endif
 			
-			@if(($userEventPhotos ?? collect())->count() > 0)
+			@php $userTournamentGallery = $userEventPhotos ?? collect(); @endphp
+
 			<div class="card">
 				<label>{{ __('tournaments.setup_photos_pick') }}</label>
-				
-				<div class="event-photos-selector" id="tournament-photos-selector"
-				data-selected='{{ json_encode($currentPhotoIds) }}'>
-					<div class="swiper tournamentPhotosSwiper">
-						<div class="swiper-wrapper">
-							@foreach($userEventPhotos as $photo)
-							<div class="swiper-slide">
-								<div class="hover-image mb-1">
-									<img src="{{ $photo->getUrl('event_thumb') }}" alt="photo" loading="lazy"/>
+
+				<div id="tournament-photos-swiper-wrap" @if($userTournamentGallery->count() === 0) style="display:none" @endif>
+					<div class="event-photos-selector" id="tournament-photos-selector"
+					data-selected='{{ json_encode($currentPhotoIds) }}'>
+						<div class="swiper tournamentPhotosSwiper">
+							<div class="swiper-wrapper">
+								@foreach($userTournamentGallery as $photo)
+								<div class="swiper-slide">
+									<div class="hover-image mb-1">
+										<img src="{{ $photo->getUrl('event_thumb') }}" alt="photo" loading="lazy"/>
+									</div>
+									<div class="mt-1 d-flex between fvc">
+										<label class="checkbox-item mb-0">
+											<input type="checkbox" class="t-photo-select" value="{{ $photo->id }}">
+											<div class="custom-checkbox"></div>
+											<span>{{ __('tournaments.setup_photos_select') }}</span>
+										</label>
+										<div class="photo-order-badge f-16 b-600 cd"></div>
+									</div>
 								</div>
-								<div class="mt-1 d-flex between fvc">
-									<label class="checkbox-item mb-0">
-										<input type="checkbox" class="t-photo-select" value="{{ $photo->id }}">
-										<div class="custom-checkbox"></div>
-										<span>{{ __('tournaments.setup_photos_select') }}</span>
-									</label>
-									<div class="photo-order-badge f-16 b-600 cd"></div>
-								</div>
+								@endforeach
 							</div>
-							@endforeach
+							<div class="swiper-pagination"></div>
 						</div>
-						<div class="swiper-pagination"></div>
+						<ul class="list f-16 mt-1">
+							<li>{{ __('tournaments.setup_photos_hint_1') }}</li>
+						</ul>
 					</div>
-					
-					<ul class="list f-16 mt-1">
-						<li>{{ __('tournaments.setup_photos_hint_1') }}</li>
-						<li>{{ __('tournaments.setup_photos_hint_2', ['link' => '<a target="_blank" href="' . route('user.photos') . '">' . __('tournaments.setup_photos_hint_2_link') . '</a>']) }}</li>
-					</ul>
 				</div>
-			</div>	
-			<div class="text-center">
-				<form method="POST" action="{{ route('tournament.photos.store', $event) }}" id="tournament-photos-form" class="mt-2">
+
+				<div class="mt-1">
+					<input type="file" id="tournament-photo-upload" accept="image/*" style="display:none">
+					<button type="button" id="tournament-upload-photo-btn" class="btn btn-secondary f-13" style="padding:6px 14px">
+						+ {{ __('tournaments.setup_photos_add') }}
+					</button>
+					<div class="f-13 cd mt-05">
+						{!! __('tournaments.setup_photos_hint_2', ['link' => '<a target="_blank" href="' . route('user.photos') . '">' . __('tournaments.setup_photos_hint_2_link') . '</a>']) !!}
+					</div>
+				</div>
+			</div>
+
+			<div class="text-center mt-2">
+				<form method="POST" action="{{ route('tournament.photos.store', $event) }}" id="tournament-photos-form">
 					@csrf
 					<input type="hidden" name="photo_ids" id="tournament_photos_input" value="">
 					<button type="submit" class="btn btn-primary" id="tournament-photos-submit" style="display:none">{{ __('tournaments.setup_photos_save') }}</button>
 				</form>
 			</div>
-			@else
-			<div class="alert alert-info">
-				{{ __('tournaments.setup_photos_empty', ['link' => '<a href="' . route('user.photos') . '" target="_blank">' . __('tournaments.setup_photos_empty_link') . '</a>']) }}
-			</div>
-			@endif
 		</div>
 		@endif
 		
@@ -1940,11 +2009,13 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 	</script>
 
 	<script src="/assets/fas.js"></script>
+	<script src="/js/cropper.min.js"></script>
 	<script>
 		document.addEventListener('DOMContentLoaded', function() {
 			// Tournament Photos Swiper
-			if (document.querySelector('.tournamentPhotosSwiper')) {
-				new Swiper('.tournamentPhotosSwiper', {
+			var tournamentPhotosSwiper = null;
+			if (document.querySelector('.tournamentPhotosSwiper .swiper-wrapper')) {
+				tournamentPhotosSwiper = new Swiper('.tournamentPhotosSwiper', {
 					slidesPerView: 3,
 					spaceBetween: 20,
 					pagination: { el: '.tournamentPhotosSwiper .swiper-pagination', clickable: true },
@@ -1954,45 +2025,221 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 						1024: { slidesPerView: 4 }
 					}
 				});
-				
-				var container = document.getElementById('tournament-photos-selector');
-				if (container) {
-					var savedPhotos = JSON.parse(container.dataset.selected || '[]');
-					var selectedPhotos = savedPhotos.slice();
-					
-					function updateTournamentUI() {
-						document.querySelectorAll('.t-photo-select').forEach(function(cb) {
-							var id = parseInt(cb.value);
-							var isSelected = selectedPhotos.indexOf(id) !== -1;
-							cb.checked = isSelected;
-							var badge = cb.closest('.swiper-slide').querySelector('.photo-order-badge');
-							if (isSelected) {
-								var order = selectedPhotos.indexOf(id) + 1;
-								badge.textContent = order === 1 ? @json(__('tournaments.setup_photo_main')) : (@json(__('tournaments.setup_photo_pos_n', ['n' => ''])) + order);
-								} else {
-								badge.textContent = '';
-							}
-						});
-						document.getElementById('tournament_photos_input').value = JSON.stringify(selectedPhotos);
-						var btn = document.getElementById('tournament-photos-submit');
-						btn.style.display = selectedPhotos.length > 0 ? '' : 'none';
+			}
+
+			var selectorEl = document.getElementById('tournament-photos-selector');
+			var savedPhotos = selectorEl ? JSON.parse(selectorEl.dataset.selected || '[]') : [];
+			var selectedPhotos = savedPhotos.slice();
+			var tPhotoSelectLabel = @json(__('tournaments.setup_photos_select'));
+			var tPhotoMainLabel   = @json(__('tournaments.setup_photo_main'));
+			var tPhotoPosLabel    = @json(__('tournaments.setup_photo_pos_n', ['n' => '']));
+
+			function updateTournamentUI() {
+				document.querySelectorAll('.t-photo-select').forEach(function(cb) {
+					var id = parseInt(cb.value);
+					var isSelected = selectedPhotos.indexOf(id) !== -1;
+					cb.checked = isSelected;
+					var badge = cb.closest('.swiper-slide').querySelector('.photo-order-badge');
+					if (isSelected) {
+						var order = selectedPhotos.indexOf(id) + 1;
+						badge.textContent = order === 1 ? tPhotoMainLabel : (tPhotoPosLabel + order);
+					} else {
+						badge.textContent = '';
 					}
-					
-					document.querySelectorAll('.t-photo-select').forEach(function(cb) {
-						cb.addEventListener('change', function() {
-							var id = parseInt(this.value);
-							if (this.checked) {
-								selectedPhotos.push(id);
-								} else {
-								var idx = selectedPhotos.indexOf(id);
-								if (idx !== -1) selectedPhotos.splice(idx, 1);
-							}
-							updateTournamentUI();
-						});
+				});
+				var inp = document.getElementById('tournament_photos_input');
+				if (inp) inp.value = JSON.stringify(selectedPhotos);
+				var btn = document.getElementById('tournament-photos-submit');
+				if (btn) btn.style.display = selectedPhotos.length > 0 ? '' : 'none';
+			}
+
+			function bindTournamentCheckbox(cb) {
+				cb.addEventListener('change', function() {
+					var id = parseInt(this.value);
+					if (this.checked) {
+						selectedPhotos.push(id);
+					} else {
+						var idx = selectedPhotos.indexOf(id);
+						if (idx !== -1) selectedPhotos.splice(idx, 1);
+					}
+					updateTournamentUI();
+				});
+			}
+
+			document.querySelectorAll('.t-photo-select').forEach(bindTournamentCheckbox);
+			updateTournamentUI();
+
+			// --- Загрузка фото с кропом 4:3 (800×600) в турнирный альбом ---
+			var tournamentCropper = null;
+
+			function supportsWebPT() {
+				try {
+					var c = document.createElement('canvas');
+					return c.toDataURL('image/webp').indexOf('data:image/webp') === 0;
+				} catch(e) { return false; }
+			}
+
+			function processImageT(file, callback) {
+				var url = URL.createObjectURL(file);
+				var img = new Image();
+				img.onload = function() {
+					var w = img.width, h = img.height, maxSize = 1920;
+					if (w > maxSize || h > maxSize) {
+						var r = Math.min(maxSize / w, maxSize / h);
+						w = Math.round(w * r); h = Math.round(h * r);
+					}
+					var canvas = document.createElement('canvas');
+					canvas.width = w; canvas.height = h;
+					canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+					var fmt = supportsWebPT() ? 'image/webp' : 'image/jpeg';
+					canvas.toBlob(function(blob) { callback(blob, fmt); }, fmt, 0.85);
+				};
+				img.src = url;
+			}
+
+			function showTournamentCropperModal(imageUrl, onCropComplete) {
+				var modal = document.createElement('div');
+				modal.className = 'cropper-modal-overlay';
+				var mc = document.createElement('div');
+				mc.className = 'cropper-modal-container';
+				var mt = document.createElement('h3');
+				mt.textContent = 'Обрезать фото';
+				var imgWrapper = document.createElement('div');
+				imgWrapper.className = 'cropper-image-wrapper';
+				var img = document.createElement('img');
+				img.src = imageUrl;
+				imgWrapper.appendChild(img);
+				var bc = document.createElement('div');
+				bc.className = 'cropper-buttons';
+				var saveBtn = document.createElement('button');
+				saveBtn.textContent = 'Добавить'; saveBtn.type = 'button'; saveBtn.className = 'btn';
+				var cancelBtn = document.createElement('button');
+				cancelBtn.textContent = 'Отмена'; cancelBtn.type = 'button'; cancelBtn.className = 'btn btn-secondary';
+				bc.appendChild(saveBtn); bc.appendChild(cancelBtn);
+				var loading = document.createElement('div');
+				loading.className = 'fancybox-loading'; loading.style.display = 'none';
+				modal.appendChild(loading);
+				mc.appendChild(mt); mc.appendChild(imgWrapper); mc.appendChild(bc);
+				modal.appendChild(mc);
+				document.body.appendChild(modal);
+				modal.offsetHeight;
+				requestAnimationFrame(function() { modal.classList.add('cropper-modal-overlay--active'); });
+				img.onload = function() {
+					if (tournamentCropper) tournamentCropper.destroy();
+					tournamentCropper = new Cropper(img, {
+						aspectRatio: 4 / 3,
+						viewMode: 1, background: true, dragMode: 'crop',
+						autoCropArea: 0.8, cropBoxMovable: true, cropBoxResizable: true,
+						zoomable: true, zoomOnWheel: true, wheelZoomRatio: 0.1,
+						movable: true, guides: true, center: true, highlight: true,
+						responsive: true, restore: false,
 					});
-					
+				};
+				saveBtn.onclick = function() {
+					if (!tournamentCropper) return;
+					modal.classList.add('loading');
+					saveBtn.disabled = true; cancelBtn.disabled = true;
+					var canvas = tournamentCropper.getCroppedCanvas({ width: 800, height: 600 });
+					var fmt = supportsWebPT() ? 'image/webp' : 'image/jpeg';
+					canvas.toBlob(function(blob) { onCropComplete(blob, fmt); }, fmt, 0.90);
+				};
+				cancelBtn.onclick = function() {
+					modal.remove();
+					if (tournamentCropper) { tournamentCropper.destroy(); tournamentCropper = null; }
+					document.getElementById('tournament-photo-upload').value = '';
+				};
+				modal.onclick = function(e) { if (e.target === modal) cancelBtn.onclick(); };
+			}
+
+			function sendTournamentPhoto(originalBlob, croppedBlob, format) {
+				var ext = format === 'image/webp' ? 'webp' : 'jpg';
+				var ts = Date.now();
+				var fd = new FormData();
+				fd.append('photo_original', originalBlob, 'original_' + ts + '.' + ext);
+				fd.append('photo_cropped',  croppedBlob, 'thumb_' + ts + '.' + ext);
+				fd.append('photo_type', 'tournament_photos');
+				fd.append('make_avatar', '0');
+				fd.append('_token', document.querySelector('meta[name="csrf-token"]').content);
+				fetch('/user/photos', { method: 'POST', body: fd })
+					.then(function(r) {
+						return r.json().then(function(data) {
+							var modal = document.querySelector('.cropper-modal-overlay');
+							if (r.ok && data.success) {
+								if (modal) modal.remove();
+								onTournamentPhotoUploaded(data.media_id, data.thumb_url);
+							} else {
+								if (modal) modal.remove();
+								swal({ title: 'Ошибка', text: data.error || 'Не удалось загрузить фото', icon: 'error', button: 'Понятно' });
+							}
+						});
+					})
+					.catch(function() {
+						var modal = document.querySelector('.cropper-modal-overlay');
+						if (modal) modal.remove();
+						swal({ title: 'Ошибка', text: 'Ошибка сети. Попробуйте ещё раз.', icon: 'error', button: 'Понятно' });
+					});
+			}
+
+			function onTournamentPhotoUploaded(mediaId, thumbUrl) {
+				var slideHtml = '<div class="swiper-slide">' +
+					'<div class="hover-image mb-1">' +
+					'<img src="' + thumbUrl + '" alt="photo" loading="lazy" style="width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:8px"/>' +
+					'</div>' +
+					'<div class="mt-1 d-flex between fvc">' +
+					'<label class="checkbox-item mb-0">' +
+					'<input type="checkbox" class="t-photo-select" value="' + mediaId + '">' +
+					'<div class="custom-checkbox"></div>' +
+					'<span>' + tPhotoSelectLabel + '</span>' +
+					'</label>' +
+					'<div class="photo-order-badge f-16 b-600 cd"></div>' +
+					'</div></div>';
+
+				var swiperWrap = document.getElementById('tournament-photos-swiper-wrap');
+				if (swiperWrap) swiperWrap.style.display = '';
+
+				if (!tournamentPhotosSwiper) {
+					tournamentPhotosSwiper = new Swiper('.tournamentPhotosSwiper', {
+						slidesPerView: 3, spaceBetween: 20,
+						pagination: { el: '.tournamentPhotosSwiper .swiper-pagination', clickable: true },
+						breakpoints: { 320: { slidesPerView: 2 }, 640: { slidesPerView: 3 }, 1024: { slidesPerView: 4 } }
+					});
+				}
+
+				tournamentPhotosSwiper.prependSlide(slideHtml);
+				tournamentPhotosSwiper.slideTo(0);
+
+				var newCb = document.querySelector('.t-photo-select[value="' + mediaId + '"]');
+				if (newCb) {
+					bindTournamentCheckbox(newCb);
+					selectedPhotos.unshift(mediaId);
 					updateTournamentUI();
 				}
+
+				document.getElementById('tournament-photo-upload').value = '';
+			}
+
+			var uploadBtn = document.getElementById('tournament-upload-photo-btn');
+			var uploadInput = document.getElementById('tournament-photo-upload');
+			if (uploadBtn && uploadInput) {
+				uploadBtn.addEventListener('click', function() { uploadInput.click(); });
+				uploadInput.addEventListener('change', function(e) {
+					var file = e.target.files[0];
+					if (!file) return;
+					if (!file.type.startsWith('image/')) {
+						swal({ title: 'Ошибка', text: 'Пожалуйста, выберите изображение', icon: 'error', button: 'Понятно' });
+						this.value = ''; return;
+					}
+					if (file.size > 15 * 1024 * 1024) {
+						swal({ title: 'Ошибка', text: 'Файл слишком большой. Максимум 15 МБ.', icon: 'error', button: 'Понятно' });
+						this.value = ''; return;
+					}
+					processImageT(file, function(blob, fmt) {
+						var url = URL.createObjectURL(blob);
+						showTournamentCropperModal(url, function(croppedBlob, cropFmt) {
+							sendTournamentPhoto(blob, croppedBlob, cropFmt);
+						});
+					});
+				});
 			}
 		});
 	</script>
