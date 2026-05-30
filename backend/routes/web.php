@@ -274,6 +274,7 @@ Route::post('/auth/tma-exchange', [TmaAuthController::class, 'exchange'])->name(
 	Route::get('/auth/yandex/callback', [YandexAuthController::class, 'callback'])->middleware('no-store-html')->name('auth.yandex.callback');
 	Route::get('/auth/apple/redirect', [\App\Http\Controllers\Auth\AppleAuthController::class, 'redirect'])->name('auth.apple.redirect');
 	Route::post('/auth/apple/callback', [\App\Http\Controllers\Auth\AppleAuthController::class, 'callback'])->name('auth.apple.callback');
+	Route::post('/auth/apple/native-callback', [\App\Http\Controllers\Auth\AppleAuthController::class, 'nativeCallback'])->name('auth.apple.native_callback');
 	Route::get('/auth/google/redirect', [\App\Http\Controllers\Auth\GoogleAuthController::class, 'redirect'])->middleware('no-store-html')->name('auth.google.redirect');
 	Route::get('/auth/google/callback', [\App\Http\Controllers\Auth\GoogleAuthController::class, 'callback'])->middleware('no-store-html')->name('auth.google.callback');
 	Route::post('/auth/biometric-login', [\App\Http\Controllers\Api\BiometricController::class, 'webLogin'])->name('auth.biometric.login');
