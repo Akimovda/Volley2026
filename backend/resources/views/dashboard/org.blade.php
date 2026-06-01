@@ -16,7 +16,7 @@
     </x-slot>
 
     <x-slot name="d_description">
-        <div class="d-flex gap-2 mt-2 flex-wrap">
+        <div class="d-flex gap-1 mt-2 flex-wrap">
             <a href="{{ route('events.create.event_management') }}" class="btn btn-secondary">{{ __('profile.dash_org_btn_my_events') }}</a>
             <a href="{{ route('profile.payment_settings') }}" class="btn btn-secondary">{{ __('profile.dash_org_btn_pay_settings') }}</a>
             <a href="{{ route('profile.transactions') }}" class="btn btn-secondary">{{ __('profile.dash_org_btn_transactions') }}</a>
@@ -28,29 +28,29 @@
         {{-- СВОДКА --}}
         <div class="ramka">
             <h2 class="-mt-05">{{ __('profile.dash_org_h2_summary') }}</h2>
-            <div class="row row2">
+            <div class="row">
                 <div class="col-6 col-md-3">
                     <div class="card text-center">
-                        <div class="f-13" style="opacity:.6">{{ __('profile.dash_org_total_events') }}</div>
-                        <div class="f-36 b-700">{{ $totalEvents }}</div>
+                        <div>{{ __('profile.dash_org_total_events') }}</div>
+                        <div style="font-size: 3rem" class="b-600 cd">{{ $totalEvents }}</div>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="card text-center">
-                        <div class="f-13" style="opacity:.6">{{ __('profile.dash_org_active_events') }}</div>
-                        <div class="f-36 b-700 cs">{{ $activeEvents }}</div>
+                        <div>{{ __('profile.dash_org_active_events') }}</div>
+                        <div style="font-size: 3rem" class="b-600 cd">{{ $activeEvents }}</div>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="card text-center">
-                        <div class="f-13" style="opacity:.6">{{ __('profile.dash_org_recurring') }}</div>
-                        <div class="f-36 b-700 cd">{{ $recurringEvents }}</div>
+                        <div>{{ __('profile.dash_org_recurring') }}</div>
+                        <div style="font-size: 3rem" class="b-600 cd">{{ $recurringEvents }}</div>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="card text-center">
-                        <div class="f-13" style="opacity:.6">{{ __('profile.dash_org_one_time') }}</div>
-                        <div class="f-36 b-700">{{ $oneTimeEvents }}</div>
+                        <div>{{ __('profile.dash_org_one_time') }}</div>
+                        <div style="font-size: 3rem" class="b-600 cd">{{ $oneTimeEvents }}</div>
                     </div>
                 </div>
             </div>
@@ -59,30 +59,30 @@
         {{-- ИГРОКИ --}}
         <div class="ramka">
             <h2 class="-mt-05">{{ __('profile.dash_org_h2_players') }}</h2>
-            <div class="row row2">
+            <div class="row">
                 <div class="col-6 col-md-3">
                     <div class="card text-center">
-                        <div class="f-13" style="opacity:.6">{{ __('profile.dash_org_unique_players') }}</div>
-                        <div class="f-36 b-700">{{ $playersStats->unique_players ?? 0 }}</div>
+                        <div>{{ __('profile.dash_org_unique_players') }}</div>
+                         <div style="font-size: 3rem" class="b-600 cd">{{ $playersStats->unique_players ?? 0 }}</div>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="card text-center">
-                        <div class="f-13" style="opacity:.6">{{ __('profile.dash_org_total_regs') }}</div>
-                        <div class="f-36 b-700">{{ $playersStats->total_registrations ?? 0 }}</div>
+                        <div>{{ __('profile.dash_org_total_regs') }}</div>
+                         <div style="font-size: 3rem" class="b-600 cd">{{ $playersStats->total_registrations ?? 0 }}</div>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="card text-center">
-                        <div class="f-13" style="opacity:.6">{{ __('profile.dash_org_new_30d') }}</div>
-                        <div class="f-36 b-700 cs">{{ $newPlayers ?? 0 }}</div>
+                        <div>{{ __('profile.dash_org_new_30d') }}</div>
+                         <div style="font-size: 3rem" class="b-600 cd">{{ $newPlayers ?? 0 }}</div>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="card text-center">
-                        <div class="f-13" style="opacity:.6">{{ __('profile.dash_org_pageviews_30d') }}</div>
-                        <div class="f-36 b-700">{{ $pageViews }}</div>
-                        <div class="f-12" style="opacity:.5">{{ __('profile.dash_org_profile_views') }} {{ $profileViews }}</div>
+                        <div>{{ __('profile.dash_org_pageviews_30d') }}</div>
+                         <div style="font-size: 3rem" class="b-600 cd">{{ $pageViews }}</div>
+                        <div class="f-13" style="opacity:.5">{{ __('profile.dash_org_profile_views') }} {{ $profileViews }}</div>
                     </div>
                 </div>
             </div>
@@ -191,7 +191,7 @@
                             @if($tourn->location) · {{ $tourn->location->name }} @endif
                         </div>
                     </div>
-                    <a href="{{ route('tournament.public.show', $tourn->id) }}" class="f-12" style="opacity:.6">Публичная →</a>
+                    <a href="{{ route('tournament.public.show', $tourn->id) }}" class="f-12">Публичная →</a>
                     @if($isActive)
                         <span class="f-12 p-1 px-2 b-600" style="background:rgba(16,185,129,.15);border-radius:6px;color:#10b981">LIVE</span>
                     @elseif($isComplete)
@@ -206,29 +206,29 @@
 
 <div class="ramka">
             <h2 class="-mt-05">🤖 Эффективность ботов</h2>
-            <div class="row row2">
+            <div class="row">
                 <div class="col-6 col-md-3">
                     <div class="card text-center">
-                        <div class="f-13" style="opacity:.6">Мероприятий с ботами</div>
-                        <div class="f-36 b-700">{{ $botEffect->occurrences_with_bots }}</div>
+                        <div>Мероприятий с ботами</div>
+                        <div style="font-size: 3rem" class="b-600 cd">{{ $botEffect->occurrences_with_bots }}</div>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="card text-center">
-                        <div class="f-13" style="opacity:.6">Без ботов</div>
-                        <div class="f-36 b-700">{{ $botEffect->occurrences_without_bots }}</div>
+                        <div>Без ботов</div>
+                        <div style="font-size: 3rem" class="b-600 cd">{{ $botEffect->occurrences_without_bots }}</div>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="card text-center">
-                        <div class="f-13" style="opacity:.6">Ср. записей с ботами</div>
-                        <div class="f-36 b-700 cd">{{ round($botEffect->avg_with_bots ?? 0, 1) }}</div>
+                        <div>Ср. записей с ботами</div>
+                        <div style="font-size: 3rem" class="b-600 cd">{{ round($botEffect->avg_with_bots ?? 0, 1) }}</div>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="card text-center">
-                        <div class="f-13" style="opacity:.6">Ср. записей без ботов</div>
-                        <div class="f-36 b-700">{{ round($botEffect->avg_without_bots ?? 0, 1) }}</div>
+                        <div>Ср. записей без ботов</div>
+                        <div style="font-size: 3rem" class="b-600 cd">{{ round($botEffect->avg_without_bots ?? 0, 1) }}</div>
                     </div>
                 </div>
             </div>
@@ -237,7 +237,7 @@
                 $withoutBots = round($botEffect->avg_without_bots ?? 0, 1);
                 $diff = $withBots - $withoutBots;
             @endphp
-            <div class="card mt-2 f-16">
+            <div class="alert alert-info mt-2">
                 @if($diff > 0)
                     🟢 Боты привлекают в среднем <strong>+{{ round($diff, 1) }}</strong> дополнительных записей на мероприятие
                 @elseif($diff < 0)
@@ -250,11 +250,12 @@
         @endif
 
         {{-- ТОП ИГРОКОВ --}}
-        <div class="ramka">
+    
             <div class="row row2">
                 <div class="col-md-6">
+				<div class="ramka">
                     <h2 class="-mt-05">🏆 Самые активные игроки</h2>
-                    <div class="card">
+                    
                         @forelse($topPlayers as $i => $player)
                         <div class="d-flex between fvc py-1 {{ $i > 0 ? 'border-top' : '' }}">
                             <div class="d-flex fvc gap-2">
@@ -265,20 +266,21 @@
                             </div>
                             <div class="text-right">
                                 <span class="f-16 b-600">{{ $player->visits }}</span>
-                                <span class="f-13" style="opacity:.5"> игр</span>
+                                <span style="opacity:.5"> игр</span>
                                 @if($player->visits_30d > 0)
                                 <span class="f-13 cs"> +{{ $player->visits_30d }} за 30д</span>
                                 @endif
                             </div>
                         </div>
                         @empty
-                        <div class="f-16" style="opacity:.5">Нет данных</div>
+                        <div>Нет данных</div>
                         @endforelse
                     </div>
                 </div>
                 <div class="col-md-6">
+				  <div class="ramka">
                     <h2 class="-mt-05">❌ Часто отменяют</h2>
-                    <div class="card">
+                  
                         @forelse($topCancellers as $i => $player)
                         <div class="d-flex between fvc py-1 {{ $i > 0 ? 'border-top' : '' }}">
                             <div class="d-flex fvc gap-2">
@@ -289,16 +291,16 @@
                             </div>
                             <div class="text-right">
                                 <span class="f-16 b-600 red">{{ $player->cancellations }}</span>
-                                <span class="f-13" style="opacity:.5"> отмен</span>
+                                <span> отмен</span>
                             </div>
                         </div>
                         @empty
-                        <div class="f-16" style="opacity:.5">Нет данных</div>
+                        <div>Нет данных</div>
                         @endforelse
                     </div>
                 </div>
             </div>
-        </div>
+  
 
 
         {{-- АБОНЕМЕНТЫ И КУПОНЫ --}}
@@ -308,25 +310,25 @@
             <div class="row row2">
                 <div class="col-6 col-md-3">
                     <div class="card text-center">
-                        <div class="f-13" style="opacity:.6">Всего выдано</div>
+                        <div>Всего выдано</div>
                         <div class="f-32 b-700">{{ $subStats->total }}</div>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="card text-center">
-                        <div class="f-13" style="opacity:.6">{{ __('profile.dash_org_active_events') }}</div>
+                        <div>{{ __('profile.dash_org_active_events') }}</div>
                         <div class="f-32 b-700 cs">{{ $subStats->active }}</div>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="card text-center">
-                        <div class="f-13" style="opacity:.6">Посещений использовано</div>
+                        <div>Посещений использовано</div>
                         <div class="f-32 b-700 cd">{{ $subStats->total_visits_used ?? 0 }}</div>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="card text-center">
-                        <div class="f-13" style="opacity:.6">Доход (оплаченные)</div>
+                        <div>Доход (оплаченные)</div>
                         <div class="f-32 b-700">{{ number_format(($subRevenue ?? 0)/100, 0) }} ₽</div>
                     </div>
                 </div>
@@ -365,25 +367,25 @@
             <div class="row row2">
                 <div class="col-6 col-md-3">
                     <div class="card text-center">
-                        <div class="f-13" style="opacity:.6">Всего выдано</div>
+                        <div>Всего выдано</div>
                         <div class="f-32 b-700">{{ $couponStats->total }}</div>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="card text-center">
-                        <div class="f-13" style="opacity:.6">{{ __('profile.dash_org_active_events') }}</div>
+                        <div>{{ __('profile.dash_org_active_events') }}</div>
                         <div class="f-32 b-700 cs">{{ $couponStats->active }}</div>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="card text-center">
-                        <div class="f-13" style="opacity:.6">Использовано</div>
+                        <div>Использовано</div>
                         <div class="f-32 b-700 cd">{{ $couponStats->used }}</div>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="card text-center">
-                        <div class="f-13" style="opacity:.6">Всего применений</div>
+                        <div>Всего применений</div>
                         <div class="f-32 b-700">{{ $couponStats->total_uses ?? 0 }}</div>
                     </div>
                 </div>
