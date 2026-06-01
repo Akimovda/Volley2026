@@ -652,13 +652,14 @@ class EventRegistrationsManagementController extends Controller
         $row = DB::table('event_registrations')
             ->where('id', $registration)
             ->where('event_id', (int) $event->id)
-            ->first(['id', 'user_id', 'group_key', 'cancelled_at', 'occurrence_id', 'position']);
+            ->first(['id', 'user_id', 'group_key', 'cancelled_at', 'is_cancelled', 'status', 'occurrence_id', 'position']);
 
         if (!$row) {
             return back()->with('error', 'Регистрация не найдена.');
         }
 
-        $isCancelled = !empty($row->cancelled_at);
+        // Проверяем все три поля — если хоть одно говорит «отменена», считаем отменённой
+        $isCancelled = !empty($row->cancelled_at) || !empty($row->is_cancelled) || $row->status === 'cancelled';
 
         if (!$isCancelled && !empty($row->group_key)) {
             try {
