@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\DB;
  *
  * Что делает:
  * - НЕ блокирует админку (и вообще ничего кроме join)
- * - Блокирует ТОЛЬКО запись на мероприятие (events.join),
+ * - Блокирует запись на мероприятие (events.join и occurrences.join),
  *   если event_id входит в активный запрет пользователя.
  * - Отмену записи (events.leave) НЕ блокируем (пусть может выйти).
  */
@@ -30,23 +30,36 @@ class EnsureUserNotRestricted
         }
 
         // -----------------------------
-        // 1) Блокируем ТОЛЬКО join
+        // 1) Блокируем ТОЛЬКО join (legacy events.join и новый occurrences.join)
         // -----------------------------
         $routeName = (string) ($request->route()?->getName() ?? '');
-        if ($routeName !== 'events.join') {
+        if (!in_array($routeName, ['events.join', 'occurrences.join'], true)) {
             return $next($request);
         }
 
         // -----------------------------
         // 2) Достаем event_id из route model binding
+        //    events.join: параметр 'event'
+        //    occurrences.join: параметр 'occurrence' → берём event_id из него
         // -----------------------------
-        $eventParam = $request->route('event'); // может быть Event-модель или id
         $eventId = null;
 
-        if (is_object($eventParam) && isset($eventParam->id)) {
-            $eventId = (int) $eventParam->id;
-        } elseif (is_numeric($eventParam)) {
-            $eventId = (int) $eventParam;
+        if ($routeName === 'occurrences.join') {
+            $occurrenceParam = $request->route('occurrence');
+            if (is_object($occurrenceParam) && isset($occurrenceParam->event_id)) {
+                $eventId = (int) $occurrenceParam->event_id;
+            } elseif (is_numeric($occurrenceParam)) {
+                $eventId = (int) DB::table('event_occurrences')
+                    ->where('id', (int) $occurrenceParam)
+                    ->value('event_id');
+            }
+        } else {
+            $eventParam = $request->route('event');
+            if (is_object($eventParam) && isset($eventParam->id)) {
+                $eventId = (int) $eventParam->id;
+            } elseif (is_numeric($eventParam)) {
+                $eventId = (int) $eventParam;
+            }
         }
 
         if (!$eventId) {
