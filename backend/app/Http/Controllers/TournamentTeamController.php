@@ -8,6 +8,7 @@ use App\Models\EventTeamMember;
 use App\Models\EventOccurrence;
 use App\Services\TournamentTeamService;
 use App\Services\TournamentTeamDistributionService;
+use App\Models\EventTournamentSetting;
 use App\Services\WaitlistService;
 use DomainException;
 use Illuminate\Http\RedirectResponse;
@@ -505,10 +506,11 @@ class TournamentTeamController extends Controller
 
         $addToWaitlist = $request->boolean('add_to_waitlist');
         $occurrenceId  = $team->occurrence_id ? (int) $team->occurrence_id : null;
+        $teamKind      = $team->team_kind;
 
-        // Запоминаем позицию участника до удаления
+        // Запоминаем позицию участника до удаления (для classic_team waitlist)
         $memberPositionCode = null;
-        if ($addToWaitlist && $occurrenceId) {
+        if ($addToWaitlist && $occurrenceId && $teamKind !== 'beach_pair') {
             $member = $team->members()->where('user_id', $user->id)->first();
             $memberPositionCode = $member?->position_code ?: null;
         }
@@ -520,14 +522,38 @@ class TournamentTeamController extends Controller
             $successMsg = 'Вы покинули команду.';
 
             if ($addToWaitlist && $occurrenceId) {
-                $occurrence = EventOccurrence::find($occurrenceId);
-                if ($occurrence) {
-                    $positions = $memberPositionCode ? [$memberPositionCode] : [];
+                if ($teamKind === 'beach_pair') {
+                    // Для пляжного турнира: создаём новую пару с игроком как капитаном
                     try {
-                        $waitlistService->join($occurrence, $user, $positions);
-                        $successMsg .= ' Вы добавлены в лист ожидания.';
+                        $settings   = EventTournamentSetting::where('event_id', $event->id)->first();
+                        $autoApprove = ($settings?->application_mode ?? 'manual') === 'auto';
+                        $teamName   = trim(($user->last_name ?? '') . ' ' . ($user->first_name ? mb_substr($user->first_name, 0, 1) . '.' : ''));
+                        if ($teamName === '' || $teamName === '.') {
+                            $teamName = $user->name ?? 'Новая пара';
+                        }
+                        $newTeam = $service->createTeam(
+                            event: $event,
+                            captain: $user,
+                            name: $teamName,
+                            occurrenceId: $occurrenceId,
+                            teamKind: 'beach_pair',
+                            autoApprove: $autoApprove,
+                        );
+                        $successMsg .= ' Создана новая пара — ищите партнёра.';
                     } catch (\Exception $e) {
-                        $successMsg .= ' Не удалось добавить в лист ожидания: ' . $e->getMessage();
+                        $successMsg .= ' Не удалось создать пару: ' . $e->getMessage();
+                    }
+                } else {
+                    // Для обычного мероприятия: occurrence_waitlist
+                    $occurrence = EventOccurrence::find($occurrenceId);
+                    if ($occurrence) {
+                        $positions = $memberPositionCode ? [$memberPositionCode] : [];
+                        try {
+                            $waitlistService->join($occurrence, $user, $positions);
+                            $successMsg .= ' Вы добавлены в лист ожидания.';
+                        } catch (\Exception $e) {
+                            $successMsg .= ' Не удалось добавить в лист ожидания: ' . $e->getMessage();
+                        }
                     }
                 }
             }
