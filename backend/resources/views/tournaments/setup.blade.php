@@ -757,11 +757,17 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 						@endif
 						<div class="mt-1 d-flex between fvc">
 							<div class="mt-05 cd b-600">{{ __('tournaments.setup_team_persons', ['n' => $members->count()]) }}</div>
-							<form method="POST" action="{{ route('tournamentTeams.destroy', [$event, $team]) }}" class="mt-1">
-								@csrf @method('DELETE')
-								<button type="submit" class="icon-delete btn-alert btn btn-danger btn-svg" data-title="{{ __('tournaments.setup_team_delete_title', ['name' => $team->name]) }}" data-icon="warning" data-confirm-text="{{ __('tournaments.btn_delete') }}" data-cancel-text="{{ __('tournaments.btn_cancel') }}">
-								</button>
-							</form>
+							<div style="display:flex;gap:4px;align-items:center">
+								<form method="POST" action="{{ route('tournamentTeams.sendToWaitlist', [$event, $team]) }}" class="mt-1">
+									@csrf
+									<button type="submit" class="btn btn-secondary btn-small btn-alert" data-title="Переместить «{{ $team->name }}» в список ожидания?" data-icon="warning" data-confirm-text="Переместить" data-cancel-text="{{ __('tournaments.btn_cancel') }}" title="Вернуть в лист ожидания">⏳</button>
+								</form>
+								<form method="POST" action="{{ route('tournamentTeams.destroy', [$event, $team]) }}" class="mt-1">
+									@csrf @method('DELETE')
+									<button type="submit" class="icon-delete btn-alert btn btn-danger btn-svg" data-title="{{ __('tournaments.setup_team_delete_title', ['name' => $team->name]) }}" data-icon="warning" data-confirm-text="{{ __('tournaments.btn_delete') }}" data-cancel-text="{{ __('tournaments.btn_cancel') }}">
+									</button>
+								</form>
+							</div>
 						</div>
 					</div>
 				</div>
@@ -1426,7 +1432,7 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 										<td>
 											<div class="b-600 cd">{{ $standing->team->name ?? '—' }}@if($isOutsider) <span class="f-16">{{ __('tournaments.setup_outsider_label') }}</span>@endif</div>
 											@if($standing->team && $standing->team->members->count())
-											<div class="f-16">{{ $standing->team->members->map(fn($m) => $m->user->last_name ?? '?')->implode(' / ') }}</div>
+											<div class="f-16">{{ $standing->team->members->map(fn($m) => trim(($m->user->last_name ?? '') . ' ' . ($m->user->first_name ?? '')) ?: '?')->implode(' / ') }}</div>
 											@endif
 										</td>
 										<td style="text-align:center"><span class="b-600 alert-info pt-05 pb-05 p-1">{{ $standing->played }}</span></td>
