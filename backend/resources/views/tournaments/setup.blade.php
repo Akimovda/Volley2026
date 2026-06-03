@@ -312,6 +312,7 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 			$_tourStarted = $selectedOccurrence && now('UTC')->gte($selectedOccurrence->starts_at);
 			@endphp
 
+			@php $hasStages = $stages->isNotEmpty(); @endphp
 			{{-- Состав лиги --}}
 			@if($leagueTeams->count())
 			@php
@@ -320,7 +321,7 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 				                             ->sortBy('reserve_position');
 			@endphp
 			<div class="">
-				<h2 class="-mt-05">
+				<h2 class="-mt-05" style="cursor:pointer;user-select:none" onclick="var b=document.getElementById('league-teams-body');b.style.display=b.style.display==='none'?'':'none';this.querySelector('.toggle-icon').textContent=b.style.display==='none'?'▶':'▼'">
 					{{ __('tournaments.setup_series_lineup') }}
 					<span class="cd">
 						— {{ $_activeTeams->count() }} {{ __('tournaments.setup_series_active') }}
@@ -328,7 +329,9 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 						/ {{ $_reserveTeams->count() }} {{ __('tournaments.setup_series_reserve') }} ({{ __('tournaments.setup_series_waitlist_h2') }})
 						@endif
 					</span>
+					<span class="toggle-icon" style="margin-left:8px;font-size:14px">{{ $hasStages ? '▶' : '▼' }}</span>
 				</h2>
+				<div id="league-teams-body" style="{{ $hasStages ? 'display:none' : '' }}">
 
 				{{-- ===== ОСНОВНОЙ СОСТАВ ===== --}}
 				<div class="table-scrollable">
@@ -591,6 +594,7 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 					</button>
 				</form>
 				@endif
+				</div>{{-- /league-teams-body --}}
 			</div>
 		</div>
 		@endif
@@ -733,7 +737,8 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 				$completeTeams   = $teams->filter(fn($t) => $t->is_complete);
 				$incompleteTeams = $teams->filter(fn($t) => !$t->is_complete);
 			@endphp
-			<h2 class="-mt-05">{{ __('tournaments.setup_teams_h2', ['n' => $completeTeams->count()]) }}</h2>
+			<h2 class="-mt-05" style="cursor:pointer;user-select:none" onclick="var b=document.getElementById('teams-body');b.style.display=b.style.display==='none'?'':'none';this.querySelector('.toggle-icon').textContent=b.style.display==='none'?'▶':'▼'">{{ __('tournaments.setup_teams_h2', ['n' => $completeTeams->count()]) }} <span class="toggle-icon" style="font-size:14px">{{ $hasStages ? '▶' : '▼' }}</span></h2>
+			<div id="teams-body" style="{{ $hasStages ? 'display:none' : '' }}">
 			@if($completeTeams->isEmpty())
 			<div class="alert alert-info">{{ __('tournaments.setup_teams_empty') }}</div>
 			@else
@@ -839,6 +844,7 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 			</div>		
 			
 			
+			</div>{{-- /teams-body --}}
 		</div>
 		
 		
