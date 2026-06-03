@@ -53,7 +53,7 @@ $rankNumerals = [1=>'I', 2=>'II', 3=>'III', 4=>'IV', 5=>'V', 6=>'VI', 7=>'VII', 
                 <td class="p-1">
                     <div class="b-600 cd">{{ $standing?->team?->name ?? '—' }}@if($isOutsider) <span class="f-12" style="font-weight:400"> · аут.</span>@endif</div>
                     @if($standing?->team?->members?->count())
-                    <div class="f-12" style="color:#6b7280">{{ $standing->team->members->map(fn($m) => $m->user->last_name ?? '?')->implode(' / ') }}</div>
+                    <div class="f-12" style="color:#6b7280">{{ $standing->team->members->map(fn($m) => trim(($m->user->last_name ?? '') . ' ' . ($m->user->first_name ?? '')) ?: '?')->implode(' / ') }}</div>
                     @endif
                 </td>
                 @foreach($teamIds as $colIdx => $oppId)

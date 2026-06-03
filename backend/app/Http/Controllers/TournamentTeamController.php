@@ -328,6 +328,88 @@ class TournamentTeamController extends Controller
             ->with('success', "Команда удалена.");
     }
 
+    /**
+     * Организатор переводит команду в лист ожидания.
+     * beach_pair: расформировать + создать соло-пары для каждого участника (→ «Ищут партнёра»).
+     * classic_team: расформировать + добавить участников в occurrence_waitlist.
+     */
+    public function sendTeamToWaitlist(
+        Request $request,
+        Event $event,
+        EventTeam $team,
+        TournamentTeamService $service,
+        WaitlistService $waitlistService
+    ): RedirectResponse {
+        abort_unless((int) $team->event_id === (int) $event->id, 404);
+        $user = $request->user();
+        $isOrganizer = (int) $event->organizer_id === (int) $user->id || $user->isAdmin();
+        abort_unless($isOrganizer, 403);
+
+        $occurrenceId = $team->occurrence_id ? (int) $team->occurrence_id : null;
+        $teamKind     = $team->team_kind;
+        $teamName     = $team->name;
+
+        $members = $team->members()->with('user')
+            ->where('confirmation_status', 'confirmed')
+            ->get();
+
+        \App\Models\EventTeamApplication::where('event_team_id', $team->id)->delete();
+        \App\Models\EventTeamInvite::where('event_team_id', $team->id)->delete();
+        $team->members()->delete();
+        $team->delete();
+
+        $errors = [];
+
+        if ($teamKind === 'beach_pair') {
+            $settings    = EventTournamentSetting::where('event_id', $event->id)->first();
+            $autoApprove = ($settings?->application_mode ?? 'manual') === 'auto';
+            foreach ($members as $m) {
+                $mu       = $m->user;
+                $soloName = trim(($mu->last_name ?? '') . ' ' . ($mu->first_name ? mb_substr($mu->first_name, 0, 1) . '.' : ''));
+                if ($soloName === '' || $soloName === '.') {
+                    $soloName = $mu->name ?? 'Новая пара';
+                }
+                try {
+                    $service->createTeam(
+                        event: $event,
+                        captain: $mu,
+                        name: $soloName,
+                        occurrenceId: $occurrenceId,
+                        teamKind: 'beach_pair',
+                        autoApprove: $autoApprove,
+                    );
+                } catch (\Exception $e) {
+                    $errors[] = $e->getMessage();
+                }
+            }
+        } else {
+            $occurrence = $occurrenceId ? EventOccurrence::find($occurrenceId) : null;
+            if ($occurrence) {
+                foreach ($members as $m) {
+                    $positions = $m->position_code ? [$m->position_code] : [];
+                    try {
+                        $waitlistService->join($occurrence, $m->user, $positions);
+                    } catch (\Exception $e) {
+                        $errors[] = $e->getMessage();
+                    }
+                }
+            }
+        }
+
+        $this->dispatchAnnounceRefresh($event, $occurrenceId);
+
+        $msg = "Команда «{$teamName}» перемещена в список ожидания.";
+        if ($errors) {
+            $msg .= ' Ошибки: ' . implode('; ', $errors);
+        }
+
+        $redirectUrl = route('tournament.setup', $event);
+        if ($occurrenceId) {
+            $redirectUrl .= '?occurrence_id=' . $occurrenceId;
+        }
+        return redirect($redirectUrl)->with('success', $msg);
+    }
+
 
     /**
      * Игрок отправляет запрос на вступление в пару с вакантным местом.
