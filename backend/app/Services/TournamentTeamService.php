@@ -1263,9 +1263,10 @@ final class TournamentTeamService
             }
         }
 
-        // Не должен быть в другой активной команде на это мероприятие
+        // Не должен быть в другой активной команде на этот конкретный тур
         $alreadyInTeam = EventTeamMember::whereHas('team', function ($q) use ($team) {
             $q->where('event_id', $team->event_id)
+              ->where('occurrence_id', $team->occurrence_id)
               ->where('id', '!=', $team->id)
               ->whereIn('status', ['ready', 'pending_members', 'submitted', 'confirmed', 'approved']);
         })
