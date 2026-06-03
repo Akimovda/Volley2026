@@ -95,7 +95,7 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 
 	<x-slot name="breadcrumbs">
 		<li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
-			<a href="{{ route('events.show', $event) }}" itemprop="item"><span itemprop="name">{{ $event->title }}</span></a>
+			<a href="{{ route('events.show', $event) }}{{ $selectedOccurrence ? '?occurrence=' . $selectedOccurrence->id : '' }}" itemprop="item"><span itemprop="name">{{ $event->title }}</span></a>
 			<meta itemprop="position" content="2">
 		</li>
 		<li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
