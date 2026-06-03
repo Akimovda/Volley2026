@@ -1628,13 +1628,13 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 											<td>
 												<div class="{{ $match->winner_team_id === $match->team_home_id ? 'cd b-600' : '' }}">{{ $match->teamHome->name ?? 'TBD' }}</div>
 												@if($match->teamHome && $match->teamHome->members->count())
-												<div class="f-13">{{ $match->teamHome->members->map(fn($m) => $m->user->last_name ?? '?')->implode(' / ') }}</div>
+												<div class="f-13">{{ $match->teamHome->members->map(fn($m) => trim(($m->user->last_name ?? '') . ' ' . ($m->user->first_name ?? '')) ?: '?')->implode(' / ') }}</div>
 												@endif
 											</td>
 											<td>
 												<div class="{{ $match->winner_team_id === $match->team_away_id ? 'cd b-600' : '' }}">{{ $match->teamAway->name ?? 'TBD' }}</div>
 												@if($match->teamAway && $match->teamAway->members->count())
-												<div class="f-13">{{ $match->teamAway->members->map(fn($m) => $m->user->last_name ?? '?')->implode(' / ') }}</div>
+												<div class="f-13">{{ $match->teamAway->members->map(fn($m) => trim(($m->user->last_name ?? '') . ' ' . ($m->user->first_name ?? '')) ?: '?')->implode(' / ') }}</div>
 												@endif
 											</td>
 											<td style="text-align:center">{{ $match->setsScore() ?? '—' }}</td>
