@@ -62,8 +62,8 @@
                             class="{{ $effectiveBot ? 'occ-bot-toggle btn-danger btn btn-svg icon-stop' : 'occ-bot-toggle btn-success btn btn-svg icon-play' }}">
                         </button>
                         @endif
-                        @if($event->format === 'tournament' && !$event->is_recurring)
-                        <a href="{{ route('tournament.setup', $event) }}"
+                        @if($event->format === 'tournament')
+                        <a href="{{ route('tournament.setup', $event) }}{{ $event->is_recurring ? '?occurrence_id=' . (int)$occ->id : '' }}"
                             class="btn btn-small btn-secondary"
                             title="{{ __('events.occ_tournament_btn') }}">🏆</a>
                         @else
