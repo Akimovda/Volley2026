@@ -729,12 +729,16 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 		Команды
 		============================================================ --}}
 		<div class="ramka">
-			<h2 class="-mt-05">{{ __('tournaments.setup_teams_h2', ['n' => $teams->count()]) }}</h2>
-			@if($teams->isEmpty())
+			@php
+				$completeTeams   = $teams->filter(fn($t) => $t->is_complete);
+				$incompleteTeams = $teams->filter(fn($t) => !$t->is_complete);
+			@endphp
+			<h2 class="-mt-05">{{ __('tournaments.setup_teams_h2', ['n' => $completeTeams->count()]) }}</h2>
+			@if($completeTeams->isEmpty())
 			<div class="alert alert-info">{{ __('tournaments.setup_teams_empty') }}</div>
 			@else
 			<div class="row">
-				@foreach($teams as $team)
+				@foreach($completeTeams as $team)
 				<div class="col-md-6 col-xl-3">
 					<div class="card">
 						<a href="{{ route('tournamentTeams.show', [$event, $team]) }}" class="blink b-600 d-block mb-1">
@@ -753,6 +757,33 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 						@endif
 						<div class="mt-1 d-flex between fvc">
 							<div class="mt-05 cd b-600">{{ __('tournaments.setup_team_persons', ['n' => $members->count()]) }}</div>
+							<form method="POST" action="{{ route('tournamentTeams.destroy', [$event, $team]) }}" class="mt-1">
+								@csrf @method('DELETE')
+								<button type="submit" class="icon-delete btn-alert btn btn-danger btn-svg" data-title="{{ __('tournaments.setup_team_delete_title', ['name' => $team->name]) }}" data-icon="warning" data-confirm-text="{{ __('tournaments.btn_delete') }}" data-cancel-text="{{ __('tournaments.btn_cancel') }}">
+								</button>
+							</form>
+						</div>
+					</div>
+				</div>
+				@endforeach
+			</div>
+			@endif
+
+			@if($incompleteTeams->isNotEmpty())
+			<h3 class="mt-2 mb-05">⏳ Ищут партнёра ({{ $incompleteTeams->count() }})</h3>
+			<div class="row">
+				@foreach($incompleteTeams as $team)
+				<div class="col-md-6 col-xl-3">
+					<div class="card" style="opacity:.8;border-style:dashed">
+						<a href="{{ route('tournamentTeams.show', [$event, $team]) }}" class="blink b-600 d-block mb-1">
+							{{ $team->name }}
+						</a>
+						@php $members = $team->members->load('user'); @endphp
+						@foreach($members as $m)
+						<div>{{ trim(($m->user->last_name ?? '') . ' ' . ($m->user->first_name ?? '')) ?: $m->user->name ?? '?' }}</div>
+						@endforeach
+						<div class="mt-1 d-flex between fvc">
+							<div class="mt-05 cd b-600" style="color:#92400e">Ищет партнёра</div>
 							<form method="POST" action="{{ route('tournamentTeams.destroy', [$event, $team]) }}" class="mt-1">
 								@csrf @method('DELETE')
 								<button type="submit" class="icon-delete btn-alert btn btn-danger btn-svg" data-title="{{ __('tournaments.setup_team_delete_title', ['name' => $team->name]) }}" data-icon="warning" data-confirm-text="{{ __('tournaments.btn_delete') }}" data-cancel-text="{{ __('tournaments.btn_cancel') }}">
