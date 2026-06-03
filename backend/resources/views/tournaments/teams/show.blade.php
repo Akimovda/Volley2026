@@ -392,6 +392,16 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
                     <div class="b-600 f-16" style="color:{{ $appStColor[$appSt] ?? '#333' }}">{{ $appStLabels[$appSt] ?? $appSt }}</div>
                 </div>
             </div>
+        @elseif(in_array($team->status, ['approved', 'submitted'], true))
+            {{-- Команда принята/подана автоматически (autoApprove или подтверждение резерва) без явной заявки --}}
+            @php $autoSt = $team->status === 'approved' ? 'approved' : 'pending'; @endphp
+            <div class="d-flex fvc" style="gap:.6rem;margin-bottom:.75rem;padding:.6rem .9rem;border-radius:8px;background:{{ $appStBg[$autoSt] }}">
+                <span style="font-size:1.1rem">{{ $appStIcon[$autoSt] }}</span>
+                <div>
+                    <span class="f-16">Статус заявки</span>
+                    <div class="b-600 f-16" style="color:{{ $appStColor[$autoSt] }}">{{ $appStLabels[$autoSt] }}</div>
+                </div>
+            </div>
 
             @if($canManage && in_array($appSt, ['incomplete','pending'], true))
                 <form method="POST" action="{{ route('tournamentTeams.revokeApplication',[$event,$team]) }}"
