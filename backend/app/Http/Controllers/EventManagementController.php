@@ -961,6 +961,43 @@ if ($role === 'admin') {
                         'is_snow' => $event->is_snow ?? null,
                     ]
                 );
+
+                // Для повторяющихся серий: обновить все ещё не начавшиеся occurrences
+                // (starts_at > now). Архивные (прошедшие) не трогаем.
+                if ((bool) ($event->is_recurring ?? false)) {
+                    $futureOccs = EventOccurrence::query()
+                        ->where('event_id', (int) $event->id)
+                        ->where('starts_at', '>', $nowUtc)
+                        ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
+                        ->get();
+
+                    foreach ($futureOccs as $occ) {
+                        $occStart = Carbon::parse($occ->starts_at, 'UTC');
+                        $occ->duration_sec       = $event->duration_sec;
+                        $occ->timezone           = $event->timezone ?: 'UTC';
+                        $occ->location_id        = $event->location_id ?? null;
+                        $occ->allow_registration = $event->allow_registration ?? null;
+                        $occ->max_players        = $event->gameSettings?->max_players ?? null;
+                        $occ->age_policy         = $event->age_policy ?? null;
+                        $occ->is_snow            = $event->is_snow ?? null;
+
+                        if ($allowReg) {
+                            $occ->registration_starts_at     = $occStart->copy()->subDays($daysBefore)->subHours($hoursBefore);
+                            $occ->registration_ends_at       = $occStart->copy()->subMinutes($endsMinBefore);
+                            $occ->cancel_self_until          = $occStart->copy()->subMinutes($cancelMinBefore);
+                            $occ->cancel_self_until_waitlist = $cancelWaitlistMinBefore !== null
+                                ? $occStart->copy()->subMinutes($cancelWaitlistMinBefore)
+                                : null;
+                        } else {
+                            $occ->registration_starts_at     = null;
+                            $occ->registration_ends_at       = null;
+                            $occ->cancel_self_until          = null;
+                            $occ->cancel_self_until_waitlist = null;
+                        }
+
+                        $occ->save();
+                    }
+                }
             }
         });
 
