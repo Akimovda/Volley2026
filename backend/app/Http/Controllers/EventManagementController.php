@@ -982,11 +982,18 @@ if ($role === 'admin') {
                         $occ->is_snow            = $event->is_snow ?? null;
 
                         if ($allowReg) {
-                            $occ->registration_starts_at     = $occStart->copy()->subDays($daysBefore)->subHours($hoursBefore);
-                            $occ->registration_ends_at       = $occStart->copy()->subMinutes($endsMinBefore);
-                            $occ->cancel_self_until          = $occStart->copy()->subMinutes($cancelMinBefore);
-                            $occ->cancel_self_until_waitlist = $cancelWaitlistMinBefore !== null
+                            $occ->registration_starts_at = $occStart->copy()->subDays($daysBefore)->subHours($hoursBefore);
+                            $occ->registration_ends_at   = $occStart->copy()->subMinutes($endsMinBefore);
+
+                            // Если рассчитанный дедлайн отмены уже в прошлом — не блокируем выход
+                            $cancelUntil = $occStart->copy()->subMinutes($cancelMinBefore);
+                            $occ->cancel_self_until = $cancelUntil->greaterThan($nowUtc) ? $cancelUntil : null;
+
+                            $cancelWlUntil = $cancelWaitlistMinBefore !== null
                                 ? $occStart->copy()->subMinutes($cancelWaitlistMinBefore)
+                                : null;
+                            $occ->cancel_self_until_waitlist = ($cancelWlUntil && $cancelWlUntil->greaterThan($nowUtc))
+                                ? $cancelWlUntil
                                 : null;
                         } else {
                             $occ->registration_starts_at     = null;
