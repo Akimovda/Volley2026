@@ -520,6 +520,7 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 			<div class="alert alert-info">{{ __('tournaments.setup_no_teams_in_league') }}</div>
 			@endif
 
+			@if(!$hasStages)
 			{{-- Добавить команду вручную в дивизион --}}
 			<div class="mt-1">
 				<details id="add-to-league-details">
@@ -594,7 +595,8 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 					</button>
 				</form>
 				@endif
-				</div>{{-- /league-teams-body --}}
+				</div>
+			@endif
 			</div>
 		</div>
 		@endif
