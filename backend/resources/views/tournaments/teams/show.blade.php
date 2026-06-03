@@ -628,18 +628,47 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
                 @endphp
 
                 @if($isMember && !$isCaptainSelf)
-                    <form method="POST" action="{{ route('tournamentTeams.leave', [$event, $team]) }}" class="mt-1">
-                        @csrf
-                        <button type="submit" class="btn btn-secondary btn-alert w-100"
-                                data-title="Покинуть команду {{ $team->name }}?"
-                                data-text="Вы будете удалены из состава. Если оплата была произведена — средства вернутся на ваш внутренний счёт."
-                                data-icon="warning"
-                                data-confirm-text="Да, покинуть"
-                                data-cancel-text="Отмена"
-                                style="color:#dc2626">
-                            🚪 Покинуть команду
-                        </button>
-                    </form>
+                    <button type="button" class="btn btn-secondary w-100 mt-1"
+                            onclick="document.getElementById('leave-team-modal').style.display='flex'"
+                            style="color:#dc2626">
+                        🚪 Покинуть команду
+                    </button>
+
+                    {{-- Модальное окно выхода из команды --}}
+                    <div id="leave-team-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.5);align-items:center;justify-content:center;padding:1rem">
+                        <div style="background:var(--bg,#fff);border-radius:12px;max-width:420px;width:100%;padding:1.5rem;box-shadow:0 8px 32px rgba(0,0,0,.18)">
+                            <div class="b-600 f-18 mb-1">🚪 Покинуть команду?</div>
+                            <div class="f-16 mb-2" style="color:var(--text2,#555)">
+                                Вы будете удалены из состава «{{ $team->name }}».
+                                @if($team->occurrence_id)
+                                    Хотите встать в лист ожидания на это мероприятие?
+                                @endif
+                            </div>
+
+                            <div class="d-flex flex-column gap-1">
+                                @if($team->occurrence_id)
+                                    <form method="POST" action="{{ route('tournamentTeams.leave', [$event, $team]) }}">
+                                        @csrf
+                                        <input type="hidden" name="add_to_waitlist" value="1">
+                                        <button type="submit" class="btn w-100">
+                                            Покинуть и встать в лист ожидания
+                                        </button>
+                                    </form>
+                                @endif
+                                <form method="POST" action="{{ route('tournamentTeams.leave', [$event, $team]) }}">
+                                    @csrf
+                                    <input type="hidden" name="add_to_waitlist" value="0">
+                                    <button type="submit" class="btn btn-secondary w-100" style="color:#dc2626">
+                                        Покинуть без добавления в очередь
+                                    </button>
+                                </form>
+                                <button type="button" class="btn btn-secondary w-100"
+                                        onclick="document.getElementById('leave-team-modal').style.display='none'">
+                                    Отмена
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 @endif
 
                 @if($isCaptainSelf || $isOrganizer)

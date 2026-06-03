@@ -8,6 +8,7 @@ use App\Models\EventTeamMember;
 use App\Models\EventOccurrence;
 use App\Services\TournamentTeamService;
 use App\Services\TournamentTeamDistributionService;
+use App\Services\WaitlistService;
 use DomainException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -494,21 +495,46 @@ class TournamentTeamController extends Controller
         Request $request,
         Event $event,
         EventTeam $team,
-        TournamentTeamService $service
+        TournamentTeamService $service,
+        WaitlistService $waitlistService
     ): RedirectResponse {
         abort_unless((int) $team->event_id === (int) $event->id, 404);
 
         $user = $request->user();
         abort_unless($user, 403);
 
+        $addToWaitlist = $request->boolean('add_to_waitlist');
+        $occurrenceId  = $team->occurrence_id ? (int) $team->occurrence_id : null;
+
+        // Запоминаем позицию участника до удаления
+        $memberPositionCode = null;
+        if ($addToWaitlist && $occurrenceId) {
+            $member = $team->members()->where('user_id', $user->id)->first();
+            $memberPositionCode = $member?->position_code ?: null;
+        }
+
         try {
-            $occurrenceId = $team->occurrence_id ? (int) $team->occurrence_id : null;
             $service->leaveTeam($team, (int) $user->id);
             $this->dispatchAnnounceRefresh($event, $occurrenceId);
 
+            $successMsg = 'Вы покинули команду.';
+
+            if ($addToWaitlist && $occurrenceId) {
+                $occurrence = EventOccurrence::find($occurrenceId);
+                if ($occurrence) {
+                    $positions = $memberPositionCode ? [$memberPositionCode] : [];
+                    try {
+                        $waitlistService->join($occurrence, $user, $positions);
+                        $successMsg .= ' Вы добавлены в лист ожидания.';
+                    } catch (\Exception $e) {
+                        $successMsg .= ' Не удалось добавить в лист ожидания: ' . $e->getMessage();
+                    }
+                }
+            }
+
             return redirect()
                 ->route('events.show', $event)
-                ->with('success', 'Вы покинули команду.');
+                ->with('success', $successMsg);
         } catch (DomainException $e) {
             return back()->withErrors(['leave' => $e->getMessage()]);
         }
