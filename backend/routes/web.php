@@ -369,6 +369,9 @@ Route::post('/auth/tma-exchange', [TmaAuthController::class, 'exchange'])->name(
     Route::delete('/events/{event}/teams/{team}', [TournamentTeamController::class, 'destroy'])
         ->name('tournamentTeams.destroy');
 
+    Route::post('/events/{event}/teams/{team}/transfer-captain', [TournamentTeamController::class, 'transferCaptain'])
+        ->name('tournamentTeams.transferCaptain');
+
     Route::post('/events/{event}/teams/{team}/leave', [TournamentTeamController::class, 'leaveTeam'])
         ->name('tournamentTeams.leave');
 

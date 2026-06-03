@@ -1154,6 +1154,62 @@ final class TournamentTeamService
     }
 
     /**
+     * Капитан вручную передаёт капитанство подтверждённому участнику команды.
+     */
+    public function transferCaptain(EventTeam $team, int $newCaptainUserId, int $performedByUserId): void
+    {
+        if ((int) $team->captain_user_id !== $performedByUserId) {
+            throw new DomainException('Передать капитанство может только текущий капитан.');
+        }
+
+        if ($newCaptainUserId === $performedByUserId) {
+            throw new DomainException('Вы уже являетесь капитаном.');
+        }
+
+        $newCaptainMember = $team->members()
+            ->where('user_id', $newCaptainUserId)
+            ->where('confirmation_status', 'confirmed')
+            ->first();
+
+        if (!$newCaptainMember) {
+            throw new DomainException('Игрок не найден в составе или не подтверждён.');
+        }
+
+        $oldCaptainMember = $team->members()
+            ->where('user_id', $performedByUserId)
+            ->first();
+
+        DB::transaction(function () use ($team, $newCaptainMember, $oldCaptainMember, $newCaptainUserId, $performedByUserId) {
+            $team->update(['captain_user_id' => $newCaptainUserId]);
+
+            $newCaptainMember->update([
+                'role_code' => 'captain',
+                'team_role' => 'captain',
+            ]);
+
+            if ($oldCaptainMember) {
+                $oldCaptainMember->update([
+                    'role_code' => 'player',
+                    'team_role' => 'player',
+                ]);
+            }
+
+            $this->audit($team, 'captain_transferred', $newCaptainUserId, $performedByUserId, [], [
+                'reason' => 'manual_transfer',
+                'new_captain_user_id' => $newCaptainUserId,
+            ]);
+
+            $this->notifyUser(
+                userId: $newCaptainUserId,
+                type: 'team_captain_transferred',
+                title: 'Вы стали капитаном',
+                body: "Вам передано капитанство в команде «{$team->name}».",
+                payload: ['team_id' => $team->id, 'event_id' => $team->event_id],
+            );
+        });
+    }
+
+    /**
      * Запрос игрока на вступление в пару (beach_pair с вакантным местом).
      */
     public function joinRequest(EventTeam $team, User $user): EventTeamMember
