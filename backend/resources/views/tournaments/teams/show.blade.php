@@ -147,6 +147,14 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
                     </form>
                     @endif
                 @endif
+                @if($isCaptain && (int)$member->user_id !== (int)$team->captain_user_id && $member->confirmation_status === 'confirmed')
+                    <form method="POST" action="{{ route('tournamentTeams.transferCaptain',[$event,$team]) }}"
+                          onsubmit="return confirm('Передать капитанство игроку {{ addslashes($member->user->name ?? '') }}?')">
+                        @csrf
+                        <input type="hidden" name="new_captain_user_id" value="{{ $member->user_id }}">
+                        <button type="submit" class="btn btn-small btn-secondary" title="Передать капитанство">👑</button>
+                    </form>
+                @endif
                 @if(($isCaptain || $isOrganizer) && (int)$member->user_id !== (int)$team->captain_user_id)
                     <form method="POST" action="{{ route('tournamentTeams.members.destroy',[$event,$team,$member]) }}">
                         @csrf @method('DELETE')

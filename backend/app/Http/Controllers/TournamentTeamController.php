@@ -620,6 +620,27 @@ class TournamentTeamController extends Controller
     /**
      * Капитан расформировывает команду.
      */
+    public function transferCaptain(
+        Request $request,
+        Event $event,
+        EventTeam $team,
+        TournamentTeamService $service
+    ): RedirectResponse {
+        abort_unless((int) $team->event_id === (int) $event->id, 404);
+        abort_unless((int) $team->captain_user_id === (int) $request->user()->id, 403);
+
+        $data = $request->validate([
+            'new_captain_user_id' => ['required', 'integer', 'exists:users,id'],
+        ]);
+
+        try {
+            $service->transferCaptain($team, (int) $data['new_captain_user_id'], (int) $request->user()->id);
+            return back()->with('success', 'Капитанство передано.');
+        } catch (DomainException $e) {
+            return back()->withErrors(['transfer' => $e->getMessage()]);
+        }
+    }
+
     public function disbandTeam(
         Request $request,
         Event $event,
