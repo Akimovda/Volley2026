@@ -139,7 +139,7 @@
                         @php
                             $place = $i + 1;
                             $team = \App\Models\EventTeam::with('members.user')->find($c['team_id']);
-                            $members = $team ? $team->members->map(fn($m) => $m->user->last_name ?? '?')->implode(' / ') : '';
+                            $members = $team ? $team->members->map(fn($m) => trim(($m->user->last_name ?? '') . ' ' . ($m->user->first_name ?? '')) ?: '?')->implode(' / ') : '';
                         @endphp
                         <div class="tv-match" style="border-bottom:1px solid rgba(255,255,255,.05);padding:12px 0">
                             <div style="width:40px;font-size:22px;text-align:center">
@@ -163,7 +163,7 @@
                     @foreach($classification as $c)
                         @php
                             $team = \App\Models\EventTeam::with('members.user')->find($c['team_id']);
-                            $members = $team ? $team->members->map(fn($m) => $m->user->last_name ?? '?')->implode(' / ') : '';
+                            $members = $team ? $team->members->map(fn($m) => trim(($m->user->last_name ?? '') . ' ' . ($m->user->first_name ?? '')) ?: '?')->implode(' / ') : '';
                         @endphp
                         <div class="tv-match" style="border-bottom:1px solid rgba(255,255,255,.05);padding:12px 0">
                             <div style="width:40px;font-size:22px;text-align:center">
@@ -218,7 +218,7 @@
                                             <td>
                                                 <div>{{ $s->team->name ?? '—' }}</div>
                                                 @if($s->team && $s->team->members->count())
-                                                <div style="font-size:12px;opacity:.5">{{ $s->team->members->map(fn($mm) => $mm->user->last_name ?? '?')->implode(' / ') }}</div>
+                                                <div style="font-size:12px;opacity:.5">{{ $s->team->members->map(fn($mm) => trim(($mm->user->last_name ?? '') . ' ' . ($mm->user->first_name ?? '')) ?: '?')->implode(' / ') }}</div>
                                                 @endif
                                             </td>
                                             <td class="tc">{{ $s->played }}</td>
@@ -238,7 +238,7 @@
                                     <div class="team right {{ $m->winner_team_id === $m->team_home_id ? 'winner' : '' }}">
                                         {{ $m->teamHome->name ?? 'TBD' }}
                                         @if($m->teamHome && $m->teamHome->members->count())
-                                        <div style="font-size:11px;opacity:.4">{{ $m->teamHome->members->map(fn($mm) => $mm->user->last_name ?? '?')->implode(' / ') }}</div>
+                                        <div style="font-size:11px;opacity:.4">{{ $m->teamHome->members->map(fn($mm) => trim(($mm->user->last_name ?? '') . ' ' . ($mm->user->first_name ?? '')) ?: '?')->implode(' / ') }}</div>
                                         @endif
                                     </div>
                                     <div class="score">
@@ -254,7 +254,7 @@
                                     <div class="team {{ $m->winner_team_id === $m->team_away_id ? 'winner' : '' }}">
                                         {{ $m->teamAway->name ?? 'TBD' }}
                                         @if($m->teamAway && $m->teamAway->members->count())
-                                        <div style="font-size:11px;opacity:.4">{{ $m->teamAway->members->map(fn($mm) => $mm->user->last_name ?? '?')->implode(' / ') }}</div>
+                                        <div style="font-size:11px;opacity:.4">{{ $m->teamAway->members->map(fn($mm) => trim(($mm->user->last_name ?? '') . ' ' . ($mm->user->first_name ?? '')) ?: '?')->implode(' / ') }}</div>
                                         @endif
                                     </div>
                                 </div>
@@ -270,7 +270,7 @@
                             <div class="team right {{ $m->winner_team_id === $m->team_home_id ? 'winner' : '' }}">
                                 {{ $m->teamHome->name ?? 'TBD' }}
                                 @if($m->teamHome && $m->teamHome->members->count())
-                                <div style="font-size:11px;opacity:.4">{{ $m->teamHome->members->map(fn($mm) => $mm->user->last_name ?? '?')->implode(' / ') }}</div>
+                                <div style="font-size:11px;opacity:.4">{{ $m->teamHome->members->map(fn($mm) => trim(($mm->user->last_name ?? '') . ' ' . ($mm->user->first_name ?? '')) ?: '?')->implode(' / ') }}</div>
                                 @endif
                             </div>
                             <div class="score">
@@ -286,7 +286,7 @@
                             <div class="team {{ $m->winner_team_id === $m->team_away_id ? 'winner' : '' }}">
                                 {{ $m->teamAway->name ?? 'TBD' }}
                                 @if($m->teamAway && $m->teamAway->members->count())
-                                <div style="font-size:11px;opacity:.4">{{ $m->teamAway->members->map(fn($mm) => $mm->user->last_name ?? '?')->implode(' / ') }}</div>
+                                <div style="font-size:11px;opacity:.4">{{ $m->teamAway->members->map(fn($mm) => trim(($mm->user->last_name ?? '') . ' ' . ($mm->user->first_name ?? '')) ?: '?')->implode(' / ') }}</div>
                                 @endif
                             </div>
                         </div>
