@@ -1105,6 +1105,21 @@ final class TournamentTeamService
                 return;
             }
 
+            // Если у партнёра уже есть своя команда на этом турнире — расформировываем,
+            // иначе он окажется в двух командах одновременно
+            $partnerHasOtherTeam = EventTeam::query()
+                ->where('id', '!=', $team->id)
+                ->where('event_id', $team->event_id)
+                ->where('occurrence_id', $team->occurrence_id)
+                ->whereHas('members', fn ($q) => $q->where('user_id', $newCaptainMember->user_id))
+                ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
+                ->exists();
+
+            if ($partnerHasOtherTeam) {
+                $this->disbandTeam($team, $userId);
+                return;
+            }
+
             DB::transaction(function () use ($team, $member, $newCaptainMember, $event, $userId) {
                 $this->refundForMember($member, $event);
                 $member->delete();
