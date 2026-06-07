@@ -354,6 +354,8 @@ Route::post('/auth/tma-exchange', [TmaAuthController::class, 'exchange'])->name(
         ->name("events.occurrences.update");
     Route::post("/events/{event}/occurrences/{occurrence}/toggle-bot", [EventManagementController::class, "toggleBotOccurrence"])
         ->name("events.occurrences.toggle-bot");
+    Route::post("/events/{event}/occurrences/{occurrence}/reset", [EventManagementController::class, "resetOccurrence"])
+        ->name("events.occurrences.reset");
 		// Прямое добавление игрока организатором (без invite)
 		Route::post('/events/{event}/teams/{team}/members/add-by-organizer', [TournamentTeamController::class, 'addMemberByOrganizer'])
         ->name('tournamentTeams.addMemberByOrganizer');

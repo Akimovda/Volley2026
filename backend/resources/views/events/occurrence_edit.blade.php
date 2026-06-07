@@ -169,6 +169,20 @@
                 </div>
             </div>
         </form>
+
+        @if($occurrence->is_individually_edited)
+        <div class="ramka" style="border-color:var(--color-warning,#f59e0b);margin-top:1rem">
+            <div class="f-13" style="margin-bottom:.75rem;opacity:.8">
+                Этот повтор был индивидуально отредактирован и защищён от автоматической перезаписи серией.
+                Сброс вернёт все поля к значениям серии и снимет защиту.
+            </div>
+            <form action="{{ route('events.occurrences.reset', [$event, $occurrence]) }}" method="POST"
+                  onsubmit="return confirm('Сбросить все настройки этого повтора до значений серии?')">
+                @csrf
+                <button type="submit" class="btn btn-secondary">Сбросить до значений серии</button>
+            </form>
+        </div>
+        @endif
     </div>
 
     <x-slot name="script">

@@ -321,6 +321,71 @@ if ($role === 'admin') {
         return response()->json(['enabled' => !$effective]);
     }
 
+    public function resetOccurrence(Request $request, Event $event, \App\Models\EventOccurrence $occurrence)
+    {
+        $user = $request->user();
+        if (!$user) return redirect()->route('login');
+
+        $role = (string)($user->role ?? 'user');
+        if ($role === 'organizer' && (int)$event->organizer_id !== (int)$user->id) abort(403);
+        if ($role === 'staff' && (int)$event->organizer_id !== (int)$this->resolveOrganizerIdForCreator($user)) abort(403);
+
+        $nowUtc  = \Carbon\Carbon::now('UTC');
+        $occStart = \Carbon\Carbon::parse($occurrence->starts_at, 'UTC');
+
+        // Вычислить окна регистрации по смещениям серии
+        $regStarts = null;
+        $regEnds   = null;
+        $cancelTil = null;
+
+        if ($event->starts_at && $event->registration_starts_at && $event->registration_ends_at) {
+            $evStart  = \Carbon\Carbon::parse($event->starts_at, 'UTC');
+            $secBefore = max(0, $evStart->diffInSeconds(\Carbon\Carbon::parse($event->registration_starts_at, 'UTC'), false) * -1);
+            $endMin    = max(1, (int)round($evStart->diffInMinutes(\Carbon\Carbon::parse($event->registration_ends_at, 'UTC'), false) * -1));
+            $regStarts = $occStart->copy()->subSeconds($secBefore);
+            $regEnds   = $occStart->copy()->subMinutes($endMin);
+        }
+
+        if ($event->starts_at && $event->cancel_self_until) {
+            $evStart   = \Carbon\Carbon::parse($event->starts_at, 'UTC');
+            $cancelMin = max(1, (int)round($evStart->diffInMinutes(\Carbon\Carbon::parse($event->cancel_self_until, 'UTC'), false) * -1));
+            $cancelTil = $occStart->copy()->subMinutes($cancelMin);
+            if ($cancelTil->lte($nowUtc)) $cancelTil = null;
+        }
+
+        $occurrence->title               = null;
+        $occurrence->description_html    = null;
+        $occurrence->location_id         = null;
+        $occurrence->allow_registration  = null;
+        $occurrence->max_players         = null;
+        $occurrence->duration_sec        = $event->duration_sec;
+        $occurrence->age_policy          = null;
+        $occurrence->child_age_min       = null;
+        $occurrence->child_age_max       = null;
+        $occurrence->is_paid             = null;
+        $occurrence->price_minor         = null;
+        $occurrence->price_currency      = null;
+        $occurrence->price_text          = null;
+        $occurrence->payment_method      = null;
+        $occurrence->payment_link        = null;
+        $occurrence->refund_hours_full   = null;
+        $occurrence->refund_hours_partial = null;
+        $occurrence->refund_partial_pct  = null;
+        $occurrence->trainer_user_id     = null;
+        $occurrence->registration_starts_at = $regStarts;
+        $occurrence->registration_ends_at   = $regEnds;
+        $occurrence->cancel_self_until      = $cancelTil;
+        $occurrence->is_individually_edited = false;
+        $occurrence->save();
+
+        // Удалить override игровых настроек occurrence
+        \App\Models\EventOccurrenceGameSetting::where('occurrence_id', $occurrence->id)->delete();
+
+        return redirect()
+            ->route('events.occurrences.edit', [$event, $occurrence])
+            ->with('status', 'Повтор сброшен до значений серии.');
+    }
+
     public function destroyOccurrence(\App\Models\EventOccurrence $occurrence, \Illuminate\Http\Request $request)
     {
         $deleteMode = (string)$request->input('delete_mode', 'single');
