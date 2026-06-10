@@ -1086,16 +1086,21 @@ body.dark .gradient-marker-line,
     
 
 @if(isset($ratingHistory) && $ratingHistory->isNotEmpty())
+@php
+    $ratingChartData = $ratingHistory->map(function($h) {
+        return [
+            'label' => $h->recorded_at ? $h->recorded_at->format('d.m') : '',
+            'mu'    => round((float)$h->mu_after, 2),
+            'cr'    => round(max(0, (float)$h->mu_after - 3 * (float)$h->sigma_after), 2),
+        ];
+    })->values()->toArray();
+@endphp
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
 (function(){
     const ctx = document.getElementById('profileRatingChart');
     if (!ctx) return;
-    const raw = @json($ratingHistory->map(fn($h) => [
-        'label' => $h->recorded_at->format('d.m'),
-        'mu'    => round((float)$h->mu_after, 2),
-        'cr'    => round(max(0, (float)$h->mu_after - 3 * (float)$h->sigma_after), 2),
-    ]));
+    const raw = @json($ratingChartData);
     if (!raw.length) return;
     const peak = Math.max(...raw.map(r => r.mu));
     new Chart(ctx, {
