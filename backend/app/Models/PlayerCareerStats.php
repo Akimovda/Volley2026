@@ -27,6 +27,16 @@ class PlayerCareerStats extends Model
         'elo_rating',
         'mu',
         'sigma',
+        'mu_peak',
+        'mu_peak_date',
+        'unique_opponents',
+        'unique_partners',
+        'main_partner_id',
+        'main_partner_games',
+        'pair_stability',
+        'last_5_form',
+        'last_10_form',
+        'points_ratio',
         'updated_at',
         // detailed stats
         'total_serves', 'total_aces', 'total_serve_errors',
@@ -44,9 +54,13 @@ class PlayerCareerStats extends Model
         'serve_efficiency'     => 'float',
         'attack_efficiency'    => 'float',
         'reception_efficiency' => 'float',
-        'mu'                   => 'float',
-        'sigma'                => 'float',
-        'updated_at'           => 'datetime',
+        'mu'              => 'float',
+        'sigma'           => 'float',
+        'mu_peak'         => 'float',
+        'pair_stability'  => 'float',
+        'points_ratio'    => 'float',
+        'mu_peak_date'    => 'date',
+        'updated_at'      => 'datetime',
     ];
 
     public const DIRECTION_CLASSIC = 'classic';

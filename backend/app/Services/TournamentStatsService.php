@@ -67,7 +67,7 @@ class TournamentStatsService
         }
 
         App::make(TournamentOpenSkillService::class)
-            ->processMatchByIds($winnerIds, $loserIds, $direction, $seasonId, $leagueId);
+            ->processMatchByIds($winnerIds, $loserIds, $direction, $seasonId, $leagueId, $event->id, $match->id);
     }
 
     /**
