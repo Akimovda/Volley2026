@@ -1,6 +1,16 @@
 <x-voll-layout body_class="coupon-template-create-page">
     <x-slot name="title">{{ __('subscriptions.coupon_tpl_create_title') }}</x-slot>
     <x-slot name="h1">{{ __('subscriptions.coupon_tpl_create_title') }}</x-slot>
+    <x-slot name="image">
+		<div class="top-section-img" data-aos="fade" data-aos-duration="1000">
+			<div class="top-section-light-img">
+				<img src="/img/top/cupons.webp" alt="img">
+			</div>	
+			<div class="top-section-dark-img">
+				<img src="/img/top/cupons-night.webp" alt="img">
+			</div>
+		</div>	
+	</x-slot>		
     <div class="container">
         @if($errors->any())
             <div class="ramka"><div class="alert alert-error"><ul class="list">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul></div></div>

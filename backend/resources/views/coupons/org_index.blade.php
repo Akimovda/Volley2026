@@ -1,6 +1,16 @@
 <x-voll-layout body_class="coupons-org-page">
     <x-slot name="title">{{ __('subscriptions.coupon_org_title') }}</x-slot>
     <x-slot name="h1">{{ __('subscriptions.coupon_org_h1') }}</x-slot>
+    <x-slot name="image">
+		<div class="top-section-img" data-aos="fade" data-aos-duration="1000">
+			<div class="top-section-light-img">
+				<img src="/img/top/cupons.webp" alt="img">
+			</div>	
+			<div class="top-section-dark-img">
+				<img src="/img/top/cupons-night.webp" alt="img">
+			</div>
+		</div>	
+	</x-slot>	
     <div class="container">
     <div class="row row2">
         <div class="col-lg-4 col-xl-3 order-2 d-none d-lg-block">
