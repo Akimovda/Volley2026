@@ -25,7 +25,7 @@ class PlayerRatingController extends Controller
         $direction = $request->input('direction', 'classic');
         $seasonId  = $request->input('season_id');
         $cityId    = $request->input('city');
-        $sort      = $request->input('sort', 'match_win_rate');
+        $sort      = $request->input('sort', 'conservative_rating');
         $perPage   = 30;
 
         // Доступные сезоны для фильтра
@@ -55,22 +55,22 @@ class PlayerRatingController extends Controller
      */
     protected function careerRating(string $direction, string $sort, ?int $cityId, int $perPage)
     {
-        $sortColumn = match ($sort) {
-            'elo_rating'      => 'elo_rating',
-            'matches_played'  => 'total_matches',
-            default           => 'match_win_rate',
-        };
-
         $query = PlayerCareerStats::where('direction', $direction)
-            ->where('total_matches', '>=', 3) // минимум 3 матча
+            ->where('total_matches', '>=', 3)
             ->with('user');
 
         if ($cityId) {
             $query->whereHas('user', fn($q) => $q->where('city_id', $cityId));
         }
 
-        return $query->orderByDesc($sortColumn)
-            ->orderByDesc('total_matches')
+        $query = match ($sort) {
+            'elo_rating'          => $query->orderByDesc('elo_rating'),
+            'matches_played'      => $query->orderByDesc('total_matches'),
+            'match_win_rate'      => $query->orderByDesc('match_win_rate'),
+            default               => $query->orderByDesc(\Illuminate\Support\Facades\DB::raw('mu - 3 * sigma')),
+        };
+
+        return $query->orderByDesc('total_matches')
             ->paginate($perPage)
             ->withQueryString();
     }
@@ -80,12 +80,6 @@ class PlayerRatingController extends Controller
      */
     protected function seasonRating(int $seasonId, string $sort, ?int $cityId, int $perPage)
     {
-        $sortColumn = match ($sort) {
-            'elo_rating'     => 'elo_season',
-            'matches_played' => 'matches_played',
-            default          => 'match_win_rate',
-        };
-
         $query = TournamentSeasonStats::where('season_id', $seasonId)
             ->where('matches_played', '>=', 1)
             ->with(['user', 'league']);
@@ -94,8 +88,14 @@ class PlayerRatingController extends Controller
             $query->whereHas('user', fn($q) => $q->where('city_id', $cityId));
         }
 
-        return $query->orderByDesc($sortColumn)
-            ->orderByDesc('matches_played')
+        $query = match ($sort) {
+            'elo_rating'     => $query->orderByDesc('elo_season'),
+            'matches_played' => $query->orderByDesc('matches_played'),
+            'match_win_rate' => $query->orderByDesc('match_win_rate'),
+            default          => $query->orderByDesc(\Illuminate\Support\Facades\DB::raw('mu_season - 3 * sigma_season')),
+        };
+
+        return $query->orderByDesc('matches_played')
             ->paginate($perPage)
             ->withQueryString();
     }

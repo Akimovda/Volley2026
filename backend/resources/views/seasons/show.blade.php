@@ -200,6 +200,7 @@
 							<tr>
 								<th style="width:30px">#</th>
 								<th>{{ __('seasons.col_player') }}</th>
+								<th>{{ __('tournaments.conservative_rating') }}</th>
 								<th>{{ __('seasons.col_matches') }}</th>
 								<th>{{ __('seasons.col_wins') }}</th>
 								<th>WinRate</th>
@@ -208,10 +209,14 @@
 							</tr>
 						</thead>
 						<tbody>
-							@foreach($season->stats->take(20) as $i => $stat)
+							@foreach($season->stats->sortByDesc(fn($s) => ($s->mu_season ?? 25) - 3 * ($s->sigma_season ?? 8.333))->take(20) as $i => $stat)
 							<tr>
 								<td>{{ $i + 1 }}</td>
 								<td><a href="{{ route('users.show', $stat->user_id) }}" class="blink">{{ $stat->user->first_name ?? '' }} {{ $stat->user->last_name ?? '' }}</a></td>
+								<td class="text-center">
+									@php $cr = max(0, ($stat->mu_season ?? 25) - 3 * ($stat->sigma_season ?? 8.333)); @endphp
+									<strong style="color:#E7612F">{{ number_format($cr, 1) }}</strong>
+								</td>
 								<td class="text-center">{{ $stat->matches_played }}</td>
 								<td class="text-center">{{ $stat->matches_won }}</td>
 								<td class="text-center"><span class="wr">{{ number_format($stat->match_win_rate, 1) }}%</span></td>

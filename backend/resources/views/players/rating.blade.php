@@ -28,6 +28,7 @@
         <div class="col-sm-3">
             <label class="form-label">{{ __('profile.rating_label_sort') }}</label>
             <select name="sort" class="form-select" onchange="this.form.submit()">
+                <option value="conservative_rating" {{ ($sort === 'conservative_rating' || $sort === '') ? 'selected' : '' }}>{{ __('tournaments.conservative_rating') }}</option>
                 <option value="match_win_rate" {{ $sort === 'match_win_rate' ? 'selected' : '' }}>WinRate</option>
                 <option value="elo_rating" {{ $sort === 'elo_rating' ? 'selected' : '' }}>Elo</option>
                 <option value="matches_played" {{ $sort === 'matches_played' ? 'selected' : '' }}>{{ __('profile.rating_sort_matches') }}</option>
@@ -54,6 +55,7 @@
                             <th>{{ __('profile.rating_col_league') }}</th>
                             <th>{{ __('profile.rating_col_rounds') }}</th>
                         @endif
+                        <th>{{ __('tournaments.conservative_rating') }}</th>
                         <th>{{ __('profile.rating_col_matches') }}</th>
                         <th>{{ __('profile.rating_col_wins') }}</th>
                         <th>WinRate</th>
@@ -93,6 +95,17 @@
                                 <td>{{ $stat->league?->name ?? '—' }}</td>
                                 <td>{{ $stat->rounds_played }}</td>
                             @endif
+                            <td>
+                                @php
+                                    $cr = $isSeasonMode
+                                        ? max(0, ($stat->mu_season ?? 25) - 3 * ($stat->sigma_season ?? 8.333))
+                                        : max(0, ($stat->mu ?? 25) - 3 * ($stat->sigma ?? 8.333));
+                                @endphp
+                                <strong style="color:#E7612F">{{ number_format($cr, 1) }}</strong>
+                                <span class="f-12" style="opacity:.4" title="{{ __('tournaments.rating_info') }}">
+                                    μ{{ number_format($isSeasonMode ? ($stat->mu_season ?? 25) : ($stat->mu ?? 25), 1) }}
+                                </span>
+                            </td>
                             <td>{{ $isSeasonMode ? $stat->matches_played : $stat->total_matches }}</td>
                             <td>{{ $isSeasonMode ? $stat->matches_won : $stat->total_wins }}</td>
                             <td>

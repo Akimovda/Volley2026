@@ -641,4 +641,10 @@ return [
     'btn_offer_sub'                 => 'Предложить себя',
     'confirm_substitution'          => 'Подтвердить замену',
     'cancel_substitution'           => 'Отменить замену',
+
+    // OpenSkill рейтинг
+    'conservative_rating'           => 'Рейтинг',
+    'mu'                            => 'Уровень (μ)',
+    'sigma'                         => 'Точность (σ)',
+    'rating_info'                   => 'Чем больше игр, тем точнее рейтинг',
 ];

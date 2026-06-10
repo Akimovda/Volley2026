@@ -586,6 +586,13 @@ body.dark .gradient-marker-line,
                         <div class="card p-3 mb-3">
                             <div class="f-13 b-600 mb-2" style="opacity:.6">🏖 Итого</div>
                             <div class="d-flex" style="gap:16px;flex-wrap:wrap">
+                                @php $crBeach = max(0, ($careerBeach->mu ?? 25) - 3 * ($careerBeach->sigma ?? 8.333)); @endphp
+                                @if($careerBeach->total_matches >= 3)
+                                <div style="text-align:center">
+                                    <div class="f-24 b-800" style="color:#E7612F">{{ number_format($crBeach, 1) }}</div>
+                                    <div class="f-11" style="opacity:.5">{{ __('tournaments.conservative_rating') }}</div>
+                                </div>
+                                @endif
                                 <div style="text-align:center">
                                     <div class="f-24 b-800" style="color:#E7612F">{{ $careerBeach->match_win_rate }}%</div>
                                     <div class="f-11" style="opacity:.5">WinRate</div>
@@ -675,6 +682,13 @@ body.dark .gradient-marker-line,
                         <div class="card p-3 mb-3">
                             <div class="f-13 b-600 mb-2" style="opacity:.6">🏐 Итого</div>
                             <div class="d-flex" style="gap:16px;flex-wrap:wrap">
+                                @php $crClassic = max(0, ($careerClassic->mu ?? 25) - 3 * ($careerClassic->sigma ?? 8.333)); @endphp
+                                @if($careerClassic->total_matches >= 3)
+                                <div style="text-align:center">
+                                    <div class="f-24 b-800" style="color:#E7612F">{{ number_format($crClassic, 1) }}</div>
+                                    <div class="f-11" style="opacity:.5">{{ __('tournaments.conservative_rating') }}</div>
+                                </div>
+                                @endif
                                 <div style="text-align:center">
                                     <div class="f-24 b-800" style="color:#E7612F">{{ $careerClassic->match_win_rate }}%</div>
                                     <div class="f-11" style="opacity:.5">WinRate</div>

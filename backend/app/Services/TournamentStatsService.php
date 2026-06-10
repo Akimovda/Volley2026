@@ -11,6 +11,7 @@ use App\Models\PlayerTournamentStats;
 use App\Models\PlayerCareerStats;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\App;
+use App\Services\TournamentOpenSkillService;
 
 class TournamentStatsService
 {
@@ -35,6 +36,38 @@ class TournamentStatsService
         ] as $side) {
             $this->updateTeamPlayersStats($event, $side['team_id'], $side);
         }
+
+        // OpenSkill — обновляем mu/sigma после каждого матча
+        $homeWon       = $match->winner_team_id === $match->team_home_id;
+        $winnerTeamId  = $homeWon ? $match->team_home_id : $match->team_away_id;
+        $loserTeamId   = $homeWon ? $match->team_away_id : $match->team_home_id;
+
+        $winnerIds = DB::table('event_team_members')
+            ->where('event_team_id', $winnerTeamId)
+            ->where('confirmation_status', 'confirmed')
+            ->pluck('user_id')->toArray();
+
+        $loserIds = DB::table('event_team_members')
+            ->where('event_team_id', $loserTeamId)
+            ->where('confirmation_status', 'confirmed')
+            ->pluck('user_id')->toArray();
+
+        $direction = $event->direction ?? 'beach';
+        $seasonId  = $event->season_id;
+        $leagueId  = null;
+        if ($seasonId) {
+            $leagueId = DB::table('tournament_season_events')
+                ->where('event_id', $event->id)
+                ->value('league_id');
+            if (!$leagueId) {
+                $leagueId = DB::table('tournament_leagues')
+                    ->where('season_id', $seasonId)
+                    ->value('id');
+            }
+        }
+
+        App::make(TournamentOpenSkillService::class)
+            ->processMatchByIds($winnerIds, $loserIds, $direction, $seasonId, $leagueId);
     }
 
     /**
