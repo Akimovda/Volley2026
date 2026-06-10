@@ -25,6 +25,8 @@ class PlayerCareerStats extends Model
         'set_win_rate',
         'best_placement',
         'elo_rating',
+        'mu',
+        'sigma',
         'updated_at',
         // detailed stats
         'total_serves', 'total_aces', 'total_serve_errors',
@@ -42,6 +44,8 @@ class PlayerCareerStats extends Model
         'serve_efficiency'     => 'float',
         'attack_efficiency'    => 'float',
         'reception_efficiency' => 'float',
+        'mu'                   => 'float',
+        'sigma'                => 'float',
         'updated_at'           => 'datetime',
     ];
 
@@ -51,6 +55,11 @@ class PlayerCareerStats extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function conservativeRating(): float
+    {
+        return max(0.0, ($this->mu ?? 25.0) - 3.0 * ($this->sigma ?? 8.333));
     }
 
     public function pointDiff(): int

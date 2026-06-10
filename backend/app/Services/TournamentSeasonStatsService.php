@@ -7,6 +7,7 @@ use App\Models\TournamentMatch;
 use App\Models\TournamentSeasonStats;
 use App\Models\TournamentSeason;
 use App\Models\TournamentLeague;
+use App\Services\TournamentEloService;
 use Illuminate\Support\Facades\DB;
 
 class TournamentSeasonStatsService
@@ -37,6 +38,9 @@ class TournamentSeasonStatsService
         ] as $side) {
             $this->updateTeamPlayersSeasonStats($season, $league, $side);
         }
+
+        // Обновляем elo_season (был мёртвым — теперь считается)
+        app(TournamentEloService::class)->processSeasonMatch($match, $season->id, $league->id);
     }
 
     private function updateTeamPlayersSeasonStats(TournamentSeason $season, TournamentLeague $league, array $side): void
@@ -201,6 +205,25 @@ class TournamentSeasonStatsService
 
             foreach ($matches as $match) {
                 $this->updateForMatch($match, $event);
+            }
+        }
+
+        // Пересчёт elo_season по всем матчам
+        foreach ($eventIds as $eventId) {
+            $event = Event::find($eventId);
+            if (!$event) continue;
+
+            $league = $season->leagues()->first();
+            if (!$league) continue;
+
+            $matches = TournamentMatch::whereHas('stage', fn($q) => $q->where('event_id', $eventId))
+                ->where('status', 'completed')
+                ->whereNotNull('winner_team_id')
+                ->orderBy(DB::raw('COALESCE(scored_at, created_at)'))
+                ->get();
+
+            foreach ($matches as $match) {
+                app(TournamentEloService::class)->processSeasonMatch($match, $season->id, $league->id);
             }
         }
 

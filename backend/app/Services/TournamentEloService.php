@@ -6,6 +6,7 @@ use App\Models\Event;
 use App\Models\TournamentMatch;
 use App\Models\PlayerCareerStats;
 use App\Models\PlayerTournamentStats;
+use App\Models\TournamentSeasonStats;
 use Illuminate\Support\Facades\DB;
 
 class TournamentEloService
@@ -109,6 +110,67 @@ class TournamentEloService
 
         $career->elo_rating = max(100, $career->elo_rating + $delta);
         $career->save();
+    }
+
+    /**
+     * Обновить elo_season в tournament_season_stats для одного матча.
+     */
+    public function processSeasonMatch(TournamentMatch $match, int $seasonId, int $leagueId): void
+    {
+        $homePlayerIds = $this->getTeamPlayerIds($match->team_home_id);
+        $awayPlayerIds = $this->getTeamPlayerIds($match->team_away_id);
+
+        if (empty($homePlayerIds) || empty($awayPlayerIds)) return;
+
+        $homeAvgElo = $this->getAverageSeasonElo($homePlayerIds, $seasonId, $leagueId);
+        $awayAvgElo = $this->getAverageSeasonElo($awayPlayerIds, $seasonId, $leagueId);
+
+        $homeWon = $match->winner_team_id === $match->team_home_id;
+
+        $expectedHome = 1 / (1 + pow(10, ($awayAvgElo - $homeAvgElo) / 400));
+
+        $setBonus = 1.0;
+        if ($homeWon && $match->sets_away === 0)  $setBonus = 1.2;
+        elseif (!$homeWon && $match->sets_home === 0) $setBonus = 1.2;
+
+        $deltaHome = round(self::K_FACTOR * $setBonus * (($homeWon ? 1 : 0) - $expectedHome));
+        $deltaAway = -$deltaHome;
+
+        foreach ($homePlayerIds as $uid) {
+            $this->updateSeasonElo($uid, $seasonId, $leagueId, $deltaHome);
+        }
+        foreach ($awayPlayerIds as $uid) {
+            $this->updateSeasonElo($uid, $seasonId, $leagueId, $deltaAway);
+        }
+    }
+
+    private function getAverageSeasonElo(array $userIds, int $seasonId, int $leagueId): float
+    {
+        $elos = TournamentSeasonStats::where('season_id', $seasonId)
+            ->where('league_id', $leagueId)
+            ->whereIn('user_id', $userIds)
+            ->pluck('elo_season')
+            ->toArray();
+
+        $missing = count($userIds) - count($elos);
+        for ($i = 0; $i < $missing; $i++) {
+            $elos[] = self::DEFAULT_ELO;
+        }
+
+        return count($elos) > 0 ? array_sum($elos) / count($elos) : self::DEFAULT_ELO;
+    }
+
+    private function updateSeasonElo(int $userId, int $seasonId, int $leagueId, int $delta): void
+    {
+        $stat = TournamentSeasonStats::where('season_id', $seasonId)
+            ->where('league_id', $leagueId)
+            ->where('user_id', $userId)
+            ->first();
+
+        if (!$stat) return;
+
+        $stat->elo_season = max(100, $stat->elo_season + $delta);
+        $stat->save();
     }
 
     /**

@@ -25,11 +25,15 @@ class TournamentSeasonStats extends Model
         'best_placement',
         'current_streak',
         'elo_season',
+        'mu_season',
+        'sigma_season',
     ];
 
     protected $casts = [
         'match_win_rate' => 'float',
         'set_win_rate'   => 'float',
+        'mu_season'      => 'float',
+        'sigma_season'   => 'float',
     ];
 
     /* ---------- relations ---------- */
@@ -50,6 +54,11 @@ class TournamentSeasonStats extends Model
     }
 
     /* ---------- computed ---------- */
+
+    public function conservativeRating(): float
+    {
+        return max(0.0, ($this->mu_season ?? 25.0) - 3.0 * ($this->sigma_season ?? 8.333));
+    }
 
     public function pointDiff(): int
     {

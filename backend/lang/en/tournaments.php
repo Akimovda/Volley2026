@@ -622,4 +622,10 @@ return [
     'btn_offer_sub'                 => 'Offer myself',
     'confirm_substitution'          => 'Confirm substitution',
     'cancel_substitution'           => 'Cancel substitution',
+
+    // OpenSkill rating
+    'conservative_rating'           => 'Rating',
+    'mu'                            => 'Skill (μ)',
+    'sigma'                         => 'Uncertainty (σ)',
+    'rating_info'                   => 'More games = more accurate rating',
 ];
