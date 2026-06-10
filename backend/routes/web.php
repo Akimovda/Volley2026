@@ -1098,6 +1098,10 @@ Route::get('/s/{slug}', function (string $slug) {
 */
 Route::get('/players/rating', [PlayerRatingController::class, 'index'])
     ->name('players.rating');
+Route::get('/players/teams', [PlayerRatingController::class, 'teams'])
+    ->name('players.teams');
+Route::get('/pages/rating-info', fn() => view('pages.rating_info'))
+    ->name('pages.rating_info');
 
 /*
 |--------------------------------------------------------------------------

@@ -592,7 +592,13 @@
 								</a>								
 								<a href="/level_players" class="menu-item">
 									<span class="menu-text">{{ __('ui.nav_levels') }}</span>
-								</a>	
+								</a>
+								<a href="{{ route('players.rating') }}" class="menu-item">
+									<span class="menu-text">{{ __('players.rating') }}</span>
+								</a>
+								<a href="{{ route('players.teams') }}" class="menu-item">
+									<span class="menu-text">{{ __('players.teams_title') }}</span>
+								</a>
 								<a href="/about" class="menu-item">
 									<span class="menu-text">{{ __('ui.nav_about') }}</span>
 								</a>

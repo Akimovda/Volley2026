@@ -65,8 +65,11 @@ class TournamentOpenSkillService
         $this->saveCareerRatings($loserIds,  $newLoser,  $careerMap);
 
         // --- Статистика пар ---
-        $this->updatePairStats($winnerIds, true);
-        $this->updatePairStats($loserIds,  false);
+        $gameScheme = $eventId
+            ? DB::table('event_tournament_settings')->where('event_id', $eventId)->value('game_scheme')
+            : null;
+        $this->updatePairStats($winnerIds, true,  $direction, $gameScheme);
+        $this->updatePairStats($loserIds,  false, $direction, $gameScheme);
 
         // --- Статистика соперников ---
         $this->updateOpponentStats($winnerIds, $loserIds);
@@ -289,7 +292,7 @@ class TournamentOpenSkillService
     //  Статистика пар (внутри команды)
     // ---------------------------------------------------------------
 
-    private function updatePairStats(array $userIds, bool $won): void
+    private function updatePairStats(array $userIds, bool $won, string $direction = 'beach', ?string $gameScheme = null): void
     {
         $n = count($userIds);
         if ($n < 2) return;
@@ -301,13 +304,15 @@ class TournamentOpenSkillService
 
                 DB::statement("
                     INSERT INTO player_pair_stats
-                        (player1_id, player2_id, matches_together, wins_together, created_at, updated_at)
-                    VALUES (?, ?, 1, ?, NOW(), NOW())
+                        (player1_id, player2_id, direction, game_scheme, matches_together, wins_together, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, 1, ?, NOW(), NOW())
                     ON CONFLICT (player1_id, player2_id) DO UPDATE
                     SET matches_together = player_pair_stats.matches_together + 1,
                         wins_together    = player_pair_stats.wins_together + EXCLUDED.wins_together,
+                        direction        = EXCLUDED.direction,
+                        game_scheme      = COALESCE(EXCLUDED.game_scheme, player_pair_stats.game_scheme),
                         updated_at       = NOW()
-                ", [$p1, $p2, $won ? 1 : 0]);
+                ", [$p1, $p2, $direction, $gameScheme, $won ? 1 : 0]);
             }
         }
     }
