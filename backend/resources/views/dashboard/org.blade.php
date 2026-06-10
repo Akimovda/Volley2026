@@ -27,6 +27,7 @@
     <x-slot name="d_description">
         <div class="d-flex gap-1 mt-2 flex-wrap">
             <a href="{{ route('events.create.event_management') }}" class="btn btn-secondary">{{ __('profile.dash_org_btn_my_events') }}</a>
+            <a href="{{ route('org.players') }}" class="btn btn-secondary">👥 Аналитика игроков</a>
             <a href="{{ route('profile.payment_settings') }}" class="btn btn-secondary">{{ __('profile.dash_org_btn_pay_settings') }}</a>
             <a href="{{ route('profile.transactions') }}" class="btn btn-secondary">{{ __('profile.dash_org_btn_transactions') }}</a>
         </div>
@@ -263,7 +264,10 @@
             <div class="row row2">
                 <div class="col-md-6">
 				<div class="ramka">
-                    <h2 class="-mt-05">🏆 Самые активные игроки</h2>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h2 class="-mt-05">🏆 Самые активные игроки</h2>
+                        <a href="{{ route('org.players') }}" class="btn btn-outline-primary btn-sm">👥 Подробнее</a>
+                    </div>
                     
                         @forelse($topPlayers as $i => $player)
                         <div class="d-flex between fvc py-1 {{ $i > 0 ? 'border-top' : '' }}">
