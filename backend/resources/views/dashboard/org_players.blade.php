@@ -152,8 +152,8 @@
                     <div class="card">
                         <div class="f-14 b-600 mb-2">По полу</div>
                         @php
-                            $male   = $genderStats->get('male')?->cnt   ?? 0;
-                            $female = $genderStats->get('female')?->cnt ?? 0;
+                            $male   = $genderStats->get('m')?->cnt ?? 0;
+                            $female = $genderStats->get('f')?->cnt ?? 0;
                             $total  = $male + $female;
                         @endphp
                         @if($total > 0)
