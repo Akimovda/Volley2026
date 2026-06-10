@@ -22,11 +22,11 @@
     <div class="d-flex gap-1 mb-3 flex-wrap align-items-center">
         <a href="{{ route('players.rating', array_merge(request()->query(), ['direction'=>'beach'])) }}"
            class="btn {{ $direction === 'beach' ? 'btn-primary' : 'btn-secondary' }} btn-small">
-            🏖 {{ __('players.beach') }}
+            {{ __('players.beach') }}
         </a>
         <a href="{{ route('players.rating', array_merge(request()->query(), ['direction'=>'classic'])) }}"
            class="btn {{ $direction === 'classic' ? 'btn-primary' : 'btn-secondary' }} btn-small">
-            🏐 {{ __('players.classic') }}
+            {{ __('players.classic') }}
         </a>
         @if(!$isSeasonMode)
         <span class="f-13" style="opacity:.5;margin-left:4px">{{ $direction === 'beach' ? '2x2 · 3x3 · 4x4' : '4x4 · 4x2 · 5x1 · 5x1+либеро' }}</span>

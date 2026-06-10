@@ -25,11 +25,11 @@
     <div class="d-flex gap-1 mb-3 flex-wrap">
         <a href="{{ route('players.teams', array_merge(request()->query(), ['direction'=>'beach', 'scheme'=>null])) }}"
            class="btn {{ $direction === 'beach' ? 'btn-primary' : 'btn-secondary' }} btn-small">
-            🏖 {{ __('players.beach') }}
+            {{ __('players.beach') }}
         </a>
         <a href="{{ route('players.teams', array_merge(request()->query(), ['direction'=>'classic', 'scheme'=>null])) }}"
            class="btn {{ $direction === 'classic' ? 'btn-primary' : 'btn-secondary' }} btn-small">
-            🏐 {{ __('players.classic') }}
+            {{ __('players.classic') }}
         </a>
     </div>
 
