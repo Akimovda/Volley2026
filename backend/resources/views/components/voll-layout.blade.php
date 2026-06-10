@@ -438,6 +438,7 @@
 					@endphp
 					
 					<div class="social-auth">
+						@if(!$isRussianIp)
 						@unless(str_contains(request()->userAgent() ?? '', 'Android'))
 						<!-- Кнопка Apple (обязательно первой по требованию Apple) -->
 						<a href="{{ route('auth.apple.redirect', ['return' => $returnUrl]) }}" class="auth-btn auth-btn-apple">
@@ -449,6 +450,7 @@
 							<span class="auth-text">{{ __('ui.auth_apple') }}</span>
 						</a>
 						@endunless
+						@endif
 						
 						<!-- Кнопка VK -->
 						<a href="{{ route('auth.vk.redirect', ['return' => $returnUrl]) }}" data-href="{{ route('auth.vk.redirect', ['return' => $returnUrl]) }}" class="auth-btn auth-btn-vk">
@@ -466,14 +468,17 @@
 							<span class="auth-text">{{ __('ui.auth_yandex') }}</span>
 						</a>
 						
+						@if(!$isRussianIp)
 						<a href="{{ route('auth.telegram.redirect', ['return' => url()->full()]) }}" data-href="{{ route('auth.telegram.redirect', ['return' => url()->full()]) }}" class="auth-btn auth-btn-telegram">
 							<span class="auth-icon-circle">
 								<span class="icon-tg"></span>
 							</span>
 							<span class="auth-text">{{ __('ui.auth_telegram') }}</span>
 						</a>
-						
-						
+						@endif
+
+
+						@if(!$isRussianIp)
 						@unless(str_contains(request()->userAgent() ?? '', 'iPhone') || str_contains(request()->userAgent() ?? '', 'iPad') || str_contains(request()->userAgent() ?? '', 'Macintosh'))
 						<!-- Кнопка Google (Android + desktop, не Apple) -->
 						<a href="{{ route('auth.google.redirect', ['return' => $returnUrl]) }}" class="auth-btn auth-btn-google">
@@ -488,6 +493,7 @@
 							<span class="auth-text">{{ __('ui.auth_google') }}</span>
 						</a>
 						@endunless
+						@endif
 						
 						{{--
 						<div data-href="#max" class="auth-btn auth-btn-max">

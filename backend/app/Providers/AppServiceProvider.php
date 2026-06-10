@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\UserNotification;
 use App\Models\EventRegistration;
+use App\Services\GeoIpService;
 use App\Support\AssetVersion;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Event;
@@ -34,6 +35,13 @@ public function boot(): void
     });
     
 View::composer('*', function ($view) {
+    static $isRussianIp = null;
+    if ($isRussianIp === null) {
+        $ip = request()->ip() ?? '';
+        $isRussianIp = $ip ? app(GeoIpService::class)->isRussia($ip) : false;
+    }
+    $view->with('isRussianIp', $isRussianIp);
+
     $notificationsUnread = 0;
     $unreadNotifications = collect(); // 👈 только непрочитанные
 

@@ -3,7 +3,16 @@
     <x-slot name="title">{{ __('profile.dash_org_title') }}</x-slot>
     <x-slot name="h1">{{ __('profile.dash_org_title') }}</x-slot>
     <x-slot name="t_description">{{ __('profile.dash_org_t_description') }}</x-slot>
-
+    <x-slot name="image">
+		<div class="top-section-img" data-aos="fade" data-aos-duration="1000">
+			<div class="top-section-light-img">
+				<img src="/img/top/dashboard-2.webp" alt="img">
+			</div>	
+			<div class="top-section-dark-img">
+				<img src="/img/top/dashboard-2-dark.webp" alt="img">
+			</div>
+		</div>	
+	</x-slot>	
     <x-slot name="breadcrumbs">
         <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
             <a href="{{ route('profile.show') }}" itemprop="item"><span itemprop="name">{{ __('profile.nch_breadcrumb') }}</span></a>

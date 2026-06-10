@@ -12,7 +12,16 @@
         {{ __('profile.dash_player_user_n', ['id' => $user->id]) }}
         @endif
 	</x-slot>	
-
+    <x-slot name="image">
+		<div class="top-section-img" data-aos="fade" data-aos-duration="1000">
+			<div class="top-section-light-img">
+				<img src="/img/top/dashboard-2.webp" alt="img">
+			</div>	
+			<div class="top-section-dark-img">
+				<img src="/img/top/dashboard-2-dark.webp" alt="img">
+			</div>
+		</div>	
+	</x-slot>	
     <x-slot name="t_description">{{ __('profile.dash_player_t_description') }}</x-slot>
 
     <x-slot name="breadcrumbs">
