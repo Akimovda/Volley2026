@@ -2,7 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\PlayerCareerStats;
 use App\Models\PlayerFollow;
+use App\Models\PlayerOpponentStats;
+use App\Models\PlayerPairStats;
+use App\Models\PlayerRatingHistory;
 use App\Models\User;
 use App\Models\UserLevelVote;
 use App\Models\UserPlayLike;
@@ -69,20 +73,73 @@ class UserPublicController extends Controller
             }
         }
 
+        // --- OpenSkill / рейтинг ---
+        $ratingHistory = PlayerRatingHistory::where('user_id', $user->id)
+            ->with('event:id,title,direction')
+            ->orderBy('recorded_at')
+            ->get();
+
+        $ratingPartners = [];
+        foreach (['beach', 'classic'] as $dir) {
+            $ratingPartners[$dir] = PlayerPairStats::where('direction', $dir)
+                ->where(fn($q) => $q->where('player1_id', $user->id)->orWhere('player2_id', $user->id))
+                ->orderByDesc('matches_together')
+                ->limit(10)
+                ->get()
+                ->map(function ($pair) use ($user) {
+                    $pid = (int)$pair->player1_id === (int)$user->id
+                        ? $pair->player2_id
+                        : $pair->player1_id;
+                    $pair->partner = User::select('id', 'first_name', 'last_name')->find($pid);
+                    return $pair;
+                })
+                ->filter(fn($p) => $p->partner !== null)
+                ->values();
+        }
+
+        $ratingOpponents = PlayerOpponentStats::where('user_id', $user->id)
+            ->join('users as opp', 'opp.id', '=', 'player_opponent_stats.opponent_id')
+            ->orderByDesc('matches_against')
+            ->limit(10)
+            ->select('player_opponent_stats.*', 'opp.first_name', 'opp.last_name')
+            ->get();
+
+        // Позиция в рейтинге по каждому направлению
+        $ratingPositions = [];
+        foreach (['beach', 'classic'] as $dir) {
+            $stats = PlayerCareerStats::where('user_id', $user->id)->where('direction', $dir)->first();
+            if ($stats && $stats->total_matches > 0) {
+                $cr = max(0, $stats->mu - 3 * $stats->sigma);
+                $ratingPositions[$dir] = [
+                    'pos'   => PlayerCareerStats::where('direction', $dir)
+                        ->where('total_matches', '>', 0)
+                        ->whereRaw('(mu - 3 * sigma) > ?', [$cr])
+                        ->count() + 1,
+                    'total' => PlayerCareerStats::where('direction', $dir)
+                        ->where('total_matches', '>', 0)
+                        ->count(),
+                ];
+            }
+        }
+
         return view('user.public', [
-            'user'          => $user,
-            'isSelf'        => $isSelf,
-            'photos'        => $photos,
-            'classicVotes'  => $classicVotes,
-            'beachVotes'    => $beachVotes,
-            'classicAvg'    => $classicAvg,
-            'beachAvg'      => $beachAvg,
-            'myClassicVote' => $myClassicVote,
-            'myBeachVote'   => $myBeachVote,
-            'likes'         => $likes,
-            'iLiked'        => $iLiked,
-            'canFollow'     => $canFollow,
-            'isFollowing'   => $isFollowing,
+            'user'             => $user,
+            'isSelf'           => $isSelf,
+            'photos'           => $photos,
+            'classicVotes'     => $classicVotes,
+            'beachVotes'       => $beachVotes,
+            'classicAvg'       => $classicAvg,
+            'beachAvg'         => $beachAvg,
+            'myClassicVote'    => $myClassicVote,
+            'myBeachVote'      => $myBeachVote,
+            'likes'            => $likes,
+            'iLiked'           => $iLiked,
+            'canFollow'        => $canFollow,
+            'isFollowing'      => $isFollowing,
+            'ratingHistory'    => $ratingHistory,
+            'ratingPartners'   => $ratingPartners,
+            'ratingOpponents'  => $ratingOpponents,
+            'ratingPositions'  => $ratingPositions,
         ]);
     }
 }

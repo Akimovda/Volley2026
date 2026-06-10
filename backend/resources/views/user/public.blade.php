@@ -768,6 +768,145 @@ body.dark .gradient-marker-line,
                 </script>
                 @endif
 
+                {{-- ===== OPENSKILL: История, партнёры, соперники ===== --}}
+                @php
+                    $hasRatingHistory = isset($ratingHistory) && $ratingHistory->isNotEmpty();
+                    $hasRatingPartners = isset($ratingPartners) && (
+                        collect($ratingPartners['beach'] ?? [])->isNotEmpty() ||
+                        collect($ratingPartners['classic'] ?? [])->isNotEmpty()
+                    );
+                    $hasRatingOpponents = isset($ratingOpponents) && $ratingOpponents->isNotEmpty();
+                @endphp
+
+                @if($hasRatingHistory || $hasRatingPartners || $hasRatingOpponents)
+                <div class="ramka">
+                    <h2 class="-mt-05">📈 Рейтинговая статистика</h2>
+
+                    {{-- Позиции в рейтинге --}}
+                    @if(isset($ratingPositions) && count($ratingPositions) > 0)
+                    <div class="d-flex gap-2 mb-3 flex-wrap">
+                        @foreach($ratingPositions as $dir => $pos)
+                        <div class="card text-center" style="min-width:120px;padding:10px 16px">
+                            <div class="f-11" style="opacity:.5">{{ $dir === 'beach' ? '🏖 Пляж' : '🏐 Классика' }}</div>
+                            <div class="f-22 b-800" style="color:#E7612F">#{{ $pos['pos'] }}</div>
+                            <div class="f-11" style="opacity:.5">из {{ $pos['total'] }}</div>
+                        </div>
+                        @endforeach
+                        <div style="align-self:center">
+                            <a href="{{ route('players.rating', ['direction' => array_key_first($ratingPositions ?? ['beach'=>null])]) }}" class="btn btn-secondary btn-small">Полный рейтинг →</a>
+                        </div>
+                    </div>
+                    @endif
+
+                    {{-- График динамики mu --}}
+                    @if($hasRatingHistory)
+                    <div class="card mb-3">
+                        <div class="f-14 b-600 mb-2">{{ __('players.rating_dynamics') }}</div>
+                        <canvas id="profileRatingChart" height="120"></canvas>
+                    </div>
+                    @endif
+
+                    {{-- Форма и серии --}}
+                    @foreach(['beach','classic'] as $dir)
+                    @php
+                        $dirStats = null;
+                        if ($dir === 'beach' && isset($careerBeach) && $careerBeach) $dirStats = $careerBeach;
+                        if ($dir === 'classic' && isset($careerClassic) && $careerClassic) $dirStats = $careerClassic;
+                        $f5  = $dirStats?->last_5_form ?? '';
+                        $f10 = $dirStats?->last_10_form ?? '';
+                    @endphp
+                    @if($dirStats && $dirStats->total_matches > 0 && ($f5 || $f10))
+                    <div class="f-13 b-600 mb-1" style="opacity:.6">{{ $dir === 'beach' ? '🏖 Пляж' : '🏐 Классика' }}</div>
+                    <div class="d-flex gap-2 mb-3 flex-wrap">
+                        @if($f5)
+                        <div class="card text-center" style="padding:8px 14px">
+                            <div class="f-11" style="opacity:.5">{{ __('players.last_5') }}</div>
+                            <div class="f-15 b-700">
+                                @foreach(mb_str_split($f5) as $ch)
+                                    <span class="{{ in_array($ch,['В','W']) ? 'cs' : 'red' }}">{{ $ch }}</span>
+                                @endforeach
+                            </div>
+                        </div>
+                        @endif
+                        @if($f10)
+                        <div class="card text-center" style="padding:8px 14px">
+                            <div class="f-11" style="opacity:.5">{{ __('players.last_10') }}</div>
+                            <div class="f-14 b-700">
+                                @foreach(mb_str_split($f10) as $ch)
+                                    <span class="{{ in_array($ch,['В','W']) ? 'cs' : 'red' }}">{{ $ch }}</span>
+                                @endforeach
+                            </div>
+                        </div>
+                        @endif
+                        @if(($dirStats->pair_stability ?? 0) > 0 && $dirStats->main_partner_id)
+                        @php $mp = \App\Models\User::select('id','first_name','last_name')->find($dirStats->main_partner_id); @endphp
+                        @if($mp)
+                        <div class="card text-center" style="padding:8px 14px">
+                            <div class="f-11" style="opacity:.5">{{ __('players.pair_stability') }}</div>
+                            <div class="f-15 b-700">{{ round($dirStats->pair_stability) }}%</div>
+                            <div class="f-11" style="opacity:.5">{{ trim($mp->last_name . ' ' . mb_substr($mp->first_name,0,1)) }}.</div>
+                        </div>
+                        @endif
+                        @endif
+                    </div>
+                    @endif
+                    @endforeach
+
+                    {{-- Партнёры --}}
+                    @foreach(['beach','classic'] as $dir)
+                    @php $dirPairs = collect($ratingPartners[$dir] ?? []); @endphp
+                    @if($dirPairs->isNotEmpty())
+                    <div class="f-14 b-600 mb-1">{{ __('players.teammates') }} ({{ $dir === 'beach' ? '🏖 Пляж' : '🏐 Классика' }})</div>
+                    <div class="card mb-3">
+                        @foreach($dirPairs->take(5) as $i => $pair)
+                        @php $wr = $pair->matches_together > 0 ? round($pair->wins_together / $pair->matches_together * 100) : 0; @endphp
+                        <div class="d-flex between fvc py-1 f-14 {{ $i > 0 ? 'border-top' : '' }}">
+                            <div class="d-flex fvc gap-2">
+                                <span class="f-13" style="width:20px;opacity:.4">{{ $i+1 }}</span>
+                                <a href="{{ route('users.show', $pair->partner->id) }}" class="blink">
+                                    {{ trim($pair->partner->last_name . ' ' . $pair->partner->first_name) }}
+                                </a>
+                                @if($pair->game_scheme)
+                                <span class="f-12" style="opacity:.4">{{ $pair->game_scheme }}</span>
+                                @endif
+                            </div>
+                            <div class="text-right">
+                                <span class="b-600">{{ $pair->matches_together }}</span>
+                                <span style="opacity:.5"> игр</span>
+                                <span class="{{ $wr >= 50 ? 'cs' : 'red' }} b-600 f-13 ml-1">{{ $wr }}%</span>
+                            </div>
+                        </div>
+                        @endforeach
+                    </div>
+                    @endif
+                    @endforeach
+
+                    {{-- Соперники --}}
+                    @if($hasRatingOpponents)
+                    <div class="f-14 b-600 mb-1">{{ __('players.opponents') }}</div>
+                    <div class="card mb-3">
+                        @foreach($ratingOpponents->take(5) as $i => $opp)
+                        @php $wr = $opp->matches_against > 0 ? round($opp->wins_against / $opp->matches_against * 100) : 0; @endphp
+                        <div class="d-flex between fvc py-1 f-14 {{ $i > 0 ? 'border-top' : '' }}">
+                            <div class="d-flex fvc gap-2">
+                                <span class="f-13" style="width:20px;opacity:.4">{{ $i+1 }}</span>
+                                <a href="{{ route('users.show', $opp->opponent_id) }}" class="blink">
+                                    {{ trim($opp->last_name . ' ' . $opp->first_name) }}
+                                </a>
+                            </div>
+                            <div class="text-right">
+                                <span class="b-600">{{ $opp->matches_against }}</span>
+                                <span style="opacity:.5"> встреч</span>
+                                <span class="{{ $wr >= 50 ? 'cs' : 'red' }} b-600 f-13 ml-1">{{ $wr }}%В</span>
+                            </div>
+                        </div>
+                        @endforeach
+                    </div>
+                    @endif
+
+                </div>
+                @endif
+
                 {{-- ===== С ВАМИ УДОБНО ИГРАТЬ ===== --}}
                 <div class="ramka">
                     <div class="d-flex between">
@@ -945,4 +1084,37 @@ body.dark .gradient-marker-line,
 		</div>
 	</div>
     
+
+@if(isset($ratingHistory) && $ratingHistory->isNotEmpty())
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+(function(){
+    const ctx = document.getElementById('profileRatingChart');
+    if (!ctx) return;
+    const raw = @json($ratingHistory->map(fn($h) => [
+        'label' => $h->recorded_at->format('d.m'),
+        'mu'    => round((float)$h->mu_after, 2),
+        'cr'    => round(max(0, (float)$h->mu_after - 3 * (float)$h->sigma_after), 2),
+    ]));
+    if (!raw.length) return;
+    const peak = Math.max(...raw.map(r => r.mu));
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: raw.map(r => r.label),
+            datasets: [
+                { label: 'Mu', data: raw.map(r => r.mu), borderColor: '#E7612F', borderWidth: 2, pointRadius: 2, tension: 0.3, fill: false },
+                { label: 'CR', data: raw.map(r => r.cr), borderColor: '#28a745', borderDash: [4,4], borderWidth: 1.5, pointRadius: 0, fill: false },
+                { label: 'ATH '+peak.toFixed(1), data: raw.map(() => peak), borderColor: 'rgba(220,53,69,.3)', borderDash:[2,4], borderWidth:1, pointRadius:0, fill:false }
+            ]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8, font: { size: 11 } } } },
+            scales: { y: { beginAtZero: false }, x: { ticks: { maxTicksLimit: 12, font: { size: 10 } } } }
+        }
+    });
+})();
+</script>
+@endif
 </x-voll-layout>
