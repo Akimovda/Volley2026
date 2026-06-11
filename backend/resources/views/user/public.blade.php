@@ -1088,8 +1088,12 @@ body.dark .gradient-marker-line,
 @if(isset($ratingHistory) && $ratingHistory->isNotEmpty())
 @php
     $ratingChartData = $ratingHistory->map(function($h) {
+        $date = $h->match_scored_at ?? $h->match_scheduled_at ?? $h->recorded_at;
+        if ($date && is_string($date)) {
+            $date = \Carbon\Carbon::parse($date);
+        }
         return [
-            'label' => $h->recorded_at ? $h->recorded_at->format('d.m') : '',
+            'label' => $date ? $date->format('d.m') : '',
             'mu'    => round((float)$h->mu_after, 2),
             'cr'    => round(max(0, (float)$h->mu_after - 3 * (float)$h->sigma_after), 2),
         ];
@@ -1108,9 +1112,9 @@ body.dark .gradient-marker-line,
         data: {
             labels: raw.map(r => r.label),
             datasets: [
-                { label: 'Mu', data: raw.map(r => r.mu), borderColor: '#E7612F', borderWidth: 2, pointRadius: 2, tension: 0.3, fill: false },
-                { label: 'CR', data: raw.map(r => r.cr), borderColor: '#28a745', borderDash: [4,4], borderWidth: 1.5, pointRadius: 0, fill: false },
-                { label: 'ATH '+peak.toFixed(1), data: raw.map(() => peak), borderColor: 'rgba(220,53,69,.3)', borderDash:[2,4], borderWidth:1, pointRadius:0, fill:false }
+                { label: 'μ — скрытый потенциал', data: raw.map(r => r.mu), borderColor: '#E7612F', borderWidth: 2, pointRadius: 2, tension: 0.3, fill: false },
+                { label: 'CR — публичный рейтинг (μ−3σ)', data: raw.map(r => r.cr), borderColor: '#28a745', borderDash: [4,4], borderWidth: 1.5, pointRadius: 0, fill: false },
+                { label: 'Пик μ: '+peak.toFixed(1), data: raw.map(() => peak), borderColor: 'rgba(220,53,69,.3)', borderDash:[2,4], borderWidth:1, pointRadius:0, fill:false }
             ]
         },
         options: {

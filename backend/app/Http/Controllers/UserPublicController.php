@@ -74,9 +74,12 @@ class UserPublicController extends Controller
         }
 
         // --- OpenSkill / рейтинг ---
-        $ratingHistory = PlayerRatingHistory::where('user_id', $user->id)
+        $ratingHistory = PlayerRatingHistory::where('player_rating_history.user_id', $user->id)
+            ->leftJoin('tournament_matches as tm', 'tm.id', '=', 'player_rating_history.match_id')
+            ->select('player_rating_history.*', 'tm.scored_at as match_scored_at', 'tm.scheduled_at as match_scheduled_at')
             ->with('event:id,title,direction')
-            ->orderBy('recorded_at')
+            ->orderBy('tm.scored_at')
+            ->orderBy('player_rating_history.recorded_at')
             ->get();
 
         $ratingPartners = [];
