@@ -68,7 +68,7 @@ return ['label' => __('events.seats_dash'), 'registered' => $registered];
 					</a>
 				</div>
 				<div class="mt-2" data-aos-delay="350" data-aos="fade-up">
-					<a href="{{ url('/events/' . (int)$event->id) }}"
+					<a href="{{ url('/events/' . (int)$event->id) . ($nextOccurrence ? '?occurrence=' . (int)$nextOccurrence->id : '') }}"
 					class="btn btn-secondary">
 						{{ __('events.open_event') }}
 					</a>
@@ -83,7 +83,7 @@ return ['label' => __('events.seats_dash'), 'registered' => $registered];
 				<meta itemprop="position" content="2">
 			</li>
 			<li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
-				<a href="{{ url('/events/' . (int)$event->id) }}" itemprop="item">
+				<a href="{{ url('/events/' . (int)$event->id) . ($nextOccurrence ? '?occurrence=' . (int)$nextOccurrence->id : '') }}" itemprop="item">
 					<span itemprop="name">#{{ (int)$event->id }} {{ $event->title }}</span>
 				</a>
 				<meta itemprop="position" content="3">

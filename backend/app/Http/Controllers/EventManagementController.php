@@ -295,10 +295,13 @@ if ($role === 'admin') {
         $upcoming = $allOccurrences->filter(fn ($o) => $o->starts_at && \Carbon\Carbon::parse($o->starts_at, 'UTC')->gte($now))->values();
         $archived = $allOccurrences->filter(fn ($o) => !$o->starts_at || \Carbon\Carbon::parse($o->starts_at, 'UTC')->lt($now))->sortByDesc('starts_at')->values();
 
+        $nextOccurrence = $upcoming->first();
+
         return view('events.event_management_occurrences', [
-            'event'      => $event,
-            'occurrences' => $upcoming,
-            'archived'    => $archived,
+            'event'           => $event,
+            'occurrences'     => $upcoming,
+            'archived'        => $archived,
+            'nextOccurrence'  => $nextOccurrence,
         ]);
     }
     public function toggleBotEvent(Request $request, Event $event): \Illuminate\Http\JsonResponse
