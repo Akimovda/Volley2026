@@ -1125,7 +1125,7 @@ if ($role === 'admin') {
         // Каналы анонсов: пересохраняем привязки (delete-then-insert)
         app(\App\Services\EventNotificationChannelService::class)->updateChannels($event, $request);
 
-        // Отменить старые будущие повторения если пользователь выбрал "cancel"
+        // Обработка будущих повторений при изменении расписания серии
         $futureOccurrencesAction = $request->input('future_occurrences_action', 'keep');
         $cancelledFutureIds = [];
         if (
@@ -1134,21 +1134,43 @@ if ($role === 'admin') {
             && Schema::hasTable('event_occurrences')
         ) {
             $nowUtc = CarbonImmutable::now('UTC');
-            $q = DB::table('event_occurrences')
+
+            $futureIds = DB::table('event_occurrences')
                 ->where('event_id', (int) $event->id)
                 ->where('starts_at', '>', $nowUtc)
-                ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)');
+                ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
+                ->pluck('id')
+                ->map(fn ($v) => (int) $v)
+                ->all();
 
-            $cancelledFutureIds = $q->pluck('id')->map(fn ($v) => (int) $v)->all();
+            if (!empty($futureIds)) {
+                // Разделяем: с активными регистрациями → cancel+уведомление, без → delete
+                $withRegs = DB::table('event_registrations')
+                    ->whereIn('occurrence_id', $futureIds)
+                    ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
+                    ->distinct()
+                    ->pluck('occurrence_id')
+                    ->map(fn ($v) => (int) $v)
+                    ->all();
 
-            if (!empty($cancelledFutureIds)) {
-                $cancelPayload = ['cancelled_at' => $nowUtc, 'updated_at' => $nowUtc];
-                if (Schema::hasColumn('event_occurrences', 'is_cancelled')) {
-                    $cancelPayload['is_cancelled'] = true;
+                $withoutRegs = array_values(array_diff($futureIds, $withRegs));
+
+                // Без регистраций — удаляем (мусор)
+                if (!empty($withoutRegs)) {
+                    DB::table('event_occurrences')->whereIn('id', $withoutRegs)->delete();
                 }
-                DB::table('event_occurrences')
-                    ->whereIn('id', $cancelledFutureIds)
-                    ->update($cancelPayload);
+
+                // С регистрациями — отменяем и уведомляем
+                if (!empty($withRegs)) {
+                    $cancelPayload = ['cancelled_at' => $nowUtc, 'updated_at' => $nowUtc];
+                    if (Schema::hasColumn('event_occurrences', 'is_cancelled')) {
+                        $cancelPayload['is_cancelled'] = true;
+                    }
+                    DB::table('event_occurrences')
+                        ->whereIn('id', $withRegs)
+                        ->update($cancelPayload);
+                    $cancelledFutureIds = $withRegs;
+                }
             }
         }
 
@@ -1156,7 +1178,7 @@ if ($role === 'admin') {
             ExpandEventOccurrencesJob::dispatch((int) $event->id, 90, 500);
         }
 
-        // Уведомляем участников отменённых повторений после dispatch (ExpandJob создаст новые)
+        // Уведомляем участников отменённых повторений (только тех у кого были регистрации)
         foreach ($cancelledFutureIds as $occurrenceId) {
             $this->notifyUsersAboutCancelledEvent(
                 event: $event,
