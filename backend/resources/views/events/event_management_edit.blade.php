@@ -1672,24 +1672,69 @@
         syncTpmEdit();
     })();
 
-    // Перехват submit для повторяющихся мероприятий: спросить что делать с будущими повторениями
+    // Перехват submit: диалог только если изменилось расписание серии
     (function() {
         var isRecurringNow = {{ $event->is_recurring ? 'true' : 'false' }};
-        var form = document.querySelector('form[action*="event-management"]') || document.querySelector('.edit-event-form');
-        // Ищем форму по кнопке
         var btn = document.getElementById('edit_save_btn');
         if (!btn) return;
-        form = btn.closest('form');
+        var form = btn.closest('form');
         if (!form || !isRecurringNow) return;
 
+        // Снимок исходных значений расписания (из PHP на момент загрузки страницы)
+        var origSchedule = {
+            starts_at:  {{ json_encode(\Carbon\Carbon::parse($event->starts_at, 'UTC')->setTimezone($event->timezone ?? 'UTC')->format('Y-m-d')) }},
+            type:       {{ json_encode($recType) }},
+            interval:   {{ json_encode((string)$recInterval) }},
+            end_type:   {{ json_encode($recEndType) }},
+            end_until:  {{ json_encode($recEndUntil) }},
+            end_count:  {{ json_encode((string)$recEndCount) }},
+            weekdays:   {{ json_encode(array_map('strval', $recWeekdays)) }},
+        };
+
+        function scheduleChanged() {
+            var cb = document.getElementById('is_recurring_edit');
+            if (!cb || !cb.checked) return false; // снимают повторение — не наш случай
+
+            // starts_at
+            var startsField = form.querySelector('[name="starts_at"]');
+            if (startsField && startsField.value.slice(0, 10) !== origSchedule.starts_at) return true;
+
+            // recurrence_type
+            var typeField = form.querySelector('[name="recurrence_type"]');
+            if (typeField && typeField.value !== origSchedule.type) return true;
+
+            // recurrence_interval
+            var intField = form.querySelector('[name="recurrence_interval"]');
+            if (intField && String(intField.value || '1') !== origSchedule.interval) return true;
+
+            // recurrence_end_type
+            var endRadio = form.querySelector('[name="recurrence_end_type"]:checked');
+            if (endRadio && endRadio.value !== origSchedule.end_type) return true;
+
+            // recurrence_end_until
+            var untilField = form.querySelector('[name="recurrence_end_until"]');
+            if (untilField && untilField.value !== origSchedule.end_until) return true;
+
+            // recurrence_end_count
+            var countField = form.querySelector('[name="recurrence_end_count"]');
+            if (countField && String(countField.value || '0') !== origSchedule.end_count) return true;
+
+            // recurrence_weekdays (порядок не важен)
+            var checked = Array.from(form.querySelectorAll('[name="recurrence_weekdays[]"]:checked'))
+                .map(function(el) { return el.value; }).sort();
+            var orig = origSchedule.weekdays.slice().sort();
+            if (JSON.stringify(checked) !== JSON.stringify(orig)) return true;
+
+            return false;
+        }
+
         form.addEventListener('submit', function(e) {
-            var recurringCheckbox = document.getElementById('is_recurring_edit');
-            if (!recurringCheckbox || !recurringCheckbox.checked) return; // отключают повторение — без вопроса
+            if (!scheduleChanged()) return; // расписание не менялось — отправляем без диалога
 
             e.preventDefault();
 
             swal({
-                title: 'Изменить серию',
+                title: 'Изменить расписание серии',
                 text: 'Что сделать с уже созданными будущими повторениями?',
                 icon: 'warning',
                 buttons: {
@@ -1704,7 +1749,7 @@
                     },
                 },
             }).then(function(val) {
-                if (!val) return; // закрыл диалог — ничего не делаем
+                if (!val) return;
                 document.getElementById('future_occurrences_action').value = val;
                 form.submit();
             });
