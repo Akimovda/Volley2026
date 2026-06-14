@@ -1698,7 +1698,7 @@
                         value: 'keep',
                     },
                     cancel_future: {
-                        text: 'Отменить старые',
+                        text: 'Отменить повторения',
                         value: 'cancel',
                         className: 'swal-button--danger',
                     },
