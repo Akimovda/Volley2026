@@ -1029,8 +1029,44 @@ if ($role === 'admin') {
         // Каналы анонсов: пересохраняем привязки (delete-then-insert)
         app(\App\Services\EventNotificationChannelService::class)->updateChannels($event, $request);
 
+        // Отменить старые будущие повторения если пользователь выбрал "cancel"
+        $futureOccurrencesAction = $request->input('future_occurrences_action', 'keep');
+        $cancelledFutureIds = [];
+        if (
+            $futureOccurrencesAction === 'cancel'
+            && (bool) $event->is_recurring
+            && Schema::hasTable('event_occurrences')
+        ) {
+            $nowUtc = CarbonImmutable::now('UTC');
+            $q = DB::table('event_occurrences')
+                ->where('event_id', (int) $event->id)
+                ->where('starts_at', '>', $nowUtc)
+                ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)');
+
+            $cancelledFutureIds = $q->pluck('id')->map(fn ($v) => (int) $v)->all();
+
+            if (!empty($cancelledFutureIds)) {
+                $cancelPayload = ['cancelled_at' => $nowUtc, 'updated_at' => $nowUtc];
+                if (Schema::hasColumn('event_occurrences', 'is_cancelled')) {
+                    $cancelPayload['is_cancelled'] = true;
+                }
+                DB::table('event_occurrences')
+                    ->whereIn('id', $cancelledFutureIds)
+                    ->update($cancelPayload);
+            }
+        }
+
         if ((bool) $event->is_recurring && trim((string) $event->recurrence_rule) !== '') {
             ExpandEventOccurrencesJob::dispatch((int) $event->id, 90, 500);
+        }
+
+        // Уведомляем участников отменённых повторений после dispatch (ExpandJob создаст новые)
+        foreach ($cancelledFutureIds as $occurrenceId) {
+            $this->notifyUsersAboutCancelledEvent(
+                event: $event,
+                occurrenceId: $occurrenceId,
+                reason: 'Расписание серии изменено организатором'
+            );
         }
 
         return redirect()
