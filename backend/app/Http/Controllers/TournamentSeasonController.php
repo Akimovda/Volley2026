@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Event;
 use App\Models\League;
+use App\Models\PromotionHistory;
 use App\Models\TournamentSeason;
 use App\Models\TournamentLeague;
 use App\Models\TournamentLeagueTeam;
@@ -79,6 +80,7 @@ class TournamentSeasonController extends Controller
             'leagues.reserveTeams.user',
             'seasonEvents.event',
             'seasonEvents.league',
+            'league.feederLeague',
         ]);
 
         // Доступные события организатора (не привязанные к сезону)
@@ -89,7 +91,13 @@ class TournamentSeasonController extends Controller
             ->limit(50)
             ->get();
 
-        return view('seasons.edit', compact('season', 'availableEvents'));
+        $promotionHistory = \App\Models\PromotionHistory::where('season_id', $season->id)
+            ->with(['user', 'fromDivision', 'toDivision'])
+            ->orderByDesc('created_at')
+            ->limit(50)
+            ->get();
+
+        return view('seasons.edit', compact('season', 'availableEvents', 'promotionHistory'));
     }
 
     /* ================================================================
@@ -108,7 +116,60 @@ class TournamentSeasonController extends Controller
             'config'    => 'nullable|array',
         ]);
 
+        // Обработка config промоушена
+        $promotionConfigFields = [
+            'bool'   => ['auto_promotion', 'queue_entry_enabled'],
+            'int'    => ['queue_entry_slots', 'feeder_promote_slots'],
+            'string' => ['promotion_trigger', 'relegation_penalty'],
+        ];
+        $config = $season->config ?? [];
+        foreach ($promotionConfigFields as $type => $fields) {
+            foreach ($fields as $field) {
+                if ($request->has("config.{$field}")) {
+                    $val = $request->input("config.{$field}");
+                    $config[$field] = match ($type) {
+                        'bool'   => (bool) $val,
+                        'int'    => (int) $val,
+                        default  => ($val === '' ? null : $val),
+                    };
+                } elseif ($type === 'bool') {
+                    // Чекбоксы не отправляются если unchecked
+                    $config[$field] = false;
+                }
+            }
+        }
+        $validated['config'] = $config;
+
         $this->seasonService->updateSeason($season, $validated);
+
+        // Сохранение настроек дивизионов
+        if ($request->has('divisions')) {
+            foreach ($request->input('divisions') as $divisionId => $data) {
+                $division = \App\Models\TournamentLeague::find((int) $divisionId);
+                if (!$division || $division->season_id !== $season->id) continue;
+
+                if (isset($data['max_teams'])) {
+                    $division->max_teams = $data['max_teams'] !== '' ? (int) $data['max_teams'] : null;
+                }
+                if (isset($data['level'])) {
+                    $division->level = (int) $data['level'];
+                }
+
+                $divConfig = $division->config ?? [];
+                foreach (['eliminate_count', 'promote_count'] as $intField) {
+                    if (isset($data['config'][$intField])) {
+                        $divConfig[$intField] = (int) $data['config'][$intField];
+                    }
+                }
+                foreach (['eliminate_to', 'promote_to'] as $strField) {
+                    if (isset($data['config'][$strField])) {
+                        $divConfig[$strField] = $data['config'][$strField] ?: null;
+                    }
+                }
+                $division->config = $divConfig;
+                $division->save();
+            }
+        }
 
         return back()->with('success', 'Сезон обновлён.');
     }
@@ -516,6 +577,141 @@ class TournamentSeasonController extends Controller
         } catch (\InvalidArgumentException $e) {
             return back()->with('error', $e->getMessage());
         }
+    }
+
+    /* ================================================================
+     *  Ручное управление командами (вылет / перевод / активация)
+     * ================================================================ */
+
+    public function relegateTeam(Request $request, TournamentSeason $season, \App\Models\TournamentLeagueTeam $leagueTeam)
+    {
+        $this->authorizeSeason($request, $season);
+        abort_unless($leagueTeam->league->season_id === $season->id, 403);
+
+        $target = $request->input('target', 'reserve'); // 'reserve' | 'feeder' | 'lower_division'
+
+        $toDivision = match ($target) {
+            'lower_division' => $leagueTeam->league->lowerDivision() ?? $leagueTeam->league,
+            'feeder'         => $this->getFeederDivision($season) ?? $leagueTeam->league,
+            default          => $leagueTeam->league,
+        };
+        $newStatus = 'reserve';
+
+        app(\App\Services\TournamentPromotionService::class)->manualMove(
+            $season, $leagueTeam, $toDivision, $newStatus, 'organizer'
+        );
+
+        return back()->with('success', __('tournaments.team_relegated'));
+    }
+
+    public function transferTeam(Request $request, TournamentSeason $season, \App\Models\TournamentLeagueTeam $leagueTeam)
+    {
+        $this->authorizeSeason($request, $season);
+        abort_unless($leagueTeam->league->season_id === $season->id, 403);
+
+        $request->validate(['to_division_id' => 'required|integer']);
+        $toDivision = \App\Models\TournamentLeague::where('season_id', $season->id)
+            ->findOrFail((int) $request->input('to_division_id'));
+
+        app(\App\Services\TournamentPromotionService::class)->manualMove(
+            $season, $leagueTeam, $toDivision, 'active', 'organizer'
+        );
+
+        return back()->with('success', __('tournaments.team_transferred'));
+    }
+
+    public function activateTeam(Request $request, TournamentSeason $season, \App\Models\TournamentLeagueTeam $leagueTeam)
+    {
+        $this->authorizeSeason($request, $season);
+        abort_unless($leagueTeam->league->season_id === $season->id, 403);
+
+        $leagueTeam->status                  = \App\Models\TournamentLeagueTeam::STATUS_ACTIVE;
+        $leagueTeam->reserve_position        = null;
+        $leagueTeam->confirmation_expires_at = null;
+        $leagueTeam->joined_at               = now();
+        $leagueTeam->save();
+
+        return back()->with('success', __('tournaments.team_activated'));
+    }
+
+    /* ================================================================
+     *  Выполнить промоушен вручную
+     * ================================================================ */
+
+    public function executePromotion(Request $request, TournamentSeason $season)
+    {
+        $this->authorizeSeason($request, $season);
+
+        $request->validate([
+            'occurrence_id' => 'required|integer',
+            'round_number'  => 'required|integer|min:1',
+        ]);
+
+        $results = app(\App\Services\TournamentPromotionService::class)->process(
+            $season,
+            (int) $request->input('occurrence_id'),
+            (int) $request->input('round_number'),
+            'organizer'
+        );
+
+        $totalMoves = count($results['relegated'])
+            + count($results['promoted'])
+            + count($results['entered_from_queue'])
+            + count($results['entered_from_feeder']);
+
+        if (!empty($results['errors'])) {
+            \Illuminate\Support\Facades\Log::warning('Promotion errors', $results['errors']);
+        }
+
+        return back()->with('success', __('tournaments.promotion_completed', ['count' => $totalMoves]));
+    }
+
+    /* ================================================================
+     *  Отказ от перевода (игрок)
+     * ================================================================ */
+
+    public function declineTransfer(Request $request, PromotionHistory $promotionHistory)
+    {
+        $user = $request->user();
+        abort_unless((int) $promotionHistory->user_id === (int) $user->id, 403);
+
+        abort_unless(in_array($promotionHistory->action, [
+            PromotionHistory::ACTION_RELEGATED_FEEDER,
+            PromotionHistory::ACTION_PROMOTED_UPPER,
+            PromotionHistory::ACTION_PROMOTED_PARENT,
+        ], true), 422, 'Этот перевод нельзя отменить.');
+
+        abort_unless($promotionHistory->status === PromotionHistory::STATUS_COMPLETED, 422, 'Статус перевода не позволяет отказаться.');
+
+        abort_unless(
+            $promotionHistory->created_at->diffInDays(now()) <= 7,
+            422,
+            __('tournaments.decline_expired')
+        );
+
+        $leagueTeam = $promotionHistory->leagueTeam;
+        abort_unless($leagueTeam, 404);
+
+        app(\App\Services\TournamentPromotionService::class)->declineTransfer($leagueTeam, $promotionHistory);
+
+        return back()->with('success', __('tournaments.transfer_declined'));
+    }
+
+    /* ================================================================
+     *  Вспомогательный метод — получить первый дивизион фидерной лиги
+     * ================================================================ */
+
+    private function getFeederDivision(TournamentSeason $season): ?\App\Models\TournamentLeague
+    {
+        $league = $season->league;
+        if (!$league || !$league->hasFeeder()) return null;
+
+        $feederSeason = $league->feederLeague->seasons()
+            ->where('status', 'active')
+            ->latest('starts_at')
+            ->first();
+
+        return $feederSeason?->leagues()->orderBy('level')->first();
     }
 
     /* ================================================================

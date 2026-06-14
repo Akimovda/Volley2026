@@ -148,6 +148,30 @@
 				</div>
 				@endif
 
+				{{-- Кнопка записаться на ближайший тур (только активный сезон) --}}
+				@if($season->isActive())
+				@php
+					$nextSE = $season->seasonEvents
+						->filter(fn($se) => $se->event && \Carbon\Carbon::parse($se->event->starts_at)->isFuture())
+						->sortBy('round_number')
+						->first();
+				@endphp
+				@if($nextSE && $nextSE->event)
+				<div class="mb-2">
+					<a href="/events/{{ $nextSE->event_id }}{{ $nextSE->occurrence_id ? '?occurrence=' . $nextSE->occurrence_id : '' }}"
+						class="btn f-14" style="padding:8px 20px">
+						{{ __('tournaments.register_for_next_tour') }} →
+					</a>
+					<div class="f-13 cd mt-05">
+						{{ __('tournaments.round') }} {{ $nextSE->round_number }}
+						@if($nextSE->event->starts_at)
+						— {{ \Carbon\Carbon::parse($nextSE->event->starts_at)->format('d.m.Y') }}
+						@endif
+					</div>
+				</div>
+				@endif
+				@endif
+
 				{{-- Рейтинг топ-5 --}}
 				@php $seasonStats = $season->stats->sortByDesc('match_win_rate')->take(5); @endphp
 				@if($seasonStats->isNotEmpty())

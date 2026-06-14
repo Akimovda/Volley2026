@@ -25,6 +25,7 @@ class League extends Model implements HasMedia
         'website',
         'phone',
         'status',
+        'feeder_league_id',
         'config',
     ];
 
@@ -43,6 +44,17 @@ class League extends Model implements HasMedia
     public function organizer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'organizer_id');
+    }
+
+    public function feederLeague(): BelongsTo
+    {
+        return $this->belongsTo(League::class, 'feeder_league_id');
+    }
+
+    // Лиги, для которых эта лига является фидером
+    public function parentLeagues(): HasMany
+    {
+        return $this->hasMany(League::class, 'feeder_league_id');
     }
 
     public function seasons(): HasMany
@@ -98,5 +110,16 @@ class League extends Model implements HasMedia
     public function seasonsCount(): int
     {
         return $this->seasons()->count();
+    }
+
+    public function hasFeeder(): bool
+    {
+        return $this->feeder_league_id !== null;
+    }
+
+    // Возвращает лигу верхнего уровня, для которой эта — фидер (или null)
+    public function isFeederFor(): ?League
+    {
+        return League::where('feeder_league_id', $this->id)->first();
     }
 }

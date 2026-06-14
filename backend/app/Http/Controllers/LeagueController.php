@@ -122,7 +122,12 @@ class LeagueController extends Controller
 
         $eventPhotos = auth()->user()->getMedia('event_photos')->sortByDesc('created_at')->values();
 
-        return view('leagues.edit', compact('league', 'eventPhotos'));
+        $availableLeagues = \App\Models\League::where('organizer_id', $request->user()->id)
+            ->where('id', '!=', $league->id)
+            ->orderBy('name')
+            ->get();
+
+        return view('leagues.edit', compact('league', 'eventPhotos', 'availableLeagues'));
     }
 
     /* ================================================================
@@ -134,19 +139,25 @@ class LeagueController extends Controller
         $this->authorizeLeague($request, $league);
 
         $validated = $request->validate([
-            'name'           => 'required|string|max:255',
-            'direction'      => 'required|in:classic,beach',
-            'description'    => 'nullable|string|max:2000',
-            'vk'             => 'nullable|string|max:255',
-            'telegram'       => 'nullable|string|max:255',
-            'max_messenger'  => 'nullable|string|max:255',
-            'website'        => 'nullable|url|max:255',
-            'phone'          => 'nullable|string|max:30',
-            'status'         => 'nullable|in:active,archived',
-            'logo'           => 'nullable|image|max:2048',
-            'remove_logo'    => 'nullable|boolean',
-            'logo_media_id'  => 'nullable|integer',
+            'name'             => 'required|string|max:255',
+            'direction'        => 'required|in:classic,beach',
+            'description'      => 'nullable|string|max:2000',
+            'vk'               => 'nullable|string|max:255',
+            'telegram'         => 'nullable|string|max:255',
+            'max_messenger'    => 'nullable|string|max:255',
+            'website'          => 'nullable|url|max:255',
+            'phone'            => 'nullable|string|max:30',
+            'status'           => 'nullable|in:active,archived',
+            'feeder_league_id' => 'nullable|exists:leagues,id',
+            'logo'             => 'nullable|image|max:2048',
+            'remove_logo'      => 'nullable|boolean',
+            'logo_media_id'    => 'nullable|integer',
         ]);
+
+        // feeder_league_id не должен ссылаться на саму себя
+        if (isset($validated['feeder_league_id']) && $validated['feeder_league_id'] == $league->id) {
+            $validated['feeder_league_id'] = null;
+        }
 
         $league->update(collect($validated)->except(['logo', 'remove_logo', 'logo_media_id'])->toArray());
 

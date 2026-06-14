@@ -77,6 +77,43 @@
 			<button type="button" class="btn btn-secondary btn-haptic" id="btn-share-season">{{ __('seasons.btn_share') }}</button>
 		</div>
 
+		{{-- Баннер pending transfer для игрока --}}
+		@auth
+		@php
+			$pendingTransfer = \App\Models\PromotionHistory::where('user_id', auth()->id())
+				->where('season_id', $season->id)
+				->whereIn('action', [
+					\App\Models\PromotionHistory::ACTION_RELEGATED_FEEDER,
+					\App\Models\PromotionHistory::ACTION_PROMOTED_UPPER,
+					\App\Models\PromotionHistory::ACTION_PROMOTED_PARENT,
+				])
+				->where('status', \App\Models\PromotionHistory::STATUS_COMPLETED)
+				->where('created_at', '>=', now()->subDays(7))
+				->with('toDivision')
+				->latest()
+				->first();
+		@endphp
+		@if($pendingTransfer)
+		<div class="ramka" style="background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.2)">
+			<div class="d-flex between fvc" style="flex-wrap:wrap;gap:12px">
+				<div>
+					@if(str_starts_with($pendingTransfer->action, 'relegated'))
+					<span class="b-600">{{ __('tournaments.you_were_relegated', ['to' => $pendingTransfer->toDivision?->name ?? '']) }}</span>
+					@else
+					<span class="b-600">{{ __('tournaments.you_were_promoted', ['to' => $pendingTransfer->toDivision?->name ?? '']) }}</span>
+					@endif
+					<div class="f-13 cd mt-05">{{ __('tournaments.confirm_decline') }}</div>
+				</div>
+				<form method="POST" action="{{ route('promotions.decline', $pendingTransfer) }}"
+					onsubmit="return confirm({!! json_encode(__('tournaments.confirm_decline')) !!})">
+					@csrf
+					<button type="submit" class="btn btn-secondary">{{ __('tournaments.decline_transfer') }}</button>
+				</form>
+			</div>
+		</div>
+		@endif
+		@endauth
+
 		{{-- Расписание туров --}}
 		@if(isset($occurrences) && $occurrences->count())
 		<div class="ramka">	

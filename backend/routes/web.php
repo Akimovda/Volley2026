@@ -1023,6 +1023,18 @@ Route::middleware([
         ->name('seasons.activate');
     Route::post('/seasons/{season}/complete', [TournamentSeasonController::class, 'complete'])
         ->name('seasons.complete');
+    Route::post('/seasons/{season}/promote', [TournamentSeasonController::class, 'executePromotion'])
+        ->name('seasons.promote');
+    Route::post('/promotions/{promotionHistory}/decline', [TournamentSeasonController::class, 'declineTransfer'])
+        ->name('promotions.decline');
+
+    // Ручное управление командами в лиге
+    Route::post('/seasons/{season}/teams/{leagueTeam}/relegate', [TournamentSeasonController::class, 'relegateTeam'])
+        ->name('seasons.teams.relegate');
+    Route::post('/seasons/{season}/teams/{leagueTeam}/transfer', [TournamentSeasonController::class, 'transferTeam'])
+        ->name('seasons.teams.transfer');
+    Route::post('/seasons/{season}/teams/{leagueTeam}/activate', [TournamentSeasonController::class, 'activateTeam'])
+        ->name('seasons.teams.activate');
 
     // Дивизионы (бывшие "лиги" внутри сезона) — CRUD
     Route::post('/seasons/{season}/divisions', [TournamentSeasonController::class, 'storeLeague'])
