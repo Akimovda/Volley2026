@@ -1339,8 +1339,9 @@
 
                 {{-- КНОПКИ --}}
                 <div class="ramka text-center">
+                    <input type="hidden" name="future_occurrences_action" id="future_occurrences_action" value="keep">
                     <a href="{{ route('events.create.event_management') }}" class="btn btn-secondary mr-2">{{ __('events.btn_cancel_back') }}</a>
-                    <button type="submit" class="btn">{{ __('events.btn_save_changes') }}</button>
+                    <button type="submit" class="btn" id="edit_save_btn">{{ __('events.btn_save_changes') }}</button>
                 </div>
 
             </form>
@@ -1669,6 +1670,45 @@
         if (sel) sel.addEventListener('change', syncTpmEdit);
         if (isPaid) isPaid.addEventListener('change', syncTpmEdit);
         syncTpmEdit();
+    })();
+
+    // Перехват submit для повторяющихся мероприятий: спросить что делать с будущими повторениями
+    (function() {
+        var isRecurringNow = {{ $event->is_recurring ? 'true' : 'false' }};
+        var form = document.querySelector('form[action*="event-management"]') || document.querySelector('.edit-event-form');
+        // Ищем форму по кнопке
+        var btn = document.getElementById('edit_save_btn');
+        if (!btn) return;
+        form = btn.closest('form');
+        if (!form || !isRecurringNow) return;
+
+        form.addEventListener('submit', function(e) {
+            var recurringCheckbox = document.getElementById('is_recurring_edit');
+            if (!recurringCheckbox || !recurringCheckbox.checked) return; // отключают повторение — без вопроса
+
+            e.preventDefault();
+
+            swal({
+                title: 'Изменить серию',
+                text: 'Что сделать с уже созданными будущими повторениями?',
+                icon: 'warning',
+                buttons: {
+                    keep: {
+                        text: 'Оставить',
+                        value: 'keep',
+                    },
+                    cancel_future: {
+                        text: 'Отменить старые',
+                        value: 'cancel',
+                        className: 'swal-button--danger',
+                    },
+                },
+            }).then(function(val) {
+                if (!val) return; // закрыл диалог — ничего не делаем
+                document.getElementById('future_occurrences_action').value = val;
+                form.submit();
+            });
+        });
     })();
 </script>
     </x-slot>
