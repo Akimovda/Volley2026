@@ -109,10 +109,12 @@ class EventManagementController extends Controller
             });
         }
 
+        $nowUtcStr = $nowUtc->toDateTimeString();
         $q->addSelect([
             'events.*',
             DB::raw($regsSub ? 'COALESCE(ar.active_regs, 0) as active_regs' : '0 as active_regs'),
             DB::raw($nextOccSub ? 'no.next_occurrence_starts_at as next_occurrence_starts_at' : 'NULL as next_occurrence_starts_at'),
+            DB::raw($nextOccSub ? "(SELECT eo2.id FROM event_occurrences eo2 WHERE eo2.event_id = events.id AND eo2.starts_at > '{$nowUtcStr}' AND (eo2.is_cancelled IS NULL OR eo2.is_cancelled = false) AND eo2.cancelled_at IS NULL ORDER BY eo2.starts_at ASC LIMIT 1) as next_occurrence_id" : 'NULL as next_occurrence_id'),
         ]);
 
         if ($role === 'admin') {
