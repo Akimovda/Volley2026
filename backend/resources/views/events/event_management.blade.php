@@ -247,7 +247,7 @@ return ['label' => __('events.seats_dash'), 'free' => null, 'max' => null, 'regi
 										<span class="emo" title="{{ __('events.recurring_title') }}">🔁</span>
 										@endif    
 										<div>
-											<a class="blink" href="{{ url('/events/' . (int)$event->id) }}">{{ $event->title }}</a>
+											<a class="blink" href="{{ url('/events/' . (int)$event->id) . ($isRecurring && $event->next_occurrence_id ? '?occurrence=' . (int)$event->next_occurrence_id : '') }}">{{ $event->title }}</a>
 											<div class="f-16 pt-1">
 												{{ strtoupper((string)$event->direction) }} · {{ (string)$event->format }}
 												@if(\Illuminate\Support\Facades\Schema::hasColumn('events','is_template') && (bool)$event->is_template)
