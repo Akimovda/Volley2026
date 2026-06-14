@@ -1861,7 +1861,7 @@ class TournamentController extends Controller
 
                     // Авто-продвижение в сезоне (promote/relegate/reserve)
                     app(\App\Services\TournamentPromotionService::class)
-                        ->process($event);
+                        ->processEvent($event);
                 } catch (\Throwable $e) {
                     \Log::warning('Tournament completion notification failed: ' . $e->getMessage());
                 }

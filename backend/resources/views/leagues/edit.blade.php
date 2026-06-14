@@ -68,6 +68,21 @@
 							</select>
 						</div>
 
+						@if(isset($availableLeagues) && $availableLeagues->isNotEmpty())
+						<div class="card mb-2">
+							<label>{{ __('tournaments.feeder_league') }}</label>
+							<select name="feeder_league_id">
+								<option value="">{{ __('tournaments.no_feeder') }}</option>
+								@foreach($availableLeagues as $fl)
+									<option value="{{ $fl->id }}" {{ $league->feeder_league_id == $fl->id ? 'selected' : '' }}>
+										{{ $fl->name }}
+									</option>
+								@endforeach
+							</select>
+							<div class="f-13 cd mt-05">{{ __('tournaments.feeder_league_hint') }}</div>
+						</div>
+						@endif
+
 						<div class="card mb-2">
 							<label>{{ __('seasons.leagues_section_logo') }}</label>
 							@if($league->logo_url)

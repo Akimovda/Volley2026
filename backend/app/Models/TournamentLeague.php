@@ -68,6 +68,12 @@ class TournamentLeague extends Model
         return (int) $this->cfg('promote_count', 0);
     }
 
+    // Алиас для единообразия с ТЗ
+    public function getPromoteCount(): int
+    {
+        return $this->promoteCount();
+    }
+
     public function relegateCount(): int
     {
         return (int) $this->cfg('relegate_count', 0);
@@ -78,9 +84,44 @@ class TournamentLeague extends Model
         return (int) $this->cfg('eliminate_count', 0);
     }
 
+    // Алиас для единообразия с ТЗ
+    public function getEliminateCount(): int
+    {
+        return $this->eliminateCount();
+    }
+
+    public function getEliminateTo(): string
+    {
+        return $this->cfg('eliminate_to', 'reserve');
+    }
+
     public function promoteTo(): ?string
     {
         return $this->cfg('promote_to');
+    }
+
+    // Алиас для единообразия с ТЗ
+    public function getPromoteTo(): ?string
+    {
+        return $this->promoteTo();
+    }
+
+    // Дивизион уровнем выше в том же сезоне (меньший level = выше)
+    public function upperDivision(): ?TournamentLeague
+    {
+        return static::where('season_id', $this->season_id)
+            ->where('level', '<', $this->level)
+            ->orderByDesc('level')
+            ->first();
+    }
+
+    // Дивизион уровнем ниже в том же сезоне
+    public function lowerDivision(): ?TournamentLeague
+    {
+        return static::where('season_id', $this->season_id)
+            ->where('level', '>', $this->level)
+            ->orderBy('level')
+            ->first();
     }
 
     public function hasCapacity(): bool
