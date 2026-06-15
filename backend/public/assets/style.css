@@ -4790,6 +4790,7 @@ body.dark .progress { background: rgba(255,255,255,0.12); }
 }
 .is-app body.dark #app-back-btn {
 	background: rgba(34, 35, 51, 0.95);
+	color: #F97316;
 }
 .is-app body.dark #app-back-btn:active {
 	background: rgba(0, 0, 0, 0.95);
