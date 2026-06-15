@@ -831,8 +831,9 @@
                                             @endforeach
                                         </select>
 
-                                </div>
-                                
+                                    </div>
+                                </div>{{-- /price_wrap_edit --}}
+
                                 <div class="mt-2">
                                     <label>{{ __('events.pay_method_label') }}</label>
                                     <select name="payment_method">
