@@ -329,16 +329,16 @@ class TournamentTeamController extends Controller
     }
 
     /**
-     * Организатор переводит команду в лист ожидания.
+     * Организатор переводит команду в резерв.
      * beach_pair: расформировать + создать соло-пары для каждого участника (→ «Ищут партнёра»).
-     * classic_team: расформировать + добавить участников в occurrence_waitlist.
+     * classic_team (лиговый): TournamentLeagueTeam.status='reserve' — появляется в блоке «Лист ожидания» на setup.
+     * classic_team (нелиговый): EventTeam.reserve_position — появляется в счётчике резерва.
      */
     public function sendTeamToWaitlist(
         Request $request,
         Event $event,
         EventTeam $team,
-        TournamentTeamService $service,
-        WaitlistService $waitlistService
+        TournamentTeamService $service
     ): RedirectResponse {
         abort_unless((int) $team->event_id === (int) $event->id, 404);
         $user = $request->user();
@@ -349,19 +349,24 @@ class TournamentTeamController extends Controller
         $teamKind     = $team->team_kind;
         $teamName     = $team->name;
 
-        $members = $team->members()->with('user')
-            ->where('confirmation_status', 'confirmed')
-            ->get();
-
-        \App\Models\EventTeamApplication::where('event_team_id', $team->id)->delete();
-        \App\Models\EventTeamInvite::where('event_team_id', $team->id)->delete();
-        $team->members()->delete();
-        $team->delete();
-
-        $errors = [];
+        $redirectUrl = route('tournament.setup', $event);
+        if ($occurrenceId) {
+            $redirectUrl .= '?occurrence_id=' . $occurrenceId;
+        }
 
         if ($teamKind === 'beach_pair') {
-            $settings    = EventTournamentSetting::where('event_id', $event->id)->first();
+            // Beach: расформировать + соло-пары → «Ищут партнёра»
+            $members = $team->members()->with('user')
+                ->where('confirmation_status', 'confirmed')
+                ->get();
+
+            \App\Models\EventTeamApplication::where('event_team_id', $team->id)->delete();
+            \App\Models\EventTeamInvite::where('event_team_id', $team->id)->delete();
+            $team->members()->delete();
+            $team->delete();
+
+            $errors   = [];
+            $settings = EventTournamentSetting::where('event_id', $event->id)->first();
             $autoApprove = ($settings?->application_mode ?? 'manual') === 'auto';
             foreach ($members as $m) {
                 $mu       = $m->user;
@@ -382,32 +387,56 @@ class TournamentTeamController extends Controller
                     $errors[] = $e->getMessage();
                 }
             }
-        } else {
-            $occurrence = $occurrenceId ? EventOccurrence::find($occurrenceId) : null;
-            if ($occurrence) {
-                foreach ($members as $m) {
-                    $positions = $m->position_code ? [$m->position_code] : [];
-                    try {
-                        $waitlistService->join($occurrence, $m->user, $positions);
-                    } catch (\Exception $e) {
-                        $errors[] = $e->getMessage();
-                    }
+
+            $this->dispatchAnnounceRefresh($event, $occurrenceId);
+
+            $msg = "Команда «{$teamName}» переведена в резерв.";
+            if ($errors) {
+                $msg .= ' Ошибки: ' . implode('; ', $errors);
+            }
+            return redirect($redirectUrl)->with('success', $msg);
+        }
+
+        // Classic: перевести в резерв через правильный механизм (не occurrence_waitlist)
+        $seasonEvent = $occurrenceId
+            ? \App\Models\TournamentSeasonEvent::where('occurrence_id', $occurrenceId)->first()
+            : null;
+
+        if ($seasonEvent?->league_id) {
+            // Лиговый турнир: TournamentLeagueTeam → reserve
+            $league = \App\Models\TournamentLeague::find($seasonEvent->league_id);
+            $leagueTeam = \App\Models\TournamentLeagueTeam::where('league_id', $seasonEvent->league_id)
+                ->where('team_id', $team->id)
+                ->first();
+
+            if (!$leagueTeam) {
+                $captainId = $team->captain_user_id
+                    ?? $team->members()->where('role_code', 'captain')->value('user_id')
+                    ?? $team->members()->first()?->user_id;
+                if ($captainId) {
+                    $leagueTeam = \App\Models\TournamentLeagueTeam::where('league_id', $seasonEvent->league_id)
+                        ->where('user_id', $captainId)
+                        ->first();
                 }
             }
+
+            if ($leagueTeam && $league) {
+                $leagueTeam->eliminate($league->nextReservePosition());
+            }
+        } else {
+            // Нелиговый турнир: EventTeam → reserve_position
+            $maxReserve = \App\Models\EventTeam::where('event_id', $event->id)
+                ->whereNotNull('reserve_position')
+                ->max('reserve_position') ?? 0;
+            $team->update([
+                'reserve_position' => $maxReserve + 1,
+                'status'           => 'reserve',
+            ]);
         }
 
         $this->dispatchAnnounceRefresh($event, $occurrenceId);
 
-        $msg = "Команда «{$teamName}» перемещена в список ожидания.";
-        if ($errors) {
-            $msg .= ' Ошибки: ' . implode('; ', $errors);
-        }
-
-        $redirectUrl = route('tournament.setup', $event);
-        if ($occurrenceId) {
-            $redirectUrl .= '?occurrence_id=' . $occurrenceId;
-        }
-        return redirect($redirectUrl)->with('success', $msg);
+        return redirect($redirectUrl)->with('success', "Команда «{$teamName}» переведена в резерв.");
     }
 
 
