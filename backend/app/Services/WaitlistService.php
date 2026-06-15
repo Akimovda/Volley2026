@@ -141,13 +141,13 @@ class WaitlistService
             return;
         }
 
-        // Командные турниры — старая логика с уведомлением (командная регистрация ≠ позиции)
-        // Для tournament_individual — обычная автозапись как для индивидуальных мероприятий
+        // Командные турниры не используют occurrence_waitlist.
+        // Резерв через TournamentLeagueTeam (лига) или EventTeam.reserve_position (standalone).
+        // tournament_individual работает как обычное мероприятие — не пропускаем.
         $event = $occurrence->event ?: $occurrence->loadMissing('event')->event;
         if ($event && (string) $event->format === 'tournament') {
             $isIndividualTournamentForWaitlist = (string)($event->registration_mode ?? '') === 'tournament_individual';
             if (!$isIndividualTournamentForWaitlist) {
-                $this->notifyNext($occurrence->id, $position);
                 return;
             }
         }

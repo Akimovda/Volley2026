@@ -767,7 +767,7 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 							<div style="display:flex;gap:4px;align-items:center">
 								<form method="POST" action="{{ route('tournamentTeams.sendToWaitlist', [$event, $team]) }}" class="mt-1">
 									@csrf
-									<button type="submit" class="btn btn-secondary btn-small btn-alert" data-title="Переместить «{{ $team->name }}» в список ожидания?" data-icon="warning" data-confirm-text="Переместить" data-cancel-text="{{ __('tournaments.btn_cancel') }}" title="Вернуть в лист ожидания">⏳</button>
+									<button type="submit" class="btn btn-secondary btn-small btn-alert" data-title="Переместить «{{ $team->name }}» в резерв?" data-icon="warning" data-confirm-text="В резерв" data-cancel-text="{{ __('tournaments.btn_cancel') }}" title="В резерв">⏳</button>
 								</form>
 								<form method="POST" action="{{ route('tournamentTeams.destroy', [$event, $team]) }}" class="mt-1">
 									@csrf @method('DELETE')
