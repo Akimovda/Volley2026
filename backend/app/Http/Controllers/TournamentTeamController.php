@@ -33,11 +33,46 @@ class TournamentTeamController extends Controller
             'invites.invitedByUser',
         ]);
 
+        $leagueForSubs        = null;
+        $reserveForSubs       = collect();
+        $tourStarted          = false;
+        $existingSubstitutions = collect();
+
+        if ($team->occurrence_id) {
+            $seasonEvent = \App\Models\TournamentSeasonEvent::where('occurrence_id', $team->occurrence_id)->first();
+            if ($seasonEvent?->league_id) {
+                $leagueForSubs = \App\Models\TournamentLeague::find($seasonEvent->league_id);
+                if ($leagueForSubs) {
+                    $reserveForSubs = $leagueForSubs->leagueTeams()
+                        ->where('status', 'reserve')
+                        ->whereNotNull('user_id')
+                        ->with('user:id,first_name,last_name')
+                        ->get();
+                }
+            }
+            if ($team->occurrence) {
+                $tourStarted = now('UTC')->gte($team->occurrence->starts_at);
+            }
+            $existingSubstitutions = \App\Models\TeamSubstitution::where('team_id', $team->id)
+                ->where('occurrence_id', $team->occurrence_id)
+                ->whereIn('status', ['pending', 'confirmed'])
+                ->with([
+                    'originalPlayer:id,first_name,last_name',
+                    'substitutePlayer:id,first_name,last_name',
+                ])
+                ->get()
+                ->keyBy('original_player_id');
+        }
+
         return view('tournaments.teams.show', [
-            'event' => $event,
-            'team' => $team,
-            'teamRoleOptions' => $service->getTeamRoleOptions(),
-            'positionOptions' => $service->getAvailablePositionOptions($team),
+            'event'                 => $event,
+            'team'                  => $team,
+            'teamRoleOptions'       => $service->getTeamRoleOptions(),
+            'positionOptions'       => $service->getAvailablePositionOptions($team),
+            'leagueForSubs'         => $leagueForSubs,
+            'reserveForSubs'        => $reserveForSubs,
+            'tourStarted'           => $tourStarted,
+            'existingSubstitutions' => $existingSubstitutions,
         ]);
     }
 
