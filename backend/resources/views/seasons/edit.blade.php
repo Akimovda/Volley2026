@@ -277,39 +277,45 @@
 							@csrf @method('PUT')
 							<input type="hidden" name="name" value="{{ $season->name }}">
 							<input type="hidden" name="direction" value="{{ $season->direction }}">
-							<div class="d-flex" style="gap:8px;flex-wrap:wrap;align-items:flex-end">
+
+							{{-- Строка 1: числовые поля --}}
+							<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px">
 								<div>
 									<label class="f-13 cd">{{ __('tournaments.max_teams') }}</label>
 									<input type="number" name="divisions[{{ $divLeague->id }}][max_teams]"
-										value="{{ $divLeague->max_teams }}" min="2" max="32" style="width:72px">
+										value="{{ $divLeague->max_teams }}" min="2" max="32" style="width:100%">
 								</div>
 								<div>
 									<label class="f-13 cd">{{ __('tournaments.level') }}</label>
 									<input type="number" name="divisions[{{ $divLeague->id }}][level]"
-										value="{{ $divLeague->level }}" min="1" max="10" style="width:64px">
-									<div class="f-13 cd">1=Hard, 2=Lite</div>
+										value="{{ $divLeague->level }}" min="1" max="10" style="width:100%">
+									<div class="f-12 cd" style="line-height:1.2">1=Hard, 2=Lite</div>
 								</div>
 								<div>
 									<label class="f-13 cd">{{ __('tournaments.eliminate_count') }}</label>
 									<input type="number" name="divisions[{{ $divLeague->id }}][config][eliminate_count]"
-										value="{{ $divLeague->getEliminateCount() }}" min="0" max="10" style="width:64px">
+										value="{{ $divLeague->getEliminateCount() }}" min="0" max="10" style="width:100%">
 								</div>
 								<div>
+									<label class="f-13 cd">{{ __('tournaments.promote_count') }}</label>
+									<input type="number" name="divisions[{{ $divLeague->id }}][config][promote_count]"
+										value="{{ $divLeague->getPromoteCount() }}" min="0" max="10" style="width:100%">
+								</div>
+							</div>
+
+							{{-- Строка 2: селекты + кнопка --}}
+							<div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:flex-end">
+								<div>
 									<label class="f-13 cd">{{ __('tournaments.eliminate_to') }}</label>
-									<select name="divisions[{{ $divLeague->id }}][config][eliminate_to]">
+									<select name="divisions[{{ $divLeague->id }}][config][eliminate_to]" style="width:100%">
 										<option value="reserve" {{ $divLeague->getEliminateTo() === 'reserve' ? 'selected' : '' }}>{{ __('tournaments.to_reserve') }}</option>
 										<option value="feeder" {{ $divLeague->getEliminateTo() === 'feeder' ? 'selected' : '' }}>{{ __('tournaments.to_feeder_league') }}</option>
 										<option value="lower_division" {{ $divLeague->getEliminateTo() === 'lower_division' ? 'selected' : '' }}>{{ __('tournaments.to_lower_division') }}</option>
 									</select>
 								</div>
 								<div>
-									<label class="f-13 cd">{{ __('tournaments.promote_count') }}</label>
-									<input type="number" name="divisions[{{ $divLeague->id }}][config][promote_count]"
-										value="{{ $divLeague->getPromoteCount() }}" min="0" max="10" style="width:64px">
-								</div>
-								<div>
 									<label class="f-13 cd">{{ __('tournaments.promote_to') }}</label>
-									<select name="divisions[{{ $divLeague->id }}][config][promote_to]">
+									<select name="divisions[{{ $divLeague->id }}][config][promote_to]" style="width:100%">
 										<option value="">{{ __('tournaments.nowhere') }}</option>
 										<option value="upper_division" {{ $divLeague->getPromoteTo() === 'upper_division' ? 'selected' : '' }}>{{ __('tournaments.to_upper_division') }}</option>
 										<option value="parent_league" {{ $divLeague->getPromoteTo() === 'parent_league' ? 'selected' : '' }}>{{ __('tournaments.to_parent_league') }}</option>
