@@ -344,6 +344,13 @@ class TournamentSeasonController extends Controller
                 }
             }
 
+            if ($validated['target_status'] === 'active' && $league->max_teams && !$league->hasCapacity()) {
+                $current = $league->activeTeams()->count();
+                throw new \InvalidArgumentException(
+                    "Дивизион заполнен ({$current}/{$league->max_teams} команд в основном составе). Добавьте в резерв."
+                );
+            }
+
             $entry = $this->leagueService->addTeam($league, $team, forceStatus: $validated['target_status']);
 
             $msg = $entry->isReserve()

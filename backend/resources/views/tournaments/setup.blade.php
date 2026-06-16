@@ -524,7 +524,12 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 			{{-- Добавить команду вручную в дивизион --}}
 			<div class="mt-1">
 				<details id="add-to-league-details">
-					<summary class="btn btn-secondary">➕ Добавить в состав / резерв</summary>
+					@php
+					$_addLeagueMax     = $seasonData['league']->max_teams ?? null;
+					$_addLeagueActive  = $leagueTeams->where('status', 'active')->count();
+					$_addLeagueFull    = $_addLeagueMax && $_addLeagueActive >= $_addLeagueMax;
+					@endphp
+				<summary class="btn btn-secondary">➕ Добавить в состав / резерв</summary>
 					<form method="POST" action="{{ route('divisions.createAndAdd', $seasonData['league']) }}" class="mt-2">
 						@csrf
 						@if($selectedOccurrence)
@@ -561,11 +566,27 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 							</div>
 							<div class="col-md-6">
 								<div class="card">
-									<label>Место</label>
-									<select name="target_status">
+									<label>
+									Место
+									@if($_addLeagueMax)
+									<span class="cd" id="league-cap-hint">— {{ $_addLeagueActive }} / {{ $_addLeagueMax }} команд</span>
+									@endif
+								</label>
+									<select name="target_status" id="add-league-target-status"
+										data-max="{{ $_addLeagueMax ?? '' }}"
+										data-current="{{ $_addLeagueActive }}">
 										<option value="active">Основной состав</option>
-										<option value="reserve">Резерв</option>
+										<option value="reserve"{{ $_addLeagueFull ? ' selected' : '' }}>Резерв</option>
 									</select>
+									@if($_addLeagueFull)
+									<div class="alert alert-warning mt-1" id="league-cap-warning" style="font-size:13px;padding:6px 10px">
+										⚠ Основной состав заполнен ({{ $_addLeagueActive }}/{{ $_addLeagueMax }}). Добавление переведёт в резерв или вернёт ошибку.
+									</div>
+									@else
+									<div class="alert alert-warning mt-1" id="league-cap-warning" style="font-size:13px;padding:6px 10px;display:none">
+										⚠ Основной состав заполнен ({{ $_addLeagueActive }}/{{ $_addLeagueMax ?? '∞' }}). Добавление переведёт в резерв или вернёт ошибку.
+									</div>
+									@endif
 								</div>
 							</div>
 							<div class="col-md-12 text-center">
@@ -2050,6 +2071,22 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 		}
 		makeAC('add-league-captain-search','add-league-captain-id','add-league-captain-dd','add-league-captain-wrap');
 		makeAC('add-league-partner-search','add-league-partner-id','add-league-partner-dd','add-league-partner-wrap');
+
+		// Предупреждение о лимите дивизиона
+		(function(){
+			var sel = document.getElementById('add-league-target-status');
+			var warn = document.getElementById('league-cap-warning');
+			if (!sel || !warn) return;
+			var max = parseInt(sel.dataset.max) || 0;
+			var cur = parseInt(sel.dataset.current) || 0;
+			sel.addEventListener('change', function(){
+				if (max && cur >= max && this.value === 'active') {
+					warn.style.display = '';
+				} else {
+					warn.style.display = 'none';
+				}
+			});
+		})();
 	})();
 	</script>
 
