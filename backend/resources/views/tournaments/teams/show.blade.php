@@ -24,7 +24,7 @@ $canManage   = $isCaptain || $isOrganizer;
 
 			<div class="d-flex flex-wrap gap-1 m-center">
 				<div class="mt-2" data-aos-delay="250" data-aos="fade-up">
-					 <a href="{{ route('events.show', $event) }}" class="btn btn-secondary">← К турниру</a>
+					 <a href="{{ route('events.show', $event) }}{{ $team->occurrence_id ? '?occurrence=' . $team->occurrence_id : '' }}" class="btn btn-secondary">← К турниру</a>
 				</div>
 				
 				
@@ -442,6 +442,7 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
                 <form method="POST" action="{{ route('tournamentTeams.withdraw', [$event, $team]) }}" class="mt-2">
                     @csrf
                     <button type="submit" class="btn btn-secondary btn-alert"
+                            style="border:2px solid #dc2626;color:#dc2626"
                             data-title="{{ $leagueTeamSelf ? 'Отказаться от участия в этом туре?' : 'Снять команду с турнира?' }}"
                             data-icon="warning"
                             data-confirm-text="Да, перейти в резерв"
@@ -558,6 +559,7 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
                 <form method="POST" action="{{ route('tournamentTeams.withdraw', [$event, $team]) }}" class="mt-2">
                     @csrf
                     <button type="submit" class="btn btn-secondary btn-alert"
+                            style="border:2px solid #dc2626;color:#dc2626"
                             data-title="{{ $leagueTeamSelf ? 'Отказаться от участия в этом туре?' : 'Снять команду с турнира?' }}"
                             data-icon="warning"
                             data-confirm-text="Да, перейти в резерв"
