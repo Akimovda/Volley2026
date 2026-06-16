@@ -438,6 +438,18 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
                     <button type="submit" class="btn btn-small btn-danger">{{ __('events.tapp_revoke_btn') }}</button>
                 </form>
             @endif
+            @if($canManage && $appSt === 'approved' && !$tourStarted && ($leagueTeamSelf?->status === 'active' || (!$leagueTeamSelf && ($team->reserve_position === null) && $team->status !== 'reserve')))
+                <form method="POST" action="{{ route('tournamentTeams.withdraw', [$event, $team]) }}" class="mt-2">
+                    @csrf
+                    <button type="submit" class="btn btn-secondary btn-alert"
+                            data-title="{{ $leagueTeamSelf ? 'Отказаться от участия в этом туре?' : 'Снять команду с турнира?' }}"
+                            data-icon="warning"
+                            data-confirm-text="Да, перейти в резерв"
+                            data-cancel-text="Отмена">
+                        ↩ Отказаться от тура / перейти в резерв
+                    </button>
+                </form>
+            @endif
 
             {{-- Блок оплаты (после подачи заявки) --}}
             @php
@@ -542,6 +554,18 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
                     <div class="b-600 f-16" style="color:{{ $appStColor[$autoSt] }}">{{ $appStLabels[$autoSt] }}</div>
                 </div>
             </div>
+            @if($canManage && $team->status === 'approved' && !$tourStarted && ($leagueTeamSelf?->status === 'active' || (!$leagueTeamSelf && ($team->reserve_position === null))))
+                <form method="POST" action="{{ route('tournamentTeams.withdraw', [$event, $team]) }}" class="mt-2">
+                    @csrf
+                    <button type="submit" class="btn btn-secondary btn-alert"
+                            data-title="{{ $leagueTeamSelf ? 'Отказаться от участия в этом туре?' : 'Снять команду с турнира?' }}"
+                            data-icon="warning"
+                            data-confirm-text="Да, перейти в резерв"
+                            data-cancel-text="Отмена">
+                        ↩ Отказаться от тура / перейти в резерв
+                    </button>
+                </form>
+            @endif
 
         @elseif($canManage)
             <div class="f-16 mb-2">Если состав готов — подайте заявку на турнир.</div>

@@ -33,9 +33,10 @@ class TournamentTeamController extends Controller
             'invites.invitedByUser',
         ]);
 
-        $leagueForSubs        = null;
-        $reserveForSubs       = collect();
-        $tourStarted          = false;
+        $leagueForSubs         = null;
+        $leagueTeamSelf        = null;
+        $reserveForSubs        = collect();
+        $tourStarted           = false;
         $existingSubstitutions = collect();
 
         if ($team->occurrence_id) {
@@ -43,6 +44,15 @@ class TournamentTeamController extends Controller
             if ($seasonEvent?->league_id) {
                 $leagueForSubs = \App\Models\TournamentLeague::find($seasonEvent->league_id);
                 if ($leagueForSubs) {
+                    $leagueTeamSelf = \App\Models\TournamentLeagueTeam::where('league_id', $seasonEvent->league_id)
+                        ->where('team_id', $team->id)
+                        ->first();
+                    // Fallback: пляжные пары могут быть привязаны по user_id капитана
+                    if (!$leagueTeamSelf && $team->captain_user_id) {
+                        $leagueTeamSelf = \App\Models\TournamentLeagueTeam::where('league_id', $seasonEvent->league_id)
+                            ->where('user_id', $team->captain_user_id)
+                            ->first();
+                    }
                     $reserveForSubs = $leagueForSubs->leagueTeams()
                         ->where('status', 'reserve')
                         ->whereNotNull('user_id')
@@ -70,6 +80,7 @@ class TournamentTeamController extends Controller
             'teamRoleOptions'       => $service->getTeamRoleOptions(),
             'positionOptions'       => $service->getAvailablePositionOptions($team),
             'leagueForSubs'         => $leagueForSubs,
+            'leagueTeamSelf'        => $leagueTeamSelf,
             'reserveForSubs'        => $reserveForSubs,
             'tourStarted'           => $tourStarted,
             'existingSubstitutions' => $existingSubstitutions,
@@ -474,6 +485,56 @@ class TournamentTeamController extends Controller
         return redirect($redirectUrl)->with('success', "Команда «{$teamName}» переведена в резерв.");
     }
 
+
+    /**
+     * Капитан/организатор снимает команду с конкретного тура — переводит в резерв дивизиона.
+     * Для нелиговых турниров: обновляет EventTeam.status = 'reserve'.
+     */
+    public function withdrawTeam(Request $request, Event $event, EventTeam $team): RedirectResponse
+    {
+        abort_unless((int) $team->event_id === (int) $event->id, 404);
+
+        $user        = $request->user();
+        $isCaptain   = (int) $team->captain_user_id === (int) $user->id;
+        $isOrganizer = (int) $event->organizer_id   === (int) $user->id || $user->isAdmin();
+        abort_unless($isCaptain || $isOrganizer, 403);
+
+        $occurrenceId = $team->occurrence_id ? (int) $team->occurrence_id : null;
+        $teamName     = $team->name;
+
+        $seasonEvent = $occurrenceId
+            ? \App\Models\TournamentSeasonEvent::where('occurrence_id', $occurrenceId)->first()
+            : null;
+
+        if ($seasonEvent?->league_id) {
+            $league     = \App\Models\TournamentLeague::find($seasonEvent->league_id);
+            $leagueTeam = \App\Models\TournamentLeagueTeam::where('league_id', $seasonEvent->league_id)
+                ->where('team_id', $team->id)
+                ->first();
+            if (!$leagueTeam && $team->captain_user_id) {
+                $leagueTeam = \App\Models\TournamentLeagueTeam::where('league_id', $seasonEvent->league_id)
+                    ->where('user_id', $team->captain_user_id)
+                    ->first();
+            }
+            if ($leagueTeam && $league) {
+                $leagueTeam->eliminate($league->nextReservePosition());
+            }
+        } else {
+            $maxReserve = \App\Models\EventTeam::where('event_id', $event->id)
+                ->whereNotNull('reserve_position')
+                ->max('reserve_position') ?? 0;
+            $team->update([
+                'reserve_position' => $maxReserve + 1,
+                'status'           => 'reserve',
+            ]);
+        }
+
+        $this->dispatchAnnounceRefresh($event, $occurrenceId);
+
+        return redirect()
+            ->route('tournamentTeams.show', [$event, $team])
+            ->with('success', "Команда «{$teamName}» переведена в резерв.");
+    }
 
     /**
      * Игрок отправляет запрос на вступление в пару с вакантным местом.
