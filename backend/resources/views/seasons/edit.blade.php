@@ -80,12 +80,12 @@
 
 						{{-- Настройки промоушена --}}
 						<div class="card mb-2" style="background:rgba(231,97,47,.04);border:1px solid rgba(231,97,47,.15)">
-							<label class="b-600 mb-1">{{ __('tournaments.promotion_settings') }}</label>
+							<label class="f-14 b-600 mb-1">{{ __('tournaments.promotion_settings') }}</label>
 
 							<label class="checkbox-item mb-1">
 								<input type="checkbox" name="config[auto_promotion]" value="1" {{ $season->isAutoPromotion() ? 'checked' : '' }}>
 								<div class="custom-checkbox"></div>
-								<span class="f-14">{{ __('tournaments.auto_promotion') }}</span>
+								<span class="f-13">{{ __('tournaments.auto_promotion') }}</span>
 							</label>
 							<div class="f-13 cd mb-2">{{ __('tournaments.auto_promotion_hint') }}</div>
 
@@ -95,14 +95,16 @@
 								<option value="after_tour" {{ $season->getPromotionTrigger() === 'after_tour' ? 'selected' : '' }}>{{ __('tournaments.trigger_after_tour') }}</option>
 							</select>
 
-							<label class="checkbox-item mb-1">
-								<input type="checkbox" name="config[queue_entry_enabled]" value="1" {{ $season->isQueueEntryEnabled() ? 'checked' : '' }}>
-								<div class="custom-checkbox"></div>
-								<span class="f-14">{{ __('tournaments.queue_entry_enabled') }}</span>
-							</label>
-							<div class="d-flex fvc mb-2" style="gap:8px">
-								<span class="f-13 b-600">{{ __('tournaments.queue_entry_slots') }}:</span>
-								<input type="number" name="config[queue_entry_slots]" min="0" max="10" value="{{ $season->getQueueEntrySlots() }}" style="width:70px">
+							<div class="mt-2 pt-2" style="border-top:1px solid rgba(128,128,128,.12)">
+								<label class="checkbox-item mb-1">
+									<input type="checkbox" name="config[queue_entry_enabled]" value="1" {{ $season->isQueueEntryEnabled() ? 'checked' : '' }}>
+									<div class="custom-checkbox"></div>
+									<span class="f-13">{{ __('tournaments.queue_entry_enabled') }}</span>
+								</label>
+								<div class="mb-2">
+									<label class="f-13 b-600">{{ __('tournaments.queue_entry_slots') }}</label>
+									<input type="number" name="config[queue_entry_slots]" min="0" max="10" value="{{ $season->getQueueEntrySlots() }}" style="width:100%">
+								</div>
 							</div>
 
 							@if($season->league && $season->league->hasFeeder())
@@ -277,37 +279,37 @@
 							<input type="hidden" name="direction" value="{{ $season->direction }}">
 							<div class="d-flex" style="gap:8px;flex-wrap:wrap;align-items:flex-end">
 								<div>
-									<label class="f-12 cd">{{ __('tournaments.max_teams') }}</label>
+									<label class="f-13 cd">{{ __('tournaments.max_teams') }}</label>
 									<input type="number" name="divisions[{{ $divLeague->id }}][max_teams]"
 										value="{{ $divLeague->max_teams }}" min="2" max="32" style="width:72px">
 								</div>
 								<div>
-									<label class="f-12 cd">{{ __('tournaments.level') }}</label>
+									<label class="f-13 cd">{{ __('tournaments.level') }}</label>
 									<input type="number" name="divisions[{{ $divLeague->id }}][level]"
 										value="{{ $divLeague->level }}" min="1" max="10" style="width:64px">
-									<div class="f-12 cd">1=Hard, 2=Lite</div>
+									<div class="f-13 cd">1=Hard, 2=Lite</div>
 								</div>
 								<div>
-									<label class="f-12 cd">{{ __('tournaments.eliminate_count') }}</label>
+									<label class="f-13 cd">{{ __('tournaments.eliminate_count') }}</label>
 									<input type="number" name="divisions[{{ $divLeague->id }}][config][eliminate_count]"
 										value="{{ $divLeague->getEliminateCount() }}" min="0" max="10" style="width:64px">
 								</div>
 								<div>
-									<label class="f-12 cd">{{ __('tournaments.eliminate_to') }}</label>
-									<select name="divisions[{{ $divLeague->id }}][config][eliminate_to]" style="font-size:13px">
+									<label class="f-13 cd">{{ __('tournaments.eliminate_to') }}</label>
+									<select name="divisions[{{ $divLeague->id }}][config][eliminate_to]">
 										<option value="reserve" {{ $divLeague->getEliminateTo() === 'reserve' ? 'selected' : '' }}>{{ __('tournaments.to_reserve') }}</option>
 										<option value="feeder" {{ $divLeague->getEliminateTo() === 'feeder' ? 'selected' : '' }}>{{ __('tournaments.to_feeder_league') }}</option>
 										<option value="lower_division" {{ $divLeague->getEliminateTo() === 'lower_division' ? 'selected' : '' }}>{{ __('tournaments.to_lower_division') }}</option>
 									</select>
 								</div>
 								<div>
-									<label class="f-12 cd">{{ __('tournaments.promote_count') }}</label>
+									<label class="f-13 cd">{{ __('tournaments.promote_count') }}</label>
 									<input type="number" name="divisions[{{ $divLeague->id }}][config][promote_count]"
 										value="{{ $divLeague->getPromoteCount() }}" min="0" max="10" style="width:64px">
 								</div>
 								<div>
-									<label class="f-12 cd">{{ __('tournaments.promote_to') }}</label>
-									<select name="divisions[{{ $divLeague->id }}][config][promote_to]" style="font-size:13px">
+									<label class="f-13 cd">{{ __('tournaments.promote_to') }}</label>
+									<select name="divisions[{{ $divLeague->id }}][config][promote_to]">
 										<option value="">{{ __('tournaments.nowhere') }}</option>
 										<option value="upper_division" {{ $divLeague->getPromoteTo() === 'upper_division' ? 'selected' : '' }}>{{ __('tournaments.to_upper_division') }}</option>
 										<option value="parent_league" {{ $divLeague->getPromoteTo() === 'parent_league' ? 'selected' : '' }}>{{ __('tournaments.to_parent_league') }}</option>
