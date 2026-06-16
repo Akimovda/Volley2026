@@ -155,6 +155,35 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
                         <button type="submit" class="btn btn-small btn-secondary" title="Передать капитанство">👑</button>
                     </form>
                 @endif
+                @if($canManage && $leagueForSubs && !$tourStarted && $member->confirmation_status === 'confirmed' && (int)$member->user_id !== (int)$team->captain_user_id)
+                    @php $existingSub = $existingSubstitutions[$member->user_id] ?? null; @endphp
+                    @if($existingSub)
+                        @if($existingSub->isConfirmed())
+                            <span style="font-size:12px;padding:2px 8px;border-radius:10px;background:#f0fdf4;color:#166534;font-weight:600">
+                                🔄 {{ $existingSub->substitutePlayer->last_name }} {{ $existingSub->substitutePlayer->first_name }}
+                            </span>
+                        @else
+                            <span style="font-size:12px;padding:2px 8px;border-radius:10px;background:#fff7e6;color:#92400e;font-weight:600">
+                                ⏳ {{ $existingSub->substitutePlayer->last_name }} {{ $existingSub->substitutePlayer->first_name }}
+                            </span>
+                            <form method="POST" action="{{ route('substitutions.cancel', $existingSub) }}" style="display:inline">
+                                @csrf
+                                <button class="btn btn-small btn-secondary btn-alert"
+                                    data-title="Отменить замену?"
+                                    data-icon="warning"
+                                    data-confirm-text="Да"
+                                    data-cancel-text="Отмена"
+                                    title="Отменить замену">✕</button>
+                            </form>
+                        @endif
+                    @else
+                        <button type="button" class="btn btn-small btn-secondary"
+                            title="Найти замену на этот тур"
+                            data-member-id="{{ $member->user_id }}"
+                            data-member-name="{{ $member->user->last_name }} {{ $member->user->first_name }}"
+                            onclick="openSubModal(this)">🔄</button>
+                    @endif
+                @endif
                 @if(($isCaptain || $isOrganizer) && (int)$member->user_id !== (int)$team->captain_user_id)
                     <form method="POST" action="{{ route('tournamentTeams.members.destroy',[$event,$team,$member]) }}">
                         @csrf @method('DELETE')
@@ -690,8 +719,112 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
 </div>
 </div>
 
+@if($leagueForSubs && $team->occurrence_id && !$tourStarted)
+<div id="subModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center">
+    <div class="card p-3" style="max-width:480px;width:95%;max-height:90vh;overflow-y:auto;position:relative">
+        <button onclick="closeSubModal()" style="position:absolute;top:10px;right:12px;background:none;border:none;font-size:18px;cursor:pointer">✕</button>
+        <h3 class="-mt-05 mb-1" id="subModalTitle">🔄 Замена на тур</h3>
+        <div class="f-13 mb-2" style="opacity:.6" id="subReplacingLabel"></div>
+
+        {{-- Вкладки --}}
+        <div class="d-flex gap-1 mb-2">
+            <button class="btn sub-tab-btn" data-tab="reserve" onclick="switchSubTab('reserve')">Из резерва</button>
+            <button class="btn btn-secondary sub-tab-btn" data-tab="external" onclick="switchSubTab('external')">Поиск игрока</button>
+        </div>
+
+        {{-- Из резерва --}}
+        <div id="subTabReserve">
+            @if($reserveForSubs->isNotEmpty())
+            @foreach($reserveForSubs as $rlt)
+            @if($rlt->user)
+            <div class="d-flex" style="padding:6px 0;border-bottom:1px solid rgba(128,128,128,.08);align-items:center;gap:8px">
+                <span style="flex:1">{{ $rlt->user->last_name }} {{ $rlt->user->first_name }}</span>
+                <button type="button" class="btn btn-small"
+                    onclick="selectSubstitute({{ $rlt->user_id }}, '{{ addslashes($rlt->user->last_name.' '.$rlt->user->first_name) }}', 'reserve')">
+                    Пригласить
+                </button>
+            </div>
+            @endif
+            @endforeach
+            @else
+            <div class="f-13" style="opacity:.5">Резерв пуст</div>
+            @endif
+        </div>
+
+        {{-- Поиск внешнего --}}
+        <div id="subTabExternal" style="display:none">
+            <input type="text" id="subSearchInput" placeholder="Поиск по имени…" autocomplete="off" style="width:100%;margin-bottom:.5rem">
+            <div id="subSearchResults"></div>
+        </div>
+
+        {{-- Форма подтверждения (скрытая) --}}
+        <form method="POST" id="subForm" action="{{ route('leagues.substitutions.store', $leagueForSubs) }}" style="display:none">
+            @csrf
+            <input type="hidden" name="occurrence_id" value="{{ $team->occurrence_id }}">
+            <input type="hidden" name="team_id" value="{{ $team->id }}">
+            <input type="hidden" name="original_player_id" id="subOriginalId">
+            <input type="hidden" name="substitute_player_id" id="subSubstituteId">
+            <input type="hidden" name="substitute_source" id="subSource">
+            <div class="mt-3 p-2" style="background:rgba(128,128,128,.08);border-radius:8px" id="subConfirmBlock">
+                <div class="f-13 mb-2" id="subConfirmText"></div>
+                <button type="submit" class="btn w-100">Отправить приглашение</button>
+            </div>
+        </form>
+    </div>
+</div>
+@endif
+
 <x-slot name="script">
 <script>
+@if($leagueForSubs && $team->occurrence_id && !$tourStarted)
+(function(){
+    function openSubModal(btn) {
+        document.getElementById('subOriginalId').value = btn.dataset.memberId;
+        document.getElementById('subReplacingLabel').textContent = 'Замена для: ' + btn.dataset.memberName;
+        document.getElementById('subForm').style.display = 'none';
+        document.getElementById('subSearchInput').value = '';
+        document.getElementById('subSearchResults').innerHTML = '';
+        switchSubTab('reserve');
+        document.getElementById('subModal').style.display = 'flex';
+    }
+    function closeSubModal() { document.getElementById('subModal').style.display = 'none'; }
+    function switchSubTab(tab) {
+        document.querySelectorAll('.sub-tab-btn').forEach(function(b){ b.classList.toggle('btn-secondary', b.dataset.tab !== tab); });
+        document.getElementById('subTabReserve').style.display = tab === 'reserve' ? '' : 'none';
+        document.getElementById('subTabExternal').style.display = tab === 'external' ? '' : 'none';
+    }
+    function selectSubstitute(id, name, source) {
+        document.getElementById('subSubstituteId').value = id;
+        document.getElementById('subSource').value = source;
+        document.getElementById('subConfirmText').textContent = 'Выбран: ' + name;
+        document.getElementById('subForm').style.display = '';
+    }
+    window.openSubModal = openSubModal;
+    window.closeSubModal = closeSubModal;
+    window.switchSubTab = switchSubTab;
+    window.selectSubstitute = selectSubstitute;
+
+    var t;
+    document.getElementById('subSearchInput').addEventListener('input', function(){
+        clearTimeout(t); var q = this.value.trim();
+        if (q.length < 2) return;
+        t = setTimeout(function(){
+            jQuery.ajax({url: '/api/users/search', data: {q: q}, success: function(r){
+                var el = document.getElementById('subSearchResults'); el.innerHTML = '';
+                (r.items || []).forEach(function(u){
+                    var d = document.createElement('div');
+                    d.style.cssText = 'padding:5px 0;border-bottom:1px solid rgba(128,128,128,.08);display:flex;align-items:center;gap:8px';
+                    d.innerHTML = '<span style="flex:1">' + (u.label || u.name) + '</span>'
+                        + '<button type="button" class="btn btn-small" onclick="selectSubstitute(' + u.id + ',\''
+                        + (u.label || u.name).replace(/'/g, "\\'") + '\',\'external\')">Пригласить</button>';
+                    el.appendChild(d);
+                });
+            }});
+        }, 300);
+    });
+    document.getElementById('subModal').addEventListener('click', function(e){ if (e.target === this) closeSubModal(); });
+})();
+@endif
 (function(){
     var input=document.getElementById('ti-input'),dd=document.getElementById('ti-dd'),
         hid=document.getElementById('ti-userid'),sel=document.getElementById('ti-selected'),
