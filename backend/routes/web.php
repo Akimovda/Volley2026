@@ -381,6 +381,9 @@ Route::post('/auth/tma-exchange', [TmaAuthController::class, 'exchange'])->name(
     Route::post('/events/{event}/teams/{team}/send-to-waitlist', [TournamentTeamController::class, 'sendTeamToWaitlist'])
         ->name('tournamentTeams.sendToWaitlist');
 
+    Route::post('/events/{event}/teams/{team}/withdraw', [TournamentTeamController::class, 'withdrawTeam'])
+        ->name('tournamentTeams.withdraw');
+
     Route::get('/events/{event}/teams/{team}/confirm-reserve/{token}', [TournamentTeamController::class, 'reserveConfirmShow'])
         ->name('tournamentTeams.reserveConfirmShow')->withoutMiddleware(['auth']);
     Route::post('/events/{event}/teams/{team}/confirm-reserve', [TournamentTeamController::class, 'reserveConfirm'])
