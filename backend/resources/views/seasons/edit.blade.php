@@ -57,7 +57,7 @@
 		<div class="row row2 form">
 			<div class="col-lg-4">
 				{{-- Настройки --}}
-				<div class="ramka">
+				<div class="ramka" style="z-index:10">
 					<h2 class="-mt-05">{{ __('seasons.edit_settings_h2') }}</h2>
 					<form action="{{ route('seasons.update', $season) }}" method="POST">
 						@csrf @method('PUT')
@@ -148,7 +148,7 @@
 				</div>
 				
 				{{-- Действия --}}
-				<div class="ramka">
+				<div class="ramka" style="z-index:9">
 					<div class="d-flex" style="gap:1rem;flex-wrap:wrap">
 						@if($season->isDraft())
 						<form action="{{ route('seasons.activate', $season) }}" method="POST" style="flex:1">
@@ -183,7 +183,7 @@
 			<div class="col-lg-8">
 				
 				{{-- Добавить лигу --}}
-				<div class="ramka">
+				<div class="ramka" style="z-index:10">
 					<h2 class="-mt-05">{{ __('seasons.add_division_h2') }}</h2>
 					<form action="{{ route('seasons.divisions.store', $season) }}" method="POST">
 						@csrf
@@ -210,7 +210,7 @@
 				{{-- Список дивизионов --}}
 
 				@forelse($season->leagues as $divLeague)
-				<div class="ramka">
+				<div class="ramka" style="z-index:{{ max(4, 9 - $loop->index) }}">
 					<div class="d-flex between fvc mb-2">
 						<h2 class="-mt-05 mb-0">{{ __('seasons.division_label') }} {{ $divLeague->name }}</h2>
 						<div>
@@ -407,7 +407,7 @@
 					$lastCompletedSE = $season->seasonEvents->where('status', 'completed')->sortByDesc('round_number')->first();
 				@endphp
 				@if($lastCompletedSE && !$season->isAutoPromotion() && $lastCompletedSE->occurrence_id)
-				<div class="ramka" style="background:rgba(231,97,47,.04);border:1px solid rgba(231,97,47,.2)">
+				<div class="ramka" style="background:rgba(231,97,47,.04);border:1px solid rgba(231,97,47,.2);z-index:3">
 					<h2 class="-mt-05">{{ __('tournaments.promotion_ready') }}</h2>
 					<p class="f-14 cd">{{ __('tournaments.promotion_ready_hint') }}</p>
 					<form method="POST" action="{{ route('seasons.promote', $season) }}">
@@ -426,7 +426,7 @@
 				@endif
 				
 				{{-- Привязанные турниры --}}
-				<div class="ramka">
+				<div class="ramka" style="z-index:9">
 					<h2 class="-mt-05">{{ __('seasons.tournaments_section_h2') }}</h2>
 					
 					@if($season->seasonEvents->isNotEmpty())
@@ -495,7 +495,7 @@
 
 				{{-- История промоушенов --}}
 				@if($promotionHistory->isNotEmpty())
-				<div class="ramka">
+				<div class="ramka" style="z-index:3">
 					<h2 class="-mt-05">{{ __('tournaments.promotion_history') }}</h2>
 					<div style="overflow-x:auto">
 						<table style="width:100%;border-collapse:collapse;font-size:13px">
