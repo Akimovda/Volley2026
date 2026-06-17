@@ -164,45 +164,87 @@
                 @csrf
                 @method('PUT')
 
-                @if(($event->format ?? '') === 'tournament' && !empty($seasonInfo))
-                {{-- ===== БЛОК 0: Серия турниров (read-only) ===== --}}
-                <div class="ramka">
+                @if(($event->format ?? '') === 'tournament')
+                {{-- ===== БЛОК 0: Привязка к лиге / сезону / дивизиону ===== --}}
+                <div class="ramka" style="z-index:12">
                     <h2 class="-mt-05">{{ __('events.season_title') }}</h2>
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="card">
-                                <label>{{ __('events.season_league_label') }}</label>
-                                <div class="b-600 f-15">
-                                    @if(!empty($seasonInfo['league_url']))
-                                        <a href="{{ $seasonInfo['league_url'] }}" class="link">{{ $seasonInfo['league_name'] ?? '—' }}</a>
-                                    @else
-                                        {{ $seasonInfo['league_name'] ?? '—' }}
-                                    @endif
+
+                    @if($availableSeasons->isNotEmpty())
+                    <form method="POST" action="{{ route('events.event_management.update-season', $event) }}">
+                        @csrf
+                        @php
+                            $seasonsJson = $availableSeasons->values()->toArray();
+                        @endphp
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card mb-2" style="overflow:visible">
+                                    <label>Сезон</label>
+                                    <select name="season_id" id="mgmt_season_select">
+                                        <option value="">— не привязан —</option>
+                                        @foreach($availableSeasons as $s)
+                                        <option value="{{ $s['season_id'] }}"
+                                            {{ (int)$event->season_id === (int)$s['season_id'] ? 'selected' : '' }}>
+                                            {{ $s['label'] }}
+                                        </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card mb-2" style="overflow:visible">
+                                    <label>Дивизион</label>
+                                    <select name="division_id" id="mgmt_division_select">
+                                        <option value="">— не выбран —</option>
+                                        @foreach($availableSeasons as $s)
+                                            @if((int)$event->season_id === (int)$s['season_id'])
+                                                @foreach($s['divisions'] as $d)
+                                                <option value="{{ $d['id'] }}"
+                                                    {{ (int)$currentDivisionId === (int)$d['id'] ? 'selected' : '' }}>
+                                                    {{ $d['name'] }}
+                                                </option>
+                                                @endforeach
+                                            @endif
+                                        @endforeach
+                                    </select>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-4">
-                            <div class="card">
-                                <label>{{ __('events.season_label') }}</label>
-                                <div class="b-600 f-15">
-                                    @if(!empty($seasonInfo['season_url']))
-                                        <a href="{{ $seasonInfo['season_url'] }}" class="link">{{ $seasonInfo['season_name'] ?? '—' }}</a>
-                                    @else
-                                        {{ $seasonInfo['season_name'] ?? '—' }}
-                                    @endif
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="card">
-                                <label>{{ __('events.division_label') }}</label>
-                                <div class="b-600 f-15">{{ $seasonInfo['division_name'] ?? '—' }}</div>
-                            </div>
-                        </div>
-                    </div>
-                    <ul class="list f-13 mt-1" style="opacity:.7">
-                        <li>{{ __('events.edit_season_readonly_hint') ?? 'Привязка к лиге, сезону и дивизиону задаётся при создании турнира и здесь не меняется.' }}</li>
-                    </ul>
+                        <button type="submit" class="btn btn-primary" style="padding:8px 24px">Сохранить привязку</button>
+                    </form>
+
+                    <script>
+                    (function() {
+                        var seasons = @json($seasonsJson);
+                        var seasonSel = document.getElementById('mgmt_season_select');
+                        var divSel = document.getElementById('mgmt_division_select');
+                        if (!seasonSel || !divSel) return;
+
+                        function updateDivisions() {
+                            var sid = parseInt(seasonSel.value);
+                            var season = seasons.find(function(s) { return s.season_id === sid; });
+                            var divs = season ? season.divisions : [];
+                            divSel.innerHTML = '<option value="">— не выбран —</option>';
+                            divs.forEach(function(d) {
+                                var opt = document.createElement('option');
+                                opt.value = d.id;
+                                opt.textContent = d.name;
+                                divSel.appendChild(opt);
+                            });
+                            if (typeof createCustomSelect === 'function') {
+                                var $sel = $(divSel);
+                                var $wrapper = $sel.prev('.form-select-wrapper');
+                                if ($wrapper.length) $wrapper.remove();
+                                createCustomSelect($sel);
+                            }
+                        }
+
+                        seasonSel.addEventListener('change', updateDivisions);
+                    }());
+                    </script>
+
+                    @else
+                    <div class="alert alert-info">Нет доступных лиг и сезонов. Создайте лигу и сезон в разделе управления лигами.</div>
+                    @endif
                 </div>
                 @endif
 
