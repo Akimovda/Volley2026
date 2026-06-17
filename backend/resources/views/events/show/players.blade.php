@@ -473,9 +473,9 @@
 		    : collect();
 		@endphp
 		@if($captainSavedTeams->isNotEmpty())
-		<div class="mb-2">
+		<div class="mt-2 mb-2">
 			<div class="f-15 b-600 mb-1">Использовать сохранённую команду:</div>
-			<form method="POST" action="{{ route('tournamentTeams.fromSaved', $event) }}" id="saved-team-form">
+			<form method="POST" action="{{ route('tournamentTeams.fromSaved', $event) }}" id="saved-team-form" class="form">
 				@csrf
 				<input type="hidden" name="occurrence_id" value="{{ $occurrence->id }}">
 				<select name="user_team_id" id="saved-team-select" class="mb-1">
