@@ -124,7 +124,26 @@
 							<div class="f-13 cd">{{ __('tournaments.relegation_penalty_hint') }}</div>
 						</div>
 
-						<button type="submit" class="btn btn-primary w-100">{{ __('seasons.btn_save') }}</button>
+						<div class="mt-2 pt-2" style="border-top:1px solid rgba(128,128,128,.12)">
+							<label class="f-13 b-600 mb-1">{{ __('tournaments.auto_sync_label') }}</label>
+							<label class="checkbox-item mb-1">
+								<input type="checkbox" name="config[auto_sync_after_promotion]" value="1" id="auto_sync_check" {{ $season->isAutoSync() ? 'checked' : '' }}>
+								<div class="custom-checkbox"></div>
+								<span class="f-13">{{ __('tournaments.auto_sync_enabled') }}</span>
+							</label>
+							<div class="f-13 cd mb-2">{{ __('tournaments.auto_sync_hint') }}</div>
+							<div id="auto_sync_delay_block" style="{{ $season->isAutoSync() ? '' : 'display:none' }}">
+								<label class="f-13 b-600">{{ __('tournaments.auto_sync_delay') }}</label>
+								<select name="config[auto_sync_delay_hours]">
+									<option value="0"  {{ $season->getAutoSyncDelayHours() === 0  ? 'selected' : '' }}>{{ __('tournaments.delay_immediately') }}</option>
+									<option value="12" {{ $season->getAutoSyncDelayHours() === 12 ? 'selected' : '' }}>{{ __('tournaments.delay_12h') }}</option>
+									<option value="24" {{ $season->getAutoSyncDelayHours() === 24 ? 'selected' : '' }}>{{ __('tournaments.delay_24h') }}</option>
+									<option value="48" {{ $season->getAutoSyncDelayHours() === 48 ? 'selected' : '' }}>{{ __('tournaments.delay_48h') }}</option>
+								</select>
+							</div>
+						</div>
+
+						<button type="submit" class="btn btn-primary w-100 mt-2">{{ __('seasons.btn_save') }}</button>
 					</form>
 				</div>
 				
@@ -598,6 +617,15 @@
 				if (e.target === this) this.style.display = 'none';
 			});
 		});
+
+		// Показ/скрытие блока задержки автосинхронизации
+		var autoSyncCheck = document.getElementById('auto_sync_check');
+		var autoSyncDelay = document.getElementById('auto_sync_delay_block');
+		if (autoSyncCheck && autoSyncDelay) {
+			autoSyncCheck.addEventListener('change', function() {
+				autoSyncDelay.style.display = this.checked ? '' : 'none';
+			});
+		}
 	}());
 	</script>
 	</x-slot>
