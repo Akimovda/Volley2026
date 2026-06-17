@@ -678,6 +678,7 @@ return [
     'to_parent_league'              => 'В основную лигу',
     'nowhere'                       => 'Никуда',
     'level'                         => 'Уровень',
+    'division_level'                => 'Уровень дивизиона',
     'max_teams'                     => 'Макс. команд',
     'team_relegated'                => 'Команда перемещена',
     'team_transferred'              => 'Команда переведена',
