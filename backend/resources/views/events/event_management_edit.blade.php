@@ -157,58 +157,58 @@
             </div>
         @endif
 
+        @if(($event->format ?? '') === 'tournament')
+        {{-- ===== БЛОК 0: Привязка к лиге / сезону / дивизиону (отдельная форма, вне главной) ===== --}}
+        <div class="ramka" style="z-index:12">
+            <h2 class="-mt-05">{{ __('events.season_title') }}</h2>
+
+            @if($detectedSeason)
+            <div class="row mb-2">
+                <div class="col-md-6">
+                    <div class="card">
+                        <label>Лига</label>
+                        <div class="b-600 f-15">{{ $detectedLeague->name }}</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <label>Сезон <span class="cd f-13">(по дате мероприятия)</span></label>
+                        <div class="b-600 f-15">{{ $detectedSeason->name }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <form method="POST" action="{{ route('events.event_management.update-season', $event) }}">
+                @csrf
+                <div class="card mb-2" style="overflow:visible">
+                    <label>Дивизион</label>
+                    <select name="division_id">
+                        <option value="">— не выбран —</option>
+                        @foreach($seasonDivisions as $d)
+                        <option value="{{ $d->id }}"
+                            {{ (int)$currentDivisionId === (int)$d->id ? 'selected' : '' }}>
+                            {{ $d->name }}
+                        </option>
+                        @endforeach
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary" style="padding:8px 24px">Сохранить привязку</button>
+            </form>
+
+            @else
+            <div class="alert alert-warning" style="padding-top:6px;padding-bottom:6px">
+                Не найден активный сезон для даты этого мероприятия. Проверьте даты сезонов в разделе управления лигами.
+            </div>
+            @endif
+        </div>
+        @endif
+
         <div class="form">
             <form method="POST"
                   action="{{ route('events.event_management.update', ['event' => (int)$event->id]) }}"
                   enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
-
-                @if(($event->format ?? '') === 'tournament')
-                {{-- ===== БЛОК 0: Привязка к лиге / сезону / дивизиону ===== --}}
-                <div class="ramka" style="z-index:12">
-                    <h2 class="-mt-05">{{ __('events.season_title') }}</h2>
-
-                    @if($detectedSeason)
-                    <div class="row mb-2">
-                        <div class="col-md-6">
-                            <div class="card">
-                                <label>Лига</label>
-                                <div class="b-600 f-15">{{ $detectedLeague->name }}</div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="card">
-                                <label>Сезон <span class="cd f-13">(по дате мероприятия)</span></label>
-                                <div class="b-600 f-15">{{ $detectedSeason->name }}</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <form method="POST" action="{{ route('events.event_management.update-season', $event) }}">
-                        @csrf
-                        <div class="card mb-2" style="overflow:visible">
-                            <label>Дивизион</label>
-                            <select name="division_id">
-                                <option value="">— не выбран —</option>
-                                @foreach($seasonDivisions as $d)
-                                <option value="{{ $d->id }}"
-                                    {{ (int)$currentDivisionId === (int)$d->id ? 'selected' : '' }}>
-                                    {{ $d->name }}
-                                </option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <button type="submit" class="btn btn-primary" style="padding:8px 24px">Сохранить привязку</button>
-                    </form>
-
-                    @else
-                    <div class="alert alert-warning" style="padding-top:6px;padding-bottom:6px">
-                        Не найден активный сезон для даты этого мероприятия. Проверьте даты сезонов в разделе управления лигами.
-                    </div>
-                    @endif
-                </div>
-                @endif
 
                 {{-- ===== БЛОК 1: Основные настройки ===== --}}
                 <div class="ramka"  style="z-index: 6">
