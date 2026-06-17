@@ -169,81 +169,43 @@
                 <div class="ramka" style="z-index:12">
                     <h2 class="-mt-05">{{ __('events.season_title') }}</h2>
 
-                    @if($availableSeasons->isNotEmpty())
+                    @if($detectedSeason)
+                    <div class="row mb-2">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <label>Лига</label>
+                                <div class="b-600 f-15">{{ $detectedLeague->name }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <label>Сезон <span class="cd f-13">(по дате мероприятия)</span></label>
+                                <div class="b-600 f-15">{{ $detectedSeason->name }}</div>
+                            </div>
+                        </div>
+                    </div>
+
                     <form method="POST" action="{{ route('events.event_management.update-season', $event) }}">
                         @csrf
-                        @php
-                            $seasonsJson = $availableSeasons->values()->toArray();
-                        @endphp
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="card mb-2" style="overflow:visible">
-                                    <label>Сезон</label>
-                                    <select name="season_id" id="mgmt_season_select">
-                                        <option value="">— не привязан —</option>
-                                        @foreach($availableSeasons as $s)
-                                        <option value="{{ $s['season_id'] }}"
-                                            {{ (int)$event->season_id === (int)$s['season_id'] ? 'selected' : '' }}>
-                                            {{ $s['label'] }}
-                                        </option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="card mb-2" style="overflow:visible">
-                                    <label>Дивизион</label>
-                                    <select name="division_id" id="mgmt_division_select">
-                                        <option value="">— не выбран —</option>
-                                        @foreach($availableSeasons as $s)
-                                            @if((int)$event->season_id === (int)$s['season_id'])
-                                                @foreach($s['divisions'] as $d)
-                                                <option value="{{ $d['id'] }}"
-                                                    {{ (int)$currentDivisionId === (int)$d['id'] ? 'selected' : '' }}>
-                                                    {{ $d['name'] }}
-                                                </option>
-                                                @endforeach
-                                            @endif
-                                        @endforeach
-                                    </select>
-                                </div>
-                            </div>
+                        <div class="card mb-2" style="overflow:visible">
+                            <label>Дивизион</label>
+                            <select name="division_id">
+                                <option value="">— не выбран —</option>
+                                @foreach($seasonDivisions as $d)
+                                <option value="{{ $d->id }}"
+                                    {{ (int)$currentDivisionId === (int)$d->id ? 'selected' : '' }}>
+                                    {{ $d->name }}
+                                </option>
+                                @endforeach
+                            </select>
                         </div>
                         <button type="submit" class="btn btn-primary" style="padding:8px 24px">Сохранить привязку</button>
                     </form>
 
-                    <script>
-                    (function() {
-                        var seasons = @json($seasonsJson);
-                        var seasonSel = document.getElementById('mgmt_season_select');
-                        var divSel = document.getElementById('mgmt_division_select');
-                        if (!seasonSel || !divSel) return;
-
-                        function updateDivisions() {
-                            var sid = parseInt(seasonSel.value);
-                            var season = seasons.find(function(s) { return s.season_id === sid; });
-                            var divs = season ? season.divisions : [];
-                            divSel.innerHTML = '<option value="">— не выбран —</option>';
-                            divs.forEach(function(d) {
-                                var opt = document.createElement('option');
-                                opt.value = d.id;
-                                opt.textContent = d.name;
-                                divSel.appendChild(opt);
-                            });
-                            if (typeof createCustomSelect === 'function') {
-                                var $sel = $(divSel);
-                                var $wrapper = $sel.prev('.form-select-wrapper');
-                                if ($wrapper.length) $wrapper.remove();
-                                createCustomSelect($sel);
-                            }
-                        }
-
-                        seasonSel.addEventListener('change', updateDivisions);
-                    }());
-                    </script>
-
                     @else
-                    <div class="alert alert-info">Нет доступных лиг и сезонов. Создайте лигу и сезон в разделе управления лигами.</div>
+                    <div class="alert alert-warning" style="padding-top:6px;padding-bottom:6px">
+                        Не найден активный сезон для даты этого мероприятия. Проверьте даты сезонов в разделе управления лигами.
+                    </div>
                     @endif
                 </div>
                 @endif
