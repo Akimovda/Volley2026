@@ -550,6 +550,9 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
 		Route::put('/events/create/event_management/{event}', [EventManagementController::class, 'update'])
         ->name('events.event_management.update');
 
+        Route::post('/events/create/event_management/{event}/update-season', [EventManagementController::class, 'updateSeason'])
+        ->name('events.event_management.update-season');
+
         Route::post('/events/create/event_management/{event}/toggle-bot', [EventManagementController::class, 'toggleBotEvent'])
         ->name('events.event_management.toggle-bot');
 		
