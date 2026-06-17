@@ -130,39 +130,30 @@ final class TournamentSeasonAutoCreateService
      */
     private function attachToExisting(Event $event, array $data): ?TournamentSeason
     {
-        $seasonId = (int) ($data['existing_season_id'] ?? 0);
         $leagueId = (int) ($data['existing_league_id'] ?? 0);
 
-        if ($seasonId <= 0 || $leagueId <= 0) {
-            Log::warning('TournamentSeasonAutoCreate: existing mode but no season/league selected', [
+        if ($leagueId <= 0) {
+            Log::warning('TournamentSeasonAutoCreate: existing mode but no division selected', [
                 'event_id' => $event->id,
             ]);
-            // Fallback: создаём новый
             return $this->createNew($event, $data);
         }
 
-        // Проверяем что сезон принадлежит этому организатору
-        $season = TournamentSeason::where('id', $seasonId)
+        // Берём сезон из дивизиона (не из формы)
+        $league = TournamentLeague::find($leagueId);
+        if (!$league) {
+            Log::warning('TournamentSeasonAutoCreate: division not found', ['event_id' => $event->id, 'league_id' => $leagueId]);
+            return $this->createNew($event, $data);
+        }
+
+        $season = TournamentSeason::where('id', $league->season_id)
             ->where('organizer_id', $event->organizer_id)
             ->first();
 
         if (!$season) {
             Log::warning('TournamentSeasonAutoCreate: season not found or wrong organizer', [
                 'event_id'  => $event->id,
-                'season_id' => $seasonId,
-            ]);
-            return $this->createNew($event, $data);
-        }
-
-        // Проверяем что лига принадлежит этому сезону
-        $league = TournamentLeague::where('id', $leagueId)
-            ->where('season_id', $season->id)
-            ->first();
-
-        if (!$league) {
-            Log::warning('TournamentSeasonAutoCreate: league not found in season', [
-                'event_id'  => $event->id,
-                'league_id' => $leagueId,
+                'season_id' => $league->season_id,
             ]);
             return $this->createNew($event, $data);
         }
@@ -222,6 +213,13 @@ final class TournamentSeasonAutoCreateService
         $parentLeagueId = (int) $currentSeason->league_id;
         $tz = $event->timezone ?: 'UTC';
 
+        // Предпочтительный уровень дивизиона — берём из первой существующей привязки
+        $preferredLevel = null;
+        $existingLeagueId = TournamentSeasonEvent::where('event_id', $event->id)->value('league_id');
+        if ($existingLeagueId) {
+            $preferredLevel = TournamentLeague::find($existingLeagueId)?->level;
+        }
+
         $occurrences = $event->occurrences()
             ->whereNull('cancelled_at')
             ->orderBy('starts_at')
@@ -237,7 +235,7 @@ final class TournamentSeasonAutoCreateService
                 ->setTimezone($tz)
                 ->toDateString();
 
-            $resolved = $this->resolveSeasonForDate($parentLeagueId, $localDate);
+            $resolved = $this->resolveSeasonForDate($parentLeagueId, $localDate, $preferredLevel);
 
             if (!$resolved) {
                 Log::info('syncSeasonEventsAfterExpand: no season for date, skipping', [
@@ -367,7 +365,7 @@ final class TournamentSeasonAutoCreateService
      *
      * @return array{season: TournamentSeason, league: TournamentLeague}|null
      */
-    private function resolveSeasonForDate(int $parentLeagueId, string $localDateStr): ?array
+    private function resolveSeasonForDate(int $parentLeagueId, string $localDateStr, ?int $preferredLevel = null): ?array
     {
         $season = TournamentSeason::where('league_id', $parentLeagueId)
             ->where('status', '!=', TournamentSeason::STATUS_DRAFT)
@@ -380,10 +378,17 @@ final class TournamentSeasonAutoCreateService
             return null;
         }
 
-        $league = TournamentLeague::where('season_id', $season->id)
-            ->orderBy('sort_order')
-            ->orderBy('id')
-            ->first();
+        $query = TournamentLeague::where('season_id', $season->id);
+        if ($preferredLevel !== null) {
+            $query->where('level', $preferredLevel);
+        }
+        $league = $query->orderBy('sort_order')->orderBy('id')->first();
+
+        // Fallback — любой дивизион сезона
+        if (!$league) {
+            $league = TournamentLeague::where('season_id', $season->id)
+                ->orderBy('sort_order')->orderBy('id')->first();
+        }
 
         if (!$league) {
             return null;
