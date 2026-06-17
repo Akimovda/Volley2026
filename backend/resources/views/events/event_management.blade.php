@@ -87,8 +87,19 @@ return ['label' => __('events.seats_dash'), 'free' => null, 'max' => null, 'regi
 			</li>
 		</x-slot>    
 		
-		<x-slot name="t_description">{{ __('events.mgmt_t_description') }}</x-slot>    
-		
+		<x-slot name="t_description">{{ __('events.mgmt_t_description') }}</x-slot>
+
+		<x-slot name="image">
+			<div class="top-section-img" data-aos="fade" data-aos-duration="1000">
+				<div class="top-section-light-img">
+					<img src="/img/event-management-light.png" alt="img">
+				</div>
+				<div class="top-section-dark-img">
+					<img src="/img/event-management-dark.png" alt="img">
+				</div>
+			</div>
+		</x-slot>
+
 		<x-slot name="d_description">
 			<div data-aos-delay="250" data-aos="fade-up">
 				<a href="{{ route('events.create') }}" class="mt-2 btn btn-outline-secondary">
