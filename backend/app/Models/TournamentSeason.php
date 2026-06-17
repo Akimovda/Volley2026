@@ -98,6 +98,16 @@ class TournamentSeason extends Model
         return $this->cfg('relegation_penalty');
     }
 
+    public function isAutoSync(): bool
+    {
+        return (bool) $this->cfg('auto_sync_after_promotion', false);
+    }
+
+    public function getAutoSyncDelayHours(): int
+    {
+        return (int) $this->cfg('auto_sync_delay_hours', 24);
+    }
+
     public function promotionRules(): array
     {
         return $this->cfg('promotion_rules', []);

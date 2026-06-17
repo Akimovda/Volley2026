@@ -478,4 +478,83 @@ class TournamentLeagueService
         return null;
     }
 
+    /**
+     * Синхронизировать участников дивизиона в occurrence турнира.
+     * Возвращает ['added' => int, 'linked' => int].
+     * Только направление лига→тур (не тур→лига).
+     */
+    public function syncDivisionToOccurrence(TournamentLeague $league, \App\Models\EventOccurrence $occurrence): array
+    {
+        $event   = $occurrence->event;
+        $occId   = $occurrence->id;
+        $linked  = 0;
+
+        $leagueTeams = TournamentLeagueTeam::where('league_id', $league->id)
+            ->whereIn('status', ['active', 'pending_confirmation', 'reserve'])
+            ->with('team.members')
+            ->get();
+
+        foreach ($leagueTeams as $lt) {
+            $captainId = $lt->team?->captain_user_id ?? $lt->user_id;
+            if (!$captainId) continue;
+
+            $existing = EventTeam::where('event_id', $event->id)
+                ->where('occurrence_id', $occId)
+                ->where('captain_user_id', $captainId)
+                ->first();
+
+            if ($existing) {
+                if ($lt->team_id && (int) $lt->team_id !== $existing->id) {
+                    $lt->update(['team_id' => $existing->id]);
+                }
+                continue;
+            }
+
+            $oldTeam  = $lt->team;
+            $baseName = $oldTeam?->name ?? (User::find($captainId)?->last_name ?? 'Команда');
+            $name     = $baseName;
+            $i        = 2;
+            while (EventTeam::where('event_id', $event->id)
+                ->where('occurrence_id', $occId)
+                ->where('name', $name)->exists()) {
+                $name = $baseName . ' ' . $i++;
+            }
+
+            $newTeam = EventTeam::create([
+                'event_id'        => $event->id,
+                'occurrence_id'   => $occId,
+                'captain_user_id' => $captainId,
+                'name'            => $name,
+                'team_kind'       => $oldTeam?->team_kind ?? 'beach_pair',
+                'status'          => 'approved',
+                'invite_code'     => \Illuminate\Support\Str::random(8),
+                'is_complete'     => (bool) $oldTeam?->is_complete,
+                'last_checked_at' => now(),
+                'confirmed_at'    => now(),
+            ]);
+
+            if ($oldTeam && $oldTeam->members->isNotEmpty()) {
+                foreach ($oldTeam->members as $member) {
+                    \App\Models\EventTeamMember::create([
+                        'event_team_id'       => $newTeam->id,
+                        'user_id'             => $member->user_id,
+                        'role_code'           => $member->role_code,
+                        'team_role'           => $member->team_role,
+                        'position_code'       => $member->position_code,
+                        'position_order'      => $member->position_order,
+                        'confirmation_status' => 'confirmed',
+                        'joined_at'           => now(),
+                        'responded_at'        => now(),
+                        'confirmed_at'        => now(),
+                    ]);
+                }
+            }
+
+            $lt->update(['team_id' => $newTeam->id, 'status' => 'active']);
+            $linked++;
+        }
+
+        return ['added' => 0, 'linked' => $linked];
+    }
+
 }

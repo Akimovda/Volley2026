@@ -1621,6 +1621,11 @@ class TournamentController extends Controller
             }
         }
 
+        // Ручная синхронизация — помечаем тур как синхронизированный (блокирует авто-job)
+        if ($occurrenceId > 0 && $seasonEvt) {
+            $seasonEvt->update(['synced_at' => now()]);
+        }
+
         $total = $added + $linked;
         if ($total === 0) {
             return back()->with('success', 'Все команды уже синхронизированы.');

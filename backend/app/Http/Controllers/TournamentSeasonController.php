@@ -118,8 +118,8 @@ class TournamentSeasonController extends Controller
 
         // Обработка config промоушена
         $promotionConfigFields = [
-            'bool'   => ['auto_promotion', 'queue_entry_enabled'],
-            'int'    => ['queue_entry_slots', 'feeder_promote_slots'],
+            'bool'   => ['auto_promotion', 'queue_entry_enabled', 'auto_sync_after_promotion'],
+            'int'    => ['queue_entry_slots', 'feeder_promote_slots', 'auto_sync_delay_hours'],
             'string' => ['promotion_trigger', 'relegation_penalty'],
         ];
         $config = $season->config ?? [];
@@ -657,10 +657,13 @@ class TournamentSeasonController extends Controller
             'round_number'  => 'required|integer|min:1',
         ]);
 
+        $roundNumber  = (int) $request->input('round_number');
+        $occurrenceId = (int) $request->input('occurrence_id');
+
         $results = app(\App\Services\TournamentPromotionService::class)->process(
             $season,
-            (int) $request->input('occurrence_id'),
-            (int) $request->input('round_number'),
+            $occurrenceId,
+            $roundNumber,
             'organizer'
         );
 
@@ -671,6 +674,13 @@ class TournamentSeasonController extends Controller
 
         if (!empty($results['errors'])) {
             \Illuminate\Support\Facades\Log::warning('Promotion errors', $results['errors']);
+        }
+
+        // Автосинхронизация состава дивизионов в следующий тур
+        if ($season->isAutoSync() && $totalMoves > 0) {
+            $delayHours = $season->getAutoSyncDelayHours();
+            \App\Jobs\SyncLeagueTeamsToNextOccurrenceJob::dispatch($season->id, $roundNumber)
+                ->delay(now()->addHours($delayHours));
         }
 
         return back()->with('success', __('tournaments.promotion_completed', ['count' => $totalMoves]));
