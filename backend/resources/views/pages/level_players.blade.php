@@ -26,6 +26,17 @@
         {{ __('pages.lp_title') }}
 	</x-slot>
 
+	<x-slot name="image">
+		<div class="top-section-img" data-aos="fade" data-aos-duration="1000">
+			<div class="top-section-light-img">
+				<img src="/img/level-light.png" alt="img">
+			</div>
+			<div class="top-section-dark-img">
+				<img src="/img/level-dark.png" alt="img">
+			</div>
+		</div>
+	</x-slot>
+
     <div class="container">
         <div class="ramka">
 			<div class="level-section">
