@@ -134,7 +134,18 @@ $groupedByDate[$dateKey] = ['date' => $date, 'occurrences' => []];
 		<x-slot name="t_description">
 			{{ __('events.index_t_description') }}
 		</x-slot>
-		
+
+		<x-slot name="image">
+			<div class="top-section-img" data-aos="fade" data-aos-duration="1000">
+				<div class="top-section-light-img">
+					<img src="/img/events-light.png" alt="img">
+				</div>
+				<div class="top-section-dark-img">
+					<img src="/img/events-dark.png" alt="img">
+				</div>
+			</div>
+		</x-slot>
+
 		<x-slot name="d_description">
 			<div class="d-flex flex-wrap gap-1 m-center">
 				<div class="mt-2" data-aos-delay="250" data-aos="fade-up">
