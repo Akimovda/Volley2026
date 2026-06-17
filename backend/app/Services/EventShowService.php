@@ -330,6 +330,9 @@ class EventShowService
         // Настройки оплаты рекламных мероприятий
         $platPaySettings = \App\Models\PlatformPaymentSetting::first();
 
+        // Коэффициент уровня игроков (вычисляется вне кеша — всегда актуально)
+        $playerQuality = app(\App\Services\PlayerQualityService::class)->forOccurrence($occurrence);
+
         return [
             'event' => $event,
             'platPaySettings' => $platPaySettings,
@@ -344,6 +347,7 @@ class EventShowService
             ],
             'myTournamentTeams' => $myTournamentTeams,
             'registrationMode' => $registrationMode,
+            'player_quality' => $playerQuality,
         ];
     }
 }

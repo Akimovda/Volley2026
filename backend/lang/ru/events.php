@@ -1028,4 +1028,5 @@ return [
     'overview_col_address'    => 'Адрес',
     'overview_col_regs'       => 'Записи',
     'overview_btn_manage'     => 'Управление записями',
+    'player_quality'          => 'Коэффициент 💪 : :value из :max',
 ];

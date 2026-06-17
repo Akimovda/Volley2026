@@ -995,6 +995,10 @@ $showWaitlist = !$isTournament && !$eventStarted && auth()->check() && !$isRegis
 		<div class="ramka">
 			<h2 class="-mt-05">{{ ($event->format === 'tournament' && !$isIndividualTournament) ? __('events.show_pl_list_h2_tournament') : __('events.show_pl_list_h2') }}</h2>
 
+			@if(!is_null($player_quality ?? null))
+			<div class="f-14 cd mb-2">{{ __('events.player_quality', ['value' => number_format($player_quality, 2, '.', ''), 'max' => 7]) }}</div>
+			@endif
+
 			@if($event->format === 'tournament' && !$isIndividualTournament)
 			@php
             $allTournamentTeams = \App\Models\EventTeam::where('event_id', $event->id)

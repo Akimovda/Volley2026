@@ -969,4 +969,5 @@ return [
     'overview_col_address'    => 'Address',
     'overview_col_regs'       => 'Registrations',
     'overview_btn_manage'     => 'Manage registrations',
+    'player_quality'          => 'Coefficient 💪 : :value of :max',
 ];
