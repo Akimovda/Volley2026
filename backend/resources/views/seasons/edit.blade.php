@@ -278,6 +278,13 @@
 							<input type="hidden" name="name" value="{{ $season->name }}">
 							<input type="hidden" name="direction" value="{{ $season->direction }}">
 
+							{{-- Строка 0: название --}}
+							<div style="margin-bottom:8px">
+								<label class="f-13 cd">{{ __('seasons.label_division_name') }}</label>
+								<input type="text" name="divisions[{{ $divLeague->id }}][name]"
+									value="{{ $divLeague->name }}" style="width:100%">
+							</div>
+
 							{{-- Строка 1: числовые поля --}}
 							<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px">
 								<div>

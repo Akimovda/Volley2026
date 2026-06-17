@@ -28,7 +28,7 @@ class TournamentSeasonService
             $slug = $baseSlug . '-' . $i++;
         }
 
-        return TournamentSeason::create([
+        $season = TournamentSeason::create([
             'organizer_id' => $organizer->id,
             'league_id'    => $data['league_id'] ?? null,
             'name'         => $data['name'],
@@ -39,6 +39,29 @@ class TournamentSeasonService
             'status'       => TournamentSeason::STATUS_DRAFT,
             'config'       => $data['config'] ?? [],
         ]);
+
+        // Копируем структуру дивизионов из последнего сезона той же лиги
+        if (!empty($data['league_id'])) {
+            $prevSeason = TournamentSeason::where('league_id', $data['league_id'])
+                ->where('id', '!=', $season->id)
+                ->orderByDesc('id')
+                ->first();
+
+            if ($prevSeason) {
+                $prevDivisions = $prevSeason->leagues()->orderBy('level')->get();
+                foreach ($prevDivisions as $div) {
+                    TournamentLeague::create([
+                        'season_id' => $season->id,
+                        'name'      => $div->name,
+                        'level'     => $div->level,
+                        'max_teams' => $div->max_teams,
+                        'config'    => $div->config ?? [],
+                    ]);
+                }
+            }
+        }
+
+        return $season;
     }
 
     /**

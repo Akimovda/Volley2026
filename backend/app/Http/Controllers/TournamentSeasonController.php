@@ -148,6 +148,9 @@ class TournamentSeasonController extends Controller
                 $division = \App\Models\TournamentLeague::find((int) $divisionId);
                 if (!$division || $division->season_id !== $season->id) continue;
 
+                if (isset($data['name']) && trim($data['name']) !== '') {
+                    $division->name = trim($data['name']);
+                }
                 if (isset($data['max_teams'])) {
                     $division->max_teams = $data['max_teams'] !== '' ? (int) $data['max_teams'] : null;
                 }
