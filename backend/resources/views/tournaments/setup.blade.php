@@ -579,11 +579,11 @@ $tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selec
 										<option value="reserve"{{ $_addLeagueFull ? ' selected' : '' }}>Резерв</option>
 									</select>
 									@if($_addLeagueFull)
-									<div class="alert alert-warning mt-1" id="league-cap-warning" style="font-size:13px;padding:6px 12px;margin:6px 0 0;line-height:1.4">
+									<div class="alert alert-warning mt-1" id="league-cap-warning" style="font-size:13px;padding-top:6px;padding-bottom:6px;margin:6px 0 0;line-height:1.4">
 										⚠ Основной состав заполнен ({{ $_addLeagueActive }}/{{ $_addLeagueMax }}). Добавление переведёт в резерв или вернёт ошибку.
 									</div>
 									@else
-									<div class="alert alert-warning mt-1" id="league-cap-warning" style="font-size:13px;padding:6px 12px;margin:6px 0 0;line-height:1.4;display:none">
+									<div class="alert alert-warning mt-1" id="league-cap-warning" style="font-size:13px;padding-top:6px;padding-bottom:6px;margin:6px 0 0;line-height:1.4;display:none">
 										⚠ Основной состав заполнен ({{ $_addLeagueActive }}/{{ $_addLeagueMax ?? '∞' }}). Добавление переведёт в резерв или вернёт ошибку.
 									</div>
 									@endif
