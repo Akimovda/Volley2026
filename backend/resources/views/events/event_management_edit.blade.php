@@ -178,7 +178,7 @@
                 </div>
             </div>
 
-            <form method="POST" action="{{ route('events.event_management.update-season', $event) }}">
+            <form method="POST" action="{{ route('events.event_management.update-season', $event) }}" class="form">
                 @csrf
                 <div class="card mb-2" style="overflow:visible">
                     <label>Дивизион</label>
