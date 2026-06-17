@@ -285,6 +285,13 @@
 									value="{{ $divLeague->name }}" style="width:100%">
 							</div>
 
+							@php
+								$lowerDiv = $season->leagues->where('level', $divLeague->level + 1)->first();
+								$upperDiv = $season->leagues->where('level', $divLeague->level - 1)->first();
+								$isLowest = $lowerDiv === null;
+								$isHighest = $upperDiv === null;
+							@endphp
+
 							{{-- Строка 1: числовые поля --}}
 							<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px">
 								<div>
@@ -293,10 +300,10 @@
 										value="{{ $divLeague->max_teams }}" min="2" max="32" style="width:100%">
 								</div>
 								<div>
-									<label class="f-13 cd">{{ __('tournaments.level') }}</label>
+									<label class="f-13 cd">{{ __('tournaments.division_level') }}</label>
 									<input type="number" name="divisions[{{ $divLeague->id }}][level]"
 										value="{{ $divLeague->level }}" min="1" max="10" style="width:100%">
-									<div class="f-12 cd" style="line-height:1.2">1=Hard, 2=Lite</div>
+									<div class="f-12 cd" style="line-height:1.2">1 = главный</div>
 								</div>
 								<div>
 									<label class="f-13 cd">{{ __('tournaments.eliminate_count') }}</label>
@@ -315,17 +322,36 @@
 								<div>
 									<label class="f-13 cd">{{ __('tournaments.eliminate_to') }}</label>
 									<select name="divisions[{{ $divLeague->id }}][config][eliminate_to]" style="width:100%">
-										<option value="reserve" {{ $divLeague->getEliminateTo() === 'reserve' ? 'selected' : '' }}>{{ __('tournaments.to_reserve') }}</option>
-										<option value="feeder" {{ $divLeague->getEliminateTo() === 'feeder' ? 'selected' : '' }}>{{ __('tournaments.to_feeder_league') }}</option>
-										<option value="lower_division" {{ $divLeague->getEliminateTo() === 'lower_division' ? 'selected' : '' }}>{{ __('tournaments.to_lower_division') }}</option>
+										@if($isLowest)
+											{{-- Нижний дивизион: вылет = в резерв --}}
+											<option value="reserve" selected>{{ __('tournaments.to_reserve') }}</option>
+										@else
+											{{-- Не нижний: вылет в дивизион ниже --}}
+											<option value="lower_division" {{ $divLeague->getEliminateTo() === 'lower_division' ? 'selected' : '' }}>
+												{{ $lowerDiv ? '↓ ' . $lowerDiv->name : __('tournaments.to_lower_division') }}
+											</option>
+											@if($season->league && $season->league->hasFeeder())
+											<option value="feeder" {{ $divLeague->getEliminateTo() === 'feeder' ? 'selected' : '' }}>{{ __('tournaments.to_feeder_league') }}</option>
+											@endif
+										@endif
 									</select>
 								</div>
 								<div>
 									<label class="f-13 cd">{{ __('tournaments.promote_to') }}</label>
 									<select name="divisions[{{ $divLeague->id }}][config][promote_to]" style="width:100%">
-										<option value="">{{ __('tournaments.nowhere') }}</option>
-										<option value="upper_division" {{ $divLeague->getPromoteTo() === 'upper_division' ? 'selected' : '' }}>{{ __('tournaments.to_upper_division') }}</option>
-										<option value="parent_league" {{ $divLeague->getPromoteTo() === 'parent_league' ? 'selected' : '' }}>{{ __('tournaments.to_parent_league') }}</option>
+										@if($isHighest)
+											{{-- Верхний дивизион: повышаться некуда --}}
+											<option value="">{{ __('tournaments.nowhere') }}</option>
+											@if($season->league && $season->league->hasFeeder())
+											<option value="parent_league" {{ $divLeague->getPromoteTo() === 'parent_league' ? 'selected' : '' }}>{{ __('tournaments.to_parent_league') }}</option>
+											@endif
+										@else
+											{{-- Не верхний: повышение в дивизион выше --}}
+											<option value="upper_division" {{ $divLeague->getPromoteTo() === 'upper_division' ? 'selected' : '' }}>
+												{{ $upperDiv ? '↑ ' . $upperDiv->name : __('tournaments.to_upper_division') }}
+											</option>
+											<option value="" {{ $divLeague->getPromoteTo() === null ? 'selected' : '' }}>{{ __('tournaments.nowhere') }}</option>
+										@endif
 									</select>
 								</div>
 								<div>

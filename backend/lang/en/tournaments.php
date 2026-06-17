@@ -659,6 +659,7 @@ return [
     'to_parent_league'              => 'To parent league',
     'nowhere'                       => 'Nowhere',
     'level'                         => 'Level',
+    'division_level'                => 'Division level',
     'max_teams'                     => 'Max teams',
     'team_relegated'                => 'Team relegated',
     'team_transferred'              => 'Team transferred',
