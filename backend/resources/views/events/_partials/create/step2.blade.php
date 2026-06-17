@@ -664,9 +664,9 @@ if (hiddenH) hiddenH.value = h;
 									</div>
 								</div>
 
-								{{-- Существующая лига (иерархия: Лига → Сезон → Дивизион) --}}
+								{{-- Существующая лига (Лига → Дивизион, сезон определяется по дате) --}}
 								<div class="row mt-2" id="existing_league_fields" style="display:none;">
-									<div class="col-md-4">
+									<div class="col-md-6">
 										<div class="card" style="overflow:visible">
 											<label>{{ __('events.season_league_label') }}</label>
 											<select id="top_league_select">
@@ -688,22 +688,14 @@ if (hiddenH) hiddenH.value = h;
 											</select>
 										</div>
 									</div>
-									{{-- Сезон — показывается после выбора лиги --}}
-									<div class="col-md-4" id="season_col" style="display:none;">
+									{{-- Дивизион — показывается после выбора лиги, сезон авто по дате --}}
+									<div class="col-md-6" id="division_col" style="display:none;">
 										<div class="card" style="overflow:visible">
-											<label>{{ __('events.season_label') }}</label>
-											<select name="existing_season_id" id="existing_season_id">
-												<option value="">{{ __('events.season_choose') }}</option>
-											</select>
-										</div>
-									</div>
-									{{-- Дивизион — показывается после выбора сезона --}}
-									<div class="col-md-4" id="division_col" style="display:none;">
-										<div class="card" style="overflow:visible">
-											<label>{{ __('events.division_label') }}</label>
+											<label>{{ __('events.division_label') }} <span class="cd f-13" id="season_auto_label"></span></label>
 											<select name="existing_league_id" id="existing_league_id">
 												<option value="">{{ __('events.division_choose') }}</option>
 											</select>
+											<input type="hidden" name="existing_season_id" id="existing_season_id">
 										</div>
 									</div>
 								</div>
@@ -722,9 +714,7 @@ if (hiddenH) hiddenH.value = h;
 							const existingFields = document.getElementById('existing_league_fields');
 							const topLeagueSelect     = document.getElementById('top_league_select');
 							const leagueSelect        = document.getElementById('existing_league_id');
-							const seasonCol           = document.getElementById('season_col');
 							const divisionCol         = document.getElementById('division_col');
-							const seasonSelect        = document.getElementById('existing_season_id');
 
 							const leaguesData = @php
 							$leaguesJs = [];
@@ -740,7 +730,7 @@ if (hiddenH) hiddenH.value = h;
 									foreach ($s->leagues as $div) {
 										$divs[] = ['id' => $div->id, 'name' => $div->name];
 									}
-									$leaguesJs[$lid]['seasons'][] = ['id' => $s->id, 'name' => $s->name, 'divisions' => $divs];
+									$leaguesJs[$lid]['seasons'][] = ['id' => $s->id, 'name' => $s->name, 'starts_at' => $s->starts_at?->format('Y-m-d'), 'ends_at' => $s->ends_at?->format('Y-m-d'), 'divisions' => $divs];
 								}
 							}
 							echo json_encode(array_values($leaguesJs));
@@ -788,52 +778,36 @@ if (hiddenH) hiddenH.value = h;
 
 							function populateSeasons() {
 								const lid = parseInt(topLeagueSelect ? topLeagueSelect.value : 0);
-								seasonSelect.innerHTML = '<option value="">{{ __('events.season_choose') }}</option>';
 								leagueSelect.innerHTML = '<option value="">{{ __('events.division_choose') }}</option>';
 								divisionCol.style.display = 'none';
-								if (!lid) {
-									seasonCol.style.display = 'none';
-									rebuildCustomSelect(seasonSelect);
-									rebuildCustomSelect(leagueSelect);
-									return;
-								}
+								const autoLabel = document.getElementById('season_auto_label');
+								const seasonHidden = document.getElementById('existing_season_id');
+								if (autoLabel) autoLabel.textContent = '';
+								if (seasonHidden) seasonHidden.value = '';
+
+								if (!lid) { rebuildCustomSelect(leagueSelect); return; }
 
 								const league = leaguesData.find(l => l.id === lid);
-								if (league && league.seasons.length > 0) {
-									league.seasons.forEach(s => {
-										const opt = document.createElement('option');
-										opt.value = s.id;
-										opt.textContent = s.name;
-										seasonSelect.appendChild(opt);
-									});
-								}
-								seasonCol.style.display = '';
-								rebuildCustomSelect(seasonSelect);
-								rebuildCustomSelect(leagueSelect);
-							}
+								if (!league || !league.seasons.length) { rebuildCustomSelect(leagueSelect); return; }
 
-							function populateDivisions() {
-								const lid    = parseInt(topLeagueSelect ? topLeagueSelect.value : 0);
-								const sid    = parseInt(seasonSelect.value);
-								leagueSelect.innerHTML = '<option value="">{{ __('events.division_choose') }}</option>';
-								divisionCol.style.display = 'none';
-								if (!lid || !sid) {
-									rebuildCustomSelect(leagueSelect);
-									return;
-								}
+								// Найти активный сезон по сегодняшней дате
+								const today = new Date().toISOString().split('T')[0];
+								let targetSeason = league.seasons.find(s => s.starts_at && s.ends_at && s.starts_at <= today && s.ends_at >= today);
+								if (!targetSeason) targetSeason = league.seasons[0]; // fallback: первый
 
-								const league  = leaguesData.find(l => l.id === lid);
-								const season  = league && league.seasons.find(s => s.id === sid);
-								if (season && season.divisions && season.divisions.length > 0) {
-									season.divisions.forEach(d => {
-										const opt = document.createElement('option');
-										opt.value = d.id;
-										opt.textContent = d.name;
-										leagueSelect.appendChild(opt);
-									});
-									if (season.divisions.length === 1) leagueSelect.value = season.divisions[0].id;
-									divisionCol.style.display = '';
+								if (seasonHidden) seasonHidden.value = targetSeason.id;
+								if (autoLabel) autoLabel.textContent = '(' + targetSeason.name + ')';
+
+								(targetSeason.divisions || []).forEach(d => {
+									const opt = document.createElement('option');
+									opt.value = d.id;
+									opt.textContent = d.name;
+									leagueSelect.appendChild(opt);
+								});
+								if (targetSeason.divisions && targetSeason.divisions.length === 1) {
+									leagueSelect.value = targetSeason.divisions[0].id;
 								}
+								divisionCol.style.display = '';
 								rebuildCustomSelect(leagueSelect);
 							}
 
@@ -845,7 +819,6 @@ if (hiddenH) hiddenH.value = h;
 							if (createSeason)  createSeason.addEventListener('change', syncSeasonFields);
 							if (leagueMode)    leagueMode.addEventListener('change', syncLeagueMode);
 							if (topLeagueSelect) topLeagueSelect.addEventListener('change', populateSeasons);
-							if (seasonSelect)    seasonSelect.addEventListener('change', populateDivisions);
 
 							syncSeasonBox();
 							syncSeasonFields();
