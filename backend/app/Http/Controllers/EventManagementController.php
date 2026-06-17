@@ -265,41 +265,57 @@ if ($role === 'admin') {
             'include_registered_list' => (bool) ($first->include_registered_list ?? true),
         ];
 
-        // Доступные сезоны+дивизионы для смены привязки (только tournament-формат)
-        $availableSeasons = collect();
+        // Автоопределение сезона по дате события + дивизионы для выбора
+        $detectedSeason   = null;
+        $detectedLeague   = null;
+        $seasonDivisions  = collect();
         $currentDivisionId = null;
         if (($event->format ?? '') === 'tournament') {
+            $eventDate = $event->starts_at
+                ? \Carbon\Carbon::parse($event->starts_at)
+                : now();
+
             $leagues = \App\Models\League::where('organizer_id', $event->organizer_id)
                 ->orderBy('name')->get();
+
             foreach ($leagues as $lg) {
-                $seasons = \App\Models\TournamentSeason::where('league_id', $lg->id)
+                $season = \App\Models\TournamentSeason::where('league_id', $lg->id)
+                    ->where(function ($q) use ($eventDate) {
+                        $q->whereNull('starts_at')->orWhere('starts_at', '<=', $eventDate);
+                    })
+                    ->where(function ($q) use ($eventDate) {
+                        $q->whereNull('ends_at')->orWhere('ends_at', '>=', $eventDate);
+                    })
                     ->with('leagues')
                     ->orderByDesc('starts_at')
-                    ->get();
-                foreach ($seasons as $s) {
-                    $availableSeasons->push([
-                        'season_id'  => $s->id,
-                        'label'      => $lg->name . ' — ' . $s->name,
-                        'divisions'  => $s->leagues->map(fn($d) => ['id' => $d->id, 'name' => $d->name])->values()->all(),
-                    ]);
+                    ->first();
+
+                if ($season) {
+                    $detectedSeason  = $season;
+                    $detectedLeague  = $lg;
+                    $seasonDivisions = $season->leagues;
+                    break;
                 }
             }
+
             $currentDivisionId = DB::table('tournament_season_events')
                 ->where('event_id', $event->id)
                 ->value('league_id');
         }
 
         return view('events.event_management_edit', [
-            'event' => $event,
-            'activeRegs' => (int) $activeRegs,
-            'locations' => $locations,
-            'currentCity' => $currentCity,
-            'userChannels' => $userChannels,
+            'event'            => $event,
+            'activeRegs'       => (int) $activeRegs,
+            'locations'        => $locations,
+            'currentCity'      => $currentCity,
+            'userChannels'     => $userChannels,
             'selectedChannelIds' => $selectedChannelIds,
-            'savedThreadIds' => $savedThreadIds,
-            'channelSettings' => $channelSettings,
-            'seasonInfo' => $seasonInfo,
-            'availableSeasons' => $availableSeasons,
+            'savedThreadIds'   => $savedThreadIds,
+            'channelSettings'  => $channelSettings,
+            'seasonInfo'       => $seasonInfo,
+            'detectedSeason'   => $detectedSeason,
+            'detectedLeague'   => $detectedLeague,
+            'seasonDivisions'  => $seasonDivisions,
             'currentDivisionId' => $currentDivisionId,
         ]);
     }
@@ -316,12 +332,14 @@ if ($role === 'admin') {
         if ($role === 'staff' && (int) $event->organizer_id !== (int) $organizerIdForStaff) abort(403);
 
         $request->validate([
-            'season_id'   => ['nullable', 'integer', 'exists:tournament_seasons,id'],
-            'division_id' => ['nullable', 'integer', 'exists:tournament_leagues,id'],
+            'division_id' => ['required', 'integer', 'exists:tournament_leagues,id'],
         ]);
 
-        $seasonId   = $request->input('season_id') ? (int) $request->input('season_id') : null;
-        $divisionId = $request->input('division_id') ? (int) $request->input('division_id') : null;
+        $divisionId = (int) $request->input('division_id');
+
+        // Находим сезон по дивизиону
+        $division = \App\Models\TournamentLeague::findOrFail($divisionId);
+        $seasonId = $division->season_id;
 
         // Обновляем season_id на событии
         $event->season_id = $seasonId;
@@ -355,12 +373,9 @@ if ($role === 'admin') {
                 ]);
                 $round++;
             }
-        } elseif (!$seasonId) {
-            // Если сезон снят — удаляем все season_events
-            DB::table('tournament_season_events')->where('event_id', $event->id)->delete();
         }
 
-        return back()->with('success', 'Привязка к сезону и дивизиону обновлена.');
+        return back()->with('success', 'Привязка к дивизиону обновлена.');
     }
     public function occurrences(\App\Models\Event $event)
     {
