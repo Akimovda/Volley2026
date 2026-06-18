@@ -48,6 +48,18 @@
 		
 		
 	</x-slot>
+
+    <x-slot name="image">
+        <div class="top-section-img" data-aos="fade" data-aos-duration="1000">
+            <div class="top-section-light-img">
+                <img src="/img/users-light.webp" alt="img">
+            </div>
+            <div class="top-section-dark-img">
+                <img src="/img/users-dark.webp" alt="img">
+            </div>
+        </div>
+    </x-slot>
+
     <x-slot name="d_description">
 		<div data-aos-delay="250" data-aos="fade-up">
 			<button class="btn ufilter-btn mt-2">{{ __('profile.idx_btn_filter') }}</button>

@@ -7,6 +7,17 @@
     <x-slot name="h1">{{ __('locations.index_h1') }}</x-slot>
     <x-slot name="t_description">{{ __('locations.index_t_description') }}</x-slot>
 
+    <x-slot name="image">
+        <div class="top-section-img" data-aos="fade" data-aos-duration="1000">
+            <div class="top-section-light-img">
+                <img src="/img/locations-light.webp" alt="img">
+            </div>
+            <div class="top-section-dark-img">
+                <img src="/img/locations-dark.webp" alt="img">
+            </div>
+        </div>
+    </x-slot>
+
     <x-slot name="breadcrumbs">
         <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
             <a href="{{ route('locations.index') }}" itemprop="item"><span itemprop="name">{{ __('locations.breadcrumb_index') }}</span></a>

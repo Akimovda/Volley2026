@@ -177,7 +177,18 @@
 			<x-slot name="t_description">
 				{{ __('profile.cp_t_description') }}
 			</x-slot>
-			
+
+			<x-slot name="image">
+				<div class="top-section-img" data-aos="fade" data-aos-duration="1000">
+					<div class="top-section-light-img">
+						<img src="/img/profile-complete-light.webp" alt="img">
+					</div>
+					<div class="top-section-dark-img">
+						<img src="/img/profile-complete-dark.webp" alt="img">
+					</div>
+				</div>
+			</x-slot>
+
 			<x-slot name="style">
 				<style>
 					
