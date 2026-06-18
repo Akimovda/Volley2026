@@ -7,6 +7,17 @@
     <x-slot name="h1">{{ __('profile.school_idx_title') }}</x-slot>
     <x-slot name="t_description">{{ __('profile.school_idx_t_description') }}</x-slot>
 
+    <x-slot name="image">
+        <div class="top-section-img" data-aos="fade" data-aos-duration="1000">
+            <div class="top-section-light-img">
+                <img src="/img/volleyball-school-light.webp" alt="img">
+            </div>
+            <div class="top-section-dark-img">
+                <img src="/img/volleyball-school-dark.webp" alt="img">
+            </div>
+        </div>
+    </x-slot>
+
     <x-slot name="breadcrumbs">
         <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
             <a href="{{ route('volleyball_school.index') }}" itemprop="item">
