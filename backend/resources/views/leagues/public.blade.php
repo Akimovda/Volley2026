@@ -16,7 +16,18 @@
 	<x-slot name="t_description">
 		{{ __('seasons.leagues_public_description') }}
 	</x-slot>
-	
+
+	<x-slot name="image">
+		<div class="top-section-img" data-aos="fade" data-aos-duration="1000">
+			<div class="top-section-light-img">
+				<img src="/img/leagues-light.webp" alt="img">
+			</div>
+			<div class="top-section-dark-img">
+				<img src="/img/leagues-dark.webp" alt="img">
+			</div>
+		</div>
+	</x-slot>
+
 	<div class="container">
 		
 		@if($leagues->isEmpty())
