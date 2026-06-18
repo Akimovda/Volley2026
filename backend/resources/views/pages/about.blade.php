@@ -299,18 +299,18 @@
     <div class="row row2">
         <div class="col-md-6">
             <ul class="list f-15">
-                <li>🍎 Приложение для iOS доступно в App Store</li>
-                <li>🤳 Face ID / Touch ID для быстрого входа</li>
+                <li>🍎 iOS — доступно в App Store</li>
+                <li>🤳 Face ID / Touch ID для быстрого входа (iOS)</li>
                 <li>🔔 Push-уведомления о записях, напоминаниях и турнирах</li>
                 <li>🌐 Весь функционал сайта в удобном мобильном виде</li>
             </ul>
         </div>
         <div class="col-md-6">
             <ul class="list f-15">
+                <li>🤖 Android — доступно в RuStore</li>
                 <li>🌙 Тёмная тема — автоматически под системную</li>
                 <li>🔗 Universal Links — ссылки открываются прямо в приложении</li>
                 <li>🔑 Вход через Apple ID, Google, Telegram, ВКонтакте</li>
-                <li>🤖 Версия для Android в разработке</li>
             </ul>
         </div>
     </div>
