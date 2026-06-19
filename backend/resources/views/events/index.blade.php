@@ -138,10 +138,10 @@ $groupedByDate[$dateKey] = ['date' => $date, 'occurrences' => []];
 		<x-slot name="image">
 			<div class="top-section-img" data-aos="fade" data-aos-duration="1000">
 				<div class="top-section-light-img">
-					<img src="/img/events-light.png" alt="img">
+					<img src="/img/events-light.webp" alt="img">
 				</div>
 				<div class="top-section-dark-img">
-					<img src="/img/events-dark.png" alt="img">
+					<img src="/img/events-dark.webp" alt="img">
 				</div>
 			</div>
 		</x-slot>
