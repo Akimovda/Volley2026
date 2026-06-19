@@ -50,7 +50,12 @@
 				$tz     = (string)($event?->timezone ?? 'Europe/Moscow');
 
 				// Счётчик команд вычисляем один раз — нужен во всех ранних возвратах
-				$teamsMax         = (int)($event->tournament_teams_count ?? $event->tournamentSetting?->teams_count ?? 0);
+				$teamsMax         = (int)(
+					$occurrence->effectiveGameSettings()->teams_count
+					?? $event->tournament_teams_count
+					?? $event->tournamentSetting?->teams_count
+					?? 0
+				);
 				$leagueReserveIds = $this->getLeagueReserveTeamIds($occurrence);
 				$teamsReg         = \App\Models\EventTeam::where('event_id', $occurrence->event_id)
 					->where(fn($q) => $q->where('occurrence_id', $occurrence->id)->orWhereNull('occurrence_id'))
@@ -1139,7 +1144,11 @@
                 (string)($occurrence->event->format ?? '') === 'tournament' &&
                 in_array((string)($occurrence->event->registration_mode ?? ''), ['team_classic', 'team_beach', 'team'], true)
             ) {
-				$teamsMax  = (int)($occurrence->event->tournament_teams_count ?? 0);
+				$teamsMax  = (int)(
+					$occurrence->effectiveGameSettings()->teams_count
+					?? $occurrence->event->tournament_teams_count
+					?? 0
+				);
 				$regMode   = (string)($occurrence->event->registration_mode ?? '');
 				$gsSubtype = (string)($occurrence->event->gameSettings?->subtype ?? '');
 				$teamSize  = preg_match('/^(\d+)x\d+$/i', $gsSubtype, $m) ? (int)$m[1] : 2;
