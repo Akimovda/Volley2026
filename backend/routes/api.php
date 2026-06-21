@@ -55,6 +55,13 @@ Route::middleware('auth:sanctum,web')->group(function () {
     Route::delete('/notifications/{id}', [\App\Http\Controllers\Api\NotificationsApiController::class, 'destroy']);
 });
 
+// Activity / HR tracking
+Route::middleware('auth:sanctum,web')->group(function () {
+    Route::post('/activity/sessions', [\App\Http\Controllers\Api\ActivitySessionController::class, 'start']);
+    Route::post('/activity/sessions/{session}/samples', [\App\Http\Controllers\Api\ActivitySessionController::class, 'ingestSamples']);
+    Route::post('/activity/sessions/{session}/finalize', [\App\Http\Controllers\Api\ActivitySessionController::class, 'finalize']);
+});
+
 // Face ID / биометрическая авторизация
 Route::post('/biometric/login', [\App\Http\Controllers\Api\BiometricController::class, 'login']);
 Route::middleware('auth:sanctum')->group(function () {

@@ -335,6 +335,9 @@
 								<a href="{{ route('player.my-events') }}" class="menu-item">
 									<span class="menu-text">{{ __('ui.menu_my_events') }}</span>
 								</a>
+								<a href="{{ route('profile.athlete') }}" class="menu-item">
+									<span class="menu-text">{{ __('activity.menu_item') }}</span>
+								</a>
 								<a href="/user/profile" class="menu-item">
 									<span class="menu-text">{{ __('ui.menu_my_profile') }}</span>
 								</a>

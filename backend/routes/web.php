@@ -239,6 +239,14 @@ Route::get('/user/profile', [\App\Http\Controllers\UserProfileController::class,
     ->middleware(['auth', config('jetstream.auth_session'), 'verified'])
     ->name('profile.show');
 
+// Настройки пульса / атлетический профиль
+Route::get('/profile/athlete', [\App\Http\Controllers\AthleteProfileController::class, 'show'])
+    ->middleware(['auth', config('jetstream.auth_session'), 'verified'])
+    ->name('profile.athlete');
+Route::post('/profile/athlete', [\App\Http\Controllers\AthleteProfileController::class, 'update'])
+    ->middleware(['auth', config('jetstream.auth_session'), 'verified'])
+    ->name('profile.athlete.update');
+
 Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified'])->group(function () {
     Route::get('/user/teams', [\App\Http\Controllers\UserTeamController::class, 'index'])
         ->name('user.teams.index');
