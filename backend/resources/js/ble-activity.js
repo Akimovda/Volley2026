@@ -93,14 +93,65 @@ function renderLive(bpm, zone) {
     if (timerEl) timerEl.textContent = formatDuration(t);
 }
 
+function renderJumpSummary(data) {
+    const caps       = Array.isArray(data.tracked_capabilities) ? data.tracked_capabilities : ['hr'];
+    const hasJumps   = caps.includes('jumps');
+    const i18n       = config.jumpI18n || {};
+    const jumpsBlock = el('ble-sum-jumps-block');
+    const noTrackEl  = el('ble-sum-jumps-not-tracked');
+
+    if (!hasJumps) {
+        if (noTrackEl)  noTrackEl.style.display  = '';
+        if (jumpsBlock) jumpsBlock.style.display = 'none';
+        return;
+    }
+
+    if (jumpsBlock) jumpsBlock.style.display = '';
+
+    const countEl = el('ble-sum-jump-count');
+    if (countEl) countEl.textContent = data.jump_count ?? '0';
+
+    const trendEl = el('ble-sum-jump-trend');
+    if (trendEl) {
+        const trend = data.jump_trend || {};
+        if (trend.first) {
+            trendEl.textContent      = i18n.jump_first_session || '';
+            trendEl.style.opacity    = '.6';
+            trendEl.style.fontWeight = 'normal';
+            trendEl.style.color      = '';
+        } else if (trend.label && trend.delta != null) {
+            const absDelta = Math.abs(trend.delta);
+            const key  = trend.label === 'higher' ? 'jump_trend_higher' : 'jump_trend_lower';
+            trendEl.textContent      = (i18n[key] || ':delta').replace(':delta', absDelta);
+            trendEl.style.color      = trend.label === 'higher' ? '#4caf50' : '#f44336';
+            trendEl.style.opacity    = '';
+            trendEl.style.fontWeight = '600';
+        } else {
+            trendEl.textContent = '';
+        }
+    }
+
+    const reachEl = el('ble-sum-jump-reach');
+    if (reachEl && data.jump_max_height_cm != null) {
+        const reach = data.direction === 'beach' ? config.reachBeachCm : config.reachClassicCm;
+        if (reach) {
+            const hitting = Math.round(reach + parseFloat(data.jump_max_height_cm));
+            reachEl.textContent = (i18n.hitting_reach || '≈ :cm см').replace(':cm', hitting);
+        }
+    }
+}
+
 function renderSummary(data) {
     setPhase('done');
+
+    renderJumpSummary(data);
+
     const fields = {
-        'ble-sum-avg':      data.avg_hr     ? `${data.avg_hr} уд/мин` : '–',
-        'ble-sum-max':      data.max_hr     ? `${data.max_hr} уд/мин` : '–',
-        'ble-sum-min':      data.min_hr     ? `${data.min_hr} уд/мин` : '–',
-        'ble-sum-duration': data.duration_sec != null ? formatDuration(data.duration_sec) : '–',
-        'ble-sum-load':     data.load_score != null   ? String(data.load_score)            : '–',
+        'ble-sum-avg':      data.avg_hr      ? `${data.avg_hr} уд/мин` : '–',
+        'ble-sum-max':      data.max_hr      ? `${data.max_hr} уд/мин` : '–',
+        'ble-sum-min':      data.min_hr      ? `${data.min_hr} уд/мин` : '–',
+        'ble-sum-duration': data.duration_sec  != null ? formatDuration(data.duration_sec) : '–',
+        'ble-sum-load':     data.load_score    != null ? String(data.load_score)            : '–',
         'ble-sum-samples':  data.samples_count != null ? String(data.samples_count)        : '–',
     };
     Object.entries(fields).forEach(([id, val]) => {
@@ -122,7 +173,7 @@ function renderSummary(data) {
 
     const zonesEl = el('ble-sum-zones');
     if (zonesEl && data.time_in_zone) {
-        const names = config.zoneNames || {};
+        const names  = config.zoneNames || {};
         const colors = { z1: '#4caf50', z2: '#8bc34a', z3: '#ffc107', z4: '#ff9800', z5: '#f44336' };
         zonesEl.innerHTML = Object.entries(data.time_in_zone)
             .filter(([, sec]) => sec > 0)

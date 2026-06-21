@@ -76,6 +76,7 @@ class ActivitySessionController extends Controller
             'samples_count'        => $session->samples_count,
             'time_in_zone'         => $session->time_in_zone,
             'tracked_capabilities' => $session->tracked_capabilities ?? ['hr'],
+            'direction'            => $session->direction,
             'jump_count'           => $session->jump_count,
             'jump_avg_height_cm'   => $session->jump_avg_height_cm,
             'jump_max_height_cm'   => $session->jump_max_height_cm,
