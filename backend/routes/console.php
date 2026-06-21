@@ -100,3 +100,8 @@ Schedule::call(function () {
 Schedule::command('tournaments:sync-season-routing')
     ->dailyAt('03:30')
     ->withoutOverlapping();
+
+// Пуш «Записать активность?» — через 5 мин после старта occurrence
+Schedule::command('activity:prompt-recording')
+    ->everyMinute()
+    ->withoutOverlapping();

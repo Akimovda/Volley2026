@@ -14,4 +14,10 @@ return [
         'health_connect' => ['hr', 'jumps'],
     ],
     'default_capabilities' => ['hr'],
+
+    // Планировщик пушей «Записать активность?»
+    // prompt_after_min  — через сколько минут после старта occurrence слать пуш
+    // prompt_grace_min  — окно (от now()-grace до now()-after); защита от накопленных occurrence при простое планировщика
+    'prompt_after_min' => 5,
+    'prompt_grace_min' => 35,
 ];
