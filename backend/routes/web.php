@@ -250,7 +250,8 @@ Route::get('/activity', [\App\Http\Controllers\ActivityDashboardController::clas
     ->name('activity.index');
 Route::get('/activity/{session}', [\App\Http\Controllers\ActivityDashboardController::class, 'show'])
     ->middleware(['auth', config('jetstream.auth_session'), 'verified'])
-    ->name('activity.show');
+    ->name('activity.show')
+    ->whereNumber('session');
 
 Route::get('/profile/athlete', [\App\Http\Controllers\AthleteProfileController::class, 'show'])
     ->middleware(['auth', config('jetstream.auth_session'), 'verified'])
