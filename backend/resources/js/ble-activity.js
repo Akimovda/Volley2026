@@ -482,6 +482,57 @@ async function stopSession() {
 window.initBleActivity = function (cfg) {
     config = cfg || {};
 
+    // ── Auto-confirm mode (?auto=1) — запись через часы ──────────────────────
+    const autoUrlParams = new URLSearchParams(location.search);
+    if (autoUrlParams.get('auto') === '1') {
+        const autoConfirmEl = el('ble-auto-confirm');
+        if (autoConfirmEl) autoConfirmEl.style.display = '';
+        const controlsEl = el('ble-controls');
+        if (controlsEl) controlsEl.style.display = 'none';
+        const consentEl = el('ble-consent-block');
+        if (consentEl) consentEl.style.display = 'none';
+
+        if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+            const nativeEl = el('ble-auto-native');
+            if (nativeEl) nativeEl.style.display = '';
+
+            const btnRecord = el('ble-auto-btn-record');
+            if (btnRecord) {
+                btnRecord.addEventListener('click', async function () {
+                    this.disabled = true;
+                    const occ = Number(autoUrlParams.get('occurrence')) || null;
+                    try {
+                        await window.Capacitor.Plugins.ActivityBridge.startWatchRecording({ occurrenceId: occ });
+                        const startedEl = el('ble-auto-started');
+                        if (startedEl) startedEl.style.display = '';
+                        this.style.display = 'none';
+                        const notNowWrap = el('ble-auto-not-now-wrap');
+                        if (notNowWrap) notNowWrap.style.display = 'none';
+                    } catch (e) {
+                        console.error('[Auto] startWatchRecording failed:', e);
+                        const errEl = el('ble-auto-error');
+                        if (errEl) { errEl.textContent = e.message || 'Ошибка запуска записи'; errEl.style.display = ''; }
+                        this.disabled = false;
+                    }
+                });
+            }
+
+            const btnNotNow = el('ble-auto-btn-not-now');
+            if (btnNotNow) {
+                btnNotNow.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    window.location.href = '/activity';
+                });
+            }
+        } else {
+            const notNativeEl = el('ble-auto-not-native');
+            if (notNativeEl) notNativeEl.style.display = '';
+        }
+
+        return;
+    }
+
+    // ── Normal BLE flow ───────────────────────────────────────────────────────
     setPhase('idle');
 
     if (!window.Capacitor || !window.Capacitor.isNativePlatform()) {

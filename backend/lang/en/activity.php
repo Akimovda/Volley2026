@@ -117,4 +117,10 @@ return [
 
     // Push prompt
     'prompt_body'            => 'Workout in progress — record your activity?',
+
+    // Watch recording auto-confirm (?auto=1)
+    'auto_confirm_title'      => 'Workout in progress — record your activity?',
+    'record_now'              => 'Record Activity',
+    'not_now'                 => 'Not now',
+    'recording_started_watch' => 'Recording started — stop it on your watch when done',
 ];
