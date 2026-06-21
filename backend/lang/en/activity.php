@@ -57,6 +57,7 @@ return [
     'samples_count'          => 'Samples',
     'done_btn'               => 'Done',
     'error_ble_init'         => 'Failed to initialize Bluetooth. Check permissions.',
+    'saving'                 => 'Saving…',
     'error_no_session'       => 'Session creation failed. Please try again.',
     'time_in_zones'          => 'Time in zones',
 

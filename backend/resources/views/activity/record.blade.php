@@ -1,34 +1,45 @@
 <x-voll-layout body_class="activity-record-page">
     <x-slot name="title">{{ __('activity.record_page_title') }} — VolleyPlay</x-slot>
 
+    <x-slot name="breadcrumbs">
+        <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
+            <a href="{{ route('profile.athlete') }}" itemprop="item"><span itemprop="name">{{ __('activity.page_title') }}</span></a>
+            <meta itemprop="position" content="2">
+        </li>
+        <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
+            <span itemprop="name">{{ __('activity.record_page_title') }}</span>
+            <meta itemprop="position" content="3">
+        </li>
+    </x-slot>
+
     <div class="container">
         <div class="row">
             <div class="col-lg-6 col-lg-offset-3">
 
+                {{-- Баннер для браузера (скрыт по умолчанию, JS показывает если не Capacitor) --}}
+                <div id="ble-not-app" class="alert alert-info mb-2" style="display:none">
+                    {{ __('activity.available_in_app_only') }}
+                </div>
+
                 <div class="ramka">
                     <h1 class="-mt-05">{{ __('activity.record_page_title') }}</h1>
 
-                    {{-- Сообщение для браузера (вне приложения) --}}
-                    <div id="ble-not-app" style="display:none">
-                        <div class="alert alert-info">{{ __('activity.available_in_app_only') }}</div>
-                        <a href="{{ route('profile.athlete') }}" class="btn btn-secondary w-100">{{ __('activity.save_btn') }}</a>
-                    </div>
-
-                    {{-- Блок согласия (показывается если нет согласия текущей версии) --}}
+                    {{-- Блок согласия на обработку данных о здоровье --}}
                     <div id="ble-consent-block" style="{{ $hasHealthConsent ? 'display:none' : '' }}">
                         <div class="alert alert-info">
                             <strong>{{ __('activity.consent_title') }}</strong>
                         </div>
-                        <div class="form mt-1">
-                            <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer">
-                                <input type="checkbox" id="ble-consent-checkbox" style="margin-top:3px;flex-shrink:0">
-                                <span class="f-14">
+                        <div class="form mt-1 mb-1">
+                            <label class="checkbox-item" style="align-items:flex-start">
+                                <input type="checkbox" id="ble-consent-checkbox">
+                                <div class="custom-checkbox" style="margin-top:2px"></div>
+                                <span class="f-14" style="line-height:1.5">
                                     {{ __('activity.consent_checkbox') }}
                                     (<a href="{{ route('personal_data_agreement') }}" target="_blank">{{ __('activity.consent_link') }}</a>)
                                 </span>
                             </label>
                         </div>
-                        <div id="ble-consent-error" class="alert alert-danger mt-1" style="display:none">
+                        <div id="ble-consent-error" class="alert alert-danger" style="display:none">
                             {{ __('activity.consent_required') }}
                         </div>
                     </div>
@@ -72,7 +83,6 @@
 
                         {{-- ФАЗА: recording --}}
                         <div id="ble-phase-recording" style="display:none">
-                            {{-- Живой пульс --}}
                             <div style="text-align:center;padding:16px 0">
                                 <div id="ble-zone-bar" style="height:6px;border-radius:3px;background:#ccc;margin-bottom:12px;transition:background .4s"></div>
                                 <div style="font-size:4rem;font-weight:700;line-height:1" id="ble-bpm">–</div>
@@ -94,7 +104,7 @@
 
                         {{-- ФАЗА: stopping --}}
                         <div id="ble-phase-stopping" style="display:none">
-                            <div class="alert alert-info">Сохранение…</div>
+                            <div class="alert alert-info">{{ __('activity.saving') }}</div>
                         </div>
 
                         {{-- ФАЗА: done — итоги --}}
@@ -125,7 +135,7 @@
                                     <td style="padding:6px 0;opacity:.7">{{ __('activity.samples_count') }}</td>
                                     <td style="text-align:right;font-weight:600" id="ble-sum-samples">–</td>
                                 </tr>
-                                <tr id="ble-sum-calories-row">
+                                <tr>
                                     <td style="padding:6px 0;opacity:.7">{{ __('activity.calories') }}</td>
                                     <td style="text-align:right;font-weight:600" id="ble-sum-calories">–</td>
                                 </tr>
