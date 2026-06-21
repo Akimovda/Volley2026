@@ -62,6 +62,7 @@ Route::middleware('auth:sanctum,web')->group(function () {
     Route::delete('/activity/devices/{device}', [\App\Http\Controllers\Api\ActivityDeviceController::class, 'destroy']);
     Route::post('/activity/sessions', [\App\Http\Controllers\Api\ActivitySessionController::class, 'start']);
     Route::post('/activity/sessions/{session}/samples',  [\App\Http\Controllers\Api\ActivitySessionController::class, 'ingestSamples']);
+    Route::post('/activity/sessions/{session}/jumps',    [\App\Http\Controllers\Api\ActivityJumpController::class, 'store']);
     Route::post('/activity/sessions/{session}/finalize', [\App\Http\Controllers\Api\ActivitySessionController::class, 'finalize']);
 });
 

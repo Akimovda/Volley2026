@@ -62,17 +62,24 @@ class ActivitySessionController extends Controller
 
         $session = $this->service->finalize($session);
 
+        $jumpTrend = $this->service->heightTrend($session);
+
         return response()->json([
-            'session_id'    => $session->id,
-            'status'        => $session->status,
-            'duration_sec'  => $session->duration_sec,
-            'avg_hr'        => $session->avg_hr,
-            'max_hr'        => $session->max_hr,
-            'min_hr'        => $session->min_hr,
-            'load_score'    => $session->load_score,
-            'calories_kcal' => $session->calories_kcal,
-            'samples_count' => $session->samples_count,
-            'time_in_zone'  => $session->time_in_zone,
+            'session_id'           => $session->id,
+            'status'               => $session->status,
+            'duration_sec'         => $session->duration_sec,
+            'avg_hr'               => $session->avg_hr,
+            'max_hr'               => $session->max_hr,
+            'min_hr'               => $session->min_hr,
+            'load_score'           => $session->load_score,
+            'calories_kcal'        => $session->calories_kcal,
+            'samples_count'        => $session->samples_count,
+            'time_in_zone'         => $session->time_in_zone,
+            'tracked_capabilities' => $session->tracked_capabilities ?? ['hr'],
+            'jump_count'           => $session->jump_count,
+            'jump_avg_height_cm'   => $session->jump_avg_height_cm,
+            'jump_max_height_cm'   => $session->jump_max_height_cm,
+            'jump_trend'           => $jumpTrend,
         ]);
     }
 }

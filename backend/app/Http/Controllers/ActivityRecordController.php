@@ -47,10 +47,22 @@ class ActivityRecordController extends Controller
         $hasHealthConsent = $user->hasHealthConsent();
         $pairedDevices    = $user->athleteDevices()
             ->orderByDesc('last_connected_at')
-            ->get(['id', 'name', 'ble_identifier'])
-            ->map(fn($d) => ['db_device_id' => $d->id, 'ble_identifier' => $d->ble_identifier, 'name' => $d->name])
+            ->get(['id', 'name', 'ble_identifier', 'protocol'])
+            ->map(fn($d) => [
+                'db_device_id'  => $d->id,
+                'ble_identifier'=> $d->ble_identifier,
+                'name'          => $d->name,
+                'capabilities'  => $d->capabilities(),
+            ])
             ->values();
 
-        return view('activity.record', compact('occurrenceId', 'occurrences', 'zones', 'maxHr', 'restingHr', 'hasHealthConsent', 'pairedDevices'));
+        $profile            = $user->athleteProfile;
+        $reachClassicCm     = $profile?->reach_classic_cm;
+        $reachBeachCm       = $profile?->reach_beach_cm;
+
+        return view('activity.record', compact(
+            'occurrenceId', 'occurrences', 'zones', 'maxHr', 'restingHr',
+            'hasHealthConsent', 'pairedDevices', 'reachClassicCm', 'reachBeachCm'
+        ));
     }
 }

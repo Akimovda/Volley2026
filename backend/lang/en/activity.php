@@ -84,4 +84,17 @@ return [
     'calories_estimate'      => '≈ :value kcal',
     'weight_for_calories'    => 'Set your weight in settings to see calories',
     'set_weight_hint'        => 'Configure profile',
+
+    // Jumps
+    'jumps_count'            => 'Jumps',
+    'jumps_not_tracked'      => 'This sensor does not track jumps',
+    'jump_trend_higher'      => ':delta cm above personal average',
+    'jump_trend_lower'       => ':delta cm below personal average',
+    'jump_first_session'     => 'first session — baseline set',
+
+    // Reach
+    'reach_classic'          => 'Standing reach, classic (cm)',
+    'reach_beach'            => 'Standing reach, beach (cm)',
+    'reach_hint'             => 'Standing reach — the height you can touch flat-footed with arm raised (measured against a wall). Classic: with shoes; beach: barefoot.',
+    'hitting_reach'          => '≈ :cm cm from the floor',
 ];
