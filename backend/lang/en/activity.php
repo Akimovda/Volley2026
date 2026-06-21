@@ -97,4 +97,21 @@ return [
     'reach_beach'            => 'Standing reach, beach (cm)',
     'reach_hint'             => 'Standing reach — the height you can touch flat-footed with arm raised (measured against a wall). Classic: with shoes; beach: barefoot.',
     'hitting_reach'          => '≈ :cm cm from the floor',
+
+    // Activity dashboard
+    'menu_history'           => '📊 Workout History',
+    'dashboard_title'        => 'Workout History',
+    'no_sessions'            => 'No recorded workouts yet.',
+    'total_sessions'         => 'Total workouts',
+    'last_load'              => 'Load (last)',
+    'last_date'              => 'Date',
+    'filter_all'             => 'All',
+    'filter_classic'         => 'Classic',
+    'filter_beach'           => 'Beach',
+    'hr_curve'               => 'HR Curve',
+    'session_free_training'  => 'Free Training',
+    'history_link'           => 'Workout History →',
+    'back_to_list'           => 'Back',
+    'jump_avg_height'        => 'Avg height',
+    'jump_max_height'        => 'Max height',
 ];

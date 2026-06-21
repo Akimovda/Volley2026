@@ -244,6 +244,14 @@ Route::get('/activity/record', [\App\Http\Controllers\ActivityRecordController::
     ->middleware(['auth', config('jetstream.auth_session'), 'verified'])
     ->name('activity.record');
 
+// Дашборд активности (история тренировок)
+Route::get('/activity', [\App\Http\Controllers\ActivityDashboardController::class, 'index'])
+    ->middleware(['auth', config('jetstream.auth_session'), 'verified'])
+    ->name('activity.index');
+Route::get('/activity/{session}', [\App\Http\Controllers\ActivityDashboardController::class, 'show'])
+    ->middleware(['auth', config('jetstream.auth_session'), 'verified'])
+    ->name('activity.show');
+
 Route::get('/profile/athlete', [\App\Http\Controllers\AthleteProfileController::class, 'show'])
     ->middleware(['auth', config('jetstream.auth_session'), 'verified'])
     ->name('profile.athlete');
