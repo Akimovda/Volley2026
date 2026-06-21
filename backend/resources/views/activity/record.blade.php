@@ -170,6 +170,25 @@
                         </div>
 
                     </div>{{-- /#ble-controls --}}
+
+                    {{-- Блок авто-подтверждения (?auto=1, только нативное приложение) --}}
+                    <div id="ble-auto-confirm" style="display:none">
+                        <p class="f-15 b-600 mb-1">{{ __('activity.auto_confirm_title') }}</p>
+                        <div id="ble-auto-native" style="display:none">
+                            <button id="ble-auto-btn-record" class="btn w-100">{{ __('activity.record_now') }}</button>
+                            <div class="text-center mt-1" id="ble-auto-not-now-wrap">
+                                <a href="#" id="ble-auto-btn-not-now" class="f-14" style="opacity:.7">{{ __('activity.not_now') }}</a>
+                            </div>
+                            <div id="ble-auto-started" class="alert alert-success mt-1" style="display:none">
+                                {{ __('activity.recording_started_watch') }}
+                            </div>
+                            <div id="ble-auto-error" class="alert alert-danger mt-1" style="display:none"></div>
+                        </div>
+                        <div id="ble-auto-not-native" class="alert alert-info" style="display:none">
+                            {{ __('activity.available_in_app_only') }}
+                        </div>
+                    </div>
+
                 </div>
 
                 {{-- Зоны ЧСС для справки --}}
