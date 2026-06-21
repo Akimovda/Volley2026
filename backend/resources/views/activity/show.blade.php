@@ -1,0 +1,281 @@
+<x-voll-layout body_class="activity-show-page">
+    @php $user = auth()->user(); @endphp
+
+    <x-slot name="title">{{ $sessionTitle }} — {{ __('activity.dashboard_title') }} — VolleyPlay</x-slot>
+    <x-slot name="h1">{{ __('activity.dashboard_title') }}</x-slot>
+    <x-slot name="h2">{{ $sessionTitle }}</x-slot>
+
+    <x-slot name="breadcrumbs">
+        <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
+            <a href="{{ route('profile.show') }}" itemprop="item"><span itemprop="name">{{ __('profile.show_title') }}</span></a>
+            <meta itemprop="position" content="2">
+        </li>
+        <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
+            <a href="{{ route('activity.index') }}" itemprop="item"><span itemprop="name">{{ __('activity.dashboard_title') }}</span></a>
+            <meta itemprop="position" content="3">
+        </li>
+        <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
+            <span itemprop="name">{{ $sessionTitle }}</span>
+            <meta itemprop="position" content="4">
+        </li>
+    </x-slot>
+
+    @php
+        $dur = $session->duration_sec ?? 0;
+        $durStr = $dur >= 3600
+            ? sprintf('%d:%02d:%02d', intdiv($dur, 3600), intdiv($dur % 3600, 60), $dur % 60)
+            : sprintf('%d:%02d', intdiv($dur, 60), $dur % 60);
+
+        $zoneColors = ['z1' => '#4caf50', 'z2' => '#8bc34a', 'z3' => '#ffc107', 'z4' => '#ff7043', 'z5' => '#f44336'];
+        $zoneNames  = [
+            'z1' => __('activity.z1_name'),
+            'z2' => __('activity.z2_name'),
+            'z3' => __('activity.z3_name'),
+            'z4' => __('activity.z4_name'),
+            'z5' => __('activity.z5_name'),
+        ];
+        $totalZoneSec = collect($session->time_in_zone ?? [])->sum();
+    @endphp
+
+    <div class="container">
+        <div class="row row2">
+
+            {{-- Боковое меню --}}
+            <div class="col-lg-4 col-xl-3 order-2 d-none d-lg-block">
+                <div class="sticky">
+                    <div class="card-ramka">
+                        @include('profile._menu', ['activeMenu' => 'activity'])
+                    </div>
+                </div>
+            </div>
+
+            {{-- Основной контент --}}
+            <div class="col-lg-8 col-xl-9 order-1">
+
+                {{-- Заголовок + дата --}}
+                <div class="ramka">
+                    <div class="d-flex justify-between align-center">
+                        <div>
+                            <div class="b-600 f-18">{{ $sessionTitle }}</div>
+                            <div class="f-13" style="opacity:.6">
+                                {{ $session->started_at?->format('d.m.Y H:i') }}
+                                @if($session->direction)
+                                    · <span class="badge badge-sm {{ $session->direction === 'beach' ? 'badge-orange' : 'badge-blue' }}">
+                                        {{ __('activity.filter_' . $session->direction) }}
+                                    </span>
+                                @endif
+                            </div>
+                        </div>
+                        <a href="{{ route('activity.index') }}" class="btn btn-sm btn-secondary">← {{ __('activity.back_to_list') }}</a>
+                    </div>
+                </div>
+
+                {{-- Скалярные метрики --}}
+                <div class="row row2 mb-1">
+                    <div class="col-6 col-md-4">
+                        <div class="ramka text-center">
+                            <div class="f-13" style="opacity:.65">{{ __('activity.avg_hr') }}</div>
+                            <div class="b-700 cd" style="font-size:2rem">{{ $session->avg_hr ?? '—' }}</div>
+                            <div class="f-12" style="opacity:.5">{{ __('activity.live_bpm') }}</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4">
+                        <div class="ramka text-center">
+                            <div class="f-13" style="opacity:.65">{{ __('activity.max_hr') }}</div>
+                            <div class="b-700 cd" style="font-size:2rem">{{ $session->max_hr ?? '—' }}</div>
+                            <div class="f-12" style="opacity:.5">{{ __('activity.live_bpm') }}</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4">
+                        <div class="ramka text-center">
+                            <div class="f-13" style="opacity:.65">{{ __('activity.min_hr') }}</div>
+                            <div class="b-700 cd" style="font-size:2rem">{{ $session->min_hr ?? '—' }}</div>
+                            <div class="f-12" style="opacity:.5">{{ __('activity.live_bpm') }}</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4">
+                        <div class="ramka text-center">
+                            <div class="f-13" style="opacity:.65">{{ __('activity.duration') }}</div>
+                            <div class="b-700 cd" style="font-size:1.6rem">{{ $durStr }}</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4">
+                        <div class="ramka text-center">
+                            <div class="f-13" style="opacity:.65">{{ __('activity.load_score') }}</div>
+                            <div class="b-700 cd" style="font-size:2rem">
+                                {{ $session->load_score ? number_format($session->load_score, 0) : '—' }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4">
+                        <div class="ramka text-center">
+                            <div class="f-13" style="opacity:.65">{{ __('activity.calories') }}</div>
+                            <div class="b-700 cd" style="font-size:2rem">
+                                {{ $session->calories_kcal ? '≈' . number_format($session->calories_kcal, 0) : '—' }}
+                            </div>
+                            @if($session->calories_kcal)
+                                <div class="f-12" style="opacity:.5">ккал</div>
+                            @else
+                                <div class="f-12">
+                                    <a href="{{ route('profile.athlete') }}">{{ __('activity.set_weight_hint') }}</a>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Прыжки (capability-aware) --}}
+                @if($hasJumps)
+                <div class="ramka mb-1">
+                    <h3 class="-mt-05">{{ __('activity.jumps_count') }}</h3>
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="f-13" style="opacity:.65">{{ __('activity.jumps_count') }}</div>
+                            <div class="b-700 cd" style="font-size:2rem">{{ $session->jump_count ?? 0 }}</div>
+                        </div>
+                        @if($session->jump_avg_height_cm)
+                        <div class="col-4">
+                            <div class="f-13" style="opacity:.65">{{ __('activity.jump_avg_height') }}</div>
+                            <div class="b-700 cd" style="font-size:2rem">{{ number_format($session->jump_avg_height_cm, 1) }}</div>
+                            <div class="f-12" style="opacity:.5">см</div>
+                        </div>
+                        @endif
+                        @if($session->jump_max_height_cm)
+                        <div class="col-4">
+                            <div class="f-13" style="opacity:.65">{{ __('activity.jump_max_height') }}</div>
+                            <div class="b-700 cd" style="font-size:2rem">{{ number_format($session->jump_max_height_cm, 1) }}</div>
+                            <div class="f-12" style="opacity:.5">см</div>
+                        </div>
+                        @endif
+                    </div>
+                </div>
+                @else
+                <div class="ramka mb-1" style="opacity:.55;font-size:.9rem">
+                    {{ __('activity.jumps_not_tracked') }}
+                </div>
+                @endif
+
+                {{-- Кривая ЧСС --}}
+                @if(count($samples) > 0)
+                <div class="ramka mb-1">
+                    <h3 class="-mt-05">{{ __('activity.hr_curve') }}</h3>
+                    <div style="position:relative;height:220px">
+                        <canvas id="hr-chart"></canvas>
+                    </div>
+                </div>
+                @endif
+
+                {{-- Время в зонах --}}
+                @if($session->time_in_zone && $totalZoneSec > 0)
+                <div class="ramka mb-1">
+                    <h3 class="-mt-05">{{ __('activity.time_in_zones') }}</h3>
+                    @foreach(['z1','z2','z3','z4','z5'] as $zKey)
+                    @php
+                        $sec  = $session->time_in_zone[$zKey] ?? 0;
+                        $pct  = $totalZoneSec > 0 ? round($sec / $totalZoneSec * 100) : 0;
+                        $minS = sprintf('%d:%02d', intdiv($sec, 60), $sec % 60);
+                        $zoneRange = ($zones[$zKey]['low'] ?? '?') . '–' . ($zones[$zKey]['high'] ?? '?');
+                    @endphp
+                    <div class="mb-1">
+                        <div class="d-flex justify-between f-13 mb-half">
+                            <span>
+                                <span class="b-600">{{ $zoneNames[$zKey] }}</span>
+                                <span style="opacity:.55;margin-left:4px">{{ $zoneRange }} {{ __('activity.live_bpm') }}</span>
+                            </span>
+                            <span style="opacity:.7">{{ $minS }} ({{ $pct }}%)</span>
+                        </div>
+                        <div style="background:rgba(0,0,0,.08);border-radius:4px;height:10px;overflow:hidden">
+                            <div style="width:{{ $pct }}%;height:100%;background:{{ $zoneColors[$zKey] }};border-radius:4px;transition:width .4s"></div>
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
+                @endif
+
+            </div>{{-- col-lg-8 --}}
+        </div>{{-- row --}}
+    </div>{{-- container --}}
+</x-voll-layout>
+
+@if(count($samples) > 0)
+@php
+$samplesJson = json_encode(array_map(fn($s) => ['t' => $s['t_offset_sec'], 'b' => $s['bpm']], $samples));
+$zonesJson   = json_encode($zones);
+$zoneColorsJson = json_encode($zoneColors);
+@endphp
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+(function() {
+    var samples    = {!! $samplesJson !!};
+    var zones      = {!! $zonesJson !!};
+    var zoneColors = {!! $zoneColorsJson !!};
+
+    function fmtSec(s) {
+        var m = Math.floor(s / 60), ss = s % 60;
+        return m + ':' + (ss < 10 ? '0' : '') + ss;
+    }
+
+    var labels = samples.map(function(s) { return fmtSec(s.t); });
+    var data   = samples.map(function(s) { return s.b; });
+
+    // Градиент по зонам: цвет точки по bpm
+    function colorForBpm(bpm) {
+        if (bpm >= zones.z5.low) return zoneColors.z5;
+        if (bpm >= zones.z4.low) return zoneColors.z4;
+        if (bpm >= zones.z3.low) return zoneColors.z3;
+        if (bpm >= zones.z2.low) return zoneColors.z2;
+        if (bpm >= zones.z1.low) return zoneColors.z1;
+        return '#90a4ae';
+    }
+
+    var ctx = document.getElementById('hr-chart').getContext('2d');
+
+    // Создаём градиент для заливки
+    var gradient = ctx.createLinearGradient(0, 0, 0, 220);
+    gradient.addColorStop(0, 'rgba(244,67,54,.25)');
+    gradient.addColorStop(1, 'rgba(76,175,80,.05)');
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: data,
+                borderColor: '#e53935',
+                borderWidth: 1.5,
+                pointRadius: 0,
+                fill: true,
+                backgroundColor: gradient,
+                tension: 0.3,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(ctx) { return ctx.parsed.y + ' {{ __('activity.live_bpm') }}'; }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    ticks: {
+                        maxTicksLimit: 8,
+                        maxRotation: 0,
+                        font: { size: 11 }
+                    },
+                    grid: { display: false }
+                },
+                y: {
+                    ticks: { font: { size: 11 } },
+                    grid: { color: 'rgba(0,0,0,.06)' }
+                }
+            }
+        }
+    });
+})();
+</script>
+@endif

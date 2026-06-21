@@ -162,6 +162,11 @@
                             </table>
                             <div class="mt-1" id="ble-sum-zones"></div>
                             <button id="ble-btn-done" class="btn w-100 mt-2">{{ __('activity.done_btn') }}</button>
+                            @if(config('activity.recording_open') || auth()->user()?->isAdmin())
+                            <div class="text-center mt-1">
+                                <a href="{{ route('activity.index') }}" class="f-13" style="opacity:.7">{{ __('activity.history_link') }}</a>
+                            </div>
+                            @endif
                         </div>
 
                     </div>{{-- /#ble-controls --}}

@@ -129,6 +129,16 @@
                         <span class="menu-text">{{ __('activity.menu_item') }}</span>
                     @endif
                 </a>
+                @if(config('activity.recording_open') || $menuUser->isAdmin())
+                <a href="{{ route('activity.index') }}"
+                   class="menu-item {{ $activeMenu === 'activity' ? 'active' : '' }}">
+                    @if($activeMenu === 'activity')
+                        <strong class="cd menu-text">{{ __('activity.menu_history') }}</strong>
+                    @else
+                        <span class="menu-text">{{ __('activity.menu_history') }}</span>
+                    @endif
+                </a>
+                @endif
                 <a href="{{ route('friends.index') }}"
                    class="menu-item {{ $activeMenu === 'friends' ? 'active' : '' }}">
                     @if($activeMenu === 'friends')
