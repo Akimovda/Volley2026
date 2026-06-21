@@ -101,6 +101,49 @@
                                 </div>
                             </div>
 
+                            {{-- Доскок классика --}}
+                            <div class="col-sm-6">
+                                <div class="card">
+                                    <label>
+                                        <div>{{ __('activity.reach_classic') }}</div>
+                                    </label>
+                                    <input type="number"
+                                           name="reach_classic_cm"
+                                           class="{{ $errors->has('reach_classic_cm') ? 'input-error' : '' }}"
+                                           value="{{ old('reach_classic_cm', $profile?->reach_classic_cm) }}"
+                                           min="100" max="350"
+                                           placeholder="250">
+                                    <ul class="list f-16 mt-1">
+                                        @error('reach_classic_cm')<li class="red b-600">{{ $message }}</li>@enderror
+                                    </ul>
+                                </div>
+                            </div>
+
+                            {{-- Доскок пляж --}}
+                            <div class="col-sm-6">
+                                <div class="card">
+                                    <label>
+                                        <div>{{ __('activity.reach_beach') }}</div>
+                                    </label>
+                                    <input type="number"
+                                           name="reach_beach_cm"
+                                           class="{{ $errors->has('reach_beach_cm') ? 'input-error' : '' }}"
+                                           value="{{ old('reach_beach_cm', $profile?->reach_beach_cm) }}"
+                                           min="100" max="350"
+                                           placeholder="245">
+                                    <ul class="list f-16 mt-1">
+                                        @error('reach_beach_cm')<li class="red b-600">{{ $message }}</li>@enderror
+                                    </ul>
+                                </div>
+                            </div>
+
+                            {{-- Подсказка доскока --}}
+                            <div class="col-12">
+                                <div class="alert alert-info f-14">
+                                    {{ __('activity.reach_hint') }}
+                                </div>
+                            </div>
+
                         </div>
 
                         <button type="submit" class="btn btn-primary mt-1">{{ __('activity.save_btn') }}</button>

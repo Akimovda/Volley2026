@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\ActivityJumpEvent;
 use App\Models\ActivitySession;
 use App\Models\AthleteDevice;
 use App\Models\EventOccurrence;
@@ -24,14 +25,18 @@ class ActivitySessionService
             $direction = $event?->direction ?? null;
         }
 
+        $capabilities = $device?->capabilities() ?? config('activity.default_capabilities', ['hr']);
+
         return ActivitySession::create([
-            'user_id'       => $user->id,
-            'occurrence_id' => $occurrence?->id,
-            'device_id'     => $device?->id,
-            'direction'     => $direction,
-            'status'        => 'live',
-            'started_at'    => now(),
-            'samples_count' => 0,
+            'user_id'              => $user->id,
+            'occurrence_id'        => $occurrence?->id,
+            'device_id'            => $device?->id,
+            'direction'            => $direction,
+            'status'               => 'live',
+            'started_at'           => now(),
+            'samples_count'        => 0,
+            'jump_count'           => 0,
+            'tracked_capabilities' => $capabilities,
         ]);
     }
 
@@ -74,6 +79,72 @@ class ActivitySessionService
         }
 
         return $accepted;
+    }
+
+    /**
+     * Идемпотентный батчевый приём прыжков.
+     * $jumps = [['t' => int, 'height_cm' => float|null, 'type' => string|null], ...]
+     */
+    public function ingestJumps(ActivitySession $session, array $jumps): int
+    {
+        if (empty($jumps)) {
+            return 0;
+        }
+
+        $rows = array_map(fn($j) => [
+            'session_id'   => $session->id,
+            't_offset_sec' => (int) $j['t'],
+            'height_cm'    => isset($j['height_cm']) ? round((float) $j['height_cm'], 1) : null,
+            'type'         => $j['type'] ?? null,
+        ], $jumps);
+
+        $countBefore = DB::table('activity_jump_events')
+            ->where('session_id', $session->id)
+            ->count();
+
+        foreach (array_chunk($rows, 500) as $chunk) {
+            DB::table('activity_jump_events')->insertOrIgnore($chunk);
+        }
+
+        $countAfter = DB::table('activity_jump_events')
+            ->where('session_id', $session->id)
+            ->count();
+
+        return $countAfter - $countBefore;
+    }
+
+    /**
+     * Тренд высоты прыжков относительно предыдущих 5 jumps-сессий.
+     * Возвращает ['avg_prev'=>float,'delta'=>float,'label'=>string] или ['first'=>true].
+     */
+    public function heightTrend(ActivitySession $session): array
+    {
+        if ($session->jump_avg_height_cm === null) {
+            return ['first' => true];
+        }
+
+        $prevSessions = ActivitySession::where('user_id', $session->user_id)
+            ->where('id', '!=', $session->id)
+            ->where('status', 'completed')
+            ->whereNotNull('jump_avg_height_cm')
+            ->when($session->direction, fn($q) => $q->where('direction', $session->direction))
+            ->whereRaw("tracked_capabilities::jsonb @> '\"jumps\"'")
+            ->orderByDesc('started_at')
+            ->limit(5)
+            ->pluck('jump_avg_height_cm');
+
+        if ($prevSessions->isEmpty()) {
+            return ['first' => true];
+        }
+
+        $avgPrev = round($prevSessions->avg(), 1);
+        $delta   = round((float) $session->jump_avg_height_cm - $avgPrev, 1);
+
+        return [
+            'avg_prev' => $avgPrev,
+            'delta'    => $delta,
+            'label'    => $delta >= 0 ? 'higher' : 'lower',
+        ];
     }
 
     public function finalize(ActivitySession $session): ActivitySession
@@ -146,17 +217,30 @@ class ActivitySessionService
             $caloriesKcal = round($totalKcal, 1);
         }
 
+        // jump aggregates
+        $jumpAgg = DB::table('activity_jump_events')
+            ->where('session_id', $session->id)
+            ->selectRaw('COUNT(*) as cnt, AVG(height_cm) as avg_h, MAX(height_cm) as max_h')
+            ->first();
+
+        $jumpCount      = (int) ($jumpAgg->cnt ?? 0);
+        $jumpAvgHeight  = $jumpAgg->avg_h !== null ? round((float) $jumpAgg->avg_h, 1) : null;
+        $jumpMaxHeight  = $jumpAgg->max_h !== null ? round((float) $jumpAgg->max_h, 1) : null;
+
         $session->update([
-            'status'        => 'completed',
-            'ended_at'      => now(),
-            'duration_sec'  => $durationSec,
-            'avg_hr'        => $avgBpm,
-            'max_hr'        => $maxBpm,
-            'min_hr'        => $minBpm === PHP_INT_MAX ? null : $minBpm,
-            'time_in_zone'  => $timeInZone,
-            'load_score'    => round($loadScore, 2),
-            'calories_kcal' => $caloriesKcal,
-            'samples_count' => $count,
+            'status'              => 'completed',
+            'ended_at'            => now(),
+            'duration_sec'        => $durationSec,
+            'avg_hr'              => $avgBpm,
+            'max_hr'              => $maxBpm,
+            'min_hr'              => $minBpm === PHP_INT_MAX ? null : $minBpm,
+            'time_in_zone'        => $timeInZone,
+            'load_score'          => round($loadScore, 2),
+            'calories_kcal'       => $caloriesKcal,
+            'samples_count'       => $count,
+            'jump_count'          => $jumpCount,
+            'jump_avg_height_cm'  => $jumpAvgHeight,
+            'jump_max_height_cm'  => $jumpMaxHeight,
         ]);
 
         $session->refresh();

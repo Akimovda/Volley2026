@@ -116,6 +116,20 @@
                         {{-- ФАЗА: done — итоги --}}
                         <div id="ble-phase-done" style="display:none">
                             <h2 class="-mt-05">{{ __('activity.session_summary') }}</h2>
+
+                            {{-- Прыжки (capability-aware) --}}
+                            <div id="ble-sum-jumps-block" style="display:none;text-align:center;padding:12px 0 6px;border-bottom:1px solid rgba(0,0,0,.08);margin-bottom:8px">
+                                <div style="font-size:2.4rem;font-weight:700;line-height:1" id="ble-sum-jump-count">–</div>
+                                <div style="font-size:.85rem;opacity:.6;margin-top:2px">{{ __('activity.jumps_count') }}</div>
+                                <div style="margin-top:6px;font-size:.95rem;font-weight:600" id="ble-sum-jump-trend"></div>
+                                <div style="margin-top:4px;font-size:.85rem;opacity:.65" id="ble-sum-jump-reach"></div>
+                            </div>
+
+                            {{-- Сообщение если датчик не поддерживает прыжки --}}
+                            <div id="ble-sum-jumps-not-tracked" style="display:none;padding:6px 0 10px;font-size:.85rem;opacity:.55;border-bottom:1px solid rgba(0,0,0,.08);margin-bottom:8px">
+                                {{ __('activity.jumps_not_tracked') }}
+                            </div>
+
                             <table style="width:100%;border-collapse:collapse" class="f-15">
                                 <tr>
                                     <td style="padding:6px 0;opacity:.7">{{ __('activity.avg_hr') }}</td>
@@ -198,6 +212,16 @@ $zoneNamesJs = [
 ];
 @endphp
 <script>
+@php
+$jumpI18n = [
+    'jumps_count'        => __('activity.jumps_count'),
+    'jumps_not_tracked'  => __('activity.jumps_not_tracked'),
+    'jump_trend_higher'  => __('activity.jump_trend_higher'),
+    'jump_trend_lower'   => __('activity.jump_trend_lower'),
+    'jump_first_session' => __('activity.jump_first_session'),
+    'hitting_reach'      => __('activity.hitting_reach'),
+];
+@endphp
 window.__activityConfig = {
     zones:              @json($zones),
     zoneNames:          @json($zoneNamesJs),
@@ -209,6 +233,9 @@ window.__activityConfig = {
     weightForCalories:  @json(__('activity.weight_for_calories')),
     setWeightUrl:       @json(route('profile.athlete')),
     pairedDevices:      @json($pairedDevices),
+    reachClassicCm:     {{ $reachClassicCm ?? 'null' }},
+    reachBeachCm:       {{ $reachBeachCm ?? 'null' }},
+    jumpI18n:           @json($jumpI18n),
 };
 </script>
 @vite(['resources/js/ble-activity.js'])

@@ -23,4 +23,11 @@ class AthleteDevice extends Model
     {
         return $this->hasMany(ActivitySession::class, 'device_id');
     }
+
+    /** Возможности этого устройства на основе protocol. */
+    public function capabilities(): array
+    {
+        return config('activity.device_capabilities')[$this->protocol]
+            ?? config('activity.default_capabilities', ['hr']);
+    }
 }

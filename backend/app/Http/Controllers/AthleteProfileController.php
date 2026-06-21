@@ -32,17 +32,21 @@ class AthleteProfileController extends Controller
     public function update(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'resting_hr' => ['nullable', 'integer', 'min:30', 'max:100'],
-            'max_hr'     => ['nullable', 'integer', 'min:100', 'max:250'],
-            'weight_kg'  => ['nullable', 'numeric', 'min:30', 'max:300'],
+            'resting_hr'       => ['nullable', 'integer', 'min:30', 'max:100'],
+            'max_hr'           => ['nullable', 'integer', 'min:100', 'max:250'],
+            'weight_kg'        => ['nullable', 'numeric', 'min:30', 'max:300'],
+            'reach_classic_cm' => ['nullable', 'integer', 'min:100', 'max:350'],
+            'reach_beach_cm'   => ['nullable', 'integer', 'min:100', 'max:350'],
         ]);
 
         AthleteProfile::updateOrCreate(
             ['user_id' => $request->user()->id],
             [
-                'resting_hr' => $data['resting_hr'] ?: null,
-                'max_hr'     => $data['max_hr'] ?: null,
-                'weight_kg'  => $data['weight_kg'] ?: null,
+                'resting_hr'       => $data['resting_hr'] ?: null,
+                'max_hr'           => $data['max_hr'] ?: null,
+                'weight_kg'        => $data['weight_kg'] ?: null,
+                'reach_classic_cm' => $data['reach_classic_cm'] ?: null,
+                'reach_beach_cm'   => $data['reach_beach_cm'] ?: null,
             ]
         );
 
