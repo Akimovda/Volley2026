@@ -114,4 +114,7 @@ return [
     'back_to_list'           => 'Back',
     'jump_avg_height'        => 'Avg height',
     'jump_max_height'        => 'Max height',
+
+    // Push prompt
+    'prompt_body'            => 'Workout in progress — record your activity?',
 ];
