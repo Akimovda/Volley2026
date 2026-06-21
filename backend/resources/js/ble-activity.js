@@ -108,6 +108,18 @@ function renderSummary(data) {
         if (e) e.textContent = val;
     });
 
+    const calEl = el('ble-sum-calories');
+    if (calEl) {
+        if (data.calories_kcal != null) {
+            calEl.textContent = `≈ ${data.calories_kcal} ккал`;
+        } else {
+            calEl.innerHTML = `<span style="opacity:.6;font-size:.85em">`
+                + `<a href="${config.setWeightUrl || '/profile/athlete'}" style="color:inherit">`
+                + (config.weightForCalories || 'Укажите вес в настройках')
+                + `</a></span>`;
+        }
+    }
+
     const zonesEl = el('ble-sum-zones');
     if (zonesEl && data.time_in_zone) {
         const names = config.zoneNames || {};
@@ -189,7 +201,31 @@ function scheduleReconnect() {
 
 // ── Main actions ──────────────────────────────────────────────────────────────
 
+async function recordConsent() {
+    return new Promise((resolve, reject) => {
+        window.jQuery.ajax({
+            url:         '/api/activity/consent',
+            method:      'POST',
+            contentType: 'application/json',
+            data:        JSON.stringify({}),
+            headers:     { 'X-CSRF-TOKEN': csrfToken() },
+            xhrFields:   { withCredentials: true },
+            success:     () => { config.hasHealthConsent = true; resolve(); },
+            error:       reject,
+        });
+    });
+}
+
 async function connectSensor() {
+    // Проверяем согласие — если нет, показываем блок и не идём дальше
+    if (!config.hasHealthConsent) {
+        const consentBlock = el('ble-consent-block');
+        if (consentBlock) consentBlock.style.display = '';
+        const errEl = el('ble-consent-error');
+        if (errEl) errEl.style.display = '';
+        return;
+    }
+
     setPhase('connecting');
     try {
         await BleClient.initialize({ androidNeverForLocation: true });
@@ -303,4 +339,22 @@ window.initBleActivity = function (cfg) {
     if (btnStart)   btnStart.addEventListener('click',   () => startSession());
     if (btnStop)    btnStop.addEventListener('click',    () => stopSession());
     if (btnDone)    btnDone.addEventListener('click',    () => { window.location.href = '/profile/athlete'; });
+
+    const consentCheckbox = el('ble-consent-checkbox');
+    if (consentCheckbox) {
+        consentCheckbox.addEventListener('change', async function () {
+            const errEl = el('ble-consent-error');
+            if (!this.checked) return;
+            try {
+                await recordConsent();
+                const block = el('ble-consent-block');
+                if (block) block.style.display = 'none';
+                if (errEl) errEl.style.display = 'none';
+            } catch (e) {
+                console.error('[BLE] consent failed:', e);
+                this.checked = false;
+                if (errEl) errEl.style.display = '';
+            }
+        });
+    }
 };

@@ -70,6 +70,7 @@ class ActivitySessionController extends Controller
             'max_hr'        => $session->max_hr,
             'min_hr'        => $session->min_hr,
             'load_score'    => $session->load_score,
+            'calories_kcal' => $session->calories_kcal,
             'samples_count' => $session->samples_count,
             'time_in_zone'  => $session->time_in_zone,
         ]);
