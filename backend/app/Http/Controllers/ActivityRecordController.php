@@ -45,7 +45,12 @@ class ActivityRecordController extends Controller
         $maxHr            = $this->profileService->effectiveMaxHr($user);
         $restingHr        = $this->profileService->effectiveRestingHr($user);
         $hasHealthConsent = $user->hasHealthConsent();
+        $pairedDevices    = $user->athleteDevices()
+            ->orderByDesc('last_connected_at')
+            ->get(['id', 'name', 'ble_identifier'])
+            ->map(fn($d) => ['db_device_id' => $d->id, 'ble_identifier' => $d->ble_identifier, 'name' => $d->name])
+            ->values();
 
-        return view('activity.record', compact('occurrenceId', 'occurrences', 'zones', 'maxHr', 'restingHr', 'hasHealthConsent'));
+        return view('activity.record', compact('occurrenceId', 'occurrences', 'zones', 'maxHr', 'restingHr', 'hasHealthConsent', 'pairedDevices'));
     }
 }

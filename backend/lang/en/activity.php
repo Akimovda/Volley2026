@@ -67,6 +67,18 @@ return [
     'consent_link'           => 'Privacy Policy',
     'consent_required'       => 'Consent to process health data is required',
 
+    // Devices
+    'my_devices'             => 'My Devices',
+    'connect_device'         => 'Add Sensor',
+    'paired_devices'         => 'Paired Sensors',
+    'remove_device'          => 'Remove',
+    'no_devices'             => 'No paired sensors',
+    'connect_in_settings_hint' => 'First connect a sensor in the "My Devices" section of your profile settings.',
+    'record_training'        => 'Record Workout',
+    'last_connected_at'      => 'Last connected',
+    'device_added'           => 'Sensor added',
+    'adding_device'          => 'Connecting sensor…',
+
     // Calories
     'calories'               => 'Calories',
     'calories_estimate'      => '≈ :value kcal',

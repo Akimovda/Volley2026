@@ -9,6 +9,17 @@ use Illuminate\Http\Request;
 
 class ActivityDeviceController extends Controller
 {
+    public function destroy(Request $request, AthleteDevice $device): JsonResponse
+    {
+        if ($device->user_id !== $request->user()->id) {
+            abort(403);
+        }
+
+        $device->delete();
+
+        return response()->json(['ok' => true]);
+    }
+
     public function upsert(Request $request): JsonResponse
     {
         $data = $request->validate([

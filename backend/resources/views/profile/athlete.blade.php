@@ -107,6 +107,67 @@
                     </form>
                 </div>
 
+                {{-- Мои устройства (app-only, показывается через JS) --}}
+                @php
+                $_activityGate = config('activity.recording_open') || $user->isAdmin();
+                @endphp
+                @if($_activityGate)
+                <div class="ramka mt-2" id="ble-devices-section" style="display:none">
+                    <h2 class="-mt-05">{{ __('activity.my_devices') }}</h2>
+
+                    {{-- Блок согласия --}}
+                    <div id="ble-consent-block-settings" style="{{ $hasHealthConsent ? 'display:none' : '' }}">
+                        <div class="alert alert-info">
+                            <strong>{{ __('activity.consent_title') }}</strong>
+                        </div>
+                        <div class="form mt-1 mb-1">
+                            <label class="checkbox-item" style="align-items:flex-start">
+                                <input type="checkbox" id="ble-consent-checkbox-settings">
+                                <div class="custom-checkbox" style="margin-top:2px"></div>
+                                <span class="f-14" style="line-height:1.5">
+                                    {{ __('activity.consent_checkbox') }}
+                                    (<a href="{{ route('personal_data_agreement') }}" target="_blank">{{ __('activity.consent_link') }}</a>)
+                                </span>
+                            </label>
+                        </div>
+                        <div id="ble-consent-error-settings" class="alert alert-danger" style="display:none">
+                            {{ __('activity.consent_required') }}
+                        </div>
+                    </div>
+
+                    {{-- Список привязанных устройств --}}
+                    <div id="ble-device-list">
+                        @forelse($devices as $device)
+                        <div class="card mb-1" data-device-id="{{ $device->id }}">
+                            <div style="display:flex;align-items:center;gap:10px">
+                                <div style="flex:1">
+                                    <div class="b-600">{{ $device->name }}</div>
+                                    @if($device->last_connected_at)
+                                    <div class="f-13 cd3">{{ __('activity.last_connected_at') }}: {{ $device->last_connected_at->diffForHumans() }}</div>
+                                    @endif
+                                </div>
+                                <button class="btn btn-sm btn-outline-danger ble-device-delete"
+                                        data-id="{{ $device->id }}" type="button">{{ __('activity.remove_device') }}</button>
+                            </div>
+                        </div>
+                        @empty
+                        <div class="f-14 cd3 mb-1" id="ble-no-devices-msg">{{ __('activity.no_devices') }}</div>
+                        @endforelse
+                    </div>
+
+                    <div id="ble-add-device-status" class="alert mb-1" style="display:none"></div>
+
+                    <button id="ble-btn-add-device" class="btn w-100" type="button"
+                            {{ $hasHealthConsent ? '' : 'disabled style=opacity:.5' }}>
+                        {{ __('activity.connect_device') }}
+                    </button>
+
+                    <div class="mt-1 f-14">
+                        <a href="{{ route('activity.record') }}">{{ __('activity.record_training') }}</a>
+                    </div>
+                </div>
+                @endif
+
                 {{-- Зоны ЧСС --}}
                 <div class="ramka mt-2">
                     <h3 class="-mt-05">{{ __('activity.zones_heading') }}</h3>
@@ -129,3 +190,20 @@
     </div>
 
 </x-voll-layout>
+
+@if(config('activity.recording_open') || $user->isAdmin())
+@vite(['resources/js/ble-activity.js'])
+<script>
+window.addEventListener('load', function () {
+    if (typeof window.initBleDeviceManager === 'function') {
+        window.initBleDeviceManager({
+            hasHealthConsent: {{ $hasHealthConsent ? 'true' : 'false' }},
+            connectingText:   @json(__('activity.adding_device')),
+            removeText:       @json(__('activity.remove_device')),
+            noDevicesText:    @json(__('activity.no_devices')),
+            deviceAddedText:  @json(__('activity.device_added')),
+        });
+    }
+});
+</script>
+@endif

@@ -58,7 +58,8 @@ Route::middleware('auth:sanctum,web')->group(function () {
 // Activity / HR tracking
 Route::middleware('auth:sanctum,web')->group(function () {
     Route::post('/activity/consent',  [\App\Http\Controllers\Api\ActivityConsentController::class, 'store']);
-    Route::post('/activity/devices',  [\App\Http\Controllers\Api\ActivityDeviceController::class, 'upsert']);
+    Route::post('/activity/devices',           [\App\Http\Controllers\Api\ActivityDeviceController::class, 'upsert']);
+    Route::delete('/activity/devices/{device}', [\App\Http\Controllers\Api\ActivityDeviceController::class, 'destroy']);
     Route::post('/activity/sessions', [\App\Http\Controllers\Api\ActivitySessionController::class, 'start']);
     Route::post('/activity/sessions/{session}/samples',  [\App\Http\Controllers\Api\ActivitySessionController::class, 'ingestSamples']);
     Route::post('/activity/sessions/{session}/finalize', [\App\Http\Controllers\Api\ActivitySessionController::class, 'finalize']);
