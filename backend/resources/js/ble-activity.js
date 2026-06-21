@@ -217,7 +217,6 @@ async function recordConsent() {
 }
 
 async function connectSensor() {
-    // Проверяем согласие — если нет, показываем блок и не идём дальше
     if (!config.hasHealthConsent) {
         const consentBlock = el('ble-consent-block');
         if (consentBlock) consentBlock.style.display = '';
@@ -226,33 +225,27 @@ async function connectSensor() {
         return;
     }
 
+    // Нет привязанных устройств — показываем подсказку
+    if (!config.pairedDevices || !config.pairedDevices.length) {
+        const hintEl = el('ble-no-device-hint');
+        if (hintEl) hintEl.style.display = '';
+        return;
+    }
+
     setPhase('connecting');
+    const paired = config.pairedDevices[0];
     try {
         await BleClient.initialize({ androidNeverForLocation: true });
-        const device = await BleClient.requestDevice({ services: [HR_SERVICE] });
+        await BleClient.connect(paired.ble_identifier, () => onDisconnect());
 
-        let dbDeviceId = null;
-        try {
-            const r = await ajaxPost('/api/activity/devices', {
-                ble_identifier: device.deviceId,
-                name:           device.name || 'HR Sensor',
-                protocol:       'ble_hrp',
-            });
-            dbDeviceId = r.device_id;
-        } catch (e) {
-            console.warn('[BLE] device registration failed:', e);
-        }
-
-        await BleClient.connect(device.deviceId, () => onDisconnect());
-
-        state.deviceId   = device.deviceId;
-        state.dbDeviceId = dbDeviceId;
+        state.deviceId          = paired.ble_identifier;
+        state.dbDeviceId        = paired.db_device_id;
         state.reconnectAttempts = 0;
 
         setPhase('connected');
 
         const nameEl = el('ble-device-name');
-        if (nameEl) nameEl.textContent = device.name || device.deviceId;
+        if (nameEl) nameEl.textContent = paired.name || paired.ble_identifier;
 
     } catch (e) {
         console.error('[BLE] connect failed:', e);
@@ -261,6 +254,125 @@ async function connectSensor() {
         if (errEl) { errEl.textContent = e.message || 'Ошибка подключения'; errEl.style.display = ''; }
     }
 }
+
+// ── Device manager (settings page) ───────────────────────────────────────────
+
+function bindDeleteButton(btn, dmCfg) {
+    if (!btn) return;
+    btn.addEventListener('click', async function () {
+        const id = this.dataset.id;
+        if (!id) return;
+        try {
+            await new Promise((resolve, reject) => {
+                window.jQuery.ajax({
+                    url:       `/api/activity/devices/${id}`,
+                    method:    'DELETE',
+                    headers:   { 'X-CSRF-TOKEN': csrfToken() },
+                    xhrFields: { withCredentials: true },
+                    success:   resolve,
+                    error:     (xhr) => reject(new Error(xhr.statusText)),
+                });
+            });
+            const card = this.closest('[data-device-id]');
+            if (card) card.remove();
+            const list = document.getElementById('ble-device-list');
+            if (list && !list.querySelector('[data-device-id]')) {
+                const msg = document.createElement('div');
+                msg.className = 'f-14 cd3 mb-1';
+                msg.id = 'ble-no-devices-msg';
+                msg.textContent = dmCfg.noDevicesText || '';
+                list.appendChild(msg);
+            }
+        } catch (e) {
+            console.error('[BLE] delete device failed:', e);
+        }
+    });
+}
+
+async function connectAndRegister(dmCfg) {
+    const statusEl = document.getElementById('ble-add-device-status');
+    const btnAdd   = document.getElementById('ble-btn-add-device');
+
+    function setStatus(msg, type) {
+        if (!statusEl) return;
+        statusEl.textContent = msg;
+        statusEl.className = `alert alert-${type} mb-1`;
+        statusEl.style.display = '';
+    }
+
+    if (btnAdd) btnAdd.disabled = true;
+    setStatus(dmCfg.connectingText || '…', 'info');
+
+    try {
+        await BleClient.initialize({ androidNeverForLocation: true });
+        const device = await BleClient.requestDevice({ services: [HR_SERVICE] });
+
+        await BleClient.connect(device.deviceId, () => {});
+
+        const r = await ajaxPost('/api/activity/devices', {
+            ble_identifier: device.deviceId,
+            name:           device.name || 'HR Sensor',
+            protocol:       'ble_hrp',
+        });
+
+        try { await BleClient.disconnect(device.deviceId); } catch {}
+
+        if (statusEl) statusEl.style.display = 'none';
+
+        const listEl = document.getElementById('ble-device-list');
+        const noMsg  = document.getElementById('ble-no-devices-msg');
+        if (noMsg) noMsg.remove();
+        if (listEl) {
+            const card = document.createElement('div');
+            card.className = 'card mb-1';
+            card.dataset.deviceId = r.device_id;
+            card.innerHTML =
+                '<div style="display:flex;align-items:center;gap:10px">'
+                + '<div style="flex:1"><div class="b-600">' + (device.name || 'HR Sensor') + '</div></div>'
+                + '<button class="btn btn-sm btn-outline-danger ble-device-delete" data-id="' + r.device_id + '" type="button">'
+                + (dmCfg.removeText || 'X') + '</button>'
+                + '</div>';
+            listEl.appendChild(card);
+            bindDeleteButton(card.querySelector('.ble-device-delete'), dmCfg);
+        }
+    } catch (e) {
+        console.error('[BLE] connectAndRegister failed:', e);
+        setStatus(e.message || 'Ошибка', 'danger');
+    } finally {
+        if (btnAdd) btnAdd.disabled = false;
+    }
+}
+
+window.initBleDeviceManager = function (dmCfg) {
+    if (!window.Capacitor || !window.Capacitor.isNativePlatform()) return;
+
+    const section = document.getElementById('ble-devices-section');
+    if (section) section.style.display = '';
+
+    const btnAdd = document.getElementById('ble-btn-add-device');
+    if (btnAdd) btnAdd.addEventListener('click', () => connectAndRegister(dmCfg));
+
+    document.querySelectorAll('.ble-device-delete').forEach(btn => bindDeleteButton(btn, dmCfg));
+
+    const checkbox = document.getElementById('ble-consent-checkbox-settings');
+    if (checkbox) {
+        checkbox.addEventListener('change', async function () {
+            const errEl = document.getElementById('ble-consent-error-settings');
+            if (!this.checked) return;
+            try {
+                await recordConsent();
+                const block = document.getElementById('ble-consent-block-settings');
+                if (block) block.style.display = 'none';
+                const btn = document.getElementById('ble-btn-add-device');
+                if (btn) { btn.disabled = false; btn.style.opacity = ''; }
+            } catch (e) {
+                console.error('[BLE] consent failed:', e);
+                this.checked = false;
+                if (errEl) errEl.style.display = '';
+            }
+        });
+    }
+};
 
 async function startSession() {
     const occurrenceId = config.occurrenceId || el('ble-occurrence-select')?.value || null;

@@ -23,7 +23,10 @@ class AthleteProfileController extends Controller
             $suggestedMaxHr = $this->service->suggestMaxHr($age);
         }
 
-        return view('profile.athlete', compact('user', 'profile', 'suggestedMaxHr'));
+        $devices         = $user->athleteDevices()->orderByDesc('last_connected_at')->get();
+        $hasHealthConsent = $user->hasHealthConsent();
+
+        return view('profile.athlete', compact('user', 'profile', 'suggestedMaxHr', 'devices', 'hasHealthConsent'));
     }
 
     public function update(Request $request): RedirectResponse

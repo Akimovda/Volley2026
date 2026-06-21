@@ -62,6 +62,12 @@
                         <input type="hidden" id="ble-occurrence-select" value="{{ $occurrenceId }}">
                         @endif
 
+                        {{-- Подсказка когда нет привязанных устройств --}}
+                        <div id="ble-no-device-hint" class="alert alert-info mb-1" style="display:none">
+                            {!! __('activity.connect_in_settings_hint') !!}
+                            <a href="{{ route('profile.athlete') }}">{{ __('activity.my_devices') }}</a>
+                        </div>
+
                         {{-- ФАЗА: idle --}}
                         <div id="ble-phase-idle">
                             <div id="ble-connect-error" class="alert alert-danger mb-1" style="display:none"></div>
@@ -202,6 +208,7 @@ window.__activityConfig = {
     hasHealthConsent:   {{ $hasHealthConsent ? 'true' : 'false' }},
     weightForCalories:  @json(__('activity.weight_for_calories')),
     setWeightUrl:       @json(route('profile.athlete')),
+    pairedDevices:      @json($pairedDevices),
 };
 </script>
 @vite(['resources/js/ble-activity.js'])

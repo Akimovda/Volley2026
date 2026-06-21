@@ -312,8 +312,6 @@
 		</div>
 		@endif
 		
-		@include('events._partials.activity_record_btn')
-
 		{{-- ===============================
 		GUARD ЗАПРЕЩАЕТ
 		=============================== --}}
