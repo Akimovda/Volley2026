@@ -319,16 +319,18 @@ async function stopSession() {
 window.initBleActivity = function (cfg) {
     config = cfg || {};
 
+    setPhase('idle');
+
     if (!window.Capacitor || !window.Capacitor.isNativePlatform()) {
-        setPhase('idle');
         const notAppEl = el('ble-not-app');
         if (notAppEl) notAppEl.style.display = '';
-        const controlsEl = el('ble-controls');
-        if (controlsEl) controlsEl.style.display = 'none';
-        return;
+        const btnConnect = el('ble-btn-connect');
+        if (btnConnect) {
+            btnConnect.disabled = true;
+            btnConnect.style.opacity = '0.5';
+            btnConnect.style.cursor = 'not-allowed';
+        }
     }
-
-    setPhase('idle');
 
     const btnConnect = el('ble-btn-connect');
     const btnStart   = el('ble-btn-start');
