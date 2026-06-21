@@ -24,7 +24,7 @@
                                 <input type="checkbox" id="ble-consent-checkbox" style="margin-top:3px;flex-shrink:0">
                                 <span class="f-14">
                                     {{ __('activity.consent_checkbox') }}
-                                    (<a href="{{ route('pages.personal_data_agreement') }}" target="_blank">{{ __('activity.consent_link') }}</a>)
+                                    (<a href="{{ route('personal_data_agreement') }}" target="_blank">{{ __('activity.consent_link') }}</a>)
                                 </span>
                             </label>
                         </div>
