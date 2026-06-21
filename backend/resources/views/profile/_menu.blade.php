@@ -121,6 +121,14 @@
                         <span class="menu-text">{{ __('profile.menu_my_stats') }}</span>
                     @endif
                 </a>
+                <a href="{{ route('profile.athlete') }}"
+                   class="menu-item {{ $activeMenu === 'athlete' ? 'active' : '' }}">
+                    @if($activeMenu === 'athlete')
+                        <strong class="cd menu-text">{{ __('activity.menu_item') }}</strong>
+                    @else
+                        <span class="menu-text">{{ __('activity.menu_item') }}</span>
+                    @endif
+                </a>
                 <a href="{{ route('friends.index') }}"
                    class="menu-item {{ $activeMenu === 'friends' ? 'active' : '' }}">
                     @if($activeMenu === 'friends')

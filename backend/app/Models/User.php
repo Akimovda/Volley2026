@@ -514,4 +514,19 @@ public function getNameAttribute($value): string
         return $this->hasMany(\App\Models\TournamentSeasonStats::class);
     }
 
+    public function athleteProfile(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(AthleteProfile::class);
+    }
+
+    public function athleteDevices(): HasMany
+    {
+        return $this->hasMany(AthleteDevice::class);
+    }
+
+    public function activitySessions(): HasMany
+    {
+        return $this->hasMany(ActivitySession::class);
+    }
+
 }
