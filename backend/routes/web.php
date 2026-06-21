@@ -240,6 +240,10 @@ Route::get('/user/profile', [\App\Http\Controllers\UserProfileController::class,
     ->name('profile.show');
 
 // Настройки пульса / атлетический профиль
+Route::get('/activity/record', [\App\Http\Controllers\ActivityRecordController::class, 'show'])
+    ->middleware(['auth', config('jetstream.auth_session'), 'verified'])
+    ->name('activity.record');
+
 Route::get('/profile/athlete', [\App\Http\Controllers\AthleteProfileController::class, 'show'])
     ->middleware(['auth', config('jetstream.auth_session'), 'verified'])
     ->name('profile.athlete');
