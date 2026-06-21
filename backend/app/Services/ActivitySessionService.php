@@ -11,7 +11,10 @@ use Illuminate\Support\Facades\Log;
 
 class ActivitySessionService
 {
-    public function __construct(private readonly AthleteProfileService $profileService) {}
+    public function __construct(
+        private readonly AthleteProfileService $profileService,
+        private readonly ActivityCalorieService $calorieService,
+    ) {}
 
     public function start(User $user, ?EventOccurrence $occurrence, ?AthleteDevice $device): ActivitySession
     {
@@ -128,6 +131,21 @@ class ActivitySessionService
             $timeInZone['z5'] * 5
         ) / 60.0;
 
+        // calories via Keytel (requires weight, birth_date, gender)
+        $caloriesKcal = null;
+        $profile      = $user->athleteProfile;
+        $weightKg     = $profile?->weight_kg ? (float) $profile->weight_kg : null;
+        if ($weightKg !== null && $user->birth_date && $user->gender) {
+            $age    = (int) $user->birth_date->diffInYears(now());
+            $gender = $user->gender; // 'm' or 'f'
+            $totalKcal = 0.0;
+            foreach ($samples as $s) {
+                // each sample = 1 second; Keytel gives kcal/min → divide by 60
+                $totalKcal += $this->calorieService->keytelKcalPerMin((int) $s->bpm, $weightKg, $age, $gender) / 60.0;
+            }
+            $caloriesKcal = round($totalKcal, 1);
+        }
+
         $session->update([
             'status'        => 'completed',
             'ended_at'      => now(),
@@ -137,6 +155,7 @@ class ActivitySessionService
             'min_hr'        => $minBpm === PHP_INT_MAX ? null : $minBpm,
             'time_in_zone'  => $timeInZone,
             'load_score'    => round($loadScore, 2),
+            'calories_kcal' => $caloriesKcal,
             'samples_count' => $count,
         ]);
 

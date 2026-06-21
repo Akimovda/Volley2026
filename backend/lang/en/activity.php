@@ -14,9 +14,9 @@ return [
     'max_hr_placeholder'     => 'e.g. 190',
     'max_hr_age_hint'        => 'Optimal for your age: ~:bpm bpm (Tanaka formula)',
 
-    'weight_label'           => 'Weight, kg (optional)',
+    'weight_label'           => 'Weight, kg',
     'weight_placeholder'     => 'e.g. 75',
-    'weight_hint'            => 'Reserved for future calorie calculation.',
+    'weight_hint'            => 'Weight (kg) — needed to estimate calories burned.',
 
     'save_btn'               => 'Save',
     'saved'                  => 'Settings saved',
@@ -59,4 +59,16 @@ return [
     'error_ble_init'         => 'Failed to initialize Bluetooth. Check permissions.',
     'error_no_session'       => 'Session creation failed. Please try again.',
     'time_in_zones'          => 'Time in zones',
+
+    // Health data consent
+    'consent_title'          => 'Health Data',
+    'consent_checkbox'       => 'I consent to processing health data (heart rate and derivatives) per the Privacy Policy',
+    'consent_link'           => 'Privacy Policy',
+    'consent_required'       => 'Consent to process health data is required',
+
+    // Calories
+    'calories'               => 'Calories',
+    'calories_estimate'      => '≈ :value kcal',
+    'weight_for_calories'    => 'Set your weight in settings to see calories',
+    'set_weight_hint'        => 'Configure profile',
 ];

@@ -41,10 +41,11 @@ class ActivityRecordController extends Controller
                 ->filter(fn($o) => $o['id']);
         }
 
-        $zones      = $this->profileService->zoneThresholds($user);
-        $maxHr      = $this->profileService->effectiveMaxHr($user);
-        $restingHr  = $this->profileService->effectiveRestingHr($user);
+        $zones            = $this->profileService->zoneThresholds($user);
+        $maxHr            = $this->profileService->effectiveMaxHr($user);
+        $restingHr        = $this->profileService->effectiveRestingHr($user);
+        $hasHealthConsent = $user->hasHealthConsent();
 
-        return view('activity.record', compact('occurrenceId', 'occurrences', 'zones', 'maxHr', 'restingHr'));
+        return view('activity.record', compact('occurrenceId', 'occurrences', 'zones', 'maxHr', 'restingHr', 'hasHealthConsent'));
     }
 }

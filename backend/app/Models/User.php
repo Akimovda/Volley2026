@@ -302,6 +302,15 @@
 		{
 			return ProfileUpdateGuard::isAdmin($this);
 		}
+
+		public function hasHealthConsent(): bool
+		{
+			$version = config('activity.consent_version');
+			return UserConsent::where('user_id', $this->id)
+				->where('type', 'health_activity')
+				->where('document_version', $version)
+				->exists();
+		}
 		
 		public function isOrganizer(): bool
 		{

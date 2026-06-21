@@ -14,6 +14,25 @@
                         <a href="{{ route('profile.athlete') }}" class="btn btn-secondary w-100">{{ __('activity.save_btn') }}</a>
                     </div>
 
+                    {{-- Блок согласия (показывается если нет согласия текущей версии) --}}
+                    <div id="ble-consent-block" style="{{ $hasHealthConsent ? 'display:none' : '' }}">
+                        <div class="alert alert-info">
+                            <strong>{{ __('activity.consent_title') }}</strong>
+                        </div>
+                        <div class="form mt-1">
+                            <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer">
+                                <input type="checkbox" id="ble-consent-checkbox" style="margin-top:3px;flex-shrink:0">
+                                <span class="f-14">
+                                    {{ __('activity.consent_checkbox') }}
+                                    (<a href="{{ route('pages.personal_data_agreement') }}" target="_blank">{{ __('activity.consent_link') }}</a>)
+                                </span>
+                            </label>
+                        </div>
+                        <div id="ble-consent-error" class="alert alert-danger mt-1" style="display:none">
+                            {{ __('activity.consent_required') }}
+                        </div>
+                    </div>
+
                     {{-- Основной блок управления --}}
                     <div id="ble-controls">
 
@@ -106,6 +125,10 @@
                                     <td style="padding:6px 0;opacity:.7">{{ __('activity.samples_count') }}</td>
                                     <td style="text-align:right;font-weight:600" id="ble-sum-samples">–</td>
                                 </tr>
+                                <tr id="ble-sum-calories-row">
+                                    <td style="padding:6px 0;opacity:.7">{{ __('activity.calories') }}</td>
+                                    <td style="text-align:right;font-weight:600" id="ble-sum-calories">–</td>
+                                </tr>
                             </table>
                             <div class="mt-1" id="ble-sum-zones"></div>
                             <button id="ble-btn-done" class="btn w-100 mt-2">{{ __('activity.done_btn') }}</button>
@@ -160,12 +183,15 @@ $zoneNamesJs = [
 @endphp
 <script>
 window.__activityConfig = {
-    zones:          @json($zones),
-    zoneNames:      @json($zoneNamesJs),
-    maxHr:          {{ $maxHr }},
-    restingHr:      {{ $restingHr }},
-    occurrenceId:   {{ $occurrenceId ?? 'null' }},
-    errorNoSession: @json(__('activity.error_no_session')),
+    zones:              @json($zones),
+    zoneNames:          @json($zoneNamesJs),
+    maxHr:              {{ $maxHr }},
+    restingHr:          {{ $restingHr }},
+    occurrenceId:       {{ $occurrenceId ?? 'null' }},
+    errorNoSession:     @json(__('activity.error_no_session')),
+    hasHealthConsent:   {{ $hasHealthConsent ? 'true' : 'false' }},
+    weightForCalories:  @json(__('activity.weight_for_calories')),
+    setWeightUrl:       @json(route('profile.athlete')),
 };
 </script>
 @vite(['resources/js/ble-activity.js'])
