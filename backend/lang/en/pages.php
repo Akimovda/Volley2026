@@ -39,6 +39,12 @@ return [
     'pda_h_8' => '8. Confirmation of consent',
     'pda_p_8' => 'By clicking "Sign in" via Telegram/VK/Yandex and/or filling in your profile in the Volley service, you confirm you have read the terms and consent to the processing of personal data.',
 
+    'pda_h_9'   => '9. Physical Activity and Health Data',
+    'pda_9_1'   => 'Through the "Record Workout" feature, the service may collect physical activity data: heart rate sensor readings (BPM), workout duration, load characteristics (average, maximum and minimum HR, time in HR zones, load score). This data constitutes a special category of personal data (health data).',
+    'pda_9_2'   => 'Health data is collected solely on the basis of the User\'s explicit action: the feature is started manually by pressing the Start button; data is not collected without this action. The sensor is connected via the User\'s personal device using BLE wireless protocol.',
+    'pda_9_3'   => 'Health data is used exclusively to: display the User\'s workout statistics and calculate HR zones using the Karvonen method. Data is not shared with third parties and is not used for advertising, commercial or any other purposes.',
+    'pda_9_4'   => 'The User may stop data collection at any time by stopping the workout, and may request deletion of previously collected health data by contacting the Operator via the feedback form on the site.',
+
     // === pages/level_players.blade.php ===
     'lp_title'        => 'Player levels',
     'lp_description'  => 'Definitions from volleymsk.ru forum + our additions to the "Confident continuing amateur" level.',
