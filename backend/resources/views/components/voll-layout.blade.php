@@ -338,6 +338,11 @@
 								<a href="{{ route('profile.athlete') }}" class="menu-item">
 									<span class="menu-text">{{ __('activity.menu_item') }}</span>
 								</a>
+								@if(config('activity.recording_open') || auth()->user()?->isAdmin())
+								<a href="{{ route('activity.index') }}" class="menu-item">
+									<span class="menu-text">{{ __('activity.menu_history') }}</span>
+								</a>
+								@endif
 								<a href="/user/profile" class="menu-item">
 									<span class="menu-text">{{ __('ui.menu_my_profile') }}</span>
 								</a>
