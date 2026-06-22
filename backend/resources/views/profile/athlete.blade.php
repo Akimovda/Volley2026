@@ -1,6 +1,60 @@
 {{-- resources/views/profile/athlete.blade.php --}}
 <x-voll-layout body_class="profile-page">
 
+    <x-slot name="style">
+    <style>
+    :root {
+        --act-hr-z1: #2967BA;
+        --act-hr-z2: #22c55e;
+        --act-hr-z3: #eab308;
+        --act-hr-z4: #f97316;
+        --act-hr-z5: #ef4444;
+        --act-hr-z1-tint: rgba(41,103,186,.09);
+        --act-hr-z2-tint: rgba(34,197,94,.09);
+        --act-hr-z3-tint: rgba(234,179,8,.09);
+        --act-hr-z4-tint: rgba(249,115,22,.09);
+        --act-hr-z5-tint: rgba(239,68,68,.09);
+    }
+    body.dark {
+        --act-hr-z1-tint: rgba(41,103,186,.18);
+        --act-hr-z2-tint: rgba(34,197,94,.18);
+        --act-hr-z3-tint: rgba(234,179,8,.18);
+        --act-hr-z4-tint: rgba(249,115,22,.18);
+        --act-hr-z5-tint: rgba(239,68,68,.18);
+    }
+    /* Сегментированная шкала */
+    .hr-zone-bar { display:flex; gap:3px; height:10px; border-radius:6px; overflow:hidden; }
+    .hr-zone-bar__seg { flex:1; border-radius:3px; }
+    .hr-zone-bar__seg--z1 { background:var(--act-hr-z1); }
+    .hr-zone-bar__seg--z2 { background:var(--act-hr-z2); }
+    .hr-zone-bar__seg--z3 { background:var(--act-hr-z3); }
+    .hr-zone-bar__seg--z4 { background:var(--act-hr-z4); }
+    .hr-zone-bar__seg--z5 { background:var(--act-hr-z5); }
+    /* Строки зон */
+    .hr-zone-list { display:flex; flex-direction:column; gap:5px; }
+    .hr-zone-row {
+        display:flex; align-items:center; gap:12px;
+        padding:10px 12px; border-radius:8px; min-height:44px;
+    }
+    .hr-zone-row--z1 { background:var(--act-hr-z1-tint); }
+    .hr-zone-row--z2 { background:var(--act-hr-z2-tint); }
+    .hr-zone-row--z3 { background:var(--act-hr-z3-tint); }
+    .hr-zone-row--z4 { background:var(--act-hr-z4-tint); }
+    .hr-zone-row--z5 { background:var(--act-hr-z5-tint); }
+    .hr-zone-row__marker {
+        width:4px; height:34px; border-radius:2px; flex-shrink:0;
+    }
+    .hr-zone-row--z1 .hr-zone-row__marker { background:var(--act-hr-z1); }
+    .hr-zone-row--z2 .hr-zone-row__marker { background:var(--act-hr-z2); }
+    .hr-zone-row--z3 .hr-zone-row__marker { background:var(--act-hr-z3); }
+    .hr-zone-row--z4 .hr-zone-row__marker { background:var(--act-hr-z4); }
+    .hr-zone-row--z5 .hr-zone-row__marker { background:var(--act-hr-z5); }
+    .hr-zone-row__info { flex:1; min-width:0; }
+    .hr-zone-row__name { font-size:1.4rem; line-height:1.3; }
+    .hr-zone-row__bpm  { font-size:1.25rem; opacity:.7; margin-top:1px; }
+    </style>
+    </x-slot>
+
     <x-slot name="title">{{ __('activity.activity_sensors_settings') }}</x-slot>
     <x-slot name="h1">{{ __('activity.activity_sensors_settings') }}</x-slot>
     <x-slot name="h2">{{ __('activity.page_subtitle') }}</x-slot>
@@ -216,18 +270,40 @@
                 {{-- Зоны ЧСС --}}
                 <div class="ramka mt-2">
                     <h3 class="-mt-05">{{ __('activity.zones_heading') }}</h3>
-                    <p class="f-14 cd2">{{ __('activity.zones_description') }}</p>
-                    <div class="row">
+
+                    @if($usingDefaultHr)
+                    <div class="alert alert-info f-14 mb-2">{{ __('activity.zones_no_data_hint') }}</div>
+                    @else
+                    <p class="f-13 cd3 mb-2">{{ __('activity.zones_description') }}</p>
+                    @endif
+
+                    {{-- Сегментированная шкала --}}
+                    <div class="hr-zone-bar mb-2">
                         @foreach(['z1','z2','z3','z4','z5'] as $z)
-                            <div class="col-sm-6 col-md col-lg mb-1">
-                                <div class="card text-center py-1">
-                                    <div class="b-700 f-16">{{ strtoupper($z) }}</div>
-                                    <div class="f-14 cd2">{{ __('activity.' . $z . '_name') }}</div>
-                                </div>
-                            </div>
+                        <div class="hr-zone-bar__seg hr-zone-bar__seg--{{ $z }}"
+                             title="{{ __('activity.' . $z . '_name') }}"></div>
                         @endforeach
                     </div>
-                    <p class="f-12 cd3 mt-1 mb-0">{{ __('activity.zones_karvonen_note') }}</p>
+
+                    {{-- Строки зон --}}
+                    <div class="hr-zone-list">
+                        @foreach(['z1','z2','z3','z4','z5'] as $z)
+                        <div class="hr-zone-row hr-zone-row--{{ $z }}">
+                            <div class="hr-zone-row__marker"></div>
+                            <div class="hr-zone-row__info">
+                                <div class="hr-zone-row__name">
+                                    <span class="b-700">{{ strtoupper($z) }}</span>
+                                    <span class="cd2"> · {{ __('activity.' . $z . '_name') }}</span>
+                                </div>
+                                <div class="hr-zone-row__bpm">
+                                    {{ $zoneThresholds[$z]['low'] }}–{{ $zoneThresholds[$z]['high'] }} {{ __('activity.live_bpm') }}
+                                </div>
+                            </div>
+                        </div>
+                        @endforeach
+                    </div>
+
+                    <p class="f-12 cd3 mt-15 mb-0">{{ __('activity.zones_karvonen_note') }}</p>
                 </div>
 
             </div>
