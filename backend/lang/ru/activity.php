@@ -49,11 +49,11 @@ return [
     'zone_label'             => 'Зона',
     'timer_label'            => 'Время',
     'session_summary'        => 'Итоги тренировки',
-    'avg_hr'                 => 'Средний пульс',
+    'avg_hr'                 => '🫀 Средний пульс',
     'max_hr'                 => 'Максимальный пульс',
     'min_hr'                 => 'Минимальный пульс',
-    'duration'               => 'Продолжительность',
-    'load_score'             => 'Нагрузка',
+    'duration'               => '⏳ Продолжительность',
+    'load_score'             => '💪 Нагрузка',
     'samples_count'          => 'Измерений',
     'done_btn'               => 'Готово',
     'error_ble_init'         => 'Не удалось инициализировать Bluetooth. Проверьте разрешения.',
@@ -80,13 +80,13 @@ return [
     'adding_device'          => 'Подключение датчика…',
 
     // Калории
-    'calories'               => 'Калории',
+    'calories'               => '🔥 Калории',
     'calories_estimate'      => '≈ :value ккал',
     'weight_for_calories'    => 'Укажите вес в настройках, чтобы видеть калории',
     'set_weight_hint'        => 'Настроить профиль',
 
     // Прыжки
-    'jumps_count'            => 'Прыжков',
+    'jumps_count'            => '🏐 Прыжков',
     'jumps_not_tracked'      => 'Этот датчик не отслеживает прыжки',
     'jump_trend_higher'      => 'выше среднего на :delta см',
     'jump_trend_lower'       => 'ниже среднего на :delta см',
