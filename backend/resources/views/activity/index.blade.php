@@ -1,4 +1,40 @@
 <x-voll-layout body_class="activity-dashboard-page">
+    <x-slot name="style">
+    <style>
+    :root {
+        --act-brand:  #2967BA;
+        --act-hr-z0:  #9ca3af;
+        --act-hr-z1:  #2967BA;
+        --act-hr-z2:  #22c55e;
+        --act-hr-z3:  #eab308;
+        --act-hr-z4:  #f97316;
+        --act-hr-z5:  #ef4444;
+    }
+    /* Segmented filter — full width, equal 3 segments */
+    .act-filter-tabs {
+        display: flex !important;
+        width: 100%;
+        max-width: none !important;
+        box-sizing: border-box;
+    }
+    .act-filter-tabs .tab {
+        flex: 1;
+        min-width: 0;
+        padding: 0.9rem 0.4rem;
+        font-size: 1.3rem;
+    }
+    /* Card session title */
+    .act-session-title {
+        color: var(--act-brand);
+        font-weight: 700;
+    }
+    body.dark .act-session-title {
+        color: #FFB171;
+    }
+    /* HR value colored by zone */
+    .act-hr-val { font-weight: 700; }
+    </style>
+    </x-slot>
     @php $user = auth()->user(); @endphp
 
     <x-slot name="title">{{ __('activity.dashboard_title') }} — VolleyPlay</x-slot>
@@ -61,7 +97,7 @@
 
                 {{-- Фильтр --}}
                 <div class="mb-2 mt-1">
-                    <div class="tabs w-100" style="max-width:360px">
+                    <div class="tabs w-100 act-filter-tabs">
                         <a href="{{ route('activity.index', ['direction' => 'all']) }}"
                            class="tab {{ $direction === 'all' ? 'active' : '' }}">{{ __('activity.filter_all') }}</a>
                         <a href="{{ route('activity.index', ['direction' => 'classic']) }}"
@@ -73,6 +109,25 @@
                 </div>
 
                 {{-- Список сессий --}}
+                @php
+                $hrZoneColors = ['#9ca3af','#2967BA','#22c55e','#eab308','#f97316','#ef4444'];
+                $hrColorFn = function(?int $bpm) use ($zoneThresholds, $hrZoneColors): string {
+                    if (!$bpm) return $hrZoneColors[0];
+                    if ($zoneThresholds) {
+                        $zone = 0;
+                        for ($z = 5; $z >= 1; $z--) {
+                            if ($bpm >= $zoneThresholds["z{$z}"]['low']) { $zone = $z; break; }
+                        }
+                    } else {
+                        if ($bpm >= 160)     $zone = 5;
+                        elseif ($bpm >= 140) $zone = 4;
+                        elseif ($bpm >= 120) $zone = 3;
+                        elseif ($bpm >= 100) $zone = 2;
+                        else                 $zone = 1;
+                    }
+                    return $hrZoneColors[$zone];
+                };
+                @endphp
                 @forelse($sessions as $session)
                 @php
                     $hasJumps = is_array($session->tracked_capabilities) && in_array('jumps', $session->tracked_capabilities);
@@ -85,7 +140,7 @@
                 <a href="{{ route('activity.show', $session) }}" class="ramka mb-1" style="display:block;text-decoration:none;color:inherit">
                     <div class="d-flex justify-between align-center">
                         <div>
-                            <div class="b-600">{{ $title }}</div>
+                            <div class="act-session-title">{{ $title }}</div>
                             <div class="f-13" style="opacity:.6">{{ $session->started_at?->format('d.m.Y H:i') }}</div>
                         </div>
                         <div class="text-right">
@@ -103,7 +158,14 @@
                         </div>
                         <div class="col-6 col-md-3">
                             <div class="f-13" style="opacity:.6">{{ __('activity.avg_hr') }}</div>
-                            <div class="b-600">{{ $session->avg_hr ? $session->avg_hr . ' ' . __('activity.live_bpm') : '—' }}</div>
+                            <div class="b-600">
+                                @if($session->avg_hr)
+                                    <span class="act-hr-val" style="color:{{ $hrColorFn($session->avg_hr) }}">{{ $session->avg_hr }}</span>
+                                    <span style="opacity:.75;font-weight:400;font-size:.9em"> {{ __('activity.live_bpm') }}</span>
+                                @else
+                                    —
+                                @endif
+                            </div>
                         </div>
                         <div class="col-6 col-md-3">
                             <div class="f-13" style="opacity:.6">{{ __('activity.load_score') }}</div>
