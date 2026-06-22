@@ -23,6 +23,13 @@
         padding: 0.9rem 0.4rem;
         font-size: 1.3rem;
     }
+    .act-filter-tabs .tab.active {
+        background: var(--act-brand);
+        border-radius: 999px;
+    }
+    body.dark .act-filter-tabs .tab.active {
+        background: #E7612F;
+    }
     /* Card session title */
     .act-session-title {
         color: var(--act-brand);

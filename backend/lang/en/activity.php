@@ -49,11 +49,11 @@ return [
     'zone_label'             => 'Zone',
     'timer_label'            => 'Time',
     'session_summary'        => 'Workout Summary',
-    'avg_hr'                 => 'Average HR',
+    'avg_hr'                 => '🫀 Average HR',
     'max_hr'                 => 'Maximum HR',
     'min_hr'                 => 'Minimum HR',
-    'duration'               => 'Duration',
-    'load_score'             => 'Load score',
+    'duration'               => '⏳ Duration',
+    'load_score'             => '💪 Load score',
     'samples_count'          => 'Samples',
     'done_btn'               => 'Done',
     'error_ble_init'         => 'Failed to initialize Bluetooth. Check permissions.',
@@ -80,13 +80,13 @@ return [
     'adding_device'          => 'Connecting sensor…',
 
     // Calories
-    'calories'               => 'Calories',
+    'calories'               => '🔥 Calories',
     'calories_estimate'      => '≈ :value kcal',
     'weight_for_calories'    => 'Set your weight in settings to see calories',
     'set_weight_hint'        => 'Configure profile',
 
     // Jumps
-    'jumps_count'            => 'Jumps',
+    'jumps_count'            => '🏐 Jumps',
     'jumps_not_tracked'      => 'This sensor does not track jumps',
     'jump_trend_higher'      => ':delta cm above personal average',
     'jump_trend_lower'       => ':delta cm below personal average',
