@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\AthleteDevice;
 use App\Models\User;
 
 class AthleteProfileService
@@ -28,6 +29,25 @@ class AthleteProfileService
     {
         $profile = $user->athleteProfile;
         return ($profile && $profile->resting_hr) ? $profile->resting_hr : 60;
+    }
+
+    /**
+     * Приоритет: личный коэффициент атлета → конфиг по протоколу → дефолт.
+     */
+    public function effectiveJumpCoeff(User $user, ?AthleteDevice $device): float
+    {
+        $profile = $user->athleteProfile;
+        if ($profile && $profile->jump_height_coeff !== null) {
+            return (float) $profile->jump_height_coeff;
+        }
+
+        $map      = config('activity.jump_height_coeff', []);
+        $protocol = $device?->protocol;
+        if ($protocol && array_key_exists($protocol, $map) && $map[$protocol] !== null) {
+            return (float) $map[$protocol];
+        }
+
+        return (float) config('activity.jump_height_coeff_default', 0.55);
     }
 
     /**

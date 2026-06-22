@@ -7,13 +7,17 @@ use App\Models\ActivitySession;
 use App\Models\AthleteDevice;
 use App\Models\EventOccurrence;
 use App\Services\ActivitySessionService;
+use App\Services\AthleteProfileService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 class ActivitySessionController extends Controller
 {
-    public function __construct(private readonly ActivitySessionService $service) {}
+    public function __construct(
+        private readonly ActivitySessionService $service,
+        private readonly AthleteProfileService $profileService,
+    ) {}
 
     public function start(Request $request): JsonResponse
     {
@@ -34,7 +38,12 @@ class ActivitySessionController extends Controller
 
         $session = $this->service->start($request->user(), $occurrence, $device);
 
-        return response()->json(['session_id' => $session->id], 201);
+        $jumpHeightCoeff = $this->profileService->effectiveJumpCoeff($request->user(), $device);
+
+        return response()->json([
+            'session_id'        => $session->id,
+            'jump_height_coeff' => $jumpHeightCoeff,
+        ], 201);
     }
 
     public function ingestSamples(Request $request, ActivitySession $session): JsonResponse
