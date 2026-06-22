@@ -648,6 +648,14 @@
 				</div>
 
 				<div class="ramka">
+					<h2 class="-mt-05">{{ __('activity.activity_sensors_settings') }}</h2>
+					<p class="f-15 mb-2">{{ __('activity.connect_in_settings_hint') }}</p>
+					<a href="{{ route('profile.athlete') }}" class="btn btn-secondary">
+						{{ __('activity.activity_sensors_settings') }} →
+					</a>
+				</div>
+
+				<div class="ramka">
                     <h2 class="-mt-05">{{ __('profile.sec_notifications') }}</h2>
 					
                     <p class="mb-15">

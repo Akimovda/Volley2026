@@ -15,6 +15,18 @@ return [
     ],
     'default_capabilities' => ['hr'],
 
+    // Точность измерения прыжков по протоколу.
+    // none     = только пульс, прыжки недоступны
+    // relative = прыжки через акселерометр телефона/часов (приблизительно)
+    // better   = датчик у корпуса (Polar/нагрудный), повышенная точность
+    'device_accuracy' => [
+        'ble_hrp'        => 'none',
+        'healthkit'      => 'relative',
+        'polar_sdk'      => 'better',
+        'health_connect' => 'relative',
+    ],
+    'default_accuracy' => 'none',
+
     // Планировщик пушей «Записать активность?»
     // prompt_after_min  — через сколько минут после старта occurrence слать пуш
     // prompt_grace_min  — окно (от now()-grace до now()-after); защита от накопленных occurrence при простое планировщика
