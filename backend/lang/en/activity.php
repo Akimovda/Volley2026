@@ -26,6 +26,7 @@ return [
     'zones_heading'          => 'HR Zones',
     'zones_description'      => 'Calculated automatically from your parameters using the Karvonen method.',
     'zones_karvonen_note'    => 'HR_zone = HR_rest + % × (HR_max − HR_rest)',
+    'zones_no_data_hint'     => 'Fill in your age and resting heart rate in settings to get personalised zones. Estimated values are shown for now.',
 
     'z1_name' => 'Recovery',
     'z2_name' => 'Aerobic Base',
