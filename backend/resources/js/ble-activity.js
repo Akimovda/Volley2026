@@ -377,9 +377,10 @@ async function connectAndRegister(dmCfg) {
             const card = document.createElement('div');
             card.className = 'card mb-1';
             card.dataset.deviceId = r.device_id;
+            const accText = dmCfg.deviceAccText ? '<div class="f-13 cd3 mt-05">' + dmCfg.deviceAccText + '</div>' : '';
             card.innerHTML =
                 '<div style="display:flex;align-items:center;gap:10px">'
-                + '<div style="flex:1"><div class="b-600">' + (device.name || 'HR Sensor') + '</div></div>'
+                + '<div style="flex:1"><div class="b-600">' + (device.name || 'HR Sensor') + '</div>' + accText + '</div>'
                 + '<button class="btn btn-sm btn-outline-danger ble-device-delete" data-id="' + r.device_id + '" type="button">'
                 + (dmCfg.removeText || 'X') + '</button>'
                 + '</div>';

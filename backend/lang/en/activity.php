@@ -2,7 +2,9 @@
 
 return [
     'menu_item'            => '❤️ Heart Rate & Activity',
-    'page_title'           => 'Heart Rate Settings',
+    'my_activity'          => '❤️ My Activity',
+    'activity_sensors_settings' => 'Activity sensor settings',
+    'page_title'           => 'Activity sensor settings',
     'page_subtitle'        => 'HR zones using the Karvonen method',
     'settings_heading'     => 'My Parameters',
 
@@ -69,6 +71,9 @@ return [
 
     // Devices
     'my_devices'             => 'My Devices',
+    'device_acc_none'        => 'This sensor transmits heart rate only. Jump counting and movement-based load are not available.',
+    'device_acc_relative'    => 'Heart rate — accurate. Jumps — approximate: we count them and track relative dynamics, not exact centimetres.',
+    'device_acc_better'      => 'Heart rate — accurate. Jumps — with higher precision (sensor worn at the body).',
     'connect_device'         => 'Add Sensor',
     'paired_devices'         => 'Paired Sensors',
     'remove_device'          => 'Remove',
@@ -99,8 +104,8 @@ return [
     'hitting_reach'          => '≈ :cm cm from the floor',
 
     // Activity dashboard
-    'menu_history'           => '📊 Workout History',
-    'dashboard_title'        => 'Workout History',
+    'menu_history'           => '❤️ My Activity',
+    'dashboard_title'        => '❤️ My Activity',
     'no_sessions'            => 'No recorded workouts yet.',
     'total_sessions'         => 'Total workouts',
     'last_load'              => 'Load (last)',
@@ -110,7 +115,7 @@ return [
     'filter_beach'           => 'Beach',
     'hr_curve'               => 'HR Curve',
     'session_free_training'  => 'Free Training',
-    'history_link'           => 'Workout History →',
+    'history_link'           => '❤️ My Activity →',
     'back_to_list'           => 'Back',
     'jump_avg_height'        => 'Avg height',
     'jump_max_height'        => 'Max height',

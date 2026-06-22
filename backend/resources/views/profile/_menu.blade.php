@@ -121,21 +121,13 @@
                         <span class="menu-text">{{ __('profile.menu_my_stats') }}</span>
                     @endif
                 </a>
-                <a href="{{ route('profile.athlete') }}"
-                   class="menu-item {{ $activeMenu === 'athlete' ? 'active' : '' }}">
-                    @if($activeMenu === 'athlete')
-                        <strong class="cd menu-text">{{ __('activity.menu_item') }}</strong>
-                    @else
-                        <span class="menu-text">{{ __('activity.menu_item') }}</span>
-                    @endif
-                </a>
                 @if(config('activity.recording_open') || $menuUser->isAdmin())
                 <a href="{{ route('activity.index') }}"
                    class="menu-item {{ $activeMenu === 'activity' ? 'active' : '' }}">
                     @if($activeMenu === 'activity')
-                        <strong class="cd menu-text">{{ __('activity.menu_history') }}</strong>
+                        <strong class="cd menu-text">{{ __('activity.my_activity') }}</strong>
                     @else
-                        <span class="menu-text">{{ __('activity.menu_history') }}</span>
+                        <span class="menu-text">{{ __('activity.my_activity') }}</span>
                     @endif
                 </a>
                 @endif
@@ -353,21 +345,13 @@
             <span class="menu-text">{{ __('profile.menu_my_stats') }}</span>
         @endif
     </a>
-    <a href="{{ route('profile.athlete') }}"
-       class="menu-item {{ $activeMenu === 'athlete' ? 'active' : '' }}">
-        @if($activeMenu === 'athlete')
-            <strong class="cd menu-text">{{ __('activity.menu_item') }}</strong>
-        @else
-            <span class="menu-text">{{ __('activity.menu_item') }}</span>
-        @endif
-    </a>
     @if(config('activity.recording_open') || $menuUser->isAdmin())
     <a href="{{ route('activity.index') }}"
        class="menu-item {{ $activeMenu === 'activity' ? 'active' : '' }}">
         @if($activeMenu === 'activity')
-            <strong class="cd menu-text">{{ __('activity.menu_history') }}</strong>
+            <strong class="cd menu-text">{{ __('activity.my_activity') }}</strong>
         @else
-            <span class="menu-text">{{ __('activity.menu_history') }}</span>
+            <span class="menu-text">{{ __('activity.my_activity') }}</span>
         @endif
     </a>
     @endif

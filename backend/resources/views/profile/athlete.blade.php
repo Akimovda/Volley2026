@@ -1,8 +1,8 @@
 {{-- resources/views/profile/athlete.blade.php --}}
 <x-voll-layout body_class="profile-page">
 
-    <x-slot name="title">{{ __('activity.page_title') }}</x-slot>
-    <x-slot name="h1">{{ __('activity.page_title') }}</x-slot>
+    <x-slot name="title">{{ __('activity.activity_sensors_settings') }}</x-slot>
+    <x-slot name="h1">{{ __('activity.activity_sensors_settings') }}</x-slot>
     <x-slot name="h2">{{ __('activity.page_subtitle') }}</x-slot>
 
     <x-slot name="breadcrumbs">
@@ -11,7 +11,7 @@
             <meta itemprop="position" content="2">
         </li>
         <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
-            <span itemprop="name">{{ __('activity.page_title') }}</span>
+            <span itemprop="name">{{ __('activity.activity_sensors_settings') }}</span>
             <meta itemprop="position" content="3">
         </li>
     </x-slot>
@@ -181,6 +181,7 @@
                     {{-- Список привязанных устройств --}}
                     <div id="ble-device-list">
                         @forelse($devices as $device)
+                        @php $devAccuracy = config('activity.device_accuracy.' . $device->protocol, config('activity.default_accuracy', 'none')); @endphp
                         <div class="card mb-1" data-device-id="{{ $device->id }}">
                             <div style="display:flex;align-items:center;gap:10px">
                                 <div style="flex:1">
@@ -188,6 +189,7 @@
                                     @if($device->last_connected_at)
                                     <div class="f-13 cd3">{{ __('activity.last_connected_at') }}: {{ $device->last_connected_at->diffForHumans() }}</div>
                                     @endif
+                                    <div class="f-13 cd3 mt-05">{{ __('activity.device_acc_' . $devAccuracy) }}</div>
                                 </div>
                                 <button class="btn btn-sm btn-outline-danger ble-device-delete"
                                         data-id="{{ $device->id }}" type="button">{{ __('activity.remove_device') }}</button>
@@ -245,6 +247,7 @@ window.addEventListener('load', function () {
             removeText:       @json(__('activity.remove_device')),
             noDevicesText:    @json(__('activity.no_devices')),
             deviceAddedText:  @json(__('activity.device_added')),
+            deviceAccText:    @json(__('activity.device_acc_none')),
         });
     }
 });
