@@ -7,14 +7,15 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class AthleteProfile extends Model
 {
-    protected $fillable = ['user_id', 'resting_hr', 'max_hr', 'weight_kg', 'reach_classic_cm', 'reach_beach_cm'];
+    protected $fillable = ['user_id', 'resting_hr', 'max_hr', 'weight_kg', 'reach_classic_cm', 'reach_beach_cm', 'jump_height_coeff'];
 
     protected $casts = [
-        'resting_hr'      => 'integer',
-        'max_hr'          => 'integer',
-        'weight_kg'       => 'decimal:2',
-        'reach_classic_cm'=> 'integer',
-        'reach_beach_cm'  => 'integer',
+        'resting_hr'        => 'integer',
+        'max_hr'            => 'integer',
+        'weight_kg'         => 'decimal:2',
+        'reach_classic_cm'  => 'integer',
+        'reach_beach_cm'    => 'integer',
+        'jump_height_coeff' => 'decimal:3',
     ];
 
     public function user(): BelongsTo

@@ -27,6 +27,15 @@ return [
     ],
     'default_accuracy' => 'none',
 
+    // Коэффициент конвертации «ускорение → высота прыжка» по протоколу устройства.
+    // null = используем дефолт; личный коэффициент атлета (athlete_profiles.jump_height_coeff) имеет приоритет.
+    'jump_height_coeff' => [
+        'healthkit'      => 0.533,
+        'health_connect' => 0.533,
+        'polar_sdk'      => null,   // откалибруем на реальном железе
+    ],
+    'jump_height_coeff_default' => 0.55,
+
     // Планировщик пушей «Записать активность?»
     // prompt_after_min  — через сколько минут после старта occurrence слать пуш
     // prompt_grace_min  — окно (от now()-grace до now()-after); защита от накопленных occurrence при простое планировщика
