@@ -43,7 +43,11 @@ class ActivityDashboardController extends Controller
             ->orderByDesc('started_at')
             ->first();
 
-        return view('activity.index', compact('sessions', 'direction', 'totalCount', 'lastSession'));
+        $profile         = $user->athleteProfile;
+        $hasThresholds   = ($profile && $profile->max_hr) || $user->birth_date;
+        $zoneThresholds  = $hasThresholds ? $this->profileService->zoneThresholds($user) : null;
+
+        return view('activity.index', compact('sessions', 'direction', 'totalCount', 'lastSession', 'zoneThresholds'));
     }
 
     public function show(Request $request, ActivitySession $session): View
