@@ -53,7 +53,19 @@
 		@livewireStyles
 		<link href="@asset_v('assets/style.css')" rel="stylesheet">
 		<style>
-			/* Telegram Mini App — safe area (fullscreen mode) */
+			/* All environments: float header below device status bar / notch */
+			.fix-header {
+			top: calc(env(safe-area-inset-top, 0px) + 1rem);
+			}
+			.top-section {
+			padding-top: calc(11rem + env(safe-area-inset-top, 0px));
+			}
+			@media (max-width: 767px) {
+			.top-section {
+				padding-top: calc(12rem + env(safe-area-inset-top, 0px));
+			}
+			}
+			/* Telegram Mini App — safe area (fullscreen mode, overrides global above) */
 			.tg-webapp .fix-header {
 			top: 0; left: 0; right: 0;
 			border-radius: 0;
@@ -66,9 +78,6 @@
 			padding-bottom: var(--tg-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
 			overflow-x: clip; /* fix position:fixed broken by overflow-x:hidden on body in WebView */
 			}
-			/* App Store / RuStore баннер — сдвигаем fixed-шапку вниз */
-			body.has-app-banner { padding-top: var(--app-banner-h, 0px); }
-			body.has-app-banner .fix-header { top: var(--app-banner-h, 0px) !important; }
 			/* Нативное приложение — скрыть веб-элементы */
 			.is-app footer,
 			.is-app .fix-header-btn-theme {
@@ -104,68 +113,34 @@
 	</head>
 	<body @class([$body_class ?? null])>
 		<script>
+			/* App banner via swal — runs after lib.js is loaded */
 			(function() {
 				var ua = navigator.userAgent;
 				if (ua.includes('VolleyPlayApp')) return;
-				
 				var isAndroid = ua.includes('Android');
 				var isIOS = (ua.includes('iPhone') || ua.includes('iPad')) && !isAndroid;
 				if (!isAndroid && !isIOS) return;
-				
 				var STORAGE_KEY = isAndroid ? 'rustore_banner_hidden_until' : 'appbanner_hidden_until';
 				var hidden = localStorage.getItem(STORAGE_KEY);
 				if (hidden && Date.now() < parseInt(hidden, 10)) return;
-				
 				var STORE_URL = isAndroid
-				? 'https://www.rustore.ru/catalog/app/club.volleyplay.app'
-				: 'https://apps.apple.com/app/id6764748613';
-				var HEIGHT = isAndroid ? 60 : 40;
-				
-				var banner = document.createElement('div');
-				banner.id = 'app-store-banner';
-				
-				if (isAndroid) {
-					banner.innerHTML =
-					'<a href="' + STORE_URL + '" style="display:flex;align-items:center;flex:1;min-width:0;text-decoration:none;color:inherit;">' +
-					'<img src="/icons/app-logo.png" style="width:20px;height:20px;border-radius:5px;margin-right:8px;flex-shrink:0;" alt="">' +
-					'<div style="font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + @json(__('ui.app_banner_title')) + '</div>' +
-					'</a>' +
-					'<a href="' + STORE_URL + '" style="margin-left:10px;flex-shrink:0;background:#F97316;color:#fff;font-size:13px;font-weight:600;padding:6px 14px;border-radius:20px;text-decoration:none;white-space:nowrap;">' + @json(__('ui.app_banner_open')) + '</a>' +
-					'<button id="app-banner-close" style="margin-left:10px;flex-shrink:0;background:none;border:none;font-size:20px;line-height:1;cursor:pointer;opacity:.5;padding:4px 6px;" aria-label="' + @json(__('ui.app_banner_close')) + '">×</button>';
-					} else {
-					banner.innerHTML =
-					'<a href="' + STORE_URL + '" style="display:flex;align-items:center;flex:1;min-width:0;text-decoration:none;color:inherit;">' +
-					'<img src="/icons/app-logo.png" style="width:20px;height:20px;border-radius:5px;margin-right:8px;flex-shrink:0;" alt="">' +
-					'<div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + @json(__('ui.app_banner_title')) + '</div>' +
-					'</a>' +
-					'<a href="' + STORE_URL + '" style="margin-left:10px;flex-shrink:0;background:#F97316;color:#fff;font-size:12px;font-weight:600;padding:5px 12px;border-radius:20px;text-decoration:none;white-space:nowrap;">' + @json(__('ui.app_banner_open')) + '</a>' +
-					'<button id="app-banner-close" style="margin-left:8px;flex-shrink:0;background:none;border:none;font-size:18px;line-height:1;cursor:pointer;opacity:.5;padding:4px 6px;" aria-label="' + @json(__('ui.app_banner_close')) + '">×</button>';
-				}
-				
-				banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;display:flex;align-items:center;padding:0 12px;height:' + HEIGHT + 'px;box-shadow:0 2px 8px rgba(0,0,0,.15);box-sizing:border-box;';
-				
-				document.documentElement.style.setProperty('--app-banner-h', HEIGHT + 'px');
-				document.body.classList.add('has-app-banner');
-				document.body.insertBefore(banner, document.body.firstChild);
-				
-				function applyTheme() {
-					var dark = document.body.classList.contains('dark');
-					banner.style.background = dark ? '#1e1e2e' : '#ffffff';
-					var closeBtn = document.getElementById('app-banner-close');
-					if (closeBtn) closeBtn.style.color = dark ? '#ffffff' : '#000000';
-				}
-				applyTheme();
-				
-				document.getElementById('app-banner-close').addEventListener('click', function(e) {
-					e.preventDefault();
-					banner.remove();
-					document.body.classList.remove('has-app-banner');
-					document.documentElement.style.removeProperty('--app-banner-h');
-					localStorage.setItem(STORAGE_KEY, String(Date.now() + 7 * 24 * 60 * 60 * 1000));
+					? 'https://www.rustore.ru/catalog/app/club.volleyplay.app'
+					: 'https://apps.apple.com/app/id6764748613';
+				window.addEventListener('load', function() {
+					if (typeof swal === 'undefined') return;
+					if (document.documentElement.classList.contains('is-app')) return;
+					if (document.body.classList.contains('tg-webapp')) return;
+					swal({
+						title: @json(__('ui.app_banner_title')),
+						buttons: {
+							cancel: { text: @json(__('ui.app_banner_close')), value: null, visible: true },
+							confirm: { text: @json(__('ui.app_banner_open')), value: 'open', className: 'btn-alert' }
+						}
+					}).then(function(v) {
+						localStorage.setItem(STORAGE_KEY, String(Date.now() + 7 * 24 * 60 * 60 * 1000));
+						if (v === 'open') window.open(STORE_URL, '_blank');
+					});
 				});
-				
-				var obs = typeof MutationObserver !== 'undefined' && new MutationObserver(applyTheme);
-				if (obs) obs.observe(document.body, { attributes: true, attributeFilter: ['class'] });
 			})();
 		</script>
 		<script>
@@ -175,6 +150,24 @@
 				document.body.classList.add('tg-webapp');
 				if (tg.ready) tg.ready();
 				if (tg.expand) tg.expand();
+				function setTgSafeArea() {
+					var top = 0, bottom = 0;
+					if (tg.safeAreaInset) {
+						top = Math.max(top, tg.safeAreaInset.top || 0);
+						bottom = Math.max(bottom, tg.safeAreaInset.bottom || 0);
+					}
+					if (tg.contentSafeAreaInset) {
+						top = Math.max(top, tg.contentSafeAreaInset.top || 0);
+					}
+					document.documentElement.style.setProperty('--tg-safe-area-inset-top', top + 'px');
+					document.documentElement.style.setProperty('--tg-safe-area-inset-bottom', bottom + 'px');
+				}
+				setTgSafeArea();
+				if (tg.onEvent) {
+					tg.onEvent('viewportChanged', setTgSafeArea);
+					tg.onEvent('safeAreaChanged', setTgSafeArea);
+					tg.onEvent('contentSafeAreaChanged', setTgSafeArea);
+				}
 			})();
 		</script>
 		<script>

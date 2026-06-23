@@ -3366,6 +3366,8 @@ body.dark .top-section .title-description {
 	}	
 }
 .main-container {
+	position: relative;
+	z-index: 3;
 	background: linear-gradient(to bottom, #e7f0ff, #fff);
 	padding: 0 0 4rem 0;
 	/*overflow: clip;*/
