@@ -14,10 +14,7 @@ class ActivityRecordController extends Controller
     public function show(Request $request): View
     {
         $user = $request->user();
-
-        if (!config('activity.recording_open') && !$user->isAdmin()) {
-            abort(403);
-        }
+        if (!$this->canRecordActivity($user)) abort(403);
 
         $occurrenceId = $request->integer('occurrence') ?: null;
 
