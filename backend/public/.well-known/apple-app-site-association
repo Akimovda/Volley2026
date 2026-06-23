@@ -1,17 +1,12 @@
 {
     "applinks": {
-        "apps": [],
         "details": [
             {
                 "appID": "V762R44QWF.club.volleyplay.app",
-                "paths": [
-                    "/auth/telegram/callback*",
-                    "/events",
-                    "/events/*",
-                    "/s/*",
-                    "/l/*",
-                    "/locations",
-                    "/locations/*"
+                "components": [
+                    { "/": "/auth/*",    "exclude": true, "comment": "OAuth callbacks — must stay in WebView" },
+                    { "/": "/sanctum/*", "exclude": true, "comment": "Sanctum auth — must stay in WebView" },
+                    { "/": "/*" }
                 ]
             }
         ]
