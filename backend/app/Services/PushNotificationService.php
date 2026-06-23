@@ -103,16 +103,24 @@ final class PushNotificationService
             ? 'https://api.push.apple.com'
             : 'https://api.sandbox.push.apple.com';
 
-        $payload = json_encode(array_merge(
-            [
-                'aps' => [
-                    'alert' => ['title' => $title, 'body' => $body],
-                    'sound' => 'default',
-                    'badge' => $badge,
-                ],
-            ],
-            $data
-        ), JSON_UNESCAPED_UNICODE);
+        $categoryMap = [
+            'registration_created' => 'REG_CREATED',
+            'event_reminder'       => 'EVENT_REMINDER',
+            'event_cancelled'      => 'EVENT_CANCELLED',
+            'friend_joined_event'  => 'FRIEND_JOINED',
+        ];
+        $category = $categoryMap[$data['type'] ?? ''] ?? null;
+
+        $aps = [
+            'alert' => ['title' => $title, 'body' => $body],
+            'sound' => 'default',
+            'badge' => $badge,
+        ];
+        if ($category !== null) {
+            $aps['category'] = $category;
+        }
+
+        $payload = json_encode(array_merge(['aps' => $aps], $data), JSON_UNESCAPED_UNICODE);
 
         $ch = curl_init("{$host}/3/device/{$token}");
         curl_setopt_array($ch, [
