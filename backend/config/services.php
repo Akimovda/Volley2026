@@ -27,10 +27,13 @@ return [
     ],
 
     'vk' => [
-        'token'       => env('VK_TOKEN'),
-        'version'     => env('VK_API_VERSION', '5.199'),
-        'bot_link'    => env('VK_BOT_LINK'),
-        'bot_api_url' => env('VK_BOT_API_URL'),
+        'token'           => env('VK_TOKEN'),
+        'version'         => env('VK_API_VERSION', '5.199'),
+        'bot_link'        => env('VK_BOT_LINK'),
+        'bot_api_url'     => env('VK_BOT_API_URL'),
+        'community_token' => env('VK_COMMUNITY_TOKEN'),
+        'community_group' => env('VK_COMMUNITY_GROUP_ID'),
+        'community_v'     => env('VK_COMMUNITY_API_VERSION', '5.199'),
     ],
 
     'max' => [

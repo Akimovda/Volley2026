@@ -176,24 +176,14 @@ final class NotificationDeliverySender
 
     private function sendVk(User $user, array $payload): void
     {
-        // vk_notify_user_id — VK user_id, сохранённый когда пользователь написал боту notify_<token>
-        // Для личных сообщений peer_id == user_id, поэтому передаём его напрямую как chat_id
         $vkUserId = trim((string) ($user->vk_notify_user_id ?? ''));
         if ($vkUserId === '') {
             throw new \RuntimeException('У пользователя не привязан VK-бот (vk_notify_user_id пуст).');
         }
 
-        // Маршрутизируем через VK-бота (как VkChannelPublisher):
-        // Laravel → POST /send на VK-бот → VK API messages.send
-        // Бот сам держит community token и строит keyboard
-        $endpoint = rtrim((string) config('services.vk.bot_api_url'), '/');
-        if ($endpoint === '') {
-            throw new \RuntimeException('Не настроен services.vk.bot_api_url.');
-        }
-
-        $secret = (string) config('services.bind.secret');
-        if ($secret === '') {
-            throw new \RuntimeException('Не настроен BIND_WEBHOOK_SECRET.');
+        $token = (string) config('services.vk.community_token');
+        if ($token === '') {
+            throw new \RuntimeException('Не настроен VK_COMMUNITY_TOKEN.');
         }
 
         $rich       = $this->buildRichPayload($payload);
@@ -201,26 +191,36 @@ final class NotificationDeliverySender
         $buttonUrl  = $rich['button_url'];
         $buttonText = $rich['button_text'] !== '' ? $rich['button_text'] : ($buttonUrl !== '' ? 'Подробнее' : '');
 
-        $resp = Http::timeout(20)
-            ->withHeaders([
-                'X-Bind-Secret' => $secret,
-                'Accept'        => 'application/json',
-            ])
-            ->post($endpoint . '/send', array_filter([
-                'chat_id'     => $vkUserId,
-                'text'        => $text,
-                'button_url'  => $buttonUrl !== '' ? $buttonUrl : null,
-                'button_text' => $buttonText !== '' ? $buttonText : null,
-                'image_url'   => $rich['image_url'] !== '' ? $rich['image_url'] : null,
-            ], fn ($v) => $v !== null));
+        $params = [
+            'peer_id'      => (int) $vkUserId,
+            'message'      => $text,
+            'random_id'    => random_int(1, PHP_INT_MAX),
+            'access_token' => $token,
+            'v'            => config('services.vk.community_v', '5.199'),
+        ];
 
-        if (!$resp->ok()) {
-            throw new \RuntimeException('VK bot HTTP ' . $resp->status() . ': ' . $resp->body());
+        if ($buttonUrl !== '' && $buttonText !== '') {
+            $params['keyboard'] = json_encode([
+                'inline'  => true,
+                'buttons' => [[
+                    [
+                        'action' => [
+                            'type'  => 'open_link',
+                            'link'  => $buttonUrl,
+                            'label' => mb_substr($buttonText, 0, 40),
+                        ],
+                    ],
+                ]],
+            ], JSON_UNESCAPED_UNICODE);
         }
 
+        $resp = Http::timeout(10)
+            ->asForm()
+            ->post('https://api.vk.com/method/messages.send', $params);
+
         $json = $resp->json();
-        if (!is_array($json) || empty($json['ok'])) {
-            throw new \RuntimeException('VK bot error: ' . $resp->body());
+        if (!empty($json['error'])) {
+            throw new \RuntimeException('VK API error: ' . json_encode($json['error'], JSON_UNESCAPED_UNICODE));
         }
     }
 
