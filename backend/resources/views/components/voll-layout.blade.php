@@ -64,6 +64,7 @@
 			}
 			body.tg-webapp {
 			padding-bottom: var(--tg-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+			overflow-x: clip; /* fix position:fixed broken by overflow-x:hidden on body in WebView */
 			}
 			/* App Store / RuStore баннер — сдвигаем fixed-шапку вниз */
 			body.has-app-banner { padding-top: var(--app-banner-h, 0px); }
