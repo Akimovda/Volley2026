@@ -22,6 +22,13 @@ class ActivityDeviceController extends Controller
 
     public function upsert(Request $request): JsonResponse
     {
+        if (!$request->user()->hasHealthConsent()) {
+            return response()->json([
+                'error'           => 'consent_required',
+                'consent_version' => config('activity.consent_version'),
+            ], 403);
+        }
+
         $data = $request->validate([
             'ble_identifier' => ['required', 'string', 'max:255'],
             'name'           => ['required', 'string', 'max:255'],
