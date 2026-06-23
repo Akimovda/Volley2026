@@ -72,6 +72,8 @@ return [
 
     // Devices
     'my_devices'             => 'My Devices',
+    'device_help_ble'        => '"Add Sensor" is for chest heart rate monitors and BLE sensors (Polar, Wahoo, Garmin, etc.) that broadcast via Bluetooth.',
+    'device_help_watch'      => 'Apple Watch connects differently: tap "Record Workout" and start a session — your Watch will appear in the list automatically after the first recording.',
     'device_acc_none'        => 'This sensor transmits heart rate only. Jump counting and movement-based load are not available.',
     'device_acc_relative'    => 'Heart rate — accurate. Jumps — approximate: we count them and track relative dynamics, not exact centimetres.',
     'device_acc_better'      => 'Heart rate — accurate. Jumps — with higher precision (sensor worn at the body).',
