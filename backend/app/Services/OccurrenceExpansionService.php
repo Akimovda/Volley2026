@@ -203,6 +203,10 @@ final class OccurrenceExpansionService
                 return false;
             }
 
+            if ((bool)($existing->is_individually_edited ?? false)) {
+                return false;
+            }
+
             $rawStart = $existing->getRawOriginal('starts_at');
             if ($rawStart) {
                 $existingStartUtc = CarbonImmutable::parse($rawStart, 'UTC');

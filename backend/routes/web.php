@@ -588,6 +588,9 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
         
         Route::delete('/occurrences/{occurrence}', [EventManagementController::class, 'destroyOccurrence'])
         ->name('occurrences.destroy');
+
+        Route::post('/events/{event}/occurrences/{occurrence}/reset', [EventManagementController::class, 'resetOccurrence'])
+        ->name('events.occurrences.reset');
 		
 		// optional legacy copy
 		Route::post('/events/{event}/copy', [EventCreateController::class, 'fromEvent'])
