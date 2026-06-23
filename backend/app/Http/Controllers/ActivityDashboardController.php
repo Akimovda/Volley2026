@@ -11,19 +11,12 @@ class ActivityDashboardController extends Controller
 {
     public function __construct(private readonly AthleteProfileService $profileService) {}
 
-    private function checkGate(Request $request): void
-    {
-        $user = $request->user();
-        if (!config('activity.recording_open') && !$user->isAdmin()) {
-            abort(403);
-        }
-    }
-
     public function index(Request $request): View
     {
-        $this->checkGate($request);
+        $user = $request->user();
+        if (!$this->canRecordActivity($user)) abort(403);
 
-        $user      = $request->user();
+        $canRecord = true; // гейт пройден
         $direction = $request->query('direction', 'all');
 
         $query = ActivitySession::where('user_id', $user->id)
@@ -47,12 +40,13 @@ class ActivityDashboardController extends Controller
         $hasThresholds   = ($profile && $profile->max_hr) || $user->birth_date;
         $zoneThresholds  = $hasThresholds ? $this->profileService->zoneThresholds($user) : null;
 
-        return view('activity.index', compact('sessions', 'direction', 'totalCount', 'lastSession', 'zoneThresholds'));
+        return view('activity.index', compact('sessions', 'direction', 'totalCount', 'lastSession', 'zoneThresholds', 'canRecord'));
     }
 
     public function show(Request $request, ActivitySession $session): View
     {
-        $this->checkGate($request);
+        $user = $request->user();
+        if (!$this->canRecordActivity($user)) abort(403);
 
         if ($session->user_id !== $request->user()->id) {
             abort(403);

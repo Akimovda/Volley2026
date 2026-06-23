@@ -80,6 +80,15 @@
             {{-- Основной контент --}}
             <div class="col-lg-8 col-xl-9 order-1">
 
+                {{-- CTA: Записать тренировку --}}
+                @if($canRecord)
+                <div class="mb-2">
+                    <a href="{{ route('activity.record') }}" class="btn w-100" style="min-height:44px;font-size:1.7rem">
+                        {{ __('activity.record_btn') }}
+                    </a>
+                </div>
+                @endif
+
                 {{-- Сводка --}}
                 <div class="ramka">
                     <div class="row">
