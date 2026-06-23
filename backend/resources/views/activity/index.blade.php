@@ -105,7 +105,7 @@
                         </div>
                         <div class="col-12 col-md-4 text-center mt-1 mt-md-0">
                             <div class="f-13" style="opacity:.65">{{ __('activity.last_date') }}</div>
-                            <div class="b-600 cd">{{ $lastSession->started_at?->format('d.m.Y') ?? '—' }}</div>
+                            <div class="b-600 cd">{{ $lastSession->started_at?->setTimezone($userTimezone)->format('d.m.Y') ?? '—' }}</div>
                         </div>
                         @endif
                     </div>
@@ -157,7 +157,7 @@
                     <div class="d-flex justify-between align-center">
                         <div>
                             <div class="act-session-title">{{ $title }}</div>
-                            <div class="f-13" style="opacity:.6">{{ $session->started_at?->format('d.m.Y H:i') }}</div>
+                            <div class="f-13" style="opacity:.6">{{ $session->started_at?->setTimezone($userTimezone)->format('d.m.Y H:i') }}</div>
                         </div>
                         <div class="text-right">
                             @if($session->direction)
