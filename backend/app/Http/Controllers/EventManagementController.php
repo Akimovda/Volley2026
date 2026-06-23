@@ -464,6 +464,11 @@ if ($role === 'admin') {
         $occurrence->allow_registration  = null;
         $occurrence->max_players         = null;
         $occurrence->duration_sec        = $event->duration_sec;
+        $occurrence->classic_level_min   = null;
+        $occurrence->classic_level_max   = null;
+        $occurrence->beach_level_min     = null;
+        $occurrence->beach_level_max     = null;
+        $occurrence->show_participants   = $event->show_participants ?? true;
         $occurrence->age_policy          = null;
         $occurrence->child_age_min       = null;
         $occurrence->child_age_max       = null;
@@ -494,12 +499,12 @@ if ($role === 'admin') {
     public function destroyOccurrence(\App\Models\EventOccurrence $occurrence, \Illuminate\Http\Request $request)
     {
         $deleteMode = (string)$request->input('delete_mode', 'single');
-    
+
         if ($deleteMode === 'force') {
             $occurrence->delete();
             return back()->with('status', 'Повтор удалён навсегда.');
         }
-    
+
         $occurrence->cancelled_at = now();
         $occurrence->is_cancelled = true;
         $occurrence->save();
@@ -1150,6 +1155,11 @@ if ($role === 'admin') {
                     $newMinute = $newEventStartInTz->minute;
 
                     foreach ($futureOccs as $occ) {
+                        // Индивидуально отредактированные повторения защищены от перезаписи
+                        if ((bool)($occ->is_individually_edited ?? false)) {
+                            continue;
+                        }
+
                         $occStart = Carbon::parse($occ->starts_at, 'UTC');
                         $occStartInTz = $occStart->copy()->setTimezone($occ->timezone ?: $eventTz);
 
