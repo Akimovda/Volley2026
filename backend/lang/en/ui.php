@@ -102,7 +102,7 @@ return [
     'site_description' => 'Your Volley Club — volleyball service',
 
     // App banner (RuStore / App Store)
-    'app_banner_title' => 'VolleyClub — volleyball service',
+    'app_banner_title' => 'We have an app for iOS and Android! Want to install?',
     'app_banner_open'  => 'Open',
     'app_banner_close' => 'Close',
 
