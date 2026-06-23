@@ -4,6 +4,14 @@ return [
     'recording_open'   => env('ACTIVITY_RECORDING_OPEN', false),
     'consent_version'  => env('ACTIVITY_CONSENT_VERSION', '2026-06-21'),
 
+    // Allowlist user_id для доступа к записи без recording_open и без прав admin.
+    // Задаётся через .env: ACTIVITY_RECORDING_ALLOWLIST=415,416
+    // После ревью Apple — убрать из .env (не из кода).
+    'recording_allowlist' => array_values(array_filter(
+        array_map('intval', explode(',', env('ACTIVITY_RECORDING_ALLOWLIST', ''))),
+        fn($id) => $id > 0
+    )),
+
     // Что умеет собирать каждый тип источника данных.
     // ble_hrp = стандартный BLE HR Profile (нагрудный пояс) — только пульс.
     // healthkit/polar_sdk/health_connect — могут измерять прыжки через акселерометр.
