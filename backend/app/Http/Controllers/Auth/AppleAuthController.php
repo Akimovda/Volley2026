@@ -193,7 +193,13 @@ class AppleAuthController extends Controller
             if (is_array($aud)) {
                 $aud = $aud[0] ?? '';
             }
-            if ($aud !== config('services.apple.client_id')) {
+            // Нативный iOS токен (ASAuthorizationAppleIDProvider) ставит aud = bundle ID приложения,
+            // web-токен — Services ID (client_id). Принимаем оба.
+            $validAud = array_filter([
+                config('services.apple.client_id'),  // club.volleyplay.app.signin
+                config('apn.app_bundle_id', ''),     // club.volleyplay.app
+            ]);
+            if (!in_array($aud, $validAud, true)) {
                 throw new \RuntimeException('Invalid audience: ' . $aud);
             }
         } catch (\Throwable $e) {

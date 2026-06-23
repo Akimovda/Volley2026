@@ -52,7 +52,8 @@ class GoogleAuthController extends Controller
         $request->session()->put('oauth_provider', 'google');
         $request->session()->put('oauth_intent', $intent);
 
-        $response = Socialite::driver('google')->redirect();
+        // stateless: WKWebView (Capacitor) и Telegram не сохраняют session через OAuth-редирект
+        $response = Socialite::driver('google')->stateless()->redirect();
         $request->session()->save();
         return $response;
     }
@@ -62,7 +63,7 @@ class GoogleAuthController extends Controller
         $returnTo = $this->popReturnTo($request);
 
         try {
-            $googleUser = Socialite::driver('google')->user();
+            $googleUser = Socialite::driver('google')->stateless()->user();
         } catch (\Throwable $e) {
             $this->logWarn('callback failed', [
                 'e'     => $e->getMessage(),
