@@ -311,8 +311,15 @@ async function connectSensor() {
 
 // ── Watch session (healthkit) ─────────────────────────────────────────────────
 
+// В watch-пути согласие даёт нативный sheet — web-чекбокс не нужен.
+function hideWebConsentForWatch() {
+    const consentEl = el('ble-consent-block');
+    if (consentEl) consentEl.style.display = 'none';
+}
+
 async function startWatchSession() {
     if (!window.Capacitor || !window.Capacitor.isNativePlatform()) return;
+    hideWebConsentForWatch();
     const occurrenceId = config.occurrenceId || el('ble-occurrence-select')?.value || null;
     const occ = occurrenceId ? parseInt(occurrenceId, 10) : null;
     const btnWatch = el('ble-btn-watch');
@@ -529,8 +536,7 @@ window.initBleActivity = function (cfg) {
         if (autoConfirmEl) autoConfirmEl.style.display = '';
         const controlsEl = el('ble-controls');
         if (controlsEl) controlsEl.style.display = 'none';
-        const consentEl = el('ble-consent-block');
-        if (consentEl) consentEl.style.display = 'none';
+        hideWebConsentForWatch();
 
         if (window.Capacitor && window.Capacitor.isNativePlatform()) {
             const nativeEl = el('ble-auto-native');
