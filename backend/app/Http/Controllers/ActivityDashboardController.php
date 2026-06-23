@@ -40,7 +40,10 @@ class ActivityDashboardController extends Controller
         $hasThresholds   = ($profile && $profile->max_hr) || $user->birth_date;
         $zoneThresholds  = $hasThresholds ? $this->profileService->zoneThresholds($user) : null;
 
-        return view('activity.index', compact('sessions', 'direction', 'totalCount', 'lastSession', 'zoneThresholds', 'canRecord'));
+        // Таймзона пользователя: из города → fallback UTC
+        $userTimezone = $user->city?->timezone ?? 'UTC';
+
+        return view('activity.index', compact('sessions', 'direction', 'totalCount', 'lastSession', 'zoneThresholds', 'canRecord', 'userTimezone'));
     }
 
     public function show(Request $request, ActivitySession $session): View
@@ -72,11 +75,12 @@ class ActivityDashboardController extends Controller
         $hasJumps = is_array($session->tracked_capabilities)
             && in_array('jumps', $session->tracked_capabilities, true);
 
-        $sessionTitle = $session->occurrence?->event?->title
+        $sessionTitle  = $session->occurrence?->event?->title
             ?? __('activity.session_free_training');
+        $userTimezone  = $user->city?->timezone ?? 'UTC';
 
         return view('activity.show', compact(
-            'session', 'samples', 'zones', 'hasJumps', 'sessionTitle'
+            'session', 'samples', 'zones', 'hasJumps', 'sessionTitle', 'userTimezone'
         ));
     }
 }

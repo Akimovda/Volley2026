@@ -58,7 +58,7 @@
                         <div>
                             <div class="b-600 f-18">{{ $sessionTitle }}</div>
                             <div class="f-13" style="opacity:.6">
-                                {{ $session->started_at?->format('d.m.Y H:i') }}
+                                {{ $session->started_at?->setTimezone($userTimezone)->format('d.m.Y H:i') }}
                                 @if($session->direction)
                                     · <span class="badge badge-sm {{ $session->direction === 'beach' ? 'badge-orange' : 'badge-blue' }}">
                                         {{ __('activity.filter_' . $session->direction) }}
