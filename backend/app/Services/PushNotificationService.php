@@ -35,14 +35,14 @@ final class PushNotificationService
             ->where('platform', 'ios')
             ->pluck('token');
 
-        Log::warning('APNs send() called', [
+        Log::debug('APNs send() called', [
             'user_id'      => $userId,
             'title'        => $title,
             'tokens_found' => $tokens->count(),
         ]);
 
         if ($tokens->isEmpty()) {
-            Log::warning('APNs: no active iOS tokens for user, skipping.', ['user_id' => $userId]);
+            Log::debug('APNs: no active iOS tokens for user, skipping.', ['user_id' => $userId]);
             return $result;
         }
 
@@ -55,7 +55,7 @@ final class PushNotificationService
                 $sent = $this->sendToToken($token, $title, $body, $data, $badge);
                 if ($sent) {
                     $result['sent']++;
-                    Log::warning('APNs push sent', [
+                    Log::info('APNs push sent', [
                         'user_id' => $userId,
                         'token'   => substr($token, 0, 10) . '...',
                     ]);
@@ -64,7 +64,7 @@ final class PushNotificationService
                 }
             } catch (\Throwable $e) {
                 $result['failed']++;
-                Log::warning('APNs push failed', [
+                Log::error('APNs push failed', [
                     'user_id' => $userId,
                     'token'   => substr($token, 0, 10) . '...',
                     'error'   => $e->getMessage(),
@@ -72,7 +72,7 @@ final class PushNotificationService
             }
         }
 
-        Log::warning('APNs send() finished', array_merge(['user_id' => $userId], $result));
+        Log::debug('APNs send() finished', array_merge(['user_id' => $userId], $result));
 
         return $result;
     }
@@ -89,7 +89,7 @@ final class PushNotificationService
         if ($missing !== []) {
             Log::warning('APNs not configured, skipping push notification.', [
                 'missing_keys' => array_keys($missing),
-            ]);
+            ]); // warning — конфиг сломан, нужно разобраться
             return false;
         }
 
@@ -145,7 +145,7 @@ final class PushNotificationService
             throw new \RuntimeException('APNs curl error: ' . $curlError);
         }
 
-        Log::warning('APNs HTTP response', [
+        Log::debug('APNs HTTP response', [
             'token'    => substr($token, 0, 10) . '...',
             'httpCode' => $httpCode,
             'response' => $response ?: '(empty)',
@@ -154,14 +154,14 @@ final class PushNotificationService
         if ($httpCode !== 200) {
             if ($httpCode === 410) {
                 DeviceToken::where('token', $token)->update(['is_active' => false]);
-                Log::warning('APNs token deactivated (410 Gone)', ['token' => substr($token, 0, 10) . '...']);
+                Log::warning('APNs token deactivated (410 Gone)', ['token' => substr($token, 0, 10) . '...']); // warning — токен протух
                 return false;
             }
             if ($httpCode === 400) {
                 $body = json_decode($response, true);
                 if (isset($body['reason']) && in_array($body['reason'], ['BadDeviceToken', 'Unregistered'])) {
                     DeviceToken::where('token', $token)->update(['is_active' => false]);
-                    Log::warning('APNs token deactivated (400 ' . $body['reason'] . ')', ['token' => substr($token, 0, 10) . '...']);
+                    Log::warning('APNs token deactivated (400 ' . $body['reason'] . ')', ['token' => substr($token, 0, 10) . '...']); // warning — невалидный токен
                     return false;
                 }
             }
