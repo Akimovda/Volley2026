@@ -1426,6 +1426,19 @@ body.dark .btn-danger {
 body.dark .btn-danger:hover {
     background: #dc2626;
 }
+/* Деструктивный secondary: красный текст (Отвязать, удалить аккаунт и т.п.) */
+.btn-secondary.btn-alert {
+    color: #ef4444;
+}
+.btn-secondary.btn-alert:hover {
+    color: #dc2626;
+}
+body.dark .btn-secondary.btn-alert {
+    color: #f87171;
+}
+body.dark .btn-secondary.btn-alert:hover {
+    color: #fca5a5;
+}
 /* Состояния */
 .btn:disabled{
 	opacity: 0.5;
