@@ -127,6 +127,12 @@ return [
     'prompt_body'            => 'Workout in progress — record your activity?',
 
     // Watch recording auto-confirm (?auto=1)
+    // Source selection (Watch vs BLE)
+    'record_with_watch'       => '🫀 Record with Apple Watch',
+    'choose_source'           => 'Recording source',
+    'source_watch'            => '⌚ Apple Watch',
+    'source_ble'              => '🫀 HR Monitor',
+
     'auto_confirm_title'      => 'Workout in progress — record your activity?',
     'record_now'              => 'Record Activity',
     'not_now'                 => 'Not now',

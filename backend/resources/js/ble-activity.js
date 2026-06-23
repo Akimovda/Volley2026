@@ -22,6 +22,8 @@ const state = {
 };
 
 let config = {};
+// BLE-устройства для текущего сеанса (null = использовать все из config.pairedDevices)
+let activeBleDevices = null;
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -276,15 +278,16 @@ async function connectSensor() {
         return;
     }
 
-    // Нет привязанных устройств — показываем подсказку
-    if (!config.pairedDevices || !config.pairedDevices.length) {
+    // Нет BLE-устройств — показываем подсказку
+    const bleList = activeBleDevices ?? config.pairedDevices ?? [];
+    if (!bleList.length) {
         const hintEl = el('ble-no-device-hint');
         if (hintEl) hintEl.style.display = '';
         return;
     }
 
     setPhase('connecting');
-    const paired = config.pairedDevices[0];
+    const paired = bleList[0];
     try {
         await BleClient.initialize({ androidNeverForLocation: true });
         await BleClient.connect(paired.ble_identifier, () => onDisconnect());
@@ -303,6 +306,27 @@ async function connectSensor() {
         setPhase('idle');
         const errEl = el('ble-connect-error');
         if (errEl) { errEl.textContent = e.message || 'Ошибка подключения'; errEl.style.display = ''; }
+    }
+}
+
+// ── Watch session (healthkit) ─────────────────────────────────────────────────
+
+async function startWatchSession() {
+    if (!window.Capacitor || !window.Capacitor.isNativePlatform()) return;
+    const occurrenceId = config.occurrenceId || el('ble-occurrence-select')?.value || null;
+    const occ = occurrenceId ? parseInt(occurrenceId, 10) : null;
+    const btnWatch = el('ble-btn-watch');
+    if (btnWatch) btnWatch.disabled = true;
+    try {
+        await window.Capacitor.Plugins.ActivityBridge.startWatchRecording({ occurrenceId: occ });
+        const startedEl = el('ble-watch-started');
+        if (startedEl) startedEl.style.display = '';
+        if (btnWatch) btnWatch.style.display = 'none';
+    } catch (e) {
+        console.error('[Watch] startWatchRecording failed:', e);
+        const errEl = el('ble-watch-error');
+        if (errEl) { errEl.textContent = e.message || 'Ошибка запуска записи'; errEl.style.display = ''; }
+        if (btnWatch) btnWatch.disabled = false;
     }
 }
 
@@ -548,25 +572,63 @@ window.initBleActivity = function (cfg) {
         return;
     }
 
-    // ── Normal BLE flow ───────────────────────────────────────────────────────
+    // ── Normal flow: маршрутизация по типу устройств ─────────────────────────
     setPhase('idle');
 
-    if (!window.Capacitor || !window.Capacitor.isNativePlatform()) {
+    const isNativeApp = !!(window.Capacitor && window.Capacitor.isNativePlatform());
+    const paired      = config.pairedDevices || [];
+    const hasWatch    = paired.some(d => d.protocol === 'healthkit');
+    const hasBle      = paired.some(d => d.protocol !== 'healthkit');
+
+    if (!isNativeApp) {
+        // Браузер — всё недоступно, показываем баннер
         const notAppEl = el('ble-not-app');
         if (notAppEl) notAppEl.style.display = '';
         const btnConnect = el('ble-btn-connect');
         if (btnConnect) {
+            btnConnect.style.display = '';
             btnConnect.disabled = true;
             btnConnect.style.opacity = '0.5';
             btnConnect.style.cursor = 'not-allowed';
         }
+    } else if (hasWatch && !hasBle) {
+        // Только Apple Watch
+        const watchEl = el('ble-source-watch');
+        if (watchEl) watchEl.style.display = '';
+    } else if (hasWatch && hasBle) {
+        // Оба типа — показать выбор
+        const bothEl = el('ble-source-both');
+        if (bothEl) bothEl.style.display = '';
+
+        const btnSrcWatch = el('ble-btn-src-watch');
+        if (btnSrcWatch) btnSrcWatch.addEventListener('click', () => {
+            bothEl.style.display = 'none';
+            const watchEl = el('ble-source-watch');
+            if (watchEl) watchEl.style.display = '';
+        });
+
+        const btnSrcBle = el('ble-btn-src-ble');
+        if (btnSrcBle) btnSrcBle.addEventListener('click', () => {
+            bothEl.style.display = 'none';
+            // Для BLE-пути фильтруем только не-healthkit устройства
+            activeBleDevices = paired.filter(d => d.protocol !== 'healthkit');
+            const btnConnect = el('ble-btn-connect');
+            if (btnConnect) btnConnect.style.display = '';
+        });
+    } else {
+        // Только BLE или нет устройств — обычный BLE-флоу
+        const btnConnect = el('ble-btn-connect');
+        if (btnConnect) btnConnect.style.display = '';
     }
 
+    // Wiring кнопок (watch, BLE, start/stop/done)
+    const btnWatch  = el('ble-btn-watch');
     const btnConnect = el('ble-btn-connect');
     const btnStart   = el('ble-btn-start');
     const btnStop    = el('ble-btn-stop');
     const btnDone    = el('ble-btn-done');
 
+    if (btnWatch)   btnWatch.addEventListener('click',   () => startWatchSession());
     if (btnConnect) btnConnect.addEventListener('click', () => connectSensor());
     if (btnStart)   btnStart.addEventListener('click',   () => startSession());
     if (btnStop)    btnStop.addEventListener('click',    () => stopSession());

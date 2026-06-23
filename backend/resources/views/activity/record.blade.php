@@ -71,7 +71,27 @@
                         {{-- ФАЗА: idle --}}
                         <div id="ble-phase-idle">
                             <div id="ble-connect-error" class="alert alert-danger mb-1" style="display:none"></div>
-                            <button id="ble-btn-connect" class="btn w-100">{{ __('activity.connect_sensor') }}</button>
+
+                            {{-- Режим: только Apple Watch --}}
+                            <div id="ble-source-watch" style="display:none">
+                                <button id="ble-btn-watch" class="btn w-100">{{ __('activity.record_with_watch') }}</button>
+                                <div id="ble-watch-started" class="alert alert-success mt-1" style="display:none">
+                                    {{ __('activity.recording_started_watch') }}
+                                </div>
+                                <div id="ble-watch-error" class="alert alert-danger mt-1" style="display:none"></div>
+                            </div>
+
+                            {{-- Режим: оба типа — выбор источника --}}
+                            <div id="ble-source-both" style="display:none">
+                                <div class="f-13 mb-1" style="opacity:.7">{{ __('activity.choose_source') }}</div>
+                                <div style="display:flex;gap:.8rem;flex-wrap:wrap">
+                                    <button id="ble-btn-src-watch" class="btn" style="flex:1;min-width:140px">{{ __('activity.source_watch') }}</button>
+                                    <button id="ble-btn-src-ble" class="btn btn-secondary" style="flex:1;min-width:140px">{{ __('activity.source_ble') }}</button>
+                                </div>
+                            </div>
+
+                            {{-- Режим: только BLE / показывается JS по protocol --}}
+                            <button id="ble-btn-connect" class="btn w-100" style="display:none">{{ __('activity.connect_sensor') }}</button>
                         </div>
 
                         {{-- ФАЗА: connecting --}}
@@ -260,6 +280,7 @@ window.__activityConfig = {
     reachClassicCm:     {{ $reachClassicCm ?? 'null' }},
     reachBeachCm:       {{ $reachBeachCm ?? 'null' }},
     jumpI18n:           @json($jumpI18n),
+    watchStartedText:   @json(__('activity.recording_started_watch')),
 };
 </script>
 @vite(['resources/js/ble-activity.js'])

@@ -50,6 +50,7 @@ class ActivityRecordController extends Controller
                 'ble_identifier'=> $d->ble_identifier,
                 'name'          => $d->name,
                 'capabilities'  => $d->capabilities(),
+                'protocol'      => $d->protocol,
             ])
             ->values();
 
