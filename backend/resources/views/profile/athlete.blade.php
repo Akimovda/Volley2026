@@ -206,11 +206,19 @@
 
                 {{-- Мои устройства (app-only, показывается через JS) --}}
                 @php
-                $_activityGate = config('activity.recording_open') || $user->isAdmin();
+                $_activityGate = config('activity.recording_open')
+                    || $user->isAdmin()
+                    || in_array($user->id, config('activity.recording_allowlist', []), true);
                 @endphp
                 @if($_activityGate)
                 <div class="ramka mt-2" id="ble-devices-section" style="display:none">
                     <h2 class="-mt-05">{{ __('activity.my_devices') }}</h2>
+
+                    {{-- Подсказка: два типа датчиков --}}
+                    <div class="alert alert-info f-14 mb-15" style="padding:.75rem 1rem;line-height:1.5">
+                        <div>{{ __('activity.device_help_ble') }}</div>
+                        <div class="mt-05">⌚ {{ __('activity.device_help_watch') }}</div>
+                    </div>
 
                     {{-- Блок согласия --}}
                     <div id="ble-consent-block-settings" style="{{ $hasHealthConsent ? 'display:none' : '' }}">
