@@ -21,6 +21,13 @@ class ActivitySessionController extends Controller
 
     public function start(Request $request): JsonResponse
     {
+        if (!$request->user()->hasHealthConsent()) {
+            return response()->json([
+                'error'           => 'consent_required',
+                'consent_version' => config('activity.consent_version'),
+            ], 403);
+        }
+
         $data = $request->validate([
             'occurrence_id' => ['nullable', 'integer', 'exists:event_occurrences,id'],
             'device_id'     => ['nullable', 'integer', 'exists:athlete_devices,id'],
