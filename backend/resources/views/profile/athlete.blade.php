@@ -215,7 +215,7 @@
                     <h2 class="-mt-05">{{ __('activity.my_devices') }}</h2>
 
                     {{-- Подсказка: два типа датчиков --}}
-                    <div class="alert alert-info f-14 mb-15" style="padding:.75rem 1rem;line-height:1.5">
+                    <div class="alert alert-info f-14 mb-15" style="padding-top:.75rem;padding-bottom:.75rem;line-height:1.5">
                         <div>{{ __('activity.device_help_ble') }}</div>
                         <div class="mt-05">⌚ {{ __('activity.device_help_watch') }}</div>
                     </div>
