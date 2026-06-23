@@ -25,7 +25,10 @@
                     <h1 class="-mt-05">{{ __('activity.record_page_title') }}</h1>
 
                     {{-- Блок согласия на обработку данных о здоровье --}}
-                    <div id="ble-consent-block" style="{{ $hasHealthConsent ? 'display:none' : '' }}">
+                    {{-- Watch-only: согласие даёт нативный sheet, web-чекбокс не нужен --}}
+                    {{-- Смешанный (watch+BLE): скрыт по умолчанию, JS покажет при выборе BLE --}}
+                    @unless($isWatchOnly)
+                    <div id="ble-consent-block" style="{{ ($hasHealthConsent || $hasWatchDevice) ? 'display:none' : '' }}">
                         <div class="alert alert-info">
                             <strong>{{ __('activity.consent_title') }}</strong>
                         </div>
@@ -43,6 +46,7 @@
                             {{ __('activity.consent_required') }}
                         </div>
                     </div>
+                    @endunless
 
                     {{-- Основной блок управления --}}
                     <div id="ble-controls">

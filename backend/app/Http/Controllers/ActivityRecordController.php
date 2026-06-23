@@ -58,9 +58,14 @@ class ActivityRecordController extends Controller
         $reachClassicCm     = $profile?->reach_classic_cm;
         $reachBeachCm       = $profile?->reach_beach_cm;
 
+        $isWatchOnly    = $pairedDevices->isNotEmpty()
+                          && $pairedDevices->every(fn($d) => $d['protocol'] === 'healthkit');
+        $hasWatchDevice = $pairedDevices->contains(fn($d) => $d['protocol'] === 'healthkit');
+
         return view('activity.record', compact(
             'occurrenceId', 'occurrences', 'zones', 'maxHr', 'restingHr',
-            'hasHealthConsent', 'pairedDevices', 'reachClassicCm', 'reachBeachCm'
+            'hasHealthConsent', 'pairedDevices', 'reachClassicCm', 'reachBeachCm',
+            'isWatchOnly', 'hasWatchDevice'
         ));
     }
 }
