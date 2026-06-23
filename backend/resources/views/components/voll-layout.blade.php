@@ -991,7 +991,7 @@
 				
 				async function tryBiometricLogin() {
 					var lastFail = localStorage.getItem('biometricFailedAt');
-					if (lastFail && (Date.now() - parseInt(lastFail)) < 43200000) {
+					if (lastFail && (Date.now() - parseInt(lastFail)) < 60000) {
 						console.log('[Biometric] skipping — failed less than 60s ago');
 						return;
 					}
