@@ -222,7 +222,57 @@ class AppleAuthController extends Controller
             return response()->json(['success' => false, 'error' => 'Apple ID не совпадает.'], 422);
         }
 
-        // email: приоритет из JWT (верифицирован Apple), fallback — из запроса
+        // ── LINK: пользователь уже залогинен → привязать к текущему аккаунту ──
+        if (Auth::check()) {
+            $current = $request->user();
+
+            // Идемпотентно: тот же Apple ID уже привязан к этому аккаунту
+            if ((string) ($current->apple_id ?? '') === $appleId) {
+                Log::info('[APPLE_NATIVE] Link: already linked to self', ['user_id' => $current->id]);
+                return response()->json([
+                    'success' => true,
+                    'linked'  => true,
+                    'message' => __('profile.apple_link_already_yours'),
+                    'user'    => ['id' => $current->id, 'name' => $current->first_name ?: $current->name],
+                ]);
+            }
+
+            // Этот Apple ID уже принадлежит другому аккаунту
+            if (User::where('apple_id', $appleId)->where('id', '!=', $current->id)->exists()) {
+                Log::warning('[APPLE_NATIVE] Link: apple_id taken', ['user_id' => $current->id]);
+                return response()->json([
+                    'success' => false,
+                    'error'   => __('profile.apple_link_taken'),
+                ], 409);
+            }
+
+            // У текущего уже привязан другой Apple ID — не перезаписываем
+            if (!empty($current->apple_id) && $current->apple_id !== $appleId) {
+                Log::warning('[APPLE_NATIVE] Link: user already has different apple_id', ['user_id' => $current->id]);
+                return response()->json([
+                    'success' => false,
+                    'error'   => __('profile.apple_link_have_other'),
+                ], 409);
+            }
+
+            // Привязываем — НЕ Auth::login(), НЕ session()->regenerate()
+            $current->apple_id = $appleId;
+            $current->save();
+
+            $request->session()->put('auth_provider', 'apple');
+            $request->session()->put('auth_provider_id', $appleId);
+
+            Log::info('[APPLE_NATIVE] Link: success', ['user_id' => $current->id]);
+
+            return response()->json([
+                'success' => true,
+                'linked'  => true,
+                'message' => __('profile.apple_link_success'),
+                'user'    => ['id' => $current->id, 'name' => $current->first_name ?: $current->name],
+            ]);
+        }
+
+        // ── LOGIN: пользователь не залогинен → войти или создать аккаунт ───────
         $email     = (string) ($decoded->email ?? '');
         if ($email === '') {
             $email = trim((string) ($validated['email'] ?? ''));
@@ -230,7 +280,6 @@ class AppleAuthController extends Controller
         $firstName = trim((string) ($validated['first_name'] ?? ''));
         $lastName  = trim((string) ($validated['last_name'] ?? ''));
 
-        // Поиск пользователя
         $user      = User::where('apple_id', $appleId)->first();
         $isNewUser = false;
 
@@ -271,7 +320,7 @@ class AppleAuthController extends Controller
         $request->session()->put('auth_provider', 'apple');
         $request->session()->put('auth_provider_id', $appleId);
 
-        Log::warning('[APPLE_NATIVE] Success', ['user_id' => $user->id, 'is_new' => $isNewUser]);
+        Log::info('[APPLE_NATIVE] Login success', ['user_id' => $user->id, 'is_new' => $isNewUser]);
 
         return response()->json([
             'success'  => true,
