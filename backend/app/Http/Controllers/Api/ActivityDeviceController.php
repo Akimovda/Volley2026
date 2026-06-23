@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\ActivitySession;
 use App\Models\AthleteDevice;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ActivityDeviceController extends Controller
 {
@@ -15,7 +17,11 @@ class ActivityDeviceController extends Controller
             abort(403);
         }
 
-        $device->delete();
+        DB::transaction(function () use ($device) {
+            // Отвязываем сессии: история остаётся, device_id → NULL
+            ActivitySession::where('device_id', $device->id)->update(['device_id' => null]);
+            $device->delete();
+        });
 
         return response()->json(['ok' => true]);
     }
