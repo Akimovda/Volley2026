@@ -618,6 +618,11 @@ window.initBleActivity = function (cfg) {
             bothEl.style.display = 'none';
             // Для BLE-пути фильтруем только не-healthkit устройства
             activeBleDevices = paired.filter(d => d.protocol !== 'healthkit');
+            // Смешанный случай: показать web-чекбокс согласия, если нет согласия
+            if (!config.hasHealthConsent) {
+                const consentBlock = el('ble-consent-block');
+                if (consentBlock) consentBlock.style.display = '';
+            }
             const btnConnect = el('ble-btn-connect');
             if (btnConnect) btnConnect.style.display = '';
         });
