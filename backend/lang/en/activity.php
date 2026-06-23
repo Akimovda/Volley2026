@@ -129,4 +129,9 @@ return [
     'record_now'              => 'Record Activity',
     'not_now'                 => 'Not now',
     'recording_started_watch' => 'Recording started — stop it on your watch when done',
+
+    // Activity feature announcement (activity:announce)
+    'announce_title' => '❤️ Activity Recording — new feature',
+    'announce_body'  => "VolleyPlay now supports activity recording: heart rate, load zones and jump tracking via smart watches and heart rate monitors.\n\nData is collected only with your explicit consent when connecting a sensor. It's voluntary — declining has no effect on other features.\n\nPrivacy details: https://volleyplay.club/personal_data_agreement#health-data",
+    'announce_push'  => '❤️ New: heart rate, load & jump tracking during workouts. Connect a sensor in the app.',
 ];

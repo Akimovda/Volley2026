@@ -4759,6 +4759,9 @@ body.dark .progress { background: rgba(255,255,255,0.12); }
 }
 .is-app body {
 	padding-bottom: env(safe-area-inset-bottom, 0px);
+	/* overflow-x: hidden on body breaks position:fixed in iOS WKWebView;
+	   clip clips overflow without creating a scroll container */
+	overflow-x: clip;
 }
 .is-app .top-section {
 	padding-top: calc(12rem + env(safe-area-inset-top, 0px));

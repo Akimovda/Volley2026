@@ -313,6 +313,7 @@ function bindDeleteButton(btn, dmCfg) {
     btn.addEventListener('click', async function () {
         const id = this.dataset.id;
         if (!id) return;
+        const statusEl = document.getElementById('ble-add-device-status');
         try {
             await new Promise((resolve, reject) => {
                 window.jQuery.ajax({
@@ -321,7 +322,7 @@ function bindDeleteButton(btn, dmCfg) {
                     headers:   { 'X-CSRF-TOKEN': csrfToken() },
                     xhrFields: { withCredentials: true },
                     success:   resolve,
-                    error:     (xhr) => reject(new Error(xhr.statusText)),
+                    error:     (xhr) => reject(new Error(xhr.responseJSON?.error || xhr.statusText || 'Ошибка')),
                 });
             });
             const card = this.closest('[data-device-id]');
@@ -336,6 +337,11 @@ function bindDeleteButton(btn, dmCfg) {
             }
         } catch (e) {
             console.error('[BLE] delete device failed:', e);
+            if (statusEl) {
+                statusEl.className = 'alert alert-danger mb-1';
+                statusEl.textContent = 'Не удалось удалить устройство: ' + e.message;
+                statusEl.style.display = '';
+            }
         }
     });
 }
@@ -396,15 +402,24 @@ async function connectAndRegister(dmCfg) {
 }
 
 window.initBleDeviceManager = function (dmCfg) {
-    if (!window.Capacitor || !window.Capacitor.isNativePlatform()) return;
+    const isNative = !!(window.Capacitor && window.Capacitor.isNativePlatform());
 
     const section = document.getElementById('ble-devices-section');
     if (section) section.style.display = '';
 
-    const btnAdd = document.getElementById('ble-btn-add-device');
-    if (btnAdd) btnAdd.addEventListener('click', () => connectAndRegister(dmCfg));
-
+    // Удаление устройств работает во всех контекстах (браузер + native)
     document.querySelectorAll('.ble-device-delete').forEach(btn => bindDeleteButton(btn, dmCfg));
+
+    // Добавление через BLE — только в нативном приложении
+    const btnAdd = document.getElementById('ble-btn-add-device');
+    if (btnAdd) {
+        if (isNative) {
+            btnAdd.addEventListener('click', () => connectAndRegister(dmCfg));
+        } else {
+            btnAdd.disabled = true;
+            btnAdd.style.display = 'none';
+        }
+    }
 
     const checkbox = document.getElementById('ble-consent-checkbox-settings');
     if (checkbox) {
