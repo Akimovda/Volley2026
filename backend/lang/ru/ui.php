@@ -102,7 +102,7 @@ return [
     'site_description' => 'Волейбольный сервис Your Volley Club!',
 
     // Баннер приложения (RuStore / App Store)
-    'app_banner_title' => 'VolleyClub — волейбольный сервис',
+    'app_banner_title' => 'У нас есть приложение для iOS и Android! Хотите установить?',
     'app_banner_open'  => 'Открыть',
     'app_banner_close' => 'Закрыть',
 
