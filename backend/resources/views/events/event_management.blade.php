@@ -335,6 +335,7 @@ return ['label' => __('events.seats_dash'), 'free' => null, 'max' => null, 'regi
 										title="{{ __('events.create_copy') }}"></a>										
 										
 										
+                                        @if($tab === 'mine')
                                         <form method="POST"
 										action="{{ route('events.event_management.destroy', ['event' => (int)$event->id]) }}"
 										class="d-inline-block">
@@ -349,6 +350,7 @@ return ['label' => __('events.seats_dash'), 'free' => null, 'max' => null, 'regi
 											data-cancel-text="{{ __('events.cancel_no') }}">
 											</button>
 										</form>
+                                        @endif
                                         
                                         {{-- Force delete для recurring (только для админа) --}}
                                         @if($isAdmin)
@@ -391,6 +393,7 @@ return ['label' => __('events.seats_dash'), 'free' => null, 'max' => null, 'regi
 										title="{{ __('events.create_copy') }}"></a>
 										
                                         
+                                        @if($tab === 'mine')
                                         <form method="POST"
 										action="{{ route('events.event_management.destroy', ['event' => (int)$event->id]) }}"
 										class="d-inline-block">
@@ -405,6 +408,7 @@ return ['label' => __('events.seats_dash'), 'free' => null, 'max' => null, 'regi
 											data-cancel-text="{{ __('events.cancel_no') }}">
 											</button>
 										</form>
+                                        @endif
                                         
                                         @if($isAdmin)
                                         <form method="POST"
