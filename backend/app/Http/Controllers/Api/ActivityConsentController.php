@@ -9,6 +9,24 @@ use Illuminate\Http\Request;
 
 class ActivityConsentController extends Controller
 {
+    public function show(Request $request): JsonResponse
+    {
+        $version = config('activity.consent_version');
+
+        if (!$request->user()->hasHealthConsent()) {
+            return response()->json([
+                'consent'         => false,
+                'error'           => 'consent_required',
+                'consent_version' => $version,
+            ], 403);
+        }
+
+        return response()->json([
+            'consent'         => true,
+            'consent_version' => $version,
+        ]);
+    }
+
     public function store(Request $request): JsonResponse
     {
         $user    = $request->user();

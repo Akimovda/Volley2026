@@ -68,7 +68,7 @@
 			<div class="title-h h3">{{ __('pages.pda_h_8') }}</div>
 			<p>{{ __('pages.pda_p_8') }}</p>
 
-			<div class="title-h h3">{{ __('pages.pda_h_9') }}</div>
+			<div id="health-data" class="title-h h3">{{ __('pages.pda_h_9') }}</div>
 			<ul class="list">
 				<li>{{ __('pages.pda_9_1') }}</li>
 				<li>{{ __('pages.pda_9_2') }}</li>
