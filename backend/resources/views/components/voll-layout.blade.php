@@ -753,8 +753,12 @@
 										</div>	
 										<div class="col-6">
 											<a href="https://www.rustore.ru/catalog/app/club.volleyplay.app" class="rustore app-link"></a>
-										</div>	
+										</div>
 									</div>
+									<a href="/downloads/VolleyClub_1.1.0.apk" class="app-link" download style="justify-content:center;gap:0.6rem;text-decoration:none;font-size:1.5rem;">
+										<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="width:2rem;height:2rem;flex-shrink:0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"/><path d="M8 11l4 4 4-4"/><path d="M2 17l.621 2.485A2 2 0 004.561 21h14.878a2 2 0 001.94-1.515L22 17"/></svg>
+										{{ __('ui.footer_apk_download') }}
+									</a>
 								</div>
 							</div>
 							<div>
