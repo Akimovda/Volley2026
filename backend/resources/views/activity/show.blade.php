@@ -110,12 +110,18 @@
                     <div class="col-6 col-md-4">
                         <div class="ramka text-center">
                             <div class="f-13" style="opacity:.65">{{ __('activity.calories') }}</div>
-                            <div class="b-700 cd" style="font-size:2rem">
-                                {{ $session->calories_kcal ? '≈' . number_format($session->calories_kcal, 0) : '—' }}
-                            </div>
-                            @if($session->calories_kcal)
-                                <div class="f-12" style="opacity:.5">ккал</div>
+                            @if($session->calories_kcal !== null)
+                                @if($session->calorie_source === 'healthkit')
+                                    {{-- Измерено Apple Watch — без знака ≈ --}}
+                                    <div class="b-700 cd" style="font-size:2rem">{{ number_format($session->calories_kcal, 0) }}</div>
+                                    <div class="f-12" style="opacity:.65">{{ __('activity.calories_measured', ['n' => '']) }}</div>
+                                @else
+                                    {{-- Расчётно по Keytel (source='keytel' или NULL у старых сессий) --}}
+                                    <div class="b-700 cd" style="font-size:2rem">≈{{ number_format($session->calories_kcal, 0) }}</div>
+                                    <div class="f-12" style="opacity:.5">ккал</div>
+                                @endif
                             @else
+                                <div class="b-700 cd" style="font-size:2rem">—</div>
                                 <div class="f-12">
                                     <a href="{{ route('profile.athlete') }}">{{ __('activity.set_weight_hint') }}</a>
                                 </div>

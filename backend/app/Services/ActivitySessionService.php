@@ -147,7 +147,7 @@ class ActivitySessionService
         ];
     }
 
-    public function finalize(ActivitySession $session): ActivitySession
+    public function finalize(ActivitySession $session, ?float $activeEnergyKcal = null): ActivitySession
     {
         $samples = DB::table('activity_hr_samples')
             ->where('session_id', $session->id)
@@ -202,19 +202,29 @@ class ActivitySessionService
             $timeInZone['z5'] * 5
         ) / 60.0;
 
-        // calories via Keytel (requires weight, birth_date, gender)
-        $caloriesKcal = null;
-        $profile      = $user->athleteProfile;
-        $weightKg     = $profile?->weight_kg ? (float) $profile->weight_kg : null;
-        if ($weightKg !== null && $user->birth_date && $user->gender) {
-            $age    = (int) $user->birth_date->diffInYears(now());
-            $gender = $user->gender; // 'm' or 'f'
-            $totalKcal = 0.0;
-            foreach ($samples as $s) {
-                // each sample = 1 second; Keytel gives kcal/min → divide by 60
-                $totalKcal += $this->calorieService->keytelKcalPerMin((int) $s->bpm, $weightKg, $age, $gender) / 60.0;
+        // calories: (a) healthkit measured — priority; (b) Keytel estimated — fallback
+        $caloriesKcal  = null;
+        $calorieSource = null;
+
+        if ($activeEnergyKcal !== null && $activeEnergyKcal > 0) {
+            // (a) Apple Watch / HealthKit measured value
+            $caloriesKcal  = round($activeEnergyKcal, 1);
+            $calorieSource = 'healthkit';
+        } else {
+            // (b) Keytel formula (requires weight, birth_date, gender)
+            $profile  = $user->athleteProfile;
+            $weightKg = $profile?->weight_kg ? (float) $profile->weight_kg : null;
+            if ($weightKg !== null && $user->birth_date && $user->gender) {
+                $age       = (int) $user->birth_date->diffInYears(now());
+                $gender    = $user->gender; // 'm' or 'f'
+                $totalKcal = 0.0;
+                foreach ($samples as $s) {
+                    $totalKcal += $this->calorieService->keytelKcalPerMin((int) $s->bpm, $weightKg, $age, $gender) / 60.0;
+                }
+                $caloriesKcal  = round($totalKcal, 1);
+                $calorieSource = 'keytel';
             }
-            $caloriesKcal = round($totalKcal, 1);
+            // (c) neither → both remain null
         }
 
         // jump aggregates
@@ -237,6 +247,7 @@ class ActivitySessionService
             'time_in_zone'        => $timeInZone,
             'load_score'          => round($loadScore, 2),
             'calories_kcal'       => $caloriesKcal,
+            'calorie_source'      => $calorieSource,
             'samples_count'       => $count,
             'jump_count'          => $jumpCount,
             'jump_avg_height_cm'  => $jumpAvgHeight,
