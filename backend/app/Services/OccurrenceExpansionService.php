@@ -216,9 +216,6 @@ final class OccurrenceExpansionService
             }
 
             $existing->fill([
-                'classic_level_max' => $event->classic_level_max,
-                'beach_level_min' => $event->beach_level_min,
-                'beach_level_max' => $event->beach_level_max,
                 'max_players' => $maxPlayersSnapshot,
                 'duration_sec' => $durationSec,
                 'registration_starts_at'    => $allowReg ? $regStarts : null,
@@ -246,10 +243,6 @@ final class OccurrenceExpansionService
             'location_id' => (int)($event->location_id ?? 0),
             'allow_registration' => $allowReg,
             'max_players' => $maxPlayersSnapshot,
-            'classic_level_min' => $event->classic_level_min,
-            'classic_level_max' => $event->classic_level_max,
-            'beach_level_min' => $event->beach_level_min,
-            'beach_level_max' => $event->beach_level_max,
             'registration_starts_at'    => $allowReg ? $regStarts : null,
             'registration_ends_at'      => $allowReg ? $regEnds   : null,
             'cancel_self_until'         => $allowReg ? $cancelTil : null,
