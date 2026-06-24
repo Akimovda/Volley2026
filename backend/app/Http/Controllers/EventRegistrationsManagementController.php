@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\BroadcastToRegistrantsJob;
 use App\Models\Event;
 use App\Models\User;
 use App\Services\EventRegistrationGroupService;
@@ -1218,6 +1219,136 @@ class EventRegistrationsManagementController extends Controller
         return $result;
     }
     
+    // -------------------------------------------------------------------------
+    // GET /events/{event}/registrations/broadcast
+    // -------------------------------------------------------------------------
+    public function broadcastForm(Request $request, Event $event)
+    {
+        $user = $request->user();
+        if (!$user) return redirect()->route('login');
+        $this->ensureCanCreateEvents($user);
+        $this->ensureCanManageEvent($user, $event);
+
+        $occurrenceId = (int) $request->query('occurrence', 0);
+        if (!$occurrenceId) {
+            return redirect()->route('events.registrations.index', ['event' => $event->id])
+                ->with('error', 'Выберите конкретную дату для рассылки.');
+        }
+
+        $counts  = $this->buildBroadcastCounts($event->id, $occurrenceId);
+        $reach   = $this->buildReach($counts['mainIds']->merge($counts['reserveIds'])->unique()->values()->all());
+
+        return view('events.registrations_broadcast', [
+            'event'        => $event,
+            'occurrenceId' => $occurrenceId,
+            'counts'       => $counts,
+            'reach'        => $reach,
+        ]);
+    }
+
+    // -------------------------------------------------------------------------
+    // POST /events/{event}/registrations/broadcast
+    // -------------------------------------------------------------------------
+    public function broadcastSend(Request $request, Event $event)
+    {
+        $user = $request->user();
+        if (!$user) return redirect()->route('login');
+        $this->ensureCanCreateEvents($user);
+        $this->ensureCanManageEvent($user, $event);
+
+        $data = $request->validate([
+            'occurrence_id'   => ['required', 'integer', 'min:1'],
+            'title'           => ['required', 'string', 'max:255'],
+            'body'            => ['required', 'string', 'max:5000'],
+            'channels'        => ['required', 'array', 'min:1'],
+            'channels.*'      => ['string', 'in:in_app,telegram,vk,max,push'],
+            'include_reserve' => ['nullable', 'boolean'],
+        ]);
+
+        $occurrenceId   = (int) $data['occurrence_id'];
+        $includeReserve = (bool) ($data['include_reserve'] ?? false);
+        $channels       = $data['channels'];
+
+        $counts  = $this->buildBroadcastCounts($event->id, $occurrenceId);
+        $userIds = $includeReserve
+            ? $counts['mainIds']->merge($counts['reserveIds'])->unique()->values()->all()
+            : $counts['mainIds']->all();
+
+        // Охват фиксируем ДО постановки в очередь — по тому же $userIds
+        $reach = $this->buildReach($userIds);
+
+        BroadcastToRegistrantsJob::dispatch(
+            userIds:      $userIds,
+            channels:     $channels,
+            title:        $data['title'],
+            body:         $data['body'],
+            eventId:      (int) $event->id,
+            occurrenceId: $occurrenceId,
+        );
+
+        return redirect()
+            ->route('events.registrations.broadcast.form', [
+                'event'      => $event->id,
+                'occurrence' => $occurrenceId,
+            ])
+            ->with('broadcast_sent', [
+                'queued'   => count($userIds),
+                'channels' => $channels,
+                'reach'    => $reach,
+            ]);
+    }
+
+    private function buildBroadcastCounts(int $eventId, int $occurrenceId): array
+    {
+        $base = DB::table('event_registrations')
+            ->where('event_id', $eventId)
+            ->where('occurrence_id', $occurrenceId)
+            ->where('is_cancelled', false)
+            ->whereNull('cancelled_at')
+            ->where('status', 'confirmed');
+
+        $mainIds    = (clone $base)->where('position', '!=', 'reserve')->pluck('user_id');
+        $reserveIds = (clone $base)->where('position', 'reserve')->pluck('user_id');
+
+        return [
+            'mainIds'    => $mainIds,
+            'reserveIds' => $reserveIds,
+            'mainCount'  => $mainIds->count(),
+            'reserveCount' => $reserveIds->count(),
+        ];
+    }
+
+    private function buildReach(array $userIds): array
+    {
+        if (empty($userIds)) {
+            return ['total' => 0, 'tg' => 0, 'vk' => 0, 'max' => 0, 'push' => 0];
+        }
+
+        $row = DB::table('users')
+            ->whereIn('id', $userIds)
+            ->selectRaw("
+                COUNT(*) AS total,
+                COUNT(telegram_id) FILTER (WHERE telegram_id IS NOT NULL AND telegram_id <> '') AS tg,
+                COUNT(vk_id)       FILTER (WHERE vk_id IS NOT NULL AND vk_id <> '')             AS vk,
+                COUNT(max_chat_id) FILTER (WHERE max_chat_id IS NOT NULL AND max_chat_id <> '') AS max_c
+            ")
+            ->first();
+
+        $push = (int) DB::table('device_tokens')
+            ->whereIn('user_id', $userIds)
+            ->where('is_active', true)
+            ->distinct('user_id')
+            ->count('user_id');
+
+        return [
+            'total' => (int) $row->total,
+            'tg'    => (int) $row->tg,
+            'vk'    => (int) $row->vk,
+            'max'   => (int) $row->max_c,
+            'push'  => $push,
+        ];
+    }
+
     private function ensureCanCreateEvents($user): void
     {
         if (!$user) abort(403);

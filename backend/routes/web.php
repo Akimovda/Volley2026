@@ -642,6 +642,12 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
 
 		Route::delete('/events/{event}/registrations/{registration}', [EventRegistrationsManagementController::class, 'destroy'])
         ->name('events.registrations.destroy');
+
+		Route::get('/events/{event}/registrations/broadcast', [EventRegistrationsManagementController::class, 'broadcastForm'])
+        ->name('events.registrations.broadcast.form');
+
+		Route::post('/events/{event}/registrations/broadcast', [EventRegistrationsManagementController::class, 'broadcastSend'])
+        ->name('events.registrations.broadcast.send');
 		
 		Route::post('/events/{event}/registrations/{registration}/group/create', [EventRegistrationsManagementController::class, 'createGroup'])
         ->name('events.registrations.group.create');
