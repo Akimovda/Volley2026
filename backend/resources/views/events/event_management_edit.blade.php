@@ -1552,7 +1552,7 @@
                 function fillLocations(items, preselect) {
                     if (!locSel) return;
                     var current = preselect != null ? preselect : parseInt(locSel.value || 0);
-                    locSel.innerHTML = '<option value="">{{ __("events.tournament_choose") }}</option>';
+                    locSel.innerHTML = '<option value="">' + @json(__("events.tournament_choose")) + '</option>';
                     (items || []).forEach(function(loc) {
                         var opt = document.createElement('option');
                         opt.value = loc.id;
