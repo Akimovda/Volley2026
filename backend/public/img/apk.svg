@@ -1,9 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 72" width="256" height="72">
-  <rect width="256" height="72" rx="10" fill="#E6ECF3"/>
-  <!-- Android robot icon, centered at x=46 y=36, size ~36x36 -->
-  <g transform="translate(18, 14) scale(1.45)">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 72" width="160" height="72">
+  <!-- background matching app-link style -->
+  <rect width="160" height="72" rx="10" fill="#E6ECF3"/>
+  <!-- Android robot icon, x=8 y=10, scale 1.2 -->
+  <g transform="translate(8,10) scale(1.2)">
     <path fill="#0A1931" d="M6.18 15.64a2.18 2.18 0 0 1-2.18-2.18C4 12.29 4.98 11.36 6.18 11.36c1.19 0 2.18.93 2.18 2.1 0 1.17-.99 2.18-2.18 2.18m11.64 0a2.18 2.18 0 0 1-2.18-2.18c0-1.17.99-2.1 2.18-2.1 1.19 0 2.18.93 2.18 2.1 0 1.17-.99 2.18-2.18 2.18M6.36 6.27l-1.5-2.6a.47.47 0 0 1 .82-.46l1.52 2.63A8.5 8.5 0 0 1 12 5c1.25 0 2.44.27 3.5.84l1.52-2.63a.47.47 0 0 1 .82.46l-1.5 2.6A8.49 8.49 0 0 1 20.5 12H3.5a8.49 8.49 0 0 1 2.86-5.73M10 9h-.5a.5.5 0 0 0 0 1H10a.5.5 0 0 0 0-1m4.5 0H14a.5.5 0 0 0 0 1h.5a.5.5 0 0 0 0-1M4 13v5a1 1 0 0 0 1 1h1v3a1.5 1.5 0 0 0 3 0v-3h6v3a1.5 1.5 0 0 0 3 0v-3h1a1 1 0 0 0 1-1v-5H4z"/>
   </g>
-  <text x="72" y="27" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="12" fill="#0A1931" opacity="0.7">Скачать для</text>
-  <text x="72" y="50" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="22" font-weight="700" fill="#0A1931">Android</text>
+  <text x="46" y="28" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="12" fill="#0A1931" opacity="0.7">Скачать для</text>
+  <text x="46" y="52" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" font-size="22" font-weight="700" fill="#0A1931">Android</text>
 </svg>
