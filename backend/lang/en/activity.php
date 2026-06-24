@@ -122,6 +122,10 @@ return [
     'back_to_list'           => 'Back',
     'jump_avg_height'        => 'Avg height',
     'jump_max_height'        => 'Max height',
+    'jump_chart_title'       => 'Jump height chart',
+    'jump_chart_y_axis'      => 'Height, cm',
+    'jump_chart_x_axis'      => 'Jump #',
+    'jump_chart_tooltip'     => 'cm',
 
     // Push prompt
     'prompt_body'            => 'Workout in progress — record your activity?',

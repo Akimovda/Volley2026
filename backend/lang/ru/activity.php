@@ -122,6 +122,10 @@ return [
     'back_to_list'           => 'К списку',
     'jump_avg_height'        => 'Средняя высота',
     'jump_max_height'        => 'Макс. высота',
+    'jump_chart_title'       => 'График прыжков',
+    'jump_chart_y_axis'      => 'Высота, см',
+    'jump_chart_x_axis'      => 'Прыжок №',
+    'jump_chart_tooltip'     => 'см',
 
     // Пуш-напоминание о записи
     'prompt_body'            => 'Тренировка идёт — записать активность?',

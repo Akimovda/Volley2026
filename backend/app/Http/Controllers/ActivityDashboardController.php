@@ -75,12 +75,16 @@ class ActivityDashboardController extends Controller
         $hasJumps = is_array($session->tracked_capabilities)
             && in_array('jumps', $session->tracked_capabilities, true);
 
+        $jumpEvents = $hasJumps
+            ? $session->jumpEvents()->orderBy('t_offset_sec')->get(['t_offset_sec', 'height_cm'])
+            : collect();
+
         $sessionTitle  = $session->occurrence?->event?->title
             ?? __('activity.session_free_training');
         $userTimezone  = $user->city?->timezone ?? 'UTC';
 
         return view('activity.show', compact(
-            'session', 'samples', 'zones', 'hasJumps', 'sessionTitle', 'userTimezone'
+            'session', 'samples', 'zones', 'hasJumps', 'jumpEvents', 'sessionTitle', 'userTimezone'
         ));
     }
 }
