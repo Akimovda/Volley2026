@@ -16,7 +16,6 @@ class BroadcastToRegistrantsJob implements ShouldQueue
 
     public int $tries = 3;
     public int $backoff = 30;
-    public string $queue = 'broadcasts';
 
     public function __construct(
         public readonly array  $userIds,
@@ -25,7 +24,9 @@ class BroadcastToRegistrantsJob implements ShouldQueue
         public readonly string $body,
         public readonly int    $eventId,
         public readonly int    $occurrenceId,
-    ) {}
+    ) {
+        $this->onQueue('broadcasts');
+    }
 
     public function handle(UserNotificationService $notif): void
     {
