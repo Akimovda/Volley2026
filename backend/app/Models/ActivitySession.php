@@ -12,7 +12,7 @@ class ActivitySession extends Model
         'user_id', 'occurrence_id', 'device_id', 'direction', 'status',
         'started_at', 'ended_at', 'duration_sec',
         'avg_hr', 'max_hr', 'min_hr',
-        'time_in_zone', 'load_score', 'samples_count', 'calories_kcal',
+        'time_in_zone', 'load_score', 'samples_count', 'calories_kcal', 'calorie_source',
         'jump_count', 'jump_avg_height_cm', 'jump_max_height_cm', 'tracked_capabilities',
     ];
 

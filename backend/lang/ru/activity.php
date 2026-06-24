@@ -89,6 +89,9 @@ return [
 
     // Калории
     'calories'               => '🔥 Калории',
+    'calories_measured'      => ':n ккал (Apple Watch)',
+    'calories_estimated'     => '≈:n ккал',
+    'calories_no_data'       => '— укажите вес',
     'calories_estimate'      => '≈ :value ккал',
     'weight_for_calories'    => 'Укажите вес в настройках, чтобы видеть калории',
     'set_weight_hint'        => 'Настроить профиль',

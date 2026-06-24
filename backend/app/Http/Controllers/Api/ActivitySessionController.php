@@ -76,8 +76,15 @@ class ActivitySessionController extends Controller
             return response()->json(['error' => 'Forbidden'], 403);
         }
 
-        $session = $this->service->finalize($session);
+        $validated = $request->validate([
+            'active_energy_kcal' => ['nullable', 'numeric', 'min:0', 'max:5000'],
+        ]);
 
+        $activeEnergyKcal = isset($validated['active_energy_kcal']) && $validated['active_energy_kcal'] > 0
+            ? (float) $validated['active_energy_kcal']
+            : null;
+
+        $session   = $this->service->finalize($session, $activeEnergyKcal);
         $jumpTrend = $this->service->heightTrend($session);
 
         return response()->json([
@@ -89,6 +96,7 @@ class ActivitySessionController extends Controller
             'min_hr'               => $session->min_hr,
             'load_score'           => $session->load_score,
             'calories_kcal'        => $session->calories_kcal,
+            'calorie_source'       => $session->calorie_source,
             'samples_count'        => $session->samples_count,
             'time_in_zone'         => $session->time_in_zone,
             'tracked_capabilities' => $session->tracked_capabilities ?? ['hr'],

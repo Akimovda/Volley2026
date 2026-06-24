@@ -89,6 +89,9 @@ return [
 
     // Calories
     'calories'               => '🔥 Calories',
+    'calories_measured'      => ':n kcal (Apple Watch)',
+    'calories_estimated'     => '≈:n kcal',
+    'calories_no_data'       => '— add your weight',
     'calories_estimate'      => '≈ :value kcal',
     'weight_for_calories'    => 'Set your weight in settings to see calories',
     'set_weight_hint'        => 'Configure profile',
