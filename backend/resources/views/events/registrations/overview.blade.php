@@ -148,7 +148,7 @@ $baseQuery  = request()->except(['dir', 'page']);
 								<th class="f-13 text-muted">{{ __('events.overview_col_title') }}</th>
 								<th class="f-13 text-muted">{{ __('events.overview_col_address') }}</th>
 								<th class="f-13 text-muted text-center" style="white-space:nowrap;">{{ __('events.overview_col_regs') }}</th>
-								<th style="width:44px;"></th>
+								<th style="width:88px;"></th>
 							</tr>
 						</thead>
 						<tbody>
@@ -168,17 +168,27 @@ $baseQuery  = request()->except(['dir', 'page']);
 								<td class="f-14 text-muted">{{ $fmtAddress($row) }}</td>
 								<td class="f-14 text-center {{ $regsClass }}">{{ $regsStr }}</td>
 								<td class="text-center">
-									<a href="{{ ($row->format ?? '') === 'tournament' ? url('/events/' . (int)$row->event_id . '/tournament/setup') . '?occurrence_id=' . (int)$row->occurrence_id : url('/events/' . (int)$row->event_id . '/registrations') . '?occurrence=' . (int)$row->occurrence_id }}"
-									class="btn btn-small btn-secondary p-0 d-inline-flex align-items-center justify-content-center"
-									style="width:36px;height:36px;"
-									title="{{ __('events.overview_btn_manage') }}">
-										<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor">
-											<circle cx="332.8" cy="166.4" r="128"/>
-											<path d="M332.8,320c-99.84,0-179.2,79.36-179.2,179.2H512C512,399.36,432.64,320,332.8,320z"/>
-											<path d="M215.04,33.28c-17.92-12.8-38.4-20.48-61.44-20.48c-56.32,0-102.4,46.08-102.4,102.4s46.08,102.4,102.4,102.4c2.56,0,5.12,0,7.68,0c-5.12-15.36-7.68-33.28-7.68-51.2C153.6,112.64,176.64,64,215.04,33.28z"/>
-											<path d="M171.52,243.2c-5.12,0-12.8,0-17.92,0C69.12,243.2,0,312.32,0,396.8h128c17.92-38.4,48.64-71.68,87.04-94.72C197.12,286.72,181.76,266.24,171.52,243.2z"/>
-										</svg>
-									</a>
+									<div class="d-inline-flex gap-1 align-items-center">
+										<a href="{{ ($row->format ?? '') === 'tournament' ? url('/events/' . (int)$row->event_id . '/tournament/setup') . '?occurrence_id=' . (int)$row->occurrence_id : url('/events/' . (int)$row->event_id . '/registrations') . '?occurrence=' . (int)$row->occurrence_id }}"
+										class="btn btn-small btn-secondary p-0 d-inline-flex align-items-center justify-content-center"
+										style="width:36px;height:36px;"
+										title="{{ __('events.overview_btn_manage') }}">
+											<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor">
+												<circle cx="332.8" cy="166.4" r="128"/>
+												<path d="M332.8,320c-99.84,0-179.2,79.36-179.2,179.2H512C512,399.36,432.64,320,332.8,320z"/>
+												<path d="M215.04,33.28c-17.92-12.8-38.4-20.48-61.44-20.48c-56.32,0-102.4,46.08-102.4,102.4s46.08,102.4,102.4,102.4c2.56,0,5.12,0,7.68,0c-5.12-15.36-7.68-33.28-7.68-51.2C153.6,112.64,176.64,64,215.04,33.28z"/>
+												<path d="M171.52,243.2c-5.12,0-12.8,0-17.92,0C69.12,243.2,0,312.32,0,396.8h128c17.92-38.4,48.64-71.68,87.04-94.72C197.12,286.72,181.76,266.24,171.52,243.2z"/>
+											</svg>
+										</a>
+										@if(($row->format ?? '') !== 'tournament')
+										<a href="{{ route('events.registrations.broadcast.form', ['event' => (int)$row->event_id, 'occurrence' => (int)$row->occurrence_id]) }}"
+										class="btn btn-small btn-secondary p-0 d-inline-flex align-items-center justify-content-center"
+										style="width:36px;height:36px;font-size:16px;"
+										title="{{ __('events.broadcast_write_all') }}">
+											💬
+										</a>
+										@endif
+									</div>
 								</td>
 							</tr>
 							@endforeach
@@ -209,17 +219,27 @@ $baseQuery  = request()->except(['dir', 'page']);
 							</div>
 							<div class="d-flex flex-column align-items-end gap-1" style="flex-shrink:0;">
 								<span class="f-14 {{ $regsClass }}">{{ $regsStr }}</span>
-								<a href="{{ ($row->format ?? '') === 'tournament' ? url('/events/' . (int)$row->event_id . '/tournament/setup') . '?occurrence_id=' . (int)$row->occurrence_id : url('/events/' . (int)$row->event_id . '/registrations') . '?occurrence=' . (int)$row->occurrence_id }}"
-								class="btn btn-small btn-secondary p-0 d-inline-flex align-items-center justify-content-center"
-								style="width:36px;height:36px;"
-								title="{{ __('events.overview_btn_manage') }}">
-									<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor">
-										<circle cx="332.8" cy="166.4" r="128"/>
-										<path d="M332.8,320c-99.84,0-179.2,79.36-179.2,179.2H512C512,399.36,432.64,320,332.8,320z"/>
-										<path d="M215.04,33.28c-17.92-12.8-38.4-20.48-61.44-20.48c-56.32,0-102.4,46.08-102.4,102.4s46.08,102.4,102.4,102.4c2.56,0,5.12,0,7.68,0c-5.12-15.36-7.68-33.28-7.68-51.2C153.6,112.64,176.64,64,215.04,33.28z"/>
-										<path d="M171.52,243.2c-5.12,0-12.8,0-17.92,0C69.12,243.2,0,312.32,0,396.8h128c17.92-38.4,48.64-71.68,87.04-94.72C197.12,286.72,181.76,266.24,171.52,243.2z"/>
-									</svg>
-								</a>
+								<div class="d-flex gap-1">
+									<a href="{{ ($row->format ?? '') === 'tournament' ? url('/events/' . (int)$row->event_id . '/tournament/setup') . '?occurrence_id=' . (int)$row->occurrence_id : url('/events/' . (int)$row->event_id . '/registrations') . '?occurrence=' . (int)$row->occurrence_id }}"
+									class="btn btn-small btn-secondary p-0 d-inline-flex align-items-center justify-content-center"
+									style="width:36px;height:36px;"
+									title="{{ __('events.overview_btn_manage') }}">
+										<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor">
+											<circle cx="332.8" cy="166.4" r="128"/>
+											<path d="M332.8,320c-99.84,0-179.2,79.36-179.2,179.2H512C512,399.36,432.64,320,332.8,320z"/>
+											<path d="M215.04,33.28c-17.92-12.8-38.4-20.48-61.44-20.48c-56.32,0-102.4,46.08-102.4,102.4s46.08,102.4,102.4,102.4c2.56,0,5.12,0,7.68,0c-5.12-15.36-7.68-33.28-7.68-51.2C153.6,112.64,176.64,64,215.04,33.28z"/>
+											<path d="M171.52,243.2c-5.12,0-12.8,0-17.92,0C69.12,243.2,0,312.32,0,396.8h128c17.92-38.4,48.64-71.68,87.04-94.72C197.12,286.72,181.76,266.24,171.52,243.2z"/>
+										</svg>
+									</a>
+									@if(($row->format ?? '') !== 'tournament')
+									<a href="{{ route('events.registrations.broadcast.form', ['event' => (int)$row->event_id, 'occurrence' => (int)$row->occurrence_id]) }}"
+									class="btn btn-small btn-secondary p-0 d-inline-flex align-items-center justify-content-center"
+									style="width:36px;height:36px;font-size:16px;"
+									title="{{ __('events.broadcast_write_all') }}">
+										💬
+									</a>
+									@endif
+								</div>
 							</div>
 						</div>
 					</div>
