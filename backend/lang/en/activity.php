@@ -120,6 +120,7 @@ return [
     'filter_classic'         => 'Classic',
     'filter_beach'           => 'Beach',
     'hr_curve'               => 'HR Curve',
+    'hr_chart_x_axis'        => 'Time',
     'session_free_training'  => 'Free Training',
     'history_link'           => '❤️ My Activity →',
     'back_to_list'           => 'Back',

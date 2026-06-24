@@ -214,6 +214,21 @@
 
 @if(count($samples) > 0 || ($hasJumps && $jumpEvents->count() > 0))
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+// Общие данные для обоих графиков
+var _sessionStartUtc = @json($session->started_at ? $session->started_at->timestamp : null);
+var _userTz          = @json($userTimezone);
+
+// UTC + offset → фактическое время суток в TZ пользователя
+function fmtClock(offsetSec) {
+    if (_sessionStartUtc === null) return String(offsetSec);
+    var ms = (_sessionStartUtc + offsetSec) * 1000;
+    return new Intl.DateTimeFormat('ru-RU', {
+        hour: '2-digit', minute: '2-digit', hour12: false,
+        timeZone: _userTz || 'UTC'
+    }).format(new Date(ms));
+}
+</script>
 @endif
 
 @if($hasJumps && $jumpEvents->count() > 0)
@@ -221,11 +236,7 @@
 (function() {
     var jumps = @json($jumpEvents->values());
 
-    function fmtJumpTime(s) {
-        return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
-    }
-
-    // Точки: {x: t_offset_sec (число), y: height_cm} — linear-ось разместит по времени
+    // linear-ось: x = t_offset_sec (число), ticks и tooltip форматируются через fmtClock
     var jumpData = jumps.map(function(j) {
         return { x: j.t_offset_sec, y: j.height_cm !== null ? parseFloat(j.height_cm) : null };
     });
@@ -252,7 +263,7 @@
                 legend: { display: false },
                 tooltip: {
                     callbacks: {
-                        title: function(items) { return fmtJumpTime(items[0].parsed.x); },
+                        title: function(items) { return fmtClock(items[0].parsed.x); },
                         label: function(ctx) { return ctx.parsed.y + ' {{ __('activity.jump_chart_tooltip') }}'; }
                     }
                 }
@@ -264,7 +275,7 @@
                         maxTicksLimit: 8,
                         maxRotation: 0,
                         font: { size: 11 },
-                        callback: function(s) { return fmtJumpTime(s); }
+                        callback: function(s) { return fmtClock(s); }
                     },
                     title: { display: true, text: '{{ __('activity.jump_chart_x_axis') }}', font: { size: 11 } },
                     grid: { display: false }
@@ -284,8 +295,8 @@
 
 @if(count($samples) > 0)
 @php
-$samplesJson = json_encode(array_map(fn($s) => ['t' => $s['t_offset_sec'], 'b' => $s['bpm']], $samples));
-$zonesJson   = json_encode($zones);
+$samplesJson    = json_encode(array_map(fn($s) => ['t' => $s['t_offset_sec'], 'b' => $s['bpm']], $samples));
+$zonesJson      = json_encode($zones);
 $zoneColorsJson = json_encode($zoneColors);
 @endphp
 <script>
@@ -294,12 +305,8 @@ $zoneColorsJson = json_encode($zoneColors);
     var zones      = {!! $zonesJson !!};
     var zoneColors = {!! $zoneColorsJson !!};
 
-    function fmtSec(s) {
-        var m = Math.floor(s / 60), ss = s % 60;
-        return m + ':' + (ss < 10 ? '0' : '') + ss;
-    }
-
-    var labels = samples.map(function(s) { return fmtSec(s.t); });
+    // Ось X — фактическое время суток через fmtClock (та же функция что у jump-chart)
+    var labels = samples.map(function(s) { return fmtClock(s.t); });
     var data   = samples.map(function(s) { return s.b; });
 
     // Градиент по зонам: цвет точки по bpm
@@ -340,6 +347,7 @@ $zoneColorsJson = json_encode($zoneColors);
                 legend: { display: false },
                 tooltip: {
                     callbacks: {
+                        title: function(items) { return fmtClock(samples[items[0].dataIndex].t); },
                         label: function(ctx) { return ctx.parsed.y + ' {{ __('activity.live_bpm') }}'; }
                     }
                 }
@@ -351,6 +359,7 @@ $zoneColorsJson = json_encode($zoneColors);
                         maxRotation: 0,
                         font: { size: 11 }
                     },
+                    title: { display: true, text: '{{ __('activity.hr_chart_x_axis') }}', font: { size: 11 } },
                     grid: { display: false }
                 },
                 y: {

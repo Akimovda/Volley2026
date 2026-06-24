@@ -120,6 +120,7 @@ return [
     'filter_classic'         => 'Классика',
     'filter_beach'           => 'Пляж',
     'hr_curve'               => 'Кривая ЧСС',
+    'hr_chart_x_axis'        => 'Время',
     'session_free_training'  => 'Свободная тренировка',
     'history_link'           => '❤️ Моя активность →',
     'back_to_list'           => 'К списку',
