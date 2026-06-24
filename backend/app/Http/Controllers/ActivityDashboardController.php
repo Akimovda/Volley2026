@@ -76,7 +76,7 @@ class ActivityDashboardController extends Controller
             && in_array('jumps', $session->tracked_capabilities, true);
 
         $jumpEvents = $hasJumps
-            ? $session->jumpEvents()->orderBy('t_offset_sec')->get(['t_offset_sec', 'height_cm'])
+            ? $session->jumps()->orderBy('t_offset_sec')->get(['t_offset_sec', 'height_cm'])
             : collect();
 
         $sessionTitle  = $session->occurrence?->event?->title
