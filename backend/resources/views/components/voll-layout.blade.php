@@ -756,11 +756,7 @@
 											<a href="https://www.rustore.ru/catalog/app/club.volleyplay.app" class="rustore app-link"></a>
 										</div>
 										<div style="flex:0 0 33.333%;max-width:33.333%;padding:0 0.4rem">
-											<a href="/downloads/VolleyClub_1.1.0.apk" class="app-link" download
-											   style="flex-direction:column;justify-content:center;gap:0.4rem;text-decoration:none;font-size:1.3rem;font-weight:600;color:inherit">
-												<svg style="width:2rem;height:2rem;flex-shrink:0;fill:currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M6.18 15.64a2.18 2.18 0 0 1-2.18-2.18C4 12.29 4.98 11.36 6.18 11.36c1.19 0 2.18.93 2.18 2.1 0 1.17-.99 2.18-2.18 2.18m11.64 0a2.18 2.18 0 0 1-2.18-2.18c0-1.17.99-2.1 2.18-2.1 1.19 0 2.18.93 2.18 2.1 0 1.17-.99 2.18-2.18 2.18M6.36 6.27l-1.5-2.6a.47.47 0 0 1 .82-.46l1.52 2.63A8.5 8.5 0 0 1 12 5c1.25 0 2.44.27 3.5.84l1.52-2.63a.47.47 0 0 1 .82.46l-1.5 2.6A8.49 8.49 0 0 1 20.5 12H3.5a8.49 8.49 0 0 1 2.86-5.73M10 9h-.5a.5.5 0 0 0 0 1H10a.5.5 0 0 0 0-1m4.5 0H14a.5.5 0 0 0 0 1h.5a.5.5 0 0 0 0-1M4 13v5a1 1 0 0 0 1 1h1v3a1.5 1.5 0 0 0 3 0v-3h6v3a1.5 1.5 0 0 0 3 0v-3h1a1 1 0 0 0 1-1v-5H4z"/></svg>
-												{{ __('ui.footer_apk_download') }}
-											</a>
+											<a href="/downloads/VolleyClub_1.1.0.apk" class="app-link apk-dl" download></a>
 										</div>
 									</div>
 								</div>

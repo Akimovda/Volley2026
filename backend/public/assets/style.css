@@ -3597,7 +3597,10 @@ body.dark .footer-menu a:hover {
 	background-image: url(/img/appstore.png); 
 }
 .app-link.rustore {
-	background-image: url(/img/rustore.png); 
+	background-image: url(/img/rustore.png);
+}
+.app-link.apk-dl {
+	background-image: url(/img/apk.svg);
 }
 body.dark .footer .app-link {
 	filter: invert(94%);
