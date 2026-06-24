@@ -124,7 +124,7 @@ return [
     'jump_max_height'        => 'Макс. высота',
     'jump_chart_title'       => 'График прыжков',
     'jump_chart_y_axis'      => 'Высота, см',
-    'jump_chart_x_axis'      => 'Прыжок №',
+    'jump_chart_x_axis'      => 'Время',
     'jump_chart_tooltip'     => 'см',
 
     // Пуш-напоминание о записи

@@ -124,7 +124,7 @@ return [
     'jump_max_height'        => 'Max height',
     'jump_chart_title'       => 'Jump height chart',
     'jump_chart_y_axis'      => 'Height, cm',
-    'jump_chart_x_axis'      => 'Jump #',
+    'jump_chart_x_axis'      => 'Time',
     'jump_chart_tooltip'     => 'cm',
 
     // Push prompt

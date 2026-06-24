@@ -214,15 +214,21 @@
 <script>
 (function() {
     var jumps = @json($jumpEvents->values());
-    var labels = jumps.map(function(_, i) { return '{{ __('activity.jump_chart_x_axis') }}' + (i + 1); });
-    var heights = jumps.map(function(j) { return j.height_cm !== null ? parseFloat(j.height_cm) : null; });
+
+    function fmtJumpTime(s) {
+        return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+    }
+
+    // Точки: {x: t_offset_sec (число), y: height_cm} — linear-ось разместит по времени
+    var jumpData = jumps.map(function(j) {
+        return { x: j.t_offset_sec, y: j.height_cm !== null ? parseFloat(j.height_cm) : null };
+    });
 
     new Chart(document.getElementById('jump-chart').getContext('2d'), {
         type: 'line',
         data: {
-            labels: labels,
             datasets: [{
-                data: heights,
+                data: jumpData,
                 borderColor: '#2967BA',
                 backgroundColor: 'rgba(41,103,186,.12)',
                 borderWidth: 2,
@@ -240,13 +246,20 @@
                 legend: { display: false },
                 tooltip: {
                     callbacks: {
+                        title: function(items) { return fmtJumpTime(items[0].parsed.x); },
                         label: function(ctx) { return ctx.parsed.y + ' {{ __('activity.jump_chart_tooltip') }}'; }
                     }
                 }
             },
             scales: {
                 x: {
-                    ticks: { maxTicksLimit: 10, maxRotation: 0, font: { size: 11 } },
+                    type: 'linear',
+                    ticks: {
+                        maxTicksLimit: 8,
+                        maxRotation: 0,
+                        font: { size: 11 },
+                        callback: function(s) { return fmtJumpTime(s); }
+                    },
                     title: { display: true, text: '{{ __('activity.jump_chart_x_axis') }}', font: { size: 11 } },
                     grid: { display: false }
                 },
