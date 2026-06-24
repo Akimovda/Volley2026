@@ -75,6 +75,12 @@
                    class="inline-flex items-center px-4 py-2 rounded-lg font-semibold text-sm border border-gray-200 bg-white hover:bg-gray-50">
                     Открыть мероприятие
                 </a>
+                @if($occurrenceId)
+                <a href="{{ route('events.registrations.broadcast.form', ['event' => $event->id, 'occurrence' => $occurrenceId]) }}"
+                   class="inline-flex items-center gap-1 px-4 py-2 rounded-lg font-semibold text-sm border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100">
+                    {{ __('events.broadcast_write_all') }}
+                </a>
+                @endif
             </div>
         </div>
     </x-slot>
