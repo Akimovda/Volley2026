@@ -95,7 +95,7 @@ return [
     'footer_personal_data'  => 'Согласие на обработку персональных данных',
     'footer_user_agreement' => 'Пользовательское соглашение',
     'footer_apps_title'     => 'Приложения',
-    'footer_apk_download'   => 'Скачать APK для Android',
+    'footer_apk_download'   => 'Скачать для Android',
     'footer_copyright'      => '© VolleyPlay :year. Все права защищены.',
 
     // SEO / meta
