@@ -1361,7 +1361,7 @@
         <script src="/assets/org.js"></script>
 
         <script>
-        document.addEventListener('DOMContentLoaded', function () {
+        function initMgmtForm() {
 
             // --- Длительность ---
             const dHours   = document.querySelector('[name="duration_hours"]');
@@ -1458,55 +1458,6 @@
             syncRegHM(regEndsH, regEndsM, regEndsHid);
             syncRegHM(cancelH,  cancelM,  cancelHid);
             syncRegHMAllowZero(cancelWH, cancelWM, cancelWHid);
-
-            // --- Начало регистрации: подсказка с датой открытия ---
-            (function() {
-                const hint = document.getElementById('mgmt_reg_starts_hint');
-                if (!hint) return;
-                const evStartTs = {{ $evStartsAt ? $evStartsAt->timestamp : 0 }};
-                const evTz = {{ json_encode($event->timezone ?? 'UTC') }};
-                if (!evStartTs) return;
-
-                function updateRegStartsHint() {
-                    const dSel = document.getElementById('mgmt_reg_starts_d');
-                    const hSel = document.getElementById('mgmt_reg_starts_h');
-                    if (!dSel || !hSel) return;
-                    const d = parseInt(dSel.value, 10) || 0;
-                    const h = parseInt(hSel.value, 10) || 0;
-                    const regDate = new Date((evStartTs - d * 86400 - h * 3600) * 1000);
-                    try {
-                        const fmt = new Intl.DateTimeFormat('ru-RU', {
-                            timeZone: evTz, day: '2-digit', month: '2-digit', year: 'numeric',
-                            hour: '2-digit', minute: '2-digit', hour12: false
-                        });
-                        hint.textContent = '→ Открытие регистрации: ' + fmt.format(regDate) + ' (' + evTz + ')';
-                    } catch(e) { hint.textContent = ''; }
-                }
-
-                $(document).on('change', '#mgmt_reg_starts_d, #mgmt_reg_starts_h', updateRegStartsHint);
-                $(document).on('input', 'input[name="starts_at"]', updateRegStartsHint);
-                updateRegStartsHint();
-            })();
-
-            // --- Авторасчёт макс. игроков (Команды × состав) ---
-            (function() {
-                const maxEl = document.getElementById('mgmt_game_max_players');
-                if (!maxEl) return;
-                const sizes = { '2x2': 2, '3x3': 3, '4x4': 4, '4x2': 6, '5x1': 6, '5x1_libero': 7 };
-
-                function recalc() {
-                    const subtypeEl = document.getElementById('mgmt_game_subtype');
-                    const teamsEl   = document.getElementById('mgmt_teams_count');
-                    if (!subtypeEl || !teamsEl) return;
-                    const tc = parseInt(teamsEl.value, 10) || 0;
-                    const ts = sizes[subtypeEl.value] || 0;
-                    maxEl.value = tc > 0 && ts > 0 ? tc * ts : maxEl.value;
-                }
-
-                $(document).on('input change', '#mgmt_teams_count', recalc);
-                $(document).on('change', '#mgmt_game_subtype', recalc);
-                recalc();
-            })();
 
             // --- Бот-ассистент toggle ---
             const botChk = document.getElementById('bot_assistant_enabled_edit');
@@ -1695,7 +1646,53 @@
                 // Ничего дополнительно не нужно.
             })();
 
-        });
+            // --- Пересчёт Макс. игроков (teams_count × team_size из субтайпа) ---
+            // team_size берётся из sizes[subtypeEl.value]: 2x2→2, 3x3→3, 4x4→4, 4x2→6, 5x1→6, 5x1_libero→7
+            var _mgmtSizes = { '2x2':2, '3x3':3, '4x4':4, '4x2':6, '5x1':6, '5x1_libero':7 };
+            function mgmtRecalcMax() {
+                var maxEl     = document.getElementById('mgmt_game_max_players');
+                var subtypeEl = document.getElementById('mgmt_game_subtype');
+                var teamsEl   = document.getElementById('mgmt_teams_count');
+                if (!maxEl || !subtypeEl || !teamsEl) return;
+                var tc = parseInt(teamsEl.value, 10) || 0;
+                var ts = _mgmtSizes[subtypeEl.value] || 0;
+                if (tc > 0 && ts > 0) maxEl.value = tc * ts;
+            }
+            $(document).on('input change', '#mgmt_teams_count', mgmtRecalcMax);
+            $(document).on('change', '#mgmt_game_subtype', mgmtRecalcMax);
+            mgmtRecalcMax();
+
+            // --- Подсказка: дата открытия регистрации ---
+            (function() {
+                var evStartTs = {!! $evStartsAt ? $evStartsAt->timestamp : 0 !!};
+                var evTz = {!! json_encode($event->timezone ?? 'UTC') !!};
+                function mgmtUpdateRegHint() {
+                    var hint = document.getElementById('mgmt_reg_starts_hint');
+                    var dSel = document.getElementById('mgmt_reg_starts_d');
+                    var hSel = document.getElementById('mgmt_reg_starts_h');
+                    if (!hint || !dSel || !hSel || !evStartTs) return;
+                    var d = parseInt(dSel.value, 10) || 0;
+                    var h = parseInt(hSel.value, 10) || 0;
+                    var regDate = new Date((evStartTs - d * 86400 - h * 3600) * 1000);
+                    try {
+                        hint.textContent = '→ Открытие регистрации: ' + new Intl.DateTimeFormat('ru-RU', {
+                            timeZone: evTz, day:'2-digit', month:'2-digit', year:'numeric',
+                            hour:'2-digit', minute:'2-digit', hour12: false
+                        }).format(regDate) + ' (' + evTz + ')';
+                    } catch(e) { hint.textContent = ''; }
+                }
+                $(document).on('change', '#mgmt_reg_starts_d, #mgmt_reg_starts_h', mgmtUpdateRegHint);
+                $(document).on('input', 'input[name="starts_at"]', mgmtUpdateRegHint);
+                mgmtUpdateRegHint();
+            })();
+
+        } // end initMgmtForm
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initMgmtForm);
+        } else {
+            setTimeout(initMgmtForm, 0);
+        }
 
             // === Payment link toggle ===
             const payMethodSel = document.querySelector('select[name="payment_method"]');
