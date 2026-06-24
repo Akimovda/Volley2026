@@ -843,16 +843,26 @@
 
                                 <div class="mt-2">
                                     <label>{{ __('events.pay_method_label') }}</label>
-                                    <select name="payment_method">
-                                        @foreach([
-                                            'cash' => __('events.pay_method_cash'),
+                                    @php
+                                        $availMethodsEdit = $orgPaySettings?->availableMethods() ?? ['cash'];
+                                        // Сохранённый метод всегда доступен для выбора (даже если реквизиты удалены)
+                                        $savedMethodEdit = $event->payment_method ?? 'cash';
+                                        if (!in_array($savedMethodEdit, $availMethodsEdit)) {
+                                            $availMethodsEdit[] = $savedMethodEdit;
+                                        }
+                                        $pmEdit = old('payment_method', $savedMethodEdit);
+                                        $allMethodLabelsEdit = [
+                                            'cash'       => __('events.pay_method_cash'),
                                             'tbank_link' => __('events.pay_method_tbank'),
-                                            'sber_link' => __('events.pay_method_sber'),
-                                            'yoomoney' => __('events.pay_method_yookassa')
-                                        ] as $method => $label)
-                                            <option value="{{ $method }}" 
-                                                @selected(old('payment_method', $event->payment_method ?? 'cash') === $method)>
-                                                {{ $label }}
+                                            'sber_link'  => __('events.pay_method_sber'),
+                                            'yoomoney'   => __('events.pay_method_yookassa'),
+                                        ];
+                                    @endphp
+                                    <select name="payment_method">
+                                        @foreach($availMethodsEdit as $method)
+                                            <option value="{{ $method }}"
+                                                @selected($pmEdit === $method)>
+                                                {{ $allMethodLabelsEdit[$method] ?? $method }}
                                             </option>
                                         @endforeach
                                     </select>

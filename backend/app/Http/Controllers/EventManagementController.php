@@ -303,6 +303,8 @@ if ($role === 'admin') {
                 ->value('league_id');
         }
 
+        $orgPaySettings = \App\Models\PaymentSetting::where('organizer_id', (int) $event->organizer_id)->first();
+
         return view('events.event_management_edit', [
             'event'            => $event,
             'activeRegs'       => (int) $activeRegs,
@@ -317,6 +319,7 @@ if ($role === 'admin') {
             'detectedLeague'   => $detectedLeague,
             'seasonDivisions'  => $seasonDivisions,
             'currentDivisionId' => $currentDivisionId,
+            'orgPaySettings'   => $orgPaySettings,
         ]);
     }
 
@@ -841,6 +844,12 @@ if ($role === 'admin') {
             abort(403);
         }
     
+        // Допустимые методы оплаты: настроенные у организатора + текущий сохранённый (чтобы не сломать редактирование)
+        $payMethodAllowed = \App\Models\PaymentSetting::availableMethodsFor((int) $event->organizer_id);
+        if ($event->payment_method && !in_array($event->payment_method, $payMethodAllowed)) {
+            $payMethodAllowed[] = $event->payment_method;
+        }
+
         $data = $request->validate([
             'title'       => ['required', 'string', 'max:255'],
             'direction'   => ['nullable', 'string', 'in:classic,beach'],
@@ -879,7 +888,7 @@ if ($role === 'admin') {
             'is_paid'                  => ['sometimes', 'boolean'],
             'price_amount'             => ['nullable', 'numeric', 'min:0', 'max:500000'],
             'price_currency'           => ['nullable', 'string', 'max:3'],
-            'payment_method'           => ['nullable', 'string', 'in:cash,tbank_link,sber_link,yoomoney'],
+            'payment_method'           => ['nullable', 'string', \Illuminate\Validation\Rule::in($payMethodAllowed)],
             'payment_link'             => ['nullable', 'string', 'max:500'],
             'tournament_payment_mode'  => ['nullable', 'string', 'in:team,per_player'],
             'teams_count'              => ['nullable', 'integer', 'min:2', 'max:200'],

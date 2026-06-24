@@ -38,4 +38,19 @@ class PaymentSetting extends Model
             || !empty($this->tbank_link)
             || !empty($this->sber_link);
     }
+
+    public function availableMethods(): array
+    {
+        $methods = ['cash'];
+        if (!empty($this->tbank_link))   $methods[] = 'tbank_link';
+        if (!empty($this->sber_link))    $methods[] = 'sber_link';
+        if ($this->yoomoney_verified)    $methods[] = 'yoomoney';
+        return $methods;
+    }
+
+    public static function availableMethodsFor(int $organizerId): array
+    {
+        $settings = static::where('organizer_id', $organizerId)->first();
+        return $settings ? $settings->availableMethods() : ['cash'];
+    }
 }
