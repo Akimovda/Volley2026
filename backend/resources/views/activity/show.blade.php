@@ -149,6 +149,15 @@
                         @endif
                     </div>
                 </div>
+                {{-- График прыжков --}}
+                @if($hasJumps && $jumpEvents->count() > 0)
+                <div class="ramka mb-1">
+                    <h3 class="-mt-05">{{ __('activity.jump_chart_title') }}</h3>
+                    <div style="position:relative;height:220px">
+                        <canvas id="jump-chart"></canvas>
+                    </div>
+                </div>
+                @endif
                 @else
                 <div class="ramka mb-1" style="opacity:.55;font-size:.9rem">
                     {{ __('activity.jumps_not_tracked') }}
@@ -197,13 +206,69 @@
     </div>{{-- container --}}
 </x-voll-layout>
 
+@if(count($samples) > 0 || ($hasJumps && $jumpEvents->count() > 0))
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+@endif
+
+@if($hasJumps && $jumpEvents->count() > 0)
+<script>
+(function() {
+    var jumps = @json($jumpEvents->values());
+    var labels = jumps.map(function(_, i) { return '{{ __('activity.jump_chart_x_axis') }}' + (i + 1); });
+    var heights = jumps.map(function(j) { return j.height_cm !== null ? parseFloat(j.height_cm) : null; });
+
+    new Chart(document.getElementById('jump-chart').getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: heights,
+                borderColor: '#2967BA',
+                backgroundColor: 'rgba(41,103,186,.12)',
+                borderWidth: 2,
+                pointRadius: 4,
+                pointBackgroundColor: '#2967BA',
+                fill: true,
+                tension: 0.3,
+                spanGaps: true,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(ctx) { return ctx.parsed.y + ' {{ __('activity.jump_chart_tooltip') }}'; }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    ticks: { maxTicksLimit: 10, maxRotation: 0, font: { size: 11 } },
+                    title: { display: true, text: '{{ __('activity.jump_chart_x_axis') }}', font: { size: 11 } },
+                    grid: { display: false }
+                },
+                y: {
+                    ticks: { font: { size: 11 } },
+                    title: { display: true, text: '{{ __('activity.jump_chart_y_axis') }}', font: { size: 11 } },
+                    grid: { color: 'rgba(0,0,0,.06)' },
+                    beginAtZero: true,
+                }
+            }
+        }
+    });
+})();
+</script>
+@endif
+
 @if(count($samples) > 0)
 @php
 $samplesJson = json_encode(array_map(fn($s) => ['t' => $s['t_offset_sec'], 'b' => $s['bpm']], $samples));
 $zonesJson   = json_encode($zones);
 $zoneColorsJson = json_encode($zoneColors);
 @endphp
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
 (function() {
     var samples    = {!! $samplesJson !!};
