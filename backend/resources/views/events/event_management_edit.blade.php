@@ -521,7 +521,7 @@
                         <div class="col-md-3">
                             <div class="card" style="overflow:visible">
                                 <label>{{ __('events.game_subtype') }}</label>
-                                <select name="game_subtype">
+                                <select name="game_subtype" id="mgmt_game_subtype">
                                     @foreach($gameSubtypes as $k => $l)
                                         <option value="{{ $k }}"
                                             @selected(old('game_subtype', $event->gameSettings?->subtype) === $k)>
@@ -535,7 +535,7 @@
                         <div class="col-md-3">
                             <div class="card" style="overflow:visible">
                                 <label>{{ __('events.team_n') }}</label>
-                                <input type="number" name="teams_count" min="2" max="200"
+                                <input type="number" name="teams_count" id="mgmt_teams_count" min="2" max="200"
                                     value="{{ old('teams_count', $event->gameSettings?->teams_count ?? 2) }}">
                             </div>
                         </div>
@@ -551,8 +551,10 @@
                         <div class="col-md-3">
                             <div class="card" style="overflow:visible">
                                 <label>{{ __('events.max_players') }}</label>
-                                <input type="number" name="game_max_players" min="0" max="99"
+                                <input type="number" name="game_max_players" id="mgmt_game_max_players" min="0" max="999"
+                                    readonly style="background:#f3f4f6;cursor:default"
                                     value="{{ old('game_max_players', $event->gameSettings?->max_players ?? 0) }}">
+                                <small style="display:block;margin-top:.3rem;color:#6b7280;font-size:.8rem">Рассчитывается автоматически</small>
                             </div>
                         </div>
 
@@ -697,6 +699,7 @@
                                         @endfor
                                     </select>
                                 </div>
+                                <small id="mgmt_reg_starts_hint" style="display:block;margin-top:.4rem;color:#6b7280;font-size:.8rem"></small>
                             </div>
                         </div>
 
@@ -1759,6 +1762,72 @@
                 form.submit();
             });
         });
+    })();
+
+    // --- Начало регистрации: подсказка с датой/временем ---
+    (function() {
+        var dSel  = document.getElementById('mgmt_reg_starts_d');
+        var hSel  = document.getElementById('mgmt_reg_starts_h');
+        var hint  = document.getElementById('mgmt_reg_starts_hint');
+        var startsInput = document.querySelector('input[name="starts_at"]');
+        var tzInput     = document.querySelector('input[name="timezone"]');
+        if (!dSel || !hSel || !hint) return;
+
+        function localToUTC(startsVal, tz) {
+            if (!startsVal || !tz) return null;
+            try {
+                var naiveUTC = new Date(startsVal + ':00Z');
+                var parts = new Intl.DateTimeFormat('en-CA', {
+                    timeZone: tz, hour12: false,
+                    year: 'numeric', month: '2-digit', day: '2-digit',
+                    hour: '2-digit', minute: '2-digit'
+                }).formatToParts(naiveUTC);
+                var get = function(t) { return parts.find(function(p){return p.type===t;}).value; };
+                var tzMs = new Date(get('year')+'-'+get('month')+'-'+get('day')+'T'+get('hour')+':'+get('minute')+':00Z').getTime();
+                return new Date(naiveUTC.getTime() - (tzMs - naiveUTC.getTime()));
+            } catch(e) { return null; }
+        }
+
+        function updateHint() {
+            var startsVal = startsInput ? startsInput.value : '';
+            var tz = tzInput ? tzInput.value : '';
+            var d = parseInt(dSel.value, 10) || 0;
+            var h = parseInt(hSel.value, 10) || 0;
+            if (!startsVal || !tz) { hint.textContent = ''; return; }
+            var startsUTC = localToUTC(startsVal, tz);
+            if (!startsUTC) { hint.textContent = ''; return; }
+            var regUTC = new Date(startsUTC.getTime() - (d * 86400 + h * 3600) * 1000);
+            try {
+                var fmt = new Intl.DateTimeFormat('ru-RU', {
+                    timeZone: tz, day: '2-digit', month: '2-digit', year: 'numeric',
+                    hour: '2-digit', minute: '2-digit', hour12: false
+                });
+                hint.textContent = '→ Регистрация откроется ' + fmt.format(regUTC) + ' (' + tz + ')';
+            } catch(e) { hint.textContent = ''; }
+        }
+
+        dSel.addEventListener('change', updateHint);
+        hSel.addEventListener('change', updateHint);
+        if (startsInput) startsInput.addEventListener('input', updateHint);
+        updateHint();
+    })();
+
+    // --- Авторасчёт макс. игроков (Команды × состав команды) ---
+    (function() {
+        var subtypeEl = document.getElementById('mgmt_game_subtype');
+        var teamsEl   = document.getElementById('mgmt_teams_count');
+        var maxEl     = document.getElementById('mgmt_game_max_players');
+        if (!subtypeEl || !teamsEl || !maxEl) return;
+        // Размер команды для каждого формата (количество игроков в составе одной команды)
+        var sizes = { '2x2': 2, '3x3': 3, '4x4': 4, '4x2': 6, '5x1': 6, '5x1_libero': 7 };
+        function recalc() {
+            var tc = parseInt(teamsEl.value, 10) || 0;
+            var ts = sizes[subtypeEl.value] || 0;
+            maxEl.value = tc * ts;
+        }
+        subtypeEl.addEventListener('change', recalc);
+        teamsEl.addEventListener('input', recalc);
+        recalc();
     })();
 </script>
     </x-slot>
