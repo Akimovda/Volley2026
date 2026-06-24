@@ -1746,13 +1746,13 @@
 
         // Снимок исходных значений расписания (из PHP на момент загрузки страницы)
         var origSchedule = {
-            starts_at:  {{ json_encode(\Carbon\Carbon::parse($event->starts_at, 'UTC')->setTimezone($event->timezone ?? 'UTC')->format('Y-m-d')) }},
-            type:       {{ json_encode($recType) }},
-            interval:   {{ json_encode((string)$recInterval) }},
-            end_type:   {{ json_encode($recEndType) }},
-            end_until:  {{ json_encode($recEndUntil) }},
-            end_count:  {{ json_encode((string)$recEndCount) }},
-            weekdays:   {{ json_encode(array_map('strval', $recWeekdays)) }},
+            starts_at:  @json(\Carbon\Carbon::parse($event->starts_at, 'UTC')->setTimezone($event->timezone ?? 'UTC')->format('Y-m-d')),
+            type:       @json($recType),
+            interval:   @json((string)$recInterval),
+            end_type:   @json($recEndType),
+            end_until:  @json($recEndUntil),
+            end_count:  @json((string)$recEndCount),
+            weekdays:   @json(array_map('strval', $recWeekdays)),
         };
 
         function scheduleChanged() {
