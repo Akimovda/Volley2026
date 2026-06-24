@@ -672,6 +672,7 @@ return [
     'pay_hint_cash'          => 'Players pay on site, no sign-up restrictions',
     'pay_hint_link'          => 'Player taps "I\'ve paid", you confirm manually',
     'pay_hint_yoomoney'      => 'Seat is held for :n min. Sign-up is confirmed automatically after payment',
+    'pay_method_not_configured' => 'This payment method is not configured in your profile. Add your details in the payment settings.',
 
     'tournament_pay_mode'    => 'Who pays for participation',
     'tournament_pay_team'    => '👑 Captain pays for the whole team',

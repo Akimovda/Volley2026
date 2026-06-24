@@ -86,16 +86,22 @@
                                         <div id="payment_method_wrap" class="mt-2">
                                             <label>{{ __('events.pay_method_label') }}</label>
                                             @php
-                                                $pm = old('payment_method', $prefill['payment_method'] ?? 'cash');
                                                 $orgPaySettings = auth()->check()
                                                     ? \App\Models\PaymentSetting::where('organizer_id', auth()->id())->first()
                                                     : null;
+                                                $availableMethods = $orgPaySettings?->availableMethods() ?? ['cash'];
+                                                $pm = old('payment_method', $prefill['payment_method'] ?? 'cash');
+                                                if (!in_array($pm, $availableMethods)) $pm = 'cash';
                                             @endphp
                                             <select name="payment_method" id="payment_method">
                                                 <option value="cash" @selected($pm === 'cash')>{{ __('events.pay_method_cash') }}</option>
+                                                @if(in_array('tbank_link', $availableMethods))
                                                 <option value="tbank_link" @selected($pm === 'tbank_link')>{{ __('events.pay_method_tbank') }}</option>
+                                                @endif
+                                                @if(in_array('sber_link', $availableMethods))
                                                 <option value="sber_link" @selected($pm === 'sber_link')>{{ __('events.pay_method_sber') }}</option>
-                                                @if($orgPaySettings?->yoomoney_verified)
+                                                @endif
+                                                @if(in_array('yoomoney', $availableMethods))
                                                 <option value="yoomoney" @selected($pm === 'yoomoney')>{{ __('events.pay_method_yoomoney') }}</option>
                                                 @endif
                                             </select>

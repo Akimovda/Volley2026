@@ -476,7 +476,16 @@
 			
             $validator->after(function ($v) use ($request) {
             $data = $v->getData();
-        
+
+            // Доступность выбранного способа оплаты для этого организатора
+            if (!empty($data['is_paid'])) {
+                $method = (string) ($data['payment_method'] ?? 'cash');
+                $available = \App\Models\PaymentSetting::availableMethodsFor((int) auth()->id());
+                if (!in_array($method, $available)) {
+                    $v->errors()->add('payment_method', __('events.pay_method_not_configured'));
+                }
+            }
+
             $format = (string) ($data['format'] ?? '');
             $direction = (string) ($data['direction'] ?? 'classic');
             $policy = (string) ($data['game_gender_policy'] ?? '');
