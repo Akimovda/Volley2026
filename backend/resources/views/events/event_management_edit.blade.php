@@ -554,7 +554,7 @@
                                 <input type="number" name="game_max_players" id="mgmt_game_max_players" min="0" max="999"
                                     readonly style="background:#f3f4f6;cursor:default"
                                     value="{{ old('game_max_players', $event->gameSettings?->max_players ?? 0) }}">
-                                <small style="display:block;margin-top:.3rem;color:#6b7280;font-size:.8rem">Рассчитывается автоматически</small>
+                                <small style="display:block;margin-top:.4rem;color:#6b7280;font-size:1.3rem">Рассчитывается автоматически</small>
                             </div>
                         </div>
 
@@ -699,7 +699,7 @@
                                         @endfor
                                     </select>
                                 </div>
-                                <small id="mgmt_reg_starts_hint" style="display:block;margin-top:.4rem;color:#6b7280;font-size:.8rem"></small>
+                                <small id="mgmt_reg_starts_hint" style="display:block;margin-top:.4rem;color:#6b7280;font-size:1.3rem"></small>
                             </div>
                         </div>
 
@@ -1459,6 +1459,57 @@
             syncRegHM(cancelH,  cancelM,  cancelHid);
             syncRegHMAllowZero(cancelWH, cancelWM, cancelWHid);
 
+            // --- Начало регистрации: подсказка с датой открытия ---
+            (function() {
+                const dSel  = document.getElementById('mgmt_reg_starts_d');
+                const hSel  = document.getElementById('mgmt_reg_starts_h');
+                const hint  = document.getElementById('mgmt_reg_starts_hint');
+                const startsInput = document.querySelector('input[name="starts_at"]');
+                const tzInput     = document.querySelector('input[name="timezone"]');
+                if (!dSel || !hSel || !hint) return;
+
+                function updateRegStartsHint() {
+                    const startsVal = startsInput ? startsInput.value : '';
+                    const tz = (tzInput ? tzInput.value : '') || 'UTC';
+                    const d = parseInt(dSel.value, 10) || 0;
+                    const h = parseInt(hSel.value, 10) || 0;
+                    if (!startsVal) { hint.textContent = ''; return; }
+                    try {
+                        const startsUTC = localEventTimeToUTC(startsVal, tz);
+                        if (!startsUTC) { hint.textContent = ''; return; }
+                        const regUTC = new Date(startsUTC.getTime() - (d * 86400 + h * 3600) * 1000);
+                        const fmt = new Intl.DateTimeFormat('ru-RU', {
+                            timeZone: tz, day: '2-digit', month: '2-digit', year: 'numeric',
+                            hour: '2-digit', minute: '2-digit', hour12: false
+                        });
+                        hint.textContent = '→ Открытие регистрации: ' + fmt.format(regUTC) + ' (' + tz + ')';
+                    } catch(e) { hint.textContent = ''; }
+                }
+
+                $(dSel).on('change custom-change', updateRegStartsHint);
+                $(hSel).on('change custom-change', updateRegStartsHint);
+                startsInput?.addEventListener('input', updateRegStartsHint);
+                updateRegStartsHint();
+            })();
+
+            // --- Авторасчёт макс. игроков (Команды × состав) ---
+            (function() {
+                const subtypeEl = document.getElementById('mgmt_game_subtype');
+                const teamsEl   = document.getElementById('mgmt_teams_count');
+                const maxEl     = document.getElementById('mgmt_game_max_players');
+                if (!subtypeEl || !teamsEl || !maxEl) return;
+                const sizes = { '2x2': 2, '3x3': 3, '4x4': 4, '4x2': 6, '5x1': 6, '5x1_libero': 7 };
+                function recalc() {
+                    const tc = parseInt(teamsEl.value, 10) || 0;
+                    const ts = sizes[subtypeEl.value] || 0;
+                    if (tc > 0 && ts > 0) maxEl.value = tc * ts;
+                }
+                $(subtypeEl).on('change custom-change', recalc);
+                teamsEl.addEventListener('input', recalc);
+                teamsEl.addEventListener('change', recalc);
+                recalc();
+            })();
+
             // --- Бот-ассистент toggle ---
             const botChk = document.getElementById('bot_assistant_enabled_edit');
             const botSettings = document.getElementById('bot_settings_edit');
@@ -1764,71 +1815,6 @@
         });
     })();
 
-    // --- Начало регистрации: подсказка с датой/временем ---
-    (function() {
-        var dSel  = document.getElementById('mgmt_reg_starts_d');
-        var hSel  = document.getElementById('mgmt_reg_starts_h');
-        var hint  = document.getElementById('mgmt_reg_starts_hint');
-        var startsInput = document.querySelector('input[name="starts_at"]');
-        var tzInput     = document.querySelector('input[name="timezone"]');
-        if (!dSel || !hSel || !hint) return;
-
-        function localToUTC(startsVal, tz) {
-            if (!startsVal || !tz) return null;
-            try {
-                var naiveUTC = new Date(startsVal + ':00Z');
-                var parts = new Intl.DateTimeFormat('en-CA', {
-                    timeZone: tz, hour12: false,
-                    year: 'numeric', month: '2-digit', day: '2-digit',
-                    hour: '2-digit', minute: '2-digit'
-                }).formatToParts(naiveUTC);
-                var get = function(t) { return parts.find(function(p){return p.type===t;}).value; };
-                var tzMs = new Date(get('year')+'-'+get('month')+'-'+get('day')+'T'+get('hour')+':'+get('minute')+':00Z').getTime();
-                return new Date(naiveUTC.getTime() - (tzMs - naiveUTC.getTime()));
-            } catch(e) { return null; }
-        }
-
-        function updateHint() {
-            var startsVal = startsInput ? startsInput.value : '';
-            var tz = tzInput ? tzInput.value : '';
-            var d = parseInt(dSel.value, 10) || 0;
-            var h = parseInt(hSel.value, 10) || 0;
-            if (!startsVal || !tz) { hint.textContent = ''; return; }
-            var startsUTC = localToUTC(startsVal, tz);
-            if (!startsUTC) { hint.textContent = ''; return; }
-            var regUTC = new Date(startsUTC.getTime() - (d * 86400 + h * 3600) * 1000);
-            try {
-                var fmt = new Intl.DateTimeFormat('ru-RU', {
-                    timeZone: tz, day: '2-digit', month: '2-digit', year: 'numeric',
-                    hour: '2-digit', minute: '2-digit', hour12: false
-                });
-                hint.textContent = '→ Регистрация откроется ' + fmt.format(regUTC) + ' (' + tz + ')';
-            } catch(e) { hint.textContent = ''; }
-        }
-
-        dSel.addEventListener('change', updateHint);
-        hSel.addEventListener('change', updateHint);
-        if (startsInput) startsInput.addEventListener('input', updateHint);
-        updateHint();
-    })();
-
-    // --- Авторасчёт макс. игроков (Команды × состав команды) ---
-    (function() {
-        var subtypeEl = document.getElementById('mgmt_game_subtype');
-        var teamsEl   = document.getElementById('mgmt_teams_count');
-        var maxEl     = document.getElementById('mgmt_game_max_players');
-        if (!subtypeEl || !teamsEl || !maxEl) return;
-        // Размер команды для каждого формата (количество игроков в составе одной команды)
-        var sizes = { '2x2': 2, '3x3': 3, '4x4': 4, '4x2': 6, '5x1': 6, '5x1_libero': 7 };
-        function recalc() {
-            var tc = parseInt(teamsEl.value, 10) || 0;
-            var ts = sizes[subtypeEl.value] || 0;
-            maxEl.value = tc * ts;
-        }
-        subtypeEl.addEventListener('change', recalc);
-        teamsEl.addEventListener('input', recalc);
-        recalc();
-    })();
 </script>
     </x-slot>
 
