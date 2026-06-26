@@ -231,7 +231,11 @@ $fCity     = request('city', '');
 									autocomplete="off"
 									list="location-datalist"
                                     >
-                                    <datalist id="location-datalist"></datalist>
+                                    <datalist id="location-datalist">
+                                    @foreach($activeLocationNames ?? [] as $locName)
+                                    <option value="{{ e($locName) }}">
+                                    @endforeach
+                                    </datalist>
 								</div>
 								
 								<div class="col-12 d-flex flex-wrap gap-2 align-items-center">
@@ -642,27 +646,6 @@ $fCity     = request('city', '');
 				window.toggleAllImgs = function(btn) {
 					applyImgState(!_allHidden);
 				};
-				// ===== Location autocomplete =====
-				(function () {
-					var datalist = document.getElementById('location-datalist');
-					var input    = document.getElementById('filter-location-input');
-					if (!datalist || !input) return;
-
-					$.ajax({
-						url: '/ajax/locations/with-events',
-						data: { active: 1 },
-						dataType: 'json',
-						xhrFields: { withCredentials: true },
-						success: function(data) {
-							if (!data.ok || !Array.isArray(data.items)) return;
-							data.items.forEach(function(item) {
-								var opt = document.createElement('option');
-								opt.value = item.name;
-								datalist.appendChild(opt);
-							});
-						}
-					});
-				})();
 			</script>
 		</x-slot>	
 		

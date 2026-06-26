@@ -284,13 +284,30 @@ class EventIndexService
 
         [$joinedIds,$restrictedIds] = $this->joinedIds('occurrence_id');
 
+        $now = now('UTC');
+        $activeLocationNames = DB::table('locations as l')
+            ->whereExists(function ($sub) use ($now) {
+                $sub->selectRaw('1')
+                    ->from('event_occurrences as eo')
+                    ->join('events as e', 'e.id', '=', 'eo.event_id')
+                    ->where(function ($w) {
+                        $w->whereColumn('eo.location_id', 'l.id')
+                          ->orWhereColumn('e.location_id', 'l.id');
+                    })
+                    ->where('eo.starts_at', '>', $now)
+                    ->whereNull('eo.cancelled_at');
+            })
+            ->orderBy('l.name')
+            ->pluck('l.name');
+
         return view('events.index',[
             'occurrences' => $occurrences,
             'joinedOccurrenceIds' => $joinedIds,
             'restrictedOccurrenceIds' => $restrictedIds,
             'events' => collect(),
             'joinedEventIds' => [],
-            'restrictedEventIds' => []
+            'restrictedEventIds' => [],
+            'activeLocationNames' => $activeLocationNames,
         ]);
     }
 
