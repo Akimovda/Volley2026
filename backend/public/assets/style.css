@@ -4444,6 +4444,31 @@ body.dark .btn-outline-primary:hover {
     .org-nav-grid { grid-template-columns: 1fr; }
 }
 
+/* === Section title row: заголовок слева + кнопка справа ================= */
+.section-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.2rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.8rem;
+}
+/* h2 внутри строки: сжимается если мало места, не выталкивает кнопку */
+.ramka .section-title-row h2,
+.card-ramka .section-title-row h2 {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin-bottom: 0;     /* margin переехал на .section-title-row */
+}
+/* кнопка: не сжимается, не растягивается, прижата вправо */
+.section-title-row .btn {
+    flex: 0 0 auto;
+}
+/* очень узкий экран: кнопка на строку ниже, по правому краю */
+@media (max-width: 380px) {
+    .section-title-row .btn { margin-left: auto; }
+}
+
 .join-backdrop.hidden { display:none; }
 .join-backdrop { position:fixed; inset:0; z-index:1050; background:rgba(0,0,0,.55); }
 .join-modal { max-width: 720px; width: 100%; background:#fff; border-radius:16px; overflow:hidden; box-shadow: 0 20px 60px rgba(0,0,0,.25); }

@@ -163,7 +163,7 @@
 
         @if($orgTournaments->isNotEmpty())
         <div class="ramka">
-            <div class="d-flex justify-content-between align-items-center">
+            <div class="section-title-row">
                 <h2 class="-mt-05">🏆 Турниры</h2>
                 <a href="{{ route('org.tournament-analytics') }}" class="btn btn-outline-primary btn-sm">📊 Аналитика турниров</a>
             </div>
@@ -264,7 +264,7 @@
             <div class="row row2">
                 <div class="col-md-6">
 				<div class="ramka">
-                    <div class="d-flex justify-content-between align-items-center">
+                    <div class="section-title-row">
                         <h2 class="-mt-05">🏆 Самые активные игроки</h2>
                         <a href="{{ route('org.players') }}" class="btn btn-outline-primary btn-sm">👥 Подробнее</a>
                     </div>
