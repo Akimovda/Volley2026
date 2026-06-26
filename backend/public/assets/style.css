@@ -4379,9 +4379,24 @@ body.dark .wizard-pill.is-active {
 }	
 
 
-.events-page .day-chip { padding: 1rem 1.8rem; min-width: 5rem; scroll-snap-align: start; text-align:center; cursor:pointer; user-select:none; line-height: 1.15; }
+.events-page .day-chip { padding: 1rem 1.8rem 0.9rem; min-width: 5rem; scroll-snap-align: start; text-align:center; cursor:pointer; user-select:none; line-height: 1.15; border-bottom: 3px solid transparent; }
 .events-page .day-chip .dc-date { font-weight: 600; }
 .events-page .day-chip .dc-dow  { font-size: 12px; opacity: .85; margin-top: 2px; }
+/* Убираем подвижный пилл — только для пикера дней на /events */
+.events-page .event-dates-ramka .tab-highlight { display: none; }
+/* Активный день — подчёркивание вместо заливки */
+.events-page .day-chip.active {
+    background: transparent;
+    color: #2967BA;
+    border-bottom-color: #2967BA;
+    border-radius: 0;
+    text-shadow: none;
+}
+/* Тёмная тема — оранжевое подчёркивание */
+body.dark .events-page .day-chip.active {
+    color: #E7612F;
+    border-bottom-color: #E7612F;
+}
 
 .join-backdrop.hidden { display:none; }
 .join-backdrop { position:fixed; inset:0; z-index:1050; background:rgba(0,0,0,.55); }
