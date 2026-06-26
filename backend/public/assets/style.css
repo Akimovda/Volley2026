@@ -4392,8 +4392,8 @@ body.dark .wizard-pill.is-active {
     border-radius: 0;
     text-shadow: none;
 }
-/* Тёмная тема — оранжевое подчёркивание */
-body.dark .events-page .day-chip.active {
+/* Тёмная тема — оранжевое подчёркивание (events-page на самом body) */
+body.dark.events-page .day-chip.active {
     color: #E7612F;
     border-bottom-color: #E7612F;
 }
