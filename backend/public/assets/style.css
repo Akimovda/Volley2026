@@ -4880,6 +4880,8 @@ body.dark .progress { background: rgba(255,255,255,0.12); }
 .is-app body.dark #app-back-btn:active {
 	background: rgba(0, 0, 0, 0.95);
 }
+/* Скрыть на стартовом экране /events (history.length в WKWebView ненадёжен) */
+.is-app .events-page #app-back-btn { display: none; }
 
 /* ─── Нативные кнопки (Capacitor) ─────────────────────────── */
 .native-actions {

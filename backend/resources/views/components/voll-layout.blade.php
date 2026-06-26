@@ -7,7 +7,7 @@
 	<head>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-		<script>if(navigator.userAgent.includes('VolleyPlayApp')){document.documentElement.classList.add('is-app');window.addEventListener('load',function(){var btn=document.getElementById('app-back-btn');if(btn&&window.history.length<=1){btn.style.display='none';}});}</script>
+		<script>if(navigator.userAgent.includes('VolleyPlayApp')){document.documentElement.classList.add('is-app');window.addEventListener('load',function(){var btn=document.getElementById('app-back-btn');if(!btn)return;var path=window.location.pathname.replace(/\/$/,'')||'/';var roots=['/','/events'];if(roots.indexOf(path)!==-1||window.history.length<=1){btn.style.display='none';}});}</script>
 		<script>
 			if(navigator.userAgent.includes('VolleyPlayApp')){
 				document.addEventListener('click',function(e){
