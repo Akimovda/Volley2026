@@ -25,7 +25,7 @@
     </x-slot>
 
     <x-slot name="d_description">
-        <div class="d-flex gap-1 mt-2 flex-wrap">
+        <div class="org-nav-grid">
             <a href="{{ route('events.create.event_management') }}" class="btn btn-secondary">{{ __('profile.dash_org_btn_my_events') }}</a>
             <a href="{{ route('org.players') }}" class="btn btn-secondary">👥 Аналитика игроков</a>
             <a href="{{ route('profile.payment_settings') }}" class="btn btn-secondary">{{ __('profile.dash_org_btn_pay_settings') }}</a>
