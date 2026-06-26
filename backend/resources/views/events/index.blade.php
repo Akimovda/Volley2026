@@ -222,20 +222,12 @@ $fCity     = request('city', '');
 								
                                 <div class="col-12 col-md-4">
                                     <label class="form-label mb-1">{{ __('events.filter_location') }}</label>
-                                    <input type="text"
-									name="location"
-									class="form-control"
-									placeholder="{{ __('events.filter_location_ph') }}"
-									value="{{ e($fLocation) }}"
-									id="filter-location-input"
-									autocomplete="off"
-									list="location-datalist"
-                                    >
-                                    <datalist id="location-datalist">
-                                    @foreach($activeLocationNames ?? [] as $locName)
-                                    <option value="{{ e($locName) }}">
-                                    @endforeach
-                                    </datalist>
+                                    <select name="location" class="form-select">
+                                        <option value="">{{ __('events.filter_any') }}</option>
+                                        @foreach($activeLocationNames ?? [] as $locName)
+                                        <option value="{{ e($locName) }}" {{ $fLocation === $locName ? 'selected' : '' }}>{{ e($locName) }}</option>
+                                        @endforeach
+                                    </select>
 								</div>
 								
 								<div class="col-12 d-flex flex-wrap gap-2 align-items-center">
