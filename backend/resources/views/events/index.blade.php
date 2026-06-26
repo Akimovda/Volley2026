@@ -553,7 +553,11 @@ $fCity     = request('city', '');
 				}
 				
 				document.querySelectorAll('.day-chip').forEach(chip => {
-					chip.addEventListener('click', (e) => { e.preventDefault(); activateTab(chip.dataset.tab); });
+					chip.addEventListener('click', (e) => {
+						if (!chip.dataset.tab) return; // кнопка смены диапазона — пропускаем href
+						e.preventDefault();
+						activateTab(chip.dataset.tab);
+					});
 				});
 				
 				(function initToday() {
