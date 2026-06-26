@@ -553,7 +553,7 @@ $fCity     = request('city', '');
 				}
 				
 				document.querySelectorAll('.day-chip').forEach(chip => {
-					chip.addEventListener('click', () => activateTab(chip.dataset.tab));
+					chip.addEventListener('click', (e) => { e.preventDefault(); activateTab(chip.dataset.tab); });
 				});
 				
 				(function initToday() {
@@ -564,8 +564,9 @@ $fCity     = request('city', '');
 					const todayChip = todayKey ? chips.find(c => c.dataset.date === todayKey) : null;
 					if (todayChip) {
 						activateTab(todayChip.dataset.tab);
-						todayChip.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-						} else {
+						// горизонтальный скролл полосы дней — только inline, без вертикального сдвига страницы
+						todayChip.scrollIntoView({ behavior: 'instant', inline: 'center', block: 'nearest' });
+					} else {
 						activateTab(chips[0].dataset.tab);
 					}
 				})();
