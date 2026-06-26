@@ -647,21 +647,21 @@ $fCity     = request('city', '');
 					var datalist = document.getElementById('location-datalist');
 					var input    = document.getElementById('filter-location-input');
 					if (!datalist || !input) return;
-					
-					fetch('/ajax/locations/with-events?active=1', {
-						headers: { 'Accept': 'application/json' },
-						credentials: 'same-origin',
-					})
-					.then(function(r) { return r.json(); })
-					.then(function(data) {
-						if (!data.ok || !Array.isArray(data.items)) return;
-						data.items.forEach(function(item) {
-							var opt = document.createElement('option');
-							opt.value = item.name;
-							datalist.appendChild(opt);
-						});
-					})
-					.catch(function() {});
+
+					$.ajax({
+						url: '/ajax/locations/with-events',
+						data: { active: 1 },
+						dataType: 'json',
+						xhrFields: { withCredentials: true },
+						success: function(data) {
+							if (!data.ok || !Array.isArray(data.items)) return;
+							data.items.forEach(function(item) {
+								var opt = document.createElement('option');
+								opt.value = item.name;
+								datalist.appendChild(opt);
+							});
+						}
+					});
 				})();
 			</script>
 		</x-slot>	
