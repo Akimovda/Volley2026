@@ -84,23 +84,16 @@ $groupedByDate[$dateKey] = ['date' => $date, 'occurrences' => []];
     $daysOfWeek = __('events.dow_short');
 	
     $formatOptions = [];
-    $levelOptions  = [];
     if ($hasOcc) {
 	foreach ($occList as $occ) {
 	$e = $occ->event;
 	if (!$e) continue;
-	
 	$fmt = (string)($e->format ?? '');
 	if ($fmt !== '') $formatOptions[$fmt] = $fmt;
-	
-	foreach (['classic_level_min','classic_level_max','beach_level_min','beach_level_max'] as $col) {
-	$v = $e->{$col} ?? null;
-	if (!is_null($v) && is_numeric($v)) $levelOptions[(int)$v] = (int)$v;
-	}
 	}
     }
     ksort($formatOptions);
-    ksort($levelOptions);
+    $levelOptions = [1, 2, 3, 4, 5, 6, 7];
 	@endphp
 	
 	<x-voll-layout body_class="events-page">
@@ -222,7 +215,7 @@ $fCity     = request('city', '');
 									<select name="level" class="form-select">
 										<option value="" {{ $fLevel==='' ? 'selected' : '' }}>{{ __('events.filter_any_level') }}</option>
 										@foreach(($levelOptions ?? []) as $lv)
-										<option value="{{ (int)$lv }}" {{ (string)$fLevel===(string)$lv ? 'selected' : '' }}>{{ (int)$lv }}</option>
+										<option value="{{ (int)$lv }}" {{ (string)$fLevel===(string)$lv ? 'selected' : '' }}>{{ __('events.filter_level_' . $lv) }}</option>
 										@endforeach
 									</select>
 								</div>
