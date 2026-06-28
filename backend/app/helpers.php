@@ -37,6 +37,16 @@ if (! function_exists('level_name')) {
     }
 }
 
+if (! function_exists('level_name_short')) {
+    function level_name_short($level): string
+    {
+        $level = (int) $level;
+        $key = 'events.level_short_' . $level;
+        $translated = __($key);
+        return $translated !== $key ? $translated : (string) $level;
+    }
+}
+
 // =========================
 // Arrays / Old helpers
 // =========================

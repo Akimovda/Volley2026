@@ -211,6 +211,7 @@
 					transition: all 0.2s ease;
 					font-size: 1.4rem;
 					line-height: 1.4;
+					white-space: normal;
 					box-shadow: 0 0.2rem 0.4rem rgba(0, 0, 0, 0.03);
 					}
 					

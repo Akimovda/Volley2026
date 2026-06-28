@@ -176,11 +176,11 @@
                     <span>
                         Уровень:
                         @if(!is_null($ev['level_min']))
-                            <span class="levelmark level-{{ $ev['level_min'] }}">{{ $ev['level_min'] }}</span>
+                            <span class="levelmark level-{{ $ev['level_min'] }}">{{ __('events.level_short_' . $ev['level_min']) }}</span>
                         @endif
                         —
                         @if(!is_null($ev['level_max']))
-                            <span class="levelmark level-{{ $ev['level_max'] }}">{{ $ev['level_max'] }}</span>
+                            <span class="levelmark level-{{ $ev['level_max'] }}">{{ __('events.level_short_' . $ev['level_max']) }}</span>
                         @endif
                     </span>
                 </div>
