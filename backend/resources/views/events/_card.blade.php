@@ -152,12 +152,12 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 			$minText = $lvMin !== null ? level_name_short($lvMin) : '—';
 			$maxText = $lvMax !== null ? level_name_short($lvMax) : '—';
 			$minSpan = $lvMin !== null
-			? "<span class=\"levelmark level-{$lvMin}\">" . e($minText) . "</span>"
-			: '<span class="levelmark level-minus">—</span>';
+			? "<span class=\"levelmark levelmark--event level-{$lvMin}\">" . e($minText) . "</span>"
+			: '<span class="levelmark levelmark--event level-minus">—</span>';
 
 			$maxSpan = $lvMax !== null
-			? "<span class=\"levelmark level-{$lvMax}\">" . e($maxText) . "</span>"
-			: '<span class="levelmark level-minus">—</span>';
+			? "<span class=\"levelmark levelmark--event level-{$lvMax}\">" . e($maxText) . "</span>"
+			: '<span class="levelmark levelmark--event level-minus">—</span>';
 
 			$levelLabel = '<div class="level-range">' . $minSpan . '<span class="level-range-sep">—</span>' . $maxSpan . '</div>';
 			}

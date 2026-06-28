@@ -441,12 +441,18 @@ strong.levelmark {
 	align-items: center;
 	gap: 0.4rem;
 	justify-content: center;
-	flex-wrap: wrap;
+	flex-wrap: nowrap;
 }
 .level-range-sep {
-	font-size: 1.4rem;
+	font-size: 1.2rem;
 	color: #888;
 	line-height: 1;
+}
+.levelmark--event {
+	height: 2.4rem;
+	padding: 0 0.6rem;
+	font-size: 1.1rem;
+	border-radius: 1.2rem;
 }
 body.dark .levelmark {
 	border: 1px solid #222333;
