@@ -130,7 +130,7 @@
             <div class="user-level-label">{{ __('profile.card_lvl_classic') }}</div>
             <div class="user-level-value">
                 @if($classicLevel)
-                    <span class="levelmark level-{{ $classicLevel }}">{{ $classic }}</span>
+                    <span class="levelmark level-{{ $classicLevel }}">{{ __('events.level_short_' . $classicLevel) }}</span>
                 @else
                     <span class="levelmark level-na">!?</span>
                 @endif
@@ -140,7 +140,7 @@
             <div class="user-level-label">{{ __('profile.card_lvl_beach') }}</div>
             <div class="user-level-value">
                 @if($beachLevel)
-                    <span class="levelmark level-{{ $beachLevel }}">{{ $beach }}</span>
+                    <span class="levelmark level-{{ $beachLevel }}">{{ __('events.level_short_' . $beachLevel) }}</span>
                 @else
                     <span class="levelmark level-na">!?</span>
                 @endif

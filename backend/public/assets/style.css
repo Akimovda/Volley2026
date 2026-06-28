@@ -407,16 +407,17 @@ body.dark ol li::before {
 }
 .levelmark {
 	font-weight: bold;
-	font-size:1.4rem;
+	font-size: 1.2rem;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-	min-height: 3.2rem;
+	height: 3.2rem;
 	border: 1px solid #fff;
-	min-width: 3.2rem;
+	padding: 0 0.8rem;
 	border-radius: 3.2rem;
 	line-height: 1;
-	box-shadow: 0 0.4rem 1.2rem rgba(0, 0, 0, 0.08);	
+	white-space: nowrap;
+	box-shadow: 0 0.4rem 1.2rem rgba(0, 0, 0, 0.08);
 	position: relative;
 	overflow: hidden;
 }
@@ -427,13 +428,25 @@ body.dark ol li::before {
     left: 0;
     right: 0;
     height: 40%;
-    background: linear-gradient(to bottom, 
-	rgba(255, 255, 255, 0.2), 
+    background: linear-gradient(to bottom,
+	rgba(255, 255, 255, 0.2),
 	rgba(255, 255, 255, 0));
     pointer-events: none;
 }
 strong.levelmark {
-	padding: 0 2rem;
+	padding: 0 1.2rem;
+}
+.level-range {
+	display: flex;
+	align-items: center;
+	gap: 0.4rem;
+	justify-content: center;
+	flex-wrap: wrap;
+}
+.level-range-sep {
+	font-size: 1.4rem;
+	color: #888;
+	line-height: 1;
 }
 body.dark .levelmark {
 	border: 1px solid #222333;
@@ -4208,10 +4221,11 @@ body.dark .badge.badge-muted {
     flex-flow: column;
 	text-align: center;
     align-items: center;
-    justify-content: center;	
+    justify-content: center;
 	text-transform: uppercase;
 	font-weight: 600;
 	border-radius: 1rem;
+	white-space: normal;
 }
 .level-level {
 	padding-left: 1rem;
