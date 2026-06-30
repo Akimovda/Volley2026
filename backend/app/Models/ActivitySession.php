@@ -14,7 +14,7 @@ class ActivitySession extends Model
         'avg_hr', 'max_hr', 'min_hr',
         'time_in_zone', 'load_score', 'samples_count', 'calories_kcal', 'calorie_source',
         'jump_count', 'jump_avg_height_cm', 'jump_max_height_cm', 'tracked_capabilities',
-        'steps',
+        'steps', 'jump_count_expected', 'jump_count_mismatch',
     ];
 
     protected $casts = [
@@ -29,6 +29,8 @@ class ActivitySession extends Model
         'duration_sec'         => 'integer',
         'samples_count'        => 'integer',
         'jump_count'           => 'integer',
+        'jump_count_expected'  => 'integer',
+        'jump_count_mismatch'  => 'integer',
     ];
 
     public function user(): BelongsTo
