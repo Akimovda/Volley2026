@@ -78,11 +78,14 @@ class ActivitySessionController extends Controller
 
         $validated = $request->validate([
             'active_energy_kcal' => ['nullable', 'numeric', 'min:0', 'max:5000'],
+            'steps'              => ['nullable', 'integer', 'min:0'],
         ]);
 
         $activeEnergyKcal = isset($validated['active_energy_kcal']) && $validated['active_energy_kcal'] > 0
             ? (float) $validated['active_energy_kcal']
             : null;
+
+        $session->steps = (int) ($validated['steps'] ?? 0);
 
         $session   = $this->service->finalize($session, $activeEnergyKcal);
         $jumpTrend = $this->service->heightTrend($session);

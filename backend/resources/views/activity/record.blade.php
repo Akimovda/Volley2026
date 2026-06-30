@@ -72,6 +72,16 @@
                             <a href="{{ route('profile.athlete') }}">{{ __('activity.my_devices') }}</a>
                         </div>
 
+                        {{-- Баннер восстановления прерванной сессии --}}
+                        <div id="ble-recovery-banner" style="display:none" class="alert alert-warning mb-2">
+                            <strong>{{ __('activity.recovery_title') }}</strong><br>
+                            {{ __('activity.recovery_body') }}
+                            <div class="mt-1" style="display:flex;gap:.5rem;flex-wrap:wrap">
+                                <button id="ble-recovery-upload" class="btn btn-sm">{{ __('activity.recovery_upload') }}</button>
+                                <button id="ble-recovery-discard" class="btn btn-sm btn-secondary">{{ __('activity.recovery_discard') }}</button>
+                            </div>
+                        </div>
+
                         {{-- ФАЗА: idle --}}
                         <div id="ble-phase-idle">
                             <div id="ble-connect-error" class="alert alert-danger mb-1" style="display:none"></div>
@@ -130,6 +140,12 @@
                                 <div style="font-size:3rem;font-weight:700;opacity:.4" id="ble-bpm">–</div>
                             </div>
                             <button id="ble-btn-stop" class="btn btn-danger w-100">{{ __('activity.stop') }}</button>
+                        </div>
+
+                        {{-- ФАЗА: disconnected — реконнект исчерпан --}}
+                        <div id="ble-phase-disconnected" style="display:none">
+                            <div class="alert alert-danger">{{ __('activity.disconnected_permanent') }}</div>
+                            <button id="ble-btn-reconnect-manual" class="btn w-100 mt-1">{{ __('activity.try_again') }}</button>
                         </div>
 
                         {{-- ФАЗА: stopping --}}

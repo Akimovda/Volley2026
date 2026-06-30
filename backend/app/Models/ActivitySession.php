@@ -14,6 +14,7 @@ class ActivitySession extends Model
         'avg_hr', 'max_hr', 'min_hr',
         'time_in_zone', 'load_score', 'samples_count', 'calories_kcal', 'calorie_source',
         'jump_count', 'jump_avg_height_cm', 'jump_max_height_cm', 'tracked_capabilities',
+        'steps',
     ];
 
     protected $casts = [

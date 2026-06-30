@@ -8,10 +8,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class AthleteDevice extends Model
 {
-    protected $fillable = ['user_id', 'name', 'protocol', 'ble_identifier', 'model', 'last_connected_at'];
+    protected $fillable = ['user_id', 'name', 'protocol', 'ble_identifier', 'model', 'last_connected_at', 'auto_start'];
 
     protected $casts = [
         'last_connected_at' => 'datetime',
+        'auto_start'        => 'boolean',
     ];
 
     public function user(): BelongsTo

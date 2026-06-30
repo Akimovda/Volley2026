@@ -7,6 +7,7 @@ const HR_MEAS    = '00002a37-0000-1000-8000-00805f9b34fb';
 const FLUSH_INTERVAL_MS  = 10_000;
 const RECONNECT_MAX      = 10;
 const RECONNECT_DELAY_MS = 3_000;
+const LS_SESSION_KEY     = 'ble_pending_session_v1';
 
 const state = {
     phase:      'idle', // idle | connecting | connected | recording | reconnecting | stopping | done
@@ -70,7 +71,7 @@ const el = id => document.getElementById(id);
 
 function setPhase(phase) {
     state.phase = phase;
-    const phases = ['idle', 'connecting', 'connected', 'recording', 'reconnecting', 'stopping', 'done'];
+    const phases = ['idle', 'connecting', 'connected', 'recording', 'reconnecting', 'stopping', 'done', 'disconnected'];
     phases.forEach(p => {
         const block = el('ble-phase-' + p);
         if (block) block.style.display = (p === phase) ? '' : 'none';
@@ -187,6 +188,84 @@ function renderSummary(data) {
     }
 }
 
+// ── Session persistence (localStorage) ───────────────────────────────────────
+
+function persistSession() {
+    if (!state.sessionId) return;
+    try {
+        localStorage.setItem(LS_SESSION_KEY, JSON.stringify({
+            sessionId:  state.sessionId,
+            t0:         state.t0,
+            deviceId:   state.deviceId,
+            dbDeviceId: state.dbDeviceId,
+            buffer:     state.buffer,
+            savedAt:    Date.now(),
+        }));
+    } catch (e) {
+        console.warn('[BLE] localStorage write failed:', e);
+    }
+}
+
+function clearPersistedSession() {
+    try { localStorage.removeItem(LS_SESSION_KEY); } catch {}
+}
+
+function checkPendingSession() {
+    let saved;
+    try {
+        const raw = localStorage.getItem(LS_SESSION_KEY);
+        if (!raw) return;
+        saved = JSON.parse(raw);
+    } catch { return; }
+
+    // Если сессия старше 4 часов — считаем мёртвой
+    if (!saved.sessionId || (Date.now() - saved.savedAt) > 4 * 60 * 60 * 1000) {
+        clearPersistedSession();
+        return;
+    }
+
+    const banner = el('ble-recovery-banner');
+    if (banner) {
+        banner.style.display = '';
+        const btn = el('ble-recovery-upload');
+        if (btn) btn.addEventListener('click', () => resumeUpload(saved));
+        const btnDiscard = el('ble-recovery-discard');
+        if (btnDiscard) btnDiscard.addEventListener('click', () => {
+            clearPersistedSession();
+            banner.style.display = 'none';
+        });
+    }
+}
+
+async function resumeUpload(saved) {
+    const banner = el('ble-recovery-banner');
+    if (banner) banner.style.display = 'none';
+
+    if (saved.buffer && saved.buffer.length > 0) {
+        try {
+            await ajaxPost(
+                `/api/activity/sessions/${saved.sessionId}/samples`,
+                { samples: saved.buffer }
+            );
+        } catch (e) {
+            console.warn('[BLE] recovery flush failed:', e);
+        }
+    }
+
+    try {
+        const summary = await ajaxPost(
+            `/api/activity/sessions/${saved.sessionId}/finalize`,
+            {}
+        );
+        clearPersistedSession();
+        renderSummary(summary);
+        setPhase('done');
+    } catch (e) {
+        console.error('[BLE] recovery finalize failed:', e);
+        alert('Не удалось завершить предыдущую сессию. Попробуйте позже.');
+    }
+}
+
 // ── Flush buffer ─────────────────────────────────────────────────────────────
 
 async function flushOnce() {
@@ -194,6 +273,7 @@ async function flushOnce() {
     const batch = state.buffer.splice(0);
     try {
         await ajaxPost(`/api/activity/sessions/${state.sessionId}/samples`, { samples: batch });
+        persistSession();
     } catch {
         state.buffer.unshift(...batch); // keep for next attempt (idempotent ingest)
     }
@@ -286,6 +366,9 @@ async function connectSensor() {
         return;
     }
 
+    const connectErrEl = el('ble-connect-error');
+    if (connectErrEl) { connectErrEl.style.display = 'none'; connectErrEl.textContent = ''; }
+
     setPhase('connecting');
     const paired = bleList[0];
     try {
@@ -302,10 +385,24 @@ async function connectSensor() {
         if (nameEl) nameEl.textContent = paired.name || paired.ble_identifier;
 
     } catch (e) {
-        console.error('[BLE] connect failed:', e);
+        console.warn('[BLE connect error]', e.message, e);
         setPhase('idle');
         const errEl = el('ble-connect-error');
-        if (errEl) { errEl.textContent = e.message || 'Ошибка подключения'; errEl.style.display = ''; }
+        if (errEl) {
+            let userMsg = e.message || 'Неизвестная ошибка';
+            if (e.message?.includes('timeout') || e.message?.includes('Timeout')) {
+                userMsg = 'Не удалось подключиться. Проверьте: датчик включён, '
+                        + 'находится рядом и не подключён к другому устройству. '
+                        + 'Попробуйте выключить и включить датчик.';
+            } else if (e.message?.includes('permission') || e.message?.includes('Permission')) {
+                userMsg = 'Нет разрешения на Bluetooth. '
+                        + 'Разрешите доступ в настройках телефона.';
+            } else if (e.message?.includes('disabled') || e.message?.includes('Bluetooth is disabled')) {
+                userMsg = 'Bluetooth выключен. Включите Bluetooth и попробуйте снова.';
+            }
+            errEl.textContent  = userMsg;
+            errEl.style.display = '';
+        }
     }
 }
 
@@ -491,6 +588,7 @@ async function startSession() {
     state.sessionId = sessionId;
     state.t0        = Date.now();
     state.buffer    = [];
+    persistSession();
 
     try { await KeepAwake.keepAwake(); } catch {}
 
@@ -517,6 +615,7 @@ async function stopSession() {
 
     try {
         const summary = await ajaxPost(`/api/activity/sessions/${state.sessionId}/finalize`, {});
+        clearPersistedSession();
         renderSummary(summary);
     } catch (e) {
         console.error('[BLE] finalize failed:', e);
@@ -644,6 +743,15 @@ window.initBleActivity = function (cfg) {
     if (btnStart)   btnStart.addEventListener('click',   () => startSession());
     if (btnStop)    btnStop.addEventListener('click',    () => stopSession());
     if (btnDone)    btnDone.addEventListener('click',    () => { window.location.href = '/profile/athlete'; });
+
+    const btnReconnectManual = el('ble-btn-reconnect-manual');
+    if (btnReconnectManual) btnReconnectManual.addEventListener('click', () => {
+        state.reconnectAttempts = 0;
+        setPhase('reconnecting');
+        scheduleReconnect();
+    });
+
+    checkPendingSession();
 
     const consentCheckbox = el('ble-consent-checkbox');
     if (consentCheckbox) {
