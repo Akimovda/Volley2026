@@ -860,7 +860,8 @@ return [
     'occ_reg_enabled'        => 'Enabled',
     'occ_reg_starts_days'    => 'Registration opens (days before)',
     'occ_reg_ends_label'     => 'Registration closes (before start)',
-    'occ_cancel_label'       => 'Cancellation lock (before start)',
+    'occ_cancel_label'          => 'Cancellation lock (before start)',
+    'occ_cancel_waitlist_label' => 'Cancellation lock (waitlist)',
 
     'occ_remind_title'       => 'Reminder',
     'occ_remind_enabled'     => 'Reminder enabled',

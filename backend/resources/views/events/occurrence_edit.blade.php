@@ -37,6 +37,15 @@
     $cancelHours = (int) floor($cancelMin / 60);
     $cancelMins = $cancelMin % 60;
 
+    $cancelWaitlistMin = 0;
+    if ($occStarts && $occurrence->cancel_self_until_waitlist) {
+        $cancelWaitlistMin = (int) \Carbon\Carbon::parse($occurrence->cancel_self_until_waitlist)->diffInMinutes($occStarts);
+    } elseif ($event->starts_at && $event->cancel_self_until_waitlist) {
+        $cancelWaitlistMin = (int) \Carbon\Carbon::parse($event->cancel_self_until_waitlist)->diffInMinutes(\Carbon\Carbon::parse($event->starts_at));
+    }
+    $cancelWaitlistHours = (int) floor($cancelWaitlistMin / 60);
+    $cancelWaitlistMins = $cancelWaitlistMin % 60;
+
     $remEnabled = !is_null($occurrence->remind_registration_enabled) ? (bool) $occurrence->remind_registration_enabled : (bool) ($event->remind_registration_enabled ?? false);
     $remMin = (int) ($occurrence->remind_registration_minutes_before ?? $event->remind_registration_minutes_before ?? 600);
     $remH = (int) floor($remMin / 60);
@@ -134,31 +143,54 @@
             @csrf @method('PUT')
 
             {{-- ============ ПЛАШКА: УНАСЛЕДОВАНО ОТ СЕРИИ ============ --}}
-            @include('events._partials.series_badge')
+            <div style="position:relative;z-index:20">
+                @include('events._partials.series_badge')
+            </div>
 
             {{-- ============ НАЗВАНИЕ И ОПИСАНИЕ ============ --}}
-            @include('events._partials.title_desc')
+            <div style="position:relative;z-index:19">
+                @include('events._partials.title_desc')
+            </div>
 
             {{-- ============ ДАТА И ВРЕМЯ ============ --}}
-            @include('events._partials.datetime')
+            <div style="position:relative;z-index:18">
+                @include('events._partials.datetime')
+            </div>
 
             {{-- ============ ЛОКАЦИЯ И УЧАСТНИКИ ============ --}}
-            @include('events._partials.location_players')
+            <div style="position:relative;z-index:17">
+                @include('events._partials.location_players')
+            </div>
+
+            {{-- ============ РЕГИСТРАЦИЯ ============ --}}
+            <div style="position:relative;z-index:16">
+                @include('events._partials.registration')
+            </div>
 
             {{-- ============ КОМАНДЫ И ИГРОВАЯ СХЕМА ============ --}}
-            @include('events._partials.team_config')
+            <div style="position:relative;z-index:15">
+                @include('events._partials.team_config')
+            </div>
 
             {{-- ============ УРОВЕНЬ И ВОЗРАСТ ============ --}}
-            @include('events._partials.level_age')
+            <div style="position:relative;z-index:14">
+                @include('events._partials.level_age')
+            </div>
 
             {{-- ============ ГЕНДЕРНЫЕ ОГРАНИЧЕНИЯ ============ --}}
-            @include('events._partials.gender')
+            <div style="position:relative;z-index:13">
+                @include('events._partials.gender')
+            </div>
 
             {{-- ============ ОПЛАТА ============ --}}
-            @include('events._partials.payment')
+            <div style="position:relative;z-index:12">
+                @include('events._partials.payment')
+            </div>
 
             {{-- ============ ТРЕНЕР ============ --}}
-            @include('events._partials.trainer')
+            <div style="position:relative;z-index:11">
+                @include('events._partials.trainer')
+            </div>
 
             {{-- ============ КНОПКИ ============ --}}
             <div class="ramka">
@@ -197,6 +229,7 @@
         [
             ['occ_reg_ends_h','occ_reg_ends_m','occ_reg_ends_min'],
             ['occ_cancel_h','occ_cancel_m','occ_cancel_min'],
+            ['occ_cancel_wl_h','occ_cancel_wl_m','occ_cancel_wl_min'],
             ['occ_rem_h','occ_rem_m','occ_rem_min'],
         ].forEach(function(ids) {
             var h = document.getElementById(ids[0]);
