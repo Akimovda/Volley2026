@@ -2,21 +2,26 @@
     Partial: events._partials.registration
 
     Блок "Регистрация" для occurrence_edit: чекбокс allow_registration,
-    начало регистрации (дни до), конец (часы+мин до), запрет отмены (часы+мин до).
+    начало регистрации (дни до), конец (часы+мин до), запрет отмены (часы+мин до),
+    запрет отмены при наличии листа ожидания (часы+мин до).
 
     Expects in scope:
-      - $allowReg      (bool)  — регистрация включена
-      - $regStartsDays (int)   — за сколько дней до начала открывается рег.
-      - $regEndsMin    (int)   — total minutes до начала когда рег. закрывается
-      - $regEndsHours  (int)   — часовая часть $regEndsMin
-      - $regEndsMins   (int)   — минутная часть $regEndsMin
-      - $cancelMin     (int)   — total minutes до начала для запрета отмены
-      - $cancelHours   (int)   — часовая часть $cancelMin
-      - $cancelMins    (int)   — минутная часть $cancelMin
+      - $allowReg             (bool)  — регистрация включена
+      - $regStartsDays        (int)   — за сколько дней до начала открывается рег.
+      - $regEndsMin           (int)   — total minutes до начала когда рег. закрывается
+      - $regEndsHours         (int)   — часовая часть $regEndsMin
+      - $regEndsMins          (int)   — минутная часть $regEndsMin
+      - $cancelMin            (int)   — total minutes до начала для запрета отмены
+      - $cancelHours          (int)   — часовая часть $cancelMin
+      - $cancelMins           (int)   — минутная часть $cancelMin
+      - $cancelWaitlistMin    (int)   — total minutes до начала для запрета отмены (очередь)
+      - $cancelWaitlistHours  (int)   — часовая часть $cancelWaitlistMin
+      - $cancelWaitlistMins   (int)   — минутная часть $cancelWaitlistMin
 
     JS (в occurrence_edit): syncHM привязан к id:
-      - occ_reg_ends_h/m → occ_reg_ends_min
-      - occ_cancel_h/m   → occ_cancel_min
+      - occ_reg_ends_h/m   → occ_reg_ends_min
+      - occ_cancel_h/m     → occ_cancel_min
+      - occ_cancel_wl_h/m  → occ_cancel_wl_min
 --}}
 <div class="ramka">
     <h2 class="-mt-05">{{ __('events.occ_reg_title') }}</h2>
@@ -73,6 +78,24 @@
                     <select id="occ_cancel_m" style="width:auto">
                         @foreach([0,10,15,20,30,40,50] as $m)
                             <option value="{{ $m }}" @selected($cancelMins == $m)>{{ $m }} м</option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <label>{{ __('events.occ_cancel_waitlist_label') }}</label>
+                <input type="hidden" name="cancel_lock_waitlist_minutes_before" id="occ_cancel_wl_min" value="{{ old('cancel_lock_waitlist_minutes_before', $cancelWaitlistMin) }}">
+                <div class="d-flex" style="gap:.5rem">
+                    <select id="occ_cancel_wl_h" style="width:auto">
+                        @for($h = 0; $h <= 24; $h++)
+                            <option value="{{ $h }}" @selected($cancelWaitlistHours == $h)>{{ $h }} ч</option>
+                        @endfor
+                    </select>
+                    <select id="occ_cancel_wl_m" style="width:auto">
+                        @foreach([0,10,15,20,30,40,50] as $m)
+                            <option value="{{ $m }}" @selected($cancelWaitlistMins == $m)>{{ $m }} м</option>
                         @endforeach
                     </select>
                 </div>

@@ -861,7 +861,8 @@ return [
     'occ_reg_enabled'        => 'Включена',
     'occ_reg_starts_days'    => 'Начало рег. (дней до)',
     'occ_reg_ends_label'     => 'Конец рег. (до начала)',
-    'occ_cancel_label'       => 'Запрет отмены (до начала)',
+    'occ_cancel_label'          => 'Запрет отмены (до начала)',
+    'occ_cancel_waitlist_label' => 'Запрет отмены (при наличии очереди)',
 
     'occ_remind_title'       => 'Напоминание',
     'occ_remind_enabled'     => 'Напоминание включено',

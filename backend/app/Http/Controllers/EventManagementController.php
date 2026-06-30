@@ -764,13 +764,33 @@ if ($role === 'admin') {
             : ($eventTrainerIds[0] ?? null);
         $occurrence->trainer_user_id = $effectiveFirst;
 
-        // ===== Персональные данные / Регистрация / Напоминания =====
-        // Эти поля серийные (управляются на уровне event), UI occurrence_edit их
-        // больше не редактирует. Не трогаем их при сохранении — значения
-        // остаются как есть в БД (null = наследование от event).
-        //
-        // Если нужен override по конкретному из этих полей — добавить обратно
-        // блок в blade и здесь.
+        // ===== Окно регистрации (override) =====
+        if (array_key_exists('allow_registration', $data)) {
+            $occurrence->allow_registration = $override(
+                (bool) $data['allow_registration'],
+                (bool) ($event->allow_registration ?? false)
+            );
+        }
+
+        if (isset($data['reg_starts_days_before'])) {
+            $regStartsDaysBefore = (int) $data['reg_starts_days_before'];
+            $occurrence->registration_starts_at = $startsUtc->copy()->subDays($regStartsDaysBefore);
+        }
+
+        if (isset($data['reg_ends_minutes_before'])) {
+            $occurrence->registration_ends_at = $startsUtc->copy()->subMinutes((int) $data['reg_ends_minutes_before']);
+        }
+
+        if (isset($data['cancel_lock_minutes_before'])) {
+            $occurrence->cancel_self_until = $startsUtc->copy()->subMinutes((int) $data['cancel_lock_minutes_before']);
+        }
+
+        if (isset($data['cancel_lock_waitlist_minutes_before'])) {
+            $wlMin = (int) $data['cancel_lock_waitlist_minutes_before'];
+            $occurrence->cancel_self_until_waitlist = $wlMin > 0
+                ? $startsUtc->copy()->subMinutes($wlMin)
+                : null;
+        }
 
         $occurrence->is_individually_edited = true;
         $occurrence->save();
