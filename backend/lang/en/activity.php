@@ -109,6 +109,10 @@ return [
     'reach_hint'             => 'Standing reach — the height you can touch flat-footed with arm raised (measured against a wall). Classic: with shoes; beach: barefoot.',
     'hitting_reach'          => '≈ :cm cm from the floor',
 
+    // Steps
+    'steps'                  => 'Steps',
+    'steps_label'            => '👟 Steps',
+
     // Activity dashboard
     'menu_history'           => '❤️ My Activity',
     'dashboard_title'        => '❤️ My Activity',

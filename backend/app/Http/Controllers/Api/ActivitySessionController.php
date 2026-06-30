@@ -77,8 +77,9 @@ class ActivitySessionController extends Controller
         }
 
         $validated = $request->validate([
-            'active_energy_kcal' => ['nullable', 'numeric', 'min:0', 'max:5000'],
-            'steps'              => ['nullable', 'integer', 'min:0'],
+            'active_energy_kcal'   => ['nullable', 'numeric', 'min:0', 'max:5000'],
+            'steps'                => ['nullable', 'integer', 'min:0'],
+            'expected_jump_count'  => ['nullable', 'integer', 'min:0'],
         ]);
 
         $activeEnergyKcal = isset($validated['active_energy_kcal']) && $validated['active_energy_kcal'] > 0
@@ -87,7 +88,28 @@ class ActivitySessionController extends Controller
 
         $session->steps = (int) ($validated['steps'] ?? 0);
 
+        $expectedJumps = (int) ($validated['expected_jump_count'] ?? 0);
+        if ($expectedJumps > 0) {
+            $session->jump_count_expected = $expectedJumps;
+        }
+
         $session   = $this->service->finalize($session, $activeEnergyKcal);
+
+        if ($expectedJumps > 0) {
+            $actualJumps = $session->jump_count ?? 0;
+            $mismatch    = $expectedJumps - $actualJumps;
+            $session->jump_count_mismatch = $mismatch;
+            $session->saveQuietly();
+
+            if ($mismatch > 0) {
+                Log::warning('[Activity] Jump count mismatch', [
+                    'session_id' => $session->id,
+                    'expected'   => $expectedJumps,
+                    'actual'     => $actualJumps,
+                    'missing'    => $mismatch,
+                ]);
+            }
+        }
         $jumpTrend = $this->service->heightTrend($session);
 
         return response()->json([

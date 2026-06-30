@@ -65,6 +65,11 @@ Route::middleware('auth:sanctum,web')->group(function () {
     Route::post('/activity/sessions/{session}/samples',  [\App\Http\Controllers\Api\ActivitySessionController::class, 'ingestSamples']);
     Route::post('/activity/sessions/{session}/jumps',    [\App\Http\Controllers\Api\ActivityJumpController::class, 'store']);
     Route::post('/activity/sessions/{session}/finalize', [\App\Http\Controllers\Api\ActivitySessionController::class, 'finalize']);
+    Route::get('/activity/stats/weekly', [\App\Http\Controllers\Api\ActivityStatsController::class, 'weekly'])
+        ->middleware('abilities:activity:read');
+
+    // Выдача PAT для iOS-виджета (вызывается из WKWebView по сессионной cookie)
+    Route::post('/widget/token', [\App\Http\Controllers\Api\WidgetTokenController::class, 'issue']);
 });
 
 // Face ID / биометрическая авторизация

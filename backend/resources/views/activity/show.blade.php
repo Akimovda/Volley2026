@@ -170,6 +170,14 @@
                 </div>
                 @endif
 
+                {{-- Шаги --}}
+                @if(($session->steps ?? 0) > 0)
+                <div class="ramka mb-1 text-center">
+                    <div class="f-13" style="opacity:.65">{{ __('activity.steps_label') }}</div>
+                    <div class="b-700 cd" style="font-size:2rem">{{ number_format($session->steps, 0, ',', ' ') }}</div>
+                </div>
+                @endif
+
                 {{-- Кривая ЧСС --}}
                 @if(count($samples) > 0)
                 <div class="ramka mb-1">
