@@ -146,6 +146,16 @@ return [
     'not_now'                 => 'Not now',
     'recording_started_watch' => 'Recording started — stop it on your watch when done',
 
+    // Session recovery
+    'recovery_title'   => 'Unfinished workout found',
+    'recovery_body'    => 'A previous recording was interrupted. Upload the data to the server?',
+    'recovery_upload'  => 'Upload',
+    'recovery_discard' => 'Discard',
+
+    // Connection lost
+    'disconnected_permanent' => 'Sensor connection lost. Reconnection attempts exhausted.',
+    'try_again'              => 'Try again',
+
     // Activity feature announcement (activity:announce)
     'announce_title' => '❤️ Activity Recording — new feature',
     'announce_body'  => "VolleyPlay now supports activity recording: heart rate, load zones and jump tracking via smart watches and heart rate monitors.\n\nData is collected only with your explicit consent when connecting a sensor. It's voluntary — declining has no effect on other features.\n\nPrivacy details: https://volleyplay.club/personal_data_agreement#health-data",

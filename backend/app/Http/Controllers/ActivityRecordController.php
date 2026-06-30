@@ -44,13 +44,14 @@ class ActivityRecordController extends Controller
         $hasHealthConsent = $user->hasHealthConsent();
         $pairedDevices    = $user->athleteDevices()
             ->orderByDesc('last_connected_at')
-            ->get(['id', 'name', 'ble_identifier', 'protocol'])
+            ->get(['id', 'name', 'ble_identifier', 'protocol', 'auto_start'])
             ->map(fn($d) => [
                 'db_device_id'  => $d->id,
                 'ble_identifier'=> $d->ble_identifier,
                 'name'          => $d->name,
                 'capabilities'  => $d->capabilities(),
                 'protocol'      => $d->protocol,
+                'auto_start'    => (bool) $d->auto_start,
             ])
             ->values();
 

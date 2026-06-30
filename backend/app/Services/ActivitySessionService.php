@@ -252,6 +252,7 @@ class ActivitySessionService
             'jump_count'          => $jumpCount,
             'jump_avg_height_cm'  => $jumpAvgHeight,
             'jump_max_height_cm'  => $jumpMaxHeight,
+            'steps'               => $session->steps ?? null,
         ]);
 
         $session->refresh();
