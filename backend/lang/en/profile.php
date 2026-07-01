@@ -477,11 +477,12 @@ return [
     'pub_beach_universal'  => 'Universal (2 and 4)',
 
     'positions' => [
-        'setter'   => 'Setter',
-        'outside'  => 'Outside hitter',
-        'opposite' => 'Opposite',
-        'middle'   => 'Middle blocker',
-        'libero'   => 'Libero',
+        'setter'       => 'Setter',
+        'outside'      => 'Outside hitter',
+        'opposite'     => 'Opposite',
+        'middle'       => 'Middle blocker',
+        'middle_full'  => 'Middle Blocker',
+        'libero'       => 'Libero',
     ],
 
     // === User photos ===
