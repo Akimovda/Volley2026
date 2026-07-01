@@ -262,6 +262,7 @@ $tourNumber = $seasonData
 		$occSubstitutions = collect();
 		$_tourStarted     = $selectedOccurrence && now('UTC')->gte($selectedOccurrence->starts_at);
 		$_reserveForSubs  = collect();
+		$hasStages        = $stages->isNotEmpty();
 		@endphp
 		@if($seasonData)
 		<div class="ramka" id="season_league_management">
