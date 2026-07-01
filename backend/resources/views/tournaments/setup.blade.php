@@ -257,6 +257,12 @@ $tourNumber = $seasonData
 		{{-- ============================================================
 		{{ __('tournaments.setup_series_h2') }}
 		============================================================ --}}
+		@php
+		$leagueForSubs    = null;
+		$occSubstitutions = collect();
+		$_tourStarted     = $selectedOccurrence && now('UTC')->gte($selectedOccurrence->starts_at);
+		$_reserveForSubs  = collect();
+		@endphp
 		@if($seasonData)
 		<div class="ramka" id="season_league_management">
 			<style>
