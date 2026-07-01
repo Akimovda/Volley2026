@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AthleteDevice;
 use App\Models\AthleteProfile;
 use App\Services\AthleteProfileService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -27,8 +29,9 @@ class AthleteProfileController extends Controller
         $hasHealthConsent = $user->hasHealthConsent();
         $zoneThresholds   = $this->service->zoneThresholds($user);
         $usingDefaultHr   = !$user->birth_date && !($profile?->max_hr) && !($profile?->resting_hr);
+        $preferredDevice  = $profile?->preferredDevice;
 
-        return view('profile.athlete', compact('user', 'profile', 'suggestedMaxHr', 'devices', 'hasHealthConsent', 'zoneThresholds', 'usingDefaultHr'));
+        return view('profile.athlete', compact('user', 'profile', 'suggestedMaxHr', 'devices', 'hasHealthConsent', 'zoneThresholds', 'usingDefaultHr', 'preferredDevice'));
     }
 
     public function update(Request $request): RedirectResponse
@@ -53,5 +56,34 @@ class AthleteProfileController extends Controller
         );
 
         return redirect()->route('profile.athlete')->with('status', __('activity.saved'));
+    }
+
+    public function setPreferredDevice(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'type'      => ['required', 'in:healthkit,ble'],
+            'device_id' => ['nullable', 'integer', 'exists:athlete_devices,id'],
+        ]);
+
+        if ($validated['type'] === 'ble' && empty($validated['device_id'])) {
+            return response()->json(['error' => 'device_id required for ble'], 422);
+        }
+
+        if ($validated['type'] === 'ble') {
+            AthleteDevice::where('id', $validated['device_id'])
+                ->where('user_id', $request->user()->id)
+                ->firstOrFail();
+        }
+
+        $user = $request->user();
+        AthleteProfile::updateOrCreate(
+            ['user_id' => $user->id],
+            [
+                'preferred_device_type' => $validated['type'],
+                'preferred_device_id'   => $validated['type'] === 'ble' ? $validated['device_id'] : null,
+            ]
+        );
+
+        return response()->json(['ok' => true]);
     }
 }

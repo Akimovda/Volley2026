@@ -259,6 +259,9 @@ Route::get('/profile/athlete', [\App\Http\Controllers\AthleteProfileController::
 Route::post('/profile/athlete', [\App\Http\Controllers\AthleteProfileController::class, 'update'])
     ->middleware(['auth', config('jetstream.auth_session'), 'verified'])
     ->name('profile.athlete.update');
+Route::post('/profile/athlete/preferred-device', [\App\Http\Controllers\AthleteProfileController::class, 'setPreferredDevice'])
+    ->middleware(['auth', config('jetstream.auth_session'), 'verified'])
+    ->name('profile.athlete.preferred-device');
 
 Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified'])->group(function () {
     Route::get('/user/teams', [\App\Http\Controllers\UserTeamController::class, 'index'])

@@ -83,11 +83,28 @@
                 {{-- CTA: Записать тренировку --}}
                 @if($canRecord)
                 <div class="mb-2">
-                    <a href="{{ route('activity.record') }}" class="btn w-100" style="min-height:44px;font-size:1.7rem">
+                    <button id="btn-record-activity" class="btn w-100" style="min-height:44px;font-size:1.7rem"
+                        data-preferred-type="{{ $preferredDeviceType ?? '' }}"
+                        data-preferred-device-id="{{ $preferredDevice?->id ?? '' }}"
+                        data-preferred-ble-id="{{ $preferredDevice?->ble_identifier ?? '' }}"
+                        data-record-url="{{ route('activity.record') }}">
                         {{ __('activity.record_btn') }}
-                    </a>
+                    </button>
                 </div>
                 @endif
+
+                {{-- Импорт из HealthKit / Health Connect --}}
+                <div id="healthkit-import-section" style="display:none" class="mb-2">
+                    <button id="btn-import-healthkit" class="btn btn-outline-secondary w-100"
+                            style="min-height:44px">
+                        📲 {{ __('activity.import_from_health') }}
+                    </button>
+                    <div id="healthkit-import-status" style="display:none" class="mt-1">
+                        <div class="alert mb-0" id="healthkit-import-message">
+                            {{ __('activity.import_loading') }}
+                        </div>
+                    </div>
+                </div>
 
                 {{-- Сводка --}}
                 <div class="ramka">
@@ -159,11 +176,16 @@
                             <div class="act-session-title">{{ $title }}</div>
                             <div class="f-13" style="opacity:.6">{{ $session->started_at?->setTimezone($userTimezone)->format('d.m.Y H:i') }}</div>
                         </div>
-                        <div class="text-right">
+                        <div class="text-right" style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
                             @if($session->direction)
                                 <span class="badge badge-sm {{ $session->direction === 'beach' ? 'badge-orange' : 'badge-blue' }}">
                                     {{ __('activity.filter_' . $session->direction) }}
                                 </span>
+                            @endif
+                            @if(($session->source ?? 'watch') === 'healthkit_import')
+                                <span class="badge badge-sm" style="background:rgba(120,120,128,.18);color:inherit">📲 {{ $session->source_name }}</span>
+                            @elseif(($session->source ?? 'watch') === 'ble')
+                                <span class="badge badge-sm badge-blue" style="opacity:.75">📡 BLE</span>
                             @endif
                         </div>
                     </div>
@@ -215,3 +237,122 @@
         </div>{{-- row --}}
     </div>{{-- container --}}
 </x-voll-layout>
+<script>
+document.getElementById('btn-record-activity')?.addEventListener('click', async function (e) {
+    e.preventDefault();
+    var btn       = e.currentTarget;
+    var type      = btn.dataset.preferredType;
+    var recordUrl = btn.dataset.recordUrl;
+
+    if (!type) {
+        window.location.href = recordUrl;
+        return;
+    }
+
+    if (type === 'healthkit') {
+        if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.ActivityBridge) {
+            try {
+                await window.Capacitor.Plugins.ActivityBridge.startWatchRecording({});
+                window.location.href = recordUrl + '?started=watch';
+            } catch (err) {
+                console.error('[QuickStart] Watch start failed:', err);
+                window.location.href = recordUrl;
+            }
+        } else {
+            window.location.href = recordUrl;
+        }
+        return;
+    }
+
+    if (type === 'ble') {
+        var deviceId = btn.dataset.preferredDeviceId;
+        window.location.href = recordUrl + '?quick_start_device_id=' + deviceId;
+        return;
+    }
+
+    window.location.href = recordUrl;
+});
+
+// ── HealthKit / Health Connect import ────────────────────────────────────────
+if (window.Capacitor) {
+    var importSection = document.getElementById('healthkit-import-section');
+    if (importSection) importSection.style.display = '';
+
+    var importBtn = document.getElementById('btn-import-healthkit');
+    if (importBtn && Capacitor.getPlatform() === 'android') {
+        importBtn.textContent = '📲 ' + @json(__('activity.import_from_health_connect'));
+    }
+}
+
+document.getElementById('btn-import-healthkit')?.addEventListener('click', async function () {
+    var statusDiv = document.getElementById('healthkit-import-status');
+    var messageEl = document.getElementById('healthkit-import-message');
+    var btn       = this;
+
+    btn.disabled = true;
+    statusDiv.style.display = '';
+    messageEl.className = 'alert alert-info mb-0';
+    messageEl.textContent = @json(__('activity.import_loading'));
+
+    try {
+        var platform = Capacitor.getPlatform();
+        var workouts = [];
+
+        if (platform === 'ios') {
+            await window.Capacitor.Plugins.ActivityBridge.requestHealthKitPermissions();
+            var res = await window.Capacitor.Plugins.ActivityBridge.getHealthKitWorkouts({ daysBack: 30 });
+            workouts = res.workouts ?? [];
+        } else if (platform === 'android') {
+            await window.Capacitor.Plugins.ActivityBridge.requestHealthConnectPermissions();
+            var res = await window.Capacitor.Plugins.ActivityBridge.getHealthConnectWorkouts({ daysBack: 30 });
+            workouts = res.workouts ?? [];
+        } else {
+            throw new Error('Platform not supported');
+        }
+
+        if (!workouts.length) {
+            messageEl.className = 'alert alert-warning mb-0';
+            messageEl.textContent = @json(__('activity.import_no_workouts'));
+            btn.disabled = false;
+            return;
+        }
+
+        var response = await fetch('/api/activity/import/healthkit', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '',
+                'Accept': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({ workouts: workouts }),
+        });
+
+        if (!response.ok) throw new Error('Server error: ' + response.status);
+
+        var data = await response.json();
+
+        messageEl.className = 'alert alert-success mb-0';
+        var msg = @json(__('activity.import_done', ['count' => ':count'])).replace(':count', data.imported);
+        if (data.skipped > 0) {
+            msg += ' ' + @json(__('activity.import_skipped', ['count' => ':count'])).replace(':count', data.skipped);
+        }
+        messageEl.textContent = msg;
+
+        if (data.imported > 0) {
+            setTimeout(function () { location.reload(); }, 2000);
+        }
+
+    } catch (err) {
+        console.error('[Health import]', err);
+        if (err.message?.includes('permission') || err.message?.includes('denied')) {
+            messageEl.className = 'alert alert-warning mb-0';
+            messageEl.textContent = @json(__('activity.import_permissions'));
+        } else {
+            messageEl.className = 'alert alert-danger mb-0';
+            messageEl.textContent = @json(__('activity.import_error'));
+        }
+        btn.disabled = false;
+    }
+});
+</script>

@@ -10,6 +10,7 @@ class ActivitySession extends Model
 {
     protected $fillable = [
         'user_id', 'occurrence_id', 'device_id', 'direction', 'status',
+        'source', 'external_workout_id',
         'started_at', 'ended_at', 'duration_sec',
         'avg_hr', 'max_hr', 'min_hr',
         'time_in_zone', 'load_score', 'samples_count', 'calories_kcal', 'calorie_source',
@@ -56,5 +57,15 @@ class ActivitySession extends Model
     public function jumps(): HasMany
     {
         return $this->hasMany(ActivityJumpEvent::class, 'session_id');
+    }
+
+    public function getSourceNameAttribute(): string
+    {
+        return match($this->source) {
+            'healthkit_import' => 'Здоровье',
+            'ble'              => 'BLE',
+            'watch'            => 'Apple Watch',
+            default            => $this->source ?? 'watch',
+        };
     }
 }

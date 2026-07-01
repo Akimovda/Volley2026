@@ -40,10 +40,17 @@ class ActivityDashboardController extends Controller
         $hasThresholds   = ($profile && $profile->max_hr) || $user->birth_date;
         $zoneThresholds  = $hasThresholds ? $this->profileService->zoneThresholds($user) : null;
 
+        $preferredDeviceType = $profile?->preferred_device_type;
+        $preferredDevice     = $profile?->preferredDevice;
+
         // Таймзона пользователя: из города → fallback UTC
         $userTimezone = $user->city?->timezone ?? 'UTC';
 
-        return view('activity.index', compact('sessions', 'direction', 'totalCount', 'lastSession', 'zoneThresholds', 'canRecord', 'userTimezone'));
+        return view('activity.index', compact(
+            'sessions', 'direction', 'totalCount', 'lastSession',
+            'zoneThresholds', 'canRecord', 'userTimezone',
+            'preferredDeviceType', 'preferredDevice'
+        ));
     }
 
     public function show(Request $request, ActivitySession $session): View
