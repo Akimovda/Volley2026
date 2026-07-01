@@ -652,5 +652,22 @@ document.addEventListener('DOMContentLoaded', function() {
     syncMinutesAllowZero('cancel_lock_waitlist_hours', 'cancel_lock_waitlist_mins', 'cancel_lock_waitlist_minutes_before');
 });
 </script>
+<script>
+(function () {
+    var form = document.querySelector('form[action*="events"]');
+    if (!form) return;
+    form.addEventListener('submit', function (e) {
+        var btn = form.querySelector('button[type="submit"]');
+        if (!btn) return;
+        if (btn.dataset.submitted === 'true') {
+            e.preventDefault();
+            return;
+        }
+        btn.dataset.submitted = 'true';
+        btn.disabled = true;
+        btn.textContent = 'Сохранение...';
+    });
+})();
+</script>
 
 </x-voll-layout>

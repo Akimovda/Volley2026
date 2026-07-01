@@ -349,28 +349,11 @@ async function recordConsent() {
     });
 }
 
-async function connectSensor() {
-    if (!config.hasHealthConsent) {
-        const consentBlock = el('ble-consent-block');
-        if (consentBlock) consentBlock.style.display = '';
-        const errEl = el('ble-consent-error');
-        if (errEl) errEl.style.display = '';
-        return;
-    }
-
-    // Нет BLE-устройств — показываем подсказку
-    const bleList = activeBleDevices ?? config.pairedDevices ?? [];
-    if (!bleList.length) {
-        const hintEl = el('ble-no-device-hint');
-        if (hintEl) hintEl.style.display = '';
-        return;
-    }
-
+async function connectSpecificSensor(paired) {
     const connectErrEl = el('ble-connect-error');
     if (connectErrEl) { connectErrEl.style.display = 'none'; connectErrEl.textContent = ''; }
 
     setPhase('connecting');
-    const paired = bleList[0];
     try {
         await BleClient.initialize({ androidNeverForLocation: true });
         await BleClient.connect(paired.ble_identifier, () => onDisconnect());
@@ -404,6 +387,25 @@ async function connectSensor() {
             errEl.style.display = '';
         }
     }
+}
+
+async function connectSensor() {
+    if (!config.hasHealthConsent) {
+        const consentBlock = el('ble-consent-block');
+        if (consentBlock) consentBlock.style.display = '';
+        const errEl = el('ble-consent-error');
+        if (errEl) errEl.style.display = '';
+        return;
+    }
+
+    const bleList = activeBleDevices ?? config.pairedDevices ?? [];
+    if (!bleList.length) {
+        const hintEl = el('ble-no-device-hint');
+        if (hintEl) hintEl.style.display = '';
+        return;
+    }
+
+    await connectSpecificSensor(bleList[0]);
 }
 
 // ── Watch session (healthkit) ─────────────────────────────────────────────────
@@ -752,6 +754,15 @@ window.initBleActivity = function (cfg) {
     });
 
     checkPendingSession();
+
+    // ?quick_start_device_id — автоподключение к конкретному BLE-устройству
+    const quickStartId = new URLSearchParams(location.search).get('quick_start_device_id');
+    if (quickStartId && window.Capacitor?.isNativePlatform()) {
+        const device = (config.pairedDevices || []).find(d => String(d.db_device_id) === quickStartId);
+        if (device && device.protocol !== 'healthkit') {
+            (async () => { await connectSpecificSensor(device); })();
+        }
+    }
 
     const consentCheckbox = el('ble-consent-checkbox');
     if (consentCheckbox) {

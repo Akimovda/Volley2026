@@ -80,6 +80,8 @@ return [
     'connect_device'         => 'Add Sensor',
     'paired_devices'         => 'Paired Sensors',
     'remove_device'          => 'Remove',
+    'set_primary'            => 'Set as primary',
+    'is_primary'             => 'Primary',
     'no_devices'             => 'No paired sensors',
     'connect_in_settings_hint' => 'First connect a sensor in the "My Devices" section of your profile settings.',
     'record_training'        => 'Record Workout',
@@ -159,6 +161,15 @@ return [
     // Connection lost
     'disconnected_permanent' => 'Sensor connection lost. Reconnection attempts exhausted.',
     'try_again'              => 'Try again',
+
+    'import_from_health'          => 'Import from Health',
+    'import_from_health_connect'  => 'Import from Health Connect',
+    'import_loading'       => 'Loading workouts...',
+    'import_done'          => 'Imported: :count workouts',
+    'import_skipped'       => '(skipped duplicates: :count)',
+    'import_error'         => 'Import error. Please try again.',
+    'import_no_workouts'   => 'No new workouts found in the last 30 days.',
+    'import_permissions'   => 'Please allow Health data access in settings.',
 
     // Activity feature announcement (activity:announce)
     'announce_title' => '❤️ Activity Recording — new feature',

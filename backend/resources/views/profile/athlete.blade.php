@@ -253,8 +253,20 @@
                                     @endif
                                     <div class="f-13 cd3 mt-05">{{ __('activity.device_acc_' . $devAccuracy) }}</div>
                                 </div>
-                                <button class="btn btn-sm btn-outline-danger ble-device-delete"
-                                        data-id="{{ $device->id }}" type="button">{{ __('activity.remove_device') }}</button>
+                                <div style="display:flex;gap:6px;flex-shrink:0">
+                                    <button class="btn btn-sm btn-set-primary {{ $preferredDevice?->id === $device->id ? 'btn-primary' : 'btn-outline-primary' }}"
+                                            data-device-id="{{ $device->id }}"
+                                            data-device-type="{{ $device->protocol }}"
+                                            type="button">
+                                        @if($preferredDevice?->id === $device->id)
+                                            ✓ {{ __('activity.is_primary') }}
+                                        @else
+                                            {{ __('activity.set_primary') }}
+                                        @endif
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger ble-device-delete"
+                                            data-id="{{ $device->id }}" type="button">{{ __('activity.remove_device') }}</button>
+                                </div>
                             </div>
                         </div>
                         @empty
@@ -323,6 +335,29 @@
 @if(config('activity.recording_open') || $user->isAdmin())
 @vite(['resources/js/ble-activity.js'])
 <script>
+document.querySelectorAll('.btn-set-primary').forEach(function (btn) {
+    btn.addEventListener('click', async function () {
+        const deviceId   = btn.dataset.deviceId;
+        const deviceType = btn.dataset.deviceType === 'healthkit' ? 'healthkit' : 'ble';
+        btn.disabled = true;
+        try {
+            const res = await fetch('/profile/athlete/preferred-device', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                },
+                body: JSON.stringify({ type: deviceType, device_id: deviceId }),
+            });
+            if (!res.ok) throw new Error('server error');
+            location.reload();
+        } catch (e) {
+            btn.disabled = false;
+            alert(@json(__('activity.save_btn')) + ' — error');
+        }
+    });
+});
+
 window.addEventListener('load', function () {
     if (typeof window.initBleDeviceManager === 'function') {
         window.initBleDeviceManager({

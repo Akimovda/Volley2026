@@ -115,7 +115,15 @@ use App\Services\StaffLogService;
                    $request->merge($data);
                     \Illuminate\Support\Facades\Log::info("bot_raw", ["v" => $request->input("bot_assistant_enabled", "NOT_SET"), "all" => $request->only(["bot_assistant_enabled"])]);
 
+                   $idempotencyKey = 'event_create_' . $user->id . '_'
+                       . md5($request->input('title', '') . $request->input('starts_at_local', ''));
+                   $lock = \Illuminate\Support\Facades\Cache::lock($idempotencyKey, 10);
+                   if (!$lock->get()) {
+                       return back()->withInput()->withErrors(['general' => 'Событие уже создаётся, подождите...']);
+                   }
+
                    $result = $this->storeService->store($request, $user);
+                   $lock->release();
                    $event = $result['event'];
 
                    // Рекламное мероприятие — оплата через ЮKassa
@@ -172,26 +180,6 @@ use App\Services\StaffLogService;
                     $privateLink = null;
                     if ((bool)($event->is_private ?? false) && !empty($event->public_token)) {
                         $privateLink = route('events.public', ['token' => $event->public_token]);
-                    }
-                    
-                    $successMsg = !(bool)($event->allow_registration ?? true) && ($event->ad_price_rub ?? 0) > 0
-                        ? '🎉 Ваше рекламное мероприятие создано! Просьба произвести оплату и нажать кнопку «Я оплатил». Удачного дня! 😉'
-                        : 'Мероприятие создано.';
-
-                   return redirect()
-                        ->route('events.show', $event)
-                        ->with('success', $successMsg)
-                        ->with('clear_event_draft', true)
-                        ->with('private_link', $privateLink);
-                  
-                    $event = $result['event'];
-                    
-                    $privateLink = null;
-                    
-                    if ((bool)($event->is_private ?? false) && !empty($event->public_token)) {
-                        $privateLink = route('events.public', [
-                            'token' => $event->public_token,
-                        ]);
                     }
                     
                     $successMsg = !(bool)($event->allow_registration ?? true) && ($event->ad_price_rub ?? 0) > 0

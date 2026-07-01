@@ -67,6 +67,7 @@ Route::middleware('auth:sanctum,web')->group(function () {
     Route::post('/activity/sessions/{session}/finalize', [\App\Http\Controllers\Api\ActivitySessionController::class, 'finalize']);
     Route::get('/activity/stats/weekly', [\App\Http\Controllers\Api\ActivityStatsController::class, 'weekly'])
         ->middleware('abilities:activity:read');
+    Route::post('/activity/import/healthkit', [\App\Http\Controllers\Api\ActivityImportController::class, 'importHealthKit']);
 
     // Выдача PAT для iOS-виджета (вызывается из WKWebView по сессионной cookie)
     Route::post('/widget/token', [\App\Http\Controllers\Api\WidgetTokenController::class, 'issue']);
