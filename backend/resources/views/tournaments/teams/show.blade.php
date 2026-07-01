@@ -656,8 +656,18 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
             <div class="f-16 mb-05">Ожидают: <strong>{{ $pendingCount }}</strong></div>
             <div class="f-16 mb-1">Всего: <strong>{{ $team->members->count() }}</strong></div>
             @if($settings)
+            @php
+            $schemeLabels = [
+                '4x4'        => '4×4',
+                '4x2'        => '4×2',
+                '5x1'        => '5×1 ' . __('events.libero_without'),
+                '5x1_libero' => '5×1 ' . __('events.libero_word'),
+                '2x2'        => '2×2',
+                '3x3'        => '3×3',
+            ];
+            @endphp
             <div class="f-16">
-                Схема: <strong>{{ $settings->game_scheme ?? '—' }}</strong>
+                Схема: <strong>{{ $schemeLabels[$settings->game_scheme ?? ''] ?? ($settings->game_scheme ?? '—') }}</strong>
                 @if($team->team_kind === 'classic_team')
                 <br>Мин.: <strong>{{ $settings->team_size_min ?? '—' }}</strong> ·
                 Макс.: <strong>{{ $settings->total_players_max ?? $settings->team_size_max ?? '—' }}</strong>
