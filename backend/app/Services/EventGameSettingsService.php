@@ -571,7 +571,7 @@ class EventGameSettingsService
             |--------------------------------------------------------------------------
             */
             
-            $teams = (int)($data['teams_count'] ?? 2);
+            $teams = (int)($data['teams_count'] ?? $data['tournament_teams_count'] ?? 2);
             $teams = max(2, min($teams, 200));
             
             $subtype = $subtype ?: (($direction === 'beach') ? '2x2' : '4x2');
