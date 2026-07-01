@@ -239,7 +239,7 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
 
     {{-- Созданные приглашения --}}
     @if($canManage)
-    <div class="ramka">
+    <div class="ramka" style="z-index:8">
         <h2 class="-mt-05">📨 Созданные приглашения</h2>
         @forelse(($team->invites ?? collect())->sortByDesc('id') as $inv)
         @php
@@ -282,7 +282,7 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
     </div>
 
     {{-- Создать приглашение --}}
-    <div class="ramka">
+    <div class="ramka" style="z-index:7">
         <h2 class="-mt-05">➕ Создать ссылку-приглашение</h2>
             <p>Игрок получит персональную ссылку с ролью и позицией. </p>
         <form method="POST" action="{{ route('tournamentTeamInvites.store',[$event,$team]) }}" class="form">
@@ -323,7 +323,7 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
 
     {{-- Добавить игрока напрямую (только для организатора/админа) --}}
     @if($isOrganizer)
-    <div class="ramka">
+    <div class="ramka" style="z-index:6">
         <h2 class="-mt-05">➕ {{ __('events.org_add_player_h2') }}</h2>
         <div class="f-18 mb-2">{{ __('events.org_add_player_hint') }}</div>
         @error('add_member')<div class="alert alert-error mb-2">{{ $message }}</div>@enderror
