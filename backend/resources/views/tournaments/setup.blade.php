@@ -74,7 +74,9 @@
 @if($selectedOccurrence)
 @php
 $occDate = \Carbon\Carbon::parse($selectedOccurrence->starts_at)->setTimezone($event->timezone ?? 'Europe/Moscow');
-$tourNumber = $seasonData['occurrences']->search(fn($occ) => $occ->id === $selectedOccurrence->id) + 1;
+$tourNumber = $seasonData
+    ? ($seasonData['occurrences']->search(fn($occ) => $occ->id === $selectedOccurrence->id) + 1)
+    : 1;
 @endphp
 <x-slot name="h2">
 		{{ __('tournaments.setup_round_n', ['n' => $tourNumber, 'date' => $occDate->format('d.m.Y')]) }}
