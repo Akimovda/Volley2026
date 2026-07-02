@@ -1093,6 +1093,28 @@ if ($role === 'admin') {
     
             $event->load('gameSettings');
 
+            // Пересинхронизировать event_role_slots с актуальными game_settings
+            // (иначе max_slots остаётся от старого teams_count/subtype — баг с "лишними" свободными местами)
+            if ($event->gameSettings) {
+                $gs = $event->gameSettings;
+                $teams = max(2, min((int) ($gs->teams_count ?? 2), 200));
+
+                $calc = \App\Services\GameCalculator::calculate(
+                    (string) $gs->subtype,
+                    $gs->libero_mode,
+                    $teams
+                );
+
+                $roles = [];
+                foreach (($calc['roles'] ?? []) as $role => $count) {
+                    $roles[$role] = $count * $teams;
+                }
+
+                if (!empty($roles)) {
+                    app(\App\Services\EventRoleSlotService::class)->syncRoleSlots($event, $roles);
+                }
+            }
+
             // Обновляем настройки турнира (если турнир): схема, состав, заявки и пр.
             if ($event->format === 'tournament') {
                 $isBeach = ($event->direction ?? 'classic') === 'beach';
