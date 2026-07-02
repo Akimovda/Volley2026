@@ -8,6 +8,7 @@
     Expects in scope:
       - $allowReg             (bool)  — регистрация включена
       - $regStartsDays        (int)   — за сколько дней до начала открывается рег.
+      - $regStartsHours       (int)   — часовая часть смещения начала регистрации
       - $regEndsMin           (int)   — total minutes до начала когда рег. закрывается
       - $regEndsHours         (int)   — часовая часть $regEndsMin
       - $regEndsMins          (int)   — минутная часть $regEndsMin
@@ -40,11 +41,18 @@
         <div class="col-md-3">
             <div class="card">
                 <label>{{ __('events.occ_reg_starts_days') }}</label>
-                <select name="reg_starts_days_before">
-                    @for($d = 0; $d <= 90; $d++)
-                        <option value="{{ $d }}" @selected(old('reg_starts_days_before', $regStartsDays) == $d)>{{ $d }}</option>
-                    @endfor
-                </select>
+                <div class="d-flex" style="gap:.5rem">
+                    <select name="reg_starts_days_before" style="width:auto">
+                        @for($d = 0; $d <= 90; $d++)
+                            <option value="{{ $d }}" @selected(old('reg_starts_days_before', $regStartsDays) == $d)>{{ $d }} {{ __('events.dur_d_short') }}</option>
+                        @endfor
+                    </select>
+                    <select name="reg_starts_hours_before" style="width:auto">
+                        @for($h = 0; $h <= 23; $h++)
+                            <option value="{{ $h }}" @selected(old('reg_starts_hours_before', $regStartsHours ?? 0) == $h)>{{ $h }} {{ __('events.dur_h_short') }}</option>
+                        @endfor
+                    </select>
+                </div>
             </div>
         </div>
         <div class="col-md-3">
