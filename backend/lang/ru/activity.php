@@ -89,6 +89,18 @@ return [
     'device_added'           => 'Датчик добавлен',
     'adding_device'          => 'Подключение датчика…',
 
+    // Подсказки по поддерживаемым устройствам
+    'devices_help_title'         => 'Поддерживаемые устройства',
+    'devices_realtime'           => 'В реальном времени',
+    'devices_postfactum'         => 'После тренировки (импорт)',
+    'devices_watch_realtime'     => 'Apple Watch — пульс, прыжки, высота прыжка, шаги',
+    'devices_wearos_realtime'    => 'Wear OS — пульс, шаги',
+    'devices_ble_realtime'       => 'BLE-датчик пульса — только пульс',
+    'devices_healthkit_import'   => 'Xiaomi, Garmin, Polar, Samsung и другие через приложение Здоровье',
+    'devices_hc_import'          => 'Xiaomi, Samsung, Garmin, Polar и другие через Health Connect',
+    'devices_import_btn'         => 'Импортировать тренировки',
+    'devices_jumps_note'         => '* Прыжки и высота прыжка — только Apple Watch',
+
     // Калории
     'calories'               => '🔥 Калории',
     'calories_measured'      => ':n ккал (Apple Watch)',

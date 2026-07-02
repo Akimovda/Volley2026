@@ -220,6 +220,20 @@
                         <div class="mt-05" id="device-help-watch" style="display:none">⌚ {{ __('activity.device_help_watch') }}</div>
                     </div>
 
+                    {{-- Компактная подсказка по поддерживаемым устройствам (platform-aware) --}}
+                    <div class="f-13 mb-15" style="opacity:.7;line-height:1.6">
+                        <div id="profile-devices-ios-hint" style="display:none">
+                            ⌚ {{ __('activity.devices_watch_realtime') }}<br>
+                            📡 {{ __('activity.devices_ble_realtime') }}<br>
+                            📲 {{ __('activity.devices_healthkit_import') }}
+                        </div>
+                        <div id="profile-devices-android-hint" style="display:none">
+                            ⌚ {{ __('activity.devices_wearos_realtime') }}<br>
+                            📡 {{ __('activity.devices_ble_realtime') }}<br>
+                            📲 {{ __('activity.devices_hc_import') }}
+                        </div>
+                    </div>
+
                     {{-- Блок согласия --}}
                     <div id="ble-consent-block-settings" style="{{ $hasHealthConsent ? 'display:none' : '' }}">
                         <div class="alert alert-info">
@@ -359,9 +373,15 @@ document.querySelectorAll('.btn-set-primary').forEach(function (btn) {
 });
 
 window.addEventListener('load', function () {
-    if (window.Capacitor?.getPlatform?.() === 'ios') {
+    var platform = window.Capacitor?.getPlatform?.() ?? 'web';
+    if (platform === 'ios') {
         var watchHint = document.getElementById('device-help-watch');
         if (watchHint) watchHint.style.display = '';
+        var iosHint = document.getElementById('profile-devices-ios-hint');
+        if (iosHint) iosHint.style.display = '';
+    } else if (platform === 'android') {
+        var androidHint = document.getElementById('profile-devices-android-hint');
+        if (androidHint) androidHint.style.display = '';
     }
 
     if (typeof window.initBleDeviceManager === 'function') {

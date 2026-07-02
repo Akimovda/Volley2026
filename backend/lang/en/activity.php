@@ -89,6 +89,18 @@ return [
     'device_added'           => 'Sensor added',
     'adding_device'          => 'Connecting sensor…',
 
+    // Supported devices hints
+    'devices_help_title'         => 'Supported devices',
+    'devices_realtime'           => 'Real-time',
+    'devices_postfactum'         => 'After workout (import)',
+    'devices_watch_realtime'     => 'Apple Watch — heart rate, jumps, jump height, steps',
+    'devices_wearos_realtime'    => 'Wear OS — heart rate, steps',
+    'devices_ble_realtime'       => 'BLE heart rate sensor — heart rate only',
+    'devices_healthkit_import'   => 'Xiaomi, Garmin, Polar, Samsung and others via Health app',
+    'devices_hc_import'          => 'Xiaomi, Samsung, Garmin, Polar and others via Health Connect',
+    'devices_import_btn'         => 'Import workouts',
+    'devices_jumps_note'         => '* Jumps and jump height — Apple Watch only',
+
     // Calories
     'calories'               => '🔥 Calories',
     'calories_measured'      => ':n kcal (Apple Watch)',

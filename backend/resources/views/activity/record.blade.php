@@ -260,9 +260,62 @@
                     </div>
                 </div>
 
+                {{-- Подсказка по поддерживаемым устройствам --}}
+                <div class="ramka mt-2">
+                    <h2 class="-mt-05">{{ __('activity.devices_help_title') }}</h2>
+
+                    <div class="f-13 mb-05" style="opacity:.7">⚡ {{ __('activity.devices_realtime') }}</div>
+
+                    <div id="devices-ios-realtime" style="display:none">
+                        <div class="f-14 mb-05" style="display:flex;gap:8px;align-items:flex-start">
+                            <span>⌚</span><span>{{ __('activity.devices_watch_realtime') }}</span>
+                        </div>
+                        <div class="f-14 mb-1" style="display:flex;gap:8px;align-items:flex-start">
+                            <span>📡</span><span>{{ __('activity.devices_ble_realtime') }}</span>
+                        </div>
+                    </div>
+
+                    <div id="devices-android-realtime" style="display:none">
+                        <div class="f-14 mb-05" style="display:flex;gap:8px;align-items:flex-start">
+                            <span>⌚</span><span>{{ __('activity.devices_wearos_realtime') }}</span>
+                        </div>
+                        <div class="f-14 mb-1" style="display:flex;gap:8px;align-items:flex-start">
+                            <span>📡</span><span>{{ __('activity.devices_ble_realtime') }}</span>
+                        </div>
+                    </div>
+
+                    <div class="f-13 mt-1 mb-05" style="opacity:.7">📲 {{ __('activity.devices_postfactum') }}</div>
+
+                    <div id="devices-ios-import" class="f-14" style="display:none">
+                        {{ __('activity.devices_healthkit_import') }}
+                    </div>
+                    <div id="devices-android-import" class="f-14" style="display:none">
+                        {{ __('activity.devices_hc_import') }}
+                    </div>
+
+                    <div class="f-13 mt-1" style="opacity:.55">
+                        {{ __('activity.devices_jumps_note') }}
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
+
+<script>
+(function () {
+    var platform = window.Capacitor?.getPlatform?.() ?? 'web';
+    var ids = platform === 'ios'
+        ? ['devices-ios-realtime', 'devices-ios-import']
+        : platform === 'android'
+            ? ['devices-android-realtime', 'devices-android-import']
+            : ['devices-ios-realtime', 'devices-ios-import', 'devices-android-realtime', 'devices-android-import'];
+    ids.forEach(function (id) {
+        var elDevices = document.getElementById(id);
+        if (elDevices) elDevices.style.display = '';
+    });
+})();
+</script>
 
 </x-voll-layout>
 
