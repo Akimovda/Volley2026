@@ -40,6 +40,11 @@ class ActivityStatsController extends Controller
                 ->whereDate('started_at', $today)
                 ->max('jump_max_height_cm');
 
+            $weeklyMaxJumpHeight = (int) ActivitySession::where('user_id', $user->id)
+                ->where('status', 'completed')
+                ->where('started_at', '>=', $startOfWeek)
+                ->max('jump_max_height_cm');
+
             $todaySteps = (int) ActivitySession::where('user_id', $user->id)
                 ->where('status', 'completed')
                 ->whereDate('started_at', $today)
@@ -52,6 +57,7 @@ class ActivityStatsController extends Controller
                 'today_calories'           => $todayCalories,
                 'today_jumps'              => $todayJumps,
                 'today_max_jump_height_cm' => $todayMaxJumpHeight,
+                'weekly_max_jump_height_cm' => $weeklyMaxJumpHeight,
                 'today_steps'              => $todaySteps,
                 'streak_days'              => $streak,
             ];
