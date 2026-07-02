@@ -683,9 +683,12 @@ window.initBleActivity = function (cfg) {
     setPhase('idle');
 
     const isNativeApp = !!(window.Capacitor && window.Capacitor.isNativePlatform());
+    const isIOS       = window.Capacitor?.getPlatform?.() === 'ios';
     const paired      = config.pairedDevices || [];
     const hasWatch    = paired.some(d => d.protocol === 'healthkit');
     const hasBle      = paired.some(d => d.protocol !== 'healthkit');
+    // Apple Watch (healthkit) доступен только на iOS — на Android ActivityBridge.startWatchRecording() не существует
+    const watchAvailable = hasWatch && isIOS;
 
     if (!isNativeApp) {
         // Браузер — всё недоступно, показываем баннер
@@ -698,11 +701,11 @@ window.initBleActivity = function (cfg) {
             btnConnect.style.opacity = '0.5';
             btnConnect.style.cursor = 'not-allowed';
         }
-    } else if (hasWatch && !hasBle) {
+    } else if (watchAvailable && !hasBle) {
         // Только Apple Watch
         const watchEl = el('ble-source-watch');
         if (watchEl) watchEl.style.display = '';
-    } else if (hasWatch && hasBle) {
+    } else if (watchAvailable && hasBle) {
         // Оба типа — показать выбор
         const bothEl = el('ble-source-both');
         if (bothEl) bothEl.style.display = '';
