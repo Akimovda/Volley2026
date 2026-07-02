@@ -524,8 +524,22 @@ async function connectAndRegister(dmCfg) {
             bindDeleteButton(card.querySelector('.ble-device-delete'), dmCfg);
         }
     } catch (e) {
-        console.error('[BLE] connectAndRegister failed:', e);
-        setStatus(e.message || 'Ошибка', 'danger');
+        console.warn('[BLE] connectAndRegister:', e.message);
+        const msg = e.message ?? '';
+
+        if (msg.includes('cancelled') || msg.includes('canceled') ||
+            msg.includes('User cancelled') || msg.includes('User canceled')) {
+            // Пользователь сам закрыл диалог выбора устройства — не ошибка
+            if (statusEl) statusEl.style.display = 'none';
+        } else if (msg.includes('timeout') || msg.includes('Timeout')) {
+            setStatus('Датчик не найден. Убедитесь что он включён и рядом.', 'warning');
+        } else if (msg.includes('permission') || msg.includes('Permission')) {
+            setStatus('Нет разрешения на Bluetooth. Разрешите в настройках.', 'warning');
+        } else if (msg.includes('disabled') || msg.includes('Bluetooth is disabled')) {
+            setStatus('Bluetooth выключен. Включите и попробуйте снова.', 'warning');
+        } else {
+            setStatus(msg || 'Ошибка подключения', 'danger');
+        }
     } finally {
         if (btnAdd) btnAdd.disabled = false;
     }

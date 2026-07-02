@@ -189,6 +189,10 @@ return [
     'import_error'         => 'Ошибка импорта. Попробуйте позже.',
     'import_no_workouts'   => 'Новых тренировок не найдено за последние 30 дней.',
     'import_permissions'   => 'Разрешите доступ к данным Здоровье в настройках.',
+    'import_hc_not_installed' => 'Health Connect не установлен. '
+        . 'Установите приложение Health Connect из RuStore или Google Play.',
+    'import_server_error'     => 'Ошибка на сервере. Попробуйте позже.',
+    'import_cancelled'        => 'Импорт отменён.',
 
     // Анонс функции записи активности (activity:announce)
     'announce_title' => '❤️ Запись активности — новая функция',
