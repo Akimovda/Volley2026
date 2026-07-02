@@ -9,15 +9,20 @@
     $maxPlayers = $occurrence->max_players ?? $event->gameSettings?->max_players ?? 0;
 
     $regStartsDays = 3;
+    $regStartsHours = 0;
     $regEndsMin = 15;
     $cancelMin = 60;
 
     $occStarts = $occurrence->starts_at ? \Carbon\Carbon::parse($occurrence->starts_at) : null;
 
     if ($occStarts && $occurrence->registration_starts_at) {
-        $regStartsDays = (int) \Carbon\Carbon::parse($occurrence->registration_starts_at)->diffInDays($occStarts);
+        $regStartsDiffSec = $occStarts->timestamp - \Carbon\Carbon::parse($occurrence->registration_starts_at)->timestamp;
+        $regStartsDays = (int) floor($regStartsDiffSec / 86400);
+        $regStartsHours = (int) floor(($regStartsDiffSec % 86400) / 3600);
     } elseif ($event->starts_at && $event->registration_starts_at) {
-        $regStartsDays = (int) \Carbon\Carbon::parse($event->registration_starts_at)->diffInDays(\Carbon\Carbon::parse($event->starts_at));
+        $regStartsDiffSec = \Carbon\Carbon::parse($event->starts_at)->timestamp - \Carbon\Carbon::parse($event->registration_starts_at)->timestamp;
+        $regStartsDays = (int) floor($regStartsDiffSec / 86400);
+        $regStartsHours = (int) floor(($regStartsDiffSec % 86400) / 3600);
     }
 
     if ($occStarts && $occurrence->registration_ends_at) {

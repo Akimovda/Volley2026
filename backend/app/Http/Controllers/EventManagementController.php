@@ -774,7 +774,8 @@ if ($role === 'admin') {
 
         if (isset($data['reg_starts_days_before'])) {
             $regStartsDaysBefore = (int) $data['reg_starts_days_before'];
-            $occurrence->registration_starts_at = $startsUtc->copy()->subDays($regStartsDaysBefore);
+            $regStartsHoursBefore = (int) ($data['reg_starts_hours_before'] ?? 0);
+            $occurrence->registration_starts_at = $startsUtc->copy()->subDays($regStartsDaysBefore)->subHours($regStartsHoursBefore);
         }
 
         if (isset($data['reg_ends_minutes_before'])) {
