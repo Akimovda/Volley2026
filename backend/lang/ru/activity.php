@@ -89,17 +89,24 @@ return [
     'device_added'           => 'Датчик добавлен',
     'adding_device'          => 'Подключение датчика…',
 
-    // Подсказки по поддерживаемым устройствам
+    // Подсказки по поддерживаемым устройствам (3 уровня)
     'devices_help_title'         => 'Поддерживаемые устройства',
-    'devices_realtime'           => 'В реальном времени',
-    'devices_postfactum'         => 'После тренировки (импорт)',
-    'devices_watch_realtime'     => 'Apple Watch — пульс, прыжки, высота прыжка, шаги',
-    'devices_wearos_realtime'    => 'Wear OS — пульс, шаги',
-    'devices_ble_realtime'       => 'BLE-датчик пульса — только пульс',
-    'devices_healthkit_import'   => 'Xiaomi, Garmin, Polar, Samsung и другие через приложение Здоровье',
-    'devices_hc_import'          => 'Xiaomi, Samsung, Garmin, Polar и другие через Health Connect',
-    'devices_import_btn'         => 'Импортировать тренировки',
-    'devices_jumps_note'         => '* Прыжки и высота прыжка — только Apple Watch',
+
+    // Уровень 1: полная статистика
+    'devices_full_stats'         => 'Полная статистика (пульс + прыжки + высота + шаги)',
+    'devices_watch_full'         => 'Apple Watch',
+    'devices_movesense_full'     => 'Movesense HR+, Polar H10, Polar Verity Sense — скоро',
+
+    // Уровень 2: частичная — импорт постфактум
+    'devices_partial_import'     => 'Пульс + шаги + калории (импорт после тренировки)',
+    'devices_healthkit_import'   => 'Через приложение Здоровье: Xiaomi Mi Band, Garmin, Samsung, Polar и другие',
+    'devices_hc_import'          => 'Через Health Connect: Xiaomi, Samsung, Garmin, Polar и другие',
+
+    // Уровень 3: частичная — только пульс в реальном времени
+    'devices_ble_only'           => 'Только пульс (в реальном времени)',
+    'devices_ble_sensors'        => 'BLE-датчики: Coospo HW9, H808S и аналоги',
+
+    'devices_jumps_note'         => '* Прыжки и высота — Apple Watch и профессиональные BLE-датчики движения (Movesense, Polar H10)',
 
     // Калории
     'calories'               => '🔥 Калории',

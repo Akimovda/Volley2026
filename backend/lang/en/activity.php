@@ -89,17 +89,24 @@ return [
     'device_added'           => 'Sensor added',
     'adding_device'          => 'Connecting sensor…',
 
-    // Supported devices hints
+    // Supported devices hints (3 tiers)
     'devices_help_title'         => 'Supported devices',
-    'devices_realtime'           => 'Real-time',
-    'devices_postfactum'         => 'After workout (import)',
-    'devices_watch_realtime'     => 'Apple Watch — heart rate, jumps, jump height, steps',
-    'devices_wearos_realtime'    => 'Wear OS — heart rate, steps',
-    'devices_ble_realtime'       => 'BLE heart rate sensor — heart rate only',
-    'devices_healthkit_import'   => 'Xiaomi, Garmin, Polar, Samsung and others via Health app',
-    'devices_hc_import'          => 'Xiaomi, Samsung, Garmin, Polar and others via Health Connect',
-    'devices_import_btn'         => 'Import workouts',
-    'devices_jumps_note'         => '* Jumps and jump height — Apple Watch only',
+
+    // Tier 1: full stats
+    'devices_full_stats'         => 'Full stats (heart rate + jumps + height + steps)',
+    'devices_watch_full'         => 'Apple Watch',
+    'devices_movesense_full'     => 'Movesense HR+, Polar H10, Polar Verity Sense — coming soon',
+
+    // Tier 2: partial — import after workout
+    'devices_partial_import'     => 'Heart rate + steps + calories (import after workout)',
+    'devices_healthkit_import'   => 'Via Health app: Xiaomi Mi Band, Garmin, Samsung, Polar and others',
+    'devices_hc_import'          => 'Via Health Connect: Xiaomi, Samsung, Garmin, Polar and others',
+
+    // Tier 3: partial — heart rate only, real-time
+    'devices_ble_only'           => 'Heart rate only (real-time)',
+    'devices_ble_sensors'        => 'BLE sensors: Coospo HW9, H808S and similar',
+
+    'devices_jumps_note'         => '* Jumps and height — Apple Watch and professional BLE motion sensors (Movesense, Polar H10)',
 
     // Calories
     'calories'               => '🔥 Calories',

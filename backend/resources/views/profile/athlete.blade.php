@@ -220,17 +220,18 @@
                         <div class="mt-05" id="device-help-watch" style="display:none">⌚ {{ __('activity.device_help_watch') }}</div>
                     </div>
 
-                    {{-- Компактная подсказка по поддерживаемым устройствам (platform-aware) --}}
+                    {{-- Компактная подсказка по поддерживаемым устройствам (platform-aware, 3 уровня) --}}
                     <div class="f-13 mb-15" style="opacity:.7;line-height:1.6">
                         <div id="profile-devices-ios-hint" style="display:none">
-                            ⌚ {{ __('activity.devices_watch_realtime') }}<br>
-                            📡 {{ __('activity.devices_ble_realtime') }}<br>
-                            📲 {{ __('activity.devices_healthkit_import') }}
+                            ✅ {{ __('activity.devices_watch_full') }}<br>
+                            🔜 {{ __('activity.devices_movesense_full') }}<br>
+                            📲 {{ __('activity.devices_healthkit_import') }}<br>
+                            📡 {{ __('activity.devices_ble_sensors') }}
                         </div>
                         <div id="profile-devices-android-hint" style="display:none">
-                            ⌚ {{ __('activity.devices_wearos_realtime') }}<br>
-                            📡 {{ __('activity.devices_ble_realtime') }}<br>
-                            📲 {{ __('activity.devices_hc_import') }}
+                            🔜 {{ __('activity.devices_movesense_full') }}<br>
+                            📲 {{ __('activity.devices_hc_import') }}<br>
+                            📡 {{ __('activity.devices_ble_sensors') }}
                         </div>
                     </div>
 
