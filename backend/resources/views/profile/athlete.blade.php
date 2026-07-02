@@ -217,7 +217,7 @@
                     {{-- Подсказка: два типа датчиков --}}
                     <div class="alert alert-info f-14 mb-15" style="padding-top:.75rem;padding-bottom:.75rem;line-height:1.5">
                         <div>{{ __('activity.device_help_ble') }}</div>
-                        <div class="mt-05">⌚ {{ __('activity.device_help_watch') }}</div>
+                        <div class="mt-05" id="device-help-watch" style="display:none">⌚ {{ __('activity.device_help_watch') }}</div>
                     </div>
 
                     {{-- Блок согласия --}}
@@ -359,6 +359,11 @@ document.querySelectorAll('.btn-set-primary').forEach(function (btn) {
 });
 
 window.addEventListener('load', function () {
+    if (window.Capacitor?.getPlatform?.() === 'ios') {
+        var watchHint = document.getElementById('device-help-watch');
+        if (watchHint) watchHint.style.display = '';
+    }
+
     if (typeof window.initBleDeviceManager === 'function') {
         window.initBleDeviceManager({
             hasHealthConsent: {{ $hasHealthConsent ? 'true' : 'false' }},
