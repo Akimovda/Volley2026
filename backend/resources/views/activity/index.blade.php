@@ -303,7 +303,13 @@ document.getElementById('btn-import-healthkit')?.addEventListener('click', async
             var res = await window.Capacitor.Plugins.ActivityBridge.getHealthKitWorkouts({ daysBack: 30 });
             workouts = res.workouts ?? [];
         } else if (platform === 'android') {
-            await window.Capacitor.Plugins.ActivityBridge.requestHealthConnectPermissions();
+            var permResult = await window.Capacitor.Plugins.ActivityBridge.requestHealthConnectPermissions();
+            if (!permResult.granted) {
+                messageEl.className = 'alert alert-warning mb-0';
+                messageEl.textContent = @json(__('activity.import_permissions'));
+                btn.disabled = false;
+                return;
+            }
             var res = await window.Capacitor.Plugins.ActivityBridge.getHealthConnectWorkouts({ daysBack: 30 });
             workouts = res.workouts ?? [];
         } else {
@@ -345,19 +351,24 @@ document.getElementById('btn-import-healthkit')?.addEventListener('click', async
 
     } catch (err) {
         console.error('[Health import]', err);
+        const code = err.errorMessage ?? err.code ?? '';
         const msg = err.message ?? '';
 
-        if (msg.includes('permission') || msg.includes('denied')) {
-            messageEl.className = 'alert alert-warning mb-0';
-            messageEl.textContent = @json(__('activity.import_permissions'));
-        } else if (msg.includes('not installed') || msg.includes('unavailable') ||
-                   msg.includes('SDK_UNAVAILABLE') || msg.includes('not available')) {
+        if (code === 'health_connect_unavailable') {
             // Health Connect не установлен (Android < 14)
             messageEl.className = 'alert alert-warning mb-0';
             messageEl.textContent = @json(__('activity.import_hc_not_installed'));
+        } else if (code === 'health_connect_error' || code === 'health_connect_query_failed') {
+            // Техническая ошибка Health Connect
+            messageEl.className = 'alert alert-danger mb-0';
+            messageEl.textContent = @json(__('activity.import_error'));
         } else if (msg.includes('Server error: 5')) {
             messageEl.className = 'alert alert-danger mb-0';
             messageEl.textContent = @json(__('activity.import_server_error'));
+        } else if (msg.includes('permission') || msg.includes('denied')) {
+            // iOS HealthKit отказ
+            messageEl.className = 'alert alert-warning mb-0';
+            messageEl.textContent = @json(__('activity.import_permissions'));
         } else if (msg.includes('cancelled') || msg.includes('canceled')) {
             messageEl.className = 'alert alert-info mb-0';
             messageEl.textContent = @json(__('activity.import_cancelled'));
