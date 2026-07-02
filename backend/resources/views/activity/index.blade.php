@@ -345,9 +345,22 @@ document.getElementById('btn-import-healthkit')?.addEventListener('click', async
 
     } catch (err) {
         console.error('[Health import]', err);
-        if (err.message?.includes('permission') || err.message?.includes('denied')) {
+        const msg = err.message ?? '';
+
+        if (msg.includes('permission') || msg.includes('denied')) {
             messageEl.className = 'alert alert-warning mb-0';
             messageEl.textContent = @json(__('activity.import_permissions'));
+        } else if (msg.includes('not installed') || msg.includes('unavailable') ||
+                   msg.includes('SDK_UNAVAILABLE') || msg.includes('not available')) {
+            // Health Connect не установлен (Android < 14)
+            messageEl.className = 'alert alert-warning mb-0';
+            messageEl.textContent = @json(__('activity.import_hc_not_installed'));
+        } else if (msg.includes('Server error: 5')) {
+            messageEl.className = 'alert alert-danger mb-0';
+            messageEl.textContent = @json(__('activity.import_server_error'));
+        } else if (msg.includes('cancelled') || msg.includes('canceled')) {
+            messageEl.className = 'alert alert-info mb-0';
+            messageEl.textContent = @json(__('activity.import_cancelled'));
         } else {
             messageEl.className = 'alert alert-danger mb-0';
             messageEl.textContent = @json(__('activity.import_error'));

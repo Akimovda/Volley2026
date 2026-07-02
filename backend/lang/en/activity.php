@@ -189,6 +189,10 @@ return [
     'import_error'         => 'Import error. Please try again.',
     'import_no_workouts'   => 'No new workouts found in the last 30 days.',
     'import_permissions'   => 'Please allow Health data access in settings.',
+    'import_hc_not_installed' => 'Health Connect is not installed. '
+        . 'Please install the Health Connect app from the Play Store.',
+    'import_server_error'     => 'Server error. Please try again later.',
+    'import_cancelled'        => 'Import cancelled.',
 
     // Activity feature announcement (activity:announce)
     'announce_title' => '❤️ Activity Recording — new feature',
