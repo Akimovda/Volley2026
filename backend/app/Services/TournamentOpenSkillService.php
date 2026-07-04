@@ -182,6 +182,7 @@ class TournamentOpenSkillService
                 $winnerIds, $loserIds, $direction,
                 $seasonId, $leagueId, $event->id, $match->id
             );
+            $match->forceFill(['stats_processed_at' => now()])->saveQuietly();
             $processed++;
         }
 
