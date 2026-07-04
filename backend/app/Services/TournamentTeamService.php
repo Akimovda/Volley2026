@@ -190,6 +190,47 @@ final class TournamentTeamService
     }
 
     /**
+     * Разбивка укомплектованности по позициям для classic_team — для UI.
+     * Использует ту же логику подсчёта, что и checkRequirements().
+     */
+    public function getPositionBreakdown(EventTeam $team): array
+    {
+        if ($team->team_kind !== 'classic_team') {
+            return [];
+        }
+
+        $team->loadMissing(['event.tournamentSetting', 'members.user']);
+        $settings = $this->getSettings($team->event);
+        $confirmed = $team->members->where('confirmation_status', 'confirmed');
+
+        $scheme = $settings?->getGameScheme() ?? '5x1';
+        $requiredPositions = (array) config("volleyball.classic.{$scheme}.positions", []);
+
+        $rows = [];
+        foreach ($requiredPositions as $position => $requiredCount) {
+            $currentCount = $confirmed->where('position_code', $position)->count();
+            $rows[] = [
+                'label'    => $this->positionLabel($position),
+                'current'  => $currentCount,
+                'required' => (int) $requiredCount,
+                'ok'       => $currentCount >= (int) $requiredCount,
+            ];
+        }
+
+        if ($settings?->require_libero) {
+            $hasLibero = $confirmed->contains('position_code', 'libero');
+            $rows[] = [
+                'label'    => 'Либеро',
+                'current'  => $hasLibero ? 1 : 0,
+                'required' => 1,
+                'ok'       => $hasLibero,
+            ];
+        }
+
+        return $rows;
+    }
+
+    /**
      * Пригласить или добавить участника в команду
      */
     /**
