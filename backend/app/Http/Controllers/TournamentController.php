@@ -23,6 +23,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Services\PlayerMatchStatsService;
 use App\Models\MatchPlayerStats;
+use App\Models\MatchRallyEvent;
+use App\Services\MatchRallyService;
 
 class TournamentController extends Controller
 {
@@ -34,6 +36,7 @@ class TournamentController extends Controller
         private TournamentSwissService $swissService,
         private TournamentKingService $kingService,
         private TournamentKingBeachService $kingBeachService,
+        private MatchRallyService $rallyService,
     ) {}
 
     /* ================================================================
@@ -45,9 +48,9 @@ class TournamentController extends Controller
         $this->authorizeOrganizer($request, $event);
 
         $stages = $event->tournamentStages()->with([
-            'groups.teams', 'groups.standings',
+            'groups.teams', 'groups.standings', 'groups.standings.team.captain',
             'matches' => fn($q) => $q->orderBy('round')->orderBy('match_number'),
-            'matches.teamHome', 'matches.teamAway', 'matches.winner',
+            'matches.teamHome.captain', 'matches.teamAway.captain', 'matches.winner',
         ])->get();
 
         // ── Season / League data + selectedOccurrence (до загрузки teams!) ──
@@ -257,7 +260,9 @@ class TournamentController extends Controller
                 $groups = $stage->groups;
 
                 if ($drawMode === 'manual') {
-                    // Ручное распределение: manual_teams[team_id] = 'A'|'B'|...
+                    // Ручное распределение: manual_teams[team_id] = ['group' => 'A'|'B'|..., 'position' => int|null]
+                    // position необязателен и задаёт порядок посева (seed) внутри группы —
+                    // именно этот порядок определяет распределение пар по турам в circle-method.
                     $manualTeams = $request->input('manual_teams', []);
                     $groupLabels = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P'];
                     $groupsByLabel = [];
@@ -265,18 +270,27 @@ class TournamentController extends Controller
                         $label = $groupLabels[$idx] ?? (string)($idx + 1);
                         $groupsByLabel[$label] = $group;
                     }
-                    $seedCounters = [];
-                    foreach ($manualTeams as $teamId => $label) {
+
+                    $byLabel = [];
+                    foreach ($manualTeams as $teamId => $data) {
+                        $label    = is_array($data) ? ($data['group'] ?? null) : $data;
+                        $position = is_array($data) ? ($data['position'] ?? null) : null;
                         if (empty($label) || !isset($groupsByLabel[$label])) continue;
-                        $group = $groupsByLabel[$label];
-                        if (!isset($seedCounters[$label])) $seedCounters[$label] = 0;
-                        $seedCounters[$label]++;
-                        \App\Models\TournamentGroupTeam::create([
-                            'group_id' => $group->id,
+                        $byLabel[$label][] = [
                             'team_id'  => (int) $teamId,
-                            'seed'     => $seedCounters[$label],
-                        ]);
+                            'position' => ($position !== null && $position !== '') ? (int) $position : null,
+                        ];
                     }
+
+                    $assignments = [];
+                    foreach ($byLabel as $label => $entries) {
+                        // usort стабилен в PHP8: команды без позиции (PHP_INT_MAX) сохраняют
+                        // исходный порядок из запроса — это и есть fallback-поведение.
+                        usort($entries, fn($a, $b) => ($a['position'] ?? PHP_INT_MAX) <=> ($b['position'] ?? PHP_INT_MAX));
+                        $assignments[$groupsByLabel[$label]->id] = array_column($entries, 'team_id');
+                    }
+
+                    $this->setupService->drawManual($assignments);
                 } elseif ($drawMode === 'seeded') {
                     $sorted = $teams->sortByDesc(fn($t) => $this->setupService->getTeamRating($t, $event->id))->values();
                 } else {
@@ -646,7 +660,11 @@ class TournamentController extends Controller
 
         $match->load(['teamHome.members.user', 'teamAway.members.user', 'stage']);
 
-        return view('tournaments.score', compact('event', 'match', 'stage'));
+        $hasRallyData = !$match->isCompleted()
+            && $stage->type !== TournamentStage::TYPE_KING_BEACH
+            && MatchRallyEvent::where('match_id', $match->id)->exists();
+
+        return view('tournaments.score', compact('event', 'match', 'stage', 'hasRallyData'));
     }
 
     /* ================================================================
@@ -1990,6 +2008,161 @@ class TournamentController extends Controller
         }
 
         return $this->redirectToSetup($event, 'Статистика игроков сохранена.');
+    }
+
+    /* ================================================================
+     *  Поочковый ввод счёта со статистикой (rally-режим)
+     * ================================================================ */
+
+    private function guardRallyMode(Request $request, TournamentMatch $match): ?RedirectResponse
+    {
+        $stage = $match->stage;
+        $event = $stage->event;
+        $this->authorizeOrganizer($request, $event);
+
+        if ($stage->type === TournamentStage::TYPE_KING_BEACH) {
+            return redirect()
+                ->route('tournament.matches.score.form', $match)
+                ->with('error', 'Поочковый ввод недоступен для формата "Король пляжа".');
+        }
+        if ($match->isCompleted()) {
+            return redirect()
+                ->route('tournament.matches.player_stats.form', $match)
+                ->with('error', 'Матч уже завершён.');
+        }
+        if (!$match->hasTeams()) {
+            return redirect()
+                ->route('tournament.matches.score.form', $match)
+                ->with('error', 'У матча не назначены команды.');
+        }
+
+        return null;
+    }
+
+    public function rallyForm(Request $request, TournamentMatch $match)
+    {
+        if ($redirect = $this->guardRallyMode($request, $match)) {
+            return $redirect;
+        }
+
+        $stage = $match->stage;
+        $event = $stage->event;
+        $match->load(['teamHome.members.user', 'teamHome.captain', 'teamAway.members.user', 'teamAway.captain', 'stage']);
+
+        $activeSet = $this->rallyService->getActiveSetNumber($match);
+        $setNumber = (int) $request->query('set', $activeSet);
+        if ($setNumber < 1) {
+            $setNumber = $activeSet;
+        }
+
+        $board = $this->rallyService->getBoard($match, $setNumber);
+        $matchReady = $this->rallyService->isMatchReadyToFinalize($match);
+
+        return view('tournaments.score_rally', compact('event', 'match', 'stage', 'board', 'setNumber', 'matchReady'));
+    }
+
+    public function rallyRecordPoint(Request $request, TournamentMatch $match)
+    {
+        if ($redirect = $this->guardRallyMode($request, $match)) {
+            if ($request->expectsJson()) {
+                return response()->json(['error' => 'Поочковый ввод недоступен для этого матча.'], 422);
+            }
+            return $redirect;
+        }
+
+        $validated = $request->validate([
+            'set_number'      => 'required|integer|min:1|max:5',
+            'team_id'         => 'required|integer',
+            'action_type'     => 'required|string',
+            'player_id'       => 'nullable|integer',
+            'dig_user_id'     => 'nullable|integer',
+            'assist_user_id'  => 'nullable|integer',
+        ]);
+
+        try {
+            $this->rallyService->recordPoint(
+                $match,
+                (int) $validated['set_number'],
+                (int) $validated['team_id'],
+                $validated['action_type'],
+                isset($validated['player_id']) ? (int) $validated['player_id'] : null,
+                isset($validated['dig_user_id']) ? (int) $validated['dig_user_id'] : null,
+                isset($validated['assist_user_id']) ? (int) $validated['assist_user_id'] : null,
+                $request->user(),
+            );
+        } catch (\InvalidArgumentException $e) {
+            if ($request->expectsJson()) {
+                return response()->json(['error' => $e->getMessage()], 422);
+            }
+            return redirect()
+                ->route('tournament.matches.rally.form', [$match, 'set' => $validated['set_number']])
+                ->with('error', $e->getMessage());
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'board'   => $this->rallyService->getBoard($match->fresh(), (int) $validated['set_number']),
+            ]);
+        }
+
+        return redirect()->route('tournament.matches.rally.form', [$match, 'set' => $validated['set_number']]);
+    }
+
+    public function rallyUndoLastPoint(Request $request, TournamentMatch $match)
+    {
+        if ($redirect = $this->guardRallyMode($request, $match)) {
+            if ($request->expectsJson()) {
+                return response()->json(['error' => 'Поочковый ввод недоступен для этого матча.'], 422);
+            }
+            return $redirect;
+        }
+
+        $validated = $request->validate([
+            'set_number' => 'required|integer|min:1|max:5',
+        ]);
+
+        try {
+            $this->rallyService->undoLastPoint($match, (int) $validated['set_number']);
+        } catch (\InvalidArgumentException $e) {
+            if ($request->expectsJson()) {
+                return response()->json(['error' => $e->getMessage()], 422);
+            }
+            return redirect()
+                ->route('tournament.matches.rally.form', [$match, 'set' => $validated['set_number']])
+                ->with('error', $e->getMessage());
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'board'   => $this->rallyService->getBoard($match->fresh(), (int) $validated['set_number']),
+            ]);
+        }
+
+        return redirect()->route('tournament.matches.rally.form', [$match, 'set' => $validated['set_number']]);
+    }
+
+    public function rallyFinalize(Request $request, TournamentMatch $match)
+    {
+        if ($redirect = $this->guardRallyMode($request, $match)) {
+            return $redirect;
+        }
+
+        if (!$this->rallyService->isMatchReadyToFinalize($match)) {
+            return redirect()
+                ->route('tournament.matches.rally.form', $match)
+                ->with('error', 'Матч ещё не завершён по счёту.');
+        }
+
+        $sets = $this->rallyService->buildFinalSets($match);
+
+        // Переиспользуем существующий score() целиком (валидация/standings/
+        // тайбрейкер/checkStageCompletion/редирект на следующий матч) —
+        // без дублирования логики.
+        $request->merge(['sets' => $sets]);
+
+        return $this->score($request, $match);
     }
 
     /* ================================================================

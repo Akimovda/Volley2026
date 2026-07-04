@@ -158,10 +158,8 @@
 						<div class="d-flex gap-1">
 							<span class="b-600" style="width:18px">{{ $s->rank }}.</span>
 							<span>
-								<div>{{ $s->team->name ?? '—' }}</div>
-								@if($s->team && $s->team->members->count())
-								<div class="f-13">{{ $s->team->members->map(fn($m) => trim(($m->user->last_name ?? '') . ' ' . ($m->user->first_name ?? '')) ?: '?')->implode(' / ') }}</div>
-								@endif
+								<div>@include('tournaments._partials.team_name_link', ['team' => $s->team])</div>
+								@include('tournaments._partials.team_roster_line', ['team' => $s->team, 'class' => 'f-13'])
 							</span>
 							<span style="margin-left:auto">{{ $s->wins }}{{ __('tournaments.tv_w_short') }} {{ $s->losses }}{{ __('tournaments.tv_l_short') }}</span>
 						</div>
@@ -248,10 +246,8 @@
 									<tr>
 										<td>{{ $s->rank }}{{ $inTb ? ' 🎲' : '' }}</td>
 										<td>
-											<div class="cd b-600">{{ $s->team->name ?? '—' }}</div>
-											@if($s->team && $s->team->members->count())
-											<div class="f-16">{{ $s->team->members->map(fn($m) => trim(($m->user->last_name ?? '') . ' ' . ($m->user->first_name ?? '')) ?: '?')->implode(' / ') }}</div>
-											@endif
+											<div class="cd b-600">@include('tournaments._partials.team_name_link', ['team' => $s->team])</div>
+											@include('tournaments._partials.team_roster_line', ['team' => $s->team, 'class' => 'f-16'])
 										</td>
 										<td style="text-align:center">{{ $s->played }}</td>
 										<td style="text-align:center;color:#10b981">{{ $s->wins }}</td>
@@ -287,10 +283,8 @@
 				@foreach($matches->sortBy('match_number') as $m)
 				<div class="d-flex f-14" style="padding:5px 0;border-bottom:1px solid rgba(128,128,128,.08);gap:8px;align-items:center">
 					<span style="flex:1;text-align:right" class="{{ $m->winner_team_id === $m->team_home_id ? 'b-700' : '' }}">
-						{{ $m->teamHome->name ?? 'TBD' }}
-						@if($m->teamHome && $m->teamHome->members->count())
-						<div class="f-11" style="color:#6b7280">{{ $m->teamHome->members->map(fn($mm) => trim(($mm->user->last_name ?? '') . ' ' . ($mm->user->first_name ?? '')) ?: '?')->implode(' / ') }}</div>
-						@endif
+						@include('tournaments._partials.team_name_link', ['team' => $m->teamHome, 'fallback' => 'TBD'])
+						@include('tournaments._partials.team_roster_line', ['team' => $m->teamHome, 'class' => 'f-11', 'style' => 'color:#6b7280'])
 					</span>
 					<span class="px-2 b-700" style="min-width:80px;text-align:center;{{ $m->isCompleted() ? '' : 'opacity:.4' }}">
 						{{ $m->setsScore() ?? 'vs' }}
@@ -299,12 +293,18 @@
 						@endif
 					</span>
 					<span style="flex:1" class="{{ $m->winner_team_id === $m->team_away_id ? 'b-700' : '' }}">
-						{{ $m->teamAway->name ?? 'TBD' }}
-						@if($m->teamAway && $m->teamAway->members->count())
-						<div class="f-11" style="color:#6b7280">{{ $m->teamAway->members->map(fn($mm) => trim(($mm->user->last_name ?? '') . ' ' . ($mm->user->first_name ?? '')) ?: '?')->implode(' / ') }}</div>
-						@endif
+						@include('tournaments._partials.team_name_link', ['team' => $m->teamAway, 'fallback' => 'TBD'])
+						@include('tournaments._partials.team_roster_line', ['team' => $m->teamAway, 'class' => 'f-11', 'style' => 'color:#6b7280'])
 					</span>
 				</div>
+				@if($m->isCompleted() && !empty($matchStatsByMatchId[$m->id]['has_stats']))
+				<div style="text-align:center;margin:2px 0 8px">
+					<button type="button" class="btn btn-small btn-secondary" onclick="toggleMatchStats({{ $m->id }})">📊 {{ __('tournaments.pub_match_stats_toggle') }}</button>
+				</div>
+				<div id="match-stats-{{ $m->id }}" class="card mb-2" style="display:none">
+					@include('tournaments._partials.match_stats_table', ['statsData' => $matchStatsByMatchId[$m->id], 'match' => $m])
+				</div>
+				@endif
 				@endforeach
 				@endforeach
 			</div>
@@ -350,6 +350,12 @@
 		$divisions = $hasDivisions
 		? collect($classification)->groupBy('division')
 		: collect(['all' => collect($classification)]);
+
+		// Пачкой грузим команды классификации одним запросом (вместо find() внутри циклов)
+		$classificationTeams = \App\Models\EventTeam::whereIn('id', collect($classification)->pluck('team_id'))
+		    ->with(['members.user', 'captain'])
+		    ->get()
+		    ->keyBy('id');
 		@endphp
 		
 		@if($hasDivisions)
@@ -361,22 +367,16 @@
 					@foreach($divTeams as $i => $c)
 					@php
 					$localPlace = $i + 1;
-					$team = \App\Models\EventTeam::with('members.user')->find($c['team_id']);
-					$members = $team ? $team->members->map(function($m) {
-					$u = $m->user;
-					return $u ? '<a href="' . route('users.show', $u) . '" class="blink" style="color:#6b7280">' . $u->last_name . ' ' . $u->first_name . '</a>' : '?';
-					})->implode(' / ') : '';
+					$team = $classificationTeams->get($c['team_id']);
 					@endphp
 					<div style="padding:6px 0;border-bottom:1px solid rgba(128,128,128,.08)">
 						<div class="d-flex f-14" style="gap:8px;align-items:center">
 							<span class="b-700" style="width:26px;{{ $localPlace <= 3 ? 'font-size:18px' : '' }}">
 								{{ $localPlace === 1 ? '🥇' : ($localPlace === 2 ? '🥈' : ($localPlace === 3 ? '🥉' : $localPlace . '.')) }}
 							</span>
-							<span class="{{ $localPlace <= 3 ? 'b-700' : '' }}">{{ $c['team_name'] }}</span>
+							<span class="{{ $localPlace <= 3 ? 'b-700' : '' }}">@include('tournaments._partials.team_name_link', ['team' => $team, 'fallback' => $c['team_name']])</span>
 						</div>
-						@if($members)
-						<div class="f-12" style="margin-left:34px;color:#6b7280">{!! $members !!}</div>
-						@endif
+						@include('tournaments._partials.team_roster_line', ['team' => $team, 'class' => 'f-12', 'style' => 'margin-left:34px;color:#6b7280'])
 					</div>
 					@endforeach
 				</div>
@@ -389,22 +389,16 @@
 			<div class="b-700 f-16 mb-2">🏆 {{ __('tournaments.pub_final_standings') }}</div>
 			@foreach($classification as $c)
 			@php
-			$team = \App\Models\EventTeam::with('members.user')->find($c['team_id']);
-			$members = $team ? $team->members->map(function($m) {
-			$u = $m->user;
-			return $u ? '<a href="' . route('users.show', $u) . '" class="blink" style="color:#6b7280">' . $u->last_name . ' ' . $u->first_name . '</a>' : '?';
-			})->implode(' / ') : '';
+			$team = $classificationTeams->get($c['team_id']);
 			@endphp
 			<div style="padding:6px 0;border-bottom:1px solid rgba(128,128,128,.08)">
 				<div class="d-flex f-14" style="gap:8px;align-items:center">
 					<span class="b-700" style="width:26px;{{ $c['place'] <= 3 ? 'font-size:18px' : '' }}">
 						{{ $c['place'] === 1 ? '🥇' : ($c['place'] === 2 ? '🥈' : ($c['place'] === 3 ? '🥉' : $c['place'] . '.')) }}
 					</span>
-					<span class="{{ $c['place'] <= 3 ? 'b-700' : '' }}">{{ $c['team_name'] }}</span>
+					<span class="{{ $c['place'] <= 3 ? 'b-700' : '' }}">@include('tournaments._partials.team_name_link', ['team' => $team, 'fallback' => $c['team_name']])</span>
 				</div>
-				@if($members)
-				<div class="f-12" style="margin-left:34px;color:#6b7280">{!! $members !!}</div>
-				@endif
+				@include('tournaments._partials.team_roster_line', ['team' => $team, 'class' => 'f-12', 'style' => 'margin-left:34px;color:#6b7280'])
 			</div>
 			@endforeach
 		</div>
@@ -430,10 +424,8 @@
 			<div class="d-flex f-14" style="padding:5px 0;border-bottom:1px solid rgba(128,128,128,.08);gap:8px;align-items:center">
 				<span class="f-12" style="opacity:.4;width:30px">R{{ $m->round }}</span>
 				<span style="flex:1;text-align:right" class="{{ $m->winner_team_id === $m->team_home_id ? 'b-700' : '' }}">
-					{{ $m->teamHome->name ?? '?' }}
-					@if($m->teamHome && $m->teamHome->members->count())
-					<div class="f-11" style="color:#6b7280">{{ $m->teamHome->members->map(fn($mm) => trim(($mm->user->last_name ?? '') . ' ' . ($mm->user->first_name ?? '')) ?: '?')->implode(' / ') }}</div>
-					@endif
+					@include('tournaments._partials.team_name_link', ['team' => $m->teamHome, 'fallback' => '?'])
+					@include('tournaments._partials.team_roster_line', ['team' => $m->teamHome, 'class' => 'f-11', 'style' => 'color:#6b7280'])
 				</span>
 				<span class="px-2 b-700" style="min-width:100px;text-align:center">
 					{{ $m->setsScore() }}
@@ -442,14 +434,20 @@
 					@endif
 				</span>
 				<span style="flex:1" class="{{ $m->winner_team_id === $m->team_away_id ? 'b-700' : '' }}">
-					{{ $m->teamAway->name ?? '?' }}
-					@if($m->teamAway && $m->teamAway->members->count())
-					<div class="f-11" style="color:#6b7280">{{ $m->teamAway->members->map(fn($mm) => trim(($mm->user->last_name ?? '') . ' ' . ($mm->user->first_name ?? '')) ?: '?')->implode(' / ') }}</div>
-					@endif
+					@include('tournaments._partials.team_name_link', ['team' => $m->teamAway, 'fallback' => '?'])
+					@include('tournaments._partials.team_roster_line', ['team' => $m->teamAway, 'class' => 'f-11', 'style' => 'color:#6b7280'])
 				</span>
 			</div>
+			@if(!empty($matchStatsByMatchId[$m->id]['has_stats']))
+			<div style="text-align:center;margin:2px 0 8px">
+				<button type="button" class="btn btn-small btn-secondary" onclick="toggleMatchStats({{ $m->id }})">📊 {{ __('tournaments.pub_match_stats_toggle') }}</button>
+			</div>
+			<div id="match-stats-r-{{ $m->id }}" class="card mb-2" style="display:none">
+				@include('tournaments._partials.match_stats_table', ['statsData' => $matchStatsByMatchId[$m->id], 'match' => $m])
+			</div>
+			@endif
 			@endforeach
-			
+
 			@if($stage->matches->where('status', 'completed')->isEmpty())
 			<div class="f-13" style="opacity:.5">{{ __('tournaments.pub_no_finished_matches') }}</div>
 			@endif
@@ -639,6 +637,11 @@
 				setInterval(pollLive, pollInterval);
 				@endif
 			})();
+
+			function toggleMatchStats(id) {
+				var el = document.getElementById('match-stats-' + id) || document.getElementById('match-stats-r-' + id);
+				if (el) el.style.display = (el.style.display === 'none') ? '' : 'none';
+			}
 
 			// Android WebView не скачивает файлы по Content-Disposition: attachment
 			if (window.Capacitor && window.Capacitor.getPlatform() === 'android') {

@@ -917,6 +917,9 @@ Route::get('/events/{event}/tournament/live', [TournamentPublicController::class
 Route::get('/events/{event}/tournament/bracket/{stage}', [TournamentPublicController::class, 'bracket'])
     ->name('tournament.public.bracket');
 
+Route::get('/events/{event}/tournament/teams/{team}', [TournamentPublicController::class, 'teamRoster'])
+    ->name('tournament.public.team');
+
 Route::get('/organizer/{organizer}/tournaments', [TournamentPublicController::class, 'organizerTournaments'])
     ->name('tournament.organizer');
 
@@ -977,6 +980,16 @@ Route::middleware([
         ->name('tournament.matches.player_stats.form');
     Route::post('/tournament-matches/{match}/player-stats', [TournamentController::class, 'playerStatsSave'])
         ->name('tournament.matches.player_stats.save');
+
+    // Поочковый ввод счёта со статистикой (rally-режим)
+    Route::get('/tournament-matches/{match}/score/rally', [TournamentController::class, 'rallyForm'])
+        ->name('tournament.matches.rally.form');
+    Route::post('/tournament-matches/{match}/score/rally/point', [TournamentController::class, 'rallyRecordPoint'])
+        ->name('tournament.matches.rally.point');
+    Route::post('/tournament-matches/{match}/score/rally/undo', [TournamentController::class, 'rallyUndoLastPoint'])
+        ->name('tournament.matches.rally.undo');
+    Route::post('/tournament-matches/{match}/score/rally/finalize', [TournamentController::class, 'rallyFinalize'])
+        ->name('tournament.matches.rally.finalize');
 
     Route::post('/events/{event}/tournament/apply-promotion', [TournamentController::class, 'applyDivisionPromotion'])
         ->name('tournament.applyPromotion');

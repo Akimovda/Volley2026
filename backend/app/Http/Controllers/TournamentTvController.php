@@ -32,8 +32,8 @@ class TournamentTvController extends Controller
         $stages = $event->tournamentStages()
             ->when($selectedOccurrence, fn($q) => $q->where('occurrence_id', $selectedOccurrence->id))
             ->with([
-                'groups.standings' => fn($q) => $q->with('team.members.user')->orderBy('rank'),
-                'matches' => fn($q) => $q->with(['teamHome.members.user', 'teamAway.members.user', 'winner'])
+                'groups.standings' => fn($q) => $q->with('team.members.user', 'team.captain')->orderBy('rank'),
+                'matches' => fn($q) => $q->with(['teamHome.members.user', 'teamHome.captain', 'teamAway.members.user', 'teamAway.captain', 'winner'])
                     ->orderBy('round')->orderBy('match_number'),
             ])
             ->orderBy('sort_order')

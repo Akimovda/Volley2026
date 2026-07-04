@@ -51,10 +51,8 @@ $rankNumerals = [1=>'I', 2=>'II', 3=>'III', 4=>'IV', 5=>'V', 6=>'VI', 7=>'VII', 
             <tr style="{{ $isOutsider ? 'opacity:0.65' : '' }}">
                 <td style="text-align:center;color:#6b7280;padding:4px">{{ $rowIdx + 1 }}</td>
                 <td class="p-1">
-                    <div class="b-600 cd">{{ $standing?->team?->name ?? '—' }}@if($isOutsider) <span class="f-12" style="font-weight:400"> · аут.</span>@endif</div>
-                    @if($standing?->team?->members?->count())
-                    <div class="f-12" style="color:#6b7280">{{ $standing->team->members->map(fn($m) => trim(($m->user->last_name ?? '') . ' ' . ($m->user->first_name ?? '')) ?: '?')->implode(' / ') }}</div>
-                    @endif
+                    <div class="b-600 cd">@include('tournaments._partials.team_name_link', ['team' => $standing?->team])@if($isOutsider) <span class="f-12" style="font-weight:400"> · аут.</span>@endif</div>
+                    @include('tournaments._partials.team_roster_line', ['team' => $standing?->team, 'class' => 'f-12', 'style' => 'color:#6b7280'])
                 </td>
                 @foreach($teamIds as $colIdx => $oppId)
                 @php

@@ -1114,6 +1114,7 @@ $tourNumber = $seasonData
 											<tr>
 												<th>{{ __('tournaments.setup_col_team') }}</th>
 												<th>{{ __('tournaments.setup_stage_col_group') }}</th>
+												<th>{{ __('tournaments.setup_stage_manual_position_col') }}</th>
 											</tr>
 										</thead>
 										<tbody>
@@ -1126,11 +1127,14 @@ $tourNumber = $seasonData
 													@endif
 												</td>
 												<td class="text-center">
-													<select name="manual_teams[{{ $team->id }}]" class="manual-group-select" >
+													<select name="manual_teams[{{ $team->id }}][group]" class="manual-group-select" >
 														<option value="">—</option>
 														<option value="A">{{ __('tournaments.setup_stage_group_letter', ['l' => 'A']) }}</option>
 														<option value="B">{{ __('tournaments.setup_stage_group_letter', ['l' => 'B']) }}</option>
 													</select>
+												</td>
+												<td class="text-center">
+													<input type="number" name="manual_teams[{{ $team->id }}][position]" min="1" max="{{ $teams->count() }}" style="width:4.5rem" placeholder="—">
 												</td>
 											</tr>
 											@endforeach
@@ -1469,10 +1473,8 @@ $tourNumber = $seasonData
 									<tr>
 										<td style="text-align:center">{{ $standing->rank }}</td>
 										<td>
-											<div class="b-600 cd">{{ $standing->team->name ?? '—' }}@if($isOutsider) <span class="f-16">{{ __('tournaments.setup_outsider_label') }}</span>@endif</div>
-											@if($standing->team && $standing->team->members->count())
-											<div class="f-16">{{ $standing->team->members->map(fn($m) => trim(($m->user->last_name ?? '') . ' ' . ($m->user->first_name ?? '')) ?: '?')->implode(' / ') }}</div>
-											@endif
+											<div class="b-600 cd">@include('tournaments._partials.team_name_link', ['team' => $standing->team])@if($isOutsider) <span class="f-16">{{ __('tournaments.setup_outsider_label') }}</span>@endif</div>
+											@include('tournaments._partials.team_roster_line', ['team' => $standing->team, 'class' => 'f-16'])
 										</td>
 										<td style="text-align:center"><span class="b-600 alert-info pt-05 pb-05 p-1">{{ $standing->played }}</span></td>
 										<td style="text-align:center;"><span class="b-600 alert-success pt-05 pb-05 p-1">{{ $standing->wins }}</span></td>
@@ -1665,16 +1667,12 @@ $tourNumber = $seasonData
 											<td>{{ $match->match_number }}</td>
 											<td>R{{ $match->round }}</td>
 											<td>
-												<div class="{{ $match->winner_team_id === $match->team_home_id ? 'cd b-600' : '' }}">{{ $match->teamHome->name ?? 'TBD' }}</div>
-												@if($match->teamHome && $match->teamHome->members->count())
-												<div class="f-13">{{ $match->teamHome->members->map(fn($m) => trim(($m->user->last_name ?? '') . ' ' . ($m->user->first_name ?? '')) ?: '?')->implode(' / ') }}</div>
-												@endif
+												<div class="{{ $match->winner_team_id === $match->team_home_id ? 'cd b-600' : '' }}">@include('tournaments._partials.team_name_link', ['team' => $match->teamHome, 'fallback' => 'TBD'])</div>
+												@include('tournaments._partials.team_roster_line', ['team' => $match->teamHome, 'class' => 'f-13'])
 											</td>
 											<td>
-												<div class="{{ $match->winner_team_id === $match->team_away_id ? 'cd b-600' : '' }}">{{ $match->teamAway->name ?? 'TBD' }}</div>
-												@if($match->teamAway && $match->teamAway->members->count())
-												<div class="f-13">{{ $match->teamAway->members->map(fn($m) => trim(($m->user->last_name ?? '') . ' ' . ($m->user->first_name ?? '')) ?: '?')->implode(' / ') }}</div>
-												@endif
+												<div class="{{ $match->winner_team_id === $match->team_away_id ? 'cd b-600' : '' }}">@include('tournaments._partials.team_name_link', ['team' => $match->teamAway, 'fallback' => 'TBD'])</div>
+												@include('tournaments._partials.team_roster_line', ['team' => $match->teamAway, 'class' => 'f-13'])
 											</td>
 											<td style="text-align:center">{{ $match->setsScore() ?? '—' }}</td>
 											<td style="text-align:center">{{ $match->detailedScore() ?: '—' }}</td>

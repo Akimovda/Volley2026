@@ -112,6 +112,39 @@ class PlayerMatchStatsService
     }
 
     /**
+     * Массовая загрузка статистики для набора матчей одним запросом (без N+1).
+     *
+     * @param \Illuminate\Support\Collection<int, TournamentMatch> $matches
+     * @return array<int, array{home: array, away: array, sets_count: int, has_stats: bool}> keyed by match_id
+     */
+    public function getMatchStatsTableForMatches($matches): array
+    {
+        $matchIds = $matches->pluck('id');
+        if ($matchIds->isEmpty()) {
+            return [];
+        }
+
+        $allStats = MatchPlayerStats::whereIn('match_id', $matchIds)->with('user')->get()->groupBy('match_id');
+
+        $result = [];
+        foreach ($matches as $match) {
+            $statsForMatch = $allStats->get($match->id, collect());
+            if ($statsForMatch->isEmpty()) {
+                $result[$match->id] = ['home' => [], 'away' => [], 'sets_count' => 0, 'has_stats' => false];
+                continue;
+            }
+            $setsCount = $statsForMatch->where('set_number', '>', 0)->max('set_number') ?? 0;
+            $result[$match->id] = [
+                'home'       => $this->formatTeamStats($statsForMatch->where('team_id', $match->team_home_id)->groupBy('user_id'), $setsCount),
+                'away'       => $this->formatTeamStats($statsForMatch->where('team_id', $match->team_away_id)->groupBy('user_id'), $setsCount),
+                'sets_count' => $setsCount,
+                'has_stats'  => true,
+            ];
+        }
+        return $result;
+    }
+
+    /**
      * Форматировать статистику команды для отображения.
      */
     private function formatTeamStats($groupedByUser, int $setsCount): array
