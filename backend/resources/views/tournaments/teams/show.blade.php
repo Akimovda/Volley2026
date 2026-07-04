@@ -116,8 +116,8 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
             $joinRequests  = $team->members->where('confirmation_status', 'requested');
         @endphp
         @forelse($activeMembers as $member)
-        <div class="card d-flex between fvc mb-1" style="flex-wrap:wrap;gap:1rem">
-            <div class="d-flex fvc" style="gap:.8rem">
+        <div class="card mb-1">
+            <div class="d-flex fvc" style="gap:.8rem;flex-wrap:wrap">
                 <img src="{{ $member->user->profile_photo_url ?? '' }}" alt="" style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;">
                 <div>
                     <div class="d-flex fvc" style="gap:.6rem;flex-wrap:wrap;row-gap:.4rem">
@@ -197,71 +197,73 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
                     </div>
                 </div>
             </div>
-            <div class="d-flex gap-1 fvc">
-                <span style="display:inline-block;padding:2px 10px;border-radius:10px;font-size:12px;font-weight:600;background:{{ $stBg[$member->confirmation_status] ?? '#f3f4f6' }};color:{{ $stColor[$member->confirmation_status] ?? '#6b7280' }}">
-                    {{ $stLabels[$member->confirmation_status] ?? $member->confirmation_status }}
-                </span>
-                @if($isCaptain && (int)$member->user_id !== (int)$team->captain_user_id)
-                    @if($member->confirmation_status !== 'confirmed')
-                    <form method="POST" action="{{ route('tournamentTeams.members.confirm',[$event,$team,$member]) }}">
-                        @csrf
-                        <button class="btn btn-small">✅</button>
-                    </form>
+            <div class="d-flex fvc mt-1" style="flex-wrap:wrap;gap:.6rem;justify-content:space-between">
+                <div class="d-flex fvc gap-1" style="flex-wrap:wrap">
+                    @if($isCaptain && (int)$member->user_id !== (int)$team->captain_user_id)
+                        @if($member->confirmation_status !== 'confirmed')
+                        <form method="POST" action="{{ route('tournamentTeams.members.confirm',[$event,$team,$member]) }}">
+                            @csrf
+                            <button class="btn btn-small">✅</button>
+                        </form>
+                        @endif
+                        @if($member->confirmation_status !== 'declined')
+                        <form method="POST" action="{{ route('tournamentTeams.members.decline',[$event,$team,$member]) }}">
+                            @csrf
+                            <button class="btn btn-small btn-secondary">✗</button>
+                        </form>
+                        @endif
                     @endif
-                    @if($member->confirmation_status !== 'declined')
-                    <form method="POST" action="{{ route('tournamentTeams.members.decline',[$event,$team,$member]) }}">
-                        @csrf
-                        <button class="btn btn-small btn-secondary">✗</button>
-                    </form>
+                    @if($isCaptain && (int)$member->user_id !== (int)$team->captain_user_id && $member->confirmation_status === 'confirmed')
+                        <form method="POST" action="{{ route('tournamentTeams.transferCaptain',[$event,$team]) }}"
+                              onsubmit="return confirm('Передать капитанство игроку {{ addslashes($member->user->name ?? '') }}?')">
+                            @csrf
+                            <input type="hidden" name="new_captain_user_id" value="{{ $member->user_id }}">
+                            <button type="submit" class="btn btn-small btn-secondary" title="Передать капитанство">👑</button>
+                        </form>
                     @endif
-                @endif
-                @if($isCaptain && (int)$member->user_id !== (int)$team->captain_user_id && $member->confirmation_status === 'confirmed')
-                    <form method="POST" action="{{ route('tournamentTeams.transferCaptain',[$event,$team]) }}"
-                          onsubmit="return confirm('Передать капитанство игроку {{ addslashes($member->user->name ?? '') }}?')">
-                        @csrf
-                        <input type="hidden" name="new_captain_user_id" value="{{ $member->user_id }}">
-                        <button type="submit" class="btn btn-small btn-secondary" title="Передать капитанство">👑</button>
-                    </form>
-                @endif
-                @if($canManage && $leagueForSubs && !$tourStarted && $member->confirmation_status === 'confirmed' && (int)$member->user_id !== (int)$team->captain_user_id)
-                    @php $existingSub = $existingSubstitutions[$member->user_id] ?? null; @endphp
-                    @if($existingSub)
-                        @if($existingSub->isConfirmed())
-                            <span style="font-size:12px;padding:2px 8px;border-radius:10px;background:#f0fdf4;color:#166534;font-weight:600">
-                                🔄 {{ $existingSub->substitutePlayer->last_name }} {{ $existingSub->substitutePlayer->first_name }}
-                            </span>
+                    @if($canManage && $leagueForSubs && !$tourStarted && $member->confirmation_status === 'confirmed' && (int)$member->user_id !== (int)$team->captain_user_id)
+                        @php $existingSub = $existingSubstitutions[$member->user_id] ?? null; @endphp
+                        @if($existingSub)
+                            @if($existingSub->isConfirmed())
+                                <span style="font-size:12px;padding:2px 8px;border-radius:10px;background:#f0fdf4;color:#166534;font-weight:600">
+                                    🔄 {{ $existingSub->substitutePlayer->last_name }} {{ $existingSub->substitutePlayer->first_name }}
+                                </span>
+                            @else
+                                <span style="font-size:12px;padding:2px 8px;border-radius:10px;background:#fff7e6;color:#92400e;font-weight:600">
+                                    ⏳ {{ $existingSub->substitutePlayer->last_name }} {{ $existingSub->substitutePlayer->first_name }}
+                                </span>
+                                <form method="POST" action="{{ route('substitutions.cancel', $existingSub) }}" style="display:inline">
+                                    @csrf
+                                    <button class="btn btn-small btn-secondary btn-alert"
+                                        data-title="Отменить замену?"
+                                        data-icon="warning"
+                                        data-confirm-text="Да"
+                                        data-cancel-text="Отмена"
+                                        title="Отменить замену">✕</button>
+                                </form>
+                            @endif
                         @else
-                            <span style="font-size:12px;padding:2px 8px;border-radius:10px;background:#fff7e6;color:#92400e;font-weight:600">
-                                ⏳ {{ $existingSub->substitutePlayer->last_name }} {{ $existingSub->substitutePlayer->first_name }}
-                            </span>
-                            <form method="POST" action="{{ route('substitutions.cancel', $existingSub) }}" style="display:inline">
-                                @csrf
-                                <button class="btn btn-small btn-secondary btn-alert"
-                                    data-title="Отменить замену?"
+                            <button type="button" class="btn btn-small btn-secondary"
+                                title="Найти замену на этот тур"
+                                data-member-id="{{ $member->user_id }}"
+                                data-member-name="{{ $member->user->last_name }} {{ $member->user->first_name }}"
+                                onclick="openSubModal(this)">🔄</button>
+                        @endif
+                    @endif
+                    @if(($isCaptain || $isOrganizer) && (int)$member->user_id !== (int)$team->captain_user_id)
+                        <form method="POST" action="{{ route('tournamentTeams.members.destroy',[$event,$team,$member]) }}">
+                            @csrf @method('DELETE')
+                            <button type="submit" class="btn btn-small btn-secondary btn-alert"
+                                    data-title="Удалить из команды?"
                                     data-icon="warning"
                                     data-confirm-text="Да"
-                                    data-cancel-text="Отмена"
-                                    title="Отменить замену">✕</button>
-                            </form>
-                        @endif
-                    @else
-                        <button type="button" class="btn btn-small btn-secondary"
-                            title="Найти замену на этот тур"
-                            data-member-id="{{ $member->user_id }}"
-                            data-member-name="{{ $member->user->last_name }} {{ $member->user->first_name }}"
-                            onclick="openSubModal(this)">🔄</button>
+                                    data-cancel-text="Отмена">🗑</button>
+                        </form>
                     @endif
-                @endif
-                @if(($isCaptain || $isOrganizer) && (int)$member->user_id !== (int)$team->captain_user_id)
-                    <form method="POST" action="{{ route('tournamentTeams.members.destroy',[$event,$team,$member]) }}">
-                        @csrf @method('DELETE')
-                        <button type="submit" class="btn btn-small btn-secondary btn-alert"
-                                data-title="Удалить из команды?"
-                                data-icon="warning"
-                                data-confirm-text="Да"
-                                data-cancel-text="Отмена">🗑</button>
-                    </form>
-                @endif
+                </div>
+                <span style="display:inline-block;padding:2px 10px;border-radius:10px;font-size:12px;font-weight:600;background:{{ $stBg[$member->confirmation_status] ?? '#f3f4f6' }};color:{{ $stColor[$member->confirmation_status] ?? '#6b7280' }};flex-shrink:0">
+                    {{ $stLabels[$member->confirmation_status] ?? $member->confirmation_status }}
+                </span>
             </div>
         </div>
         @empty
