@@ -150,20 +150,11 @@
 			@if($stage->groups->isNotEmpty())
 			<div class="row">
 				@foreach($stage->groups as $group)
-				<div class="col-md-6">
+				<div class="{{ $stage->groups->count() > 1 ? 'col-md-6' : 'col-md-12' }}">
 					<div class="card">
 						<div class="b-600 cd mb-1">{{ $group->name }}</div>
 						@if($group->standings->isNotEmpty())
-						@foreach($group->standings->sortBy('rank')->take(3) as $s)
-						<div class="d-flex gap-1">
-							<span class="b-600" style="width:18px">{{ $s->rank }}.</span>
-							<span>
-								<div>@include('tournaments._partials.team_name_link', ['team' => $s->team])</div>
-								@include('tournaments._partials.team_roster_line', ['team' => $s->team, 'class' => 'f-13'])
-							</span>
-							<span style="margin-left:auto">{{ $s->wins }}{{ __('tournaments.tv_w_short') }} {{ $s->losses }}{{ __('tournaments.tv_l_short') }}</span>
-						</div>
-						@endforeach
+						@include('tournaments._partials.podium', ['group' => $group])
 						@else
 						<div class="f-13">
 							{{ $group->teams->pluck('name')->implode(', ') }}
