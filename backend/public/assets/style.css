@@ -4954,16 +4954,27 @@ body:not(.is-app) .native-actions {
 	font-size: 13px;
 }
 /* ===== Club module: таймлайн занятости кортов (Фаза 2) ===== */
+/* HEADER_OFFSET (JS-константа) = высота .timeline-direction-label (26px, с margin) +
+   .timeline-court-header (24px) = 50px — ось времени должна учитывать этот отступ,
+   иначе подписи времени расходятся с реальным положением событий/линии текущего времени. */
+.timeline-day {
+	width: 100%;
+}
 .timeline-scroll {
 	display: flex;
+	width: 100%;
 	overflow-x: auto;
 	gap: 12px;
 	padding-bottom: 8px;
+	position: relative;
 }
 .timeline-axis {
-	position: relative;
+	position: sticky;
+	left: 0;
+	z-index: 4;
 	flex: 0 0 52px;
 	width: 52px;
+	background: rgba(255, 255, 255, .94);
 }
 .timeline-axis-label {
 	position: absolute;
@@ -4974,18 +4985,41 @@ body:not(.is-app) .native-actions {
 	opacity: .55;
 	white-space: nowrap;
 }
+.timeline-now-dot {
+	position: absolute;
+	right: -4px;
+	width: 9px;
+	height: 9px;
+	margin-top: -4px;
+	border-radius: 50%;
+	background: #E7612F;
+	box-shadow: 0 0 0 2px #fff;
+	z-index: 5;
+}
 .timeline-courts {
 	display: flex;
 	gap: 16px;
+	position: relative;
+}
+.timeline-now-line {
+	position: absolute;
+	left: 0;
+	right: 0;
+	height: 2px;
+	background: #E7612F;
+	pointer-events: none;
+	z-index: 3;
 }
 .timeline-direction-group {
 	display: flex;
 	flex-direction: column;
 }
 .timeline-direction-label {
+	height: 18px;
+	line-height: 18px;
+	margin: 0 0 8px;
 	font-weight: 700;
 	font-size: 13px;
-	margin-bottom: 6px;
 	opacity: .75;
 	white-space: nowrap;
 }
@@ -4996,12 +5030,14 @@ body:not(.is-app) .native-actions {
 .timeline-court-col {
 	flex: 0 0 140px;
 	width: 140px;
+	min-width: 120px;
 }
 .timeline-court-header {
+	height: 24px;
+	line-height: 24px;
 	text-align: center;
 	font-size: 12px;
 	font-weight: 600;
-	padding: 4px 0;
 	background: rgba(41, 103, 186, .08);
 	border-radius: 6px 6px 0 0;
 }
@@ -5079,6 +5115,9 @@ body:not(.is-app) .native-actions {
 .timeline-week-closed {
 	opacity: .4;
 }
+body.dark .timeline-axis {
+	background: rgba(30, 31, 45, .94);
+}
 body.dark .timeline-court-header {
 	background: rgba(255, 177, 113, .12);
 }
@@ -5093,10 +5132,14 @@ body.dark .timeline-week-table td {
 body.dark .timeline-week-day-header:hover {
 	background: rgba(255, 177, 113, .12);
 }
+body.dark .timeline-now-dot {
+	box-shadow: 0 0 0 2px #1a1b2e;
+}
 @media (max-width: 767px) {
 	.timeline-court-col {
 		flex-basis: 120px;
 		width: 120px;
+		min-width: 120px;
 	}
 }
 

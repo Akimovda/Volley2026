@@ -28,15 +28,15 @@ $statusColors = [
 $renderBooking = function ($booking) use ($statusLabels, $statusColors) {
     $court = $booking->court;
     $location = $court?->direction?->location;
-    $user = $booking->user;
-    $userName = $user ? (trim(($user->last_name ?? '') . ' ' . ($user->first_name ?? '')) ?: $user->name) : '—';
     return [
         'id' => $booking->id,
         'court_name' => $court->name ?? '—',
         'location_name' => $location->name ?? '—',
         'starts_at' => $booking->starts_at?->format('d.m.Y H:i'),
         'ends_at' => $booking->ends_at?->format('H:i'),
-        'user_name' => $userName,
+        'user_name' => $booking->booker_name,
+        'is_guest' => $booking->isGuestBooking(),
+        'guest_phone' => $booking->guest_phone,
         'event' => $booking->event,
         'price' => $booking->price_total,
         'status' => $booking->status,
@@ -56,7 +56,14 @@ $renderBooking = function ($booking) use ($statusLabels, $statusColors) {
         <div class="alert alert-error">{{ session('error') }}</div>
         @endif
 
+        @if($locations->isNotEmpty())
+        @include('club._partials.booking_modal', ['locations' => $locations])
+        @endif
+
         <div class="d-flex gap-1 mb-2" style="flex-wrap:wrap">
+            @if($locations->isNotEmpty())
+            <button type="button" class="btn btn-small btn-primary" onclick="window.__openAddBookingModal && window.__openAddBookingModal()">➕ {{ __('club.add_booking') }}</button>
+            @endif
             <button type="button" class="btn btn-small btn-primary" id="cbTabPending">{{ __('club.tab_pending') }} ({{ $pending->count() }})</button>
             <button type="button" class="btn btn-small btn-secondary" id="cbTabActive">{{ __('club.tab_active') }} ({{ $active->count() }})</button>
             <button type="button" class="btn btn-small btn-secondary" id="cbTabHistory">{{ __('club.tab_history') }} ({{ $history->count() }})</button>
@@ -70,7 +77,7 @@ $renderBooking = function ($booking) use ($statusLabels, $statusColors) {
                         <div>
                             <div class="b-700">{{ $row['location_name'] }} · {{ $row['court_name'] }}</div>
                             <div class="f-14">{{ $row['starts_at'] }}–{{ $row['ends_at'] }}</div>
-                            <div class="f-14">{{ __('club.booking_by') }}: {{ $row['user_name'] }}</div>
+                            <div class="f-14">{{ __('club.booking_by') }}: {{ $row['user_name'] }}@if($row['is_guest']) <span class="f-12 cd">({{ __('club.guest') }}@if($row['guest_phone']), {{ $row['guest_phone'] }}@endif)</span>@endif</div>
                             @if($row['event'])
                             <div class="f-14"><a href="{{ route('events.show', $row['event']) }}" class="blink">{{ $row['event']->title }}</a></div>
                             @endif
@@ -103,7 +110,7 @@ $renderBooking = function ($booking) use ($statusLabels, $statusColors) {
                         <span class="f-12 p-1 px-2" style="background:{{ $row['status_color'] }}22;color:{{ $row['status_color'] }};border-radius:6px">{{ $row['status_label'] }}</span>
                     </div>
                     <div class="f-14">{{ $row['starts_at'] }}–{{ $row['ends_at'] }}</div>
-                    <div class="f-14">{{ __('club.booking_by') }}: {{ $row['user_name'] }}</div>
+                    <div class="f-14">{{ __('club.booking_by') }}: {{ $row['user_name'] }}@if($row['is_guest']) <span class="f-12 cd">({{ __('club.guest') }}@if($row['guest_phone']), {{ $row['guest_phone'] }}@endif)</span>@endif</div>
                     @if($row['event'])
                     <div class="f-14"><a href="{{ route('events.show', $row['event']) }}" class="blink">{{ $row['event']->title }}</a></div>
                     @endif
@@ -122,7 +129,7 @@ $renderBooking = function ($booking) use ($statusLabels, $statusColors) {
                         <span class="f-12 p-1 px-2" style="background:{{ $row['status_color'] }}22;color:{{ $row['status_color'] }};border-radius:6px">{{ $row['status_label'] }}</span>
                     </div>
                     <div class="f-14">{{ $row['starts_at'] }}–{{ $row['ends_at'] }}</div>
-                    <div class="f-14">{{ __('club.booking_by') }}: {{ $row['user_name'] }}</div>
+                    <div class="f-14">{{ __('club.booking_by') }}: {{ $row['user_name'] }}@if($row['is_guest']) <span class="f-12 cd">({{ __('club.guest') }}@if($row['guest_phone']), {{ $row['guest_phone'] }}@endif)</span>@endif</div>
                     @if($row['event'])
                     <div class="f-14"><a href="{{ route('events.show', $row['event']) }}" class="blink">{{ $row['event']->title }}</a></div>
                     @endif

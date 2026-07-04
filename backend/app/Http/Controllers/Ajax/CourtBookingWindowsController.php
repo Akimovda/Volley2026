@@ -32,7 +32,7 @@ class CourtBookingWindowsController extends Controller
         }
 
         $date = Carbon::parse($dateInput);
-        $tz = $location->timezone ?: 'Europe/Moscow';
+        $tz = $location->effectiveTimezone();
         $windows = $service->windowsForDuration($directionModel, $date, $durationMinutes);
 
         $courts = $directionModel->courts->map(fn ($c) => ['id' => $c->id, 'name' => $c->name])->values();

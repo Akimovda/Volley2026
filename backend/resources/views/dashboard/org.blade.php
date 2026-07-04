@@ -30,6 +30,9 @@
             <a href="{{ route('org.players') }}" class="btn btn-secondary">👥 Аналитика игроков</a>
             <a href="{{ route('profile.payment_settings') }}" class="btn btn-secondary">{{ __('profile.dash_org_btn_pay_settings') }}</a>
             <a href="{{ route('profile.transactions') }}" class="btn btn-secondary">{{ __('profile.dash_org_btn_transactions') }}</a>
+            @if(auth()->user()?->is_club_manager)
+            <a href="{{ route('club.bookings.index') }}" class="btn btn-secondary">🏟️ {{ __('club.court_bookings') }}</a>
+            @endif
         </div>
     </x-slot>
 

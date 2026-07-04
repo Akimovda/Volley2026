@@ -104,7 +104,7 @@ class TimelineService
      */
     private function fetchCourtBookingSlots(LocationCourt $court, Location $location, Carbon $date): array
     {
-        $tz = $location->timezone ?: 'Europe/Moscow';
+        $tz = $location->effectiveTimezone();
         $dayStart = Carbon::parse($date->toDateString() . ' 00:00:00', $tz);
         $dayEnd = $dayStart->copy()->endOfDay();
 
@@ -127,23 +127,18 @@ class TimelineService
             $s = Carbon::parse($booking->getRawOriginal('starts_at'), 'UTC')->setTimezone($tz);
             $e = Carbon::parse($booking->getRawOriginal('ends_at'), 'UTC')->setTimezone($tz);
 
-            $userName = null;
-            if ($booking->user) {
-                $lastName = $booking->user->last_name ?? '';
-                $firstInitial = $booking->user->first_name ? mb_substr($booking->user->first_name, 0, 1) . '.' : '';
-                $userName = trim($lastName . ' ' . $firstInitial) ?: $booking->user->name;
-            }
+            $bookerName = $booking->booker_name;
 
             $slots[] = [
                 'type'          => 'booking',
                 'court_id'      => $court->id,
                 'booking_id'    => $booking->id,
-                'title'         => $userName ?: __('club.booking_by'),
+                'title'         => $bookerName !== '—' ? $bookerName : __('club.booking_by'),
                 'starts_at'     => $s->format('H:i'),
                 'ends_at'       => $e->format('H:i'),
                 'color'         => $statusColors[$booking->status] ?? '#8E8E93',
                 'status'        => $booking->status,
-                'organizer'     => $userName,
+                'organizer'     => $bookerName !== '—' ? $bookerName : null,
             ];
         }
 
@@ -156,7 +151,7 @@ class TimelineService
      */
     private function fetchOccurrences(Location $location, string $direction, Carbon $date)
     {
-        $tz = $location->timezone ?: 'Europe/Moscow';
+        $tz = $location->effectiveTimezone();
         $dayStart = Carbon::parse($date->toDateString() . ' 00:00:00', $tz);
         $dayEnd = $dayStart->copy()->endOfDay();
         $dayStartUtc = $dayStart->copy()->setTimezone('UTC');

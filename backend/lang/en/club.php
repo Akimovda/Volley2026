@@ -66,6 +66,22 @@ return [
     'reject_reason_label' => 'Rejection reason',
     'no_bookings'         => 'No bookings.',
 
+    // === Manual booking by the owner (post manual-test fixes) ===
+    'add_booking'             => 'Add booking',
+    'court_bookings'          => 'Court bookings',
+    'client'                  => 'Client',
+    'platform_user'           => 'Platform user',
+    'guest'                   => 'Guest',
+    'guest_name'              => 'Name',
+    'guest_phone'             => 'Phone',
+    'booking_saved'           => 'Booking added',
+    'time_from'               => 'Start',
+    'time_to'                 => 'End',
+    'booking_date_label'      => 'Date',
+    'booking_location_label'  => 'Location',
+    'booking_status_label'    => 'Status',
+    'optional_hint'           => 'optional',
+
     // === Trusted organizers (Phase 3) ===
     'trust_title'               => 'Trusted organizers',
     'trust_hint'                => 'Organizers with a higher trust level can book courts without prepayment.',

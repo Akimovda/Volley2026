@@ -5,8 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\CourtBooking;
 use App\Models\Location;
 use App\Models\LocationCourt;
+use App\Models\User;
 use App\Services\CourtBookingService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Validation\Rule;
 
 class ClubBookingController extends Controller
 {
@@ -41,7 +44,60 @@ class ClubBookingController extends Controller
                 });
         })->orderByDesc('starts_at')->limit(100)->get();
 
-        return view('club.bookings', compact('pending', 'active', 'history'));
+        $locations = Location::whereIn('id', $locationIds)
+            ->with(['directions' => fn ($q) => $q->where('is_active', true)
+                ->with(['courts' => fn ($q2) => $q2->where('is_active', true)->orderBy('sort_order')])])
+            ->get();
+
+        return view('club.bookings', compact('pending', 'active', 'history', 'locations'));
+    }
+
+    public function storeManual(Request $request, CourtBookingService $service)
+    {
+        $user = $request->user();
+        abort_unless($user && ($user->is_club_manager || $user->isAdmin()), 403);
+
+        $data = $request->validate([
+            'court_id'      => ['required', 'integer', 'exists:location_courts,id'],
+            'date'          => ['required', 'date_format:Y-m-d'],
+            'time_from'     => ['required', 'date_format:H:i'],
+            'time_to'       => ['required', 'date_format:H:i'],
+            'organizer_id'  => ['nullable', 'required_without:guest_name', 'integer', 'exists:users,id'],
+            'guest_name'    => ['nullable', 'required_without:organizer_id', 'string', 'max:150'],
+            'guest_phone'   => ['nullable', 'string', 'max:30'],
+            'status'        => ['required', Rule::in([CourtBooking::STATUS_CONFIRMED, CourtBooking::STATUS_PAID])],
+        ]);
+
+        $court = LocationCourt::with('direction.location')->findOrFail($data['court_id']);
+
+        try {
+            $service->assertCanManageCourt($court, $user);
+        } catch (\InvalidArgumentException $e) {
+            abort(403, $e->getMessage());
+        }
+
+        $location = $court->direction->location;
+        $tz = $location->effectiveTimezone();
+        $startsAt = Carbon::parse($data['date'] . ' ' . $data['time_from'], $tz)->setTimezone('UTC');
+        $endsAt = Carbon::parse($data['date'] . ' ' . $data['time_to'], $tz)->setTimezone('UTC');
+
+        $bookingUser = !empty($data['organizer_id']) ? User::find($data['organizer_id']) : null;
+
+        try {
+            $service->createManual(
+                $court,
+                $startsAt,
+                $endsAt,
+                $bookingUser,
+                $data['guest_name'] ?? null,
+                $data['guest_phone'] ?? null,
+                $data['status']
+            );
+        } catch (\InvalidArgumentException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return back()->with('success', __('club.booking_saved'));
     }
 
     public function confirm(Request $request, CourtBooking $booking, CourtBookingService $service)

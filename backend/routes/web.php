@@ -144,6 +144,8 @@ Route::get('/logout', fn () => redirect('/'));
 
 		Route::get('/club/bookings', [\App\Http\Controllers\ClubBookingController::class, 'index'])
 			->name('club.bookings.index');
+		Route::post('/club/bookings/manual', [\App\Http\Controllers\ClubBookingController::class, 'storeManual'])
+			->name('club.bookings.storeManual');
 		Route::post('/club/bookings/{booking}/confirm', [\App\Http\Controllers\ClubBookingController::class, 'confirm'])
 			->name('club.bookings.confirm');
 		Route::post('/club/bookings/{booking}/reject', [\App\Http\Controllers\ClubBookingController::class, 'reject'])

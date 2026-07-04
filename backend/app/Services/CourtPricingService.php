@@ -30,7 +30,7 @@ class CourtPricingService
         }
 
         $location = $direction->relationLoaded('location') ? $direction->location : $direction->location()->first();
-        $tz = $location?->timezone ?: 'Europe/Moscow';
+        $tz = $location?->effectiveTimezone() ?: 'Europe/Moscow';
 
         $rules = CourtPriceRule::where('direction_id', $direction->id)
             ->where(function ($q) use ($court) {

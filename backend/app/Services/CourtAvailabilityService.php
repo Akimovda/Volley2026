@@ -160,7 +160,7 @@ class CourtAvailabilityService
     {
         $intervals = $this->timelineService->eventMinuteIntervals($location, $direction->direction, $date);
 
-        $tz = $location->timezone ?: 'Europe/Moscow';
+        $tz = $location->effectiveTimezone();
         $dayStart = Carbon::parse($date->toDateString() . ' 00:00:00', $tz);
         $dayEnd = $dayStart->copy()->endOfDay();
 

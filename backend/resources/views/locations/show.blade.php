@@ -193,12 +193,19 @@
         {{-- ТАЙМЛАЙН ЗАНЯТОСТИ КОРТОВ (только владелец локации / админ) --}}
         @php
         $canManageTimeline = $user && ((method_exists($user, 'isAdmin') && $user->isAdmin()) || (int) ($location->owner_id ?? 0) === (int) $user->id);
+        if ($canManageTimeline) {
+            $location->load(['directions' => fn ($q) => $q->where('is_active', true)
+                ->with(['courts' => fn ($q2) => $q2->where('is_active', true)->orderBy('sort_order')])]);
+            $bookingModalLocations = collect([$location]);
+        }
         @endphp
         @if($canManageTimeline)
+        @include('club._partials.booking_modal', ['locations' => $bookingModalLocations])
         <div class="ramka" id="timelineSection">
             <div class="d-flex between fvc mb-2" style="flex-wrap:wrap;gap:10px">
                 <h2 class="-mt-05" style="margin:0">{{ __('club.timeline') }}</h2>
-                <div class="d-flex gap-1" role="tablist">
+                <div class="d-flex gap-1" style="flex-wrap:wrap">
+                    <button type="button" class="btn btn-small btn-primary" onclick="window.__openAddBookingModal && window.__openAddBookingModal()">➕ {{ __('club.add_booking') }}</button>
                     <button type="button" class="btn btn-small btn-primary" id="tlSwitchList">{{ __('club.list_view') }}</button>
                     <button type="button" class="btn btn-small btn-secondary" id="tlSwitchTimeline">{{ __('club.timeline') }}</button>
                 </div>
@@ -509,10 +516,59 @@
                     paid: @json(__('club.status_paid')),
                 };
 
-                const state = { mode: 'day', date: new Date() };
+                const state = { mode: 'day', date: new Date(), dayStart: null, dayEnd: null };
                 const PX_PER_MIN = 1.5;
+                // Высота .timeline-direction-label (18+8=26px) + .timeline-court-header (24px) —
+                // ось времени должна начинаться с этим отступом, иначе подписи времени не
+                // совпадают с реальным положением событий/линии текущего времени.
+                const HEADER_OFFSET = 50;
+                const locationTz = @json($location->effectiveTimezone());
 
                 function fmtDate(d) { return d.toISOString().slice(0, 10); }
+
+                // Текущие дата (YYYY-MM-DD) и минуты с полуночи В ТАЙМЗОНЕ ЛОКАЦИИ.
+                function nowInTz(tz) {
+                    const parts = new Intl.DateTimeFormat('en-CA', {
+                        timeZone: tz, hour12: false,
+                        year: 'numeric', month: '2-digit', day: '2-digit',
+                        hour: '2-digit', minute: '2-digit',
+                    }).formatToParts(new Date());
+                    const get = (type) => (parts.find(p => p.type === type) || {}).value || '0';
+                    const dateStr = get('year') + '-' + get('month') + '-' + get('day');
+                    const minutes = parseInt(get('hour'), 10) * 60 + parseInt(get('minute'), 10);
+                    return { dateStr, minutes };
+                }
+
+                // Перерисовать линию текущего времени поверх уже отрисованной сетки дня
+                // (вызывается сразу после renderDay и затем раз в минуту по таймеру).
+                function renderNowLine() {
+                    const axisEl = dayGrid.querySelector('.timeline-axis');
+                    const courtsWrapEl = dayGrid.querySelector('.timeline-courts');
+                    if (!axisEl || !courtsWrapEl) return;
+
+                    const oldLine = courtsWrapEl.querySelector('.timeline-now-line');
+                    if (oldLine) oldLine.remove();
+                    const oldDot = axisEl.querySelector('.timeline-now-dot');
+                    if (oldDot) oldDot.remove();
+
+                    if (state.mode !== 'day' || state.dayStart === null) return;
+
+                    const { dateStr, minutes } = nowInTz(locationTz);
+                    if (dateStr !== fmtDate(state.date)) return; // выбран не сегодняшний день
+                    if (minutes < state.dayStart || minutes > state.dayEnd) return; // вне рабочих часов
+
+                    const top = HEADER_OFFSET + (minutes - state.dayStart) * PX_PER_MIN;
+
+                    const line = document.createElement('div');
+                    line.className = 'timeline-now-line';
+                    line.style.top = top + 'px';
+                    courtsWrapEl.appendChild(line);
+
+                    const dot = document.createElement('div');
+                    dot.className = 'timeline-now-dot';
+                    dot.style.top = top + 'px';
+                    axisEl.appendChild(dot);
+                }
 
                 function setActive(btnActive, btnInactive) {
                     btnActive.classList.remove('btn-secondary'); btnActive.classList.add('btn-primary');
@@ -568,23 +624,26 @@
                     const openDirs = directions.filter(d => !d.is_closed);
                     if (!openDirs.length) {
                         dayGrid.innerHTML = '<div class="alert alert-info">' + closedLabel + '</div>';
+                        state.dayStart = null; state.dayEnd = null;
                         return;
                     }
 
                     const dayStart = Math.min.apply(null, openDirs.map(d => timeToMin(d.opens_at)));
                     const dayEnd = Math.max.apply(null, openDirs.map(d => timeToMin(d.closes_at)));
                     const totalMin = dayEnd - dayStart;
+                    state.dayStart = dayStart;
+                    state.dayEnd = dayEnd;
 
                     const wrap = document.createElement('div');
                     wrap.className = 'timeline-scroll';
 
                     const axis = document.createElement('div');
                     axis.className = 'timeline-axis';
-                    axis.style.height = (totalMin * PX_PER_MIN) + 'px';
+                    axis.style.height = (totalMin * PX_PER_MIN + HEADER_OFFSET) + 'px';
                     for (let m = dayStart; m <= dayEnd; m += 30) {
                         const label = document.createElement('div');
                         label.className = 'timeline-axis-label';
-                        label.style.top = ((m - dayStart) * PX_PER_MIN) + 'px';
+                        label.style.top = (HEADER_OFFSET + (m - dayStart) * PX_PER_MIN) + 'px';
                         label.textContent = String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
                         axis.appendChild(label);
                     }
@@ -653,7 +712,11 @@
                     wrap.appendChild(axis);
                     wrap.appendChild(courtsWrap);
                     dayGrid.appendChild(wrap);
+
+                    renderNowLine();
                 }
+
+                setInterval(renderNowLine, 60000);
 
                 function renderWeek(days) {
                     weekGrid.innerHTML = '';

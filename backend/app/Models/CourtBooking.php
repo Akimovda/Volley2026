@@ -23,6 +23,8 @@ class CourtBooking extends Model
     protected $fillable = [
         'court_id',
         'user_id',
+        'guest_name',
+        'guest_phone',
         'event_id',
         'occurrence_id',
         'starts_at',
@@ -65,5 +67,19 @@ class CourtBooking extends Model
     public function scopeActive(Builder $q): Builder
     {
         return $q->whereIn('status', self::ACTIVE_STATUSES);
+    }
+
+    /**
+     * Бронь принадлежит ЛИБО пользователю платформы (user_id), ЛИБО гостю (guest_name).
+     * User::name — единственный аксессор полного имени в проекте (full_name не существует).
+     */
+    public function getBookerNameAttribute(): string
+    {
+        return $this->user?->name ?? $this->guest_name ?? '—';
+    }
+
+    public function isGuestBooking(): bool
+    {
+        return $this->user_id === null && !empty($this->guest_name);
     }
 }

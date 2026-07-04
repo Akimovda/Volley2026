@@ -49,6 +49,15 @@ class Location extends Model implements HasMedia
         return $this->hasMany(LocationDirection::class);
     }
 
+    /**
+     * locations.timezone колонки нет — берём таймзону из связанного города
+     * (cities.timezone), иначе дефолт проекта.
+     */
+    public function effectiveTimezone(): string
+    {
+        return $this->city?->timezone ?: 'Europe/Moscow';
+    }
+
     public function registerMediaCollections(): void
     {
         $this->addMediaCollection('photos')

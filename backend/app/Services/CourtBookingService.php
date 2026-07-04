@@ -28,6 +28,89 @@ class CourtBookingService
      */
     public function create(User $user, LocationCourt $court, Carbon $startsAt, Carbon $endsAt, ?Event $event = null): CourtBooking
     {
+        [$direction, $location] = $this->validateBookingWindow($court, $startsAt, $endsAt);
+
+        $trustLevel = ClubOrganizerTrust::where('location_id', $location->id)
+            ->where('organizer_id', $user->id)
+            ->value('trust_level') ?? ClubOrganizerTrust::LEVEL_PREPAID_ONLY;
+
+        [$status, $paymentMode, $expiresAt] = match ($trustLevel) {
+            ClubOrganizerTrust::LEVEL_TRUSTED => [CourtBooking::STATUS_CONFIRMED, CourtBooking::PAYMENT_MODE_TRUSTED, null],
+            ClubOrganizerTrust::LEVEL_ALLOW_ON_SITE => [CourtBooking::STATUS_PENDING, CourtBooking::PAYMENT_MODE_ON_SITE, null],
+            // prepaid_only: Фаза 3 — оплата ещё не подключена (Фаза 4), но TTL уже действует,
+            // как если бы ждали оплату; подтверждает всё равно владелец клуба.
+            default => [CourtBooking::STATUS_PENDING, CourtBooking::PAYMENT_MODE_PREPAID, now()->addMinutes(self::TTL_MINUTES)],
+        };
+
+        $priceTotal = $this->pricingService->calculate($court, $startsAt, $endsAt);
+
+        return $this->insertBooking($court, $startsAt, $endsAt, [
+            'court_id'      => $court->id,
+            'user_id'       => $user->id,
+            'event_id'      => $event?->id,
+            'occurrence_id' => null,
+            'starts_at'     => $startsAt,
+            'ends_at'       => $endsAt,
+            'status'        => $status,
+            'price_total'   => $priceTotal,
+            'payment_mode'  => $paymentMode,
+            'expires_at'    => $expiresAt,
+        ], notify: true);
+    }
+
+    /**
+     * Ручное добавление брони владельцем локации/админом — статус выбирается сразу
+     * (confirmed/paid), payment_mode всегда on_site, TTL не применяется. Клиент —
+     * либо пользователь платформы (user), либо гость (guestName/guestPhone) — ровно один из двух.
+     */
+    public function createManual(
+        LocationCourt $court,
+        Carbon $startsAt,
+        Carbon $endsAt,
+        ?User $user,
+        ?string $guestName,
+        ?string $guestPhone,
+        string $status,
+    ): CourtBooking {
+        if (!$user && empty($guestName)) {
+            throw new InvalidArgumentException('Укажите пользователя платформы или имя гостя.');
+        }
+        if ($user && !empty($guestName)) {
+            throw new InvalidArgumentException('Нельзя одновременно указать пользователя и гостя.');
+        }
+        if (!in_array($status, [CourtBooking::STATUS_CONFIRMED, CourtBooking::STATUS_PAID], true)) {
+            throw new InvalidArgumentException('Недопустимый статус брони.');
+        }
+
+        $this->validateBookingWindow($court, $startsAt, $endsAt);
+
+        $priceTotal = $this->pricingService->calculate($court, $startsAt, $endsAt);
+
+        return $this->insertBooking($court, $startsAt, $endsAt, [
+            'court_id'      => $court->id,
+            'user_id'       => $user?->id,
+            'guest_name'    => $user ? null : $guestName,
+            'guest_phone'   => $user ? null : $guestPhone,
+            'event_id'      => null,
+            'occurrence_id' => null,
+            'starts_at'     => $startsAt,
+            'ends_at'       => $endsAt,
+            'status'        => $status,
+            'price_total'   => $priceTotal,
+            'payment_mode'  => CourtBooking::PAYMENT_MODE_ON_SITE,
+            'expires_at'    => null,
+            'cancelled_by'  => null,
+        ], notify: false);
+    }
+
+    /**
+     * Общие проверки времени/длительности + разрешение direction/location корта.
+     * Переиспользуется create() и createManual().
+     *
+     * @return array{0: \App\Models\LocationDirection, 1: \App\Models\Location}
+     */
+    private function validateBookingWindow(LocationCourt $court, Carbon $startsAt, Carbon $endsAt): array
+    {
         if ($endsAt->lte($startsAt)) {
             throw new InvalidArgumentException('Время окончания должно быть позже начала.');
         }
@@ -57,21 +140,16 @@ class CourtBookingService
 
         $this->assertWithinWorkingHours($direction, $location, $startsAt, $endsAt);
 
-        $trustLevel = ClubOrganizerTrust::where('location_id', $location->id)
-            ->where('organizer_id', $user->id)
-            ->value('trust_level') ?? ClubOrganizerTrust::LEVEL_PREPAID_ONLY;
+        return [$direction, $location];
+    }
 
-        [$status, $paymentMode, $expiresAt] = match ($trustLevel) {
-            ClubOrganizerTrust::LEVEL_TRUSTED => [CourtBooking::STATUS_CONFIRMED, CourtBooking::PAYMENT_MODE_TRUSTED, null],
-            ClubOrganizerTrust::LEVEL_ALLOW_ON_SITE => [CourtBooking::STATUS_PENDING, CourtBooking::PAYMENT_MODE_ON_SITE, null],
-            // prepaid_only: Фаза 3 — оплата ещё не подключена (Фаза 4), но TTL уже действует,
-            // как если бы ждали оплату; подтверждает всё равно владелец клуба.
-            default => [CourtBooking::STATUS_PENDING, CourtBooking::PAYMENT_MODE_PREPAID, now()->addMinutes(self::TTL_MINUTES)],
-        };
-
-        $priceTotal = $this->pricingService->calculate($court, $startsAt, $endsAt);
-
-        return DB::transaction(function () use ($court, $user, $event, $startsAt, $endsAt, $status, $paymentMode, $expiresAt, $priceTotal) {
+    /**
+     * Блокировка строки корта + проверка пересечений + вставка — общая точка для
+     * create()/createManual(), гарантирует невозможность двойной брони.
+     */
+    private function insertBooking(LocationCourt $court, Carbon $startsAt, Carbon $endsAt, array $attributes, bool $notify): CourtBooking
+    {
+        return DB::transaction(function () use ($court, $startsAt, $endsAt, $attributes, $notify) {
             // Блокируем строку корта — сериализует все конкурентные попытки брони
             // именно этого корта через одну транзакцию за раз.
             LocationCourt::where('id', $court->id)->lockForUpdate()->first();
@@ -86,23 +164,31 @@ class CourtBookingService
                 throw new InvalidArgumentException('Этот корт уже забронирован на выбранное время.');
             }
 
-            $booking = CourtBooking::create([
-                'court_id'      => $court->id,
-                'user_id'       => $user->id,
-                'event_id'      => $event?->id,
-                'occurrence_id' => null,
-                'starts_at'     => $startsAt,
-                'ends_at'       => $endsAt,
-                'status'        => $status,
-                'price_total'   => $priceTotal,
-                'payment_mode'  => $paymentMode,
-                'expires_at'    => $expiresAt,
-            ]);
+            $booking = CourtBooking::create($attributes);
 
-            $this->notifyOwner($booking);
+            if ($notify) {
+                $this->notifyOwner($booking);
+            }
 
             return $booking;
         });
+    }
+
+    /**
+     * Доступ владельца локации/админа к корту — используется контроллером ПЕРЕД
+     * вызовом createManual(), чтобы отдать 403 до попытки создания брони.
+     */
+    public function assertCanManageCourt(LocationCourt $court, User $clubOwner): void
+    {
+        $direction = $court->relationLoaded('direction') ? $court->direction : $court->direction()->first();
+        $location = $direction?->relationLoaded('location') ? $direction->location : $direction?->location()->first();
+
+        $isOwner = $location && (int) $location->owner_id === (int) $clubOwner->id;
+        $isAdmin = method_exists($clubOwner, 'isAdmin') && $clubOwner->isAdmin();
+
+        if (!$isOwner && !$isAdmin) {
+            throw new InvalidArgumentException('Нет прав управлять этим кортом.');
+        }
     }
 
     public function confirm(CourtBooking $booking, User $clubOwner): void
@@ -148,7 +234,7 @@ class CourtBookingService
 
     private function assertWithinWorkingHours($direction, $location, Carbon $startsAt, Carbon $endsAt): void
     {
-        $tz = $location->timezone ?: 'Europe/Moscow';
+        $tz = $location->effectiveTimezone();
         $startLocal = $startsAt->copy()->setTimezone($tz);
         $endLocal = $endsAt->copy()->setTimezone($tz);
 
