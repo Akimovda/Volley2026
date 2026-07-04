@@ -139,7 +139,35 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
                     @endphp
                     @if($canEditPosition || $canToggleTeamRole)
                     <div class="mt-05" style="display:flex;flex-wrap:wrap;gap:.6rem;align-items:center">
-                        @if($canEditPosition)
+                        @if($canEditPosition && $canToggleTeamRole)
+                        {{-- Один select: смена амплуа + перевод основа↔запасной --}}
+                        <form method="POST" action="{{ route('tournamentTeams.members.updatePosition',[$event,$team,$member]) }}" class="member-position-form" data-member-form="{{ $member->id }}" style="display:none">
+                            @csrf @method('PATCH')
+                            <input type="hidden" name="position_code" class="member-position-input">
+                        </form>
+                        <form method="POST" action="{{ route('tournamentTeams.members.updateTeamRole',[$event,$team,$member]) }}" class="member-role-form" data-member-form="{{ $member->id }}" style="display:none">
+                            @csrf @method('PATCH')
+                            <input type="hidden" name="team_role" class="member-role-input">
+                        </form>
+                        <div class="form" style="width:16rem">
+                            <select class="member-action-select" data-member="{{ $member->id }}">
+                                @if(!$member->position_code)
+                                <option value="" disabled selected>— амплуа —</option>
+                                @endif
+                                @foreach($positionCapacity as $code => $info)
+                                    @php $full = $info['current'] >= $info['max'] && $member->position_code !== $code; @endphp
+                                    <option value="pos:{{ $code }}" @selected($member->position_code === $code) @disabled($full)>
+                                        {{ $info['label'] }} ({{ $info['current'] }}/{{ $info['max'] }}){{ $full ? ' — занято' : '' }}
+                                    </option>
+                                @endforeach
+                                @if($member->team_role === 'reserve')
+                                <option value="role:player">↑ Перевести в основу</option>
+                                @else
+                                <option value="role:reserve">↓ Перевести в запасные</option>
+                                @endif
+                            </select>
+                        </div>
+                        @elseif($canEditPosition)
                         <div style="width:15rem">
                             <form method="POST" action="{{ route('tournamentTeams.members.updatePosition',[$event,$team,$member]) }}" class="form">
                                 @csrf @method('PATCH')
@@ -156,8 +184,7 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
                                 </select>
                             </form>
                         </div>
-                        @endif
-                        @if($canToggleTeamRole)
+                        @elseif($canToggleTeamRole)
                         <form method="POST" action="{{ route('tournamentTeams.members.updateTeamRole',[$event,$team,$member]) }}">
                             @csrf @method('PATCH')
                             <input type="hidden" name="team_role" value="{{ $member->team_role === 'reserve' ? 'player' : 'reserve' }}">
@@ -873,6 +900,29 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
 
 <x-slot name="script">
 <script>
+(function(){
+    document.addEventListener('change', function(e){
+        var sel = e.target;
+        if (!sel.classList || !sel.classList.contains('member-action-select')) return;
+        var val = sel.value;
+        if (!val) return;
+        var sep = val.indexOf(':');
+        var type = val.slice(0, sep);
+        var code = val.slice(sep + 1);
+        var memberId = sel.dataset.member;
+        if (type === 'role') {
+            var roleForm = document.querySelector('.member-role-form[data-member-form="'+memberId+'"]');
+            if (!roleForm) return;
+            roleForm.querySelector('.member-role-input').value = code;
+            roleForm.submit();
+        } else if (type === 'pos') {
+            var posForm = document.querySelector('.member-position-form[data-member-form="'+memberId+'"]');
+            if (!posForm) return;
+            posForm.querySelector('.member-position-input').value = code;
+            posForm.submit();
+        }
+    });
+})();
 @if($leagueForSubs && $team->occurrence_id && !$tourStarted)
 (function(){
     function openSubModal(btn) {

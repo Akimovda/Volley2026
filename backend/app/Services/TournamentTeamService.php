@@ -153,24 +153,26 @@ final class TournamentTeamService
     }
 
     /**
-     * Получить доступные позиции (амплуа) для команды
+     * Получить доступные позиции (амплуа) для команды — только те, где ещё есть
+     * свободный слот (учитывает confirmed-участников, включая запасных с назначенным
+     * амплуа — см. getPositionCapacity()). Используется при добавлении НОВОГО участника
+     * (organizer add / invite-ссылка), где занятые слоты выбирать не нужно.
      */
     public function getAvailablePositionOptions(EventTeam $team): array
     {
         if ((string) $team->team_kind !== 'classic_team') {
             return [];
         }
-    
-        $settings = $this->getSettings($team->event);
-        $scheme = $settings?->getGameScheme() ?? '5x1';
-    
-        $positions = (array) config("volleyball.classic.{$scheme}.positions", []);
+
         $result = [];
-    
-        foreach ($positions as $code => $count) {
-            $result[$code] = $this->positionLabel($code) . " (макс. {$count})";
+        foreach ($this->getPositionCapacity($team) as $code => $info) {
+            if ($info['current'] >= $info['max']) {
+                continue;
+            }
+            $free = $info['max'] - $info['current'];
+            $result[$code] = "{$info['label']} (свободно {$free} из {$info['max']})";
         }
-    
+
         return $result;
     }
     
