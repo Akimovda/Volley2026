@@ -1074,7 +1074,7 @@ $showWaitlist = !$isTournament && !$eventStarted && auth()->check() && !$isRegis
 				@foreach($confirmedMembers as $m)
 				@php
 					$mUser   = $m->user;
-					$mLevel  = (int)($mUser->beach_level ?? $mUser->classic_level ?? 0);
+					$mLevel  = $isBeachPair ? (int)($mUser->beach_level ?? $mUser->classic_level ?? 0) : (int)($mUser->classic_level ?? $mUser->beach_level ?? 0);
 					$mColor  = $mLevel > 0 ? level_color($mLevel) : '#aaaaaa';
 					$mName   = trim(($mUser->last_name ?? '') . ' ' . ($mUser->first_name ?? '')) ?: ($mUser->name ?? '?');
 				@endphp
@@ -1146,7 +1146,7 @@ $showWaitlist = !$isTournament && !$eventStarted && auth()->check() && !$isRegis
 					@foreach($confirmedMembers as $m)
 					@php
 						$mUser  = $m->user;
-						$mLevel = (int)($mUser->beach_level ?? $mUser->classic_level ?? 0);
+						$mLevel = $isBeachPair ? (int)($mUser->beach_level ?? $mUser->classic_level ?? 0) : (int)($mUser->classic_level ?? $mUser->beach_level ?? 0);
 						$mColor = $mLevel > 0 ? level_color($mLevel) : '#aaaaaa';
 						$mName  = trim(($mUser->last_name ?? '') . ' ' . ($mUser->first_name ?? '')) ?: ($mUser->name ?? '?');
 					@endphp
