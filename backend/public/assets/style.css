@@ -4953,3 +4953,83 @@ body:not(.is-app) .native-actions {
 	padding: 4px 14px;
 	font-size: 13px;
 }
+/* === Пьедестал (турнирный подиум топ-3) === */
+.podium-wrap {
+	display: flex;
+	align-items: flex-end;
+	justify-content: center;
+	gap: 10px;
+	margin: 14px 0 6px;
+}
+.podium-col {
+	flex: 1 1 0;
+	max-width: 170px;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	text-align: center;
+}
+.podium-silver { order: 1; }
+.podium-gold   { order: 2; }
+.podium-bronze { order: 3; }
+.podium-medal {
+	font-size: 30px;
+	line-height: 1;
+	margin-bottom: 4px;
+}
+.podium-name {
+	font-weight: 700;
+	font-size: 14px;
+	line-height: 1.25;
+	min-height: 18px;
+}
+.podium-sub-line {
+	font-size: 11.5px;
+	opacity: .65;
+	margin: 2px 0 4px;
+}
+.podium-record {
+	font-size: 12.5px;
+	font-weight: 700;
+	margin-bottom: 6px;
+}
+.podium-bar {
+	width: 100%;
+	border-radius: 10px 10px 4px 4px;
+	display: flex;
+	align-items: flex-start;
+	justify-content: center;
+	padding-top: 8px;
+	font-weight: 800;
+	font-size: 20px;
+	color: #fff;
+	box-shadow: 0 3px 10px rgba(0, 0, 0, .15);
+}
+.podium-gold .podium-bar {
+	height: 92px;
+	background: linear-gradient(180deg, #FFD86B, #E7A800);
+}
+.podium-silver .podium-bar {
+	height: 66px;
+	background: linear-gradient(180deg, #E9EDF2, #B7BEC9);
+	color: #374151;
+}
+.podium-bronze .podium-bar {
+	height: 48px;
+	background: linear-gradient(180deg, #E8A26B, #B9702F);
+}
+.podium-rest {
+	margin-top: 8px;
+	padding-top: 8px;
+	border-top: 1px dashed rgba(128, 128, 128, .2);
+}
+body.dark .podium-bar {
+	box-shadow: 0 3px 14px rgba(0, 0, 0, .45);
+}
+@media (max-width: 480px) {
+	.podium-medal { font-size: 24px; }
+	.podium-name { font-size: 12.5px; }
+	.podium-gold .podium-bar { height: 76px; }
+	.podium-silver .podium-bar { height: 56px; }
+	.podium-bronze .podium-bar { height: 40px; }
+}
