@@ -1125,12 +1125,18 @@ if ($role === 'admin') {
                 $payMode = $event->is_paid ? ($data['tournament_payment_mode'] ?? 'team') : 'free';
                 $scheme = $data['tournament_game_scheme'] ?? $defaultScheme;
 
+                $teamSizeMin = isset($data['tournament_team_size_min']) ? (int) $data['tournament_team_size_min'] : null;
+                $reserveMax  = isset($data['tournament_reserve_players_max']) ? (int) $data['tournament_reserve_players_max'] : null;
+
                 $tsPayload = array_filter([
                     'game_scheme'                  => $scheme,
                     'require_libero'               => !$isBeach && $scheme === '5x1_libero',
-                    'team_size_min'                => isset($data['tournament_team_size_min']) ? (int) $data['tournament_team_size_min'] : null,
-                    'team_size_max'                => isset($data['tournament_team_size_min']) ? (int) $data['tournament_team_size_min'] : null,
-                    'reserve_players_max'          => isset($data['tournament_reserve_players_max']) ? (int) $data['tournament_reserve_players_max'] : null,
+                    'team_size_min'                => $teamSizeMin,
+                    'team_size_max'                => $teamSizeMin,
+                    'reserve_players_max'          => $reserveMax,
+                    // Пересчитывается из min+reserve на каждое сохранение — иначе остаётся
+                    // от прежней схемы/резерва, как раньше происходило с require_libero.
+                    'total_players_max'            => ($teamSizeMin !== null && $reserveMax !== null) ? $teamSizeMin + $reserveMax : null,
                     'teams_count'                  => isset($data['teams_count']) ? (int) $data['teams_count'] : null,
                     'application_mode'             => $data['tournament_application_mode'] ?? 'manual',
                     'captain_confirms_members'     => array_key_exists('tournament_captain_confirms_members', $data) ? (bool) $data['tournament_captain_confirms_members'] : null,
