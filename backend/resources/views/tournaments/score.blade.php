@@ -59,13 +59,16 @@
 				@else
 				<div class="d-flex between fvc">
 					<div style="flex:1;text-align:center">
+						@if($match->teamHome && $match->teamHome->team_kind === 'classic_team')
+						{{-- Классика: только название команды + капитан --}}
+						<div class="b-700 f-18">@include('tournaments._partials.team_name_link', ['team' => $match->teamHome, 'fallback' => 'TBD'])</div>
+						@include('tournaments._partials.team_roster_line', ['team' => $match->teamHome, 'class' => 'f-16'])
+						@else
+						{{-- Пляжка: полный состав с учётом замен, как раньше --}}
 						@php
 								$occId = $match->stage->occurrence_id;
 								$homeRoster = $match->teamHome && $occId
 									? app(\App\Services\TeamSubstitutionService::class)->getActualRoster($match->teamHome->id, $occId)
-									: collect();
-								$awayRoster = $match->teamAway && $occId
-									? app(\App\Services\TeamSubstitutionService::class)->getActualRoster($match->teamAway->id, $occId)
 									: collect();
 								@endphp
 						<div class="b-700 f-18">{{ $match->teamHome->name ?? 'TBD' }}</div>
@@ -78,21 +81,35 @@
 							@endforeach
 						</div>
 						@endif
-						</div>
-						<div class="px-2 f-20 b-600">VS</div>
-						<div style="flex:1;text-align:center">
-							<div class="b-700 f-18">{{ $match->teamAway->name ?? 'TBD' }}</div>
-							@if($match->teamAway && ($awayRoster->isNotEmpty() || $match->teamAway->members->count()))
-							<div class="f-16 team-members">
-								@foreach(($awayRoster->isNotEmpty() ? $awayRoster : $match->teamAway->members->map(fn($m)=>['user'=>$m->user,'is_substitute'=>false,'original_user'=>null,'member'=>$m])) as $mi => $row)
-								@if($row['user'] ?? null)
-								<a href="{{ route('users.show', $row['user']) }}" class="blink">{{ $row['user']->last_name }} {{ $row['user']->first_name }}</a>@if($row['is_substitute'] ?? false) <span class="f-12" style="opacity:.6">({{ __('tournaments.sub_label') }})</span>@endif{{ $mi < count($awayRoster->isNotEmpty() ? $awayRoster->toArray() : $match->teamAway->members->toArray()) - 1 ? ' / ' : '' }}
-								@endif
-								@endforeach
-							</div>
+						@endif
+					</div>
+					<div class="px-2 f-20 b-600">VS</div>
+					<div style="flex:1;text-align:center">
+						@if($match->teamAway && $match->teamAway->team_kind === 'classic_team')
+						{{-- Классика: только название команды + капитан --}}
+						<div class="b-700 f-18">@include('tournaments._partials.team_name_link', ['team' => $match->teamAway, 'fallback' => 'TBD'])</div>
+						@include('tournaments._partials.team_roster_line', ['team' => $match->teamAway, 'class' => 'f-16'])
+						@else
+						{{-- Пляжка: полный состав с учётом замен, как раньше --}}
+						@php
+								$occId = $match->stage->occurrence_id;
+								$awayRoster = $match->teamAway && $occId
+									? app(\App\Services\TeamSubstitutionService::class)->getActualRoster($match->teamAway->id, $occId)
+									: collect();
+								@endphp
+						<div class="b-700 f-18">{{ $match->teamAway->name ?? 'TBD' }}</div>
+						@if($match->teamAway && ($awayRoster->isNotEmpty() || $match->teamAway->members->count()))
+						<div class="f-16 team-members">
+							@foreach(($awayRoster->isNotEmpty() ? $awayRoster : $match->teamAway->members->map(fn($m)=>['user'=>$m->user,'is_substitute'=>false,'original_user'=>null,'member'=>$m])) as $mi => $row)
+							@if($row['user'] ?? null)
+							<a href="{{ route('users.show', $row['user']) }}" class="blink">{{ $row['user']->last_name }} {{ $row['user']->first_name }}</a>@if($row['is_substitute'] ?? false) <span class="f-12" style="opacity:.6">({{ __('tournaments.sub_label') }})</span>@endif{{ $mi < count($awayRoster->isNotEmpty() ? $awayRoster->toArray() : $match->teamAway->members->toArray()) - 1 ? ' / ' : '' }}
 							@endif
-							</div>
+							@endforeach
 						</div>
+						@endif
+						@endif
+					</div>
+				</div>
 				@endif
 				</div>
 
