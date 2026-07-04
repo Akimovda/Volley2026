@@ -3,11 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Event;
+use App\Models\EventTeam;
 use App\Models\TournamentSeasonEvent;
 use App\Models\TournamentStage;
 use App\Models\TournamentMatch;
 use App\Models\TournamentStanding;
 use App\Models\PlayerTournamentStats;
+use App\Services\PlayerMatchStatsService;
 use Illuminate\Http\Request;
 
 class TournamentPublicController extends Controller
@@ -59,8 +61,8 @@ class TournamentPublicController extends Controller
             ->when($selectedOccurrence, fn($q) => $q->where('occurrence_id', $selectedOccurrence->id))
             ->with([
                 'groups.teams',
-                'groups.standings' => fn($q) => $q->with('team.members.user')->orderBy('rank'),
-                'matches' => fn($q) => $q->with(['teamHome.members.user', 'teamAway.members.user', 'winner'])
+                'groups.standings' => fn($q) => $q->with('team.members.user', 'team.captain')->orderBy('rank'),
+                'matches' => fn($q) => $q->with(['teamHome.members.user', 'teamHome.captain', 'teamAway.members.user', 'teamAway.captain', 'winner'])
                     ->orderBy('round')->orderBy('match_number'),
             ])
             ->orderBy('sort_order')
@@ -86,8 +88,12 @@ class TournamentPublicController extends Controller
                 ->get();
         }
 
+        // Детальная статистика по игрокам (эйсы/ошибки/блоки) — только для завершённых матчей, если заполнена
+        $completedMatches = $stages->flatMap->matches->where('status', TournamentMatch::STATUS_COMPLETED)->values();
+        $matchStatsByMatchId = app(PlayerMatchStatsService::class)->getMatchStatsTableForMatches($completedMatches);
+
         return view('tournaments.public.show', compact(
-            'event', 'stages', 'tab', 'setting', 'totalMatches', 'totalTeams', 'occurrences', 'selectedOccurrence', 'seasonStats', 'currentSeason'
+            'event', 'stages', 'tab', 'setting', 'totalMatches', 'totalTeams', 'occurrences', 'selectedOccurrence', 'seasonStats', 'currentSeason', 'matchStatsByMatchId'
         ));
     }
 
@@ -170,6 +176,18 @@ class TournamentPublicController extends Controller
         $totalRounds = $matches->max('round') ?? 0;
 
         return view('tournaments.public.bracket', compact('event', 'stage', 'matches', 'totalRounds'));
+    }
+
+    /**
+     * Публичная страница состава команды (без авторизации).
+     */
+    public function teamRoster(Request $request, Event $event, EventTeam $team)
+    {
+        abort_unless((int) $team->event_id === (int) $event->id, 404);
+
+        $team->load(['captain', 'members.user']);
+
+        return view('tournaments.public.team', compact('event', 'team'));
     }
 
     /**

@@ -95,7 +95,20 @@
 						</div>
 				@endif
 				</div>
-					
+
+				@if($stage->type !== 'king_beach' && !$match->isCompleted())
+					@if($hasRallyData ?? false)
+					<div class="alert alert-info d-flex fvc gap-1" style="flex-wrap:wrap">
+						<span>{{ __('tournaments.rally_partial_banner') }}</span>
+						<a href="{{ route('tournament.matches.rally.form', $match) }}" class="btn btn-small btn-primary">{{ __('tournaments.rally_continue') }}</a>
+					</div>
+					@else
+					<div class="text-center mb-2">
+						<a href="{{ route('tournament.matches.rally.form', $match) }}" class="btn btn-secondary btn-small">📊 {{ __('tournaments.rally_switch_link') }}</a>
+					</div>
+					@endif
+				@endif
+
 					{{-- Форма счёта --}}
 					<form method="POST" action="{{ $isEdit ? route('tournament.matches.rescore', $match) : route('tournament.matches.score', $match) }}" id="scoreForm">
 						@csrf

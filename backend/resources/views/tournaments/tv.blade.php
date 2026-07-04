@@ -138,16 +138,15 @@
                     @foreach($divTeams as $i => $c)
                         @php
                             $place = $i + 1;
-                            $team = \App\Models\EventTeam::with('members.user')->find($c['team_id']);
-                            $members = $team ? $team->members->map(fn($m) => trim(($m->user->last_name ?? '') . ' ' . ($m->user->first_name ?? '')) ?: '?')->implode(' / ') : '';
+                            $team = \App\Models\EventTeam::with('members.user', 'captain')->find($c['team_id']);
                         @endphp
                         <div class="tv-match" style="border-bottom:1px solid rgba(255,255,255,.05);padding:12px 0">
                             <div style="width:40px;font-size:22px;text-align:center">
                                 {{ $place === 1 ? '🥇' : ($place === 2 ? '🥈' : ($place === 3 ? '🥉' : $place . '.')) }}
                             </div>
                             <div style="flex:1">
-                                <div style="font-weight:700;font-size:18px;{{ $place <= 3 ? 'color:#E7612F' : '' }}">{{ $c['team_name'] }}</div>
-                                <div style="font-size:13px;opacity:.5">{{ $members }}</div>
+                                <div style="font-weight:700;font-size:18px;{{ $place <= 3 ? 'color:#E7612F' : '' }}">@include('tournaments._partials.team_name_link', ['team' => $team, 'fallback' => $c['team_name']])</div>
+                                @include('tournaments._partials.team_roster_line', ['team' => $team, 'class' => '', 'style' => 'font-size:13px;opacity:.5'])
                             </div>
                             <div style="text-align:right;font-size:14px">
                                 <div class="b-700" style="color:#E7612F">{{ $c['rating_points'] ?? 0 }} {{ __('tournaments.tv_pts_short') }}</div>
@@ -162,16 +161,15 @@
                     <h3>🏆 {{ __('tournaments.tv_results') }}</h3>
                     @foreach($classification as $c)
                         @php
-                            $team = \App\Models\EventTeam::with('members.user')->find($c['team_id']);
-                            $members = $team ? $team->members->map(fn($m) => trim(($m->user->last_name ?? '') . ' ' . ($m->user->first_name ?? '')) ?: '?')->implode(' / ') : '';
+                            $team = \App\Models\EventTeam::with('members.user', 'captain')->find($c['team_id']);
                         @endphp
                         <div class="tv-match" style="border-bottom:1px solid rgba(255,255,255,.05);padding:12px 0">
                             <div style="width:40px;font-size:22px;text-align:center">
                                 {{ $c['place'] === 1 ? '🥇' : ($c['place'] === 2 ? '🥈' : ($c['place'] === 3 ? '🥉' : $c['place'] . '.')) }}
                             </div>
                             <div style="flex:1">
-                                <div style="font-weight:700;font-size:18px;{{ $c['place'] <= 3 ? 'color:#E7612F' : '' }}">{{ $c['team_name'] }}</div>
-                                <div style="font-size:13px;opacity:.5">{{ $members }}</div>
+                                <div style="font-weight:700;font-size:18px;{{ $c['place'] <= 3 ? 'color:#E7612F' : '' }}">@include('tournaments._partials.team_name_link', ['team' => $team, 'fallback' => $c['team_name']])</div>
+                                @include('tournaments._partials.team_roster_line', ['team' => $team, 'class' => '', 'style' => 'font-size:13px;opacity:.5'])
                             </div>
                             <div style="text-align:right;font-size:14px">
                                 <div class="b-700" style="color:#E7612F">{{ $c['rating_points'] ?? 0 }} {{ __('tournaments.tv_pts_short') }}</div>
@@ -216,10 +214,8 @@
                                         <tr>
                                             <td class="rank">{{ $s->rank }}</td>
                                             <td>
-                                                <div>{{ $s->team->name ?? '—' }}</div>
-                                                @if($s->team && $s->team->members->count())
-                                                <div style="font-size:12px;opacity:.5">{{ $s->team->members->map(fn($mm) => trim(($mm->user->last_name ?? '') . ' ' . ($mm->user->first_name ?? '')) ?: '?')->implode(' / ') }}</div>
-                                                @endif
+                                                <div>@include('tournaments._partials.team_name_link', ['team' => $s->team])</div>
+                                                @include('tournaments._partials.team_roster_line', ['team' => $s->team, 'class' => '', 'style' => 'font-size:12px;opacity:.5'])
                                             </td>
                                             <td class="tc">{{ $s->played }}</td>
                                             <td class="tc win">{{ $s->wins }}</td>
@@ -236,10 +232,8 @@
                             @foreach($activeStage->matches->where('group_id', $group->id)->sortBy(['round','match_number']) as $m)
                                 <div class="tv-match" data-match-id="{{ $m->id }}">
                                     <div class="team right {{ $m->winner_team_id === $m->team_home_id ? 'winner' : '' }}">
-                                        {{ $m->teamHome->name ?? 'TBD' }}
-                                        @if($m->teamHome && $m->teamHome->members->count())
-                                        <div style="font-size:11px;opacity:.4">{{ $m->teamHome->members->map(fn($mm) => trim(($mm->user->last_name ?? '') . ' ' . ($mm->user->first_name ?? '')) ?: '?')->implode(' / ') }}</div>
-                                        @endif
+                                        @include('tournaments._partials.team_name_link', ['team' => $m->teamHome, 'fallback' => 'TBD'])
+                                        @include('tournaments._partials.team_roster_line', ['team' => $m->teamHome, 'class' => '', 'style' => 'font-size:11px;opacity:.4'])
                                     </div>
                                     <div class="score">
                                         @if($m->isCompleted())
@@ -252,10 +246,8 @@
                                         @endif
                                     </div>
                                     <div class="team {{ $m->winner_team_id === $m->team_away_id ? 'winner' : '' }}">
-                                        {{ $m->teamAway->name ?? 'TBD' }}
-                                        @if($m->teamAway && $m->teamAway->members->count())
-                                        <div style="font-size:11px;opacity:.4">{{ $m->teamAway->members->map(fn($mm) => trim(($mm->user->last_name ?? '') . ' ' . ($mm->user->first_name ?? '')) ?: '?')->implode(' / ') }}</div>
-                                        @endif
+                                        @include('tournaments._partials.team_name_link', ['team' => $m->teamAway, 'fallback' => 'TBD'])
+                                        @include('tournaments._partials.team_roster_line', ['team' => $m->teamAway, 'class' => '', 'style' => 'font-size:11px;opacity:.4'])
                                     </div>
                                 </div>
                             @endforeach
@@ -268,10 +260,8 @@
                     @foreach($activeStage->matches->sortBy(['round','match_number']) as $m)
                         <div class="tv-match">
                             <div class="team right {{ $m->winner_team_id === $m->team_home_id ? 'winner' : '' }}">
-                                {{ $m->teamHome->name ?? 'TBD' }}
-                                @if($m->teamHome && $m->teamHome->members->count())
-                                <div style="font-size:11px;opacity:.4">{{ $m->teamHome->members->map(fn($mm) => trim(($mm->user->last_name ?? '') . ' ' . ($mm->user->first_name ?? '')) ?: '?')->implode(' / ') }}</div>
-                                @endif
+                                @include('tournaments._partials.team_name_link', ['team' => $m->teamHome, 'fallback' => 'TBD'])
+                                @include('tournaments._partials.team_roster_line', ['team' => $m->teamHome, 'class' => '', 'style' => 'font-size:11px;opacity:.4'])
                             </div>
                             <div class="score">
                                 @if($m->isCompleted())
@@ -284,10 +274,8 @@
                                 @endif
                             </div>
                             <div class="team {{ $m->winner_team_id === $m->team_away_id ? 'winner' : '' }}">
-                                {{ $m->teamAway->name ?? 'TBD' }}
-                                @if($m->teamAway && $m->teamAway->members->count())
-                                <div style="font-size:11px;opacity:.4">{{ $m->teamAway->members->map(fn($mm) => trim(($mm->user->last_name ?? '') . ' ' . ($mm->user->first_name ?? '')) ?: '?')->implode(' / ') }}</div>
-                                @endif
+                                @include('tournaments._partials.team_name_link', ['team' => $m->teamAway, 'fallback' => 'TBD'])
+                                @include('tournaments._partials.team_roster_line', ['team' => $m->teamAway, 'class' => '', 'style' => 'font-size:11px;opacity:.4'])
                             </div>
                         </div>
                     @endforeach
