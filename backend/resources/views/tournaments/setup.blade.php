@@ -1009,6 +1009,7 @@ $tourNumber = $seasonData
 							<div class="col-lg-3 col-md-6">
 								<div class="card"><label>{{ __('tournaments.setup_stage_groups_advance') }}</label>
 									<input name="advance_count" type="number" value="2" min="1" max="8">
+									<p class="f-16">{{ __('tournaments.setup_stage_groups_advance_hint') }}</p>
 								</div>
 							</div>
 							<div class="col-lg-3 col-md-6">

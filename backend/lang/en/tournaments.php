@@ -418,6 +418,7 @@ return [
 
     'setup_stage_groups_count' => 'Groups count',
     'setup_stage_groups_advance' => 'Advance from group',
+    'setup_stage_groups_advance_hint' => 'Only used if you later create a separate playoff stage. If the group stage is the tournament\'s only stage (places are decided by round-robin results), you can leave this field as is.',
     'setup_stage_third_place' => '3rd place match',
     'setup_stage_courts_count' => 'Courts count',
     'setup_stage_courts_for_groups' => 'Courts for groups',
