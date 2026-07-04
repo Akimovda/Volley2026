@@ -423,7 +423,7 @@
                         <div class="col-md-3">
                             <div class="card" style="overflow:visible">
                                 <label>{{ __('events.game_subtype') }}</label>
-                                <select name="tournament_game_scheme">
+                                <select name="tournament_game_scheme" id="mgmt_tournament_game_scheme">
                                     @foreach($tournamentSchemes as $k => $l)
                                         <option value="{{ $k }}" @selected(old('tournament_game_scheme', $ts?->game_scheme) === $k)>{{ $l }}</option>
                                     @endforeach
@@ -442,7 +442,7 @@
                         <div class="col-md-3">
                             <div class="card" style="overflow:visible">
                                 <label>{{ __('events.tournament_team_size_label') ?? 'Состав команды' }}</label>
-                                <input type="number" name="tournament_team_size_min" min="1" max="20"
+                                <input type="number" name="tournament_team_size_min" id="mgmt_tournament_team_size_min" min="1" max="20"
                                     value="{{ old('tournament_team_size_min', $ts?->team_size_min ?? ($isBeach ? 2 : 6)) }}">
                             </div>
                         </div>
@@ -450,7 +450,7 @@
                         <div class="col-md-3">
                             <div class="card" style="overflow:visible">
                                 <label>{{ __('events.tournament_reserve_label') ?? 'Запасных' }}</label>
-                                <input type="number" name="tournament_reserve_players_max" min="0" max="20"
+                                <input type="number" name="tournament_reserve_players_max" id="mgmt_tournament_reserve_players_max" min="0" max="20"
                                     value="{{ old('tournament_reserve_players_max', $ts?->reserve_players_max ?? 0) }}">
                             </div>
                         </div>
@@ -1694,6 +1694,20 @@
                 $(document).on('change', '#mgmt_reg_starts_d, #mgmt_reg_starts_h', mgmtUpdateRegHint);
                 $(document).on('input', 'input[name="starts_at"]', mgmtUpdateRegHint);
                 mgmtUpdateRegHint();
+            })();
+
+            // --- Синхронизация "Состав команды" со схемой турнира ---
+            // Без этого при смене схемы (напр. 5x1_libero → 5x1) поле "Состав команды"
+            // оставалось от старой схемы — как и require_libero (см. фикс в EventManagementController).
+            (function() {
+                var schemeSel = document.getElementById('mgmt_tournament_game_scheme');
+                var minInput  = document.getElementById('mgmt_tournament_team_size_min');
+                if (!schemeSel || !minInput) return;
+                var schemeDefaults = { '4x4': 4, '4x2': 6, '5x1': 6, '5x1_libero': 7, '2x2': 2, '3x3': 3 };
+                $(document).on('change', '#mgmt_tournament_game_scheme', function() {
+                    var def = schemeDefaults[this.value];
+                    if (def !== undefined) minInput.value = String(def);
+                });
             })();
 
         } // end initMgmtForm
