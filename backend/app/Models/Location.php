@@ -17,6 +17,7 @@ class Location extends Model implements HasMedia
 
     protected $fillable = [
         'organizer_id',
+        'owner_id',
         'name',
         'address',
         'city_id',     // ✅ вместо city
@@ -36,6 +37,16 @@ class Location extends Model implements HasMedia
     public function city()
     {
         return $this->belongsTo(\App\Models\City::class, 'city_id');
+    }
+
+    public function owner(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'owner_id');
+    }
+
+    public function directions()
+    {
+        return $this->hasMany(LocationDirection::class);
     }
 
     public function registerMediaCollections(): void

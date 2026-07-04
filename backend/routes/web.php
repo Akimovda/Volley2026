@@ -846,6 +846,7 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
         Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');
         Route::get('/users/{user}', [AdminUserController::class, 'show'])->name('users.show');
         Route::post('/users/{user}/role', [AdminRoleController::class, 'updateUserRole'])->name('users.role.update');
+        Route::post('/users/{user}/club-manager', [AdminRoleController::class, 'updateClubManager'])->name('users.club-manager.update');
         Route::delete('/users/{user}/purge', [AdminUserController::class, 'purge'])->name('users.purge');
 
         Route::get('/users/duplicates', [\App\Http\Controllers\Admin\AdminUserDuplicatesController::class, 'index'])
@@ -891,6 +892,9 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
 		
         Route::delete('/locations/{location}/photos/{media}', [AdminLocationPhotoController::class, 'destroy'])
 		->name('locations.photos.destroy');
+
+        Route::post('/locations/{location}/directions', [AdminLocationController::class, 'saveDirections'])
+            ->name('locations.directions.save');
 
         Route::get('/impersonate', [ImpersonationController::class, 'index'])->name('impersonate.index');
         Route::post('/impersonate/start/{user}', [ImpersonationController::class, 'start'])->name('impersonate.start');

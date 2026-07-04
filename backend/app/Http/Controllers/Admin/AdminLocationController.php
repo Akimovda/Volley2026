@@ -5,7 +5,11 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\City;
 use App\Models\Location;
+use App\Models\LocationCourt;
+use App\Models\LocationDirection;
+use App\Models\LocationWorkingHour;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 class AdminLocationController extends Controller
@@ -89,7 +93,16 @@ public function store(Request $request)
             ->sortBy(fn ($m) => (int)($m->order_column ?? 0))
             ->values();
 
-        return view('admin.locations.edit', compact('location', 'photos'));
+        $directions = LocationDirection::where('location_id', $location->id)
+            ->with(['courts' => fn ($q) => $q->orderBy('sort_order'), 'workingHours'])
+            ->get()
+            ->keyBy('direction');
+
+        $clubManagers = \App\Models\User::where('is_club_manager', true)
+            ->orderBy('last_name')
+            ->get();
+
+        return view('admin.locations.edit', compact('location', 'photos', 'directions', 'clubManagers'));
     }
 
 public function update(Request $request, Location $location)
@@ -107,7 +120,12 @@ public function update(Request $request, Location $location)
         'lng'            => ['nullable', 'numeric', 'between:-180,180'],
         'photos'         => ['nullable', 'array'],
         'photos.*'       => ['nullable', 'image', 'max:5120'],
+        'owner_id'       => ['nullable', 'integer', 'exists:users,id'],
     ]);
+
+    if ($request->user()?->isAdmin()) {
+        $location->owner_id = $data['owner_id'] ?? null;
+    }
 
     $city = City::query()->whereKey((int)$data['city_id'])->first();
 
@@ -140,6 +158,104 @@ public function update(Request $request, Location $location)
 
     return back()->with('status', 'Локация сохранена ✅');
 }
+
+    public function saveDirections(Request $request, Location $location)
+    {
+        $data = $request->validate([
+            'directions'                          => ['required', 'array'],
+            'directions.*.enabled'                 => ['nullable', 'boolean'],
+            'directions.*.courts_count'            => ['nullable', 'integer', 'min:1', 'max:20'],
+            'directions.*.court_names'             => ['nullable', 'array'],
+            'directions.*.court_names.*'           => ['nullable', 'string', 'max:100'],
+            'directions.*.hours'                   => ['nullable', 'array'],
+            'directions.*.hours.*.opens_at'        => ['nullable', 'date_format:H:i'],
+            'directions.*.hours.*.closes_at'       => ['nullable', 'date_format:H:i'],
+            'directions.*.hours.*.is_day_off'      => ['nullable', 'boolean'],
+        ]);
+
+        DB::transaction(function () use ($data, $location) {
+            foreach ([LocationDirection::DIRECTION_CLASSIC, LocationDirection::DIRECTION_BEACH] as $directionKey) {
+                $input = $data['directions'][$directionKey] ?? null;
+                $enabled = (bool) ($input['enabled'] ?? false);
+
+                $existing = LocationDirection::where('location_id', $location->id)
+                    ->where('direction', $directionKey)
+                    ->first();
+
+                if (!$enabled) {
+                    if ($existing) {
+                        $existing->is_active = false;
+                        $existing->save();
+                    }
+                    continue;
+                }
+
+                $isNewDirection = !$existing;
+                $courtsCount = max(1, (int) ($input['courts_count'] ?? 1));
+
+                $direction = LocationDirection::updateOrCreate(
+                    ['location_id' => $location->id, 'direction' => $directionKey],
+                    ['courts_count' => $courtsCount, 'is_active' => true]
+                );
+
+                // Корты: upsert по порядковому номеру (sort_order = 1..N)
+                $courtNames = $input['court_names'] ?? [];
+                $existingCourts = $direction->courts()->orderBy('sort_order')->get()->keyBy('sort_order');
+
+                for ($i = 1; $i <= $courtsCount; $i++) {
+                    $name = trim((string) ($courtNames[$i - 1] ?? ''))
+                        ?: __('club.court_default_name_' . $directionKey, ['n' => $i]);
+
+                    $court = $existingCourts->get($i);
+                    if ($court) {
+                        $court->name = $name;
+                        $court->is_active = true;
+                        $court->save();
+                    } else {
+                        LocationCourt::create([
+                            'direction_id' => $direction->id,
+                            'name'         => $name,
+                            'sort_order'   => $i,
+                            'is_active'    => true,
+                        ]);
+                    }
+                }
+
+                // Количество уменьшилось — деактивируем лишние, НЕ удаляем (на них могут быть брони)
+                $direction->courts()->where('sort_order', '>', $courtsCount)->update(['is_active' => false]);
+
+                // Режим работы: upsert по (direction_id, day_of_week)
+                $hoursInput = $input['hours'] ?? [];
+                for ($day = 0; $day <= 6; $day++) {
+                    $dayData = $hoursInput[$day] ?? null;
+
+                    if ($dayData === null) {
+                        if ($isNewDirection) {
+                            // Дефолт при создании направления: Пн-Вс 08:00-23:00, без выходных
+                            LocationWorkingHour::updateOrCreate(
+                                ['direction_id' => $direction->id, 'day_of_week' => $day],
+                                ['opens_at' => '08:00', 'closes_at' => '23:00', 'is_day_off' => false]
+                            );
+                        }
+                        // для уже существующего направления без данных по дню — не трогаем
+                        continue;
+                    }
+
+                    $isDayOff = (bool) ($dayData['is_day_off'] ?? false);
+                    LocationWorkingHour::updateOrCreate(
+                        ['direction_id' => $direction->id, 'day_of_week' => $day],
+                        [
+                            'opens_at'   => $isDayOff ? null : ($dayData['opens_at'] ?? null),
+                            'closes_at'  => $isDayOff ? null : ($dayData['closes_at'] ?? null),
+                            'is_day_off' => $isDayOff,
+                        ]
+                    );
+                }
+            }
+        });
+
+        return back()->with('status', __('club.save_directions') . ' ✅');
+    }
 
     public function destroy(Location $location)
     {

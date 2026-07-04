@@ -108,6 +108,58 @@
                     saveBtn?.addEventListener('click', saveOrder);
 				}
 			})();
+
+			// --- Направления и корты
+			(function () {
+				document.querySelectorAll('.direction-block').forEach(function (block) {
+					var toggle = block.querySelector('.direction-toggle');
+					var fields = block.querySelector('.direction-fields');
+					if (toggle && fields) {
+						toggle.addEventListener('change', function () {
+							fields.style.display = toggle.checked ? '' : 'none';
+						});
+					}
+
+					var countSelect = block.querySelector('.courts-count-select');
+					var namesWrap = block.querySelector('.court-names-wrap');
+					if (countSelect && namesWrap) {
+						var directionKey = block.getAttribute('data-direction');
+						var defaultLabelTpl = namesWrap.getAttribute('data-default-label');
+						var nameLabel = namesWrap.getAttribute('data-name-label');
+
+						countSelect.addEventListener('change', function () {
+							var target = parseInt(countSelect.value, 10) || 1;
+							var current = namesWrap.querySelectorAll('.court-name-item').length;
+
+							if (target > current) {
+								for (var i = current + 1; i <= target; i++) {
+									var col = document.createElement('div');
+									col.className = 'col-md-4 court-name-item';
+									var defaultName = defaultLabelTpl.replace('__N__', i);
+									col.innerHTML = '<div class="card">' +
+										'<label>' + nameLabel + ' ' + i + '</label>' +
+										'<input type="text" name="directions[' + directionKey + '][court_names][]" value="' + defaultName + '" maxlength="100">' +
+										'</div>';
+									namesWrap.appendChild(col);
+								}
+							} else if (target < current) {
+								var items = namesWrap.querySelectorAll('.court-name-item');
+								for (var j = items.length - 1; j >= target; j--) {
+									items[j].remove();
+								}
+							}
+						});
+					}
+
+					block.querySelectorAll('.day-off-toggle').forEach(function (dayOff) {
+						var row = dayOff.closest('tr');
+						var timeInputs = row ? row.querySelectorAll('input[type="time"]') : [];
+						dayOff.addEventListener('change', function () {
+							timeInputs.forEach(function (inp) { inp.disabled = dayOff.checked; });
+						});
+					});
+				});
+			})();
 		</script>
 	</x-slot>
 	
@@ -345,6 +397,24 @@
                             @error('note')<div class="invalid-feedback">{{ $message }}</div>@enderror
 						</div>
 					</div>
+
+                    {{-- OWNER (только для админа) --}}
+                    @if(auth()->user()?->isAdmin())
+                    <div class="col-12">
+                        <div class="card">
+                            <label>{{ __('club.location_owner') }}</label>
+                            <select name="owner_id">
+                                <option value="">{{ __('club.no_owner_option') }}</option>
+                                @foreach($clubManagers as $manager)
+                                <option value="{{ $manager->id }}" @selected((int) old('owner_id', $location->owner_id) === $manager->id)>
+                                    {{ trim($manager->last_name . ' ' . $manager->first_name) ?: $manager->name }}
+                                </option>
+                                @endforeach
+                            </select>
+                            @error('owner_id')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+						</div>
+					</div>
+                    @endif
 				</div>
 				
 				<div class="mt-2 text-center">
@@ -368,7 +438,110 @@
 			</div>
 			--}}
 		</div>
-		
+
+        {{-- НАПРАВЛЕНИЯ И КОРТЫ --}}
+        <div class="ramka">
+            <h2 class="-mt-05">{{ __('club.directions_title') }}</h2>
+            <form method="POST" action="{{ route('admin.locations.directions.save', $location) }}" class="form" id="directionsForm">
+                @csrf
+
+                @php
+                $directionMeta = [
+                    'classic' => ['label' => __('club.direction_classic'), 'countLabel' => __('club.courts_count_classic')],
+                    'beach'   => ['label' => __('club.direction_beach'), 'countLabel' => __('club.courts_count_beach')],
+                ];
+                @endphp
+
+                @foreach($directionMeta as $directionKey => $meta)
+                @php
+                $dir = $directions->get($directionKey);
+                $isEnabled = old("directions.$directionKey.enabled", $dir?->is_active ? '1' : '') ? true : false;
+                $courtsCount = old("directions.$directionKey.courts_count", $dir->courts_count ?? 1);
+                $courtNames = $dir ? $dir->courts->pluck('name')->values()->all() : [];
+                $hoursByDay = $dir ? $dir->workingHours->keyBy('day_of_week') : collect();
+                @endphp
+                <div class="card mb-2 direction-block" data-direction="{{ $directionKey }}">
+                    <label class="d-flex fvc gap-1 mb-2">
+                        <input type="checkbox" class="direction-toggle" name="directions[{{ $directionKey }}][enabled]" value="1" @checked($isEnabled)>
+                        <span class="b-700 f-18">{{ $meta['label'] }}</span>
+                    </label>
+
+                    <div class="direction-fields" style="{{ $isEnabled ? '' : 'display:none' }}">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="card">
+                                    <label>{{ $meta['countLabel'] }}</label>
+                                    <select name="directions[{{ $directionKey }}][courts_count]" class="courts-count-select">
+                                        @for($n = 1; $n <= 20; $n++)
+                                        <option value="{{ $n }}" @selected((int) $courtsCount === $n)>{{ $n }}</option>
+                                        @endfor
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="court-names-wrap row mt-1"
+                             data-default-label="{{ __('club.court_default_name_' . $directionKey, ['n' => '__N__']) }}"
+                             data-name-label="{{ __('club.court_name_label') }}">
+                            @for($i = 1; $i <= (int) $courtsCount; $i++)
+                            <div class="col-md-4 court-name-item">
+                                <div class="card">
+                                    <label>{{ __('club.court_name_label') }} {{ $i }}</label>
+                                    <input type="text" name="directions[{{ $directionKey }}][court_names][]"
+                                           value="{{ old('directions.' . $directionKey . '.court_names.' . ($i - 1), $courtNames[$i - 1] ?? __('club.court_default_name_' . $directionKey, ['n' => $i])) }}"
+                                           maxlength="100">
+                                </div>
+                            </div>
+                            @endfor
+                        </div>
+
+                        <div class="mt-2">
+                            <div class="b-600 mb-1">{{ __('club.working_hours') }}</div>
+                            <div class="table-scrollable">
+                                <table class="table f-13">
+                                    <thead>
+                                        <tr>
+                                            <th style="text-align:left"></th>
+                                            <th style="text-align:center">{{ __('club.opens_at') }}</th>
+                                            <th style="text-align:center">{{ __('club.closes_at') }}</th>
+                                            <th style="text-align:center">{{ __('club.day_off') }}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @for($day = 0; $day <= 6; $day++)
+                                        @php
+                                        $wh = $hoursByDay->get($day);
+                                        $isDayOff = old("directions.$directionKey.hours.$day.is_day_off", $wh->is_day_off ?? false) ? true : false;
+                                        $opensAt = old("directions.$directionKey.hours.$day.opens_at", $wh?->opens_at ? \Carbon\Carbon::parse($wh->opens_at)->format('H:i') : '08:00');
+                                        $closesAt = old("directions.$directionKey.hours.$day.closes_at", $wh?->closes_at ? \Carbon\Carbon::parse($wh->closes_at)->format('H:i') : '23:00');
+                                        @endphp
+                                        <tr>
+                                            <td>{{ __('club.days.' . $day) }}</td>
+                                            <td style="text-align:center">
+                                                <input type="time" name="directions[{{ $directionKey }}][hours][{{ $day }}][opens_at]" value="{{ $opensAt }}" @disabled($isDayOff)>
+                                            </td>
+                                            <td style="text-align:center">
+                                                <input type="time" name="directions[{{ $directionKey }}][hours][{{ $day }}][closes_at]" value="{{ $closesAt }}" @disabled($isDayOff)>
+                                            </td>
+                                            <td style="text-align:center">
+                                                <input type="checkbox" class="day-off-toggle" name="directions[{{ $directionKey }}][hours][{{ $day }}][is_day_off]" value="1" @checked($isDayOff)>
+                                            </td>
+                                        </tr>
+                                        @endfor
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                @endforeach
+
+                <div class="mt-2 text-center">
+                    <button type="submit" class="btn btn-primary">{{ __('club.save_directions') }}</button>
+                </div>
+            </form>
+        </div>
+
         {{-- PHOTOS (D&D SORT) --}}
         @if(!$photos->isEmpty())
         <div class="ramka">
