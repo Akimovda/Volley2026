@@ -44,13 +44,14 @@ class LocationsByCityController extends Controller
                 : '';
     
             return [
-                'id'      => (int) $loc->id,
-                'name'    => (string) ($loc->name ?? ''),
-                'address' => (string) ($loc->address ?? ''),
-                'lat'     => $loc->lat !== null ? (string) $loc->lat : '',
-                'lng'     => $loc->lng !== null ? (string) $loc->lng : '',
-                'short'   => (string) ($loc->short_text ?? ''),
-                'thumb'   => (string) ($thumb ?? ''),
+                'id'       => (int) $loc->id,
+                'name'     => (string) ($loc->name ?? ''),
+                'address'  => (string) ($loc->address ?? ''),
+                'lat'      => $loc->lat !== null ? (string) $loc->lat : '',
+                'lng'      => $loc->lng !== null ? (string) $loc->lng : '',
+                'short'    => (string) ($loc->short_text ?? ''),
+                'thumb'    => (string) ($thumb ?? ''),
+                'owner_id' => (int) ($loc->owner_id ?? 0),
             ];
         })->values();
     

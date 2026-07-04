@@ -38,6 +38,8 @@
 										data-city-search-url="{{ route('cities.search') }}"
 										data-locations-url="{{ route('ajax.locations.byCity') }}"
 										data-city-meta-url="{{ route('ajax.cities.meta') }}"
+										data-current-user-id="{{ auth()->id() }}"
+										data-is-club-manager="{{ auth()->user() && auth()->user()->is_club_manager ? '1' : '0' }}"
 										>
 											
 											{{-- Поле для отображения --}}
@@ -117,9 +119,21 @@
 										@if(!$isAdmin)
 										<ul class="list f-16 mt-1">
 											<li>{{ __('events.location_admin_only_hint') }}</li>
-										</ul>											
+										</ul>
 										@endif
-									</div>									
+
+										{{-- Цвет в таймлайне (только владелец локации, is_club_manager) --}}
+										<div id="timeline_color_block" class="mt-2" style="display:none">
+											<label>{{ __('club.timeline_color') }}</label>
+											<div class="d-flex gap-1" style="flex-wrap:wrap">
+												@foreach(['#4A9EFF','#34C759','#FFD60A','#E7612F','#AF52DE','#FF3B30','#5AC8FA','#8E8E93'] as $swatch)
+												<label class="color-swatch" style="background:{{ $swatch }}">
+													<input type="radio" name="timeline_color" value="{{ $swatch }}" @checked(old('timeline_color') === $swatch)>
+												</label>
+												@endforeach
+											</div>
+										</div>
+									</div>
 								</div>
 								
 								

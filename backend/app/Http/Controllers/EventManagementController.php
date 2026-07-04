@@ -946,9 +946,10 @@ if ($role === 'admin') {
             'tournament_captain_confirms_members' => ['sometimes', 'boolean'],
             'tournament_auto_submit_when_ready'   => ['sometimes', 'boolean'],
             'tournament_allow_incomplete_application' => ['sometimes', 'boolean'],
+            'timeline_color' => ['nullable', 'regex:/^#[0-9A-Fa-f]{6}$/'],
         ]);
-    
-        DB::transaction(function () use ($event, $data) {
+
+        DB::transaction(function () use ($event, $data, $user) {
             $tz = (string) $data['timezone'];
             $startsUtc = Carbon::parse($data['starts_at'], $tz)->utc();
             // duration: приоритет у duration_sec (вычислен JS), fallback hours+min
@@ -973,6 +974,22 @@ if ($role === 'admin') {
             $event->title = $data['title'];
             $event->timezone = $tz;
             $event->location_id = (int) $data['location_id'];
+
+            // Цвет в таймлайне — только владелец локации (club manager), проверяем на сервере
+            if (array_key_exists('timeline_color', $data)) {
+                $newLocation = \App\Models\Location::find((int) $data['location_id']);
+                if (
+                    !empty($data['timeline_color'])
+                    && $user->is_club_manager
+                    && $newLocation
+                    && (int) $newLocation->owner_id === (int) $user->id
+                ) {
+                    $event->timeline_color = $data['timeline_color'];
+                } else {
+                    $event->timeline_color = null;
+                }
+            }
+
             $event->starts_at = $startsUtc;
             $event->duration_sec = $durationSec;
             $event->allow_registration = $allowReg;

@@ -190,8 +190,43 @@
 			</div>
 		</div>
 		
+        {{-- ТАЙМЛАЙН ЗАНЯТОСТИ КОРТОВ (только владелец локации / админ) --}}
+        @php
+        $canManageTimeline = $user && ((method_exists($user, 'isAdmin') && $user->isAdmin()) || (int) ($location->owner_id ?? 0) === (int) $user->id);
+        @endphp
+        @if($canManageTimeline)
+        <div class="ramka" id="timelineSection">
+            <div class="d-flex between fvc mb-2" style="flex-wrap:wrap;gap:10px">
+                <h2 class="-mt-05" style="margin:0">{{ __('club.timeline') }}</h2>
+                <div class="d-flex gap-1" role="tablist">
+                    <button type="button" class="btn btn-small btn-primary" id="tlSwitchList">{{ __('club.list_view') }}</button>
+                    <button type="button" class="btn btn-small btn-secondary" id="tlSwitchTimeline">{{ __('club.timeline') }}</button>
+                </div>
+            </div>
+
+            <div id="timelinePanel" style="display:none">
+                <div class="d-flex between fvc mb-2" style="flex-wrap:wrap;gap:10px">
+                    <div class="d-flex gap-1 fvc" style="flex-wrap:wrap">
+                        <button type="button" class="btn btn-small btn-secondary" id="tlPrev">{{ __('club.yesterday') }}</button>
+                        <span class="b-600" id="tlCurrentLabel">{{ __('club.today') }}</span>
+                        <input type="date" id="tlDatePicker" class="btn-small">
+                        <button type="button" class="btn btn-small btn-secondary" id="tlNext">{{ __('club.tomorrow') }}</button>
+                    </div>
+                    <div class="d-flex gap-1">
+                        <button type="button" class="btn btn-small btn-primary" id="tlModeDay">{{ __('club.day_view') }}</button>
+                        <button type="button" class="btn btn-small btn-secondary" id="tlModeWeek">{{ __('club.week_view') }}</button>
+                    </div>
+                </div>
+
+                <div id="tlLoading" class="alert alert-info" style="display:none">…</div>
+                <div id="tlDayGrid" class="timeline-day"></div>
+                <div id="tlWeekGrid" class="timeline-week" style="display:none"></div>
+            </div>
+        </div>
+        @endif
+
         {{-- Мероприятия в этой локации --}}
-        
+
         {{-- ТУРНИРЫ В ЛОКАЦИИ --}}
         @php
             $locationTournaments = \App\Models\Event::where('location_id', $location->id)
@@ -441,6 +476,245 @@
                     }
                 } catch(e) {}
             });
+
+            // ===== Таймлайн занятости кортов =====
+            (function () {
+                const section = document.getElementById('timelineSection');
+                if (!section) return;
+
+                const timelineUrl = @json($canManageTimeline ? route('locations.timeline', $location) : null);
+                const listBtn = document.getElementById('tlSwitchList');
+                const tlBtn = document.getElementById('tlSwitchTimeline');
+                const panel = document.getElementById('timelinePanel');
+                const prevBtn = document.getElementById('tlPrev');
+                const nextBtn = document.getElementById('tlNext');
+                const datePicker = document.getElementById('tlDatePicker');
+                const currentLabel = document.getElementById('tlCurrentLabel');
+                const modeDayBtn = document.getElementById('tlModeDay');
+                const modeWeekBtn = document.getElementById('tlModeWeek');
+                const loadingEl = document.getElementById('tlLoading');
+                const dayGrid = document.getElementById('tlDayGrid');
+                const weekGrid = document.getElementById('tlWeekGrid');
+
+                const directionLabels = {
+                    classic: @json(__('club.direction_classic')),
+                    beach: @json(__('club.direction_beach')),
+                };
+                const closedLabel = @json(__('club.closed_day'));
+                const eventsCountTpl = @json(__('club.events_count', ['count' => '__N__']));
+                const todayLabel = @json(__('club.today'));
+
+                const state = { mode: 'day', date: new Date() };
+                const PX_PER_MIN = 1.5;
+
+                function fmtDate(d) { return d.toISOString().slice(0, 10); }
+
+                function setActive(btnActive, btnInactive) {
+                    btnActive.classList.remove('btn-secondary'); btnActive.classList.add('btn-primary');
+                    btnInactive.classList.remove('btn-primary'); btnInactive.classList.add('btn-secondary');
+                }
+
+                function showList() { panel.style.display = 'none'; setActive(listBtn, tlBtn); }
+                function showTimeline() { panel.style.display = ''; setActive(tlBtn, listBtn); load(); }
+                listBtn.addEventListener('click', showList);
+                tlBtn.addEventListener('click', showTimeline);
+
+                function setMode(mode) {
+                    state.mode = mode;
+                    if (mode === 'day') {
+                        setActive(modeDayBtn, modeWeekBtn);
+                        dayGrid.style.display = ''; weekGrid.style.display = 'none';
+                    } else {
+                        setActive(modeWeekBtn, modeDayBtn);
+                        dayGrid.style.display = 'none'; weekGrid.style.display = '';
+                    }
+                    load();
+                }
+                modeDayBtn.addEventListener('click', () => setMode('day'));
+                modeWeekBtn.addEventListener('click', () => setMode('week'));
+
+                prevBtn.addEventListener('click', function () {
+                    state.date.setDate(state.date.getDate() - (state.mode === 'week' ? 7 : 1));
+                    load();
+                });
+                nextBtn.addEventListener('click', function () {
+                    state.date.setDate(state.date.getDate() + (state.mode === 'week' ? 7 : 1));
+                    load();
+                });
+                datePicker.addEventListener('change', function () {
+                    if (datePicker.value) { state.date = new Date(datePicker.value + 'T00:00:00'); load(); }
+                });
+
+                function updateLabel() {
+                    const isToday = fmtDate(state.date) === fmtDate(new Date());
+                    currentLabel.textContent = isToday
+                        ? todayLabel
+                        : state.date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+                    datePicker.value = fmtDate(state.date);
+                }
+
+                function timeToMin(t) {
+                    const parts = t.split(':').map(Number);
+                    return parts[0] * 60 + parts[1];
+                }
+
+                function renderDay(directions) {
+                    dayGrid.innerHTML = '';
+                    const openDirs = directions.filter(d => !d.is_closed);
+                    if (!openDirs.length) {
+                        dayGrid.innerHTML = '<div class="alert alert-info">' + closedLabel + '</div>';
+                        return;
+                    }
+
+                    const dayStart = Math.min.apply(null, openDirs.map(d => timeToMin(d.opens_at)));
+                    const dayEnd = Math.max.apply(null, openDirs.map(d => timeToMin(d.closes_at)));
+                    const totalMin = dayEnd - dayStart;
+
+                    const wrap = document.createElement('div');
+                    wrap.className = 'timeline-scroll';
+
+                    const axis = document.createElement('div');
+                    axis.className = 'timeline-axis';
+                    axis.style.height = (totalMin * PX_PER_MIN) + 'px';
+                    for (let m = dayStart; m <= dayEnd; m += 30) {
+                        const label = document.createElement('div');
+                        label.className = 'timeline-axis-label';
+                        label.style.top = ((m - dayStart) * PX_PER_MIN) + 'px';
+                        label.textContent = String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+                        axis.appendChild(label);
+                    }
+
+                    const courtsWrap = document.createElement('div');
+                    courtsWrap.className = 'timeline-courts';
+
+                    directions.forEach(function (dir) {
+                        const group = document.createElement('div');
+                        group.className = 'timeline-direction-group';
+
+                        const label = document.createElement('div');
+                        label.className = 'timeline-direction-label';
+                        label.textContent = directionLabels[dir.direction] || dir.direction;
+                        group.appendChild(label);
+
+                        const row = document.createElement('div');
+                        row.className = 'timeline-courts-row';
+
+                        if (dir.is_closed) {
+                            const closed = document.createElement('div');
+                            closed.className = 'timeline-closed';
+                            closed.textContent = closedLabel;
+                            row.appendChild(closed);
+                        } else {
+                            dir.courts.forEach(function (court) {
+                                const col = document.createElement('div');
+                                col.className = 'timeline-court-col';
+
+                                const header = document.createElement('div');
+                                header.className = 'timeline-court-header';
+                                header.textContent = court.name;
+                                col.appendChild(header);
+
+                                const body = document.createElement('div');
+                                body.className = 'timeline-court-body';
+                                body.style.height = (totalMin * PX_PER_MIN) + 'px';
+
+                                court.slots.forEach(function (slot) {
+                                    const startMin = timeToMin(slot.starts_at);
+                                    const endMin = timeToMin(slot.ends_at);
+                                    const block = document.createElement('a');
+                                    block.className = 'timeline-event-block';
+                                    block.href = '/events/' + slot.event_id;
+                                    block.style.top = ((startMin - dayStart) * PX_PER_MIN) + 'px';
+                                    block.style.height = Math.max(18, (endMin - startMin) * PX_PER_MIN) + 'px';
+                                    block.style.background = slot.color || '#4A9EFF';
+                                    block.innerHTML = '<div class="timeline-event-title">' + (slot.title || '') + '</div>' +
+                                        '<div class="timeline-event-meta">' + slot.starts_at + '–' + slot.ends_at + (slot.organizer ? ' · ' + slot.organizer : '') + '</div>';
+                                    body.appendChild(block);
+                                });
+
+                                col.appendChild(body);
+                                row.appendChild(col);
+                            });
+                        }
+
+                        group.appendChild(row);
+                        courtsWrap.appendChild(group);
+                    });
+
+                    wrap.appendChild(axis);
+                    wrap.appendChild(courtsWrap);
+                    dayGrid.appendChild(wrap);
+                }
+
+                function renderWeek(days) {
+                    weekGrid.innerHTML = '';
+                    const directionsSet = new Set();
+                    days.forEach(d => d.directions.forEach(dd => directionsSet.add(dd.direction)));
+                    const directionsList = Array.from(directionsSet);
+                    const counts = days.flatMap(d => d.directions.map(dd => dd.events_count));
+                    const maxCount = Math.max(1, ...counts);
+
+                    const table = document.createElement('table');
+                    table.className = 'timeline-week-table';
+
+                    const thead = document.createElement('thead');
+                    const headRow = document.createElement('tr');
+                    headRow.appendChild(document.createElement('th'));
+                    days.forEach(function (day) {
+                        const th = document.createElement('th');
+                        th.textContent = day.day_label;
+                        th.className = 'timeline-week-day-header';
+                        th.addEventListener('click', function () {
+                            state.date = new Date(day.date + 'T00:00:00');
+                            setMode('day');
+                        });
+                        headRow.appendChild(th);
+                    });
+                    thead.appendChild(headRow);
+                    table.appendChild(thead);
+
+                    const tbody = document.createElement('tbody');
+                    directionsList.forEach(function (directionKey) {
+                        const row = document.createElement('tr');
+                        const th = document.createElement('th');
+                        th.textContent = directionLabels[directionKey] || directionKey;
+                        row.appendChild(th);
+
+                        days.forEach(function (day) {
+                            const dd = day.directions.find(x => x.direction === directionKey);
+                            const td = document.createElement('td');
+                            if (!dd || dd.is_closed) {
+                                td.textContent = closedLabel;
+                                td.className = 'timeline-week-closed';
+                            } else {
+                                const intensity = dd.events_count / maxCount;
+                                td.style.background = 'rgba(74,158,255,' + (0.08 + intensity * 0.5).toFixed(2) + ')';
+                                td.textContent = eventsCountTpl.replace('__N__', dd.events_count);
+                            }
+                            row.appendChild(td);
+                        });
+
+                        tbody.appendChild(row);
+                    });
+                    table.appendChild(tbody);
+                    weekGrid.appendChild(table);
+                }
+
+                async function load() {
+                    updateLabel();
+                    loadingEl.style.display = '';
+                    try {
+                        const url = timelineUrl + '?date=' + fmtDate(state.date) + '&mode=' + state.mode;
+                        const res = await fetch(url, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' });
+                        const data = await res.json();
+                        if (state.mode === 'day') { renderDay(data); } else { renderWeek(data); }
+                    } catch (e) {
+                        dayGrid.innerHTML = ''; weekGrid.innerHTML = '';
+                    } finally {
+                        loadingEl.style.display = 'none';
+                    }
+                }
+            })();
         });
     </script>
 	</x-slot>

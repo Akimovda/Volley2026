@@ -408,6 +408,12 @@ class EventStoreService
             if ($isTournament) {
                 $event->tournament_teams_count = (int)($data['tournament_teams_count'] ?? 4);
             }
+
+            // Цвет в таймлайне — только владелец локации (club manager), проверяем на сервере
+            if (!empty($data['timeline_color']) && $user->is_club_manager && (int) $location->owner_id === (int) $user->id) {
+                $event->timeline_color = $data['timeline_color'];
+            }
+
             $event->save();
 
             /*

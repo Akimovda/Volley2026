@@ -181,7 +181,7 @@ class EventOccurrence extends Model
 
         $tz = $this->timezone ?: ($this->event?->timezone ?: 'UTC');
 
-        return DateTime::fromUtcToTz($raw, $tz);
+        return DateTime::utcToLocal($raw, $tz);
     }
 
     /**

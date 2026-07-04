@@ -38,6 +38,7 @@ class Event extends Model implements HasMedia
         'public_token',
         'direction',
         'format',
+        'timeline_color',
         'allow_registration',
         'registration_mode',
         'tournament_teams_count',

@@ -23,4 +23,16 @@ return [
         0 => 'Monday', 1 => 'Tuesday', 2 => 'Wednesday',
         3 => 'Thursday', 4 => 'Friday', 5 => 'Saturday', 6 => 'Sunday',
     ],
+
+    // === Timeline (Phase 2) ===
+    'timeline'        => 'Timeline',
+    'list_view'       => 'List',
+    'day_view'        => 'Day',
+    'week_view'       => 'Week',
+    'today'           => 'Today',
+    'yesterday'       => '← Yesterday',
+    'tomorrow'        => 'Tomorrow →',
+    'closed_day'      => 'Closed',
+    'timeline_color'  => 'Timeline color',
+    'events_count'    => ':count events',
 ];

@@ -1302,18 +1302,33 @@ document.addEventListener("trix-file-accept", function (event) {
 	var mapWrap = document.getElementById('location_preview_map_wrap');
 	var mapEl = document.getElementById('location_preview_map');
 	
+	function updateTimelineColorVisibility(opt) {
+		var block = document.getElementById('timeline_color_block');
+		if (!block) return;
+
+		var ownerId = opt ? Number(opt.getAttribute('data-owner') || 0) : 0;
+		var currentUserId = cityWrap ? Number(cityWrap.getAttribute('data-current-user-id') || 0) : 0;
+		var isClubManager = cityWrap ? cityWrap.getAttribute('data-is-club-manager') === '1' : false;
+
+		var show = isClubManager && ownerId > 0 && currentUserId > 0 && ownerId === currentUserId;
+		block.style.display = show ? '' : 'none';
+	}
+
 	function updatePreview() {
 		if (!sel) return;
-		
+
 		var opt = null;
 		if (sel.selectedIndex >= 0) opt = sel.options[sel.selectedIndex];
-		
+
 		if (!opt || !opt.value) {
 			if (wrap) addClass(wrap, 'hidden');
 			if (mapEl) mapEl.src = '';
+			updateTimelineColorVisibility(null);
 			return;
 		}
-		
+
+		updateTimelineColorVisibility(opt);
+
 		var name = opt.getAttribute('data-name') || '';
 		var city = opt.getAttribute('data-city') || '';
 		var address = opt.getAttribute('data-address') || '';
@@ -1512,6 +1527,7 @@ document.addEventListener("trix-file-accept", function (event) {
 				opt.setAttribute('data-lat', it.lat || '');
 				opt.setAttribute('data-lng', it.lng || '');
 				opt.setAttribute('data-thumb', it.thumb || '');
+				opt.setAttribute('data-owner', it.owner_id || '0');
 				
 				loc.appendChild(opt);
 			}

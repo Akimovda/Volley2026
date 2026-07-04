@@ -4953,3 +4953,170 @@ body:not(.is-app) .native-actions {
 	padding: 4px 14px;
 	font-size: 13px;
 }
+/* ===== Club module: таймлайн занятости кортов (Фаза 2) ===== */
+.timeline-scroll {
+	display: flex;
+	overflow-x: auto;
+	gap: 12px;
+	padding-bottom: 8px;
+}
+.timeline-axis {
+	position: relative;
+	flex: 0 0 52px;
+	width: 52px;
+}
+.timeline-axis-label {
+	position: absolute;
+	left: 0;
+	right: 0;
+	transform: translateY(-50%);
+	font-size: 11px;
+	opacity: .55;
+	white-space: nowrap;
+}
+.timeline-courts {
+	display: flex;
+	gap: 16px;
+}
+.timeline-direction-group {
+	display: flex;
+	flex-direction: column;
+}
+.timeline-direction-label {
+	font-weight: 700;
+	font-size: 13px;
+	margin-bottom: 6px;
+	opacity: .75;
+	white-space: nowrap;
+}
+.timeline-courts-row {
+	display: flex;
+	gap: 6px;
+}
+.timeline-court-col {
+	flex: 0 0 140px;
+	width: 140px;
+}
+.timeline-court-header {
+	text-align: center;
+	font-size: 12px;
+	font-weight: 600;
+	padding: 4px 0;
+	background: rgba(41, 103, 186, .08);
+	border-radius: 6px 6px 0 0;
+}
+.timeline-court-body {
+	position: relative;
+	background: rgba(128, 128, 128, .05);
+	border: 1px solid rgba(128, 128, 128, .1);
+	border-radius: 0 0 6px 6px;
+}
+.timeline-closed {
+	flex: 1;
+	text-align: center;
+	padding: 20px 0;
+	opacity: .5;
+	font-size: 13px;
+}
+.timeline-event-block {
+	position: absolute;
+	left: 3px;
+	right: 3px;
+	border-radius: 6px;
+	color: #fff;
+	padding: 3px 6px;
+	overflow: hidden;
+	text-decoration: none;
+	box-shadow: 0 2px 6px rgba(0, 0, 0, .15);
+	transition: transform .15s ease, box-shadow .15s ease;
+}
+.timeline-event-block:hover {
+	transform: scale(1.02);
+	box-shadow: 0 4px 12px rgba(0, 0, 0, .25);
+	color: #fff;
+}
+.timeline-event-title {
+	font-size: 12px;
+	font-weight: 700;
+	line-height: 1.2;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	overflow: hidden;
+}
+.timeline-event-meta {
+	font-size: 10px;
+	opacity: .9;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	overflow: hidden;
+}
+.timeline-week-table {
+	width: 100%;
+	border-collapse: collapse;
+}
+.timeline-week-table th,
+.timeline-week-table td {
+	border: 1px solid rgba(128, 128, 128, .12);
+	padding: 8px;
+	text-align: center;
+	font-size: 12px;
+}
+.timeline-week-day-header {
+	cursor: pointer;
+	font-weight: 700;
+}
+.timeline-week-day-header:hover {
+	background: rgba(41, 103, 186, .1);
+}
+.timeline-week-closed {
+	opacity: .4;
+}
+body.dark .timeline-court-header {
+	background: rgba(255, 177, 113, .12);
+}
+body.dark .timeline-court-body {
+	background: rgba(255, 255, 255, .04);
+	border-color: rgba(255, 255, 255, .1);
+}
+body.dark .timeline-week-table th,
+body.dark .timeline-week-table td {
+	border-color: rgba(255, 255, 255, .12);
+}
+body.dark .timeline-week-day-header:hover {
+	background: rgba(255, 177, 113, .12);
+}
+@media (max-width: 767px) {
+	.timeline-court-col {
+		flex-basis: 120px;
+		width: 120px;
+	}
+}
+
+/* ===== Club module: палитра цвета события в таймлайне (Фаза 2) ===== */
+.color-swatch {
+	position: relative;
+	display: inline-block;
+	width: 32px;
+	height: 32px;
+	border-radius: 8px;
+	cursor: pointer;
+	box-shadow: inset 0 0 0 2px rgba(0, 0, 0, .08);
+	transition: transform .15s ease, box-shadow .15s ease;
+}
+.color-swatch:hover {
+	transform: scale(1.08);
+}
+.color-swatch input[type="radio"] {
+	position: absolute;
+	inset: 0;
+	margin: 0;
+	opacity: 0;
+	cursor: pointer;
+}
+.color-swatch input[type="radio"]:checked + * ,
+.color-swatch:has(input[type="radio"]:checked) {
+	box-shadow: 0 0 0 3px #fff, 0 0 0 5px #2967BA;
+}
+body.dark .color-swatch:has(input[type="radio"]:checked) {
+	box-shadow: 0 0 0 3px #1a1b2e, 0 0 0 5px #FFB171;
+}

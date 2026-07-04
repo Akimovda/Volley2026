@@ -123,15 +123,20 @@
 			'integer',
 			Rule::exists('locations','id')
 			->where(function ($q) use ($request) {
-				
+
 				$cityId = (int)$request->input('city_id',0);
-				
+
 				if ($cityId > 0) {
 					$q->where('city_id',$cityId);
 				}
 			})
             ],
-			
+
+            'timeline_color' => [
+                'nullable',
+                'regex:/^#[0-9A-Fa-f]{6}$/',
+            ],
+
             /*
 				|--------------------------------------------------------------------------
 				| LEVELS

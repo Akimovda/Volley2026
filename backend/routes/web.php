@@ -135,7 +135,12 @@ Route::get('/logout', fn () => redirect('/'));
     ->whereNumber('location')
     ->middleware('track.view:location,location')
     ->name('locations.show');
-	
+
+	Route::middleware(['auth'])->group(function () {
+		Route::get('/locations/{location}/timeline', [\App\Http\Controllers\ClubTimelineController::class, 'show'])
+			->name('locations.timeline');
+	});
+
 	/*
 		|--------------------------------------------------------------------------
 		| Channel Notification
