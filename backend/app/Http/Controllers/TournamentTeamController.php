@@ -293,6 +293,40 @@ class TournamentTeamController extends Controller
     }
 
     /**
+     * Перевод игрока между основным составом и запасными в рамках команды
+     * (не путать с командным резервом/листом ожидания турнира).
+     */
+    public function updateMemberTeamRole(
+        Request $request,
+        Event $event,
+        EventTeam $team,
+        EventTeamMember $member,
+        TournamentTeamService $service
+    ): RedirectResponse {
+        abort_unless((int) $team->event_id === (int) $event->id, 404);
+        abort_unless((int) $member->event_team_id === (int) $team->id, 404);
+        $canManage = (int) $team->captain_user_id === (int) $request->user()->id
+            || (int) $event->organizer_id === (int) $request->user()->id
+            || $request->user()->isAdmin();
+        abort_unless($canManage, 403);
+
+        $data = $request->validate([
+            'team_role' => ['required', 'string', 'in:player,reserve'],
+        ]);
+
+        try {
+            $service->changeMemberTeamRole($team, $member, $data['team_role'], $request->user()->id);
+            $this->dispatchAnnounceRefresh($event, $team->occurrence_id ? (int) $team->occurrence_id : null);
+
+            return back()->with('success', 'Роль игрока в команде изменена.');
+        } catch (DomainException $e) {
+            return back()->withErrors([
+                'member' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
      * Организатор/админ добавляет игрока в команду напрямую (без invite).
      */
     public function addMemberByOrganizer(

@@ -191,8 +191,10 @@ final class TournamentTeamService
 
     /**
      * Ёмкость по позициям для classic_team: сколько занято / сколько мест по каждой
-     * позиции схемы (без учёта резерва). Используется и для отображения, и для
-     * проверки при смене позиции участника.
+     * позиции схемы. Считает confirmed-участников независимо от team_role (запасной,
+     * которому назначили амплуа, занимает тот же слот, что и основной игрок) — это
+     * согласуется с checkRequirements(), который тоже не разделяет по team_role.
+     * Используется и для отображения, и для проверки при смене позиции участника.
      */
     public function getPositionCapacity(EventTeam $team): array
     {
@@ -209,15 +211,13 @@ final class TournamentTeamService
             $positions['libero'] = 1;
         }
 
-        $confirmedPlayers = $team->members
-            ->where('confirmation_status', 'confirmed')
-            ->whereIn('team_role', ['player', 'captain']);
+        $confirmed = $team->members->where('confirmation_status', 'confirmed');
 
         $result = [];
         foreach ($positions as $code => $max) {
             $result[$code] = [
                 'label'   => $this->positionLabel($code),
-                'current' => $confirmedPlayers->where('position_code', $code)->count(),
+                'current' => $confirmed->where('position_code', $code)->count(),
                 'max'     => (int) $max,
             ];
         }
@@ -245,8 +245,9 @@ final class TournamentTeamService
     }
 
     /**
-     * Смена амплуа уже подтверждённого игрока капитаном/организатором.
-     * Запрещает занять позицию, если по схеме турнира на неё уже набран лимит слотов.
+     * Смена амплуа уже подтверждённого игрока (основного или запасного) капитаном/организатором.
+     * Запрещает занять позицию, если по схеме турнира на неё уже набран лимит слотов
+     * (запасной с назначенным амплуа занимает тот же слот, что и основной игрок).
      */
     public function changeMemberPosition(EventTeam $team, EventTeamMember $member, string $newPositionCode, int $performedByUserId): EventTeamMember
     {
@@ -258,8 +259,8 @@ final class TournamentTeamService
             throw new DomainException('Игрок не состоит в этой команде.');
         }
 
-        if (!in_array($member->team_role, ['player', 'captain'], true)) {
-            throw new DomainException('Позицию можно менять только основным игрокам (не запасным).');
+        if (!in_array($member->team_role, ['player', 'captain', 'reserve'], true)) {
+            throw new DomainException('Недопустимая роль участника.');
         }
 
         if ($member->confirmation_status !== 'confirmed') {
@@ -295,6 +296,66 @@ final class TournamentTeamService
                 performedByUserId: $performedByUserId,
                 oldValue: ['position_code' => $oldPositionCode],
                 newValue: ['position_code' => $newPositionCode],
+            );
+
+            $this->refreshTeamState($team->fresh());
+
+            return $member->fresh();
+        });
+    }
+
+    /**
+     * Перевод подтверждённого игрока между основным составом и запасными в рамках
+     * одной команды (не путать с командным резервом/листом ожидания турнира —
+     * здесь речь только про team_role внутри ростера одной команды).
+     * Капитана переводить нельзя — для этого есть отдельная передача капитанства.
+     */
+    public function changeMemberTeamRole(EventTeam $team, EventTeamMember $member, string $newTeamRole, int $performedByUserId): EventTeamMember
+    {
+        if ((int) $member->event_team_id !== (int) $team->id) {
+            throw new DomainException('Игрок не состоит в этой команде.');
+        }
+
+        if (!in_array($newTeamRole, ['player', 'reserve'], true)) {
+            throw new DomainException('Недопустимая роль участника.');
+        }
+
+        if ($member->team_role === 'captain') {
+            throw new DomainException('Капитана нельзя перевести в запасные напрямую — сначала передайте капитанство.');
+        }
+
+        if ($member->confirmation_status !== 'confirmed') {
+            throw new DomainException('Роль можно менять только подтверждённым игрокам.');
+        }
+
+        $oldTeamRole = $member->team_role;
+        if ($oldTeamRole === $newTeamRole) {
+            return $member;
+        }
+
+        if ($newTeamRole === 'reserve') {
+            $limits = $this->getTeamLimits($team);
+            $currentReserves = $team->members
+                ->where('confirmation_status', 'confirmed')
+                ->where('team_role', 'reserve')
+                ->count();
+
+            if ($currentReserves >= (int) $limits['reserve_max']) {
+                throw new DomainException("Достигнут лимит запасных игроков ({$limits['reserve_max']}).");
+            }
+        }
+
+        return DB::transaction(function () use ($team, $member, $newTeamRole, $oldTeamRole, $performedByUserId) {
+            $member->team_role = $newTeamRole;
+            $member->save();
+
+            $this->audit(
+                team: $team,
+                action: 'team_role_changed',
+                userId: $member->user_id,
+                performedByUserId: $performedByUserId,
+                oldValue: ['team_role' => $oldTeamRole],
+                newValue: ['team_role' => $newTeamRole],
             );
 
             $this->refreshTeamState($team->fresh());

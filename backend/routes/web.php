@@ -372,6 +372,10 @@ Route::post('/auth/tma-exchange', [TmaAuthController::class, 'exchange'])->name(
 		// Смена позиции (амплуа) подтверждённого участника капитаном/организатором
 		Route::patch('/events/{event}/teams/{team}/members/{member}/position', [TournamentTeamController::class, 'updateMemberPosition'])
         ->name('tournamentTeams.members.updatePosition');
+
+		// Перевод игрока между основным составом и запасными в рамках команды
+		Route::patch('/events/{event}/teams/{team}/members/{member}/team-role', [TournamentTeamController::class, 'updateMemberTeamRole'])
+        ->name('tournamentTeams.members.updateTeamRole');
 		
 		Route::get('/events/{event}/occurrences/manage', [EventManagementController::class, 'occurrences'])
         ->name('events.event_management.occurrences');

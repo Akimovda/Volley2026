@@ -123,16 +123,30 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
                     <div class="b-600 f-16">{{ $member->user->name ?? ('#'.$member->user_id) }}</div>
                     <div class="f-16">
                         {{ $roleLabels[$member->team_role] ?? $member->team_role }}
-                        @if($team->team_kind==='classic_team')
-                            @php
-                                $canEditPosition = $canManage
-                                    && in_array($member->team_role, ['player','captain'], true)
-                                    && $member->confirmation_status === 'confirmed';
-                            @endphp
-                            @if($canEditPosition && !empty($positionCapacity))
-                            · <form method="POST" action="{{ route('tournamentTeams.members.updatePosition',[$event,$team,$member]) }}" style="display:inline">
+                        @if($team->team_kind==='classic_team' && $member->position_code)
+                            · {{ $posLabels[$member->position_code] ?? $member->position_code }}
+                        @endif
+                    </div>
+                    @php
+                        $canEditPosition = $canManage
+                            && $team->team_kind === 'classic_team'
+                            && in_array($member->team_role, ['player','captain','reserve'], true)
+                            && $member->confirmation_status === 'confirmed'
+                            && !empty($positionCapacity);
+                        $canToggleTeamRole = $canManage
+                            && in_array($member->team_role, ['player','reserve'], true)
+                            && $member->confirmation_status === 'confirmed';
+                    @endphp
+                    @if($canEditPosition || $canToggleTeamRole)
+                    <div class="mt-05" style="display:flex;flex-wrap:wrap;gap:.6rem;align-items:center">
+                        @if($canEditPosition)
+                        <div style="width:15rem">
+                            <form method="POST" action="{{ route('tournamentTeams.members.updatePosition',[$event,$team,$member]) }}" class="form">
                                 @csrf @method('PATCH')
-                                <select name="position_code" onchange="this.form.submit()" style="font-size:12px;padding:1px 4px;border-radius:6px">
+                                <select name="position_code" onchange="this.form.submit()">
+                                    @if(!$member->position_code)
+                                    <option value="" disabled selected>— амплуа —</option>
+                                    @endif
                                     @foreach($positionCapacity as $code => $info)
                                         @php $full = $info['current'] >= $info['max'] && $member->position_code !== $code; @endphp
                                         <option value="{{ $code }}" @selected($member->position_code === $code) @disabled($full)>
@@ -141,11 +155,19 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
                                     @endforeach
                                 </select>
                             </form>
-                            @elseif($member->position_code)
-                            · {{ $posLabels[$member->position_code] ?? $member->position_code }}
-                            @endif
+                        </div>
+                        @endif
+                        @if($canToggleTeamRole)
+                        <form method="POST" action="{{ route('tournamentTeams.members.updateTeamRole',[$event,$team,$member]) }}">
+                            @csrf @method('PATCH')
+                            <input type="hidden" name="team_role" value="{{ $member->team_role === 'reserve' ? 'player' : 'reserve' }}">
+                            <button type="submit" class="btn btn-small btn-secondary">
+                                {{ $member->team_role === 'reserve' ? '↑ В основу' : '↓ В запасные' }}
+                            </button>
+                        </form>
                         @endif
                     </div>
+                    @endif
                 </div>
             </div>
             <div class="d-flex gap-1 fvc">
@@ -696,7 +718,7 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
         </div>
         @if($team->team_kind === 'classic_team' && !empty($positionBreakdown))
         <div class="card mt-1">
-            <div class="f-16 mb-05 b-600">Разбивка по позициям (без учёта резерва):</div>
+            <div class="f-16 mb-05 b-600">Разбивка по позициям (запасной с назначенным амплуа тоже занимает слот):</div>
             @php $playersOk = ($requirementsCheck['players_count'] ?? 0) >= (int)($requirementsCheck['limits']['min_players'] ?? 0); @endphp
             <div class="f-15 mb-05" style="color:{{ $playersOk ? '#16a34a' : '#dc2626' }}">
                 {{ $playersOk ? '✅' : '❌' }} Основных игроков: <strong>{{ $requirementsCheck['players_count'] ?? 0 }}</strong> из <strong>{{ $requirementsCheck['limits']['min_players'] ?? ($settings->team_size_min ?? '—') }}</strong>
