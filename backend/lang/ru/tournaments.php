@@ -437,6 +437,7 @@ return [
 
     'setup_stage_groups_count' => 'Кол-во групп',
     'setup_stage_groups_advance' => 'Выходят из группы',
+    'setup_stage_groups_advance_hint' => 'Учитывается только если вы позже создадите отдельную стадию плей-офф. Если групповой этап — единственная стадия турнира (места определяются по итогам круговой системы), это поле можно не менять.',
     'setup_stage_third_place' => 'Матч за 3-е место',
     'setup_stage_courts_count' => 'Кол-во площадок',
     'setup_stage_courts_for_groups' => 'Площадки для групп',
