@@ -137,6 +137,9 @@
                 'regex:/^#[0-9A-Fa-f]{6}$/',
             ],
 
+            'court_id' => ['nullable', 'integer', 'exists:location_courts,id'],
+            'booking_starts_at' => ['nullable', 'date_format:Y-m-d\TH:i'],
+
             /*
 				|--------------------------------------------------------------------------
 				| LEVELS

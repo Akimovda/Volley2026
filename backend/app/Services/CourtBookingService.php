@@ -1,0 +1,210 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\ClubOrganizerTrust;
+use App\Models\CourtBooking;
+use App\Models\Event;
+use App\Models\LocationCourt;
+use App\Models\LocationWorkingHour;
+use App\Models\User;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use InvalidArgumentException;
+
+class CourtBookingService
+{
+    private const TTL_MINUTES = 30;
+
+    public function __construct(
+        private CourtPricingService $pricingService,
+    ) {}
+
+    /**
+     * Создание брони. В транзакции блокируем строку корта (сериализует конкурентные
+     * попытки забронировать ЭТОТ корт), затем проверяем пересечения и вставляем —
+     * двойная бронь невозможна.
+     */
+    public function create(User $user, LocationCourt $court, Carbon $startsAt, Carbon $endsAt, ?Event $event = null): CourtBooking
+    {
+        if ($endsAt->lte($startsAt)) {
+            throw new InvalidArgumentException('Время окончания должно быть позже начала.');
+        }
+        if ($startsAt->lt(now())) {
+            throw new InvalidArgumentException('Нельзя забронировать время в прошлом.');
+        }
+
+        $durationMinutes = $startsAt->diffInMinutes($endsAt);
+        if ($durationMinutes < 30) {
+            throw new InvalidArgumentException('Минимальная длительность брони — 30 минут.');
+        }
+        if ($durationMinutes % 30 !== 0) {
+            throw new InvalidArgumentException('Длительность брони должна быть кратна 30 минутам.');
+        }
+        if ($startsAt->minute % 30 !== 0) {
+            throw new InvalidArgumentException('Время начала должно быть кратно 30 минутам.');
+        }
+
+        $direction = $court->relationLoaded('direction') ? $court->direction : $court->direction()->first();
+        if (!$direction) {
+            throw new InvalidArgumentException('У корта не определено направление.');
+        }
+        $location = $direction->relationLoaded('location') ? $direction->location : $direction->location()->first();
+        if (!$location) {
+            throw new InvalidArgumentException('У направления не определена локация.');
+        }
+
+        $this->assertWithinWorkingHours($direction, $location, $startsAt, $endsAt);
+
+        $trustLevel = ClubOrganizerTrust::where('location_id', $location->id)
+            ->where('organizer_id', $user->id)
+            ->value('trust_level') ?? ClubOrganizerTrust::LEVEL_PREPAID_ONLY;
+
+        [$status, $paymentMode, $expiresAt] = match ($trustLevel) {
+            ClubOrganizerTrust::LEVEL_TRUSTED => [CourtBooking::STATUS_CONFIRMED, CourtBooking::PAYMENT_MODE_TRUSTED, null],
+            ClubOrganizerTrust::LEVEL_ALLOW_ON_SITE => [CourtBooking::STATUS_PENDING, CourtBooking::PAYMENT_MODE_ON_SITE, null],
+            // prepaid_only: Фаза 3 — оплата ещё не подключена (Фаза 4), но TTL уже действует,
+            // как если бы ждали оплату; подтверждает всё равно владелец клуба.
+            default => [CourtBooking::STATUS_PENDING, CourtBooking::PAYMENT_MODE_PREPAID, now()->addMinutes(self::TTL_MINUTES)],
+        };
+
+        $priceTotal = $this->pricingService->calculate($court, $startsAt, $endsAt);
+
+        return DB::transaction(function () use ($court, $user, $event, $startsAt, $endsAt, $status, $paymentMode, $expiresAt, $priceTotal) {
+            // Блокируем строку корта — сериализует все конкурентные попытки брони
+            // именно этого корта через одну транзакцию за раз.
+            LocationCourt::where('id', $court->id)->lockForUpdate()->first();
+
+            $overlapping = CourtBooking::where('court_id', $court->id)
+                ->active()
+                ->where('starts_at', '<', $endsAt)
+                ->where('ends_at', '>', $startsAt)
+                ->exists();
+
+            if ($overlapping) {
+                throw new InvalidArgumentException('Этот корт уже забронирован на выбранное время.');
+            }
+
+            $booking = CourtBooking::create([
+                'court_id'      => $court->id,
+                'user_id'       => $user->id,
+                'event_id'      => $event?->id,
+                'occurrence_id' => null,
+                'starts_at'     => $startsAt,
+                'ends_at'       => $endsAt,
+                'status'        => $status,
+                'price_total'   => $priceTotal,
+                'payment_mode'  => $paymentMode,
+                'expires_at'    => $expiresAt,
+            ]);
+
+            $this->notifyOwner($booking);
+
+            return $booking;
+        });
+    }
+
+    public function confirm(CourtBooking $booking, User $clubOwner): void
+    {
+        $this->assertCanManage($booking, $clubOwner);
+
+        if ($booking->status !== CourtBooking::STATUS_PENDING) {
+            throw new InvalidArgumentException('Подтвердить можно только бронь в статусе "ожидает".');
+        }
+
+        $booking->status = CourtBooking::STATUS_CONFIRMED;
+        $booking->expires_at = null;
+        $booking->save();
+    }
+
+    public function reject(CourtBooking $booking, User $clubOwner, string $reason): void
+    {
+        $this->assertCanManage($booking, $clubOwner);
+
+        if (!in_array($booking->status, [CourtBooking::STATUS_PENDING, CourtBooking::STATUS_CONFIRMED], true)) {
+            throw new InvalidArgumentException('Эту бронь нельзя отклонить.');
+        }
+
+        $booking->status = CourtBooking::STATUS_CANCELLED;
+        $booking->cancelled_by = 'club';
+        $booking->cancel_reason = $reason;
+        $booking->save();
+    }
+
+    public function cancelByUser(CourtBooking $booking, User $user): void
+    {
+        if ((int) $booking->user_id !== (int) $user->id) {
+            throw new InvalidArgumentException('Это не ваша бронь.');
+        }
+        if (!in_array($booking->status, CourtBooking::ACTIVE_STATUSES, true)) {
+            throw new InvalidArgumentException('Эту бронь нельзя отменить.');
+        }
+
+        $booking->status = CourtBooking::STATUS_CANCELLED;
+        $booking->cancelled_by = 'user';
+        $booking->save();
+    }
+
+    private function assertWithinWorkingHours($direction, $location, Carbon $startsAt, Carbon $endsAt): void
+    {
+        $tz = $location->timezone ?: 'Europe/Moscow';
+        $startLocal = $startsAt->copy()->setTimezone($tz);
+        $endLocal = $endsAt->copy()->setTimezone($tz);
+
+        if (!$startLocal->isSameDay($endLocal)) {
+            throw new InvalidArgumentException('Бронь не может пересекать полночь.');
+        }
+
+        $wh = LocationWorkingHour::where('direction_id', $direction->id)
+            ->where('day_of_week', $startLocal->dayOfWeekIso - 1)
+            ->first();
+
+        if (!$wh || $wh->is_day_off) {
+            throw new InvalidArgumentException('В этот день направление не работает.');
+        }
+
+        $opensMin = $this->timeToMin($wh->opens_at);
+        $closesMin = $this->timeToMin($wh->closes_at);
+        $startMin = $startLocal->hour * 60 + $startLocal->minute;
+        $endMin = $endLocal->hour * 60 + $endLocal->minute;
+
+        if ($startMin < $opensMin || $endMin > $closesMin) {
+            throw new InvalidArgumentException('Время брони вне режима работы направления.');
+        }
+    }
+
+    private function assertCanManage(CourtBooking $booking, User $clubOwner): void
+    {
+        $court = $booking->relationLoaded('court') ? $booking->court : $booking->court()->first();
+        $direction = $court?->relationLoaded('direction') ? $court->direction : $court?->direction()->first();
+        $location = $direction?->relationLoaded('location') ? $direction->location : $direction?->location()->first();
+
+        $isOwner = $location && (int) $location->owner_id === (int) $clubOwner->id;
+        $isAdmin = method_exists($clubOwner, 'isAdmin') && $clubOwner->isAdmin();
+
+        if (!$isOwner && !$isAdmin) {
+            throw new InvalidArgumentException('Нет прав управлять этой бронью.');
+        }
+    }
+
+    /**
+     * Уведомление владельцу локации — заглушка (лог), полноценные уведомления
+     * (push/telegram/vk/max) появятся в Фазе 6.
+     */
+    private function notifyOwner(CourtBooking $booking): void
+    {
+        Log::info('[CourtBooking] Новая бронь ожидает внимания владельца локации', [
+            'booking_id' => $booking->id,
+            'court_id'   => $booking->court_id,
+            'user_id'    => $booking->user_id,
+            'status'     => $booking->status,
+        ]);
+    }
+
+    private function timeToMin(string $time): int
+    {
+        [$h, $m] = array_map('intval', explode(':', substr($time, 0, 5)));
+        return $h * 60 + $m;
+    }
+}

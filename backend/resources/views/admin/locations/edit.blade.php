@@ -160,6 +160,68 @@
 					});
 				});
 			})();
+
+			(function () {
+				var input   = document.getElementById('trust-ac-input');
+				var dd      = document.getElementById('trust-ac-dd');
+				var hidden  = document.getElementById('trust-ac-organizer-id');
+				var submitBtn = document.getElementById('trust-submit-btn');
+				var timer   = null;
+
+				if (!input) return;
+
+				function esc(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+				function showDd() { dd.classList.add('form-select-dropdown--active'); }
+				function hideDd() { dd.classList.remove('form-select-dropdown--active'); }
+
+				function pick(id, label) {
+					hidden.value = id;
+					input.value = label;
+					submitBtn.disabled = false;
+					hideDd();
+					dd.innerHTML = '';
+				}
+
+				function render(items) {
+					dd.innerHTML = '';
+					if (!items.length) {
+						dd.innerHTML = '<div class="city-message">{{ __('ui.not_found') }}</div>';
+						showDd();
+						return;
+					}
+					items.forEach(function (item) {
+						var div = document.createElement('div');
+						div.className = 'trainer-item form-select-option';
+						div.innerHTML = '<div class="text-sm text-gray-900">' + esc(item.label || item.name) + '</div>';
+						div.addEventListener('click', function () { pick(item.id, item.label || item.name); });
+						dd.appendChild(div);
+					});
+					showDd();
+				}
+
+				input.addEventListener('input', function () {
+					clearTimeout(timer);
+					hidden.value = '';
+					submitBtn.disabled = true;
+					var q = input.value.trim();
+					if (q.length < 2) { hideDd(); return; }
+
+					timer = setTimeout(function () {
+						fetch('/ajax/users/search?q=' + encodeURIComponent(q), {
+							headers: { 'Accept': 'application/json' },
+							credentials: 'same-origin'
+						})
+						.then(function (r) { return r.json(); })
+						.then(function (data) { render(data.items || []); })
+						.catch(function () { hideDd(); });
+					}, 250);
+				});
+
+				document.addEventListener('click', function (e) {
+					var wrap = document.getElementById('trust-ac-wrap');
+					if (wrap && !wrap.contains(e.target)) hideDd();
+				});
+			})();
 		</script>
 	</x-slot>
 	
@@ -540,6 +602,48 @@
                     <button type="submit" class="btn btn-primary">{{ __('club.save_directions') }}</button>
                 </div>
             </form>
+        </div>
+
+        {{-- ДОВЕРЕННЫЕ ОРГАНИЗАТОРЫ --}}
+        <div class="ramka">
+            <h2 class="-mt-05">{{ __('club.trust_title') }}</h2>
+            <div class="f-14 cd mb-2">{{ __('club.trust_hint') }}</div>
+
+            <form method="POST" action="{{ route('admin.locations.trust.save', $location) }}" class="form d-flex gap-1 fvc" style="flex-wrap:wrap">
+                @csrf
+                <div style="position:relative;flex:1;min-width:14rem" id="trust-ac-wrap">
+                    <input type="text" id="trust-ac-input" autocomplete="off" class="form-control"
+                        placeholder="{{ __('club.trust_search_placeholder') }}">
+                    <div id="trust-ac-dd" class="form-select-dropdown trainer_dd"></div>
+                    <input type="hidden" name="organizer_id" id="trust-ac-organizer-id">
+                </div>
+                <select name="trust_level" id="trust-level-select" style="min-width:12rem">
+                    <option value="{{ \App\Models\ClubOrganizerTrust::LEVEL_PREPAID_ONLY }}">{{ __('club.trust_level_prepaid_only') }}</option>
+                    <option value="{{ \App\Models\ClubOrganizerTrust::LEVEL_ALLOW_ON_SITE }}">{{ __('club.trust_level_allow_on_site') }}</option>
+                    <option value="{{ \App\Models\ClubOrganizerTrust::LEVEL_TRUSTED }}">{{ __('club.trust_level_trusted') }}</option>
+                </select>
+                <button type="submit" class="btn btn-primary" id="trust-submit-btn" disabled>{{ __('club.trust_add_btn') }}</button>
+            </form>
+            @error('organizer_id')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+
+            <div class="mt-2">
+                @forelse($trustedOrganizers as $trust)
+                <div class="card mb-1 d-flex between fvc" style="flex-wrap:wrap;gap:8px">
+                    <div class="b-600">
+                        {{ trim(($trust->organizer->last_name ?? '') . ' ' . ($trust->organizer->first_name ?? '')) ?: ($trust->organizer->name ?? '#' . $trust->organizer_id) }}
+                        <span class="f-13 cd">— {{ __('club.trust_level_' . $trust->trust_level) }}</span>
+                    </div>
+                    <form method="POST" action="{{ route('admin.locations.trust.destroy', [$location, $trust]) }}"
+                        onsubmit="return confirm({!! json_encode(__('club.trust_confirm_remove')) !!})">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="btn btn-small btn-danger">{{ __('club.trust_remove_btn') }}</button>
+                    </form>
+                </div>
+                @empty
+                <div class="f-14 cd">{{ __('club.trust_empty') }}</div>
+                @endforelse
+            </div>
         </div>
 
         {{-- PHOTOS (D&D SORT) --}}

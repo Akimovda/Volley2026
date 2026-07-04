@@ -105,3 +105,13 @@ Schedule::command('tournaments:sync-season-routing')
 Schedule::command('activity:prompt-recording')
     ->everyMinute()
     ->withoutOverlapping();
+
+// Club module: истечение неоплаченных броней кортов (TTL 30 минут, каждые 5 минут):
+// pending-брони с payment_mode=prepaid, у которых наступил expires_at, переводятся
+// в expired — освобождают слот, чтобы им мог воспользоваться другой организатор.
+Schedule::call(function () {
+    \App\Models\CourtBooking::where('status', 'pending')
+        ->whereNotNull('expires_at')
+        ->where('expires_at', '<', now())
+        ->update(['status' => 'expired', 'cancelled_by' => 'system']);
+})->everyFiveMinutes()->name('expire-court-bookings');

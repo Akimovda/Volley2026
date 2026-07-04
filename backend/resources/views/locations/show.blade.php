@@ -503,6 +503,11 @@
                 const closedLabel = @json(__('club.closed_day'));
                 const eventsCountTpl = @json(__('club.events_count', ['count' => '__N__']));
                 const todayLabel = @json(__('club.today'));
+                const statusLabels = {
+                    pending: @json(__('club.status_pending')),
+                    confirmed: @json(__('club.status_confirmed')),
+                    paid: @json(__('club.status_paid')),
+                };
 
                 const state = { mode: 'day', date: new Date() };
                 const PX_PER_MIN = 1.5;
@@ -621,14 +626,18 @@
                                 court.slots.forEach(function (slot) {
                                     const startMin = timeToMin(slot.starts_at);
                                     const endMin = timeToMin(slot.ends_at);
-                                    const block = document.createElement('a');
-                                    block.className = 'timeline-event-block';
-                                    block.href = '/events/' + slot.event_id;
+                                    const isBooking = slot.type === 'booking';
+                                    const block = document.createElement(isBooking ? 'div' : 'a');
+                                    block.className = 'timeline-event-block' + (isBooking ? ' timeline-booking-block' : '');
+                                    if (!isBooking) block.href = '/events/' + slot.event_id;
                                     block.style.top = ((startMin - dayStart) * PX_PER_MIN) + 'px';
                                     block.style.height = Math.max(18, (endMin - startMin) * PX_PER_MIN) + 'px';
                                     block.style.background = slot.color || '#4A9EFF';
+                                    const metaLabel = isBooking
+                                        ? (statusLabels[slot.status] || slot.status)
+                                        : (slot.organizer || '');
                                     block.innerHTML = '<div class="timeline-event-title">' + (slot.title || '') + '</div>' +
-                                        '<div class="timeline-event-meta">' + slot.starts_at + '–' + slot.ends_at + (slot.organizer ? ' · ' + slot.organizer : '') + '</div>';
+                                        '<div class="timeline-event-meta">' + slot.starts_at + '–' + slot.ends_at + (metaLabel ? ' · ' + metaLabel : '') + '</div>';
                                     body.appendChild(block);
                                 });
 

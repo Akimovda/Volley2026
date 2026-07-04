@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\City;
+use App\Models\ClubOrganizerTrust;
 use App\Models\Location;
 use App\Models\LocationCourt;
 use App\Models\LocationDirection;
@@ -11,6 +12,7 @@ use App\Models\LocationWorkingHour;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\Rule;
 
 class AdminLocationController extends Controller
 {
@@ -102,7 +104,11 @@ public function store(Request $request)
             ->orderBy('last_name')
             ->get();
 
-        return view('admin.locations.edit', compact('location', 'photos', 'directions', 'clubManagers'));
+        $trustedOrganizers = ClubOrganizerTrust::where('location_id', $location->id)
+            ->with('organizer')
+            ->get();
+
+        return view('admin.locations.edit', compact('location', 'photos', 'directions', 'clubManagers', 'trustedOrganizers'));
     }
 
 public function update(Request $request, Location $location)
@@ -255,6 +261,34 @@ public function update(Request $request, Location $location)
         });
 
         return back()->with('status', __('club.save_directions') . ' ✅');
+    }
+
+    public function saveTrust(Request $request, Location $location)
+    {
+        $data = $request->validate([
+            'organizer_id' => ['required', 'integer', 'exists:users,id'],
+            'trust_level'  => ['required', Rule::in([
+                ClubOrganizerTrust::LEVEL_PREPAID_ONLY,
+                ClubOrganizerTrust::LEVEL_ALLOW_ON_SITE,
+                ClubOrganizerTrust::LEVEL_TRUSTED,
+            ])],
+        ]);
+
+        ClubOrganizerTrust::updateOrCreate(
+            ['location_id' => $location->id, 'organizer_id' => $data['organizer_id']],
+            ['trust_level' => $data['trust_level']]
+        );
+
+        return back()->with('status', __('club.trust_saved') . ' ✅');
+    }
+
+    public function destroyTrust(Location $location, ClubOrganizerTrust $trust)
+    {
+        abort_unless($trust->location_id === $location->id, 404);
+
+        $trust->delete();
+
+        return back()->with('status', __('club.trust_removed') . ' ✅');
     }
 
     public function destroy(Location $location)

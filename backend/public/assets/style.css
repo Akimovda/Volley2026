@@ -5035,6 +5035,14 @@ body:not(.is-app) .native-actions {
 	box-shadow: 0 4px 12px rgba(0, 0, 0, .25);
 	color: #fff;
 }
+.timeline-booking-block {
+	border: 1px dashed rgba(255, 255, 255, .7);
+	cursor: default;
+}
+.timeline-booking-block:hover {
+	transform: none;
+	box-shadow: 0 2px 6px rgba(0, 0, 0, .15);
+}
 .timeline-event-title {
 	font-size: 12px;
 	font-weight: 700;

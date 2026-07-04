@@ -38,20 +38,23 @@ class LocationsByCityController extends Controller
             return response()->json(['ok' => true, 'items' => []]);
         }
     
+        $query->with(['directions' => fn ($q) => $q->where('is_active', true)]);
+
         $items = $query->get()->map(function ($loc) {
             $thumb = method_exists($loc, 'getFirstMediaUrl')
                 ? ($loc->getFirstMediaUrl('photos', 'thumb') ?: $loc->getFirstMediaUrl('photos'))
                 : '';
-    
+
             return [
-                'id'       => (int) $loc->id,
-                'name'     => (string) ($loc->name ?? ''),
-                'address'  => (string) ($loc->address ?? ''),
-                'lat'      => $loc->lat !== null ? (string) $loc->lat : '',
-                'lng'      => $loc->lng !== null ? (string) $loc->lng : '',
-                'short'    => (string) ($loc->short_text ?? ''),
-                'thumb'    => (string) ($thumb ?? ''),
-                'owner_id' => (int) ($loc->owner_id ?? 0),
+                'id'             => (int) $loc->id,
+                'name'           => (string) ($loc->name ?? ''),
+                'address'        => (string) ($loc->address ?? ''),
+                'lat'            => $loc->lat !== null ? (string) $loc->lat : '',
+                'lng'            => $loc->lng !== null ? (string) $loc->lng : '',
+                'short'          => (string) ($loc->short_text ?? ''),
+                'thumb'          => (string) ($thumb ?? ''),
+                'owner_id'       => (int) ($loc->owner_id ?? 0),
+                'has_directions' => $loc->directions->isNotEmpty(),
             ];
         })->values();
     

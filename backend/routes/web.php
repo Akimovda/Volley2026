@@ -139,6 +139,15 @@ Route::get('/logout', fn () => redirect('/'));
 	Route::middleware(['auth'])->group(function () {
 		Route::get('/locations/{location}/timeline', [\App\Http\Controllers\ClubTimelineController::class, 'show'])
 			->name('locations.timeline');
+		Route::get('/locations/{location}/booking-windows', \App\Http\Controllers\Ajax\CourtBookingWindowsController::class)
+			->name('locations.booking_windows');
+
+		Route::get('/club/bookings', [\App\Http\Controllers\ClubBookingController::class, 'index'])
+			->name('club.bookings.index');
+		Route::post('/club/bookings/{booking}/confirm', [\App\Http\Controllers\ClubBookingController::class, 'confirm'])
+			->name('club.bookings.confirm');
+		Route::post('/club/bookings/{booking}/reject', [\App\Http\Controllers\ClubBookingController::class, 'reject'])
+			->name('club.bookings.reject');
 	});
 
 	/*
@@ -900,6 +909,11 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
 
         Route::post('/locations/{location}/directions', [AdminLocationController::class, 'saveDirections'])
             ->name('locations.directions.save');
+
+        Route::post('/locations/{location}/trust', [AdminLocationController::class, 'saveTrust'])
+            ->name('locations.trust.save');
+        Route::delete('/locations/{location}/trust/{trust}', [AdminLocationController::class, 'destroyTrust'])
+            ->name('locations.trust.destroy');
 
         Route::get('/impersonate', [ImpersonationController::class, 'index'])->name('impersonate.index');
         Route::post('/impersonate/start/{user}', [ImpersonationController::class, 'start'])->name('impersonate.start');

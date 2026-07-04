@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\CourtBooking;
 use App\Models\EventOccurrence;
 use App\Models\Location;
 use App\Models\LocationCourt;
@@ -62,12 +63,12 @@ class TimelineService
     }
 
     /**
-     * Занятые интервалы корта в дату.
+     * Занятые интервалы корта в дату: события направления + брони этого корта.
      *
-     * Пока: события локации в этот день (court_bookings появятся в Фазе 3 — метод
-     * будет расширен). События сейчас не привязаны к конкретному корту, поэтому
-     * в Фазе 2 событие показывается на ВСЕХ кортах СВОЕГО направления (совпадение
-     * определяется по direction_id корта ↔ events.direction).
+     * Событие, привязанное к конкретному корту через court_booking_id, показывается
+     * ТОЛЬКО на этом корте. Событие без привязки (легаси/не через бронирование) —
+     * на ВСЕХ кортах направления, как в Фазе 2 (court_id слота === null).
+     * Брони кортов без события (event_id пуст) добавляются отдельно, цвет — по статусу.
      */
     private function occupiedSlots(Location $location, LocationCourt $court, Carbon $date): array
     {
@@ -84,14 +85,76 @@ class TimelineService
             $this->directionSlotsCache[$cacheKey] = $this->fetchDirectionSlots($location, $directionKey, $date);
         }
 
-        return $this->directionSlotsCache[$cacheKey];
+        $eventSlots = array_values(array_filter(
+            $this->directionSlotsCache[$cacheKey],
+            fn(array $slot) => $slot['court_id'] === null || $slot['court_id'] === $court->id
+        ));
+
+        $bookingSlots = $this->fetchCourtBookingSlots($court, $location, $date);
+
+        $all = array_merge($eventSlots, $bookingSlots);
+        usort($all, fn($a, $b) => $a['starts_at'] <=> $b['starts_at']);
+
+        return $all;
+    }
+
+    /**
+     * Брони этого корта, НЕ привязанные к событию (event_id пуст) — брони с событием
+     * уже показаны выше как event-слот, отфильтрованный по своему court_id.
+     */
+    private function fetchCourtBookingSlots(LocationCourt $court, Location $location, Carbon $date): array
+    {
+        $tz = $location->timezone ?: 'Europe/Moscow';
+        $dayStart = Carbon::parse($date->toDateString() . ' 00:00:00', $tz);
+        $dayEnd = $dayStart->copy()->endOfDay();
+
+        $statusColors = [
+            CourtBooking::STATUS_PENDING   => '#8E8E93',
+            CourtBooking::STATUS_CONFIRMED => '#4A9EFF',
+            CourtBooking::STATUS_PAID      => '#34C759',
+        ];
+
+        $bookings = CourtBooking::active()
+            ->whereNull('event_id')
+            ->where('court_id', $court->id)
+            ->where('starts_at', '<', $dayEnd->copy()->setTimezone('UTC'))
+            ->where('ends_at', '>', $dayStart->copy()->setTimezone('UTC'))
+            ->with('user')
+            ->get();
+
+        $slots = [];
+        foreach ($bookings as $booking) {
+            $s = Carbon::parse($booking->getRawOriginal('starts_at'), 'UTC')->setTimezone($tz);
+            $e = Carbon::parse($booking->getRawOriginal('ends_at'), 'UTC')->setTimezone($tz);
+
+            $userName = null;
+            if ($booking->user) {
+                $lastName = $booking->user->last_name ?? '';
+                $firstInitial = $booking->user->first_name ? mb_substr($booking->user->first_name, 0, 1) . '.' : '';
+                $userName = trim($lastName . ' ' . $firstInitial) ?: $booking->user->name;
+            }
+
+            $slots[] = [
+                'type'          => 'booking',
+                'court_id'      => $court->id,
+                'booking_id'    => $booking->id,
+                'title'         => $userName ?: __('club.booking_by'),
+                'starts_at'     => $s->format('H:i'),
+                'ends_at'       => $e->format('H:i'),
+                'color'         => $statusColors[$booking->status] ?? '#8E8E93',
+                'status'        => $booking->status,
+                'organizer'     => $userName,
+            ];
+        }
+
+        return $slots;
     }
 
     /**
      * Найти все незавершённые occurrences на этой локации+направлении в указанную
-     * календарную дату (в таймзоне локации) и сформировать слоты для таймлайна.
+     * календарную дату (в таймзоне локации).
      */
-    private function fetchDirectionSlots(Location $location, string $direction, Carbon $date): array
+    private function fetchOccurrences(Location $location, string $direction, Carbon $date)
     {
         $tz = $location->timezone ?: 'Europe/Moscow';
         $dayStart = Carbon::parse($date->toDateString() . ' 00:00:00', $tz);
@@ -99,7 +162,7 @@ class TimelineService
         $dayStartUtc = $dayStart->copy()->setTimezone('UTC');
         $dayEndUtc = $dayEnd->copy()->setTimezone('UTC');
 
-        $occurrences = EventOccurrence::query()
+        return EventOccurrence::query()
             ->join('events', 'events.id', '=', 'event_occurrences.event_id')
             ->whereRaw('COALESCE(event_occurrences.location_id, events.location_id) = ?', [$location->id])
             ->where('events.direction', $direction)
@@ -109,10 +172,44 @@ class TimelineService
                     ->orWhere('event_occurrences.is_cancelled', false);
             })
             ->whereNull('event_occurrences.cancelled_at')
-            ->with(['event.organizer'])
+            ->with(['event.organizer', 'event.courtBooking'])
             ->select('event_occurrences.*')
             ->orderBy('event_occurrences.starts_at')
             ->get();
+    }
+
+    /**
+     * Занятые минутные интервалы (от начала суток по локальному времени локации)
+     * событиями направления в дату — переиспользуется CourtAvailabilityService
+     * для проверки пересечений (Фаза 2: событие занимает ВСЕ корты направления,
+     * т.к. ещё не привязано к конкретному корту).
+     *
+     * @return array<int, array{0:int,1:int}> [[startMin,endMin], ...]
+     */
+    public function eventMinuteIntervals(Location $location, string $direction, Carbon $date): array
+    {
+        $intervals = [];
+        foreach ($this->fetchOccurrences($location, $direction, $date) as $occ) {
+            $startsLocal = $occ->starts_at_local;
+            $endsLocal = $occ->ends_at_local;
+            if (!$startsLocal || !$endsLocal) {
+                continue;
+            }
+            $intervals[] = [
+                $startsLocal->hour * 60 + $startsLocal->minute,
+                $endsLocal->hour * 60 + $endsLocal->minute,
+            ];
+        }
+        return $intervals;
+    }
+
+    /**
+     * Найти все незавершённые occurrences на этой локации+направлении в указанную
+     * календарную дату (в таймзоне локации) и сформировать слоты для таймлайна.
+     */
+    private function fetchDirectionSlots(Location $location, string $direction, Carbon $date): array
+    {
+        $occurrences = $this->fetchOccurrences($location, $direction, $date);
 
         $slots = [];
         foreach ($occurrences as $occ) {
@@ -139,6 +236,7 @@ class TimelineService
                 'ends_at'       => $endsLocal->format('H:i'),
                 'color'         => $occ->event?->timeline_color,
                 'organizer'     => $organizerLabel,
+                'court_id'      => $occ->event?->courtBooking?->court_id,
             ];
         }
 
