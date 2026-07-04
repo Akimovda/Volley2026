@@ -120,25 +120,24 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
             <div class="d-flex fvc" style="gap:.8rem">
                 <img src="{{ $member->user->profile_photo_url ?? '' }}" alt="" style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;">
                 <div>
-                    <div class="b-600 f-16">{{ $member->user->name ?? ('#'.$member->user_id) }}</div>
-                    <div class="f-16">
-                        {{ $roleLabels[$member->team_role] ?? $member->team_role }}
-                        @if($team->team_kind==='classic_team' && $member->position_code)
-                            · {{ $posLabels[$member->position_code] ?? $member->position_code }}
-                        @endif
-                    </div>
-                    @php
-                        $canEditPosition = $canManage
-                            && $team->team_kind === 'classic_team'
-                            && in_array($member->team_role, ['player','captain','reserve'], true)
-                            && $member->confirmation_status === 'confirmed'
-                            && !empty($positionCapacity);
-                        $canToggleTeamRole = $canManage
-                            && in_array($member->team_role, ['player','reserve'], true)
-                            && $member->confirmation_status === 'confirmed';
-                    @endphp
-                    @if($canEditPosition || $canToggleTeamRole)
-                    <div class="mt-05" style="display:flex;flex-wrap:wrap;gap:.6rem;align-items:center">
+                    <div class="d-flex fvc" style="gap:.6rem;flex-wrap:wrap;row-gap:.4rem">
+                        <span class="b-600 f-16">{{ $member->user->name ?? ('#'.$member->user_id) }}</span>
+                        <span class="f-16">
+                            {{ $roleLabels[$member->team_role] ?? $member->team_role }}
+                            @if($team->team_kind==='classic_team' && $member->position_code)
+                                · {{ $posLabels[$member->position_code] ?? $member->position_code }}
+                            @endif
+                        </span>
+                        @php
+                            $canEditPosition = $canManage
+                                && $team->team_kind === 'classic_team'
+                                && in_array($member->team_role, ['player','captain','reserve'], true)
+                                && $member->confirmation_status === 'confirmed'
+                                && !empty($positionCapacity);
+                            $canToggleTeamRole = $canManage
+                                && in_array($member->team_role, ['player','reserve'], true)
+                                && $member->confirmation_status === 'confirmed';
+                        @endphp
                         @if($canEditPosition && $canToggleTeamRole)
                         {{-- Один select: смена амплуа + перевод основа↔запасной --}}
                         <form method="POST" action="{{ route('tournamentTeams.members.updatePosition',[$event,$team,$member]) }}" class="member-position-form" data-member-form="{{ $member->id }}" style="display:none">
@@ -156,8 +155,9 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
                                 @endif
                                 @foreach($positionCapacity as $code => $info)
                                     @php $full = $info['current'] >= $info['max'] && $member->position_code !== $code; @endphp
-                                    <option value="pos:{{ $code }}" @selected($member->position_code === $code) @disabled($full)>
-                                        {{ $info['label'] }} ({{ $info['current'] }}/{{ $info['max'] }}){{ $full ? ' — занято' : '' }}
+                                    @continue($full)
+                                    <option value="pos:{{ $code }}" @selected($member->position_code === $code)>
+                                        {{ $info['label'] }} ({{ $info['current'] }}/{{ $info['max'] }})
                                     </option>
                                 @endforeach
                                 @if($member->team_role === 'reserve')
@@ -177,8 +177,9 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
                                     @endif
                                     @foreach($positionCapacity as $code => $info)
                                         @php $full = $info['current'] >= $info['max'] && $member->position_code !== $code; @endphp
-                                        <option value="{{ $code }}" @selected($member->position_code === $code) @disabled($full)>
-                                            {{ $info['label'] }} ({{ $info['current'] }}/{{ $info['max'] }}){{ $full ? ' — занято' : '' }}
+                                        @continue($full)
+                                        <option value="{{ $code }}" @selected($member->position_code === $code)>
+                                            {{ $info['label'] }} ({{ $info['current'] }}/{{ $info['max'] }})
                                         </option>
                                     @endforeach
                                 </select>
@@ -194,7 +195,6 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
                         </form>
                         @endif
                     </div>
-                    @endif
                 </div>
             </div>
             <div class="d-flex gap-1 fvc">
