@@ -1003,7 +1003,7 @@ $showWaitlist = !$isTournament && !$eventStarted && auth()->check() && !$isRegis
 			@php
             $allTournamentTeams = \App\Models\EventTeam::where('event_id', $event->id)
 			->where(fn($q) => $q->where('occurrence_id', $occurrence->id)->orWhereNull('occurrence_id'))
-			->whereIn('status', ['ready','pending_members','draft','submitted','confirmed','approved','incomplete'])
+			->whereIn('status', ['ready','pending_members','draft','submitted','pending','confirmed','approved','incomplete'])
 			->with(['captain', 'members.user'])
 			->orderByRaw("CASE WHEN status IN ('ready','submitted','confirmed','approved') THEN 0 ELSE 1 END")
 			->get();
