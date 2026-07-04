@@ -1123,9 +1123,11 @@ if ($role === 'admin') {
                 $isBeach = ($event->direction ?? 'classic') === 'beach';
                 $defaultScheme = $isBeach ? '2x2' : '5x1';
                 $payMode = $event->is_paid ? ($data['tournament_payment_mode'] ?? 'team') : 'free';
+                $scheme = $data['tournament_game_scheme'] ?? $defaultScheme;
 
                 $tsPayload = array_filter([
-                    'game_scheme'                  => $data['tournament_game_scheme'] ?? $defaultScheme,
+                    'game_scheme'                  => $scheme,
+                    'require_libero'               => !$isBeach && $scheme === '5x1_libero',
                     'team_size_min'                => isset($data['tournament_team_size_min']) ? (int) $data['tournament_team_size_min'] : null,
                     'team_size_max'                => isset($data['tournament_team_size_min']) ? (int) $data['tournament_team_size_min'] : null,
                     'reserve_players_max'          => isset($data['tournament_reserve_players_max']) ? (int) $data['tournament_reserve_players_max'] : null,

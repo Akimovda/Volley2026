@@ -669,20 +669,40 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
             <div class="f-16">
                 Схема: <strong>{{ $schemeLabels[$settings->game_scheme ?? ''] ?? ($settings->game_scheme ?? '—') }}</strong>
                 @if($team->team_kind === 'classic_team')
-                <br>Мин.: <strong>{{ $settings->team_size_min ?? '—' }}</strong> ·
-                Макс.: <strong>{{ $settings->total_players_max ?? $settings->team_size_max ?? '—' }}</strong>
                 <br>Запасных: <strong>{{ $settings->reserve_players_max ?? '—' }}</strong>
-                <br>Либеро: <strong>{{ $settings->require_libero ? 'Да' : 'Нет' }}</strong>
                 @endif
                 @if($settings->max_rating_sum)<br>Лимит рейтинга: <strong>{{ $settings->max_rating_sum }}</strong>@endif
             </div>
             @endif
         </div>
+        @if($team->team_kind === 'classic_team' && !empty($positionBreakdown))
+        <div class="card mt-1">
+            <div class="f-16 mb-05 b-600">Разбивка по позициям (без учёта резерва):</div>
+            @php $playersOk = ($requirementsCheck['players_count'] ?? 0) >= (int)($requirementsCheck['limits']['min_players'] ?? 0); @endphp
+            <div class="f-15 mb-05" style="color:{{ $playersOk ? '#16a34a' : '#dc2626' }}">
+                {{ $playersOk ? '✅' : '❌' }} Основных игроков: <strong>{{ $requirementsCheck['players_count'] ?? 0 }}</strong> из <strong>{{ $requirementsCheck['limits']['min_players'] ?? ($settings->team_size_min ?? '—') }}</strong>
+            </div>
+            @foreach($positionBreakdown as $row)
+            <div class="f-15" style="color:{{ $row['ok'] ? '#16a34a' : '#dc2626' }}">
+                {{ $row['ok'] ? '✅' : '❌' }} {{ $row['label'] }}: <strong>{{ $row['current'] }}</strong> из <strong>{{ $row['required'] }}</strong>
+            </div>
+            @endforeach
+        </div>
+        @endif
         <div class="mt-1">
             @if($team->is_complete)
             <div class="alert alert-success">✅ Состав готов</div>
             @else
-            <div class="alert alert-warning">⚠️ Состав не готов</div>
+            <div class="alert alert-warning">
+                ⚠️ Состав не готов
+                @if(!empty($requirementsCheck['issues']))
+                <ul class="mb-0" style="padding-left:1.2rem">
+                    @foreach($requirementsCheck['issues'] as $issue)
+                    <li>{{ $issue }}</li>
+                    @endforeach
+                </ul>
+                @endif
+            </div>
             @endif
 
             {{-- Кнопки выхода --}}

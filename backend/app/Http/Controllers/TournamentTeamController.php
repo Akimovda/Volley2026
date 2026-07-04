@@ -84,6 +84,8 @@ class TournamentTeamController extends Controller
             'reserveForSubs'        => $reserveForSubs,
             'tourStarted'           => $tourStarted,
             'existingSubstitutions' => $existingSubstitutions,
+            'positionBreakdown'     => $service->getPositionBreakdown($team),
+            'requirementsCheck'     => $service->checkRequirements($team),
         ]);
     }
 
