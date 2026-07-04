@@ -102,7 +102,7 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
 <div class="col-lg-8">
 
     {{-- Состав --}}
-    <div class="ramka">
+    <div class="ramka" style="z-index:10">
         <h2 class="-mt-05">👥 Состав команды</h2>
         <div class="f-16 mb-2">
             Капитан: <strong>{{ $team->captain->name ?? ('#'.$team->captain_user_id) }}</strong>
@@ -279,7 +279,7 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
 
     {{-- Запросы на вступление --}}
     @if($canManage && $joinRequests->isNotEmpty())
-    <div class="ramka">
+    <div class="ramka" style="z-index:9">
         <h2 class="-mt-05">🙋 Запросы на вступление ({{ $joinRequests->count() }})</h2>
         @foreach($joinRequests as $member)
         <div class="card d-flex between fvc mb-1" style="flex-wrap:wrap;gap:1rem">
@@ -737,7 +737,7 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
             <div class="f-16">
                 Схема: <strong>{{ $schemeLabels[$settings->game_scheme ?? ''] ?? ($settings->game_scheme ?? '—') }}</strong>
                 @if($team->team_kind === 'classic_team')
-                <br>Запасных: <strong>{{ $settings->reserve_players_max ?? '—' }}</strong>
+                <br>Запасных: <strong>{{ $requirementsCheck['reserve_count'] ?? 0 }} из {{ $settings->reserve_players_max ?? '—' }}</strong>
                 @endif
                 @if($settings->max_rating_sum)<br>Лимит рейтинга: <strong>{{ $settings->max_rating_sum }}</strong>@endif
             </div>
