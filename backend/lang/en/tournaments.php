@@ -610,6 +610,7 @@ return [
     'setup_groups_apply_yes' => 'Yes, apply',
 
     'setup_btn_round_results' => '📊 View round results',
+    'setup_btn_tournament_results' => '📊 View tournament results',
 
     'setup_empty_h2'        => 'Tournament is not set up yet',
     'setup_empty_text'      => 'Create the first stage above, then run the seeding.',

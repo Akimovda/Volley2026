@@ -1693,7 +1693,7 @@ $tourNumber = $seasonData
 												</div>	
 											</td>
 											<td class="p-1">
-												@if($match->isScheduled() && $match->hasTeams())
+												@if(($match->isScheduled() || $match->isLive()) && $match->hasTeams())
 												<a href="{{ route('tournament.matches.score.form', $match) }}" class="btn btn-primary btn-small">
 													{{ __('tournaments.setup_match_btn_score') }}
 												</a>
@@ -1919,8 +1919,16 @@ $tourNumber = $seasonData
 		</div>
 		@endif
 		@endif
-		
-		
+
+		{{-- Кнопка результатов турнира (без сезона — обычный/standalone турнир без дивизионов) --}}
+		@if(!$event->season_id && $stages->isNotEmpty() && $stages->every(fn($s) => $s->status === 'completed'))
+		<div class="ramka" style="text-align:center">
+			<a href="{{ route('tournament.public.show', $event) }}{{ $selectedOccurrence ? '?occurrence_id=' . $selectedOccurrence->id : '' }}" class="btn btn-primary p-3 f-16" style="display:inline-block">
+				{{ __('tournaments.setup_btn_tournament_results') }}
+			</a>
+		</div>
+		@endif
+
 		@if($stages->isEmpty())
 		<div class="ramka" style="text-align:center">
 			<p class="f-18 b-600">{{ __('tournaments.setup_empty_h2') }}</p>

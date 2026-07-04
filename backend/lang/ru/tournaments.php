@@ -629,6 +629,7 @@ return [
     'setup_groups_apply_yes' => 'Да, применить',
 
     'setup_btn_round_results' => '📊 Посмотреть результаты тура',
+    'setup_btn_tournament_results' => '📊 Посмотреть результаты турнира',
 
     'setup_empty_h2'        => 'Турнир пока не настроен',
     'setup_empty_text'      => 'Создайте первую стадию выше, затем проведите жеребьёвку.',
