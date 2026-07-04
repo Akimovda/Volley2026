@@ -37,6 +37,15 @@ class TournamentStatsService
             $this->updateTeamPlayersStats($event, $side['team_id'], $side);
         }
 
+        // OpenSkill/пары/соперники — накопительные счётчики (matches_together и т.п.),
+        // НЕ пересчитываются с нуля, а инкрементируются. rebuildTournamentStats() вызывает
+        // updateAfterMatch() для ВСЕХ завершённых матчей события при КАЖДОМ сохранении
+        // счёта любого матча турнира — без этой защиты счётчики накручивались бы повторно
+        // на каждое новое сохранение (баг, обнаруженный и исправленный 2026-07-04).
+        if ($match->stats_processed_at) {
+            return;
+        }
+
         // OpenSkill — обновляем mu/sigma после каждого матча
         $homeWon       = $match->winner_team_id === $match->team_home_id;
         $winnerTeamId  = $homeWon ? $match->team_home_id : $match->team_away_id;
@@ -68,6 +77,8 @@ class TournamentStatsService
 
         App::make(TournamentOpenSkillService::class)
             ->processMatchByIds($winnerIds, $loserIds, $direction, $seasonId, $leagueId, $event->id, $match->id);
+
+        $match->forceFill(['stats_processed_at' => now()])->saveQuietly();
     }
 
     /**
