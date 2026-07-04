@@ -190,10 +190,11 @@ final class TournamentTeamService
     }
 
     /**
-     * Разбивка укомплектованности по позициям для classic_team — для UI.
-     * Использует ту же логику подсчёта, что и checkRequirements().
+     * Ёмкость по позициям для classic_team: сколько занято / сколько мест по каждой
+     * позиции схемы (без учёта резерва). Используется и для отображения, и для
+     * проверки при смене позиции участника.
      */
-    public function getPositionBreakdown(EventTeam $team): array
+    public function getPositionCapacity(EventTeam $team): array
     {
         if ($team->team_kind !== 'classic_team') {
             return [];
@@ -201,33 +202,105 @@ final class TournamentTeamService
 
         $team->loadMissing(['event.tournamentSetting', 'members.user']);
         $settings = $this->getSettings($team->event);
-        $confirmed = $team->members->where('confirmation_status', 'confirmed');
-
         $scheme = $settings?->getGameScheme() ?? '5x1';
-        $requiredPositions = (array) config("volleyball.classic.{$scheme}.positions", []);
 
-        $rows = [];
-        foreach ($requiredPositions as $position => $requiredCount) {
-            $currentCount = $confirmed->where('position_code', $position)->count();
-            $rows[] = [
-                'label'    => $this->positionLabel($position),
-                'current'  => $currentCount,
-                'required' => (int) $requiredCount,
-                'ok'       => $currentCount >= (int) $requiredCount,
+        $positions = (array) config("volleyball.classic.{$scheme}.positions", []);
+        if ($settings?->require_libero && !array_key_exists('libero', $positions)) {
+            $positions['libero'] = 1;
+        }
+
+        $confirmedPlayers = $team->members
+            ->where('confirmation_status', 'confirmed')
+            ->whereIn('team_role', ['player', 'captain']);
+
+        $result = [];
+        foreach ($positions as $code => $max) {
+            $result[$code] = [
+                'label'   => $this->positionLabel($code),
+                'current' => $confirmedPlayers->where('position_code', $code)->count(),
+                'max'     => (int) $max,
             ];
         }
 
-        if ($settings?->require_libero) {
-            $hasLibero = $confirmed->contains('position_code', 'libero');
+        return $result;
+    }
+
+    /**
+     * Разбивка укомплектованности по позициям для classic_team — для UI.
+     */
+    public function getPositionBreakdown(EventTeam $team): array
+    {
+        $rows = [];
+        foreach ($this->getPositionCapacity($team) as $code => $info) {
             $rows[] = [
-                'label'    => 'Либеро',
-                'current'  => $hasLibero ? 1 : 0,
-                'required' => 1,
-                'ok'       => $hasLibero,
+                'code'     => $code,
+                'label'    => $info['label'],
+                'current'  => $info['current'],
+                'required' => $info['max'],
+                'ok'       => $info['current'] >= $info['max'],
             ];
         }
 
         return $rows;
+    }
+
+    /**
+     * Смена амплуа уже подтверждённого игрока капитаном/организатором.
+     * Запрещает занять позицию, если по схеме турнира на неё уже набран лимит слотов.
+     */
+    public function changeMemberPosition(EventTeam $team, EventTeamMember $member, string $newPositionCode, int $performedByUserId): EventTeamMember
+    {
+        if ((string) $team->team_kind !== 'classic_team') {
+            throw new DomainException('Смена позиции доступна только для классических команд.');
+        }
+
+        if ((int) $member->event_team_id !== (int) $team->id) {
+            throw new DomainException('Игрок не состоит в этой команде.');
+        }
+
+        if (!in_array($member->team_role, ['player', 'captain'], true)) {
+            throw new DomainException('Позицию можно менять только основным игрокам (не запасным).');
+        }
+
+        if ($member->confirmation_status !== 'confirmed') {
+            throw new DomainException('Позицию можно менять только подтверждённым игрокам.');
+        }
+
+        $oldPositionCode = $member->position_code;
+        if ($oldPositionCode === $newPositionCode) {
+            return $member;
+        }
+
+        $capacity = $this->getPositionCapacity($team);
+        if (!array_key_exists($newPositionCode, $capacity)) {
+            throw new DomainException('Недопустимая позиция для этой схемы игры.');
+        }
+
+        $slot = $capacity[$newPositionCode];
+        if ($slot['current'] >= $slot['max']) {
+            throw new DomainException("Позиция «{$slot['label']}» уже занята ({$slot['current']} из {$slot['max']}).");
+        }
+
+        return DB::transaction(function () use ($team, $member, $newPositionCode, $oldPositionCode, $performedByUserId) {
+            $member->position_code = $newPositionCode;
+            if ($member->team_role !== 'captain') {
+                $member->role_code = $newPositionCode;
+            }
+            $member->save();
+
+            $this->audit(
+                team: $team,
+                action: 'position_changed',
+                userId: $member->user_id,
+                performedByUserId: $performedByUserId,
+                oldValue: ['position_code' => $oldPositionCode],
+                newValue: ['position_code' => $newPositionCode],
+            );
+
+            $this->refreshTeamState($team->fresh());
+
+            return $member->fresh();
+        });
     }
 
     /**

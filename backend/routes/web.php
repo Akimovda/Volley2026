@@ -368,6 +368,10 @@ Route::post('/auth/tma-exchange', [TmaAuthController::class, 'exchange'])->name(
 		// Удаление участника из команды
 		Route::delete('/events/{event}/teams/{team}/members/{member}', [TournamentTeamController::class, 'removeMember'])
         ->name('tournamentTeams.members.destroy');
+
+		// Смена позиции (амплуа) подтверждённого участника капитаном/организатором
+		Route::patch('/events/{event}/teams/{team}/members/{member}/position', [TournamentTeamController::class, 'updateMemberPosition'])
+        ->name('tournamentTeams.members.updatePosition');
 		
 		Route::get('/events/{event}/occurrences/manage', [EventManagementController::class, 'occurrences'])
         ->name('events.event_management.occurrences');

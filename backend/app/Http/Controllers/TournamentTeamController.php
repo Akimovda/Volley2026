@@ -86,6 +86,7 @@ class TournamentTeamController extends Controller
             'existingSubstitutions' => $existingSubstitutions,
             'positionBreakdown'     => $service->getPositionBreakdown($team),
             'requirementsCheck'     => $service->checkRequirements($team),
+            'positionCapacity'      => $service->getPositionCapacity($team),
         ]);
     }
 
@@ -251,6 +252,39 @@ class TournamentTeamController extends Controller
             $this->dispatchAnnounceRefresh($event, $team->occurrence_id ? (int) $team->occurrence_id : null);
 
             return back()->with('success', 'Игрок удалён из команды.');
+        } catch (DomainException $e) {
+            return back()->withErrors([
+                'member' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Смена позиции (амплуа) подтверждённого игрока капитаном или организатором.
+     */
+    public function updateMemberPosition(
+        Request $request,
+        Event $event,
+        EventTeam $team,
+        EventTeamMember $member,
+        TournamentTeamService $service
+    ): RedirectResponse {
+        abort_unless((int) $team->event_id === (int) $event->id, 404);
+        abort_unless((int) $member->event_team_id === (int) $team->id, 404);
+        $canManage = (int) $team->captain_user_id === (int) $request->user()->id
+            || (int) $event->organizer_id === (int) $request->user()->id
+            || $request->user()->isAdmin();
+        abort_unless($canManage, 403);
+
+        $data = $request->validate([
+            'position_code' => ['required', 'string', 'in:setter,outside,opposite,middle,libero'],
+        ]);
+
+        try {
+            $service->changeMemberPosition($team, $member, $data['position_code'], $request->user()->id);
+            $this->dispatchAnnounceRefresh($event, $team->occurrence_id ? (int) $team->occurrence_id : null);
+
+            return back()->with('success', 'Позиция игрока изменена.');
         } catch (DomainException $e) {
             return back()->withErrors([
                 'member' => $e->getMessage(),
