@@ -58,7 +58,8 @@ class ClubBookingController extends Controller
         abort_unless($user && ($user->is_club_manager || $user->isAdmin()), 403);
 
         $data = $request->validate([
-            'court_id'      => ['required', 'integer', 'exists:location_courts,id'],
+            'court_ids'      => ['required', 'array', 'min:1'],
+            'court_ids.*'    => ['integer', 'exists:location_courts,id'],
             'date'          => ['required', 'date_format:Y-m-d'],
             'time_from'     => ['required', 'date_format:H:i'],
             'time_to'       => ['required', 'date_format:H:i'],
@@ -72,66 +73,59 @@ class ClubBookingController extends Controller
             'repeat_until'  => ['required_if:repeat,' . implode(',', CourtBooking::REPEAT_OPTIONS), 'nullable', 'date_format:Y-m-d', 'after_or_equal:date'],
         ]);
 
-        $court = LocationCourt::with('direction.location')->findOrFail($data['court_id']);
-
-        try {
-            $service->assertCanManageCourt($court, $user);
-        } catch (\InvalidArgumentException $e) {
-            abort(403, $e->getMessage());
+        $courts = LocationCourt::with('direction.location')->whereIn('id', $data['court_ids'])->get();
+        if ($courts->count() !== count($data['court_ids'])) {
+            return back()->with('error', __('club.court_not_found'));
         }
 
-        $location = $court->direction->location;
-        $tz = $location->effectiveTimezone();
+        foreach ($courts as $court) {
+            try {
+                $service->assertCanManageCourt($court, $user);
+            } catch (\InvalidArgumentException $e) {
+                abort(403, $e->getMessage());
+            }
+        }
+
+        $tz = $courts->first()->direction->location->effectiveTimezone();
         $startsAt = Carbon::parse($data['date'] . ' ' . $data['time_from'], $tz)->setTimezone('UTC');
         $endsAt = Carbon::parse($data['date'] . ' ' . $data['time_to'], $tz)->setTimezone('UTC');
 
         $repeat = $data['repeat'] ?? CourtBooking::REPEAT_NONE;
+        $repeatUntilUtc = null;
         if ($repeat !== CourtBooking::REPEAT_NONE) {
             $repeatUntilDate = Carbon::parse($data['repeat_until'], $tz);
             if ($repeatUntilDate->gt(Carbon::parse($data['date'], $tz)->addMonths(3))) {
                 return back()->with('error', __('club.repeat_until_too_far'));
             }
+            $repeatUntilUtc = Carbon::parse($data['repeat_until'] . ' 23:59:59', $tz)->setTimezone('UTC');
         }
 
         $bookingUser = !empty($data['organizer_id']) ? User::find($data['organizer_id']) : null;
         $extra = ['title' => $data['title'] ?? null, 'color' => $data['color'] ?? null];
 
         try {
-            if ($repeat === CourtBooking::REPEAT_NONE) {
-                $service->createManual(
-                    $court,
-                    $startsAt,
-                    $endsAt,
-                    $bookingUser,
-                    $data['guest_name'] ?? null,
-                    $data['guest_phone'] ?? null,
-                    $data['status'],
-                    $extra
-                );
-            } else {
-                $repeatUntilUtc = Carbon::parse($data['repeat_until'] . ' 23:59:59', $tz)->setTimezone('UTC');
-                $result = $service->createManualSeries(
-                    $court,
-                    $startsAt,
-                    $endsAt,
-                    $bookingUser,
-                    $data['guest_name'] ?? null,
-                    $data['guest_phone'] ?? null,
-                    $data['status'],
-                    $extra,
-                    $repeat,
-                    $repeatUntilUtc
-                );
-
-                $message = __('club.booking_series_created', ['count' => count($result['created'])]);
-                if (!empty($result['skipped'])) {
-                    $message .= ' ' . __('club.skipped_dates', ['dates' => implode(', ', $result['skipped'])]);
-                }
-
-                return back()->with('success', $message);
-            }
+            $result = $service->createManualMultiCourt(
+                $courts->all(),
+                $startsAt,
+                $endsAt,
+                $bookingUser,
+                $data['guest_name'] ?? null,
+                $data['guest_phone'] ?? null,
+                $data['status'],
+                $extra,
+                $repeat,
+                $repeatUntilUtc
+            );
         } catch (\InvalidArgumentException $e) {
             return back()->with('error', $e->getMessage());
+        }
+
+        if ($repeat !== CourtBooking::REPEAT_NONE || !empty($result['skipped'])) {
+            $message = __('club.booking_series_created', ['count' => count($result['created'])]);
+            if (!empty($result['skipped'])) {
+                $message .= ' ' . __('club.skipped_dates', ['dates' => implode(', ', $result['skipped'])]);
+            }
+            return back()->with('success', $message);
         }
 
         return back()->with('success', __('club.booking_saved'));

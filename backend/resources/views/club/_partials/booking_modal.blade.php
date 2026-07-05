@@ -17,7 +17,7 @@ $locationsJs = $locations->map(function ($loc) {
 @endphp
 
 <div id="addBookingModalContent" style="display:none; max-width: 42rem">
-    <div class="card">
+    <div class="card" style="height:auto;max-height:80vh;overflow-y:auto">
         <h3 class="-mt-05" id="abModalTitle">{{ __('club.add_booking') }}</h3>
 
         @if(session('error'))
@@ -46,9 +46,17 @@ $locationsJs = $locations->map(function ($loc) {
                 <select id="abDirectionSelect"></select>
             </div>
 
-            <div class="mb-2">
+            {{-- Редактирование: один корт (бронь атомарна) --}}
+            <div class="mb-2" id="abCourtSelectWrap" style="display:none">
                 <label>{{ __('club.court_label') }}</label>
-                <select name="court_id" id="abCourtSelect" required></select>
+                <select name="court_id" id="abCourtSelect"></select>
+            </div>
+
+            {{-- Добавление/копирование: можно выбрать несколько кортов сразу (напр. под турнир) --}}
+            <div class="mb-2" id="abCourtCheckboxWrap">
+                <label>{{ __('club.courts_label') }}</label>
+                <div id="abCourtCheckboxes" class="d-flex gap-1" style="flex-wrap:wrap"></div>
+                <div class="f-14 cd mt-1" id="abCourtCheckboxError" style="display:none">{{ __('club.select_at_least_one_court') }}</div>
             </div>
 
             <div class="row">
@@ -146,6 +154,11 @@ $locationsJs = $locations->map(function ($loc) {
     const dirSelect = document.getElementById('abDirectionSelect');
     const dirWrap = document.getElementById('abDirectionWrap');
     const courtSelect = document.getElementById('abCourtSelect');
+    const courtSelectWrap = document.getElementById('abCourtSelectWrap');
+    const courtCheckboxWrap = document.getElementById('abCourtCheckboxWrap');
+    const courtCheckboxes = document.getElementById('abCourtCheckboxes');
+    const courtCheckboxError = document.getElementById('abCourtCheckboxError');
+    let currentMode = 'add';
     const dateInput = document.getElementById('abDate');
     const timeFrom = document.getElementById('abTimeFrom');
     const timeTo = document.getElementById('abTimeTo');
@@ -190,6 +203,24 @@ $locationsJs = $locations->map(function ($loc) {
         return null;
     }
 
+    // createCustomSelect() снимает копию <option> ОДИН раз в момент инициализации.
+    // Когда fillDirections()/fillCourts() позже переписывают options через innerHTML,
+    // кастомная обёртка (видимый дропдаун) остаётся со СТАРЫМ набором опций —
+    // именно поэтому список кортов визуально "не обновлялся" при смене направления.
+    // Пересоздаём обёртку каждый раз после того, как реально поменяли <option>ы.
+    function rebuildCustomSelect(selectEl) {
+        if (!selectEl || !window.jQuery) return;
+        var $el = jQuery(selectEl);
+        if (window.customSelect && typeof window.customSelect.destroy === 'function') {
+            window.customSelect.destroy(selectEl.id);
+        }
+        $el.off('change'); // снимаем jQuery-обработчик, оставшийся от предыдущей обёртки
+        if (typeof window.createCustomSelect === 'function') {
+            window.createCustomSelect($el);
+            $el.data('custom-initialized', true);
+        }
+    }
+
     function fillDirections(preselectDirId) {
         const loc = currentLocation();
         dirSelect.innerHTML = '';
@@ -202,23 +233,54 @@ $locationsJs = $locations->map(function ($loc) {
         });
         dirWrap.style.display = loc.directions.length > 1 ? '' : 'none';
         if (preselectDirId) dirSelect.value = String(preselectDirId);
+        rebuildCustomSelect(dirSelect);
         fillCourts();
     }
 
     function fillCourts(preselectCourtId) {
         const loc = currentLocation();
         courtSelect.innerHTML = '';
+        courtCheckboxes.innerHTML = '';
         if (!loc) return;
         const dirId = parseInt(dirSelect.value, 10);
         const dir = loc.directions.find(d => d.id === dirId) || loc.directions[0];
         if (!dir) return;
         dir.courts.forEach(c => {
+            const label = (c.is_indoor ? '🏠 ' : '☀️ ') + c.name;
+
             const opt = document.createElement('option');
             opt.value = c.id;
-            opt.textContent = (c.is_indoor ? '🏠 ' : '☀️ ') + c.name;
+            opt.textContent = label;
             courtSelect.appendChild(opt);
+
+            const cbLabel = document.createElement('label');
+            cbLabel.className = 'd-flex fvc gap-1 checkbox-item';
+            const cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.name = 'court_ids[]';
+            cb.value = String(c.id);
+            if (preselectCourtId && c.id === preselectCourtId) cb.checked = true;
+            cbLabel.appendChild(cb);
+            cbLabel.appendChild(document.createTextNode(' ' + label));
+            courtCheckboxes.appendChild(cbLabel);
         });
         if (preselectCourtId) courtSelect.value = String(preselectCourtId);
+        applyCourtFieldMode();
+        rebuildCustomSelect(courtSelect);
+    }
+
+    // В режиме edit активен select (name=court_id), чекбоксы отключены (не должны
+    // попасть в POST); в add/copy — наоборот, select отключён, активны чекбоксы.
+    function applyCourtFieldMode() {
+        const isEdit = currentMode === 'edit';
+        courtSelectWrap.style.display = isEdit ? '' : 'none';
+        courtCheckboxWrap.style.display = isEdit ? 'none' : '';
+        courtSelect.disabled = !isEdit;
+        courtSelect.required = isEdit;
+        courtCheckboxes.querySelectorAll('input[type="checkbox"]').forEach(function (cb) {
+            cb.disabled = isEdit;
+        });
+        if (!isEdit) courtCheckboxError.style.display = 'none';
     }
 
     if (locSelect) locSelect.addEventListener('change', function () { fillDirections(); });
@@ -241,8 +303,19 @@ $locationsJs = $locations->map(function ($loc) {
     dateInput.addEventListener('change', updateRepeatUntilMax);
     updateRepeatUntilMax();
 
+    // fancybox (type:'inline') замеряет высоту контента один раз при открытии и не
+    // пересчитывает её при последующих изменениях DOM — нужно явно дёргать update(),
+    // иначе выросший блок (repeat_until, гость/пользователь) наезжает на кнопку "Сохранить".
+    function refreshFancyboxSize() {
+        if (window.jQuery && jQuery.fancybox && typeof jQuery.fancybox.getInstance === 'function') {
+            var inst = jQuery.fancybox.getInstance();
+            if (inst && typeof inst.update === 'function') inst.update();
+        }
+    }
+
     repeatSelect.addEventListener('change', function () {
         repeatUntilWrap.style.display = repeatSelect.value === 'none' ? 'none' : '';
+        refreshFancyboxSize();
     });
 
     // Переключатель "пользователь платформы" / "гость"
@@ -254,6 +327,7 @@ $locationsJs = $locations->map(function ($loc) {
         const isUser = clientUser.checked;
         userBlock.style.display = isUser ? '' : 'none';
         guestBlock.style.display = isUser ? 'none' : '';
+        refreshFancyboxSize();
     }
     clientUser.addEventListener('change', updateClientKind);
     clientGuest.addEventListener('change', updateClientKind);
@@ -339,6 +413,7 @@ $locationsJs = $locations->map(function ($loc) {
      * time_to, title, color, client_kind, organizer_id, organizer_label, guest_name, guest_phone, status.
      */
     window.__openBookingModal = function (mode, booking) {
+        currentMode = mode;
         resetFormDefaults();
 
         if (mode === 'edit') {
@@ -400,6 +475,25 @@ $locationsJs = $locations->map(function ($loc) {
         updateRepeatUntilMax();
         openModal();
     };
+
+    courtCheckboxes.addEventListener('change', function (e) {
+        if (e.target && e.target.type === 'checkbox' && e.target.checked) {
+            courtCheckboxError.style.display = 'none';
+        }
+    });
+
+    form.addEventListener('submit', function (e) {
+        if (currentMode === 'edit') return;
+        const anyChecked = Array.prototype.some.call(
+            courtCheckboxes.querySelectorAll('input[type="checkbox"]'),
+            function (cb) { return cb.checked; }
+        );
+        if (!anyChecked) {
+            e.preventDefault();
+            courtCheckboxError.style.display = '';
+            refreshFancyboxSize();
+        }
+    });
 
     window.__openAddBookingModal = function (presetDate) {
         window.__openBookingModal('add', presetDate ? { date: presetDate } : null);

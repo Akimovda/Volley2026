@@ -167,6 +167,187 @@
 				});
 			})();
 
+			// --- Стоимость аренды (правила ценообразования) ---
+			(function () {
+				var form = document.getElementById('priceRulesForm');
+				if (!form) return;
+
+				document.querySelectorAll('.price-rules-rows').forEach(function (wrap) {
+					var directionKey = wrap.getAttribute('data-direction');
+					var courts = JSON.parse(wrap.getAttribute('data-courts') || '[]');
+					var days = JSON.parse(wrap.getAttribute('data-days') || '{}');
+					var existing = JSON.parse(wrap.getAttribute('data-existing') || '[]');
+					var courtLabel = wrap.getAttribute('data-court-label');
+					var allCourtsLabel = wrap.getAttribute('data-all-courts-label');
+					var indoorLabel = wrap.getAttribute('data-indoor-label');
+					var outdoorLabel = wrap.getAttribute('data-outdoor-label');
+					var dayLabel = wrap.getAttribute('data-day-label');
+					var allDaysLabel = wrap.getAttribute('data-all-days-label');
+					var weekdaysLabel = wrap.getAttribute('data-weekdays-label');
+					var weekendLabel = wrap.getAttribute('data-weekend-label');
+					var timeLabel = wrap.getAttribute('data-time-label');
+					var priceLabel = wrap.getAttribute('data-price-label');
+					var removeLabel = wrap.getAttribute('data-remove-label');
+
+					function addRow(data) {
+						data = data || {};
+						var row = document.createElement('div');
+						row.className = 'card mb-1 price-rule-row';
+
+						var courtSelect = document.createElement('select');
+						courtSelect.className = 'rule-court-select';
+						var allOpt = document.createElement('option');
+						allOpt.value = '';
+						allOpt.textContent = allCourtsLabel;
+						courtSelect.appendChild(allOpt);
+						var indoorGroup = document.createElement('optgroup');
+						indoorGroup.label = indoorLabel;
+						var outdoorGroup = document.createElement('optgroup');
+						outdoorGroup.label = outdoorLabel;
+						courts.forEach(function (c) {
+							var opt = document.createElement('option');
+							opt.value = String(c.id);
+							opt.textContent = c.name;
+							(c.is_indoor ? indoorGroup : outdoorGroup).appendChild(opt);
+						});
+						if (indoorGroup.children.length) courtSelect.appendChild(indoorGroup);
+						if (outdoorGroup.children.length) courtSelect.appendChild(outdoorGroup);
+						if (data.court_id) courtSelect.value = String(data.court_id);
+
+						var daySelect = document.createElement('select');
+						daySelect.className = 'rule-day-select';
+						var allDaysOpt = document.createElement('option');
+						allDaysOpt.value = '';
+						allDaysOpt.textContent = allDaysLabel;
+						daySelect.appendChild(allDaysOpt);
+						Object.keys(days).forEach(function (num) {
+							var opt = document.createElement('option');
+							opt.value = num;
+							opt.textContent = days[num];
+							daySelect.appendChild(opt);
+						});
+						var weekdaysOpt = document.createElement('option');
+						weekdaysOpt.value = 'weekdays';
+						weekdaysOpt.textContent = weekdaysLabel;
+						daySelect.appendChild(weekdaysOpt);
+						var weekendOpt = document.createElement('option');
+						weekendOpt.value = 'weekend';
+						weekendOpt.textContent = weekendLabel;
+						daySelect.appendChild(weekendOpt);
+						if (data.day_of_week !== undefined && data.day_of_week !== null) daySelect.value = String(data.day_of_week);
+
+						var startsInput = document.createElement('input');
+						startsInput.type = 'time';
+						startsInput.className = 'rule-starts-at';
+						if (data.starts_at) startsInput.value = data.starts_at;
+
+						var endsInput = document.createElement('input');
+						endsInput.type = 'time';
+						endsInput.className = 'rule-ends-at';
+						if (data.ends_at) endsInput.value = data.ends_at;
+
+						var priceInput = document.createElement('input');
+						priceInput.type = 'number';
+						priceInput.min = '1';
+						priceInput.step = '0.01';
+						priceInput.className = 'rule-price';
+						priceInput.placeholder = priceLabel;
+						if (data.price) priceInput.value = data.price;
+
+						var removeBtn = document.createElement('button');
+						removeBtn.type = 'button';
+						removeBtn.className = 'btn btn-small btn-danger rule-remove-btn';
+						removeBtn.textContent = removeLabel;
+						removeBtn.addEventListener('click', function () { row.remove(); });
+
+						function col(labelText, el, widthClass) {
+							var c = document.createElement('div');
+							c.className = widthClass;
+							var l = document.createElement('label');
+							l.className = 'f-13';
+							l.textContent = labelText;
+							c.appendChild(l);
+							c.appendChild(el);
+							return c;
+						}
+
+						var rowInner = document.createElement('div');
+						rowInner.className = 'row';
+						rowInner.appendChild(col(courtLabel, courtSelect, 'col-md-3'));
+						rowInner.appendChild(col(dayLabel, daySelect, 'col-md-3'));
+						var timeWrap = document.createElement('div');
+						timeWrap.className = 'col-md-3';
+						var timeL = document.createElement('label');
+						timeL.className = 'f-13';
+						timeL.textContent = timeLabel;
+						timeWrap.appendChild(timeL);
+						var timeRow = document.createElement('div');
+						timeRow.className = 'd-flex gap-1 fvc';
+						timeRow.appendChild(startsInput);
+						timeRow.appendChild(document.createTextNode('—'));
+						timeRow.appendChild(endsInput);
+						timeWrap.appendChild(timeRow);
+						rowInner.appendChild(timeWrap);
+						rowInner.appendChild(col(priceLabel, priceInput, 'col-md-2'));
+						var btnWrap = document.createElement('div');
+						btnWrap.className = 'col-md-1 d-flex fvc';
+						btnWrap.style.alignItems = 'flex-end';
+						btnWrap.appendChild(removeBtn);
+						rowInner.appendChild(btnWrap);
+
+						row.appendChild(rowInner);
+						wrap.appendChild(row);
+					}
+
+					existing.forEach(function (rule) { addRow(rule); });
+
+					var addBtn = document.querySelector('.price-add-rule-btn[data-direction="' + directionKey + '"]');
+					if (addBtn) addBtn.addEventListener('click', function () { addRow(); });
+				});
+
+				// Перед сабмитом: разворачиваем пресеты Пн-Пт/Сб-Вс в отдельные правила
+				// (по одному на день) и строим индексированные hidden-поля для каждого
+				// направления — видимые контролы строк не имеют name и сами не отправляются.
+				form.addEventListener('submit', function () {
+					form.querySelectorAll('.price-rules-hidden-generated').forEach(function (el) { el.remove(); });
+
+					document.querySelectorAll('.price-rules-rows').forEach(function (wrap) {
+						var directionKey = wrap.getAttribute('data-direction');
+						var idx = 0;
+
+						wrap.querySelectorAll('.price-rule-row').forEach(function (row) {
+							var price = row.querySelector('.rule-price').value;
+							if (!price) return;
+
+							var courtId = row.querySelector('.rule-court-select').value;
+							var dayVal = row.querySelector('.rule-day-select').value;
+							var startsAt = row.querySelector('.rule-starts-at').value;
+							var endsAt = row.querySelector('.rule-ends-at').value;
+
+							var dayList;
+							if (dayVal === 'weekdays') dayList = ['0', '1', '2', '3', '4'];
+							else if (dayVal === 'weekend') dayList = ['5', '6'];
+							else dayList = [dayVal]; // '' (все) или конкретный день
+
+							dayList.forEach(function (dayOfWeek) {
+								var fields = { court_id: courtId, day_of_week: dayOfWeek, starts_at: startsAt, ends_at: endsAt, price: price };
+								Object.keys(fields).forEach(function (field) {
+									var val = fields[field];
+									if (val === '' || val === null || val === undefined) return; // пусто = не отправляем (null на сервере)
+									var hidden = document.createElement('input');
+									hidden.type = 'hidden';
+									hidden.className = 'price-rules-hidden-generated';
+									hidden.name = 'directions[' + directionKey + '][rules][' + idx + '][' + field + ']';
+									hidden.value = val;
+									form.appendChild(hidden);
+								});
+								idx++;
+							});
+						});
+					});
+				});
+			})();
+
 			(function () {
 				var input   = document.getElementById('trust-ac-input');
 				var dd      = document.getElementById('trust-ac-dd');
@@ -614,6 +795,72 @@
 
                 <div class="mt-2 text-center">
                     <button type="submit" class="btn btn-primary">{{ __('club.save_directions') }}</button>
+                </div>
+            </form>
+        </div>
+
+        {{-- СТОИМОСТЬ АРЕНДЫ --}}
+        <div class="ramka">
+            <h2 class="-mt-05">{{ __('club.rental_pricing_title') }}</h2>
+            <form method="POST" action="{{ route('admin.locations.price_rules.save', $location) }}" class="form" id="priceRulesForm">
+                @csrf
+
+                @foreach($directionMeta as $directionKey => $meta)
+                @php
+                $dir = $directions->get($directionKey);
+                if (!$dir || !$dir->is_active) { continue; }
+                $dirRules = $priceRules->get($dir->id, collect());
+                $baseRule = $dirRules->first(fn ($r) => $r->court_id === null && $r->day_of_week === null && $r->starts_at === null);
+                $customRules = $dirRules->reject(fn ($r) => $baseRule && $r->id === $baseRule->id)->values();
+                $existingRulesJson = $customRules->map(fn ($r) => [
+                    'court_id'    => $r->court_id,
+                    'day_of_week' => $r->day_of_week,
+                    'starts_at'   => $r->starts_at ? substr($r->starts_at, 0, 5) : null,
+                    'ends_at'     => $r->ends_at ? substr($r->ends_at, 0, 5) : null,
+                    'price'       => (float) $r->price_per_hour,
+                ])->values();
+                $courtsJson = $dir->courts->map(fn ($c) => ['id' => $c->id, 'name' => $c->name, 'is_indoor' => (bool) $c->is_indoor])->values();
+                @endphp
+                <div class="card mb-2 price-direction-block" data-direction="{{ $directionKey }}">
+                    <div class="b-700 f-18 mb-2">{{ $meta['label'] }}</div>
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="card">
+                                <label>{{ __('club.base_price') }}</label>
+                                <input type="number" name="directions[{{ $directionKey }}][base_price]" min="1" step="0.01"
+                                       value="{{ old('directions.' . $directionKey . '.base_price', $baseRule->price_per_hour ?? '') }}"
+                                       placeholder="{{ __('club.base_price_placeholder') }}">
+                                <ul class="list f-14 mt-1"><li>{{ __('club.base_price_hint') }}</li></ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="b-600 mt-2 mb-1">{{ __('club.price_rules_label') }}</div>
+                    <div class="price-rules-rows"
+                         id="priceRules_{{ $directionKey }}"
+                         data-direction="{{ $directionKey }}"
+                         data-existing="{{ $existingRulesJson->toJson() }}"
+                         data-courts="{{ $courtsJson->toJson() }}"
+                         data-court-label="{{ __('club.court_label') }}"
+                         data-all-courts-label="{{ __('club.all_courts') }}"
+                         data-indoor-label="{{ __('club.indoor') }}"
+                         data-outdoor-label="{{ __('club.outdoor') }}"
+                         data-day-label="{{ __('club.day_label') }}"
+                         data-all-days-label="{{ __('club.all_days') }}"
+                         data-weekdays-label="{{ __('club.weekdays') }}"
+                         data-weekend-label="{{ __('club.weekend') }}"
+                         data-time-label="{{ __('club.time_label') }}"
+                         data-price-label="{{ __('club.price_label') }}"
+                         data-remove-label="{{ __('club.remove_rule') }}"
+                         data-days="{{ json_encode(__('club.days')) }}"
+                    ></div>
+                    <button type="button" class="btn btn-small btn-secondary mt-1 price-add-rule-btn" data-direction="{{ $directionKey }}">{{ __('club.add_rule') }}</button>
+                </div>
+                @endforeach
+
+                <div class="mt-2 text-center">
+                    <button type="submit" class="btn btn-primary">{{ __('club.save_price_rules') }}</button>
                 </div>
             </form>
         </div>

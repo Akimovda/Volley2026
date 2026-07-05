@@ -10,13 +10,15 @@ class PaymentSettingsController extends Controller
     {
         $user = $request->user();
         $settings = PaymentSetting::firstOrNew(['organizer_id' => $user->id]);
+        $canUseForRentals = $user->is_club_manager && $user->ownedLocations()->exists();
 
-        return view('payment.settings', compact('settings'));
+        return view('payment.settings', compact('settings', 'canUseForRentals'));
     }
 
     public function update(Request $request)
     {
         $user = $request->user();
+        $canUseForRentals = $user->is_club_manager && $user->ownedLocations()->exists();
 
         $data = $request->validate([
             'default_method'       => ['required', 'in:cash,tbank_link,sber_link,yoomoney'],
@@ -30,6 +32,7 @@ class PaymentSettingsController extends Controller
             'refund_partial_pct'   => ['required', 'integer', 'min:0', 'max:100'],
             'refund_no_quorum_full'=> ['sometimes', 'boolean'],
             'payment_hold_minutes' => ['required', 'integer', 'min:5', 'max:120'],
+            'payment_for_rentals'  => ['sometimes', 'boolean'],
         ]);
 
         $yooEnabled = (bool)($data['yoomoney_enabled'] ?? false);
@@ -42,6 +45,7 @@ class PaymentSettingsController extends Controller
             array_merge($data, [
                 'yoomoney_enabled'  => $yooEnabled,
                 'yoomoney_verified' => $yooVerified,
+                'payment_for_rentals' => $canUseForRentals && (bool)($data['payment_for_rentals'] ?? false),
             ])
         );
 

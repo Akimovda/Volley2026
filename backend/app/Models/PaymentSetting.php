@@ -12,12 +12,14 @@ class PaymentSetting extends Model
         'yoomoney_enabled', 'yoomoney_verified',
         'refund_hours_full', 'refund_hours_partial', 'refund_partial_pct',
         'refund_no_quorum_full', 'payment_hold_minutes',
+        'payment_for_rentals',
     ];
 
     protected $casts = [
         'yoomoney_enabled'    => 'boolean',
         'yoomoney_verified'   => 'boolean',
         'refund_no_quorum_full' => 'boolean',
+        'payment_for_rentals' => 'boolean',
     ];
 
     public function organizer()

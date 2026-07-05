@@ -108,7 +108,12 @@ public function store(Request $request)
             ->with('organizer')
             ->get();
 
-        return view('admin.locations.edit', compact('location', 'photos', 'directions', 'clubManagers', 'trustedOrganizers'));
+        $priceRules = \App\Models\CourtPriceRule::whereIn('direction_id', $directions->pluck('id'))
+            ->orderBy('priority')
+            ->get()
+            ->groupBy('direction_id');
+
+        return view('admin.locations.edit', compact('location', 'photos', 'directions', 'clubManagers', 'trustedOrganizers', 'priceRules'));
     }
 
 public function update(Request $request, Location $location)
@@ -267,6 +272,104 @@ public function update(Request $request, Location $location)
         });
 
         return back()->with('status', __('club.save_directions') . ' ✅');
+    }
+
+    /**
+     * Полная перезапись правил ценообразования направления (delete + insert
+     * в транзакции). priority вычисляется автоматически по специфичности:
+     * court(+4) + day(+2) + time-window(+1) — 0 (база) .. 7 (корт+день+время).
+     */
+    public function savePriceRules(Request $request, Location $location)
+    {
+        $data = $request->validate([
+            'directions'                        => ['required', 'array'],
+            'directions.*.base_price'           => ['nullable', 'numeric', 'min:0.01', 'max:99999'],
+            'directions.*.rules'                => ['nullable', 'array'],
+            'directions.*.rules.*.court_id'     => ['nullable', 'integer', 'exists:location_courts,id'],
+            'directions.*.rules.*.day_of_week'  => ['nullable', 'integer', 'min:0', 'max:6'],
+            'directions.*.rules.*.starts_at'    => ['nullable', 'date_format:H:i'],
+            'directions.*.rules.*.ends_at'      => ['nullable', 'date_format:H:i'],
+            'directions.*.rules.*.price'        => ['required', 'numeric', 'min:0.01', 'max:99999'],
+        ]);
+
+        foreach ($data['directions'] as $directionKey => $input) {
+            foreach (($input['rules'] ?? []) as $i => $rule) {
+                $hasStart = !empty($rule['starts_at']);
+                $hasEnd = !empty($rule['ends_at']);
+                if ($hasStart !== $hasEnd) {
+                    return back()->with('error', __('club.price_rule_time_both_required'));
+                }
+                if ($hasStart && $hasEnd && $rule['ends_at'] <= $rule['starts_at']) {
+                    return back()->with('error', __('club.price_rule_time_order'));
+                }
+            }
+        }
+
+        DB::transaction(function () use ($data, $location) {
+            foreach ([LocationDirection::DIRECTION_CLASSIC, LocationDirection::DIRECTION_BEACH] as $directionKey) {
+                $direction = LocationDirection::where('location_id', $location->id)
+                    ->where('direction', $directionKey)
+                    ->first();
+                if (!$direction) {
+                    continue;
+                }
+
+                $input = $data['directions'][$directionKey] ?? null;
+                if ($input === null) {
+                    continue;
+                }
+
+                \App\Models\CourtPriceRule::where('direction_id', $direction->id)->delete();
+
+                $rows = [];
+
+                if (!empty($input['base_price'])) {
+                    $rows[] = [
+                        'direction_id'   => $direction->id,
+                        'court_id'       => null,
+                        'day_of_week'    => null,
+                        'starts_at'      => null,
+                        'ends_at'        => null,
+                        'price_per_hour' => $input['base_price'],
+                        'priority'       => 0,
+                        'created_at'     => now(),
+                        'updated_at'     => now(),
+                    ];
+                }
+
+                foreach (($input['rules'] ?? []) as $rule) {
+                    if (empty($rule['price'])) {
+                        continue;
+                    }
+
+                    $courtId = !empty($rule['court_id']) ? (int) $rule['court_id'] : null;
+                    $dayOfWeek = isset($rule['day_of_week']) && $rule['day_of_week'] !== ''
+                        ? (int) $rule['day_of_week'] : null;
+                    $startsAt = $rule['starts_at'] ?? null;
+                    $endsAt = $rule['ends_at'] ?? null;
+
+                    $priority = ($courtId ? 4 : 0) + ($dayOfWeek !== null ? 2 : 0) + ($startsAt && $endsAt ? 1 : 0);
+
+                    $rows[] = [
+                        'direction_id'   => $direction->id,
+                        'court_id'       => $courtId,
+                        'day_of_week'    => $dayOfWeek,
+                        'starts_at'      => $startsAt,
+                        'ends_at'        => $endsAt,
+                        'price_per_hour' => $rule['price'],
+                        'priority'       => $priority,
+                        'created_at'     => now(),
+                        'updated_at'     => now(),
+                    ];
+                }
+
+                if (!empty($rows)) {
+                    \App\Models\CourtPriceRule::insert($rows);
+                }
+            }
+        });
+
+        return back()->with('status', __('club.price_rules_saved') . ' ✅');
     }
 
     public function saveTrust(Request $request, Location $location)

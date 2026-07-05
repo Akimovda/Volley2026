@@ -110,6 +110,58 @@ class CourtBookingService
     }
 
     /**
+     * Бронирование НЕСКОЛЬКИХ кортов на одно и то же время (напр. под турнир).
+     * Без повторения: всё в одной транзакции — конфликт любого корта откатывает
+     * ВСЕ вставки (createManual() внутри использует SAVEPOINT через вложенный
+     * DB::transaction(), поэтому откат внешней транзакции откатывает и его).
+     * С повторением: для каждого корта — своя независимая серия (createManualSeries),
+     * конфликтующие даты внутри серии пропускаются как обычно, не аборт всего.
+     *
+     * @param LocationCourt[] $courts
+     * @param array{title?: ?string, color?: ?string} $extra
+     * @return array{created: CourtBooking[], skipped: string[]}
+     */
+    public function createManualMultiCourt(
+        array $courts,
+        Carbon $startsAt,
+        Carbon $endsAt,
+        ?User $user,
+        ?string $guestName,
+        ?string $guestPhone,
+        string $status,
+        array $extra,
+        string $repeat,
+        ?Carbon $repeatUntil,
+    ): array {
+        if ($repeat === CourtBooking::REPEAT_NONE) {
+            return DB::transaction(function () use ($courts, $startsAt, $endsAt, $user, $guestName, $guestPhone, $status, $extra) {
+                $created = [];
+                foreach ($courts as $court) {
+                    try {
+                        $created[] = $this->createManual($court, $startsAt, $endsAt, $user, $guestName, $guestPhone, $status, $extra);
+                    } catch (InvalidArgumentException $e) {
+                        throw new InvalidArgumentException("Корт «{$court->name}»: {$e->getMessage()}");
+                    }
+                }
+                return ['created' => $created, 'skipped' => []];
+            });
+        }
+
+        return DB::transaction(function () use ($courts, $startsAt, $endsAt, $user, $guestName, $guestPhone, $status, $extra, $repeat, $repeatUntil) {
+            $allCreated = [];
+            $allSkipped = [];
+            foreach ($courts as $court) {
+                $result = $this->createManualSeries($court, $startsAt, $endsAt, $user, $guestName, $guestPhone, $status, $extra, $repeat, $repeatUntil);
+                $allCreated = array_merge($allCreated, $result['created']);
+                foreach ($result['skipped'] as $skippedDate) {
+                    $allSkipped[] = "{$court->name}: {$skippedDate}";
+                }
+            }
+            return ['created' => $allCreated, 'skipped' => $allSkipped];
+        });
+    }
+
+    /**
      * Серия повторяющихся ручных броней: первая создаётся как обычно и становится
      * "родителем" (parent_booking_id), остальные привязываются к ней. Дата, занятая
      * пересекающейся бронью, просто пропускается (не прерывает всю серию).

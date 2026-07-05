@@ -916,6 +916,9 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
         Route::post('/locations/{location}/directions', [AdminLocationController::class, 'saveDirections'])
             ->name('locations.directions.save');
 
+        Route::post('/locations/{location}/price-rules', [AdminLocationController::class, 'savePriceRules'])
+            ->name('locations.price_rules.save');
+
         Route::post('/locations/{location}/trust', [AdminLocationController::class, 'saveTrust'])
             ->name('locations.trust.save');
         Route::delete('/locations/{location}/trust/{trust}', [AdminLocationController::class, 'destroyTrust'])

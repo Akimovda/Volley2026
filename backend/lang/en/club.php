@@ -27,6 +27,25 @@ return [
         3 => 'Thursday', 4 => 'Friday', 5 => 'Saturday', 6 => 'Sunday',
     ],
 
+    // === Rental pricing (court_price_rules) ===
+    'rental_pricing_title'          => 'Rental pricing',
+    'base_price'                    => 'Base price',
+    'base_price_placeholder'        => 'e.g. 1500',
+    'base_price_hint'               => 'Rule with no court/day/time — applies when none of the rules below match',
+    'price_rules_label'             => 'Rules (override the base price)',
+    'add_rule'                      => '+ Add rule',
+    'remove_rule'                   => 'Remove',
+    'all_courts'                    => 'All',
+    'day_label'                     => 'Days',
+    'all_days'                      => 'All',
+    'weekdays'                      => 'Mon-Fri',
+    'weekend'                       => 'Sat-Sun',
+    'time_label'                    => 'Time',
+    'save_price_rules'              => 'Save prices',
+    'price_rules_saved'             => 'Pricing rules saved',
+    'price_rule_time_both_required' => 'A rule needs both times (start and end) or neither.',
+    'price_rule_time_order'         => 'End time must be after start time.',
+
     // === Timeline (Phase 2) ===
     'timeline'        => 'Timeline',
     'list_view'       => 'List',
@@ -48,6 +67,9 @@ return [
     'no_free_slots'            => 'No free slots for the selected duration.',
     'date_in_past'              => 'This date has already passed — choose a future date.',
     'court_label'               => 'Court',
+    'courts_label'              => 'Courts',
+    'select_at_least_one_court' => 'Select at least one court.',
+    'court_not_found'           => 'One of the selected courts was not found.',
     'price_label'               => 'Price',
     'price_free'                => 'free',
     'selected_slot_label'       => 'Selected: :court, :time',
@@ -123,4 +145,8 @@ return [
     'this_and_following'        => 'This and all following',
     'booking_updated'           => 'Booking updated',
     'booking_cancelled'         => 'Booking cancelled',
+
+    // === Payment settings for rentals (Phase 4 groundwork) ===
+    'payment_for_rentals'       => 'Use these settings to accept payment for court rentals',
+    'payment_for_rentals_hint'  => 'Actual rental payment via YooKassa/link will arrive in a later phase of the club module — this checkbox only records the intent.',
 ];
