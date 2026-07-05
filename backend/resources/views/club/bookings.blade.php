@@ -28,20 +28,34 @@ $statusColors = [
 $renderBooking = function ($booking) use ($statusLabels, $statusColors) {
     $court = $booking->court;
     $location = $court?->direction?->location;
+    $tz = $location?->effectiveTimezone() ?? 'Europe/Moscow';
+    $startsLocal = $booking->starts_at?->copy()->setTimezone($tz);
+    $endsLocal = $booking->ends_at?->copy()->setTimezone($tz);
     return [
         'id' => $booking->id,
+        'court_id' => $court->id ?? null,
+        'direction_id' => $court->direction_id ?? null,
         'court_name' => $court->name ?? '—',
         'location_name' => $location->name ?? '—',
-        'starts_at' => $booking->starts_at?->format('d.m.Y H:i'),
-        'ends_at' => $booking->ends_at?->format('H:i'),
+        'date' => $startsLocal?->toDateString(),
+        'time_from' => $startsLocal?->format('H:i'),
+        'time_to' => $endsLocal?->format('H:i'),
+        'starts_at' => $startsLocal?->format('d.m.Y H:i'),
+        'ends_at' => $endsLocal?->format('H:i'),
         'user_name' => $booking->booker_name,
         'is_guest' => $booking->isGuestBooking(),
+        'organizer_id' => $booking->user_id,
+        'guest_name' => $booking->guest_name,
         'guest_phone' => $booking->guest_phone,
+        'title' => $booking->title,
+        'color' => $booking->color,
         'event' => $booking->event,
         'price' => $booking->price_total,
         'status' => $booking->status,
         'status_label' => $statusLabels[$booking->status] ?? $booking->status,
         'status_color' => $statusColors[$booking->status] ?? '#8E8E93',
+        'is_series' => $booking->parent_booking_id !== null,
+        'can_manage' => $booking->event_id === null,
     ];
 };
 @endphp
@@ -58,6 +72,7 @@ $renderBooking = function ($booking) use ($statusLabels, $statusColors) {
 
         @if($locations->isNotEmpty())
         @include('club._partials.booking_modal', ['locations' => $locations])
+        @include('club._partials.booking_details_modal')
         @endif
 
         <div class="d-flex gap-1 mb-2" style="flex-wrap:wrap">
@@ -106,15 +121,26 @@ $renderBooking = function ($booking) use ($statusLabels, $statusColors) {
             @forelse($active as $b)
                 @php $row = $renderBooking($b); @endphp
                 <div class="card mb-2">
-                    <div class="b-700">{{ $row['location_name'] }} · {{ $row['court_name'] }}
-                        <span class="f-12 p-1 px-2" style="background:{{ $row['status_color'] }}22;color:{{ $row['status_color'] }};border-radius:6px">{{ $row['status_label'] }}</span>
+                    <div class="d-flex between fvc" style="flex-wrap:wrap;gap:8px">
+                        <div>
+                            <div class="b-700">{{ $row['location_name'] }} · {{ $row['court_name'] }}
+                                <span class="f-12 p-1 px-2" style="background:{{ $row['status_color'] }}22;color:{{ $row['status_color'] }};border-radius:6px">{{ $row['status_label'] }}</span>
+                            </div>
+                            <div class="f-14">{{ $row['starts_at'] }}–{{ $row['ends_at'] }}</div>
+                            <div class="f-14">{{ __('club.booking_by') }}: {{ $row['user_name'] }}@if($row['is_guest']) <span class="f-12 cd">({{ __('club.guest') }}@if($row['guest_phone']), {{ $row['guest_phone'] }}@endif)</span>@endif</div>
+                            @if($row['event'])
+                            <div class="f-14"><a href="{{ route('events.show', $row['event']) }}" class="blink">{{ $row['event']->title }}</a></div>
+                            @endif
+                            <div class="f-14">{{ __('club.booking_price') }}: {{ $row['price'] !== null ? $row['price'] . ' ₽' : __('club.price_free') }}</div>
+                        </div>
+                        @if($row['can_manage'])
+                        <div class="d-flex gap-1 cb-booking-actions" style="flex-wrap:wrap" data-booking="{{ json_encode($row) }}">
+                            <button type="button" class="btn btn-small btn-secondary cb-edit-btn">{{ __('club.edit_booking') }}</button>
+                            <button type="button" class="btn btn-small btn-secondary cb-copy-btn">{{ __('club.copy_booking') }}</button>
+                            <button type="button" class="btn btn-small btn-secondary cb-cancel-btn">{{ __('club.cancel_booking') }}</button>
+                        </div>
+                        @endif
                     </div>
-                    <div class="f-14">{{ $row['starts_at'] }}–{{ $row['ends_at'] }}</div>
-                    <div class="f-14">{{ __('club.booking_by') }}: {{ $row['user_name'] }}@if($row['is_guest']) <span class="f-12 cd">({{ __('club.guest') }}@if($row['guest_phone']), {{ $row['guest_phone'] }}@endif)</span>@endif</div>
-                    @if($row['event'])
-                    <div class="f-14"><a href="{{ route('events.show', $row['event']) }}" class="blink">{{ $row['event']->title }}</a></div>
-                    @endif
-                    <div class="f-14">{{ __('club.booking_price') }}: {{ $row['price'] !== null ? $row['price'] . ' ₽' : __('club.price_free') }}</div>
                 </div>
             @empty
             <div class="alert alert-info">{{ __('club.no_bookings') }}</div>
@@ -162,6 +188,48 @@ $renderBooking = function ($booking) use ($statusLabels, $statusColors) {
             tabs.pending.btn.addEventListener('click', function () { selectTab('pending'); });
             tabs.active.btn.addEventListener('click', function () { selectTab('active'); });
             tabs.history.btn.addEventListener('click', function () { selectTab('history'); });
+        })();
+
+        (function () {
+            function toModalBooking(row) {
+                return {
+                    id: row.id,
+                    court_id: row.court_id,
+                    direction_id: row.direction_id,
+                    date: row.date,
+                    time_from: row.time_from,
+                    time_to: row.time_to,
+                    title: row.title,
+                    color: row.color,
+                    is_guest: row.is_guest,
+                    organizer_id: row.organizer_id,
+                    organizer_label: row.user_name,
+                    booker_name: row.user_name,
+                    guest_name: row.guest_name,
+                    guest_phone: row.guest_phone,
+                    status: row.status,
+                    is_series: row.is_series,
+                };
+            }
+
+            document.querySelectorAll('.cb-booking-actions').forEach(function (wrap) {
+                var row = JSON.parse(wrap.getAttribute('data-booking'));
+                var booking = toModalBooking(row);
+
+                var editBtn = wrap.querySelector('.cb-edit-btn');
+                var copyBtn = wrap.querySelector('.cb-copy-btn');
+                var cancelBtn = wrap.querySelector('.cb-cancel-btn');
+
+                if (editBtn) editBtn.addEventListener('click', function () {
+                    if (window.__openBookingModalForEdit) window.__openBookingModalForEdit(booking);
+                });
+                if (copyBtn) copyBtn.addEventListener('click', function () {
+                    if (window.__openBookingModalForCopy) window.__openBookingModalForCopy(booking);
+                });
+                if (cancelBtn) cancelBtn.addEventListener('click', function () {
+                    if (window.__openBookingCancelModal) window.__openBookingCancelModal(booking);
+                });
+            });
         })();
     </script>
 </x-slot>

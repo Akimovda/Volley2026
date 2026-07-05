@@ -10,12 +10,14 @@ class LocationCourt extends Model
     protected $fillable = [
         'direction_id',
         'name',
+        'is_indoor',
         'sort_order',
         'is_active',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'is_indoor' => 'boolean',
         'sort_order' => 'integer',
     ];
 

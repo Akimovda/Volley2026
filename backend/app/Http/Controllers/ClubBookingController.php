@@ -62,10 +62,14 @@ class ClubBookingController extends Controller
             'date'          => ['required', 'date_format:Y-m-d'],
             'time_from'     => ['required', 'date_format:H:i'],
             'time_to'       => ['required', 'date_format:H:i'],
+            'title'         => ['nullable', 'string', 'max:150'],
+            'color'         => ['nullable', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'organizer_id'  => ['nullable', 'required_without:guest_name', 'integer', 'exists:users,id'],
             'guest_name'    => ['nullable', 'required_without:organizer_id', 'string', 'max:150'],
             'guest_phone'   => ['nullable', 'string', 'max:30'],
             'status'        => ['required', Rule::in([CourtBooking::STATUS_CONFIRMED, CourtBooking::STATUS_PAID])],
+            'repeat'        => ['nullable', Rule::in(array_merge([CourtBooking::REPEAT_NONE], CourtBooking::REPEAT_OPTIONS))],
+            'repeat_until'  => ['required_if:repeat,' . implode(',', CourtBooking::REPEAT_OPTIONS), 'nullable', 'date_format:Y-m-d', 'after_or_equal:date'],
         ]);
 
         $court = LocationCourt::with('direction.location')->findOrFail($data['court_id']);
@@ -81,23 +85,133 @@ class ClubBookingController extends Controller
         $startsAt = Carbon::parse($data['date'] . ' ' . $data['time_from'], $tz)->setTimezone('UTC');
         $endsAt = Carbon::parse($data['date'] . ' ' . $data['time_to'], $tz)->setTimezone('UTC');
 
+        $repeat = $data['repeat'] ?? CourtBooking::REPEAT_NONE;
+        if ($repeat !== CourtBooking::REPEAT_NONE) {
+            $repeatUntilDate = Carbon::parse($data['repeat_until'], $tz);
+            if ($repeatUntilDate->gt(Carbon::parse($data['date'], $tz)->addMonths(3))) {
+                return back()->with('error', __('club.repeat_until_too_far'));
+            }
+        }
+
         $bookingUser = !empty($data['organizer_id']) ? User::find($data['organizer_id']) : null;
+        $extra = ['title' => $data['title'] ?? null, 'color' => $data['color'] ?? null];
 
         try {
-            $service->createManual(
-                $court,
-                $startsAt,
-                $endsAt,
-                $bookingUser,
-                $data['guest_name'] ?? null,
-                $data['guest_phone'] ?? null,
-                $data['status']
-            );
+            if ($repeat === CourtBooking::REPEAT_NONE) {
+                $service->createManual(
+                    $court,
+                    $startsAt,
+                    $endsAt,
+                    $bookingUser,
+                    $data['guest_name'] ?? null,
+                    $data['guest_phone'] ?? null,
+                    $data['status'],
+                    $extra
+                );
+            } else {
+                $repeatUntilUtc = Carbon::parse($data['repeat_until'] . ' 23:59:59', $tz)->setTimezone('UTC');
+                $result = $service->createManualSeries(
+                    $court,
+                    $startsAt,
+                    $endsAt,
+                    $bookingUser,
+                    $data['guest_name'] ?? null,
+                    $data['guest_phone'] ?? null,
+                    $data['status'],
+                    $extra,
+                    $repeat,
+                    $repeatUntilUtc
+                );
+
+                $message = __('club.booking_series_created', ['count' => count($result['created'])]);
+                if (!empty($result['skipped'])) {
+                    $message .= ' ' . __('club.skipped_dates', ['dates' => implode(', ', $result['skipped'])]);
+                }
+
+                return back()->with('success', $message);
+            }
         } catch (\InvalidArgumentException $e) {
             return back()->with('error', $e->getMessage());
         }
 
         return back()->with('success', __('club.booking_saved'));
+    }
+
+    public function update(Request $request, CourtBooking $booking, CourtBookingService $service)
+    {
+        $user = $request->user();
+        abort_unless($user, 403);
+
+        $data = $request->validate([
+            'court_id'      => ['required', 'integer', 'exists:location_courts,id'],
+            'date'          => ['required', 'date_format:Y-m-d'],
+            'time_from'     => ['required', 'date_format:H:i'],
+            'time_to'       => ['required', 'date_format:H:i'],
+            'title'         => ['nullable', 'string', 'max:150'],
+            'color'         => ['nullable', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'organizer_id'  => ['nullable', 'required_without:guest_name', 'integer', 'exists:users,id'],
+            'guest_name'    => ['nullable', 'required_without:organizer_id', 'string', 'max:150'],
+            'guest_phone'   => ['nullable', 'string', 'max:30'],
+            'status'        => ['required', Rule::in([CourtBooking::STATUS_CONFIRMED, CourtBooking::STATUS_PAID])],
+        ]);
+
+        $court = LocationCourt::with('direction.location')->findOrFail($data['court_id']);
+        $tz = $court->direction->location->effectiveTimezone();
+        $startsAt = Carbon::parse($data['date'] . ' ' . $data['time_from'], $tz)->setTimezone('UTC');
+        $endsAt = Carbon::parse($data['date'] . ' ' . $data['time_to'], $tz)->setTimezone('UTC');
+        $bookingUser = !empty($data['organizer_id']) ? User::find($data['organizer_id']) : null;
+
+        try {
+            $result = $service->update($booking, $user, [
+                'court_id'    => (int) $data['court_id'],
+                'starts_at'   => $startsAt,
+                'ends_at'     => $endsAt,
+                'title'       => $data['title'] ?? null,
+                'color'       => $data['color'] ?? null,
+                'status'      => $data['status'],
+                'user'        => $bookingUser,
+                'guest_name'  => $data['guest_name'] ?? null,
+                'guest_phone' => $data['guest_phone'] ?? null,
+            ]);
+        } catch (\InvalidArgumentException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        $updated = $result['booking'];
+        if ($result['schedule_changed'] && $updated->user_id) {
+            app(\App\Services\UserNotificationService::class)
+                ->createCourtBookingChangedNotification($updated->user_id, $updated->load('court.direction.location'));
+        }
+
+        return back()->with('success', __('club.booking_updated'));
+    }
+
+    public function cancel(Request $request, CourtBooking $booking, CourtBookingService $service)
+    {
+        $user = $request->user();
+        abort_unless($user, 403);
+
+        $data = $request->validate([
+            'reason' => ['nullable', 'string', 'max:500'],
+            'scope'  => ['nullable', Rule::in(['only_this', 'this_and_following'])],
+        ]);
+
+        $scope = ($data['scope'] ?? 'only_this') === 'this_and_following' ? 'this_and_following' : 'this';
+
+        try {
+            $cancelled = $service->cancel($booking, $user, $data['reason'] ?? null, $scope);
+        } catch (\InvalidArgumentException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        $notificationService = app(\App\Services\UserNotificationService::class);
+        foreach ($cancelled as $b) {
+            if ($b->user_id) {
+                $notificationService->createCourtBookingCancelledNotification($b->user_id, $b->load('court.direction.location'), $data['reason'] ?? null);
+            }
+        }
+
+        return back()->with('success', __('club.booking_cancelled'));
     }
 
     public function confirm(Request $request, CourtBooking $booking, CourtBookingService $service)

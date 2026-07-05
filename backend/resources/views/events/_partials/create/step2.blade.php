@@ -155,13 +155,7 @@
 										{{-- Цвет в таймлайне (только владелец локации, is_club_manager) --}}
 										<div id="timeline_color_block" class="mt-2" style="display:none">
 											<label>{{ __('club.timeline_color') }}</label>
-											<div class="d-flex gap-1" style="flex-wrap:wrap">
-												@foreach(['#4A9EFF','#34C759','#FFD60A','#E7612F','#AF52DE','#FF3B30','#5AC8FA','#8E8E93'] as $swatch)
-												<label class="color-swatch" style="background:{{ $swatch }}">
-													<input type="radio" name="timeline_color" value="{{ $swatch }}" @checked(old('timeline_color') === $swatch)>
-												</label>
-												@endforeach
-											</div>
+											@include('club._partials.color_palette', ['name' => 'timeline_color', 'selected' => old('timeline_color')])
 										</div>
 									</div>
 								</div>

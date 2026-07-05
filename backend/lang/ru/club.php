@@ -15,6 +15,9 @@ return [
     'court_default_name_beach'   => 'Корт :n',
 
     'court_name_label'   => 'Название',
+    'court_is_indoor'    => 'Крытый корт',
+    'indoor'             => 'Крытый',
+    'outdoor'            => 'Открытый',
     'opens_at'           => 'Открытие',
     'closes_at'          => 'Закрытие',
     'no_owner_option'    => '— без владельца —',
@@ -96,4 +99,28 @@ return [
     'trust_level_prepaid_only'  => 'Только предоплата',
     'trust_level_allow_on_site' => 'Оплата на месте разрешена',
     'trust_level_trusted'       => 'Полное доверие (без подтверждения)',
+
+    // === Название/цвет, повторение, редактирование/отмена брони (доработки после второго ручного теста) ===
+    'booking_title_label'       => 'Название',
+    'booking_title_placeholder' => 'Аренда корта',
+    'booking_color'             => 'Цвет в таймлайне',
+
+    'repeat_label'              => 'Повторение',
+    'repeat_none'               => 'Без повторения',
+    'repeat_daily'              => 'Каждый день',
+    'repeat_weekly'             => 'Каждую неделю',
+    'repeat_biweekly'           => 'Каждые 2 недели',
+    'repeat_until'              => 'Повторять до',
+    'repeat_until_too_far'      => 'Дата окончания повторения не может быть больше чем через 3 месяца.',
+    'booking_series_created'    => 'Создано броней: :count.',
+    'skipped_dates'             => 'Пропущены занятые даты: :dates.',
+
+    'edit_booking'              => 'Редактировать',
+    'copy_booking'              => 'Копировать',
+    'cancel_booking'            => 'Отменить бронь',
+    'cancel_reason'             => 'Причина отмены',
+    'only_this'                 => 'Только эту',
+    'this_and_following'        => 'Эту и все последующие',
+    'booking_updated'           => 'Бронь обновлена',
+    'booking_cancelled'         => 'Бронь отменена',
 ];

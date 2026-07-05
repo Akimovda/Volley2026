@@ -15,6 +15,9 @@ return [
     'court_default_name_beach'   => 'Court :n',
 
     'court_name_label'   => 'Name',
+    'court_is_indoor'    => 'Indoor court',
+    'indoor'             => 'Indoor',
+    'outdoor'            => 'Outdoor',
     'opens_at'           => 'Opens',
     'closes_at'          => 'Closes',
     'no_owner_option'    => '— no owner —',
@@ -96,4 +99,28 @@ return [
     'trust_level_prepaid_only'  => 'Prepayment only',
     'trust_level_allow_on_site' => 'On-site payment allowed',
     'trust_level_trusted'       => 'Fully trusted (no confirmation needed)',
+
+    // === Title/color, recurrence, edit/cancel (post second manual-test fixes) ===
+    'booking_title_label'       => 'Title',
+    'booking_title_placeholder' => 'Court rental',
+    'booking_color'             => 'Timeline color',
+
+    'repeat_label'              => 'Repeat',
+    'repeat_none'               => 'No repeat',
+    'repeat_daily'              => 'Every day',
+    'repeat_weekly'             => 'Every week',
+    'repeat_biweekly'           => 'Every 2 weeks',
+    'repeat_until'              => 'Repeat until',
+    'repeat_until_too_far'      => 'The repeat end date cannot be more than 3 months away.',
+    'booking_series_created'    => 'Bookings created: :count.',
+    'skipped_dates'             => 'Skipped already-booked dates: :dates.',
+
+    'edit_booking'              => 'Edit',
+    'copy_booking'              => 'Copy',
+    'cancel_booking'            => 'Cancel booking',
+    'cancel_reason'             => 'Cancellation reason',
+    'only_this'                 => 'Only this one',
+    'this_and_following'        => 'This and all following',
+    'booking_updated'           => 'Booking updated',
+    'booking_cancelled'         => 'Booking cancelled',
 ];

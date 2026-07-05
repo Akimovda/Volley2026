@@ -2690,6 +2690,12 @@ function recalcPlayers() {
 		return startsAtEl.value.split('T')[0];
 	}
 
+	function desiredTime() {
+		if (!startsAtEl || !startsAtEl.value) return '';
+		var parts = startsAtEl.value.split('T');
+		return parts.length > 1 ? parts[1].slice(0, 5) : '';
+	}
+
 	function todayStr() {
 		var d = new Date();
 		var m = String(d.getMonth() + 1).padStart(2, '0');
@@ -2721,6 +2727,9 @@ function recalcPlayers() {
 		emptyEl.style.display = hasAny ? 'none' : '';
 		if (!hasAny) return;
 
+		var wantedTime = desiredTime();
+		var matchBtn = null;
+
 		courts.forEach(function (court) {
 			var courtSlots = slots[court.id] || [];
 			if (!courtSlots.length) return;
@@ -2730,7 +2739,7 @@ function recalcPlayers() {
 
 			var title = document.createElement('div');
 			title.className = 'b-600 f-16 mb-1';
-			title.textContent = courtLabel + ': ' + court.name;
+			title.textContent = (court.is_indoor ? '🏠 ' : '☀️ ') + courtLabel + ': ' + court.name;
 			courtBlock.appendChild(title);
 
 			var btnsWrap = document.createElement('div');
@@ -2757,11 +2766,15 @@ function recalcPlayers() {
 					}
 				});
 				btnsWrap.appendChild(btn);
+
+				if (!matchBtn && wantedTime && slot.start === wantedTime) matchBtn = btn;
 			});
 
 			courtBlock.appendChild(btnsWrap);
 			gridEl.appendChild(courtBlock);
 		});
+
+		if (matchBtn) matchBtn.click();
 	}
 
 	function refresh() {

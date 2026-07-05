@@ -62,6 +62,8 @@ class CourtBookingService
      * Ручное добавление брони владельцем локации/админом — статус выбирается сразу
      * (confirmed/paid), payment_mode всегда on_site, TTL не применяется. Клиент —
      * либо пользователь платформы (user), либо гость (guestName/guestPhone) — ровно один из двух.
+     *
+     * @param array{title?: ?string, color?: ?string, parent_booking_id?: ?int} $extra
      */
     public function createManual(
         LocationCourt $court,
@@ -71,6 +73,7 @@ class CourtBookingService
         ?string $guestName,
         ?string $guestPhone,
         string $status,
+        array $extra = [],
     ): CourtBooking {
         if (!$user && empty($guestName)) {
             throw new InvalidArgumentException('Укажите пользователя платформы или имя гостя.');
@@ -87,20 +90,202 @@ class CourtBookingService
         $priceTotal = $this->pricingService->calculate($court, $startsAt, $endsAt);
 
         return $this->insertBooking($court, $startsAt, $endsAt, [
-            'court_id'      => $court->id,
-            'user_id'       => $user?->id,
-            'guest_name'    => $user ? null : $guestName,
-            'guest_phone'   => $user ? null : $guestPhone,
-            'event_id'      => null,
-            'occurrence_id' => null,
-            'starts_at'     => $startsAt,
-            'ends_at'       => $endsAt,
-            'status'        => $status,
-            'price_total'   => $priceTotal,
-            'payment_mode'  => CourtBooking::PAYMENT_MODE_ON_SITE,
-            'expires_at'    => null,
-            'cancelled_by'  => null,
+            'court_id'           => $court->id,
+            'user_id'            => $user?->id,
+            'guest_name'         => $user ? null : $guestName,
+            'guest_phone'        => $user ? null : $guestPhone,
+            'title'              => $extra['title'] ?? null,
+            'color'              => $extra['color'] ?? null,
+            'parent_booking_id'  => $extra['parent_booking_id'] ?? null,
+            'event_id'           => null,
+            'occurrence_id'      => null,
+            'starts_at'          => $startsAt,
+            'ends_at'            => $endsAt,
+            'status'             => $status,
+            'price_total'        => $priceTotal,
+            'payment_mode'       => CourtBooking::PAYMENT_MODE_ON_SITE,
+            'expires_at'         => null,
+            'cancelled_by'       => null,
         ], notify: false);
+    }
+
+    /**
+     * Серия повторяющихся ручных броней: первая создаётся как обычно и становится
+     * "родителем" (parent_booking_id), остальные привязываются к ней. Дата, занятая
+     * пересекающейся бронью, просто пропускается (не прерывает всю серию).
+     *
+     * @param array{title?: ?string, color?: ?string} $extra
+     * @return array{created: CourtBooking[], skipped: string[]}
+     */
+    public function createManualSeries(
+        LocationCourt $court,
+        Carbon $firstStartsAt,
+        Carbon $firstEndsAt,
+        ?User $user,
+        ?string $guestName,
+        ?string $guestPhone,
+        string $status,
+        array $extra,
+        string $repeat,
+        Carbon $repeatUntil,
+    ): array {
+        $durationMinutes = $firstStartsAt->diffInMinutes($firstEndsAt);
+
+        $starts = [$firstStartsAt->copy()];
+        $cursor = $firstStartsAt->copy();
+        while (true) {
+            $cursor = match ($repeat) {
+                CourtBooking::REPEAT_DAILY => $cursor->copy()->addDay(),
+                CourtBooking::REPEAT_WEEKLY => $cursor->copy()->addWeek(),
+                CourtBooking::REPEAT_BIWEEKLY => $cursor->copy()->addWeeks(2),
+                default => null,
+            };
+            if (!$cursor || $cursor->gt($repeatUntil)) {
+                break;
+            }
+            $starts[] = $cursor->copy();
+        }
+
+        $created = [];
+        $skipped = [];
+        $parentId = null;
+
+        foreach ($starts as $startsAt) {
+            $endsAt = $startsAt->copy()->addMinutes($durationMinutes);
+
+            try {
+                $booking = $this->createManual(
+                    $court, $startsAt, $endsAt, $user, $guestName, $guestPhone, $status,
+                    array_merge($extra, ['parent_booking_id' => $parentId])
+                );
+                $created[] = $booking;
+                $parentId ??= $booking->id;
+            } catch (InvalidArgumentException $e) {
+                $skipped[] = $startsAt->copy()->setTimezone($court->direction->location->effectiveTimezone())->format('d.m.Y H:i');
+            }
+        }
+
+        return ['created' => $created, 'skipped' => $skipped];
+    }
+
+    /**
+     * Редактирование ручной/платформенной брони владельцем локации/админом.
+     * Пересечения проверяются с исключением самой брони.
+     *
+     * @param array{court_id?: int, starts_at?: Carbon, ends_at?: Carbon, title?: ?string,
+     *              color?: ?string, status?: string, user?: ?User, guest_name?: ?string, guest_phone?: ?string} $data
+     * @return array{booking: CourtBooking, schedule_changed: bool}
+     */
+    public function update(CourtBooking $booking, User $clubOwner, array $data): array
+    {
+        $this->assertCanManage($booking, $clubOwner);
+
+        $court = isset($data['court_id']) && $data['court_id'] !== $booking->court_id
+            ? LocationCourt::with('direction.location')->findOrFail($data['court_id'])
+            : ($booking->relationLoaded('court') ? $booking->court : $booking->court()->with('direction.location')->first());
+
+        if ((int) $court->id !== (int) $booking->court_id) {
+            $this->assertCanManageCourt($court, $clubOwner);
+        }
+
+        $startsAt = $data['starts_at'] ?? $booking->starts_at;
+        $endsAt = $data['ends_at'] ?? $booking->ends_at;
+
+        $this->validateBookingWindow($court, $startsAt, $endsAt);
+
+        $scheduleChanged = (int) $court->id !== (int) $booking->court_id
+            || !$startsAt->equalTo($booking->starts_at)
+            || !$endsAt->equalTo($booking->ends_at);
+
+        $user = array_key_exists('user', $data) ? $data['user'] : $booking->user;
+        $guestName = array_key_exists('guest_name', $data) ? $data['guest_name'] : $booking->guest_name;
+        $guestPhone = array_key_exists('guest_phone', $data) ? $data['guest_phone'] : $booking->guest_phone;
+
+        if (!$user && empty($guestName)) {
+            throw new InvalidArgumentException('Укажите пользователя платформы или имя гостя.');
+        }
+        if ($user && !empty($guestName)) {
+            throw new InvalidArgumentException('Нельзя одновременно указать пользователя и гостя.');
+        }
+
+        $status = $data['status'] ?? $booking->status;
+        if (!in_array($status, [CourtBooking::STATUS_CONFIRMED, CourtBooking::STATUS_PAID], true)) {
+            throw new InvalidArgumentException('Недопустимый статус брони.');
+        }
+
+        $priceTotal = $this->pricingService->calculate($court, $startsAt, $endsAt);
+
+        DB::transaction(function () use ($booking, $court, $startsAt, $endsAt, $data, $user, $guestName, $guestPhone, $status, $priceTotal) {
+            LocationCourt::where('id', $court->id)->lockForUpdate()->first();
+
+            $overlapping = CourtBooking::where('court_id', $court->id)
+                ->where('id', '!=', $booking->id)
+                ->active()
+                ->where('starts_at', '<', $endsAt)
+                ->where('ends_at', '>', $startsAt)
+                ->exists();
+
+            if ($overlapping) {
+                throw new InvalidArgumentException('Этот корт уже забронирован на выбранное время.');
+            }
+
+            $booking->court_id = $court->id;
+            $booking->starts_at = $startsAt;
+            $booking->ends_at = $endsAt;
+            $booking->status = $status;
+            $booking->price_total = $priceTotal;
+            $booking->user_id = $user?->id;
+            $booking->guest_name = $user ? null : $guestName;
+            $booking->guest_phone = $user ? null : $guestPhone;
+            if (array_key_exists('title', $data)) {
+                $booking->title = $data['title'];
+            }
+            if (array_key_exists('color', $data)) {
+                $booking->color = $data['color'];
+            }
+            $booking->save();
+        });
+
+        return ['booking' => $booking->fresh(), 'schedule_changed' => $scheduleChanged];
+    }
+
+    /**
+     * Отмена брони владельцем локации/админом. scope='this' — только эта бронь;
+     * scope='this_and_following' — эта и все последующие брони той же серии
+     * (parent_booking_id === корень серии, starts_at >= этой брони).
+     *
+     * @return CourtBooking[] отменённые брони (для рассылки уведомлений арендаторам)
+     */
+    public function cancel(CourtBooking $booking, User $clubOwner, ?string $reason, string $scope = 'this'): array
+    {
+        $this->assertCanManage($booking, $clubOwner);
+
+        if (!in_array($booking->status, CourtBooking::ACTIVE_STATUSES, true)) {
+            throw new InvalidArgumentException('Эту бронь нельзя отменить.');
+        }
+
+        $toCancel = collect([$booking]);
+
+        if ($scope === 'this_and_following') {
+            $rootId = $booking->seriesRootId();
+            $toCancel = CourtBooking::where(function ($q) use ($rootId) {
+                $q->where('id', $rootId)->orWhere('parent_booking_id', $rootId);
+            })
+                ->active()
+                ->where('starts_at', '>=', $booking->starts_at)
+                ->get();
+        }
+
+        DB::transaction(function () use ($toCancel, $reason) {
+            foreach ($toCancel as $b) {
+                $b->status = CourtBooking::STATUS_CANCELLED;
+                $b->cancelled_by = 'club';
+                $b->cancel_reason = $reason;
+                $b->save();
+            }
+        });
+
+        return $toCancel->all();
     }
 
     /**

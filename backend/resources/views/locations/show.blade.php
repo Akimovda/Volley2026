@@ -201,6 +201,7 @@
         @endphp
         @if($canManageTimeline)
         @include('club._partials.booking_modal', ['locations' => $bookingModalLocations])
+        @include('club._partials.booking_details_modal')
         <div class="ramka" id="timelineSection">
             <div class="d-flex between fvc mb-2" style="flex-wrap:wrap;gap:10px">
                 <h2 class="-mt-05" style="margin:0">{{ __('club.timeline') }}</h2>
@@ -675,7 +676,7 @@
 
                                 const header = document.createElement('div');
                                 header.className = 'timeline-court-header';
-                                header.textContent = court.name;
+                                header.textContent = (court.is_indoor ? '🏠 ' : '☀️ ') + court.name;
                                 col.appendChild(header);
 
                                 const body = document.createElement('div');
@@ -697,6 +698,34 @@
                                         : (slot.organizer || '');
                                     block.innerHTML = '<div class="timeline-event-title">' + (slot.title || '') + '</div>' +
                                         '<div class="timeline-event-meta">' + slot.starts_at + '–' + slot.ends_at + (metaLabel ? ' · ' + metaLabel : '') + '</div>';
+
+                                    if (isBooking && typeof window.__openBookingDetails === 'function') {
+                                        block.style.cursor = 'pointer';
+                                        block.addEventListener('click', function () {
+                                            window.__openBookingDetails({
+                                                id: slot.booking_id,
+                                                court_id: slot.court_id,
+                                                direction_id: slot.direction_id,
+                                                date: slot.date,
+                                                time_from: slot.starts_at,
+                                                time_to: slot.ends_at,
+                                                title: slot.raw_title,
+                                                color: slot.raw_color,
+                                                is_guest: slot.is_guest,
+                                                organizer_id: slot.organizer_id,
+                                                organizer_label: slot.organizer,
+                                                guest_name: slot.guest_name,
+                                                guest_phone: slot.guest_phone,
+                                                booker_name: slot.booker_name,
+                                                status: slot.status,
+                                                price_total: slot.price_total,
+                                                court_name: slot.court_name,
+                                                parent_booking_id: slot.parent_booking_id,
+                                                is_series: slot.is_series,
+                                            });
+                                        });
+                                    }
+
                                     body.appendChild(block);
                                 });
 

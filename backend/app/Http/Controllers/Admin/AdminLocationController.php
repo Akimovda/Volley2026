@@ -173,6 +173,8 @@ public function update(Request $request, Location $location)
             'directions.*.courts_count'            => ['nullable', 'integer', 'min:1', 'max:20'],
             'directions.*.court_names'             => ['nullable', 'array'],
             'directions.*.court_names.*'           => ['nullable', 'string', 'max:100'],
+            'directions.*.court_indoor'             => ['nullable', 'array'],
+            'directions.*.court_indoor.*'           => ['nullable', 'boolean'],
             'directions.*.hours'                   => ['nullable', 'array'],
             'directions.*.hours.*.opens_at'        => ['nullable', 'date_format:H:i'],
             'directions.*.hours.*.closes_at'       => ['nullable', 'date_format:H:i'],
@@ -206,21 +208,25 @@ public function update(Request $request, Location $location)
 
                 // Корты: upsert по порядковому номеру (sort_order = 1..N)
                 $courtNames = $input['court_names'] ?? [];
+                $courtIndoor = $input['court_indoor'] ?? [];
                 $existingCourts = $direction->courts()->orderBy('sort_order')->get()->keyBy('sort_order');
 
                 for ($i = 1; $i <= $courtsCount; $i++) {
                     $name = trim((string) ($courtNames[$i - 1] ?? ''))
                         ?: __('club.court_default_name_' . $directionKey, ['n' => $i]);
+                    $isIndoor = (bool) ($courtIndoor[$i - 1] ?? false);
 
                     $court = $existingCourts->get($i);
                     if ($court) {
                         $court->name = $name;
+                        $court->is_indoor = $isIndoor;
                         $court->is_active = true;
                         $court->save();
                     } else {
                         LocationCourt::create([
                             'direction_id' => $direction->id,
                             'name'         => $name,
+                            'is_indoor'    => $isIndoor,
                             'sort_order'   => $i,
                             'is_active'    => true,
                         ]);

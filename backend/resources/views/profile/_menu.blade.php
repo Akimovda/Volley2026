@@ -233,6 +233,16 @@
                         <span class="menu-text">{{ __('profile.menu_org_staff_logs') }}</span>
                     @endif
                 </a>
+                @if($menuUser->is_club_manager && $menuUser->ownedLocations()->exists())
+                <a href="{{ route('club.bookings.index') }}"
+                   class="menu-item {{ $activeMenu === 'club_bookings' ? 'active' : '' }}">
+                    @if($activeMenu === 'club_bookings')
+                        <strong class="cd menu-text">🏟️ {{ __('club.bookings_title') }}</strong>
+                    @else
+                        <span class="menu-text">🏟️ {{ __('club.bookings_title') }}</span>
+                    @endif
+                </a>
+                @endif
 
                 @php
                     $mySchool = \App\Models\VolleyballSchool::where('organizer_id', $menuUser->id)->first();

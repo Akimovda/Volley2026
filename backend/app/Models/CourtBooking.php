@@ -20,11 +20,19 @@ class CourtBooking extends Model
     public const PAYMENT_MODE_ON_SITE = 'on_site';
     public const PAYMENT_MODE_TRUSTED = 'trusted';
 
+    public const REPEAT_NONE = 'none';
+    public const REPEAT_DAILY = 'daily';
+    public const REPEAT_WEEKLY = 'weekly';
+    public const REPEAT_BIWEEKLY = 'biweekly';
+    public const REPEAT_OPTIONS = [self::REPEAT_DAILY, self::REPEAT_WEEKLY, self::REPEAT_BIWEEKLY];
+
     protected $fillable = [
         'court_id',
         'user_id',
         'guest_name',
         'guest_phone',
+        'title',
+        'color',
         'event_id',
         'occurrence_id',
         'starts_at',
@@ -35,6 +43,7 @@ class CourtBooking extends Model
         'expires_at',
         'cancelled_by',
         'cancel_reason',
+        'parent_booking_id',
     ];
 
     protected $casts = [
@@ -62,6 +71,19 @@ class CourtBooking extends Model
     public function occurrence(): BelongsTo
     {
         return $this->belongsTo(EventOccurrence::class, 'occurrence_id');
+    }
+
+    public function parentBooking(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'parent_booking_id');
+    }
+
+    /**
+     * ID корневой брони серии: сама бронь, если она родитель, иначе parent_booking_id.
+     */
+    public function seriesRootId(): int
+    {
+        return $this->parent_booking_id ?? $this->id;
     }
 
     public function scopeActive(Builder $q): Builder

@@ -4998,6 +4998,7 @@ body:not(.is-app) .native-actions {
 }
 .timeline-courts {
 	display: flex;
+	flex: 1 1 auto;
 	gap: 16px;
 	position: relative;
 }
@@ -5012,6 +5013,7 @@ body:not(.is-app) .native-actions {
 }
 .timeline-direction-group {
 	display: flex;
+	flex: 1 1 auto;
 	flex-direction: column;
 }
 .timeline-direction-label {
@@ -5028,8 +5030,8 @@ body:not(.is-app) .native-actions {
 	gap: 6px;
 }
 .timeline-court-col {
-	flex: 0 0 140px;
-	width: 140px;
+	flex: 1 1 140px;
+	width: auto;
 	min-width: 120px;
 }
 .timeline-court-header {

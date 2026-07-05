@@ -1,4 +1,4 @@
-{{-- Модалка "Добавить бронь" — переиспользуется на locations/show и club/bookings.
+{{-- Модалка "Добавить/редактировать/копировать бронь" — переиспользуется на locations/show и club/bookings.
      $locations: коллекция Location с eager-loaded directions.courts (is_active) --}}
 @php
 $locationsJs = $locations->map(function ($loc) {
@@ -9,7 +9,7 @@ $locationsJs = $locations->map(function ($loc) {
             return [
                 'id' => $dir->id,
                 'direction' => $dir->direction,
-                'courts' => $dir->courts->map(fn($c) => ['id' => $c->id, 'name' => $c->name])->values(),
+                'courts' => $dir->courts->map(fn($c) => ['id' => $c->id, 'name' => $c->name, 'is_indoor' => (bool) $c->is_indoor])->values(),
             ];
         })->values(),
     ];
@@ -18,14 +18,17 @@ $locationsJs = $locations->map(function ($loc) {
 
 <div id="addBookingModalContent" style="display:none; max-width: 42rem">
     <div class="card">
-        <h3 class="-mt-05">{{ __('club.add_booking') }}</h3>
+        <h3 class="-mt-05" id="abModalTitle">{{ __('club.add_booking') }}</h3>
 
         @if(session('error'))
         <div class="alert alert-error">{{ session('error') }}</div>
         @endif
 
-        <form method="POST" action="{{ route('club.bookings.storeManual') }}" class="form" id="addBookingForm">
+        <form method="POST" action="{{ route('club.bookings.storeManual') }}" class="form" id="addBookingForm"
+              data-store-url="{{ route('club.bookings.storeManual') }}"
+              data-update-url-template="{{ route('club.bookings.update', ['booking' => '__ID__']) }}">
             @csrf
+            <input type="hidden" name="_method" id="abMethod" value="">
 
             @if($locations->count() > 1)
             <div class="mb-2">
@@ -70,6 +73,16 @@ $locationsJs = $locations->map(function ($loc) {
             </div>
 
             <div class="mb-2">
+                <label>{{ __('club.booking_title_label') }}</label>
+                <input type="text" name="title" id="abTitle" maxlength="150" placeholder="{{ __('club.booking_title_placeholder') }}">
+            </div>
+
+            <div class="mb-2">
+                <label>{{ __('club.booking_color') }}</label>
+                @include('club._partials.color_palette', ['name' => 'color', 'selected' => null, 'inputId' => 'abColor'])
+            </div>
+
+            <div class="mb-2">
                 <label class="b-600 d-block mb-1">{{ __('club.client') }}</label>
                 <div class="d-flex gap-1 mb-1">
                     <label class="d-flex fvc gap-1">
@@ -103,7 +116,21 @@ $locationsJs = $locations->map(function ($loc) {
                 </select>
             </div>
 
-            <button type="submit" class="btn btn-primary w-100">{{ __('admin.btn_save_changes') }}</button>
+            <div class="mb-2" id="abRepeatBlock">
+                <label>{{ __('club.repeat_label') }}</label>
+                <select name="repeat" id="abRepeat">
+                    <option value="none">{{ __('club.repeat_none') }}</option>
+                    <option value="daily">{{ __('club.repeat_daily') }}</option>
+                    <option value="weekly">{{ __('club.repeat_weekly') }}</option>
+                    <option value="biweekly">{{ __('club.repeat_biweekly') }}</option>
+                </select>
+            </div>
+            <div class="mb-2" id="abRepeatUntilWrap" style="display:none">
+                <label>{{ __('club.repeat_until') }}</label>
+                <input type="date" name="repeat_until" id="abRepeatUntil">
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100" id="abSubmitBtn">{{ __('admin.btn_save_changes') }}</button>
         </form>
     </div>
 </div>
@@ -111,6 +138,10 @@ $locationsJs = $locations->map(function ($loc) {
 <script>
 (function () {
     const locations = @json($locationsJs);
+    const form = document.getElementById('addBookingForm');
+    const methodInput = document.getElementById('abMethod');
+    const modalTitle = document.getElementById('abModalTitle');
+    const submitBtn = document.getElementById('abSubmitBtn');
     const locSelect = document.getElementById('abLocationSelect');
     const dirSelect = document.getElementById('abDirectionSelect');
     const dirWrap = document.getElementById('abDirectionWrap');
@@ -118,6 +149,13 @@ $locationsJs = $locations->map(function ($loc) {
     const dateInput = document.getElementById('abDate');
     const timeFrom = document.getElementById('abTimeFrom');
     const timeTo = document.getElementById('abTimeTo');
+    const titleInput = document.getElementById('abTitle');
+    const repeatBlock = document.getElementById('abRepeatBlock');
+    const repeatSelect = document.getElementById('abRepeat');
+    const repeatUntilWrap = document.getElementById('abRepeatUntilWrap');
+    const repeatUntilInput = document.getElementById('abRepeatUntil');
+    const storeUrl = form.getAttribute('data-store-url');
+    const updateUrlTemplate = form.getAttribute('data-update-url-template');
     const directionLabels = {
         classic: @json(__('club.direction_classic')),
         beach: @json(__('club.direction_beach')),
@@ -143,7 +181,16 @@ $locationsJs = $locations->map(function ($loc) {
         return locations.find(l => l.id === id) || locations[0] || null;
     }
 
-    function fillDirections() {
+    function findLocationByCourtId(courtId) {
+        for (const loc of locations) {
+            for (const dir of loc.directions) {
+                if (dir.courts.some(c => c.id === courtId)) return { loc, dir };
+            }
+        }
+        return null;
+    }
+
+    function fillDirections(preselectDirId) {
         const loc = currentLocation();
         dirSelect.innerHTML = '';
         if (!loc) return;
@@ -154,10 +201,11 @@ $locationsJs = $locations->map(function ($loc) {
             dirSelect.appendChild(opt);
         });
         dirWrap.style.display = loc.directions.length > 1 ? '' : 'none';
+        if (preselectDirId) dirSelect.value = String(preselectDirId);
         fillCourts();
     }
 
-    function fillCourts() {
+    function fillCourts(preselectCourtId) {
         const loc = currentLocation();
         courtSelect.innerHTML = '';
         if (!loc) return;
@@ -167,17 +215,35 @@ $locationsJs = $locations->map(function ($loc) {
         dir.courts.forEach(c => {
             const opt = document.createElement('option');
             opt.value = c.id;
-            opt.textContent = c.name;
+            opt.textContent = (c.is_indoor ? '🏠 ' : '☀️ ') + c.name;
             courtSelect.appendChild(opt);
         });
+        if (preselectCourtId) courtSelect.value = String(preselectCourtId);
     }
 
-    if (locSelect) locSelect.addEventListener('change', fillDirections);
-    dirSelect.addEventListener('change', fillCourts);
+    if (locSelect) locSelect.addEventListener('change', function () { fillDirections(); });
+    dirSelect.addEventListener('change', function () { fillCourts(); });
     fillDirections();
 
-    const today = new Date();
-    dateInput.value = today.toISOString().slice(0, 10);
+    function todayStr() {
+        const d = new Date();
+        return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+    dateInput.value = todayStr();
+
+    function updateRepeatUntilMax() {
+        if (!dateInput.value) return;
+        const d = new Date(dateInput.value + 'T00:00:00');
+        d.setMonth(d.getMonth() + 3);
+        repeatUntilInput.max = d.toISOString().slice(0, 10);
+        repeatUntilInput.min = dateInput.value;
+    }
+    dateInput.addEventListener('change', updateRepeatUntilMax);
+    updateRepeatUntilMax();
+
+    repeatSelect.addEventListener('change', function () {
+        repeatUntilWrap.style.display = repeatSelect.value === 'none' ? 'none' : '';
+    });
 
     // Переключатель "пользователь платформы" / "гость"
     const userBlock = document.getElementById('abUserBlock');
@@ -247,13 +313,104 @@ $locationsJs = $locations->map(function ($loc) {
         if (userBlock && !userBlock.contains(e.target)) hideDd();
     });
 
-    window.__openAddBookingModal = function (presetDate) {
-        if (presetDate) dateInput.value = presetDate;
+    function resetFormDefaults() {
+        form.reset();
+        dateInput.value = todayStr();
+        timeTo.value = '10:00';
+        methodInput.value = '';
+        fillDirections();
+        updateClientKind();
+        repeatUntilWrap.style.display = 'none';
+        updateRepeatUntilMax();
+    }
+
+    function openModal() {
         jQuery.fancybox.open({
             src: '#addBookingModalContent',
             type: 'inline',
             opts: { hideScrollbar: false, touch: false, toolbar: false, smallBtn: true, animationEffect: 'zoom-in-out', transitionEffect: 'zoom-in-out', preventCaptionOverlap: false }
         });
+    }
+
+    /**
+     * mode: 'add' | 'edit' | 'copy'
+     * booking: null (чистое добавление) или объект с полями брони (см. TimelineService::fetchCourtBookingSlots
+     * и club/bookings.blade.php renderBooking) — id, location_id, direction_id, court_id, date, time_from,
+     * time_to, title, color, client_kind, organizer_id, organizer_label, guest_name, guest_phone, status.
+     */
+    window.__openBookingModal = function (mode, booking) {
+        resetFormDefaults();
+
+        if (mode === 'edit') {
+            modalTitle.textContent = @json(__('club.edit_booking'));
+            submitBtn.textContent = @json(__('admin.btn_save_changes'));
+            methodInput.value = 'PUT';
+            form.setAttribute('action', updateUrlTemplate.replace('__ID__', booking.id));
+            repeatBlock.style.display = 'none';
+            repeatUntilWrap.style.display = 'none';
+        } else if (mode === 'copy') {
+            modalTitle.textContent = @json(__('club.copy_booking'));
+            submitBtn.textContent = @json(__('club.add_booking'));
+            methodInput.value = '';
+            form.setAttribute('action', storeUrl);
+            repeatBlock.style.display = '';
+        } else {
+            modalTitle.textContent = @json(__('club.add_booking'));
+            submitBtn.textContent = @json(__('admin.btn_save_changes'));
+            methodInput.value = '';
+            form.setAttribute('action', storeUrl);
+            repeatBlock.style.display = '';
+        }
+
+        if (!booking) {
+            openModal();
+            return;
+        }
+
+        if (booking.court_id && locSelect) {
+            const found = findLocationByCourtId(booking.court_id);
+            if (found) locSelect.value = String(found.loc.id);
+        }
+        fillDirections(booking.direction_id);
+        fillCourts(booking.court_id);
+
+        if (mode !== 'copy' && booking.date) dateInput.value = booking.date;
+        if (booking.time_from) timeFrom.value = booking.time_from;
+        if (booking.time_to) timeTo.value = booking.time_to;
+        titleInput.value = booking.title || '';
+
+        if (booking.color) {
+            const colorRadio = form.querySelector('input[name="color"][value="' + booking.color + '"]');
+            if (colorRadio) colorRadio.checked = true;
+        }
+
+        if (booking.client_kind === 'guest' || booking.is_guest) {
+            clientGuest.checked = true;
+            document.getElementById('abGuestName').value = booking.guest_name || '';
+            document.getElementById('abGuestPhone').value = booking.guest_phone || '';
+        } else {
+            clientUser.checked = true;
+            uHidden.value = booking.organizer_id || '';
+            uInput.value = booking.organizer_label || booking.booker_name || '';
+        }
+        updateClientKind();
+
+        if (booking.status) document.getElementById('abStatus').value = booking.status;
+
+        updateRepeatUntilMax();
+        openModal();
+    };
+
+    window.__openAddBookingModal = function (presetDate) {
+        window.__openBookingModal('add', presetDate ? { date: presetDate } : null);
+    };
+
+    window.__openBookingModalForEdit = function (booking) {
+        window.__openBookingModal('edit', booking);
+    };
+
+    window.__openBookingModalForCopy = function (booking) {
+        window.__openBookingModal('copy', booking);
     };
 })();
 </script>

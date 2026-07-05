@@ -44,9 +44,10 @@ class TimelineService
             $courts = [];
             foreach ($dir->courts as $court) {
                 $courts[] = [
-                    'id'    => $court->id,
-                    'name'  => $court->name,
-                    'slots' => $this->occupiedSlots($location, $court, $date),
+                    'id'        => $court->id,
+                    'name'      => $court->name,
+                    'is_indoor' => (bool) $court->is_indoor,
+                    'slots'     => $this->occupiedSlots($location, $court, $date),
                 ];
             }
 
@@ -122,23 +123,41 @@ class TimelineService
             ->with('user')
             ->get();
 
+        $rootIds = $bookings->map(fn ($b) => $b->seriesRootId())->unique()->values();
+        $seriesRootIds = $rootIds->isEmpty() ? collect() : CourtBooking::whereIn('parent_booking_id', $rootIds)
+            ->select('parent_booking_id')->distinct()->pluck('parent_booking_id');
+
         $slots = [];
         foreach ($bookings as $booking) {
             $s = Carbon::parse($booking->getRawOriginal('starts_at'), 'UTC')->setTimezone($tz);
             $e = Carbon::parse($booking->getRawOriginal('ends_at'), 'UTC')->setTimezone($tz);
 
             $bookerName = $booking->booker_name;
+            $displayTitle = $booking->title ?: ($bookerName !== '—' ? $bookerName : __('club.booking_by'));
 
             $slots[] = [
-                'type'          => 'booking',
-                'court_id'      => $court->id,
-                'booking_id'    => $booking->id,
-                'title'         => $bookerName !== '—' ? $bookerName : __('club.booking_by'),
-                'starts_at'     => $s->format('H:i'),
-                'ends_at'       => $e->format('H:i'),
-                'color'         => $statusColors[$booking->status] ?? '#8E8E93',
-                'status'        => $booking->status,
-                'organizer'     => $bookerName !== '—' ? $bookerName : null,
+                'type'               => 'booking',
+                'court_id'           => $court->id,
+                'direction_id'       => $court->direction_id,
+                'booking_id'         => $booking->id,
+                'title'              => $displayTitle,
+                'raw_title'          => $booking->title,
+                'starts_at'          => $s->format('H:i'),
+                'ends_at'            => $e->format('H:i'),
+                'date'               => $s->toDateString(),
+                'color'              => $booking->color ?: ($statusColors[$booking->status] ?? '#8E8E93'),
+                'raw_color'          => $booking->color,
+                'status'             => $booking->status,
+                'organizer'          => $bookerName !== '—' ? $bookerName : null,
+                'booker_name'        => $bookerName,
+                'organizer_id'       => $booking->user_id,
+                'is_guest'           => $booking->isGuestBooking(),
+                'guest_name'         => $booking->guest_name,
+                'guest_phone'        => $booking->guest_phone,
+                'price_total'        => $booking->price_total,
+                'court_name'         => $court->name,
+                'parent_booking_id'  => $booking->parent_booking_id,
+                'is_series'          => $booking->parent_booking_id !== null || $seriesRootIds->contains($booking->id),
             ];
         }
 

@@ -126,6 +126,7 @@
 						var directionKey = block.getAttribute('data-direction');
 						var defaultLabelTpl = namesWrap.getAttribute('data-default-label');
 						var nameLabel = namesWrap.getAttribute('data-name-label');
+						var indoorLabel = namesWrap.getAttribute('data-indoor-label');
 
 						countSelect.addEventListener('change', function () {
 							var target = parseInt(countSelect.value, 10) || 1;
@@ -139,6 +140,11 @@
 									col.innerHTML = '<div class="card">' +
 										'<label>' + nameLabel + ' ' + i + '</label>' +
 										'<input type="text" name="directions[' + directionKey + '][court_names][]" value="' + defaultName + '" maxlength="100">' +
+										'<input type="hidden" name="directions[' + directionKey + '][court_indoor][' + (i - 1) + ']" value="0">' +
+										'<label class="d-flex fvc gap-1 mt-1 f-14">' +
+										'<input type="checkbox" name="directions[' + directionKey + '][court_indoor][' + (i - 1) + ']" value="1">' +
+										indoorLabel +
+										'</label>' +
 										'</div>';
 									namesWrap.appendChild(col);
 								}
@@ -520,6 +526,7 @@
                 $isEnabled = old("directions.$directionKey.enabled", $dir?->is_active ? '1' : '') ? true : false;
                 $courtsCount = old("directions.$directionKey.courts_count", $dir->courts_count ?? 1);
                 $courtNames = $dir ? $dir->courts->pluck('name')->values()->all() : [];
+                $courtIndoor = $dir ? $dir->courts->pluck('is_indoor')->values()->all() : [];
                 $hoursByDay = $dir ? $dir->workingHours->keyBy('day_of_week') : collect();
                 @endphp
                 <div class="card mb-2 direction-block" data-direction="{{ $directionKey }}">
@@ -544,7 +551,8 @@
 
                         <div class="court-names-wrap row mt-1"
                              data-default-label="{{ __('club.court_default_name_' . $directionKey, ['n' => '__N__']) }}"
-                             data-name-label="{{ __('club.court_name_label') }}">
+                             data-name-label="{{ __('club.court_name_label') }}"
+                             data-indoor-label="{{ __('club.court_is_indoor') }}">
                             @for($i = 1; $i <= (int) $courtsCount; $i++)
                             <div class="col-md-4 court-name-item">
                                 <div class="card">
@@ -552,6 +560,12 @@
                                     <input type="text" name="directions[{{ $directionKey }}][court_names][]"
                                            value="{{ old('directions.' . $directionKey . '.court_names.' . ($i - 1), $courtNames[$i - 1] ?? __('club.court_default_name_' . $directionKey, ['n' => $i])) }}"
                                            maxlength="100">
+                                    <input type="hidden" name="directions[{{ $directionKey }}][court_indoor][{{ $i - 1 }}]" value="0">
+                                    <label class="d-flex fvc gap-1 mt-1 f-14">
+                                        <input type="checkbox" name="directions[{{ $directionKey }}][court_indoor][{{ $i - 1 }}]" value="1"
+                                               @checked(old('directions.' . $directionKey . '.court_indoor.' . ($i - 1), $courtIndoor[$i - 1] ?? false))>
+                                        {{ __('club.court_is_indoor') }}
+                                    </label>
                                 </div>
                             </div>
                             @endfor

@@ -150,6 +150,10 @@ Route::get('/logout', fn () => redirect('/'));
 			->name('club.bookings.confirm');
 		Route::post('/club/bookings/{booking}/reject', [\App\Http\Controllers\ClubBookingController::class, 'reject'])
 			->name('club.bookings.reject');
+		Route::put('/club/bookings/{booking}', [\App\Http\Controllers\ClubBookingController::class, 'update'])
+			->name('club.bookings.update');
+		Route::post('/club/bookings/{booking}/cancel', [\App\Http\Controllers\ClubBookingController::class, 'cancel'])
+			->name('club.bookings.cancel');
 	});
 
 	/*
