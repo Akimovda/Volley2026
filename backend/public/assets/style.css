@@ -5254,3 +5254,13 @@ body.dark .podium-bar {
 	.podium-silver .podium-bar { height: 56px; }
 	.podium-bronze .podium-bar { height: 40px; }
 }
+
+/* ===== Club module: модалка "Добавить/редактировать бронь" — шире на десктопе ===== */
+.booking-modal-content {
+	max-width: 42rem;
+}
+@media (min-width: 992px) {
+	.booking-modal-content {
+		max-width: 68rem;
+	}
+}

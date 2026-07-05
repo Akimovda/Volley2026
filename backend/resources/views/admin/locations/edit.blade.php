@@ -297,6 +297,18 @@
 
 						row.appendChild(rowInner);
 						wrap.appendChild(row);
+
+						// Обычный createElement('select') не превращается в кастомный дропдаун
+						// сам по себе — глобальный CSS безусловно прячет ЛЮБОЙ .form select
+						// (@media (hover:hover) { .form select { clip: rect(0,0,0,0); ... } }),
+						// рассчитывая на то, что рядом появится обёртка createCustomSelect().
+						// Без явного вызова здесь селекты корта/дней были бы схлопнуты в 1px.
+						if (window.jQuery && typeof window.createCustomSelect === 'function') {
+							[courtSelect, daySelect].forEach(function (sel) {
+								window.createCustomSelect(jQuery(sel));
+								jQuery(sel).data('custom-initialized', true);
+							});
+						}
 					}
 
 					existing.forEach(function (rule) { addRow(rule); });

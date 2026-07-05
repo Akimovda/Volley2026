@@ -16,7 +16,7 @@ $locationsJs = $locations->map(function ($loc) {
 })->values();
 @endphp
 
-<div id="addBookingModalContent" style="display:none; max-width: 42rem">
+<div id="addBookingModalContent" class="booking-modal-content" style="display:none">
     <div class="card" style="height:auto;max-height:80vh;overflow-y:auto">
         <h3 class="-mt-05" id="abModalTitle">{{ __('club.add_booking') }}</h3>
 
@@ -253,15 +253,22 @@ $locationsJs = $locations->map(function ($loc) {
             opt.textContent = label;
             courtSelect.appendChild(opt);
 
+            // .checkbox-item — установленный в проекте паттерн (см. payment/settings.blade.php):
+            // сам <input type="checkbox"> скрыт правилом `.form .checkbox-item input { display:none }`,
+            // видимый квадратик рисует СОСЕДНИЙ <div class="custom-checkbox"> через :checked ~ селектор.
+            // Без этого div чекбокс есть в DOM и работает, но абсолютно не виден.
             const cbLabel = document.createElement('label');
-            cbLabel.className = 'd-flex fvc gap-1 checkbox-item';
+            cbLabel.className = 'checkbox-item';
             const cb = document.createElement('input');
             cb.type = 'checkbox';
             cb.name = 'court_ids[]';
             cb.value = String(c.id);
             if (preselectCourtId && c.id === preselectCourtId) cb.checked = true;
+            const customBox = document.createElement('div');
+            customBox.className = 'custom-checkbox';
             cbLabel.appendChild(cb);
-            cbLabel.appendChild(document.createTextNode(' ' + label));
+            cbLabel.appendChild(customBox);
+            cbLabel.appendChild(document.createTextNode(label));
             courtCheckboxes.appendChild(cbLabel);
         });
         if (preselectCourtId) courtSelect.value = String(preselectCourtId);
