@@ -124,7 +124,7 @@
 										@endif
 
 										{{-- Club module: бронирование корта через платформу --}}
-										<div id="club_booking_block" class="card mt-2" style="display:none"
+										<div id="club_booking_block" class="card mt-2" style="display:none;height:auto"
 						data-court-label="{{ __('club.court_label') }}"
 						data-price-label="{{ __('club.price_label') }}"
 						data-free-label="{{ __('club.price_free') }}"
@@ -144,6 +144,7 @@
 											<div id="club_booking_grid_wrap" style="display:none">
 												<div id="club_booking_loading" class="alert alert-info" style="display:none">{{ __('club.loading_slots') }}</div>
 												<div id="club_booking_empty" class="alert alert-info" style="display:none">{{ __('club.no_free_slots') }}</div>
+												<div id="club_booking_past" class="alert alert-info" style="display:none">{{ __('club.date_in_past') }}</div>
 												<div id="club_booking_grid"></div>
 												<div id="club_booking_selected" class="mt-2 f-16" style="display:none"></div>
 												<input type="hidden" name="court_id" id="booking_court_id">

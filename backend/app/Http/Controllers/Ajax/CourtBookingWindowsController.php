@@ -31,8 +31,14 @@ class CourtBookingWindowsController extends Controller
             return response()->json(['ok' => true, 'courts' => [], 'slots' => []]);
         }
 
-        $date = Carbon::parse($dateInput);
         $tz = $location->effectiveTimezone();
+        $date = Carbon::parse($dateInput, $tz);
+
+        if ($date->startOfDay()->lt(Carbon::now($tz)->startOfDay())) {
+            $courts = $directionModel->courts->map(fn ($c) => ['id' => $c->id, 'name' => $c->name])->values();
+            return response()->json(['ok' => true, 'is_past' => true, 'courts' => $courts, 'slots' => []]);
+        }
+
         $windows = $service->windowsForDuration($directionModel, $date, $durationMinutes);
 
         $courts = $directionModel->courts->map(fn ($c) => ['id' => $c->id, 'name' => $c->name])->values();

@@ -43,6 +43,7 @@ return [
     'book_via_platform'        => 'Book through the platform',
     'loading_slots'            => 'Loading available times…',
     'no_free_slots'            => 'No free slots for the selected duration.',
+    'date_in_past'              => 'This date has already passed — choose a future date.',
     'court_label'               => 'Court',
     'price_label'               => 'Price',
     'price_free'                => 'free',

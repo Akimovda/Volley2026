@@ -143,6 +143,7 @@ $renderBooking = function ($booking) use ($statusLabels, $statusColors) {
 </div>
 
 <x-slot name="script">
+    <script src="/assets/fas.js"></script>
     <script>
         (function () {
             var tabs = {

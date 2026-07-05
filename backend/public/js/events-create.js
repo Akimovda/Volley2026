@@ -1319,8 +1319,11 @@ document.addEventListener("trix-file-accept", function (event) {
 		if (!block) return;
 
 		var ownerId = opt ? Number(opt.getAttribute('data-owner') || 0) : 0;
-		var hasDirections = opt ? opt.getAttribute('data-has-directions') === '1' : false;
-		var show = ownerId > 0 && hasDirections;
+		var directions = opt ? String(opt.getAttribute('data-directions') || '').split(',').filter(Boolean) : [];
+		var directionEl = document.getElementById('direction');
+		var currentDirection = directionEl ? directionEl.value : '';
+		var hasCurrentDirection = currentDirection !== '' && directions.indexOf(currentDirection) !== -1;
+		var show = ownerId > 0 && hasCurrentDirection;
 		block.style.display = show ? '' : 'none';
 
 		if (!show) {
@@ -1403,8 +1406,10 @@ document.addEventListener("trix-file-accept", function (event) {
 	}
 	
 	if (sel) sel.addEventListener('change', updatePreview);
+	var locDirectionSel = document.getElementById('direction');
+	if (locDirectionSel) locDirectionSel.addEventListener('change', updatePreview);
 	updatePreview();
-	
+
 	// ========== 8. PAID UX ==========
 	var paidEl2 = document.getElementById('is_paid');
 	var priceWrap = document.getElementById('price_wrap');
@@ -1552,7 +1557,7 @@ document.addEventListener("trix-file-accept", function (event) {
 				opt.setAttribute('data-lng', it.lng || '');
 				opt.setAttribute('data-thumb', it.thumb || '');
 				opt.setAttribute('data-owner', it.owner_id || '0');
-			opt.setAttribute('data-has-directions', it.has_directions ? '1' : '0');
+			opt.setAttribute('data-directions', (it.directions || []).join(','));
 				
 				loc.appendChild(opt);
 			}
@@ -2651,6 +2656,7 @@ function recalcPlayers() {
 	var gridWrap = document.getElementById('club_booking_grid_wrap');
 	var loadingEl = document.getElementById('club_booking_loading');
 	var emptyEl = document.getElementById('club_booking_empty');
+	var pastEl = document.getElementById('club_booking_past');
 	var gridEl = document.getElementById('club_booking_grid');
 	var selectedEl = document.getElementById('club_booking_selected');
 	var courtIdEl = document.getElementById('booking_court_id');
@@ -2684,6 +2690,13 @@ function recalcPlayers() {
 		return startsAtEl.value.split('T')[0];
 	}
 
+	function todayStr() {
+		var d = new Date();
+		var m = String(d.getMonth() + 1).padStart(2, '0');
+		var day = String(d.getDate()).padStart(2, '0');
+		return d.getFullYear() + '-' + m + '-' + day;
+	}
+
 	function clearSelection() {
 		if (courtIdEl) courtIdEl.value = '';
 		if (bookingStartEl) bookingStartEl.value = '';
@@ -2693,6 +2706,13 @@ function recalcPlayers() {
 	function renderGrid(data) {
 		gridEl.innerHTML = '';
 		clearSelection();
+
+		if (data && data.is_past) {
+			emptyEl.style.display = 'none';
+			pastEl.style.display = '';
+			return;
+		}
+		pastEl.style.display = 'none';
 
 		var courts = (data && data.courts) || [];
 		var slots = (data && data.slots) || {};
@@ -2758,11 +2778,21 @@ function recalcPlayers() {
 
 		if (!locationId || !direction || !duration || !date || !urlTemplate) {
 			gridEl.innerHTML = '';
+			pastEl.style.display = 'none';
 			emptyEl.style.display = '';
 			return;
 		}
 
+		if (date < todayStr()) {
+			gridEl.innerHTML = '';
+			emptyEl.style.display = 'none';
+			loadingEl.style.display = 'none';
+			pastEl.style.display = '';
+			return;
+		}
+
 		emptyEl.style.display = 'none';
+		pastEl.style.display = 'none';
 		loadingEl.style.display = '';
 		gridEl.innerHTML = '';
 

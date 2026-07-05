@@ -54,7 +54,7 @@ class LocationsByCityController extends Controller
                 'short'          => (string) ($loc->short_text ?? ''),
                 'thumb'          => (string) ($thumb ?? ''),
                 'owner_id'       => (int) ($loc->owner_id ?? 0),
-                'has_directions' => $loc->directions->isNotEmpty(),
+                'directions'     => $loc->directions->pluck('direction')->values(),
             ];
         })->values();
     
