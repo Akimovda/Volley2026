@@ -5248,6 +5248,8 @@ body.dark .color-swatch:has(input[type="radio"]:checked) {
 	font-size: 20px;
 	color: #fff;
 	box-shadow: 0 3px 10px rgba(0, 0, 0, .15);
+	position: relative;
+	overflow: hidden;
 }
 .podium-gold .podium-bar {
 	height: 92px;
@@ -5267,8 +5269,49 @@ body.dark .color-swatch:has(input[type="radio"]:checked) {
 	padding-top: 8px;
 	border-top: 1px dashed rgba(128, 128, 128, .2);
 }
-body.dark .podium-bar {
-	box-shadow: 0 3px 14px rgba(0, 0, 0, .45);
+
+/* Светлая тема — диагональный блик, пробегающий по бару пьедестала */
+.podium-bar::after {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: -75%;
+	width: 50%;
+	height: 100%;
+	background: linear-gradient(120deg,
+		transparent 0%,
+		rgba(255, 255, 255, .55) 50%,
+		transparent 100%);
+	transform: skewX(-20deg);
+	animation: podium-shine 3.5s ease-in-out infinite;
+}
+.podium-gold .podium-bar::after { animation-delay: 0s; }
+.podium-silver .podium-bar::after { animation-delay: .4s; }
+.podium-bronze .podium-bar::after { animation-delay: .8s; }
+@keyframes podium-shine {
+	0%   { left: -75%; }
+	55%  { left: 125%; }
+	100% { left: 125%; }
+}
+@media (prefers-reduced-motion: reduce) {
+	.podium-bar::after { animation: none; }
+}
+
+/* Тёмная тема — свечение по цвету места + приглушённый блик */
+body.dark .podium-gold .podium-bar {
+	box-shadow: 0 3px 14px rgba(0, 0, 0, .45), 0 0 24px rgba(255, 200, 60, .45), 0 0 60px rgba(255, 200, 60, .18);
+}
+body.dark .podium-silver .podium-bar {
+	box-shadow: 0 3px 14px rgba(0, 0, 0, .45), 0 0 20px rgba(200, 205, 215, .35), 0 0 50px rgba(200, 205, 215, .14);
+}
+body.dark .podium-bronze .podium-bar {
+	box-shadow: 0 3px 14px rgba(0, 0, 0, .45), 0 0 20px rgba(205, 127, 50, .4), 0 0 50px rgba(205, 127, 50, .16);
+}
+body.dark .podium-bar::after {
+	background: linear-gradient(120deg,
+		transparent 0%,
+		rgba(255, 255, 255, .25) 50%,
+		transparent 100%);
 }
 @media (max-width: 480px) {
 	.podium-medal { font-size: 24px; }

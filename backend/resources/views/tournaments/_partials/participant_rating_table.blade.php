@@ -59,6 +59,9 @@ $direction = $ratingData['direction'];
                         <div class="d-flex gap-1" style="align-items:center">
                             <img src="{{ $r['user']?->profile_photo_url }}" alt="" loading="lazy" style="width:24px;height:24px;border-radius:50%;object-fit:cover;flex-shrink:0">
                             <a href="{{ route('users.show', $r['user_id']) }}" class="blink b-600">{{ $r['user']?->displayName() ?? '#' . $r['user_id'] }}</a>
+                            @if($event->tournament_mvp_user_id && (int) $event->tournament_mvp_user_id === (int) $r['user_id'])
+                            <span class="f-13" title="MVP турнира (назначен организатором)">🏆 MVP</span>
+                            @endif
                         </div>
                     </td>
                     <td class="p-1" style="text-align:center">{{ $r['t_games'] }}</td>

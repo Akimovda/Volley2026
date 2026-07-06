@@ -18,6 +18,7 @@
         .loss { color: #dc2626; }
         .footer { margin-top: 20px; font-size: 10px; color: #999; text-align: center; }
         .page-break { page-break-before: always; }
+        .mvp-block { font-size: 15px; font-weight: bold; color: #E7612F; margin-bottom: 10px; }
     </style>
 </head>
 <body>
@@ -161,37 +162,60 @@
         @endif
     @endforeach
 
-    @if($topPlayers->isNotEmpty())
+    @php
+        // MVP назначается организатором вручную на странице управления турниром
+        // (setup.blade.php → tournament.mvp), не считается автоматически.
+        $mvpUser = $event->tournament_mvp_user_id ? \App\Models\User::find($event->tournament_mvp_user_id) : null;
+    @endphp
+    @if(!empty($ratingData['rows']))
         <div class="page-break"></div>
         <h2>Рейтинг игроков</h2>
+
+        @if($mvpUser)
+            <div class="mvp-block">🏆 MVP турнира: {{ $mvpUser->displayName() }}</div>
+        @endif
+
         <table>
             <thead>
                 <tr>
-                    <th class="tc">#</th>
-                    <th>Игрок</th>
-                    <th>Команда</th>
-                    <th class="tc">Матчи</th>
-                    <th class="tc">Победы</th>
-                    <th class="tc">WinRate</th>
-                    <th class="tc">Сеты</th>
-                    <th class="tc">Разница</th>
+                    <th class="tc" rowspan="2">#</th>
+                    <th rowspan="2">Игрок</th>
+                    <th class="tc" colspan="{{ $ratingData['hasPoints'] ? 3 : 2 }}">Турнир</th>
+                    <th class="tc" colspan="3">Общий рейтинг</th>
+                </tr>
+                <tr>
+                    <th class="tc">И</th>
+                    <th class="tc">П</th>
+                    @if($ratingData['hasPoints'])
+                        <th class="tc">Очки</th>
+                    @endif
+                    <th class="tc">Рейтинг</th>
+                    <th class="tc">И</th>
+                    <th class="tc">Win%</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach($topPlayers as $i => $ps)
-                    <tr>
+                @foreach($ratingData['rows'] as $i => $r)
+                    @php $isMvp = $event->tournament_mvp_user_id && (int) $event->tournament_mvp_user_id === (int) $r['user_id']; @endphp
+                    <tr @if($isMvp) style="background:#fff8d6" @endif>
                         <td class="tc bold">{{ $i + 1 }}</td>
-                        <td>{{ $ps->user->displayName() }}</td>
-                        <td>{{ $ps->team->name ?? '—' }}</td>
-                        <td class="tc">{{ $ps->matches_played }}</td>
-                        <td class="tc win">{{ $ps->matches_won }}</td>
-                        <td class="tc wr">{{ $ps->match_win_rate }}%</td>
-                        <td class="tc">{{ $ps->sets_won }}:{{ $ps->sets_lost }}</td>
-                        <td class="tc">{{ $ps->point_diff > 0 ? '+' : '' }}{{ $ps->point_diff }}</td>
+                        <td>{{ $r['user']?->displayName() ?? '#' . $r['user_id'] }}{{ $isMvp ? ' 🏆' : '' }}</td>
+                        <td class="tc">{{ $r['t_games'] }}</td>
+                        <td class="tc win">{{ $r['t_wins'] }}</td>
+                        @if($ratingData['hasPoints'])
+                            <td class="tc wr">{{ $r['t_points'] }}</td>
+                        @endif
+                        <td class="tc wr">{{ number_format($r['cr'], 1) }}</td>
+                        <td class="tc">{{ $r['o_games'] }}</td>
+                        <td class="tc">{{ $r['o_winrate'] }}%</td>
                     </tr>
                 @endforeach
             </tbody>
         </table>
+
+        @if($ratingData['hiddenCount'] > 0)
+            <div class="meta">Ещё {{ $ratingData['hiddenCount'] }} игроков без сыгранных матчей</div>
+        @endif
     @endif
 
     <div class="footer">VolleyPlay.Club · {{ now()->format('d.m.Y H:i') }}</div>
