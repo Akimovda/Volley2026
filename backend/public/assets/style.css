@@ -5372,11 +5372,11 @@ body.dark .club-analytics-summary {
 .ms-header { margin-bottom: 20px; }
 .ms-header-meta {
 	display: inline-block;
-	font-size: .72rem;
+	font-size: 1.4rem;
 	font-weight: 700;
 	text-transform: uppercase;
 	letter-spacing: .05em;
-	opacity: .5;
+	opacity: .65;
 	margin-bottom: 6px;
 }
 .ms-header-meta--right { float: right; }
@@ -5427,6 +5427,9 @@ body.dark .club-analytics-summary {
 .ms-header-score-sets { font-size: .78rem; opacity: .6; margin-top: 4px; white-space: nowrap; }
 .ms-set-sep { margin: 0 4px; opacity: .5; }
 .ms-set-dim { opacity: .45; }
+/* Цвета счёта — только светлая тема (в тёмной оставляем стандартный светлый текст) */
+body:not(.dark) .ms-header-score-main { color: #2967BA; }
+body:not(.dark) .ms-header-score-sets { color: #E7612F; }
 
 .ms-heroes {
 	display: grid;
@@ -5463,7 +5466,7 @@ body.dark .club-analytics-summary {
 	border-radius: 6px;
 	border: 2px solid #fff;
 }
-.ms-hero-badge--away { left: -3px; right: auto; background: #E7612F; }
+.ms-hero-badge--away { background: #E7612F; }
 .ms-hero-body { flex: 1; min-width: 0; }
 .ms-hero-name {
 	font-weight: 700;
@@ -5484,7 +5487,6 @@ body.dark .club-analytics-summary {
 	border-radius: 50%;
 	margin-right: 6px;
 }
-.ms-hero-card--away .ms-hero-dot { margin-right: 0; margin-left: 6px; }
 .ms-hero-dot--attack { background: #2967BA; }
 .ms-hero-dot--block { background: #10b981; }
 .ms-hero-dot--serve { background: #E7612F; }
@@ -5592,10 +5594,22 @@ body.dark .ms-ptable td { border-color: rgba(255, 255, 255, .07); }
 	.ms-header-team-name { font-size: 1.4rem; }
 	.ms-bar-row { grid-template-columns: 30px 1fr 78px 1fr 30px; }
 
+	/* Хедер: обе команды в одну строку (order 1/2), счёт — отдельной строкой под
+	   ними на всю ширину (order 3, flex-basis 100% форсирует перенос), крупно и по
+	   центру — иначе "команда+счёт+команда" не влезают в одну строку на узких
+	   экранах и вёрстка ломается (см. скриншот из предыдущей итерации). */
+	.ms-header-team { order: 1; flex: 1 1 45%; }
+	.ms-header-team--away { order: 2; }
+	.ms-header-score {
+		order: 3;
+		flex: 1 1 100%;
+		padding: 6px 0 0;
+	}
+	.ms-header-score-main { font-size: 3.8rem; }
+	.ms-header-score-sets { font-size: 1.7rem; margin-top: 6px; }
+
 	/* Зеркальность (аватар/текст справа) — только для десктопа. На мобиле оба героя
-	   выравниваются одинаково (аватар слева, текст слева), иначе точки разбивки
-	   (.ms-hero-dot) слипаются с текстом: их margin рассчитан на реальный порядок
-	   DOM (dot идёт первым всегда), а не на визуальный reverse карточки. */
+	   выравниваются одинаково (аватар слева, текст слева). */
 	.ms-hero-card--away {
 		flex-direction: row;
 		text-align: left;
@@ -5603,20 +5617,11 @@ body.dark .ms-ptable td { border-color: rgba(255, 255, 255, .07); }
 	.ms-hero-card--away .ms-hero-breakdown {
 		align-items: flex-start;
 	}
-	.ms-hero-card--away .ms-hero-dot {
-		margin-right: 6px;
-		margin-left: 0;
-	}
-	.ms-hero-badge--away {
-		left: auto;
-		right: -3px;
-	}
 }
 @media (max-width: 420px) {
 	.ms-header-row { gap: 8px; }
 	.ms-captain-avatar { width: 40px; height: 40px; }
-	.ms-header-score { padding: 0 6px; }
-	.ms-header-score-main { font-size: 1.4rem; }
+	.ms-header-score-main { font-size: 3rem; }
 	.ms-hero-avatar { width: 56px; height: 56px; }
 	.ms-hero-points { font-size: 2.6rem; }
 }
