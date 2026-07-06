@@ -59,6 +59,7 @@
         'biometric_token',
         'google_id',
         'locale',
+        'is_club_manager',
 		];
 		
 		protected $hidden = [
@@ -74,6 +75,7 @@
         'payload' => 'array',
         'read_at' => 'datetime',
         'avatar_media_id' => 'integer',  // 👈 ДОБАВИТЬ
+        'is_club_manager' => 'boolean',
 		];
 		
 		protected function casts(): array
@@ -223,7 +225,12 @@
 		{
 			return $this->hasMany(UserBeachZone::class);
 		}
-		
+
+		public function ownedLocations(): HasMany
+		{
+			return $this->hasMany(Location::class, 'owner_id');
+		}
+
 		// --------------------------------------------------
 		// Roles
 		// --------------------------------------------------

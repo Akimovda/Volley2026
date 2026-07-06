@@ -1302,18 +1302,60 @@ document.addEventListener("trix-file-accept", function (event) {
 	var mapWrap = document.getElementById('location_preview_map_wrap');
 	var mapEl = document.getElementById('location_preview_map');
 	
+	function updateTimelineColorVisibility(opt) {
+		var block = document.getElementById('timeline_color_block');
+		if (!block) return;
+
+		var ownerId = opt ? Number(opt.getAttribute('data-owner') || 0) : 0;
+		var currentUserId = cityWrap ? Number(cityWrap.getAttribute('data-current-user-id') || 0) : 0;
+		var isClubManager = cityWrap ? cityWrap.getAttribute('data-is-club-manager') === '1' : false;
+
+		var show = isClubManager && ownerId > 0 && currentUserId > 0 && ownerId === currentUserId;
+		block.style.display = show ? '' : 'none';
+	}
+
+	function updateClubBookingVisibility(opt) {
+		var block = document.getElementById('club_booking_block');
+		if (!block) return;
+
+		var ownerId = opt ? Number(opt.getAttribute('data-owner') || 0) : 0;
+		var directions = opt ? String(opt.getAttribute('data-directions') || '').split(',').filter(Boolean) : [];
+		var directionEl = document.getElementById('direction');
+		var currentDirection = directionEl ? directionEl.value : '';
+		var hasCurrentDirection = currentDirection !== '' && directions.indexOf(currentDirection) !== -1;
+		var show = ownerId > 0 && hasCurrentDirection;
+		block.style.display = show ? '' : 'none';
+
+		if (!show) {
+			var directRadio = block.querySelector('input[name="club_booking_choice"][value="direct"]');
+			if (directRadio) directRadio.checked = true;
+			var gridWrap = document.getElementById('club_booking_grid_wrap');
+			if (gridWrap) gridWrap.style.display = 'none';
+			var courtIdEl = document.getElementById('booking_court_id');
+			var bookingStartEl = document.getElementById('booking_starts_at');
+			if (courtIdEl) courtIdEl.value = '';
+			if (bookingStartEl) bookingStartEl.value = '';
+		}
+	}
+
 	function updatePreview() {
 		if (!sel) return;
-		
+
 		var opt = null;
 		if (sel.selectedIndex >= 0) opt = sel.options[sel.selectedIndex];
-		
+
 		if (!opt || !opt.value) {
 			if (wrap) addClass(wrap, 'hidden');
 			if (mapEl) mapEl.src = '';
+			updateTimelineColorVisibility(null);
+			updateClubBookingVisibility(null);
 			return;
 		}
-		
+
+		updateTimelineColorVisibility(opt);
+		updateClubBookingVisibility(opt);
+		if (typeof window.__refreshClubBookingSlots === 'function') window.__refreshClubBookingSlots();
+
 		var name = opt.getAttribute('data-name') || '';
 		var city = opt.getAttribute('data-city') || '';
 		var address = opt.getAttribute('data-address') || '';
@@ -1364,8 +1406,10 @@ document.addEventListener("trix-file-accept", function (event) {
 	}
 	
 	if (sel) sel.addEventListener('change', updatePreview);
+	var locDirectionSel = document.getElementById('direction');
+	if (locDirectionSel) locDirectionSel.addEventListener('change', updatePreview);
 	updatePreview();
-	
+
 	// ========== 8. PAID UX ==========
 	var paidEl2 = document.getElementById('is_paid');
 	var priceWrap = document.getElementById('price_wrap');
@@ -1512,6 +1556,8 @@ document.addEventListener("trix-file-accept", function (event) {
 				opt.setAttribute('data-lat', it.lat || '');
 				opt.setAttribute('data-lng', it.lng || '');
 				opt.setAttribute('data-thumb', it.thumb || '');
+				opt.setAttribute('data-owner', it.owner_id || '0');
+			opt.setAttribute('data-directions', (it.directions || []).join(','));
 				
 				loc.appendChild(opt);
 			}
@@ -2600,4 +2646,195 @@ function recalcPlayers() {
         schemeEl.addEventListener('change', toggleReserveFields);
         toggleReserveFields();
     }
+})();
+
+// ===== Club module: бронирование корта через платформу (Фаза 3) =====
+(function () {
+	var block = document.getElementById('club_booking_block');
+	if (!block) return;
+
+	var gridWrap = document.getElementById('club_booking_grid_wrap');
+	var loadingEl = document.getElementById('club_booking_loading');
+	var emptyEl = document.getElementById('club_booking_empty');
+	var pastEl = document.getElementById('club_booking_past');
+	var gridEl = document.getElementById('club_booking_grid');
+	var selectedEl = document.getElementById('club_booking_selected');
+	var courtIdEl = document.getElementById('booking_court_id');
+	var bookingStartEl = document.getElementById('booking_starts_at');
+	var locationSel = document.getElementById('location_id');
+	var directionSel = document.getElementById('direction');
+	var startsAtEl = document.getElementById('starts_at_local');
+
+	var courtLabel = block.getAttribute('data-court-label') || 'Корт';
+	var priceLabel = block.getAttribute('data-price-label') || 'Цена';
+	var freeLabel = block.getAttribute('data-free-label') || 'бесплатно';
+	var selectedLabelTpl = block.getAttribute('data-selected-label') || 'Выбрано: :court, :time';
+
+	var cityWrapEl = document.getElementById('event-city-autocomplete');
+	var urlTemplate = cityWrapEl ? (cityWrapEl.getAttribute('data-booking-windows-url-template') || '') : '';
+
+	function isPlatformChosen() {
+		var radio = block.querySelector('input[name="club_booking_choice"][value="platform"]');
+		return radio && radio.checked;
+	}
+
+	function totalDurationMinutes() {
+		var days = parseInt((document.querySelector('select[name="duration_days"]') || {}).value || '0', 10) || 0;
+		var hours = parseInt((document.querySelector('select[name="duration_hours"]') || {}).value || '0', 10) || 0;
+		var minutes = parseInt((document.querySelector('select[name="duration_minutes"]') || {}).value || '0', 10) || 0;
+		return days * 24 * 60 + hours * 60 + minutes;
+	}
+
+	function currentDate() {
+		if (!startsAtEl || !startsAtEl.value) return '';
+		return startsAtEl.value.split('T')[0];
+	}
+
+	function desiredTime() {
+		if (!startsAtEl || !startsAtEl.value) return '';
+		var parts = startsAtEl.value.split('T');
+		return parts.length > 1 ? parts[1].slice(0, 5) : '';
+	}
+
+	function todayStr() {
+		var d = new Date();
+		var m = String(d.getMonth() + 1).padStart(2, '0');
+		var day = String(d.getDate()).padStart(2, '0');
+		return d.getFullYear() + '-' + m + '-' + day;
+	}
+
+	function clearSelection() {
+		if (courtIdEl) courtIdEl.value = '';
+		if (bookingStartEl) bookingStartEl.value = '';
+		if (selectedEl) { selectedEl.style.display = 'none'; selectedEl.textContent = ''; }
+	}
+
+	function renderGrid(data) {
+		gridEl.innerHTML = '';
+		clearSelection();
+
+		if (data && data.is_past) {
+			emptyEl.style.display = 'none';
+			pastEl.style.display = '';
+			return;
+		}
+		pastEl.style.display = 'none';
+
+		var courts = (data && data.courts) || [];
+		var slots = (data && data.slots) || {};
+		var hasAny = courts.some(function (c) { return (slots[c.id] || []).length > 0; });
+
+		emptyEl.style.display = hasAny ? 'none' : '';
+		if (!hasAny) return;
+
+		var wantedTime = desiredTime();
+		var matchBtn = null;
+
+		courts.forEach(function (court) {
+			var courtSlots = slots[court.id] || [];
+			if (!courtSlots.length) return;
+
+			var courtBlock = document.createElement('div');
+			courtBlock.className = 'mb-2';
+
+			var title = document.createElement('div');
+			title.className = 'b-600 f-16 mb-1';
+			title.textContent = (court.is_indoor ? '🏠 ' : '☀️ ') + courtLabel + ': ' + court.name;
+			courtBlock.appendChild(title);
+
+			var btnsWrap = document.createElement('div');
+			btnsWrap.className = 'd-flex gap-1';
+			btnsWrap.style.flexWrap = 'wrap';
+
+			courtSlots.forEach(function (slot) {
+				var btn = document.createElement('button');
+				btn.type = 'button';
+				btn.className = 'btn btn-small btn-secondary';
+				var priceText = (slot.price === null || slot.price === undefined) ? freeLabel : (Number(slot.price) + ' ₽');
+				btn.textContent = slot.start + ' · ' + priceText;
+				btn.addEventListener('click', function () {
+					btnsWrap.querySelectorAll('button').forEach(function (b) { b.classList.remove('btn-primary'); b.classList.add('btn-secondary'); });
+					btn.classList.remove('btn-secondary');
+					btn.classList.add('btn-primary');
+
+					if (courtIdEl) courtIdEl.value = String(court.id);
+					var date = currentDate();
+					if (bookingStartEl) bookingStartEl.value = date + 'T' + slot.start;
+					if (selectedEl) {
+						selectedEl.style.display = '';
+						selectedEl.textContent = selectedLabelTpl.replace(':court', court.name).replace(':time', slot.start) + ' (' + priceText + ')';
+					}
+				});
+				btnsWrap.appendChild(btn);
+
+				if (!matchBtn && wantedTime && slot.start === wantedTime) matchBtn = btn;
+			});
+
+			courtBlock.appendChild(btnsWrap);
+			gridEl.appendChild(courtBlock);
+		});
+
+		if (matchBtn) matchBtn.click();
+	}
+
+	function refresh() {
+		if (!isPlatformChosen()) {
+			gridWrap.style.display = 'none';
+			return;
+		}
+		gridWrap.style.display = '';
+
+		var locationId = locationSel ? locationSel.value : '';
+		var direction = directionSel ? directionSel.value : '';
+		var duration = totalDurationMinutes();
+		var date = currentDate();
+
+		if (!locationId || !direction || !duration || !date || !urlTemplate) {
+			gridEl.innerHTML = '';
+			pastEl.style.display = 'none';
+			emptyEl.style.display = '';
+			return;
+		}
+
+		if (date < todayStr()) {
+			gridEl.innerHTML = '';
+			emptyEl.style.display = 'none';
+			loadingEl.style.display = 'none';
+			pastEl.style.display = '';
+			return;
+		}
+
+		emptyEl.style.display = 'none';
+		pastEl.style.display = 'none';
+		loadingEl.style.display = '';
+		gridEl.innerHTML = '';
+
+		var url = urlTemplate.replace('__LOCID__', encodeURIComponent(locationId))
+			+ '?direction=' + encodeURIComponent(direction)
+			+ '&duration=' + encodeURIComponent(duration)
+			+ '&date=' + encodeURIComponent(date);
+
+		fetch(url, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+			.then(function (res) { return res.json(); })
+			.then(function (data) {
+				loadingEl.style.display = 'none';
+				renderGrid(data);
+			})
+			.catch(function () {
+				loadingEl.style.display = 'none';
+				emptyEl.style.display = '';
+			});
+	}
+
+	block.querySelectorAll('input[name="club_booking_choice"]').forEach(function (radio) {
+		radio.addEventListener('change', refresh);
+	});
+	if (startsAtEl) startsAtEl.addEventListener('change', refresh);
+	if (directionSel) directionSel.addEventListener('change', refresh);
+	['duration_days', 'duration_hours', 'duration_minutes'].forEach(function (name) {
+		var el = document.querySelector('select[name="' + name + '"]');
+		if (el) el.addEventListener('change', refresh);
+	});
+
+	window.__refreshClubBookingSlots = refresh;
 })();

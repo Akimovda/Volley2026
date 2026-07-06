@@ -113,6 +113,14 @@
                         <span class="menu-text">{{ __('profile.menu_my_events') }}</span>
                     @endif
                 </a>
+                <a href="{{ route('player.my-bookings') }}"
+                   class="menu-item {{ $activeMenu === 'my_bookings' ? 'active' : '' }}">
+                    @if($activeMenu === 'my_bookings')
+                        <strong class="cd menu-text">{{ __('club.my_bookings') }}</strong>
+                    @else
+                        <span class="menu-text">{{ __('club.my_bookings') }}</span>
+                    @endif
+                </a>
                 <a href="{{ route('player.dashboard') }}"
                    class="menu-item {{ $activeMenu === 'player_dashboard' ? 'active' : '' }}">
                     @if($activeMenu === 'player_dashboard')
@@ -233,6 +241,24 @@
                         <span class="menu-text">{{ __('profile.menu_org_staff_logs') }}</span>
                     @endif
                 </a>
+                @if($menuUser->is_club_manager && $menuUser->ownedLocations()->exists())
+                <a href="{{ route('club.bookings.index') }}"
+                   class="menu-item {{ $activeMenu === 'club_bookings' ? 'active' : '' }}">
+                    @if($activeMenu === 'club_bookings')
+                        <strong class="cd menu-text">🏟️ {{ __('club.bookings_title') }}</strong>
+                    @else
+                        <span class="menu-text">🏟️ {{ __('club.bookings_title') }}</span>
+                    @endif
+                </a>
+                <a href="{{ route('club.analytics.index') }}"
+                   class="menu-item {{ $activeMenu === 'club_analytics' ? 'active' : '' }}">
+                    @if($activeMenu === 'club_analytics')
+                        <strong class="cd menu-text">📊 {{ __('club.analytics') }}</strong>
+                    @else
+                        <span class="menu-text">📊 {{ __('club.analytics') }}</span>
+                    @endif
+                </a>
+                @endif
 
                 @php
                     $mySchool = \App\Models\VolleyballSchool::where('organizer_id', $menuUser->id)->first();
@@ -335,6 +361,14 @@
             <strong class="cd menu-text">{{ __('profile.menu_my_events') }}</strong>
         @else
             <span class="menu-text">{{ __('profile.menu_my_events') }}</span>
+        @endif
+    </a>
+    <a href="{{ route('player.my-bookings') }}"
+       class="menu-item {{ $activeMenu === 'my_bookings' ? 'active' : '' }}">
+        @if($activeMenu === 'my_bookings')
+            <strong class="cd menu-text">{{ __('club.my_bookings') }}</strong>
+        @else
+            <span class="menu-text">{{ __('club.my_bookings') }}</span>
         @endif
     </a>
     <a href="{{ route('player.dashboard') }}"

@@ -230,6 +230,22 @@
                             </ul>
                         </div>
                     </div>
+                    @if($canUseForRentals)
+                    <div class="col-12">
+                        <div class="card">
+                            <label class="checkbox-item">
+                                <input type="hidden" name="payment_for_rentals" value="0">
+                                <input type="checkbox" name="payment_for_rentals" value="1"
+                                    @checked(old('payment_for_rentals', $settings->payment_for_rentals ?? false))>
+                                <div class="custom-checkbox"></div>
+                                <span>{{ __('club.payment_for_rentals') }}</span>
+                            </label>
+                            <ul class="list f-14 mt-1">
+                                <li>{{ __('club.payment_for_rentals_hint') }}</li>
+                            </ul>
+                        </div>
+                    </div>
+                    @endif
                 </div>
             </div>
 

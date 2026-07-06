@@ -46,4 +46,35 @@ class AdminRoleController extends Controller
 
         return back()->with('status', "Роль обновлена: {$oldRole} → {$newRole}");
     }
+
+    public function updateClubManager(Request $request, User $user)
+    {
+        $data = $request->validate([
+            'is_club_manager' => ['nullable', 'boolean'],
+        ]);
+
+        $old = (bool) $user->is_club_manager;
+        $new = (bool) $request->boolean('is_club_manager');
+
+        if ($old === $new) {
+            return back()->with('status', 'Статус «Управляющий клубом» не изменился.');
+        }
+
+        $user->is_club_manager = $new;
+        $user->save();
+
+        AdminAuditLogger::log(
+            'user.club_manager.update',
+            'user',
+            (string) $user->id,
+            [
+                'old_is_club_manager' => $old,
+                'new_is_club_manager' => $new,
+            ],
+            null,
+            $request
+        );
+
+        return back()->with('status', $new ? 'Пользователь назначен управляющим клубом.' : 'Статус управляющего клубом снят.');
+    }
 }

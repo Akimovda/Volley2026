@@ -342,7 +342,24 @@
 						</form>
 					</div>
 				</div>
-				
+
+				{{-- Управляющий клубом --}}
+				<div class="ramka">
+					<h2 class="-mt-05">{{ __('club.club_manager_role') }}</h2>
+					<div class="card-body">
+						<form method="POST" action="{{ route('admin.users.club-manager.update', $user) }}" class="form">
+							@csrf
+							<label class="d-flex fvc gap-1">
+								<input type="checkbox" name="is_club_manager" value="1" @checked($user->is_club_manager)>
+								{{ __('club.club_manager_role') }}
+							</label>
+							<button class="btn btn-primary w-100 mt-2" type="submit">
+								Сохранить
+							</button>
+						</form>
+					</div>
+				</div>
+
 				{{-- Привязка Staff к организатору --}}
 				@if(true) {{-- всегда показываем для Админа --}}
 				<div class="ramka">

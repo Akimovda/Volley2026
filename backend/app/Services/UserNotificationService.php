@@ -475,6 +475,110 @@ final class UserNotificationService
         );
     }
 
+    public function createCourtBookingChangedNotification(
+        int $userId,
+        \App\Models\CourtBooking $booking
+    ): UserNotification {
+        $courtName = $booking->court?->name ?? '';
+        $label = $booking->title ?: $courtName;
+        $tz = $booking->court?->direction?->location?->effectiveTimezone() ?? 'Europe/Moscow';
+        $startsAtText = $booking->starts_at->copy()->setTimezone($tz)->format('d.m.Y H:i');
+
+        return $this->create(
+            userId: $userId,
+            type: 'court_booking_changed',
+            title: 'Бронь изменена',
+            body: "Ваша бронь «{$label}» изменена: новое время {$startsAtText}, корт {$courtName}.",
+            payload: [
+                'court_booking_id' => $booking->id,
+                'court_id'         => $booking->court_id,
+                'starts_at'        => $booking->starts_at->toIso8601String(),
+            ],
+            channels: ['in_app', 'telegram', 'vk', 'max']
+        );
+    }
+
+    public function createCourtBookingCancelledNotification(
+        int $userId,
+        \App\Models\CourtBooking $booking,
+        ?string $reason = null
+    ): UserNotification {
+        $courtName = $booking->court?->name ?? '';
+        $label = $booking->title ?: $courtName;
+        $tz = $booking->court?->direction?->location?->effectiveTimezone() ?? 'Europe/Moscow';
+        $startsAtText = $booking->starts_at->copy()->setTimezone($tz)->format('d.m.Y H:i');
+
+        $body = $reason
+            ? "Ваша бронь «{$label}» на {$startsAtText} отменена клубом. Причина: {$reason}."
+            : "Ваша бронь «{$label}» на {$startsAtText} отменена клубом.";
+
+        return $this->create(
+            userId: $userId,
+            type: 'court_booking_cancelled',
+            title: 'Бронь отменена',
+            body: $body,
+            payload: [
+                'court_booking_id' => $booking->id,
+                'court_id'         => $booking->court_id,
+                'starts_at'        => $booking->starts_at->toIso8601String(),
+                'cancel_reason'    => $reason,
+            ],
+            channels: ['in_app', 'telegram', 'vk', 'max']
+        );
+    }
+
+    public function createCourtBookingConfirmedNotification(
+        int $userId,
+        \App\Models\CourtBooking $booking
+    ): UserNotification {
+        $courtName = $booking->court?->name ?? '';
+        $locationName = $booking->court?->direction?->location?->name ?? '';
+        $tz = $booking->court?->direction?->location?->effectiveTimezone() ?? 'Europe/Moscow';
+        $startsAtText = $booking->starts_at->copy()->setTimezone($tz)->format('d.m.Y H:i');
+
+        return $this->create(
+            userId: $userId,
+            type: 'court_booking_confirmed',
+            title: 'Бронь подтверждена',
+            body: "Ваша бронь корта «{$courtName}» ({$locationName}) на {$startsAtText} подтверждена клубом.",
+            payload: [
+                'court_booking_id' => $booking->id,
+                'court_id'         => $booking->court_id,
+                'starts_at'        => $booking->starts_at->toIso8601String(),
+            ],
+            channels: ['in_app', 'telegram', 'vk', 'max']
+        );
+    }
+
+    public function createCourtBookingRejectedNotification(
+        int $userId,
+        \App\Models\CourtBooking $booking,
+        ?string $reason = null
+    ): UserNotification {
+        $courtName = $booking->court?->name ?? '';
+        $locationName = $booking->court?->direction?->location?->name ?? '';
+        $tz = $booking->court?->direction?->location?->effectiveTimezone() ?? 'Europe/Moscow';
+        $startsAtText = $booking->starts_at->copy()->setTimezone($tz)->format('d.m.Y H:i');
+
+        $body = $reason
+            ? "Ваша заявка на бронь корта «{$courtName}» ({$locationName}) на {$startsAtText} отклонена клубом. Причина: {$reason}."
+            : "Ваша заявка на бронь корта «{$courtName}» ({$locationName}) на {$startsAtText} отклонена клубом.";
+
+        return $this->create(
+            userId: $userId,
+            type: 'court_booking_rejected',
+            title: 'Заявка на бронь отклонена',
+            body: $body,
+            payload: [
+                'court_booking_id' => $booking->id,
+                'court_id'         => $booking->court_id,
+                'starts_at'        => $booking->starts_at->toIso8601String(),
+                'cancel_reason'    => $reason,
+            ],
+            channels: ['in_app', 'telegram', 'vk', 'max']
+        );
+    }
+
     public function createEventCancelledByQuorumNotification(
         int $userId,
         int $eventId,

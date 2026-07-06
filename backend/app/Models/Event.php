@@ -38,6 +38,8 @@ class Event extends Model implements HasMedia
         'public_token',
         'direction',
         'format',
+        'timeline_color',
+        'court_booking_id',
         'allow_registration',
         'registration_mode',
         'tournament_teams_count',
@@ -142,6 +144,11 @@ class Event extends Model implements HasMedia
     {
         return $this->belongsTo(User::class, 'organizer_id')
             ->withTrashed();
+    }
+
+    public function courtBooking(): BelongsTo
+    {
+        return $this->belongsTo(CourtBooking::class);
     }
 
     public function season(): BelongsTo

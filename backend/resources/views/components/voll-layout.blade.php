@@ -329,6 +329,9 @@
 								<a href="{{ route('player.my-events') }}" class="menu-item">
 									<span class="menu-text">{{ __('ui.menu_my_events') }}</span>
 								</a>
+								<a href="{{ route('player.my-bookings') }}" class="menu-item">
+									<span class="menu-text">{{ __('club.my_bookings') }}</span>
+								</a>
 								@if(config('activity.recording_open') || auth()->user()?->isAdmin())
 								<a href="{{ route('activity.index') }}" class="menu-item">
 									<span class="menu-text">{{ __('activity.my_activity') }}</span>
@@ -371,6 +374,14 @@
 								<a href="/events/registrations/manage" class="menu-item">
 									<span class="menu-text">{{ __('ui.org_regs_manage') }}</span>
 								</a>
+								@if(auth()->user()->is_club_manager && auth()->user()->ownedLocations()->exists())
+								<a href="{{ route('club.bookings.index') }}" class="menu-item">
+									<span class="menu-text">{{ __('club.bookings_title') }}</span>
+								</a>
+								<a href="{{ route('club.analytics.index') }}" class="menu-item">
+									<span class="menu-text">{{ __('club.analytics') }}</span>
+								</a>
+								@endif
 								<a href="/events/create" class="menu-item">
 									<span class="menu-text">{{ __('ui.org_create_event') }}</span>
 								</a>

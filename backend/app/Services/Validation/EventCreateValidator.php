@@ -123,15 +123,23 @@
 			'integer',
 			Rule::exists('locations','id')
 			->where(function ($q) use ($request) {
-				
+
 				$cityId = (int)$request->input('city_id',0);
-				
+
 				if ($cityId > 0) {
 					$q->where('city_id',$cityId);
 				}
 			})
             ],
-			
+
+            'timeline_color' => [
+                'nullable',
+                'regex:/^#[0-9A-Fa-f]{6}$/',
+            ],
+
+            'court_id' => ['nullable', 'integer', 'exists:location_courts,id'],
+            'booking_starts_at' => ['nullable', 'date_format:Y-m-d\TH:i'],
+
             /*
 				|--------------------------------------------------------------------------
 				| LEVELS

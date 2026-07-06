@@ -135,7 +135,38 @@ Route::get('/logout', fn () => redirect('/'));
     ->whereNumber('location')
     ->middleware('track.view:location,location')
     ->name('locations.show');
-	
+
+	Route::middleware(['auth'])->group(function () {
+		Route::get('/locations/{location}/timeline', [\App\Http\Controllers\ClubTimelineController::class, 'show'])
+			->name('locations.timeline');
+		Route::get('/locations/{location}/booking-windows', \App\Http\Controllers\Ajax\CourtBookingWindowsController::class)
+			->name('locations.booking_windows');
+
+		Route::get('/club/bookings', [\App\Http\Controllers\ClubBookingController::class, 'index'])
+			->name('club.bookings.index');
+		Route::post('/club/bookings/manual', [\App\Http\Controllers\ClubBookingController::class, 'storeManual'])
+			->name('club.bookings.storeManual');
+		Route::post('/club/bookings/{booking}/confirm', [\App\Http\Controllers\ClubBookingController::class, 'confirm'])
+			->name('club.bookings.confirm');
+		Route::post('/club/bookings/{booking}/reject', [\App\Http\Controllers\ClubBookingController::class, 'reject'])
+			->name('club.bookings.reject');
+		Route::put('/club/bookings/{booking}', [\App\Http\Controllers\ClubBookingController::class, 'update'])
+			->name('club.bookings.update');
+		Route::post('/club/bookings/{booking}/cancel', [\App\Http\Controllers\ClubBookingController::class, 'cancel'])
+			->name('club.bookings.cancel');
+
+		Route::get('/club/analytics', [\App\Http\Controllers\ClubAnalyticsController::class, 'index'])
+			->name('club.analytics.index');
+
+		// Фаза 5 — прямая бронь корта игроком
+		Route::post('/court-bookings', [\App\Http\Controllers\PlayerCourtBookingController::class, 'store'])
+			->name('court_bookings.store');
+		Route::get('/my/bookings', [\App\Http\Controllers\PlayerCourtBookingController::class, 'myBookings'])
+			->name('player.my-bookings');
+		Route::post('/my/bookings/{booking}/cancel', [\App\Http\Controllers\PlayerCourtBookingController::class, 'cancel'])
+			->name('player.bookings.cancel');
+	});
+
 	/*
 		|--------------------------------------------------------------------------
 		| Channel Notification
@@ -846,6 +877,7 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
         Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');
         Route::get('/users/{user}', [AdminUserController::class, 'show'])->name('users.show');
         Route::post('/users/{user}/role', [AdminRoleController::class, 'updateUserRole'])->name('users.role.update');
+        Route::post('/users/{user}/club-manager', [AdminRoleController::class, 'updateClubManager'])->name('users.club-manager.update');
         Route::delete('/users/{user}/purge', [AdminUserController::class, 'purge'])->name('users.purge');
 
         Route::get('/users/duplicates', [\App\Http\Controllers\Admin\AdminUserDuplicatesController::class, 'index'])
@@ -891,6 +923,17 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
 		
         Route::delete('/locations/{location}/photos/{media}', [AdminLocationPhotoController::class, 'destroy'])
 		->name('locations.photos.destroy');
+
+        Route::post('/locations/{location}/directions', [AdminLocationController::class, 'saveDirections'])
+            ->name('locations.directions.save');
+
+        Route::post('/locations/{location}/price-rules', [AdminLocationController::class, 'savePriceRules'])
+            ->name('locations.price_rules.save');
+
+        Route::post('/locations/{location}/trust', [AdminLocationController::class, 'saveTrust'])
+            ->name('locations.trust.save');
+        Route::delete('/locations/{location}/trust/{trust}', [AdminLocationController::class, 'destroyTrust'])
+            ->name('locations.trust.destroy');
 
         Route::get('/impersonate', [ImpersonationController::class, 'index'])->name('impersonate.index');
         Route::post('/impersonate/start/{user}', [ImpersonationController::class, 'start'])->name('impersonate.start');

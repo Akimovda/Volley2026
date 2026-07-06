@@ -1,0 +1,336 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\CourtBooking;
+use App\Models\EventOccurrence;
+use App\Models\Location;
+use App\Models\LocationCourt;
+use App\Models\TournamentMatch;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
+
+class TimelineService
+{
+    /** Кэш занятых слотов по направлению+дате в рамках одного вызова day()/week() — курты одного направления показывают одинаковые слоты. */
+    private array $directionSlotsCache = [];
+
+    /**
+     * Данные таймлайна для одного дня.
+     * Возвращает структуру для рендера: направления → корты → занятые интервалы.
+     */
+    public function day(Location $location, Carbon $date): array
+    {
+        $directions = $location->directions()
+            ->where('is_active', true)
+            ->with(['courts' => fn($q) => $q->where('is_active', true)
+                ->orderBy('sort_order')])
+            ->with('workingHours')
+            ->get();
+
+        $result = [];
+        foreach ($directions as $dir) {
+            $wh = $dir->workingHours
+                ->firstWhere('day_of_week', ($date->dayOfWeekIso - 1));
+
+            // День закрыт
+            if (!$wh || $wh->is_day_off) {
+                $result[] = [
+                    'direction'  => $dir->direction,
+                    'is_closed'  => true,
+                    'courts'     => [],
+                ];
+                continue;
+            }
+
+            $courts = [];
+            foreach ($dir->courts as $court) {
+                $courts[] = [
+                    'id'        => $court->id,
+                    'name'      => $court->name,
+                    'is_indoor' => (bool) $court->is_indoor,
+                    'slots'     => $this->occupiedSlots($location, $court, $date),
+                ];
+            }
+
+            $result[] = [
+                'direction' => $dir->direction,
+                'is_closed' => false,
+                'opens_at'  => substr($wh->opens_at, 0, 5),
+                'closes_at' => substr($wh->closes_at, 0, 5),
+                'courts'    => $courts,
+            ];
+        }
+
+        return $result;
+    }
+
+    /**
+     * Занятые интервалы корта в дату: события направления + брони этого корта.
+     *
+     * Событие, привязанное к конкретному корту через court_booking_id, показывается
+     * ТОЛЬКО на этом корте. Событие без привязки (легаси/не через бронирование) —
+     * на ВСЕХ кортах направления, как в Фазе 2 (court_id слота === null).
+     * Брони кортов без события (event_id пуст) добавляются отдельно, цвет — по статусу.
+     */
+    private function occupiedSlots(Location $location, LocationCourt $court, Carbon $date): array
+    {
+        $direction = $court->relationLoaded('direction') ? $court->direction : $court->direction()->first();
+        $directionKey = $direction?->direction;
+
+        if (!$directionKey) {
+            return [];
+        }
+
+        $cacheKey = $directionKey . '|' . $date->toDateString();
+
+        if (!isset($this->directionSlotsCache[$cacheKey])) {
+            $this->directionSlotsCache[$cacheKey] = $this->fetchDirectionSlots($location, $directionKey, $date);
+        }
+
+        $eventSlots = array_values(array_filter(
+            $this->directionSlotsCache[$cacheKey],
+            fn(array $slot) => $slot['court_id'] === null || $slot['court_id'] === $court->id
+        ));
+
+        $bookingSlots = $this->fetchCourtBookingSlots($court, $location, $date);
+
+        $all = array_merge($eventSlots, $bookingSlots);
+        usort($all, fn($a, $b) => $a['starts_at'] <=> $b['starts_at']);
+
+        return $all;
+    }
+
+    /**
+     * Брони этого корта, НЕ привязанные к событию (event_id пуст) — брони с событием
+     * уже показаны выше как event-слот, отфильтрованный по своему court_id.
+     */
+    private function fetchCourtBookingSlots(LocationCourt $court, Location $location, Carbon $date): array
+    {
+        $tz = $location->effectiveTimezone();
+        $dayStart = Carbon::parse($date->toDateString() . ' 00:00:00', $tz);
+        $dayEnd = $dayStart->copy()->endOfDay();
+
+        $statusColors = [
+            CourtBooking::STATUS_PENDING   => '#8E8E93',
+            CourtBooking::STATUS_CONFIRMED => '#4A9EFF',
+            CourtBooking::STATUS_PAID      => '#34C759',
+        ];
+
+        $bookings = CourtBooking::active()
+            ->whereNull('event_id')
+            ->where('court_id', $court->id)
+            ->where('starts_at', '<', $dayEnd->copy()->setTimezone('UTC'))
+            ->where('ends_at', '>', $dayStart->copy()->setTimezone('UTC'))
+            ->with('user')
+            ->get();
+
+        $rootIds = $bookings->map(fn ($b) => $b->seriesRootId())->unique()->values();
+        $seriesRootIds = $rootIds->isEmpty() ? collect() : CourtBooking::whereIn('parent_booking_id', $rootIds)
+            ->select('parent_booking_id')->distinct()->pluck('parent_booking_id');
+
+        $slots = [];
+        foreach ($bookings as $booking) {
+            $s = Carbon::parse($booking->getRawOriginal('starts_at'), 'UTC')->setTimezone($tz);
+            $e = Carbon::parse($booking->getRawOriginal('ends_at'), 'UTC')->setTimezone($tz);
+
+            $bookerName = $booking->booker_name;
+            $displayTitle = $booking->title ?: ($bookerName !== '—' ? $bookerName : __('club.booking_by'));
+
+            $slots[] = [
+                'type'               => 'booking',
+                'court_id'           => $court->id,
+                'direction_id'       => $court->direction_id,
+                'booking_id'         => $booking->id,
+                'title'              => $displayTitle,
+                'raw_title'          => $booking->title,
+                'starts_at'          => $s->format('H:i'),
+                'ends_at'            => $e->format('H:i'),
+                'date'               => $s->toDateString(),
+                'color'              => $booking->color ?: ($statusColors[$booking->status] ?? '#8E8E93'),
+                'raw_color'          => $booking->color,
+                'status'             => $booking->status,
+                'organizer'          => $bookerName !== '—' ? $bookerName : null,
+                'booker_name'        => $bookerName,
+                'organizer_id'       => $booking->user_id,
+                'is_guest'           => $booking->isGuestBooking(),
+                'guest_name'         => $booking->guest_name,
+                'guest_phone'        => $booking->guest_phone,
+                'price_total'        => $booking->price_total,
+                'court_name'         => $court->name,
+                'parent_booking_id'  => $booking->parent_booking_id,
+                'is_series'          => $booking->parent_booking_id !== null || $seriesRootIds->contains($booking->id),
+            ];
+        }
+
+        return $slots;
+    }
+
+    /**
+     * Найти все незавершённые occurrences на этой локации+направлении в указанную
+     * календарную дату (в таймзоне локации).
+     */
+    private function fetchOccurrences(Location $location, string $direction, Carbon $date)
+    {
+        $tz = $location->effectiveTimezone();
+        $dayStart = Carbon::parse($date->toDateString() . ' 00:00:00', $tz);
+        $dayEnd = $dayStart->copy()->endOfDay();
+        $dayStartUtc = $dayStart->copy()->setTimezone('UTC');
+        $dayEndUtc = $dayEnd->copy()->setTimezone('UTC');
+
+        return EventOccurrence::query()
+            ->join('events', 'events.id', '=', 'event_occurrences.event_id')
+            ->whereRaw('COALESCE(event_occurrences.location_id, events.location_id) = ?', [$location->id])
+            ->where('events.direction', $direction)
+            ->whereBetween('event_occurrences.starts_at', [$dayStartUtc, $dayEndUtc])
+            ->where(function ($q) {
+                $q->whereNull('event_occurrences.is_cancelled')
+                    ->orWhere('event_occurrences.is_cancelled', false);
+            })
+            ->whereNull('event_occurrences.cancelled_at')
+            ->with(['event.organizer', 'event.courtBooking'])
+            ->select('event_occurrences.*')
+            ->orderBy('event_occurrences.starts_at')
+            ->get();
+    }
+
+    /**
+     * Занятые минутные интервалы (от начала суток по локальному времени локации)
+     * событиями направления в дату — переиспользуется CourtAvailabilityService
+     * для проверки пересечений (Фаза 2: событие занимает ВСЕ корты направления,
+     * т.к. ещё не привязано к конкретному корту).
+     *
+     * @return array<int, array{0:int,1:int}> [[startMin,endMin], ...]
+     */
+    public function eventMinuteIntervals(Location $location, string $direction, Carbon $date): array
+    {
+        $intervals = [];
+        foreach ($this->fetchOccurrences($location, $direction, $date) as $occ) {
+            $startsLocal = $occ->starts_at_local;
+            $endsLocal = $occ->ends_at_local;
+            if (!$startsLocal || !$endsLocal) {
+                continue;
+            }
+            $intervals[] = [
+                $startsLocal->hour * 60 + $startsLocal->minute,
+                $endsLocal->hour * 60 + $endsLocal->minute,
+            ];
+        }
+        return $intervals;
+    }
+
+    /**
+     * Найти все незавершённые occurrences на этой локации+направлении в указанную
+     * календарную дату (в таймзоне локации) и сформировать слоты для таймлайна.
+     */
+    private function fetchDirectionSlots(Location $location, string $direction, Carbon $date): array
+    {
+        $occurrences = $this->fetchOccurrences($location, $direction, $date);
+
+        // Курты направления по имени — для сопоставления с tournament_matches.court
+        // (там хранится имя корта строкой, не court_id).
+        $courtIdsByName = LocationCourt::whereHas(
+            'direction',
+            fn($q) => $q->where('location_id', $location->id)->where('direction', $direction)
+        )->pluck('id', 'name');
+
+        $slots = [];
+        foreach ($occurrences as $occ) {
+            $startsLocal = $occ->starts_at_local;
+            $endsLocal = $occ->ends_at_local;
+            if (!$startsLocal || !$endsLocal) {
+                continue;
+            }
+
+            $organizer = $occ->event?->organizer;
+            $organizerLabel = null;
+            if ($organizer) {
+                $lastName = $organizer->last_name ?? '';
+                $firstInitial = $organizer->first_name ? mb_substr($organizer->first_name, 0, 1) . '.' : '';
+                $organizerLabel = trim($lastName . ' ' . $firstInitial) ?: $organizer->name;
+            }
+
+            $base = [
+                'type'          => 'event',
+                'event_id'      => $occ->event_id,
+                'occurrence_id' => $occ->id,
+                'title'         => $occ->event?->title,
+                'starts_at'     => $startsLocal->format('H:i'),
+                'ends_at'       => $endsLocal->format('H:i'),
+                'color'         => $occ->event?->timeline_color,
+                'organizer'     => $organizerLabel,
+            ];
+
+            $tournamentCourtIds = $this->tournamentCourtIds($occ, $courtIdsByName);
+
+            if (!empty($tournamentCourtIds)) {
+                // Турнир с известной привязкой матчей к конкретным кортам (по имени) —
+                // показываем только на этих кортах, а не на всём направлении.
+                foreach ($tournamentCourtIds as $courtId) {
+                    $slots[] = $base + ['court_id' => $courtId];
+                }
+            } else {
+                $slots[] = $base + ['court_id' => $occ->event?->courtBooking?->court_id];
+            }
+        }
+
+        return $slots;
+    }
+
+    /**
+     * ID кортов, реально занятых турниром в этой occurrence — определяется по
+     * tournament_matches.court (имя корта строкой) через стадии, привязанные к
+     * occurrence_id. Возвращает [] если событие не турнир или матчи не имеют
+     * явной привязки к корту (тогда действует legacy-поведение — все корты направления).
+     *
+     * @param Collection<string,int> $courtIdsByName имя корта => court_id
+     * @return int[]
+     */
+    private function tournamentCourtIds(EventOccurrence $occ, Collection $courtIdsByName): array
+    {
+        if ($occ->event?->format !== 'tournament') {
+            return [];
+        }
+
+        $courtNames = TournamentMatch::query()
+            ->whereHas('stage', fn($q) => $q->where('event_id', $occ->event_id)->where('occurrence_id', $occ->id))
+            ->whereNotNull('court')
+            ->distinct()
+            ->pluck('court');
+
+        $courtIds = [];
+        foreach ($courtNames as $name) {
+            if (isset($courtIdsByName[$name])) {
+                $courtIds[] = $courtIdsByName[$name];
+            }
+        }
+
+        return array_values(array_unique($courtIds));
+    }
+
+    /**
+     * Данные для недельного режима: 7 дней, загруженность каждого направления
+     * по дням (для heat map).
+     */
+    public function week(Location $location, Carbon $weekStart): array
+    {
+        $days = [];
+        for ($i = 0; $i < 7; $i++) {
+            $date = $weekStart->copy()->addDays($i);
+            $dayData = $this->day($location, $date);
+
+            $days[] = [
+                'date'       => $date->toDateString(),
+                'day_label'  => $date->isoFormat('dd, D MMM'),
+                'directions' => array_map(fn($d) => [
+                    'direction'    => $d['direction'],
+                    'is_closed'    => $d['is_closed'],
+                    'events_count' => $d['is_closed'] ? 0
+                        : array_sum(array_map(
+                            fn($c) => count($c['slots']), $d['courts'])),
+                ], $dayData),
+            ];
+        }
+        return $days;
+    }
+}

@@ -10,6 +10,7 @@ use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\DB;
 use App\Services\Validation\EventCreateValidator;
 use App\Services\TournamentSeasonAutoCreateService;
+use App\Services\CourtBookingService;
 
 class EventStoreService
 {
@@ -25,6 +26,7 @@ class EventStoreService
         private EventRoleSlotService $roleSlotService,
         private EventNotificationChannelService $channelService,
         private TournamentSeasonAutoCreateService $seasonAutoService,
+        private CourtBookingService $courtBookingService,
     ) {}
 
     /*
@@ -408,7 +410,34 @@ class EventStoreService
             if ($isTournament) {
                 $event->tournament_teams_count = (int)($data['tournament_teams_count'] ?? 4);
             }
-            $event->save();
+
+            // Цвет в таймлайне — только владелец локации (club manager), проверяем на сервере
+            if (!empty($data['timeline_color']) && $user->is_club_manager && (int) $location->owner_id === (int) $user->id) {
+                $event->timeline_color = $data['timeline_color'];
+            }
+
+            // Club module: бронирование корта через платформу — событие и бронь
+            // создаются атомарно: если слот занят, событие тоже не создаётся.
+            $courtId = (int) ($data['court_id'] ?? 0);
+            $bookingStartsAtLocal = $data['booking_starts_at'] ?? null;
+
+            if ($courtId > 0 && !empty($bookingStartsAtLocal)) {
+                DB::transaction(function () use ($event, $courtId, $bookingStartsAtLocal, $user) {
+                    $event->save();
+
+                    $court = \App\Models\LocationCourt::findOrFail($courtId);
+                    $tz = $event->timezone ?: 'Europe/Moscow';
+                    $bookingStart = \Illuminate\Support\Carbon::parse($bookingStartsAtLocal, $tz)->setTimezone('UTC');
+                    $bookingEnd = $bookingStart->copy()->addSeconds((int) $event->duration_sec);
+
+                    $booking = $this->courtBookingService->create($user, $court, $bookingStart, $bookingEnd, $event);
+
+                    $event->court_booking_id = $booking->id;
+                    $event->save();
+                });
+            } else {
+                $event->save();
+            }
 
             /*
                 |--------------------------------------------------------------------------

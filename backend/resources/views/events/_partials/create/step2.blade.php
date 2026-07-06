@@ -38,6 +38,9 @@
 										data-city-search-url="{{ route('cities.search') }}"
 										data-locations-url="{{ route('ajax.locations.byCity') }}"
 										data-city-meta-url="{{ route('ajax.cities.meta') }}"
+										data-current-user-id="{{ auth()->id() }}"
+										data-is-club-manager="{{ auth()->user() && auth()->user()->is_club_manager ? '1' : '0' }}"
+										data-booking-windows-url-template="{{ route('locations.booking_windows', ['location' => '__LOCID__']) }}"
 										>
 											
 											{{-- Поле для отображения --}}
@@ -117,9 +120,44 @@
 										@if(!$isAdmin)
 										<ul class="list f-16 mt-1">
 											<li>{{ __('events.location_admin_only_hint') }}</li>
-										</ul>											
+										</ul>
 										@endif
-									</div>									
+
+										{{-- Club module: бронирование корта через платформу --}}
+										<div id="club_booking_block" class="card mt-2" style="display:none;height:auto"
+						data-court-label="{{ __('club.court_label') }}"
+						data-price-label="{{ __('club.price_label') }}"
+						data-free-label="{{ __('club.price_free') }}"
+						data-selected-label="{{ __('club.selected_slot_label') }}"
+						>
+											<div class="b-600 mb-1">🏟 {{ __('club.managed_by_club') }}</div>
+											<div class="f-16 mb-2">{{ __('club.courts_already_booked_q') }}</div>
+											<label class="d-flex fvc gap-1 mb-1">
+												<input type="radio" name="club_booking_choice" value="direct" checked>
+												{{ __('club.booked_directly') }}
+											</label>
+											<label class="d-flex fvc gap-1 mb-2">
+												<input type="radio" name="club_booking_choice" value="platform">
+												{{ __('club.book_via_platform') }}
+											</label>
+
+											<div id="club_booking_grid_wrap" style="display:none">
+												<div id="club_booking_loading" class="alert alert-info" style="display:none">{{ __('club.loading_slots') }}</div>
+												<div id="club_booking_empty" class="alert alert-info" style="display:none">{{ __('club.no_free_slots') }}</div>
+												<div id="club_booking_past" class="alert alert-info" style="display:none">{{ __('club.date_in_past') }}</div>
+												<div id="club_booking_grid"></div>
+												<div id="club_booking_selected" class="mt-2 f-16" style="display:none"></div>
+												<input type="hidden" name="court_id" id="booking_court_id">
+												<input type="hidden" name="booking_starts_at" id="booking_starts_at">
+											</div>
+										</div>
+
+										{{-- Цвет в таймлайне (только владелец локации, is_club_manager) --}}
+										<div id="timeline_color_block" class="mt-2" style="display:none">
+											<label>{{ __('club.timeline_color') }}</label>
+											@include('club._partials.color_palette', ['name' => 'timeline_color', 'selected' => old('timeline_color')])
+										</div>
+									</div>
 								</div>
 								
 								

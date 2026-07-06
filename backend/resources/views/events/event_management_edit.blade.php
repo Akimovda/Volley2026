@@ -320,6 +320,8 @@
                                     data-search-url="{{ route('cities.search') }}"
                                     data-locations-url="{{ route('ajax.locations.byCity') }}"
                                     data-city-meta-url="{{ route('ajax.cities.meta') }}"
+                                    data-current-user-id="{{ auth()->id() }}"
+                                    data-is-club-manager="{{ auth()->user() && auth()->user()->is_club_manager ? '1' : '0' }}"
                                 >
                                     @php
                                         $cityLabel = '';
@@ -368,6 +370,7 @@
                                             data-lat="{{ $loc->lat ?? '' }}"
                                             data-lng="{{ $loc->lng ?? '' }}"
                                             data-thumb="{{ e((string)$thumb) }}"
+                                            data-owner="{{ (int) ($loc->owner_id ?? 0) }}"
                                         >
                                             {{ $loc->name }}@if(!empty($loc->address)) — {{ $loc->address }}@endif
                                         </option>
@@ -381,6 +384,18 @@
                                     <li>{{ __('events.location_admin_only_hint') }}</li>
                                 </ul>
                                 @endif
+
+                                {{-- Цвет в таймлайне (только владелец локации, is_club_manager) --}}
+                                <div id="timeline_color_block_edit" class="mt-2" style="display:none">
+                                    <label>{{ __('club.timeline_color') }}</label>
+                                    <div class="d-flex gap-1" style="flex-wrap:wrap">
+                                        @foreach(['#4A9EFF','#34C759','#FFD60A','#E7612F','#AF52DE','#FF3B30','#5AC8FA','#8E8E93'] as $swatch)
+                                        <label class="color-swatch" style="background:{{ $swatch }}">
+                                            <input type="radio" name="timeline_color" value="{{ $swatch }}" @checked(old('timeline_color', $event->timeline_color) === $swatch)>
+                                        </label>
+                                        @endforeach
+                                    </div>
+                                </div>
 
                                 {{-- preview --}}
                                 <div id="location_preview_edit" class="mt-2 hidden">
@@ -1492,8 +1507,20 @@
             const mapWrap = document.getElementById('lpe_map_wrap');
             const mapEl = document.getElementById('lpe_map');
 
+            function updateTimelineColorVisibilityEdit(opt) {
+                const block = document.getElementById('timeline_color_block_edit');
+                if (!block) return;
+                const acWrap = document.getElementById('edit-city-ac-wrap');
+                const ownerId = opt ? Number(opt.getAttribute('data-owner') || 0) : 0;
+                const currentUserId = acWrap ? Number(acWrap.getAttribute('data-current-user-id') || 0) : 0;
+                const isClubManager = acWrap ? acWrap.getAttribute('data-is-club-manager') === '1' : false;
+                const show = isClubManager && ownerId > 0 && currentUserId > 0 && ownerId === currentUserId;
+                block.style.display = show ? '' : 'none';
+            }
+
             function updatePreview() {
                 const opt = sel?.options[sel.selectedIndex];
+                updateTimelineColorVisibilityEdit(opt);
                 if (!opt?.value) { wrap?.classList.add('hidden'); return; }
                 wrap?.classList.remove('hidden');
                 if (nameEl) nameEl.textContent = opt.getAttribute('data-name') || '';
@@ -1563,6 +1590,7 @@
                         opt.setAttribute('data-lat', loc.lat || '');
                         opt.setAttribute('data-lng', loc.lng || '');
                         opt.setAttribute('data-thumb', loc.thumb || '');
+                        opt.setAttribute('data-owner', loc.owner_id || '0');
                         if (loc.id === current) opt.selected = true;
                         locSel.appendChild(opt);
                     });
