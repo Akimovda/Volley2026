@@ -664,11 +664,11 @@ class TournamentController extends Controller
             && $stage->type !== TournamentStage::TYPE_KING_BEACH
             && MatchRallyEvent::where('match_id', $match->id)->exists();
 
-        $hasRallyDataCompleted = $match->isCompleted()
+        $canReopenViaRally = $match->isCompleted()
             && $stage->type !== TournamentStage::TYPE_KING_BEACH
-            && MatchRallyEvent::where('match_id', $match->id)->exists();
+            && $match->hasTeams();
 
-        return view('tournaments.score', compact('event', 'match', 'stage', 'hasRallyData', 'hasRallyDataCompleted'));
+        return view('tournaments.score', compact('event', 'match', 'stage', 'hasRallyData', 'canReopenViaRally'));
     }
 
     /* ================================================================
@@ -2171,10 +2171,13 @@ class TournamentController extends Controller
 
     /**
      * Переоткрыть завершённый матч для правки через поочковый ввод.
-     * Сбрасывает счёт/статус матча (как rescoreMatch), но НЕ трогает
-     * уже накопленные match_rally_events — организатор может отменить
-     * неверные очки и добавить верные, затем заново нажать «Записать счёт»
-     * (rallyFinalize), который проведёт submitScore() + rebuildAll() как обычно.
+     * Сбрасывает счёт/статус матча (как rescoreMatch). Если у матча уже
+     * есть накопленные match_rally_events (счёт вводился по очкам) — они
+     * НЕ трогаются, организатор может отменить неверные очки и добавить
+     * верные. Если рали-данных нет (счёт вводился обычной формой по сетам) —
+     * организатор вводит матч заново с нуля по очкам. В обоих случаях
+     * завершение — через «Записать счёт» (rallyFinalize), который проведёт
+     * submitScore() + rebuildAll() как обычно.
      */
     public function rallyReopen(Request $request, TournamentMatch $match)
     {
@@ -2190,12 +2193,6 @@ class TournamentController extends Controller
 
         if (!$match->isCompleted()) {
             return redirect()->route('tournament.matches.rally.form', $match);
-        }
-
-        if (!MatchRallyEvent::where('match_id', $match->id)->exists()) {
-            return redirect()
-                ->route('tournament.matches.score.form', $match)
-                ->with('error', 'Для этого матча нет данных поочкового ввода — используйте обычное исправление счёта.');
         }
 
         $stageIsDivStage = str_starts_with($stage->name, 'Группа ');
