@@ -293,7 +293,7 @@
 					<button type="button" class="btn btn-small btn-secondary" onclick="toggleMatchStats({{ $m->id }})">📊 {{ __('tournaments.pub_match_stats_toggle') }}</button>
 				</div>
 				<div id="match-stats-{{ $m->id }}" class="card mb-2" style="display:none">
-					@include('tournaments._partials.match_stats_table', ['statsData' => $matchStatsByMatchId[$m->id], 'match' => $m])
+					@include('tournaments._partials.match_stats_pretty', ['statsData' => $matchStatsByMatchId[$m->id], 'match' => $m, 'stage' => $stage, 'event' => $event])
 				</div>
 				@endif
 				@endforeach
@@ -434,7 +434,7 @@
 				<button type="button" class="btn btn-small btn-secondary" onclick="toggleMatchStats({{ $m->id }})">📊 {{ __('tournaments.pub_match_stats_toggle') }}</button>
 			</div>
 			<div id="match-stats-r-{{ $m->id }}" class="card mb-2" style="display:none">
-				@include('tournaments._partials.match_stats_table', ['statsData' => $matchStatsByMatchId[$m->id], 'match' => $m])
+				@include('tournaments._partials.match_stats_pretty', ['statsData' => $matchStatsByMatchId[$m->id], 'match' => $m, 'stage' => $stage, 'event' => $event])
 			</div>
 			@endif
 			@endforeach

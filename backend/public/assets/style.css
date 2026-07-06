@@ -5365,3 +5365,239 @@ body.dark .club-occ-bar {
 body.dark .club-analytics-summary {
 	border-color: rgba(255, 255, 255, .1);
 }
+
+/* ===== Турниры: красивая статистика матча (match_stats_pretty) ===== */
+.ms-wrap { padding: 4px 0; }
+
+.ms-header { margin-bottom: 20px; }
+.ms-header-meta {
+	display: inline-block;
+	font-size: .72rem;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: .05em;
+	opacity: .5;
+	margin-bottom: 6px;
+}
+.ms-header-meta--right { float: right; }
+.ms-header-row {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	clear: both;
+	flex-wrap: wrap;
+}
+.ms-header-team {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	flex: 1 1 40%;
+	min-width: 0;
+}
+.ms-header-team--away { flex-direction: row-reverse; text-align: right; }
+.ms-captain-avatar {
+	width: 48px;
+	height: 48px;
+	border-radius: 50%;
+	object-fit: cover;
+	flex-shrink: 0;
+	border: 2px solid rgba(0, 0, 0, .06);
+}
+.ms-captain-avatar--fallback {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: #fff;
+	font-weight: 800;
+	font-size: 1rem;
+	border: none;
+}
+.ms-captain-avatar--home { background: #2967BA; }
+.ms-captain-avatar--away { background: #E7612F; }
+.ms-header-team-name {
+	font-weight: 800;
+	font-size: 1.05rem;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	min-width: 0;
+}
+.ms-header-score { flex-shrink: 0; text-align: center; padding: 0 12px; }
+.ms-header-score-main { font-size: 1.8rem; font-weight: 800; line-height: 1.1; }
+.ms-header-score-sets { font-size: .78rem; opacity: .6; margin-top: 4px; white-space: nowrap; }
+.ms-set-sep { margin: 0 4px; opacity: .5; }
+.ms-set-dim { opacity: .45; }
+
+.ms-heroes {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 16px;
+	margin-bottom: 20px;
+}
+.ms-hero-card {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	padding: 14px;
+	border-radius: 14px;
+	background: rgba(0, 0, 0, .025);
+}
+.ms-hero-card--away { flex-direction: row-reverse; text-align: right; }
+.ms-hero-avatar-wrap { position: relative; flex-shrink: 0; }
+.ms-hero-avatar {
+	width: 72px;
+	height: 72px;
+	border-radius: 50%;
+	object-fit: cover;
+	border: 2px solid rgba(0, 0, 0, .06);
+}
+.ms-hero-badge {
+	position: absolute;
+	bottom: -3px;
+	right: -3px;
+	background: #2967BA;
+	color: #fff;
+	font-size: .62rem;
+	font-weight: 800;
+	padding: 2px 5px;
+	border-radius: 6px;
+	border: 2px solid #fff;
+}
+.ms-hero-badge--away { left: -3px; right: auto; background: #E7612F; }
+.ms-hero-body { flex: 1; min-width: 0; }
+.ms-hero-name {
+	font-weight: 700;
+	font-size: .92rem;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.ms-hero-points { font-size: 1.7rem; font-weight: 800; margin: 2px 0 6px; }
+.ms-hero-points--home { color: #2967BA; }
+.ms-hero-points--away { color: #E7612F; }
+.ms-hero-breakdown { display: flex; flex-direction: column; gap: 3px; font-size: .78rem; opacity: .85; }
+.ms-hero-card--away .ms-hero-breakdown { align-items: flex-end; }
+.ms-hero-dot {
+	display: inline-block;
+	width: 7px;
+	height: 7px;
+	border-radius: 50%;
+	margin-right: 6px;
+}
+.ms-hero-card--away .ms-hero-dot { margin-right: 0; margin-left: 6px; }
+.ms-hero-dot--attack { background: #2967BA; }
+.ms-hero-dot--block { background: #10b981; }
+.ms-hero-dot--serve { background: #E7612F; }
+
+.ms-bars { margin-bottom: 20px; }
+.ms-bar-row {
+	display: grid;
+	grid-template-columns: 34px 1fr 96px 1fr 34px;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 10px;
+	font-size: .82rem;
+}
+.ms-bar-value { font-weight: 800; }
+.ms-bar-value--home { text-align: right; }
+.ms-bar-value--away { text-align: left; }
+.ms-bar-track {
+	height: 10px;
+	border-radius: 6px;
+	background: rgba(0, 0, 0, .06);
+	display: flex;
+	overflow: hidden;
+}
+.ms-bar-track--away { justify-content: flex-end; }
+.ms-bar-fill { height: 100%; border-radius: 6px; transition: width .4s ease; min-width: 2px; }
+.ms-bar-fill--home { background: #2967BA; }
+.ms-bar-fill--away { background: #E7612F; }
+.ms-bar-fill--error { background: #ef4444; opacity: .8; }
+.ms-bar-label {
+	text-align: center;
+	font-size: .68rem;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: .04em;
+	opacity: .6;
+}
+
+.ms-tables { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.ms-team-table-title {
+	font-weight: 800;
+	font-size: .95rem;
+	margin-bottom: 8px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.ms-team-table-title--away { text-align: right; }
+.ms-ptable { width: 100%; border-collapse: collapse; font-size: .82rem; }
+.ms-ptable th {
+	text-align: center;
+	font-size: .66rem;
+	text-transform: uppercase;
+	opacity: .5;
+	font-weight: 700;
+	padding: 4px 4px 6px;
+	border-bottom: 1px solid rgba(0, 0, 0, .08);
+}
+.ms-ptable th:first-child { text-align: left; }
+.ms-ptable td {
+	padding: 6px 4px;
+	border-bottom: 1px solid rgba(0, 0, 0, .05);
+	text-align: center;
+	vertical-align: middle;
+}
+.ms-td-player { text-align: left; }
+.ms-player-cell { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.ms-player-avatar-mini { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.ms-player-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ms-badge {
+	display: inline-block;
+	font-size: .62rem;
+	font-weight: 800;
+	padding: 2px 5px;
+	border-radius: 5px;
+	background: rgba(41, 103, 186, .12);
+	color: #2967BA;
+	flex-shrink: 0;
+}
+.ms-team-table--away .ms-badge { background: rgba(231, 97, 47, .12); color: #E7612F; }
+.ms-points-cell { font-weight: 800; }
+.ms-row--muted { opacity: .4; }
+.ms-section-label {
+	font-size: .68rem;
+	font-weight: 700;
+	text-transform: uppercase;
+	opacity: .45;
+	padding: 10px 4px 2px !important;
+	text-align: left !important;
+	border-bottom: none !important;
+}
+
+/* Dark mode */
+body.dark .ms-captain-avatar { border-color: rgba(255, 255, 255, .12); }
+body.dark .ms-hero-card { background: rgba(255, 255, 255, .04); }
+body.dark .ms-hero-avatar { border-color: rgba(255, 255, 255, .12); }
+body.dark .ms-hero-badge { border-color: #1e293b; }
+body.dark .ms-bar-track { background: rgba(255, 255, 255, .1); }
+body.dark .ms-ptable th { border-color: rgba(255, 255, 255, .1); }
+body.dark .ms-ptable td { border-color: rgba(255, 255, 255, .07); }
+
+/* Мобильная адаптация */
+@media (max-width: 768px) {
+	.ms-tables { grid-template-columns: 1fr; }
+	.ms-heroes { grid-template-columns: 1fr; }
+	.ms-header-team-name { font-size: .92rem; }
+	.ms-bar-row { grid-template-columns: 30px 1fr 78px 1fr 30px; font-size: .76rem; }
+	.ms-bar-label { font-size: .62rem; }
+}
+@media (max-width: 420px) {
+	.ms-header-row { gap: 8px; }
+	.ms-captain-avatar { width: 40px; height: 40px; }
+	.ms-header-score { padding: 0 6px; }
+	.ms-header-score-main { font-size: 1.4rem; }
+	.ms-hero-avatar { width: 56px; height: 56px; }
+	.ms-hero-points { font-size: 1.3rem; }
+}
