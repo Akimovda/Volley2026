@@ -219,6 +219,11 @@ class ClubBookingController extends Controller
             return back()->with('error', $e->getMessage());
         }
 
+        if ($booking->user_id) {
+            app(\App\Services\UserNotificationService::class)
+                ->createCourtBookingConfirmedNotification($booking->user_id, $booking->load('court.direction.location'));
+        }
+
         return back()->with('success', 'Бронь подтверждена.');
     }
 
@@ -231,10 +236,18 @@ class ClubBookingController extends Controller
             'reason' => ['nullable', 'string', 'max:500'],
         ]);
 
+        $notifyUserId = $booking->user_id;
+        $bookingForNotification = $booking->load('court.direction.location');
+
         try {
             $service->reject($booking, $user, $data['reason'] ?? '');
         } catch (\InvalidArgumentException $e) {
             return back()->with('error', $e->getMessage());
+        }
+
+        if ($notifyUserId) {
+            app(\App\Services\UserNotificationService::class)
+                ->createCourtBookingRejectedNotification($notifyUserId, $bookingForNotification, $data['reason'] ?? null);
         }
 
         return back()->with('success', 'Бронь отклонена.');

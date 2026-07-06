@@ -329,6 +329,9 @@
 								<a href="{{ route('player.my-events') }}" class="menu-item">
 									<span class="menu-text">{{ __('ui.menu_my_events') }}</span>
 								</a>
+								<a href="{{ route('player.my-bookings') }}" class="menu-item">
+									<span class="menu-text">{{ __('club.my_bookings') }}</span>
+								</a>
 								@if(config('activity.recording_open') || auth()->user()?->isAdmin())
 								<a href="{{ route('activity.index') }}" class="menu-item">
 									<span class="menu-text">{{ __('activity.my_activity') }}</span>

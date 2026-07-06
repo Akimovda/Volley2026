@@ -18,11 +18,19 @@
 	
 	$user = auth()->user();
 	$userTz = \App\Support\DateTime::effectiveUserTz(auth()->user());
-	
+
 	$tzLabel = function (? \Carbon\Carbon $c, string $fallbackTz) {
 	if (!$c) return $fallbackTz;
 	return $c->format('T') . ' (UTC' . $c->format('P') . ')';
 	};
+
+	// Фаза 5 — прямая бронь корта игроком: доступна ЛЮБОМУ авторизованному пользователю
+	// (не только владельцу), если у локации есть owner_id и хотя бы одно активное
+	// направление. Грузим направления+корты один раз здесь — переиспользуется ниже
+	// и для таймлайна владельца (там уже был свой ->load(), теперь общий).
+	$location->load(['directions' => fn ($q) => $q->where('is_active', true)
+		->with(['courts' => fn ($q2) => $q2->where('is_active', true)->orderBy('sort_order')])]);
+	$canBookCourt = (bool) $location->owner_id && $location->directions->isNotEmpty();
     @endphp
 	
     <x-slot name="title">
@@ -109,9 +117,18 @@
 						</div>
                         @endif
 					</div>
-					
 
-					
+                    @if($canBookCourt)
+                    <div class="mb-2">
+                        @auth
+                        <button type="button" class="btn btn-primary" onclick="window.__openPlayerBookingModal && window.__openPlayerBookingModal()">🏐 {{ __('club.book_court') }}</button>
+                        @include('club._partials.player_booking_modal', ['location' => $location])
+                        @else
+                        <a href="{{ route('login', ['return' => $location->public_url]) }}" class="btn btn-primary">🏐 {{ __('club.book_court') }}</a>
+                        @endauth
+                    </div>
+                    @endif
+
                     @if(!empty($location->long_text_full))
 					<div>
 						{!! $location->long_text_full !!}
@@ -194,8 +211,6 @@
         @php
         $canManageTimeline = $user && ((method_exists($user, 'isAdmin') && $user->isAdmin()) || (int) ($location->owner_id ?? 0) === (int) $user->id);
         if ($canManageTimeline) {
-            $location->load(['directions' => fn ($q) => $q->where('is_active', true)
-                ->with(['courts' => fn ($q2) => $q2->where('is_active', true)->orderBy('sort_order')])]);
             $bookingModalLocations = collect([$location]);
         }
         @endphp

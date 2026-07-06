@@ -157,6 +157,14 @@ Route::get('/logout', fn () => redirect('/'));
 
 		Route::get('/club/analytics', [\App\Http\Controllers\ClubAnalyticsController::class, 'index'])
 			->name('club.analytics.index');
+
+		// Фаза 5 — прямая бронь корта игроком
+		Route::post('/court-bookings', [\App\Http\Controllers\PlayerCourtBookingController::class, 'store'])
+			->name('court_bookings.store');
+		Route::get('/my/bookings', [\App\Http\Controllers\PlayerCourtBookingController::class, 'myBookings'])
+			->name('player.my-bookings');
+		Route::post('/my/bookings/{booking}/cancel', [\App\Http\Controllers\PlayerCourtBookingController::class, 'cancel'])
+			->name('player.bookings.cancel');
 	});
 
 	/*

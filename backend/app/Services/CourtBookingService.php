@@ -17,6 +17,10 @@ class CourtBookingService
 {
     private const TTL_MINUTES = 30;
 
+    /** Фаза 5: прямая бронь игроком — горизонт бронирования и анти-спам лимит. */
+    private const PLAYER_MAX_ADVANCE_DAYS = 30;
+    private const PLAYER_MAX_ACTIVE_PENDING_PER_LOCATION = 3;
+
     public function __construct(
         private CourtPricingService $pricingService,
     ) {}
@@ -55,6 +59,52 @@ class CourtBookingService
             'price_total'   => $priceTotal,
             'payment_mode'  => $paymentMode,
             'expires_at'    => $expiresAt,
+        ], notify: true);
+    }
+
+    /**
+     * Прямая бронь корта игроком со страницы локации (Фаза 5). В отличие от create()
+     * (используется организаторами через ClubOrganizerTrust) — НЕ смотрит на trust-
+     * настройки: оплата YooKassa ещё не подключена (следующая фаза), поэтому для ЛЮБОГО
+     * игрока бронь всегда идёт как "подтверждение владельцем" (status=pending,
+     * payment_mode=on_site, без TTL) — независимо от того, что решил бы trust-уровень.
+     */
+    public function createByPlayer(User $user, LocationCourt $court, Carbon $startsAt, Carbon $endsAt): CourtBooking
+    {
+        [, $location] = $this->validateBookingWindow($court, $startsAt, $endsAt);
+
+        if (!$location->owner_id) {
+            throw new InvalidArgumentException('Эта локация не поддерживает бронирование через платформу.');
+        }
+
+        if ($startsAt->gt(now()->addDays(self::PLAYER_MAX_ADVANCE_DAYS))) {
+            throw new InvalidArgumentException('Бронировать можно не более чем за ' . self::PLAYER_MAX_ADVANCE_DAYS . ' дней вперёд.');
+        }
+
+        $activePendingCount = CourtBooking::where('user_id', $user->id)
+            ->where('status', CourtBooking::STATUS_PENDING)
+            ->whereHas('court.direction', fn ($q) => $q->where('location_id', $location->id))
+            ->count();
+
+        if ($activePendingCount >= self::PLAYER_MAX_ACTIVE_PENDING_PER_LOCATION) {
+            throw new InvalidArgumentException(
+                'У вас уже есть ' . self::PLAYER_MAX_ACTIVE_PENDING_PER_LOCATION . ' заявки на бронь в этой локации, ожидающие подтверждения клуба. Дождитесь ответа по ним, прежде чем создавать новые.'
+            );
+        }
+
+        $priceTotal = $this->pricingService->calculate($court, $startsAt, $endsAt);
+
+        return $this->insertBooking($court, $startsAt, $endsAt, [
+            'court_id'      => $court->id,
+            'user_id'       => $user->id,
+            'event_id'      => null,
+            'occurrence_id' => null,
+            'starts_at'     => $startsAt,
+            'ends_at'       => $endsAt,
+            'status'        => CourtBooking::STATUS_PENDING,
+            'price_total'   => $priceTotal,
+            'payment_mode'  => CourtBooking::PAYMENT_MODE_ON_SITE,
+            'expires_at'    => null,
         ], notify: true);
     }
 
@@ -462,6 +512,14 @@ class CourtBookingService
         }
         if (!in_array($booking->status, CourtBooking::ACTIVE_STATUSES, true)) {
             throw new InvalidArgumentException('Эту бронь нельзя отменить.');
+        }
+
+        $court = $booking->relationLoaded('court') ? $booking->court : $booking->court()->with('direction.location')->first();
+        $location = $court->direction->location;
+        $cancelHours = $location->booking_cancel_hours ?? 24;
+
+        if (now()->gt($booking->starts_at->copy()->subHours($cancelHours))) {
+            throw new InvalidArgumentException(__('club.cancel_deadline_error', ['hours' => $cancelHours]));
         }
 
         $booking->status = CourtBooking::STATUS_CANCELLED;

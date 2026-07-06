@@ -113,6 +113,14 @@
                         <span class="menu-text">{{ __('profile.menu_my_events') }}</span>
                     @endif
                 </a>
+                <a href="{{ route('player.my-bookings') }}"
+                   class="menu-item {{ $activeMenu === 'my_bookings' ? 'active' : '' }}">
+                    @if($activeMenu === 'my_bookings')
+                        <strong class="cd menu-text">{{ __('club.my_bookings') }}</strong>
+                    @else
+                        <span class="menu-text">{{ __('club.my_bookings') }}</span>
+                    @endif
+                </a>
                 <a href="{{ route('player.dashboard') }}"
                    class="menu-item {{ $activeMenu === 'player_dashboard' ? 'active' : '' }}">
                     @if($activeMenu === 'player_dashboard')
@@ -353,6 +361,14 @@
             <strong class="cd menu-text">{{ __('profile.menu_my_events') }}</strong>
         @else
             <span class="menu-text">{{ __('profile.menu_my_events') }}</span>
+        @endif
+    </a>
+    <a href="{{ route('player.my-bookings') }}"
+       class="menu-item {{ $activeMenu === 'my_bookings' ? 'active' : '' }}">
+        @if($activeMenu === 'my_bookings')
+            <strong class="cd menu-text">{{ __('club.my_bookings') }}</strong>
+        @else
+            <span class="menu-text">{{ __('club.my_bookings') }}</span>
         @endif
     </a>
     <a href="{{ route('player.dashboard') }}"

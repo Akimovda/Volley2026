@@ -172,4 +172,21 @@ return [
     'paid_on_site'              => 'paid on site',
     'analytics_no_locations'    => "You don't have any club venues yet.",
     'analytics_no_courts'       => 'This venue has no active courts yet.',
+
+    // === Phase 5 — direct court booking by players ===
+    'book_court'                => 'Book a court',
+    'my_bookings'               => 'My bookings',
+    'send_request'              => 'Send request',
+    'duration'                  => 'Duration',
+    'duration_30m'              => '30 minutes',
+    'duration_1h'               => '1 hour',
+    'duration_1h30m'            => '1.5 hours',
+    'duration_2h'               => '2 hours',
+    'duration_3h'               => '3 hours',
+    'cost'                      => 'Cost',
+    'available_slots'          => 'Available slots',
+    'busy'                      => 'Busy',
+    'booking_pending_info'      => 'Request sent. Waiting for the club to confirm.',
+    'cancel_deadline_error'     => 'Cancellation is only possible at least :hours h before the start.',
+    'booking_cancel_hours_label' => 'Player cancellation deadline (hours before start)',
 ];

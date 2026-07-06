@@ -676,6 +676,17 @@
 						</div>
 					</div>
                     @endif
+
+                    {{-- Отмена брони игроком: за сколько часов до начала ещё можно отменить --}}
+                    <div class="col-12">
+                        <div class="card">
+                            <label>{{ __('club.booking_cancel_hours_label') }}</label>
+                            <input type="number" name="booking_cancel_hours" min="0" max="720"
+                                value="{{ old('booking_cancel_hours', $location->booking_cancel_hours ?? 24) }}"
+                                class="@error('booking_cancel_hours') is-invalid @enderror">
+                            @error('booking_cancel_hours')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                        </div>
+                    </div>
 				</div>
 				
 				<div class="mt-2 text-center">

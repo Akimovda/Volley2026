@@ -27,11 +27,13 @@ class Location extends Model implements HasMedia
         'long_text2',  // ✅ второе поле (для “полного”)
         'lat',
         'lng',
+        'booking_cancel_hours',
     ];
 
     protected $casts = [
         'lat' => 'float',
         'lng' => 'float',
+        'booking_cancel_hours' => 'integer',
     ];
 
     public function city()
