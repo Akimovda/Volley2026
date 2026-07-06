@@ -375,6 +375,9 @@
 								<a href="{{ route('club.bookings.index') }}" class="menu-item">
 									<span class="menu-text">{{ __('club.bookings_title') }}</span>
 								</a>
+								<a href="{{ route('club.analytics.index') }}" class="menu-item">
+									<span class="menu-text">{{ __('club.analytics') }}</span>
+								</a>
 								@endif
 								<a href="/events/create" class="menu-item">
 									<span class="menu-text">{{ __('ui.org_create_event') }}</span>

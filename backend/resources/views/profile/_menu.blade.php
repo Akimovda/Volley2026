@@ -242,6 +242,14 @@
                         <span class="menu-text">🏟️ {{ __('club.bookings_title') }}</span>
                     @endif
                 </a>
+                <a href="{{ route('club.analytics.index') }}"
+                   class="menu-item {{ $activeMenu === 'club_analytics' ? 'active' : '' }}">
+                    @if($activeMenu === 'club_analytics')
+                        <strong class="cd menu-text">📊 {{ __('club.analytics') }}</strong>
+                    @else
+                        <span class="menu-text">📊 {{ __('club.analytics') }}</span>
+                    @endif
+                </a>
                 @endif
 
                 @php

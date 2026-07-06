@@ -73,6 +73,7 @@ $renderBooking = function ($booking) use ($statusLabels, $statusColors) {
         @if($locations->isNotEmpty())
         @include('club._partials.booking_modal', ['locations' => $locations])
         @include('club._partials.booking_details_modal')
+        @include('club._partials.timeline', ['locations' => $locations, 'showAddButton' => false])
         @endif
 
         <div class="d-flex gap-1 mb-2" style="flex-wrap:wrap">

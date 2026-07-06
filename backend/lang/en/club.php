@@ -154,4 +154,22 @@ return [
     // === Payment settings for rentals (Phase 4 groundwork) ===
     'payment_for_rentals'       => 'Use these settings to accept payment for court rentals',
     'payment_for_rentals_hint'  => 'Actual rental payment via YooKassa/link will arrive in a later phase of the club module — this checkbox only records the intent.',
+
+    // === Club analytics (court occupancy and revenue) ===
+    'analytics'                 => 'Analytics',
+    'occupancy'                 => 'Occupancy',
+    'revenue'                   => 'Revenue',
+    'period_month'              => 'Month',
+    'period_quarter'            => 'Quarter',
+    'period_half_year'          => 'Half-year',
+    'period_year'               => 'Year',
+    'period_label_quarter'      => 'Q:n :year',
+    'period_label_half_year'    => 'H:n :year',
+    'period_prev'                => '← Prev',
+    'period_next'                => 'Next →',
+    'whole_center'              => 'Whole center',
+    'paid_online'               => 'paid online',
+    'paid_on_site'              => 'paid on site',
+    'analytics_no_locations'    => "You don't have any club venues yet.",
+    'analytics_no_courts'       => 'This venue has no active courts yet.',
 ];

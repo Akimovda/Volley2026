@@ -154,6 +154,9 @@ Route::get('/logout', fn () => redirect('/'));
 			->name('club.bookings.update');
 		Route::post('/club/bookings/{booking}/cancel', [\App\Http\Controllers\ClubBookingController::class, 'cancel'])
 			->name('club.bookings.cancel');
+
+		Route::get('/club/analytics', [\App\Http\Controllers\ClubAnalyticsController::class, 'index'])
+			->name('club.analytics.index');
 	});
 
 	/*

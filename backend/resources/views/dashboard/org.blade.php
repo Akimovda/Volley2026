@@ -32,6 +32,7 @@
             <a href="{{ route('profile.transactions') }}" class="btn btn-secondary">{{ __('profile.dash_org_btn_transactions') }}</a>
             @if(auth()->user()?->is_club_manager && auth()->user()->ownedLocations()->exists())
             <a href="{{ route('club.bookings.index') }}" class="btn btn-secondary">🏟️ {{ __('club.court_bookings') }}</a>
+            <a href="{{ route('club.analytics.index') }}" class="btn btn-secondary">📊 {{ __('club.analytics') }}</a>
             @endif
         </div>
     </x-slot>

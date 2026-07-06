@@ -5306,3 +5306,62 @@ body.dark .podium-bar {
 		width: calc(100vw - 32px);
 	}
 }
+
+/* ===== Club module: аналитика — прогресс-бары загрузки кортов ===== */
+.club-occ-row {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 10px;
+	margin-bottom: 8px;
+}
+.club-occ-row__name {
+	flex: 0 0 150px;
+	min-width: 110px;
+}
+.club-occ-bar {
+	display: block;
+	flex: 1 1 120px;
+	min-width: 100px;
+	height: 10px;
+	border-radius: 6px;
+	overflow: hidden;
+	background: rgba(17, 24, 39, .1);
+}
+.club-occ-bar__fill {
+	display: block;
+	height: 100%;
+	border-radius: 6px;
+	transition: width .4s ease;
+	min-width: 2px;
+}
+.club-occ-bar__fill--low {
+	background: #9E9E9E;
+}
+.club-occ-bar__fill--mid {
+	background: #E7612F;
+}
+.club-occ-bar__fill--high {
+	background: #34C759;
+}
+.club-occ-row__pct {
+	flex: 0 0 44px;
+	text-align: right;
+	font-weight: 600;
+}
+.club-occ-row__revenue {
+	flex: 0 0 110px;
+	text-align: right;
+}
+body.dark .club-occ-bar {
+	background: rgba(255, 255, 255, .12);
+}
+.club-analytics-summary {
+	border-radius: 1rem;
+	border: 0.2rem solid rgba(0, 0, 0, .1);
+	padding: 1.5rem 2rem;
+	margin-bottom: 1.5rem;
+}
+body.dark .club-analytics-summary {
+	border-color: rgba(255, 255, 255, .1);
+}
