@@ -189,4 +189,22 @@ return [
     'booking_pending_info'      => 'Заявка отправлена. Ожидайте подтверждения клуба.',
     'cancel_deadline_error'     => 'Отмена возможна не позднее чем за :hours ч. до начала.',
     'booking_cancel_hours_label' => 'Отмена брони игроком не позднее чем за N часов до начала',
+
+    // Фаза 4 — оплата брони онлайн
+    'booking_awaiting_payment'     => 'Ожидает оплаты',
+    'booking_pay_button'           => 'Оплатить :amount ₽',
+    'booking_pay_countdown_label'  => 'Осталось на оплату: :mins мин :secs сек',
+    'booking_pay_countdown_expired'=> 'Время на оплату истекло',
+    'booking_pay_not_available'    => 'Оплата онлайн для этой брони недоступна.',
+    'booking_pay_expired'          => 'Время на оплату истекло, бронь освобождена.',
+    'booking_pay_failed'           => 'Не удалось создать платёж. Попробуйте позже.',
+    'booking_cancelled_refunded'   => 'Бронь отменена, возврат оформлен — деньги вернутся на карту в течение нескольких дней.',
+    'cancel_no_refund_warning'     => 'Внимание: возврат за эту бронь не полагается (истёк срок возврата или у клуба действует политика без возврата).',
+    'payment_mode_online'          => 'Оплачена онлайн',
+    'payment_mode_awaiting'        => 'Ожидает оплаты',
+    'payment_mode_on_site'         => 'Оплата на месте',
+    'refund_policy_label'          => 'Возврат при отмене оплаченной онлайн брони',
+    'refund_policy_full'           => 'Полный возврат до дедлайна',
+    'refund_policy_none'           => 'Без возвратов',
+    'refund_deadline_hours_label'  => 'Возврат возможен не позднее чем за N часов до начала',
 ];

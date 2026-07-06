@@ -133,11 +133,15 @@ public function update(Request $request, Location $location)
         'photos.*'       => ['nullable', 'image', 'max:5120'],
         'owner_id'       => ['nullable', 'integer', 'exists:users,id'],
         'booking_cancel_hours' => ['nullable', 'integer', 'min:0', 'max:720'],
+        'refund_policy'  => ['nullable', 'in:full,none'],
+        'refund_deadline_hours' => ['nullable', 'integer', 'min:0', 'max:720'],
     ]);
 
     if ($request->user()?->isAdmin()) {
         $location->owner_id = $data['owner_id'] ?? null;
         $location->booking_cancel_hours = $data['booking_cancel_hours'] ?? 24;
+        $location->refund_policy = $data['refund_policy'] ?? 'full';
+        $location->refund_deadline_hours = $data['refund_deadline_hours'] ?? 24;
     }
 
     $city = City::query()->whereKey((int)$data['city_id'])->first();

@@ -193,15 +193,20 @@ class ClubBookingController extends Controller
         $scope = ($data['scope'] ?? 'only_this') === 'this_and_following' ? 'this_and_following' : 'this';
 
         try {
-            $cancelled = $service->cancel($booking, $user, $data['reason'] ?? null, $scope);
+            $result = $service->cancel($booking, $user, $data['reason'] ?? null, $scope);
         } catch (\InvalidArgumentException $e) {
             return back()->with('error', $e->getMessage());
         }
 
         $notificationService = app(\App\Services\UserNotificationService::class);
-        foreach ($cancelled as $b) {
-            if ($b->user_id) {
-                $notificationService->createCourtBookingCancelledNotification($b->user_id, $b->load('court.direction.location'), $data['reason'] ?? null);
+        $refundedIds = $result['refunded_ids'];
+        foreach ($result['cancelled'] as $b) {
+            if (!$b->user_id) {
+                continue;
+            }
+            $notificationService->createCourtBookingCancelledNotification($b->user_id, $b->load('court.direction.location'), $data['reason'] ?? null);
+            if (in_array($b->id, $refundedIds, true)) {
+                $notificationService->createCourtBookingRefundedNotification($b->user_id, $b);
             }
         }
 

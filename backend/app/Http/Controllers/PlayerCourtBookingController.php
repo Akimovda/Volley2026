@@ -34,9 +34,14 @@ class PlayerCourtBookingController extends Controller
         $endsAt = $startsAt->copy()->addMinutes((int) $data['duration']);
 
         try {
-            $service->createByPlayer($user, $court, $startsAt, $endsAt);
+            $booking = $service->createByPlayer($user, $court, $startsAt, $endsAt);
         } catch (\InvalidArgumentException $e) {
             return back()->with('error', $e->getMessage());
+        }
+
+        if ($booking->payment_mode === CourtBooking::PAYMENT_MODE_PREPAID) {
+            return back()->with('success', __('club.booking_pay_button', ['amount' => number_format((float) $booking->price_total, 0, ',', ' ')]))
+                ->with('pay_booking_url', route('player.my-bookings'));
         }
 
         return back()->with('success', __('club.booking_pending_info'));
@@ -72,11 +77,56 @@ class PlayerCourtBookingController extends Controller
         $user = $request->user();
 
         try {
-            $service->cancelByUser($booking, $user);
+            $refunded = $service->cancelByUser($booking, $user);
         } catch (\InvalidArgumentException $e) {
             return back()->with('error', $e->getMessage());
         }
 
+        if ($refunded) {
+            app(\App\Services\UserNotificationService::class)
+                ->createCourtBookingRefundedNotification($user->id, $booking);
+
+            return back()->with('success', __('club.booking_cancelled_refunded'));
+        }
+
         return back()->with('success', __('club.booking_cancelled'));
+    }
+
+    /**
+     * Фаза 4 — оплатить prepaid-бронь (после создания или пока не истёк TTL).
+     * POST /my/bookings/{booking}/pay — редиректит на страницу оплаты ЮKassa.
+     */
+    public function pay(Request $request, CourtBooking $booking, \App\Services\PaymentService $paymentService)
+    {
+        $user = $request->user();
+
+        if ((int) $booking->user_id !== (int) $user->id) {
+            abort(403);
+        }
+
+        if ($booking->status !== CourtBooking::STATUS_PENDING || $booking->payment_mode !== CourtBooking::PAYMENT_MODE_PREPAID) {
+            return back()->with('error', __('club.booking_pay_not_available'));
+        }
+
+        if ($booking->expires_at && now()->gte($booking->expires_at)) {
+            return back()->with('error', __('club.booking_pay_expired'));
+        }
+
+        $booking->loadMissing('court.direction.location');
+        $ownerId = $booking->court?->direction?->location?->owner_id;
+        $settings = $ownerId ? \App\Models\PaymentSetting::where('organizer_id', $ownerId)->first() : null;
+
+        if (!$settings || !$settings->isYoomoneyReady()) {
+            return back()->with('error', __('club.booking_pay_not_available'));
+        }
+
+        try {
+            $payment = $paymentService->createForBooking($booking, $settings, route('player.my-bookings'));
+        } catch (\Throwable $e) {
+            report($e);
+            return back()->with('error', __('club.booking_pay_failed'));
+        }
+
+        return redirect()->away($payment->yoomoney_confirmation_url);
     }
 }
