@@ -1030,6 +1030,9 @@ Route::middleware([
     Route::post('/tournament-matches/{match}/player-stats', [TournamentController::class, 'playerStatsSave'])
         ->name('tournament.matches.player_stats.save');
 
+    Route::get('/tournament-matches/{match}/pdf-stats', [TournamentController::class, 'pdfMatchStats'])
+        ->name('tournament.matches.pdf_stats');
+
     // Поочковый ввод счёта со статистикой (rally-режим)
     Route::get('/tournament-matches/{match}/score/rally', [TournamentController::class, 'rallyForm'])
         ->name('tournament.matches.rally.form');

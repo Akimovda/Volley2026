@@ -1963,6 +1963,32 @@ class TournamentController extends Controller
     }
 
     /**
+     * PDF-выгрузка статистики матча (доступна, когда счёт по партиям внесён).
+     */
+    public function pdfMatchStats(Request $request, TournamentMatch $match)
+    {
+        $stage = $match->stage;
+        $event = $stage->event;
+        $this->authorizeOrganizer($request, $event);
+
+        if (!$match->isCompleted()) {
+            return redirect()
+                ->route('tournament.matches.rally.form', $match)
+                ->with('error', 'Статистика будет доступна для выгрузки после завершения матча.');
+        }
+
+        $match->load(['teamHome.members.user', 'teamHome.captain', 'teamAway.members.user', 'teamAway.captain', 'stage']);
+
+        $statsData = app(PlayerMatchStatsService::class)->getMatchStatsTable($match);
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('tournaments.pdf.match_stats', compact('event', 'stage', 'match', 'statsData'))
+            ->setPaper('a4', 'portrait');
+
+        $filename = 'match_' . $match->id . '_stats_' . now()->format('Ymd') . '.pdf';
+        return $pdf->download($filename);
+    }
+
+    /**
      * Сохранение детальной статистики матча.
      */
     public function playerStatsSave(Request $request, TournamentMatch $match)
