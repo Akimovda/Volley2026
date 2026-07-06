@@ -5042,6 +5042,11 @@ body:not(.is-app) .native-actions {
 	font-weight: 600;
 	background: rgba(41, 103, 186, .08);
 	border-radius: 6px 6px 0 0;
+	padding: 0 4px;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	cursor: default;
 }
 .timeline-court-body {
 	position: relative;
@@ -5273,18 +5278,31 @@ body.dark .podium-bar {
 	.podium-bronze .podium-bar { height: 40px; }
 }
 
-/* ===== Club module: модалка "Добавить/редактировать бронь" — ширина по содержимому =====
-   .form / .form input,select { width:100% } внутри inline-block .fancybox-content без
-   явного max-width на обёртке даёт "резиновый" блок шириной во весь доступный экран
-   (browser берёт max-width как preferred width при shrink-to-fit) — отсюда был баг
-   "контейнер модалки шире содержимого". max-width ограничивает именно эту ширину. */
+/* ===== Club module: модалка "Добавить/редактировать бронь" =====
+   Размер видимого белого окна задаём НЕПОСРЕДСТВЕННО на .fancybox-content (через
+   opts.baseClass:'booking-modal-fancybox' в JS открытия), а не на вложенном
+   .booking-modal-content: тот — блок с width:100% внутри inline-block
+   .fancybox-content, а .form input/select тоже width:100% — при shrink-to-fit
+   браузер берёт max-width вложенного блока как "предпочитаемую" ширину родителя,
+   что давало то слишком широкий контейнер, то (после смены состояния формы без
+   пересчёта) высоту от предыдущего, более высокого состояния. Фиксируя размер
+   прямо на .fancybox-content, привязки нет — окно всегда по актуальному контенту. */
 .booking-modal-content {
-	max-width: 48rem;
 	width: 100%;
 }
+.fancybox-container.booking-modal-fancybox .fancybox-content {
+	width: 100%;
+	max-width: 48rem; /* ~480px на десктопе */
+	max-height: 90vh;
+	overflow-y: auto;
+}
 @media (max-width: 768px) {
-	.booking-modal-content {
-		max-width: 100%;
-		width: 100%;
+	.fancybox-container.booking-modal-fancybox .fancybox-slide {
+		padding-left: 16px;
+		padding-right: 16px;
+	}
+	.fancybox-container.booking-modal-fancybox .fancybox-content {
+		max-width: calc(100vw - 32px);
+		width: calc(100vw - 32px);
 	}
 }

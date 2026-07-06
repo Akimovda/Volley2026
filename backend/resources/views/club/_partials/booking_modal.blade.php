@@ -17,7 +17,7 @@ $locationsJs = $locations->map(function ($loc) {
 @endphp
 
 <div id="addBookingModalContent" class="booking-modal-content" style="display:none">
-    <div class="card" style="height:auto;max-height:90vh;overflow-y:auto">
+    <div class="card" style="height:auto">
         <h3 class="-mt-05" id="abModalTitle">{{ __('club.add_booking') }}</h3>
 
         @if(session('error'))
@@ -274,6 +274,7 @@ $locationsJs = $locations->map(function ($loc) {
         if (preselectCourtId) courtSelect.value = String(preselectCourtId);
         applyCourtFieldMode();
         rebuildCustomSelect(courtSelect);
+        refreshFancyboxSize();
     }
 
     // В режиме edit активен select (name=court_id), чекбоксы отключены (не должны
@@ -409,7 +410,11 @@ $locationsJs = $locations->map(function ($loc) {
         jQuery.fancybox.open({
             src: '#addBookingModalContent',
             type: 'inline',
-            opts: { hideScrollbar: false, touch: false, toolbar: false, smallBtn: true, animationEffect: 'zoom-in-out', transitionEffect: 'zoom-in-out', preventCaptionOverlap: false }
+            opts: {
+                baseClass: 'booking-modal-fancybox',
+                hideScrollbar: false, touch: false, toolbar: false, smallBtn: true,
+                animationEffect: 'zoom-in-out', transitionEffect: 'zoom-in-out', preventCaptionOverlap: false,
+            }
         });
     }
 

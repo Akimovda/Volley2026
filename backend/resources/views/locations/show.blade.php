@@ -705,6 +705,7 @@
                                 const header = document.createElement('div');
                                 header.className = 'timeline-court-header';
                                 header.textContent = (court.is_indoor ? '🏠 ' : '☀️ ') + court.name;
+                                header.title = court.name;
                                 col.appendChild(header);
 
                                 const body = document.createElement('div');

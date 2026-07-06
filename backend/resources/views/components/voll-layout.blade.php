@@ -371,6 +371,11 @@
 								<a href="/events/registrations/manage" class="menu-item">
 									<span class="menu-text">{{ __('ui.org_regs_manage') }}</span>
 								</a>
+								@if(auth()->user()->is_club_manager && auth()->user()->ownedLocations()->exists())
+								<a href="{{ route('club.bookings.index') }}" class="menu-item">
+									<span class="menu-text">{{ __('club.bookings_title') }}</span>
+								</a>
+								@endif
 								<a href="/events/create" class="menu-item">
 									<span class="menu-text">{{ __('ui.org_create_event') }}</span>
 								</a>
