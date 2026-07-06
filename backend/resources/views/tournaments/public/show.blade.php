@@ -502,6 +502,42 @@
 			<div class="f-13" style="opacity:.5">Нет данных. Статистика появится после первых сыгранных матчей.</div>
 			@endif
 		</div>
+
+		<div class="card p-3 mb-3">
+			<div class="b-700 f-16 mb-2">📊 {{ __('tournaments.pub_match_stats_toggle') }}</div>
+			@php $anyCompletedForStatsTab = false; @endphp
+			@foreach($stages as $stage)
+			@php $stageCompletedForStatsTab = $stage->matches->where('status', 'completed')->sortBy(['round', 'match_number']); @endphp
+			@if($stageCompletedForStatsTab->isNotEmpty())
+			@php $anyCompletedForStatsTab = true; @endphp
+			<div class="mb-2">
+				<div class="cd b-600 mb-1" style="opacity:.6">{{ $stage->name }}</div>
+				@foreach($stageCompletedForStatsTab as $m)
+				<div class="d-flex f-14" style="padding:5px 0;border-bottom:1px solid rgba(128,128,128,.08);gap:8px;align-items:center">
+					<span style="flex:1;text-align:right" class="{{ $m->winner_team_id === $m->team_home_id ? 'b-700' : '' }}">
+						@include('tournaments._partials.team_name_link', ['team' => $m->teamHome, 'fallback' => '?'])
+					</span>
+					<span class="px-2 b-700" style="min-width:80px;text-align:center">{{ $m->setsScore() }}</span>
+					<span style="flex:1" class="{{ $m->winner_team_id === $m->team_away_id ? 'b-700' : '' }}">
+						@include('tournaments._partials.team_name_link', ['team' => $m->teamAway, 'fallback' => '?'])
+					</span>
+				</div>
+				@if(!empty($matchStatsByMatchId[$m->id]['has_stats']))
+				<div style="text-align:center;margin:2px 0 8px">
+					<button type="button" class="btn btn-small btn-secondary" onclick="toggleMatchStats({{ $m->id }})">📊 {{ __('tournaments.pub_match_stats_toggle') }}</button>
+				</div>
+				<div id="match-stats-s-{{ $m->id }}" class="card mb-2" style="display:none">
+					@include('tournaments._partials.match_stats_pretty', ['statsData' => $matchStatsByMatchId[$m->id], 'match' => $m, 'stage' => $stage, 'event' => $event])
+				</div>
+				@endif
+				@endforeach
+			</div>
+			@endif
+			@endforeach
+			@if(!$anyCompletedForStatsTab)
+			<div class="f-13" style="opacity:.5">{{ __('tournaments.pub_no_finished_matches') }}</div>
+			@endif
+		</div>
 		</div>
 		{{-- ============================================================
 		TAB: Фото
@@ -630,7 +666,7 @@
 			})();
 
 			function toggleMatchStats(id) {
-				var el = document.getElementById('match-stats-' + id) || document.getElementById('match-stats-r-' + id);
+				var el = document.getElementById('match-stats-' + id) || document.getElementById('match-stats-r-' + id) || document.getElementById('match-stats-s-' + id);
 				if (el) el.style.display = (el.style.display === 'none') ? '' : 'none';
 			}
 
