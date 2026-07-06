@@ -41,6 +41,11 @@
             2 => public_path('assets/pdf-icons/medal-silver.png'),
             3 => public_path('assets/pdf-icons/medal-bronze.png'),
         ];
+        $placeColor = [
+            1 => '#B8860B',
+            2 => '#8C8C8C',
+            3 => '#B5651D',
+        ];
         $mvpIcon = public_path('assets/pdf-icons/mvp.png');
     @endphp
     @if(!empty($classification))
@@ -55,7 +60,7 @@
             <tbody>
                 @foreach($classification as $c)
                     <tr>
-                        <td class="tc bold" style="{{ $c['place'] <= 3 ? 'color:#E7612F' : '' }}">
+                        <td class="tc bold" style="{{ $c['place'] <= 3 ? 'color:' . $placeColor[$c['place']] : '' }}">
                             @if($c['place'] <= 3)
                                 <img src="{{ $medalIcon[$c['place']] }}" width="16" height="16" style="vertical-align:middle">
                             @endif
@@ -239,6 +244,9 @@
         @endif
     @endif
 
-    <div class="footer">VolleyPlay.Club · {{ now()->format('d.m.Y H:i') }}</div>
+    <div class="footer">
+        VolleyPlay.Club · {{ now()->format('d.m.Y H:i') }}<br>
+        Иконки: Icons8 (icons8.com)
+    </div>
 </body>
 </html>
