@@ -33,6 +33,16 @@
     @php
         $classification = app(\App\Services\TournamentStatsService::class)->calculateFinalClassification($event);
     @endphp
+    @php
+        // dompdf не рендерит emoji (нет глифов в DejaVu Sans) и не рендерит SVG —
+        // только растровые PNG по локальному пути внутри chroot (base_path()).
+        $medalIcon = [
+            1 => public_path('assets/pdf-icons/medal-gold.png'),
+            2 => public_path('assets/pdf-icons/medal-silver.png'),
+            3 => public_path('assets/pdf-icons/medal-bronze.png'),
+        ];
+        $mvpIcon = public_path('assets/pdf-icons/mvp.png');
+    @endphp
     @if(!empty($classification))
         <h2>Итоговая классификация</h2>
         <table>
@@ -46,6 +56,9 @@
                 @foreach($classification as $c)
                     <tr>
                         <td class="tc bold" style="{{ $c['place'] <= 3 ? 'color:#E7612F' : '' }}">
+                            @if($c['place'] <= 3)
+                                <img src="{{ $medalIcon[$c['place']] }}" width="16" height="16" style="vertical-align:middle">
+                            @endif
                             {{ $c['place'] }}
                         </td>
                         <td class="{{ $c['place'] <= 3 ? 'bold' : '' }}">{{ $c['team_name'] }}</td>
@@ -172,7 +185,10 @@
         <h2>Рейтинг игроков</h2>
 
         @if($mvpUser)
-            <div class="mvp-block">MVP турнира: {{ $mvpUser->displayName() }}</div>
+            <div class="mvp-block">
+                <img src="{{ $mvpIcon }}" width="20" height="20" style="vertical-align:middle">
+                MVP турнира: {{ $mvpUser->displayName() }}
+            </div>
         @endif
 
         <table>
@@ -199,7 +215,12 @@
                     @php $isMvp = $event->tournament_mvp_user_id && (int) $event->tournament_mvp_user_id === (int) $r['user_id']; @endphp
                     <tr @if($isMvp) style="background:#fff8d6" @endif>
                         <td class="tc bold">{{ $i + 1 }}</td>
-                        <td>{{ $r['user']?->displayName() ?? '#' . $r['user_id'] }}{{ $isMvp ? ' (MVP)' : '' }}</td>
+                        <td>
+                            {{ $r['user']?->displayName() ?? '#' . $r['user_id'] }}
+                            @if($isMvp)
+                                <img src="{{ $mvpIcon }}" width="14" height="14" style="vertical-align:middle">
+                            @endif
+                        </td>
                         <td class="tc">{{ $r['t_games'] }}</td>
                         <td class="tc win">{{ $r['t_wins'] }}</td>
                         @if($ratingData['hasPoints'])
