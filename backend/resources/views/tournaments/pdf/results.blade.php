@@ -47,6 +47,10 @@
             3 => '#B5651D',
         ];
         $mvpIcon = public_path('assets/pdf-icons/mvp.png');
+        $captainsByTeam = \App\Models\EventTeam::whereIn('id', collect($classification)->pluck('team_id')->filter()->unique())
+            ->with('captain')
+            ->get()
+            ->keyBy('id');
     @endphp
     @if(!empty($classification))
         <h2>Итоговая классификация</h2>
@@ -55,10 +59,15 @@
                 <tr>
                     <th class="tc">Место</th>
                     <th>Команда</th>
+                    <th>Капитан</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach($classification as $c)
+                    @php
+                        $captain = $captainsByTeam->get($c['team_id'])?->captain;
+                        $captainName = $captain ? trim(($captain->last_name ?? '') . ' ' . ($captain->first_name ?? '')) ?: '—' : '—';
+                    @endphp
                     <tr>
                         <td class="tc bold" style="{{ $c['place'] <= 3 ? 'color:' . $placeColor[$c['place']] : '' }}">
                             @if($c['place'] <= 3)
@@ -67,6 +76,7 @@
                             {{ $c['place'] }}
                         </td>
                         <td class="{{ $c['place'] <= 3 ? 'bold' : '' }}">{{ $c['team_name'] }}</td>
+                        <td>{{ $captainName }}</td>
                     </tr>
                 @endforeach
             </tbody>
