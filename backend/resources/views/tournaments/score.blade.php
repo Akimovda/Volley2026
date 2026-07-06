@@ -126,7 +126,7 @@
 					@endif
 				@endif
 
-				@if($stage->type !== 'king_beach' && $isEdit && ($hasRallyDataCompleted ?? false))
+				@if($stage->type !== 'king_beach' && $isEdit && ($canReopenViaRally ?? false))
 				<div class="alert alert-info d-flex fvc gap-1 mb-2" style="flex-wrap:wrap">
 					<span>{{ __('tournaments.rally_reopen_banner') }}</span>
 					<form method="POST" action="{{ route('tournament.matches.rally.reopen', $match) }}" style="margin:0">
