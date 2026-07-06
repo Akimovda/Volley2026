@@ -5396,8 +5396,8 @@ body.dark .club-analytics-summary {
 }
 .ms-header-team--away { flex-direction: row-reverse; text-align: right; }
 .ms-captain-avatar {
-	width: 48px;
-	height: 48px;
+	width: 60px;
+	height: 60px;
 	border-radius: 50%;
 	object-fit: cover;
 	flex-shrink: 0;
@@ -5409,27 +5409,31 @@ body.dark .club-analytics-summary {
 	justify-content: center;
 	color: #fff;
 	font-weight: 800;
-	font-size: 1rem;
+	font-size: 1.3rem;
 	border: none;
 }
 .ms-captain-avatar--home { background: #2967BA; }
 .ms-captain-avatar--away { background: #E7612F; }
 .ms-header-team-name {
-	font-weight: 800;
-	font-size: 1.05rem;
+	font-weight: 500;
+	font-size: 2.1rem;
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
 	min-width: 0;
 }
+.ms-header-team-name--winner { font-weight: 700; }
 .ms-header-score { flex-shrink: 0; text-align: center; padding: 0 12px; }
-.ms-header-score-main { font-size: 1.8rem; font-weight: 800; line-height: 1.1; }
-.ms-header-score-sets { font-size: .78rem; opacity: .6; margin-top: 4px; white-space: nowrap; }
+.ms-header-score-main { font-size: 4.6rem; font-weight: 800; line-height: 1.1; }
+.ms-header-score-sets { font-size: 1.7rem; margin-top: 4px; white-space: nowrap; }
 .ms-set-sep { margin: 0 4px; opacity: .5; }
-.ms-set-dim { opacity: .45; }
+/* Только ПРОИГРАННОЕ число сета приглушается — раньше opacity висел на всём
+   .ms-header-score-sets, из-за чего блёклым выглядел и победный счёт тоже. */
+.ms-set-dim { opacity: .55; font-weight: 400; }
+.ms-set-win { font-weight: 700; }
 /* Цвета счёта — только светлая тема (в тёмной оставляем стандартный светлый текст) */
 body:not(.dark) .ms-header-score-main { color: #2967BA; }
-body:not(.dark) .ms-header-score-sets { color: #E7612F; }
+body:not(.dark) .ms-set-win { color: #E7612F; }
 
 .ms-heroes {
 	display: grid;
@@ -5592,6 +5596,7 @@ body.dark .ms-ptable td { border-color: rgba(255, 255, 255, .07); }
 	.ms-tables { grid-template-columns: 1fr; }
 	.ms-heroes { grid-template-columns: 1fr; }
 	.ms-header-team-name { font-size: 1.4rem; }
+	.ms-captain-avatar { width: 48px; height: 48px; }
 	.ms-bar-row { grid-template-columns: 30px 1fr 78px 1fr 30px; }
 
 	/* Хедер: обе команды в одну строку (order 1/2), счёт — отдельной строкой под

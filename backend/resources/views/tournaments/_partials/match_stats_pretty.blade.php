@@ -110,6 +110,9 @@ if ($match->score_home && $match->score_away) {
         $setsRendered[] = ['home' => $h, 'away' => $a, 'home_win' => $h > $a];
     }
 }
+
+$homeWonMatch = $match->winner_team_id && (int) $match->winner_team_id === (int) $match->team_home_id;
+$awayWonMatch = $match->winner_team_id && (int) $match->winner_team_id === (int) $match->team_away_id;
 @endphp
 
 <div class="ms-wrap">
@@ -130,7 +133,7 @@ if ($match->score_home && $match->score_away) {
                 @else
                 <div class="ms-captain-avatar ms-captain-avatar--fallback ms-captain-avatar--home">{{ $teamInitials($homeTeam->name ?? '?') }}</div>
                 @endif
-                <span class="ms-header-team-name">{{ $homeTeam->name ?? '?' }}</span>
+                <span class="ms-header-team-name{{ $homeWonMatch ? ' ms-header-team-name--winner' : '' }}">{{ $homeTeam->name ?? '?' }}</span>
             </div>
 
             <div class="ms-header-score">
@@ -139,14 +142,14 @@ if ($match->score_home && $match->score_away) {
                 <div class="ms-header-score-sets">
                     @foreach($setsRendered as $i => $s)
                     @if($i > 0)<span class="ms-set-sep">·</span>@endif
-                    <span class="{{ $s['home_win'] ? '' : 'ms-set-dim' }}">{{ $s['home'] }}</span>:<span class="{{ !$s['home_win'] ? '' : 'ms-set-dim' }}">{{ $s['away'] }}</span>
+                    <span class="{{ $s['home_win'] ? 'ms-set-win' : 'ms-set-dim' }}">{{ $s['home'] }}</span>:<span class="{{ !$s['home_win'] ? 'ms-set-win' : 'ms-set-dim' }}">{{ $s['away'] }}</span>
                     @endforeach
                 </div>
                 @endif
             </div>
 
             <div class="ms-header-team ms-header-team--away">
-                <span class="ms-header-team-name">{{ $awayTeam->name ?? '?' }}</span>
+                <span class="ms-header-team-name{{ $awayWonMatch ? ' ms-header-team-name--winner' : '' }}">{{ $awayTeam->name ?? '?' }}</span>
                 @if($awayTeam?->captain && $hasRealAvatar($awayTeam->captain))
                 <img src="{{ $awayTeam->captain->profile_photo_url }}" class="ms-captain-avatar" alt="" loading="lazy">
                 @else
