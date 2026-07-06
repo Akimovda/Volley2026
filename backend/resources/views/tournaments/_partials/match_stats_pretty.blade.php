@@ -11,11 +11,11 @@
 $getVal = fn($totals, $f) => is_array($totals) ? ($totals[$f] ?? 0) : ($totals->$f ?? 0);
 
 $posAbbr = [
-    'setter'   => 'Св',
-    'outside'  => 'Дг',
-    'opposite' => 'Дн',
-    'middle'   => 'Ц',
-    'libero'   => 'Либ',
+    'setter'   => __('tournaments.pos_abbr_setter'),
+    'outside'  => __('tournaments.pos_abbr_outside'),
+    'opposite' => __('tournaments.pos_abbr_opposite'),
+    'middle'   => __('tournaments.pos_abbr_middle'),
+    'libero'   => __('tournaments.pos_abbr_libero'),
 ];
 
 $teamInitials = function (?string $name): string {

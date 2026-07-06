@@ -781,4 +781,11 @@ return [
     'confirm_decline'               => 'Отказаться от перевода? Команда попадёт в конец резерва.',
     'transfer_declined'             => 'Перевод отменён. Команда в резерве.',
     'decline_expired'               => 'Время для отказа истекло (7 дней)',
+
+    // Сокращения позиций игрока (статистика матча)
+    'pos_abbr_setter'               => 'Св',
+    'pos_abbr_outside'              => 'До',
+    'pos_abbr_opposite'             => 'Ди',
+    'pos_abbr_middle'               => 'Цб',
+    'pos_abbr_libero'               => 'Ли',
 ];

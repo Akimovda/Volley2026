@@ -762,4 +762,11 @@ return [
     'confirm_decline'               => 'Decline transfer? Team will go to end of reserve.',
     'transfer_declined'             => 'Transfer declined. Team moved to reserve.',
     'decline_expired'               => 'Decline period expired (7 days)',
+
+    // Player position abbreviations (match stats)
+    'pos_abbr_setter'               => 'S',
+    'pos_abbr_outside'              => 'OH',
+    'pos_abbr_opposite'             => 'Opp',
+    'pos_abbr_middle'               => 'MB',
+    'pos_abbr_libero'               => 'L',
 ];

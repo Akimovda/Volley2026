@@ -5467,15 +5467,15 @@ body.dark .club-analytics-summary {
 .ms-hero-body { flex: 1; min-width: 0; }
 .ms-hero-name {
 	font-weight: 700;
-	font-size: .92rem;
+	font-size: 1.6rem;
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
 }
-.ms-hero-points { font-size: 1.7rem; font-weight: 800; margin: 2px 0 6px; }
+.ms-hero-points { font-size: 3.4rem; font-weight: 800; margin: 2px 0 6px; }
 .ms-hero-points--home { color: #2967BA; }
 .ms-hero-points--away { color: #E7612F; }
-.ms-hero-breakdown { display: flex; flex-direction: column; gap: 3px; font-size: .78rem; opacity: .85; }
+.ms-hero-breakdown { display: flex; flex-direction: column; gap: 3px; font-size: 1.4rem; opacity: .85; }
 .ms-hero-card--away .ms-hero-breakdown { align-items: flex-end; }
 .ms-hero-dot {
 	display: inline-block;
@@ -5498,7 +5498,7 @@ body.dark .club-analytics-summary {
 	margin-bottom: 10px;
 	font-size: .82rem;
 }
-.ms-bar-value { font-weight: 800; }
+.ms-bar-value { font-weight: 800; font-size: 1.6rem; }
 .ms-bar-value--home { text-align: right; }
 .ms-bar-value--away { text-align: left; }
 .ms-bar-track {
@@ -5515,7 +5515,7 @@ body.dark .club-analytics-summary {
 .ms-bar-fill--error { background: #ef4444; opacity: .8; }
 .ms-bar-label {
 	text-align: center;
-	font-size: .68rem;
+	font-size: 1.4rem;
 	font-weight: 700;
 	text-transform: uppercase;
 	letter-spacing: .04em;
@@ -5525,14 +5525,14 @@ body.dark .club-analytics-summary {
 .ms-tables { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 .ms-team-table-title {
 	font-weight: 800;
-	font-size: .95rem;
+	font-size: 1.7rem;
 	margin-bottom: 8px;
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
 }
 .ms-team-table-title--away { text-align: right; }
-.ms-ptable { width: 100%; border-collapse: collapse; font-size: .82rem; }
+.ms-ptable { width: 100%; border-collapse: collapse; font-size: 1.5rem; }
 .ms-ptable th {
 	text-align: center;
 	font-size: .66rem;
@@ -5589,9 +5589,28 @@ body.dark .ms-ptable td { border-color: rgba(255, 255, 255, .07); }
 @media (max-width: 768px) {
 	.ms-tables { grid-template-columns: 1fr; }
 	.ms-heroes { grid-template-columns: 1fr; }
-	.ms-header-team-name { font-size: .92rem; }
-	.ms-bar-row { grid-template-columns: 30px 1fr 78px 1fr 30px; font-size: .76rem; }
-	.ms-bar-label { font-size: .62rem; }
+	.ms-header-team-name { font-size: 1.4rem; }
+	.ms-bar-row { grid-template-columns: 30px 1fr 78px 1fr 30px; }
+
+	/* Зеркальность (аватар/текст справа) — только для десктопа. На мобиле оба героя
+	   выравниваются одинаково (аватар слева, текст слева), иначе точки разбивки
+	   (.ms-hero-dot) слипаются с текстом: их margin рассчитан на реальный порядок
+	   DOM (dot идёт первым всегда), а не на визуальный reverse карточки. */
+	.ms-hero-card--away {
+		flex-direction: row;
+		text-align: left;
+	}
+	.ms-hero-card--away .ms-hero-breakdown {
+		align-items: flex-start;
+	}
+	.ms-hero-card--away .ms-hero-dot {
+		margin-right: 6px;
+		margin-left: 0;
+	}
+	.ms-hero-badge--away {
+		left: auto;
+		right: -3px;
+	}
 }
 @media (max-width: 420px) {
 	.ms-header-row { gap: 8px; }
@@ -5599,5 +5618,5 @@ body.dark .ms-ptable td { border-color: rgba(255, 255, 255, .07); }
 	.ms-header-score { padding: 0 6px; }
 	.ms-header-score-main { font-size: 1.4rem; }
 	.ms-hero-avatar { width: 56px; height: 56px; }
-	.ms-hero-points { font-size: 1.3rem; }
+	.ms-hero-points { font-size: 2.6rem; }
 }
