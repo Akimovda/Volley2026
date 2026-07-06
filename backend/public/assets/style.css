@@ -5606,7 +5606,7 @@ body.dark .ms-ptable td { border-color: rgba(255, 255, 255, .07); }
 /* Мобильная адаптация */
 @media (max-width: 768px) {
 	.ms-tables { grid-template-columns: 1fr; }
-	.ms-heroes { grid-template-columns: 1fr; }
+	.ms-heroes { grid-template-columns: 1fr 1fr; gap: 10px; }
 	.ms-header-team-name { font-size: 1.4rem; }
 	.ms-captain-avatar { width: 48px; height: 48px; }
 	.ms-bar-row { grid-template-columns: 30px 1fr 78px 1fr 30px; }
@@ -5625,14 +5625,49 @@ body.dark .ms-ptable td { border-color: rgba(255, 255, 255, .07); }
 	.ms-header-score-main { font-size: 3.8rem; }
 	.ms-header-score-sets { font-size: 1.7rem; margin-top: 6px; }
 
-	/* Зеркальность (аватар/текст справа) — только для десктопа. На мобиле оба героя
-	   выравниваются одинаково (аватар слева, текст слева). */
+	/* Герои матча: две колонки рядом вместо блоков друг под другом (много скролла).
+	   Внутри каждой карточки — вертикальная раскладка (аватар/бейдж/имя/очки/разбивка
+	   по центру), одинаковая для обеих сторон — зеркальность (row-reverse) только
+	   для десктопа, тут её полностью отключаем. */
+	.ms-hero-card,
 	.ms-hero-card--away {
-		flex-direction: row;
-		text-align: left;
+		flex-direction: column;
+		align-items: center;
+		text-align: center;
+		gap: 8px;
+		padding: 12px 8px;
 	}
+	.ms-hero-avatar-wrap {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 4px;
+	}
+	.ms-hero-avatar { width: 64px; height: 64px; }
+	/* Бейдж позиции — под аватаром обычным блоком, не поверх фото (см. предыдущий
+	   фикс наезда на десктопе — там оставляем absolute, тут просто в потоке). */
+	.ms-hero-badge,
+	.ms-hero-badge--away {
+		position: static;
+		left: auto;
+		right: auto;
+		bottom: auto;
+	}
+	.ms-hero-body { width: 100%; text-align: center; }
+	.ms-hero-name {
+		white-space: normal;
+		overflow: visible;
+		text-overflow: clip;
+		min-height: 3.4rem;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+	.ms-hero-points { text-align: center; }
+	.ms-hero-breakdown,
 	.ms-hero-card--away .ms-hero-breakdown {
-		align-items: flex-start;
+		align-items: center;
+		font-size: 1.25rem;
 	}
 }
 @media (max-width: 420px) {
