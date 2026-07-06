@@ -7,6 +7,8 @@ use App\Models\CourtBooking;
 use App\Models\Event;
 use App\Models\LocationCourt;
 use App\Models\LocationWorkingHour;
+use App\Models\Payment;
+use App\Models\PaymentSetting;
 use App\Models\User;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -23,6 +25,7 @@ class CourtBookingService
 
     public function __construct(
         private CourtPricingService $pricingService,
+        private PaymentService $paymentService,
     ) {}
 
     /**
@@ -65,9 +68,10 @@ class CourtBookingService
     /**
      * Прямая бронь корта игроком со страницы локации (Фаза 5). В отличие от create()
      * (используется организаторами через ClubOrganizerTrust) — НЕ смотрит на trust-
-     * настройки: оплата YooKassa ещё не подключена (следующая фаза), поэтому для ЛЮБОГО
-     * игрока бронь всегда идёт как "подтверждение владельцем" (status=pending,
-     * payment_mode=on_site, без TTL) — независимо от того, что решил бы trust-уровень.
+     * настройки. Фаза 4: если у владельца локации включена оплата аренды и настроена
+     * ЮKassa (payment_settings.payment_for_rentals + isYoomoneyReady()) — бронь идёт
+     * как prepaid (status=pending, TTL 30 мин, игрок оплачивает онлайн). Иначе — как
+     * раньше: подтверждение владельцем (status=pending, payment_mode=on_site, без TTL).
      */
     public function createByPlayer(User $user, LocationCourt $court, Carbon $startsAt, Carbon $endsAt): CourtBooking
     {
@@ -94,6 +98,8 @@ class CourtBookingService
 
         $priceTotal = $this->pricingService->calculate($court, $startsAt, $endsAt);
 
+        $canPrepay = $this->canPrepayOnline($location->owner_id);
+
         return $this->insertBooking($court, $startsAt, $endsAt, [
             'court_id'      => $court->id,
             'user_id'       => $user->id,
@@ -103,9 +109,23 @@ class CourtBookingService
             'ends_at'       => $endsAt,
             'status'        => CourtBooking::STATUS_PENDING,
             'price_total'   => $priceTotal,
-            'payment_mode'  => CourtBooking::PAYMENT_MODE_ON_SITE,
-            'expires_at'    => null,
+            'payment_mode'  => $canPrepay ? CourtBooking::PAYMENT_MODE_PREPAID : CourtBooking::PAYMENT_MODE_ON_SITE,
+            'expires_at'    => $canPrepay ? now()->addMinutes(self::TTL_MINUTES) : null,
         ], notify: true);
+    }
+
+    /**
+     * Может ли владелец локации принимать онлайн-оплату аренды (Фаза 4).
+     */
+    public function canPrepayOnline(?int $locationOwnerId): bool
+    {
+        if (!$locationOwnerId) {
+            return false;
+        }
+
+        $settings = PaymentSetting::where('organizer_id', $locationOwnerId)->first();
+
+        return (bool) ($settings && $settings->payment_for_rentals && $settings->isYoomoneyReady());
     }
 
     /**
@@ -356,7 +376,11 @@ class CourtBookingService
      * scope='this_and_following' — эта и все последующие брони той же серии
      * (parent_booking_id === корень серии, starts_at >= этой брони).
      *
-     * @return CourtBooking[] отменённые брони (для рассылки уведомлений арендаторам)
+     * Фаза 4.3: отмена клубом ОПЛАЧЕННОЙ (paid+prepaid) брони — возврат ВСЕГДА,
+     * независимо от refund_policy локации (клуб отменил — деньги возвращаются).
+     *
+     * @return array{cancelled: CourtBooking[], refunded_ids: int[]} отменённые брони
+     *         и id тех из них, по которым реально прошёл возврат (для уведомлений)
      */
     public function cancel(CourtBooking $booking, User $clubOwner, ?string $reason, string $scope = 'this'): array
     {
@@ -378,16 +402,49 @@ class CourtBookingService
                 ->get();
         }
 
-        DB::transaction(function () use ($toCancel, $reason) {
+        // Кандидаты на возврат собираем ВНУТРИ транзакции (вместе с отменой), а сам
+        // вызов ЮKassa делаем ПОСЛЕ коммита — сбой шлюза не должен откатывать отмену
+        // брони (игрок/владелец должен суметь отменить, даже если возврат не прошёл).
+        $refundCandidates = [];
+
+        DB::transaction(function () use ($toCancel, $reason, &$refundCandidates) {
             foreach ($toCancel as $b) {
+                $wasPaidPrepaid = $b->status === CourtBooking::STATUS_PAID
+                    && $b->payment_mode === CourtBooking::PAYMENT_MODE_PREPAID;
+
                 $b->status = CourtBooking::STATUS_CANCELLED;
                 $b->cancelled_by = 'club';
                 $b->cancel_reason = $reason;
                 $b->save();
+
+                if ($wasPaidPrepaid) {
+                    $refundCandidates[] = $b;
+                }
             }
         });
 
-        return $toCancel->all();
+        $refundedIds = [];
+        foreach ($refundCandidates as $b) {
+            $b->loadMissing('court.direction.location');
+            $ownerId = $b->court?->direction?->location?->owner_id;
+            $payment = Payment::where('court_booking_id', $b->id)->where('status', 'paid')->latest('id')->first();
+            $settings = $ownerId ? PaymentSetting::where('organizer_id', $ownerId)->first() : null;
+
+            if (!$payment || !$settings || !$settings->isYoomoneyReady()) {
+                continue;
+            }
+
+            try {
+                $this->paymentService->refundBooking($payment, $settings, 'Отмена брони клубом: ' . ($reason ?? '—'));
+                $refundedIds[] = $b->id;
+            } catch (\Throwable $e) {
+                Log::error('[CourtBookingService] Возврат при отмене клубом не удался', [
+                    'booking_id' => $b->id, 'payment_id' => $payment->id, 'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        return ['cancelled' => $toCancel->all(), 'refunded_ids' => $refundedIds];
     }
 
     /**
@@ -505,7 +562,10 @@ class CourtBookingService
         $booking->save();
     }
 
-    public function cancelByUser(CourtBooking $booking, User $user): void
+    /**
+     * @return bool true если по этой отмене был оформлен настоящий возврат ЮKassa
+     */
+    public function cancelByUser(CourtBooking $booking, User $user): bool
     {
         if ((int) $booking->user_id !== (int) $user->id) {
             throw new InvalidArgumentException('Это не ваша бронь.');
@@ -522,9 +582,66 @@ class CourtBookingService
             throw new InvalidArgumentException(__('club.cancel_deadline_error', ['hours' => $cancelHours]));
         }
 
-        $booking->status = CourtBooking::STATUS_CANCELLED;
-        $booking->cancelled_by = 'user';
-        $booking->save();
+        $wasPaidPrepaid = $booking->status === CourtBooking::STATUS_PAID
+            && $booking->payment_mode === CourtBooking::PAYMENT_MODE_PREPAID;
+
+        DB::transaction(function () use ($booking) {
+            $booking->status = CourtBooking::STATUS_CANCELLED;
+            $booking->cancelled_by = 'user';
+            $booking->save();
+        });
+
+        if (!$wasPaidPrepaid) {
+            return false;
+        }
+
+        $refundPolicy = $location->refund_policy ?? 'full';
+        $refundDeadlineHours = $location->refund_deadline_hours ?? 24;
+        $withinDeadline = now()->lte($booking->starts_at->copy()->subHours($refundDeadlineHours));
+
+        if ($refundPolicy !== 'full' || !$withinDeadline) {
+            return false;
+        }
+
+        $payment = Payment::where('court_booking_id', $booking->id)->where('status', 'paid')->latest('id')->first();
+        $settings = PaymentSetting::where('organizer_id', $location->owner_id)->first();
+
+        if (!$payment || !$settings || !$settings->isYoomoneyReady()) {
+            return false;
+        }
+
+        try {
+            $this->paymentService->refundBooking($payment, $settings, 'Отмена брони игроком до дедлайна возврата');
+            return true;
+        } catch (\Throwable $e) {
+            Log::error('[CourtBookingService] Возврат при отмене игроком не удался', [
+                'booking_id' => $booking->id, 'payment_id' => $payment->id, 'error' => $e->getMessage(),
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * Можно ли ожидать возврат при отмене этой брони игроком ПРЯМО СЕЙЧАС (для предупреждения в UI
+     * перед подтверждением отмены — см. 4.3: "предупреждение в UI перед отменой").
+     */
+    public function refundWouldApply(CourtBooking $booking): bool
+    {
+        if ($booking->status !== CourtBooking::STATUS_PAID || $booking->payment_mode !== CourtBooking::PAYMENT_MODE_PREPAID) {
+            return false;
+        }
+
+        $location = $booking->court?->direction?->location;
+        if (!$location) {
+            return false;
+        }
+
+        if (($location->refund_policy ?? 'full') !== 'full') {
+            return false;
+        }
+
+        $refundDeadlineHours = $location->refund_deadline_hours ?? 24;
+        return now()->lte($booking->starts_at->copy()->subHours($refundDeadlineHours));
     }
 
     private function assertWithinWorkingHours($direction, $location, Carbon $startsAt, Carbon $endsAt): void
@@ -570,17 +687,24 @@ class CourtBookingService
     }
 
     /**
-     * Уведомление владельцу локации — заглушка (лог), полноценные уведомления
-     * (push/telegram/vk/max) появятся в Фазе 6.
+     * Фаза 6: уведомление владельцу локации о новой брони, ожидающей внимания
+     * (pending — либо ждёт подтверждения клуба, либо ждёт оплаты игроком).
      */
     private function notifyOwner(CourtBooking $booking): void
     {
-        Log::info('[CourtBooking] Новая бронь ожидает внимания владельца локации', [
-            'booking_id' => $booking->id,
-            'court_id'   => $booking->court_id,
-            'user_id'    => $booking->user_id,
-            'status'     => $booking->status,
-        ]);
+        if ($booking->status !== CourtBooking::STATUS_PENDING) {
+            return;
+        }
+
+        $booking->loadMissing('court.direction.location');
+        $ownerId = $booking->court?->direction?->location?->owner_id;
+
+        if (!$ownerId) {
+            return;
+        }
+
+        app(\App\Services\UserNotificationService::class)
+            ->createCourtBookingRequestedNotification($ownerId, $booking);
     }
 
     private function timeToMin(string $time): int

@@ -25,7 +25,9 @@ $statusColors = [
     'expired'   => '#8E8E93',
 ];
 
-$renderMyBooking = function ($booking) use ($statusLabels, $statusColors) {
+$courtBookingService = app(\App\Services\CourtBookingService::class);
+
+$renderMyBooking = function ($booking) use ($statusLabels, $statusColors, $courtBookingService) {
     $court = $booking->court;
     $location = $court?->direction?->location;
     $tz = $location?->effectiveTimezone() ?? 'Europe/Moscow';
@@ -34,6 +36,14 @@ $renderMyBooking = function ($booking) use ($statusLabels, $statusColors) {
     $cancelHours = $location?->booking_cancel_hours ?? 24;
     $canCancel = in_array($booking->status, ['pending', 'confirmed', 'paid'], true)
         && now()->lt($booking->starts_at->copy()->subHours($cancelHours));
+    $canPay = $booking->status === 'pending'
+        && $booking->payment_mode === 'prepaid'
+        && $booking->expires_at
+        && now()->lt($booking->expires_at);
+    $refundWarning = $booking->status === 'paid'
+        && $booking->payment_mode === 'prepaid'
+        && $canCancel
+        && !$courtBookingService->refundWouldApply($booking);
 
     return [
         'id' => $booking->id,
@@ -48,6 +58,9 @@ $renderMyBooking = function ($booking) use ($statusLabels, $statusColors) {
         'event' => $booking->event,
         'can_cancel' => $canCancel,
         'cancel_hours' => $cancelHours,
+        'can_pay' => $canPay,
+        'expires_at_iso' => $canPay ? $booking->expires_at->toIso8601String() : null,
+        'refund_warning' => $refundWarning,
     ];
 };
 @endphp
@@ -81,16 +94,27 @@ $renderMyBooking = function ($booking) use ($statusLabels, $statusColors) {
                             <div class="f-14"><a href="{{ route('events.show', $row['event']) }}" class="blink">{{ $row['event']->title }}</a></div>
                             @endif
                             <div class="f-14">{{ __('club.booking_price') }}: {{ $row['price'] !== null ? number_format((float) $row['price'], 0, ',', ' ') . ' ₽' : __('club.price_free') }}</div>
-                            @if($row['status'] === 'pending')
+                            @if($row['status'] === 'pending' && !$row['can_pay'])
                             <div class="f-14 cd">{{ __('club.booking_pending_info') }}</div>
                             @endif
+                            @if($row['can_pay'])
+                            <div class="f-14 cd" data-pay-countdown="{{ $row['expires_at_iso'] }}">{{ __('club.booking_awaiting_payment') }}</div>
+                            @endif
                         </div>
-                        @if($row['can_cancel'])
-                        <form method="POST" action="{{ route('player.bookings.cancel', $b) }}" onsubmit="return confirm({{ json_encode(__('club.cancel_booking')) }} + '?')">
-                            @csrf
-                            <button type="submit" class="btn btn-small btn-secondary">{{ __('club.cancel_booking') }}</button>
-                        </form>
-                        @endif
+                        <div class="d-flex gap-1" style="flex-wrap:wrap">
+                            @if($row['can_pay'])
+                            <form method="POST" action="{{ route('player.bookings.pay', $b) }}">
+                                @csrf
+                                <button type="submit" class="btn btn-small btn-primary">{{ __('club.booking_pay_button', ['amount' => number_format((float) $row['price'], 0, ',', ' ')]) }}</button>
+                            </form>
+                            @endif
+                            @if($row['can_cancel'])
+                            <form method="POST" action="{{ route('player.bookings.cancel', $b) }}" onsubmit="return confirm({{ json_encode($row['refund_warning'] ? __('club.cancel_booking') . "\n\n" . __('club.cancel_no_refund_warning') : __('club.cancel_booking')) }} + '?')">
+                                @csrf
+                                <button type="submit" class="btn btn-small btn-secondary">{{ __('club.cancel_booking') }}</button>
+                            </form>
+                            @endif
+                        </div>
                     </div>
                 </div>
             @empty
@@ -136,6 +160,28 @@ $renderMyBooking = function ($booking) use ($statusLabels, $statusColors) {
             }
             tabs.active.btn.addEventListener('click', function () { selectTab('active'); });
             tabs.history.btn.addEventListener('click', function () { selectTab('history'); });
+
+            // Обратный отсчёт до expires_at на pending-prepaid бронях
+            var countdownEls = document.querySelectorAll('[data-pay-countdown]');
+            if (countdownEls.length) {
+                var labelTpl = @json(__('club.booking_pay_countdown_label'));
+                var expiredTpl = @json(__('club.booking_pay_countdown_expired'));
+                function tick() {
+                    countdownEls.forEach(function (el) {
+                        var expiresAt = new Date(el.getAttribute('data-pay-countdown')).getTime();
+                        var diffMs = expiresAt - Date.now();
+                        if (diffMs <= 0) {
+                            el.textContent = expiredTpl;
+                            return;
+                        }
+                        var mins = Math.floor(diffMs / 60000);
+                        var secs = Math.floor((diffMs % 60000) / 1000);
+                        el.textContent = labelTpl.replace(':mins', mins).replace(':secs', String(secs).padStart(2, '0'));
+                    });
+                }
+                tick();
+                setInterval(tick, 1000);
+            }
         })();
     </script>
 </x-slot>

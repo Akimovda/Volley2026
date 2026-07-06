@@ -165,6 +165,8 @@ Route::get('/logout', fn () => redirect('/'));
 			->name('player.my-bookings');
 		Route::post('/my/bookings/{booking}/cancel', [\App\Http\Controllers\PlayerCourtBookingController::class, 'cancel'])
 			->name('player.bookings.cancel');
+		Route::post('/my/bookings/{booking}/pay', [\App\Http\Controllers\PlayerCourtBookingController::class, 'pay'])
+			->name('player.bookings.pay');
 	});
 
 	/*

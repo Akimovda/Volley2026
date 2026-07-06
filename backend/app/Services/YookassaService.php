@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Models\CourtBooking;
 use App\Models\Event;
+use App\Models\PaymentSetting;
 use App\Models\PlatformPaymentSetting;
 use YooKassa\Client;
 use YooKassa\Model\Notification\NotificationSucceeded;
@@ -26,6 +28,99 @@ class YookassaService
         $client->setAuth($settings->yoomoney_shop_id, $settings->yoomoney_secret_key);
 
         return $client;
+    }
+
+    /**
+     * Клиент по ключам КОНКРЕТНОГО организатора/владельца локации (payment_settings),
+     * а не платформы — для оплаты аренды корта (Фаза 4) и обычных платных мероприятий.
+     */
+    private function makeClientFor(PaymentSetting $settings): Client
+    {
+        if (empty($settings->yoomoney_shop_id) || empty($settings->yoomoney_secret_key)) {
+            throw new \RuntimeException('ЮKassa не настроена у организатора: заполните shop_id и secret_key в настройках оплаты.');
+        }
+
+        $client = new Client();
+        $client->setAuth($settings->yoomoney_shop_id, $settings->yoomoney_secret_key);
+
+        return $client;
+    }
+
+    /**
+     * Создать реальный платёж ЮKassa за бронь корта, используя ключи владельца локации.
+     *
+     * @return array{payment_id: string, payment_url: string}
+     */
+    public function createBookingPayment(CourtBooking $booking, PaymentSetting $settings, string $returnUrl): array
+    {
+        $client = $this->makeClientFor($settings);
+        $idempotenceKey = 'court-booking-' . $booking->id . '-' . Str::random(8);
+
+        $court = $booking->court;
+        $description = 'Бронь корта' . ($court ? " «{$court->name}»" : '') . ' #' . $booking->id;
+
+        $response = $client->createPayment([
+            'amount' => [
+                'value'    => number_format((float) $booking->price_total, 2, '.', ''),
+                'currency' => 'RUB',
+            ],
+            'confirmation' => [
+                'type'       => 'redirect',
+                'return_url' => $returnUrl,
+            ],
+            'capture'     => true,
+            'description' => $description,
+            'metadata'    => [
+                'court_booking_id' => $booking->id,
+                'type'             => 'court_booking',
+            ],
+        ], $idempotenceKey);
+
+        return [
+            'payment_id'  => $response->getId(),
+            'payment_url' => $response->getConfirmation()->getConfirmationUrl(),
+        ];
+    }
+
+    /**
+     * Переспросить статус конкретного платежа напрямую у ЮKassa (не доверять телу вебхука) —
+     * тем же способом, что уже используется для рекламных платежей (handleWebhook() ниже).
+     */
+    public function verifyPayment(string $yooPaymentId, PaymentSetting $settings): ?string
+    {
+        try {
+            $info = $this->makeClientFor($settings)->getPaymentInfo($yooPaymentId);
+            return $info?->getStatus();
+        } catch (\Throwable $e) {
+            Log::error('YookassaService::verifyPayment', ['error' => $e->getMessage(), 'payment_id' => $yooPaymentId]);
+            return null;
+        }
+    }
+
+    /**
+     * Настоящий возврат через SDK (в отличие от PaymentService::refund(), который
+     * зачисляет на внутренний VirtualWallet) — деньги возвращаются на карту клиента.
+     *
+     * @return array{refund_id: string, status: string}
+     */
+    public function createRefund(string $yooPaymentId, int $amountMinor, PaymentSetting $settings, string $reason = ''): array
+    {
+        $client = $this->makeClientFor($settings);
+        $idempotenceKey = 'refund-' . $yooPaymentId . '-' . Str::random(8);
+
+        $response = $client->createRefund([
+            'payment_id' => $yooPaymentId,
+            'amount'     => [
+                'value'    => number_format($amountMinor / 100, 2, '.', ''),
+                'currency' => 'RUB',
+            ],
+            'description' => $reason ?: 'Возврат по отмене брони',
+        ], $idempotenceKey);
+
+        return [
+            'refund_id' => $response->getId(),
+            'status'    => $response->getStatus(),
+        ];
     }
 
     public function createAdPayment(Event $event): array

@@ -44,13 +44,17 @@ class CourtBooking extends Model
         'cancelled_by',
         'cancel_reason',
         'parent_booking_id',
+        'reminded_24h_at',
+        'reminded_2h_at',
     ];
 
     protected $casts = [
-        'starts_at'   => 'datetime',
-        'ends_at'     => 'datetime',
-        'expires_at'  => 'datetime',
-        'price_total' => 'float',
+        'starts_at'       => 'datetime',
+        'ends_at'         => 'datetime',
+        'expires_at'      => 'datetime',
+        'price_total'     => 'float',
+        'reminded_24h_at' => 'datetime',
+        'reminded_2h_at'  => 'datetime',
     ];
 
     public function court(): BelongsTo
@@ -76,6 +80,18 @@ class CourtBooking extends Model
     public function parentBooking(): BelongsTo
     {
         return $this->belongsTo(self::class, 'parent_booking_id');
+    }
+
+    public function payments()
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    public function latestPayment(): ?Payment
+    {
+        return $this->relationLoaded('payments')
+            ? $this->payments->sortByDesc('id')->first()
+            : $this->payments()->latest('id')->first();
     }
 
     /**

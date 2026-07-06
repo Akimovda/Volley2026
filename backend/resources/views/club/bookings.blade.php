@@ -25,7 +25,17 @@ $statusColors = [
     'expired'   => '#8E8E93',
 ];
 
-$renderBooking = function ($booking) use ($statusLabels, $statusColors) {
+$paymentBadge = function ($booking) {
+    if ($booking->payment_mode === 'prepaid' && $booking->status === 'paid') {
+        return ['label' => __('club.payment_mode_online'), 'color' => '#34C759'];
+    }
+    if ($booking->payment_mode === 'prepaid' && $booking->status === 'pending') {
+        return ['label' => __('club.payment_mode_awaiting'), 'color' => '#FF9500'];
+    }
+    return ['label' => __('club.payment_mode_on_site'), 'color' => '#8E8E93'];
+};
+
+$renderBooking = function ($booking) use ($statusLabels, $statusColors, $paymentBadge) {
     $court = $booking->court;
     $location = $court?->direction?->location;
     $tz = $location?->effectiveTimezone() ?? 'Europe/Moscow';
@@ -54,6 +64,7 @@ $renderBooking = function ($booking) use ($statusLabels, $statusColors) {
         'status' => $booking->status,
         'status_label' => $statusLabels[$booking->status] ?? $booking->status,
         'status_color' => $statusColors[$booking->status] ?? '#8E8E93',
+        'payment_badge' => $paymentBadge($booking),
         'is_series' => $booking->parent_booking_id !== null,
         'can_manage' => $booking->event_id === null,
     ];
@@ -91,7 +102,9 @@ $renderBooking = function ($booking) use ($statusLabels, $statusColors) {
                 <div class="card mb-2">
                     <div class="d-flex between fvc" style="flex-wrap:wrap;gap:8px">
                         <div>
-                            <div class="b-700">{{ $row['location_name'] }} · {{ $row['court_name'] }}</div>
+                            <div class="b-700">{{ $row['location_name'] }} · {{ $row['court_name'] }}
+                                <span class="f-12 p-1 px-2" style="background:{{ $row['payment_badge']['color'] }}22;color:{{ $row['payment_badge']['color'] }};border-radius:6px">{{ $row['payment_badge']['label'] }}</span>
+                            </div>
                             <div class="f-14">{{ $row['starts_at'] }}–{{ $row['ends_at'] }}</div>
                             <div class="f-14">{{ __('club.booking_by') }}: {{ $row['user_name'] }}@if($row['is_guest']) <span class="f-12 cd">({{ __('club.guest') }}@if($row['guest_phone']), {{ $row['guest_phone'] }}@endif)</span>@endif</div>
                             @if($row['event'])
@@ -126,6 +139,7 @@ $renderBooking = function ($booking) use ($statusLabels, $statusColors) {
                         <div>
                             <div class="b-700">{{ $row['location_name'] }} · {{ $row['court_name'] }}
                                 <span class="f-12 p-1 px-2" style="background:{{ $row['status_color'] }}22;color:{{ $row['status_color'] }};border-radius:6px">{{ $row['status_label'] }}</span>
+                                <span class="f-12 p-1 px-2" style="background:{{ $row['payment_badge']['color'] }}22;color:{{ $row['payment_badge']['color'] }};border-radius:6px">{{ $row['payment_badge']['label'] }}</span>
                             </div>
                             <div class="f-14">{{ $row['starts_at'] }}–{{ $row['ends_at'] }}</div>
                             <div class="f-14">{{ __('club.booking_by') }}: {{ $row['user_name'] }}@if($row['is_guest']) <span class="f-12 cd">({{ __('club.guest') }}@if($row['guest_phone']), {{ $row['guest_phone'] }}@endif)</span>@endif</div>
@@ -154,6 +168,7 @@ $renderBooking = function ($booking) use ($statusLabels, $statusColors) {
                 <div class="card mb-2">
                     <div class="b-700">{{ $row['location_name'] }} · {{ $row['court_name'] }}
                         <span class="f-12 p-1 px-2" style="background:{{ $row['status_color'] }}22;color:{{ $row['status_color'] }};border-radius:6px">{{ $row['status_label'] }}</span>
+                                <span class="f-12 p-1 px-2" style="background:{{ $row['payment_badge']['color'] }}22;color:{{ $row['payment_badge']['color'] }};border-radius:6px">{{ $row['payment_badge']['label'] }}</span>
                     </div>
                     <div class="f-14">{{ $row['starts_at'] }}–{{ $row['ends_at'] }}</div>
                     <div class="f-14">{{ __('club.booking_by') }}: {{ $row['user_name'] }}@if($row['is_guest']) <span class="f-12 cd">({{ __('club.guest') }}@if($row['guest_phone']), {{ $row['guest_phone'] }}@endif)</span>@endif</div>

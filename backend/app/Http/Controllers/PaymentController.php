@@ -5,6 +5,7 @@ use App\Models\Payment;
 use App\Models\PaymentSetting;
 use App\Services\PaymentService;
 use App\Services\UserNotificationService;
+use App\Services\YookassaService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -14,6 +15,7 @@ class PaymentController extends Controller
     public function __construct(
         private PaymentService $paymentService,
         private UserNotificationService $notificationService,
+        private YookassaService $yookassa,
     ) {}
 
     /**
@@ -30,7 +32,6 @@ class PaymentController extends Controller
         }
 
         $yooPaymentId = $data['object']['id'];
-        $status       = $data['object']['status'] ?? '';
 
         $payment = Payment::where('yoomoney_payment_id', $yooPaymentId)->first();
 
@@ -39,19 +40,39 @@ class PaymentController extends Controller
             return response()->json(['ok' => true]);
         }
 
-        // Верификация подписи
         $settings = PaymentSetting::where('organizer_id', $payment->organizer_id)->first();
-        if ($settings?->yoomoney_secret_key) {
-            $ip = $request->ip();
-            // ЮМани присылает с определённых IP — можно добавить проверку
+        if (!$settings) {
+            Log::warning("YooMoney webhook: no payment_settings for organizer {$payment->organizer_id}");
+            return response()->json(['ok' => true]);
         }
 
-        if ($status === 'succeeded') {
+        // НЕ доверяем статусу из тела вебхука напрямую (его теоретически можно подделать) —
+        // переспрашиваем реальный статус платежа у ЮKassa тем же способом, что и для
+        // рекламных платежей (YookassaService::handleWebhook()).
+        $status = $this->yookassa->verifyPayment($yooPaymentId, $settings);
+        if ($status === null) {
+            return response()->json(['ok' => true]);
+        }
+
+        if ($status === 'succeeded' && $payment->status === 'pending') {
             $this->paymentService->markPaid($payment);
-            $this->sendPaymentNotification($payment, 'paid');
-        } elseif ($status === 'canceled') {
+
+            if ($payment->court_booking_id) {
+                $booking = $payment->courtBooking()->with('court.direction.location')->first();
+                if ($booking && $booking->court?->direction?->location?->owner_id) {
+                    $this->notificationService->createCourtBookingPaidNotification(
+                        $booking->court->direction->location->owner_id,
+                        $booking
+                    );
+                }
+            } else {
+                $this->sendPaymentNotification($payment, 'paid');
+            }
+        } elseif ($status === 'canceled' && $payment->status === 'pending') {
             $payment->update(['status' => 'cancelled']);
-            $this->sendPaymentNotification($payment, 'cancelled');
+            if (!$payment->court_booking_id) {
+                $this->sendPaymentNotification($payment, 'cancelled');
+            }
         }
 
         return response()->json(['ok' => true]);

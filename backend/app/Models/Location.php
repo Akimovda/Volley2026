@@ -28,12 +28,15 @@ class Location extends Model implements HasMedia
         'lat',
         'lng',
         'booking_cancel_hours',
+        'refund_policy',
+        'refund_deadline_hours',
     ];
 
     protected $casts = [
         'lat' => 'float',
         'lng' => 'float',
         'booking_cancel_hours' => 'integer',
+        'refund_deadline_hours' => 'integer',
     ];
 
     public function city()

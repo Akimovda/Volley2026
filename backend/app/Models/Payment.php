@@ -11,7 +11,7 @@ class Payment extends Model
         'yoomoney_payment_id', 'yoomoney_confirmation_url', 'yoomoney_meta',
         'expires_at',
         'user_confirmed', 'org_confirmed', 'user_confirmed_at', 'org_confirmed_at',
-        'team_id', 'team_member_id',
+        'team_id', 'team_member_id', 'court_booking_id',
         'refund_amount_minor', 'refund_reason', 'refunded_at',
     ];
 
@@ -32,6 +32,7 @@ class Payment extends Model
     public function teamMember()   { return $this->belongsTo(EventTeamMember::class, 'team_member_id'); }
 
     public function registration() { return $this->belongsTo(EventRegistration::class); }
+    public function courtBooking() { return $this->belongsTo(CourtBooking::class); }
 
     public function isPending(): bool  { return $this->status === 'pending'; }
     public function isPaid(): bool     { return $this->status === 'paid'; }

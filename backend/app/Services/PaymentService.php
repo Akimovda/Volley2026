@@ -1,6 +1,7 @@
 <?php
 namespace App\Services;
 
+use App\Models\CourtBooking;
 use App\Models\Event;
 use App\Models\EventOccurrence;
 use App\Models\EventRegistration;
@@ -8,9 +9,45 @@ use App\Models\Payment;
 use App\Models\PaymentSetting;
 use App\Models\VirtualWallet;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class PaymentService
 {
+    public function __construct(
+        private YookassaService $yookassa,
+    ) {}
+
+    /**
+     * Создать (или переиспользовать активный) платёж ЮKassa за бронь корта — используется
+     * "Оплатить" на /my/bookings. Ключи берутся из payment_settings ВЛАДЕЛЬЦА ЛОКАЦИИ.
+     */
+    public function createForBooking(CourtBooking $booking, PaymentSetting $settings, string $returnUrl): Payment
+    {
+        $existing = Payment::where('court_booking_id', $booking->id)
+            ->where('status', 'pending')
+            ->whereNotNull('yoomoney_confirmation_url')
+            ->latest('id')
+            ->first();
+
+        if ($existing && !$existing->isExpired()) {
+            return $existing;
+        }
+
+        $result = $this->yookassa->createBookingPayment($booking, $settings, $returnUrl);
+
+        return Payment::create([
+            'user_id'                   => $booking->user_id,
+            'organizer_id'               => $settings->organizer_id,
+            'court_booking_id'           => $booking->id,
+            'method'                     => 'yoomoney',
+            'status'                     => 'pending',
+            'amount_minor'               => (int) round($booking->price_total * 100),
+            'currency'                   => 'RUB',
+            'yoomoney_payment_id'        => $result['payment_id'],
+            'yoomoney_confirmation_url'  => $result['payment_url'],
+            'expires_at'                 => $booking->expires_at,
+        ]);
+    }
     /**
      * Создать платёж при записи на мероприятие
      */
@@ -67,7 +104,45 @@ class PaymentService
                     'payment_expires_at' => null,
                 ]);
             }
+
+            if ($payment->court_booking_id) {
+                CourtBooking::where('id', $payment->court_booking_id)
+                    ->where('status', CourtBooking::STATUS_PENDING)
+                    ->update(['status' => CourtBooking::STATUS_PAID, 'expires_at' => null]);
+            }
         });
+    }
+
+    /**
+     * Возврат по оплаченной ЮKassa брони корта — настоящий возврат на карту (не VirtualWallet,
+     * это для игрока-арендатора, а не для игрока мероприятия). Если брони не была оплачена
+     * онлайн (нет yoomoney_payment_id) — возвращать нечего, вызывающая сторона просто отменяет.
+     */
+    public function refundBooking(Payment $payment, PaymentSetting $settings, string $reason): void
+    {
+        if (empty($payment->yoomoney_payment_id)) {
+            return;
+        }
+
+        $result = $this->yookassa->createRefund(
+            $payment->yoomoney_payment_id,
+            $payment->amount_minor,
+            $settings,
+            $reason
+        );
+
+        $payment->update([
+            'status'              => 'refunded',
+            'refund_amount_minor' => $payment->amount_minor,
+            'refund_reason'       => $reason,
+            'refunded_at'         => now(),
+        ]);
+
+        Log::info('[PaymentService] Возврат по брони корта оформлен', [
+            'payment_id' => $payment->id,
+            'refund_id'  => $result['refund_id'],
+            'status'     => $result['status'],
+        ]);
     }
 
     /**

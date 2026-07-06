@@ -109,9 +109,45 @@ Schedule::command('activity:prompt-recording')
 // Club module: истечение неоплаченных броней кортов (TTL 30 минут, каждые 5 минут):
 // pending-брони с payment_mode=prepaid, у которых наступил expires_at, переводятся
 // в expired — освобождают слот, чтобы им мог воспользоваться другой организатор.
+// Проходим по одной (не массовый update) — нужно уведомить арендатора о каждой.
 Schedule::call(function () {
+    $notificationService = app(\App\Services\UserNotificationService::class);
+
     \App\Models\CourtBooking::where('status', 'pending')
         ->whereNotNull('expires_at')
         ->where('expires_at', '<', now())
-        ->update(['status' => 'expired', 'cancelled_by' => 'system']);
+        ->with('court.direction.location')
+        ->each(function (\App\Models\CourtBooking $booking) use ($notificationService) {
+            $booking->status = 'expired';
+            $booking->cancelled_by = 'system';
+            $booking->save();
+
+            if ($booking->user_id) {
+                $notificationService->createCourtBookingExpiredNotification($booking->user_id, $booking);
+            }
+        });
 })->everyFiveMinutes()->name('expire-court-bookings');
+
+// Club module: напоминания о брони корта за 24ч и за 2ч до начала (каждые 15 минут).
+// Окно ±7.5 мин вокруг целевого момента — половина шага расписания, чтобы каждая
+// бронь попала ровно в один прогон. reminded_24h_at/reminded_2h_at — защита от дублей.
+Schedule::call(function () {
+    $notificationService = app(\App\Services\UserNotificationService::class);
+
+    $remind = function (int $hoursBefore, string $flagColumn) use ($notificationService) {
+        $target = now()->addHours($hoursBefore);
+        \App\Models\CourtBooking::whereIn('status', \App\Models\CourtBooking::ACTIVE_STATUSES)
+            ->whereNull($flagColumn)
+            ->whereBetween('starts_at', [$target->copy()->subMinutes(7.5), $target->copy()->addMinutes(7.5)])
+            ->with('court.direction.location')
+            ->each(function (\App\Models\CourtBooking $booking) use ($notificationService, $hoursBefore, $flagColumn) {
+                if ($booking->user_id) {
+                    $notificationService->createCourtBookingReminderNotification($booking->user_id, $booking, $hoursBefore);
+                }
+                $booking->update([$flagColumn => now()]);
+            });
+    };
+
+    $remind(24, 'reminded_24h_at');
+    $remind(2, 'reminded_2h_at');
+})->everyFifteenMinutes()->name('remind-court-bookings');

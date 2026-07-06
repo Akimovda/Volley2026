@@ -189,4 +189,22 @@ return [
     'booking_pending_info'      => 'Request sent. Waiting for the club to confirm.',
     'cancel_deadline_error'     => 'Cancellation is only possible at least :hours h before the start.',
     'booking_cancel_hours_label' => 'Player cancellation deadline (hours before start)',
+
+    // Phase 4 — online booking payment
+    'booking_awaiting_payment'     => 'Awaiting payment',
+    'booking_pay_button'           => 'Pay :amount ₽',
+    'booking_pay_countdown_label'  => 'Time left to pay: :mins min :secs sec',
+    'booking_pay_countdown_expired'=> 'Payment window expired',
+    'booking_pay_not_available'    => 'Online payment is not available for this booking.',
+    'booking_pay_expired'          => 'Payment window expired, the booking was released.',
+    'booking_pay_failed'           => 'Could not create payment. Please try again later.',
+    'booking_cancelled_refunded'   => 'Booking cancelled, refund issued — the money will arrive on your card within a few days.',
+    'cancel_no_refund_warning'     => 'Note: no refund applies to this booking (refund deadline passed, or the club has a no-refund policy).',
+    'payment_mode_online'          => 'Paid online',
+    'payment_mode_awaiting'        => 'Awaiting payment',
+    'payment_mode_on_site'         => 'Pay on site',
+    'refund_policy_label'          => 'Refund on cancellation of an online-paid booking',
+    'refund_policy_full'           => 'Full refund before deadline',
+    'refund_policy_none'           => 'No refunds',
+    'refund_deadline_hours_label'  => 'Refund allowed up to N hours before start',
 ];

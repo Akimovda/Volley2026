@@ -579,6 +579,141 @@ final class UserNotificationService
         );
     }
 
+    /**
+     * Фаза 6: новая заявка на бронь — владельцу локации (pending, ждёт подтверждения
+     * или оплаты игроком).
+     */
+    public function createCourtBookingRequestedNotification(
+        int $ownerId,
+        \App\Models\CourtBooking $booking
+    ): UserNotification {
+        $courtName = $booking->court?->name ?? '';
+        $locationName = $booking->court?->direction?->location?->name ?? '';
+        $tz = $booking->court?->direction?->location?->effectiveTimezone() ?? 'Europe/Moscow';
+        $startsAtText = $booking->starts_at->copy()->setTimezone($tz)->format('d.m.Y H:i');
+        $bookerName = $booking->getBookerNameAttribute();
+
+        return $this->create(
+            userId: $ownerId,
+            type: 'court_booking_requested',
+            title: 'Новая заявка на бронь корта',
+            body: "{$bookerName} хочет забронировать корт «{$courtName}» ({$locationName}) на {$startsAtText}.",
+            payload: [
+                'court_booking_id' => $booking->id,
+                'court_id'         => $booking->court_id,
+                'starts_at'        => $booking->starts_at->toIso8601String(),
+            ],
+            channels: ['in_app', 'telegram', 'vk', 'max']
+        );
+    }
+
+    /**
+     * Фаза 6: бронь оплачена онлайн — владельцу локации.
+     */
+    public function createCourtBookingPaidNotification(
+        int $ownerId,
+        \App\Models\CourtBooking $booking
+    ): UserNotification {
+        $courtName = $booking->court?->name ?? '';
+        $locationName = $booking->court?->direction?->location?->name ?? '';
+        $tz = $booking->court?->direction?->location?->effectiveTimezone() ?? 'Europe/Moscow';
+        $startsAtText = $booking->starts_at->copy()->setTimezone($tz)->format('d.m.Y H:i');
+        $bookerName = $booking->getBookerNameAttribute();
+        $price = $booking->price_total !== null ? number_format((float) $booking->price_total, 0, ',', ' ') . ' ₽' : '';
+
+        return $this->create(
+            userId: $ownerId,
+            type: 'court_booking_paid',
+            title: '✅ Бронь оплачена онлайн',
+            body: "{$bookerName} оплатил(а) бронь корта «{$courtName}» ({$locationName}) на {$startsAtText}" . ($price ? ": {$price}." : '.'),
+            payload: [
+                'court_booking_id' => $booking->id,
+                'court_id'         => $booking->court_id,
+                'starts_at'        => $booking->starts_at->toIso8601String(),
+            ],
+            channels: ['in_app', 'telegram', 'vk', 'max']
+        );
+    }
+
+    /**
+     * Фаза 6: бронь истекла (не оплачена за 30 минут) — арендатору.
+     */
+    public function createCourtBookingExpiredNotification(
+        int $userId,
+        \App\Models\CourtBooking $booking
+    ): UserNotification {
+        $courtName = $booking->court?->name ?? '';
+        $locationName = $booking->court?->direction?->location?->name ?? '';
+        $tz = $booking->court?->direction?->location?->effectiveTimezone() ?? 'Europe/Moscow';
+        $startsAtText = $booking->starts_at->copy()->setTimezone($tz)->format('d.m.Y H:i');
+
+        return $this->create(
+            userId: $userId,
+            type: 'court_booking_expired',
+            title: 'Бронь истекла',
+            body: "Время на оплату брони корта «{$courtName}» ({$locationName}) на {$startsAtText} истекло, бронь отменена.",
+            payload: [
+                'court_booking_id' => $booking->id,
+                'court_id'         => $booking->court_id,
+                'starts_at'        => $booking->starts_at->toIso8601String(),
+            ],
+            channels: ['in_app', 'telegram', 'vk', 'max']
+        );
+    }
+
+    /**
+     * Фаза 6: возврат по брони оформлен — арендатору.
+     */
+    public function createCourtBookingRefundedNotification(
+        int $userId,
+        \App\Models\CourtBooking $booking
+    ): UserNotification {
+        $courtName = $booking->court?->name ?? '';
+        $locationName = $booking->court?->direction?->location?->name ?? '';
+        $price = $booking->price_total !== null ? number_format((float) $booking->price_total, 0, ',', ' ') . ' ₽' : '';
+
+        return $this->create(
+            userId: $userId,
+            type: 'court_booking_refunded',
+            title: '↩️ Возврат оформлен',
+            body: "Оформлен возврат" . ($price ? " {$price}" : '') . " за бронь корта «{$courtName}» ({$locationName}). Деньги вернутся на карту в течение нескольких дней.",
+            payload: [
+                'court_booking_id' => $booking->id,
+                'court_id'         => $booking->court_id,
+            ],
+            channels: ['in_app', 'telegram', 'vk', 'max']
+        );
+    }
+
+    /**
+     * Фаза 6: напоминание за 24ч/2ч до брони — арендатору.
+     */
+    public function createCourtBookingReminderNotification(
+        int $userId,
+        \App\Models\CourtBooking $booking,
+        int $hoursBefore
+    ): UserNotification {
+        $courtName = $booking->court?->name ?? '';
+        $locationName = $booking->court?->direction?->location?->name ?? '';
+        $tz = $booking->court?->direction?->location?->effectiveTimezone() ?? 'Europe/Moscow';
+        $startsAtText = $booking->starts_at->copy()->setTimezone($tz)->format('d.m.Y H:i');
+        $whenText = $hoursBefore >= 24 ? 'завтра' : 'через 2 часа';
+
+        return $this->create(
+            userId: $userId,
+            type: 'court_booking_reminder',
+            title: '⏰ Напоминание о брони',
+            body: "Напоминаем: {$whenText} ({$startsAtText}) у вас бронь корта «{$courtName}» ({$locationName}).",
+            payload: [
+                'court_booking_id' => $booking->id,
+                'court_id'         => $booking->court_id,
+                'starts_at'        => $booking->starts_at->toIso8601String(),
+                'hours_before'     => $hoursBefore,
+            ],
+            channels: ['in_app', 'telegram', 'vk', 'max']
+        );
+    }
+
     public function createEventCancelledByQuorumNotification(
         int $userId,
         int $eventId,

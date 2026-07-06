@@ -687,6 +687,27 @@
                             @error('booking_cancel_hours')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                         </div>
                     </div>
+
+                    {{-- Возврат при отмене оплаченной онлайн брони (Фаза 4) --}}
+                    <div class="col-6">
+                        <div class="card">
+                            <label>{{ __('club.refund_policy_label') }}</label>
+                            <select name="refund_policy" class="@error('refund_policy') is-invalid @enderror">
+                                <option value="full" @selected(old('refund_policy', $location->refund_policy ?? 'full') === 'full')>{{ __('club.refund_policy_full') }}</option>
+                                <option value="none" @selected(old('refund_policy', $location->refund_policy ?? 'full') === 'none')>{{ __('club.refund_policy_none') }}</option>
+                            </select>
+                            @error('refund_policy')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="card">
+                            <label>{{ __('club.refund_deadline_hours_label') }}</label>
+                            <input type="number" name="refund_deadline_hours" min="0" max="720"
+                                value="{{ old('refund_deadline_hours', $location->refund_deadline_hours ?? 24) }}"
+                                class="@error('refund_deadline_hours') is-invalid @enderror">
+                            @error('refund_deadline_hours')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                        </div>
+                    </div>
 				</div>
 				
 				<div class="mt-2 text-center">
