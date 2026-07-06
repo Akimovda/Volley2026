@@ -2527,11 +2527,20 @@ class TournamentController extends Controller
                 'match' => $match,
             ])->render();
 
-            \Spatie\Browsershot\Browsershot::html($html)
+            $browsershot = \Spatie\Browsershot\Browsershot::html($html)
                 ->windowSize(1200, 630)
                 ->deviceScaleFactor(2)
-                ->noSandbox()
-                ->save($path);
+                ->noSandbox();
+
+            // Chrome лежит в storage/app/chromium (не в ~/.cache/puppeteer — туда
+            // php-fpm/www-data не имеет доступа, см. CLAUDE.md). Версия в пути не
+            // хардкодится — берём что реально установлено.
+            $chromeBinaries = glob(storage_path('app/chromium/*/chrome-linux64/chrome'));
+            if (!empty($chromeBinaries)) {
+                $browsershot->setChromePath($chromeBinaries[0]);
+            }
+
+            $browsershot->save($path);
         }
 
         return response()->file($path, [
