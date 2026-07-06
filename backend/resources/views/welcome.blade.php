@@ -601,6 +601,8 @@ border:1rem solid #fff;
 								<li>{{ __('welcome.players_li_6') }}</li>
 								<li>{{ __('welcome.players_li_7') }}</li>
 								<li>{{ __('welcome.players_li_8') }}</li>
+								<li>{{ __('welcome.players_li_9') }}</li>
+								<li>{{ __('welcome.players_li_10') }}</li>
 							</ul>
 						</div>
 						<div class="mt-1 text-center">
@@ -730,6 +732,9 @@ border:1rem solid #fff;
 								<li>{{ __('welcome.org_li_7') }}</li>
 								<li>{{ __('welcome.org_li_8') }}</li>
 								<li>{{ __('welcome.org_li_9') }}</li>
+								<li>{{ __('welcome.org_li_10') }}</li>
+								<li>{{ __('welcome.org_li_11') }}</li>
+								<li>{{ __('welcome.org_li_12') }}</li>
 							</ul>
 						</div>
 						<div class="mt-1 text-center">
@@ -791,6 +796,8 @@ border:1rem solid #fff;
 								<li>{{ __('welcome.venues_li_4') }}</li>
 								<li>{{ __('welcome.venues_li_5') }}</li>
 								<li>{{ __('welcome.venues_li_6') }}</li>
+								<li>{{ __('welcome.venues_li_7') }}</li>
+								<li>{{ __('welcome.venues_li_8') }}</li>
 							</ul>
 						</div>
 						<div class="mt-1 text-center">
