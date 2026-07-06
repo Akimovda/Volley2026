@@ -788,4 +788,13 @@ return [
     'pos_abbr_opposite'             => 'Ди',
     'pos_abbr_middle'               => 'Цб',
     'pos_abbr_libero'               => 'Ли',
+
+    // Таблица рейтинга участников турнира (tab=stats)
+    'in_tournament'                 => 'В рамках турнира',
+    'overall_rating'                => 'Общий рейтинг',
+    'games'                         => 'Игры',
+    'wins'                          => 'Победы',
+    'points'                        => 'Очки',
+    'full_rating_link'              => 'Полный рейтинг игроков',
+    'rating_hidden_no_games'        => 'Ещё :count игроков без сыгранных матчей',
 ];

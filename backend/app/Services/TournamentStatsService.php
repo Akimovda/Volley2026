@@ -9,6 +9,7 @@ use App\Models\TournamentStage;
 use App\Models\TournamentStanding;
 use App\Models\PlayerTournamentStats;
 use App\Models\PlayerCareerStats;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\App;
 use App\Services\TournamentOpenSkillService;
@@ -266,6 +267,90 @@ class TournamentStatsService
             ->orderByDesc('point_diff')
             ->limit($limit)
             ->get();
+    }
+
+    /**
+     * Таблица рейтинга участников турнира в стиле /players/rating: турнирная
+     * статистика (игры/победы/очки) + общий рейтинг (CR/игры/winrate), формулы
+     * CR и winrate — те же, что в PlayerRatingController/players.rating.blade.php
+     * (max(0, mu - 3*sigma), wins/matches*100), без дублирования — переиспользуют
+     * ту же логику расчёта.
+     *
+     * Ростер — участники команд турнира (event_team_members), не только те,
+     * у кого уже есть player_tournament_stats (игрок мог ещё не сыграть).
+     *
+     * @return array{rows: array, hasPoints: bool, hiddenCount: int, direction: string}
+     */
+    public function getParticipantRatingTable(Event $event): array
+    {
+        $direction = $event->direction;
+
+        $roster = DB::table('event_team_members')
+            ->join('event_teams', 'event_teams.id', '=', 'event_team_members.event_team_id')
+            ->where('event_teams.event_id', $event->id)
+            ->where('event_team_members.confirmation_status', 'confirmed')
+            ->select('event_team_members.user_id', 'event_teams.name as team_name')
+            ->get()
+            ->unique('user_id')
+            ->keyBy('user_id');
+
+        if ($roster->isEmpty()) {
+            return ['rows' => [], 'hasPoints' => false, 'hiddenCount' => 0, 'direction' => $direction];
+        }
+
+        $userIds = $roster->keys()->all();
+
+        $tournamentStats = PlayerTournamentStats::where('event_id', $event->id)
+            ->whereIn('user_id', $userIds)
+            ->get()
+            ->keyBy('user_id');
+
+        $pointsByUser = app(PlayerMatchStatsService::class)->sumPointsScoredForEvent($event->id);
+        $hasPoints = $pointsByUser->sum() > 0;
+
+        $careerStats = PlayerCareerStats::where('direction', $direction)
+            ->whereIn('user_id', $userIds)
+            ->get()
+            ->keyBy('user_id');
+
+        $users = User::whereIn('id', $userIds)->get()->keyBy('id');
+
+        $rows = [];
+        foreach ($roster as $userId => $r) {
+            $ts = $tournamentStats->get($userId);
+            $cs = $careerStats->get($userId);
+
+            $mu = $cs?->mu ?? 25.0;
+            $sigma = $cs?->sigma ?? 8.333;
+            $oGames = $cs?->total_matches ?? 0;
+            $oWins = $cs?->total_wins ?? 0;
+
+            $rows[] = [
+                'user_id'   => $userId,
+                'user'      => $users->get($userId),
+                'team_name' => $r->team_name,
+                't_games'   => $ts?->matches_played ?? 0,
+                't_wins'    => $ts?->matches_won ?? 0,
+                't_points'  => (int) $pointsByUser->get($userId, 0),
+                'cr'        => max(0.0, $mu - 3 * $sigma),
+                'o_games'   => $oGames,
+                'o_winrate' => $oGames > 0 ? round($oWins / $oGames * 100, 1) : 0.0,
+            ];
+        }
+
+        $played = array_values(array_filter($rows, fn($r) => $r['t_games'] > 0));
+        $hiddenCount = count($rows) - count($played);
+
+        usort($played, fn($a, $b) => $hasPoints
+            ? ($b['t_points'] <=> $a['t_points']) ?: ($b['cr'] <=> $a['cr'])
+            : ($b['cr'] <=> $a['cr']));
+
+        return [
+            'rows'        => $played,
+            'hasPoints'   => $hasPoints,
+            'hiddenCount' => $hiddenCount,
+            'direction'   => $direction,
+        ];
     }
 
     /**
