@@ -341,8 +341,11 @@ class TournamentStatsService
         $played = array_values(array_filter($rows, fn($r) => $r['t_games'] > 0));
         $hiddenCount = count($rows) - count($played);
 
+        // Тай-брейк по победам добавлен для более точного ранжирования при
+        // равенстве очков — MVP турнира сюда не относится: он назначается
+        // организатором вручную (Event::tournament_mvp_user_id, см. setup.blade.php).
         usort($played, fn($a, $b) => $hasPoints
-            ? ($b['t_points'] <=> $a['t_points']) ?: ($b['cr'] <=> $a['cr'])
+            ? ($b['t_points'] <=> $a['t_points']) ?: ($b['t_wins'] <=> $a['t_wins']) ?: ($b['cr'] <=> $a['cr'])
             : ($b['cr'] <=> $a['cr']));
 
         return [

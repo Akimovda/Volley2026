@@ -80,10 +80,10 @@ class TournamentTvController extends Controller
             ->orderBy('sort_order')
             ->get();
 
-        $topPlayers = app(\App\Services\TournamentStatsService::class)
-            ->getTopPlayers($event->id, 20);
+        $ratingData = app(\App\Services\TournamentStatsService::class)
+            ->getParticipantRatingTable($event);
 
-        $pdf = Pdf::loadView('tournaments.pdf.results', compact('event', 'stages', 'topPlayers'))
+        $pdf = Pdf::loadView('tournaments.pdf.results', compact('event', 'stages', 'ratingData'))
             ->setPaper('a4', 'portrait');
 
         $filename = 'results_' . $event->id . '_' . now()->format('Ymd') . '.pdf';
