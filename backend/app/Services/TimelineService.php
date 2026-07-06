@@ -6,7 +6,9 @@ use App\Models\CourtBooking;
 use App\Models\EventOccurrence;
 use App\Models\Location;
 use App\Models\LocationCourt;
+use App\Models\TournamentMatch;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 
 class TimelineService
 {
@@ -225,6 +227,13 @@ class TimelineService
     {
         $occurrences = $this->fetchOccurrences($location, $direction, $date);
 
+        // Курты направления по имени — для сопоставления с tournament_matches.court
+        // (там хранится имя корта строкой, не court_id).
+        $courtIdsByName = LocationCourt::whereHas(
+            'direction',
+            fn($q) => $q->where('location_id', $location->id)->where('direction', $direction)
+        )->pluck('id', 'name');
+
         $slots = [];
         foreach ($occurrences as $occ) {
             $startsLocal = $occ->starts_at_local;
@@ -241,7 +250,7 @@ class TimelineService
                 $organizerLabel = trim($lastName . ' ' . $firstInitial) ?: $organizer->name;
             }
 
-            $slots[] = [
+            $base = [
                 'type'          => 'event',
                 'event_id'      => $occ->event_id,
                 'occurrence_id' => $occ->id,
@@ -250,11 +259,53 @@ class TimelineService
                 'ends_at'       => $endsLocal->format('H:i'),
                 'color'         => $occ->event?->timeline_color,
                 'organizer'     => $organizerLabel,
-                'court_id'      => $occ->event?->courtBooking?->court_id,
             ];
+
+            $tournamentCourtIds = $this->tournamentCourtIds($occ, $courtIdsByName);
+
+            if (!empty($tournamentCourtIds)) {
+                // Турнир с известной привязкой матчей к конкретным кортам (по имени) —
+                // показываем только на этих кортах, а не на всём направлении.
+                foreach ($tournamentCourtIds as $courtId) {
+                    $slots[] = $base + ['court_id' => $courtId];
+                }
+            } else {
+                $slots[] = $base + ['court_id' => $occ->event?->courtBooking?->court_id];
+            }
         }
 
         return $slots;
+    }
+
+    /**
+     * ID кортов, реально занятых турниром в этой occurrence — определяется по
+     * tournament_matches.court (имя корта строкой) через стадии, привязанные к
+     * occurrence_id. Возвращает [] если событие не турнир или матчи не имеют
+     * явной привязки к корту (тогда действует legacy-поведение — все корты направления).
+     *
+     * @param Collection<string,int> $courtIdsByName имя корта => court_id
+     * @return int[]
+     */
+    private function tournamentCourtIds(EventOccurrence $occ, Collection $courtIdsByName): array
+    {
+        if ($occ->event?->format !== 'tournament') {
+            return [];
+        }
+
+        $courtNames = TournamentMatch::query()
+            ->whereHas('stage', fn($q) => $q->where('event_id', $occ->event_id)->where('occurrence_id', $occ->id))
+            ->whereNotNull('court')
+            ->distinct()
+            ->pluck('court');
+
+        $courtIds = [];
+        foreach ($courtNames as $name) {
+            if (isset($courtIdsByName[$name])) {
+                $courtIds[] = $courtIdsByName[$name];
+            }
+        }
+
+        return array_values(array_unique($courtIds));
     }
 
     /**

@@ -57,6 +57,11 @@ return [
     'closed_day'      => 'Закрыто',
     'timeline_color'  => 'Цвет в таймлайне',
     'events_count'    => ':count событий',
+    'timeline_clamped_from'  => 'с :time',
+    'timeline_clamped_until' => 'до :time',
+    'list_all_courts'        => 'Все корты',
+    'list_empty_day'         => 'На этот день ничего нет.',
+    'list_open_event'        => 'Открыть',
 
     // === Бронирование кортов (Фаза 3) ===
     'managed_by_club'          => 'Эта площадка управляется клубом',

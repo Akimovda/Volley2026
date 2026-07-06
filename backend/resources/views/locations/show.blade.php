@@ -212,7 +212,7 @@
                 </div>
             </div>
 
-            <div id="timelinePanel" style="display:none">
+            <div id="timelinePanel">
                 <div class="d-flex between fvc mb-2" style="flex-wrap:wrap;gap:10px">
                     <div class="d-flex gap-1 fvc" style="flex-wrap:wrap">
                         <button type="button" class="btn btn-small btn-secondary" id="tlPrev">{{ __('club.yesterday') }}</button>
@@ -220,7 +220,7 @@
                         <input type="date" id="tlDatePicker" class="btn-small">
                         <button type="button" class="btn btn-small btn-secondary" id="tlNext">{{ __('club.tomorrow') }}</button>
                     </div>
-                    <div class="d-flex gap-1">
+                    <div class="d-flex gap-1" id="tlModeToggleWrap">
                         <button type="button" class="btn btn-small btn-primary" id="tlModeDay">{{ __('club.day_view') }}</button>
                         <button type="button" class="btn btn-small btn-secondary" id="tlModeWeek">{{ __('club.week_view') }}</button>
                     </div>
@@ -229,6 +229,7 @@
                 <div id="tlLoading" class="alert alert-info" style="display:none">…</div>
                 <div id="tlDayGrid" class="timeline-day"></div>
                 <div id="tlWeekGrid" class="timeline-week" style="display:none"></div>
+                <div id="tlListGrid" style="display:none"></div>
             </div>
         </div>
         @endif
@@ -498,11 +499,13 @@
                 const nextBtn = document.getElementById('tlNext');
                 const datePicker = document.getElementById('tlDatePicker');
                 const currentLabel = document.getElementById('tlCurrentLabel');
+                const modeToggleWrap = document.getElementById('tlModeToggleWrap');
                 const modeDayBtn = document.getElementById('tlModeDay');
                 const modeWeekBtn = document.getElementById('tlModeWeek');
                 const loadingEl = document.getElementById('tlLoading');
                 const dayGrid = document.getElementById('tlDayGrid');
                 const weekGrid = document.getElementById('tlWeekGrid');
+                const listGrid = document.getElementById('tlListGrid');
 
                 const directionLabels = {
                     classic: @json(__('club.direction_classic')),
@@ -516,8 +519,15 @@
                     confirmed: @json(__('club.status_confirmed')),
                     paid: @json(__('club.status_paid')),
                 };
+                const clampFromTpl = @json(__('club.timeline_clamped_from', ['time' => '__T__']));
+                const clampUntilTpl = @json(__('club.timeline_clamped_until', ['time' => '__T__']));
+                const allCourtsLabel = @json(__('club.list_all_courts'));
+                const listEmptyLabel = @json(__('club.list_empty_day'));
+                const openEventLabel = @json(__('club.list_open_event'));
+                const freePriceLabel = @json(__('club.price_free'));
+                const priceFieldLabel = @json(__('club.booking_price'));
 
-                const state = { mode: 'day', date: new Date(), dayStart: null, dayEnd: null };
+                const state = { view: 'list', mode: 'day', date: new Date(), dayStart: null, dayEnd: null };
                 const PX_PER_MIN = 1.5;
                 // Высота .timeline-direction-label (18+8=26px) + .timeline-court-header (24px) —
                 // ось времени должна начинаться с этим отступом, иначе подписи времени не
@@ -552,7 +562,7 @@
                     const oldDot = axisEl.querySelector('.timeline-now-dot');
                     if (oldDot) oldDot.remove();
 
-                    if (state.mode !== 'day' || state.dayStart === null) return;
+                    if (state.view !== 'timeline' || state.mode !== 'day' || state.dayStart === null) return;
 
                     const { dateStr, minutes } = nowInTz(locationTz);
                     if (dateStr !== fmtDate(state.date)) return; // выбран не сегодняшний день
@@ -576,8 +586,24 @@
                     btnInactive.classList.remove('btn-primary'); btnInactive.classList.add('btn-secondary');
                 }
 
-                function showList() { panel.style.display = 'none'; setActive(listBtn, tlBtn); }
-                function showTimeline() { panel.style.display = ''; setActive(tlBtn, listBtn); load(); }
+                // Режим "Список" — брони+события выбранного дня одним списком по времени
+                // (день/неделя переключатель к нему не относится — список всегда за 1 день).
+                function showList() {
+                    state.view = 'list';
+                    setActive(listBtn, tlBtn);
+                    modeToggleWrap.style.display = 'none';
+                    dayGrid.style.display = 'none';
+                    weekGrid.style.display = 'none';
+                    listGrid.style.display = '';
+                    load();
+                }
+                function showTimeline() {
+                    state.view = 'timeline';
+                    setActive(tlBtn, listBtn);
+                    modeToggleWrap.style.display = '';
+                    listGrid.style.display = 'none';
+                    setMode(state.mode);
+                }
                 listBtn.addEventListener('click', showList);
                 tlBtn.addEventListener('click', showTimeline);
 
@@ -596,11 +622,13 @@
                 modeWeekBtn.addEventListener('click', () => setMode('week'));
 
                 prevBtn.addEventListener('click', function () {
-                    state.date.setDate(state.date.getDate() - (state.mode === 'week' ? 7 : 1));
+                    const step = (state.view === 'timeline' && state.mode === 'week') ? 7 : 1;
+                    state.date.setDate(state.date.getDate() - step);
                     load();
                 });
                 nextBtn.addEventListener('click', function () {
-                    state.date.setDate(state.date.getDate() + (state.mode === 'week' ? 7 : 1));
+                    const step = (state.view === 'timeline' && state.mode === 'week') ? 7 : 1;
+                    state.date.setDate(state.date.getDate() + step);
                     load();
                 });
                 datePicker.addEventListener('change', function () {
@@ -684,8 +712,13 @@
                                 body.style.height = (totalMin * PX_PER_MIN) + 'px';
 
                                 court.slots.forEach(function (slot) {
-                                    const startMin = timeToMin(slot.starts_at);
-                                    const endMin = timeToMin(slot.ends_at);
+                                    const rawStartMin = timeToMin(slot.starts_at);
+                                    const rawEndMin = timeToMin(slot.ends_at);
+                                    // Событие полностью вне рабочих часов направления — не показываем совсем.
+                                    if (rawEndMin <= dayStart || rawStartMin >= dayEnd) return;
+
+                                    const startMin = Math.max(rawStartMin, dayStart);
+                                    const endMin = Math.min(rawEndMin, dayEnd);
                                     const isBooking = slot.type === 'booking';
                                     const block = document.createElement(isBooking ? 'div' : 'a');
                                     block.className = 'timeline-event-block' + (isBooking ? ' timeline-booking-block' : '');
@@ -696,8 +729,12 @@
                                     const metaLabel = isBooking
                                         ? (statusLabels[slot.status] || slot.status)
                                         : (slot.organizer || '');
+                                    const clampNotes = [];
+                                    if (rawStartMin < dayStart) clampNotes.push(clampFromTpl.replace('__T__', slot.starts_at));
+                                    if (rawEndMin > dayEnd) clampNotes.push(clampUntilTpl.replace('__T__', slot.ends_at));
                                     block.innerHTML = '<div class="timeline-event-title">' + (slot.title || '') + '</div>' +
-                                        '<div class="timeline-event-meta">' + slot.starts_at + '–' + slot.ends_at + (metaLabel ? ' · ' + metaLabel : '') + '</div>';
+                                        '<div class="timeline-event-meta">' + slot.starts_at + '–' + slot.ends_at + (metaLabel ? ' · ' + metaLabel : '') + '</div>' +
+                                        (clampNotes.length ? '<div class="timeline-event-clamp-note">' + clampNotes.join(' · ') + '</div>' : '');
 
                                     if (isBooking && typeof window.__openBookingDetails === 'function') {
                                         block.style.cursor = 'pointer';
@@ -801,20 +838,124 @@
                     weekGrid.appendChild(table);
                 }
 
+                function escHtml(s) {
+                    return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                }
+
+                // Список броней+событий выбранного дня, хронологически. Данные те же, что
+                // и для дневного таймлайна (directions -> courts -> slots), но события без
+                // привязки к корту дублируются на каждый корт направления (Фаза 2) —
+                // дедуплицируем по occurrence_id/booking_id перед выводом.
+                function renderList(directions) {
+                    listGrid.innerHTML = '';
+                    const openDirs = directions.filter(d => !d.is_closed);
+                    if (!openDirs.length) {
+                        listGrid.innerHTML = '<div class="alert alert-info">' + closedLabel + '</div>';
+                        return;
+                    }
+
+                    const seenEvents = new Set();
+                    const seenBookings = new Set();
+                    const items = [];
+                    openDirs.forEach(function (dir) {
+                        dir.courts.forEach(function (court) {
+                            court.slots.forEach(function (slot) {
+                                if (slot.type === 'event') {
+                                    const key = 'e:' + slot.occurrence_id;
+                                    if (seenEvents.has(key)) return;
+                                    seenEvents.add(key);
+                                    items.push({ slot: slot, direction: dir.direction, courtName: slot.court_id ? court.name : null });
+                                } else {
+                                    const key = 'b:' + slot.booking_id;
+                                    if (seenBookings.has(key)) return;
+                                    seenBookings.add(key);
+                                    items.push({ slot: slot, direction: dir.direction, courtName: court.name });
+                                }
+                            });
+                        });
+                    });
+
+                    if (!items.length) {
+                        listGrid.innerHTML = '<div class="alert alert-info">' + listEmptyLabel + '</div>';
+                        return;
+                    }
+
+                    items.sort(function (a, b) { return timeToMin(a.slot.starts_at) - timeToMin(b.slot.starts_at); });
+
+                    items.forEach(function (item) {
+                        const slot = item.slot;
+                        const isBooking = slot.type === 'booking';
+                        const card = document.createElement('div');
+                        card.className = 'card mb-2 timeline-list-card';
+                        card.style.borderLeft = '4px solid ' + (slot.color || '#4A9EFF');
+
+                        const courtLabel = item.courtName || allCourtsOrDirectionLabel(item.direction);
+                        const metaLabel = isBooking
+                            ? (statusLabels[slot.status] || slot.status)
+                            : (slot.organizer || '');
+                        const priceLabel = isBooking
+                            ? (priceFieldLabel + ': ' + ((slot.price_total === null || slot.price_total === undefined) ? freePriceLabel : (slot.price_total + ' ₽')))
+                            : '';
+
+                        card.innerHTML =
+                            '<div class="d-flex between fvc" style="flex-wrap:wrap;gap:8px">' +
+                                '<div>' +
+                                    '<div class="b-700">' + slot.starts_at + '–' + slot.ends_at + ' · ' + escHtml(courtLabel) + '</div>' +
+                                    '<div class="f-14">' + escHtml(slot.title || '') + (metaLabel ? ' · ' + escHtml(metaLabel) : '') + '</div>' +
+                                    (priceLabel ? '<div class="f-14">' + escHtml(priceLabel) + '</div>' : '') +
+                                '</div>' +
+                                '<div class="d-flex gap-1 timeline-list-actions" style="flex-wrap:wrap"></div>' +
+                            '</div>';
+
+                        if (isBooking) {
+                            card.classList.add('timeline-list-card--clickable');
+                            const bookingPayload = {
+                                id: slot.booking_id, court_id: slot.court_id, direction_id: slot.direction_id,
+                                date: slot.date, time_from: slot.starts_at, time_to: slot.ends_at,
+                                title: slot.raw_title, color: slot.raw_color, is_guest: slot.is_guest,
+                                organizer_id: slot.organizer_id, organizer_label: slot.organizer,
+                                guest_name: slot.guest_name, guest_phone: slot.guest_phone,
+                                booker_name: slot.booker_name, status: slot.status, price_total: slot.price_total,
+                                court_name: slot.court_name, parent_booking_id: slot.parent_booking_id, is_series: slot.is_series,
+                            };
+                            card.addEventListener('click', function () {
+                                if (typeof window.__openBookingDetails === 'function') window.__openBookingDetails(bookingPayload);
+                            });
+                        } else {
+                            const link = document.createElement('a');
+                            link.href = '/events/' + slot.event_id;
+                            link.className = 'btn btn-small btn-secondary';
+                            link.textContent = openEventLabel;
+                            card.querySelector('.timeline-list-actions').appendChild(link);
+                        }
+
+                        listGrid.appendChild(card);
+                    });
+                }
+
+                function allCourtsOrDirectionLabel(directionKey) {
+                    return allCourtsLabel + ' (' + (directionLabels[directionKey] || directionKey) + ')';
+                }
+
                 async function load() {
                     updateLabel();
                     loadingEl.style.display = '';
                     try {
-                        const url = timelineUrl + '?date=' + fmtDate(state.date) + '&mode=' + state.mode;
+                        const mode = state.view === 'list' ? 'day' : state.mode;
+                        const url = timelineUrl + '?date=' + fmtDate(state.date) + '&mode=' + mode;
                         const res = await fetch(url, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' });
                         const data = await res.json();
-                        if (state.mode === 'day') { renderDay(data); } else { renderWeek(data); }
+                        if (state.view === 'list') { renderList(data); }
+                        else if (state.mode === 'day') { renderDay(data); }
+                        else { renderWeek(data); }
                     } catch (e) {
-                        dayGrid.innerHTML = ''; weekGrid.innerHTML = '';
+                        dayGrid.innerHTML = ''; weekGrid.innerHTML = ''; listGrid.innerHTML = '';
                     } finally {
                         loadingEl.style.display = 'none';
                     }
                 }
+
+                showList();
             })();
         });
     </script>

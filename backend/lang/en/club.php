@@ -57,6 +57,11 @@ return [
     'closed_day'      => 'Closed',
     'timeline_color'  => 'Timeline color',
     'events_count'    => ':count events',
+    'timeline_clamped_from'  => 'from :time',
+    'timeline_clamped_until' => 'until :time',
+    'list_all_courts'        => 'All courts',
+    'list_empty_day'         => 'Nothing scheduled for this day.',
+    'list_open_event'        => 'Open',
 
     // === Court bookings (Phase 3) ===
     'managed_by_club'          => 'This venue is managed by a club',

@@ -5096,6 +5096,24 @@ body:not(.is-app) .native-actions {
 	text-overflow: ellipsis;
 	overflow: hidden;
 }
+.timeline-event-clamp-note {
+	font-size: 10px;
+	font-style: italic;
+	opacity: .85;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	overflow: hidden;
+}
+/* ===== Club module: режим "Список" в блоке таймлайна ===== */
+.timeline-list-card {
+	padding: 10px 14px;
+}
+.timeline-list-card--clickable {
+	cursor: pointer;
+}
+.timeline-list-card--clickable:hover {
+	box-shadow: 0 4px 12px rgba(0, 0, 0, .12);
+}
 .timeline-week-table {
 	width: 100%;
 	border-collapse: collapse;
@@ -5255,12 +5273,18 @@ body.dark .podium-bar {
 	.podium-bronze .podium-bar { height: 40px; }
 }
 
-/* ===== Club module: модалка "Добавить/редактировать бронь" — шире на десктопе ===== */
+/* ===== Club module: модалка "Добавить/редактировать бронь" — ширина по содержимому =====
+   .form / .form input,select { width:100% } внутри inline-block .fancybox-content без
+   явного max-width на обёртке даёт "резиновый" блок шириной во весь доступный экран
+   (browser берёт max-width как preferred width при shrink-to-fit) — отсюда был баг
+   "контейнер модалки шире содержимого". max-width ограничивает именно эту ширину. */
 .booking-modal-content {
-	max-width: 42rem;
+	max-width: 48rem;
+	width: 100%;
 }
-@media (min-width: 992px) {
+@media (max-width: 768px) {
 	.booking-modal-content {
-		max-width: 68rem;
+		max-width: 100%;
+		width: 100%;
 	}
 }

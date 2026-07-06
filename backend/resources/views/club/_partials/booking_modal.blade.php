@@ -17,7 +17,7 @@ $locationsJs = $locations->map(function ($loc) {
 @endphp
 
 <div id="addBookingModalContent" class="booking-modal-content" style="display:none">
-    <div class="card" style="height:auto;max-height:80vh;overflow-y:auto">
+    <div class="card" style="height:auto;max-height:90vh;overflow-y:auto">
         <h3 class="-mt-05" id="abModalTitle">{{ __('club.add_booking') }}</h3>
 
         @if(session('error'))
