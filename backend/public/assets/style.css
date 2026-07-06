@@ -5510,8 +5510,8 @@ body.dark .club-analytics-summary {
 }
 .ms-bar-track--away { justify-content: flex-end; }
 .ms-bar-fill { height: 100%; border-radius: 6px; transition: width .4s ease; min-width: 2px; }
-.ms-bar-fill--home { background: #2967BA; }
-.ms-bar-fill--away { background: #E7612F; }
+.ms-bar-fill--home,
+.ms-bar-fill--away { background: #2967BA; }
 .ms-bar-fill--error { background: #ef4444; opacity: .8; }
 .ms-bar-label {
 	text-align: center;
