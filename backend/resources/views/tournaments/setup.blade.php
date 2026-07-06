@@ -1702,6 +1702,9 @@ $tourNumber = $seasonData
 												<a href="{{ route('tournament.matches.player_stats.form', $match) }}" class="btn btn-secondary btn-small" title="{{ __('tournaments.setup_match_player_stats_title') }}">
 													📊
 												</a>
+												<a href="{{ route('tournament.matches.pdf_stats', $match) }}" class="btn btn-secondary btn-small" title="{{ __('tournaments.rally_btn_pdf_stats') }}">
+													📊 PDF
+												</a>
 												@endif
 											</td>
 										</tr>
