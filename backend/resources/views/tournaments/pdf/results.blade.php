@@ -46,7 +46,7 @@
                 @foreach($classification as $c)
                     <tr>
                         <td class="tc bold" style="{{ $c['place'] <= 3 ? 'color:#E7612F' : '' }}">
-                            {{ $c['place'] === 1 ? '🥇' : ($c['place'] === 2 ? '🥈' : ($c['place'] === 3 ? '🥉' : $c['place'])) }}
+                            {{ $c['place'] }}
                         </td>
                         <td class="{{ $c['place'] <= 3 ? 'bold' : '' }}">{{ $c['team_name'] }}</td>
                     </tr>
@@ -172,7 +172,7 @@
         <h2>Рейтинг игроков</h2>
 
         @if($mvpUser)
-            <div class="mvp-block">🏆 MVP турнира: {{ $mvpUser->displayName() }}</div>
+            <div class="mvp-block">MVP турнира: {{ $mvpUser->displayName() }}</div>
         @endif
 
         <table>
@@ -199,7 +199,7 @@
                     @php $isMvp = $event->tournament_mvp_user_id && (int) $event->tournament_mvp_user_id === (int) $r['user_id']; @endphp
                     <tr @if($isMvp) style="background:#fff8d6" @endif>
                         <td class="tc bold">{{ $i + 1 }}</td>
-                        <td>{{ $r['user']?->displayName() ?? '#' . $r['user_id'] }}{{ $isMvp ? ' 🏆' : '' }}</td>
+                        <td>{{ $r['user']?->displayName() ?? '#' . $r['user_id'] }}{{ $isMvp ? ' (MVP)' : '' }}</td>
                         <td class="tc">{{ $r['t_games'] }}</td>
                         <td class="tc win">{{ $r['t_wins'] }}</td>
                         @if($ratingData['hasPoints'])
