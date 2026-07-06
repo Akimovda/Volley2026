@@ -664,7 +664,11 @@ class TournamentController extends Controller
             && $stage->type !== TournamentStage::TYPE_KING_BEACH
             && MatchRallyEvent::where('match_id', $match->id)->exists();
 
-        return view('tournaments.score', compact('event', 'match', 'stage', 'hasRallyData'));
+        $hasRallyDataCompleted = $match->isCompleted()
+            && $stage->type !== TournamentStage::TYPE_KING_BEACH
+            && MatchRallyEvent::where('match_id', $match->id)->exists();
+
+        return view('tournaments.score', compact('event', 'match', 'stage', 'hasRallyData', 'hasRallyDataCompleted'));
     }
 
     /* ================================================================
@@ -2163,6 +2167,55 @@ class TournamentController extends Controller
         $request->merge(['sets' => $sets]);
 
         return $this->score($request, $match);
+    }
+
+    /**
+     * Переоткрыть завершённый матч для правки через поочковый ввод.
+     * Сбрасывает счёт/статус матча (как rescoreMatch), но НЕ трогает
+     * уже накопленные match_rally_events — организатор может отменить
+     * неверные очки и добавить верные, затем заново нажать «Записать счёт»
+     * (rallyFinalize), который проведёт submitScore() + rebuildAll() как обычно.
+     */
+    public function rallyReopen(Request $request, TournamentMatch $match)
+    {
+        $stage = $match->stage;
+        $event = $stage->event;
+        $this->authorizeOrganizer($request, $event);
+
+        if ($stage->type === TournamentStage::TYPE_KING_BEACH) {
+            return redirect()
+                ->route('tournament.matches.score.form', $match)
+                ->with('error', 'Поочковый ввод недоступен для формата "Король пляжа".');
+        }
+
+        if (!$match->isCompleted()) {
+            return redirect()->route('tournament.matches.rally.form', $match);
+        }
+
+        if (!MatchRallyEvent::where('match_id', $match->id)->exists()) {
+            return redirect()
+                ->route('tournament.matches.score.form', $match)
+                ->with('error', 'Для этого матча нет данных поочкового ввода — используйте обычное исправление счёта.');
+        }
+
+        $stageIsDivStage = str_starts_with($stage->name, 'Группа ');
+        if (!$stageIsDivStage) {
+            $hasDivStages = $event->tournamentStages()
+                ->where('name', 'like', 'Группа %')
+                ->where('occurrence_id', $stage->occurrence_id)
+                ->exists();
+            if ($hasDivStages) {
+                return redirect()
+                    ->route('tournament.matches.score.form', $match)
+                    ->with('error', 'Нельзя исправить счёт — группы уже сформированы. Откатите распределение и повторите.');
+            }
+        }
+
+        $this->matchService->resetScore($match);
+
+        return redirect()
+            ->route('tournament.matches.rally.form', $match)
+            ->with('success', 'Матч временно переоткрыт для правки. После исправления нажмите «Записать счёт».');
     }
 
     /* ================================================================

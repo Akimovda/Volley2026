@@ -990,6 +990,8 @@ Route::middleware([
         ->name('tournament.matches.rally.undo');
     Route::post('/tournament-matches/{match}/score/rally/finalize', [TournamentController::class, 'rallyFinalize'])
         ->name('tournament.matches.rally.finalize');
+    Route::post('/tournament-matches/{match}/score/rally/reopen', [TournamentController::class, 'rallyReopen'])
+        ->name('tournament.matches.rally.reopen');
 
     Route::post('/events/{event}/tournament/apply-promotion', [TournamentController::class, 'applyDivisionPromotion'])
         ->name('tournament.applyPromotion');

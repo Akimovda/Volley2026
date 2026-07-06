@@ -126,6 +126,20 @@
 					@endif
 				@endif
 
+				@if($stage->type !== 'king_beach' && $isEdit && ($hasRallyDataCompleted ?? false))
+				<div class="alert alert-info d-flex fvc gap-1 mb-2" style="flex-wrap:wrap">
+					<span>{{ __('tournaments.rally_reopen_banner') }}</span>
+					<form method="POST" action="{{ route('tournament.matches.rally.reopen', $match) }}" style="margin:0">
+						@csrf
+						<button type="submit" class="btn btn-small btn-primary btn-alert"
+							data-title="{{ __('tournaments.rally_reopen_confirm_title') }}"
+							data-icon="warning"
+							data-confirm-text="{{ __('tournaments.rally_reopen_btn') }}"
+							data-cancel-text="{{ __('tournaments.btn_cancel') }}">{{ __('tournaments.rally_reopen_btn') }}</button>
+					</form>
+				</div>
+				@endif
+
 					{{-- Форма счёта --}}
 					<form method="POST" action="{{ $isEdit ? route('tournament.matches.rescore', $match) : route('tournament.matches.score', $match) }}" id="scoreForm">
 						@csrf
