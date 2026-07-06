@@ -769,4 +769,13 @@ return [
     'pos_abbr_opposite'             => 'Opp',
     'pos_abbr_middle'               => 'MB',
     'pos_abbr_libero'               => 'L',
+
+    // Tournament participant rating table (tab=stats)
+    'in_tournament'                 => 'In this tournament',
+    'overall_rating'                => 'Overall rating',
+    'games'                         => 'Games',
+    'wins'                          => 'Wins',
+    'points'                        => 'Points',
+    'full_rating_link'              => 'Full player rating',
+    'rating_hidden_no_games'        => ':count more players with no matches played',
 ];

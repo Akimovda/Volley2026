@@ -299,6 +299,39 @@ class PlayerMatchStatsService
     }
 
     /**
+     * Сумма результативных очков (points_scored = aces+kills+blocks) по игроку
+     * за ВСЕ завершённые матчи турнира. Для каждого (матч, игрок) берём итоговую
+     * строку (set_number=0), если она есть, иначе суммируем построчно по сетам —
+     * иначе при простом SUM() по всем строкам счёт задвоился бы (0-строка это
+     * уже сумма сетов, не отдельное значение).
+     *
+     * @return \Illuminate\Support\Collection<int, int> сумма очков, ключ — user_id
+     */
+    public function sumPointsScoredForEvent(int $eventId): \Illuminate\Support\Collection
+    {
+        $matchIds = TournamentMatch::whereHas('stage', fn($q) => $q->where('event_id', $eventId))
+            ->where('status', TournamentMatch::STATUS_COMPLETED)
+            ->pluck('id');
+
+        if ($matchIds->isEmpty()) {
+            return collect();
+        }
+
+        $allStats = MatchPlayerStats::whereIn('match_id', $matchIds)->get()->groupBy('match_id');
+
+        $totals = [];
+        foreach ($allStats as $statsForMatch) {
+            foreach ($statsForMatch->groupBy('user_id') as $userId => $userStats) {
+                $totalRow = $userStats->firstWhere('set_number', 0);
+                $matchPoints = $totalRow ? $totalRow->points_scored : $userStats->sum('points_scored');
+                $totals[$userId] = ($totals[$userId] ?? 0) + $matchPoints;
+            }
+        }
+
+        return collect($totals);
+    }
+
+    /**
      * Список игроков обеих команд для UI формы ввода.
      */
     public function getMatchPlayers(TournamentMatch $match): array
