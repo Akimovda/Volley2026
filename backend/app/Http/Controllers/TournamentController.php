@@ -2504,4 +2504,39 @@ class TournamentController extends Controller
 
         return $inserted;
     }
+
+    /**
+     * PNG-карточка матча для шаринга (1200x630, Browsershot). Публичный роут —
+     * авторизация не нужна, доступ только по завершённому матчу. Кешируется на
+     * диске, перегенерируется только если матч обновлялся позже файла.
+     */
+    public function shareCard(TournamentMatch $match)
+    {
+        abort_unless($match->status === TournamentMatch::STATUS_COMPLETED, 404);
+
+        $match->loadMissing(['teamHome.captain', 'teamAway.captain', 'stage']);
+
+        $path = storage_path("app/public/share-cards/match-{$match->id}.png");
+
+        if (!file_exists($path) || filemtime($path) < $match->updated_at->timestamp) {
+            if (!is_dir(dirname($path))) {
+                mkdir(dirname($path), 0775, true);
+            }
+
+            $html = view('tournaments._partials.match_share_card', [
+                'match' => $match,
+            ])->render();
+
+            \Spatie\Browsershot\Browsershot::html($html)
+                ->windowSize(1200, 630)
+                ->deviceScaleFactor(2)
+                ->noSandbox()
+                ->save($path);
+        }
+
+        return response()->file($path, [
+            'Content-Type'  => 'image/png',
+            'Cache-Control' => 'public, max-age=3600',
+        ]);
+    }
 }

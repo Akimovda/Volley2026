@@ -5380,6 +5380,18 @@ body.dark .club-analytics-summary {
 	margin-bottom: 6px;
 }
 .ms-header-meta--right { float: right; }
+.ms-share-btn {
+	float: right;
+	margin-left: 10px;
+	background: none;
+	border: none;
+	cursor: pointer;
+	font-size: 1.6rem;
+	line-height: 1;
+	opacity: .7;
+	padding: 0;
+}
+.ms-share-btn:hover { opacity: 1; }
 .ms-header-row {
 	display: flex;
 	align-items: center;
