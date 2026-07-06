@@ -978,6 +978,10 @@ Route::get('/events/{event}/tournament/pdf/schedule', [TournamentTvController::c
 Route::get('/events/{event}/tournament/pdf/results', [TournamentTvController::class, 'pdfResults'])
     ->name('tournament.pdf.results');
 
+// Публичная PNG-карточка матча для шаринга (Web Share API / OG:image) — без авторизации.
+Route::get('/tournament-matches/{match}/share-card', [TournamentController::class, 'shareCard'])
+    ->name('tournament.matches.share_card');
+
 
 
 /*

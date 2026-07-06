@@ -24,6 +24,7 @@
         "socialiteproviders/apple": "^5.8",
         "socialiteproviders/vkontakte": "^5.1",
         "socialiteproviders/yandex": "^4.1",
+        "spatie/browsershot": "^5.4",
         "spatie/laravel-medialibrary": "^11.17",
         "yoomoney/yookassa-sdk-php": "*"
     },

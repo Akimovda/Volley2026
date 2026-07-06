@@ -125,6 +125,9 @@ $awayWonMatch = $match->winner_team_id && (int) $match->winner_team_id === (int)
         @if($match->scheduled_at)
         <div class="ms-header-meta ms-header-meta--right">{{ $match->scheduled_at->setTimezone($tz)->format('d.m.Y H:i') }}</div>
         @endif
+        @if($match->isCompleted())
+        <button type="button" class="ms-share-btn" onclick="msShareMatch({{ $match->id }}, {{ json_encode(($homeTeam->name ?? '?') . ' vs ' . ($awayTeam->name ?? '?')) }})">📤</button>
+        @endif
 
         <div class="ms-header-row">
             <div class="ms-header-team">
@@ -257,3 +260,21 @@ $awayWonMatch = $match->winner_team_id && (int) $match->winner_team_id === (int)
 
     @endif
 </div>
+
+@once
+<script>
+    async function msShareMatch(matchId, title) {
+        var url = '/tournament-matches/' + matchId + '/share-card';
+        try {
+            var resp = await fetch(url);
+            var blob = await resp.blob();
+            var file = new File([blob], 'match.png', { type: 'image/png' });
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                await navigator.share({ files: [file], title: title });
+                return;
+            }
+        } catch (e) { console.warn('[share]', e); }
+        window.open(url, '_blank');
+    }
+</script>
+@endonce
