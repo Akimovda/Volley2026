@@ -113,9 +113,19 @@
                     </div>
 
                     <div class="tab-pane" id="howto-max">
+                        @php
+                            $maxBotLink = rtrim((string) config('services.max.bot_link', ''), '/');
+                            $maxBotHandle = $maxBotLink !== '' ? trim(parse_url($maxBotLink, PHP_URL_PATH) ?? '', '/') : '';
+                        @endphp
+                        @if($maxBotHandle !== '')
+                        <p class="f-14 mb-1">
+                            <strong>Наш бот:</strong>
+                            <a href="{{ $maxBotLink }}" target="_blank" rel="noopener" class="link b-700">{{ $maxBotHandle }}</a>
+                        </p>
+                        @endif
                         <ol class="list">
                             <li>Создайте или откройте свой <strong>чат в MAX</strong>.</li>
-                            <li>Добавьте в чат нашего MAX-бота <strong>с правами администратора</strong>.</li>
+                            <li>Добавьте в чат нашего бота{{ $maxBotHandle !== '' ? ' '.$maxBotHandle : '' }} <strong>с правами администратора</strong>. Без этого шага список чатов будет пустым.</li>
                             <li>В блоке ниже выберите <strong>MAX</strong> и нажмите <strong>«Создать ссылку привязки»</strong>.</li>
                             <li>Нажмите <strong>«Открыть MAX»</strong> — откроется бот с уже переданным токеном.</li>
                             <li>Бот покажет список чатов — выберите нужный.</li>
