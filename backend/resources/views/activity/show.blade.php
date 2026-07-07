@@ -244,9 +244,9 @@ function fmtClock(offsetSec) {
 (function() {
     var jumps = @json($jumpEvents->values());
 
-    // linear-ось: x = t_offset_sec (число), ticks и tooltip форматируются через fmtClock
+    // linear-ось: x = t_offset_ms/1000 (секунды), ticks и tooltip форматируются через fmtClock
     var jumpData = jumps.map(function(j) {
-        return { x: j.t_offset_sec, y: j.height_cm !== null ? parseFloat(j.height_cm) : null };
+        return { x: j.t_offset_ms / 1000, y: j.height_cm !== null ? parseFloat(j.height_cm) : null };
     });
 
     new Chart(document.getElementById('jump-chart').getContext('2d'), {

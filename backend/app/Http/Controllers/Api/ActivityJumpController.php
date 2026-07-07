@@ -20,7 +20,7 @@ class ActivityJumpController extends Controller
 
         $data = $request->validate([
             'jumps'              => ['required', 'array', 'max:5000'],
-            'jumps.*.t'          => ['required', 'numeric', 'min:0'],
+            'jumps.*.t'          => ['required', 'integer', 'min:0'],
             'jumps.*.height_cm'  => ['nullable', 'numeric', 'min:0', 'max:150'],
             'jumps.*.type'       => ['nullable', 'string', 'max:32'],
         ]);
