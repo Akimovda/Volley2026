@@ -27,10 +27,18 @@ $avatarDataUri = function (?\App\Models\User $captain): ?string {
     return 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($path));
 };
 
+$captainName = function (?\App\Models\User $captain): ?string {
+    if (!$captain) return null;
+    $name = trim(($captain->last_name ?? '') . ' ' . ($captain->first_name ?? ''));
+    return $name !== '' ? $name : null;
+};
+
 $homeTeam = $match->teamHome;
 $awayTeam = $match->teamAway;
 $homeAvatar = $avatarDataUri($homeTeam?->captain);
 $awayAvatar = $avatarDataUri($awayTeam?->captain);
+$homeCaptainName = $captainName($homeTeam?->captain);
+$awayCaptainName = $captainName($awayTeam?->captain);
 
 $homeWon = $match->winner_team_id && (int) $match->winner_team_id === (int) $match->team_home_id;
 $awayWon = $match->winner_team_id && (int) $match->winner_team_id === (int) $match->team_away_id;
@@ -42,6 +50,35 @@ if ($match->score_home && $match->score_away) {
         $setsRendered[] = ['home' => $h, 'away' => $a, 'home_win' => $h > $a];
     }
 }
+
+// Логотип: полный SVG (мяч + текст VolleyPlay), инлайним содержимое файла —
+// Browsershot рендерит без сети, внешние <img src="/assets/..."> не подтянутся.
+$logoPath = public_path('assets/logo_long.svg');
+$logoSvg = is_file($logoPath)
+    ? preg_replace('/^<\?xml[^>]*\?>\s*/', '', file_get_contents($logoPath))
+    : '';
+
+// Локация и дата матча: берём occurrence турнира (если есть), иначе — само событие
+$stage = $match->stage;
+$event = $stage?->event;
+$occurrence = $stage?->occurrence_id
+    ? \App\Models\EventOccurrence::with('location')->find($stage->occurrence_id)
+    : null;
+
+$location = $occurrence?->location ?? $event?->location;
+$matchDate = $occurrence?->starts_at_local;
+if (!$matchDate && $event?->starts_at) {
+    $matchDate = \App\Support\DateTime::utcToLocal($event->getRawOriginal('starts_at'), $event->timezone ?: 'UTC');
+}
+if ($matchDate) {
+    \Carbon\Carbon::setLocale('ru');
+    $matchDateFormatted = $matchDate->isoFormat('D MMMM YYYY') . ' г.';
+} else {
+    $matchDateFormatted = null;
+}
+
+$locationLine = $location ? trim($location->name . ($location->address ? ', ' . $location->address : '')) : null;
+$metaLine = trim(implode(' · ', array_filter([$locationLine, $matchDateFormatted])));
 @endphp
 <!DOCTYPE html>
 <html>
@@ -61,8 +98,10 @@ if ($match->score_home && $match->score_away) {
         position: relative;
         overflow: hidden;
     }
-    .logo { position: absolute; top: 44px; left: 50%; transform: translateX(-50%); }
-    .logo svg { width: 200px; height: auto; display: block; }
+    .header { position: absolute; top: 40px; left: 56px; right: 56px; display: flex; align-items: center; justify-content: space-between; }
+    .logo svg { height: 52px; width: auto; display: block; }
+    .stage { font-size: 22px; opacity: .55; text-transform: uppercase; letter-spacing: .05em; font-weight: 700; text-align: right; }
+    .meta { position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); font-size: 20px; opacity: .55; white-space: nowrap; }
     .row { display: flex; align-items: center; justify-content: center; gap: 70px; margin-top: 30px; }
     .team { display: flex; flex-direction: column; align-items: center; width: 340px; }
     .avatar { width: 128px; height: 128px; border-radius: 50%; object-fit: cover; border: 4px solid rgba(255, 255, 255, .15); }
@@ -86,25 +125,21 @@ if ($match->score_home && $match->score_away) {
         white-space: nowrap;
     }
     .team-name--winner { font-weight: 700; }
+    .captain-name { margin-top: 6px; font-size: 18px; opacity: .6; text-align: center; max-width: 340px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .score-block { display: flex; flex-direction: column; align-items: center; width: 260px; }
     .score { font-size: 100px; font-weight: 800; color: #4a9eff; line-height: 1; }
     .sets { margin-top: 18px; font-size: 32px; white-space: nowrap; }
     .sets .win { color: #ff8a5c; font-weight: 700; }
     .sets .dim { opacity: .5; font-weight: 400; }
     .sep { margin: 0 10px; opacity: .5; }
-    .stage { position: absolute; bottom: 44px; left: 50%; transform: translateX(-50%); font-size: 22px; opacity: .55; text-transform: uppercase; letter-spacing: .05em; font-weight: 700; }
 </style>
 </head>
 <body>
-    <div class="logo">
-        <svg xmlns="http://www.w3.org/2000/svg" width="297px" height="88px" viewBox="0 0 297 88" version="1.1">
-            <defs><linearGradient x1="73.168378%" y1="4.69814595%" x2="73.168378%" y2="105.568873%" id="shareLogoGrad"><stop stop-color="#FFB171" offset="0%"></stop><stop stop-color="#E7612F" offset="100%"></stop></linearGradient></defs>
-            <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
-                <g transform="translate(0.529457, 0.168880)">
-                    <path d="M20.4616712,21.2653614 C43.5995828,11.4565515 63.9873842,14.9226858 77.3336873,19.9599868 L77.7359609,20.1131011 L79.9411208,20.957837 C81.612304,25.1583828 82.6757033,29.479172 83.1255988,33.8256509 C73.2484161,29.7775841 55.6173261,25.8306724 35.2544697,35.7139277 C28.7394221,31.3463466 23.9393424,26.3940322 20.4616712,21.2653614 Z M15.9816651,83.2785026 C25.6226037,75.5385008 36.1868466,62.3236963 37.7048912,41.2399692 C45.8708331,37.2453017 53.5149691,35.732692 60.3198675,35.6202698 C56.532537,60.6769039 42.9725819,76.5578623 31.8465358,85.6089348 L31.5101404,85.8811215 L30.179405,86.94998 C25.2859047,86.4551262 20.5042122,85.2107275 15.9816651,83.2785026 Z M25.8189366,62.0328424 C2.04683068,43.8434466 -0.223921947,18.8783035 0.015479381,8.40402649 L0.101491241,5.21520633 C1.90384389,3.34284074 3.86809204,1.59368609 5.99889661,-7.10542736e-15 C7.53094883,10.6345296 13.0290472,28.0658987 31.684203,40.6549873 C31.0946364,49.1383987 28.8821205,56.189305 25.8189366,62.0328424 Z" fill="url(#shareLogoGrad)"></path>
-                </g>
-            </g>
-        </svg>
+    <div class="header">
+        <div class="logo">{!! $logoSvg !!}</div>
+        @if($stage)
+        <div class="stage">{{ $stage->name }}</div>
+        @endif
     </div>
 
     <div class="row">
@@ -115,6 +150,9 @@ if ($match->score_home && $match->score_away) {
             <div class="avatar-fallback avatar--home">{{ $teamInitials($homeTeam->name ?? '?') }}</div>
             @endif
             <div class="team-name{{ $homeWon ? ' team-name--winner' : '' }}">{{ $homeTeam->name ?? '?' }}</div>
+            @if($homeCaptainName)
+            <div class="captain-name">{{ $homeCaptainName }}</div>
+            @endif
         </div>
 
         <div class="score-block">
@@ -136,11 +174,14 @@ if ($match->score_home && $match->score_away) {
             <div class="avatar-fallback avatar--away">{{ $teamInitials($awayTeam->name ?? '?') }}</div>
             @endif
             <div class="team-name{{ $awayWon ? ' team-name--winner' : '' }}">{{ $awayTeam->name ?? '?' }}</div>
+            @if($awayCaptainName)
+            <div class="captain-name">{{ $awayCaptainName }}</div>
+            @endif
         </div>
     </div>
 
-    @if($match->stage)
-    <div class="stage">{{ $match->stage->name }}</div>
+    @if($metaLine !== '')
+    <div class="meta">{{ $metaLine }}</div>
     @endif
 </body>
 </html>
