@@ -92,10 +92,10 @@ class ActivitySessionService
         }
 
         $rows = array_map(fn($j) => [
-            'session_id'   => $session->id,
-            't_offset_sec' => (int) $j['t'],
-            'height_cm'    => isset($j['height_cm']) ? round((float) $j['height_cm'], 1) : null,
-            'type'         => $j['type'] ?? null,
+            'session_id'  => $session->id,
+            't_offset_ms' => (int) $j['t'],
+            'height_cm'   => isset($j['height_cm']) ? round((float) $j['height_cm'], 1) : null,
+            'type'        => $j['type'] ?? null,
         ], $jumps);
 
         $countBefore = DB::table('activity_jump_events')
