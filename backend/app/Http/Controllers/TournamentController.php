@@ -2540,7 +2540,7 @@ class TournamentController extends Controller
     {
         abort_unless($match->status === TournamentMatch::STATUS_COMPLETED, 404);
 
-        $match->loadMissing(['teamHome.captain', 'teamAway.captain', 'stage']);
+        $match->loadMissing(['teamHome.captain', 'teamAway.captain', 'stage.event.location']);
 
         $path = storage_path("app/public/share-cards/match-{$match->id}.png");
 
