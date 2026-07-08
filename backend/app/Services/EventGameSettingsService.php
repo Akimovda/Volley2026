@@ -47,12 +47,49 @@ class EventGameSettingsService
             ];
         }
     
+        // Приоритет: king_beach > tournament_individual > team_* (единый источник истины).
+        $isKingBeach = $isTournamentBeach && !empty($data['king_beach_reg']);
         $isIndividual = !empty($data['tournament_individual_reg']);
-        $registrationMode = $isIndividual
-            ? 'tournament_individual'
-            : ($isTournamentBeach ? 'team_beach' : 'team_classic');
+        $registrationMode = $isKingBeach
+            ? 'king_beach'
+            : ($isIndividual
+                ? 'tournament_individual'
+                : ($isTournamentBeach ? 'team_beach' : 'team_classic'));
         $data['tournament_registration_mode'] = $registrationMode;
-    
+
+        if ($isKingBeach) {
+            $kbMin = isset($data['king_beach_min_players']) && $data['king_beach_min_players'] !== ''
+                ? (int) $data['king_beach_min_players']
+                : 4;
+            $kbMax = isset($data['king_beach_max_players']) && $data['king_beach_max_players'] !== ''
+                ? (int) $data['king_beach_max_players']
+                : $kbMin;
+
+            if ($kbMin < 4) {
+                $errors['king_beach_min_players'] = [__('events.king_beach_min_players_error')];
+            }
+
+            if ($kbMax < $kbMin) {
+                $errors['king_beach_max_players'] = [__('events.king_beach_max_players_error')];
+            }
+
+            // King Beach не считает max_players как team_size × teams_count — свои поля напрямую.
+            // teams_count/team_size из формы не требуются (нет команд на этапе регистрации).
+            $data['tournament_game_scheme'] = '2x2';
+            $data['tournament_teams_count'] = 0;
+            $data['tournament_team_size_min'] = $kbMin;
+            $data['tournament_reserve_players_max'] = 0;
+            $data['tournament_total_players_max'] = $kbMax;
+            $data['tournament_require_libero'] = false;
+
+            return [
+                'data' => $data,
+                'errors' => $errors,
+                'needTournamentSettings' => true,
+                'registrationMode' => $registrationMode,
+            ];
+        }
+
         $scheme = (string)($data['tournament_game_scheme'] ?? '');
         if ($scheme === '') {
             $scheme = $isTournamentBeach ? '2x2' : '5x1';
@@ -536,7 +573,50 @@ class EventGameSettingsService
         if (empty($game['needGameSettings'])) {
             return;
         }
-    
+
+        $registrationMode = (string) ($data['tournament_registration_mode'] ?? $event->registration_mode ?? '');
+
+        if ($registrationMode === 'king_beach') {
+            $minPlayers = (int) ($data['king_beach_min_players'] ?? 4);
+            $maxPlayers = (int) ($data['king_beach_max_players'] ?? $minPlayers);
+
+            $this->roleSlotService->syncRoleSlots($event, ['player' => $maxPlayers]);
+
+            $egsPayload = [
+                'subtype'             => '2x2',
+                'libero_mode'         => null,
+                'min_players'         => $minPlayers,
+                'max_players'         => $maxPlayers,
+                // teams_count: колонка NOT NULL, но НЕ unsigned — 0 валиден (нет команд у king_beach).
+                'teams_count'         => 0,
+                'allow_girls'         => false,
+                'girls_max'           => null,
+                'positions'           => [],
+                'reserve_players_max' => null,
+            ];
+
+            if (Schema::hasColumn('event_game_settings', 'gender_policy')) {
+                $egsPayload['gender_policy'] = $gender['genderPolicy'] ?: ($data['game_gender_policy'] ?? null);
+            }
+            if (Schema::hasColumn('event_game_settings', 'gender_limited_side')) {
+                $egsPayload['gender_limited_side'] = $gender['genderLimitedSide'] ?? ($data['game_gender_limited_side'] ?? null);
+            }
+            if (Schema::hasColumn('event_game_settings', 'gender_limited_max')) {
+                $egsPayload['gender_limited_max'] = $gender['genderLimitedMax'] ?? ($data['game_gender_limited_max'] ?? null);
+            }
+            if (Schema::hasColumn('event_game_settings', 'gender_limited_positions')) {
+                $egsPayload['gender_limited_positions'] = $gender['genderLimitedPositions'] ?? ($data['game_gender_limited_positions'] ?? null);
+            }
+            if (Schema::hasColumn('event_game_settings', 'gender_limited_reg_starts_days_before')) {
+                $rawDays = $data['game_gender_limited_reg_starts_days_before'] ?? null;
+                $egsPayload['gender_limited_reg_starts_days_before'] = ($rawDays === null || $rawDays === '') ? null : (int) $rawDays;
+            }
+
+            EventGameSetting::updateOrCreate(['event_id' => $event->id], $egsPayload);
+
+            return;
+        }
+
         $isGameClassic = (bool)($game['isGameClassic'] ?? false);
     
         $subtype = $data['game_subtype'] ?? null;

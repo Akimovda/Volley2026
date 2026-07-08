@@ -73,7 +73,7 @@ class WaitlistService
         // не срабатывает (нет отмены). Без этого reserve мог оставаться незаполненным
         // пока кто-то не сделает новую регистрацию (триггер в persistRegistration).
         $isIndividualTournament = (string)($occurrence->event->format ?? '') === 'tournament'
-            && (string)($occurrence->event->registration_mode ?? '') === 'tournament_individual';
+            && Event::isIndividualRegistrationMode($occurrence->event->registration_mode ?? null);
         if ($entry->wasRecentlyCreated && ((string)($occurrence->event->format ?? '') !== 'tournament' || $isIndividualTournament)) {
             $reserveMax = (int)($occurrence->event->gameSettings?->reserve_players_max ?? 0);
             if ($reserveMax > 0 && $entry->subscribedToPosition('reserve')) {
@@ -143,10 +143,10 @@ class WaitlistService
 
         // Командные турниры не используют occurrence_waitlist.
         // Резерв через TournamentLeagueTeam (лига) или EventTeam.reserve_position (standalone).
-        // tournament_individual работает как обычное мероприятие — не пропускаем.
+        // tournament_individual и king_beach работают как обычное мероприятие — не пропускаем.
         $event = $occurrence->event ?: $occurrence->loadMissing('event')->event;
         if ($event && (string) $event->format === 'tournament') {
-            $isIndividualTournamentForWaitlist = (string)($event->registration_mode ?? '') === 'tournament_individual';
+            $isIndividualTournamentForWaitlist = Event::isIndividualRegistrationMode($event->registration_mode ?? null);
             if (!$isIndividualTournamentForWaitlist) {
                 return;
             }
@@ -172,7 +172,7 @@ class WaitlistService
 
         // Командные турниры в эту ветку не идут — защита на случай прямого вызова
         if ((string) $event->format === 'tournament'
-            && (string)($event->registration_mode ?? '') !== 'tournament_individual') {
+            && !Event::isIndividualRegistrationMode($event->registration_mode ?? null)) {
             return false;
         }
 

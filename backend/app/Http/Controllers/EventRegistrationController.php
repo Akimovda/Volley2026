@@ -444,7 +444,7 @@ class EventRegistrationController extends Controller
         // Триггер нужен при новой регистрации (а не только при отмене), т.к. reserve-слоты
         // изначально пусты и onSpotFreed для них никогда не срабатывал.
         $isIndividualTournament = (string)($occurrence->event->format ?? '') === 'tournament'
-            && (string)($occurrence->event->registration_mode ?? '') === 'tournament_individual';
+            && Event::isIndividualRegistrationMode($occurrence->event->registration_mode ?? null);
         if ($created && ((string)($occurrence->event->format ?? '') !== 'tournament' || $isIndividualTournament)) {
             $reserveMax = (int)($occurrence->event->gameSettings?->reserve_players_max ?? 0);
             if ($reserveMax > 0) {

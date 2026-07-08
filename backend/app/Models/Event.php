@@ -18,6 +18,15 @@ class Event extends Model implements HasMedia
 {
     use InteractsWithMedia;
 
+    /**
+     * Индивидуальная регистрация (без команд на этапе записи): tournament_individual
+     * (амплуа + ручное/случайное распределение) и king_beach (свой путь — группы на setup).
+     */
+    public static function isIndividualRegistrationMode(?string $registrationMode): bool
+    {
+        return in_array($registrationMode, ['tournament_individual', 'king_beach'], true);
+    }
+
     protected $fillable = [
         'title',
         'description_html',

@@ -258,6 +258,9 @@
                 'max:100'
             ],
             'tournament_individual_reg' => ['nullable', 'boolean'],
+            'king_beach_reg' => ['nullable', 'boolean'],
+            'king_beach_min_players' => ['nullable', 'integer', 'min:1', 'max:200'],
+            'king_beach_max_players' => ['nullable', 'integer', 'min:1', 'max:200'],
             'child_age_min' => [
                 'nullable',
                 'integer',
@@ -498,6 +501,9 @@
             $format = (string) ($data['format'] ?? '');
             $direction = (string) ($data['direction'] ?? 'classic');
             $policy = (string) ($data['game_gender_policy'] ?? '');
+            $isKingBeach = in_array($format, ['tournament', 'tournament_beach'], true)
+                && $direction === 'beach'
+                && !empty($data['king_beach_reg']);
 
             // restricted reg start не может быть раньше общего (days_before_restricted <= days_before_general)
             if ($policy === 'mixed_limited') {
@@ -552,13 +558,17 @@
             |--------------------------------------------------------------------------
             */
         
-            $maxRaw = $isTournament
-                ? ($data['tournament_total_players_max'] ?? null)
-                : ($data['game_max_players'] ?? null);
-        
-            $maxField = $isTournament
-                ? 'tournament_total_players_max'
-                : 'game_max_players';
+            $maxRaw = $isKingBeach
+                ? ($data['king_beach_max_players'] ?? null)
+                : ($isTournament
+                    ? ($data['tournament_total_players_max'] ?? null)
+                    : ($data['game_max_players'] ?? null));
+
+            $maxField = $isKingBeach
+                ? 'king_beach_max_players'
+                : ($isTournament
+                    ? 'tournament_total_players_max'
+                    : 'game_max_players');
         
             $max = ($maxRaw === null || $maxRaw === '')
                 ? 0
@@ -579,41 +589,61 @@
             */
         
             if ($isTournament) {
-                $teamMin = (int) ($data['tournament_team_size_min'] ?? 0);
-                $totalMax = (int) ($data['tournament_total_players_max'] ?? 0);
                 $scheme = (string) ($data['tournament_game_scheme'] ?? '');
-                $teamsCount = (int) ($data['tournament_teams_count'] ?? 0);
-            
-                if ($teamsCount <= 0) {
-                    $teamsCount = 4;
-                }
-            
-                if ($teamMin > 0 && $totalMax > 0 && $totalMax < $teamMin) {
-                    $v->errors()->add(
-                        'tournament_total_players_max',
-                        'Максимальный размер команды не может быть меньше минимума игроков.'
-                    );
-                }
-            
+
                 if ($direction === 'classic' && in_array($scheme, ['2x2', '3x3'], true)) {
                     $v->errors()->add(
                         'tournament_game_scheme',
                         'Для классического турнира недоступна пляжная схема.'
                     );
                 }
-            
+
                 if ($direction === 'beach' && in_array($scheme, ['4x2', '5x1', '5x1_libero'], true)) {
                     $v->errors()->add(
                         'tournament_game_scheme',
                         'Для пляжного турнира недоступна классическая схема.'
                     );
                 }
-            
-                if ($teamsCount < 3 || $teamsCount > 100) {
-                    $v->errors()->add(
-                        'tournament_teams_count',
-                        'Количество команд должно быть от 3 до 100.'
-                    );
+
+                if ($isKingBeach) {
+                    // King Beach обходит расчёт team_size × teams_count — свои поля min/max,
+                    // teams_count/team_size не требуются (нет команд на этапе регистрации).
+                    if ($scheme !== '2x2') {
+                        $v->errors()->add('king_beach_reg', __('events.king_beach_scheme_error'));
+                    }
+
+                    $kbMin = (int) ($data['king_beach_min_players'] ?? 0);
+                    $kbMax = (int) ($data['king_beach_max_players'] ?? 0);
+
+                    if ($kbMin < 4) {
+                        $v->errors()->add('king_beach_min_players', __('events.king_beach_min_players_error'));
+                    }
+
+                    if ($kbMax > 0 && $kbMax < $kbMin) {
+                        $v->errors()->add('king_beach_max_players', __('events.king_beach_max_players_error'));
+                    }
+                } else {
+                    $teamMin = (int) ($data['tournament_team_size_min'] ?? 0);
+                    $totalMax = (int) ($data['tournament_total_players_max'] ?? 0);
+                    $teamsCount = (int) ($data['tournament_teams_count'] ?? 0);
+
+                    if ($teamsCount <= 0) {
+                        $teamsCount = 4;
+                    }
+
+                    if ($teamMin > 0 && $totalMax > 0 && $totalMax < $teamMin) {
+                        $v->errors()->add(
+                            'tournament_total_players_max',
+                            'Максимальный размер команды не может быть меньше минимума игроков.'
+                        );
+                    }
+
+                    if ($teamsCount < 3 || $teamsCount > 100) {
+                        $v->errors()->add(
+                            'tournament_teams_count',
+                            'Количество команд должно быть от 3 до 100.'
+                        );
+                    }
                 }
             }
                     

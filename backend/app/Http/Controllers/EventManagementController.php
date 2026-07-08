@@ -1171,8 +1171,16 @@ if ($role === 'admin') {
                 $teamSizeMin = isset($data['tournament_team_size_min']) ? (int) $data['tournament_team_size_min'] : null;
                 $reserveMax  = isset($data['tournament_reserve_players_max']) ? (int) $data['tournament_reserve_players_max'] : null;
 
+                // Форма редактирования не имеет чекбокса king_beach_reg (вне скоупа) —
+                // без этой проверки любое сохранение формы молча откатывало
+                // king_beach-турнир на team_beach (registration_mode перезаписывался
+                // безусловно). Сохраняем king_beach, если явно не переключили на individual.
                 $isIndividual = (bool) ($data['tournament_individual_reg'] ?? false);
-                $registrationMode = $isIndividual ? 'tournament_individual' : ($isBeach ? 'team_beach' : 'team_classic');
+                if ($event->registration_mode === 'king_beach' && !$isIndividual) {
+                    $registrationMode = 'king_beach';
+                } else {
+                    $registrationMode = $isIndividual ? 'tournament_individual' : ($isBeach ? 'team_beach' : 'team_classic');
+                }
                 $event->registration_mode = $registrationMode;
                 $event->save();
 
