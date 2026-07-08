@@ -543,6 +543,7 @@ return [
     'setup_stage_kb_advance'       => 'Проходят в следующий раунд',
     'setup_stage_kb_advance_hint'  => 'из каждой группы по 4 игрока',
     'setup_stage_kb_draw'          => 'Жеребьёвка',
+    'setup_stage_kb_draw_manual_hint' => 'Ручное распределение по группам — после создания стадии, в блоке «Не распределены по группам».',
     'setup_stage_kb_players'       => 'Участники',
     'setup_stage_kb_players_hint'  => 'берутся из зарегистрированных на турнир',
     'setup_stage_kb_players_auto'  => 'авто',

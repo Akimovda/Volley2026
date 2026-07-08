@@ -225,31 +225,22 @@ class TournamentController extends Controller
             'advance_count'   => 'nullable|integer|min:1|max:8',
             'third_place_match' => 'nullable|boolean',
             'courts'          => 'nullable|string|max:500',
-            'kb_advance_count' => 'nullable|integer|min:1|max:4',
-            'kb_courts'        => 'nullable|string|max:500',
         ]);
 
         $sortOrder = ($event->tournamentStages()->max('sort_order') ?? 0) + 1;
 
-        // King of the Beach использует отдельные поля формы (kb_advance_count/kb_courts) —
-        // в форме одновременно присутствуют и общие groups-поля (скрытые), поэтому нельзя
-        // просто брать generic advance_count/courts, иначе они молча перезатрут значение
-        // (как было раньше — kb_advance_count вообще не читался и всегда падал в default=2).
-        $isKingBeach = $validated['type'] === TournamentStage::TYPE_KING_BEACH;
-
-        $courtsRaw = $isKingBeach ? ($validated['kb_courts'] ?? null) : ($validated['courts'] ?? null);
-
+        // Блок кортов (courts_count/courts) общий для групповых форматов и King of the Beach —
+        // единое поле "courts" для обоих случаев (advance_count/группы для king_beach
+        // задаются позже, на этапе "Сформировать дивизионы").
         $config = [
             'match_format'       => $validated['match_format'],
             'set_points'         => (int) $validated['set_points'],
             'deciding_set_points' => (int) $validated['deciding_set_points'],
             'groups_count'       => (int) ($validated['groups_count'] ?? 0),
-            'advance_count'      => $isKingBeach
-                ? (int) ($validated['kb_advance_count'] ?? 2)
-                : (int) ($validated['advance_count'] ?? 2),
+            'advance_count'      => (int) ($validated['advance_count'] ?? 2),
             'third_place_match'  => (bool) ($validated['third_place_match'] ?? false),
-            'courts'             => $courtsRaw
-                ? array_values(array_filter(array_map('trim', explode(',', $courtsRaw))))
+            'courts'             => $validated['courts']
+                ? array_values(array_filter(array_map('trim', explode(',', $validated['courts']))))
                 : [],
             'draw_mode'          => $request->input('draw_mode', 'random'),
             'round_number'       => 1,

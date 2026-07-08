@@ -1164,35 +1164,20 @@ $tourNumber = $seasonData
 					{{-- King of the Beach: специфичные настройки --}}
 					<div class="mt-2" id="king_beach_fields" style="display:none">
 						<div class="row">
-							<div class="col-md-4">
-								<div class="card">
-									<label>{{ __('tournaments.setup_stage_kb_advance') }}</label>
-									<input name="kb_advance_count" type="number" value="2" min="1" max="4">
-									<p class="f-16">{{ __('tournaments.setup_stage_kb_advance_hint') }}</p>
-								</div>
-							</div>
-							<div class="col-md-4">
+							<div class="col-md-6">
 								<div class="card">
 									<label>{{ __('tournaments.setup_stage_kb_draw') }}</label>
 									<select name="draw_mode" id="kb_draw_mode_select">
 										<option value="random">{{ __('tournaments.setup_stage_seed_random') }}</option>
 										<option value="seeded">{{ __('tournaments.setup_stage_seed_seeded') }}</option>
 									</select>
+									<p class="f-16">{{ __('tournaments.setup_stage_kb_draw_manual_hint') }}</p>
 								</div>
 							</div>
-							<div class="col-md-4">
+							<div class="col-md-6">
 								<div class="card">
 									<label>{{ __('tournaments.setup_stage_kb_players') }}</label>
 									<p class="f-16">{{ __('tournaments.setup_stage_kb_players_hint') }}</p>
-								</div>
-							</div>
-						</div>
-						<div class="row mt-1">
-							<div class="col-md-12">
-								<div class="card">
-									<label>{{ __('tournaments.setup_stage_kb_courts') }}</label>
-									<input name="kb_courts" placeholder="{{ __('tournaments.setup_stage_kb_courts_ph') }}">
-									<p class="f-16">{{ __('tournaments.setup_stage_kb_courts_hint') }}</p>
 								</div>
 							</div>
 						</div>
@@ -1200,18 +1185,18 @@ $tourNumber = $seasonData
 
 					<div class="mt-2" id="group_fields">
 						<div class="row">
-							<div class="col-lg-3 col-md-6">
+							<div class="col-lg-4 col-md-6">
 								<div class="card"><label>{{ __('tournaments.setup_stage_groups_count') }}</label>
 									<input name="groups_count" type="number" value="2" min="1" max="16">
 								</div>
 							</div>
-							<div class="col-lg-3 col-md-6">
+							<div class="col-lg-4 col-md-6">
 								<div class="card"><label>{{ __('tournaments.setup_stage_groups_advance') }}</label>
 									<input name="advance_count" type="number" value="2" min="1" max="8">
 									<p class="f-16">{{ __('tournaments.setup_stage_groups_advance_hint') }}</p>
 								</div>
 							</div>
-							<div class="col-lg-3 col-md-6">
+							<div class="col-lg-4 col-md-6">
 								<div class="card"><label>{{ __('tournaments.setup_stage_third_place') }}</label>
 									<select name="third_place_match">
 										<option value="0">{{ __('tournaments.no') }}</option>
@@ -1219,45 +1204,8 @@ $tourNumber = $seasonData
 									</select>
 								</div>
 							</div>
-							<div class="col-lg-3 col-md-6">
-								<div class="card">
-									<label>{{ __('tournaments.setup_stage_courts_count') }}</label>
-									<select name="courts_count" id="courts_count_select">
-										<option value="0">—</option>
-										<option value="1">1</option>
-										<option value="2">2</option>
-										<option value="3">3</option>
-										<option value="4">4</option>
-										<option value="5">5</option>
-										<option value="6">6</option>
-										<option value="7">7</option>
-										<option value="8">8</option>
-										<option value="9">9</option>
-										<option value="10">10</option>
-										<option value="11">11</option>
-										<option value="12">12</option>
-										<option value="13">13</option>
-										<option value="14">14</option>
-										<option value="15">15</option>
-										<option value="16">16</option>
-										<option value="17">17</option>
-										<option value="18">18</option>
-										<option value="19">19</option>
-										<option value="20">20</option>
-									</select>
-									<input type="hidden" name="courts" id="courts_hidden" value="">
-								</div>
-							</div>
 						</div>
-						
-						{{-- Назначение кортов группам (динамическое) --}}
-						<div class="mt-2" id="courts_group_assign" style="display:none">
-							<div class="card">
-								<label>{{ __('tournaments.setup_stage_courts_for_groups') }}</label>
-								<hr class="mb-1">
-								<div id="courts_group_boxes" class="row"></div>
-							</div>	
-						</div>
+
 						{{-- Жеребьёвка --}}
 						<div class="row mt-2">
 							<div class="col-xl-3">
@@ -1345,64 +1293,110 @@ $tourNumber = $seasonData
 								@endif
 							</div>
 						</div>
-						
-						
-						<div class="text-center">
-							<button type="submit" class="btn btn-primary mt-2">{{ __('tournaments.setup_stage_btn_create_seed') }}</button>
+					</div>
+
+					{{-- Корты — общий блок для группового этапа и King of the Beach --}}
+					<div class="mt-2" id="courts_shared_fields" style="overflow:visible">
+						<div class="row">
+							<div class="col-lg-4 col-md-6">
+								<div class="card" style="overflow:visible">
+									<label>{{ __('tournaments.setup_stage_courts_count') }}</label>
+									<select name="courts_count" id="courts_count_select">
+										<option value="0">—</option>
+										<option value="1">1</option>
+										<option value="2">2</option>
+										<option value="3">3</option>
+										<option value="4">4</option>
+										<option value="5">5</option>
+										<option value="6">6</option>
+										<option value="7">7</option>
+										<option value="8">8</option>
+										<option value="9">9</option>
+										<option value="10">10</option>
+										<option value="11">11</option>
+										<option value="12">12</option>
+										<option value="13">13</option>
+										<option value="14">14</option>
+										<option value="15">15</option>
+										<option value="16">16</option>
+										<option value="17">17</option>
+										<option value="18">18</option>
+										<option value="19">19</option>
+										<option value="20">20</option>
+									</select>
+									<input type="hidden" name="courts" id="courts_hidden" value="">
+								</div>
+							</div>
 						</div>
-						<script>
-							(function(){
-								var courtsSel = document.getElementById("courts_count_select");
-								var groupsSel = document.querySelector('input[name="groups_count"]');
-								var hidden = document.getElementById("courts_hidden");
-								var assignBlock = document.getElementById("courts_group_assign");
-								var boxesDiv = document.getElementById("courts_group_boxes");
+
+						{{-- Назначение кортов группам (динамическое, только для форматов с группами) --}}
+						<div class="mt-2" id="courts_group_assign" style="display:none">
+							<div class="card">
+								<label>{{ __('tournaments.setup_stage_courts_for_groups') }}</label>
+								<hr class="mb-1">
+								<div id="courts_group_boxes" class="row"></div>
+							</div>	
+						</div>
+					</div>
+
+					<div class="text-center">
+						<button type="submit" class="btn btn-primary mt-2">{{ __('tournaments.setup_stage_btn_create_seed') }}</button>
+					</div>
+					<script>
+						(function(){
+							var courtsSel = document.getElementById("courts_count_select");
+							var groupsSel = document.querySelector('input[name="groups_count"]');
+							var hidden = document.getElementById("courts_hidden");
+							var assignBlock = document.getElementById("courts_group_assign");
+							var boxesDiv = document.getElementById("courts_group_boxes");
+							var typeSel = document.getElementById("stage_type_select");
+							
+							function rebuild() {
+								var n = parseInt(courtsSel.value) || 0;
+								var isGroupType = typeSel && ['round_robin', 'groups_playoff', 'thai'].indexOf(typeSel.value) !== -1;
+								var g = isGroupType ? (parseInt(groupsSel ? groupsSel.value : 0) || 0) : 0;
 								
-								function rebuild() {
-									var n = parseInt(courtsSel.value) || 0;
-									var g = parseInt(groupsSel ? groupsSel.value : 0) || 0;
-									
-									var names = [];
-									for (var i = 1; i <= n; i++) names.push(@json(__('tournaments.setup_court_n', ['n' => 'X'])).replace('X', i));
-									hidden.value = names.join(", ");
-									
-									if (n === 0 || g === 0) {
-										assignBlock.style.display = "none";
-										boxesDiv.innerHTML = "";
-										return;
-									}
-									
-									assignBlock.style.display = "";
-									var groupLabels = [];
-									for (var gi = 0; gi < g; gi++) {
-										groupLabels.push(String.fromCharCode(65 + gi)); // A, B, C...
-									}
-									
-									var colSize = Math.floor(12 / g);
-									if (colSize < 3) colSize = 3;
-									var html = "";
-									groupLabels.forEach(function(label) {
-										html += '<div class="col-md-' + colSize + ' mb-2">';
-										html += '<label>' + @json(__('tournaments.setup_group_label', ['label' => 'X'])).replace('X', label) + '</label>';
-										html += '<div class="d-flex" style="flex-wrap:wrap;gap:1rem">';
-										names.forEach(function(court) {
-											html += '<label class="checkbox-item f-13" style="min-width: 12rem; margin:0">';
-											html += '<input type="checkbox" name="group_courts[' + label + '][]" value="' + court + '">';
-											html += '<div class="custom-checkbox"></div>';
-											html += '<span>' + court + '</span>';
-											html += '</label>';
-										});
-										html += '</div></div>';
-									});
-									boxesDiv.innerHTML = html;
+								var names = [];
+								for (var i = 1; i <= n; i++) names.push(@json(__('tournaments.setup_court_n', ['n' => 'X'])).replace('X', i));
+								hidden.value = names.join(", ");
+								
+								if (n === 0 || g === 0) {
+									assignBlock.style.display = "none";
+									boxesDiv.innerHTML = "";
+									return;
 								}
 								
-								courtsSel.addEventListener("change", rebuild);
-								if (groupsSel) groupsSel.addEventListener("input", rebuild);
-								rebuild();
-							})();
-						</script>
-					</div>
+								assignBlock.style.display = "";
+								var groupLabels = [];
+								for (var gi = 0; gi < g; gi++) {
+									groupLabels.push(String.fromCharCode(65 + gi)); // A, B, C...
+								}
+								
+								var colSize = Math.floor(12 / g);
+								if (colSize < 3) colSize = 3;
+								var html = "";
+								groupLabels.forEach(function(label) {
+									html += '<div class="col-md-' + colSize + ' mb-2">';
+									html += '<label>' + @json(__('tournaments.setup_group_label', ['label' => 'X'])).replace('X', label) + '</label>';
+									html += '<div class="d-flex" style="flex-wrap:wrap;gap:1rem">';
+									names.forEach(function(court) {
+										html += '<label class="checkbox-item f-13" style="min-width: 12rem; margin:0">';
+										html += '<input type="checkbox" name="group_courts[' + label + '][]" value="' + court + '">';
+										html += '<div class="custom-checkbox"></div>';
+										html += '<span>' + court + '</span>';
+										html += '</label>';
+									});
+									html += '</div></div>';
+								});
+								boxesDiv.innerHTML = html;
+							}
+							
+							courtsSel.addEventListener("change", rebuild);
+							if (groupsSel) groupsSel.addEventListener("input", rebuild);
+							if (typeSel) typeSel.addEventListener("change", rebuild);
+							rebuild();
+						})();
+					</script>
 				</div>
 			</form>
 		</div>
@@ -2146,6 +2140,7 @@ $tourNumber = $seasonData
 			var typeSelect = document.getElementById('stage_type_select');
 			var groupFields = document.getElementById('group_fields');
 			var kbFields = document.getElementById('king_beach_fields');
+			var courtsFields = document.getElementById('courts_shared_fields');
 			// group_fields и king_beach_fields содержат поля с ОДИНАКОВЫМИ name (draw_mode) —
 			// display:none не мешает браузеру отправить их оба на сервер. Отключаем инпуты
 			// скрытого блока через disabled, чтобы в форму попадали только видимые поля.
@@ -2163,6 +2158,8 @@ $tourNumber = $seasonData
 					var showKb = (t === 'king_beach');
 					setBlockActive(groupFields, showGroup);
 					setBlockActive(kbFields, showKb);
+					// Корты — общий блок для групповых форматов и King of the Beach
+					setBlockActive(courtsFields, showGroup || showKb);
 				}
 				typeSelect.addEventListener('change', toggle);
 				toggle();

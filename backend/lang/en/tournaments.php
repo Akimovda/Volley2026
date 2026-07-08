@@ -524,6 +524,7 @@ return [
     'setup_stage_kb_advance'       => 'Advance to next round',
     'setup_stage_kb_advance_hint'  => 'per group of 4 players',
     'setup_stage_kb_draw'          => 'Draw method',
+    'setup_stage_kb_draw_manual_hint' => 'Manual group assignment — after the stage is created, in the "Not assigned to a group" section.',
     'setup_stage_kb_players'       => 'Players',
     'setup_stage_kb_players_hint'  => 'taken from registered participants',
     'setup_stage_kb_players_auto'  => 'auto',
