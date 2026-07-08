@@ -257,6 +257,7 @@
                 'min:3',
                 'max:100'
             ],
+            'tournament_individual_reg' => ['nullable', 'boolean'],
             'child_age_min' => [
                 'nullable',
                 'integer',
