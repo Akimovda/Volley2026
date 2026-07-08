@@ -694,7 +694,7 @@ border:1rem solid #fff;
 						</div>
 						<div class="mt-1 text-center">
 							@guest
-							<a href="{{ route('register') }}" class="btn">{{ __('welcome.become_org_btn_register') }}</a>
+							<a href="{{ route('login') }}" class="btn">{{ __('welcome.become_org_btn_register') }}</a>
 							@else
 							<a href="{{ route('profile.complete') }}" class="btn">{{ __('welcome.become_org_btn_profile') }}</a>
 							@endguest
