@@ -85,29 +85,31 @@ class TournamentKingBeachService
 
     /**
      * Ручное создание ОДНОЙ группы ровно из 4 игроков (без авто-распределения остальных).
+     * $name — если задан (например, из таблицы ручного распределения, где организатор
+     * сам вписал ярлык группы), используется вместо авто "Группа A/B/...".
      */
-    public function createManualGroup(TournamentStage $stage, array $playerIds, ?array $courts = null): TournamentGroup
+    public function createManualGroup(TournamentStage $stage, array $playerIds, ?array $courts = null, ?string $name = null): TournamentGroup
     {
         if (count($playerIds) !== 4) {
             throw new \InvalidArgumentException('Группа "Король пляжа" должна содержать ровно 4 игрока.');
         }
 
-        return DB::transaction(function () use ($stage, $playerIds, $courts) {
+        return DB::transaction(function () use ($stage, $playerIds, $courts, $name) {
             if ($stage->isPending()) {
                 $stage->update(['status' => TournamentStage::STATUS_IN_PROGRESS]);
             }
 
-            return $this->createOneGroup($stage, array_values($playerIds), $courts);
+            return $this->createOneGroup($stage, array_values($playerIds), $courts, $name);
         });
     }
 
-    private function createOneGroup(TournamentStage $stage, array $playerIds, ?array $courts = null): TournamentGroup
+    private function createOneGroup(TournamentStage $stage, array $playerIds, ?array $courts = null, ?string $name = null): TournamentGroup
     {
         $index = $stage->groups()->count();
 
         $group = TournamentGroup::create([
             'stage_id'   => $stage->id,
-            'name'       => 'Группа ' . chr(65 + $index),
+            'name'       => $name ?: ('Группа ' . chr(65 + $index)),
             'sort_order' => $index + 1,
             'courts'     => $courts,
         ]);
@@ -265,6 +267,144 @@ class TournamentKingBeachService
         $this->createRound($nextStage, $advancingPlayers);
 
         return $nextStage;
+    }
+
+    /**
+     * После завершения группового этапа — распределяет ВСЕХ игроков (не только
+     * "проходящих") по новым дивизионам Hard/Medium/Lite по силе (как formDivisions()
+     * для командных турниров, но по индивидуальным KingBeachStanding и единственной
+     * метрике total_points). Создаёт по одной новой king_beach стадии на дивизион,
+     * внутри каждой сразу дробит игроков на группы по 4 через distributeIntoGroups().
+     *
+     * @return array<string, TournamentStage> имя дивизиона => созданная стадия
+     */
+    public function formDivisions(TournamentStage $stage, int $advancePerGroup = 2): array
+    {
+        $groups = $stage->groups;
+        $groupsCount = $groups->count();
+
+        if ($groupsCount < 2) {
+            throw new \InvalidArgumentException('Нужно минимум 2 группы для распределения по дивизионам.');
+        }
+
+        $byRank = [];
+        foreach ($groups as $group) {
+            $standings = KingBeachStanding::where('group_id', $group->id)->orderBy('rank')->get();
+            foreach ($standings as $s) {
+                $byRank[$s->rank][] = ['user_id' => (int) $s->user_id, 'points' => (int) $s->total_points];
+            }
+        }
+        foreach ($byRank as &$players) {
+            usort($players, fn($a, $b) => $b['points'] <=> $a['points']);
+        }
+        unset($players);
+
+        $divisionPlayerIds = [];
+
+        if ($groupsCount === 2) {
+            $hardIds = [];
+            $liteIds = [];
+            foreach ($groups as $group) {
+                $standings = KingBeachStanding::where('group_id', $group->id)->orderBy('rank')->get()->values();
+                foreach ($standings as $i => $s) {
+                    if ($i < $advancePerGroup) {
+                        $hardIds[] = (int) $s->user_id;
+                    } else {
+                        $liteIds[] = (int) $s->user_id;
+                    }
+                }
+            }
+            $divisionPlayerIds = ['Hard' => $hardIds, 'Lite' => $liteIds];
+        } elseif ($groupsCount === 3) {
+            $hardIds = array_column($byRank[1] ?? [], 'user_id');
+            $mediumIds = [];
+            $liteIds = [];
+
+            $seconds = $byRank[2] ?? [];
+            if (count($seconds) > 0) {
+                $hardIds[] = $seconds[0]['user_id'];
+                for ($i = 1; $i < count($seconds); $i++) {
+                    $mediumIds[] = $seconds[$i]['user_id'];
+                }
+            }
+
+            $thirds = $byRank[3] ?? [];
+            $thirdToMedium = min(2, count($thirds));
+            for ($i = 0; $i < count($thirds); $i++) {
+                if ($i < $thirdToMedium) {
+                    $mediumIds[] = $thirds[$i]['user_id'];
+                } else {
+                    $liteIds[] = $thirds[$i]['user_id'];
+                }
+            }
+
+            foreach ($byRank as $rank => $players) {
+                if ($rank <= 3) {
+                    continue;
+                }
+                foreach ($players as $p) {
+                    $liteIds[] = $p['user_id'];
+                }
+            }
+
+            $divisionPlayerIds = ['Hard' => $hardIds, 'Medium' => $mediumIds, 'Lite' => $liteIds];
+        } else {
+            // 4+ группы: сортируем всех по рангу+очкам и режем на равные куски —
+            // каждый кусок становится отдельным дивизионом (Hard, Medium-1, Medium-2, ..., Lite).
+            // В отличие от командной версии — НЕ лупим средние дивизионы в один список
+            // (там это давало дублирование состава между Medium-N стадиями).
+            $allByQuality = [];
+            foreach ($byRank as $players) {
+                foreach ($players as $p) {
+                    $allByQuality[] = $p;
+                }
+            }
+
+            $perDiv = (int) ceil(count($allByQuality) / $groupsCount);
+            $chunks = array_chunk($allByQuality, max(1, $perDiv));
+
+            $names = array_merge(
+                ['Hard'],
+                array_map(fn($i) => 'Medium-' . $i, range(1, max(0, count($chunks) - 2))),
+                ['Lite']
+            );
+
+            foreach ($chunks as $i => $chunk) {
+                $name = $names[$i] ?? ('Medium-' . $i);
+                $divisionPlayerIds[$name] = array_column($chunk, 'user_id');
+            }
+        }
+
+        $result = [];
+        $sortOrderBase = (int) $stage->sort_order;
+
+        DB::transaction(function () use ($stage, $divisionPlayerIds, &$result, $sortOrderBase) {
+            $i = 1;
+            foreach ($divisionPlayerIds as $name => $playerIds) {
+                if (empty($playerIds)) {
+                    continue;
+                }
+
+                $newStage = TournamentStage::create([
+                    'event_id'      => $stage->event_id,
+                    'occurrence_id' => $stage->occurrence_id,
+                    'type'          => TournamentStage::TYPE_KING_BEACH,
+                    'name'          => $name,
+                    'sort_order'    => $sortOrderBase + $i,
+                    'config'        => $stage->config,
+                    'status'        => TournamentStage::STATUS_PENDING,
+                ]);
+
+                $this->distributeIntoGroups($newStage, $playerIds);
+
+                $result[$name] = $newStage;
+                $i++;
+            }
+
+            $stage->update(['status' => TournamentStage::STATUS_COMPLETED]);
+        });
+
+        return $result;
     }
 
     /**

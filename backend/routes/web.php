@@ -1018,6 +1018,9 @@ Route::middleware([
     Route::post('/events/{event}/tournament/king-beach/distribute', [TournamentController::class, 'kingBeachDistributeRandom'])
         ->name('tournament.kingBeach.distribute');
 
+    Route::post('/events/{event}/tournament/king-beach/assign-manual', [TournamentController::class, 'kingBeachAssignManual'])
+        ->name('tournament.kingBeach.assignManual');
+
     Route::get('/tournament-matches/{match}/score', [TournamentController::class, 'scoreForm'])
         ->name('tournament.matches.score.form');
 
@@ -1069,6 +1072,9 @@ Route::middleware([
 
     Route::post('/tournament-stages/{stage}/form-divisions', [TournamentController::class, 'formDivisions'])
         ->name('tournament.stages.formDivisions');
+
+    Route::post('/tournament-stages/{stage}/king-beach-form-divisions', [TournamentController::class, 'kingBeachFormDivisions'])
+        ->name('tournament.kingBeach.formDivisions');
 
     Route::post('/tournament-stages/{stage}/advance', [TournamentController::class, 'advance'])
         ->name('tournament.stages.advance');

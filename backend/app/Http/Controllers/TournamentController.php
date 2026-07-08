@@ -588,6 +588,63 @@ class TournamentController extends Controller
         return $this->redirectToSetup($event, $message, false, "stage_{$stage->id}");
     }
 
+    /**
+     * Ручное распределение нескольких игроков сразу через одну таблицу:
+     * assign[user_id] = 'произвольный ярлык группы' (например A, B, Hard...).
+     * Каждый непустой ярлык должен собрать РОВНО 4 игрока (для king_beach ротации).
+     */
+    public function kingBeachAssignManual(Request $request, Event $event): RedirectResponse
+    {
+        $this->authorizeOrganizer($request, $event);
+
+        $validated = $request->validate([
+            'stage_id'  => 'required|exists:tournament_stages,id',
+            'assign'    => 'required|array',
+            'assign.*'  => 'nullable|string|max:20',
+        ]);
+
+        $stage = TournamentStage::where('id', $validated['stage_id'])
+            ->where('event_id', $event->id)
+            ->where('type', TournamentStage::TYPE_KING_BEACH)
+            ->firstOrFail();
+
+        $unassigned = $this->kingBeachUnassignedIds($event, $stage);
+
+        $buckets = [];
+        foreach ($validated['assign'] as $userId => $label) {
+            $label = trim((string) $label);
+            $userId = (int) $userId;
+
+            if ($label === '' || !in_array($userId, $unassigned, true)) {
+                continue;
+            }
+
+            $buckets[$label][] = $userId;
+        }
+
+        if (empty($buckets)) {
+            return $this->redirectToSetup($event, 'Не выбрано ни одного игрока для распределения.', true, "stage_{$stage->id}");
+        }
+
+        $wrongCount = array_keys(array_filter($buckets, fn($ids) => count($ids) !== 4));
+        if (!empty($wrongCount)) {
+            return $this->redirectToSetup(
+                $event,
+                'В каждой группе должно быть ровно 4 игрока. Проверьте группы: ' . implode(', ', $wrongCount),
+                true,
+                "stage_{$stage->id}"
+            );
+        }
+
+        $created = 0;
+        foreach ($buckets as $label => $ids) {
+            $this->kingBeachService->createManualGroup($stage, $ids, null, $label);
+            $created++;
+        }
+
+        return $this->redirectToSetup($event, "Группы созданы: {$created}.", false, "stage_{$stage->id}");
+    }
+
     /* ================================================================
      *  Ввод счёта матча
      * ================================================================ */
@@ -1242,6 +1299,39 @@ class TournamentController extends Controller
         });
 
         return $this->redirectToSetup($event, 'Группы сформированы: ' . implode(', ', $divisionNames), false, 'promotion_block');
+    }
+
+    /**
+     * King of the Beach: после завершения группового этапа — распределить ВСЕХ
+     * игроков по новым дивизионам Hard/Medium/Lite (аналог formDivisions(), но
+     * по индивидуальным standings; работает и вне сезонных турниров).
+     */
+    public function kingBeachFormDivisions(Request $request, TournamentStage $stage): RedirectResponse
+    {
+        $event = $stage->event;
+        $this->authorizeOrganizer($request, $event);
+
+        if (!$stage->isCompleted()) {
+            return back()->with('error', 'Стадия ещё не завершена.');
+        }
+
+        $advancePerGroup = max(1, (int) $request->input(
+            'advance_per_group',
+            $stage->configValue('advance_count', 2)
+        ));
+
+        try {
+            $divisions = $this->kingBeachService->formDivisions($stage, $advancePerGroup);
+        } catch (\InvalidArgumentException $e) {
+            return $this->redirectToSetup($event, $e->getMessage(), true, "stage_{$stage->id}");
+        }
+
+        return $this->redirectToSetup(
+            $event,
+            'Дивизионы сформированы: ' . implode(', ', array_keys($divisions)),
+            false,
+            "stage_{$stage->id}"
+        );
     }
 
     public function advance(Request $request, TournamentStage $stage)

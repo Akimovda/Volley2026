@@ -23,6 +23,23 @@ $kbUnassignedPlayers = User::whereIn('id', $kbUnassignedIds)->get()
     ->sortBy(fn($u) => trim(($u->last_name ?? '') . ($u->first_name ?? '')))
     ->values();
 $kbCourts = array_values(array_filter((array) $stage->configValue('courts', [])));
+
+// Дивизионы Hard/Medium/Lite после группового этапа
+$kbGroupsCount = $stage->groups->count();
+$kbDivisionNames = match (true) {
+    $kbGroupsCount === 2 => ['Hard', 'Lite'],
+    $kbGroupsCount === 3 => ['Hard', 'Medium', 'Lite'],
+    $kbGroupsCount >= 4 => array_merge(
+        ['Hard'],
+        array_map(fn($i) => 'Medium-' . $i, range(1, max(0, $kbGroupsCount - 2))),
+        ['Lite']
+    ),
+    default => [],
+};
+$kbHasSpawnedDivisions = $stage->event->tournamentStages()
+    ->where('sort_order', '>', $stage->sort_order)
+    ->whereIn('name', $kbDivisionNames)
+    ->exists();
 @endphp
 
 <div class="ramka" id="stage_{{ $stage->id }}">
@@ -273,6 +290,46 @@ $kbCourts = array_values(array_filter((array) $stage->configValue('courts', []))
 			</div>
 		</form>
 
+		<div class="mt-2">
+			<details>
+				<summary class="btn btn-secondary">{{ __('tournaments.setup_kb_btn_manual_table') }}</summary>
+				<form method="POST" action="{{ route('tournament.kingBeach.assignManual', $stage->event_id) }}" class="mt-2">
+					@csrf
+					<input type="hidden" name="stage_id" value="{{ $stage->id }}">
+					<p class="f-13" style="opacity:.7">{{ __('tournaments.setup_kb_manual_table_hint') }}</p>
+					<div class="table-scrollable">
+						<table class="table">
+							<thead>
+								<tr>
+									<th class="p-1">{{ __('tournaments.setup_kb_col_player') }}</th>
+									<th class="p-1" style="width:120px">{{ __('tournaments.setup_team_label_name') }}</th>
+								</tr>
+							</thead>
+							<tbody>
+								@foreach($kbUnassignedPlayers as $p)
+								@php
+									$kbLevel2 = $stage->event->direction === 'beach' ? $p->beach_level : $p->classic_level;
+									$kbLevel2 = !is_null($kbLevel2) && $kbLevel2 !== '' ? (int) $kbLevel2 : null;
+									$kbGenderSign2 = $p->gender === 'f' ? '♀' : '♂';
+								@endphp
+								<tr>
+									<td class="p-1">
+										{{ trim(($p->last_name ?? '') . ' ' . ($p->first_name ?? '')) ?: ($p->name ?? '?') }}
+										<span class="f-13" style="opacity:.7">{{ $kbGenderSign2 }} {{ $kbLevel2 ? __('events.level_short_' . $kbLevel2) : '' }}</span>
+									</td>
+									<td class="p-1">
+										<input type="text" name="assign[{{ $p->id }}]" placeholder="A, Hard...">
+									</td>
+								</tr>
+								@endforeach
+							</tbody>
+						</table>
+					</div>
+					<button type="submit" class="btn btn-primary mt-2">{{ __('tournaments.setup_kb_btn_save_manual') }}</button>
+				</form>
+			</details>
+		</div>
+
 		<div class="mt-1">
 			<form method="POST" action="{{ route('tournament.kingBeach.distribute', $stage->event_id) }}" class="kb-distribute-form">
 				@csrf
@@ -293,6 +350,23 @@ $kbCourts = array_values(array_filter((array) $stage->configValue('courts', []))
 			@csrf
 			<div class="b-600">{{ __('tournaments.setup_kb_btn_next_round') }}</div>
 			<button type="submit" class="btn btn-primary">{{ __('tournaments.setup_btn_next_arrow') }}</button>
+		</form>
+	</div>
+	@endif
+
+	{{-- Дивизионы Hard/Medium/Lite после завершения группового этапа --}}
+	@if($stage->isCompleted() && count($kbDivisionNames) > 0 && !$kbHasSpawnedDivisions)
+	<div class="p-3 mt-2" style="background:rgba(16,185,129,.08);border-radius:10px">
+		<div class="b-600 mb-1">
+			{{ __('tournaments.setup_kb_divisions_intro', ['names' => implode(', ', $kbDivisionNames)]) }}
+		</div>
+		<form method="POST" action="{{ route('tournament.kingBeach.formDivisions', $stage) }}" class="d-flex fvc" style="gap:10px;flex-wrap:wrap">
+			@csrf
+			<label class="f-13" style="margin:0">
+				{{ __('tournaments.setup_groups_advance_to_div', ['name' => 'Hard']) }}
+				<input name="advance_per_group" type="number" value="{{ $kbAdvanceCount }}" min="1" max="4" style="width:70px">
+			</label>
+			<button type="submit" class="btn btn-primary">{{ __('tournaments.setup_kb_btn_form_divisions') }}</button>
 		</form>
 	</div>
 	@endif
