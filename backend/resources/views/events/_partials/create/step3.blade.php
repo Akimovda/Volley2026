@@ -432,20 +432,49 @@
                                         @else
 										<div class="mt-2">
 											@foreach($userChannels as $channel)
+											@php
+												$chIsCheckedCreate = in_array((string) $channel->id, array_map('strval', $selectedChannels), true);
+												$chThreadValCreate = old('channel_thread_ids.' . $channel->id, '');
+											@endphp
 											<label class="checkbox-item">
 												<input type="checkbox"
 												name="channels[]"
 												value="{{ $channel->id }}"
-												@checked(in_array((string) $channel->id, array_map('strval', $selectedChannels), true))>
+												class="channel-cb-create"
+												data-channel-id="{{ $channel->id }}"
+												@checked($chIsCheckedCreate)>
 												<div class="custom-checkbox"></div>
 												<span>
 													{{ strtoupper($channel->platform) }} — {{ $channel->title ?: __('events.channels_no_title') }}
 													<span class="text-muted">({{ $channel->chat_id }})</span>
 												</span>
 											</label>
+											@if($channel->platform === 'telegram')
+											<div id="channel-thread-wrap-create-{{ $channel->id }}"
+												 style="{{ $chIsCheckedCreate ? '' : 'display:none' }}; margin-left:26px; margin-bottom:6px">
+												<input type="number"
+													   name="channel_thread_ids[{{ $channel->id }}]"
+													   value="{{ $chThreadValCreate }}"
+													   placeholder="{{ __('events.channel_thread_placeholder') }}"
+													   min="1"
+													   style="width:180px; font-size:13px; padding:3px 6px">
+												<div class="text-muted f-12" style="max-width:420px">{{ __('events.channel_thread_hint') }}</div>
+												<div class="text-muted f-12" style="max-width:420px;opacity:.8">{{ __('events.channel_thread_hint_howto') }}</div>
+											</div>
+											@endif
 											@endforeach
 										</div>
-										
+										<script>
+										(function(){
+											document.querySelectorAll('.channel-cb-create').forEach(function(cb){
+												cb.addEventListener('change', function(){
+													var wrap = document.getElementById('channel-thread-wrap-create-' + this.dataset.channelId);
+													if (wrap) wrap.style.display = this.checked ? '' : 'none';
+												});
+											});
+										})();
+										</script>
+
 										<div class="mt-2">
 											<label class="checkbox-item">
 												<input type="hidden" name="channel_silent" value="0">

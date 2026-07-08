@@ -1542,6 +1542,7 @@ final class TournamentTeamService
         $event = $team->event;
         $members = $team->members()->with('user')->get();
         $teamName = $team->name;
+        $occurrenceId = $team->occurrence_id ? (int) $team->occurrence_id : null;
 
         // Рефанд
         $this->refundForTeam($team, $event);

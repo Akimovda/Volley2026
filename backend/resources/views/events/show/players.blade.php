@@ -144,14 +144,6 @@
 		<a href="{{ route('tournament.setup', $event) . '?occurrence_id=' . $occurrence->id }}" class="btn btn-primary btn-sm">{{ __('events.sp_setup_btn') }}</a>
 	</div>
 	@endif
-    @elseif($isIndividualTournament && auth()->check() && (auth()->user()->role === 'admin' || (int)($event->organizer_id ?? 0) === auth()->id()))
-    {{-- Кнопка формирования команд для организатора --}}
-    <div class="mt-1 mb-1">
-        <button id="distribute-teams-btn" class="btn btn-primary btn-sm" data-event-id="{{ $event->id }}" data-occurrence-id="{{ $occurrence->id }}">
-            {{ __('events.tournament_distribute_random_btn') }}
-        </button>
-        <a href="{{ route('tournament.setup', $event) . '?occurrence_id=' . $occurrence->id }}" class="btn btn-secondary btn-sm ml-1">{{ __('events.sp_setup_btn') }}</a>
-    </div>
     @elseif(!is_null($registeredTotal))
 	<div class="text-muted small mb-1">
 		{{ __('events.sp_free_spots_label') }}
@@ -160,6 +152,13 @@
 		/ {{ $totalCapacity }}
 		@endif
 	</div>
+    @endif
+
+    @if($isIndividualTournament && auth()->check() && (auth()->user()->role === 'admin' || (int)($event->organizer_id ?? 0) === auth()->id()))
+    {{-- Кнопка «Распределить случайно» перенесена на страницу управления турниром (блок «Команды») --}}
+    <div class="mt-1 mb-1">
+        <a href="{{ route('tournament.setup', $event) . '?occurrence_id=' . $occurrence->id }}" class="btn btn-secondary btn-sm">{{ __('events.sp_setup_btn') }}</a>
+    </div>
     @endif
 
     @php
@@ -1470,43 +1469,5 @@ $showWaitlist = !$isTournament && !$eventStarted && auth()->check() && !$isRegis
 				sel.addEventListener('change', syncBtn);
 				if (posSelect) posSelect.addEventListener('change', syncBtn);
 				syncBtn();
-			})();
-
-			// Кнопка случайного распределения команд (individual tournament)
-			(function() {
-				var btn = document.getElementById('distribute-teams-btn');
-				if (!btn) return;
-				btn.addEventListener('click', function() {
-					var eventId = btn.dataset.eventId;
-					var occurrenceId = btn.dataset.occurrenceId;
-					if (!confirm('{{ __('events.tournament_distribute_random_btn') }}?')) return;
-					btn.disabled = true;
-					btn.textContent = '...';
-					fetch('/events/' + eventId + '/distribute-individual', {
-						method: 'POST',
-						headers: {
-							'Content-Type': 'application/json',
-							'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-							'Accept': 'application/json',
-						},
-						body: JSON.stringify({ occurrence_id: parseInt(occurrenceId) }),
-						credentials: 'same-origin',
-					})
-					.then(function(r) { return r.json(); })
-					.then(function(data) {
-						if (data.ok) {
-							location.reload();
-						} else {
-							alert(data.message || 'Ошибка');
-							btn.disabled = false;
-							btn.textContent = '{{ __('events.tournament_distribute_random_btn') }}';
-						}
-					})
-					.catch(function() {
-						alert('Ошибка соединения');
-						btn.disabled = false;
-						btn.textContent = '{{ __('events.tournament_distribute_random_btn') }}';
-					});
-				});
 			})();
 		</script>

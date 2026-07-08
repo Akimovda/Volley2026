@@ -946,8 +946,28 @@ if ($role === 'admin') {
             'tournament_captain_confirms_members' => ['sometimes', 'boolean'],
             'tournament_auto_submit_when_ready'   => ['sometimes', 'boolean'],
             'tournament_allow_incomplete_application' => ['sometimes', 'boolean'],
+            'tournament_individual_reg'           => ['sometimes', 'boolean'],
             'timeline_color' => ['nullable', 'regex:/^#[0-9A-Fa-f]{6}$/'],
         ]);
+
+        // Переключение режима регистрации турнира (командная <-> индивидуальная):
+        // если уже есть команды дальше стадии draft, менять режим нельзя — данные потеряются.
+        if (($event->format ?? 'game') === 'tournament') {
+            $wasIndividual = $event->registration_mode === 'tournament_individual';
+            $willBeIndividual = (bool) ($data['tournament_individual_reg'] ?? false);
+
+            if ($wasIndividual !== $willBeIndividual) {
+                $committedTeams = \App\Models\EventTeam::where('event_id', $event->id)
+                    ->whereNotIn('status', ['draft', 'withdrawn', 'rejected'])
+                    ->count();
+
+                if ($committedTeams > 0) {
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        'tournament_individual_reg' => 'Нельзя сменить режим записи — есть команды, прошедшие дальше черновика (' . $committedTeams . '). Сначала расформируйте или переведите их в резерв.',
+                    ]);
+                }
+            }
+        }
 
         DB::transaction(function () use ($event, $data, $user) {
             $tz = (string) $data['timezone'];
@@ -1131,9 +1151,17 @@ if ($role === 'admin') {
                 if (!empty($roles)) {
                     app(\App\Services\EventRoleSlotService::class)->syncRoleSlots($event, $roles);
                 }
+
+                // max_players тоже пересчитываем от актуальных schema/teams_count —
+                // иначе "Свободных мест" на странице события считает от старого значения.
+                $newMaxPlayers = (int) ($calc['max_players'] ?? 0);
+                if ($newMaxPlayers > 0 && (int) $gs->max_players !== $newMaxPlayers) {
+                    $gs->max_players = $newMaxPlayers;
+                    $gs->save();
+                }
             }
 
-            // Обновляем настройки турнира (если турнир): схема, состав, заявки и пр.
+            // Обновляем настройки турнира (если турнир): схема, состав, заявки, режим записи и пр.
             if ($event->format === 'tournament') {
                 $isBeach = ($event->direction ?? 'classic') === 'beach';
                 $defaultScheme = $isBeach ? '2x2' : '5x1';
@@ -1143,7 +1171,13 @@ if ($role === 'admin') {
                 $teamSizeMin = isset($data['tournament_team_size_min']) ? (int) $data['tournament_team_size_min'] : null;
                 $reserveMax  = isset($data['tournament_reserve_players_max']) ? (int) $data['tournament_reserve_players_max'] : null;
 
+                $isIndividual = (bool) ($data['tournament_individual_reg'] ?? false);
+                $registrationMode = $isIndividual ? 'tournament_individual' : ($isBeach ? 'team_beach' : 'team_classic');
+                $event->registration_mode = $registrationMode;
+                $event->save();
+
                 $tsPayload = array_filter([
+                    'registration_mode'            => $registrationMode,
                     'game_scheme'                  => $scheme,
                     'require_libero'               => !$isBeach && $scheme === '5x1_libero',
                     'team_size_min'                => $teamSizeMin,

@@ -138,10 +138,29 @@ class TournamentTeamController extends Controller
                 ? \App\Models\User::findOrFail($data['captain_user_id'])
                 : $request->user();
 
-            // Проверка незаполненных полей профиля капитана
             $occurrence = !empty($data['occurrence_id'])
                 ? \App\Models\EventOccurrence::find((int) $data['occurrence_id'])
                 : null;
+
+            $isOrganizerOrAdmin = (int) $event->organizer_id === (int) $request->user()->id
+                || $request->user()->isAdmin();
+
+            // Окно регистрации: организатор/админ могут готовить команды заранее,
+            // остальные — только пока регистрация открыта (как и при индивидуальной записи).
+            if ($occurrence && !$isOrganizerOrAdmin) {
+                $windowResult = app(\App\Services\EventRegistrationGuard::class)->check(
+                    $captainUser,
+                    $occurrence,
+                    []
+                );
+                if (!$windowResult->allowed) {
+                    return back()
+                        ->withErrors(['team' => $windowResult->firstError() ?? 'Регистрация недоступна.'])
+                        ->withInput();
+                }
+            }
+
+            // Проверка незаполненных полей профиля капитана
             $missingFields = $captainUser->getMissingFieldsForEvent($event, $occurrence);
             if (!empty($missingFields)) {
                 $returnTo = route('events.show', array_filter([
@@ -161,9 +180,6 @@ class TournamentTeamController extends Controller
                 $capName = $captainUser->last_name ?: ($captainUser->first_name ?: $captainUser->name);
                 $teamName = 'Команда ' . $capName;
             }
-
-            $isOrganizerOrAdmin = (int) $event->organizer_id === (int) $request->user()->id
-                || $request->user()->isAdmin();
 
             $team = $service->createTeam(
                 event: $event,

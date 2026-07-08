@@ -873,9 +873,58 @@ $tourNumber = $seasonData
 						</div>
 					</form>
 				</details>
-			</div>		
-			
-			
+			</div>
+
+			@if(($event->registration_mode ?? '') === 'tournament_individual')
+			{{-- Случайное распределение игроков по командам (только индивидуальная запись) --}}
+			<div class="mt-1">
+				<button type="button" id="distribute-teams-btn" class="btn btn-secondary"
+					data-event-id="{{ $event->id }}"
+					data-occurrence-id="{{ $selectedOccurrence?->id }}">
+					{{ __('events.tournament_distribute_random_btn') }}
+				</button>
+			</div>
+			<script>
+			(function() {
+				var btn = document.getElementById('distribute-teams-btn');
+				if (!btn) return;
+				var defaultText = btn.textContent.trim();
+				btn.addEventListener('click', function() {
+					var eventId = btn.dataset.eventId;
+					var occurrenceId = btn.dataset.occurrenceId;
+					if (!confirm('{{ __('events.tournament_distribute_random_btn') }}?')) return;
+					btn.disabled = true;
+					btn.textContent = '...';
+					fetch('/events/' + eventId + '/distribute-individual', {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+							'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+							'Accept': 'application/json',
+						},
+						body: JSON.stringify({ occurrence_id: occurrenceId ? parseInt(occurrenceId) : null }),
+						credentials: 'same-origin',
+					})
+					.then(function(r) { return r.json(); })
+					.then(function(data) {
+						if (data.ok) {
+							location.reload();
+						} else {
+							alert(data.message || 'Ошибка');
+							btn.disabled = false;
+							btn.textContent = defaultText;
+						}
+					})
+					.catch(function() {
+						alert('Ошибка соединения');
+						btn.disabled = false;
+						btn.textContent = defaultText;
+					});
+				});
+			})();
+			</script>
+			@endif
+
 			</div>{{-- /teams-body --}}
 		</div>
 		
