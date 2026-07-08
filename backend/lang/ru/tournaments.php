@@ -565,6 +565,7 @@ return [
     'setup_kb_manual_table_hint'   => 'Впишите одинаковый ярлык группы (например A, B или Hard) для каждых 4 игроков. Пустое поле — игрок останется нераспределённым.',
     'setup_kb_btn_save_manual'     => 'Сохранить распределение',
     'setup_kb_col_player'         => 'Игрок',
+    'setup_kb_col_group_label'    => 'Группа',
     'setup_kb_col_game'           => 'Партия :n',
     'setup_kb_col_total'          => 'Сумма',
     'setup_kb_match_label'        => 'Партия :n',

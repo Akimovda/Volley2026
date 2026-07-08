@@ -297,12 +297,12 @@ $kbHasSpawnedDivisions = $stage->event->tournamentStages()
 					@csrf
 					<input type="hidden" name="stage_id" value="{{ $stage->id }}">
 					<p class="f-13" style="opacity:.7">{{ __('tournaments.setup_kb_manual_table_hint') }}</p>
-					<div class="table-scrollable">
+					<div class="table-scrollable" style="max-width:640px">
 						<table class="table">
 							<thead>
 								<tr>
 									<th class="p-1">{{ __('tournaments.setup_kb_col_player') }}</th>
-									<th class="p-1" style="width:120px">{{ __('tournaments.setup_team_label_name') }}</th>
+									<th class="p-1" style="width:140px">{{ __('tournaments.setup_kb_col_group_label') }}</th>
 								</tr>
 							</thead>
 							<tbody>
@@ -310,12 +310,25 @@ $kbHasSpawnedDivisions = $stage->event->tournamentStages()
 								@php
 									$kbLevel2 = $stage->event->direction === 'beach' ? $p->beach_level : $p->classic_level;
 									$kbLevel2 = !is_null($kbLevel2) && $kbLevel2 !== '' ? (int) $kbLevel2 : null;
+									$kbGenderColor2 = $p->gender === 'f' ? '#e5395e' : '#2967BA';
 									$kbGenderSign2 = $p->gender === 'f' ? '♀' : '♂';
 								@endphp
 								<tr>
 									<td class="p-1">
-										{{ trim(($p->last_name ?? '') . ' ' . ($p->first_name ?? '')) ?: ($p->name ?? '?') }}
-										<span class="f-13" style="opacity:.7">{{ $kbGenderSign2 }} {{ $kbLevel2 ? __('events.level_short_' . $kbLevel2) : '' }}</span>
+										<div style="display:flex;align-items:center;gap:10px">
+											<img src="{{ $p->profile_photo_url }}" alt="" loading="lazy" style="width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0">
+											<div style="min-width:0">
+												<div class="b-600" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ trim(($p->last_name ?? '') . ' ' . ($p->first_name ?? '')) ?: ($p->name ?? '?') }}</div>
+												<div class="f-13" style="opacity:.85">
+													<span style="color:{{ $kbGenderColor2 }};font-weight:700">{{ $kbGenderSign2 }}</span>
+													@if($kbLevel2)
+													<span class="levelmark levelmark--event level-{{ $kbLevel2 }}">{{ __('events.level_short_' . $kbLevel2) }}</span>
+													@else
+													<span class="levelmark levelmark--event level-na">!?</span>
+													@endif
+												</div>
+											</div>
+										</div>
 									</td>
 									<td class="p-1">
 										<input type="text" name="assign[{{ $p->id }}]" placeholder="A, Hard...">

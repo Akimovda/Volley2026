@@ -546,6 +546,7 @@ return [
     'setup_kb_manual_table_hint'   => 'Type the same group label (e.g. A, B or Hard) for every 4 players. Leave empty to keep a player unassigned.',
     'setup_kb_btn_save_manual'     => 'Save assignment',
     'setup_kb_col_player'         => 'Player',
+    'setup_kb_col_group_label'    => 'Group',
     'setup_kb_col_game'           => 'Game :n',
     'setup_kb_col_total'          => 'Total',
     'setup_kb_match_label'        => 'Game :n',

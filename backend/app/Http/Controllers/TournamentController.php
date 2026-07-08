@@ -239,7 +239,7 @@ class TournamentController extends Controller
             'groups_count'       => (int) ($validated['groups_count'] ?? 0),
             'advance_count'      => (int) ($validated['advance_count'] ?? 2),
             'third_place_match'  => (bool) ($validated['third_place_match'] ?? false),
-            'courts'             => $validated['courts']
+            'courts'             => !empty($validated['courts'])
                 ? array_values(array_filter(array_map('trim', explode(',', $validated['courts']))))
                 : [],
             'draw_mode'          => $request->input('draw_mode', 'random'),
