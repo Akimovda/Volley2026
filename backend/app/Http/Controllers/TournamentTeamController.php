@@ -131,6 +131,8 @@ class TournamentTeamController extends Controller
             'team_kind' => ['nullable', 'string', 'in:classic_team,beach_pair'],
             'captain_position_code' => ['nullable', 'string', 'in:setter,outside,opposite,middle,libero'],
             'captain_user_id' => ['nullable', 'integer', 'exists:users,id'],
+            'member_user_ids' => ['nullable', 'array'],
+            'member_user_ids.*' => ['integer', 'exists:users,id', 'distinct'],
         ]);
 
         try {
@@ -174,11 +176,29 @@ class TournamentTeamController extends Controller
                 return redirect($profileUrl);
             }
 
-            // Авто-название по фамилии капитана если пустое
+            // Дополнительные участники — ручное распределение индивидуально записавшихся игроков
+            // (только для tournament_individual; для обычных турниров member_user_ids не приходит).
+            $additionalMemberIds = array_values(array_diff(
+                array_map('intval', $data['member_user_ids'] ?? []),
+                [(int) $captainUser->id]
+            ));
+
+            // Авто-название: для tournament_individual без явного имени — фамилии игроков (пляж)
+            // или случайное короткое название (классика); иначе — по фамилии капитана, как раньше.
             $teamName = trim($data['name'] ?? '');
             if (empty($teamName)) {
-                $capName = $captainUser->last_name ?: ($captainUser->first_name ?: $captainUser->name);
-                $teamName = 'Команда ' . $capName;
+                if (($event->registration_mode ?? '') === 'tournament_individual') {
+                    $namingMembers = \App\Models\User::whereIn('id', array_merge([(int) $captainUser->id], $additionalMemberIds))
+                        ->get();
+                    $teamName = app(\App\Services\TournamentTeamNamingService::class)->generate(
+                        $event,
+                        $namingMembers,
+                        !empty($data['occurrence_id']) ? (int) $data['occurrence_id'] : null
+                    );
+                } else {
+                    $capName = $captainUser->last_name ?: ($captainUser->first_name ?: $captainUser->name);
+                    $teamName = 'Команда ' . $capName;
+                }
             }
 
             $team = $service->createTeam(
@@ -190,6 +210,15 @@ class TournamentTeamController extends Controller
                 captainPositionCode: $data['captain_position_code'] ?? null,
                 autoApprove: $isOrganizerOrAdmin,
             );
+
+            foreach ($additionalMemberIds as $memberId) {
+                $service->addMemberByOrganizer(
+                    team: $team,
+                    player: \App\Models\User::findOrFail($memberId),
+                    organizer: $request->user(),
+                    teamRole: 'player',
+                );
+            }
 
             $this->dispatchAnnounceRefresh($event, !empty($data['occurrence_id']) ? (int) $data['occurrence_id'] : null);
 

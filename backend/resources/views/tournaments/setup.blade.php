@@ -768,8 +768,10 @@ $tourNumber = $seasonData
 			@php
 				$completeTeams   = $teams->filter(fn($t) => $t->is_complete);
 				$incompleteTeams = $teams->filter(fn($t) => !$t->is_complete);
+				$isIndividualTournament = ($event->registration_mode ?? '') === 'tournament_individual';
+				$teamsHeaderKey = $isIndividualTournament ? 'tournaments.setup_teams_h2_individual' : 'tournaments.setup_teams_h2';
 			@endphp
-			<h2 class="-mt-05" style="cursor:pointer;user-select:none" onclick="var b=document.getElementById('teams-body');b.style.display=b.style.display==='none'?'':'none';this.querySelector('.toggle-icon').textContent=b.style.display==='none'?'▶':'▼'">{{ __('tournaments.setup_teams_h2', ['n' => $completeTeams->count()]) }} <span class="toggle-icon" style="font-size:14px">{{ $hasStages ? '▶' : '▼' }}</span></h2>
+			<h2 class="-mt-05" style="cursor:pointer;user-select:none" onclick="var b=document.getElementById('teams-body');b.style.display=b.style.display==='none'?'':'none';this.querySelector('.toggle-icon').textContent=b.style.display==='none'?'▶':'▼'">{{ __($teamsHeaderKey, ['n' => $completeTeams->count()]) }} <span class="toggle-icon" style="font-size:14px">{{ $hasStages ? '▶' : '▼' }}</span></h2>
 			<div id="teams-body" style="{{ $hasStages ? 'display:none' : '' }}">
 			@if($completeTeams->isEmpty())
 			<div class="alert alert-info">{{ __('tournaments.setup_teams_empty') }}</div>
@@ -838,7 +840,29 @@ $tourNumber = $seasonData
 				@endforeach
 			</div>
 			@endif
-			
+
+			@if($isIndividualTournament)
+			<h3 class="mt-2 mb-05">{{ __('tournaments.setup_unassigned_h3', ['n' => $unassignedPlayers->count()]) }}</h3>
+			@if($unassignedPlayers->isEmpty())
+			<div class="alert alert-info">{{ __('tournaments.setup_unassigned_empty') }}</div>
+			@else
+			<div class="row">
+				@foreach($unassignedPlayers as $p)
+				<div class="col-md-6 col-xl-3">
+					<div class="card" style="opacity:.9">
+						<div class="b-600">{{ trim(($p->last_name ?? '') . ' ' . ($p->first_name ?? '')) ?: ($p->name ?? '?') }}</div>
+						<div class="f-13" style="opacity:.7">
+							{{ $p->gender === 'f' ? '♀' : '♂' }} ·
+							{{ __('tournaments.setup_unassigned_level') }}:
+							{{ ($event->direction === 'beach' ? $p->beach_level : $p->classic_level) ?? '—' }}
+						</div>
+					</div>
+				</div>
+				@endforeach
+			</div>
+			@endif
+			@endif
+
 			{{-- Создать команду организатором --}}
 			<div class="mt-1">
 				<details>
@@ -857,15 +881,39 @@ $tourNumber = $seasonData
 									</div>
 								</div>
 								<div class="col-md-6">
-									<div class="card">
+									<div class="card" style="overflow:visible">
 										<label>{{ __('tournaments.setup_team_label_captain') }}</label>
+										@if($isIndividualTournament && $unassignedPlayers->isNotEmpty())
+										<div style="position:relative" id="manual-captain-ac-wrap">
+											<input type="text" id="manual-captain-search" placeholder="{{ __('tournaments.setup_team_ph_captain') }}" autocomplete="off">
+											<input type="hidden" name="captain_user_id" id="manual-captain-id">
+											<div id="manual-captain-dd" class="form-select-dropdown trainer_dd"></div>
+										</div>
+										@else
 										<div style="position:relative" id="org-captain-ac-wrap">
 											<input type="text" id="org-captain-search" placeholder="{{ __('tournaments.setup_team_ph_captain') }}" autocomplete="off">
 											<input type="hidden" name="captain_user_id" id="org-captain-id">
 											<div id="org-captain-dd" class="form-select-dropdown trainer_dd"></div>
 										</div>
+										@endif
 									</div>
 								</div>
+								@if($isIndividualTournament && $unassignedPlayers->isNotEmpty())
+								<div class="col-md-12">
+									<div class="card" style="overflow:visible">
+										<label>{{ __('tournaments.setup_team_label_members') }}</label>
+										<div id="manual-members-list" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:.5rem">
+											@foreach($unassignedPlayers as $p)
+											<label class="checkbox-item" data-user-id="{{ $p->id }}" style="display:flex;align-items:center;gap:6px;margin:0">
+												<input type="checkbox" name="member_user_ids[]" value="{{ $p->id }}">
+												<div class="custom-checkbox"></div>
+												<span>{{ trim(($p->last_name ?? '') . ' ' . ($p->first_name ?? '')) ?: ($p->name ?? '?') }} ({{ $p->gender === 'f' ? '♀' : '♂' }})</span>
+											</label>
+											@endforeach
+										</div>
+									</div>
+								</div>
+								@endif
 								<div class="col-md-12 text-center">
 									<button type="submit" class="btn">{{ __('tournaments.setup_btn_create') }}</button>
 								</div>
@@ -875,7 +923,65 @@ $tourNumber = $seasonData
 				</details>
 			</div>
 
-			@if(($event->registration_mode ?? '') === 'tournament_individual')
+			@if($isIndividualTournament && $unassignedPlayers->isNotEmpty())
+			<script>
+			(function(){
+				var players = @json($unassignedPlayers->map(fn($p) => [
+					'id' => $p->id,
+					'label' => trim(($p->last_name ?? '') . ' ' . ($p->first_name ?? '')) ?: ($p->name ?? ('#' . $p->id)),
+				])->values());
+				var inp = document.getElementById('manual-captain-search');
+				var hidden = document.getElementById('manual-captain-id');
+				var dd = document.getElementById('manual-captain-dd');
+				var wrap = document.getElementById('manual-captain-ac-wrap');
+				if (!inp || !dd || !hidden) return;
+
+				function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+				function showDd() { dd.classList.add('form-select-dropdown--active'); }
+				function hideDd() { dd.classList.remove('form-select-dropdown--active'); }
+
+				function setCaptain(id, label) {
+					inp.value = label;
+					hidden.value = String(id);
+					hideDd();
+					document.querySelectorAll('#manual-members-list [data-user-id]').forEach(function(row) {
+						var cb = row.querySelector('input[type=checkbox]');
+						if (!cb) return;
+						var isCaptain = row.dataset.userId === String(id);
+						cb.disabled = isCaptain;
+						if (isCaptain) cb.checked = false;
+					});
+				}
+
+				inp.addEventListener('input', function() {
+					hidden.value = '';
+					document.querySelectorAll('#manual-members-list input[type=checkbox]').forEach(function(cb) { cb.disabled = false; });
+					var q = inp.value.trim().toLowerCase();
+					if (q.length < 1) { hideDd(); dd.innerHTML = ''; return; }
+					var matches = players.filter(function(p) { return p.label.toLowerCase().indexOf(q) !== -1; });
+					dd.innerHTML = '';
+					if (!matches.length) {
+						dd.innerHTML = '<div class="city-message">' + @json(__('tournaments.setup_search_no_results')) + '</div>';
+						showDd();
+						return;
+					}
+					matches.slice(0, 8).forEach(function(p) {
+						var div = document.createElement('div');
+						div.className = 'trainer-item form-select-option';
+						div.innerHTML = '<div class="text-sm">' + esc(p.label) + '</div>';
+						div.addEventListener('click', function() { setCaptain(p.id, p.label); });
+						dd.appendChild(div);
+					});
+					showDd();
+				});
+
+				inp.addEventListener('keydown', function(e) { if (e.key === 'Escape') hideDd(); });
+				document.addEventListener('click', function(e) { if (wrap && !wrap.contains(e.target)) hideDd(); });
+			})();
+			</script>
+			@endif
+
+			@if($isIndividualTournament)
 			{{-- Случайное распределение игроков по командам (только индивидуальная запись) --}}
 			<div class="mt-1">
 				<button type="button" id="distribute-teams-btn" class="btn btn-secondary"

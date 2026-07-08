@@ -420,16 +420,22 @@ return [
     'setup_promote_yes'     => 'Yes, transfer',
 
     'setup_teams_h2'        => 'Teams (:n)',
+    'setup_teams_h2_individual' => 'Teams/Players (:n)',
     'setup_teams_empty'     => 'No confirmed teams.',
     'setup_team_others'     => 'and others...',
     'setup_team_persons'    => ':n people',
     'setup_team_delete_title' => 'Delete team :name?',
     'setup_btn_create_team' => '➕ Create team',
     'setup_team_label_name' => 'Team name',
-    'setup_team_ph_name'    => 'Name (auto from captain\'s last name)',
+    'setup_team_ph_name'    => 'Name (auto from surname / random)',
     'setup_team_label_captain' => 'Captain (search)',
     'setup_team_ph_captain' => 'Name or ID...',
+    'setup_team_label_members' => 'Team members',
     'setup_btn_create'      => 'Create',
+
+    'setup_unassigned_h3'    => 'Not assigned to a team (:n)',
+    'setup_unassigned_empty' => 'All registered players are assigned to a team.',
+    'setup_unassigned_level' => 'Level',
 
     'setup_add_stage_h2'    => 'Add stage',
     'setup_btn_add_stage'   => '➕ Add stage',

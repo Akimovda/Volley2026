@@ -7,10 +7,16 @@ use App\Models\EventOccurrence;
 use App\Models\EventRegistration;
 use App\Models\EventTeam;
 use App\Models\EventTeamMember;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
 class TournamentTeamDistributionService
 {
+    public function __construct(
+        private TournamentTeamNamingService $namingService,
+    ) {
+    }
+
     /**
      * Случайно распределяет индивидуально записавшихся игроков по командам.
      *
@@ -80,21 +86,29 @@ class TournamentTeamDistributionService
         $direction = $event->direction ?? 'classic';
         $teamKind  = ($direction === 'beach') ? 'beach_pair' : 'classic_team';
 
-        DB::transaction(function () use ($event, $occurrence, $teamsCount, $teamAssignments, $teamKind) {
+        $usersById = User::whereIn('id', $registrations->pluck('user_id'))->get()->keyBy('id');
+
+        DB::transaction(function () use ($event, $occurrence, $teamsCount, $teamAssignments, $teamKind, $usersById) {
             for ($i = 0; $i < $teamsCount; $i++) {
                 $members = array_values($teamAssignments[$i]);
                 if (empty($members)) {
                     continue;
                 }
 
+                $memberUsers = collect($members)
+                    ->map(fn ($member) => $usersById->get($member['user_id']))
+                    ->filter()
+                    ->values();
+
                 $team = EventTeam::create([
-                    'event_id'      => $event->id,
-                    'occurrence_id' => $occurrence->id,
-                    'name'          => 'Команда ' . ($i + 1),
-                    'team_kind'     => $teamKind,
-                    'status'        => 'confirmed',
-                    'is_complete'   => true,
-                    'invite_code'   => substr(md5(uniqid((string)$i, true)), 0, 8),
+                    'event_id'         => $event->id,
+                    'occurrence_id'    => $occurrence->id,
+                    'captain_user_id'  => $members[0]['user_id'],
+                    'name'             => $this->namingService->generate($event, $memberUsers, $occurrence->id),
+                    'team_kind'        => $teamKind,
+                    'status'           => 'confirmed',
+                    'is_complete'      => true,
+                    'invite_code'      => substr(md5(uniqid((string)$i, true)), 0, 8),
                 ]);
 
                 foreach ($members as $j => $member) {
@@ -108,11 +122,6 @@ class TournamentTeamDistributionService
                         'joined_at'           => now(),
                         'confirmed_at'        => now(),
                     ]);
-
-                    if ($isCaptain) {
-                        $team->captain_user_id = $member['user_id'];
-                        $team->save();
-                    }
                 }
             }
         });

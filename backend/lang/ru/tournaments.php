@@ -439,16 +439,22 @@ return [
     'setup_promote_yes'     => 'Да, перенести',
 
     'setup_teams_h2'        => 'Команды (:n)',
+    'setup_teams_h2_individual' => 'Команды/Игроки (:n)',
     'setup_teams_empty'     => 'Нет подтверждённых команд.',
     'setup_team_others'     => 'и другие...',
     'setup_team_persons'    => ':n чел.',
     'setup_team_delete_title' => 'Удалить команду :name?',
     'setup_btn_create_team' => '➕ Создать команду',
     'setup_team_label_name' => 'Название команды',
-    'setup_team_ph_name'    => 'Название (авто по фамилии капитана)',
+    'setup_team_ph_name'    => 'Название (авто по фамилии/случайное)',
     'setup_team_label_captain' => 'Капитан (поиск)',
     'setup_team_ph_captain' => 'Имя или ID...',
+    'setup_team_label_members' => 'Игроки команды',
     'setup_btn_create'      => 'Создать',
+
+    'setup_unassigned_h3'    => 'Не распределены по командам (:n)',
+    'setup_unassigned_empty' => 'Все зарегистрированные игроки распределены по командам.',
+    'setup_unassigned_level' => 'Уровень',
 
     'setup_add_stage_h2'    => 'Добавить стадию',
     'setup_btn_add_stage'   => '➕ Добавить стадию',

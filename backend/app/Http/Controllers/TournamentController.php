@@ -122,6 +122,26 @@ class TournamentController extends Controller
             ->with('captain')
             ->get();
 
+        // Индивидуальная запись: игроки, зарегистрированные на тур, но ещё не попавшие ни в одну команду —
+        // нужны для блока "Команды/Игроки" (список + ручное/случайное распределение).
+        $unassignedPlayers = collect();
+        if (($event->registration_mode ?? '') === 'tournament_individual' && $selectedOccurrence) {
+            $assignedUserIds = \App\Models\EventTeamMember::whereHas(
+                'team',
+                fn($q) => $q->where('event_id', $event->id)->where('occurrence_id', $selectedOccurrence->id)
+            )->pluck('user_id');
+
+            $unassignedPlayers = \App\Models\EventRegistration::where('occurrence_id', $selectedOccurrence->id)
+                ->whereNull('cancelled_at')
+                ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
+                ->whereNotIn('user_id', $assignedUserIds)
+                ->with('user')
+                ->get()
+                ->pluck('user')
+                ->filter()
+                ->values();
+        }
+
         // Все «активные» заявки: ожидающие модерации (pending) + неполные (incomplete).
         // Фильтруем по текущему туру — заявки других туров/сезонов не показываем.
         $pendingApplications = EventTeamApplication::where('event_id', $event->id)
@@ -176,7 +196,8 @@ class TournamentController extends Controller
             'event', 'stages', 'teams', 'pendingApplications',
             'applicationMode', 'userEventPhotos',
             'seasonData', 'selectedOccurrence', 'leagueTeams',
-            'tiebreakerSets', 'cleanStatsByGroup', 'outsidersByGroup'
+            'tiebreakerSets', 'cleanStatsByGroup', 'outsidersByGroup',
+            'unassignedPlayers'
         ));
     }
 
