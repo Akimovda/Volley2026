@@ -762,7 +762,8 @@ return [
     'channels_with_image'    => 'Add image',
     'channels_with_players'       => 'Show players list',
     'channel_thread_placeholder'  => 'Topic ID (optional)',
-    'channel_thread_hint'         => 'Telegram forum topic',
+    'channel_thread_hint'         => 'Telegram forum topic — if the chat is split into topics, enter its number, otherwise the announcement goes to the general chat.',
+    'channel_thread_hint_howto'   => 'How to find it: open the topic in Telegram → tap "⋮" (or "Share") on any message → "Copy Link" → in a link like t.me/c/1234567890/45 the last number (45) is the topic ID.',
 
     'show_participants_label' => 'Show participants list',
     'yes'                    => 'Yes',

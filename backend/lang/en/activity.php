@@ -156,6 +156,12 @@ return [
     'jump_chart_x_axis'      => 'Time',
     'jump_chart_tooltip'     => 'cm',
 
+    // Session sync status (activity list/detail page)
+    'sync_pending'      => 'Syncing',
+    'sync_pending_hint' => 'Data from your device is still uploading. Refresh the page in a few minutes.',
+    'sync_stale'        => 'No data received',
+    'sync_stale_hint'   => 'Sync with your device didn\'t finish. Try opening the app on your watch again.',
+
     // Push prompt
     'prompt_body'            => 'Workout in progress — record your activity?',
 

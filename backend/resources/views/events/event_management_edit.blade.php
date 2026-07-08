@@ -526,6 +526,25 @@
                                 </label>
                             </div>
                         </div>
+
+                        {{-- Индивидуальная запись игроков --}}
+                        <div class="col-md-12">
+                            <div class="card" style="background:var(--card-bg,#f9fafb)">
+                                <input type="hidden" name="tournament_individual_reg" value="0">
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="tournament_individual_reg" value="1"
+                                        @checked(old('tournament_individual_reg', $event->registration_mode === 'tournament_individual'))>
+                                    <div class="custom-checkbox"></div>
+                                    <span class="b-500">{{ __('events.tournament_individual_reg_label') }}</span>
+                                </label>
+                                <ul class="list f-16 mt-1">
+                                    <li>{{ __('events.tournament_individual_reg_hint') }}</li>
+                                </ul>
+                                @error('tournament_individual_reg')
+                                <div class="text-xs text-red-600 mt-1">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
                     @else
                         @php
                             $isBeachGame = ($event->direction ?? 'classic') === 'beach';
@@ -1034,7 +1053,8 @@
                                                placeholder="{{ __('events.channel_thread_placeholder') }}"
                                                min="1"
                                                style="width:180px; font-size:13px; padding:3px 6px">
-                                        <span class="text-muted f-12 ml-05">{{ __('events.channel_thread_hint') }}</span>
+                                        <div class="text-muted f-12" style="max-width:420px">{{ __('events.channel_thread_hint') }}</div>
+                                        <div class="text-muted f-12" style="max-width:420px;opacity:.8">{{ __('events.channel_thread_hint_howto') }}</div>
                                     </div>
                                     @endif
                                     @endforeach

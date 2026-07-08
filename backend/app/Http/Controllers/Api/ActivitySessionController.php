@@ -31,6 +31,7 @@ class ActivitySessionController extends Controller
         $data = $request->validate([
             'occurrence_id' => ['nullable', 'integer', 'exists:event_occurrences,id'],
             'device_id'     => ['nullable', 'integer', 'exists:athlete_devices,id'],
+            'client_uuid'   => ['nullable', 'string', 'max:64'],
         ]);
 
         $occurrence = isset($data['occurrence_id'])
@@ -43,14 +44,14 @@ class ActivitySessionController extends Controller
                 ->firstOrFail()
             : null;
 
-        $session = $this->service->start($request->user(), $occurrence, $device);
+        $session = $this->service->start($request->user(), $occurrence, $device, $data['client_uuid'] ?? null);
 
         $jumpHeightCoeff = $this->profileService->effectiveJumpCoeff($request->user(), $device);
 
         return response()->json([
             'session_id'        => $session->id,
             'jump_height_coeff' => $jumpHeightCoeff,
-        ], 201);
+        ], $session->wasRecentlyCreated ? 201 : 200);
     }
 
     public function ingestSamples(Request $request, ActivitySession $session): JsonResponse
