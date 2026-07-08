@@ -49,4 +49,9 @@ return [
     // prompt_grace_min  — окно (от now()-grace до now()-after); защита от накопленных occurrence при простое планировщика
     'prompt_after_min' => 5,
     'prompt_grace_min' => 35,
+
+    // Индикатор синхронизации сессии на /activity: сессия создана (status='live'),
+    // но finalize() ещё не пришёл. До sync_stale_hours — считаем, что синхронизация идёт;
+    // после — считаем, что данные с устройства, скорее всего, не придут.
+    'sync_stale_hours' => 6,
 ];

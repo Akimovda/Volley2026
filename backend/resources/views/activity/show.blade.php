@@ -21,6 +21,7 @@
     </x-slot>
 
     @php
+        $syncStatus = $session->sync_status;
         $dur = $session->duration_sec ?? 0;
         $durStr = $dur >= 3600
             ? sprintf('%d:%02d:%02d', intdiv($dur, 3600), intdiv($dur % 3600, 60), $dur % 60)
@@ -64,11 +65,27 @@
                                         {{ __('activity.filter_' . $session->direction) }}
                                     </span>
                                 @endif
+                                @if($syncStatus === 'pending')
+                                    · <span class="badge badge-sm" style="background:rgba(41,103,186,.15);color:#2967BA">⏳ {{ __('activity.sync_pending') }}</span>
+                                @elseif($syncStatus === 'stale')
+                                    · <span class="badge badge-sm" style="background:rgba(239,68,68,.15);color:#ef4444">{{ __('activity.sync_stale') }}</span>
+                                @endif
                             </div>
                         </div>
                         <a href="{{ route('activity.index') }}" class="btn btn-sm btn-secondary">← {{ __('activity.back_to_list') }}</a>
                     </div>
                 </div>
+
+                @if($syncStatus !== 'completed')
+                <div class="ramka mb-1 text-center" style="opacity:.85">
+                    <div style="font-size:1.3rem">
+                        @if($syncStatus === 'pending') ⏳ {{ __('activity.sync_pending') }} @else {{ __('activity.sync_stale') }} @endif
+                    </div>
+                    <div class="f-13 mt-1" style="opacity:.6">
+                        {{ $syncStatus === 'pending' ? __('activity.sync_pending_hint') : __('activity.sync_stale_hint') }}
+                    </div>
+                </div>
+                @else
 
                 {{-- Скалярные метрики --}}
                 <div class="row row2 mb-1">
@@ -214,6 +231,8 @@
                     @endforeach
                 </div>
                 @endif
+
+                @endif{{-- /$syncStatus === 'completed' --}}
 
             </div>{{-- col-lg-8 --}}
         </div>{{-- row --}}

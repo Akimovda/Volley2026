@@ -17,8 +17,20 @@ class ActivitySessionService
         private readonly ActivityCalorieService $calorieService,
     ) {}
 
-    public function start(User $user, ?EventOccurrence $occurrence, ?AthleteDevice $device): ActivitySession
+    public function start(User $user, ?EventOccurrence $occurrence, ?AthleteDevice $device, ?string $clientUuid = null): ActivitySession
     {
+        // Идемпотентность: часы повторяют доставку (sendMessage/transferUserInfo/HTTP retry)
+        // с одним и тем же client_uuid — возвращаем уже созданную сессию, не плодим дубли.
+        if ($clientUuid !== null) {
+            $existing = ActivitySession::where('user_id', $user->id)
+                ->where('client_uuid', $clientUuid)
+                ->first();
+
+            if ($existing) {
+                return $existing;
+            }
+        }
+
         $direction = null;
         if ($occurrence) {
             $event     = $occurrence->event ?? null;
@@ -27,17 +39,29 @@ class ActivitySessionService
 
         $capabilities = $device?->capabilities() ?? config('activity.default_capabilities', ['hr']);
 
-        return ActivitySession::create([
-            'user_id'              => $user->id,
-            'occurrence_id'        => $occurrence?->id,
-            'device_id'            => $device?->id,
-            'direction'            => $direction,
-            'status'               => 'live',
-            'started_at'           => now(),
-            'samples_count'        => 0,
-            'jump_count'           => 0,
-            'tracked_capabilities' => $capabilities,
-        ]);
+        try {
+            return ActivitySession::create([
+                'user_id'              => $user->id,
+                'occurrence_id'        => $occurrence?->id,
+                'device_id'            => $device?->id,
+                'direction'            => $direction,
+                'status'               => 'live',
+                'started_at'           => now(),
+                'samples_count'        => 0,
+                'jump_count'           => 0,
+                'tracked_capabilities' => $capabilities,
+                'client_uuid'          => $clientUuid,
+            ]);
+        } catch (\Illuminate\Database\QueryException $e) {
+            // Гонка: два одновременных retry прошли проверку выше до insert — ловим уникальный индекс.
+            if ($clientUuid !== null && str_contains($e->getMessage(), 'activity_sessions_user_id_client_uuid_unique')) {
+                return ActivitySession::where('user_id', $user->id)
+                    ->where('client_uuid', $clientUuid)
+                    ->firstOrFail();
+            }
+
+            throw $e;
+        }
     }
 
     /**
@@ -149,6 +173,16 @@ class ActivitySessionService
 
     public function finalize(ActivitySession $session, ?float $activeEnergyKcal = null): ActivitySession
     {
+        // Прыжки считаются независимо от наличия HR-сэмплов (устройство может уметь только jumps)
+        $jumpAgg = DB::table('activity_jump_events')
+            ->where('session_id', $session->id)
+            ->selectRaw('COUNT(*) as cnt, AVG(height_cm) as avg_h, MAX(height_cm) as max_h')
+            ->first();
+
+        $jumpCount     = (int) ($jumpAgg->cnt ?? 0);
+        $jumpAvgHeight = $jumpAgg->avg_h !== null ? round((float) $jumpAgg->avg_h, 1) : null;
+        $jumpMaxHeight = $jumpAgg->max_h !== null ? round((float) $jumpAgg->max_h, 1) : null;
+
         $samples = DB::table('activity_hr_samples')
             ->where('session_id', $session->id)
             ->orderBy('t_offset_sec')
@@ -156,8 +190,11 @@ class ActivitySessionService
 
         if ($samples->isEmpty()) {
             $session->update([
-                'status'   => 'completed',
-                'ended_at' => now(),
+                'status'             => 'completed',
+                'ended_at'           => now(),
+                'jump_count'         => $jumpCount,
+                'jump_avg_height_cm' => $jumpAvgHeight,
+                'jump_max_height_cm' => $jumpMaxHeight,
             ]);
             $session->refresh();
             return $session;
@@ -226,16 +263,6 @@ class ActivitySessionService
             }
             // (c) neither → both remain null
         }
-
-        // jump aggregates
-        $jumpAgg = DB::table('activity_jump_events')
-            ->where('session_id', $session->id)
-            ->selectRaw('COUNT(*) as cnt, AVG(height_cm) as avg_h, MAX(height_cm) as max_h')
-            ->first();
-
-        $jumpCount      = (int) ($jumpAgg->cnt ?? 0);
-        $jumpAvgHeight  = $jumpAgg->avg_h !== null ? round((float) $jumpAgg->avg_h, 1) : null;
-        $jumpMaxHeight  = $jumpAgg->max_h !== null ? round((float) $jumpAgg->max_h, 1) : null;
 
         $session->update([
             'status'              => 'completed',

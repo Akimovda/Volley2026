@@ -10,7 +10,7 @@ class ActivitySession extends Model
 {
     protected $fillable = [
         'user_id', 'occurrence_id', 'device_id', 'direction', 'status',
-        'source', 'external_workout_id',
+        'source', 'external_workout_id', 'client_uuid',
         'started_at', 'ended_at', 'duration_sec',
         'avg_hr', 'max_hr', 'min_hr',
         'time_in_zone', 'load_score', 'samples_count', 'calories_kcal', 'calorie_source',
@@ -67,5 +67,20 @@ class ActivitySession extends Model
             'watch'            => 'Apple Watch',
             default            => $this->source ?? 'watch',
         };
+    }
+
+    /**
+     * 'completed' — finalize() отработал; 'pending' — ещё не финализирована, в пределах окна ожидания;
+     * 'stale' — не финализирована дольше activity.sync_stale_hours, данные, вероятно, не придут.
+     */
+    public function getSyncStatusAttribute(): string
+    {
+        if ($this->status === 'completed') {
+            return 'completed';
+        }
+
+        $ageHours = (now()->timestamp - $this->started_at->timestamp) / 3600;
+
+        return $ageHours < config('activity.sync_stale_hours', 6) ? 'pending' : 'stale';
     }
 }

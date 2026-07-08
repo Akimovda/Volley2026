@@ -165,6 +165,7 @@
                 @php
                     $hasJumps = is_array($session->tracked_capabilities) && in_array('jumps', $session->tracked_capabilities);
                     $title = $session->occurrence?->event?->title ?? __('activity.session_free_training');
+                    $syncStatus = $session->sync_status;
                     $dur = $session->duration_sec ?? 0;
                     $durStr = $dur >= 3600
                         ? sprintf('%d:%02d:%02d', intdiv($dur, 3600), intdiv($dur % 3600, 60), $dur % 60)
@@ -177,6 +178,11 @@
                             <div class="f-13" style="opacity:.6">{{ $session->started_at?->setTimezone($userTimezone)->format('d.m.Y H:i') }}</div>
                         </div>
                         <div class="text-right" style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+                            @if($syncStatus === 'pending')
+                                <span class="badge badge-sm" style="background:rgba(41,103,186,.15);color:#2967BA">⏳ {{ __('activity.sync_pending') }}</span>
+                            @elseif($syncStatus === 'stale')
+                                <span class="badge badge-sm" style="background:rgba(239,68,68,.15);color:#ef4444">{{ __('activity.sync_stale') }}</span>
+                            @endif
                             @if($session->direction)
                                 <span class="badge badge-sm {{ $session->direction === 'beach' ? 'badge-orange' : 'badge-blue' }}">
                                     {{ __('activity.filter_' . $session->direction) }}
@@ -189,6 +195,7 @@
                             @endif
                         </div>
                     </div>
+                    @if($syncStatus === 'completed')
                     <div class="row mt-1" style="gap:4px 0">
                         <div class="col-6 col-md-3">
                             <div class="f-13" style="opacity:.6">{{ __('activity.duration') }}</div>
@@ -219,6 +226,11 @@
                             @endif
                         </div>
                     </div>
+                    @else
+                    <div class="f-13 mt-1" style="opacity:.6">
+                        {{ $syncStatus === 'pending' ? __('activity.sync_pending_hint') : __('activity.sync_stale_hint') }}
+                    </div>
+                    @endif
                 </a>
                 @empty
                 <div class="ramka text-center" style="opacity:.6">

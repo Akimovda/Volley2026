@@ -19,8 +19,16 @@ class ActivityDashboardController extends Controller
         $canRecord = true; // гейт пройден
         $direction = $request->query('direction', 'all');
 
+        // Незавершённые сессии тоже показываем какое-то время — иначе после старта записи
+        // на часах пользователь не видит её в списке вообще, пока не придёт finalize().
+        // Дальше стеля (sync_stale_hours + 24ч) сессия перестаёт попадать в список.
+        $pendingWindowHours = config('activity.sync_stale_hours', 6) + 24;
+
         $query = ActivitySession::where('user_id', $user->id)
-            ->where('status', 'completed')
+            ->where(function ($q) use ($pendingWindowHours) {
+                $q->where('status', 'completed')
+                    ->orWhere('started_at', '>=', now()->subHours($pendingWindowHours));
+            })
             ->with(['occurrence.event'])
             ->orderByDesc('started_at');
 
@@ -79,8 +87,13 @@ class ActivityDashboardController extends Controller
             ));
         }
 
-        $hasJumps = is_array($session->tracked_capabilities)
-            && in_array('jumps', $session->tracked_capabilities, true);
+        // Показываем блок прыжков по факту данных, а не только по capability-флагу,
+        // зафиксированному при старте сессии — он может быть устаревшим/неполным
+        // (см. ActivitySessionService::start() — idempotent-возврат не пересчитывает capabilities),
+        // а прыжки при этом уже реально приняты и агрегированы в finalize().
+        $hasJumps = (is_array($session->tracked_capabilities) && in_array('jumps', $session->tracked_capabilities, true))
+            || ($session->jump_count ?? 0) > 0
+            || $session->jumps()->exists();
 
         $jumpEvents = $hasJumps
             ? $session->jumps()->orderBy('t_offset_ms')->get(['t_offset_ms', 'height_cm'])
