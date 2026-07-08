@@ -1257,6 +1257,12 @@ if ($role === 'admin') {
                         ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
                         ->get();
 
+                    // Новое время серии (час:минута в TZ события)
+                    $eventTz = $event->timezone ?: 'UTC';
+                    $newEventStartInTz = Carbon::parse($event->starts_at, 'UTC')->setTimezone($eventTz);
+                    $newHour   = $newEventStartInTz->hour;
+                    $newMinute = $newEventStartInTz->minute;
+
                     foreach ($futureOccs as $occ) {
                         // Индивидуально отредактированные повторения защищены от перезаписи
                         if ((bool)($occ->is_individually_edited ?? false)) {
@@ -1264,6 +1270,24 @@ if ($role === 'admin') {
                         }
 
                         $occStart = Carbon::parse($occ->starts_at, 'UTC');
+                        $occStartInTz = $occStart->copy()->setTimezone($occ->timezone ?: $eventTz);
+
+                        // Если время occurrence отличается от нового времени серии — это дубль со старым временем
+                        if ($occStartInTz->hour !== $newHour || $occStartInTz->minute !== $newMinute) {
+                            // Отменяем только если нет активных регистраций
+                            $hasRegs = DB::table('event_registrations')
+                                ->where('occurrence_id', $occ->id)
+                                ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
+                                ->where('status', '!=', 'cancelled')
+                                ->exists();
+                            if (!$hasRegs) {
+                                $occ->is_cancelled = true;
+                                $occ->cancelled_at = $nowUtc;
+                                $occ->save();
+                            }
+                            continue;
+                        }
+
                         $occ->duration_sec       = $event->duration_sec;
                         $occ->timezone           = $event->timezone ?: 'UTC';
                         $occ->location_id        = $event->location_id ?? null;
