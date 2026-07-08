@@ -641,7 +641,14 @@ document.addEventListener("trix-file-accept", function (event) {
 				opt5050.textContent = 'Микс 50/50 М/Ж';
 				genderPolicyEl.appendChild(opt5050);
 			}
-			opt5050.disabled = false;
+			// King Beach: 50/50 недоступен при нечётном king_beach_max_players.
+			// Проверяем здесь (а не только в отдельном слушателе step1.blade.php),
+			// т.к. эта функция безусловно перезаписывала opt5050.disabled на каждую смену direction.
+			var kbCbForParity = document.getElementById('king_beach_reg');
+			var kbMaxForParity = document.getElementById('king_beach_max_players');
+			var kbOddBlocks5050 = !!(kbCbForParity && kbCbForParity.checked && kbMaxForParity &&
+				(parseInt(kbMaxForParity.value, 10) % 2 !== 0));
+			opt5050.disabled = kbOddBlocks5050;
 			opt5050.hidden = false;
 		}
 		
@@ -1098,7 +1105,34 @@ document.addEventListener("trix-file-accept", function (event) {
             		if (tournamentTotalEl) tournamentTotalEl.value = String(expectedTotal);
             		// пересчитано автоматически
 				}
-				
+
+				var kbCb = document.getElementById('king_beach_reg');
+				if (kbCb && kbCb.checked) {
+					var kbMinEl = document.getElementById('king_beach_min_players');
+					var kbMaxEl = document.getElementById('king_beach_max_players');
+					var kbMin = Number(val(kbMinEl));
+					var kbMax = Number(val(kbMaxEl));
+
+					if (!kbMinEl || isNaN(kbMin) || kbMin < 4) {
+						alert('Минимальный размер группы для «Короля пляжа» — 4 игрока.');
+						focusEl(kbMinEl);
+						return false;
+					}
+
+					if (!kbMaxEl || isNaN(kbMax) || kbMax < kbMin) {
+						alert('Максимум игроков не может быть меньше минимума.');
+						focusEl(kbMaxEl);
+						return false;
+					}
+
+					var kbGenderVal = genderPolicyEl ? String(val(genderPolicyEl)) : '';
+					if (kbGenderVal === 'mixed_5050' && kbMax % 2 !== 0) {
+						alert('Режим «Микс 50/50» недоступен при нечётном максимуме игроков. Выбери другую гендерную политику или измени количество игроков.');
+						focusEl(genderPolicyEl);
+						return false;
+					}
+				}
+
             	return true;
 			}
 			

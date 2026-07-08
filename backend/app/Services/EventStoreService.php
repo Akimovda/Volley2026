@@ -333,12 +333,17 @@ class EventStoreService
             $event->title = $data['title'];
             $event->direction = $data['direction'];
             $event->format = $format;
-            $isTournamentIndividual = $isTournament && !empty($data['tournament_individual_reg']);
+            // Приоритет: king_beach > tournament_individual > team_* (единый источник истины,
+            // см. EventGameSettingsService::normalizeTournamentDefaults()).
+            $isKingBeachEvent = $isTournament && $data['direction'] === 'beach' && !empty($data['king_beach_reg']);
+            $isTournamentIndividual = $isTournament && !$isKingBeachEvent && !empty($data['tournament_individual_reg']);
             $event->registration_mode = $isTournament
                 ? (
-                    $isTournamentIndividual
-                        ? 'tournament_individual'
-                        : ($data['direction'] === 'beach' ? 'team_beach' : 'team_classic')
+                    $isKingBeachEvent
+                        ? 'king_beach'
+                        : ($isTournamentIndividual
+                            ? 'tournament_individual'
+                            : ($data['direction'] === 'beach' ? 'team_beach' : 'team_classic'))
                 )
                 : ($data['registration_mode'] ?? 'single');
 
@@ -406,9 +411,9 @@ class EventStoreService
                 $event->trainer_user_id = $firstTrainerId;
             }
 			$event->event_photos = $data['event_photos'] ?? [];
-            // Турнирные поля
+            // Турнирные поля (нет команд у king_beach — счётчик команд на карточке не нужен)
             if ($isTournament) {
-                $event->tournament_teams_count = (int)($data['tournament_teams_count'] ?? 4);
+                $event->tournament_teams_count = $isKingBeachEvent ? 0 : (int)($data['tournament_teams_count'] ?? 4);
             }
 
             // Цвет в таймлайне — только владелец локации (club manager), проверяем на сервере

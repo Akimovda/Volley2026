@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Event;
 use App\Models\EventTeam;
+use App\Models\KingBeachStanding;
 use App\Models\TournamentStage;
 use App\Models\EventTeamApplication;
 use App\Models\TournamentGroup;
@@ -21,6 +22,7 @@ use App\Services\TournamentSwissService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use App\Services\PlayerMatchStatsService;
 use App\Models\MatchPlayerStats;
 use App\Models\MatchRallyEvent;
@@ -122,6 +124,26 @@ class TournamentController extends Controller
             ->with('captain')
             ->get();
 
+        // Индивидуальная запись: игроки, зарегистрированные на тур, но ещё не попавшие ни в одну команду —
+        // нужны для блока "Команды/Игроки" (список + ручное/случайное распределение).
+        $unassignedPlayers = collect();
+        if (($event->registration_mode ?? '') === 'tournament_individual' && $selectedOccurrence) {
+            $assignedUserIds = \App\Models\EventTeamMember::whereHas(
+                'team',
+                fn($q) => $q->where('event_id', $event->id)->where('occurrence_id', $selectedOccurrence->id)
+            )->pluck('user_id');
+
+            $unassignedPlayers = \App\Models\EventRegistration::where('occurrence_id', $selectedOccurrence->id)
+                ->whereNull('cancelled_at')
+                ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
+                ->whereNotIn('user_id', $assignedUserIds)
+                ->with('user')
+                ->get()
+                ->pluck('user')
+                ->filter()
+                ->values();
+        }
+
         // Все «активные» заявки: ожидающие модерации (pending) + неполные (incomplete).
         // Фильтруем по текущему туру — заявки других туров/сезонов не показываем.
         $pendingApplications = EventTeamApplication::where('event_id', $event->id)
@@ -176,7 +198,8 @@ class TournamentController extends Controller
             'event', 'stages', 'teams', 'pendingApplications',
             'applicationMode', 'userEventPhotos',
             'seasonData', 'selectedOccurrence', 'leagueTeams',
-            'tiebreakerSets', 'cleanStatsByGroup', 'outsidersByGroup'
+            'tiebreakerSets', 'cleanStatsByGroup', 'outsidersByGroup',
+            'unassignedPlayers'
         ));
     }
 
@@ -203,10 +226,14 @@ class TournamentController extends Controller
             'advance_count'   => 'nullable|integer|min:1|max:8',
             'third_place_match' => 'nullable|boolean',
             'courts'          => 'nullable|string|max:500',
+            'kb_group_size'   => ['nullable', 'integer', Rule::in(TournamentKingBeachService::GROUP_SIZES)],
         ]);
 
         $sortOrder = ($event->tournamentStages()->max('sort_order') ?? 0) + 1;
 
+        // Блок кортов (courts_count/courts) общий для групповых форматов и King of the Beach —
+        // единое поле "courts" для обоих случаев (advance_count/группы для king_beach
+        // задаются позже, на этапе "Сформировать дивизионы").
         $config = [
             'match_format'       => $validated['match_format'],
             'set_points'         => (int) $validated['set_points'],
@@ -214,11 +241,12 @@ class TournamentController extends Controller
             'groups_count'       => (int) ($validated['groups_count'] ?? 0),
             'advance_count'      => (int) ($validated['advance_count'] ?? 2),
             'third_place_match'  => (bool) ($validated['third_place_match'] ?? false),
-            'courts'             => $validated['courts']
-                ? array_map('trim', explode(',', $validated['courts']))
+            'courts'             => !empty($validated['courts'])
+                ? array_values(array_filter(array_map('trim', explode(',', $validated['courts']))))
                 : [],
             'draw_mode'          => $request->input('draw_mode', 'random'),
             'round_number'       => 1,
+            'group_size'         => (int) ($validated['kb_group_size'] ?? 4),
         ];
 
         // occurrence_id из hidden field (если сезонный турнир)
@@ -464,6 +492,159 @@ class TournamentController extends Controller
         }
 
         return $this->redirectToSetup($event, 'Жеребьёвка проведена, матчи сгенерированы.', false, "stage_{$stage->id}");
+    }
+
+    /* ================================================================
+     *  King of the Beach — ручное/случайное распределение по группам
+     * ================================================================ */
+
+    /**
+     * Игроки события/тура, зарегистрированные индивидуально, но ещё
+     * не попавшие ни в одну группу данной king_beach стадии.
+     */
+    private function kingBeachUnassignedIds(Event $event, TournamentStage $stage): array
+    {
+        $assignedIds = KingBeachStanding::where('stage_id', $stage->id)->pluck('user_id');
+
+        return DB::table('event_registrations')
+            ->where('event_id', $event->id)
+            ->when($stage->occurrence_id, fn($q) => $q->where('occurrence_id', $stage->occurrence_id))
+            ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
+            ->whereNotNull('user_id')
+            ->distinct()
+            ->pluck('user_id')
+            ->diff($assignedIds)
+            ->map(fn($id) => (int) $id)
+            ->values()
+            ->toArray();
+    }
+
+    public function kingBeachCreateGroup(Request $request, Event $event): RedirectResponse
+    {
+        $this->authorizeOrganizer($request, $event);
+
+        $validated = $request->validate([
+            'stage_id'     => 'required|exists:tournament_stages,id',
+            'player_ids'   => 'required|array',
+            'player_ids.*' => 'integer|distinct|exists:users,id',
+            'court'        => 'nullable|string|max:100',
+        ]);
+
+        $stage = TournamentStage::where('id', $validated['stage_id'])
+            ->where('event_id', $event->id)
+            ->where('type', TournamentStage::TYPE_KING_BEACH)
+            ->firstOrFail();
+
+        $groupSize = (int) $stage->configValue('group_size', 4);
+        $playerIds = array_map('intval', $validated['player_ids']);
+
+        if (count($playerIds) !== $groupSize) {
+            return $this->redirectToSetup($event, "Группа должна содержать ровно {$groupSize} игроков.", true, "stage_{$stage->id}");
+        }
+
+        $unassigned = $this->kingBeachUnassignedIds($event, $stage);
+        if (count(array_diff($playerIds, $unassigned)) > 0) {
+            return $this->redirectToSetup($event, 'Один из выбранных игроков уже распределён в другую группу или не зарегистрирован на этот тур.', true, "stage_{$stage->id}");
+        }
+
+        $courts = !empty($validated['court']) ? [$validated['court']] : null;
+
+        try {
+            $this->kingBeachService->createManualGroup($stage, $playerIds, $courts);
+        } catch (\InvalidArgumentException $e) {
+            return $this->redirectToSetup($event, $e->getMessage(), true, "stage_{$stage->id}");
+        }
+
+        return $this->redirectToSetup($event, 'Группа создана.', false, "stage_{$stage->id}");
+    }
+
+    public function kingBeachDistributeRandom(Request $request, Event $event): RedirectResponse
+    {
+        $this->authorizeOrganizer($request, $event);
+
+        $validated = $request->validate([
+            'stage_id' => 'required|exists:tournament_stages,id',
+        ]);
+
+        $stage = TournamentStage::where('id', $validated['stage_id'])
+            ->where('event_id', $event->id)
+            ->where('type', TournamentStage::TYPE_KING_BEACH)
+            ->firstOrFail();
+
+        $playerIds = $this->kingBeachUnassignedIds($event, $stage);
+        $groupSize = (int) $stage->configValue('group_size', 4);
+
+        if (count($playerIds) < $groupSize) {
+            return $this->redirectToSetup($event, "Недостаточно нераспределённых игроков (минимум {$groupSize}).", true, "stage_{$stage->id}");
+        }
+
+        $result = $this->kingBeachService->distributeIntoGroups($stage, $playerIds);
+
+        $message = 'Сформировано групп: ' . count($result['groups']) . '.';
+        if (!empty($result['leftover'])) {
+            $message .= ' Не хватило до полной группы (осталось нераспределённых): ' . count($result['leftover']) . '.';
+        }
+
+        return $this->redirectToSetup($event, $message, false, "stage_{$stage->id}");
+    }
+
+    /**
+     * Ручное распределение нескольких игроков сразу через одну таблицу:
+     * assign[user_id] = 'произвольный ярлык группы' (например A, B, Hard...).
+     * Каждый непустой ярлык должен собрать РОВНО group_size игроков (4 или 6 —
+     * см. configValue('group_size', 4) стадии).
+     */
+    public function kingBeachAssignManual(Request $request, Event $event): RedirectResponse
+    {
+        $this->authorizeOrganizer($request, $event);
+
+        $validated = $request->validate([
+            'stage_id'  => 'required|exists:tournament_stages,id',
+            'assign'    => 'required|array',
+            'assign.*'  => 'nullable|string|max:20',
+        ]);
+
+        $stage = TournamentStage::where('id', $validated['stage_id'])
+            ->where('event_id', $event->id)
+            ->where('type', TournamentStage::TYPE_KING_BEACH)
+            ->firstOrFail();
+
+        $unassigned = $this->kingBeachUnassignedIds($event, $stage);
+        $groupSize = (int) $stage->configValue('group_size', 4);
+
+        $buckets = [];
+        foreach ($validated['assign'] as $userId => $label) {
+            $label = trim((string) $label);
+            $userId = (int) $userId;
+
+            if ($label === '' || !in_array($userId, $unassigned, true)) {
+                continue;
+            }
+
+            $buckets[$label][] = $userId;
+        }
+
+        if (empty($buckets)) {
+            return $this->redirectToSetup($event, 'Не выбрано ни одного игрока для распределения.', true, "stage_{$stage->id}");
+        }
+
+        $wrongCount = array_keys(array_filter($buckets, fn($ids) => count($ids) !== $groupSize));
+        if (!empty($wrongCount)) {
+            return $this->redirectToSetup(
+                $event,
+                "В каждой группе должно быть ровно {$groupSize} игроков. Проверьте группы: " . implode(', ', $wrongCount),
+                true,
+                "stage_{$stage->id}"
+            );
+        }
+
+        $created = 0;
+        foreach ($buckets as $label => $ids) {
+            $this->kingBeachService->createManualGroup($stage, $ids, null, $label);
+            $created++;
+        }
+
+        return $this->redirectToSetup($event, "Группы созданы: {$created}.", false, "stage_{$stage->id}");
     }
 
     /* ================================================================
@@ -1120,6 +1301,39 @@ class TournamentController extends Controller
         });
 
         return $this->redirectToSetup($event, 'Группы сформированы: ' . implode(', ', $divisionNames), false, 'promotion_block');
+    }
+
+    /**
+     * King of the Beach: после завершения группового этапа — распределить ВСЕХ
+     * игроков по новым дивизионам Hard/Medium/Lite (аналог formDivisions(), но
+     * по индивидуальным standings; работает и вне сезонных турниров).
+     */
+    public function kingBeachFormDivisions(Request $request, TournamentStage $stage): RedirectResponse
+    {
+        $event = $stage->event;
+        $this->authorizeOrganizer($request, $event);
+
+        if (!$stage->isCompleted()) {
+            return back()->with('error', 'Стадия ещё не завершена.');
+        }
+
+        $advancePerGroup = max(1, (int) $request->input(
+            'advance_per_group',
+            $stage->configValue('advance_count', 2)
+        ));
+
+        try {
+            $divisions = $this->kingBeachService->formDivisions($stage, $advancePerGroup);
+        } catch (\InvalidArgumentException $e) {
+            return $this->redirectToSetup($event, $e->getMessage(), true, "stage_{$stage->id}");
+        }
+
+        return $this->redirectToSetup(
+            $event,
+            'Дивизионы сформированы: ' . implode(', ', array_keys($divisions)),
+            false,
+            "stage_{$stage->id}"
+        );
     }
 
     public function advance(Request $request, TournamentStage $stage)

@@ -16,6 +16,9 @@ $tournamentAutoSubmitWhenReady = old('tournament_auto_submit_when_ready',
 $tournamentAllowIncompleteApplication = old('tournament_allow_incomplete_application',
 $prefill['tournament_allow_incomplete_application'] ?? false);
 $tournamentIndividualReg = (bool) old('tournament_individual_reg', $prefill['tournament_individual_reg'] ?? false);
+$kingBeachReg = (bool) old('king_beach_reg', $prefill['king_beach_reg'] ?? false);
+$kingBeachMinPlayers = old('king_beach_min_players', $prefill['king_beach_min_players'] ?? 8);
+$kingBeachMaxPlayers = old('king_beach_max_players', $prefill['king_beach_max_players'] ?? 8);
 @endphp
 @php
 $registrationMode = old('registration_mode', $prefill['registration_mode'] ?? 'single');
@@ -64,6 +67,9 @@ $step1Fields = [
 'tournament_auto_submit_when_ready',
 'tournament_allow_incomplete_application',
 'tournament_individual_reg',
+'king_beach_reg',
+'king_beach_min_players',
+'king_beach_max_players',
 'tournament_application_mode',
 // ✅ trainer
 'trainer_user_ids',      // новое

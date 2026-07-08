@@ -31,7 +31,7 @@ final class TournamentTeamService
         return DB::transaction(function () use ($event, $captain, $name, $occurrenceId, $teamKind, $captainPositionCode, $autoApprove) {
             $settings = $this->getSettings($event);
 
-            $teamKind ??= $this->resolveTeamKindFromSettings($settings);
+            $teamKind ??= $this->resolveTeamKindFromSettings($settings, (string) ($event->direction ?? 'classic'));
             
             if ((string) $teamKind === 'classic_team') {
                 if (empty($captainPositionCode)) {
@@ -1141,10 +1141,11 @@ final class TournamentTeamService
             : $event->tournamentSetting()->first();
     }
 
-    private function resolveTeamKindFromSettings(?EventTournamentSetting $settings): string
+    private function resolveTeamKindFromSettings(?EventTournamentSetting $settings, string $direction = 'classic'): string
     {
         return match ($settings?->registration_mode) {
             'team_beach' => 'beach_pair',
+            'tournament_individual' => $direction === 'beach' ? 'beach_pair' : 'classic_team',
             default => 'classic_team',
         };
     }

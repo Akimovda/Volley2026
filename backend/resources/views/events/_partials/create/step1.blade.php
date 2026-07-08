@@ -300,8 +300,29 @@
 												@error('tournament_game_scheme')
 												<div class="text-xs text-red-600 mt-1">{{ $message }}</div>
 												@enderror
-												
-                                                <div class="mt-2">
+
+												{{-- Король/Королева пляжа --}}
+												<div class="mt-2" id="king_beach_reg_block" data-show-if="direction=beach,tournament_game_scheme=2x2">
+													<div class="card" style="background:var(--card-bg,#f9fafb)">
+														<input type="hidden" name="king_beach_reg" value="0">
+														<label class="checkbox-item">
+															<input
+															type="checkbox"
+															name="king_beach_reg"
+															id="king_beach_reg"
+															value="1"
+															@checked($kingBeachReg ?? false)
+															>
+															<div class="custom-checkbox"></div>
+															<span class="b-500">{{ __('events.king_beach_reg_label') }}</span>
+														</label>
+														<ul class="list f-16 mt-1">
+															<li>{{ __('events.king_beach_reg_hint') }}</li>
+														</ul>
+													</div>
+												</div>
+
+                                                <div class="mt-2" id="tournament_teams_count_wrap">
                                                     <label for="tournament_teams_count">{{ __('events.tournament_teams_count') }}</label>
                                                     <input
 													type="number"
@@ -328,8 +349,59 @@
 										
 										
 										<div class="col-md-8">
-                                            <div class="card">												
-												
+                                            <div class="card" id="king_beach_players_wrap" style="display:none;">
+
+												<label>{{ __('events.king_beach_players_setup_label') }}</label>
+												<hr class="mb-1">
+												<div class="row">
+													<div class="col-sm-6">
+														<label class="b-500">{{ __('events.king_beach_min_players_label') }}</label>
+														<input
+														type="number"
+														name="king_beach_min_players"
+														id="king_beach_min_players"
+														min="4"
+														max="200"
+														step="1"
+														value="{{ old('king_beach_min_players', $kingBeachMinPlayers ?? 8) }}"
+														class="w-full rounded-lg border-gray-200"
+														>
+														<ul class="list f-16 mt-1">
+															<li>{{ __('events.king_beach_min_players_hint') }}</li>
+														</ul>
+														@error('king_beach_min_players')
+														<div class="text-xs text-red-600 mt-1">{{ $message }}</div>
+														@enderror
+													</div>
+													<div class="col-sm-6">
+														<label class="b-500">{{ __('events.king_beach_max_players_label') }}</label>
+														<input
+														type="number"
+														name="king_beach_max_players"
+														id="king_beach_max_players"
+														min="4"
+														max="200"
+														step="1"
+														value="{{ old('king_beach_max_players', $kingBeachMaxPlayers ?? 8) }}"
+														class="w-full rounded-lg border-gray-200"
+														>
+														<ul class="list f-16 mt-1">
+															<li>{{ __('events.king_beach_max_players_hint') }}</li>
+														</ul>
+														@error('king_beach_max_players')
+														<div class="text-xs text-red-600 mt-1">{{ $message }}</div>
+														@enderror
+													</div>
+													<div class="col-sm-12">
+														<div id="king_beach_gender_parity_hint" class="f-13 mt-1" style="color:#b45309;display:none;">
+															{{ __('events.king_beach_gender_parity_hint') }}
+														</div>
+													</div>
+												</div>
+											</div>
+
+                                            <div class="card" id="tournament_squad_setup_card">
+
 												<label for="tournament_team_size_min">{{ __('events.tournament_team_setup') }}</label>
 												<hr class="mb-1">
 												<div class="row">
@@ -461,7 +533,7 @@
 									</div>
 
 									{{-- Индивидуальная запись игроков --}}
-									<div class="row mt-2">
+									<div class="row mt-2" id="tournament_individual_reg_row">
 										<div class="col-md-12">
 											<div class="card" style="background:var(--card-bg,#f9fafb)">
 												<input type="hidden" name="tournament_individual_reg" value="0">
@@ -854,4 +926,118 @@
     cb.addEventListener('change', apply);
     apply();
 })();
-</script>							
+(function(){
+    var kbCb = document.getElementById('king_beach_reg');
+    if (!kbCb) return;
+
+    var directionEl = document.getElementById('direction');
+    var schemeEl = document.getElementById('tournament_game_scheme');
+    var kbBlock = document.getElementById('king_beach_reg_block');
+    var kbPlayersWrap = document.getElementById('king_beach_players_wrap');
+    var kbMinEl = document.getElementById('king_beach_min_players');
+    var kbMaxEl = document.getElementById('king_beach_max_players');
+    var kbParityHint = document.getElementById('king_beach_gender_parity_hint');
+    var teamsCountWrap = document.getElementById('tournament_teams_count_wrap');
+    var teamsCountEl = document.getElementById('tournament_teams_count');
+    var squadCard = document.getElementById('tournament_squad_setup_card');
+    var squadInputs = squadCard ? squadCard.querySelectorAll('input') : [];
+    var genderPolicyEl = document.getElementById('game_gender_policy');
+
+    function isEligible() {
+        var dir = directionEl ? String(directionEl.value || '') : '';
+        var scheme = schemeEl ? String(schemeEl.value || '') : '';
+        return dir === 'beach' && scheme === '2x2';
+    }
+
+    // Слой 1, п.1: чекбокс виден только beach+2x2; при смене на несовместимое — скрыть И снять галку.
+    function applyEligibility() {
+        if (!isEligible() && kbCb.checked) {
+            kbCb.checked = false;
+        }
+        if (kbBlock) kbBlock.style.display = isEligible() ? '' : 'none';
+    }
+
+    // Слой 1, п.3: скрыть+исключить из сабмита teams_count и «Настройку состава»,
+    // показать поля min/max игроков.
+    function applyFieldsVisibility() {
+        var on = kbCb.checked;
+
+        if (teamsCountWrap) teamsCountWrap.style.display = on ? 'none' : '';
+        if (teamsCountEl) teamsCountEl.disabled = on;
+
+        if (squadCard) squadCard.style.display = on ? 'none' : '';
+        for (var i = 0; i < squadInputs.length; i++) squadInputs[i].disabled = on;
+
+        if (kbPlayersWrap) kbPlayersWrap.style.display = on ? '' : 'none';
+        if (kbMinEl) kbMinEl.disabled = !on;
+        if (kbMaxEl) kbMaxEl.disabled = !on;
+    }
+
+    // Слой 2, п.4-5: mixed_5050 недоступен при нечётном king_beach_max_players (только в king_beach-режиме).
+    function applyGenderParity() {
+        if (!genderPolicyEl) return;
+
+        if (!kbCb.checked) {
+            if (kbParityHint) kbParityHint.style.display = 'none';
+            var opt5050restore = genderPolicyEl.querySelector('option[value="mixed_5050"]');
+            if (opt5050restore) opt5050restore.disabled = false;
+            return;
+        }
+
+        var max = parseInt(kbMaxEl ? kbMaxEl.value : '', 10);
+        var odd = !isNaN(max) && (max % 2 !== 0);
+
+        var opt5050 = genderPolicyEl.querySelector('option[value="mixed_5050"]');
+        if (opt5050) opt5050.disabled = odd;
+
+        if (odd && genderPolicyEl.value === 'mixed_5050') {
+            genderPolicyEl.value = 'mixed_open';
+            genderPolicyEl.dispatchEvent(new Event('change'));
+        }
+
+        if (kbParityHint) kbParityHint.style.display = odd ? '' : 'none';
+    }
+
+    function applyAll() {
+        applyEligibility();
+        applyFieldsVisibility();
+        applyGenderParity();
+    }
+
+    kbCb.addEventListener('change', applyAll);
+    if (directionEl) directionEl.addEventListener('change', applyAll);
+    if (schemeEl) schemeEl.addEventListener('change', applyAll);
+    if (kbMaxEl) kbMaxEl.addEventListener('input', applyGenderParity);
+    if (genderPolicyEl) genderPolicyEl.addEventListener('change', applyGenderParity);
+
+    applyAll();
+})();
+(function(){
+    // Слой 1, п.2 (откат): king_beach сам по себе индивидуальный режим на сервере
+    // (приоритет king_beach > individual в normalizeTournamentDefaults(), подтверждено
+    // тестом) — отдельный визуальный индикатор не нужен. При включении king_beach
+    // блок «Индивидуальная запись игроков» просто скрывается целиком.
+    var kbCb = document.getElementById('king_beach_reg');
+    var indivCb = document.getElementById('tournament_individual_reg');
+    var indivRow = document.getElementById('tournament_individual_reg_row');
+    if (!kbCb || !indivCb) return;
+
+    function apply() {
+        var kbOn = kbCb.checked;
+        if (kbOn) {
+            if (indivCb.checked) {
+                indivCb.checked = false;
+                indivCb.dispatchEvent(new Event('change'));
+            }
+            indivCb.disabled = true;
+            if (indivRow) indivRow.style.display = 'none';
+        } else {
+            indivCb.disabled = false;
+            if (indivRow) indivRow.style.display = '';
+        }
+    }
+
+    kbCb.addEventListener('change', apply);
+    apply();
+})();
+</script>

@@ -977,6 +977,21 @@ return [
     'tournament_individual_reg_label'  => 'Individual player registration',
     'tournament_individual_reg_hint'   => 'Players register by position; teams are formed by the organizer manually or via random distribution.',
     'tournament_individual_reg_note'   => 'Team registration mode is disabled. Captain confirmation settings do not apply.',
+
+    // King/Queen of the Beach
+    'king_beach_reg_label'          => 'King/Queen of the Beach',
+    'king_beach_reg_hint'           => 'Players register individually. There are no fixed teams — partners rotate every match, everyone plays with everyone.',
+    'king_beach_players_setup_label' => 'Number of players',
+    'king_beach_min_players_label'  => 'Minimum players',
+    'king_beach_min_players_hint'   => 'Minimum needed to start the tournament — one engine group size (usually 4).',
+    'king_beach_max_players_label'  => 'Maximum players',
+    'king_beach_max_players_hint'   => 'Maximum number of players who can register.',
+    'king_beach_gender_parity_hint' => 'Mixed 50/50 is unavailable: the max player count is odd. Change the player count or pick another gender policy.',
+    'king_beach_min_players_error'  => 'Minimum group size is 4 players.',
+    'king_beach_max_players_error'  => 'Max players cannot be less than the minimum.',
+    'king_beach_parity_error'       => 'Mixed 50/50 requires an even max player count.',
+    'king_beach_scheme_error'       => 'King/Queen of the Beach is only available for beach volleyball with the 2x2 scheme.',
+
     'tournament_distribute_btn'        => 'Form teams',
     'tournament_distribute_random_btn' => 'Distribute randomly',
     'tournament_distribute_confirm'    => 'Form :n teams from :p registered players?',
