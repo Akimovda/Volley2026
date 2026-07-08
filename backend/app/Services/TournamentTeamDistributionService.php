@@ -22,9 +22,10 @@ class TournamentTeamDistributionService
      *
      * Алгоритм:
      *  1. Берём все активные регистрации, разбиваем по позициям.
-     *  2. Для каждой позиции перемешиваем список игроков.
-     *  3. Распределяем по командам round-robin: игрок [i] → команда [i % N].
-     *  4. Создаём N EventTeam + EventTeamMember (первый игрок в команде = капитан).
+     *  2. Команды из 2 человек (пляжные пары) — сначала смешанные М+Ж пары
+     *     (пока хватает обоих полов), остаток одного пола — пары того же пола.
+     *     Команды другого размера — просто перемешиваем и round-robin: игрок [i] → команда [i % N].
+     *  3. Создаём N EventTeam + EventTeamMember (первый игрок в паре/группе = капитан).
      *
      * Возвращает ['ok' => bool, 'message' => string, 'teams_count' => int]
      */
@@ -58,18 +59,37 @@ class TournamentTeamDistributionService
             return ['ok' => false, 'message' => __('events.tournament_distribute_error_no_players')];
         }
 
-        // Группируем по позиции
-        $byPosition = $registrations->groupBy('position')->map(fn($group) => $group->pluck('user_id')->shuffle()->values());
+        $usersById = User::whereIn('id', $registrations->pluck('user_id'))->get()->keyBy('id');
+
+        // Пары (team_size_min=2, как в 2x2) — приоритет смешанным М+Ж парам.
+        $teamSizeMin = (int) ($event->tournamentSetting?->team_size_min ?? 0);
+
+        $byPosition = $registrations->groupBy('position')->map(fn($group) => $group->pluck('user_id')->values());
 
         // Собираем все назначения: [['user_id' => X, 'position' => Y, 'team_idx' => Z]]
         $assignments = [];
         foreach ($byPosition as $position => $userIds) {
-            foreach ($userIds as $i => $userId) {
-                $assignments[] = [
-                    'user_id'   => $userId,
-                    'position'  => $position ?: 'player',
-                    'team_idx'  => $i % $teamsCount,
-                ];
+            if ($teamSizeMin === 2) {
+                $groupIdx = 0;
+                foreach ($this->pairByGenderThenRandom($userIds, $usersById) as $pair) {
+                    $teamIdx = $groupIdx % $teamsCount;
+                    foreach ($pair as $userId) {
+                        $assignments[] = [
+                            'user_id'  => $userId,
+                            'position' => $position ?: 'player',
+                            'team_idx' => $teamIdx,
+                        ];
+                    }
+                    $groupIdx++;
+                }
+            } else {
+                foreach ($userIds->shuffle()->values() as $i => $userId) {
+                    $assignments[] = [
+                        'user_id'   => $userId,
+                        'position'  => $position ?: 'player',
+                        'team_idx'  => $i % $teamsCount,
+                    ];
+                }
             }
         }
 
@@ -86,9 +106,7 @@ class TournamentTeamDistributionService
         $direction = $event->direction ?? 'classic';
         $teamKind  = ($direction === 'beach') ? 'beach_pair' : 'classic_team';
 
-        $usersById = User::whereIn('id', $registrations->pluck('user_id'))->get()->keyBy('id');
-
-        DB::transaction(function () use ($event, $occurrence, $teamsCount, $teamAssignments, $teamKind, $usersById) {
+        DB::transaction(function () use ($event, $occurrence, $teamsCount, $teamAssignments, $teamKind, $usersById, $teamSizeMin) {
             for ($i = 0; $i < $teamsCount; $i++) {
                 $members = array_values($teamAssignments[$i]);
                 if (empty($members)) {
@@ -100,6 +118,10 @@ class TournamentTeamDistributionService
                     ->filter()
                     ->values();
 
+                $isComplete = $teamSizeMin > 0
+                    ? count($members) >= $teamSizeMin
+                    : true;
+
                 $team = EventTeam::create([
                     'event_id'         => $event->id,
                     'occurrence_id'    => $occurrence->id,
@@ -107,7 +129,7 @@ class TournamentTeamDistributionService
                     'name'             => $this->namingService->generate($event, $memberUsers, $occurrence->id),
                     'team_kind'        => $teamKind,
                     'status'           => 'approved',
-                    'is_complete'      => true,
+                    'is_complete'      => $isComplete,
                     'confirmed_at'     => now(),
                     'invite_code'      => substr(md5(uniqid((string)$i, true)), 0, 8),
                 ]);
@@ -132,5 +154,47 @@ class TournamentTeamDistributionService
             'message'     => __('events.tournament_distribute_success'),
             'teams_count' => $teamsCount,
         ];
+    }
+
+    /**
+     * Разбивает игроков на пары для команд из 2 человек: сначала максимум смешанных
+     * М+Ж пар (пока хватает обоих полов), остаток (перевес одного пола + неизвестный
+     * пол) — парами вперемешку между собой. Нечётный "хвост" — неполная пара из 1 игрока
+     * (команда останется "ищет партнёра", как и при обычном ручном создании).
+     *
+     * @param \Illuminate\Support\Collection<int, int> $userIds
+     * @param \Illuminate\Support\Collection<int, \App\Models\User> $usersById
+     * @return array<int, array<int>> список пар (или одиночных остатков) user_id
+     */
+    private function pairByGenderThenRandom($userIds, $usersById): array
+    {
+        $gender = fn (int $id) => $usersById->get($id)?->gender;
+
+        $males   = $userIds->filter(fn ($id) => $gender($id) === 'm')->shuffle()->values();
+        $females = $userIds->filter(fn ($id) => $gender($id) === 'f')->shuffle()->values();
+        $rest    = $userIds->reject(fn ($id) => in_array($gender($id), ['m', 'f'], true))->shuffle()->values();
+
+        $pairs = [];
+        $mixedCount = min($males->count(), $females->count());
+
+        for ($i = 0; $i < $mixedCount; $i++) {
+            $pairs[] = [$males[$i], $females[$i]];
+        }
+
+        $leftover = $males->slice($mixedCount)->values()
+            ->concat($females->slice($mixedCount)->values())
+            ->concat($rest)
+            ->shuffle()
+            ->values();
+
+        for ($i = 0; $i < $leftover->count(); $i += 2) {
+            $pairs[] = $leftover->has($i + 1)
+                ? [$leftover[$i], $leftover[$i + 1]]
+                : [$leftover[$i]];
+        }
+
+        shuffle($pairs);
+
+        return $pairs;
     }
 }
