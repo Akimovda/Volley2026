@@ -106,8 +106,9 @@ class TournamentTeamDistributionService
                     'captain_user_id'  => $members[0]['user_id'],
                     'name'             => $this->namingService->generate($event, $memberUsers, $occurrence->id),
                     'team_kind'        => $teamKind,
-                    'status'           => 'confirmed',
+                    'status'           => 'approved',
                     'is_complete'      => true,
+                    'confirmed_at'     => now(),
                     'invite_code'      => substr(md5(uniqid((string)$i, true)), 0, 8),
                 ]);
 

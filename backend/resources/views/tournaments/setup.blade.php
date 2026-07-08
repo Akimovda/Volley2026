@@ -983,6 +983,12 @@ $tourNumber = $seasonData
 
 			@if($isIndividualTournament)
 			{{-- Случайное распределение игроков по командам (только индивидуальная запись) --}}
+			@php
+				$distributeConfirmText = __('events.tournament_distribute_confirm', [
+					'n' => $event->tournament_teams_count ?? 0,
+					'p' => $unassignedPlayers->count(),
+				]);
+			@endphp
 			<div class="mt-1">
 				<button type="button" id="distribute-teams-btn" class="btn btn-secondary"
 					data-event-id="{{ $event->id }}"
@@ -998,33 +1004,46 @@ $tourNumber = $seasonData
 				btn.addEventListener('click', function() {
 					var eventId = btn.dataset.eventId;
 					var occurrenceId = btn.dataset.occurrenceId;
-					if (!confirm('{{ __('events.tournament_distribute_random_btn') }}?')) return;
-					btn.disabled = true;
-					btn.textContent = '...';
-					fetch('/events/' + eventId + '/distribute-individual', {
-						method: 'POST',
-						headers: {
-							'Content-Type': 'application/json',
-							'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-							'Accept': 'application/json',
+
+					swal({
+						title: @json(__('events.tournament_distribute_random_btn')),
+						text: @json($distributeConfirmText),
+						icon: 'warning',
+						buttons: {
+							cancel: { text: @json(__('tournaments.btn_cancel')), value: null, visible: true, closeModal: true },
+							confirm: { text: @json(__('events.tournament_distribute_btn')), value: true, visible: true, closeModal: true },
 						},
-						body: JSON.stringify({ occurrence_id: occurrenceId ? parseInt(occurrenceId) : null }),
-						credentials: 'same-origin',
-					})
-					.then(function(r) { return r.json(); })
-					.then(function(data) {
-						if (data.ok) {
-							location.reload();
-						} else {
-							alert(data.message || 'Ошибка');
+						dangerMode: true,
+					}).then(function(confirmed) {
+						if (!confirmed) return;
+
+						btn.disabled = true;
+						btn.textContent = '...';
+						fetch('/events/' + eventId + '/distribute-individual', {
+							method: 'POST',
+							headers: {
+								'Content-Type': 'application/json',
+								'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+								'Accept': 'application/json',
+							},
+							body: JSON.stringify({ occurrence_id: occurrenceId ? parseInt(occurrenceId) : null }),
+							credentials: 'same-origin',
+						})
+						.then(function(r) { return r.json(); })
+						.then(function(data) {
+							if (data.ok) {
+								location.reload();
+							} else {
+								swal({ title: 'Ошибка', text: data.message || 'Не удалось распределить игроков.', icon: 'error', button: 'Понятно' });
+								btn.disabled = false;
+								btn.textContent = defaultText;
+							}
+						})
+						.catch(function() {
+							swal({ title: 'Ошибка', text: 'Ошибка соединения.', icon: 'error', button: 'Понятно' });
 							btn.disabled = false;
 							btn.textContent = defaultText;
-						}
-					})
-					.catch(function() {
-						alert('Ошибка соединения');
-						btn.disabled = false;
-						btn.textContent = defaultText;
+						});
 					});
 				});
 			})();
