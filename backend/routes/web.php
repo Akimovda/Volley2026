@@ -1012,6 +1012,12 @@ Route::middleware([
     Route::post('/events/{event}/tournament/draw', [TournamentController::class, 'draw'])
         ->name('tournament.draw');
 
+    Route::post('/events/{event}/tournament/king-beach/groups', [TournamentController::class, 'kingBeachCreateGroup'])
+        ->name('tournament.kingBeach.createGroup');
+
+    Route::post('/events/{event}/tournament/king-beach/distribute', [TournamentController::class, 'kingBeachDistributeRandom'])
+        ->name('tournament.kingBeach.distribute');
+
     Route::get('/tournament-matches/{match}/score', [TournamentController::class, 'scoreForm'])
         ->name('tournament.matches.score.form');
 

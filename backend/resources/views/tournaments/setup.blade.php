@@ -1187,6 +1187,15 @@ $tourNumber = $seasonData
 								</div>
 							</div>
 						</div>
+						<div class="row mt-1">
+							<div class="col-md-12">
+								<div class="card">
+									<label>{{ __('tournaments.setup_stage_kb_courts') }}</label>
+									<input name="kb_courts" placeholder="{{ __('tournaments.setup_stage_kb_courts_ph') }}">
+									<p class="f-16">{{ __('tournaments.setup_stage_kb_courts_hint') }}</p>
+								</div>
+							</div>
+						</div>
 					</div>
 
 					<div class="mt-2" id="group_fields">
@@ -2137,13 +2146,23 @@ $tourNumber = $seasonData
 			var typeSelect = document.getElementById('stage_type_select');
 			var groupFields = document.getElementById('group_fields');
 			var kbFields = document.getElementById('king_beach_fields');
+			// group_fields и king_beach_fields содержат поля с ОДИНАКОВЫМИ name (draw_mode) —
+			// display:none не мешает браузеру отправить их оба на сервер. Отключаем инпуты
+			// скрытого блока через disabled, чтобы в форму попадали только видимые поля.
+			function setBlockActive(block, active) {
+				if (!block) return;
+				block.style.display = active ? '' : 'none';
+				block.querySelectorAll('input, select, textarea').forEach(function(el) {
+					el.disabled = !active;
+				});
+			}
 			if (typeSelect) {
 				function toggle() {
 					var t = typeSelect.value;
 					var showGroup = (t === 'round_robin' || t === 'groups_playoff' || t === 'thai');
 					var showKb = (t === 'king_beach');
-					if (groupFields) groupFields.style.display = showGroup ? '' : 'none';
-					if (kbFields) kbFields.style.display = showKb ? '' : 'none';
+					setBlockActive(groupFields, showGroup);
+					setBlockActive(kbFields, showKb);
 				}
 				typeSelect.addEventListener('change', toggle);
 				toggle();

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Event;
 use App\Models\EventTeam;
+use App\Models\KingBeachStanding;
 use App\Models\TournamentStage;
 use App\Models\EventTeamApplication;
 use App\Models\TournamentGroup;
@@ -224,19 +225,31 @@ class TournamentController extends Controller
             'advance_count'   => 'nullable|integer|min:1|max:8',
             'third_place_match' => 'nullable|boolean',
             'courts'          => 'nullable|string|max:500',
+            'kb_advance_count' => 'nullable|integer|min:1|max:4',
+            'kb_courts'        => 'nullable|string|max:500',
         ]);
 
         $sortOrder = ($event->tournamentStages()->max('sort_order') ?? 0) + 1;
+
+        // King of the Beach использует отдельные поля формы (kb_advance_count/kb_courts) —
+        // в форме одновременно присутствуют и общие groups-поля (скрытые), поэтому нельзя
+        // просто брать generic advance_count/courts, иначе они молча перезатрут значение
+        // (как было раньше — kb_advance_count вообще не читался и всегда падал в default=2).
+        $isKingBeach = $validated['type'] === TournamentStage::TYPE_KING_BEACH;
+
+        $courtsRaw = $isKingBeach ? ($validated['kb_courts'] ?? null) : ($validated['courts'] ?? null);
 
         $config = [
             'match_format'       => $validated['match_format'],
             'set_points'         => (int) $validated['set_points'],
             'deciding_set_points' => (int) $validated['deciding_set_points'],
             'groups_count'       => (int) ($validated['groups_count'] ?? 0),
-            'advance_count'      => (int) ($validated['advance_count'] ?? 2),
+            'advance_count'      => $isKingBeach
+                ? (int) ($validated['kb_advance_count'] ?? 2)
+                : (int) ($validated['advance_count'] ?? 2),
             'third_place_match'  => (bool) ($validated['third_place_match'] ?? false),
-            'courts'             => $validated['courts']
-                ? array_map('trim', explode(',', $validated['courts']))
+            'courts'             => $courtsRaw
+                ? array_values(array_filter(array_map('trim', explode(',', $courtsRaw))))
                 : [],
             'draw_mode'          => $request->input('draw_mode', 'random'),
             'round_number'       => 1,
@@ -485,6 +498,94 @@ class TournamentController extends Controller
         }
 
         return $this->redirectToSetup($event, 'Жеребьёвка проведена, матчи сгенерированы.', false, "stage_{$stage->id}");
+    }
+
+    /* ================================================================
+     *  King of the Beach — ручное/случайное распределение по группам
+     * ================================================================ */
+
+    /**
+     * Игроки события/тура, зарегистрированные индивидуально, но ещё
+     * не попавшие ни в одну группу данной king_beach стадии.
+     */
+    private function kingBeachUnassignedIds(Event $event, TournamentStage $stage): array
+    {
+        $assignedIds = KingBeachStanding::where('stage_id', $stage->id)->pluck('user_id');
+
+        return DB::table('event_registrations')
+            ->where('event_id', $event->id)
+            ->when($stage->occurrence_id, fn($q) => $q->where('occurrence_id', $stage->occurrence_id))
+            ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
+            ->whereNotNull('user_id')
+            ->distinct()
+            ->pluck('user_id')
+            ->diff($assignedIds)
+            ->map(fn($id) => (int) $id)
+            ->values()
+            ->toArray();
+    }
+
+    public function kingBeachCreateGroup(Request $request, Event $event): RedirectResponse
+    {
+        $this->authorizeOrganizer($request, $event);
+
+        $validated = $request->validate([
+            'stage_id'     => 'required|exists:tournament_stages,id',
+            'player_ids'   => 'required|array|size:4',
+            'player_ids.*' => 'integer|distinct|exists:users,id',
+            'court'        => 'nullable|string|max:100',
+        ]);
+
+        $stage = TournamentStage::where('id', $validated['stage_id'])
+            ->where('event_id', $event->id)
+            ->where('type', TournamentStage::TYPE_KING_BEACH)
+            ->firstOrFail();
+
+        $playerIds = array_map('intval', $validated['player_ids']);
+
+        $unassigned = $this->kingBeachUnassignedIds($event, $stage);
+        if (count(array_diff($playerIds, $unassigned)) > 0) {
+            return $this->redirectToSetup($event, 'Один из выбранных игроков уже распределён в другую группу или не зарегистрирован на этот тур.', true, "stage_{$stage->id}");
+        }
+
+        $courts = !empty($validated['court']) ? [$validated['court']] : null;
+
+        try {
+            $this->kingBeachService->createManualGroup($stage, $playerIds, $courts);
+        } catch (\InvalidArgumentException $e) {
+            return $this->redirectToSetup($event, $e->getMessage(), true, "stage_{$stage->id}");
+        }
+
+        return $this->redirectToSetup($event, 'Группа создана.', false, "stage_{$stage->id}");
+    }
+
+    public function kingBeachDistributeRandom(Request $request, Event $event): RedirectResponse
+    {
+        $this->authorizeOrganizer($request, $event);
+
+        $validated = $request->validate([
+            'stage_id' => 'required|exists:tournament_stages,id',
+        ]);
+
+        $stage = TournamentStage::where('id', $validated['stage_id'])
+            ->where('event_id', $event->id)
+            ->where('type', TournamentStage::TYPE_KING_BEACH)
+            ->firstOrFail();
+
+        $playerIds = $this->kingBeachUnassignedIds($event, $stage);
+
+        if (count($playerIds) < 4) {
+            return $this->redirectToSetup($event, 'Недостаточно нераспределённых игроков (минимум 4).', true, "stage_{$stage->id}");
+        }
+
+        $result = $this->kingBeachService->distributeIntoGroups($stage, $playerIds);
+
+        $message = 'Сформировано групп: ' . count($result['groups']) . '.';
+        if (!empty($result['leftover'])) {
+            $message .= ' Не хватило до полной группы (осталось нераспределённых): ' . count($result['leftover']) . '.';
+        }
+
+        return $this->redirectToSetup($event, $message, false, "stage_{$stage->id}");
     }
 
     /* ================================================================

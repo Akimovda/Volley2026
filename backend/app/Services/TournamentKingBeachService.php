@@ -32,6 +32,22 @@ class TournamentKingBeachService
      */
     public function createRound(TournamentStage $stage, array $playerIds): void
     {
+        $this->distributeIntoGroups($stage, $playerIds);
+    }
+
+    /**
+     * Разбивает переданных игроков на группы по 4 (случайно или по ELO — см.
+     * config.draw_mode стадии) и создаёт для каждой матчи+standings. Нумерация
+     * групп продолжается с уже существующих (можно вызывать повторно —
+     * например, "Распределить случайно" для тех, кто остался после ручного
+     * создания части групп). Игроки, которых не хватило на полную группу из 4,
+     * НЕ создают группу — возвращаются в 'leftover', чтобы вызывающий код мог
+     * сообщить об этом организатору (раньше остаток молча терялся).
+     *
+     * @return array{groups: array<TournamentGroup>, leftover: array<int>}
+     */
+    public function distributeIntoGroups(TournamentStage $stage, array $playerIds): array
+    {
         $drawMode = $stage->configValue('draw_mode', 'random');
 
         if ($drawMode === 'seeded') {
@@ -41,25 +57,65 @@ class TournamentKingBeachService
         }
 
         $chunks = array_chunk($playerIds, 4);
+        $courts = array_values(array_filter((array) $stage->configValue('courts', [])));
 
-        DB::transaction(function () use ($stage, $chunks) {
-            $stage->update(['status' => TournamentStage::STATUS_IN_PROGRESS]);
+        $createdGroups = [];
+        $leftover = [];
 
-            foreach ($chunks as $i => $groupPlayers) {
-                if (count($groupPlayers) < 4) {
+        DB::transaction(function () use ($stage, $chunks, $courts, &$createdGroups, &$leftover) {
+            if ($stage->isPending()) {
+                $stage->update(['status' => TournamentStage::STATUS_IN_PROGRESS]);
+            }
+
+            foreach ($chunks as $chunk) {
+                if (count($chunk) < 4) {
+                    $leftover = array_merge($leftover, $chunk);
                     continue;
                 }
 
-                $group = TournamentGroup::create([
-                    'stage_id'   => $stage->id,
-                    'name'       => 'Группа ' . chr(65 + $i),
-                    'sort_order' => $i + 1,
-                ]);
+                $groupIndex = $stage->groups()->count();
+                $groupCourts = !empty($courts) ? [$courts[$groupIndex % count($courts)]] : null;
 
-                $this->createGroupMatches($stage, $group, $groupPlayers);
-                $this->initPlayerStandings($stage, $group, $groupPlayers);
+                $createdGroups[] = $this->createOneGroup($stage, array_values($chunk), $groupCourts);
             }
         });
+
+        return ['groups' => $createdGroups, 'leftover' => array_values($leftover)];
+    }
+
+    /**
+     * Ручное создание ОДНОЙ группы ровно из 4 игроков (без авто-распределения остальных).
+     */
+    public function createManualGroup(TournamentStage $stage, array $playerIds, ?array $courts = null): TournamentGroup
+    {
+        if (count($playerIds) !== 4) {
+            throw new \InvalidArgumentException('Группа "Король пляжа" должна содержать ровно 4 игрока.');
+        }
+
+        return DB::transaction(function () use ($stage, $playerIds, $courts) {
+            if ($stage->isPending()) {
+                $stage->update(['status' => TournamentStage::STATUS_IN_PROGRESS]);
+            }
+
+            return $this->createOneGroup($stage, array_values($playerIds), $courts);
+        });
+    }
+
+    private function createOneGroup(TournamentStage $stage, array $playerIds, ?array $courts = null): TournamentGroup
+    {
+        $index = $stage->groups()->count();
+
+        $group = TournamentGroup::create([
+            'stage_id'   => $stage->id,
+            'name'       => 'Группа ' . chr(65 + $index),
+            'sort_order' => $index + 1,
+            'courts'     => $courts,
+        ]);
+
+        $this->createGroupMatches($stage, $group, $playerIds);
+        $this->initPlayerStandings($stage, $group, $playerIds);
+
+        return $group;
     }
 
     /**
