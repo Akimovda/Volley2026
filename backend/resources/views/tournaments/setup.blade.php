@@ -848,13 +848,28 @@ $tourNumber = $seasonData
 			@else
 			<div class="row">
 				@foreach($unassignedPlayers as $p)
+				@php
+					$pLevel = ($event->direction === 'beach' ? $p->beach_level : $p->classic_level);
+					$pLevel = !is_null($pLevel) && $pLevel !== '' ? (int) $pLevel : null;
+					$pGenderColor = $p->gender === 'f' ? '#e5395e' : '#2967BA';
+					$pGenderSign = $p->gender === 'f' ? '♀' : '♂';
+				@endphp
 				<div class="col-md-6 col-xl-3">
 					<div class="card" style="opacity:.9">
-						<div class="b-600">{{ trim(($p->last_name ?? '') . ' ' . ($p->first_name ?? '')) ?: ($p->name ?? '?') }}</div>
-						<div class="f-13" style="opacity:.7">
-							{{ $p->gender === 'f' ? '♀' : '♂' }} ·
-							{{ __('tournaments.setup_unassigned_level') }}:
-							{{ ($event->direction === 'beach' ? $p->beach_level : $p->classic_level) ?? '—' }}
+						<div style="display:flex;align-items:center;gap:10px">
+							<img src="{{ $p->profile_photo_url }}" alt="" loading="lazy" style="width:40px;height:40px;border-radius:50%;object-fit:cover;flex-shrink:0">
+							<div style="min-width:0">
+								<div class="b-600" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ trim(($p->last_name ?? '') . ' ' . ($p->first_name ?? '')) ?: ($p->name ?? '?') }}</div>
+								<div class="f-13" style="opacity:.85">
+									<span style="color:{{ $pGenderColor }};font-weight:700">{{ $pGenderSign }}</span> ·
+									{{ __('tournaments.setup_unassigned_level') }}:
+									@if($pLevel)
+									<span class="levelmark levelmark--event level-{{ $pLevel }}">{{ __('events.level_short_' . $pLevel) }}</span>
+									@else
+									<span class="levelmark levelmark--event level-na">!?</span>
+									@endif
+								</div>
+							</div>
 						</div>
 					</div>
 				</div>
@@ -984,8 +999,9 @@ $tourNumber = $seasonData
 			@if($isIndividualTournament)
 			{{-- Случайное распределение игроков по командам (только индивидуальная запись) --}}
 			@php
+				$remainingTeamsCount = max(0, ($event->tournament_teams_count ?? 0) - ($completeTeams->count() + $incompleteTeams->count()));
 				$distributeConfirmText = __('events.tournament_distribute_confirm', [
-					'n' => $event->tournament_teams_count ?? 0,
+					'n' => $remainingTeamsCount,
 					'p' => $unassignedPlayers->count(),
 				]);
 			@endphp

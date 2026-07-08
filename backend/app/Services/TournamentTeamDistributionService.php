@@ -18,14 +18,18 @@ class TournamentTeamDistributionService
     }
 
     /**
-     * Случайно распределяет индивидуально записавшихся игроков по командам.
+     * Случайно распределяет ещё НЕраспределённых индивидуально записавшихся игроков
+     * по оставшимся командным слотам — уже созданные вручную/ранее команды не трогает
+     * и не пересоздаёт, их игроки исключаются из выборки.
      *
      * Алгоритм:
-     *  1. Берём все активные регистрации, разбиваем по позициям.
+     *  1. Берём активные регистрации БЕЗ тех, кто уже состоит в какой-либо команде
+     *     этого события/тура, разбиваем по позициям.
      *  2. Команды из 2 человек (пляжные пары) — сначала смешанные М+Ж пары
      *     (пока хватает обоих полов), остаток одного пола — пары того же пола.
      *     Команды другого размера — просто перемешиваем и round-robin: игрок [i] → команда [i % N].
-     *  3. Создаём N EventTeam + EventTeamMember (первый игрок в паре/группе = капитан).
+     *  3. Создаём недостающие EventTeam + EventTeamMember (первый игрок в паре/группе = капитан),
+     *     N = tournament_teams_count минус уже существующие команды.
      *
      * Возвращает ['ok' => bool, 'message' => string, 'teams_count' => int]
      */
@@ -35,24 +39,31 @@ class TournamentTeamDistributionService
             return ['ok' => false, 'message' => __('events.tournament_distribute_not_individual')];
         }
 
-        $teamsCount = (int)($event->tournament_teams_count ?? 0);
-        if ($teamsCount < 2) {
+        $totalTeamsCount = (int)($event->tournament_teams_count ?? 0);
+        if ($totalTeamsCount < 2) {
             return ['ok' => false, 'message' => 'Не задано количество команд.'];
         }
 
-        // Проверяем: уже есть команды?
-        $existingTeams = EventTeam::where('event_id', $event->id)
+        $existingTeamsCount = EventTeam::where('event_id', $event->id)
             ->where(fn($q) => $q->where('occurrence_id', $occurrence->id)->orWhereNull('occurrence_id'))
-            ->exists();
+            ->count();
 
-        if ($existingTeams) {
+        $teamsCount = $totalTeamsCount - $existingTeamsCount;
+        if ($teamsCount < 1) {
             return ['ok' => false, 'message' => __('events.tournament_distribute_error_exists')];
         }
 
-        // Все активные регистрации
+        // Игроки, уже состоящие в какой-либо команде этого события/тура — не трогаем.
+        $assignedUserIds = EventTeamMember::whereHas(
+            'team',
+            fn($q) => $q->where('event_id', $event->id)->where('occurrence_id', $occurrence->id)
+        )->pluck('user_id');
+
+        // Активные регистрации, которые ещё не распределены по командам
         $registrations = EventRegistration::where('occurrence_id', $occurrence->id)
             ->whereNull('cancelled_at')
             ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
+            ->whereNotIn('user_id', $assignedUserIds)
             ->get();
 
         if ($registrations->isEmpty()) {
@@ -106,7 +117,9 @@ class TournamentTeamDistributionService
         $direction = $event->direction ?? 'classic';
         $teamKind  = ($direction === 'beach') ? 'beach_pair' : 'classic_team';
 
-        DB::transaction(function () use ($event, $occurrence, $teamsCount, $teamAssignments, $teamKind, $usersById, $teamSizeMin) {
+        $createdCount = 0;
+
+        DB::transaction(function () use ($event, $occurrence, $teamsCount, $teamAssignments, $teamKind, $usersById, $teamSizeMin, &$createdCount) {
             for ($i = 0; $i < $teamsCount; $i++) {
                 $members = array_values($teamAssignments[$i]);
                 if (empty($members)) {
@@ -146,13 +159,15 @@ class TournamentTeamDistributionService
                         'confirmed_at'        => now(),
                     ]);
                 }
+
+                $createdCount++;
             }
         });
 
         return [
             'ok'          => true,
             'message'     => __('events.tournament_distribute_success'),
-            'teams_count' => $teamsCount,
+            'teams_count' => $createdCount,
         ];
     }
 

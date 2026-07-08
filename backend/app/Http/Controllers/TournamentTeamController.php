@@ -136,9 +136,16 @@ class TournamentTeamController extends Controller
         ]);
 
         try {
-            $captainUser = !empty($data['captain_user_id'])
-                ? \App\Models\User::findOrFail($data['captain_user_id'])
-                : $request->user();
+            if (!empty($data['captain_user_id'])) {
+                $captainUser = \App\Models\User::findOrFail($data['captain_user_id']);
+            } elseif (($event->registration_mode ?? '') === 'tournament_individual' && !empty($data['member_user_ids'])) {
+                // Организатор отметил игроков чекбоксами, но капитана явно не выбрал —
+                // капитаном становится первый отмеченный игрок, а НЕ сам организатор
+                // (иначе организатор без указания капитана "съедал" одно место в команде).
+                $captainUser = \App\Models\User::findOrFail((int) $data['member_user_ids'][0]);
+            } else {
+                $captainUser = $request->user();
+            }
 
             $occurrence = !empty($data['occurrence_id'])
                 ? \App\Models\EventOccurrence::find((int) $data['occurrence_id'])
@@ -221,6 +228,18 @@ class TournamentTeamController extends Controller
             }
 
             $this->dispatchAnnounceRefresh($event, !empty($data['occurrence_id']) ? (int) $data['occurrence_id'] : null);
+
+            // Организатор/админ создаёт команду со страницы управления турниром —
+            // удобнее остаться там же, чтобы сразу создать следующую, а не прыгать
+            // на страницу только что созданной команды.
+            if ($isOrganizerOrAdmin) {
+                return redirect()
+                    ->route('tournament.setup', array_filter([
+                        'event'         => $event->id,
+                        'occurrence_id' => !empty($data['occurrence_id']) ? (int) $data['occurrence_id'] : null,
+                    ]))
+                    ->with('success', 'Команда создана ✅');
+            }
 
             return redirect()
                 ->route('tournamentTeams.show', [$event, $team])
@@ -485,7 +504,10 @@ class TournamentTeamController extends Controller
         $this->dispatchAnnounceRefresh($event, $occurrenceId);
 
         return redirect()
-            ->route('tournament.setup', $event)
+            ->route('tournament.setup', array_filter([
+                'event'         => $event->id,
+                'occurrence_id' => $occurrenceId,
+            ]))
             ->with('success', "Команда удалена.");
     }
 
