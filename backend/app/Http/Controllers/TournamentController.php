@@ -22,6 +22,7 @@ use App\Services\TournamentSwissService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use App\Services\PlayerMatchStatsService;
 use App\Models\MatchPlayerStats;
 use App\Models\MatchRallyEvent;
@@ -225,6 +226,7 @@ class TournamentController extends Controller
             'advance_count'   => 'nullable|integer|min:1|max:8',
             'third_place_match' => 'nullable|boolean',
             'courts'          => 'nullable|string|max:500',
+            'kb_group_size'   => ['nullable', 'integer', Rule::in(TournamentKingBeachService::GROUP_SIZES)],
         ]);
 
         $sortOrder = ($event->tournamentStages()->max('sort_order') ?? 0) + 1;
@@ -244,6 +246,7 @@ class TournamentController extends Controller
                 : [],
             'draw_mode'          => $request->input('draw_mode', 'random'),
             'round_number'       => 1,
+            'group_size'         => (int) ($validated['kb_group_size'] ?? 4),
         ];
 
         // occurrence_id из hidden field (если сезонный турнир)
@@ -522,7 +525,7 @@ class TournamentController extends Controller
 
         $validated = $request->validate([
             'stage_id'     => 'required|exists:tournament_stages,id',
-            'player_ids'   => 'required|array|size:4',
+            'player_ids'   => 'required|array',
             'player_ids.*' => 'integer|distinct|exists:users,id',
             'court'        => 'nullable|string|max:100',
         ]);
@@ -532,7 +535,12 @@ class TournamentController extends Controller
             ->where('type', TournamentStage::TYPE_KING_BEACH)
             ->firstOrFail();
 
+        $groupSize = (int) $stage->configValue('group_size', 4);
         $playerIds = array_map('intval', $validated['player_ids']);
+
+        if (count($playerIds) !== $groupSize) {
+            return $this->redirectToSetup($event, "Группа должна содержать ровно {$groupSize} игроков.", true, "stage_{$stage->id}");
+        }
 
         $unassigned = $this->kingBeachUnassignedIds($event, $stage);
         if (count(array_diff($playerIds, $unassigned)) > 0) {
@@ -564,9 +572,10 @@ class TournamentController extends Controller
             ->firstOrFail();
 
         $playerIds = $this->kingBeachUnassignedIds($event, $stage);
+        $groupSize = (int) $stage->configValue('group_size', 4);
 
-        if (count($playerIds) < 4) {
-            return $this->redirectToSetup($event, 'Недостаточно нераспределённых игроков (минимум 4).', true, "stage_{$stage->id}");
+        if (count($playerIds) < $groupSize) {
+            return $this->redirectToSetup($event, "Недостаточно нераспределённых игроков (минимум {$groupSize}).", true, "stage_{$stage->id}");
         }
 
         $result = $this->kingBeachService->distributeIntoGroups($stage, $playerIds);
@@ -582,7 +591,8 @@ class TournamentController extends Controller
     /**
      * Ручное распределение нескольких игроков сразу через одну таблицу:
      * assign[user_id] = 'произвольный ярлык группы' (например A, B, Hard...).
-     * Каждый непустой ярлык должен собрать РОВНО 4 игрока (для king_beach ротации).
+     * Каждый непустой ярлык должен собрать РОВНО group_size игроков (4 или 6 —
+     * см. configValue('group_size', 4) стадии).
      */
     public function kingBeachAssignManual(Request $request, Event $event): RedirectResponse
     {
@@ -600,6 +610,7 @@ class TournamentController extends Controller
             ->firstOrFail();
 
         $unassigned = $this->kingBeachUnassignedIds($event, $stage);
+        $groupSize = (int) $stage->configValue('group_size', 4);
 
         $buckets = [];
         foreach ($validated['assign'] as $userId => $label) {
@@ -617,11 +628,11 @@ class TournamentController extends Controller
             return $this->redirectToSetup($event, 'Не выбрано ни одного игрока для распределения.', true, "stage_{$stage->id}");
         }
 
-        $wrongCount = array_keys(array_filter($buckets, fn($ids) => count($ids) !== 4));
+        $wrongCount = array_keys(array_filter($buckets, fn($ids) => count($ids) !== $groupSize));
         if (!empty($wrongCount)) {
             return $this->redirectToSetup(
                 $event,
-                'В каждой группе должно быть ровно 4 игрока. Проверьте группы: ' . implode(', ', $wrongCount),
+                "В каждой группе должно быть ровно {$groupSize} игроков. Проверьте группы: " . implode(', ', $wrongCount),
                 true,
                 "stage_{$stage->id}"
             );

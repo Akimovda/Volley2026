@@ -14,16 +14,34 @@ use Illuminate\Support\Facades\DB;
 class TournamentKingBeachService
 {
     /**
-     * Ротации пар для 4 игроков [0,1,2,3]:
+     * Ротации пар для 4 игроков [0,1,2,3]: каждый раунд — 1 матч (2 пары):
      * Партия 1: [0+1] vs [2+3]
      * Партия 2: [0+2] vs [1+3]
      * Партия 3: [0+3] vs [1+2]
      */
-    private const ROTATIONS = [
-        1 => ['home' => [0, 1], 'away' => [2, 3]],
-        2 => ['home' => [0, 2], 'away' => [1, 3]],
-        3 => ['home' => [0, 3], 'away' => [1, 2]],
+    private const ROTATIONS_4 = [
+        ['home' => [0, 1], 'away' => [2, 3]],
+        ['home' => [0, 2], 'away' => [1, 3]],
+        ['home' => [0, 3], 'away' => [1, 2]],
     ];
+
+    /**
+     * Для 6 игроков [0..5]: 5 раундов партнёрств — 1-факторизация K6, каждая
+     * пара партнёров встречается ровно 1 раз за все 5 раундов. Внутри каждого
+     * раунда 3 непересекающиеся пары играют друг с другом round-robin —
+     * 3 матча на раунд (P0vP1, P0vP2, P1vP2), итого 5×3=15 матчей на группу.
+     * Каждый игрок сыграет 10 из 15 матчей (сидит "вне игры" только когда его
+     * пара не участвует в конкретном матче своего раунда).
+     */
+    private const PARTNER_ROUNDS_6 = [
+        [[0, 1], [2, 3], [4, 5]],
+        [[0, 2], [1, 4], [3, 5]],
+        [[0, 3], [1, 5], [2, 4]],
+        [[0, 4], [1, 3], [2, 5]],
+        [[0, 5], [1, 2], [3, 4]],
+    ];
+
+    public const GROUP_SIZES = [4, 6];
 
     /**
      * Создать раунд «Короля пляжа»:
@@ -36,19 +54,20 @@ class TournamentKingBeachService
     }
 
     /**
-     * Разбивает переданных игроков на группы по 4 (случайно или по ELO — см.
-     * config.draw_mode стадии) и создаёт для каждой матчи+standings. Нумерация
-     * групп продолжается с уже существующих (можно вызывать повторно —
-     * например, "Распределить случайно" для тех, кто остался после ручного
-     * создания части групп). Игроки, которых не хватило на полную группу из 4,
-     * НЕ создают группу — возвращаются в 'leftover', чтобы вызывающий код мог
-     * сообщить об этом организатору (раньше остаток молча терялся).
+     * Разбивает переданных игроков на группы по configValue('group_size', 4)
+     * (случайно или по ELO — см. config.draw_mode стадии) и создаёт для каждой
+     * матчи+standings. Нумерация групп продолжается с уже существующих (можно
+     * вызывать повторно — например, "Распределить случайно" для тех, кто остался
+     * после ручного создания части групп). Игроки, которых не хватило на полную
+     * группу, НЕ создают группу — возвращаются в 'leftover', чтобы вызывающий код
+     * мог сообщить об этом организатору (раньше остаток молча терялся).
      *
      * @return array{groups: array<TournamentGroup>, leftover: array<int>}
      */
     public function distributeIntoGroups(TournamentStage $stage, array $playerIds): array
     {
         $drawMode = $stage->configValue('draw_mode', 'random');
+        $groupSize = (int) $stage->configValue('group_size', 4);
 
         if ($drawMode === 'seeded') {
             $playerIds = $this->sortByElo($playerIds, $stage->event);
@@ -56,19 +75,19 @@ class TournamentKingBeachService
             shuffle($playerIds);
         }
 
-        $chunks = array_chunk($playerIds, 4);
+        $chunks = array_chunk($playerIds, $groupSize);
         $courts = array_values(array_filter((array) $stage->configValue('courts', [])));
 
         $createdGroups = [];
         $leftover = [];
 
-        DB::transaction(function () use ($stage, $chunks, $courts, &$createdGroups, &$leftover) {
+        DB::transaction(function () use ($stage, $chunks, $groupSize, $courts, &$createdGroups, &$leftover) {
             if ($stage->isPending()) {
                 $stage->update(['status' => TournamentStage::STATUS_IN_PROGRESS]);
             }
 
             foreach ($chunks as $chunk) {
-                if (count($chunk) < 4) {
+                if (count($chunk) < $groupSize) {
                     $leftover = array_merge($leftover, $chunk);
                     continue;
                 }
@@ -84,14 +103,17 @@ class TournamentKingBeachService
     }
 
     /**
-     * Ручное создание ОДНОЙ группы ровно из 4 игроков (без авто-распределения остальных).
-     * $name — если задан (например, из таблицы ручного распределения, где организатор
-     * сам вписал ярлык группы), используется вместо авто "Группа A/B/...".
+     * Ручное создание ОДНОЙ группы ровно из configValue('group_size', 4) игроков
+     * (без авто-распределения остальных). $name — если задан (например, из таблицы
+     * ручного распределения, где организатор сам вписал ярлык группы), используется
+     * вместо авто "Группа A/B/...".
      */
     public function createManualGroup(TournamentStage $stage, array $playerIds, ?array $courts = null, ?string $name = null): TournamentGroup
     {
-        if (count($playerIds) !== 4) {
-            throw new \InvalidArgumentException('Группа "Король пляжа" должна содержать ровно 4 игрока.');
+        $groupSize = (int) $stage->configValue('group_size', 4);
+
+        if (count($playerIds) !== $groupSize) {
+            throw new \InvalidArgumentException("Группа \"Король пляжа\" должна содержать ровно {$groupSize} игроков.");
         }
 
         return DB::transaction(function () use ($stage, $playerIds, $courts, $name) {
@@ -121,28 +143,55 @@ class TournamentKingBeachService
     }
 
     /**
-     * Создать 3 партии для группы из 4 игроков с ротацией пар.
+     * Создать партии для группы (4 или 6 игроков) с ротацией пар.
+     * Для 4 — 3 матча (ROTATIONS_4). Для 6 — 15 матчей (5 раундов
+     * партнёрств × 3 матча round-robin внутри раунда, см. PARTNER_ROUNDS_6).
      */
     public function createGroupMatches(TournamentStage $stage, TournamentGroup $group, array $playerIds): void
     {
         $matchNo = (int) ($stage->matches()->max('match_number') ?? 0);
+        $pairsList = $this->buildRotationSchedule(count($playerIds));
 
-        foreach (self::ROTATIONS as $rotation => $pairs) {
+        foreach ($pairsList as $pairs) {
             $matchNo++;
             TournamentMatch::create([
                 'stage_id'     => $stage->id,
                 'group_id'     => $group->id,
-                'round'        => $rotation,
+                'round'        => $matchNo,
                 'match_number' => $matchNo,
                 'status'       => TournamentMatch::STATUS_SCHEDULED,
                 'meta'         => [
                     'king_beach'  => true,
-                    'rotation'    => $rotation,
+                    'rotation'    => $matchNo,
                     'home_players' => array_values(array_map(fn($idx) => (int) $playerIds[$idx], $pairs['home'])),
                     'away_players' => array_values(array_map(fn($idx) => (int) $playerIds[$idx], $pairs['away'])),
                 ],
             ]);
         }
+    }
+
+    /**
+     * Список матчей (['home' => [idx,idx], 'away' => [idx,idx]]) по индексам
+     * игрока внутри группы (0-based), для поддерживаемого размера группы.
+     */
+    private function buildRotationSchedule(int $groupSize): array
+    {
+        if ($groupSize === 4) {
+            return self::ROTATIONS_4;
+        }
+
+        if ($groupSize === 6) {
+            $schedule = [];
+            foreach (self::PARTNER_ROUNDS_6 as $round) {
+                [$p0, $p1, $p2] = $round;
+                $schedule[] = ['home' => $p0, 'away' => $p1];
+                $schedule[] = ['home' => $p0, 'away' => $p2];
+                $schedule[] = ['home' => $p1, 'away' => $p2];
+            }
+            return $schedule;
+        }
+
+        throw new \InvalidArgumentException("Неподдерживаемый размер группы King of the Beach: {$groupSize}");
     }
 
     protected function initPlayerStandings(TournamentStage $stage, TournamentGroup $group, array $playerIds): void

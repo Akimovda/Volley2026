@@ -1164,7 +1164,17 @@ $tourNumber = $seasonData
 					{{-- King of the Beach: специфичные настройки --}}
 					<div class="mt-2" id="king_beach_fields" style="display:none">
 						<div class="row">
-							<div class="col-md-6">
+							<div class="col-md-4">
+								<div class="card">
+									<label>{{ __('tournaments.setup_stage_kb_group_size') }}</label>
+									<select name="kb_group_size" id="kb_group_size_select">
+										<option value="4">{{ __('tournaments.setup_stage_kb_group_size_4') }}</option>
+										<option value="6">{{ __('tournaments.setup_stage_kb_group_size_6') }}</option>
+									</select>
+									<p class="f-16">{{ __('tournaments.setup_stage_kb_group_size_hint') }}</p>
+								</div>
+							</div>
+							<div class="col-md-4">
 								<div class="card">
 									<label>{{ __('tournaments.setup_stage_kb_draw') }}</label>
 									<select name="draw_mode" id="kb_draw_mode_select">
@@ -1174,7 +1184,7 @@ $tourNumber = $seasonData
 									<p class="f-16">{{ __('tournaments.setup_stage_kb_draw_manual_hint') }}</p>
 								</div>
 							</div>
-							<div class="col-md-6">
+							<div class="col-md-4">
 								<div class="card">
 									<label>{{ __('tournaments.setup_stage_kb_players') }}</label>
 									<p class="f-16">{{ __('tournaments.setup_stage_kb_players_hint') }}</p>

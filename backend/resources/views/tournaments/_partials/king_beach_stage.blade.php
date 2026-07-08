@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\DB;
 
 $kbAdvanceCount = (int) $stage->configValue('advance_count', 2);
 $kbSetPoints    = $stage->setPoints();
+$kbGroupSize    = (int) $stage->configValue('group_size', 4);
 
 // Игроки, зарегистрированные на тур индивидуально, но ещё не попавшие
 // ни в одну группу ЭТОЙ king_beach стадии — для ручного/случайного распределения.
@@ -241,7 +242,7 @@ $kbHasSpawnedDivisions = $stage->event->tournamentStages()
 		@if($kbUnassignedPlayers->isEmpty())
 		<div class="alert alert-info">{{ __('tournaments.setup_kb_unassigned_empty') }}</div>
 		@else
-		<form method="POST" action="{{ route('tournament.kingBeach.createGroup', $stage->event_id) }}" class="kb-create-group-form" data-stage="{{ $stage->id }}">
+		<form method="POST" action="{{ route('tournament.kingBeach.createGroup', $stage->event_id) }}" class="kb-create-group-form" data-stage="{{ $stage->id }}" data-group-size="{{ $kbGroupSize }}">
 			@csrf
 			<input type="hidden" name="stage_id" value="{{ $stage->id }}">
 			<div class="row">
@@ -284,9 +285,9 @@ $kbHasSpawnedDivisions = $stage->event->tournamentStages()
 				</select>
 				@endif
 				<button type="submit" class="btn btn-secondary kb-create-group-submit">
-					{{ __('tournaments.setup_kb_btn_create_group') }}
+					{{ __('tournaments.setup_kb_btn_create_group', ['n' => $kbGroupSize]) }}
 				</button>
-				<span class="f-13 kb-selected-count" style="opacity:.7">{{ __('tournaments.setup_kb_selected_count', ['n' => 0]) }}</span>
+				<span class="f-13 kb-selected-count" style="opacity:.7">{{ __('tournaments.setup_kb_selected_count', ['n' => 0, 'total' => $kbGroupSize]) }}</span>
 			</div>
 		</form>
 
@@ -296,7 +297,7 @@ $kbHasSpawnedDivisions = $stage->event->tournamentStages()
 				<form method="POST" action="{{ route('tournament.kingBeach.assignManual', $stage->event_id) }}" class="mt-2">
 					@csrf
 					<input type="hidden" name="stage_id" value="{{ $stage->id }}">
-					<p class="f-13" style="opacity:.7">{{ __('tournaments.setup_kb_manual_table_hint') }}</p>
+					<p class="f-13" style="opacity:.7">{{ __('tournaments.setup_kb_manual_table_hint', ['n' => $kbGroupSize]) }}</p>
 					<div class="table-scrollable" style="max-width:640px">
 						<table class="table">
 							<thead>
@@ -390,8 +391,12 @@ $kbHasSpawnedDivisions = $stage->event->tournamentStages()
 (function() {
 	function updateSelectedCount(form) {
 		var count = form.querySelectorAll('.kb-player-cb:checked').length;
+		var total = parseInt(form.dataset.groupSize, 10) || 4;
 		var label = form.querySelector('.kb-selected-count');
-		if (label) label.textContent = @json(__('tournaments.setup_kb_selected_count', ['n' => '__N__'])).replace('__N__', count);
+		if (label) {
+			label.textContent = @json(__('tournaments.setup_kb_selected_count', ['n' => '__N__', 'total' => '__T__']))
+				.replace('__N__', count).replace('__T__', total);
+		}
 	}
 
 	document.addEventListener('change', function(e) {
@@ -404,10 +409,16 @@ $kbHasSpawnedDivisions = $stage->event->tournamentStages()
 	document.addEventListener('submit', function(e) {
 		var form = e.target.closest('.kb-create-group-form');
 		if (!form) return;
+		var total = parseInt(form.dataset.groupSize, 10) || 4;
 		var checked = form.querySelectorAll('.kb-player-cb:checked');
-		if (checked.length !== 4) {
+		if (checked.length !== total) {
 			e.preventDefault();
-			swal({ title: 'Ошибка', text: @json(__('tournaments.setup_kb_select_exactly_4')), icon: 'error', button: 'Понятно' });
+			swal({
+				title: 'Ошибка',
+				text: @json(__('tournaments.setup_kb_select_exactly_n', ['n' => '__T__'])).replace('__T__', total),
+				icon: 'error',
+				button: 'Понятно'
+			});
 		}
 	});
 
