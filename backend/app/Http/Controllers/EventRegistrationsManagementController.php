@@ -428,14 +428,16 @@ class EventRegistrationsManagementController extends Controller
             ->where('event_id', (int) $event->id)
             ->where('user_id', $userId)
             ->when($occurrenceId, fn($q) => $q->where('occurrence_id', $occurrenceId))
-            ->first(['id', 'cancelled_at', 'is_cancelled']);
+            ->first(['id', 'cancelled_at', 'is_cancelled', 'status']);
 
         if ($existing) {
-            $isCancelledReg = !empty($existing->cancelled_at) || !empty($existing->is_cancelled);
+            // Проверяем все три поля — если хоть одно говорит «отменена», считаем отменённой
+            $isCancelledReg = !empty($existing->cancelled_at) || !empty($existing->is_cancelled) || ($existing->status ?? null) === 'cancelled';
             if ($isCancelledReg) {
                 $upd = [
                     'cancelled_at' => null,
                     'is_cancelled' => false,
+                    'status' => 'confirmed',
                     'occurrence_id' => $occurrenceId ?: null,
                     'updated_at' => now(),
                 ];
