@@ -350,6 +350,25 @@ class EventRegistrationController extends Controller
                         throw new \Exception('Свободных мест на этой позиции больше нет.');
                     }
                 }
+            } elseif ((string) ($occurrence->event->direction ?? 'classic') === 'beach') {
+                // Defensive: реальная веб-форма для пляжки всегда шлёт position='player'
+                // (у пляжки есть event_role_slots.role=player, и она идёт в ветку выше через
+                // tryTakeSlot() под тем же advisory lock). Этот блок — страховка на случай,
+                // если какой-то другой вызывающий код (API/мобильное приложение) отправит
+                // join без position вообще. Живой COUNT под уже взятым advisory lock (roleKey=0
+                // для пустой позиции — та же формула, что и в waitlist autoBookNext).
+                $occurrence->event->loadMissing('gameSettings');
+                $maxPlayers = (int) ($occurrence->event->gameSettings?->max_players ?? 0);
+                if ($maxPlayers > 0) {
+                    $registered = \DB::table('event_registrations')
+                        ->where('occurrence_id', $occurrence->id)
+                        ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
+                        ->whereRaw("(status IS NULL OR status != 'cancelled')")
+                        ->count();
+                    if ($registered >= $maxPlayers) {
+                        throw new \Exception('Свободных мест на этой позиции больше нет.');
+                    }
+                }
             }
 
             $created = true;
