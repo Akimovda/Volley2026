@@ -692,8 +692,20 @@ final class NotificationDeliverySender
             return true;
         }
 
+        // VK возвращает числовой error_code, а не текстовое описание — сигнатуры-подстроки
+        // здесь не работают. Коды из документации VK API: 7 (нет прав), 15 (доступ запрещён),
+        // 902 (нельзя отправить сообщение этому пользователю) — постоянные. Остальные
+        // (6 — rate limit, 10 — внутренняя ошибка и т.п.) считаем транзиентными по умолчанию.
+        if (str_contains($error, 'VK API error') && preg_match('/"error_code":\s*(\d+)/', $error, $m) === 1) {
+            $vkPermanentCodes = [7, 15, 902];
+            if (in_array((int) $m[1], $vkPermanentCodes, true)) {
+                return false;
+            }
+        }
+
         $permanentSignatures = [
-            'chat not found',
+            'chat not found',  // Telegram: "Bad Request: chat not found"
+            'chat.not.found',  // MAX: {"code":"chat.not.found",...} — формат с точками, не текст
             "bot can't initiate conversation",
             'user is deactivated',
             'bot was blocked by the user',
