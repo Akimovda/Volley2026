@@ -156,6 +156,10 @@ return [
         'reserve'  => 'Запасной игрок',
     ],
 
+    'gender_quota_position_full' => 'На позиции «:position» уже занято :count из :max мест для :gender.',
+    'gender_women' => 'женщин',
+    'gender_men' => 'мужчин',
+
     // ===== events/show/tournament.blade.php =====
     'show_tournament_results_btn' => '📊 Таблицы и результаты турнира',
 

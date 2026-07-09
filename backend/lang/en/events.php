@@ -155,6 +155,10 @@ return [
         'reserve'  => 'Reserve',
     ],
 
+    'gender_quota_position_full' => 'Position ":position" already has :count of :max slots filled for :gender.',
+    'gender_women' => 'women',
+    'gender_men' => 'men',
+
     // ===== events/show/tournament.blade.php =====
     'show_tournament_results_btn' => '📊 Tournament tables and results',
 

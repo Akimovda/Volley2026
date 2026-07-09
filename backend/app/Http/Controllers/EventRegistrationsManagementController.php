@@ -424,6 +424,14 @@ class EventRegistrationsManagementController extends Controller
             }
         }
 
+        // Гендерная квота (only_male/only_female/mixed_5050/mixed_limited) — независимо от лимита слотов
+        if ($pos !== '' && $occurrenceId) {
+            $genderError = $this->checkGenderQuota($userId, $occurrenceId);
+            if ($genderError) {
+                return back()->with('error', $genderError);
+            }
+        }
+
         $existing = DB::table('event_registrations')
             ->where('event_id', (int) $event->id)
             ->where('user_id', $userId)
@@ -594,7 +602,7 @@ class EventRegistrationsManagementController extends Controller
         $row = DB::table('event_registrations')
             ->where('id', $registration)
             ->where('event_id', (int) $event->id)
-            ->first(['id', 'position', 'occurrence_id']);
+            ->first(['id', 'position', 'occurrence_id', 'user_id']);
 
         if (!$row) {
             return back()->with('error', 'Регистрация не найдена.');
@@ -621,6 +629,14 @@ class EventRegistrationsManagementController extends Controller
                     $lbl = $updPositions[$newPos] ?? $newPos;
                     return back()->with('error', "Позиция «{$lbl}» заполнена ({$taken}/{$maxForPos}).");
                 }
+            }
+        }
+
+        // Гендерная квота (only_male/only_female/mixed_5050/mixed_limited) — независимо от лимита слотов
+        if ($newPos !== '' && $newPos !== $currentPos && $occId) {
+            $genderError = $this->checkGenderQuota((int) $row->user_id, $occId, $registration);
+            if ($genderError) {
+                return back()->with('error', $genderError);
             }
         }
 
@@ -714,6 +730,13 @@ class EventRegistrationsManagementController extends Controller
                             }
                         }
                     }
+
+                    // Гендерная квота (only_male/only_female/mixed_5050/mixed_limited) — независимо от направления
+                    $genderError = $this->checkGenderQuota((int) $row->user_id, $occId, $registration);
+                    if ($genderError) {
+                        return back()->with('error', $genderError);
+                    }
+
                     $newPosition = $requestedPos;
                 }
             }
@@ -1188,6 +1211,25 @@ class EventRegistrationsManagementController extends Controller
         }
 
         return [$tz, $startsLocal, $endsLocal, $registrations, $location];
+    }
+
+    /**
+     * Гендерная квота (only_male/only_female/mixed_5050/mixed_limited) — переиспользует
+     * EventRegistrationGuard::checkGenderQuotaForUser(), не дублируя логику.
+     * Возвращает текст ошибки, либо null если позиция разрешена.
+     */
+    private function checkGenderQuota(int $userId, int $occurrenceId, ?int $excludeRegistrationId = null): ?string
+    {
+        $user       = User::find($userId);
+        $occurrence = \App\Models\EventOccurrence::find($occurrenceId);
+        if (!$user || !$occurrence) {
+            return null;
+        }
+
+        $genderResult = app(\App\Services\EventRegistrationGuard::class)
+            ->checkGenderQuotaForUser($user, $occurrence, $excludeRegistrationId);
+
+        return $genderResult->errors[0] ?? null;
     }
 
     private function resolvePositions(string $direction, string $subtype, string $liberoMode): array
