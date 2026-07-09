@@ -9,7 +9,12 @@ use Illuminate\Support\Facades\Log;
 
 final class NotificationDeliverySender
 {
-    public function sendById(int $deliveryId): void
+    /**
+     * @param bool $isRetry true — вызов из notifications:retry-failed (инкрементит attempts).
+     *                      false — исходная попытка из SendNotificationDeliveryJob
+     *                      (attempts не трогаем — это ещё не "повтор").
+     */
+    public function sendById(int $deliveryId, bool $isRetry = false): void
     {
         $delivery = DB::table('notification_deliveries')
             ->where('id', $deliveryId)
@@ -27,7 +32,7 @@ final class NotificationDeliverySender
         $user = User::query()->find((int) $delivery->user_id);
 
         if (!$user) {
-            $this->markFailed($deliveryId, 'Пользователь не найден.');
+            $this->markFailed($deliveryId, 'Пользователь не найден.', $isRetry);
             return;
         }
 
@@ -63,9 +68,9 @@ final class NotificationDeliverySender
                 return;
             }
 
-            $this->markFailed($deliveryId, 'Неизвестный канал доставки.');
+            $this->markFailed($deliveryId, 'Неизвестный канал доставки.', $isRetry);
         } catch (\Throwable $e) {
-            $this->markFailed($deliveryId, $e->getMessage());
+            $this->markFailed($deliveryId, $e->getMessage(), $isRetry);
         }
     }
 
@@ -104,8 +109,12 @@ final class NotificationDeliverySender
 
     private function sendTelegram(User $user, array $payload): void
     {
-        if (empty($user->telegram_id)) {
-            throw new \RuntimeException('У пользователя нет telegram_id.');
+        // telegram_notify_chat_id — реальный chat_id личного диалога с ботом, появляется
+        // только после /start notify_<token>. telegram_id (OAuth-логин) НЕ годится как
+        // chat_id — Telegram не разрешает боту первым писать пользователю, который
+        // никогда не открывал с ним чат: "chat not found"/"bot can't initiate conversation".
+        if (empty($user->telegram_notify_chat_id)) {
+            throw new \RuntimeException('У пользователя не подключены Telegram-уведомления (telegram_notify_chat_id пуст).');
         }
 
         $token = (string) config('services.telegram.bot_token');
@@ -133,7 +142,7 @@ final class NotificationDeliverySender
             $resp = Http::timeout(20)->post(
                 "https://api.telegram.org/bot{$token}/sendPhoto",
                 array_filter([
-                    'chat_id'      => (string) $user->telegram_id,
+                    'chat_id'      => (string) $user->telegram_notify_chat_id,
                     'photo'        => $rich['image_url'],
                     'caption'      => $text,
                     'parse_mode'   => $this->telegramParseMode($rich['format']),
@@ -156,7 +165,7 @@ final class NotificationDeliverySender
         $resp = Http::timeout(20)->post(
             "https://api.telegram.org/bot{$token}/sendMessage",
             array_filter([
-                'chat_id'                  => (string) $user->telegram_id,
+                'chat_id'                  => (string) $user->telegram_notify_chat_id,
                 'text'                     => $text,
                 'parse_mode'               => $this->telegramParseMode($rich['format']),
                 'disable_web_page_preview' => false,
@@ -611,26 +620,125 @@ final class NotificationDeliverySender
         DB::table('notification_deliveries')
             ->where('id', $deliveryId)
             ->update([
-                'status'     => 'sent',
-                'sent_at'    => now(),
-                'error'      => null,
-                'updated_at' => now(),
+                'status'        => 'sent',
+                'sent_at'       => now(),
+                'error'         => null,
+                'next_retry_at' => null,
+                'updated_at'    => now(),
             ]);
     }
 
-    private function markFailed(int $deliveryId, string $error): void
+    /**
+     * @param bool $isRetry true — эта попытка уже была повтором (из notifications:retry-failed),
+     *                       инкрементим attempts. false — исходная попытка, attempts не трогаем
+     *                       (иначе "attempts=1" был бы уже на первой же неудаче, до всякого ретрая).
+     */
+    private function markFailed(int $deliveryId, string $error, bool $isRetry = false): void
     {
+        $error = mb_substr($error, 0, 4000);
+        $retryable = $this->classifyRetryable($error);
+
+        $attempts = 0;
+        if ($isRetry) {
+            $attempts = 1 + (int) DB::table('notification_deliveries')->where('id', $deliveryId)->value('attempts');
+        }
+
+        // Backoff по количеству УЖЕ сделанных повторов: 0→+1мин, 1→+5мин, 2→+30мин.
+        // На attempts=3 (третий повтор тоже упал) дальше не планируем — исчерпано.
+        $backoffMinutes = [0 => 1, 1 => 5, 2 => 30][$attempts] ?? null;
+        $nextRetryAt = ($retryable && $backoffMinutes !== null) ? now()->addMinutes($backoffMinutes) : null;
+
         DB::table('notification_deliveries')
             ->where('id', $deliveryId)
             ->update([
-                'status'     => 'failed',
-                'error'      => mb_substr($error, 0, 4000),
-                'updated_at' => now(),
+                'status'        => 'failed',
+                'error'         => $error,
+                'is_retryable'  => $retryable,
+                'attempts'      => $attempts,
+                'next_retry_at' => $nextRetryAt,
+                'updated_at'    => now(),
             ]);
 
         Log::warning('Notification delivery failed', [
             'delivery_id' => $deliveryId,
             'error'       => $error,
+            'retryable'   => $retryable,
+            'attempts'    => $attempts,
+        ]);
+
+        if ($retryable && $backoffMinutes === null) {
+            Log::warning('Notification delivery retries exhausted', [
+                'delivery_id' => $deliveryId,
+                'attempts'    => $attempts,
+            ]);
+        }
+
+        if (!$retryable) {
+            $this->deactivateChannelForDelivery($deliveryId);
+        }
+    }
+
+    /**
+     * Различает транзиентные (сеть — ответ от API не получен вообще) и постоянные
+     * (конкретный отказ API: бот заблокирован, чат не существует, аккаунт удалён)
+     * ошибки. Транзиентные ретраим, постоянные — нет (жечь лимиты API бессмысленно).
+     * Неизвестное — считаем транзиентным (безопаснее дать пару попыток, чем
+     * молча похоронить нераспознанную ошибку).
+     */
+    private function classifyRetryable(string $error): bool
+    {
+        // cURL error N — сбой на уровне сети/соединения, ответ от API не получен вообще
+        if (preg_match('/^cURL error \d+/', $error) === 1) {
+            return true;
+        }
+
+        $permanentSignatures = [
+            'chat not found',
+            "bot can't initiate conversation",
+            'user is deactivated',
+            'bot was blocked by the user',
+            'chat.denied',
+            'dialog.suspended',
+        ];
+
+        foreach ($permanentSignatures as $signature) {
+            if (stripos($error, $signature) !== false) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Постоянная ошибка канала — дальнейшие попытки для этого пользователя
+     * гарантированно провалятся. Выключаем канал флагом (НЕ трогая сам
+     * telegram_id/vk_notify_user_id — они остаются рабочими идентификаторами,
+     * бот может быть разблокирован пользователем в любой момент).
+     */
+    private function deactivateChannelForDelivery(int $deliveryId): void
+    {
+        $delivery = DB::table('notification_deliveries')->where('id', $deliveryId)->first(['channel', 'user_id']);
+        if (!$delivery || !$delivery->user_id) {
+            return;
+        }
+
+        $column = match ((string) $delivery->channel) {
+            'telegram' => 'telegram_notifications_enabled',
+            'vk'       => 'vk_notifications_enabled',
+            'max'      => 'max_notifications_enabled',
+            default    => null,
+        };
+
+        if ($column === null) {
+            return;
+        }
+
+        DB::table('users')->where('id', (int) $delivery->user_id)->update([$column => false]);
+
+        Log::warning('Notification channel deactivated after permanent failure', [
+            'user_id' => (int) $delivery->user_id,
+            'channel' => $delivery->channel,
         ]);
     }
 }

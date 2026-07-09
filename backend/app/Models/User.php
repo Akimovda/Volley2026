@@ -89,6 +89,9 @@
             'notify_player_registrations' => 'boolean',
             'is_hidden'                   => 'boolean',
             'is_test'                     => 'boolean',
+            'max_notifications_enabled'      => 'boolean',
+            'telegram_notifications_enabled' => 'boolean',
+            'vk_notifications_enabled'       => 'boolean',
             'password'                    => 'hashed',
 			];
 		}
