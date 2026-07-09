@@ -104,8 +104,12 @@ final class NotificationDeliverySender
 
     private function sendTelegram(User $user, array $payload): void
     {
-        if (empty($user->telegram_id)) {
-            throw new \RuntimeException('У пользователя нет telegram_id.');
+        // telegram_notify_chat_id — реальный chat_id личного диалога с ботом, появляется
+        // только после /start notify_<token>. telegram_id (OAuth-логин) НЕ годится как
+        // chat_id — Telegram не разрешает боту первым писать пользователю, который
+        // никогда не открывал с ним чат: "chat not found"/"bot can't initiate conversation".
+        if (empty($user->telegram_notify_chat_id)) {
+            throw new \RuntimeException('У пользователя не подключены Telegram-уведомления (telegram_notify_chat_id пуст).');
         }
 
         $token = (string) config('services.telegram.bot_token');
@@ -133,7 +137,7 @@ final class NotificationDeliverySender
             $resp = Http::timeout(20)->post(
                 "https://api.telegram.org/bot{$token}/sendPhoto",
                 array_filter([
-                    'chat_id'      => (string) $user->telegram_id,
+                    'chat_id'      => (string) $user->telegram_notify_chat_id,
                     'photo'        => $rich['image_url'],
                     'caption'      => $text,
                     'parse_mode'   => $this->telegramParseMode($rich['format']),
@@ -156,7 +160,7 @@ final class NotificationDeliverySender
         $resp = Http::timeout(20)->post(
             "https://api.telegram.org/bot{$token}/sendMessage",
             array_filter([
-                'chat_id'                  => (string) $user->telegram_id,
+                'chat_id'                  => (string) $user->telegram_notify_chat_id,
                 'text'                     => $text,
                 'parse_mode'               => $this->telegramParseMode($rich['format']),
                 'disable_web_page_preview' => false,

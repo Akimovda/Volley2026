@@ -856,7 +856,11 @@ final class UserNotificationService
         $result = [];
 
         foreach ($channels as $channel) {
-            if ($channel === 'telegram' && empty($user->telegram_id)) {
+            // telegram_notify_chat_id — сохраняется только после /start notify_<token> у бота,
+            // а не telegram_id (OAuth-логин). Раньше гейт проверял telegram_id — бот пытался
+            // писать первым тем, кто никогда не открывал с ним чат, Telegram отвечал
+            // "chat not found"/"bot can't initiate conversation" (баг, не отказ канала).
+            if ($channel === 'telegram' && empty($user->telegram_notify_chat_id)) {
                 continue;
             }
             // vk_notify_user_id — сохраняется при привязке VK-бота, а не vk_id (OAuth)
