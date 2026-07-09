@@ -672,6 +672,10 @@ final class NotificationDeliverySender
                 'attempts'    => $attempts,
             ]);
         }
+
+        if (!$retryable) {
+            $this->deactivateChannelForDelivery($deliveryId);
+        }
     }
 
     /**
@@ -704,5 +708,37 @@ final class NotificationDeliverySender
         }
 
         return true;
+    }
+
+    /**
+     * Постоянная ошибка канала — дальнейшие попытки для этого пользователя
+     * гарантированно провалятся. Выключаем канал флагом (НЕ трогая сам
+     * telegram_id/vk_notify_user_id — они остаются рабочими идентификаторами,
+     * бот может быть разблокирован пользователем в любой момент).
+     */
+    private function deactivateChannelForDelivery(int $deliveryId): void
+    {
+        $delivery = DB::table('notification_deliveries')->where('id', $deliveryId)->first(['channel', 'user_id']);
+        if (!$delivery || !$delivery->user_id) {
+            return;
+        }
+
+        $column = match ((string) $delivery->channel) {
+            'telegram' => 'telegram_notifications_enabled',
+            'vk'       => 'vk_notifications_enabled',
+            'max'      => 'max_notifications_enabled',
+            default    => null,
+        };
+
+        if ($column === null) {
+            return;
+        }
+
+        DB::table('users')->where('id', (int) $delivery->user_id)->update([$column => false]);
+
+        Log::warning('Notification channel deactivated after permanent failure', [
+            'user_id' => (int) $delivery->user_id,
+            'channel' => $delivery->channel,
+        ]);
     }
 }
