@@ -59,6 +59,21 @@ class EventRoleSlotService
     }
 
     /**
+     * Живой COUNT активных регистраций на роль в рамках конкретной occurrence.
+     * Единственный источник истины — event_role_slots.taken_slots не occurrence-scoped
+     * (один счётчик на всё повторяющееся событие) и структурно не может быть верным.
+     */
+    private function countActive(int $occurrenceId, string $role): int
+    {
+        return \DB::table('event_registrations')
+            ->where('occurrence_id', $occurrenceId)
+            ->where('position', $role)
+            ->whereNull('cancelled_at')
+            ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
+            ->count();
+    }
+
+    /**
      * Try to take slot (atomic).
      * Uses actual registration count per occurrence — not the stale taken_slots counter.
      * Caller must hold pg_advisory_xact_lock(occurrence_id, roleKey) before calling.
@@ -74,12 +89,7 @@ class EventRoleSlotService
             return false;
         }
 
-        $taken = \DB::table('event_registrations')
-            ->where('occurrence_id', $occurrenceId)
-            ->where('position', $role)
-            ->whereNull('cancelled_at')
-            ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
-            ->count();
+        $taken = $this->countActive($occurrenceId, $role);
 
         if ($taken >= $slot->max_slots) {
             return false;
@@ -93,6 +103,35 @@ class EventRoleSlotService
 
         $this->clear($event);
         return true;
+    }
+
+    /**
+     * Предикат без побочных эффектов: есть ли живое свободное место на роль
+     * прямо сейчас, для конкретной occurrence. Не пишет в БД, не меняет кеш.
+     * Используется для eager-проверок (join(), ручные действия организатора
+     * в EventWaitlistManagementController) — раньше эти места читали
+     * event_role_slots.taken_slots напрямую, что стабильно давало неверный
+     * результат для повторяющихся событий (счётчик общий на все occurrences).
+     */
+    public function hasFreeSlot(int $occurrenceId, string $role): bool
+    {
+        $eventId = \DB::table('event_occurrences')
+            ->where('id', $occurrenceId)
+            ->value('event_id');
+
+        if (!$eventId) {
+            return false;
+        }
+
+        $slot = EventRoleSlot::where('event_id', $eventId)
+            ->where('role', $role)
+            ->first();
+
+        if (!$slot) {
+            return false;
+        }
+
+        return $this->countActive($occurrenceId, $role) < $slot->max_slots;
     }
 
     /**

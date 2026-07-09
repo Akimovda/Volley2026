@@ -72,11 +72,7 @@ class EventWaitlistManagementController extends Controller
         if ($occurrence) {
             foreach ($positions as $pos) {
                 if ($pos === 'reserve') continue;
-                $slot = DB::table('event_role_slots')
-                    ->where('event_id', $event->id)
-                    ->where('role', $pos)
-                    ->first();
-                if ($slot && ($slot->max_slots - $slot->taken_slots) > 0) {
+                if (app(\App\Services\EventRoleSlotService::class)->hasFreeSlot($occurrence->id, $pos)) {
                     app(WaitlistService::class)->autoBookNext($occurrence, $pos);
                 }
             }
@@ -111,11 +107,7 @@ class EventWaitlistManagementController extends Controller
                         $waitlist->autoBookNext($occurrence, 'reserve');
                     }
                 } else {
-                    $slot = DB::table('event_role_slots')
-                        ->where('event_id', $event->id)
-                        ->where('role', $pos)
-                        ->first();
-                    if ($slot && ($slot->max_slots - $slot->taken_slots) > 0) {
+                    if (app(\App\Services\EventRoleSlotService::class)->hasFreeSlot($occurrence->id, $pos)) {
                         $waitlist->autoBookNext($occurrence, $pos);
                     }
                 }
