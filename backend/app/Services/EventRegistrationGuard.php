@@ -863,14 +863,10 @@
 
 			// Гендерная политика — нужна чтобы autoBookNext не записал неподходящий пол
 			if ($user && empty($result->errors)) {
-				$settings   = $event->gameSettings;
-				$maxPlayers = (int) ($settings?->max_players ?? 0);
-				$registrations = \App\Models\EventRegistration::with('user')
-					->where('occurrence_id', $occurrence->id)
-					->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
-					->whereRaw("(status IS NULL OR status != 'cancelled')")
-					->get();
-				$this->applyGenderPolicy($user, $settings, $registrations, $maxPlayers, $result);
+				$genderResult = $this->checkGenderQuotaForUser($user, $occurrence);
+				foreach ($genderResult->errors as $genderError) {
+					$result->errors[] = $genderError;
+				}
 			}
 
 			// checkAuthAndWindow использует $result->errors[] = ... (без addError),
@@ -882,7 +878,48 @@
 
 			return $result;
 		}
-		
+
+		/**
+		 * Проверяет гендерную квоту (only_male/only_female/mixed_5050/mixed_limited)
+		 * для конкретного пользователя без остальных проверок checkEligibility().
+		 * Используется при ручном назначении/смене позиции организатором
+		 * (EventRegistrationsManagementController), чтобы не дублировать
+		 * логику applyGenderPolicy().
+		 *
+		 * $excludeRegistrationId — исключить эту регистрацию из подсчёта уже
+		 * занятых мест (например, саму перемещаемую запись).
+		 */
+		public function checkGenderQuotaForUser(
+			User $user,
+			EventOccurrence $occurrence,
+			?int $excludeRegistrationId = null
+		): GuardResult {
+			$result = GuardResult::allow();
+			$event  = $occurrence->event;
+
+			if (!$event) {
+				return $result;
+			}
+
+			$settings   = $event->gameSettings;
+			$maxPlayers = (int) ($settings?->max_players ?? 0);
+
+			$query = \App\Models\EventRegistration::with('user')
+				->where('occurrence_id', $occurrence->id)
+				->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
+				->whereRaw("(status IS NULL OR status != 'cancelled')");
+
+			if ($excludeRegistrationId) {
+				$query->where('id', '!=', $excludeRegistrationId);
+			}
+
+			$registrations = $query->get();
+
+			$this->applyGenderPolicy($user, $settings, $registrations, $maxPlayers, $result);
+
+			return $result;
+		}
+
 		/*
 			|--------------------------------------------------------------------------
 			| LEVEL POLICY
@@ -1088,11 +1125,25 @@
 					}
 					
 					if ($count >= $limit) {
-						
+
 						$genderBlocked = true;
-						
-						$result->errors[] = 'Все места для вашего пола уже заняты.';
-						
+
+						$posLabels = array_filter(array_map(
+							fn($p) => __('events.positions.' . $p),
+							$positions
+						));
+
+						if (!empty($posLabels)) {
+							$result->errors[] = __('events.gender_quota_position_full', [
+								'position' => implode(', ', $posLabels),
+								'count'    => $count,
+								'max'      => $limit,
+								'gender'   => $targetGender === 'f' ? __('events.gender_women') : __('events.gender_men'),
+							]);
+						} else {
+							$result->errors[] = 'Все места для вашего пола уже заняты.';
+						}
+
 					}
 				}
 			}

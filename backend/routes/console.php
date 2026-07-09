@@ -77,6 +77,14 @@ Schedule::command('waitlist:process-gender-windows')
     ->withoutOverlapping()
     ->runInBackground();
 
+// Уборка устаревшего листа ожидания (ежедневно в 04:15):
+// удаляет occurrence_waitlist для occurrences, прошедших более N дней назад
+// (config('waitlist.cleanup_expired_days'), по умолчанию 7 — запас на случай
+// разбора спорных ситуаций по прошедшему туру).
+Schedule::command('waitlist:cleanup-expired')
+    ->dailyAt('04:15')
+    ->withoutOverlapping();
+
 // Автоотклонение неполных заявок команд (каждые 30 минут):
 // находит EventTeamApplication со статусом 'incomplete' у которых
 // дедлайн ближайшего occurrence (registration_ends_at) уже наступил.
