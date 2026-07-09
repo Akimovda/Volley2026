@@ -92,11 +92,7 @@ class WaitlistService
             // запускаем авто-бук сразу (onSpotFreed не сработает если место не освобождалось)
             foreach ($positions as $pos) {
                 if ($pos === 'reserve') continue;
-                $slot = \DB::table('event_role_slots')
-                    ->where('event_id', $occurrence->event_id)
-                    ->where('role', $pos)
-                    ->first();
-                if ($slot && ($slot->max_slots - $slot->taken_slots) > 0) {
+                if (app(EventRoleSlotService::class)->hasFreeSlot($occurrence->id, $pos)) {
                     $this->autoBookNext($occurrence, $pos);
                 }
             }
