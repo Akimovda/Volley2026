@@ -430,6 +430,7 @@
                         @php
                             $ts = $event->tournamentSetting;
                             $isBeach = ($event->direction ?? 'classic') === 'beach';
+                            $isKingBeachEdit = ($event->registration_mode ?? '') === 'king_beach';
                             $tournamentSchemes = $isBeach
                                 ? ['2x2' => '2×2', '3x3' => '3×3', '4x4' => '4×4']
                                 : ['4x4' => '4×4', '4x2' => '4×2', '5x1' => '5×1 ' . __('events.libero_without'), '5x1_libero' => '5×1 ' . __('events.libero_word')];
@@ -446,6 +447,7 @@
                             </div>
                         </div>
 
+                        @unless($isKingBeachEdit)
                         <div class="col-md-3">
                             <div class="card" style="overflow:visible">
                                 <label>{{ __('events.team_n') }}</label>
@@ -469,6 +471,33 @@
                                     value="{{ old('tournament_reserve_players_max', $ts?->reserve_players_max ?? 0) }}">
                             </div>
                         </div>
+                        @else
+                        <div class="col-md-3">
+                            <div class="card" style="overflow:visible">
+                                <label>{{ __('events.king_beach_min_players_label') }}</label>
+                                <input type="number" name="king_beach_min_players" id="mgmt_king_beach_min_players" min="4" max="200"
+                                    value="{{ old('king_beach_min_players', $event->gameSettings?->min_players ?? 8) }}">
+                                @error('king_beach_min_players')
+                                <div class="text-xs text-red-600 mt-1">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="card" style="overflow:visible">
+                                <label>{{ __('events.king_beach_max_players_label') }}</label>
+                                <input type="number" name="king_beach_max_players" id="mgmt_king_beach_max_players" min="4" max="200"
+                                    value="{{ old('king_beach_max_players', $event->gameSettings?->max_players ?? 8) }}">
+                                @error('king_beach_max_players')
+                                <div class="text-xs text-red-600 mt-1">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="text-muted small">{{ __('events.king_beach_edit_players_hint') }}</div>
+                        </div>
+                        @endunless
 
                         <div class="col-md-4">
                             <div class="card" style="overflow:visible">

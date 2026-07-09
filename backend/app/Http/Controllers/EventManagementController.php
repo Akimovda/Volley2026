@@ -947,6 +947,8 @@ if ($role === 'admin') {
             'tournament_auto_submit_when_ready'   => ['sometimes', 'boolean'],
             'tournament_allow_incomplete_application' => ['sometimes', 'boolean'],
             'tournament_individual_reg'           => ['sometimes', 'boolean'],
+            'king_beach_min_players'              => ['nullable', 'integer', 'min:4', 'max:200'],
+            'king_beach_max_players'              => ['nullable', 'integer', 'min:4', 'max:200'],
             'timeline_color' => ['nullable', 'regex:/^#[0-9A-Fa-f]{6}$/'],
         ]);
 
@@ -969,7 +971,70 @@ if ($role === 'admin') {
             }
         }
 
-        DB::transaction(function () use ($event, $data, $user) {
+        // King Beach — жёсткая валидация min/max ДО транзакции (не warning: квота/чётность
+        // настроены осознанно). Правило чётности расширенное относительно формы создания:
+        // при gender_policy=mixed_5050 ОБА поля (min и max) должны быть чётными.
+        $staysKingBeach = $event->registration_mode === 'king_beach'
+            && empty($data['tournament_individual_reg']);
+
+        if ($staysKingBeach) {
+            $kbMin = isset($data['king_beach_min_players']) && $data['king_beach_min_players'] !== ''
+                ? (int) $data['king_beach_min_players']
+                : (int) ($event->gameSettings?->min_players ?? 4);
+            $kbMax = isset($data['king_beach_max_players']) && $data['king_beach_max_players'] !== ''
+                ? (int) $data['king_beach_max_players']
+                : (int) ($event->gameSettings?->max_players ?? $kbMin);
+
+            $kbErrors = [];
+
+            if ($kbMin < 4) {
+                $kbErrors['king_beach_min_players'] = __('events.king_beach_min_players_error');
+            }
+
+            if ($kbMax < $kbMin) {
+                $kbErrors['king_beach_max_players'] = __('events.king_beach_max_players_error');
+            }
+
+            $kbGenderPolicy = (string) ($data['game_gender_policy'] ?? $event->gameSettings?->gender_policy ?? '');
+            if ($kbGenderPolicy === 'mixed_5050') {
+                if (!isset($kbErrors['king_beach_min_players']) && $kbMin % 2 !== 0) {
+                    $kbErrors['king_beach_min_players'] = __('events.king_beach_min_players_parity_error');
+                }
+                if (!isset($kbErrors['king_beach_max_players']) && $kbMax % 2 !== 0) {
+                    $kbErrors['king_beach_max_players'] = __('events.king_beach_max_players_parity_error');
+                }
+            }
+
+            if (!isset($kbErrors['king_beach_max_players'])) {
+                // Живой COUNT — максимум по всем ещё не начавшимся occurrences серии
+                // (снижать max нельзя ниже самого заполненного будущего тура).
+                $maxRegistered = (int) (DB::table('event_registrations as er')
+                    ->join('event_occurrences as o', 'o.id', '=', 'er.occurrence_id')
+                    ->where('er.event_id', $event->id)
+                    ->where('o.starts_at', '>=', now())
+                    ->whereRaw('(o.is_cancelled IS NULL OR o.is_cancelled = false)')
+                    ->whereRaw('(er.is_cancelled IS NULL OR er.is_cancelled = false)')
+                    ->where('er.status', '!=', 'cancelled')
+                    ->groupBy('er.occurrence_id')
+                    ->selectRaw('count(*) as cnt')
+                    ->get()
+                    ->max('cnt') ?? 0);
+
+                if ($maxRegistered > $kbMax) {
+                    $kbErrors['king_beach_max_players'] = __('events.king_beach_max_players_below_registered_error', ['count' => $maxRegistered]);
+                }
+            }
+
+            if (!empty($kbErrors)) {
+                throw \Illuminate\Validation\ValidationException::withMessages($kbErrors);
+            }
+
+            // Нормализованные значения — единый источник истины для transaction-блока ниже.
+            $data['king_beach_min_players'] = $kbMin;
+            $data['king_beach_max_players'] = $kbMax;
+        }
+
+        DB::transaction(function () use ($event, $data, $user, $staysKingBeach) {
             $tz = (string) $data['timezone'];
             $startsUtc = Carbon::parse($data['starts_at'], $tz)->utc();
             // duration: приоритет у duration_sec (вычислен JS), fallback hours+min
@@ -1131,9 +1196,28 @@ if ($role === 'admin') {
     
             $event->load('gameSettings');
 
-            // Пересинхронизировать event_role_slots с актуальными game_settings
-            // (иначе max_slots остаётся от старого teams_count/subtype — баг с "лишними" свободными местами)
-            if ($event->gameSettings) {
+            if ($staysKingBeach) {
+                // King Beach не считает вместимость как team_size×teams_count (teams_count=0,
+                // нет команд на этапе регистрации) — свои min/max напрямую в EventGameSetting,
+                // один слот 'player'. GameCalculator-пересчёт ниже для этого режима неприменим
+                // и раньше затирал max_players на "2x2 × clamp(0→2) = 4" при КАЖДОМ сохранении
+                // формы независимо от реального значения — баг, не связанный с новыми полями.
+                $kbMin = (int) $data['king_beach_min_players'];
+                $kbMax = (int) $data['king_beach_max_players'];
+
+                app(\App\Services\EventRoleSlotService::class)->syncRoleSlots($event, ['player' => $kbMax]);
+
+                if ($event->gameSettings) {
+                    $gs = $event->gameSettings;
+                    if ((int) $gs->min_players !== $kbMin || (int) $gs->max_players !== $kbMax) {
+                        $gs->min_players = $kbMin;
+                        $gs->max_players = $kbMax;
+                        $gs->save();
+                    }
+                }
+            } elseif ($event->gameSettings) {
+                // Пересинхронизировать event_role_slots с актуальными game_settings
+                // (иначе max_slots остаётся от старого teams_count/subtype — баг с "лишними" свободными местами)
                 $gs = $event->gameSettings;
                 $teams = max(2, min((int) ($gs->teams_count ?? 2), 200));
 
@@ -1168,8 +1252,18 @@ if ($role === 'admin') {
                 $payMode = $event->is_paid ? ($data['tournament_payment_mode'] ?? 'team') : 'free';
                 $scheme = $data['tournament_game_scheme'] ?? $defaultScheme;
 
-                $teamSizeMin = isset($data['tournament_team_size_min']) ? (int) $data['tournament_team_size_min'] : null;
-                $reserveMax  = isset($data['tournament_reserve_players_max']) ? (int) $data['tournament_reserve_players_max'] : null;
+                if ($staysKingBeach) {
+                    // King Beach: team_size_min/total_players_max должны отражать
+                    // king_beach_min/max_players напрямую, а не общую формулу
+                    // team_size_min+reserve (форма редактирования не скрывает общие
+                    // "Состав команды"/"Запасных" поля для king_beach — они здесь
+                    // неприменимы, reserve всегда 0, как и при создании).
+                    $teamSizeMin = (int) $data['king_beach_min_players'];
+                    $reserveMax  = 0;
+                } else {
+                    $teamSizeMin = isset($data['tournament_team_size_min']) ? (int) $data['tournament_team_size_min'] : null;
+                    $reserveMax  = isset($data['tournament_reserve_players_max']) ? (int) $data['tournament_reserve_players_max'] : null;
+                }
 
                 // Форма редактирования не имеет чекбокса king_beach_reg (вне скоупа) —
                 // без этой проверки любое сохранение формы молча откатывало
@@ -1193,7 +1287,11 @@ if ($role === 'admin') {
                     'reserve_players_max'          => $reserveMax,
                     // Пересчитывается из min+reserve на каждое сохранение — иначе остаётся
                     // от прежней схемы/резерва, как раньше происходило с require_libero.
-                    'total_players_max'            => ($teamSizeMin !== null && $reserveMax !== null) ? $teamSizeMin + $reserveMax : null,
+                    // King Beach — исключение: total_players_max = king_beach_max_players
+                    // напрямую (не team_size_min+reserve, у king_beach нет команд/резерва).
+                    'total_players_max'            => $staysKingBeach
+                        ? (int) $data['king_beach_max_players']
+                        : (($teamSizeMin !== null && $reserveMax !== null) ? $teamSizeMin + $reserveMax : null),
                     'teams_count'                  => isset($data['teams_count']) ? (int) $data['teams_count'] : null,
                     'application_mode'             => $data['tournament_application_mode'] ?? 'manual',
                     'captain_confirms_members'     => array_key_exists('tournament_captain_confirms_members', $data) ? (bool) $data['tournament_captain_confirms_members'] : null,

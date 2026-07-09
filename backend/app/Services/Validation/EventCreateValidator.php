@@ -574,7 +574,9 @@
                 ? 0
                 : (int) $maxRaw;
         
-            if ($policy === 'mixed_5050' && $max > 0) {
+            // King Beach проверяется отдельно ниже (там же чётность min) — здесь пропускаем,
+            // чтобы не дублировать/не расходиться с сообщением.
+            if ($policy === 'mixed_5050' && $max > 0 && !$isKingBeach) {
                 if ($max < 2) {
                     $v->errors()->add($maxField, 'Для 50/50 минимум 2 участника.');
                 } elseif ($max % 2 !== 0) {
@@ -621,6 +623,18 @@
 
                     if ($kbMax > 0 && $kbMax < $kbMin) {
                         $v->errors()->add('king_beach_max_players', __('events.king_beach_max_players_error'));
+                    }
+
+                    // Расширенное правило чётности: при 50/50 ОБА поля должны быть чётными
+                    // (на отличие от общего max-only чека выше — для king_beach min тоже
+                    // определяет размер стартовой группы, должен делиться пополам по полу).
+                    if ($policy === 'mixed_5050') {
+                        if ($kbMin % 2 !== 0) {
+                            $v->errors()->add('king_beach_min_players', __('events.king_beach_min_players_parity_error'));
+                        }
+                        if ($kbMax > 0 && $kbMax % 2 !== 0) {
+                            $v->errors()->add('king_beach_max_players', __('events.king_beach_max_players_parity_error'));
+                        }
                     }
                 } else {
                     $teamMin = (int) ($data['tournament_team_size_min'] ?? 0);

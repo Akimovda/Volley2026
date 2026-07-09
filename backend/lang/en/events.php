@@ -995,6 +995,10 @@ return [
     'king_beach_max_players_error'  => 'Max players cannot be less than the minimum.',
     'king_beach_parity_error'       => 'Mixed 50/50 requires an even max player count.',
     'king_beach_scheme_error'       => 'King/Queen of the Beach is only available for beach volleyball with the 2x2 scheme.',
+    'king_beach_min_players_parity_error' => 'Mixed 50/50 requires an even minimum player count.',
+    'king_beach_max_players_parity_error' => 'Mixed 50/50 requires an even maximum player count.',
+    'king_beach_max_players_below_registered_error' => ':count players are already registered — the maximum cannot be lower.',
+    'king_beach_edit_players_hint'  => 'Changing the player count affects the current and future rounds of the series.',
 
     'tournament_distribute_btn'        => 'Form teams',
     'tournament_distribute_random_btn' => 'Distribute randomly',

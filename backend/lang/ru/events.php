@@ -1054,6 +1054,10 @@ return [
     'king_beach_max_players_error'  => 'Максимум игроков не может быть меньше минимума.',
     'king_beach_parity_error'       => 'Режим «Микс 50/50» требует чётного максимального числа игроков.',
     'king_beach_scheme_error'       => 'Режим «Король/Королева пляжа» доступен только для пляжного волейбола со схемой 2x2.',
+    'king_beach_min_players_parity_error' => 'Режим «Микс 50/50» требует чётного минимального числа игроков.',
+    'king_beach_max_players_parity_error' => 'Режим «Микс 50/50» требует чётного максимального числа игроков.',
+    'king_beach_max_players_below_registered_error' => 'Уже записано :count игроков — максимум не может быть меньше.',
+    'king_beach_edit_players_hint'  => 'Изменение количества игроков коснётся текущего и будущих туров серии.',
 
     'tournament_distribute_btn'        => 'Сформировать команды',
     'tournament_distribute_random_btn' => 'Распределить случайно',
