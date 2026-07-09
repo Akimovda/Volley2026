@@ -32,6 +32,8 @@ class ActivitySessionController extends Controller
             'occurrence_id' => ['nullable', 'integer', 'exists:event_occurrences,id'],
             'device_id'     => ['nullable', 'integer', 'exists:athlete_devices,id'],
             'client_uuid'   => ['nullable', 'string', 'max:64'],
+            'local_id'      => ['nullable', 'string', 'max:64'],
+            'started_at'    => ['nullable', 'numeric'],
         ]);
 
         $occurrence = isset($data['occurrence_id'])
@@ -44,7 +46,10 @@ class ActivitySessionController extends Controller
                 ->firstOrFail()
             : null;
 
-        $session = $this->service->start($request->user(), $occurrence, $device, $data['client_uuid'] ?? null);
+        $clientUuid  = $this->resolveClientUuid($data);
+        $startedAtTs = isset($data['started_at']) ? (float) $data['started_at'] : null;
+
+        $session = $this->service->start($request->user(), $occurrence, $device, $clientUuid, $startedAtTs);
 
         $jumpHeightCoeff = $this->profileService->effectiveJumpCoeff($request->user(), $device);
 
@@ -52,6 +57,18 @@ class ActivitySessionController extends Controller
             'session_id'        => $session->id,
             'jump_height_coeff' => $jumpHeightCoeff,
         ], $session->wasRecentlyCreated ? 201 : 200);
+    }
+
+    /**
+     * На устройстве поле называется local_id, в БД — client_uuid. client_uuid остаётся
+     * приоритетным именем (обратная совместимость), local_id — алиас для клиента.
+     * iOS шлёт UPPERCASE, Android тоже (см. 6ed170e) — нормализуем регистр на случай расхождений.
+     */
+    private function resolveClientUuid(array $data): ?string
+    {
+        $clientUuid = $data['client_uuid'] ?? $data['local_id'] ?? null;
+
+        return $clientUuid !== null ? strtoupper($clientUuid) : null;
     }
 
     public function ingestSamples(Request $request, ActivitySession $session): JsonResponse

@@ -7,20 +7,34 @@ use App\Models\ActivitySession;
 use App\Models\AthleteDevice;
 use App\Models\EventOccurrence;
 use App\Models\User;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class ActivitySessionService
 {
+    // Санити-границы для клиентского started_at: не раньше выпуска фичи трекинга
+    // и не позже "сейчас + запас на рассинхрон часов устройства".
+    private const STARTED_AT_MIN_YEAR = 2020;
+    private const STARTED_AT_MAX_FUTURE_HOURS = 1;
+
     public function __construct(
         private readonly AthleteProfileService $profileService,
         private readonly ActivityCalorieService $calorieService,
     ) {}
 
-    public function start(User $user, ?EventOccurrence $occurrence, ?AthleteDevice $device, ?string $clientUuid = null): ActivitySession
+    /**
+     * @param float|null $startedAtTs Unix timestamp (секунды) реального начала тренировки
+     *                                на устройстве. Используется только при создании НОВОЙ
+     *                                сессии — если сессия уже существует (идемпотентность по
+     *                                client_uuid), started_at первого запроса не трогаем.
+     */
+    public function start(User $user, ?EventOccurrence $occurrence, ?AthleteDevice $device, ?string $clientUuid = null, ?float $startedAtTs = null): ActivitySession
     {
         // Идемпотентность: часы повторяют доставку (sendMessage/transferUserInfo/HTTP retry)
         // с одним и тем же client_uuid — возвращаем уже созданную сессию, не плодим дубли.
+        // started_at НЕ обновляем — она зафиксирована первым запросом; повторный (например,
+        // после финализации на устройстве) не должен сдвигать время старта тренировки.
         if ($clientUuid !== null) {
             $existing = ActivitySession::where('user_id', $user->id)
                 ->where('client_uuid', $clientUuid)
@@ -46,7 +60,7 @@ class ActivitySessionService
                 'device_id'            => $device?->id,
                 'direction'            => $direction,
                 'status'               => 'live',
-                'started_at'           => now(),
+                'started_at'           => $this->resolveStartedAt($startedAtTs),
                 'samples_count'        => 0,
                 'jump_count'           => 0,
                 'tracked_capabilities' => $capabilities,
@@ -62,6 +76,33 @@ class ActivitySessionService
 
             throw $e;
         }
+    }
+
+    /**
+     * КРИТИЧНО: только createFromTimestamp(), никогда Carbon::parse() для голого числа —
+     * parse('1720512938') интерпретирует строку не как epoch и даёт год 2938 (проверено
+     * экспериментально), т.к. без префикса "@" это не распознаётся как unix timestamp.
+     */
+    private function resolveStartedAt(?float $startedAtTs): Carbon
+    {
+        if ($startedAtTs === null) {
+            return now();
+        }
+
+        $candidate = Carbon::createFromTimestamp($startedAtTs);
+        $min       = Carbon::create(self::STARTED_AT_MIN_YEAR, 1, 1);
+        $max       = now()->addHours(self::STARTED_AT_MAX_FUTURE_HOURS);
+
+        if ($candidate->lt($min) || $candidate->gt($max)) {
+            Log::warning('[Activity] Некорректный started_at от клиента, использован now()', [
+                'started_at_ts' => $startedAtTs,
+                'candidate'     => $candidate->toDateTimeString(),
+            ]);
+
+            return now();
+        }
+
+        return $candidate;
     }
 
     /**
