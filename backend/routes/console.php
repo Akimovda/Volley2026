@@ -85,6 +85,14 @@ Schedule::command('waitlist:cleanup-expired')
     ->dailyAt('04:15')
     ->withoutOverlapping();
 
+// Ретрай неудачных доставок уведомлений (каждые 5 минут):
+// только транзиентные ошибки (is_retryable=true, cURL/сеть/5xx), не старше
+// config('notifications.retry_max_age_hours') (по умолчанию 6ч) и не более
+// 3 попыток (attempts<3) с backoff 1/5/30 минут между попытками.
+Schedule::command('notifications:retry-failed')
+    ->everyFiveMinutes()
+    ->withoutOverlapping();
+
 // Автоотклонение неполных заявок команд (каждые 30 минут):
 // находит EventTeamApplication со статусом 'incomplete' у которых
 // дедлайн ближайшего occurrence (registration_ends_at) уже наступил.
