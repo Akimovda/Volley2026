@@ -175,6 +175,19 @@ class WaitlistService
         $direction = (string) ($event->direction ?? 'classic');
 
         return DB::transaction(function () use ($occurrence, $event, $position, $direction) {
+            // Тот же advisory lock и та же формула roleKey, что в
+            // EventRegistrationController::persistRegistration() — без этого автобронь и прямая
+            // запись могут одновременно пройти проверку вместимости на последний слот.
+            // $position здесь ОДНА на весь вызов (передаётся из onSpotFreed() как позиция,
+            // которая освободилась) — цикл ниже перебирает КАНДИДАТОВ из очереди на эту же
+            // позицию, а не разные позиции, так что лок берём один раз, ДО остальных локов
+            // (порядок как в persistRegistration — advisory первым, чтобы не было дедлока).
+            $roleKey = $position !== '' ? (crc32($position) & 0x7fffffff) : 0;
+            DB::select(
+                'SELECT pg_advisory_xact_lock(?, ?)',
+                [$occurrence->id, $roleKey]
+            );
+
             $now = now();
 
             // Очередь: премиум первыми, затем по sort_order (ручная расстановка орг-ром),
