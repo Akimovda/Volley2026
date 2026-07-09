@@ -691,18 +691,24 @@ $genderWindowOpensAt   = isset($join->meta['gender_window_opens_at'])
         ->format('d.m.Y H:i')
     : null;
 
-// Показываем блок waitlist при полном заполнении ИЛИ когда заняты классические позиции
-// ИЛИ когда гендерное окно закрыто (встать в очередь разрешено до открытия окна)
-// Скрываем если пользователь уже записан в состав (включая запасные места)
-$showWaitlist = !$isTournament && !$eventStarted && auth()->check() && !$isRegistered && (
+// Блок «записаться в очередь» — для игрока. Показываем при полном заполнении ИЛИ
+// когда заняты классические позиции ИЛИ когда гендерное окно закрыто (встать в очередь
+// разрешено до открытия окна). Скрываем если пользователь уже записан в состав
+// (включая запасные места) — ему нечего делать в очереди.
+$showWaitlistJoinForm = !$isTournament && !$eventStarted && auth()->check() && !$isRegistered && (
     $isFull || ($isClassic && !empty($occupiedPositions)) || $genderWindowClosed
 );
+
+// Блок «просмотр очереди» — для организатора/админа. Не зависит от того, записан ли
+// он сам в состав мероприятия — организатор, который играет сам, тоже должен видеть очередь.
+$showWaitlistViewer = !$isTournament && !$eventStarted && $isOrganizer && $waitlistCount > 0;
 @endphp
 
-@if($showWaitlist)
+@if($showWaitlistJoinForm || $showWaitlistViewer)
 <div class="ramka" id="waitlist-section">
     <h2 class="-mt-05">{{ __('events.show_pl_waitlist_h2') }}</h2>
 
+    @if($showWaitlistJoinForm)
     @if(!auth()->check())
 	<div class="text-muted small">{{ __('events.show_pl_waitlist_login') }}</div>
 
@@ -796,9 +802,10 @@ $showWaitlist = !$isTournament && !$eventStarted && auth()->check() && !$isRegis
 		<button type="submit" class="btn btn-primary">{{ __('events.show_pl_waitlist_join') }}</button>
 	</form>
 	@endif
-			
-			{{-- Список резерва для организатора --}}
-			@if($isOrganizer && $waitlistCount > 0)
+	@endif
+
+			{{-- Список резерва для организатора — независимо от того, записан ли сам организатор --}}
+			@if($showWaitlistViewer)
 			@php
 			$waitlistEntries = \App\Models\OccurrenceWaitlist::query()
             ->where('occurrence_id', $occurrence->id)
