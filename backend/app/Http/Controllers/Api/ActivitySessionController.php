@@ -98,6 +98,7 @@ class ActivitySessionController extends Controller
             'active_energy_kcal'   => ['nullable', 'numeric', 'min:0', 'max:5000'],
             'steps'                => ['nullable', 'integer', 'min:0'],
             'expected_jump_count'  => ['nullable', 'integer', 'min:0'],
+            'ended_at'             => ['nullable', 'numeric'],
         ]);
 
         $activeEnergyKcal = isset($validated['active_energy_kcal']) && $validated['active_energy_kcal'] > 0
@@ -111,7 +112,8 @@ class ActivitySessionController extends Controller
             $session->jump_count_expected = $expectedJumps;
         }
 
-        $session   = $this->service->finalize($session, $activeEnergyKcal);
+        $endedAtTs = isset($validated['ended_at']) ? (float) $validated['ended_at'] : null;
+        $session   = $this->service->finalize($session, $activeEnergyKcal, $endedAtTs);
 
         if ($expectedJumps > 0) {
             $actualJumps = $session->jump_count ?? 0;

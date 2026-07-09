@@ -13,10 +13,10 @@ use Illuminate\Support\Facades\Log;
 
 class ActivitySessionService
 {
-    // Санити-границы для клиентского started_at: не раньше выпуска фичи трекинга
+    // Санити-границы для клиентских started_at/ended_at: не раньше выпуска фичи трекинга
     // и не позже "сейчас + запас на рассинхрон часов устройства".
-    private const STARTED_AT_MIN_YEAR = 2020;
-    private const STARTED_AT_MAX_FUTURE_HOURS = 1;
+    private const CLIENT_TS_MIN_YEAR = 2020;
+    private const CLIENT_TS_MAX_FUTURE_HOURS = 1;
 
     public function __construct(
         private readonly AthleteProfileService $profileService,
@@ -78,25 +78,35 @@ class ActivitySessionService
         }
     }
 
+    private function resolveStartedAt(?float $startedAtTs): Carbon
+    {
+        return $this->sanitizeClientTimestamp($startedAtTs, 'started_at');
+    }
+
+    private function resolveEndedAt(?float $endedAtTs): Carbon
+    {
+        return $this->sanitizeClientTimestamp($endedAtTs, 'ended_at');
+    }
+
     /**
      * КРИТИЧНО: только createFromTimestamp(), никогда Carbon::parse() для голого числа —
      * parse('1720512938') интерпретирует строку не как epoch и даёт год 2938 (проверено
      * экспериментально), т.к. без префикса "@" это не распознаётся как unix timestamp.
      */
-    private function resolveStartedAt(?float $startedAtTs): Carbon
+    private function sanitizeClientTimestamp(?float $ts, string $field): Carbon
     {
-        if ($startedAtTs === null) {
+        if ($ts === null) {
             return now();
         }
 
-        $candidate = Carbon::createFromTimestamp($startedAtTs);
-        $min       = Carbon::create(self::STARTED_AT_MIN_YEAR, 1, 1);
-        $max       = now()->addHours(self::STARTED_AT_MAX_FUTURE_HOURS);
+        $candidate = Carbon::createFromTimestamp($ts);
+        $min       = Carbon::create(self::CLIENT_TS_MIN_YEAR, 1, 1);
+        $max       = now()->addHours(self::CLIENT_TS_MAX_FUTURE_HOURS);
 
         if ($candidate->lt($min) || $candidate->gt($max)) {
-            Log::warning('[Activity] Некорректный started_at от клиента, использован now()', [
-                'started_at_ts' => $startedAtTs,
-                'candidate'     => $candidate->toDateTimeString(),
+            Log::warning("[Activity] Некорректный {$field} от клиента, использован now()", [
+                $field        => $ts,
+                'candidate'   => $candidate->toDateTimeString(),
             ]);
 
             return now();
@@ -212,8 +222,12 @@ class ActivitySessionService
         ];
     }
 
-    public function finalize(ActivitySession $session, ?float $activeEnergyKcal = null): ActivitySession
+    public function finalize(ActivitySession $session, ?float $activeEnergyKcal = null, ?float $endedAtTs = null): ActivitySession
     {
+        $endedAt = $this->resolveEndedAt($endedAtTs);
+        // timestamp-разница вместо diffInSeconds() (тот по умолчанию absolute=false и может дать отрицательное число)
+        $durationSec = max(0, $endedAt->timestamp - $session->started_at->timestamp);
+
         // Прыжки считаются независимо от наличия HR-сэмплов (устройство может уметь только jumps)
         $jumpAgg = DB::table('activity_jump_events')
             ->where('session_id', $session->id)
@@ -224,6 +238,8 @@ class ActivitySessionService
         $jumpAvgHeight = $jumpAgg->avg_h !== null ? round((float) $jumpAgg->avg_h, 1) : null;
         $jumpMaxHeight = $jumpAgg->max_h !== null ? round((float) $jumpAgg->max_h, 1) : null;
 
+        // Читаем сэмплы напрямую из БД в момент finalize — клиент досылает их ДО этого вызова,
+        // кэша между ingestSamples() и finalize() нет, поэтому агрегаты всегда по актуальным данным.
         $samples = DB::table('activity_hr_samples')
             ->where('session_id', $session->id)
             ->orderBy('t_offset_sec')
@@ -232,7 +248,8 @@ class ActivitySessionService
         if ($samples->isEmpty()) {
             $session->update([
                 'status'             => 'completed',
-                'ended_at'           => now(),
+                'ended_at'           => $endedAt,
+                'duration_sec'       => $durationSec,
                 'jump_count'         => $jumpCount,
                 'jump_avg_height_cm' => $jumpAvgHeight,
                 'jump_max_height_cm' => $jumpMaxHeight,
@@ -249,10 +266,8 @@ class ActivitySessionService
         $minBpm   = PHP_INT_MAX;
         $timeInZone = ['z1' => 0, 'z2' => 0, 'z3' => 0, 'z4' => 0, 'z5' => 0];
 
-        $prevOffset = null;
         foreach ($samples as $s) {
-            $bpm    = (int) $s->bpm;
-            $offset = (int) $s->t_offset_sec;
+            $bpm = (int) $s->bpm;
 
             $totalBpm += $bpm;
             if ($bpm > $maxBpm) $maxBpm = $bpm;
@@ -263,13 +278,10 @@ class ActivitySessionService
             if ($zone >= 1 && $zone <= 5) {
                 $timeInZone["z$zone"] += 1;
             }
-
-            $prevOffset = $offset;
         }
 
-        $count       = $samples->count();
-        $avgBpm      = (int) round($totalBpm / $count);
-        $durationSec = $prevOffset + 1; // от 0 до last offset включительно
+        $count  = $samples->count();
+        $avgBpm = (int) round($totalBpm / $count);
 
         // load_score = (z1*1 + z2*2 + z3*3 + z4*4 + z5*5) / 60
         $loadScore = (
@@ -307,7 +319,7 @@ class ActivitySessionService
 
         $session->update([
             'status'              => 'completed',
-            'ended_at'            => now(),
+            'ended_at'            => $endedAt,
             'duration_sec'        => $durationSec,
             'avg_hr'              => $avgBpm,
             'max_hr'              => $maxBpm,
