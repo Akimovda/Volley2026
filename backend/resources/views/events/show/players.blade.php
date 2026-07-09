@@ -79,7 +79,7 @@
     {{-- ===============================
     СТАТИСТИКА ИГРОКОВ
     =============================== --}}
-    @php $isIndividualTournament = $event->format === 'tournament' && $event->registration_mode === 'tournament_individual'; @endphp
+    @php $isIndividualTournament = $event->format === 'tournament' && \App\Models\Event::isIndividualRegistrationMode($event->registration_mode ?? null); @endphp
     @if($event->format === 'tournament' && !$isIndividualTournament)
 	@php
 	$teamsMax = $event->tournament_teams_count ?: ($event->tournamentSetting?->teams_count ?? 0);
