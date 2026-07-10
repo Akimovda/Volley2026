@@ -71,13 +71,22 @@ class ActivitySession extends Model
     }
 
     /**
-     * 'completed' — finalize() отработал; 'pending' — ещё не финализирована, в пределах окна ожидания;
+     * 'completed' — finalize() отработал, окно settling прошло (или finalized_at не известен —
+     * старые сессии до этой колонки); 'settling' — finalize() отработал недавно (< settling_minutes),
+     * ещё может дотечь retry-путём досланные сэмплы/прыжки (см. recomputeAggregates());
+     * 'pending' — ещё не финализирована, в пределах окна ожидания;
      * 'stale' — не финализирована дольше activity.sync_stale_hours, данные, вероятно, не придут.
      */
     public function getSyncStatusAttribute(): string
     {
         if ($this->status === 'completed') {
-            return 'completed';
+            if ($this->finalized_at === null) {
+                return 'completed';
+            }
+
+            $ageMinutes = (now()->timestamp - $this->finalized_at->timestamp) / 60;
+
+            return $ageMinutes < config('activity.settling_minutes', 5) ? 'settling' : 'completed';
         }
 
         $ageHours = (now()->timestamp - $this->started_at->timestamp) / 3600;

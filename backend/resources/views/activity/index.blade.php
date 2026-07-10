@@ -182,6 +182,8 @@
                                 <span class="badge badge-sm" style="background:rgba(41,103,186,.15);color:#2967BA">⏳ {{ __('activity.sync_pending') }}</span>
                             @elseif($syncStatus === 'stale')
                                 <span class="badge badge-sm" style="background:rgba(239,68,68,.15);color:#ef4444">{{ __('activity.sync_stale') }}</span>
+                            @elseif($syncStatus === 'settling')
+                                <span class="badge badge-sm" style="background:rgba(41,103,186,.15);color:#2967BA">⏳ {{ __('activity.sync_settling') }}</span>
                             @endif
                             @if($session->direction)
                                 <span class="badge badge-sm {{ $session->direction === 'beach' ? 'badge-orange' : 'badge-blue' }}">
@@ -195,7 +197,7 @@
                             @endif
                         </div>
                     </div>
-                    @if($syncStatus === 'completed')
+                    @if($syncStatus === 'completed' || $syncStatus === 'settling')
                     <div class="row mt-1" style="gap:4px 0">
                         <div class="col-6 col-md-3">
                             <div class="f-13" style="opacity:.6">{{ __('activity.duration') }}</div>
