@@ -15,12 +15,13 @@ class ActivitySession extends Model
         'avg_hr', 'max_hr', 'min_hr',
         'time_in_zone', 'load_score', 'samples_count', 'calories_kcal', 'calorie_source',
         'jump_count', 'jump_avg_height_cm', 'jump_max_height_cm', 'tracked_capabilities',
-        'steps', 'jump_count_expected', 'jump_count_mismatch',
+        'steps', 'jump_count_expected', 'jump_count_mismatch', 'finalized_at',
     ];
 
     protected $casts = [
         'started_at'           => 'datetime',
         'ended_at'             => 'datetime',
+        'finalized_at'         => 'datetime',
         'time_in_zone'         => 'array',
         'tracked_capabilities' => 'array',
         'load_score'           => 'decimal:2',
@@ -70,13 +71,22 @@ class ActivitySession extends Model
     }
 
     /**
-     * 'completed' — finalize() отработал; 'pending' — ещё не финализирована, в пределах окна ожидания;
+     * 'completed' — finalize() отработал, окно settling прошло (или finalized_at не известен —
+     * старые сессии до этой колонки); 'settling' — finalize() отработал недавно (< settling_minutes),
+     * ещё может дотечь retry-путём досланные сэмплы/прыжки (см. recomputeAggregates());
+     * 'pending' — ещё не финализирована, в пределах окна ожидания;
      * 'stale' — не финализирована дольше activity.sync_stale_hours, данные, вероятно, не придут.
      */
     public function getSyncStatusAttribute(): string
     {
         if ($this->status === 'completed') {
-            return 'completed';
+            if ($this->finalized_at === null) {
+                return 'completed';
+            }
+
+            $ageMinutes = (now()->timestamp - $this->finalized_at->timestamp) / 60;
+
+            return $ageMinutes < config('activity.settling_minutes', 5) ? 'settling' : 'completed';
         }
 
         $ageHours = (now()->timestamp - $this->started_at->timestamp) / 3600;

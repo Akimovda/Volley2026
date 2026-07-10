@@ -151,6 +151,12 @@ class ActivitySessionService
             DB::table('activity_sessions')
                 ->where('id', $session->id)
                 ->increment('samples_count', $accepted);
+
+            // Сессия уже финализирована, но досланные (retry) сэмплы должны попасть в
+            // видимые пользователю агрегаты — иначе они останутся в БД, но не на экране.
+            if ($session->status === 'completed') {
+                $this->recomputeAggregates($session);
+            }
         }
 
         return $accepted;
@@ -185,7 +191,15 @@ class ActivitySessionService
             ->where('session_id', $session->id)
             ->count();
 
-        return $countAfter - $countBefore;
+        $accepted = $countAfter - $countBefore;
+
+        // См. комментарий в ingestSamples(): досланные после finalize() прыжки должны
+        // обновить jump_count/высоты на сессии, иначе они видны только в сырой таблице.
+        if ($accepted > 0 && $session->status === 'completed') {
+            $this->recomputeAggregates($session);
+        }
+
+        return $accepted;
     }
 
     /**
@@ -228,71 +242,14 @@ class ActivitySessionService
         // timestamp-разница вместо diffInSeconds() (тот по умолчанию absolute=false и может дать отрицательное число)
         $durationSec = max(0, $endedAt->timestamp - $session->started_at->timestamp);
 
-        // Прыжки считаются независимо от наличия HR-сэмплов (устройство может уметь только jumps)
-        $jumpAgg = DB::table('activity_jump_events')
-            ->where('session_id', $session->id)
-            ->selectRaw('COUNT(*) as cnt, AVG(height_cm) as avg_h, MAX(height_cm) as max_h')
-            ->first();
-
-        $jumpCount     = (int) ($jumpAgg->cnt ?? 0);
-        $jumpAvgHeight = $jumpAgg->avg_h !== null ? round((float) $jumpAgg->avg_h, 1) : null;
-        $jumpMaxHeight = $jumpAgg->max_h !== null ? round((float) $jumpAgg->max_h, 1) : null;
-
         // Читаем сэмплы напрямую из БД в момент finalize — клиент досылает их ДО этого вызова,
-        // кэша между ingestSamples() и finalize() нет, поэтому агрегаты всегда по актуальным данным.
+        // кэша между ingestSamples() и finalize() нет, поэтому калории всегда считаются по актуальным данным.
         $samples = DB::table('activity_hr_samples')
             ->where('session_id', $session->id)
             ->orderBy('t_offset_sec')
             ->get(['t_offset_sec', 'bpm']);
 
-        if ($samples->isEmpty()) {
-            $session->update([
-                'status'             => 'completed',
-                'ended_at'           => $endedAt,
-                'duration_sec'       => $durationSec,
-                'jump_count'         => $jumpCount,
-                'jump_avg_height_cm' => $jumpAvgHeight,
-                'jump_max_height_cm' => $jumpMaxHeight,
-            ]);
-            $session->refresh();
-            return $session;
-        }
-
-        // Загружаем user с профилем
-        $user = $session->user()->with('athleteProfile')->first();
-
-        $totalBpm = 0;
-        $maxBpm   = 0;
-        $minBpm   = PHP_INT_MAX;
-        $timeInZone = ['z1' => 0, 'z2' => 0, 'z3' => 0, 'z4' => 0, 'z5' => 0];
-
-        foreach ($samples as $s) {
-            $bpm = (int) $s->bpm;
-
-            $totalBpm += $bpm;
-            if ($bpm > $maxBpm) $maxBpm = $bpm;
-            if ($bpm < $minBpm) $minBpm = $bpm;
-
-            // каждый сэмпл представляет 1 секунду интервала
-            $zone = $this->profileService->zoneForBpm($user, $bpm);
-            if ($zone >= 1 && $zone <= 5) {
-                $timeInZone["z$zone"] += 1;
-            }
-        }
-
-        $count  = $samples->count();
-        $avgBpm = (int) round($totalBpm / $count);
-
-        // load_score = (z1*1 + z2*2 + z3*3 + z4*4 + z5*5) / 60
-        $loadScore = (
-            $timeInZone['z1'] * 1 +
-            $timeInZone['z2'] * 2 +
-            $timeInZone['z3'] * 3 +
-            $timeInZone['z4'] * 4 +
-            $timeInZone['z5'] * 5
-        ) / 60.0;
-
-        // calories: (a) healthkit measured — priority; (b) Keytel estimated — fallback
+        // calories: (a) healthkit measured — priority; (b) Keytel estimated — fallback; (c) нет сэмплов/данных — null
         $caloriesKcal  = null;
         $calorieSource = null;
 
@@ -300,8 +257,9 @@ class ActivitySessionService
             // (a) Apple Watch / HealthKit measured value
             $caloriesKcal  = round($activeEnergyKcal, 1);
             $calorieSource = 'healthkit';
-        } else {
+        } elseif ($samples->isNotEmpty()) {
             // (b) Keytel formula (requires weight, birth_date, gender)
+            $user     = $session->user()->with('athleteProfile')->first();
             $profile  = $user->athleteProfile;
             $weightKg = $profile?->weight_kg ? (float) $profile->weight_kg : null;
             if ($weightKg !== null && $user->birth_date && $user->gender) {
@@ -314,28 +272,97 @@ class ActivitySessionService
                 $caloriesKcal  = round($totalKcal, 1);
                 $calorieSource = 'keytel';
             }
-            // (c) neither → both remain null
         }
 
         $session->update([
-            'status'              => 'completed',
-            'ended_at'            => $endedAt,
-            'duration_sec'        => $durationSec,
-            'avg_hr'              => $avgBpm,
-            'max_hr'              => $maxBpm,
-            'min_hr'              => $minBpm === PHP_INT_MAX ? null : $minBpm,
-            'time_in_zone'        => $timeInZone,
-            'load_score'          => round($loadScore, 2),
-            'calories_kcal'       => $caloriesKcal,
-            'calorie_source'      => $calorieSource,
-            'samples_count'       => $count,
-            'jump_count'          => $jumpCount,
-            'jump_avg_height_cm'  => $jumpAvgHeight,
-            'jump_max_height_cm'  => $jumpMaxHeight,
-            'steps'               => $session->steps ?? null,
+            'status'         => 'completed',
+            'ended_at'       => $endedAt,
+            'duration_sec'   => $durationSec,
+            'calories_kcal'  => $caloriesKcal,
+            'calorie_source' => $calorieSource,
+            'finalized_at'   => now(),
         ]);
+
+        $this->recomputeAggregates($session);
 
         $session->refresh();
         return $session;
+    }
+
+    /**
+     * Пересчитывает HR/jump-агрегаты сессии из сырых таблиц (activity_hr_samples,
+     * activity_jump_events). Вызывается и из finalize() (первичный расчёт), и из
+     * ingestSamples()/ingestJumps() (пересчёт при данных, досланных retry-путём уже
+     * ПОСЛЕ финализации — иначе они лягут в сырые таблицы, но пользователь их не увидит).
+     *
+     * НЕ трогает: ended_at, duration_sec, calories_kcal, calorie_source, status,
+     * started_at, finalized_at — эти поля описывают саму тренировку/факт финализации,
+     * а не производные метрики, и не должны сбрасываться при простом довесе данных.
+     */
+    private function recomputeAggregates(ActivitySession $session): void
+    {
+        // Прыжки считаются независимо от наличия HR-сэмплов (устройство может уметь только jumps)
+        $jumpAgg = DB::table('activity_jump_events')
+            ->where('session_id', $session->id)
+            ->selectRaw('COUNT(*) as cnt, AVG(height_cm) as avg_h, MAX(height_cm) as max_h')
+            ->first();
+
+        $update = [
+            'jump_count'         => (int) ($jumpAgg->cnt ?? 0),
+            'jump_avg_height_cm' => $jumpAgg->avg_h !== null ? round((float) $jumpAgg->avg_h, 1) : null,
+            'jump_max_height_cm' => $jumpAgg->max_h !== null ? round((float) $jumpAgg->max_h, 1) : null,
+        ];
+
+        $samples = DB::table('activity_hr_samples')
+            ->where('session_id', $session->id)
+            ->orderBy('t_offset_sec')
+            ->get(['t_offset_sec', 'bpm']);
+
+        if ($samples->isEmpty()) {
+            $update['samples_count'] = 0;
+        } else {
+            $user = $session->user()->with('athleteProfile')->first();
+
+            $totalBpm   = 0;
+            $maxBpm     = 0;
+            $minBpm     = PHP_INT_MAX;
+            $timeInZone = ['z1' => 0, 'z2' => 0, 'z3' => 0, 'z4' => 0, 'z5' => 0];
+
+            foreach ($samples as $s) {
+                $bpm = (int) $s->bpm;
+
+                $totalBpm += $bpm;
+                if ($bpm > $maxBpm) $maxBpm = $bpm;
+                if ($bpm < $minBpm) $minBpm = $bpm;
+
+                // каждый сэмпл представляет 1 секунду интервала
+                $zone = $this->profileService->zoneForBpm($user, $bpm);
+                if ($zone >= 1 && $zone <= 5) {
+                    $timeInZone["z$zone"] += 1;
+                }
+            }
+
+            $count  = $samples->count();
+            $avgBpm = (int) round($totalBpm / $count);
+
+            // load_score = (z1*1 + z2*2 + z3*3 + z4*4 + z5*5) / 60
+            $loadScore = (
+                $timeInZone['z1'] * 1 +
+                $timeInZone['z2'] * 2 +
+                $timeInZone['z3'] * 3 +
+                $timeInZone['z4'] * 4 +
+                $timeInZone['z5'] * 5
+            ) / 60.0;
+
+            $update['avg_hr']        = $avgBpm;
+            $update['max_hr']        = $maxBpm;
+            $update['min_hr']        = $minBpm === PHP_INT_MAX ? null : $minBpm;
+            $update['time_in_zone']  = $timeInZone;
+            $update['load_score']    = round($loadScore, 2);
+            $update['samples_count'] = $count;
+        }
+
+        $session->update($update);
+        $session->refresh();
     }
 }

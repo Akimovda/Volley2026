@@ -161,6 +161,8 @@ return [
     'sync_pending_hint' => 'Data from your device is still uploading. Refresh the page in a few minutes.',
     'sync_stale'        => 'No data received',
     'sync_stale_hint'   => 'Sync with your device didn\'t finish. Try opening the app on your watch again.',
+    'sync_settling'      => 'Data still coming in',
+    'sync_settling_hint' => 'The numbers are ready, but may change slightly over the next couple of minutes as the last bits of data arrive from your device.',
 
     // Push prompt
     'prompt_body'            => 'Workout in progress — record your activity?',

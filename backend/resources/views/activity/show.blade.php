@@ -69,6 +69,8 @@
                                     · <span class="badge badge-sm" style="background:rgba(41,103,186,.15);color:#2967BA">⏳ {{ __('activity.sync_pending') }}</span>
                                 @elseif($syncStatus === 'stale')
                                     · <span class="badge badge-sm" style="background:rgba(239,68,68,.15);color:#ef4444">{{ __('activity.sync_stale') }}</span>
+                                @elseif($syncStatus === 'settling')
+                                    · <span class="badge badge-sm" style="background:rgba(41,103,186,.15);color:#2967BA">⏳ {{ __('activity.sync_settling') }}</span>
                                 @endif
                             </div>
                         </div>
@@ -76,7 +78,7 @@
                     </div>
                 </div>
 
-                @if($syncStatus !== 'completed')
+                @if($syncStatus === 'pending' || $syncStatus === 'stale')
                 <div class="ramka mb-1 text-center" style="opacity:.85">
                     <div style="font-size:1.3rem">
                         @if($syncStatus === 'pending') ⏳ {{ __('activity.sync_pending') }} @else {{ __('activity.sync_stale') }} @endif
@@ -86,6 +88,14 @@
                     </div>
                 </div>
                 @else
+
+                @if($syncStatus === 'settling')
+                <div class="ramka mb-1" style="background:rgba(41,103,186,.08)">
+                    <div class="f-13" style="color:#2967BA">
+                        ⏳ {{ __('activity.sync_settling') }} — {{ __('activity.sync_settling_hint') }}
+                    </div>
+                </div>
+                @endif
 
                 {{-- Скалярные метрики --}}
                 <div class="row row2 mb-1">
@@ -232,7 +242,7 @@
                 </div>
                 @endif
 
-                @endif{{-- /$syncStatus === 'completed' --}}
+                @endif{{-- /$syncStatus === 'completed' || 'settling' --}}
 
             </div>{{-- col-lg-8 --}}
         </div>{{-- row --}}
