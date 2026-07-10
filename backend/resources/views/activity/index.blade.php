@@ -117,7 +117,7 @@
                         <div class="col-6 col-md-4 text-center">
                             <div class="f-13" style="opacity:.65">{{ __('activity.last_load') }}</div>
                             <div class="b-600 cd" style="font-size:2rem">
-                                {{ $lastSession->load_score ? number_format($lastSession->load_score, 0) : '—' }}
+                                {{ (float) $lastSession->load_score > 0 ? number_format($lastSession->load_score, 0) : '—' }}
                             </div>
                         </div>
                         <div class="col-12 col-md-4 text-center mt-1 mt-md-0">
@@ -220,7 +220,7 @@
                         </div>
                         <div class="col-6 col-md-3">
                             <div class="f-13" style="opacity:.6">{{ __('activity.load_score') }}</div>
-                            <div class="b-600">{{ $session->load_score ? number_format($session->load_score, 0) : '—' }}</div>
+                            <div class="b-600">{{ (float) $session->load_score > 0 ? number_format($session->load_score, 0) : '—' }}</div>
                         </div>
                         <div class="col-6 col-md-3">
                             @if($session->calories_kcal)

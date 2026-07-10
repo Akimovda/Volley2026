@@ -63,6 +63,7 @@ return [
     'saving'                 => 'Saving…',
     'error_no_session'       => 'Session creation failed. Please try again.',
     'time_in_zones'          => 'Time in zones',
+    'zones_below_z1'         => 'Heart rate did not reach training zones (below :bpm bpm)',
 
     // Health data consent
     'consent_title'          => 'Health Data',

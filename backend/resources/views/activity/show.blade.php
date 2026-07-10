@@ -134,7 +134,7 @@
                         <div class="ramka text-center">
                             <div class="f-13" style="opacity:.65">{{ __('activity.load_score') }}</div>
                             <div class="b-700 cd" style="font-size:2rem">
-                                {{ $session->load_score ? number_format($session->load_score, 0) : '—' }}
+                                {{ (float) $session->load_score > 0 ? number_format($session->load_score, 0) : '—' }}
                             </div>
                         </div>
                     </div>
@@ -243,6 +243,12 @@
                         </div>
                     </div>
                     @endforeach
+                </div>
+                @else
+                <div class="ramka mb-1 text-center" style="opacity:.75">
+                    <div class="f-13">
+                        {{ __('activity.zones_below_z1', ['bpm' => $zones['z1']['low'] ?? '?']) }}
+                    </div>
                 </div>
                 @endif
 
