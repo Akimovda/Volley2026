@@ -117,7 +117,7 @@
                         <div class="col-6 col-md-4 text-center">
                             <div class="f-13" style="opacity:.65">{{ __('activity.last_load') }}</div>
                             <div class="b-600 cd" style="font-size:2rem">
-                                {{ $lastSession->load_score ? number_format($lastSession->load_score, 0) : '—' }}
+                                {{ (float) $lastSession->load_score > 0 ? number_format($lastSession->load_score, 0) : '—' }}
                             </div>
                         </div>
                         <div class="col-12 col-md-4 text-center mt-1 mt-md-0">
@@ -172,19 +172,23 @@
                         : sprintf('%d:%02d', intdiv($dur, 60), $dur % 60);
                 @endphp
                 <a href="{{ route('activity.show', $session) }}" class="ramka mb-1" style="display:block;text-decoration:none;color:inherit">
-                    <div class="d-flex justify-between align-center">
+                    <div class="section-title-row">
                         <div>
                             <div class="act-session-title">{{ $title }}</div>
                             <div class="f-13" style="opacity:.6">{{ $session->started_at?->setTimezone($userTimezone)->format('d.m.Y H:i') }}</div>
+                            @if($syncStatus === 'pending' || $syncStatus === 'stale' || $syncStatus === 'settling')
+                                <div class="mt-05">
+                                    @if($syncStatus === 'pending')
+                                        <span class="badge badge-sm badge-sync-info">⏳ {{ __('activity.sync_pending') }}</span>
+                                    @elseif($syncStatus === 'stale')
+                                        <span class="badge badge-sm badge-sync-danger">{{ __('activity.sync_stale') }}</span>
+                                    @elseif($syncStatus === 'settling')
+                                        <span class="badge badge-sm badge-sync-info">⏳ {{ __('activity.sync_settling') }}</span>
+                                    @endif
+                                </div>
+                            @endif
                         </div>
                         <div class="text-right" style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
-                            @if($syncStatus === 'pending')
-                                <span class="badge badge-sm" style="background:rgba(41,103,186,.15);color:#2967BA">⏳ {{ __('activity.sync_pending') }}</span>
-                            @elseif($syncStatus === 'stale')
-                                <span class="badge badge-sm" style="background:rgba(239,68,68,.15);color:#ef4444">{{ __('activity.sync_stale') }}</span>
-                            @elseif($syncStatus === 'settling')
-                                <span class="badge badge-sm" style="background:rgba(41,103,186,.15);color:#2967BA">⏳ {{ __('activity.sync_settling') }}</span>
-                            @endif
                             @if($session->direction)
                                 <span class="badge badge-sm {{ $session->direction === 'beach' ? 'badge-orange' : 'badge-blue' }}">
                                     {{ __('activity.filter_' . $session->direction) }}
@@ -216,7 +220,7 @@
                         </div>
                         <div class="col-6 col-md-3">
                             <div class="f-13" style="opacity:.6">{{ __('activity.load_score') }}</div>
-                            <div class="b-600">{{ $session->load_score ? number_format($session->load_score, 0) : '—' }}</div>
+                            <div class="b-600">{{ (float) $session->load_score > 0 ? number_format($session->load_score, 0) : '—' }}</div>
                         </div>
                         <div class="col-6 col-md-3">
                             @if($session->calories_kcal)

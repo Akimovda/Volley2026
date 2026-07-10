@@ -1,6 +1,13 @@
 <?php
 
 return [
+    // Анонсы в TG/VK/MAX — пометка отмены/удаления (PublishOccurrenceAnnouncementService)
+    // Всегда рендерится на русском независимо от locale получателя — весь остальной
+    // текст анонса (OccurrenceAnnouncementMessageBuilder) тоже хардкожен на русском,
+    // единый язык в одном сообщении важнее локали конкретного канала.
+    'channel_announcement_cancelled_banner'          => '❌ ОТМЕНЕНО 😢',
+    'channel_announcement_cancelled_deleted_fallback' => "❌ Мероприятие отменено 😢\n\n:title\n:date",
+
     // Список мероприятий: meta + хедер
     'index_title'       => 'Мероприятия',
     'index_h1'          => 'Мероприятия',

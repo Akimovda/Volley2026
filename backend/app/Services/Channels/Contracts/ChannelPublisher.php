@@ -18,4 +18,13 @@ interface ChannelPublisher
     public function supportsUpdate(): bool;
 
     public function supportsSilent(): bool;
+
+    /**
+     * Удалить ранее отправленное сообщение. Бросает исключение при неудаче
+     * (бот не админ, лимит платформы истёк, пост уже удалён вручную) — вызывающий
+     * код должен ловить и решать, откатываться ли на update() с пометкой отмены.
+     */
+    public function delete(string $chatId, string $messageId): bool;
+
+    public function supportsDelete(): bool;
 }

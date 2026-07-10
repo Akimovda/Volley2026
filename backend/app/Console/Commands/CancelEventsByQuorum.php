@@ -178,6 +178,8 @@ class CancelEventsByQuorum extends Command
                     ->where('id', (int) $row->id)
                     ->update($payload);
 
+                \App\Jobs\MarkAnnouncementCancelledJob::dispatch((int) $row->id)->onQueue('default')->afterCommit();
+
                 $locationText = implode(', ', array_filter([
                     $row->location_name ?? null,
                     $row->location_address ?? null,

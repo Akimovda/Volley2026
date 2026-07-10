@@ -79,4 +79,17 @@ class VkChannelPublisher implements ChannelPublisher
     {
         return false;
     }
+
+    public function delete(string $chatId, string $messageId): bool
+    {
+        // messages.delete для VK-бесед не пробовали и не реализовывали (update() тоже
+        // никогда не был реализован по этой же причине) — не факт, что доступно
+        // community-токену, как и wall.edit/wall.delete (см. VkWallPublisher).
+        throw new LogicException('VK delete is not implemented.');
+    }
+
+    public function supportsDelete(): bool
+    {
+        return false;
+    }
 }
