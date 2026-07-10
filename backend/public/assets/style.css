@@ -4178,6 +4178,38 @@ body.dark .badge.badge-muted {
 	background: rgba(255,255,255,0.2);
 }
 
+/* Текстовый бейдж (не путать с .badge — тот круглый индикатор статуса 1.5rem выше).
+   .badge.badge-sm переопределяет фиксированный размер под текст с эмодзи/словами. */
+.badge.badge-sm {
+	display: inline-flex;
+	align-items: center;
+	width: auto;
+	height: auto;
+	padding: .2rem .55rem;
+	border-radius: 1rem;
+	font-size: .75rem;
+	line-height: 1.3;
+	white-space: nowrap;
+	background: rgba(120,120,128,.15);
+	color: inherit;
+}
+.badge.badge-sm.badge-blue {
+	background: rgba(41,103,186,.15);
+	color: #2967BA;
+}
+.badge.badge-sm.badge-orange {
+	background: rgba(231,97,46,.15);
+	color: #E7612F;
+}
+.badge.badge-sm.badge-sync-info {
+	background: rgba(41,103,186,.15);
+	color: #2967BA;
+}
+.badge.badge-sm.badge-sync-danger {
+	background: rgba(239,68,68,.15);
+	color: #ef4444;
+}
+
 
 
 /* Telegram специальные стили */

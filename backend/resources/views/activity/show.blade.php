@@ -55,7 +55,7 @@
 
                 {{-- Заголовок + дата --}}
                 <div class="ramka">
-                    <div class="d-flex justify-between align-center">
+                    <div class="section-title-row">
                         <div>
                             <div class="b-600 f-18">{{ $sessionTitle }}</div>
                             <div class="f-13" style="opacity:.6">
@@ -65,14 +65,18 @@
                                         {{ __('activity.filter_' . $session->direction) }}
                                     </span>
                                 @endif
-                                @if($syncStatus === 'pending')
-                                    · <span class="badge badge-sm" style="background:rgba(41,103,186,.15);color:#2967BA">⏳ {{ __('activity.sync_pending') }}</span>
-                                @elseif($syncStatus === 'stale')
-                                    · <span class="badge badge-sm" style="background:rgba(239,68,68,.15);color:#ef4444">{{ __('activity.sync_stale') }}</span>
-                                @elseif($syncStatus === 'settling')
-                                    · <span class="badge badge-sm" style="background:rgba(41,103,186,.15);color:#2967BA">⏳ {{ __('activity.sync_settling') }}</span>
-                                @endif
                             </div>
+                            @if($syncStatus === 'pending' || $syncStatus === 'stale' || $syncStatus === 'settling')
+                                <div class="mt-05">
+                                    @if($syncStatus === 'pending')
+                                        <span class="badge badge-sm badge-sync-info">⏳ {{ __('activity.sync_pending') }}</span>
+                                    @elseif($syncStatus === 'stale')
+                                        <span class="badge badge-sm badge-sync-danger">{{ __('activity.sync_stale') }}</span>
+                                    @elseif($syncStatus === 'settling')
+                                        <span class="badge badge-sm badge-sync-info">⏳ {{ __('activity.sync_settling') }}</span>
+                                    @endif
+                                </div>
+                            @endif
                         </div>
                         <a href="{{ route('activity.index') }}" class="btn btn-sm btn-secondary">← {{ __('activity.back_to_list') }}</a>
                     </div>
@@ -227,7 +231,7 @@
                         $zoneRange = ($zones[$zKey]['low'] ?? '?') . '–' . ($zones[$zKey]['high'] ?? '?');
                     @endphp
                     <div class="mb-1">
-                        <div class="d-flex justify-between f-13 mb-half">
+                        <div class="f-13" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.3rem">
                             <span>
                                 <span class="b-600">{{ $zoneNames[$zKey] }}</span>
                                 <span style="opacity:.55;margin-left:4px">{{ $zoneRange }} {{ __('activity.live_bpm') }}</span>
