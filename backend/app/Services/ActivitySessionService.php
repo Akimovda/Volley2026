@@ -238,6 +238,17 @@ class ActivitySessionService
 
     public function finalize(ActivitySession $session, ?float $activeEnergyKcal = null, ?float $endedAtTs = null): ActivitySession
     {
+        // Идемпотентность: повторный finalize() (ретрай часов после сбоя отправки jumps/samples,
+        // см. диагностику session 106) не должен перезаписывать ended_at/duration_sec/calories —
+        // они уже корректны с первого вызова. Сохраняем только то, что контроллер выставил на
+        // инстансе (steps, jump_count_expected), и пересчитываем производные агрегаты из свежих данных.
+        if ($session->status === 'completed' && $session->finalized_at !== null) {
+            $session->save();
+            $this->recomputeAggregates($session);
+            $session->refresh();
+            return $session;
+        }
+
         $endedAt = $this->resolveEndedAt($endedAtTs);
         // timestamp-разница вместо diffInSeconds() (тот по умолчанию absolute=false и может дать отрицательное число)
         $durationSec = max(0, $endedAt->timestamp - $session->started_at->timestamp);
