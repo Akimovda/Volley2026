@@ -202,4 +202,29 @@ class MaxChannelPublisher implements ChannelPublisher
     {
         return false;
     }
+
+    public function delete(string $chatId, string $messageId): bool
+    {
+        // MAX API: DELETE https://platform-api.max.ru/messages?message_id=...
+        // По аналогии с update() (PUT на тот же путь) — не задокументировано отдельно,
+        // не проверено на реальном канале; если платформа не поддерживает — бросит
+        // исключение, вызывающий код (deletePosts()) откатится на update()/warning.
+        $token = $this->getToken();
+
+        $response = Http::timeout(20)
+            ->withHeaders([
+                'Authorization' => $token,
+                'Content-Type'  => 'application/json',
+            ])
+            ->delete('https://platform-api.max.ru/messages?message_id=' . urlencode($messageId))
+            ->throw()
+            ->json();
+
+        return (bool) ($response['ok'] ?? true);
+    }
+
+    public function supportsDelete(): bool
+    {
+        return true;
+    }
 }

@@ -26,6 +26,14 @@ class PublishOccurrenceRegistrationOpenJob implements ShouldQueue
             return;
         }
 
+        // Сценарий C: job мог встать в очередь ДО отмены (диспетчер-команда
+        // events:publish-pending-announcements фильтрует на момент постановки в очередь,
+        // но occurrence могли отменить уже ПОСЛЕ dispatch и ДО выполнения) — не публикуем
+        // анонс мёртвого события.
+        if (!empty($occurrence->is_cancelled) || !empty($occurrence->cancelled_at)) {
+            return;
+        }
+
         $service->publish($occurrence);
     }
 }

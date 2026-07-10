@@ -1,6 +1,13 @@
 <?php
 
 return [
+    // TG/VK/MAX channel announcements — cancelled/deleted marker (PublishOccurrenceAnnouncementService)
+    // Always rendered in Russian regardless of recipient locale — the rest of the
+    // announcement text (OccurrenceAnnouncementMessageBuilder) is hardcoded Russian too;
+    // one consistent language per message matters more than per-channel locale.
+    'channel_announcement_cancelled_banner'          => '❌ CANCELLED 😢',
+    'channel_announcement_cancelled_deleted_fallback' => "❌ Event cancelled 😢\n\n:title\n:date",
+
     // Events list: meta + header
     'index_title'         => 'Events',
     'index_h1'            => 'Events',

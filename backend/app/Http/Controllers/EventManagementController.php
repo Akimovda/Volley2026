@@ -502,13 +502,19 @@ if ($role === 'admin') {
         $deleteMode = (string)$request->input('delete_mode', 'single');
 
         if ($deleteMode === 'force') {
+            $channelMessages = $this->collectChannelMessagesForOccurrences([(int) $occurrence->id]);
             $occurrence->delete();
+            if (!empty($channelMessages)) {
+                \App\Jobs\DeleteChannelPostsJob::dispatch($channelMessages)->onQueue('default')->afterCommit();
+            }
             return back()->with('status', 'Повтор удалён навсегда.');
         }
 
         $occurrence->cancelled_at = now();
         $occurrence->is_cancelled = true;
         $occurrence->save();
+
+        \App\Jobs\MarkAnnouncementCancelledJob::dispatch((int) $occurrence->id)->onQueue('default')->afterCommit();
 
         return back()->with('status', 'Повтор отменён.');
     }
@@ -1482,7 +1488,11 @@ if ($role === 'admin') {
 
                 // Без регистраций — удаляем (мусор)
                 if (!empty($withoutRegs)) {
+                    $channelMessagesToDelete = $this->collectChannelMessagesForOccurrences($withoutRegs);
                     DB::table('event_occurrences')->whereIn('id', $withoutRegs)->delete();
+                    if (!empty($channelMessagesToDelete)) {
+                        \App\Jobs\DeleteChannelPostsJob::dispatch($channelMessagesToDelete)->onQueue('default')->afterCommit();
+                    }
                 }
 
                 // С регистрациями — отменяем и уведомляем
@@ -1510,6 +1520,7 @@ if ($role === 'admin') {
                 occurrenceId: $occurrenceId,
                 reason: 'Расписание серии изменено организатором'
             );
+            \App\Jobs\MarkAnnouncementCancelledJob::dispatch((int) $occurrenceId)->onQueue('default')->afterCommit();
         }
 
         return redirect()
@@ -1549,8 +1560,14 @@ if ($role === 'admin') {
                     ->where('event_id', $eventId)
                     ->delete();
             }
-    
+
+            $channelMessages = $this->collectChannelMessagesForEvent($eventId);
+
             $event->delete();
+
+            if (!empty($channelMessages)) {
+                \App\Jobs\DeleteChannelPostsJob::dispatch($channelMessages)->onQueue('default')->afterCommit();
+            }
         });
     }
     public function destroy(Request $request, Event $event)
@@ -1651,8 +1668,9 @@ if ($role === 'admin') {
                     occurrenceId: (int) $occurrenceId,
                     reason: 'Отменено организатором'
                 );
+                \App\Jobs\MarkAnnouncementCancelledJob::dispatch((int) $occurrenceId)->onQueue('default')->afterCommit();
             }
-    
+
             return back()->with('status', 'Цепочка удалена: повторение выключено, будущие occurrences отменены, история сохранена.');
         }
     
@@ -1715,8 +1733,9 @@ if ($role === 'admin') {
                 occurrenceId: (int) $occurrenceId,
                 reason: 'Отменено организатором'
             );
+            \App\Jobs\MarkAnnouncementCancelledJob::dispatch((int) $occurrenceId)->onQueue('default')->afterCommit();
         }
-    
+
         return back()->with('status', 'Мероприятие отменено: дата скрыта из UI, история сохранена.');
     }
 
@@ -1903,6 +1922,7 @@ if ($role === 'admin') {
                 occurrenceId: $item['occurrence_id'],
                 reason: $item['reason']
             );
+            \App\Jobs\MarkAnnouncementCancelledJob::dispatch((int) $item['occurrence_id'])->onQueue('default')->afterCommit();
         }
     
         $msg = "Bulk cancel: затронуто {$affected}.";
@@ -1968,6 +1988,75 @@ if ($role === 'admin') {
                 reason: $reason
             );
         }
+    }
+
+    /**
+     * Собирает данные опубликованных анонсов ДО физического DELETE occurrence/event —
+     * event_channel_messages улетит каскадом вместе с occurrence, поэтому external_message_id
+     * нужно забрать заранее и передать в DeleteChannelPostsJob как plain-array,
+     * не полагаясь на то, что строка в БД доживёт до выполнения джоба.
+     */
+    private function collectChannelMessagesForOccurrences(array $occurrenceIds): array
+    {
+        if (empty($occurrenceIds) || !Schema::hasTable('event_channel_messages')) {
+            return [];
+        }
+
+        return $this->mapChannelMessageRows(
+            DB::table('event_channel_messages as ecm')
+                ->join('events as e', 'e.id', '=', 'ecm.event_id')
+                ->leftJoin('event_occurrences as eo', 'eo.id', '=', 'ecm.occurrence_id')
+                ->whereIn('ecm.occurrence_id', $occurrenceIds)
+                ->whereNotNull('ecm.external_message_id')
+        );
+    }
+
+    private function collectChannelMessagesForEvent(int $eventId): array
+    {
+        if (!Schema::hasTable('event_channel_messages')) {
+            return [];
+        }
+
+        return $this->mapChannelMessageRows(
+            DB::table('event_channel_messages as ecm')
+                ->join('events as e', 'e.id', '=', 'ecm.event_id')
+                ->leftJoin('event_occurrences as eo', 'eo.id', '=', 'ecm.occurrence_id')
+                ->where('ecm.event_id', $eventId)
+                ->whereNotNull('ecm.external_message_id')
+        );
+    }
+
+    private function mapChannelMessageRows($query): array
+    {
+        return $query
+            ->select([
+                'ecm.event_id', 'ecm.occurrence_id', 'ecm.channel_id', 'ecm.platform',
+                'ecm.external_chat_id', 'ecm.external_message_id',
+                'e.title as event_title', 'eo.starts_at', 'eo.timezone',
+            ])
+            ->get()
+            ->map(function ($row) {
+                $startsText = '';
+                if ($row->starts_at) {
+                    $tz = $row->timezone ?: 'UTC';
+                    $startsText = Carbon::parse($row->starts_at, 'UTC')
+                        ->setTimezone($tz)
+                        ->locale('ru')
+                        ->translatedFormat('j F, H:i');
+                }
+
+                return [
+                    'event_id'             => (int) $row->event_id,
+                    'occurrence_id'        => (int) $row->occurrence_id,
+                    'channel_id'           => (int) $row->channel_id,
+                    'platform'             => (string) $row->platform,
+                    'external_chat_id'     => (string) $row->external_chat_id,
+                    'external_message_id'  => (string) $row->external_message_id,
+                    'event_title'          => (string) $row->event_title,
+                    'starts_at_text'       => $startsText,
+                ];
+            })
+            ->all();
     }
 
     private function ensureCanCreateEvents($user): void

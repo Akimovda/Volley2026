@@ -113,6 +113,37 @@ class VkWallPublisher implements ChannelPublisher
     public function supportsUpdate(): bool { return false; }
     public function supportsSilent(): bool { return false; }
 
+    public function delete(string $chatId, string $messageId): bool
+    {
+        // wall.delete — та же группа методов, что и wall.edit, community-token
+        // получит тот же VK error 27 (подтверждено для edit/photos ранее). Метод
+        // реализован на случай появления user-token, но supportsDelete()=false
+        // отключает его в текущем community-flow — см. комментарий выше.
+        $ownerId = (int) $chatId;
+
+        $params = [
+            'owner_id'     => $ownerId,
+            'post_id'      => (int) $messageId,
+            'v'            => self::API_VER,
+            'access_token' => $this->accessToken,
+        ];
+
+        $response = Http::timeout(20)
+            ->asForm()
+            ->post(self::API_BASE . 'wall.delete', $params)
+            ->json();
+
+        if (isset($response['error'])) {
+            throw new RuntimeException(
+                'VK wall.delete error ' . $response['error']['error_code'] . ': ' . $response['error']['error_msg']
+            );
+        }
+
+        return true;
+    }
+
+    public function supportsDelete(): bool { return false; }
+
     private function uploadPhoto(int $ownerId, string $imageUrl): ?string
     {
         // Шаг 1: получить URL для загрузки

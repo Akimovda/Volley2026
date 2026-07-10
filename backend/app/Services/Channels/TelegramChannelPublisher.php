@@ -167,12 +167,7 @@ class TelegramChannelPublisher implements ChannelPublisher
 
             // Пытаемся удалить старое сообщение
             try {
-                $this->getHttpClient()
-                    ->post("https://api.telegram.org/bot{$token}/deleteMessage", [
-                        'chat_id' => $chatId,
-                        'message_id' => $messageId,
-                    ])
-                    ->throw();
+                $this->delete($chatId, $messageId);
             } catch (\Exception $e) {
                 Log::warning('Failed to delete old message before resend', [
                     'chat_id' => $chatId,
@@ -251,6 +246,26 @@ class TelegramChannelPublisher implements ChannelPublisher
     }
 
     public function supportsSilent(): bool
+    {
+        return true;
+    }
+
+    public function delete(string $chatId, string $messageId): bool
+    {
+        $token = $this->getToken();
+
+        $response = $this->getHttpClient()
+            ->post("https://api.telegram.org/bot{$token}/deleteMessage", [
+                'chat_id' => $chatId,
+                'message_id' => $messageId,
+            ])
+            ->throw()
+            ->json();
+
+        return (bool) ($response['ok'] ?? false);
+    }
+
+    public function supportsDelete(): bool
     {
         return true;
     }
