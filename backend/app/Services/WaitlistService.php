@@ -275,6 +275,25 @@ class WaitlistService
                 }
                 $attempts++;
 
+                // Легаси/испорченные записи с positions=[] для classic — НЕ трактуем
+                // как "подходит любая позиция" (это осмысленно только для beach, см.
+                // subscribedToPosition()). Нормализуем перед проверкой тем же правилом,
+                // что и в join().
+                if ($direction !== 'beach' && empty($entry->positions)) {
+                    $normalized = $this->occupiedPositions($occurrence);
+                    if (empty($normalized)) {
+                        continue;
+                    }
+                    $entry->positions = $normalized;
+                    $entry->save();
+                    Log::warning("Waitlist autoBook: нормализована легаси-запись с пустым positions", [
+                        'entry_id'   => $entry->id,
+                        'occurrence' => $occurrence->id,
+                        'user_id'    => $entry->user_id,
+                        'positions'  => $normalized,
+                    ]);
+                }
+
                 // Позиция должна подходить (для пляжки positions=[] → подходит любая)
                 if (!$entry->subscribedToPosition($position)) {
                     continue;
