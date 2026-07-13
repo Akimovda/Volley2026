@@ -779,8 +779,16 @@ $showWaitlistViewer = !$isTournament && !$eventStarted && $isOrganizer && $waitl
 		        );
 		    }
 		}
+
+		// Одна занятая позиция — чекбокс избыточен, отправляем её напрямую.
+		$wlSingleKey = count($wlCheckboxPositions) === 1 ? array_key_first($wlCheckboxPositions) : null;
 		@endphp
-		@if(!empty($wlCheckboxPositions))
+		@if($wlSingleKey)
+		<input type="hidden" name="positions[]" value="{{ $wlSingleKey }}">
+		<div class="text-muted small mb-2">
+			{{ __('events.show_pl_waitlist_single_pos', ['position' => $wlCheckboxPositions[$wlSingleKey]]) }}
+		</div>
+		@elseif(!empty($wlCheckboxPositions))
 		<div class="mb-2 form">
 			<label>{{ __('events.show_pl_waitlist_pick_pos') }}</label>
 			<div class="d-flex flex-wrap gap-2">
@@ -793,7 +801,7 @@ $showWaitlistViewer = !$isTournament && !$eventStarted && $isOrganizer && $waitl
 				@endforeach
 			</div>
 			<div class="text-muted small mt-1">
-				{{ __('events.show_pl_waitlist_no_pick') }}
+				{{ __('events.show_pl_waitlist_no_pick', ['positions' => implode(', ', $wlCheckboxPositions)]) }}
 			</div>
 		</div>
 		@endif
