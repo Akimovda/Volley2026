@@ -315,11 +315,16 @@ final class NotificationDeliverySender
             'organizer_deleted_player'                                   => '🗑',
             'organizer_player_auto_booked'                               => '✅',
             'organizer_player_waitlisted'                                => '🔄',
+            'organizer_player_waitlist_left'                             => '❎',
             default                                                      => '📢',
         };
 
         if ($type === 'organizer_player_waitlisted') {
             return $this->buildOrganizerWaitlistText($payload);
+        }
+
+        if ($type === 'organizer_player_waitlist_left') {
+            return $this->buildOrganizerWaitlistLeftText($payload);
         }
 
         // Организаторские уведомления о регистрации — структурированный формат
@@ -429,6 +434,28 @@ final class NotificationDeliverySender
         if ($playerName !== '') $text .= " записался игрок {$playerName}";
         $text .= " в лист ожидания на позицию: {$posLabel}.";
         $text .= " В списке ожидания {$waitlistCount} " . $this->pluralPlayers($waitlistCount) . '.';
+
+        return $text;
+    }
+
+    private function buildOrganizerWaitlistLeftText(array $payload): string
+    {
+        $date           = trim((string) ($payload['event_date'] ?? ''));
+        $time           = trim((string) ($payload['event_time'] ?? ''));
+        $title          = trim((string) ($payload['event_title'] ?? ''));
+        $playerName     = trim((string) ($payload['player_name'] ?? ''));
+        $posLabel       = trim((string) ($payload['pos_label'] ?? 'все позиции'));
+        $waitlistCount  = (int) ($payload['waitlist_count'] ?? 0);
+
+        $datePart = implode(' ', array_filter([$date, $time]));
+
+        $text = '❎ Игрок';
+        if ($playerName !== '') $text .= " {$playerName}";
+        $text .= ' покинул лист ожидания на мероприятие';
+        if ($datePart !== '') $text .= " {$datePart}";
+        if ($title !== '')    $text .= " «{$title}»";
+        $text .= " (позиции: {$posLabel}).";
+        $text .= " В списке ожидания осталось {$waitlistCount} " . $this->pluralPlayers($waitlistCount) . '.';
 
         return $text;
     }

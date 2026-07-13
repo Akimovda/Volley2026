@@ -164,10 +164,25 @@ class WaitlistService
     */
     public function leave(EventOccurrence $occurrence, User $user): void
     {
-        OccurrenceWaitlist::query()
+        $entry = OccurrenceWaitlist::query()
             ->where('occurrence_id', $occurrence->id)
             ->where('user_id', $user->id)
-            ->delete();
+            ->first();
+
+        if (!$entry) {
+            return;
+        }
+
+        $positions = (array) ($entry->positions ?? []);
+        $entry->delete();
+
+        // Организатору — симметрично join(): там "записался", здесь "покинул".
+        \App\Jobs\NotifyOrganizerWaitlistJob::dispatch(
+            (int) $occurrence->id,
+            (int) $user->id,
+            $positions,
+            'left',
+        );
 
         Log::info("Waitlist: user #{$user->id} left occurrence #{$occurrence->id}");
     }
