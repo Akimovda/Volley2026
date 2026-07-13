@@ -65,6 +65,16 @@ class EventWaitlistManagementController extends Controller
 
         $occurrence = $entry->occurrence;
         $positions  = (array) ($entry->positions ?? []);
+        $userId     = (int) $entry->user_id;
+
+        if ($occurrence && $occurrence->event) {
+            app(\App\Services\UserNotificationService::class)->createWaitlistRemovedByOrganizerNotification(
+                userId: $userId,
+                eventId: (int) $occurrence->event->id,
+                occurrenceId: (int) $occurrence->id,
+                eventTitle: (string) ($occurrence->event->title ?? ''),
+            );
+        }
 
         $entry->delete();
 
