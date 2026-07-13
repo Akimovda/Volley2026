@@ -69,7 +69,12 @@ class OccurrenceWaitlistController extends Controller
             }
         }
 
-        app(WaitlistService::class)->join($occurrence, $user, $positions);
+        app(WaitlistService::class)->join(
+            $occurrence,
+            $user,
+            $positions,
+            \App\Services\RegistrationEventLogger::resolveRealActorId($request),
+        );
 
         return back()->with('status', 'Вы записаны в резерв! Когда освободится подходящее место, мы автоматически переведём вас в основной состав.');
     }
@@ -78,7 +83,11 @@ class OccurrenceWaitlistController extends Controller
     {
         $user = $request->user();
 
-        app(WaitlistService::class)->leave($occurrence, $user);
+        app(WaitlistService::class)->leave(
+            $occurrence,
+            $user,
+            \App\Services\RegistrationEventLogger::resolveRealActorId($request),
+        );
 
         return back()->with('status', 'Вы покинули резерв.');
     }

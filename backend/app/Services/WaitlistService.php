@@ -21,7 +21,7 @@ class WaitlistService
     | JOIN WAITLIST
     |--------------------------------------------------------------------------
     */
-    public function join(EventOccurrence $occurrence, User $user, array $positions = []): OccurrenceWaitlist
+    public function join(EventOccurrence $occurrence, User $user, array $positions = [], ?int $actorId = null): OccurrenceWaitlist
     {
         // Нормализуем позиции
         $positions = array_values(array_unique(array_filter($positions)));
@@ -74,6 +74,17 @@ class WaitlistService
         Log::info("Waitlist: user #{$user->id} joined occurrence #{$occurrence->id}", [
             'positions' => $positions,
         ]);
+
+        if ($entry->wasRecentlyCreated) {
+            \App\Services\RegistrationEventLogger::log(
+                eventId: (int) $occurrence->event_id,
+                occurrenceId: (int) $occurrence->id,
+                targetUserId: (int) $user->id,
+                actorId: $actorId ?? (int) $user->id,
+                action: 'waitlist_joined',
+                meta: ['positions' => $positions],
+            );
+        }
 
         \App\Jobs\NotifyOrganizerWaitlistJob::dispatch(
             (int) $occurrence->id,
@@ -162,7 +173,7 @@ class WaitlistService
     | LEAVE WAITLIST
     |--------------------------------------------------------------------------
     */
-    public function leave(EventOccurrence $occurrence, User $user): void
+    public function leave(EventOccurrence $occurrence, User $user, ?int $actorId = null): void
     {
         $entry = OccurrenceWaitlist::query()
             ->where('occurrence_id', $occurrence->id)
@@ -175,6 +186,15 @@ class WaitlistService
 
         $positions = (array) ($entry->positions ?? []);
         $entry->delete();
+
+        \App\Services\RegistrationEventLogger::log(
+            eventId: (int) $occurrence->event_id,
+            occurrenceId: (int) $occurrence->id,
+            targetUserId: (int) $user->id,
+            actorId: $actorId ?? (int) $user->id,
+            action: 'waitlist_left',
+            meta: ['positions' => $positions],
+        );
 
         // Организатору — симметрично join(): там "записался", здесь "покинул".
         \App\Jobs\NotifyOrganizerWaitlistJob::dispatch(
@@ -429,6 +449,17 @@ class WaitlistService
                 // EventRegistrationObserver::created() сам удалит entry,
                 // но делаем явно — это идемпотентно и надёжнее в транзакции
                 $entry->delete();
+
+                // actor=null — авто-перевод, никто не выполнял действие вручную (система)
+                \App\Services\RegistrationEventLogger::log(
+                    eventId: (int) $event->id,
+                    occurrenceId: (int) $occurrence->id,
+                    targetUserId: (int) $user->id,
+                    actorId: null,
+                    action: 'waitlist_auto_booked',
+                    registrationId: (int) $reg->id,
+                    meta: ['position' => $position !== '' ? $position : null],
+                );
 
                 // Уведомление игроку: «Вы записаны из резерва в основной состав»
                 app(UserNotificationService::class)->createWaitlistAutoBookedNotification(

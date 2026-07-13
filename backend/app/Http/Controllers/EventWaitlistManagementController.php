@@ -49,7 +49,12 @@ class EventWaitlistManagementController extends Controller
 
         $positions = array_values(array_filter((array) $request->input('positions', [])));
 
-        app(WaitlistService::class)->join($occurrence, $user, $positions);
+        app(WaitlistService::class)->join(
+            $occurrence,
+            $user,
+            $positions,
+            \App\Services\RegistrationEventLogger::resolveRealActorId($request),
+        );
 
         return back()->with('status', 'Игрок добавлен в лист ожидания.');
     }
@@ -73,6 +78,15 @@ class EventWaitlistManagementController extends Controller
                 eventId: (int) $occurrence->event->id,
                 occurrenceId: (int) $occurrence->id,
                 eventTitle: (string) ($occurrence->event->title ?? ''),
+            );
+
+            \App\Services\RegistrationEventLogger::log(
+                eventId: (int) $occurrence->event->id,
+                occurrenceId: (int) $occurrence->id,
+                targetUserId: $userId,
+                actorId: \App\Services\RegistrationEventLogger::resolveRealActorId($request),
+                action: 'waitlist_removed_by_organizer',
+                meta: ['positions' => $positions],
             );
         }
 
