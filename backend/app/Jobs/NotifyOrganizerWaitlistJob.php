@@ -36,6 +36,7 @@ class NotifyOrganizerWaitlistJob implements ShouldQueue
         public readonly int $occurrenceId,
         public readonly int $playerId,
         public readonly array $positions = [],
+        public readonly string $action = 'joined', // 'joined' | 'left'
     ) {}
 
     public function handle(UserNotificationService $notificationService): void
@@ -77,11 +78,15 @@ class NotifyOrganizerWaitlistJob implements ShouldQueue
         $eventDate = mb_ucfirst($starts->translatedFormat('l')) . ', ' . $starts->translatedFormat('j F');
         $eventTime = $starts->format('H:i');
 
+        [$type, $title] = $this->action === 'left'
+            ? ['organizer_player_waitlist_left', 'Выход из листа ожидания']
+            : ['organizer_player_waitlisted', 'Запись в лист ожидания'];
+
         try {
             $notificationService->create(
                 userId:   (int) $organizer->id,
-                type:     'organizer_player_waitlisted',
-                title:    'Запись в лист ожидания',
+                type:     $type,
+                title:    $title,
                 body:     null,
                 payload:  [
                     'event_id'       => (int) $event->id,

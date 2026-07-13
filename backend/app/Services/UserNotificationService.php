@@ -186,6 +186,26 @@ final class UserNotificationService
             channels: ['in_app', 'telegram', 'vk', 'max', 'push']
         );
     }
+
+    public function createWaitlistRemovedByOrganizerNotification(
+        int $userId,
+        int $eventId,
+        ?int $occurrenceId,
+        string $eventTitle
+    ): UserNotification {
+        return $this->create(
+            userId: $userId,
+            type: 'waitlist_removed_by_organizer',
+            title: 'Изменение в листе ожидания',
+            body: "ℹ️ Вы больше не в листе ожидания на мероприятие «{$eventTitle}».",
+            payload: [
+                'event_id'      => $eventId,
+                'occurrence_id' => $occurrenceId,
+                'event_title'   => $eventTitle,
+            ],
+            channels: ['in_app', 'telegram', 'vk', 'max']
+        );
+    }
     public function createGroupInviteNotification(
         int $toUserId,
         int $fromUserId,

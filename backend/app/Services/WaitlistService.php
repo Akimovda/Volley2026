@@ -26,6 +26,19 @@ class WaitlistService
         // Нормализуем позиции
         $positions = array_values(array_unique(array_filter($positions)));
 
+        // Инвариант: positions=[] не должно попадать в БД для classic — это превращает
+        // waitlist в "на всё" даже когда занята одна конкретная позиция. Предохранитель
+        // на случай любого клиента (веб уже фильтрует на своей стороне, но мобильный
+        // и будущий API — не гарантированно).
+        $direction = (string) ($occurrence->event->direction ?? 'classic');
+        if ($direction !== 'beach' && empty($positions)) {
+            $positions = $this->occupiedPositions($occurrence);
+            Log::warning("Waitlist: join() получил пустой positions для occurrence #{$occurrence->id} (direction={$direction}) — заполнено занятыми позициями", [
+                'user_id'   => $user->id,
+                'positions' => $positions,
+            ]);
+        }
+
         $entry = OccurrenceWaitlist::updateOrCreate(
             [
                 'occurrence_id' => $occurrence->id,
@@ -103,15 +116,73 @@ class WaitlistService
 
     /*
     |--------------------------------------------------------------------------
+    | OCCUPIED POSITIONS — какие классические позиции сейчас заняты
+    |--------------------------------------------------------------------------
+    | Предохранитель против positions=[] для classic (для beach позиций нет —
+    | сюда не вызывается). Если ни одна роль не занята по отдельности (напр.
+    | общий лимит достигнут иначе) — возвращает все настроенные позиции:
+    | лучше "все", чем [].
+    */
+    public function occupiedPositions(EventOccurrence $occurrence): array
+    {
+        $event = $occurrence->event ?: $occurrence->loadMissing('event')->event;
+        if (!$event) return [];
+
+        $slotService = app(EventRoleSlotService::class);
+        $slots       = $slotService->getSlots($event);
+
+        $all      = [];
+        $occupied = [];
+        foreach ($slots as $slot) {
+            $all[] = $slot->role;
+            if (!$slotService->hasFreeSlot($occurrence->id, $slot->role)) {
+                $occupied[] = $slot->role;
+            }
+        }
+
+        $reserveMax = (int) ($event->gameSettings?->reserve_players_max ?? 0);
+        if ($reserveMax > 0) {
+            $all[] = 'reserve';
+            $reserveTaken = DB::table('event_registrations')
+                ->where('occurrence_id', $occurrence->id)
+                ->where('position', 'reserve')
+                ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
+                ->whereRaw("(status IS NULL OR status != 'cancelled')")
+                ->count();
+            if ($reserveTaken >= $reserveMax) {
+                $occupied[] = 'reserve';
+            }
+        }
+
+        return !empty($occupied) ? $occupied : $all;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
     | LEAVE WAITLIST
     |--------------------------------------------------------------------------
     */
     public function leave(EventOccurrence $occurrence, User $user): void
     {
-        OccurrenceWaitlist::query()
+        $entry = OccurrenceWaitlist::query()
             ->where('occurrence_id', $occurrence->id)
             ->where('user_id', $user->id)
-            ->delete();
+            ->first();
+
+        if (!$entry) {
+            return;
+        }
+
+        $positions = (array) ($entry->positions ?? []);
+        $entry->delete();
+
+        // Организатору — симметрично join(): там "записался", здесь "покинул".
+        \App\Jobs\NotifyOrganizerWaitlistJob::dispatch(
+            (int) $occurrence->id,
+            (int) $user->id,
+            $positions,
+            'left',
+        );
 
         Log::info("Waitlist: user #{$user->id} left occurrence #{$occurrence->id}");
     }
@@ -218,6 +289,25 @@ class WaitlistService
                     break;
                 }
                 $attempts++;
+
+                // Легаси/испорченные записи с positions=[] для classic — НЕ трактуем
+                // как "подходит любая позиция" (это осмысленно только для beach, см.
+                // subscribedToPosition()). Нормализуем перед проверкой тем же правилом,
+                // что и в join().
+                if ($direction !== 'beach' && empty($entry->positions)) {
+                    $normalized = $this->occupiedPositions($occurrence);
+                    if (empty($normalized)) {
+                        continue;
+                    }
+                    $entry->positions = $normalized;
+                    $entry->save();
+                    Log::warning("Waitlist autoBook: нормализована легаси-запись с пустым positions", [
+                        'entry_id'   => $entry->id,
+                        'occurrence' => $occurrence->id,
+                        'user_id'    => $entry->user_id,
+                        'positions'  => $normalized,
+                    ]);
+                }
 
                 // Позиция должна подходить (для пляжки positions=[] → подходит любая)
                 if (!$entry->subscribedToPosition($position)) {

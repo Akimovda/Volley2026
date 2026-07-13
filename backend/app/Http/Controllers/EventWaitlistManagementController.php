@@ -65,6 +65,16 @@ class EventWaitlistManagementController extends Controller
 
         $occurrence = $entry->occurrence;
         $positions  = (array) ($entry->positions ?? []);
+        $userId     = (int) $entry->user_id;
+
+        if ($occurrence && $occurrence->event) {
+            app(\App\Services\UserNotificationService::class)->createWaitlistRemovedByOrganizerNotification(
+                userId: $userId,
+                eventId: (int) $occurrence->event->id,
+                occurrenceId: (int) $occurrence->id,
+                eventTitle: (string) ($occurrence->event->title ?? ''),
+            );
+        }
 
         $entry->delete();
 
@@ -92,14 +102,27 @@ class EventWaitlistManagementController extends Controller
 
         $positions = array_values(array_filter((array) $request->input('positions', [])));
 
+        // Тот же инвариант, что в WaitlistService::join() — не пишем positions=[] для
+        // classic (organizer правит очередь напрямую в БД, мимо join(), поэтому
+        // предохранитель нужен здесь отдельно).
+        $occurrence = $entry->occurrence()->with('event.gameSettings')->first();
+        $waitlist   = app(WaitlistService::class);
+        if ($occurrence) {
+            $direction = (string) ($occurrence->event->direction ?? 'classic');
+            if ($direction !== 'beach' && empty($positions)) {
+                $positions = $waitlist->occupiedPositions($occurrence);
+                \Illuminate\Support\Facades\Log::warning("Waitlist: updatePositions() получил пустой positions для entry #{$entry->id} (direction={$direction}) — заполнено занятыми позициями", [
+                    'positions' => $positions,
+                ]);
+            }
+        }
+
         DB::table('occurrence_waitlist')
             ->where('id', $entry->id)
             ->update(['positions' => json_encode($positions)]);
 
         // Если среди новых позиций есть свободные слоты — авто-бук сразу
-        $occurrence = $entry->occurrence()->with('event.gameSettings')->first();
         if ($occurrence) {
-            $waitlist = app(WaitlistService::class);
             foreach ($positions as $pos) {
                 if ($pos === 'reserve') {
                     $reserveMax = (int)($occurrence->event->gameSettings?->reserve_players_max ?? 0);
