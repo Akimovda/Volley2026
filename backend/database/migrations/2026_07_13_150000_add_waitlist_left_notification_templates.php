@@ -32,7 +32,7 @@ return new class extends Migration
             $toInsert[] = [
                 'code'           => 'waitlist_removed_by_organizer',
                 'channel'        => null,
-                'name'           => 'Игроку: удалён из листа ожидания организатором',
+                'name'           => 'Игроку: больше не в листе ожидания (удалил организатор)',
                 'title_template' => null,
                 'body_template'  => null,
                 'is_active'      => false,
