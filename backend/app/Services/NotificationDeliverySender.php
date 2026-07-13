@@ -449,9 +449,9 @@ final class NotificationDeliverySender
 
         $datePart = implode(' ', array_filter([$date, $time]));
 
-        $text = '❎ Игрок';
-        if ($playerName !== '') $text .= " {$playerName}";
-        $text .= ' покинул лист ожидания на мероприятие';
+        $text = '❎ Выход из листа ожидания';
+        if ($playerName !== '') $text .= ": {$playerName}";
+        $text .= ' — мероприятие';
         if ($datePart !== '') $text .= " {$datePart}";
         if ($title !== '')    $text .= " «{$title}»";
         $text .= " (позиции: {$posLabel}).";

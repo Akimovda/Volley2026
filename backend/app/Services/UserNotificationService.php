@@ -196,8 +196,8 @@ final class UserNotificationService
         return $this->create(
             userId: $userId,
             type: 'waitlist_removed_by_organizer',
-            title: 'Вы удалены из листа ожидания',
-            body: "ℹ️ Вы удалены из листа ожидания на мероприятие «{$eventTitle}» организатором.",
+            title: 'Изменение в листе ожидания',
+            body: "ℹ️ Вы больше не в листе ожидания на мероприятие «{$eventTitle}».",
             payload: [
                 'event_id'      => $eventId,
                 'occurrence_id' => $occurrenceId,

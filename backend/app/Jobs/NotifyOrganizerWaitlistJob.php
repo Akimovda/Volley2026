@@ -79,7 +79,7 @@ class NotifyOrganizerWaitlistJob implements ShouldQueue
         $eventTime = $starts->format('H:i');
 
         [$type, $title] = $this->action === 'left'
-            ? ['organizer_player_waitlist_left', 'Игрок покинул лист ожидания']
+            ? ['organizer_player_waitlist_left', 'Выход из листа ожидания']
             : ['organizer_player_waitlisted', 'Запись в лист ожидания'];
 
         try {
