@@ -933,6 +933,12 @@ return [
     'regs_action_cancelled'  => 'Cancelled',
     'regs_action_restored'   => 'Restored',
     'regs_actor_self'        => 'self',
+    'regs_actor_system'      => 'system',
+
+    'regs_action_waitlist_joined'               => 'Waitlist: joined',
+    'regs_action_waitlist_left'                 => 'Waitlist: left',
+    'regs_action_waitlist_auto_booked'          => 'Auto-booked',
+    'regs_action_waitlist_removed_by_organizer' => 'Waitlist: removed',
 
     'regs_user_n'            => 'User #:id',
 

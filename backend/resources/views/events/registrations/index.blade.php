@@ -44,10 +44,27 @@ $activeRegistrations = $registrations->filter(fn($r) => !$isCancelled($r))->valu
 $searchUrl = route('api.users.search');
 
 $actionLabel = fn(string $a) => match($a) {
-'registered' => ['text' => __('events.regs_action_registered'),    'cls' => 'alert-success'],
-'cancelled'  => ['text' => __('events.regs_action_cancelled'),      'cls' => 'alert-error'],
-'restored'   => ['text' => __('events.regs_action_restored'), 'cls' => 'alert-info'],
-default      => ['text' => $a,             'cls' => ''],
+'registered'                    => ['text' => __('events.regs_action_registered'),               'cls' => 'alert-success'],
+'cancelled'                     => ['text' => __('events.regs_action_cancelled'),                 'cls' => 'alert-error'],
+'restored'                      => ['text' => __('events.regs_action_restored'),                  'cls' => 'alert-info'],
+'waitlist_joined'               => ['text' => __('events.regs_action_waitlist_joined'),           'cls' => 'alert-info'],
+'waitlist_left'                 => ['text' => __('events.regs_action_waitlist_left'),             'cls' => 'alert-warning'],
+'waitlist_auto_booked'          => ['text' => __('events.regs_action_waitlist_auto_booked'),      'cls' => 'alert-success'],
+'waitlist_removed_by_organizer' => ['text' => __('events.regs_action_waitlist_removed_by_organizer'), 'cls' => 'alert-error'],
+default                         => ['text' => $a,             'cls' => ''],
+};
+
+// Деталь позиции из meta (jsonb) — для waitlist-типов, где нет привязки к
+// event_registrations.position (её может ещё/уже не быть).
+$logPositionDetail = function ($log) {
+    if (empty($log->meta)) return null;
+    $meta = json_decode($log->meta, true);
+    if (!is_array($meta)) return null;
+    if (!empty($meta['position'])) return position_name($meta['position']);
+    if (!empty($meta['positions']) && is_array($meta['positions'])) {
+        return implode(', ', array_map('position_name', $meta['positions']));
+    }
+    return null;
 };
 @endphp
 
@@ -646,9 +663,10 @@ default      => ['text' => $a,             'cls' => ''],
 						<tbody>
 							@foreach($registrationLogs as $log)
 							@php
-							$logTs  = \Carbon\Carbon::parse($log->created_at, 'UTC')->setTimezone($tz);
-							$badge  = $actionLabel($log->action);
-							$isSelf = $log->actor_id && $log->actor_id == $log->user_id;
+							$logTs      = \Carbon\Carbon::parse($log->created_at, 'UTC')->setTimezone($tz);
+							$badge      = $actionLabel($log->action);
+							$isSelf     = $log->actor_id && $log->actor_id == $log->user_id;
+							$posDetail  = $logPositionDetail($log);
 							@endphp
 							<tr>
 								<td class="f-14" style="white-space:nowrap">
@@ -657,20 +675,23 @@ default      => ['text' => $a,             'cls' => ''],
 								</td>
 								<td>
 									<a href="{{ route('users.show', $log->user_id) }}" class="blink b-600">{{ $log->user_name ?: ('User #'.$log->user_id) }}</a>
+									@if($log->registration_id)
 									<div class="f-13" style="opacity:.5">reg #{{ $log->registration_id }}</div>
+									@endif
 								</td>
 								<td>
 									<span class="f-14 p-1 pt-05 pb-05 {{ $badge['cls'] }}">{{ $badge['text'] }}</span>
+									@if($posDetail)
+									<div class="f-13" style="opacity:.6">{{ $posDetail }}</div>
+									@endif
 								</td>
 								<td class="f-14">
-									@if($log->actor_id)
-									@if($isSelf)
+									@if($log->actor_id === null)
+									<span style="opacity:.6">{{ __('events.regs_actor_system') }}</span>
+									@elseif($isSelf)
 									<span style="opacity:.6">{{ __('events.regs_actor_self') }}</span>
 									@else
 									<a href="{{ route('users.show', $log->actor_id) }}" class="blink">{{ $log->actor_name ?: ('User #'.$log->actor_id) }}</a>
-									@endif
-									@else
-									<span style="opacity:.4">—</span>
 									@endif
 								</td>
 							</tr>
