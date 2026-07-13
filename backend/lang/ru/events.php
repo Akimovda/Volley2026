@@ -934,6 +934,13 @@ return [
     'regs_action_cancelled'  => 'Отменил',
     'regs_action_restored'   => 'Восстановлен',
     'regs_actor_self'        => 'сам игрок',
+    'regs_actor_system'      => 'система',
+
+    // Без глаголов рода — бейдж не привязан к полу конкретного игрока
+    'regs_action_waitlist_joined'               => 'Резерв: вход',
+    'regs_action_waitlist_left'                 => 'Резерв: выход',
+    'regs_action_waitlist_auto_booked'          => 'Авто-перевод в состав',
+    'regs_action_waitlist_removed_by_organizer' => 'Резерв: удаление',
 
     'regs_user_n'            => 'User #:id',
 

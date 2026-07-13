@@ -280,6 +280,7 @@ class EventRegistrationsManagementController extends Controller
                     'rl.user_id',
                     'rl.actor_id',
                     'rl.action',
+                    'rl.meta',
                     'rl.created_at',
                     DB::raw("COALESCE(NULLIF(TRIM(CONCAT_WS(' ', u.last_name, u.first_name)), ''), u.name) as user_name"),
                     DB::raw("COALESCE(NULLIF(TRIM(CONCAT_WS(' ', a.last_name, a.first_name)), ''), a.name) as actor_name"),
