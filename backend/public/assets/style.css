@@ -5768,42 +5768,62 @@ body.dark .ms-ptable td { border-color: rgba(255, 255, 255, .07); }
 .rp-set-header { font-size: .8rem; font-weight: 700; opacity: .7; margin-bottom: 6px; text-align: center; }
 .rp-empty { text-align: center; opacity: .5; padding: 12px 0; font-size: .85rem; }
 
+/* Строка розыгрыша — mobile-first: одна лента, цветная полоса слева = команда.
+   На широких экранах (см. медиа-запрос ниже) превращается в 2 колонки, как у конкурента. */
 .rp-feed { display: flex; flex-direction: column; gap: 2px; }
 .rp-row {
-	display: grid;
-	grid-template-columns: 1fr 1fr auto;
+	display: flex;
 	align-items: center;
 	gap: 8px;
-	padding: 6px 4px;
+	padding: 6px 8px;
 	border-bottom: 1px solid rgba(128, 128, 128, .08);
 	cursor: pointer;
 }
 .rp-row--highlight { background: rgba(41, 103, 186, .08); }
-.rp-cell { min-height: 28px; display: flex; align-items: center; gap: 6px; overflow: hidden; }
-.rp-cell--home { justify-content: flex-start; border-left: 3px solid #2967BA; padding-left: 6px; }
-.rp-cell--away {
-	justify-content: flex-end;
-	flex-direction: row-reverse;
-	text-align: right;
-	border-right: 3px solid #E7612F;
-	padding-right: 6px;
-}
-.rp-action { font-size: .7rem; font-weight: 700; text-transform: uppercase; opacity: .6; white-space: nowrap; }
-.rp-score { font-size: .85rem; font-weight: 800; min-width: 3.2rem; text-align: right; opacity: .85; }
+.rp-cell { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.rp-cell--empty { display: none; }
+.rp-cell--filled { flex: 1; min-width: 0; padding: 2px 0 2px 8px; border-left: 3px solid transparent; }
+.rp-cell--home.rp-cell--filled { border-left-color: #2967BA; }
+.rp-cell--away.rp-cell--filled { border-left-color: #E7612F; }
 
+.rp-point-circle {
+	flex-shrink: 0;
+	width: 22px;
+	height: 22px;
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: .72rem;
+	font-weight: 800;
+	color: #fff;
+}
+.rp-point-circle--home { background: #2967BA; }
+.rp-point-circle--away { background: #E7612F; }
+
+.rp-event { min-width: 0; line-height: 1.2; }
+.rp-action { font-size: .68rem; font-weight: 700; text-transform: uppercase; opacity: .6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rp-surname { font-size: .82rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rp-surname--muted { opacity: .55; }
+
+.rp-score { flex-shrink: 0; margin-left: auto; font-size: .8rem; font-weight: 800; opacity: .85; padding-left: 6px; }
+
+/* Десктоп (≥640px) — две колонки бок о бок, как в референсе конкурента */
+@media (min-width: 640px) {
+	.rp-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; }
+	.rp-cell--empty { display: flex; }
+	.rp-cell--home { grid-column: 1; }
+	.rp-cell--away { grid-column: 2; flex-direction: row-reverse; text-align: right; }
+	.rp-cell--away.rp-cell--filled { border-left: none; border-right: 3px solid #E7612F; padding: 2px 8px 2px 0; }
+	.rp-cell--away .rp-event { text-align: right; }
+	.rp-score { margin-left: 0; min-width: 3.4rem; text-align: right; }
+}
+
+/* Переиспользуемая карточка игрока (rally_player_card) — для составов/деталей, не для ленты */
 .rp-player { display: flex; align-items: center; gap: 6px; min-width: 0; }
-.rp-cell--away .rp-player { flex-direction: row-reverse; }
 .rp-player-avatar { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
 .rp-player-info { line-height: 1.15; min-width: 0; }
 .rp-player-name { font-size: .8rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rp-player-meta { font-size: .68rem; opacity: .55; white-space: nowrap; }
 .rp-player--muted { opacity: .55; }
 .rp-player--muted .rp-player-avatar { filter: grayscale(60%); }
-
-@media (max-width: 480px) {
-	.rp-player-avatar { width: 22px; height: 22px; }
-	.rp-player-name { font-size: .72rem; }
-	.rp-player-meta { font-size: .62rem; }
-	.rp-action { font-size: .62rem; }
-	.rp-score { font-size: .75rem; min-width: 2.6rem; }
-}
