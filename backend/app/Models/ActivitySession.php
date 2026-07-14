@@ -93,4 +93,16 @@ class ActivitySession extends Model
 
         return $ageHours < config('activity.sync_stale_hours', 6) ? 'pending' : 'stale';
     }
+
+    /**
+     * "Призрачная" тренировка — сессия без реальных данных (обрыв связи сразу после старта,
+     * случайный тап на кнопку записи и т.п.): короткая, без сэмплов пульса и без прыжков.
+     */
+    public function getIsGhostAttribute(): bool
+    {
+        return $this->status === 'completed'
+            && ($this->duration_sec ?? 0) < 30
+            && ($this->samples_count ?? 0) === 0
+            && ($this->jump_count ?? 0) === 0;
+    }
 }
