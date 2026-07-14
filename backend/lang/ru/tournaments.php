@@ -819,6 +819,13 @@ return [
     'pos_abbr_middle'               => 'Цб',
     'pos_abbr_libero'               => 'Ли',
 
+    // Полные названия позиций игрока (карточка игрока в ленте "ход матча")
+    'pos_full_setter'               => 'Связующий',
+    'pos_full_outside'              => 'Доигровщик',
+    'pos_full_opposite'             => 'Диагональный',
+    'pos_full_middle'               => 'Центральный блокирующий',
+    'pos_full_libero'               => 'Либеро',
+
     // Таблица рейтинга участников турнира (tab=stats)
     'in_tournament'                 => 'В рамках турнира',
     'overall_rating'                => 'Общий рейтинг',

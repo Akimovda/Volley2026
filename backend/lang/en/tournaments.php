@@ -800,6 +800,13 @@ return [
     'pos_abbr_middle'               => 'MB',
     'pos_abbr_libero'               => 'L',
 
+    // Full position names (player card in the "match progress" feed)
+    'pos_full_setter'               => 'Setter',
+    'pos_full_outside'              => 'Outside Hitter',
+    'pos_full_opposite'             => 'Opposite',
+    'pos_full_middle'               => 'Middle Blocker',
+    'pos_full_libero'               => 'Libero',
+
     // Tournament participant rating table (tab=stats)
     'in_tournament'                 => 'In this tournament',
     'overall_rating'                => 'Overall rating',
