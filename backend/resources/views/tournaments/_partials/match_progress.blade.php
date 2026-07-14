@@ -71,11 +71,11 @@ $posFull = [
 									@else
 									<span class="rp-name-link">{{ $surname }}</span>
 									@endif
+									@if($genderSign)
+									<span class="rp-gender {{ $genderClass }}">{{ $genderSign }}</span>
+									@endif
 								</div>
 								@if($positionLabel)<div class="rp-position">{{ $positionLabel }}</div>@endif
-								@if($genderSign)
-								<div class="rp-gender-row">{{ __('tournaments.rally_gender_label') }}: <span class="rp-gender {{ $genderClass }}">{{ $genderSign }}</span></div>
-								@endif
 							</div>
 						</div>
 						@endif

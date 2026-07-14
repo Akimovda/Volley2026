@@ -5792,7 +5792,7 @@ body.dark .ms-ptable td { border-color: rgba(255, 255, 255, .07); }
 .rp-event { min-width: 0; line-height: 1.3; }
 .rp-cell--home .rp-event { text-align: right; }
 .rp-cell--away .rp-event { text-align: left; }
-.rp-action { font-size: .875rem; font-weight: 700; text-transform: uppercase; opacity: .6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px; }
+.rp-action { font-size: 1rem; font-weight: 700; text-transform: uppercase; opacity: .6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px; }
 
 /* Строка игрока: аватар всегда внутренним краем к счёту (зеркально по сторонам), текст —
    снаружи. DOM-порядок (аватар, затем текст) одинаковый для обеих сторон; на home он
@@ -5810,14 +5810,13 @@ body.dark .ms-ptable td { border-color: rgba(255, 255, 255, .07); }
 .rp-cell--home .rp-player-text { text-align: right; }
 .rp-cell--away .rp-player-text { text-align: left; }
 
-.rp-name-row { display: flex; min-width: 0; }
+.rp-name-row { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
 .rp-cell--home .rp-name-row { justify-content: flex-end; }
 .rp-cell--away .rp-name-row { justify-content: flex-start; }
 
-.rp-name-link { font-size: 1.25rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
-.rp-position { font-size: .85rem; opacity: .6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.rp-gender-row { font-size: .85rem; opacity: .75; white-space: nowrap; }
-.rp-gender { font-weight: 700; }
+.rp-name-link { font-size: 1.4rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.rp-position { font-size: .95rem; opacity: .6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rp-gender { font-size: 1rem; font-weight: 700; flex-shrink: 0; }
 .rp-gender--m { color: #2967BA; }
 .rp-gender--f { color: #E6316B; }
 
@@ -5831,10 +5830,24 @@ body.dark .ms-ptable td { border-color: rgba(255, 255, 255, .07); }
 	padding: 0 4px;
 }
 
-/* ~380px: имени достаточно ellipsis (не сжимаем аватар/счёт) — амплуа и гендер вместо
-   обрезания переносятся на следующую строку, если не помещаются в одну. */
+/* ~380px: имени достаточно ellipsis (не сжимаем аватар/счёт) — амплуа вместо
+   обрезания переносится на следующую строку целым словом, если не помещается в одну. */
 @media (max-width: 400px) {
-	.rp-position, .rp-gender-row { white-space: normal; overflow-wrap: break-word; word-break: break-word; }
+	.rp-position { white-space: normal; overflow-wrap: break-word; word-break: break-word; }
+}
+
+/* ≤500px: лента "съедает" боковые поля ramka + карточки стадии, чтобы колонка текста
+   (амплуа/фамилия) не резалась по ellipsis на узких экранах — см. CLAUDE.md,
+   раздел "Турнирная страница управления". Родительские .ramka (2rem) и .card.p-3 (3rem)
+   не трогаем глобально (общие классы для всего сайта) — вместо этого сама лента
+   "дотягивается" через отрицательный margin и получает свой минимальный паддинг. */
+@media (max-width: 500px) {
+	[id^="match-progress-r-"] {
+		margin-left: -5rem;
+		margin-right: -5rem;
+		padding-left: 1.2rem;
+		padding-right: 1.2rem;
+	}
 }
 
 /* Переиспользуемая карточка игрока (rally_player_card) — для составов/деталей, не для ленты */
