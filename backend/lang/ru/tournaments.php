@@ -365,6 +365,8 @@ return [
     'rally_action_opp_block_error'     => 'Ош. блока соперника',
     'rally_action_opp_reception_error' => 'Ош. приёма соперника',
     'rally_action_unattributed'        => 'Без атрибуции',
+    'rally_team_point'                 => 'Очко команды',
+    'rally_gender_label'                => 'Пол',
     'rally_tag_dig'            => 'Приём (опц.)',
     'rally_tag_assist'         => 'Передача (опц.)',
     'rally_btn_undo'           => 'Отменить последнее очко',

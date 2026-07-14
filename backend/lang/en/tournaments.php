@@ -349,6 +349,8 @@ return [
     'rally_action_opp_block_error'     => 'Opponent block error',
     'rally_action_opp_reception_error' => 'Opponent reception error',
     'rally_action_unattributed'        => 'Unattributed',
+    'rally_team_point'                 => 'Team point',
+    'rally_gender_label'                => 'Gender',
     'rally_tag_dig'            => 'Dig (opt.)',
     'rally_tag_assist'         => 'Assist (opt.)',
     'rally_btn_undo'           => 'Undo last point',
