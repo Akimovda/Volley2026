@@ -113,7 +113,7 @@ class MatchProgressService
 
     /**
      * @param Collection<int, int> $playerIds уникальные user_id, встреченные в событиях
-     * @return array<int, array{id:int,name:string,avatar_url:string,gender:?string,position_code:?string}>
+     * @return array<int, array{id:int,name:string,avatar_url:string,gender:?string,position_code:?string,team_id:?int,team_kind:?string,role_code:?string}>
      */
     private function resolvePlayers(TournamentMatch $match, Collection $playerIds): array
     {
@@ -121,10 +121,20 @@ class MatchProgressService
             return [];
         }
 
+        // join на event_teams — для opp_*_error действий player_id указывает на игрока
+        // ПРОТИВОПОЛОЖНОЙ команды относительно team_side розыгрыша, поэтому team_id/team_kind
+        // нужно резолвить по самому игроку, а не выводить из team_home_id/team_away_id матча.
         $members = DB::table('event_team_members')
-            ->whereIn('event_team_id', [$match->team_home_id, $match->team_away_id])
-            ->whereIn('user_id', $playerIds)
-            ->select('user_id', 'position_code', 'role_code')
+            ->join('event_teams', 'event_teams.id', '=', 'event_team_members.event_team_id')
+            ->whereIn('event_team_members.event_team_id', [$match->team_home_id, $match->team_away_id])
+            ->whereIn('event_team_members.user_id', $playerIds)
+            ->select(
+                'event_team_members.user_id',
+                'event_team_members.position_code',
+                'event_team_members.role_code',
+                'event_team_members.event_team_id',
+                'event_teams.team_kind'
+            )
             ->get()
             ->keyBy('user_id');
 
@@ -149,6 +159,9 @@ class MatchProgressService
                 'avatar_url'    => $user->profile_photo_url,
                 'gender'        => $user->gender,
                 'position_code' => $positionCode,
+                'team_id'       => $member->event_team_id ?? null,
+                'team_kind'     => $member->team_kind ?? null,
+                'role_code'     => $member->role_code ?? null,
             ];
         }
 
