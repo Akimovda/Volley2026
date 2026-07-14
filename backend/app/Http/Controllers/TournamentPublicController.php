@@ -189,7 +189,32 @@ class TournamentPublicController extends Controller
 
         $team->load(['captain', 'members.user']);
 
-        return view('tournaments.public.team', compact('event', 'team'));
+        // Резерв не учитывается в среднем уровне/рейтинге команды — тот же принцип,
+        // что и у PlayerQualityService::forOccurrence() (там ->where('position', '!=', 'reserve')).
+        $ratingMembers = $team->members
+            ->where('confirmation_status', 'confirmed')
+            ->filter(fn ($m) => $m->user && $m->effective_team_role !== 'reserve');
+
+        $teamLevel = null;
+        $teamRating = null;
+
+        if ($team->team_kind === 'classic_team') {
+            $players = $ratingMembers
+                ->filter(fn ($m) => !is_null($m->user->classic_level))
+                ->map(fn ($m) => ['level' => (int) $m->user->classic_level, 'is_female' => $m->user->gender === 'f'])
+                ->values()->all();
+
+            $teamLevel = app(\App\Services\PlayerQualityService::class)->compute($players);
+        } else {
+            $userIds = $ratingMembers->pluck('user_id');
+            $stats = \App\Models\PlayerCareerStats::whereIn('user_id', $userIds)->where('direction', 'beach')->get();
+
+            if ($stats->isNotEmpty()) {
+                $teamRating = round($stats->avg(fn ($s) => $s->conservativeRating()), 1);
+            }
+        }
+
+        return view('tournaments.public.team', compact('event', 'team', 'teamLevel', 'teamRating'));
     }
 
     /**
