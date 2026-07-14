@@ -5768,67 +5768,55 @@ body.dark .ms-ptable td { border-color: rgba(255, 255, 255, .07); }
 .rp-set-header { font-size: .8rem; font-weight: 700; opacity: .7; margin-bottom: 6px; text-align: center; }
 .rp-empty { text-align: center; opacity: .5; padding: 12px 0; font-size: .85rem; }
 
-/* Строка розыгрыша — mobile-first: одна лента, цветная полоса слева = команда.
-   На широких экранах (см. медиа-запрос ниже) превращается в 2 колонки, как у конкурента. */
+/* Строка розыгрыша — счёт всегда центральная ось (grid 1fr auto 1fr), событие стянуто
+   к счёту с той стороны, чья команда набрала очко. Одна и та же раскладка на всех
+   ширинах экрана — нет отдельных мобильных/десктопных веток, поэтому не разваливается
+   ни на 380px в Capacitor-приложении, ни на широком окне. */
 .rp-feed { display: flex; flex-direction: column; gap: 2px; }
 .rp-row {
-	display: flex;
+	display: grid;
+	grid-template-columns: 1fr auto 1fr;
 	align-items: center;
-	gap: 8px;
-	padding: 6px 8px;
+	gap: 6px;
+	padding: 6px 0;
 	border-bottom: 1px solid rgba(128, 128, 128, .08);
 	cursor: pointer;
 }
 .rp-row--highlight { background: rgba(41, 103, 186, .08); }
-.rp-cell { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.rp-cell--empty { display: none; }
-.rp-cell--filled { flex: 1; min-width: 0; padding: 2px 0 2px 8px; border-left: 3px solid transparent; }
-.rp-cell--home.rp-cell--filled { border-left-color: #2967BA; }
+.rp-cell { min-width: 0; }
+.rp-cell--home { grid-column: 1; border-right: 3px solid transparent; padding-right: 8px; }
+.rp-cell--away { grid-column: 3; border-left: 3px solid transparent; padding-left: 8px; }
+.rp-cell--home.rp-cell--filled { border-right-color: #2967BA; }
 .rp-cell--away.rp-cell--filled { border-left-color: #E7612F; }
 
-.rp-point-circle {
-	flex-shrink: 0;
-	width: 22px;
-	height: 22px;
-	border-radius: 50%;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	font-size: .72rem;
-	font-weight: 800;
-	color: #fff;
-}
-.rp-point-circle--home { background: #2967BA; }
-.rp-point-circle--away { background: #E7612F; }
-
-.rp-event { min-width: 0; line-height: 1.2; }
+.rp-event { min-width: 0; line-height: 1.25; }
+.rp-cell--home .rp-event { text-align: right; }
+.rp-cell--away .rp-event { text-align: left; }
 .rp-action { font-size: .68rem; font-weight: 700; text-transform: uppercase; opacity: .6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.rp-surname { font-size: .82rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.rp-surname--muted { opacity: .55; }
 
-.rp-score { flex-shrink: 0; margin-left: auto; font-size: .8rem; font-weight: 800; opacity: .85; padding-left: 6px; }
+.rp-player-line { display: flex; align-items: baseline; gap: 4px; min-width: 0; }
+.rp-cell--home .rp-player-line { justify-content: flex-end; }
+.rp-cell--away .rp-player-line { justify-content: flex-start; }
+.rp-player-line--muted { opacity: .55; }
+.rp-gender { flex-shrink: 0; font-size: .78rem; opacity: .65; }
+.rp-name-link { font-size: .82rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.rp-position { flex-shrink: 0; font-size: .72rem; opacity: .55; }
 
-/* Десктоп (≥640px) — две колонки бок о бок, как в референсе конкурента */
-@media (min-width: 640px) {
-	.rp-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; }
-	.rp-cell--empty { display: flex; }
-	.rp-cell--home { grid-column: 1; }
-	.rp-cell--away { grid-column: 2; flex-direction: row-reverse; text-align: right; }
-	.rp-cell--away.rp-cell--filled { border-left: none; border-right: 3px solid #E7612F; padding: 2px 8px 2px 0; }
-	.rp-cell--away .rp-event { text-align: right; }
-	.rp-score { margin-left: 0; min-width: 3.4rem; text-align: right; }
+.rp-score {
+	grid-column: 2;
+	flex-shrink: 0;
+	min-width: 3rem;
+	text-align: center;
+	font-size: 1.1rem;
+	font-weight: 800;
+	padding: 0 4px;
 }
 
-/* В нативном Capacitor-приложении (html.is-app, см. voll-layout.blade.php) всегда держим
-   компактную одноленточную раскладку — даже на широких окнах (планшет), где min-width:640px
-   иначе включил бы десктопные 2 колонки. Пиксельная ширина окна ненадёжна как признак "это
-   мобильное приложение", .is-app — надёжный маркер. */
-html.is-app .rp-row { display: flex !important; }
-html.is-app .rp-cell--empty { display: none !important; }
-html.is-app .rp-cell--home.rp-cell--filled { border-left: 3px solid #2967BA; border-right: none; padding: 2px 0 2px 8px; }
-html.is-app .rp-cell--away.rp-cell--filled { border-left: 3px solid #E7612F; border-right: none; padding: 2px 0 2px 8px; flex-direction: row; text-align: left; }
-html.is-app .rp-cell--away .rp-event { text-align: left; }
-html.is-app .rp-score { margin-left: auto; min-width: auto; }
+@media (max-width: 380px) {
+	.rp-score { font-size: .95rem; min-width: 2.5rem; }
+	.rp-action { font-size: .64rem; }
+	.rp-name-link, .rp-position { font-size: .74rem; }
+}
 
 /* Переиспользуемая карточка игрока (rally_player_card) — для составов/деталей, не для ленты */
 .rp-player { display: flex; align-items: center; gap: 6px; min-width: 0; }

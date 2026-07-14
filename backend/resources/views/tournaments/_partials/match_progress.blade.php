@@ -4,15 +4,23 @@
  * Вызывающая сторона обязана проверить $progress['has_progress'] сама (пустое состояние
  * рендерится отдельно на месте вызова, этот партиал вызывается только когда есть данные).
  *
- * Строка компактная (название действия + кружок со счётом команды + фамилия) — без аватара,
- * без игрового номера (в БД такого поля нет, см. CLAUDE.md). Полная карточка игрока
- * (rally_player_card) сюда не подключается — она для составов/деталей, не для построчной ленты.
+ * Макет: счёт — центральная ось строки (крупный, по центру), событие стянуто к счёту
+ * с той стороны, чья команда набрала очко. Строка игрока — гендер + фамилия-ссылка
+ * (на публичный состав команды, #member-{id}) + амплуа (для classic_team, кроме резерва).
  *
  * @var array $progress ['sets' => [setNumber => ['rallies' => [...], 'final_score' => [...]]]]
  * @var \App\Models\TournamentMatch $match
+ * @var \App\Models\Event $event
  */
 $setNumbers = array_keys($progress['sets']);
 $defaultSet = end($setNumbers) ?: 1;
+$posAbbr = [
+    'setter'   => __('tournaments.pos_abbr_setter'),
+    'outside'  => __('tournaments.pos_abbr_outside'),
+    'opposite' => __('tournaments.pos_abbr_opposite'),
+    'middle'   => __('tournaments.pos_abbr_middle'),
+    'libero'   => __('tournaments.pos_abbr_libero'),
+];
 @endphp
 <div class="rp-wrap">
 	@if(count($setNumbers) > 1)
@@ -35,19 +43,30 @@ $defaultSet = end($setNumbers) ?: 1;
 			@foreach($set['rallies'] as $r)
 			@php
 			$actionLabel = __('tournaments.rally_action_' . $r['action_type']);
-			$sideScore = $r['team_side'] === 'home' ? $r['score_home'] : $r['score_away'];
-			$surname = $r['player'] ? trim(explode(' ', $r['player']['name'])[0] ?? '') : null;
+			$player = $r['player'];
+			$surname = $player ? trim(explode(' ', $player['name'])[0] ?? '') : null;
+			$genderSign = $player ? ($player['gender'] === 'm' ? '♂' : ($player['gender'] === 'f' ? '♀' : null)) : null;
+
+			$showPosition = $player && ($player['team_kind'] ?? null) === 'classic_team' && ($player['role_code'] ?? null) !== 'reserve';
+			$positionLabel = $showPosition ? ($player['position_code'] ? ($posAbbr[$player['position_code']] ?? $player['position_code']) : '—') : null;
 			@endphp
 			<div class="rp-row" onclick="this.classList.toggle('rp-row--highlight')">
 				@foreach(['home', 'away'] as $side)
 				@php $filled = $r['team_side'] === $side; @endphp
-				<div class="rp-cell rp-cell--{{ $side }} {{ $filled ? 'rp-cell--filled' : 'rp-cell--empty' }}">
+				<div class="rp-cell rp-cell--{{ $side }}{{ $filled ? ' rp-cell--filled' : '' }}">
 				@if($filled)
-					<span class="rp-point-circle rp-point-circle--{{ $side }}">{{ $sideScore }}</span>
 					<div class="rp-event">
 						<div class="rp-action">{{ $actionLabel }}</div>
 						@if($surname)
-						<div class="rp-surname{{ $r['is_own_action'] ? '' : ' rp-surname--muted' }}">{{ $surname }}</div>
+						<div class="rp-player-line{{ $r['is_own_action'] ? '' : ' rp-player-line--muted' }}">
+							@if($genderSign)<span class="rp-gender">{{ $genderSign }}</span>@endif
+							@if($player['team_id'])
+							<a href="{{ route('tournament.public.team', [$event, $player['team_id']]) }}#member-{{ $player['id'] }}" class="rp-name-link blink">{{ $surname }}</a>
+							@else
+							<span class="rp-name-link">{{ $surname }}</span>
+							@endif
+							@if($positionLabel)<span class="rp-position">{{ $positionLabel }}</span>@endif
+						</div>
 						@endif
 					</div>
 				@endif

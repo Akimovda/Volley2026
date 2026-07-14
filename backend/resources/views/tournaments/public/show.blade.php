@@ -442,7 +442,7 @@
 			</div>
 			<div id="match-progress-r-{{ $m->id }}" class="card mb-2" style="display:none">
 				@if(!empty($matchProgressByMatchId[$m->id]['has_progress']))
-				@include('tournaments._partials.match_progress', ['progress' => $matchProgressByMatchId[$m->id], 'match' => $m])
+				@include('tournaments._partials.match_progress', ['progress' => $matchProgressByMatchId[$m->id], 'match' => $m, 'event' => $event])
 				@else
 				<div class="rp-empty">{{ __('tournaments.pub_match_progress_not_tracked') }}</div>
 				@endif
