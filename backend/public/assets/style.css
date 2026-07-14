@@ -5819,6 +5819,17 @@ body.dark .ms-ptable td { border-color: rgba(255, 255, 255, .07); }
 	.rp-score { margin-left: 0; min-width: 3.4rem; text-align: right; }
 }
 
+/* В нативном Capacitor-приложении (html.is-app, см. voll-layout.blade.php) всегда держим
+   компактную одноленточную раскладку — даже на широких окнах (планшет), где min-width:640px
+   иначе включил бы десктопные 2 колонки. Пиксельная ширина окна ненадёжна как признак "это
+   мобильное приложение", .is-app — надёжный маркер. */
+html.is-app .rp-row { display: flex !important; }
+html.is-app .rp-cell--empty { display: none !important; }
+html.is-app .rp-cell--home.rp-cell--filled { border-left: 3px solid #2967BA; border-right: none; padding: 2px 0 2px 8px; }
+html.is-app .rp-cell--away.rp-cell--filled { border-left: 3px solid #E7612F; border-right: none; padding: 2px 0 2px 8px; flex-direction: row; text-align: left; }
+html.is-app .rp-cell--away .rp-event { text-align: left; }
+html.is-app .rp-score { margin-left: auto; min-width: auto; }
+
 /* Переиспользуемая карточка игрока (rally_player_card) — для составов/деталей, не для ленты */
 .rp-player { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .rp-player-avatar { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
