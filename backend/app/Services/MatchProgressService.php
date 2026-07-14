@@ -138,7 +138,9 @@ class MatchProgressService
             ->get()
             ->keyBy('user_id');
 
-        $users = User::whereIn('id', $playerIds)->get()->keyBy('id');
+        // with('media') — profile_photo_url резолвит аватар через getMedia('photos') внутри
+        // accessor'а; без eager load это N+1 запрос на каждого игрока ленты.
+        $users = User::whereIn('id', $playerIds)->with('media')->get()->keyBy('id');
 
         $result = [];
         foreach ($playerIds as $id) {
