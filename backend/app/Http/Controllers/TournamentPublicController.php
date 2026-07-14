@@ -10,6 +10,7 @@ use App\Models\TournamentMatch;
 use App\Models\TournamentStanding;
 use App\Models\PlayerTournamentStats;
 use App\Services\PlayerMatchStatsService;
+use App\Services\MatchProgressService;
 use Illuminate\Http\Request;
 
 class TournamentPublicController extends Controller
@@ -91,9 +92,10 @@ class TournamentPublicController extends Controller
         // Детальная статистика по игрокам (эйсы/ошибки/блоки) — только для завершённых матчей, если заполнена
         $completedMatches = $stages->flatMap->matches->where('status', TournamentMatch::STATUS_COMPLETED)->values();
         $matchStatsByMatchId = app(PlayerMatchStatsService::class)->getMatchStatsTableForMatches($completedMatches);
+        $matchProgressByMatchId = app(MatchProgressService::class)->buildForMatches($completedMatches);
 
         return view('tournaments.public.show', compact(
-            'event', 'stages', 'tab', 'setting', 'totalMatches', 'totalTeams', 'occurrences', 'selectedOccurrence', 'seasonStats', 'currentSeason', 'matchStatsByMatchId'
+            'event', 'stages', 'tab', 'setting', 'totalMatches', 'totalTeams', 'occurrences', 'selectedOccurrence', 'seasonStats', 'currentSeason', 'matchStatsByMatchId', 'matchProgressByMatchId'
         ));
     }
 

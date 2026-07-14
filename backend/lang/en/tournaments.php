@@ -324,6 +324,8 @@ return [
     'stat_assists_short'    => 'Asts',
 
     'pub_match_stats_toggle' => 'Match stats',
+    'pub_match_progress_toggle' => 'Match progress',
+    'pub_match_progress_not_tracked' => 'Match progress was not tracked. Score by rally to make it appear here.',
 
     // === score_rally.blade.php (rally-by-rally scoring with stats) ===
     'rally_title'              => 'Rally-by-rally scoring with stats',
@@ -331,6 +333,7 @@ return [
     'rally_switch_link'        => 'Score point-by-point with stats',
     'rally_continue'           => 'Continue rally scoring',
     'rally_partial_banner'     => 'There is unfinished rally-by-rally stats input for this match.',
+    'rally_switch_hint'        => 'Recommended — enables match progress feed and detailed stats',
     'rally_reopen_banner'      => 'You can fix the score and match flow via rally-by-rally stats input.',
     'rally_reopen_btn'         => 'Fix via rally-by-rally input',
     'rally_reopen_confirm_title' => 'The match will be temporarily reopened and the current set score cleared. If there is no rally-by-rally data for this match yet, you will need to enter it from scratch. After fixing it, press "Save score". Continue?',
