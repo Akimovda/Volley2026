@@ -437,6 +437,16 @@
 				@include('tournaments._partials.match_stats_pretty', ['statsData' => $matchStatsByMatchId[$m->id], 'match' => $m, 'stage' => $stage, 'event' => $event])
 			</div>
 			@endif
+			<div style="text-align:center;margin:2px 0 8px">
+				<button type="button" class="btn btn-small btn-secondary" onclick="toggleMatchProgress({{ $m->id }})">▶ {{ __('tournaments.pub_match_progress_toggle') }}</button>
+			</div>
+			<div id="match-progress-r-{{ $m->id }}" class="card mb-2" style="display:none">
+				@if(!empty($matchProgressByMatchId[$m->id]['has_progress']))
+				@include('tournaments._partials.match_progress', ['progress' => $matchProgressByMatchId[$m->id], 'match' => $m, 'event' => $event])
+				@else
+				<div class="rp-empty">{{ __('tournaments.pub_match_progress_not_tracked') }}</div>
+				@endif
+			</div>
 			@endforeach
 
 			@if($stage->matches->where('status', 'completed')->isEmpty())
@@ -619,6 +629,21 @@
 			function toggleMatchStats(id) {
 				var el = document.getElementById('match-stats-' + id) || document.getElementById('match-stats-r-' + id) || document.getElementById('match-stats-s-' + id);
 				if (el) el.style.display = (el.style.display === 'none') ? '' : 'none';
+			}
+
+			function toggleMatchProgress(id) {
+				var el = document.getElementById('match-progress-r-' + id);
+				if (el) el.style.display = (el.style.display === 'none') ? '' : 'none';
+			}
+
+			function rpShowSet(matchId, setNumber) {
+				var key = matchId + '-' + setNumber;
+				document.querySelectorAll('[data-rp-set^="' + matchId + '-"]').forEach(function(el) {
+					el.classList.toggle('rp-set--hidden', el.getAttribute('data-rp-set') !== key);
+				});
+				document.querySelectorAll('[data-rp-tab^="' + matchId + '-"]').forEach(function(el) {
+					el.classList.toggle('rp-tab--active', el.getAttribute('data-rp-tab') === key);
+				});
 			}
 
 			// Android WebView не скачивает файлы по Content-Disposition: attachment

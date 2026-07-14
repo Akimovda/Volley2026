@@ -271,6 +271,9 @@ return [
     'pub_back_to_tournament' => 'Back to tournament',
     'team_roster_title'      => 'Team roster',
     'team_roster_empty'      => 'No roster yet',
+    'team_reserve_title'     => 'Reserves',
+    'team_avg_level_label'   => 'Team average level',
+    'team_rating_label'      => 'Team rating',
     'invite_scheme'         => 'Scheme',
     'invite_min_players'    => 'Min players',
     'invite_max_players'    => 'Max players',
@@ -324,6 +327,8 @@ return [
     'stat_assists_short'    => 'Asts',
 
     'pub_match_stats_toggle' => 'Match stats',
+    'pub_match_progress_toggle' => 'Match progress',
+    'pub_match_progress_not_tracked' => 'Match progress was not tracked. Score by rally to make it appear here.',
 
     // === score_rally.blade.php (rally-by-rally scoring with stats) ===
     'rally_title'              => 'Rally-by-rally scoring with stats',
@@ -331,6 +336,7 @@ return [
     'rally_switch_link'        => 'Score point-by-point with stats',
     'rally_continue'           => 'Continue rally scoring',
     'rally_partial_banner'     => 'There is unfinished rally-by-rally stats input for this match.',
+    'rally_switch_hint'        => 'Recommended — enables match progress feed and detailed stats',
     'rally_reopen_banner'      => 'You can fix the score and match flow via rally-by-rally stats input.',
     'rally_reopen_btn'         => 'Fix via rally-by-rally input',
     'rally_reopen_confirm_title' => 'The match will be temporarily reopened and the current set score cleared. If there is no rally-by-rally data for this match yet, you will need to enter it from scratch. After fixing it, press "Save score". Continue?',
@@ -343,6 +349,8 @@ return [
     'rally_action_opp_block_error'     => 'Opponent block error',
     'rally_action_opp_reception_error' => 'Opponent reception error',
     'rally_action_unattributed'        => 'Unattributed',
+    'rally_team_point'                 => 'Team point',
+    'rally_gender_label'                => 'Gender',
     'rally_tag_dig'            => 'Dig (opt.)',
     'rally_tag_assist'         => 'Assist (opt.)',
     'rally_btn_undo'           => 'Undo last point',
@@ -799,6 +807,13 @@ return [
     'pos_abbr_opposite'             => 'Opp',
     'pos_abbr_middle'               => 'MB',
     'pos_abbr_libero'               => 'L',
+
+    // Full position names (player card in the "match progress" feed)
+    'pos_full_setter'               => 'Setter',
+    'pos_full_outside'              => 'Outside Hitter',
+    'pos_full_opposite'             => 'Opposite',
+    'pos_full_middle'               => 'Middle Blocker',
+    'pos_full_libero'               => 'Libero',
 
     // Tournament participant rating table (tab=stats)
     'in_tournament'                 => 'In this tournament',

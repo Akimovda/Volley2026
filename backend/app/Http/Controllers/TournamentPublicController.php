@@ -10,6 +10,7 @@ use App\Models\TournamentMatch;
 use App\Models\TournamentStanding;
 use App\Models\PlayerTournamentStats;
 use App\Services\PlayerMatchStatsService;
+use App\Services\MatchProgressService;
 use Illuminate\Http\Request;
 
 class TournamentPublicController extends Controller
@@ -91,9 +92,10 @@ class TournamentPublicController extends Controller
         // Детальная статистика по игрокам (эйсы/ошибки/блоки) — только для завершённых матчей, если заполнена
         $completedMatches = $stages->flatMap->matches->where('status', TournamentMatch::STATUS_COMPLETED)->values();
         $matchStatsByMatchId = app(PlayerMatchStatsService::class)->getMatchStatsTableForMatches($completedMatches);
+        $matchProgressByMatchId = app(MatchProgressService::class)->buildForMatches($completedMatches);
 
         return view('tournaments.public.show', compact(
-            'event', 'stages', 'tab', 'setting', 'totalMatches', 'totalTeams', 'occurrences', 'selectedOccurrence', 'seasonStats', 'currentSeason', 'matchStatsByMatchId'
+            'event', 'stages', 'tab', 'setting', 'totalMatches', 'totalTeams', 'occurrences', 'selectedOccurrence', 'seasonStats', 'currentSeason', 'matchStatsByMatchId', 'matchProgressByMatchId'
         ));
     }
 
@@ -187,7 +189,32 @@ class TournamentPublicController extends Controller
 
         $team->load(['captain', 'members.user']);
 
-        return view('tournaments.public.team', compact('event', 'team'));
+        // Резерв не учитывается в среднем уровне/рейтинге команды — тот же принцип,
+        // что и у PlayerQualityService::forOccurrence() (там ->where('position', '!=', 'reserve')).
+        $ratingMembers = $team->members
+            ->where('confirmation_status', 'confirmed')
+            ->filter(fn ($m) => $m->user && $m->effective_team_role !== 'reserve');
+
+        $teamLevel = null;
+        $teamRating = null;
+
+        if ($team->team_kind === 'classic_team') {
+            $players = $ratingMembers
+                ->filter(fn ($m) => !is_null($m->user->classic_level))
+                ->map(fn ($m) => ['level' => (int) $m->user->classic_level, 'is_female' => $m->user->gender === 'f'])
+                ->values()->all();
+
+            $teamLevel = app(\App\Services\PlayerQualityService::class)->compute($players);
+        } else {
+            $userIds = $ratingMembers->pluck('user_id');
+            $stats = \App\Models\PlayerCareerStats::whereIn('user_id', $userIds)->where('direction', 'beach')->get();
+
+            if ($stats->isNotEmpty()) {
+                $teamRating = round($stats->avg(fn ($s) => $s->conservativeRating()), 1);
+            }
+        }
+
+        return view('tournaments.public.team', compact('event', 'team', 'teamLevel', 'teamRating'));
     }
 
     /**

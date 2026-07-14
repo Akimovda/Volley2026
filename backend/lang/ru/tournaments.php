@@ -286,6 +286,9 @@ return [
     'pub_back_to_tournament' => 'К турниру',
     'team_roster_title'      => 'Состав команды',
     'team_roster_empty'      => 'Состав пока пуст',
+    'team_reserve_title'     => 'Запасные',
+    'team_avg_level_label'   => 'Средний уровень команды',
+    'team_rating_label'      => 'Рейтинг команды',
     'invite_scheme'         => 'Схема',
     'invite_min_players'    => 'Мин. игроков',
     'invite_max_players'    => 'Макс. игроков',
@@ -340,6 +343,8 @@ return [
     'stat_assists_short'    => 'Передачи',
 
     'pub_match_stats_toggle' => 'Статистика матча',
+    'pub_match_progress_toggle' => 'Ход матча',
+    'pub_match_progress_not_tracked' => 'Хронология матча не велась. Ведите счёт по розыгрышам, чтобы она отображалась.',
 
     // === score_rally.blade.php (поочковый ввод счёта со статистикой) ===
     'rally_title'              => 'Поочковый ввод со статистикой',
@@ -347,6 +352,7 @@ return [
     'rally_switch_link'        => 'Ввод по очкам со статистикой',
     'rally_continue'           => 'Продолжить по очкам',
     'rally_partial_banner'     => 'Есть незавершённый поточковый ввод статистики для этого матча.',
+    'rally_switch_hint'        => 'Рекомендуется — даёт «ход матча» и детальную статистику',
     'rally_reopen_banner'      => 'Можно исправить счёт и ход игры через поочковый ввод статистики.',
     'rally_reopen_btn'         => 'Исправить через поочковый ввод',
     'rally_reopen_confirm_title' => 'Матч будет временно переоткрыт, текущий счёт по сетам сброшен. Если поочковых данных для этого матча ещё нет — вводить нужно будет заново, с нуля. После исправления нажмите «Записать счёт». Продолжить?',
@@ -359,6 +365,8 @@ return [
     'rally_action_opp_block_error'     => 'Ош. блока соперника',
     'rally_action_opp_reception_error' => 'Ош. приёма соперника',
     'rally_action_unattributed'        => 'Без атрибуции',
+    'rally_team_point'                 => 'Очко команды',
+    'rally_gender_label'                => 'Пол',
     'rally_tag_dig'            => 'Приём (опц.)',
     'rally_tag_assist'         => 'Передача (опц.)',
     'rally_btn_undo'           => 'Отменить последнее очко',
@@ -818,6 +826,13 @@ return [
     'pos_abbr_opposite'             => 'Ди',
     'pos_abbr_middle'               => 'Цб',
     'pos_abbr_libero'               => 'Ли',
+
+    // Полные названия позиций игрока (карточка игрока в ленте "ход матча")
+    'pos_full_setter'               => 'Связующий',
+    'pos_full_outside'              => 'Доигровщик',
+    'pos_full_opposite'             => 'Диагональный',
+    'pos_full_middle'               => 'Центральный блокирующий',
+    'pos_full_libero'               => 'Либеро',
 
     // Таблица рейтинга участников турнира (tab=stats)
     'in_tournament'                 => 'В рамках турнира',

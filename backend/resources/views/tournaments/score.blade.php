@@ -122,6 +122,7 @@
 					@else
 					<div class="text-center mb-2">
 						<a href="{{ route('tournament.matches.rally.form', $match) }}" class="btn btn-outline">📊 {{ __('tournaments.rally_switch_link') }}</a>
+						<div class="f-12" style="opacity:.6;margin-top:4px">{{ __('tournaments.rally_switch_hint') }}</div>
 					</div>
 					@endif
 				@endif
