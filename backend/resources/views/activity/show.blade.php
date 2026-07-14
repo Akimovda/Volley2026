@@ -78,7 +78,21 @@
                                 </div>
                             @endif
                         </div>
-                        <a href="{{ route('activity.index') }}" class="btn btn-sm btn-secondary">← {{ __('activity.back_to_list') }}</a>
+                        <div style="display:flex;flex-direction:column;gap:.5rem;align-items:flex-end">
+                            <a href="{{ route('activity.index') }}" class="btn btn-sm btn-secondary">← {{ __('activity.back_to_list') }}</a>
+                            <form method="POST" action="{{ route('activity.destroy', $session) }}">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn-alert btn btn-sm"
+                                        style="background:none;border:1px solid #dc2626;color:#dc2626"
+                                        data-title="{{ __('activity.delete_confirm_title') }}"
+                                        data-text="{{ __('activity.delete_confirm_text') }}"
+                                        data-confirm-text="{{ __('activity.delete_confirm_btn') }}"
+                                        data-cancel-text="{{ __('activity.delete_cancel_btn') }}">
+                                    🗑️ {{ __('activity.delete_btn') }}
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 </div>
 

@@ -88,6 +88,18 @@ class ActivitySessionController extends Controller
         return response()->json(['accepted' => $accepted]);
     }
 
+    public function destroy(Request $request, ActivitySession $session): JsonResponse
+    {
+        if ($session->user_id !== $request->user()->id) {
+            return response()->json(['error' => 'Forbidden'], 403);
+        }
+
+        // FK на activity_hr_samples/activity_jump_events объявлены cascadeOnDelete — отдельно чистить не нужно.
+        $session->delete();
+
+        return response()->json(['ok' => true]);
+    }
+
     public function finalize(Request $request, ActivitySession $session): JsonResponse
     {
         if ($session->user_id !== $request->user()->id) {

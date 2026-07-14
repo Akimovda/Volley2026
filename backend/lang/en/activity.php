@@ -207,4 +207,17 @@ return [
     'announce_title' => '❤️ Activity Recording — new feature',
     'announce_body'  => "VolleyPlay now supports activity recording: heart rate, load zones and jump tracking via smart watches and heart rate monitors.\n\nData is collected only with your explicit consent when connecting a sensor. It's voluntary — declining has no effect on other features.\n\nPrivacy details: https://volleyplay.club/personal_data_agreement#health-data",
     'announce_push'  => '❤️ New: heart rate, load & jump tracking during workouts. Connect a sensor in the app.',
+
+    // Deleting a session
+    'delete_btn'           => 'Delete session',
+    'delete_confirm_title' => 'Delete this session?',
+    'delete_confirm_text'  => 'The session data (heart rate, jumps) will be permanently deleted.',
+    'delete_confirm_btn'   => 'Yes, delete',
+    'delete_cancel_btn'    => 'Cancel',
+    'session_deleted'      => 'Session deleted',
+
+    // Ghost sessions (no data)
+    'ghost_badge'          => 'No data',
+    'show_ghosts_link'     => 'Show empty sessions (:n)',
+    'hide_ghosts_link'     => 'Hide empty sessions',
 ];

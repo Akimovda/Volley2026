@@ -285,6 +285,10 @@ Route::get('/activity/{session}', [\App\Http\Controllers\ActivityDashboardContro
     ->middleware(['auth', config('jetstream.auth_session'), 'verified'])
     ->name('activity.show')
     ->whereNumber('session');
+Route::delete('/activity/{session}', [\App\Http\Controllers\ActivityDashboardController::class, 'destroy'])
+    ->middleware(['auth', config('jetstream.auth_session'), 'verified'])
+    ->name('activity.destroy')
+    ->whereNumber('session');
 
 Route::get('/profile/athlete', [\App\Http\Controllers\AthleteProfileController::class, 'show'])
     ->middleware(['auth', config('jetstream.auth_session'), 'verified'])

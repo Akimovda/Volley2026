@@ -65,6 +65,7 @@ Route::middleware('auth:sanctum,web')->group(function () {
     Route::post('/activity/sessions/{session}/samples',  [\App\Http\Controllers\Api\ActivitySessionController::class, 'ingestSamples']);
     Route::post('/activity/sessions/{session}/jumps',    [\App\Http\Controllers\Api\ActivityJumpController::class, 'store']);
     Route::post('/activity/sessions/{session}/finalize', [\App\Http\Controllers\Api\ActivitySessionController::class, 'finalize']);
+    Route::delete('/activity/sessions/{session}', [\App\Http\Controllers\Api\ActivitySessionController::class, 'destroy']);
     Route::get('/activity/stats/weekly', [\App\Http\Controllers\Api\ActivityStatsController::class, 'weekly'])
         ->middleware('abilities:activity:read');
     Route::post('/activity/import/healthkit', [\App\Http\Controllers\Api\ActivityImportController::class, 'importHealthKit']);

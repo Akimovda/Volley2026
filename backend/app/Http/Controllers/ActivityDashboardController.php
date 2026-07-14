@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ActivitySession;
 use App\Services\AthleteProfileService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -18,6 +19,7 @@ class ActivityDashboardController extends Controller
 
         $canRecord = true; // гейт пройден
         $direction = $request->query('direction', 'all');
+        $showGhosts = $request->boolean('show_ghosts');
 
         // Незавершённые сессии тоже показываем какое-то время — иначе после старта записи
         // на часах пользователь не видит её в списке вообще, пока не придёт finalize().
@@ -34,6 +36,17 @@ class ActivityDashboardController extends Controller
 
         if (in_array($direction, ['classic', 'beach'], true)) {
             $query->where('direction', $direction);
+        }
+
+        // "Призрачные" тренировки (см. ActivitySession::getIsGhostAttribute) — короткие,
+        // без пульса и прыжков; по умолчанию скрыты из списка, но не удаляются автоматически.
+        $isGhostSql = "status = 'completed' AND COALESCE(duration_sec, 0) < 30 "
+            . "AND COALESCE(samples_count, 0) = 0 AND COALESCE(jump_count, 0) = 0";
+
+        $ghostCount = (clone $query)->whereRaw($isGhostSql)->count();
+
+        if (!$showGhosts) {
+            $query->whereRaw("NOT ($isGhostSql)");
         }
 
         $sessions = $query->paginate(20)->withQueryString();
@@ -57,8 +70,21 @@ class ActivityDashboardController extends Controller
         return view('activity.index', compact(
             'sessions', 'direction', 'totalCount', 'lastSession',
             'zoneThresholds', 'canRecord', 'userTimezone',
-            'preferredDeviceType', 'preferredDevice'
+            'preferredDeviceType', 'preferredDevice',
+            'ghostCount', 'showGhosts'
         ));
+    }
+
+    public function destroy(Request $request, ActivitySession $session): RedirectResponse
+    {
+        if ($session->user_id !== $request->user()->id) {
+            abort(403);
+        }
+
+        // FK на activity_hr_samples/activity_jump_events объявлены cascadeOnDelete — отдельно чистить не нужно.
+        $session->delete();
+
+        return redirect()->route('activity.index')->with('status', __('activity.session_deleted'));
     }
 
     public function show(Request $request, ActivitySession $session): View

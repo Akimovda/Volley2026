@@ -106,6 +106,10 @@
                     </div>
                 </div>
 
+                @if(session('status'))
+                    <div class="alert alert-success mb-2">{{ session('status') }}</div>
+                @endif
+
                 {{-- Сводка --}}
                 <div class="ramka">
                     <div class="row">
@@ -141,6 +145,16 @@
                     </div>
                 </div>
 
+                @if($ghostCount > 0)
+                <div class="f-13 mb-1" style="opacity:.7">
+                    @if($showGhosts)
+                        <a href="{{ route('activity.index', ['direction' => $direction]) }}">{{ __('activity.hide_ghosts_link') }}</a>
+                    @else
+                        <a href="{{ route('activity.index', ['direction' => $direction, 'show_ghosts' => 1]) }}">{{ __('activity.show_ghosts_link', ['n' => $ghostCount]) }}</a>
+                    @endif
+                </div>
+                @endif
+
                 {{-- Список сессий --}}
                 @php
                 $hrZoneColors = ['#9ca3af','#2967BA','#22c55e','#eab308','#f97316','#ef4444'];
@@ -171,7 +185,8 @@
                         ? sprintf('%d:%02d:%02d', intdiv($dur, 3600), intdiv($dur % 3600, 60), $dur % 60)
                         : sprintf('%d:%02d', intdiv($dur, 60), $dur % 60);
                 @endphp
-                <a href="{{ route('activity.show', $session) }}" class="ramka mb-1" style="display:block;text-decoration:none;color:inherit">
+                <div class="ramka mb-1">
+                    <a href="{{ route('activity.show', $session) }}" style="display:block;text-decoration:none;color:inherit">
                     <div class="section-title-row">
                         <div>
                             <div class="act-session-title">{{ $title }}</div>
@@ -185,6 +200,11 @@
                                     @elseif($syncStatus === 'settling')
                                         <span class="badge badge-sm badge-sync-info">⏳ {{ __('activity.sync_settling') }}</span>
                                     @endif
+                                </div>
+                            @endif
+                            @if($session->is_ghost)
+                                <div class="mt-05">
+                                    <span class="badge badge-sm" style="background:rgba(120,120,128,.18);color:inherit">👻 {{ __('activity.ghost_badge') }}</span>
                                 </div>
                             @endif
                         </div>
@@ -237,7 +257,22 @@
                         {{ $syncStatus === 'pending' ? __('activity.sync_pending_hint') : __('activity.sync_stale_hint') }}
                     </div>
                     @endif
-                </a>
+                    </a>
+                    @if($session->is_ghost)
+                    <form method="POST" action="{{ route('activity.destroy', $session) }}" class="mt-1">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="btn-alert f-13"
+                                style="background:none;border:none;padding:0;color:#dc2626;cursor:pointer;text-decoration:underline"
+                                data-title="{{ __('activity.delete_confirm_title') }}"
+                                data-text="{{ __('activity.delete_confirm_text') }}"
+                                data-confirm-text="{{ __('activity.delete_confirm_btn') }}"
+                                data-cancel-text="{{ __('activity.delete_cancel_btn') }}">
+                            🗑️ {{ __('activity.delete_btn') }}
+                        </button>
+                    </form>
+                    @endif
+                </div>
                 @empty
                 <div class="ramka text-center" style="opacity:.6">
                     <p>{{ __('activity.no_sessions') }}</p>
