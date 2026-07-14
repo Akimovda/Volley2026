@@ -34,6 +34,7 @@
 - Симптом: `file_put_contents(.../storage/fonts/installed-fonts.json): Permission denied` при `EventRegistrationsManagementController::exportPdf`
 - Фикс: `sudo chown -R appuser:www-data storage/fonts && sudo chmod -R g+rwX storage/fonts && sudo chmod g+s storage/fonts`
 - `g+s` (setgid) критично — новые файлы наследуют group=www-data; на dev уже `drwxrwsr-x`
+- **Git-гигиена закрыта (коммит f133a8e, 2026-07-14)**: `storage/fonts/*` (включая `installed-fonts.json`, регенерируется под www-data при каждом экспорте с новым хешем) добавлен в `.gitignore`, убран из индекса через `git rm --cached` (файлы на диске не тронуты). После следующего `git merge origin/main` на проде статус станет чистым без ручного `git checkout -- storage/fonts`. Права/setgid по-прежнему нужны отдельно — гитигнор не заменяет фикс permissions выше, только убирает шум из `git status`.
 
 ## PHP-FPM opcache (КРИТИЧНО на проде)
 - `php artisan config:cache` / `route:cache` обновляют файлы, но opcache продолжает отдавать старые версии
