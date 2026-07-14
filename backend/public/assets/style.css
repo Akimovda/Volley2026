@@ -5752,3 +5752,58 @@ body.dark .ms-ptable td { border-color: rgba(255, 255, 255, .07); }
 	.ms-hero-avatar { width: 56px; height: 56px; }
 	.ms-hero-points { font-size: 2.6rem; }
 }
+
+/* Лента "ход матча" (rp = rally progress) */
+.rp-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+.rp-tab {
+	font-size: .78rem;
+	padding: 4px 10px;
+	border-radius: 8px;
+	border: 1px solid rgba(128, 128, 128, .25);
+	background: transparent;
+	cursor: pointer;
+}
+.rp-tab--active { background: #2967BA; color: #fff; border-color: #2967BA; }
+.rp-set--hidden { display: none; }
+.rp-set-header { font-size: .8rem; font-weight: 700; opacity: .7; margin-bottom: 6px; text-align: center; }
+.rp-empty { text-align: center; opacity: .5; padding: 12px 0; font-size: .85rem; }
+
+.rp-feed { display: flex; flex-direction: column; gap: 2px; }
+.rp-row {
+	display: grid;
+	grid-template-columns: 1fr 1fr auto;
+	align-items: center;
+	gap: 8px;
+	padding: 6px 4px;
+	border-bottom: 1px solid rgba(128, 128, 128, .08);
+	cursor: pointer;
+}
+.rp-row--highlight { background: rgba(41, 103, 186, .08); }
+.rp-cell { min-height: 28px; display: flex; align-items: center; gap: 6px; overflow: hidden; }
+.rp-cell--home { justify-content: flex-start; border-left: 3px solid #2967BA; padding-left: 6px; }
+.rp-cell--away {
+	justify-content: flex-end;
+	flex-direction: row-reverse;
+	text-align: right;
+	border-right: 3px solid #E7612F;
+	padding-right: 6px;
+}
+.rp-action { font-size: .7rem; font-weight: 700; text-transform: uppercase; opacity: .6; white-space: nowrap; }
+.rp-score { font-size: .85rem; font-weight: 800; min-width: 3.2rem; text-align: right; opacity: .85; }
+
+.rp-player { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.rp-cell--away .rp-player { flex-direction: row-reverse; }
+.rp-player-avatar { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.rp-player-info { line-height: 1.15; min-width: 0; }
+.rp-player-name { font-size: .8rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rp-player-meta { font-size: .68rem; opacity: .55; white-space: nowrap; }
+.rp-player--muted { opacity: .55; }
+.rp-player--muted .rp-player-avatar { filter: grayscale(60%); }
+
+@media (max-width: 480px) {
+	.rp-player-avatar { width: 22px; height: 22px; }
+	.rp-player-name { font-size: .72rem; }
+	.rp-player-meta { font-size: .62rem; }
+	.rp-action { font-size: .62rem; }
+	.rp-score { font-size: .75rem; min-width: 2.6rem; }
+}
