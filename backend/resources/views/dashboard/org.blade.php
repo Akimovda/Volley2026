@@ -132,7 +132,7 @@
                         <tr>
                             <td>{{ $row->title }}</td>
                             <td>{{ $row->occurrences_count }}</td>
-                            <td>{{ $row->total_registered }}</td>
+                            <td>{{ $row->total_registered ?? 0 }}</td>
                             <td>
                                 @php $pct = round($row->avg_load_pct ?? 0); @endphp
                                 <div style="display:flex;align-items:center;gap:8px">

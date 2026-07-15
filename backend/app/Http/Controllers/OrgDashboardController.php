@@ -70,19 +70,59 @@ class OrgDashboardController extends Controller
             ->get();
 
         // --- ЗАГРУЗКА МЕРОПРИЯТИЙ ---
-        $occurrenceLoad = DB::table('event_occurrences as eo')
+        // Живой COUNT вместо event_occurrence_stats (кеш устаревает при массовых
+        // отменах через QueryBuilder — см. EventOccurrenceStatsService::getRegisteredCount).
+        // Вместимость по типу мероприятия (тот же приоритет, что и в EventRegistrationGuard):
+        // командные турниры — команды (events.tournament_teams_count → ets.teams_count →
+        // egs.teams_count), tournament_individual/king_beach и обычные — игроки (max_players).
+        $teamModes = "('team_classic','team_beach','team')";
+        $registeredExpr = "(CASE
+                WHEN e.format = 'tournament' AND e.registration_mode IN {$teamModes} THEN (
+                    SELECT COUNT(*) FROM event_teams et
+                    WHERE et.event_id = e.id
+                    AND (et.occurrence_id = eo.id OR et.occurrence_id IS NULL)
+                    AND et.status IN ('draft','ready','pending_members','submitted','confirmed','approved')
+                )
+                ELSE (
+                    SELECT COUNT(*) FROM event_registrations er
+                    WHERE er.occurrence_id = eo.id
+                    AND er.cancelled_at IS NULL
+                    AND (er.is_cancelled IS NULL OR er.is_cancelled = false)
+                    AND (er.status IS NULL OR er.status != 'cancelled')
+                )
+            END)";
+        $capacityExpr = "(CASE
+                WHEN e.format = 'tournament' AND e.registration_mode IN {$teamModes} THEN
+                    COALESCE(NULLIF(e.tournament_teams_count, 0), NULLIF(ets.teams_count, 0), NULLIF(egs.teams_count, 0), 0)
+                WHEN e.format = 'tournament' AND e.registration_mode IN ('tournament_individual','king_beach') THEN
+                    COALESCE(NULLIF(ets.total_players_max, 0), NULLIF(egs.max_players, 0), 0)
+                ELSE
+                    COALESCE(NULLIF(egs.max_players, 0), 0)
+            END)";
+
+        $occurrenceLoadSub = DB::table('event_occurrences as eo')
             ->join('events as e', 'e.id', '=', 'eo.event_id')
-            ->join('event_game_settings as egs', 'egs.event_id', '=', 'e.id')
-            ->leftJoin('event_occurrence_stats as eos', 'eos.occurrence_id', '=', 'eo.id')
+            ->leftJoin('event_game_settings as egs', 'egs.event_id', '=', 'e.id')
+            ->leftJoin('event_tournament_settings as ets', 'ets.event_id', '=', 'e.id')
             ->where('e.organizer_id', $orgId)
             ->where('eo.starts_at', '>=', now()->subMonths(3))
+            ->whereRaw('(eo.is_cancelled IS NULL OR eo.is_cancelled = false)')
             ->select(
+                'e.id as event_id',
                 'e.title',
-                DB::raw('AVG(eos.registered_count::float / NULLIF(egs.max_players, 0) * 100) as avg_load_pct'),
-                DB::raw('COUNT(eo.id) as occurrences_count'),
-                DB::raw('SUM(eos.registered_count) as total_registered')
+                DB::raw("{$registeredExpr} as registered"),
+                DB::raw("{$capacityExpr} as capacity")
+            );
+
+        $occurrenceLoad = DB::query()->fromSub($occurrenceLoadSub, 't')
+            ->select(
+                'event_id',
+                'title',
+                DB::raw('COUNT(*) as occurrences_count'),
+                DB::raw('SUM(registered) as total_registered'),
+                DB::raw('AVG(CASE WHEN capacity > 0 THEN registered::float / capacity * 100 END) as avg_load_pct')
             )
-            ->groupBy('e.id', 'e.title')
+            ->groupBy('event_id', 'title')
             ->orderByDesc('total_registered')
             ->limit(10)
             ->get();
