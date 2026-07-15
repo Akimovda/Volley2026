@@ -4479,6 +4479,37 @@ body.dark .btn-outline-primary:hover {
     background: #E7612F !important;
     color: #fff;
 }
+/* ── Карточка "инфо слева / действия справа", переносится в столбик на узких
+   экранах (dashboard/org_my_events.blade.php, player/my-bookings.blade.php) ── */
+.card-actions-row {
+    flex-wrap: wrap;
+}
+.card-actions-row > .card-actions-info {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+.card-actions-row > .card-actions-buttons {
+    flex-shrink: 0;
+}
+@media (max-width: 600px) {
+    .card-actions-row {
+        flex-direction: column;
+        align-items: stretch !important;
+    }
+    .card-actions-row > .card-actions-buttons {
+        width: 100%;
+    }
+    /* .flex-column — класс-фантом (не определён в проекте), поэтому направление
+       стека кнопок задаём явно здесь, а не полагаемся на него */
+    .card-actions-row > .card-actions-buttons.card-actions-buttons--stack {
+        display: flex;
+        flex-direction: column;
+    }
+    .card-actions-row > .card-actions-buttons.card-actions-buttons--stack .btn {
+        width: 100%;
+        min-height: 44px;
+    }
+}
 /* ── Org dashboard nav grid ────────────────────────────────────────────── */
 .org-nav-grid {
     display: grid;

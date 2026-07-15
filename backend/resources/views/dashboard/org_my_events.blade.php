@@ -81,8 +81,8 @@ $fmtAddress = function ($row) {
 				$registrationsUrl = route('events.registrations.index', ['event' => (int)$row->event_id]) . '?occurrence=' . (int)$row->occurrence_id;
 				@endphp
 				<div class="card mb-2" style="height:auto;border:0.15rem solid #E7612F;">
-					<div class="d-flex between gap-1 fvc">
-						<div>
+					<div class="d-flex between gap-1 fvc card-actions-row">
+						<div class="card-actions-info">
 							<a href="{{ url('/events/' . (int)$row->event_id) . '?occurrence=' . (int)$row->occurrence_id }}"
 							class="blink b-600 mb-1">
 								{{ $row->title }}
@@ -92,11 +92,11 @@ $fmtAddress = function ($row) {
 							<div>📍 {{ $fmtAddress($row) }}</div>
 							@endif
 						</div>
-						<div class="d-flex flex-column gap-1" style="flex-shrink:0;">
+						<div class="d-flex flex-column gap-1 card-actions-buttons card-actions-buttons--stack">
 							@if($isTournament)
-							<a href="{{ $tournamentUrl }}" class="btn btn-secondary btn-small">{{ __('events.occ_tournament_btn') }}</a>
+							<a href="{{ $tournamentUrl }}" class="btn btn-outline-primary btn-sm">{{ __('events.occ_tournament_btn') }}</a>
 							@endif
-							<a href="{{ $registrationsUrl }}" class="btn btn-secondary btn-small">{{ __('events.registrations_manage') }}</a>
+							<a href="{{ $registrationsUrl }}" class="btn btn-outline-primary btn-sm">{{ __('events.registrations_manage') }}</a>
 						</div>
 					</div>
 				</div>
