@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class WidgetPublicController extends Controller
 {
@@ -130,11 +131,14 @@ JS;
         $cacheKey = "widget_events_{$userId}_{$limit}";
 
         return Cache::remember($cacheKey, 120, function () use ($userId, $limit, $showSlots, $showLoc) {
+            // Живой COUNT вместо event_occurrence_stats (кеш устаревает и покрывает
+            // только часть occurrences — см. report_cache_counters_audit_2026-07-16.md).
+            // limit ≤ 50 (валидация в OrganizerWidgetController), скалярный подзапрос
+            // в SELECT — не N+1, один запрос считает разом до 50 occurrences.
             $occurrences = \App\Models\EventOccurrence::query()
                 ->join('events', 'events.id', '=', 'event_occurrences.event_id')
                 ->leftJoin('locations', 'locations.id', '=', 'events.location_id')
                 ->leftJoin('cities', 'cities.id', '=', 'locations.city_id')
-                ->leftJoin('event_occurrence_stats', 'event_occurrence_stats.occurrence_id', '=', 'event_occurrences.id')
                 ->where('events.organizer_id', $userId)
                 ->where('events.allow_registration', true)
                 ->whereRaw('(event_occurrences.is_cancelled IS NULL OR event_occurrences.is_cancelled = false)')
@@ -146,7 +150,12 @@ JS;
                     'event_occurrences.starts_at',
                     'event_occurrences.max_players',
                     'event_occurrences.duration_sec',
-                    'event_occurrence_stats.registered_count',
+                    DB::raw('(SELECT COUNT(*) FROM event_registrations er
+                        WHERE er.occurrence_id = event_occurrences.id
+                        AND er.cancelled_at IS NULL
+                        AND (er.is_cancelled IS NULL OR er.is_cancelled = false)
+                        AND (er.status IS NULL OR er.status != \'cancelled\')
+                    ) as registered_count'),
                     'events.id as event_id',
                     'events.title',
                     'events.direction',

@@ -42,11 +42,13 @@ class EventRoleSlotService
                 $slot->max_slots = $count;
                 $slot->save();
             } else {
+                // taken_slots не указан — DEFAULT 0 на уровне БД (NOT NULL DEFAULT 0),
+                // колонка write-only-мёртвая, подлежит DROP отдельной миграцией
+                // (см. report_cache_counters_audit_2026-07-16.md).
                 EventRoleSlot::create([
-                    'event_id'    => $event->id,
-                    'role'        => $role,
-                    'max_slots'   => $count,
-                    'taken_slots' => 0,
+                    'event_id'  => $event->id,
+                    'role'      => $role,
+                    'max_slots' => $count,
                 ]);
             }
         }
@@ -75,9 +77,9 @@ class EventRoleSlotService
 
     /**
      * Try to take slot (atomic).
-     * Uses actual registration count per occurrence — not the stale taken_slots counter.
+     * Uses actual registration count per occurrence — decision is live COUNT-based,
+     * taken_slots не пишется (write-only-мёртвая колонка, см. отчёт об аудите).
      * Caller must hold pg_advisory_xact_lock(occurrence_id, roleKey) before calling.
-     * Updates taken_slots to actual+1 so the counter stays in sync.
      */
     public function tryTakeSlot(Event $event, string $role, int $occurrenceId): bool
     {
@@ -95,13 +97,6 @@ class EventRoleSlotService
             return false;
         }
 
-        // Синхронизируем счётчик: taken + 1 (регистрация создаётся в той же транзакции)
-        \DB::table('event_role_slots')
-            ->where('event_id', $event->id)
-            ->where('role', $role)
-            ->update(['taken_slots' => $taken + 1]);
-
-        $this->clear($event);
         return true;
     }
 
@@ -132,27 +127,6 @@ class EventRoleSlotService
         }
 
         return $this->countActive($occurrenceId, $role) < $slot->max_slots;
-    }
-
-    /**
-     * Resync taken_slots to the actual count for a given occurrence.
-     * Call after cancellation or any out-of-band change.
-     */
-    public function resyncTakenSlots(Event $event, string $role, int $occurrenceId): void
-    {
-        $actual = \DB::table('event_registrations')
-            ->where('occurrence_id', $occurrenceId)
-            ->where('position', $role)
-            ->whereNull('cancelled_at')
-            ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
-            ->count();
-
-        \DB::table('event_role_slots')
-            ->where('event_id', $event->id)
-            ->where('role', $role)
-            ->update(['taken_slots' => $actual]);
-
-        $this->clear($event);
     }
 
     public function clear(Event $event): void
