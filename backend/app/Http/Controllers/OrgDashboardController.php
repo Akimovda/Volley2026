@@ -211,4 +211,53 @@ class OrgDashboardController extends Controller
             'subStats', 'subRevenue', 'topSubTemplates', 'couponStats'
         ));
     }
+
+    /**
+     * /my/events — упрощённый карточный список мероприятий организатора
+     * (название, дата, место + быстрые ссылки на управление турниром/регистрациями).
+     * Доступ: organizer/admin — тот же паттерн, что в EventRegistrationsOverviewController.
+     */
+    public function myEvents(Request $request)
+    {
+        $user = $request->user();
+
+        $role = (string) ($user->role ?? 'user');
+        if (!in_array($role, ['organizer', 'admin'], true)) {
+            abort(403);
+        }
+
+        $filter = $request->input('filter', 'current');
+        $today = \Illuminate\Support\Carbon::now('UTC');
+
+        $q = DB::table('event_occurrences as eo')
+            ->join('events as e', 'e.id', '=', 'eo.event_id')
+            ->leftJoin('locations as l', 'l.id', '=', 'e.location_id')
+            ->where('e.organizer_id', (int) $user->id)
+            ->where(function ($w) {
+                $w->whereNull('eo.is_cancelled')->orWhere('eo.is_cancelled', false);
+            })
+            ->select([
+                'eo.id as occurrence_id',
+                'eo.starts_at',
+                'eo.timezone',
+                'e.id as event_id',
+                'e.title',
+                'e.format',
+                'e.is_recurring',
+                'l.name as loc_name',
+                'l.address as loc_address',
+            ]);
+
+        if ($filter === 'current') {
+            $q->where('eo.starts_at', '>=', $today);
+            $q->orderBy('eo.starts_at', 'asc');
+        } else {
+            $q->where('eo.starts_at', '<', $today);
+            $q->orderBy('eo.starts_at', 'desc');
+        }
+
+        $occurrences = $q->paginate(25)->withQueryString();
+
+        return view('dashboard.org_my_events', compact('occurrences', 'filter'));
+    }
 }

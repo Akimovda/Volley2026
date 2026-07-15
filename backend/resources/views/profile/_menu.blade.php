@@ -105,14 +105,6 @@
                         <span class="menu-text">{{ __('profile.menu_my_coupons') }}</span>
                     @endif
                 </a>
-                <a href="{{ route('player.my-events') }}"
-                   class="menu-item {{ $activeMenu === 'my_events' ? 'active' : '' }}">
-                    @if($activeMenu === 'my_events')
-                        <strong class="cd menu-text">{{ __('profile.menu_my_events') }}</strong>
-                    @else
-                        <span class="menu-text">{{ __('profile.menu_my_events') }}</span>
-                    @endif
-                </a>
                 <a href="{{ route('player.my-bookings') }}"
                    class="menu-item {{ $activeMenu === 'my_bookings' ? 'active' : '' }}">
                     @if($activeMenu === 'my_bookings')
@@ -121,6 +113,16 @@
                         <span class="menu-text">{{ __('club.my_bookings') }}</span>
                     @endif
                 </a>
+                @if($menuUser->courtBookings()->exists())
+                <a href="{{ route('player.my-court-bookings') }}"
+                   class="menu-item {{ $activeMenu === 'my_court_bookings' ? 'active' : '' }}">
+                    @if($activeMenu === 'my_court_bookings')
+                        <strong class="cd menu-text">{{ __('club.my_court_bookings') }}</strong>
+                    @else
+                        <span class="menu-text">{{ __('club.my_court_bookings') }}</span>
+                    @endif
+                </a>
+                @endif
                 <a href="{{ route('player.dashboard') }}"
                    class="menu-item {{ $activeMenu === 'player_dashboard' ? 'active' : '' }}">
                     @if($activeMenu === 'player_dashboard')
@@ -180,6 +182,14 @@
                 <a href="{{ route('events.create.event_management') }}"
                    class="menu-item {{ $activeMenu === 'event_management' ? 'active' : '' }}">
                     @if($activeMenu === 'event_management')
+                        <strong class="cd menu-text">{{ __('profile.menu_my_events') }}</strong>
+                    @else
+                        <span class="menu-text">{{ __('profile.menu_my_events') }}</span>
+                    @endif
+                </a>
+                <a href="{{ route('organizer.my-events') }}"
+                   class="menu-item {{ $activeMenu === 'organizer_my_events' ? 'active' : '' }}">
+                    @if($activeMenu === 'organizer_my_events')
                         <strong class="cd menu-text">{{ __('profile.menu_my_events') }}</strong>
                     @else
                         <span class="menu-text">{{ __('profile.menu_my_events') }}</span>
@@ -355,14 +365,6 @@
             <span class="menu-text">{{ __('profile.menu_my_coupons') }}</span>
         @endif
     </a>
-    <a href="{{ route('player.my-events') }}"
-       class="menu-item {{ $activeMenu === 'my_events' ? 'active' : '' }}">
-        @if($activeMenu === 'my_events')
-            <strong class="cd menu-text">{{ __('profile.menu_my_events') }}</strong>
-        @else
-            <span class="menu-text">{{ __('profile.menu_my_events') }}</span>
-        @endif
-    </a>
     <a href="{{ route('player.my-bookings') }}"
        class="menu-item {{ $activeMenu === 'my_bookings' ? 'active' : '' }}">
         @if($activeMenu === 'my_bookings')
@@ -371,6 +373,16 @@
             <span class="menu-text">{{ __('club.my_bookings') }}</span>
         @endif
     </a>
+    @if($menuUser->courtBookings()->exists())
+    <a href="{{ route('player.my-court-bookings') }}"
+       class="menu-item {{ $activeMenu === 'my_court_bookings' ? 'active' : '' }}">
+        @if($activeMenu === 'my_court_bookings')
+            <strong class="cd menu-text">{{ __('club.my_court_bookings') }}</strong>
+        @else
+            <span class="menu-text">{{ __('club.my_court_bookings') }}</span>
+        @endif
+    </a>
+    @endif
     <a href="{{ route('player.dashboard') }}"
        class="menu-item {{ $activeMenu === 'player_dashboard' ? 'active' : '' }}">
         @if($activeMenu === 'player_dashboard')

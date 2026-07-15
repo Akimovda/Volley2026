@@ -176,6 +176,7 @@ return [
     // === Phase 5 — direct court booking by players ===
     'book_court'                => 'Book a court',
     'my_bookings'               => 'My bookings',
+    'my_court_bookings'         => 'Court bookings',
     'send_request'              => 'Send request',
     'duration'                  => 'Duration',
     'duration_30m'              => '30 minutes',

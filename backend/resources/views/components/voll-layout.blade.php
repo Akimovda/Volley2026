@@ -326,12 +326,14 @@
 								<a href="{{ route('notifications.index') }}" class="menu-item">
 									<span class="menu-text">{{ __('ui.menu_notifications') }}</span>
 								</a>
-								<a href="{{ route('player.my-events') }}" class="menu-item">
-									<span class="menu-text">{{ __('ui.menu_my_events') }}</span>
-								</a>
 								<a href="{{ route('player.my-bookings') }}" class="menu-item">
 									<span class="menu-text">{{ __('club.my_bookings') }}</span>
 								</a>
+								@if(auth()->user()?->courtBookings()->exists())
+								<a href="{{ route('player.my-court-bookings') }}" class="menu-item">
+									<span class="menu-text">{{ __('club.my_court_bookings') }}</span>
+								</a>
+								@endif
 								@if(config('activity.recording_open') || auth()->user()?->isAdmin())
 								<a href="{{ route('activity.index') }}" class="menu-item">
 									<span class="menu-text">{{ __('activity.my_activity') }}</span>
@@ -370,6 +372,9 @@
 								</a>
 								<a href="/events/create/event_management" class="menu-item">
 									<span class="menu-text">{{ __('ui.org_events_management') }}</span>
+								</a>
+								<a href="{{ route('organizer.my-events') }}" class="menu-item">
+									<span class="menu-text">{{ __('ui.menu_my_events') }}</span>
 								</a>
 								<a href="/events/registrations/manage" class="menu-item">
 									<span class="menu-text">{{ __('ui.org_regs_manage') }}</span>

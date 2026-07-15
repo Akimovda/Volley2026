@@ -234,6 +234,11 @@
 			return $this->hasMany(Location::class, 'owner_id');
 		}
 
+		public function courtBookings(): HasMany
+		{
+			return $this->hasMany(\App\Models\CourtBooking::class);
+		}
+
 		// --------------------------------------------------
 		// Roles
 		// --------------------------------------------------

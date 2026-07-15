@@ -41,7 +41,7 @@ class PlayerCourtBookingController extends Controller
 
         if ($booking->payment_mode === CourtBooking::PAYMENT_MODE_PREPAID) {
             return back()->with('success', __('club.booking_pay_button', ['amount' => number_format((float) $booking->price_total, 0, ',', ' ')]))
-                ->with('pay_booking_url', route('player.my-bookings'));
+                ->with('pay_booking_url', route('player.my-court-bookings'));
         }
 
         return back()->with('success', __('club.booking_pending_info'));
@@ -121,7 +121,7 @@ class PlayerCourtBookingController extends Controller
         }
 
         try {
-            $payment = $paymentService->createForBooking($booking, $settings, route('player.my-bookings'));
+            $payment = $paymentService->createForBooking($booking, $settings, route('player.my-court-bookings'));
         } catch (\Throwable $e) {
             report($e);
             return back()->with('error', __('club.booking_pay_failed'));
