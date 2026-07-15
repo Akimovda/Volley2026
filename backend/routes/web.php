@@ -159,13 +159,15 @@ Route::get('/logout', fn () => redirect('/'));
 			->name('club.analytics.index');
 
 		// Фаза 5 — прямая бронь корта игроком
+		// URL /my/bookings отдан под личные записи на мероприятия (см. задачу 1 обмена /my/events <-> /my/bookings),
+		// брони кортов переехали на /my/court-bookings.
 		Route::post('/court-bookings', [\App\Http\Controllers\PlayerCourtBookingController::class, 'store'])
 			->name('court_bookings.store');
-		Route::get('/my/bookings', [\App\Http\Controllers\PlayerCourtBookingController::class, 'myBookings'])
-			->name('player.my-bookings');
-		Route::post('/my/bookings/{booking}/cancel', [\App\Http\Controllers\PlayerCourtBookingController::class, 'cancel'])
+		Route::get('/my/court-bookings', [\App\Http\Controllers\PlayerCourtBookingController::class, 'myBookings'])
+			->name('player.my-court-bookings');
+		Route::post('/my/court-bookings/{booking}/cancel', [\App\Http\Controllers\PlayerCourtBookingController::class, 'cancel'])
 			->name('player.bookings.cancel');
-		Route::post('/my/bookings/{booking}/pay', [\App\Http\Controllers\PlayerCourtBookingController::class, 'pay'])
+		Route::post('/my/court-bookings/{booking}/pay', [\App\Http\Controllers\PlayerCourtBookingController::class, 'pay'])
 			->name('player.bookings.pay');
 	});
 
@@ -1402,8 +1404,13 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     Route::get('/player/dashboard', [\App\Http\Controllers\PlayerDashboardController::class, 'index'])
         ->name('player.dashboard');
 
-    Route::get('/my/events', [\App\Http\Controllers\PlayerDashboardController::class, 'myEvents'])
-        ->name('player.my-events');
+    // /my/bookings — личные записи игрока на мероприятия (бывший /my/events, URL отдан под "Мои брони").
+    Route::get('/my/bookings', [\App\Http\Controllers\PlayerDashboardController::class, 'myEvents'])
+        ->name('player.my-bookings');
+
+    // /my/events — мероприятия организатора (доступ: organizer/admin, проверка внутри контроллера — как в EventRegistrationsOverviewController).
+    Route::get('/my/events', [\App\Http\Controllers\OrgDashboardController::class, 'myEvents'])
+        ->name('organizer.my-events');
 });
 
 /*

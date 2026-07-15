@@ -568,7 +568,9 @@
 					renderPositions(occurrenceId, data.free_positions || data.data?.free_positions || []);
 				});
 			});
+
+			@include('events._partials.seatline_script')
 		</script>
 	</x-slot>
-	
+
 </x-voll-layout>

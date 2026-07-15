@@ -255,6 +255,6 @@ class PlayerDashboardController extends Controller
 
         $registrations = $query->paginate(20)->withQueryString();
 
-        return view('player.my-events', compact('registrations', 'filter', 'userTz'));
+        return view('player.my-bookings', compact('registrations', 'filter', 'userTz'));
     }
 }

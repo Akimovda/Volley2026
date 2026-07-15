@@ -105,6 +105,7 @@ return [
     'card_user_n'        => 'User #:id',
     'card_seats_of'      => 'of',
     'card_seats_teams'   => ' teams',
+    'card_seats_players' => ' players',
     'card_no_limit'      => 'No limit set',
 
     // Duration short labels

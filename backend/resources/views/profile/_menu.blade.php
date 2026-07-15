@@ -105,14 +105,6 @@
                         <span class="menu-text">{{ __('profile.menu_my_coupons') }}</span>
                     @endif
                 </a>
-                <a href="{{ route('player.my-events') }}"
-                   class="menu-item {{ $activeMenu === 'my_events' ? 'active' : '' }}">
-                    @if($activeMenu === 'my_events')
-                        <strong class="cd menu-text">{{ __('profile.menu_my_events') }}</strong>
-                    @else
-                        <span class="menu-text">{{ __('profile.menu_my_events') }}</span>
-                    @endif
-                </a>
                 <a href="{{ route('player.my-bookings') }}"
                    class="menu-item {{ $activeMenu === 'my_bookings' ? 'active' : '' }}">
                     @if($activeMenu === 'my_bookings')
@@ -121,6 +113,16 @@
                         <span class="menu-text">{{ __('club.my_bookings') }}</span>
                     @endif
                 </a>
+                @if($menuUser->courtBookings()->exists())
+                <a href="{{ route('player.my-court-bookings') }}"
+                   class="menu-item {{ $activeMenu === 'my_court_bookings' ? 'active' : '' }}">
+                    @if($activeMenu === 'my_court_bookings')
+                        <strong class="cd menu-text">{{ __('club.my_court_bookings') }}</strong>
+                    @else
+                        <span class="menu-text">{{ __('club.my_court_bookings') }}</span>
+                    @endif
+                </a>
+                @endif
                 <a href="{{ route('player.dashboard') }}"
                    class="menu-item {{ $activeMenu === 'player_dashboard' ? 'active' : '' }}">
                     @if($activeMenu === 'player_dashboard')
@@ -169,6 +171,7 @@
 
             {{-- Таб: Организатор --}}
             <div class="tab-pane" id="org-menu">
+                {{-- 1. Панель организатора --}}
                 <a href="{{ route('org.dashboard') }}"
                    class="menu-item {{ $activeMenu === 'org_dashboard' ? 'active' : '' }}">
                     @if($activeMenu === 'org_dashboard')
@@ -177,14 +180,27 @@
                         <span class="menu-text">{{ __('profile.menu_org_dashboard') }}</span>
                     @endif
                 </a>
+                {{-- 2. Панель арендатора — только для арендодателей кортов --}}
+                @if($menuUser->is_club_manager && $menuUser->ownedLocations()->exists())
+                <a href="{{ route('club.analytics.index') }}"
+                   class="menu-item {{ $activeMenu === 'club_analytics' ? 'active' : '' }}">
+                    @if($activeMenu === 'club_analytics')
+                        <strong class="cd menu-text">{{ __('club.analytics') }}</strong>
+                    @else
+                        <span class="menu-text">{{ __('club.analytics') }}</span>
+                    @endif
+                </a>
+                @endif
+                {{-- 3. Управление мероприятиями --}}
                 <a href="{{ route('events.create.event_management') }}"
                    class="menu-item {{ $activeMenu === 'event_management' ? 'active' : '' }}">
                     @if($activeMenu === 'event_management')
-                        <strong class="cd menu-text">{{ __('profile.menu_my_events') }}</strong>
+                        <strong class="cd menu-text">{{ __('ui.org_events_management') }}</strong>
                     @else
-                        <span class="menu-text">{{ __('profile.menu_my_events') }}</span>
+                        <span class="menu-text">{{ __('ui.org_events_management') }}</span>
                     @endif
                 </a>
+                {{-- 4. Управление регистрациями --}}
                 <a href="{{ route('events.registrations.manage') }}"
                    class="menu-item {{ $activeMenu === 'regs_manage' ? 'active' : '' }}">
                     @if($activeMenu === 'regs_manage')
@@ -193,36 +209,97 @@
                         <span class="menu-text">{{ __('profile.menu_org_regs_manage') }}</span>
                     @endif
                 </a>
+                {{-- 5. Мои мероприятия --}}
+                <a href="{{ route('organizer.my-events') }}"
+                   class="menu-item {{ $activeMenu === 'organizer_my_events' ? 'active' : '' }}">
+                    @if($activeMenu === 'organizer_my_events')
+                        <strong class="cd menu-text">{{ __('profile.menu_my_events') }}</strong>
+                    @else
+                        <span class="menu-text">{{ __('profile.menu_my_events') }}</span>
+                    @endif
+                </a>
+                {{-- 6. Брони кортов — только для арендодателей кортов --}}
+                @if($menuUser->is_club_manager && $menuUser->ownedLocations()->exists())
+                <a href="{{ route('club.bookings.index') }}"
+                   class="menu-item {{ $activeMenu === 'club_bookings' ? 'active' : '' }}">
+                    @if($activeMenu === 'club_bookings')
+                        <strong class="cd menu-text">🎪 {{ __('club.bookings_title') }}</strong>
+                    @else
+                        <span class="menu-text">🎪 {{ __('club.bookings_title') }}</span>
+                    @endif
+                </a>
+                @endif
+                {{-- 7. Создать мероприятие --}}
                 <a href="{{ route('events.create') }}"
                    class="menu-item {{ $activeMenu === 'event_create' ? 'active' : '' }}">
                     @if($activeMenu === 'event_create')
-                        <strong class="cd menu-text">{{ __('profile.menu_org_create_event') }}</strong>
+                        <strong class="cd menu-text">📆 {{ __('profile.menu_org_create_event') }}</strong>
                     @else
-                        <span class="menu-text">{{ __('profile.menu_org_create_event') }}</span>
+                        <span class="menu-text">📆 {{ __('profile.menu_org_create_event') }}</span>
                     @endif
                 </a>
+                {{-- 8. Абонементы --}}
+                <a href="{{ route('subscription_templates.index') }}"
+                   class="menu-item {{ $activeMenu === 'sub_templates' ? 'active' : '' }}">
+                    @if($activeMenu === 'sub_templates')
+                        <strong class="cd menu-text">🪪 {{ __('ui.org_subscriptions') }}</strong>
+                    @else
+                        <span class="menu-text">🪪 {{ __('ui.org_subscriptions') }}</span>
+                    @endif
+                </a>
+                {{-- 9. Купоны --}}
+                <a href="{{ route('coupon_templates.index') }}"
+                   class="menu-item {{ $activeMenu === 'coupon_templates' ? 'active' : '' }}">
+                    @if($activeMenu === 'coupon_templates')
+                        <strong class="cd menu-text">🎟  {{ __('ui.org_coupons') }}</strong>
+                    @else
+                        <span class="menu-text">🎟  {{ __('ui.org_coupons') }}</span>
+                    @endif
+                </a>
+                {{-- 10. Мои лиги и сезоны --}}
+                <a href="{{ route('leagues.index') }}"
+                   class="menu-item {{ $activeMenu === 'org_leagues' ? 'active' : '' }}">
+                    @if($activeMenu === 'org_leagues')
+                        <strong class="cd menu-text">{{ __('ui.org_my_leagues') }}</strong>
+                    @else
+                        <span class="menu-text">{{ __('ui.org_my_leagues') }}</span>
+                    @endif
+                </a>
+                {{-- 11. Каналы уведомлений --}}
+                <a href="{{ route('profile.notification_channels') }}"
+                   class="menu-item {{ $activeMenu === 'org_notif_channels' ? 'active' : '' }}">
+                    @if($activeMenu === 'org_notif_channels')
+                        <strong class="cd menu-text">📣 {{ __('ui.org_notif_channels') }}</strong>
+                    @else
+                        <span class="menu-text">📣 {{ __('ui.org_notif_channels') }}</span>
+                    @endif
+                </a>
+                {{-- 12. Виджет на сайт --}}
+                <a href="{{ route('profile.widget') }}"
+                   class="menu-item {{ $activeMenu === 'org_widget' ? 'active' : '' }}">
+                    @if($activeMenu === 'org_widget')
+                        <strong class="cd menu-text">{{ __('ui.org_widget') }}</strong>
+                    @else
+                        <span class="menu-text">{{ __('ui.org_widget') }}</span>
+                    @endif
+                </a>
+                {{-- 13. Организатор Pro --}}
+                <a href="{{ route('organizer_pro.index') }}"
+                   class="menu-item {{ $activeMenu === 'org_pro' ? 'active' : '' }}">
+                    @if($activeMenu === 'org_pro')
+                        <strong class="cd menu-text">{{ __('ui.org_pro') }}</strong>
+                    @else
+                        <span class="menu-text">{{ __('ui.org_pro') }}</span>
+                    @endif
+                </a>
+
+                {{-- Доп. пункты профиля-организатора, не входящие в единый порядок орг. меню (см. CLAUDE.md) --}}
                 <a href="{{ route('subscriptions.index') }}"
                    class="menu-item {{ $activeMenu === 'org_subscriptions' ? 'active' : '' }}">
                     @if($activeMenu === 'org_subscriptions')
                         <strong class="cd menu-text">{{ __('profile.menu_org_subs') }}</strong>
                     @else
                         <span class="menu-text">{{ __('profile.menu_org_subs') }}</span>
-                    @endif
-                </a>
-                <a href="{{ route('subscription_templates.index') }}"
-                   class="menu-item {{ $activeMenu === 'sub_templates' ? 'active' : '' }}">
-                    @if($activeMenu === 'sub_templates')
-                        <strong class="cd menu-text">{{ __('profile.menu_org_sub_tpls') }}</strong>
-                    @else
-                        <span class="menu-text">{{ __('profile.menu_org_sub_tpls') }}</span>
-                    @endif
-                </a>
-                <a href="{{ route('coupon_templates.index') }}"
-                   class="menu-item {{ $activeMenu === 'coupon_templates' ? 'active' : '' }}">
-                    @if($activeMenu === 'coupon_templates')
-                        <strong class="cd menu-text">{{ __('profile.menu_org_coupon_tpls') }}</strong>
-                    @else
-                        <span class="menu-text">{{ __('profile.menu_org_coupon_tpls') }}</span>
                     @endif
                 </a>
                 <a href="{{ route('staff.index') }}"
@@ -241,24 +318,6 @@
                         <span class="menu-text">{{ __('profile.menu_org_staff_logs') }}</span>
                     @endif
                 </a>
-                @if($menuUser->is_club_manager && $menuUser->ownedLocations()->exists())
-                <a href="{{ route('club.bookings.index') }}"
-                   class="menu-item {{ $activeMenu === 'club_bookings' ? 'active' : '' }}">
-                    @if($activeMenu === 'club_bookings')
-                        <strong class="cd menu-text">🏟️ {{ __('club.bookings_title') }}</strong>
-                    @else
-                        <span class="menu-text">🏟️ {{ __('club.bookings_title') }}</span>
-                    @endif
-                </a>
-                <a href="{{ route('club.analytics.index') }}"
-                   class="menu-item {{ $activeMenu === 'club_analytics' ? 'active' : '' }}">
-                    @if($activeMenu === 'club_analytics')
-                        <strong class="cd menu-text">📊 {{ __('club.analytics') }}</strong>
-                    @else
-                        <span class="menu-text">📊 {{ __('club.analytics') }}</span>
-                    @endif
-                </a>
-                @endif
 
                 @php
                     $mySchool = \App\Models\VolleyballSchool::where('organizer_id', $menuUser->id)->first();
@@ -355,14 +414,6 @@
             <span class="menu-text">{{ __('profile.menu_my_coupons') }}</span>
         @endif
     </a>
-    <a href="{{ route('player.my-events') }}"
-       class="menu-item {{ $activeMenu === 'my_events' ? 'active' : '' }}">
-        @if($activeMenu === 'my_events')
-            <strong class="cd menu-text">{{ __('profile.menu_my_events') }}</strong>
-        @else
-            <span class="menu-text">{{ __('profile.menu_my_events') }}</span>
-        @endif
-    </a>
     <a href="{{ route('player.my-bookings') }}"
        class="menu-item {{ $activeMenu === 'my_bookings' ? 'active' : '' }}">
         @if($activeMenu === 'my_bookings')
@@ -371,6 +422,16 @@
             <span class="menu-text">{{ __('club.my_bookings') }}</span>
         @endif
     </a>
+    @if($menuUser->courtBookings()->exists())
+    <a href="{{ route('player.my-court-bookings') }}"
+       class="menu-item {{ $activeMenu === 'my_court_bookings' ? 'active' : '' }}">
+        @if($activeMenu === 'my_court_bookings')
+            <strong class="cd menu-text">{{ __('club.my_court_bookings') }}</strong>
+        @else
+            <span class="menu-text">{{ __('club.my_court_bookings') }}</span>
+        @endif
+    </a>
+    @endif
     <a href="{{ route('player.dashboard') }}"
        class="menu-item {{ $activeMenu === 'player_dashboard' ? 'active' : '' }}">
         @if($activeMenu === 'player_dashboard')

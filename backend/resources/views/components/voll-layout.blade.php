@@ -326,12 +326,14 @@
 								<a href="{{ route('notifications.index') }}" class="menu-item">
 									<span class="menu-text">{{ __('ui.menu_notifications') }}</span>
 								</a>
-								<a href="{{ route('player.my-events') }}" class="menu-item">
-									<span class="menu-text">{{ __('ui.menu_my_events') }}</span>
-								</a>
 								<a href="{{ route('player.my-bookings') }}" class="menu-item">
 									<span class="menu-text">{{ __('club.my_bookings') }}</span>
 								</a>
+								@if(auth()->user()?->courtBookings()->exists())
+								<a href="{{ route('player.my-court-bookings') }}" class="menu-item">
+									<span class="menu-text">{{ __('club.my_court_bookings') }}</span>
+								</a>
+								@endif
 								@if(config('activity.recording_open') || auth()->user()?->isAdmin())
 								<a href="{{ route('activity.index') }}" class="menu-item">
 									<span class="menu-text">{{ __('activity.my_activity') }}</span>
@@ -365,41 +367,59 @@
 								<div class="menu-item-title">
 									<span class="menu-text">{{ __('ui.org_menu_title') }}</span>
 								</div>
+								{{-- 1. Панель организатора --}}
 								<a href="/org/dashboard" class="menu-item">
 									<span class="menu-text">{{ __('ui.org_dashboard') }}</span>
 								</a>
-								<a href="/events/create/event_management" class="menu-item">
-									<span class="menu-text">{{ __('ui.org_events_management') }}</span>
-								</a>
-								<a href="/events/registrations/manage" class="menu-item">
-									<span class="menu-text">{{ __('ui.org_regs_manage') }}</span>
-								</a>
+								{{-- 2. Панель арендатора — только для арендодателей кортов --}}
 								@if(auth()->user()->is_club_manager && auth()->user()->ownedLocations()->exists())
-								<a href="{{ route('club.bookings.index') }}" class="menu-item">
-									<span class="menu-text">{{ __('club.bookings_title') }}</span>
-								</a>
 								<a href="{{ route('club.analytics.index') }}" class="menu-item">
 									<span class="menu-text">{{ __('club.analytics') }}</span>
 								</a>
 								@endif
+								{{-- 3. Управление мероприятиями --}}
+								<a href="/events/create/event_management" class="menu-item">
+									<span class="menu-text">{{ __('ui.org_events_management') }}</span>
+								</a>
+								{{-- 4. Управление регистрациями --}}
+								<a href="/events/registrations/manage" class="menu-item">
+									<span class="menu-text">{{ __('ui.org_regs_manage') }}</span>
+								</a>
+								{{-- 5. Мои мероприятия --}}
+								<a href="{{ route('organizer.my-events') }}" class="menu-item">
+									<span class="menu-text">{{ __('ui.menu_my_events') }}</span>
+								</a>
+								{{-- 6. Брони кортов — только для арендодателей кортов --}}
+								@if(auth()->user()->is_club_manager && auth()->user()->ownedLocations()->exists())
+								<a href="{{ route('club.bookings.index') }}" class="menu-item">
+									<span class="menu-text">🎪 {{ __('club.bookings_title') }}</span>
+								</a>
+								@endif
+								{{-- 7. Создать мероприятие --}}
 								<a href="/events/create" class="menu-item">
-									<span class="menu-text">{{ __('ui.org_create_event') }}</span>
+									<span class="menu-text">📆 {{ __('ui.org_create_event') }}</span>
 								</a>
+								{{-- 8. Абонементы --}}
 								<a href="/subscriptions/templates" class="menu-item">
-									<span class="menu-text">{{ __('ui.org_subscriptions') }}</span>
+									<span class="menu-text">🪪 {{ __('ui.org_subscriptions') }}</span>
 								</a>
+								{{-- 9. Купоны --}}
 								<a href="/coupons/templates" class="menu-item">
-									<span class="menu-text">{{ __('ui.org_coupons') }}</span>
+									<span class="menu-text">🎟  {{ __('ui.org_coupons') }}</span>
 								</a>
+								{{-- 10. Мои лиги и сезоны --}}
 								<a href="/leagues" class="menu-item">
 									<span class="menu-text">{{ __('ui.org_my_leagues') }}</span>
 								</a>
+								{{-- 11. Каналы уведомлений --}}
 								<a href="/user/profile/notification-channels" class="menu-item">
-									<span class="menu-text">{{ __('ui.org_notif_channels') }}</span>
+									<span class="menu-text">📣 {{ __('ui.org_notif_channels') }}</span>
 								</a>
+								{{-- 12. Виджет на сайт --}}
 								<a href="/profile/widget" class="menu-item">
 									<span class="menu-text">{{ __('ui.org_widget') }}</span>
 								</a>
+								{{-- 13. Организатор Pro --}}
 								<a href="/organizer-pro" class="menu-item">
 									<span class="menu-text">{{ __('ui.org_pro') }}</span>
 								</a>
