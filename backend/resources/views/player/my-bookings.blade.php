@@ -3,8 +3,8 @@
 	$user = auth()->user();
 	@endphp
 
-	<x-slot name="title">Мои мероприятия</x-slot>
-	<x-slot name="h1">Мои мероприятия</x-slot>
+	<x-slot name="title">{{ __('club.my_bookings') }}</x-slot>
+	<x-slot name="h1">{{ __('club.my_bookings') }}</x-slot>
     <x-slot name="h2">
         @if(!empty($user->first_name) || !empty($user->last_name))
         {{ trim($user->first_name . ' ' . $user->last_name) }}
