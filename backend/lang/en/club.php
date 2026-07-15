@@ -155,8 +155,8 @@ return [
     'payment_for_rentals'       => 'Use these settings to accept payment for court rentals',
     'payment_for_rentals_hint'  => 'Actual rental payment via YooKassa/link will arrive in a later phase of the club module — this checkbox only records the intent.',
 
-    // === Club analytics (court occupancy and revenue) ===
-    'analytics'                 => 'Analytics',
+    // === Club analytics (court occupancy and revenue) — "Landlord panel" in menu/page title ===
+    'analytics'                 => 'Landlord panel',
     'occupancy'                 => 'Occupancy',
     'revenue'                   => 'Revenue',
     'period_month'              => 'Month',
