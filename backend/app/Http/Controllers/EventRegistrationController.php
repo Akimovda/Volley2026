@@ -704,15 +704,7 @@ class EventRegistrationController extends Controller
                 ]);
             }
 
-            $cancelledPosition = $reg->position;
-
             DB::commit();
-
-            // Синхронизируем taken_slots после отмены
-            if ($cancelledPosition && (string)($event->direction ?? '') === 'classic') {
-                app(EventRoleSlotService::class)
-                    ->resyncTakenSlots($event, $cancelledPosition, $occurrence->id);
-            }
 
             $eventTitle = (string) ($event->title ?? ('#' . $occurrence->event_id));
 
