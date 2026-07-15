@@ -6,6 +6,7 @@ use App\Services\UserNotificationService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 
 class CancelEventsByQuorum extends Command
@@ -83,6 +84,7 @@ class CancelEventsByQuorum extends Command
         $checked = 0;
         $cancelled = 0;
         $skipped = 0;
+        $errors = 0;
 
         /** @var UserNotificationService $notifications */
         $notifications = app(UserNotificationService::class);
@@ -90,66 +92,126 @@ class CancelEventsByQuorum extends Command
         foreach ($rows as $row) {
             $checked++;
 
-            $startsUtc = Carbon::parse($row->starts_at, 'UTC');
-            $timezone = (string) ($row->timezone ?: 'UTC');
-            $minPlayers = (int) $row->min_players;
+            try {
+                $startsUtc = Carbon::parse($row->starts_at, 'UTC');
+                $timezone = (string) ($row->timezone ?: 'UTC');
+                $minPlayers = (int) $row->min_players;
 
-            // Триггер — момент окончания регистрации
-            $regEndsUtc = Carbon::parse($row->registration_ends_at, 'UTC');
+                // Триггер — момент окончания регистрации
+                $regEndsUtc = Carbon::parse($row->registration_ends_at, 'UTC');
 
-            // Ещё не наступило время окончания регистрации
-            if ($nowUtc->lt($regEndsUtc)) {
-                $skipped++;
-                continue;
-            }
-
-            // Мероприятие уже началось — не трогаем
-            if ($nowUtc->gte($startsUtc)) {
-                $skipped++;
-                continue;
-            }
-
-            $regMode = (string) ($row->event_registration_mode ?? '');
-            $isTeamMode = in_array($regMode, ['team_beach', 'team_classic'], true)
-                || (string) ($row->event_format ?? '') === 'tournament';
-
-            if ($isTeamMode) {
-                $minTeams = (int) ($row->event_tournament_teams_count ?? 0);
-                if ($minTeams <= 0) {
-                    // Командный турнир без настроенного порога — авто-отмена не применяется
+                // Ещё не наступило время окончания регистрации
+                if ($nowUtc->lt($regEndsUtc)) {
                     $skipped++;
                     continue;
                 }
 
-                $approvedTeams = $this->countApprovedTeams((int) $row->event_id, (int) $row->id);
-
-                if ($approvedTeams >= $minTeams) {
+                // Мероприятие уже началось — не трогаем
+                if ($nowUtc->gte($startsUtc)) {
                     $skipped++;
                     continue;
                 }
 
-                $activeRegs = $approvedTeams;
-                $minPlayers = $minTeams;
-                $userIds = $this->getTeamMemberUserIds((int) $row->event_id, (int) $row->id);
-            } else {
-                $activeRegs = $this->countActiveRegistrations((int) $row->event_id, (int) $row->id);
+                $regMode = (string) ($row->event_registration_mode ?? '');
+                $isTeamMode = in_array($regMode, ['team_beach', 'team_classic'], true)
+                    || (string) ($row->event_format ?? '') === 'tournament';
 
-                if ($activeRegs >= $minPlayers) {
-                    $skipped++;
+                if ($isTeamMode) {
+                    $minTeams = (int) ($row->event_tournament_teams_count ?? 0);
+                    if ($minTeams <= 0) {
+                        // Командный турнир без настроенного порога — авто-отмена не применяется
+                        $skipped++;
+                        continue;
+                    }
+
+                    $approvedTeams = $this->countApprovedTeams((int) $row->event_id, (int) $row->id);
+
+                    if ($approvedTeams >= $minTeams) {
+                        $skipped++;
+                        continue;
+                    }
+
+                    $activeRegs = $approvedTeams;
+                    $minPlayers = $minTeams;
+                    $userIds = $this->getTeamMemberUserIds((int) $row->event_id, (int) $row->id);
+                } else {
+                    $activeRegs = $this->countActiveRegistrations((int) $row->event_id, (int) $row->id);
+
+                    if ($activeRegs >= $minPlayers) {
+                        $skipped++;
+                        continue;
+                    }
+
+                    $userIds = $this->getActiveRegisteredUserIds((int) $row->event_id, (int) $row->id);
+                }
+
+                $startsLocalText = $startsUtc->copy()
+                    ->setTimezone($timezone)
+                    ->format('d.m.Y H:i') . ' (' . $timezone . ')';
+
+                if ($dryRun) {
+                    $this->line(
+                        sprintf(
+                            '[dry-run] cancel occurrence=%d event=%d regs=%d min=%d start=%s',
+                            (int) $row->id,
+                            (int) $row->event_id,
+                            $activeRegs,
+                            $minPlayers,
+                            $startsLocalText
+                        )
+                    );
+                    $cancelled++;
                     continue;
                 }
 
-                $userIds = $this->getActiveRegisteredUserIds((int) $row->event_id, (int) $row->id);
-            }
+                DB::transaction(function () use ($row, $userIds, $notifications, $startsLocalText) {
+                    $payload = [
+                        'updated_at' => now(),
+                    ];
 
-            $startsLocalText = $startsUtc->copy()
-                ->setTimezone($timezone)
-                ->format('d.m.Y H:i') . ' (' . $timezone . ')';
+                    if (Schema::hasColumn('event_occurrences', 'cancelled_at')) {
+                        $payload['cancelled_at'] = now();
+                    }
 
-            if ($dryRun) {
-                $this->line(
+                    if (Schema::hasColumn('event_occurrences', 'is_cancelled')) {
+                        $payload['is_cancelled'] = true;
+                    }
+
+                    DB::table('event_occurrences')
+                        ->where('id', (int) $row->id)
+                        ->update($payload);
+
+                    \App\Jobs\MarkAnnouncementCancelledJob::dispatch((int) $row->id)->onQueue('default')->afterCommit();
+
+                    $locationText = implode(', ', array_filter([
+                        $row->location_name ?? null,
+                        $row->location_address ?? null,
+                    ]));
+
+
+                    foreach ($userIds as $userId) {
+                        $user = \App\Models\User::find((int) $userId);
+                        $userName = null;
+                        if ($user) {
+                            $full = trim(($user->last_name ?? '') . ' ' . ($user->first_name ?? ''));
+                            $userName = $full !== '' ? $full : ($user->name ?? null);
+                        }
+
+                        $notifications->createEventCancelledByQuorumNotification(
+                            userId: (int) $userId,
+                            eventId: (int) $row->event_id,
+                            occurrenceId: (int) $row->id,
+                            eventTitle: (string) ($row->event_title ?? ('Мероприятие #' . $row->event_id)),
+                            startsAtText: $startsLocalText,
+                            locationText: $locationText ?: null,
+                            userName: $userName,
+                        );
+                    }
+                });
+
+                $this->info(
                     sprintf(
-                        '[dry-run] cancel occurrence=%d event=%d regs=%d min=%d start=%s',
+                        'Cancelled occurrence=%d event=%d regs=%d min=%d start=%s',
                         (int) $row->id,
                         (int) $row->event_id,
                         $activeRegs,
@@ -157,70 +219,20 @@ class CancelEventsByQuorum extends Command
                         $startsLocalText
                     )
                 );
+
                 $cancelled++;
+            } catch (\Throwable $e) {
+                $errors++;
+                Log::warning('events:cancel-by-quorum: failed to process occurrence', [
+                    'event_id' => (int) ($row->event_id ?? 0),
+                    'occurrence_id' => (int) ($row->id ?? 0),
+                    'error' => $e->getMessage(),
+                ]);
                 continue;
             }
-
-            DB::transaction(function () use ($row, $userIds, $notifications, $startsLocalText) {
-                $payload = [
-                    'updated_at' => now(),
-                ];
-
-                if (Schema::hasColumn('event_occurrences', 'cancelled_at')) {
-                    $payload['cancelled_at'] = now();
-                }
-
-                if (Schema::hasColumn('event_occurrences', 'is_cancelled')) {
-                    $payload['is_cancelled'] = true;
-                }
-
-                DB::table('event_occurrences')
-                    ->where('id', (int) $row->id)
-                    ->update($payload);
-
-                \App\Jobs\MarkAnnouncementCancelledJob::dispatch((int) $row->id)->onQueue('default')->afterCommit();
-
-                $locationText = implode(', ', array_filter([
-                    $row->location_name ?? null,
-                    $row->location_address ?? null,
-                ]));
-
-
-                foreach ($userIds as $userId) {
-                    $user = \App\Models\User::find((int) $userId);
-                    $userName = null;
-                    if ($user) {
-                        $full = trim(($user->last_name ?? '') . ' ' . ($user->first_name ?? ''));
-                        $userName = $full !== '' ? $full : ($user->name ?? null);
-                    }
-
-                    $notifications->createEventCancelledByQuorumNotification(
-                        userId: (int) $userId,
-                        eventId: (int) $row->event_id,
-                        occurrenceId: (int) $row->id,
-                        eventTitle: (string) ($row->event_title ?? ('Мероприятие #' . $row->event_id)),
-                        startsAtText: $startsLocalText,
-                        locationText: $locationText ?: null,
-                        userName: $userName,
-                    );
-                }
-            });
-
-            $this->info(
-                sprintf(
-                    'Cancelled occurrence=%d event=%d regs=%d min=%d start=%s',
-                    (int) $row->id,
-                    (int) $row->event_id,
-                    $activeRegs,
-                    $minPlayers,
-                    $startsLocalText
-                )
-            );
-
-            $cancelled++;
         }
 
-        $this->info("Done. checked={$checked}, cancelled={$cancelled}, skipped={$skipped}, dryRun=" . ($dryRun ? 'yes' : 'no'));
+        $this->info("Done. checked={$checked}, cancelled={$cancelled}, skipped={$skipped}, errors={$errors}, dryRun=" . ($dryRun ? 'yes' : 'no'));
 
         return self::SUCCESS;
     }
@@ -280,7 +292,7 @@ class CancelEventsByQuorum extends Command
         $members = collect();
         if (Schema::hasTable('event_team_members')) {
             $members = DB::table('event_team_members')
-                ->whereIn('team_id', $teamIds)
+                ->whereIn('event_team_id', $teamIds)
                 ->pluck('user_id');
         }
 
