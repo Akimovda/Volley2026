@@ -128,22 +128,25 @@ class OrgDashboardController extends Controller
             ->get();
 
         // --- ЭФФЕКТИВНОСТЬ БОТОВ ---
+        // Живой COUNT вместо event_occurrence_stats (та же болезнь кеша, что и у occurrenceLoad
+        // выше, — INNER JOIN к нему исключал 86.6% occurrences без строки в кеше, давая
+        // смещённую survivorship-bias оценку). $registeredExpr уже посчитан выше для occurrenceLoad.
         $botEffect = DB::table('event_occurrences as eo')
             ->join('events as e', 'e.id', '=', 'eo.event_id')
-            ->join('event_occurrence_stats as eos', 'eos.occurrence_id', '=', 'eo.id')
             ->where('e.organizer_id', $orgId)
             ->where('eo.starts_at', '>=', now()->subMonths(3))
+            ->whereRaw('(eo.is_cancelled IS NULL OR eo.is_cancelled = false)')
             ->select(
-                DB::raw('SUM(CASE WHEN EXISTS(
+                DB::raw("SUM(CASE WHEN EXISTS(
                     SELECT 1 FROM event_registrations er2
                     JOIN users u2 ON u2.id = er2.user_id
                     WHERE er2.occurrence_id = eo.id AND u2.is_bot = true AND er2.is_cancelled = false
-                ) THEN eos.registered_count ELSE 0 END)::float / NULLIF(COUNT(*), 0) as avg_with_bots'),
-                DB::raw('SUM(CASE WHEN NOT EXISTS(
+                ) THEN {$registeredExpr} ELSE 0 END)::float / NULLIF(COUNT(*), 0) as avg_with_bots"),
+                DB::raw("SUM(CASE WHEN NOT EXISTS(
                     SELECT 1 FROM event_registrations er2
                     JOIN users u2 ON u2.id = er2.user_id
                     WHERE er2.occurrence_id = eo.id AND u2.is_bot = true AND er2.is_cancelled = false
-                ) THEN eos.registered_count ELSE 0 END)::float / NULLIF(COUNT(*), 0) as avg_without_bots'),
+                ) THEN {$registeredExpr} ELSE 0 END)::float / NULLIF(COUNT(*), 0) as avg_without_bots"),
                 DB::raw('COUNT(CASE WHEN EXISTS(
                     SELECT 1 FROM event_registrations er2
                     JOIN users u2 ON u2.id = er2.user_id
