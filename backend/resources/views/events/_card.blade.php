@@ -277,7 +277,10 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 										<span class="text-muted">{{ __('events.card_seats_of') }}</span>
 										<span class="b-600" data-total>{{ (int)$maxPlayersCard }}</span>
 										@if($isTournamentFmt)
-										<span class="text-muted" data-seat-unit>{{ __('events.card_seats_teams') }}</span>
+										<span class="text-muted" data-seat-unit
+										data-unit-teams="{{ __('events.card_seats_teams') }}"
+										data-unit-players="{{ __('events.card_seats_players') }}"
+										>{{ __('events.card_seats_teams') }}</span>
 										@endif
 									</div>
 								</div>

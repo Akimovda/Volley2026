@@ -1193,21 +1193,29 @@
 				'gender_blocked'   => $genderBlocked
 			];
 
-			// Данные команд для командного турнира (не individual)
+			// Данные команд для турнира (командного и tournament_individual — там команды формируются
+			// ПОСЛЕ регистрации, поэтому лимит команд всё равно нужен для честного счётчика на карточке)
 			if (
                 (string)($occurrence->event->format ?? '') === 'tournament' &&
-                in_array((string)($occurrence->event->registration_mode ?? ''), ['team_classic', 'team_beach', 'team'], true)
+                in_array((string)($occurrence->event->registration_mode ?? ''), ['team_classic', 'team_beach', 'team', 'tournament_individual'], true)
             ) {
-				// Приоритет источников — см. комментарий выше по коду (первый блок team_classic/team_beach)
+				$regMode   = (string)($occurrence->event->registration_mode ?? '');
+				$gsSubtype = (string)($occurrence->event->gameSettings?->subtype ?? '');
+				$teamSize  = preg_match('/^(\d+)x\d+$/i', $gsSubtype, $m) ? (int)$m[1] : 2;
+
+				// Приоритет источников — см. комментарий выше по коду (первый блок team_classic/team_beach).
+				// Если лимит команд нигде не настроен (типично для tournament_individual до жеребьёвки) —
+				// выводим его из лимита игроков; если и лимита игроков нет — оставляем 0 (JS честно
+				// покажет "игроков" вместо "команд", см. seatline_script.blade.php).
 				$teamsMax  = (int)(
 					$occurrence->event->tournament_teams_count
 					?: $occurrence->event->tournamentSetting?->teams_count
 					?: $occurrence->effectiveGameSettings()->teams_count
 					?: 0
 				);
-				$regMode   = (string)($occurrence->event->registration_mode ?? '');
-				$gsSubtype = (string)($occurrence->event->gameSettings?->subtype ?? '');
-				$teamSize  = preg_match('/^(\d+)x\d+$/i', $gsSubtype, $m) ? (int)$m[1] : 2;
+				if ($teamsMax <= 0 && $totalCapacity > 0) {
+					$teamsMax = (int) ceil($totalCapacity / max(1, $teamSize));
+				}
 
 				// Для командного турнира (team_beach / team_classic) регистрации
 				// хранятся в event_teams, а не в event_registrations.

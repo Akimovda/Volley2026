@@ -35,17 +35,22 @@ async function loadSeatLine(el) {
 		}
 
 		const isTournament = el.dataset.isTournament === '1';
+		const unitEl = el.querySelector('[data-seat-unit]');
 		if (isTournament && meta.tournament_teams_max > 0) {
 			const tMax = Number(meta.tournament_teams_max);
 			const tReg = Number(meta.tournament_teams_registered ?? 0) || 0;
 			if (leftEl)  leftEl.textContent  = String(tReg);
 			if (totalEl) totalEl.textContent = String(tMax);
+			if (unitEl)  unitEl.textContent  = unitEl.dataset.unitTeams ?? unitEl.textContent;
 		} else {
 			const apiMax       = Number(meta.total_capacity ?? meta.max_players ?? 0) || 0;
 			const effectiveMax = apiMax > 0 ? apiMax : maxCard;
 			const registeredTotal = Number(meta.registered_total ?? 0) || 0;
 			if (leftEl)  leftEl.textContent  = String(registeredTotal);
 			if (totalEl) totalEl.textContent = String(effectiveMax);
+			// Турнир без данных по командам (напр. tournament_individual без настроенного лимита) —
+			// не выдаём число игроков за число команд, честно подписываем юнит "игроков".
+			if (isTournament && unitEl) unitEl.textContent = unitEl.dataset.unitPlayers ?? unitEl.textContent;
 		}
 	} catch (e) {}
 }

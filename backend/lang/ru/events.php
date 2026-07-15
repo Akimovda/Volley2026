@@ -106,6 +106,7 @@ return [
     'card_user_n'         => 'Пользователь #:id',
     'card_seats_of'       => 'из',
     'card_seats_teams'    => ' команд',
+    'card_seats_players'  => ' игроков',
     'card_no_limit'       => 'Лимит не задан',
 
     // Сокращения длительности
