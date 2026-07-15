@@ -91,7 +91,8 @@
 					<form method="POST" action="{{ route('volleyball_school.update') }}" enctype="multipart/form-data">
 						@csrf
 						@method('PUT')
-						
+						<input type="hidden" name="school_id" value="{{ $school->id }}">
+
 						<div class="ramka">
 							<h2 class="-mt-05">Основная информация</h2>
 							<div class="row">
