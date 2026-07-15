@@ -232,9 +232,7 @@ final class BotAssistantService
                 'is_cancelled'  => false,
             ]);
         });
-    
-        app(\App\Services\EventOccurrenceStatsService::class)->increment($occurrence->id);
-    
+
         return true;
     }
     
@@ -336,8 +334,7 @@ final class BotAssistantService
             EventRegistration::query()
                 ->where('id', $reg->registration_id)
                 ->delete();
-            app(\App\Services\EventOccurrenceStatsService::class)->decrement($occurrenceId);
-            
+
             Log::info("BotAssistant: bot #{$reg->user_id} ({$reg->user_name}) left occurrence #{$occurrenceId}");
         }
     }

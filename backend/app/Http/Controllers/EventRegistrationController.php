@@ -8,7 +8,6 @@ use App\Models\EventOccurrence;
 use App\Models\EventRegistration;
 use App\Models\User;
 use App\Services\EventCancellationGuard;
-use App\Services\EventOccurrenceStatsService;
 use App\Services\EventRegistrationGuard;
 use App\Services\EventRegistrationGroupService;
 use App\Services\EventRoleSlotService;
@@ -457,8 +456,6 @@ class EventRegistrationController extends Controller
             }
         });
 
-        app(EventOccurrenceStatsService::class)->increment($occurrence->id);
-
         // Если есть свободные запасные места и кто-то в листе ожидания — авто-записываем в reserve.
         // Триггер нужен при новой регистрации (а не только при отмене), т.к. reserve-слоты
         // изначально пусты и onSpotFreed для них никогда не срабатывал.
@@ -716,8 +713,6 @@ class EventRegistrationController extends Controller
                 app(EventRoleSlotService::class)
                     ->resyncTakenSlots($event, $cancelledPosition, $occurrence->id);
             }
-
-            app(EventOccurrenceStatsService::class)->decrement($occurrence->id);
 
             $eventTitle = (string) ($event->title ?? ('#' . $occurrence->event_id));
 

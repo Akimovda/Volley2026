@@ -12,7 +12,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use App\Services\EventOccurrenceStatsService;
 use App\Services\StaffLogService;
 
 class EventRegistrationsManagementController extends Controller
@@ -459,10 +458,6 @@ class EventRegistrationsManagementController extends Controller
                     ->where('id', (int) $existing->id)
                     ->update($upd);
 
-                if ($occurrenceId) {
-                    app(EventOccurrenceStatsService::class)->increment($occurrenceId);
-                }
-
                 if (Schema::hasTable('event_registration_logs')) {
                     DB::table('event_registration_logs')->insert([
                         'registration_id' => (int) $existing->id,
@@ -513,10 +508,6 @@ class EventRegistrationsManagementController extends Controller
         }
 
         $newRegId = DB::table('event_registrations')->insertGetId($insert);
-
-        if ($occurrenceId) {
-            app(EventOccurrenceStatsService::class)->increment($occurrenceId);
-        }
 
         if (Schema::hasTable('event_registration_logs')) {
             DB::table('event_registration_logs')->insert([
@@ -770,15 +761,10 @@ class EventRegistrationsManagementController extends Controller
         }
 
         $occId = $row->occurrence_id ?? null;
-        if ($occId) {
-            if ($isCancelled) {
-                app(EventOccurrenceStatsService::class)->increment((int) $occId);
-            } else {
-                app(EventOccurrenceStatsService::class)->decrement((int) $occId);
-                $occ = \App\Models\EventOccurrence::find((int) $occId);
-                if ($occ) {
-                    app(\App\Services\WaitlistService::class)->onSpotFreed($occ, $row->position ?: '');
-                }
+        if ($occId && !$isCancelled) {
+            $occ = \App\Models\EventOccurrence::find((int) $occId);
+            if ($occ) {
+                app(\App\Services\WaitlistService::class)->onSpotFreed($occ, $row->position ?: '');
             }
         }
 
@@ -867,10 +853,9 @@ class EventRegistrationsManagementController extends Controller
             return back()->with('error', 'Регистрация не найдена.');
         }
 
-        // Уменьшаем счётчик только если запись была активной
+        // Триггерим вейтлист только если запись была активной (реально освободила место)
         $wasActive = empty($row->cancelled_at) && !$row->is_cancelled && $row->status !== 'cancelled';
         if ($wasActive && !empty($row->occurrence_id)) {
-            app(EventOccurrenceStatsService::class)->decrement((int) $row->occurrence_id);
             $occ = \App\Models\EventOccurrence::find((int) $row->occurrence_id);
             if ($occ) {
                 app(\App\Services\WaitlistService::class)->onSpotFreed($occ, $row->position ?: '');
