@@ -50,11 +50,14 @@
 				$tz     = (string)($event?->timezone ?? 'Europe/Moscow');
 
 				// Счётчик команд вычисляем один раз — нужен во всех ранних возвратах
+				// tournament_teams_count (events) — авторитетный источник (см. CLAUDE.md);
+				// effectiveGameSettings()->teams_count (event_game_settings) может быть устаревшим
+				// значением GameCalculator и расходиться с реальным лимитом команд.
 				$teamsMax         = (int)(
-					$occurrence->effectiveGameSettings()->teams_count
-					?? $event->tournament_teams_count
-					?? $event->tournamentSetting?->teams_count
-					?? 0
+					$event->tournament_teams_count
+					?: $event->tournamentSetting?->teams_count
+					?: $occurrence->effectiveGameSettings()->teams_count
+					?: 0
 				);
 				$leagueReserveIds = $this->getLeagueReserveTeamIds($occurrence);
 				$teamsReg         = \App\Models\EventTeam::where('event_id', $occurrence->event_id)
@@ -1195,10 +1198,12 @@
                 (string)($occurrence->event->format ?? '') === 'tournament' &&
                 in_array((string)($occurrence->event->registration_mode ?? ''), ['team_classic', 'team_beach', 'team'], true)
             ) {
+				// Приоритет источников — см. комментарий выше по коду (первый блок team_classic/team_beach)
 				$teamsMax  = (int)(
-					$occurrence->effectiveGameSettings()->teams_count
-					?? $occurrence->event->tournament_teams_count
-					?? 0
+					$occurrence->event->tournament_teams_count
+					?: $occurrence->event->tournamentSetting?->teams_count
+					?: $occurrence->effectiveGameSettings()->teams_count
+					?: 0
 				);
 				$regMode   = (string)($occurrence->event->registration_mode ?? '');
 				$gsSubtype = (string)($occurrence->event->gameSettings?->subtype ?? '');
