@@ -85,7 +85,7 @@
 					&& $startsAt->isFuture();
 					$posLabel = $reg->position ? position_name($reg->position) : null;
 					@endphp
-					<div class="card mb-2">
+					<div class="card mb-2" style="height:auto;border:0.15rem solid #E7612F;">
 
 
 						<div class="d-flex between gap-1 fvc">
