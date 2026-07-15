@@ -88,8 +88,8 @@
 					<div class="card mb-2" style="height:auto;border:0.15rem solid #E7612F;">
 
 
-						<div class="d-flex between gap-1 fvc">
-							<div>
+						<div class="d-flex between gap-1 fvc card-actions-row">
+							<div class="card-actions-info">
 								<a href="{{ url('/events/' . $reg->event_id . '?occurrence=' . $reg->occurrence_id) }}"
 								class="blink b-600 mb-1">
 									{{ $reg->title }}
@@ -101,7 +101,7 @@
 								<div>🎯 {{ $posLabel }}</div>
 								@endif
 							</div>
-							<div>
+							<div class="card-actions-buttons">
 									<div class="text-right f-16">
 										🗓 {{ $startsAt->locale('ru')->translatedFormat('d F Y, H:i') }}
 									</div>
