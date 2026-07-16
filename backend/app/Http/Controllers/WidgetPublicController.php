@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Models\Event;
 use App\Models\OrganizerWidget;
+use App\Services\TournamentTeamService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -14,6 +14,19 @@ use Illuminate\Support\Facades\DB;
 
 class WidgetPublicController extends Controller
 {
+    /** Режимы регистрации, где счётчик ведётся в командах (см. countRegisteredTeams()) */
+    private const TEAM_MODES = ['team_classic', 'team_beach', 'team'];
+
+    /** Режимы регистрации, где счётчик в игроках, а лимит берётся из egs/ets (не из команд) */
+    private const INDIVIDUAL_TOURNAMENT_MODES = ['tournament_individual', 'king_beach'];
+
+    private TournamentTeamService $teamService;
+
+    public function __construct(TournamentTeamService $teamService)
+    {
+        $this->teamService = $teamService;
+    }
+
     /** iFrame страница */
     public function iframe(Request $request, int $userId): Response
     {
@@ -64,6 +77,14 @@ class WidgetPublicController extends Controller
     {
         $key = $request->query('key', '');
 
+        // Подписи считаются на нашей стороне (i18n через __()) и подставляются в JS как
+        // готовые строки — сам JS выполняется в браузере стороннего сайта, где Laravel-locale
+        // недоступен. reserveSuffixTpl содержит плейсхолдер ':count', заменяется в рантайме JS.
+        $unitTeams        = addslashes(__('events.card_seats_teams'));
+        $unitPlayers       = addslashes(__('events.card_seats_players'));
+        $ofWord            = addslashes(__('events.card_seats_of'));
+        $reserveSuffixTpl  = addslashes(__('events.widget_reserve_suffix'));
+
         $js = <<<JS
 (function() {
     var key = '{$key}';
@@ -71,6 +92,17 @@ class WidgetPublicController extends Controller
     if (!container) { console.warn('volley-widget: #volley-widget not found'); return; }
 
     var color = container.dataset.color || '#f59e0b';
+    var unitTeams = '{$unitTeams}';
+    var unitPlayers = '{$unitPlayers}';
+    var ofWord = '{$ofWord}';
+    var reserveSuffixTpl = '{$reserveSuffixTpl}';
+
+    function slotsText(si) {
+        var unit = si.unit === 'teams' ? unitTeams : unitPlayers;
+        var text = si.taken + ' ' + ofWord + ' ' + si.max + unit;
+        if (si.reserve > 0) { text += reserveSuffixTpl.replace(':count', si.reserve); }
+        return text;
+    }
 
     container.innerHTML = '<div style="font-family:sans-serif;color:#666;padding:12px">Загрузка...</div>';
 
@@ -88,9 +120,9 @@ class WidgetPublicController extends Controller
                 data.events.forEach(function(ev) {
                     html += '<div style="border:1px solid #eee;border-radius:12px;padding:14px;margin-bottom:10px">';
                     html += '<div style="font-weight:600;font-size:15px;margin-bottom:4px">' + ev.title + '</div>';
-                    html += '<div style="font-size:13px;color:#666;margin-bottom:6px">📅 ' + ev.starts_at + '</div>';
-                    if (ev.location) html += '<div style="font-size:13px;color:#666;margin-bottom:6px">📍 ' + ev.location + '</div>';
-                    if (ev.slots_info) html += '<div style="font-size:13px;color:#666;margin-bottom:8px">👥 ' + ev.slots_info + '</div>';
+                    html += '<div style="font-size:13px;color:#666;margin-bottom:6px">📅 ' + ev.date_long + ', ' + ev.time_range + '</div>';
+                    if (ev.address) html += '<div style="font-size:13px;color:#666;margin-bottom:6px">📍 ' + ev.address + '</div>';
+                    if (ev.slots_info) html += '<div style="font-size:13px;color:#666;margin-bottom:8px">👥 ' + slotsText(ev.slots_info) + '</div>';
                     html += '<a href="' + ev.url + '" target="_blank" style="display:inline-block;padding:6px 14px;background:' + color + ';color:#fff;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none">Записаться</a>';
                     html += '</div>';
                 });
@@ -135,10 +167,14 @@ JS;
             // только часть occurrences — см. report_cache_counters_audit_2026-07-16.md).
             // limit ≤ 50 (валидация в OrganizerWidgetController), скалярный подзапрос
             // в SELECT — не N+1, один запрос считает разом до 50 occurrences.
+            // egs/ets — нужны для канонического лимита (tournament_teams_count → ets → egs,
+            // см. EventRegistrationGuard::check()/buildAvailabilitySnapshot() и CLAUDE.md).
             $occurrences = \App\Models\EventOccurrence::query()
                 ->join('events', 'events.id', '=', 'event_occurrences.event_id')
                 ->leftJoin('locations', 'locations.id', '=', 'events.location_id')
                 ->leftJoin('cities', 'cities.id', '=', 'locations.city_id')
+                ->leftJoin('event_game_settings as egs', 'egs.event_id', '=', 'events.id')
+                ->leftJoin('event_tournament_settings as ets', 'ets.event_id', '=', 'events.id')
                 ->where('events.organizer_id', $userId)
                 ->where('events.allow_registration', true)
                 ->whereRaw('(event_occurrences.is_cancelled IS NULL OR event_occurrences.is_cancelled = false)')
@@ -159,7 +195,10 @@ JS;
                     'events.id as event_id',
                     'events.title',
                     'events.direction',
-                    'events.format',
+                    'events.format as ev_format',
+                    'events.registration_mode as reg_mode',
+                    'events.tournament_teams_count as tt_count',
+                    'events.season_id as ev_season_id',
                     'events.is_private',
                     'events.is_paid',
                     'events.price_minor',
@@ -172,17 +211,16 @@ JS;
                     'locations.name as location_name',
                     'locations.address as location_address',
                     'cities.name as city_name',
+                    'egs.max_players as egs_max_players',
+                    'egs.reserve_players_max as egs_reserve_players_max',
+                    'egs.teams_count as egs_teams_count',
+                    'ets.teams_count as ets_teams_count',
+                    'ets.total_players_max as ets_total_players_max',
                 ])
                 ->get();
 
             return $occurrences->map(function ($occ) use ($showSlots, $showLoc) {
-                $taken     = (int) ($occ->registered_count ?? 0);
-                $maxP      = (int) ($occ->max_players ?? 0);
-                $slotsInfo = null;
-                if ($showSlots && $maxP > 0) {
-                    $free      = max(0, $maxP - $taken);
-                    $slotsInfo = ['taken' => $taken, 'max' => $maxP, 'free' => $free];
-                }
+                $slotsInfo = $this->buildSlotsInfo($occ, $showSlots);
 
                 // Адрес
                 $addressParts = array_filter([
@@ -231,5 +269,53 @@ JS;
                 ];
             })->toArray();
         });
+    }
+
+    /**
+     * slots_info по канонической матрице типов (та же логика, что в EventRegistrationGuard/
+     * OrgDashboardController/countRegisteredTeams — см. CLAUDE.md «Турниры» и «Выпил кеш-счётчиков»).
+     * unit='teams' — командные турниры (счёт в командах, лимит tournament_teams_count→ets→egs);
+     * unit='players' — всё остальное, включая tournament_individual/king_beach (лимит egs→ets,
+     * без сложения с резервом — у individual/king_beach резерва в этом смысле нет).
+     */
+    private function buildSlotsInfo(object $occ, bool $showSlots): ?array
+    {
+        $isTournament = (string) ($occ->ev_format ?? '') === 'tournament';
+        $regMode      = (string) ($occ->reg_mode ?? '');
+
+        if ($isTournament && in_array($regMode, self::TEAM_MODES, true)) {
+            $unit    = 'teams';
+            $maxP    = (int) ($occ->tt_count ?: $occ->ets_teams_count ?: $occ->egs_teams_count ?: 0);
+            $counts  = $this->teamService->countRegisteredTeams(
+                (int) $occ->event_id,
+                (int) $occ->occ_id,
+                $occ->ev_season_id ? (int) $occ->ev_season_id : null
+            );
+            $taken   = $counts['registered'];
+            $reserve = $counts['reserve'];
+        } elseif ($isTournament && in_array($regMode, self::INDIVIDUAL_TOURNAMENT_MODES, true)) {
+            $unit    = 'players';
+            $maxP    = (int) ($occ->egs_max_players ?: $occ->ets_total_players_max ?: 0);
+            $taken   = (int) ($occ->registered_count ?? 0);
+            $reserve = 0;
+        } else {
+            $unit       = 'players';
+            $reserveMax = (int) ($occ->egs_reserve_players_max ?? 0);
+            $maxP       = (int) ($occ->max_players ?: $occ->egs_max_players ?: 0) + $reserveMax;
+            $taken      = (int) ($occ->registered_count ?? 0);
+            $reserve    = $reserveMax;
+        }
+
+        if (!$showSlots || $maxP <= 0) {
+            return null;
+        }
+
+        return [
+            'taken'   => $taken,
+            'max'     => $maxP,
+            'free'    => max(0, $maxP - $taken),
+            'unit'    => $unit,
+            'reserve' => $reserve,
+        ];
     }
 }
