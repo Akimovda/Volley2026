@@ -76,7 +76,7 @@
         {{-- KPI --}}
         <div class="ramka">
             <h2 class="-mt-05">{{ __('admin.kpi_section') }}</h2>
-            <div class="row row2">
+            <div class="row">
 
                 <div class="col-6 col-md-3">
                     <div class="card text-center">
@@ -117,7 +117,7 @@
                 <h2 class="-mt-05 mb-0">{{ __('admin.users_dynamic_section') }}</h2>
                 <a href="{{ route('admin.users.index') }}" class="btn btn-secondary">{{ __('admin.open_users_list') }}</a>
             </div>
-            <div class="row row2 text-center">
+            <div class="row text-center">
                 <div class="col-6 col-md">
                     <div class="card">
                         <div class="f-14">{{ __('admin.kpi_total') }}</div>
