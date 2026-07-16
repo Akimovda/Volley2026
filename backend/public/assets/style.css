@@ -3925,6 +3925,7 @@ body.dark .formula-box pre {
     position: relative;
     width: 5.6rem;
     height: 5.6rem;
+    flex-shrink: 0;
 }
 .user-card-avatar-img {
     width: 100%;
@@ -4085,7 +4086,8 @@ body.dark .provider-text {
 	margin: 0 auto;
 	font-size: 0;
 	line-height: 0;
-}	
+	flex-shrink: 0;
+}
 body.dark .profile-avatar,
 body.dark .avatar-small {
 	box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.2);

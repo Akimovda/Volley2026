@@ -167,7 +167,7 @@
 							el.style.cssText = 'display:flex;align-items:center;gap:0.75rem;margin-bottom:0.5rem;';
 							el.innerHTML = `
 								<div class="f-13" style="width:20px;text-align:right;color:#aaa">${displayIndex++}.</div>
-								<a href="${p.url || '/user/'+p.id}"><img src="${p.avatar || 'https://ui-avatars.com/api/?name=Player'}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;"></a>
+								<a href="${p.url || '/user/'+p.id}"><img src="${p.avatar || 'https://ui-avatars.com/api/?name=Player'}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;"></a>
 								<div class="f-16" style="flex:1"><a href="${p.url || '/user/'+p.id}" class="blink">${levelDotHtml(p.level)} ${p.name}</a></div>
 								<div class="f-13 text-muted">${p.position && p.position !== 'player' ? positionLabel(p.position) : ''}</div>
 							`;
@@ -183,7 +183,7 @@
 									: `<div class="f-13" style="width:20px;text-align:right;color:#aaa;padding-left:16px">╰ ${num}.</div>`;
 								el.innerHTML = `
 									${prefix}
-									<a href="${p.url || '/user/'+p.id}"><img src="${p.avatar || 'https://ui-avatars.com/api/?name=Player'}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;${mi > 0 ? 'margin-left:4px;' : ''}"></a>
+									<a href="${p.url || '/user/'+p.id}"><img src="${p.avatar || 'https://ui-avatars.com/api/?name=Player'}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;${mi > 0 ? 'margin-left:4px;' : ''}"></a>
 									<div class="f-16" style="flex:1"><a href="${p.url || '/user/'+p.id}" class="blink">${levelDotHtml(p.level)} ${p.name}</a></div>
 									<div class="f-13 text-muted">${p.position && p.position !== 'player' ? positionLabel(p.position) : ''}</div>
 								`;
@@ -203,7 +203,7 @@
 							el.style.cssText = 'display:flex;align-items:center;gap:0.75rem;margin-bottom:0.5rem;';
 							el.innerHTML = `
 								<div class="f-13" style="width:20px;text-align:right;color:#aaa">${i + 1}.</div>
-								<a href="${p.url || '/user/'+p.id}"><img src="${p.avatar || 'https://ui-avatars.com/api/?name=Player'}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;"></a>
+								<a href="${p.url || '/user/'+p.id}"><img src="${p.avatar || 'https://ui-avatars.com/api/?name=Player'}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;"></a>
 								<div class="f-16" style="flex:1"><a href="${p.url || '/user/'+p.id}" class="blink">${levelDotHtml(p.level)} ${p.name}</a></div>
 							`;
 							reserveList.appendChild(el);

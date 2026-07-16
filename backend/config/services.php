@@ -37,10 +37,14 @@ return [
     ],
 
     'max' => [
-        'bot_api_url' => env('MAX_BOT_API_URL'),
-        'bot_link'    => env('MAX_BOT_LINK'),
-        'bot_id'      => env('MAX_BOT_ID'),
-        'bot_token'   => env('MAX_BOT_TOKEN'),
+        'bot_api_url'  => env('MAX_BOT_API_URL'),
+        'bot_link'     => env('MAX_BOT_LINK'),
+        'bot_id'       => env('MAX_BOT_ID'),
+        'bot_token'    => env('MAX_BOT_TOKEN'),
+        // Прямые вызовы MAX API (персональные боты) — миграция platform-api.max.ru →
+        // platform-api2.max.ru до 2026-07-19. Дефолт — старый хост (безопасный fallback,
+        // если .env не переопределён); переключение через MAX_API_BASE_URL в .env.
+        'api_base_url' => env('MAX_API_BASE_URL', 'https://platform-api.max.ru'),
     ],
 
     'telegram' => [

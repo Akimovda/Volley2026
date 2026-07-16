@@ -138,7 +138,7 @@ class PersonalBotController extends Controller
         try {
             $meResp = Http::timeout(10)
                 ->withHeaders(['Authorization' => $token])
-                ->get('https://platform-api.max.ru/me')
+                ->get(config('services.max.api_base_url') . '/me')
                 ->json();
         } catch (\Throwable $e) {
             return back()->withErrors(['bot_token' => 'Не удалось подключиться к MAX API: ' . $e->getMessage()]);
@@ -155,7 +155,7 @@ class PersonalBotController extends Controller
         try {
             $chatResp = Http::timeout(10)
                 ->withHeaders(['Authorization' => $token])
-                ->get('https://platform-api.max.ru/chats/' . urlencode($chatId))
+                ->get(config('services.max.api_base_url') . '/chats/' . urlencode($chatId))
                 ->json();
         } catch (\Throwable $e) {
             return back()->withErrors(['chat_id' => 'Не удалось проверить чат в MAX: ' . $e->getMessage()]);
