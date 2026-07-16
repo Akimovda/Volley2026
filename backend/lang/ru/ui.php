@@ -116,4 +116,8 @@ return [
     'biometric_setup_enable' => 'Включить',
     'biometric_done_title'   => 'Готово!',
     'biometric_done_text'    => 'Face ID включён. В следующий раз вы войдёте мгновенно.',
+
+    // Пагинация
+    'pagination_jump_back'    => 'Назад на :n',
+    'pagination_jump_forward' => 'Вперёд на :n',
 ];

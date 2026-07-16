@@ -4702,6 +4702,38 @@ body.dark .tourn-tabs .tourn-tab--active {
 		justify-content: center;
 	}
 }
+
+/* === Пагинация (resources/views/pagination/custom.blade.php): одна скроллируемая строка ==== */
+.pagination-scroll {
+	display: flex;
+	flex-wrap: nowrap;
+	align-items: center;
+	overflow-x: auto;
+	-webkit-overflow-scrolling: touch;
+	scrollbar-width: none;
+	gap: 0.6rem;
+}
+.pagination-scroll::-webkit-scrollbar {
+	display: none;
+}
+/* Auto-margin на псевдо-элементах вместо justify-content:center — центрирует строку,
+   когда она помещается целиком, и НЕ обрезает начало списка при переполнении
+   (justify-content:center с overflow-x:auto центрирует контент симметрично и прячет
+   его начало за левым краем скролла — классическая ловушка, тут её нет ни в одном браузере,
+   т.к. auto-margin флекс-айтемов — базовая часть спецификации flexbox). */
+.pagination-scroll::before,
+.pagination-scroll::after {
+	content: '';
+	margin: auto;
+	flex: 0 0 auto;
+}
+.pagination-scroll .btn {
+	flex: 0 0 auto;
+	min-width: 44px;
+	min-height: 44px;
+	white-space: nowrap;
+}
+
 .card-img-top {
 	position: relative;
 	min-height: 40px;
