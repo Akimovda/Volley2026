@@ -537,6 +537,8 @@ return [
     'edit_season_readonly_hint'    => 'League, season and division are set when creating the tournament and cannot be changed here.',
 
     'restrictions_title'  => 'Restrictions',
+    'restriction_blocked_event' => 'Your account has restrictions for this event.',
+    'restriction_blocked_all'   => 'Your account is restricted from signing up for events. Please contact support.',
     'age_policy_label'    => 'Age restrictions',
     'age_policy_adult'    => 'Adults',
     'age_policy_child'    => 'Kids',

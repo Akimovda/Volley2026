@@ -116,4 +116,8 @@ return [
     'biometric_setup_enable' => 'Enable',
     'biometric_done_title'   => 'Done!',
     'biometric_done_text'    => 'Face ID is enabled. Next time you\'ll sign in instantly.',
+
+    // Pagination
+    'pagination_jump_back'    => 'Back :n',
+    'pagination_jump_forward' => 'Forward :n',
 ];

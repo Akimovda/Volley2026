@@ -45,8 +45,8 @@ return [
     'kpi_active'        => 'Активных',
     'kpi_deleted_users' => 'Удалённых:',
     'kpi_events_count'  => 'Мероприятий',
-    'kpi_blocks'        => 'Блокировок',
-    'kpi_event_all_active' => 'event_all (активных)',
+    'kpi_blocks'        => 'Блокировки',
+    'kpi_blocks_active_hint' => 'активных ограничений',
 
     'users_dynamic_section' => '👥 Пользователи / динамика',
     'open_users_list'       => 'Открыть список',
@@ -81,7 +81,7 @@ return [
 
     'blocks_title'        => '🚫 Блокировки',
     'blocks_active_hint'  => 'Активные: ends_at NULL или > now()',
-    'blocks_event_all'    => 'Event All',
+    'blocks_event_all'    => 'Все мероприятия (глобально)',
     'blocks_event_n'      => 'Event #:id',
     'blocks_no_event_specific' => 'Нет блокировок по конкретным event_id',
     'blocks_to_users'     => 'К пользователям',
@@ -312,4 +312,8 @@ return [
     'nt_channel_general' => 'общий',
     'nt_templates_count' => 'шаблонов',
     'nt_active_count'    => 'активных',
+
+    // === user restrictions (bans) ===
+    'restriction_event_ids_label' => 'ID мероприятия (пусто — все мероприятия)',
+    'restriction_events_all_label' => 'Все мероприятия',
 ];

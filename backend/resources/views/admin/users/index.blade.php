@@ -19,8 +19,47 @@
         <style>
 .table td {
     vertical-align: middle;
-}			
-		</style>		
+}
+
+.admin-users-actions-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 1rem;
+}
+@media (max-width: 767px) {
+    .admin-users-actions-row {
+        justify-content: center;
+    }
+}
+
+.btn-badge-wrap {
+    position: relative;
+    display: inline-flex;
+}
+.btn-count-badge {
+    position: absolute;
+    top: -0.6rem;
+    right: -0.6rem;
+    min-width: 1.8rem;
+    height: 1.8rem;
+    padding: 0 0.3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #e74c3c;
+    color: #fff;
+    border-radius: 999px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    line-height: 1;
+    box-shadow: 0 0 0 2px #fff;
+}
+body.dark .btn-count-badge {
+    box-shadow: 0 0 0 2px #161721;
+}
+		</style>
 	</x-slot>
 	
     <x-slot name="h1">
@@ -140,15 +179,19 @@
 								</select>
 							</div>
 							
-							<div class="col-12 text-right m-center">
-								<button class="btn" type="submit">{{ __('admin.btn_search') }}</button>
-                <a href="{{ route('admin.users.duplicates') }}" class="btn btn-secondary" style="position:relative">
-                    {{ __('admin.users_btn_duplicates') }}
-                    @if($dupCount > 0)
-                    <span style="position:absolute;top:-6px;right:-6px;background:#e74c3c;color:#fff;border-radius:50%;width:18px;height:18px;font-size:11px;display:flex;align-items:center;justify-content:center;font-weight:700">{{ $dupCount }}</span>
-                    @endif
-                </a>
-								<a href="{{ route('admin.users.index') }}" class="btn btn-secondary">{{ __('admin.btn_reset') }}</a>
+							<div class="col-12">
+								<div class="admin-users-actions-row">
+									<button class="btn" type="submit">{{ __('admin.btn_search') }}</button>
+									<span class="btn-badge-wrap">
+										<a href="{{ route('admin.users.duplicates') }}" class="btn btn-secondary">
+											{{ __('admin.users_btn_duplicates') }}
+										</a>
+										@if($dupCount > 0)
+										<span class="btn-count-badge">{{ $dupCount }}</span>
+										@endif
+									</span>
+									<a href="{{ route('admin.users.index') }}" class="btn btn-secondary">{{ __('admin.btn_reset') }}</a>
+								</div>
 							</div>
 						</div>
 					</form>

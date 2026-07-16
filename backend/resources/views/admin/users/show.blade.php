@@ -493,7 +493,7 @@
 								<span>#{{ (int)$eid }}</span>
 								@endforeach
 								@else
-								<span class="text-muted">—</span>
+								<span class="b-700 red">{{ __('admin.restriction_events_all_label') }}</span>
 								@endif
 							</div>
 							<div class="small mb-2">
@@ -511,8 +511,8 @@
 						<form method="POST" action="{{ route('admin.users.restrictions.events', $user) }}" class="form">
 							@csrf
 							<div class="mb-2">
-								<label class="small text-muted">Event IDs (числа через запятую)</label>
-								<input class="form-control" type="text" name="event_ids" placeholder="12, 18, 25" required />
+								<label class="small text-muted">{{ __('admin.restriction_event_ids_label') }}</label>
+								<input class="form-control" type="text" name="event_ids" placeholder="12, 18, 25" />
 							</div>
 							
 							<div class="mb-2">

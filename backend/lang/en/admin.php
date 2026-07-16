@@ -44,7 +44,7 @@ return [
     'kpi_deleted_users' => 'Deleted:',
     'kpi_events_count'  => 'Events',
     'kpi_blocks'        => 'Blocks',
-    'kpi_event_all_active' => 'event_all (active)',
+    'kpi_blocks_active_hint' => 'active restrictions',
 
     'users_dynamic_section' => '👥 Users / dynamics',
     'open_users_list'       => 'Open users list',
@@ -79,7 +79,7 @@ return [
 
     'blocks_title'        => '🚫 Blocks',
     'blocks_active_hint'  => 'Active: ends_at NULL or > now()',
-    'blocks_event_all'    => 'Event All',
+    'blocks_event_all'    => 'All events (global)',
     'blocks_event_n'      => 'Event #:id',
     'blocks_no_event_specific' => 'No blocks for specific event_id',
     'blocks_to_users'     => 'To users',
@@ -299,4 +299,8 @@ return [
     'nt_channel_general' => 'general',
     'nt_templates_count' => 'templates',
     'nt_active_count'    => 'active',
+
+    // === user restrictions (bans) ===
+    'restriction_event_ids_label' => 'Event ID (empty — all events)',
+    'restriction_events_all_label' => 'All events',
 ];

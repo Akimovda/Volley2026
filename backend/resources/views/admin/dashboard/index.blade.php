@@ -103,8 +103,8 @@
                 <div class="col-6 col-md-3">
                     <div class="card text-center">
                         <div class="f-14 mb-1">{{ __('admin.kpi_blocks') }}</div>
-                        <div class="f-40 b-700 red">{{ $eventAllRestrictions ?? 0 }}</div>
-                        <div class="f-14 mt-1">{{ __('admin.kpi_event_all_active') }}</div>
+                        <div class="f-40 b-700 red">{{ $activeRestrictionsTotal ?? 0 }}</div>
+                        <div class="f-14 mt-1">{{ __('admin.kpi_blocks_active_hint') }}</div>
                     </div>
                 </div>
 
