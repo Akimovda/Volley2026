@@ -4564,7 +4564,7 @@ body.dark .btn-outline-primary:hover {
 }
 .org-nav-grid .btn {
     width: 100%;
-    font-size: 1.3rem;
+    font-size: 1.6rem; /* было 1.3rem — на ≤480px давало 10.4px, ниже комфортного порога (аудит 16.07) */
     padding: 1rem 1.4rem;
     text-transform: none;
 }
