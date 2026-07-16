@@ -186,10 +186,11 @@
 					{{-- Шаг 1б: ошибка соперника --}}
 					<details style="flex:1;min-width:16rem">
 						<summary class="btn btn-secondary" style="cursor:pointer;display:block;text-align:center;background:rgba(220,38,38,.1)">⚠ {{ __('tournaments.rally_opp_error_row') }}</summary>
-						<form method="POST" action="{{ route('tournament.matches.rally.point', $match) }}" class="form mt-1">
+						<form method="POST" action="{{ route('tournament.matches.rally.point', $match) }}" class="form mt-1 js-opp-error-form">
 							@csrf
 							<input type="hidden" name="set_number" value="{{ $setNumber }}">
 							<input type="hidden" name="team_id" value="{{ $teamId }}">
+							<div class="f-12 mb-05" style="opacity:.65">{{ __('tournaments.rally_opp_player_label') }}</div>
 							<select name="player_id" class="mb-1">
 								<option value="">{{ __('tournaments.rally_no_player_option') }}</option>
 								@foreach($oppPlayers as $pp)
@@ -197,8 +198,8 @@
 								@endforeach
 							</select>
 							<div class="d-flex gap-1" style="flex-wrap:wrap">
-								<button type="submit" name="action_type" value="opp_serve_error" class="btn btn-small btn-secondary">{{ __('tournaments.rally_action_opp_serve_error') }}</button>
-								<button type="submit" name="action_type" value="opp_attack_error" class="btn btn-small btn-secondary">{{ __('tournaments.rally_action_opp_attack_error') }}</button>
+								<button type="submit" name="action_type" value="opp_serve_error" class="btn btn-small btn-secondary" data-requires-player="1">{{ __('tournaments.rally_action_opp_serve_error') }}</button>
+								<button type="submit" name="action_type" value="opp_attack_error" class="btn btn-small btn-secondary" data-requires-player="1">{{ __('tournaments.rally_action_opp_attack_error') }}</button>
 								<button type="submit" name="action_type" value="opp_block_error" class="btn btn-small btn-secondary">{{ __('tournaments.rally_action_opp_block_error') }}</button>
 								<button type="submit" name="action_type" value="opp_reception_error" class="btn btn-small btn-secondary">{{ __('tournaments.rally_action_opp_reception_error') }}</button>
 								<button type="submit" name="action_type" value="unattributed" class="btn btn-small btn-secondary">{{ __('tournaments.rally_action_unattributed') }}</button>
@@ -238,4 +239,28 @@
 
 	</div>
 </div>
+
+{{-- Мобильная эргономика: html{font-size} на этом сайте схлопывается до 50% на ≤480px
+     (см. style.css), из-за чего .form select реально рендерится ~14.4px — ниже порога 16px,
+     вызывающего авто-zoom при фокусе в iOS Safari. Страница используется с телефона у площадки —
+     фикс только для этой страницы, без изменения общего .form select/.btn-small. --}}
+<style>
+.tournament-rally-page .form select {
+	font-size: 16px;
+}
+.tournament-rally-page .btn-small {
+	font-size: 13px;
+}
+</style>
+
+<script>
+document.querySelectorAll('.js-opp-error-form button[type="submit"]').forEach(function (btn) {
+	btn.addEventListener('click', function () {
+		var select = this.closest('form').querySelector('select[name="player_id"]');
+		if (select) {
+			select.required = this.dataset.requiresPlayer === '1';
+		}
+	});
+});
+</script>
 </x-voll-layout>

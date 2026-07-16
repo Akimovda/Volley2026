@@ -341,6 +341,7 @@ return [
     'rally_reopen_btn'         => 'Fix via rally-by-rally input',
     'rally_reopen_confirm_title' => 'The match will be temporarily reopened and the current set score cleared. If there is no rally-by-rally data for this match yet, you will need to enter it from scratch. After fixing it, press "Save score". Continue?',
     'rally_opp_error_row'      => 'Opponent error',
+    'rally_opp_player_label'   => "Opponent's player",
     'rally_action_ace'         => 'Ace',
     'rally_action_kill'        => 'Kill',
     'rally_action_block'       => 'Block',

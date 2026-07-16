@@ -31,6 +31,15 @@ class MatchRallyEvent extends Model
         self::ACTION_OPP_RECEPTION_ERROR,
     ];
 
+    /**
+     * Ошибки соперника, где автор очевиден (подача/атака в аут) — игрок обязателен,
+     * в отличие от opp_block_error/opp_reception_error, где автора часто не определить.
+     */
+    public const OPP_ERROR_ACTIONS_PLAYER_REQUIRED = [
+        self::ACTION_OPP_SERVE_ERROR,
+        self::ACTION_OPP_ATTACK_ERROR,
+    ];
+
     public const ALL_ACTIONS = [
         self::ACTION_ACE,
         self::ACTION_KILL,
