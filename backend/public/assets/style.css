@@ -16,14 +16,17 @@ html {
 }
 @media (max-width: 767px) {
 	html {
-		font-size: 52%; /* 8px */
+		font-size: 52%; /* 8.32px */
 	}
 }
 @media (max-width: 480px) {
 	html {
-		font-size: 50%; /* 7.36px */
+		/* Аудит 2026-07-16 (report_mobile_typography_audit): было 50%/8px — кнопки/инпуты
+		   и часть текста падали ниже 16px (порог auto-zoom в iOS Safari) и комфортного
+		   чтения. Поднято до 58% — стратегия «В» (умеренный подъём + точечные компенсации). */
+		font-size: 58%; /* 9.28px */
 	}
-} 
+}
 
 *[id]:not(#days) {
     scroll-margin-top: 10.4rem;
