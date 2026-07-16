@@ -85,17 +85,23 @@ class AdminDashboardController extends Controller
 
         // -----------------------------
         // Restrictions widget (events) (новое)
-        // Event All = restrictions scope=events, active, event_ids пустой/NULL
+        // Event All = restrictions scope=events, active, event_ids пустой/NULL (глобальный бан)
+        // activeRestrictionsTotal = все активные ограничения (глобальные + точечные по event_id), для карточки на дашборде
         // -----------------------------
         $eventAllRestrictions = 0;
+        $activeRestrictionsTotal = 0;
         $restrictionByEvent = [];
 
         if (DB::getSchemaBuilder()->hasTable('user_restrictions')) {
-            $eventAllRestrictions = (int) DB::table('user_restrictions')
+            $activeRestrictionsBase = fn () => DB::table('user_restrictions')
                 ->where('scope', 'events')
                 ->where(function ($q) {
                     $q->whereNull('ends_at')->orWhere('ends_at', '>', now());
-                })
+                });
+
+            $activeRestrictionsTotal = (int) $activeRestrictionsBase()->count();
+
+            $eventAllRestrictions = (int) $activeRestrictionsBase()
                 ->where(function ($q) {
                     $q->whereNull('event_ids')->orWhereRaw("event_ids::text = '[]'");
                 })
@@ -136,6 +142,7 @@ class AdminDashboardController extends Controller
             'organizerRequests',
             'providers',
             'eventAllRestrictions',
+            'activeRestrictionsTotal',
             'restrictionByEvent',
             'eventsCount',
             'dupCount',
