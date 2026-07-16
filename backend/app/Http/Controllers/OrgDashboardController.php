@@ -95,9 +95,14 @@ class OrgDashboardController extends Controller
                 WHEN e.format = 'tournament' AND e.registration_mode IN {$teamModes} THEN
                     COALESCE(NULLIF(e.tournament_teams_count, 0), NULLIF(ets.teams_count, 0), NULLIF(egs.teams_count, 0), 0)
                 WHEN e.format = 'tournament' AND e.registration_mode IN ('tournament_individual','king_beach') THEN
-                    COALESCE(NULLIF(ets.total_players_max, 0), NULLIF(egs.max_players, 0), 0)
+                    -- egs.max_players пересчитывается GameCalculator'ом от teams_count при каждом
+                    -- сохранении формы (EventManagementController::update()) — надёжный источник.
+                    -- ets.total_players_max для tournament_individual — это НЕ общая вместимость
+                    -- турнира, а team_size_min+reserve (размер ОДНОЙ команды, см. EventGameSettingsService
+                    -- normalizeTournamentDefaults) — оставлен только как fallback.
+                    COALESCE(NULLIF(egs.max_players, 0), NULLIF(ets.total_players_max, 0), 0)
                 ELSE
-                    COALESCE(NULLIF(egs.max_players, 0), 0)
+                    COALESCE(NULLIF(egs.max_players, 0), 0) + COALESCE(egs.reserve_players_max, 0)
             END)";
 
         $occurrenceLoadSub = DB::table('event_occurrences as eo')
