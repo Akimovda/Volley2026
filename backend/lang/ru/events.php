@@ -108,6 +108,7 @@ return [
     'card_seats_teams'    => ' команд',
     'card_seats_players'  => ' игроков',
     'card_no_limit'       => 'Лимит не задан',
+    'widget_reserve_suffix' => ' (+:count в резерве)',
 
     // Сокращения длительности
     'dur_hours_short' => 'ч',

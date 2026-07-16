@@ -28,6 +28,9 @@
 	(function () {
 		const occurrenceId = @json($occurrence->id ?? null);
 		const isTournament = @json($event->format === 'tournament');
+		// Единый источник цвета уровня — тот же PHP-хелпер level_color(), что и на
+		// турнирных карточках (events/show/players.blade.php), карта не дублируется вручную.
+		const LEVEL_COLORS = @json(collect(range(1, 7))->mapWithKeys(fn ($l) => [$l => level_color($l)]));
 		const playersCount = document.getElementById('players-count');
 		const playersList = document.getElementById('players-list');
 		const progress = document.getElementById('players-progress');
@@ -165,7 +168,7 @@
 							el.innerHTML = `
 								<div class="f-13" style="width:20px;text-align:right;color:#aaa">${displayIndex++}.</div>
 								<a href="${p.url || '/user/'+p.id}"><img src="${p.avatar || 'https://ui-avatars.com/api/?name=Player'}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;"></a>
-								<div class="f-16" style="flex:1"><a href="${p.url || '/user/'+p.id}" class="blink">${levelIcon(p.level)} ${p.name}</a></div>
+								<div class="f-16" style="flex:1"><a href="${p.url || '/user/'+p.id}" class="blink">${levelDotHtml(p.level)} ${p.name}</a></div>
 								<div class="f-13 text-muted">${p.position && p.position !== 'player' ? positionLabel(p.position) : ''}</div>
 							`;
 							playersList.appendChild(el);
@@ -181,7 +184,7 @@
 								el.innerHTML = `
 									${prefix}
 									<a href="${p.url || '/user/'+p.id}"><img src="${p.avatar || 'https://ui-avatars.com/api/?name=Player'}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;${mi > 0 ? 'margin-left:4px;' : ''}"></a>
-									<div class="f-16" style="flex:1"><a href="${p.url || '/user/'+p.id}" class="blink">${levelIcon(p.level)} ${p.name}</a></div>
+									<div class="f-16" style="flex:1"><a href="${p.url || '/user/'+p.id}" class="blink">${levelDotHtml(p.level)} ${p.name}</a></div>
 									<div class="f-13 text-muted">${p.position && p.position !== 'player' ? positionLabel(p.position) : ''}</div>
 								`;
 								playersList.appendChild(el);
@@ -201,7 +204,7 @@
 							el.innerHTML = `
 								<div class="f-13" style="width:20px;text-align:right;color:#aaa">${i + 1}.</div>
 								<a href="${p.url || '/user/'+p.id}"><img src="${p.avatar || 'https://ui-avatars.com/api/?name=Player'}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;"></a>
-								<div class="f-16" style="flex:1"><a href="${p.url || '/user/'+p.id}" class="blink">${levelIcon(p.level)} ${p.name}</a></div>
+								<div class="f-16" style="flex:1"><a href="${p.url || '/user/'+p.id}" class="blink">${levelDotHtml(p.level)} ${p.name}</a></div>
 							`;
 							reserveList.appendChild(el);
 						});
@@ -218,18 +221,9 @@
 			| HELPERS
 			|--------------------------------------------------------------------------
 		*/
-		function levelIcon(level) {
-			const map = {
-				1: '⚪️',
-				2: '🟡',
-				3: '🟠',
-				4: '🔵',
-				5: '🟣',
-				6: '🔴',
-				7: '⚫️'
-			};
-			
-			return map[level] ?? '⚪';
+		function levelDotHtml(level) {
+			const color = LEVEL_COLORS[level] || '#aaaaaa';
+			return '<span class="level-dot" style="background:' + color + '"></span>';
 		}
 		
 		function positionLabel(pos) {

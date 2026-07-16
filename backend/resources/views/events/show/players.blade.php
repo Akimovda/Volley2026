@@ -1091,7 +1091,7 @@ $showWaitlistViewer = !$isTournament && !$eventStarted && $isOrganizer && $waitl
 					<a href="{{ route('users.show', $mUser) }}">
 						<img src="{{ $mUser->profile_photo_url }}" alt="" style="width:34px;height:34px;border-radius:50%;object-fit:cover;flex-shrink:0;">
 					</a>
-					<span style="width:10px;height:10px;border-radius:50%;background:{{ $mColor }};display:inline-block;flex-shrink:0;border:1px solid rgba(0,0,0,.15);"></span>
+					<span class="level-dot" style="background:{{ $mColor }}"></span>
 					<a href="{{ route('users.show', $mUser) }}" class="blink f-15">{{ $mName }}</a>
 				</div>
 				@endforeach
@@ -1100,7 +1100,7 @@ $showWaitlistViewer = !$isTournament && !$eventStarted && $isOrganizer && $waitl
 				<div class="d-flex fvc" style="gap:0.5rem;margin-bottom:0.3rem;">
 					<span class="f-13 text-muted" style="width:16px;text-align:right;flex-shrink:0;">2.</span>
 					<div style="width:34px;height:34px;border-radius:50%;background:var(--bg2,#f5f5f5);flex-shrink:0;display:flex;align-items:center;justify-content:center;border:2px dashed #ccc;font-size:1.8rem;color:#aaa;">?</div>
-					<span style="width:10px;height:10px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0;"></span>
+					<span class="level-dot" style="background:#ccc"></span>
 					@if($myInvite)
 					{{-- Игроку отправлено персональное приглашение → кнопка принятия --}}
 					<a href="{{ route('tournamentTeamInvites.show', ['token' => $myInvite->token]) }}"
@@ -1163,7 +1163,7 @@ $showWaitlistViewer = !$isTournament && !$eventStarted && $isOrganizer && $waitl
 						<a href="{{ route('users.show', $mUser) }}">
 							<img src="{{ $mUser->profile_photo_url }}" alt="" style="width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0">
 						</a>
-						<span style="width:9px;height:9px;border-radius:50%;background:{{ $mColor }};display:inline-block;flex-shrink:0;border:1px solid rgba(0,0,0,.12)"></span>
+						<span class="level-dot level-dot--sm" style="background:{{ $mColor }}"></span>
 						<a href="{{ route('users.show', $mUser) }}" class="blink f-14">{{ $mName }}</a>
 					</div>
 					@endforeach
@@ -1171,7 +1171,7 @@ $showWaitlistViewer = !$isTournament && !$eventStarted && $isOrganizer && $waitl
 					<div class="d-flex fvc" style="gap:0.5rem;margin-bottom:0.2rem">
 						<span class="f-13 text-muted" style="width:16px;text-align:right;flex-shrink:0">2.</span>
 						<div style="width:32px;height:32px;border-radius:50%;background:var(--bg2,#f5f5f5);flex-shrink:0;display:flex;align-items:center;justify-content:center;border:2px dashed #ccc;font-size:1.6rem;color:#aaa">?</div>
-						<span style="width:9px;height:9px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0"></span>
+						<span class="level-dot level-dot--sm" style="background:#ccc"></span>
 						<span class="f-13" style="opacity:.5;font-style:italic">{{ __('events.show_pl_seek_partner') }}</span>
 					</div>
 					@endif
