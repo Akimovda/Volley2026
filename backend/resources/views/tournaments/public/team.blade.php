@@ -12,6 +12,21 @@ $reserveMembers = $activeMembers->filter(fn($m) => (int) $m->user_id !== (int) $
 $squadMembers = $activeMembers->reject(fn($m) => (int) $m->user_id === (int) $team->captain_user_id)
     ->reject(fn($m) => $m->effective_team_role === 'reserve');
 
+// Уровень по направлению турнира — тот же паттерн, что и на странице мероприятия
+// (events/show/players.blade.php, 2026-07-16): classic_level приоритетно для
+// классики, beach_level для пляжки, с фолбэком на другое поле.
+$isBeachPair = $team->team_kind === 'beach_pair';
+$levelOf = function ($user) use ($isBeachPair) {
+    if (!$user) return null;
+    return $isBeachPair
+        ? (int) ($user->beach_level ?? $user->classic_level ?? 0)
+        : (int) ($user->classic_level ?? $user->beach_level ?? 0);
+};
+$levelColorOf = function ($user) use ($levelOf) {
+    $lvl = $levelOf($user);
+    return $lvl > 0 ? level_color($lvl) : '#aaaaaa';
+};
+
 if ($team->team_kind === 'classic_team') {
     $squadMembers = $squadMembers->sortBy(function ($m) use ($positionOrder) {
         $idx = array_search($m->effective_position_code, $positionOrder, true);
@@ -51,6 +66,7 @@ if ($team->team_kind === 'classic_team') {
             @if($team->captain)
             <img src="{{ $captainMember->user->profile_photo_url ?? '' }}" alt="" class="ttp-captain-photo">
             <div class="b-700 f-20">
+                <span class="level-dot" style="background:{{ $levelColorOf($team->captain) }}"></span>
                 <a href="{{ route('users.show', $team->captain_user_id) }}" class="blink">{{ trim(($team->captain->last_name ?? '') . ' ' . ($team->captain->first_name ?? '')) ?: $team->captain->name }}</a>
                 @if($team->captain->gender === 'm')<span class="ttp-gender ttp-gender--m">♂</span>@elseif($team->captain->gender === 'f')<span class="ttp-gender ttp-gender--f">♀</span>@endif
             </div>
@@ -78,6 +94,7 @@ if ($team->team_kind === 'classic_team') {
                         <img src="{{ $member->user->profile_photo_url ?? '' }}" alt="" class="ttp-player-photo">
                         <div>
                             <div class="d-flex fvc" style="gap:.4rem;flex-wrap:wrap;row-gap:.4rem">
+                                <span class="level-dot" style="background:{{ $levelColorOf($member->user) }}"></span>
                                 <a href="{{ route('users.show', $member->user_id) }}" class="blink b-600 f-16">{{ $member->user->name ?? ('#'.$member->user_id) }}</a>
                                 @if($member->user?->gender === 'm')<span class="ttp-gender ttp-gender--m">♂</span>@elseif($member->user?->gender === 'f')<span class="ttp-gender ttp-gender--f">♀</span>@endif
                             </div>
@@ -103,6 +120,7 @@ if ($team->team_kind === 'classic_team') {
                     <img src="{{ $member->user->profile_photo_url ?? '' }}" alt="" class="ttp-player-photo">
                     <div>
                         <div class="d-flex fvc" style="gap:.4rem;flex-wrap:wrap;row-gap:.4rem">
+                            <span class="level-dot" style="background:{{ $levelColorOf($member->user) }}"></span>
                             <a href="{{ route('users.show', $member->user_id) }}" class="blink b-600 f-16">{{ $member->user->name ?? ('#'.$member->user_id) }}</a>
                             @if($member->user?->gender === 'm')<span class="ttp-gender ttp-gender--m">♂</span>@elseif($member->user?->gender === 'f')<span class="ttp-gender ttp-gender--f">♀</span>@endif
                         </div>
