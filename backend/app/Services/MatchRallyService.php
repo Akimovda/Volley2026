@@ -70,6 +70,9 @@ class MatchRallyService
             }
             $statTeamId = $scoringTeamId;
         } elseif (in_array($actionType, MatchRallyEvent::OPP_ERROR_ACTIONS, true)) {
+            if ($playerId === null && in_array($actionType, MatchRallyEvent::OPP_ERROR_ACTIONS_PLAYER_REQUIRED, true)) {
+                throw new InvalidArgumentException('Для этого типа ошибки соперника нужно указать игрока.');
+            }
             if ($playerId !== null) {
                 if (!in_array($playerId, $rosterByTeam[$opponentTeamId], true)) {
                     throw new InvalidArgumentException('Игрок ошибки должен быть из команды соперника.');
