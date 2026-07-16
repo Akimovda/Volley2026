@@ -2931,6 +2931,16 @@ body.dark .menu-site .menu-column:not(:last-child){
 }
 
 
+/* Базовая защита от овалов: работает, когда <img class="avatar"> получает
+   только одну сторону размера (например width из контейнера) — сохраняет
+   квадратные пропорции без явного height. Более специфичные правила ниже
+   (.menu-user-login .avatar и т.п.) всё равно выигрывают по specificity. */
+.avatar {
+	aspect-ratio: 1 / 1;
+	object-fit: cover;
+	flex-shrink: 0;
+}
+
 /* Колонка с аватаром */
 .menu-user-login .column-avatar {
 	display: flex;
@@ -4124,6 +4134,12 @@ body.dark .avatar-small {
 	fill: #fff;
 	will-change: transform;
 	transition: transform 0.3s ease;
+}
+.organizer-avatar {
+	width: 100%;
+	height: 100%;
+	border-radius: 50%;
+	object-fit: cover;
 }
 .icon-light .provider-card__icon {
 	background-color: transparent;
