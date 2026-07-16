@@ -76,12 +76,27 @@ class OrgDashboardController extends Controller
         // командные турниры — команды (events.tournament_teams_count → ets.teams_count →
         // egs.teams_count), tournament_individual/king_beach и обычные — игроки (max_players).
         $teamModes = "('team_classic','team_beach','team')";
+        // Статус-лист и исключение резерва — SQL-дубль канонической логики
+        // TournamentTeamService::countRegisteredTeams() (SQL-подзапрос не может звать PHP-метод,
+        // условие обязано оставаться идентичным ему дословно — при правке одного менять оба).
+        // Резерв команд бывает двух видов и они взаимоисключающие для одного occurrence:
+        // событийный (et.reserve_position — лист ожидания сверх tournament_teams_count) и
+        // лиговый (tournament_league_teams.status='reserve', только когда у события есть season_id).
         $registeredExpr = "(CASE
                 WHEN e.format = 'tournament' AND e.registration_mode IN {$teamModes} THEN (
                     SELECT COUNT(*) FROM event_teams et
                     WHERE et.event_id = e.id
                     AND (et.occurrence_id = eo.id OR et.occurrence_id IS NULL)
-                    AND et.status IN ('draft','ready','pending_members','submitted','confirmed','approved')
+                    AND et.status IN ('ready','pending','pending_members','submitted','confirmed','approved')
+                    AND et.reserve_position IS NULL
+                    AND NOT EXISTS (
+                        SELECT 1 FROM tournament_season_events tse
+                        JOIN tournament_league_teams tlt
+                            ON tlt.league_id = tse.league_id
+                            AND tlt.status = 'reserve'
+                            AND tlt.team_id = et.id
+                        WHERE tse.occurrence_id = eo.id
+                    )
                 )
                 ELSE (
                     SELECT COUNT(*) FROM event_registrations er
