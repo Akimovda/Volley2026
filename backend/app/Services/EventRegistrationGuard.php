@@ -61,16 +61,23 @@
 					?: $occurrence->effectiveGameSettings()->teams_count
 					?: 0
 				);
-				$leagueReserveIds = $this->getLeagueReserveTeamIds($occurrence);
-				$teamsReg         = \App\Models\EventTeam::where('event_id', $occurrence->event_id)
-					->where(fn($q) => $q->where('occurrence_id', $occurrence->id)->orWhereNull('occurrence_id'))
-					->whereIn('status', ['draft','ready','pending_members','submitted','confirmed','approved'])
-					->when($leagueReserveIds->isNotEmpty(), fn($q) => $q->whereNotIn('id', $leagueReserveIds))
-					->count();
+				// Канонический подсчёт (исключает и лиговый, и событийный резерв,
+				// см. мини-диагностику event 395, 2026-07-16) — TournamentTeamService::countRegisteredTeams().
+				// Это и есть реальный путь seatline AJAX (/occurrences/{id}/availability →
+				// EventsController::availabilityOccurrence() → сюда) — buildAvailabilitySnapshot()
+				// ниже по методу для team_classic/team_beach недостижим (эта ветка всегда возвращает раньше).
+				$teamCounts = $this->teamService->countRegisteredTeams(
+					(int) $occurrence->event_id,
+					(int) $occurrence->id,
+					$event->season_id ?? null
+				);
+				$teamsReg     = $teamCounts['registered'];
+				$teamsReserve = $teamCounts['reserve'];
 				$teamsMeta = [
 					'tournament_teams_max'        => $teamsMax,
 					'tournament_teams_registered' => $teamsReg,
 					'tournament_teams_remaining'  => max(0, $teamsMax - $teamsReg),
+					'tournament_teams_reserve'    => $teamsReserve,
 				];
 
 				if (
@@ -1274,18 +1281,4 @@
 			return $p;
 		}
 
-	private function getLeagueReserveTeamIds(\App\Models\EventOccurrence $occurrence): \Illuminate\Support\Collection
-	{
-		if (!$occurrence->event->season_id) {
-			return collect();
-		}
-		$seasonEvt = \App\Models\TournamentSeasonEvent::where('occurrence_id', $occurrence->id)->first();
-		if (!$seasonEvt?->league_id) {
-			return collect();
-		}
-		return \App\Models\TournamentLeagueTeam::where('league_id', $seasonEvt->league_id)
-			->where('status', 'reserve')
-			->pluck('team_id')
-			->filter();
-	}
 	}

@@ -85,23 +85,35 @@
 	$teamsMax = $event->tournament_teams_count ?: ($event->tournamentSetting?->teams_count ?? 0);
 	$teamSize = $event->tournamentSetting?->team_size_min ?? 2;
 
-	// Резервные команды лиги — не считаются основными участниками
-	// (нужны отдельно от countRegisteredTeams() для подсчёта игроков ниже)
+	// Резервные команды лиги/события — нужны ниже для разбивки состава на
+	// основной/резерв (роспись команд), не только для сводного счётчика.
 	$leagueReserveTeamIds = collect();
+	$leagueReservePositions = collect(); // team_id → reserve_position
 	if ($event->season_id) {
 	    $seasonEvt = \App\Models\TournamentSeasonEvent::where('occurrence_id', $occurrence->id)->first();
 	    if ($seasonEvt?->league_id) {
-	        $leagueReserveTeamIds = \App\Models\TournamentLeagueTeam::where('league_id', $seasonEvt->league_id)
+	        $leagueReserveRows = \App\Models\TournamentLeagueTeam::where('league_id', $seasonEvt->league_id)
 	            ->where('status', 'reserve')
 	            ->whereNotNull('team_id')
-	            ->pluck('team_id');
+	            ->orderBy('reserve_position')
+	            ->get(['team_id', 'reserve_position']);
+	        $leagueReserveTeamIds   = $leagueReserveRows->pluck('team_id');
+	        $leagueReservePositions = $leagueReserveRows->pluck('reserve_position', 'team_id');
 	    }
 	}
+	$eventReserveTeamIds = !$event->season_id
+	    ? \App\Models\EventTeam::where('event_id', $event->id)
+	        ->where('occurrence_id', $occurrence->id)
+	        ->whereNotNull('reserve_position')
+	        ->pluck('id')
+	    : collect();
 
 	$teamStatuses = ['ready','pending','pending_members','submitted','confirmed','approved'];
 
-	// Канонический подсчёт команд/резерва — TournamentTeamService::countRegisteredTeams()
-	// (тот же счётчик, что и на карточке/дашборде организатора).
+	// Канонический подсчёт команд/резерва для сводного счётчика — TournamentTeamService::countRegisteredTeams()
+	// (тот же счётчик, что и на карточке/дашборде организатора; логика — та же, что и в
+	// $leagueReserveTeamIds/$eventReserveTeamIds выше, продублирована внутри метода намеренно —
+	// см. докстринг countRegisteredTeams()).
 	$teamCounts = app(\App\Services\TournamentTeamService::class)
 	    ->countRegisteredTeams((int) $event->id, (int) $occurrence->id, $event->season_id);
 	$teamsRegistered = $teamCounts['registered'];
