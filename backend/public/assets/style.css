@@ -4659,6 +4659,49 @@ body.dark .btn-outline-primary:hover {
 .events-page .tabs-content {
 	position: relative;
 }
+
+/* === Вкладки публичной турнирной страницы: одна скроллируемая строка ==== */
+.tourn-tabs {
+	display: flex;
+	flex-wrap: nowrap;
+	overflow-x: auto;
+	-webkit-overflow-scrolling: touch;
+	scrollbar-width: none;
+	gap: 0.4rem;
+	border-bottom: 2px solid rgba(128,128,128,.15);
+	padding-bottom: 0;
+	margin: 0 0 1rem 0;
+}
+.tourn-tabs::-webkit-scrollbar {
+	display: none;
+}
+.tourn-tabs .tourn-tab {
+	flex: 0 0 auto;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 44px;
+	padding: 0.8rem 1.6rem;
+	white-space: nowrap;
+	text-decoration: none;
+	color: #333;
+	border-bottom: 3px solid transparent;
+}
+.tourn-tabs .tourn-tab--active {
+	border-bottom-color: #E7612F;
+	color: #E7612F;
+}
+body.dark .tourn-tabs .tourn-tab {
+	color: #cacaca;
+}
+body.dark .tourn-tabs .tourn-tab--active {
+	color: #E7612F;
+}
+@media (min-width: 769px) {
+	.tourn-tabs {
+		justify-content: center;
+	}
+}
 .card-img-top {
 	position: relative;
 	min-height: 40px;

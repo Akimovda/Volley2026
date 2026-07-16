@@ -118,16 +118,15 @@
 			}
 			@endphp
 			
-			<div class="d-flex mb-1 gap-1 text-center" style="flex-wrap:wrap;border-bottom:2px solid rgba(128,128,128,.15);padding-bottom:0">
+			<div class="tourn-tabs" id="tournTabs">
 				@foreach($tabs as $key => $label)
 				<a href="{{ route('tournament.public.show', [$event, 'tab' => $key, 'occurrence_id' => $selectedOccurrence?->id]) }}"
-				class="p-2 px-3 b-600"
-				style="text-decoration:none;border-bottom:3px solid {{ $tab === $key ? '#E7612F' : 'transparent' }};{{ $tab === $key ? 'color: #E7612F' : '' }}">
+				class="tourn-tab b-600 {{ $tab === $key ? 'tourn-tab--active' : '' }}">
 					{{ $label }}
 				</a>
 				@endforeach
 			</div>
-		</div>	
+		</div>
 		
 		
 		{{-- ============================================================
@@ -624,6 +623,12 @@
 				@if($stages->where('status', 'in_progress')->isNotEmpty())
 				setInterval(pollLive, pollInterval);
 				@endif
+			})();
+
+			// Активная вкладка турнирной навигации может быть за краем горизонтального скролла — центрируем её
+			(function() {
+				var activeTab = document.querySelector('#tournTabs .tourn-tab--active');
+				if (activeTab) activeTab.scrollIntoView({ behavior: 'instant', inline: 'center', block: 'nearest' });
 			})();
 
 			function toggleMatchStats(id) {
