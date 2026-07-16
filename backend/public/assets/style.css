@@ -618,6 +618,30 @@ body.dark .levelmark {
     text-shadow: 0 1px 3px rgba(255,255,255,0.3);
 }
 
+/* Единый индикатор уровня игрока (кружок) — замена эмодзи 🔵🟡🟠🔴🟣⚪⚫.
+   Цвет всегда inline (динамический, per level_color()/countRegisteredTeams
+   PHP-хелпера) — здесь только форма/размер/обводка. */
+.level-dot {
+	width: 12px;
+	height: 12px;
+	border-radius: 50%;
+	display: inline-block;
+	flex-shrink: 0;
+	border: 1px solid rgba(0,0,0,.15);
+	vertical-align: middle;
+}
+.level-dot--sm {
+	width: 10px;
+	height: 10px;
+	border-color: rgba(0,0,0,.12);
+}
+body.dark .level-dot {
+	border-color: rgba(255,255,255,.25);
+}
+body.dark .level-dot--sm {
+	border-color: rgba(255,255,255,.2);
+}
+
 
 /* Формы */
 
