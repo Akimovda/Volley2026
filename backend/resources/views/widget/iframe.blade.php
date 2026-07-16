@@ -186,13 +186,17 @@
                 </div>
                 @endif
 
-                {{-- Места --}}
+                {{-- Места / команды --}}
                 @if(!empty($ev['slots_info']))
                 <div class="widget-meta-row">
                     <span class="emo">👥</span>
                     <span class="widget-slots">
-                        Осталось мест: <strong>{{ $ev['slots_info']['free'] }}</strong>
-                        из <strong>{{ $ev['slots_info']['max'] }}</strong>
+                        <strong>{{ $ev['slots_info']['taken'] }}</strong>
+                        {{ __('events.card_seats_of') }}
+                        <strong>{{ $ev['slots_info']['max'] }}</strong>{{ $ev['slots_info']['unit'] === 'teams' ? __('events.card_seats_teams') : __('events.card_seats_players') }}
+                        @if($ev['slots_info']['reserve'] > 0)
+                            {!! __('events.widget_reserve_suffix', ['count' => $ev['slots_info']['reserve']]) !!}
+                        @endif
                     </span>
                 </div>
                 @endif
