@@ -278,7 +278,7 @@ final class NotificationDeliverySender
                 'Authorization' => $token,
                 'Content-Type'  => 'application/json',
             ])
-            ->post('https://platform-api.max.ru/messages?chat_id=' . urlencode($chatId), $body);
+            ->post(config('services.max.api_base_url') . '/messages?chat_id=' . urlencode($chatId), $body);
 
         if (!$resp->ok()) {
             throw new \RuntimeException('MAX HTTP ' . $resp->status() . ': ' . $resp->body());
@@ -525,7 +525,7 @@ final class NotificationDeliverySender
 
         $uploadMeta = Http::timeout(20)
             ->withHeaders(['Authorization' => $token])
-            ->post('https://platform-api.max.ru/uploads?type=image');
+            ->post(config('services.max.api_base_url') . '/uploads?type=image');
 
         if (!$uploadMeta->ok()) {
             throw new \RuntimeException('MAX uploads HTTP ' . $uploadMeta->status() . ': ' . $uploadMeta->body());
@@ -568,7 +568,7 @@ final class NotificationDeliverySender
                 'Authorization' => $token,
                 'Content-Type'  => 'application/json',
             ])
-            ->post('https://platform-api.max.ru/messages?chat_id=' . urlencode($chatId), [
+            ->post(config('services.max.api_base_url') . '/messages?chat_id=' . urlencode($chatId), [
                 'text'        => '',
                 'attachments' => [[
                     'type'    => 'image',
@@ -589,7 +589,7 @@ final class NotificationDeliverySender
                     'Authorization' => $token,
                     'Content-Type'  => 'application/json',
                 ])
-                ->post('https://platform-api.max.ru/messages?chat_id=' . urlencode($chatId), [
+                ->post(config('services.max.api_base_url') . '/messages?chat_id=' . urlencode($chatId), [
                     'text'        => '',
                     'attachments' => [[
                         'type'    => 'image',

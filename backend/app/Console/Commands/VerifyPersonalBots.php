@@ -125,7 +125,7 @@ class VerifyPersonalBots extends Command
             // getMe — проверяем токен
             $me = Http::timeout(10)
                 ->withHeaders(['Authorization' => $token])
-                ->get('https://platform-api.max.ru/me')
+                ->get(config('services.max.api_base_url') . '/me')
                 ->json();
 
             if (empty($me['user_id'])) {
@@ -135,7 +135,7 @@ class VerifyPersonalBots extends Command
             // getChat — проверяем доступ к чату
             $chat = Http::timeout(10)
                 ->withHeaders(['Authorization' => $token])
-                ->get('https://platform-api.max.ru/chats/' . urlencode($chatId))
+                ->get(config('services.max.api_base_url') . '/chats/' . urlencode($chatId))
                 ->json();
 
             return empty($chat['error']);

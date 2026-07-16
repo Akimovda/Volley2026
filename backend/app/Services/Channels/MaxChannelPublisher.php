@@ -16,7 +16,7 @@ class MaxChannelPublisher implements ChannelPublisher
     {
         // Для персонального бота — прямой API MAX, иначе внутренний сервис
         if ($this->customToken !== null) {
-            return 'https://platform-api.max.ru';
+            return (string) config('services.max.api_base_url');
         }
         $url = rtrim((string) config('services.max.bot_api_url'), '/');
         if ($url === '') throw new LogicException('MAX bot_api_url is not configured.');
@@ -63,7 +63,7 @@ class MaxChannelPublisher implements ChannelPublisher
 
         $response = Http::timeout(20)
             ->withHeaders(['Authorization' => $token, 'Content-Type' => 'application/json'])
-            ->post("https://platform-api.max.ru/messages?chat_id=" . urlencode($chatId), $body)
+            ->post($this->endpoint() . "/messages?chat_id=" . urlencode($chatId), $body)
             ->throw()
             ->json();
 
@@ -115,7 +115,7 @@ class MaxChannelPublisher implements ChannelPublisher
         ChannelMessageData $message,
         array $previousMeta = []
     ): array {
-        // MAX API: PUT https://platform-api.max.ru/messages?message_id=...
+        // MAX API: PUT {api_base_url}/messages?message_id=...
         // Редактирование доступно для сообщений младше 24 часов
         $token = (string) config('services.max.bot_token');
         if ($token === '') throw new LogicException('MAX bot_token is not configured.');
@@ -175,7 +175,7 @@ class MaxChannelPublisher implements ChannelPublisher
                 'Authorization' => $token,
                 'Content-Type'  => 'application/json',
             ])
-            ->put('https://platform-api.max.ru/messages?message_id=' . urlencode($messageId), $body)
+            ->put(config('services.max.api_base_url') . '/messages?message_id=' . urlencode($messageId), $body)
             ->throw()
             ->json();
 
@@ -205,7 +205,7 @@ class MaxChannelPublisher implements ChannelPublisher
 
     public function delete(string $chatId, string $messageId): bool
     {
-        // MAX API: DELETE https://platform-api.max.ru/messages?message_id=...
+        // MAX API: DELETE {api_base_url}/messages?message_id=...
         // По аналогии с update() (PUT на тот же путь) — не задокументировано отдельно,
         // не проверено на реальном канале; если платформа не поддерживает — бросит
         // исключение, вызывающий код (deletePosts()) откатится на update()/warning.
@@ -216,7 +216,7 @@ class MaxChannelPublisher implements ChannelPublisher
                 'Authorization' => $token,
                 'Content-Type'  => 'application/json',
             ])
-            ->delete('https://platform-api.max.ru/messages?message_id=' . urlencode($messageId))
+            ->delete(config('services.max.api_base_url') . '/messages?message_id=' . urlencode($messageId))
             ->throw()
             ->json();
 
