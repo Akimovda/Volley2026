@@ -97,7 +97,7 @@ class OrgDashboardController extends Controller
                 WHEN e.format = 'tournament' AND e.registration_mode IN ('tournament_individual','king_beach') THEN
                     COALESCE(NULLIF(ets.total_players_max, 0), NULLIF(egs.max_players, 0), 0)
                 ELSE
-                    COALESCE(NULLIF(egs.max_players, 0), 0)
+                    COALESCE(NULLIF(egs.max_players, 0), 0) + COALESCE(egs.reserve_players_max, 0)
             END)";
 
         $occurrenceLoadSub = DB::table('event_occurrences as eo')
