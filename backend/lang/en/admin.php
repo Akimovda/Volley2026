@@ -299,4 +299,8 @@ return [
     'nt_channel_general' => 'general',
     'nt_templates_count' => 'templates',
     'nt_active_count'    => 'active',
+
+    // === user restrictions (bans) ===
+    'restriction_event_ids_label' => 'Event ID (empty — all events)',
+    'restriction_events_all_label' => 'All events',
 ];

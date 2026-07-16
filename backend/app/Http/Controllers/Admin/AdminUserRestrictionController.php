@@ -17,11 +17,13 @@ class AdminUserRestrictionController extends Controller
      * Ограничение записи на мероприятия (events):
      * - mode=forever => ends_at = null
      * - mode=until   => ends_at = дата
-     * - event_ids    => список ID мероприятий
+     * - event_ids    => список ID мероприятий; пусто = глобальный бан (event_all, все мероприятия)
      *
      * Доп. требование:
      * ✅ сразу удалить пользователя из записей на эти мероприятия
      * (чтобы он исчез из "уже записан" прямо после блокировки).
+     * Для глобального бана (event_ids пуст) существующие записи не трогаем —
+     * только блокируем новую запись (см. EnsureUserNotRestricted).
      */
     public function banEvents(Request $request, User $user)
     {
@@ -29,15 +31,12 @@ class AdminUserRestrictionController extends Controller
         $data = $request->validate([
             'mode'      => ['required', 'in:forever,until'],
             'until'     => ['nullable', 'date'],
-            'event_ids' => ['required', 'string', 'max:2000'],
+            'event_ids' => ['nullable', 'string', 'max:2000'],
             'reason'    => ['nullable', 'string', 'max:1000'],
         ]);
 
-        // --- parse event_ids
-        $eventIds = $this->parseEventIds((string) $data['event_ids']);
-        if (empty($eventIds)) {
-            return back()->with('error', 'Укажи хотя бы один event_id (числа через запятую/пробел).');
-        }
+        // --- parse event_ids (пусто => глобальный бан на все мероприятия)
+        $eventIds = $this->parseEventIds((string) ($data['event_ids'] ?? ''));
 
         // --- parse ends_at
         $endsAt = $this->parseEndsAt((string) $data['mode'], $data['until'] ?? null);
@@ -57,20 +56,20 @@ class AdminUserRestrictionController extends Controller
                 })
                 ->delete();
 
-            // 2) Вставляем текущее ограничение
+            // 2) Вставляем текущее ограничение (event_ids = null => глобальный бан)
             DB::table('user_restrictions')->insert([
                 'user_id'    => $user->id,
                 'scope'      => 'events',
                 'ends_at'    => $endsAt, // null = forever
-                'event_ids'  => json_encode($eventIds, JSON_UNESCAPED_UNICODE),
+                'event_ids'  => empty($eventIds) ? null : json_encode($eventIds, JSON_UNESCAPED_UNICODE),
                 'reason'     => $data['reason'] ?? null,
                 'created_by' => auth()->id(),
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
 
-            // 3) ✅ Авто-удаление из записей на заблокированные мероприятия
-            $deletedRegs = $this->dropUserRegistrationsForEvents((int) $user->id, $eventIds);
+            // 3) ✅ Авто-удаление из записей на заблокированные мероприятия (только для точечного бана)
+            $deletedRegs = empty($eventIds) ? 0 : $this->dropUserRegistrationsForEvents((int) $user->id, $eventIds);
 
             // 4) Audit
             AdminAuditLogger::log(
@@ -81,6 +80,7 @@ class AdminUserRestrictionController extends Controller
                     'scope'                 => 'events',
                     'ends_at'               => $endsAt?->toISOString(),
                     'event_ids'             => $eventIds,
+                    'is_global'             => empty($eventIds),
                     'deleted_registrations' => $deletedRegs,
                 ],
                 note: 'Admin set events restriction',
@@ -88,7 +88,9 @@ class AdminUserRestrictionController extends Controller
             );
         });
 
-        return back()->with('status', 'Ограничение (events) установлено ✅');
+        return back()->with('status', empty($eventIds)
+            ? 'Глобальное ограничение (все мероприятия) установлено ✅'
+            : 'Ограничение (events) установлено ✅');
     }
 
     /**

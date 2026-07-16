@@ -312,4 +312,8 @@ return [
     'nt_channel_general' => 'общий',
     'nt_templates_count' => 'шаблонов',
     'nt_active_count'    => 'активных',
+
+    // === user restrictions (bans) ===
+    'restriction_event_ids_label' => 'ID мероприятия (пусто — все мероприятия)',
+    'restriction_events_all_label' => 'Все мероприятия',
 ];
