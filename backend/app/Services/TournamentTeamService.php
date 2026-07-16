@@ -10,6 +10,8 @@ use App\Models\EventTeamApplication;
 use App\Models\EventTeamMember;
 use App\Models\EventTeamMemberAudit;
 use App\Models\EventTournamentSetting;
+use App\Models\TournamentLeagueTeam;
+use App\Models\TournamentSeasonEvent;
 use App\Models\User;
 use DomainException;
 use Illuminate\Support\Carbon;
@@ -1717,6 +1719,63 @@ final class TournamentTeamService
                 }
                 break;
         }
+    }
+
+    // ──────────────────────────────────────────────────────
+    // Канонический подсчёт команд (карточка / дашборд / страница события)
+    // ──────────────────────────────────────────────────────
+
+    /**
+     * Единый источник правды для "N из M команд" + "K в резерве".
+     * Резерв бывает двух видов и они взаимоисключающие для одного occurrence:
+     * лиговый (TournamentLeagueTeam.status='reserve', когда у события есть season_id)
+     * или событийный (event_teams.reserve_position — лист ожидания сверх tournament_teams_count).
+     * Используется в EventRegistrationGuard::buildAvailabilitySnapshot(),
+     * events/show/players.blade.php; для OrgDashboardController то же условие
+     * продублировано в SQL (см. комментарий у $registeredExpr) — эту сигнатуру
+     * менять только синхронно с тем SQL-дублем.
+     *
+     * @return array{registered: int, reserve: int}
+     */
+    public function countRegisteredTeams(int $eventId, int $occurrenceId, ?int $seasonId = null): array
+    {
+        $teamStatuses = ['ready', 'pending', 'pending_members', 'submitted', 'confirmed', 'approved'];
+
+        $allTeamsQ = fn ($q) => $q->where('event_id', $eventId)
+            ->where(fn ($q2) => $q2->where('occurrence_id', $occurrenceId)->orWhereNull('occurrence_id'))
+            ->whereIn('status', $teamStatuses);
+
+        $leagueReserveTeamIds = collect();
+        if ($seasonId) {
+            $seasonEvt = TournamentSeasonEvent::where('occurrence_id', $occurrenceId)->first();
+            if ($seasonEvt?->league_id) {
+                $leagueReserveTeamIds = TournamentLeagueTeam::where('league_id', $seasonEvt->league_id)
+                    ->where('status', 'reserve')
+                    ->whereNotNull('team_id')
+                    ->pluck('team_id');
+            }
+        }
+
+        $eventReserveTeamIds = !$seasonId
+            ? EventTeam::where('event_id', $eventId)
+                ->where('occurrence_id', $occurrenceId)
+                ->whereNotNull('reserve_position')
+                ->pluck('id')
+            : collect();
+
+        $registered = EventTeam::where($allTeamsQ)
+            ->when($leagueReserveTeamIds->isNotEmpty(), fn ($q) => $q->whereNotIn('id', $leagueReserveTeamIds))
+            ->when($eventReserveTeamIds->isNotEmpty(), fn ($q) => $q->whereNotIn('id', $eventReserveTeamIds))
+            ->count();
+
+        $reserve = 0;
+        if ($leagueReserveTeamIds->isNotEmpty()) {
+            $reserve = EventTeam::where($allTeamsQ)->whereIn('id', $leagueReserveTeamIds)->count();
+        } elseif ($eventReserveTeamIds->isNotEmpty()) {
+            $reserve = $eventReserveTeamIds->count();
+        }
+
+        return ['registered' => $registered, 'reserve' => $reserve];
     }
 
     // ──────────────────────────────────────────────────────
