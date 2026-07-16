@@ -16,14 +16,17 @@ html {
 }
 @media (max-width: 767px) {
 	html {
-		font-size: 52%; /* 8px */
+		font-size: 52%; /* 8.32px */
 	}
 }
 @media (max-width: 480px) {
 	html {
-		font-size: 50%; /* 7.36px */
+		/* Аудит 2026-07-16 (report_mobile_typography_audit): было 50%/8px — кнопки/инпуты
+		   и часть текста падали ниже 16px (порог auto-zoom в iOS Safari) и комфортного
+		   чтения. Поднято до 58% — стратегия «В» (умеренный подъём + точечные компенсации). */
+		font-size: 58%; /* 9.28px */
 	}
-} 
+}
 
 *[id]:not(#days) {
     scroll-margin-top: 10.4rem;
@@ -277,8 +280,8 @@ strong, b {
 .b-600 { font-weight: 600; } 
 .b-700 { font-weight: bold; } 
 .f-0 { font-size: 0; line-height: 0;} 
-.f-11 { font-size: 11px; } 
-.f-13 { font-size: 13px; } 
+.f-11 { font-size: 1.1rem; } /* было 11px фикс. — консистентность с f-15/f-16/f-18 (rem), см. аудит 16.07 */
+.f-13 { font-size: 1.3rem; } /* было 13px фикс. — на десктопе (root=10px) значение то же самое (13px) */
 .f-15 { font-size: 1.5rem; } /* 16px */	
 .f-16 { font-size: 1.6rem; } /* 16px */
 .f-18 { font-size: 1.8rem; } /* 18px */
@@ -4561,7 +4564,7 @@ body.dark .btn-outline-primary:hover {
 }
 .org-nav-grid .btn {
     width: 100%;
-    font-size: 1.3rem;
+    font-size: 1.6rem; /* было 1.3rem — на ≤480px давало 10.4px, ниже комфортного порога (аудит 16.07) */
     padding: 1rem 1.4rem;
     text-transform: none;
 }
@@ -5865,7 +5868,7 @@ body.dark .ms-ptable td { border-color: rgba(255, 255, 255, .07); }
 .rp-event { min-width: 0; line-height: 1.3; }
 .rp-cell--home .rp-event { text-align: right; }
 .rp-cell--away .rp-event { text-align: left; }
-.rp-action { font-size: 1rem; font-weight: 700; text-transform: uppercase; opacity: .6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px; }
+.rp-action { font-size: 1.5rem; font-weight: 700; text-transform: uppercase; opacity: .6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px; }
 
 /* Строка игрока: аватар всегда внутренним краем к счёту (зеркально по сторонам), текст —
    снаружи. DOM-порядок (аватар, затем текст) одинаковый для обеих сторон; на home он
