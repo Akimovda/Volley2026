@@ -280,8 +280,8 @@ strong, b {
 .b-600 { font-weight: 600; } 
 .b-700 { font-weight: bold; } 
 .f-0 { font-size: 0; line-height: 0;} 
-.f-11 { font-size: 11px; } 
-.f-13 { font-size: 13px; } 
+.f-11 { font-size: 1.1rem; } /* было 11px фикс. — консистентность с f-15/f-16/f-18 (rem), см. аудит 16.07 */
+.f-13 { font-size: 1.3rem; } /* было 13px фикс. — на десктопе (root=10px) значение то же самое (13px) */
 .f-15 { font-size: 1.5rem; } /* 16px */	
 .f-16 { font-size: 1.6rem; } /* 16px */
 .f-18 { font-size: 1.8rem; } /* 18px */
