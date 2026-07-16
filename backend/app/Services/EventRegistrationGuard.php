@@ -13,10 +13,12 @@
 	final class EventRegistrationGuard
 	{
 		private EventRoleSlotService $slotService;
-		
-		public function __construct(EventRoleSlotService $slotService)
+		private TournamentTeamService $teamService;
+
+		public function __construct(EventRoleSlotService $slotService, TournamentTeamService $teamService)
 		{
 			$this->slotService = $slotService;
+			$this->teamService = $teamService;
 		}
 		
 		public function check(
@@ -1219,14 +1221,16 @@
 
 				// Для командного турнира (team_beach / team_classic) регистрации
 				// хранятся в event_teams, а не в event_registrations.
+				// Канонический подсчёт (исключает и лиговый, и событийный резерв,
+				// см. мини-диагностику event 395, 2026-07-16) — TournamentTeamService::countRegisteredTeams().
 				if (in_array($regMode, ['team_beach', 'team_classic', 'team'], true)) {
-					$leagueReserveIds = $this->getLeagueReserveTeamIds($occurrence);
-					$teamsRegistered = \App\Models\EventTeam::where('event_id', $occurrence->event_id)
-						->where(fn($q) => $q->where('occurrence_id', $occurrence->id)
-							->orWhereNull('occurrence_id'))
-						->whereIn('status', ['draft','ready','pending_members','submitted','confirmed','approved'])
-						->when($leagueReserveIds->isNotEmpty(), fn($q) => $q->whereNotIn('id', $leagueReserveIds))
-						->count();
+					$teamCounts = $this->teamService->countRegisteredTeams(
+						(int) $occurrence->event_id,
+						(int) $occurrence->id,
+						$occurrence->event->season_id ?? null
+					);
+					$teamsRegistered = $teamCounts['registered'];
+					$meta['tournament_teams_reserve'] = $teamCounts['reserve'];
 				} else {
 					// Обычный турнир — считаем через group_key в регистрациях
 					$byGroup = \Illuminate\Support\Facades\DB::table('event_registrations')

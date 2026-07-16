@@ -86,44 +86,26 @@
 	$teamSize = $event->tournamentSetting?->team_size_min ?? 2;
 
 	// Резервные команды лиги — не считаются основными участниками
+	// (нужны отдельно от countRegisteredTeams() для подсчёта игроков ниже)
 	$leagueReserveTeamIds = collect();
-	$leagueReservePositions = collect(); // team_id → reserve_position
 	if ($event->season_id) {
 	    $seasonEvt = \App\Models\TournamentSeasonEvent::where('occurrence_id', $occurrence->id)->first();
 	    if ($seasonEvt?->league_id) {
-	        $leagueReserveRows = \App\Models\TournamentLeagueTeam::where('league_id', $seasonEvt->league_id)
+	        $leagueReserveTeamIds = \App\Models\TournamentLeagueTeam::where('league_id', $seasonEvt->league_id)
 	            ->where('status', 'reserve')
 	            ->whereNotNull('team_id')
-	            ->orderBy('reserve_position')
-	            ->get(['team_id', 'reserve_position']);
-	        $leagueReserveTeamIds   = $leagueReserveRows->pluck('team_id');
-	        $leagueReservePositions = $leagueReserveRows->pluck('reserve_position', 'team_id');
+	            ->pluck('team_id');
 	    }
 	}
 
 	$teamStatuses = ['ready','pending','pending_members','submitted','confirmed','approved'];
-	$allTeamsQ = fn($q) => $q->where('event_id', $event->id)
-	    ->where(fn($q2) => $q2->where('occurrence_id', $occurrence->id)->orWhereNull('occurrence_id'))
-	    ->whereIn('status', $teamStatuses);
 
-	// Для не-лиговых турниров: команды в резерве (reserve_position IS NOT NULL)
-	$eventReserveTeamIds = !$event->season_id
-	    ? \App\Models\EventTeam::where('event_id', $event->id)
-	        ->where('occurrence_id', $occurrence->id)
-	        ->whereNotNull('reserve_position')
-	        ->pluck('id')
-	    : collect();
-
-	$teamsRegistered = \App\Models\EventTeam::where($allTeamsQ)
-	    ->when($leagueReserveTeamIds->isNotEmpty(), fn($q) => $q->whereNotIn('id', $leagueReserveTeamIds))
-	    ->when($eventReserveTeamIds->isNotEmpty(), fn($q) => $q->whereNotIn('id', $eventReserveTeamIds))
-	    ->count();
-	$teamsReserve = 0;
-	if ($leagueReserveTeamIds->isNotEmpty()) {
-	    $teamsReserve = \App\Models\EventTeam::where($allTeamsQ)->whereIn('id', $leagueReserveTeamIds)->count();
-	} elseif ($eventReserveTeamIds->isNotEmpty()) {
-	    $teamsReserve = $eventReserveTeamIds->count();
-	}
+	// Канонический подсчёт команд/резерва — TournamentTeamService::countRegisteredTeams()
+	// (тот же счётчик, что и на карточке/дашборде организатора).
+	$teamCounts = app(\App\Services\TournamentTeamService::class)
+	    ->countRegisteredTeams((int) $event->id, (int) $occurrence->id, $event->season_id);
+	$teamsRegistered = $teamCounts['registered'];
+	$teamsReserve    = $teamCounts['reserve'];
 
 	$playersRegistered = \App\Models\EventTeamMember::whereHas('team', fn($q) => $q->where('event_id', $event->id)->where(fn($q2) => $q2->where('occurrence_id', $occurrence->id)->orWhereNull('occurrence_id'))->whereIn('status', $teamStatuses)->when($leagueReserveTeamIds->isNotEmpty(), fn($q3) => $q3->whereNotIn('id', $leagueReserveTeamIds)))
 	->where('confirmation_status', 'confirmed')
