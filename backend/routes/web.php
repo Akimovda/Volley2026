@@ -899,6 +899,10 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
         // Рекламные мероприятия
         Route::get('/events/{event}/ad/confirm', [\App\Http\Controllers\Admin\AdminAdEventController::class, 'confirm'])->name('events.ad.confirm');
         Route::get('/events/{event}/ad/reject',  [\App\Http\Controllers\Admin\AdminAdEventController::class, 'reject'])->name('events.ad.reject');
+
+        // Premium / PRO подписки
+        Route::get('/subscriptions/premium/{payment}/confirm', [\App\Http\Controllers\Admin\AdminSubscriptionController::class, 'confirmPremium'])
+            ->name('subscriptions.premium_confirm');
 		
         Route::post('/users/{user}/restrictions/events', [AdminUserRestrictionController::class, 'banEvents'])
 		->name('users.restrictions.events');

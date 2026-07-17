@@ -50,4 +50,15 @@ class PremiumSubscription extends Model
             default   => 30,
         };
     }
+
+    public static function planLabel(string $plan): string
+    {
+        return match ($plan) {
+            'trial'   => 'Пробный период',
+            'month'   => '1 месяц',
+            'quarter' => '3 месяца',
+            'year'    => '1 год',
+            default   => $plan,
+        };
+    }
 }

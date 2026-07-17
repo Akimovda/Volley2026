@@ -5,9 +5,14 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Models\OrganizerSubscription;
+use App\Models\Payment;
+use App\Models\PlatformPaymentSetting;
+use App\Models\User;
 use App\Services\OrganizerSubscriptionService;
+use App\Services\UserNotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 class OrganizerProController extends Controller
@@ -84,6 +89,38 @@ class OrganizerProController extends Controller
         }
 
         $sub = $this->service->activate($user, $data['plan']);
+
+        // Фиксируем факт оплаты как Payment — иначе оплата PRO нигде не видна в статистике
+        // (activate() создаёт только запись подписки, без payments; см. диагностику 2026-07-17)
+        if ((float) $sub->amount_rub > 0) {
+            $payment = Payment::create([
+                'user_id'           => $user->id,
+                'organizer_id'      => $user->id,
+                'method'            => 'manual',
+                'status'            => 'paid',
+                'amount_minor'      => (int) round((float) $sub->amount_rub * 100),
+                'currency'          => 'RUB',
+                'user_confirmed'    => true,
+                'user_confirmed_at' => now(),
+                'org_confirmed'     => true,
+                'org_confirmed_at'  => now(),
+            ]);
+
+            $sub->update(['payment_id' => $payment->id]);
+        }
+
+        try {
+            $platSettings   = PlatformPaymentSetting::first();
+            $paymentAdminId = (int) ($platSettings?->payment_admin_id ?? 1);
+            $admin = User::find($paymentAdminId) ?? User::where('role', 'admin')->first();
+
+            if ($admin) {
+                app(UserNotificationService::class)
+                    ->createOrganizerProActivatedNotification($admin, $sub, $user);
+            }
+        } catch (\Throwable $e) {
+            Log::warning('OrganizerProController activate notify failed: ' . $e->getMessage());
+        }
 
         return redirect()
             ->route('organizer_pro.index')

@@ -132,6 +132,86 @@ class AdminDashboardController extends Controller
         $dupCount = count(app(\App\Services\UserMergeService::class)->findDuplicates());
         $deletionDelay = (int) getAppSetting('account_deletion_delay_seconds', 30);
 
+        // -----------------------------
+        // Подписки и оплаты: Premium (игроки) + PRO (организаторы)
+        // -----------------------------
+        $activePremiumCount = (int) DB::table('premium_subscriptions')
+            ->where('status', 'active')
+            ->where('expires_at', '>', now())
+            ->count();
+
+        $activeProCount = (int) DB::table('organizer_subscriptions')
+            ->where('status', 'active')
+            ->where('expires_at', '>', now())
+            ->count();
+
+        // premium_subscriptions.payment_id / organizer_subscriptions.payment_id — historically varchar
+        // (задумано под внешний ID платежа), а payments.id — bigint; Postgres не кастует bigint=varchar
+        // автоматически в JOIN (в отличие от bind-параметров Eloquent) — везде ниже явный ::bigint.
+        $premiumRevenueMonthMinor = (int) DB::table('premium_subscriptions as ps')
+            ->join('payments as p', 'p.id', '=', DB::raw('ps.payment_id::bigint'))
+            ->where('p.status', 'paid')
+            ->whereYear('p.org_confirmed_at', now()->year)
+            ->whereMonth('p.org_confirmed_at', now()->month)
+            ->sum('p.amount_minor');
+
+        $proRevenueMonthMinor = (int) DB::table('organizer_subscriptions as os')
+            ->join('payments as p', 'p.id', '=', DB::raw('os.payment_id::bigint'))
+            ->where('p.status', 'paid')
+            ->whereYear('p.org_confirmed_at', now()->year)
+            ->whereMonth('p.org_confirmed_at', now()->month)
+            ->sum('p.amount_minor');
+
+        $subsRevenueMonthRub = ($premiumRevenueMonthMinor + $proRevenueMonthMinor) / 100;
+
+        $premiumRows = DB::table('premium_subscriptions as ps')
+            ->join('users as u', 'u.id', '=', 'ps.user_id')
+            ->join('payments as p', 'p.id', '=', DB::raw('ps.payment_id::bigint'))
+            ->select(
+                'u.id as user_id', 'u.first_name', 'u.last_name',
+                DB::raw("'premium' as kind"),
+                'ps.plan', 'p.status as payment_status', 'p.amount_minor', 'p.created_at as payment_created_at',
+                'p.id as sort_id'
+            )
+            ->orderByDesc('p.id')
+            ->limit(30)
+            ->get();
+
+        $proRows = DB::table('organizer_subscriptions as os')
+            ->join('users as u', 'u.id', '=', 'os.user_id')
+            ->join('payments as p', 'p.id', '=', DB::raw('os.payment_id::bigint'))
+            ->select(
+                'u.id as user_id', 'u.first_name', 'u.last_name',
+                DB::raw("'pro' as kind"),
+                'os.plan', 'p.status as payment_status', 'p.amount_minor', 'p.created_at as payment_created_at',
+                'p.id as sort_id'
+            )
+            ->orderByDesc('p.id')
+            ->limit(30)
+            ->get();
+
+        $recentPayments = $premiumRows->concat($proRows)
+            ->sortByDesc('payment_created_at')
+            ->take(15)
+            ->values();
+
+        $pendingPremiumPayments = DB::table('premium_subscriptions as ps')
+            ->join('users as u', 'u.id', '=', 'ps.user_id')
+            ->join('payments as p', 'p.id', '=', DB::raw('ps.payment_id::bigint'))
+            ->where('ps.status', 'pending')
+            ->where('p.status', 'pending')
+            ->where('p.user_confirmed', true)
+            ->select(
+                'ps.id as sub_id', 'ps.plan', 'u.id as user_id', 'u.first_name', 'u.last_name',
+                'p.id as payment_id', 'p.amount_minor', 'p.created_at as payment_created_at'
+            )
+            ->orderBy('p.user_confirmed_at')
+            ->get()
+            ->map(function ($row) {
+                $row->age_days = (int) now()->diffInDays(\Carbon\Carbon::parse($row->payment_created_at));
+                return $row;
+            });
+
         return view('admin.dashboard.index', compact(
             'totalUsers',
             'activeUsers',
@@ -147,6 +227,11 @@ class AdminDashboardController extends Controller
             'eventsCount',
             'dupCount',
             'deletionDelay',
+            'activePremiumCount',
+            'activeProCount',
+            'subsRevenueMonthRub',
+            'recentPayments',
+            'pendingPremiumPayments',
         ));
     }
 

@@ -289,6 +289,95 @@
             </div>
         </div>
 
+        {{-- ПОДПИСКИ И ОПЛАТЫ (Premium / PRO) --}}
+        <div class="ramka">
+            <h2 class="-mt-05">{{ __('admin.sub_section') }}</h2>
+            <div class="row text-center">
+                <div class="col-6 col-md-4">
+                    <div class="card">
+                        <div class="f-14">{{ __('admin.sub_active_premium') }}</div>
+                        <div class="f-28 b-700 cd">{{ $activePremiumCount }}</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-4">
+                    <div class="card">
+                        <div class="f-14">{{ __('admin.sub_active_pro') }}</div>
+                        <div class="f-28 b-700 cd">{{ $activeProCount }}</div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-4">
+                    <div class="card">
+                        <div class="f-14">{{ __('admin.sub_revenue_month') }}</div>
+                        <div class="f-28 b-700 cs">{{ number_format($subsRevenueMonthRub, 0, ',', ' ') }} ₽</div>
+                    </div>
+                </div>
+            </div>
+
+            @if($pendingPremiumPayments->isNotEmpty())
+            <div class="card mt-3" style="border-color:#e67e22">
+                <div class="d-flex between fvc mb-2">
+                    <div class="b-600">{{ __('admin.sub_pending_title') }}</div>
+                    <div class="f-16 b-700" style="color:#e67e22">{{ $pendingPremiumPayments->count() }}</div>
+                </div>
+                <div class="f-14 mb-2" style="opacity:.6">{{ __('admin.sub_pending_hint') }}</div>
+                <table class="table f-16">
+                    <thead>
+                        <tr>
+                            <th>{{ __('admin.sub_col_user') }}</th>
+                            <th>{{ __('admin.sub_col_plan') }}</th>
+                            <th>{{ __('admin.sub_col_amount') }}</th>
+                            <th>{{ __('admin.sub_pending_col_age') }}</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach($pendingPremiumPayments as $row)
+                        <tr @if($row->age_days >= 3) style="background:rgba(231,76,60,.08)" @endif>
+                            <td><a href="{{ route('admin.users.show', $row->user_id) }}">{{ $row->last_name }} {{ $row->first_name }}</a></td>
+                            <td>{{ __('admin.sub_plan_' . $row->plan) }}</td>
+                            <td>{{ number_format($row->amount_minor / 100, 0, ',', ' ') }} ₽</td>
+                            <td class="{{ $row->age_days >= 3 ? 'red b-600' : '' }}">{{ __('admin.sub_pending_days', ['n' => $row->age_days]) }}</td>
+                            <td class="text-right">
+                                <a href="{{ route('admin.subscriptions.premium_confirm', $row->payment_id) }}" class="btn btn-sm btn-primary">{{ __('admin.sub_pending_confirm_btn') }}</a>
+                            </td>
+                        </tr>
+                    @endforeach
+                    </tbody>
+                </table>
+            </div>
+            @endif
+
+            <div class="card mt-3">
+                <div class="b-600 mb-2">{{ __('admin.sub_recent_title') }}</div>
+                <table class="table f-16">
+                    <thead>
+                        <tr>
+                            <th>{{ __('admin.sub_col_user') }}</th>
+                            <th>{{ __('admin.sub_col_type') }}</th>
+                            <th>{{ __('admin.sub_col_plan') }}</th>
+                            <th>{{ __('admin.sub_col_amount') }}</th>
+                            <th>{{ __('admin.sub_col_status') }}</th>
+                            <th>{{ __('admin.sub_col_date') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @forelse($recentPayments as $row)
+                        <tr>
+                            <td><a href="{{ route('admin.users.show', $row->user_id) }}">{{ $row->last_name }} {{ $row->first_name }}</a></td>
+                            <td>{{ __('admin.sub_kind_' . $row->kind) }}</td>
+                            <td>{{ __('admin.sub_plan_' . $row->plan) }}</td>
+                            <td>{{ number_format($row->amount_minor / 100, 0, ',', ' ') }} ₽</td>
+                            <td>{{ __('admin.sub_pay_status_' . $row->payment_status) }}</td>
+                            <td class="f-14" style="opacity:.7">{{ \Carbon\Carbon::parse($row->payment_created_at)->format('d.m.Y H:i') }}</td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="6" class="f-14" style="opacity:.6">{{ __('admin.no_data') }}</td></tr>
+                    @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
     </div>
 
 </x-voll-layout>
