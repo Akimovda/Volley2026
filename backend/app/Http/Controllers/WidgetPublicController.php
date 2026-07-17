@@ -85,6 +85,12 @@ class WidgetPublicController extends Controller
         $ofWord            = addslashes(__('events.card_seats_of'));
         $reserveSuffixTpl  = addslashes(__('events.widget_reserve_suffix'));
 
+        $appUrl        = rtrim((string) config('app.url'), '/');
+        $appHost       = parse_url($appUrl, PHP_URL_HOST) ?: $appUrl;
+        $widgetJsonUrl = route('widget.json');
+        $poweredByHtml = '<a href="' . $appUrl . '" target="_blank" style="color:#ccc">' . $appHost . '</a>';
+        $poweredBy     = addslashes(__('profile.widget_powered_by', ['host' => $poweredByHtml]));
+
         $js = <<<JS
 (function() {
     var key = '{$key}';
@@ -96,6 +102,7 @@ class WidgetPublicController extends Controller
     var unitPlayers = '{$unitPlayers}';
     var ofWord = '{$ofWord}';
     var reserveSuffixTpl = '{$reserveSuffixTpl}';
+    var poweredBy = '{$poweredBy}';
 
     function slotsText(si) {
         var unit = si.unit === 'teams' ? unitTeams : unitPlayers;
@@ -106,7 +113,7 @@ class WidgetPublicController extends Controller
 
     container.innerHTML = '<div style="font-family:sans-serif;color:#666;padding:12px">Загрузка...</div>';
 
-    fetch('https://volley-bot.store/api/widget/events?key=' + encodeURIComponent(key))
+    fetch('{$widgetJsonUrl}?key=' + encodeURIComponent(key))
         .then(function(r) { return r.json(); })
         .then(function(data) {
             if (!data.ok) { container.innerHTML = '<div style="color:red;padding:12px">Ошибка: ' + (data.error || 'unavailable') + '</div>'; return; }
@@ -128,7 +135,7 @@ class WidgetPublicController extends Controller
                 });
             }
 
-            html += '<div style="margin-top:8px;font-size:11px;color:#ccc;text-align:right">на базе <a href="https://volley-bot.store" target="_blank" style="color:#ccc">volley-bot.store</a></div>';
+            html += '<div style="margin-top:8px;font-size:11px;color:#ccc;text-align:right">' + poweredBy + '</div>';
             html += '</div>';
             container.innerHTML = html;
         })

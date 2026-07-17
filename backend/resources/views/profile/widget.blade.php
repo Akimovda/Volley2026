@@ -151,7 +151,7 @@
                         <div class="f-13 text-muted mb-05">Вставить в HTML страницу</div>
                         <textarea readonly rows="3" class="w-100"
                                   style="font-family:monospace;font-size:12px;resize:none"
-                                  onclick="this.select()">&lt;iframe src="https://volley-bot.store/embed/org/{{ auth()->id() }}?key={{ $widget->api_key }}" width="100%" height="500" frameborder="0" style="border-radius:12px"&gt;&lt;/iframe&gt;</textarea>
+                                  onclick="this.select()">&lt;iframe src="{{ route('widget.iframe', ['userId' => auth()->id(), 'key' => $widget->api_key]) }}" width="100%" height="500" frameborder="0" style="border-radius:12px"&gt;&lt;/iframe&gt;</textarea>
                     </div>
 
                     <div class="card mb-1">
@@ -160,7 +160,7 @@
                         <textarea readonly rows="3" class="w-100"
                                   style="font-family:monospace;font-size:12px;resize:none"
                                   onclick="this.select()">&lt;div id="volley-widget" data-color="{{ $widget->getSetting('color','#f59e0b') }}"&gt;&lt;/div&gt;
-&lt;script src="https://volley-bot.store/widget/events.js?key={{ $widget->api_key }}"&gt;&lt;/script&gt;</textarea>
+&lt;script src="{{ route('widget.script', ['key' => $widget->api_key]) }}"&gt;&lt;/script&gt;</textarea>
                     </div>
 
                     <div class="card">

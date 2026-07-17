@@ -732,6 +732,7 @@ return [
     'widget_t_description' => 'Встройте список ваших мероприятий на любой внешний сайт.',
     'widget_breadcrumb'    => 'Виджет',
     'widget_pro_section_h2' => 'Доступно в Организатор Pro',
+    'widget_powered_by'     => 'на базе :host',
 
     // === players/rating ===
     'rating_title'         => 'Рейтинг игроков',

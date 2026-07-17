@@ -724,6 +724,7 @@ return [
     'widget_t_description' => 'Embed your events list on any external site.',
     'widget_breadcrumb'    => 'Widget',
     'widget_pro_section_h2' => 'Available in Organizer Pro',
+    'widget_powered_by'     => 'powered by :host',
 
     'rating_title'         => 'Player ranking',
     'rating_label_dir'     => 'Discipline',
