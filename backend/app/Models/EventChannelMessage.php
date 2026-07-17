@@ -18,12 +18,14 @@ class EventChannelMessage extends Model
         'last_payload_hash',
         'sent_at',
         'last_synced_at',
+        'announcement_finalized_at',
         'meta',
     ];
 
     protected $casts = [
         'sent_at' => 'datetime',
         'last_synced_at' => 'datetime',
+        'announcement_finalized_at' => 'datetime',
         'meta' => 'array',
     ];
 
