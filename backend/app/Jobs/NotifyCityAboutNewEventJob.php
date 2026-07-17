@@ -82,11 +82,12 @@ class NotifyCityAboutNewEventJob implements ShouldQueue
             ->pluck('user_id')
             ->all();
 
-        $address     = $this->buildAddress($event);
-        $dateTimeStr = $occurrence->starts_at
-            ->copy()
-            ->setTimezone($event->location->effectiveTimezone())
-            ->format('d.m.Y H:i');
+        $address = $this->buildAddress($event);
+
+        // Разговорный формат, как в анонсах каналов (OccurrenceAnnouncementMessageBuilder):
+        // «18 июля, суббота, 09:27» — время в таймзоне города (через effectiveTimezone()).
+        $startsLocal = $occurrence->starts_at->copy()->setTimezone($event->location->effectiveTimezone());
+        $dateTimeStr = $startsLocal->locale('ru')->translatedFormat('j F, l') . ', ' . $startsLocal->format('H:i');
 
         foreach ($chunkUsers as $user) {
             if (in_array($user->id, $alreadyNotifiedIds, true)) {
