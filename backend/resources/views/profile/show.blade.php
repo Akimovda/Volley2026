@@ -1009,7 +1009,7 @@
 					<div class="card mb-2">
 						<div class="f-15 b-600 mb-1">{{ __('profile.pay_setup_title') }}</div>
 						<div class="tabs-content">
-							<div class="tabs">
+							<div class="tabs pay-tabs">
 								<div class="tab active" data-tab="pay-events">{{ __('profile.pay_tab_events') }}</div>
 								@if(auth()->user()->isAdmin())
 								<div class="tab" data-tab="pay-premium">{{ __('profile.pay_tab_premium') }}</div>
@@ -1017,30 +1017,30 @@
 								<div class="tab-highlight"></div>
 							</div>
 							<div class="tab-panes">
-								
+
 								{{-- Вкладка: Мероприятия --}}
 								<div class="tab-pane active" id="pay-events">
 									<div class="mt-1">
 										@if($paymentSettings?->yoomoney_verified)
 										<div class="f-16 cs b-600">{{ __('profile.pay_yoo_ok') }}</div>
-										<div class="f-15 mt-05" style="opacity:.6">{{ __('profile.pay_shop_id') }} {{ $paymentSettings->yoomoney_shop_id }}</div>
+										<div class="f-15 mt-05 pay-link-value" style="opacity:.6" title="{{ $paymentSettings->yoomoney_shop_id }}">{{ __('profile.pay_shop_id') }} {{ $paymentSettings->yoomoney_shop_id }}</div>
 										@elseif($paymentSettings && ($paymentSettings->tbank_link || $paymentSettings->sber_link))
 										<div class="f-16 cd b-600">{{ __('profile.pay_link_ok') }}</div>
 										@if($paymentSettings->tbank_link)
-										<div class="f-15 mt-05" style="opacity:.6">{{ __('profile.pay_tbank_label') }} {{ $paymentSettings->tbank_link }}</div>
+										<div class="f-15 mt-05 pay-link-value" style="opacity:.6" title="{{ $paymentSettings->tbank_link }}">{{ __('profile.pay_tbank_label') }} {{ $paymentSettings->tbank_link }}</div>
 										@endif
 										@if($paymentSettings->sber_link)
-										<div class="f-15 mt-05" style="opacity:.6">{{ __('profile.pay_sber_label') }} {{ $paymentSettings->sber_link }}</div>
+										<div class="f-15 mt-05 pay-link-value" style="opacity:.6" title="{{ $paymentSettings->sber_link }}">{{ __('profile.pay_sber_label') }} {{ $paymentSettings->sber_link }}</div>
 										@endif
 										@else
 										<div class="f-15" style="opacity:.5">{{ __('profile.pay_not_setup') }}</div>
 										@endif
-										<div class="mt-2">
+										<div class="mt-2 pay-setup-btn-row">
 											<a href="{{ route('profile.payment_settings') }}" class="btn btn-secondary">{{ __('profile.pay_setup_btn') }}</a>
 										</div>
 									</div>
 								</div>
-								
+
 								{{-- Вкладка: Premium и реклама (только Admin) --}}
 								@if(auth()->user()->isAdmin())
 								<div class="tab-pane" id="pay-premium">
@@ -1060,13 +1060,13 @@
 										@else
 										<div class="f-15" style="opacity:.5">{{ __('profile.pay_premium_not_setup') }}</div>
 										@endif
-										<div class="mt-2">
+										<div class="mt-2 pay-setup-btn-row">
 											<a href="{{ route('admin.platform_payment_settings') }}" class="btn btn-secondary">{{ __('profile.pay_premium_setup_btn') }}</a>
 										</div>
 									</div>
 								</div>
 								@endif
-								
+
 							</div>
 						</div>
 					</div>

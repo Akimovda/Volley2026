@@ -6020,3 +6020,32 @@ body.dark .ms-ptable td { border-color: rgba(255, 255, 255, .07); }
 .rp-player-meta { font-size: .68rem; opacity: .55; white-space: nowrap; }
 .rp-player--muted { opacity: .55; }
 .rp-player--muted .rp-player-avatar { filter: grayscale(60%); }
+
+/* Табы блока "Платёжная система" (profile/show.blade.php) — общий .tab имеет
+   min-width:12rem, при 2 табах это 24rem, что не помещается в узкую .card внутри
+   .ramka на мобильных => flex-wrap ломает их на разновысокие строки. Здесь всегда
+   ровно 2 таба в один ряд, поровну делящие ширину, без переноса. */
+.pay-tabs.tabs {
+	display: flex;
+	width: 100%;
+}
+.pay-tabs.tabs .tab {
+	flex: 1 1 0;
+	min-width: 0;
+	padding: 1.2rem 1rem;
+	font-size: 1.3rem;
+}
+.pay-link-value {
+	display: block;
+	max-width: 100%;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+.pay-setup-btn-row {
+	text-align: center;
+}
+.pay-setup-btn-row .btn {
+	width: 100%;
+	max-width: 32rem;
+}
