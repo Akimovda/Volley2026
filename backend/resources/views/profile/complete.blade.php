@@ -98,8 +98,8 @@
 			if ($cityDisplayConfig['inputShowCountry'] && $found->country_code) {
 			$details[] = $found->country_code;
 			}
-			if ($cityDisplayConfig['inputShowRegion'] && !empty($found->region)) {
-			$details[] = $found->region;
+			if ($cityDisplayConfig['inputShowRegion'] && !empty($found->region_display)) {
+			$details[] = $found->region_display;
 			}
             
 			$selectedCityLabel = !empty($details)

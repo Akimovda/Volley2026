@@ -59,7 +59,9 @@
                     var paste = e.paste;
                     if (paste.html) {
                         var clean = paste.html.replace(/<(?!\/?(br|p|b|i|u|strong|em|a |ul|ol|li))[^>]+>/gi, '');
-                        e.preventDefault();
+                        // trix-paste прилетает ПОСЛЕ того, как Trix уже вставил сырой HTML —
+                        // preventDefault() тут бесполезен, откатываем вставку через undo()
+                        e.target.editor.undo();
                         e.target.editor.insertHTML(clean);
                     }
                 });
@@ -480,8 +482,8 @@
         if ($cityDisplayConfig['inputShowCountry'] && !empty($city->country_code)) {
 		$details[] = $city->country_code;
         }
-        if ($cityDisplayConfig['inputShowRegion'] && !empty($city->region)) {
-		$details[] = $city->region;
+        if ($cityDisplayConfig['inputShowRegion'] && !empty($city->region_display)) {
+		$details[] = $city->region_display;
         }
 		
         if (!empty($details)) {

@@ -127,8 +127,8 @@
 		<div class="ramka">
 			<div class="d-flex between">
 				<h2 class="-mt-05">{{ $city->name }}
-					@if(!empty($city->region))
-					<span class="pl-05 f-16 b-500">({{ $city->region }})</span>
+					@if($city->region_display)
+					<span class="pl-05 f-16 b-500">({{ $city->region_display }})</span>
 					@endif
 				</h2>
 				<span><span class="cd b-600 pr-05">{{ $items->count() }}</span>{{ trans_choice(__('locations.count_plural'), $items->count()) }}</span>
@@ -154,8 +154,8 @@
 		<div class="ramka">
 			<div class="d-flex between">
 				<h2 class="-mt-05">{{ $city->name }}
-					@if(!empty($city->region))
-					<span class="pl-05 f-16 b-500">({{ $city->region }})</span>
+					@if($city->region_display)
+					<span class="pl-05 f-16 b-500">({{ $city->region_display }})</span>
 					@endif
 				</h2>
 				<span><span class="cd b-600 pr-05">{{ $items->count() }}</span>{{ trans_choice(__('locations.count_plural'), $items->count()) }}</span>

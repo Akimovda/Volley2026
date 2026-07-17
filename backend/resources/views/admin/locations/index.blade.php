@@ -80,12 +80,12 @@
                             <td>
                                 @if($loc->city)
 								{{ $loc->city->name }}
-								@if($loc->city->region || $loc->city->country_code)
+								@if($loc->city->region_display || $loc->city->country_code)
 								<div class="city-details">
 									@php
 									$parts = [];
 									if($loc->city->country_code) $parts[] = $loc->city->country_code;
-									if($loc->city->region) $parts[] = $loc->city->region;
+									if($loc->city->region_display) $parts[] = $loc->city->region_display;
 									@endphp
 									{{ implode(' • ', $parts) }}
 								</div>

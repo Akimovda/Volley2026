@@ -57,7 +57,7 @@
                     $age = ($u && method_exists($u, 'ageYears')) ? $u->ageYears() : null;
 
                     $cityLabel = $u?->city
-                        ? ($u->city->name . ($u->city->region ? ' (' . $u->city->region . ')' : ''))
+                        ? ($u->city->name . ($u->city->region_display ? ' (' . $u->city->region_display . ')' : ''))
                         : null;
 
                     $headerMeta = array_values(array_filter([

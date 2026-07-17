@@ -91,7 +91,7 @@
                                 <option value="">{{ __('profile.idx_any') }}</option>
                                 @foreach($cities as $c)
 								<option value="{{ $c->id }}" @selected((string)($filters['city_id'] ?? '') === (string)$c->id)>
-									{{ $c->name }}@if($c->region) ({{ $c->region }})@endif
+									{{ $c->name }}@if($c->region_display) ({{ $c->region_display }})@endif
 								</option>
                                 @endforeach
 							</select>

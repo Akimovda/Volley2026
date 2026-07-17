@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\City;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -49,6 +50,12 @@ class CitySearchController extends Controller
             ->orderBy('name')
             ->limit($limit)
             ->get();
+
+        // Для городов федерального значения (Москва, СПб, Севастополь) region совпадает
+        // с name — отдаём region_display, чтобы клиентский JS не дублировал город в подписи.
+        $items->each(function ($item) {
+            $item->region_display = City::displayRegion($item->name, $item->region);
+        });
 
         return response()->json(['items' => $items]);
     }

@@ -1467,7 +1467,7 @@ body.dark .rusmap path[data-color]:hover{
         >
             <span class="d-flex between">
                 <span class="d-block">
-                     <span class="map-name b-600">{{ $city->name }}</span><span class="map-region f-13 pl-05">({{ $city->region }})</span>
+                     <span class="map-name b-600">{{ $city->name }}</span>@if(\App\Models\City::displayRegion($city->name, $city->region))<span class="map-region f-13 pl-05">({{ \App\Models\City::displayRegion($city->name, $city->region) }})</span>@endif
                 </span>
                 <span class="f-13 b-600">{{ $city->cnt }}</span>
             </span>

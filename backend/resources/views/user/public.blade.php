@@ -261,7 +261,7 @@ body.dark .gradient-marker-line,
 										<li><span class="b-600">Рост:</span> {{ !empty($user->height_cm) ? ($user->height_cm.' см') : '—' }}</li>
 										<li><span class="b-600">Город:</span>
 											@if($user->city)
-											{{ $user->city->name }}@if($user->city->region) (<span class="f-16">{{ $user->city->region }}</span>)@endif
+											{{ $user->city->name }}@if($user->city->region_display) (<span class="f-16">{{ $user->city->region_display }}</span>)@endif
 											@else
 											—
 										@endif</li>

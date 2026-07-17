@@ -10,7 +10,7 @@
 	
 	$firstMedia = $location->getFirstMedia('photos');
 	$cityName = $location->city?->name;
-	$regionName = $location->city?->region;
+	$regionName = $location->city?->region_display;
 	$query = trim(implode(', ', array_filter([$cityName, $location->address, $location->name])));
 	$yandexLink = $hasCoords
 	? ('https://yandex.ru/maps/?pt=' . rawurlencode($lng . ',' . $lat) . '&z=16&l=map')
