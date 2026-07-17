@@ -85,14 +85,16 @@
 
                         <div class="card">
                             <div class="d-flex gap-1 flex-wrap">
-                                <label class="d-flex gap-05" style="align-items:center;cursor:pointer">
+                                <label class="checkbox-item">
                                     <input type="checkbox" name="settings[show_slots]" value="1"
                                            {{ $widget?->getSetting('show_slots',true) ? 'checked' : '' }}>
+                                    <div class="custom-checkbox"></div>
                                     <span class="f-15">Показывать свободные места</span>
                                 </label>
-                                <label class="d-flex gap-05" style="align-items:center;cursor:pointer">
+                                <label class="checkbox-item">
                                     <input type="checkbox" name="settings[show_location]" value="1"
                                            {{ $widget?->getSetting('show_location',true) ? 'checked' : '' }}>
+                                    <div class="custom-checkbox"></div>
                                     <span class="f-15">Показывать локацию</span>
                                 </label>
                             </div>

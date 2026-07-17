@@ -23,4 +23,9 @@ return [
 
     // Link replacement
     'follow_link'     => 'follow the link',
+
+    // New event in your city (residents, opt-out defaults to ON)
+    'new_event_in_city_title'       => 'New event in your city',
+    'new_event_in_city_body'        => 'Hi! We have a new event: :title — :address, starting :datetime! You might be interested!',
+    'new_event_in_city_unsubscribe' => 'Turn off: :url',
 ];

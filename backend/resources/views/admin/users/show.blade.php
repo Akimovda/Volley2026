@@ -349,9 +349,10 @@
 					<div class="card-body">
 						<form method="POST" action="{{ route('admin.users.club-manager.update', $user) }}" class="form">
 							@csrf
-							<label class="d-flex fvc gap-1">
+							<label class="checkbox-item">
 								<input type="checkbox" name="is_club_manager" value="1" @checked($user->is_club_manager)>
-								{{ __('club.club_manager_role') }}
+								<div class="custom-checkbox"></div>
+								<span>{{ __('club.club_manager_role') }}</span>
 							</label>
 							<button class="btn btn-primary w-100 mt-2" type="submit">
 								Сохранить

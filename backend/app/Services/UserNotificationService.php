@@ -799,6 +799,45 @@ final class UserNotificationService
         );
     }
 
+    /**
+     * Новое публичное мероприятие появилось в городе жителя — рассылка через
+     * NotifyCityAboutNewEventJob (чанкованная). Rate-limit (1/сутки на пользователя)
+     * и city_id-фильтр применяются ДО вызова этого метода, на стороне job.
+     */
+    public function createNewEventInCityNotification(
+        User $user,
+        Event $event,
+        EventOccurrence $occurrence,
+        string $address,
+        string $dateTimeStr
+    ): UserNotification {
+        $locale = (string) ($user->locale ?: 'ru');
+
+        $eventUrl       = route('events.show', ['event' => $event->id, 'occurrence' => $occurrence->id]);
+        $unsubscribeUrl = route('profile.show', ['highlight' => 'city_notify']);
+
+        $body = __('notifications.new_event_in_city_body', [
+            'title'    => $event->title,
+            'address'  => $address,
+            'datetime' => $dateTimeStr,
+        ], $locale)
+            . "\n\n" . __('notifications.new_event_in_city_unsubscribe', ['url' => $unsubscribeUrl], $locale);
+
+        return $this->create(
+            userId: (int) $user->id,
+            type: 'new_event_in_city',
+            title: __('notifications.new_event_in_city_title', [], $locale),
+            body: $body,
+            payload: [
+                'event_id'      => $event->id,
+                'occurrence_id' => $occurrence->id,
+                'button_text'   => __('notifications.btn_open_event', [], $locale),
+                'button_url'    => $eventUrl,
+            ],
+            channels: ['in_app', 'telegram', 'vk', 'max']
+        );
+    }
+
     public function markAsRead(int $notificationId, int $userId): void
     {
         $notification = UserNotification::query()

@@ -688,6 +688,41 @@ class EventStoreService
                     \Log::warning('Auto-announce failed after event create: ' . $e->getMessage());
                     // Не бросаем — мероприятие уже создано
                 }
+
+                // Рассылка «новое мероприятие в городе» жителям — только для НОВЫХ
+                // публичных событий с открытой регистрацией. НЕ триггерим для копий
+                // (форма создания прислала copied_from_event_id, см. create.blade.php
+                // hidden-поле _prefill_source_event_id) и приватных событий.
+                // expand-recurring сюда не попадает вообще — это отдельный код,
+                // никогда не вызывающий store().
+                try {
+                    $cityId = $event->location?->city_id;
+
+                    if (
+                        config('notifications.new_event_city_notify_enabled', true)
+                        && (bool) $event->allow_registration
+                        && !$event->is_private
+                        && $cityId
+                        && !$request->filled('copied_from_event_id')
+                    ) {
+                        // Атомарный claim — защита от повторного диспатча (ретрай запроса и т.п.)
+                        $claimed = DB::table('events')
+                            ->where('id', $event->id)
+                            ->whereNull('city_notified_at')
+                            ->update(['city_notified_at' => now()]);
+
+                        if ($claimed) {
+                            \App\Jobs\NotifyCityAboutNewEventJob::dispatch(
+                                (int) $event->id,
+                                (int) $cityId,
+                                (int) $event->organizer_id
+                            )->onQueue('broadcasts');
+                        }
+                    }
+                } catch (\Throwable $e) {
+                    \Log::warning('NotifyCityAboutNewEventJob dispatch failed after event create: ' . $e->getMessage());
+                    // Не бросаем — мероприятие уже создано
+                }
             } catch (\Throwable $e) {
     
                 DB::rollBack();
