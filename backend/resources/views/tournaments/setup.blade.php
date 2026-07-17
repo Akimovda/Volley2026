@@ -542,7 +542,7 @@ $tourNumber = $seasonData
 					$_addLeagueFull    = $_addLeagueMax && $_addLeagueActive >= $_addLeagueMax;
 					@endphp
 				<summary class="btn btn-secondary">➕ Добавить в состав / резерв</summary>
-					<form method="POST" action="{{ route('divisions.createAndAdd', $seasonData['league']) }}" class="mt-2">
+					<form method="POST" action="{{ route('divisions.createAndAdd', $seasonData['league']) }}" class="mt-2 form">
 						@csrf
 						@if($selectedOccurrence)
 						<input type="hidden" name="occurrence_id" value="{{ $selectedOccurrence->id }}">
@@ -1084,7 +1084,7 @@ $tourNumber = $seasonData
 			<div class="btn btn-secondary" style="cursor:pointer" onclick="var b=this.nextElementSibling;b.style.display=b.style.display==='none'?'':'none';this.querySelector('.toggle-icon').textContent=b.style.display==='none'?'+':'-'">{{ __('tournaments.setup_btn_add_stage') }}			
 			</div>
 			<div style="{{ $hasStages ? 'display:none' : '' }}">
-				<form class="mt-2" method="POST" action="{{ route('tournament.stages.store', $event) }}">
+				<form class="mt-2 form" method="POST" action="{{ route('tournament.stages.store', $event) }}">
 					@csrf
 					@if($selectedOccurrence)
 					<input type="hidden" name="occurrence_id" value="{{ $selectedOccurrence->id }}">
@@ -1995,7 +1995,7 @@ $tourNumber = $seasonData
 					<strong>{{ implode(', ', $divisionNames) }}</strong>
 				</p>
 				
-				<form method="POST" action="{{ route('tournament.stages.formDivisions', $stage) }}">
+				<form method="POST" action="{{ route('tournament.stages.formDivisions', $stage) }}" class="form">
 					@csrf
 					
 					{{-- Ряд 1: Кол-во + форматы --}}
