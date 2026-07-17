@@ -272,7 +272,7 @@
 									<span class="b-600">{{ __('profile.pers_city') }}</span>		
 									
 									@if($u->city)
-									{{ $u->city->name }}@if($u->city->region) ({{ $u->city->region }})@endif
+									{{ $u->city->name }}@if($u->city->region_display) ({{ $u->city->region_display }})@endif
 									@else
 									—
 									@endif

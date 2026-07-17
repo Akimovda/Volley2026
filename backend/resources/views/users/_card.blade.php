@@ -7,7 +7,7 @@
 
     $cityLabel = null;
     if ($u->city) {
-        $cityLabel = $u->city->name . ($u->city->region ? ' <span class="d-inline-block f-13">(' . $u->city->region . ')</span>' : '');
+        $cityLabel = $u->city->name . ($u->city->region_display ? ' <span class="d-inline-block f-13">(' . $u->city->region_display . ')</span>' : '');
     }
 
     $metaParts = array_values(array_filter([

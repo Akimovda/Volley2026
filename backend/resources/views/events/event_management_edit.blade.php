@@ -326,7 +326,7 @@
                                     @php
                                         $cityLabel = '';
                                         if ($currentCity) {
-                                            $parts = array_filter([$currentCity->country_code ?? null, $currentCity->region ?? null]);
+                                            $parts = array_filter([$currentCity->country_code ?? null, $currentCity->region_display ?? null]);
                                             $cityLabel = $currentCity->name . ($parts ? ' (' . implode(', ', $parts) . ')' : '');
                                         }
                                     @endphp
@@ -1693,12 +1693,12 @@
                         div.className = 'trainer-item form-select-option';
                         var sub = [];
                         if (item.country_code) sub.push(item.country_code);
-                        if (item.region) sub.push(item.region);
+                        if (item.region_display) sub.push(item.region_display);
                         if (item.timezone) sub.push(item.timezone);
                         div.innerHTML = '<div class="text-sm" style="font-weight:600">' + esc(item.name) + '</div>'
                             + (sub.length ? '<div class="f-14" style="opacity:.6">' + esc(sub.join(' · ')) + '</div>' : '');
                         div.addEventListener('click', function() {
-                            var label = item.name + (sub.length ? ' (' + [item.country_code, item.region].filter(Boolean).join(', ') + ')' : '');
+                            var label = item.name + (sub.length ? ' (' + [item.country_code, item.region_display].filter(Boolean).join(', ') + ')' : '');
                             applyCity(item.id, label);
                         });
                         dd.appendChild(div);

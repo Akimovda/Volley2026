@@ -42,20 +42,26 @@
 										data-is-club-manager="{{ auth()->user() && auth()->user()->is_club_manager ? '1' : '0' }}"
 										data-booking-windows-url-template="{{ route('locations.booking_windows', ['location' => '__LOCID__']) }}"
 										>
-											
+
 											{{-- Поле для отображения --}}
+											@php
+											$authCity = auth()->user()->city ?? null;
+											$authCityLabel = '';
+											if ($authCity) {
+											$authCityDetails = array_filter([$authCity->country_code, $authCity->region_display]);
+											$authCityLabel = $authCity->name . ($authCityDetails ? ' (' . implode(', ', $authCityDetails) . ')' : '');
+											}
+											@endphp
 											<input
 											type="text"
 											name="city_label"
 											id="event_city_q"
 											class="w-full rounded-lg border-gray-200 @error('city_id') ring-2 ring-red-500 border-red-500 @enderror"
-											value="{{ auth()->user()->city 
-											? auth()->user()->city->name.' ('.auth()->user()->city->country_code.', '.auth()->user()->city->region.')' 
-											: '' }}"
+											value="{{ $authCityLabel }}"
 											placeholder="{{ __('events.city_search_ph') }}"
 											autocomplete="off"
 											>
-											
+
 											<div
 											id="event_city_dropdown"
 											class="city-dropdown"

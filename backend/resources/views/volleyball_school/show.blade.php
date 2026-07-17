@@ -26,7 +26,7 @@
     @endphp
 	
     <x-slot name="h2">{{ $dirLabel }}</x-slot>
-    <x-slot name="t_description">@if($school->cityModel)г. {{ $school->cityModel->name }}@if($school->cityModel->region), {{ $school->cityModel->region }}@endif@elseif($school->city){{ $school->city }}@endif</x-slot>
+    <x-slot name="t_description">@if($school->cityModel)г. {{ $school->cityModel->name }}@if($school->cityModel->region_display), {{ $school->cityModel->region_display }}@endif@elseif($school->city){{ $school->city }}@endif</x-slot>
 	
     <x-slot name="breadcrumbs">
         <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">

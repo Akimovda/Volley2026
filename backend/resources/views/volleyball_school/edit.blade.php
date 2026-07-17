@@ -39,7 +39,9 @@
                     var paste = e.paste;
                     if (paste.html) {
                         var clean = paste.html.replace(/<(?!\/?(br|p|b|i|u|strong|em|a |ul|ol|li))[^>]+>/gi, '');
-                        e.preventDefault();
+                        // trix-paste прилетает ПОСЛЕ того, как Trix уже вставил сырой HTML —
+                        // preventDefault() тут бесполезен, откатываем вставку через undo()
+                        e.target.editor.undo();
                         e.target.editor.insertHTML(clean);
                     }
                 });

@@ -1675,20 +1675,20 @@ document.addEventListener("trix-file-accept", function (event) {
 				if (CITY_CONFIG.showCountry && item.country_code) {
 					subParts.push(escapeHtml(item.country_code));
 				}
-				if (CITY_CONFIG.showRegion && item.region) {
-					subParts.push(escapeHtml(item.region));
+				if (CITY_CONFIG.showRegion && item.region_display) {
+					subParts.push(escapeHtml(item.region_display));
 				}
 				const subText = subParts.length ? ' • ' + subParts.join(' • ') : '';
-				
+
 				// Добавляем часовой пояс если есть
 				const tzText = item.timezone ? ' • ' + escapeHtml(item.timezone) : '';
-				
+
 				html.push(
 					'<button type="button" class="city-item" ' +
 					'data-id="' + escapeHtml(item.id) + '" ' +
 					'data-name="' + escapeHtml(item.name) + '" ' +
 					'data-country="' + escapeHtml(item.country_code || '') + '" ' +
-					'data-region="' + escapeHtml(item.region || '') + '" ' +
+					'data-region="' + escapeHtml(item.region_display || '') + '" ' +
 					'data-timezone="' + escapeHtml(item.timezone || '') + '">' +
 					'<div class="city-item-name">' + escapeHtml(item.name) + '</div>' +
 					(subText ? '<div class="city-item-sub">' + subText + tzText + '</div>' : '') +

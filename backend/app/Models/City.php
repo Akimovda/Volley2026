@@ -27,4 +27,27 @@ class City extends Model
     {
         return $this->hasMany(User::class, 'city_id');
     }
+
+    /**
+     * Регион для отображения рядом с городом. Для городов федерального значения
+     * (Москва, Санкт-Петербург, Севастополь) region совпадает с name — показывать
+     * его отдельно значит дублировать название города.
+     */
+    public static function displayRegion(?string $name, ?string $region): ?string
+    {
+        if (empty($region)) {
+            return null;
+        }
+
+        if (mb_strtolower(trim($region)) === mb_strtolower(trim((string) $name))) {
+            return null;
+        }
+
+        return $region;
+    }
+
+    public function getRegionDisplayAttribute(): ?string
+    {
+        return self::displayRegion($this->name, $this->region);
+    }
 }
