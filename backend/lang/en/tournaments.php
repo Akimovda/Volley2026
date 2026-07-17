@@ -422,6 +422,7 @@ return [
     'setup_activate_title'  => 'Activate the team?',
 
     'setup_no_teams_in_league' => 'The league has no teams yet. Teams will appear after they sign up for the tournament.',
+    'setup_no_division_yet' => 'This season has no divisions yet. <a href=":url">Create a division</a> to add teams manually.',
     'setup_btn_season_page' => 'Season page',
     'setup_btn_sync_teams'  => 'Sync teams to the league',
     'setup_btn_promote'     => 'Carry over rosters to the next round',

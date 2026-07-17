@@ -530,6 +530,9 @@ $tourNumber = $seasonData
 			@endif
 
 			@if(!$hasStages)
+			@if(!$seasonData['league'])
+			<div class="alert alert-info mt-1">{!! __('tournaments.setup_no_division_yet', ['url' => route('seasons.edit', $seasonData['season'])]) !!}</div>
+			@else
 			{{-- Добавить команду вручную в дивизион --}}
 			<div class="mt-1">
 				<details id="add-to-league-details">
@@ -605,6 +608,7 @@ $tourNumber = $seasonData
 					</form>
 				</details>
 			</div>
+			@endif
 
 			@php
 			$_tourAllCompleted = $stages->isNotEmpty() && $stages->every(fn($s) => $s->status === 'completed');
