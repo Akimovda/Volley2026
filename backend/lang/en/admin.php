@@ -332,4 +332,8 @@ return [
     'sub_pay_status_refunded'  => 'Refunded',
     'sub_pay_status_cancelled' => 'Cancelled',
     'sub_pay_status_expired'   => 'Expired',
+    'sub_deactivate_btn'          => 'Deactivate',
+    'sub_deactivate_confirm_title' => 'Deactivate subscription?',
+    'sub_deactivate_confirm_text'  => 'The user will lose access immediately and receive a notification.',
+    'sub_deactivate_cancel'        => 'Cancel',
 ];

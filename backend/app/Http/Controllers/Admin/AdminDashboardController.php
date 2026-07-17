@@ -170,7 +170,8 @@ class AdminDashboardController extends Controller
             ->select(
                 'u.id as user_id', 'u.first_name', 'u.last_name',
                 DB::raw("'premium' as kind"),
-                'ps.plan', 'p.status as payment_status', 'p.amount_minor', 'p.created_at as payment_created_at',
+                'ps.id as sub_id', 'ps.plan', 'ps.status as sub_status', 'ps.expires_at as sub_expires_at',
+                'p.status as payment_status', 'p.amount_minor', 'p.created_at as payment_created_at',
                 'p.id as sort_id'
             )
             ->orderByDesc('p.id')
@@ -183,7 +184,8 @@ class AdminDashboardController extends Controller
             ->select(
                 'u.id as user_id', 'u.first_name', 'u.last_name',
                 DB::raw("'pro' as kind"),
-                'os.plan', 'p.status as payment_status', 'p.amount_minor', 'p.created_at as payment_created_at',
+                'os.id as sub_id', 'os.plan', 'os.status as sub_status', 'os.expires_at as sub_expires_at',
+                'p.status as payment_status', 'p.amount_minor', 'p.created_at as payment_created_at',
                 'p.id as sort_id'
             )
             ->orderByDesc('p.id')
@@ -193,7 +195,13 @@ class AdminDashboardController extends Controller
         $recentPayments = $premiumRows->concat($proRows)
             ->sortByDesc('payment_created_at')
             ->take(15)
-            ->values();
+            ->values()
+            ->map(function ($row) {
+                $row->is_currently_active = $row->sub_status === 'active'
+                    && $row->sub_expires_at
+                    && \Carbon\Carbon::parse($row->sub_expires_at)->isFuture();
+                return $row;
+            });
 
         $pendingPremiumPayments = DB::table('premium_subscriptions as ps')
             ->join('users as u', 'u.id', '=', 'ps.user_id')

@@ -345,4 +345,8 @@ return [
     'sub_pay_status_refunded'  => 'Возврат',
     'sub_pay_status_cancelled' => 'Отменено',
     'sub_pay_status_expired'   => 'Истёк срок',
+    'sub_deactivate_btn'          => 'Деактивировать',
+    'sub_deactivate_confirm_title' => 'Деактивировать подписку?',
+    'sub_deactivate_confirm_text'  => 'Пользователь потеряет доступ немедленно и получит уведомление.',
+    'sub_deactivate_cancel'        => 'Отмена',
 ];
