@@ -44,6 +44,36 @@ class PremiumService
             ->first();
     }
 
+    /**
+     * Подтверждение админом pending-платежа Premium.
+     * Срок подписки считается ОТ ДАТЫ ПЛАТЕЖА (payment->created_at), не от даты подтверждения —
+     * иначе платёж, зависший месяцами (см. апрельские pending), после подтверждения дал бы
+     * игроку полный новый срок вместо оставшегося.
+     */
+    public function confirmPending(\App\Models\Payment $payment): PremiumSubscription
+    {
+        $sub = PremiumSubscription::where('payment_id', $payment->id)
+            ->where('status', 'pending')
+            ->firstOrFail();
+
+        // Деактивируем прежний активный (если есть) — та же логика, что в activate()
+        PremiumSubscription::where('user_id', $sub->user_id)
+            ->where('id', '!=', $sub->id)
+            ->where('status', 'active')
+            ->update(['status' => 'expired']);
+
+        $startsAt = $payment->created_at->copy();
+        $days     = PremiumSubscription::planDays($sub->plan);
+
+        $sub->update([
+            'status'     => 'active',
+            'starts_at'  => $startsAt,
+            'expires_at' => $startsAt->copy()->addDays($days),
+        ]);
+
+        return $sub->fresh();
+    }
+
     public function renew(User $user, string $plan): PremiumSubscription
     {
         $days = PremiumSubscription::planDays($plan);

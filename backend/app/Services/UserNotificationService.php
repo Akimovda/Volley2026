@@ -1116,4 +1116,70 @@ final class UserNotificationService
         );
     }
 
+    // -------------------------------------------------------------------------
+    // Premium / Организатор PRO: уведомление администратору о платеже
+    // -------------------------------------------------------------------------
+    public function createPremiumPaymentPendingNotification(User $admin, \App\Models\Payment $payment, User $player): void
+    {
+        $confirmUrl = route('admin.subscriptions.premium_confirm', $payment);
+        $amount     = number_format($payment->amount_minor / 100, 0, '.', ' ');
+
+        $title = '💳 Premium ожидает подтверждения';
+        $body  = "👤 {$player->last_name} {$player->first_name}\n"
+               . "💵 {$amount} ₽\n"
+               . "✅ Подтвердить: {$confirmUrl}";
+
+        $this->create(
+            userId:   $admin->id,
+            type:     'premium_payment_pending',
+            title:    $title,
+            body:     $body,
+            payload:  [
+                'payment_id'  => $payment->id,
+                'button_text' => 'Подтвердить оплату',
+                'button_url'  => $confirmUrl,
+            ],
+            channels: ['in_app', 'telegram', 'vk', 'max'],
+        );
+    }
+
+    public function createPremiumActivatedNotification(int $userId, \App\Models\PremiumSubscription $subscription): UserNotification
+    {
+        $expiresAtText = $subscription->expires_at->format('d.m.Y');
+
+        return $this->create(
+            userId: $userId,
+            type:   'premium_activated',
+            title:  '🎉 Premium активирован',
+            body:   "Premium активирован до {$expiresAtText}.",
+            payload: [
+                'subscription_id' => $subscription->id,
+                'expires_at'      => $subscription->expires_at->toIso8601String(),
+            ],
+            channels: ['in_app', 'telegram', 'vk', 'max'],
+        );
+    }
+
+    public function createOrganizerProActivatedNotification(User $admin, \App\Models\OrganizerSubscription $subscription, User $organizer): void
+    {
+        $amount = number_format((float) $subscription->amount_rub, 0, '.', ' ');
+        $plan   = \App\Models\OrganizerSubscription::planLabel($subscription->plan);
+
+        $title = '👑 PRO активирован';
+        $body  = "👤 {$organizer->last_name} {$organizer->first_name}\n"
+               . "📦 {$plan}\n"
+               . "💵 {$amount} ₽";
+
+        $this->create(
+            userId:   $admin->id,
+            type:     'organizer_pro_activated',
+            title:    $title,
+            body:     $body,
+            payload:  [
+                'subscription_id' => $subscription->id,
+            ],
+            channels: ['in_app', 'telegram', 'vk', 'max'],
+        );
+    }
+
 }

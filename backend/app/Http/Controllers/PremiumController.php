@@ -159,7 +159,18 @@ class PremiumController extends Controller
         ]);
 
         // Уведомляем админа
-        \Illuminate\Support\Facades\Log::info("Premium payment user_confirmed: payment #{$payment->id} user #{$user->id}");
+        try {
+            $platSettings   = PlatformPaymentSetting::first();
+            $paymentAdminId = (int) ($platSettings?->payment_admin_id ?? 1);
+            $admin = \App\Models\User::find($paymentAdminId) ?? \App\Models\User::where('role', 'admin')->first();
+
+            if ($admin) {
+                app(\App\Services\UserNotificationService::class)
+                    ->createPremiumPaymentPendingNotification($admin, $payment, $user);
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('PremiumController confirmPayment notify failed: ' . $e->getMessage());
+        }
 
         return back()->with('status', '✅ Отлично! Мы проверим перевод и активируем Premium в течение нескольких минут.');
     }
