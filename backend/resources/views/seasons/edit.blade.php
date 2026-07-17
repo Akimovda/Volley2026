@@ -59,7 +59,7 @@
 				{{-- Настройки --}}
 				<div class="ramka" style="z-index:10">
 					<h2 class="-mt-05">{{ __('seasons.edit_settings_h2') }}</h2>
-					<form action="{{ route('seasons.update', $season) }}" method="POST">
+					<form action="{{ route('seasons.update', $season) }}" method="POST" class="form">
 						@csrf @method('PUT')
 						
 						<div class="card mb-2">
@@ -579,7 +579,7 @@
 		<div style="background:#fff;border-radius:16px;padding:2rem;width:90%;max-width:400px" class="body-dark-bg">
 			<h4 class="mb-2">{{ __('tournaments.transfer_to_division') }}</h4>
 			<p id="transfer-team-name" class="f-14 cd mb-2"></p>
-			<form id="transfer-form" method="POST">
+			<form id="transfer-form" method="POST" class="form">
 				@csrf
 				<select name="to_division_id" class="mb-2" style="width:100%">
 					@foreach($season->leagues as $divOpt)

@@ -70,7 +70,7 @@
         <div class="col-md-6">
             <div class="card">
                 <h3 class="-mt-05">{{ __('subscriptions.coupon_bulk_to_users') }}</h3>
-                <form method="POST" action="{{ route('coupon_templates.bulk_issue', $templates->first()->id) }}" id="bulkIssueForm">
+                <form method="POST" action="{{ route('coupon_templates.bulk_issue', $templates->first()->id) }}" id="bulkIssueForm" class="form">
                     @csrf
                     <label>{{ __('subscriptions.coupon_bulk_tpl_label') }}</label>
                     <select name="_template_id" id="bulkTemplateSelect" onchange="updateBulkAction(this)">
@@ -97,7 +97,7 @@
         <div class="col-md-6">
             <div class="card">
                 <h3 class="-mt-05">{{ __('subscriptions.coupon_links_section') }}</h3>
-                <form method="POST" action="{{ route('coupon_templates.issue_link', $templates->first()->id) }}" id="issueLinkForm">
+                <form method="POST" action="{{ route('coupon_templates.issue_link', $templates->first()->id) }}" id="issueLinkForm" class="form">
                     @csrf
                     <label>{{ __('subscriptions.coupon_bulk_tpl_label') }}</label>
                     <select name="_template_id" id="linkTemplateSelect" onchange="updateLinkAction(this)">

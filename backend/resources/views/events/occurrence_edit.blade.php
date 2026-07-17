@@ -144,7 +144,7 @@
         <div class="ramka"><div class="alert alert-danger">{{ session('error') }}</div></div>
         @endif
 
-        <form action="{{ route('events.occurrences.update', [$event, $occurrence]) }}" method="POST">
+        <form action="{{ route('events.occurrences.update', [$event, $occurrence]) }}" method="POST" class="form">
             @csrf @method('PUT')
 
             {{-- ============ ПЛАШКА: УНАСЛЕДОВАНО ОТ СЕРИИ ============ --}}

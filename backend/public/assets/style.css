@@ -984,6 +984,15 @@ body.dark input[type="datetime-local"]::-webkit-calendar-picker-indicator {
     visibility: visible;
     transform: translateY(0);
 }
+/* .ramka/.card-ramka создают stacking context через backdrop-filter (≥992px) —
+   абсолютно спозиционированный дропдаун открытого select ограничен z-index
+   СВОЕЙ ramka и уходит под следующую ramka по DOM. JS при открытии select
+   поднимает z-index именно этой ramka выше соседних вместо ручной расстановки
+   z-index на каждой странице. */
+.ramka.select-dropdown-open,
+.card-ramka.select-dropdown-open {
+    z-index: 100 !important;
+}
 .form-select-option {
     padding: 0.8rem 2rem;
     font-size: 1.6rem;
