@@ -7,6 +7,8 @@ return [
     // one consistent language per message matters more than per-channel locale.
     'channel_announcement_cancelled_banner'          => '❌ CANCELLED 😢',
     'channel_announcement_cancelled_deleted_fallback' => "❌ Event cancelled 😢\n\n:title\n:date",
+    'channel_announcement_finalized_line'            => '🏁 Event finished!',
+    'channel_announcement_finalized_button'          => '🏁 Event finished',
 
     // Events list: meta + header
     'index_title'         => 'Events',

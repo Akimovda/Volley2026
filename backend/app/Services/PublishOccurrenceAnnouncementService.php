@@ -88,6 +88,16 @@ class PublishOccurrenceAnnouncementService
 
             // ── Запись уже существует → пробуем обновить ─────────────────
             if ($record->exists) {
+                // Мероприятие уже финализировано (markFinalized) — не перезаписывать
+                // кнопку/текст обратно на «Записаться», даже если что-то триггернуло refresh
+                // задним числом (например отмена регистрации на прошедшее мероприятие).
+                if ($record->announcement_finalized_at !== null) {
+                    $this->log($event->id, $occurrence->id, $channel->id, $channel->platform, 'skip', [
+                        'reason' => 'already_finalized',
+                    ]);
+                    continue;
+                }
+
                 // Текст не изменился → ничего делать не нужно
                 if ($record->last_payload_hash === $hash) {
                     $this->log($event->id, $occurrence->id, $channel->id, $channel->platform, 'skip', [
@@ -302,6 +312,120 @@ class PublishOccurrenceAnnouncementService
                 ]);
                 $this->log($event->id, $occurrence->id, $channel->id, $channel->platform, 'fail', [
                     'action' => 'cancel_mark',
+                    'error'  => $e->getMessage(),
+                ]);
+            }
+        }
+    }
+
+    /**
+     * Occurrence завершилась (ends_at < now): редактирует уже отправленные анонсы —
+     * кнопка «Записаться!» → «🏁 Мероприятие завершено», строка «Осталось мест» →
+     * «🏁 Мероприятие завершено!». Идемпотентно: пропускает канал, если
+     * announcement_finalized_at уже проставлен (не редактирует повторно).
+     * Отменённые occurrences не финализируются — у отмены своя семантика (markCancelled).
+     * Публикатор без supportsUpdate() (VK) — пропускается с логом, не падает.
+     */
+    public function markFinalized(EventOccurrence $occurrence): void
+    {
+        if ($occurrence->isCancelled()) {
+            return;
+        }
+
+        $event = $occurrence->event()
+            ->with(['notificationChannels.channel', 'media', 'location', 'location.city', 'organizer'])
+            ->first();
+
+        if (!$event) {
+            return;
+        }
+
+        foreach ($event->notificationChannels as $link) {
+            $channel = $link->channel;
+
+            if (!$channel || !$channel->is_verified) {
+                continue;
+            }
+
+            $record = EventChannelMessage::query()
+                ->where('event_id', (int) $event->id)
+                ->where('occurrence_id', (int) $occurrence->id)
+                ->where('channel_id', (int) $channel->id)
+                ->where('notification_type', 'registration_open')
+                ->first();
+
+            if (!$record || empty($record->external_message_id)) {
+                // Анонс никогда не публиковался в этот канал — нечего финализировать
+                continue;
+            }
+
+            if ($record->announcement_finalized_at !== null) {
+                // Уже финализировано ранее — не редактируем повторно
+                continue;
+            }
+
+            $publisher = $this->factory->forChannel($channel);
+
+            if (!$publisher->supportsUpdate()) {
+                $this->log($event->id, $occurrence->id, $channel->id, $channel->platform, 'skip', [
+                    'reason' => 'finalize_update_not_supported',
+                ]);
+                continue;
+            }
+
+            $fallbackUrl = route('events.show', [
+                'event'      => $event->id,
+                'occurrence' => $occurrence->id,
+            ]);
+            $privateLink = null;
+            if ($link->use_private_link || $event->is_private) {
+                $privateLink = $this->resolvePrivateLink($event, $occurrence) ?: $fallbackUrl;
+            }
+            $threadId = $link->message_thread_id ?? data_get($channel->meta, 'message_thread_id');
+
+            $finalMessage = $this->builder->build($occurrence, [
+                'platform'                => $channel->platform,
+                'use_private_link'        => (bool) $link->use_private_link,
+                'private_link'            => $privateLink,
+                'silent'                  => (bool) $link->silent,
+                'include_image'           => (bool) $link->include_image,
+                'include_registered_list' => (bool) $link->include_registered_list,
+                'message_thread_id'       => $threadId ? (int) $threadId : null,
+                'finalized'               => true,
+            ]);
+
+            try {
+                $result = $publisher->update(
+                    (string) $channel->chat_id,
+                    (string) $record->external_message_id,
+                    $finalMessage,
+                    (array) ($record->meta ?? [])
+                );
+
+                $newMeta = array_merge(
+                    (array) ($record->meta ?? []),
+                    ['raw' => $result['raw'] ?? []],
+                );
+
+                $record->update([
+                    'external_chat_id'          => $result['external_chat_id'] ?? $record->external_chat_id,
+                    'external_message_id'       => $result['external_message_id'] ?? $record->external_message_id,
+                    'last_payload_hash'         => sha1($finalMessage->text),
+                    'last_synced_at'            => now(),
+                    'announcement_finalized_at' => now(),
+                    'meta'                      => $newMeta,
+                ]);
+
+                $this->log($event->id, $occurrence->id, $channel->id, $channel->platform, 'finalize', []);
+            } catch (\Throwable $e) {
+                Log::warning('PublishOccurrenceAnnouncement: markFinalized update failed', [
+                    'occurrence_id' => $occurrence->id,
+                    'channel_id'    => $channel->id,
+                    'platform'      => $channel->platform,
+                    'error'         => $e->getMessage(),
+                ]);
+                $this->log($event->id, $occurrence->id, $channel->id, $channel->platform, 'fail', [
+                    'action' => 'finalize',
                     'error'  => $e->getMessage(),
                 ]);
             }

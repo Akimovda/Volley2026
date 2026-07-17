@@ -69,6 +69,15 @@ Schedule::command('events:publish-pending-announcements --limit=100')
     ->everyMinute()
     ->withoutOverlapping();
 
+// Финализация анонсов в каналах (каждые 5 минут):
+// находит occurrences, которые только что завершились (starts_at+duration_sec < now,
+// в пределах config('channels.finalize_announcement_max_age_hours') — не будим
+// редактированием старые посты), ещё не помечены announcement_finalized_at,
+// и правит уже опубликованный пост: кнопка «Записаться!» -> «🏁 Мероприятие завершено».
+Schedule::command('events:finalize-announcements --limit=100')
+    ->everyFiveMinutes()
+    ->withoutOverlapping();
+
 // Автозапись из waitlist при открытии гендерного окна (каждые 5 минут):
 // находит occurrences где gender_limited_reg_starts_days_before прошёл и
 // запускает autoBookNext для ожидающих пользователей ограничиваемого пола.

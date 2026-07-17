@@ -65,11 +65,15 @@ class OccurrenceAnnouncementMessageBuilder
         // Текст анонса
         $text = $this->buildText($occurrence, $options, $starts, $ends, $tz, $platform);
 
+        $finalized = (bool) ($options['finalized'] ?? false);
+
         return new ChannelMessageData(
             title:      (string) $event->title,
             text:       $text,
             buttonUrl:  $link,
-            buttonText: 'Записаться!',
+            buttonText: $finalized
+                ? __('events.channel_announcement_finalized_button', [], 'ru')
+                : 'Записаться!',
             imageUrl:   $imageUrl,
             silent:     (bool) ($options['silent'] ?? false),
             messageThreadId: $options['message_thread_id'] ?? null,
@@ -172,6 +176,7 @@ class OccurrenceAnnouncementMessageBuilder
         $lines[] = '';
 
         // ── Мест / Команд ────────────────────────────────────────────────────
+        $finalized            = (bool) ($options['finalized'] ?? false);
         $isTournament         = (string) ($event->format ?? '') === 'tournament';
         $isIndividualTournament = $isTournament
             && (string) ($event->registration_mode ?? '') === 'tournament_individual';
@@ -193,7 +198,9 @@ class OccurrenceAnnouncementMessageBuilder
                 ->whereIn('id', $reserveTeamIds)
                 ->where('status', '!=', 'rejected')
                 ->count();
-            if ($teamsMax > 0) {
+            if ($finalized) {
+                $lines[] = __('events.channel_announcement_finalized_line', [], 'ru');
+            } elseif ($teamsMax > 0) {
                 $header = "👥 Команд: {$teamsRegistered} / {$teamsMax}";
                 if ($teamsReserveCount > 0) {
                     $header .= " · {$teamsReserveCount} в резерве";
@@ -207,7 +214,9 @@ class OccurrenceAnnouncementMessageBuilder
             $registered  = $this->countRegistered((int) $occurrence->id);
             $free        = $totalMax > 0 ? max(0, $totalMax - $registered) : null;
 
-            if ($totalMax > 0) {
+            if ($finalized) {
+                $lines[] = __('events.channel_announcement_finalized_line', [], 'ru');
+            } elseif ($totalMax > 0) {
                 $freeLabel = $free === 0
                     ? "Мест нет 🔴"
                     : ($free <= 3 ? "Осталось мест: {$free} из {$totalMax} 🟡" : "Осталось мест: {$free} из {$totalMax}!");

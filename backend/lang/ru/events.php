@@ -7,6 +7,8 @@ return [
     // единый язык в одном сообщении важнее локали конкретного канала.
     'channel_announcement_cancelled_banner'          => '❌ ОТМЕНЕНО 😢',
     'channel_announcement_cancelled_deleted_fallback' => "❌ Мероприятие отменено 😢\n\n:title\n:date",
+    'channel_announcement_finalized_line'            => '🏁 Мероприятие завершено!',
+    'channel_announcement_finalized_button'          => '🏁 Мероприятие завершено',
 
     // Список мероприятий: meta + хедер
     'index_title'       => 'Мероприятия',
