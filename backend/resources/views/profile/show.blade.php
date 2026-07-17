@@ -655,13 +655,13 @@
 					</a>
 				</div>
 
-				<div class="ramka">
+				<div class="ramka" id="notifications">
                     <h2 class="-mt-05">{{ __('profile.sec_notifications') }}</h2>
-					
+
                     <p class="mb-15">
                         {{ __('profile.notif_lead') }}
 					</p>
-					
+
                     <div class="row provider-cards">
                         {{-- Telegram --}}
                         <div class="col-md-4">
@@ -855,6 +855,73 @@
 						
 						
 					</div>
+
+					{{-- Список пользовательских настроек уведомлений — дом для будущих переключателей --}}
+					<div class="notif-settings-list form mt-2 pt-2" style="border-top:1px solid var(--border-color, #e0e0e0)">
+						<div id="notif-setting-new_event_in_city" style="transition:box-shadow .4s ease; border-radius:8px;">
+							<label class="checkbox-item">
+								<input type="hidden" name="notify_new_events_in_city" value="0">
+								<input type="checkbox"
+									   name="notify_new_events_in_city"
+									   value="1"
+									   id="notif-toggle-new_event_in_city"
+									   data-setting="notify_new_events_in_city"
+									   {{ $u->notify_new_events_in_city ? 'checked' : '' }}
+									   {{ !$u->city_id ? 'disabled' : '' }}>
+								<div class="custom-checkbox"></div>
+								<span>{{ __('profile.notif_new_events_city_label') }}</span>
+							</label>
+							<p class="f-14 text-muted mt-05">
+								{{ $u->city_id ? __('profile.notif_new_events_city_hint') : __('profile.notif_new_events_city_no_city') }}
+								<span id="notif-setting-saved-new_event_in_city" style="color:#28a745; display:none;">✓ {{ __('profile.notif_setting_saved') }}</span>
+							</p>
+						</div>
+					</div>
+
+					<script>
+					(function() {
+						var checkbox = document.getElementById('notif-toggle-new_event_in_city');
+						if (!checkbox) return;
+
+						checkbox.addEventListener('change', function() {
+							var setting = this.dataset.setting;
+							var value = this.checked ? 1 : 0;
+							var savedLabel = document.getElementById('notif-setting-saved-' + setting);
+
+							jQuery.ajax({
+								url: '{{ route("profile.notification_settings.update") }}',
+								method: 'POST',
+								data: {
+									_token: document.querySelector('meta[name="csrf-token"]').content,
+									setting: setting,
+									value: value
+								},
+								success: function() {
+									if (savedLabel) {
+										savedLabel.style.display = '';
+										setTimeout(function() { savedLabel.style.display = 'none'; }, 2000);
+									}
+								},
+								error: function() {
+									checkbox.checked = !checkbox.checked;
+								}
+							});
+						});
+
+						// Deep-link из сообщения рассылки: /user/profile?highlight=city_notify
+						var params = new URLSearchParams(window.location.search);
+						if (params.get('highlight') === 'city_notify') {
+							var target = document.getElementById('notif-setting-new_event_in_city');
+							if (target) {
+								setTimeout(function() {
+									target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+									target.style.boxShadow = '0 0 0 3px rgba(40,167,69,.45)';
+									setTimeout(function() { target.style.boxShadow = ''; }, 2200);
+								}, 150);
+							}
+						}
+					})();
+					</script>
 
 					@if(($hasTelegramNotify || $hasVkNotify || $hasMaxNotify) && in_array((string)($u->role ?? 'user'), ['admin', 'organizer', 'staff'], true))
 					<div class="mt-2 pt-2 form" style="border-top:1px solid var(--border-color, #e0e0e0)">

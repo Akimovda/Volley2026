@@ -183,6 +183,12 @@ return [
     'notif_org_on'     => 'Enabled',
     'notif_org_off'    => 'Disabled',
 
+    // Notification settings (list inside existing profile.sec_notifications section — home for future toggles)
+    'notif_new_events_city_label'      => 'Notify me about new events in my city',
+    'notif_new_events_city_hint'       => 'A personal message whenever a new event with open registration appears in your city.',
+    'notif_new_events_city_no_city'    => 'Set your city in your profile to receive these notifications.',
+    'notif_setting_saved'              => 'Saved',
+
     // Notification channels (sec)
     'sec_channels'        => 'Notification channels',
     'channels_list_label' => 'Connected list 📣:',

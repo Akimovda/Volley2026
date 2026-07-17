@@ -440,6 +440,10 @@ if ($initialStep < 1 || $initialStep > 3) {
 					
 					{{-- ✅ timezone пусть отправляется всегда (даже если select будет disabled) --}}
 					<input type="hidden" name="timezone" id="event_timezone_hidden" value="{{ auth()->user()->city->timezone ?? '' }}">
+					{{-- Копия существующего события (?from_event_id=) — не рассылать жителям города повторно --}}
+					@if(!empty($prefill['_prefill_source_event_id']))
+					<input type="hidden" name="copied_from_event_id" value="{{ (int) $prefill['_prefill_source_event_id'] }}">
+					@endif
 					{{-- STEP 1 --}}
 					<div data-step="1" class="wizard-step step-shell">
 						@include('events._partials.create.step1')

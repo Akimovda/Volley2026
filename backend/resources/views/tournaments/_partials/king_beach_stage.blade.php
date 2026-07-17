@@ -255,8 +255,9 @@ $kbHasSpawnedDivisions = $stage->event->tournamentStages()
 				@endphp
 				<div class="col-md-6 col-xl-3">
 					<div class="card" style="opacity:.9">
-						<label style="display:flex;align-items:center;gap:10px;cursor:pointer;margin:0">
+						<label class="checkbox-item" style="align-items:center;gap:10px;margin:0">
 							<input type="checkbox" class="kb-player-cb" name="player_ids[]" value="{{ $p->id }}">
+							<div class="custom-checkbox" style="margin-right:0"></div>
 							<img src="{{ $p->profile_photo_url }}" alt="" loading="lazy" style="width:40px;height:40px;border-radius:50%;object-fit:cover;flex-shrink:0">
 							<div style="min-width:0">
 								<div class="b-600" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ trim(($p->last_name ?? '') . ' ' . ($p->first_name ?? '')) ?: ($p->name ?? '?') }}</div>

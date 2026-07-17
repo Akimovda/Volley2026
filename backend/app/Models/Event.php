@@ -85,6 +85,7 @@ class Event extends Model implements HasMedia
         'ad_yookassa_payment_url',
         'ad_organizer_notified',
         'ad_organizer_notified',
+        'city_notified_at',
     ];
 
     protected $casts = [
@@ -104,6 +105,7 @@ class Event extends Model implements HasMedia
         'cancel_self_until_waitlist' => 'datetime',
 
         'is_private' => 'boolean',
+        'city_notified_at' => 'datetime',
         'allow_registration' => 'boolean',
         'bot_assistant_enabled' => 'boolean',
         'bot_assistant_threshold' => 'integer',

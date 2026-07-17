@@ -755,8 +755,9 @@
                 $hoursByDay = $dir ? $dir->workingHours->keyBy('day_of_week') : collect();
                 @endphp
                 <div class="card mb-2 direction-block" data-direction="{{ $directionKey }}">
-                    <label class="d-flex fvc gap-1 mb-2">
+                    <label class="checkbox-item">
                         <input type="checkbox" class="direction-toggle" name="directions[{{ $directionKey }}][enabled]" value="1" @checked($isEnabled)>
+                        <div class="custom-checkbox"></div>
                         <span class="b-700 f-18">{{ $meta['label'] }}</span>
                     </label>
 
@@ -786,10 +787,11 @@
                                            value="{{ old('directions.' . $directionKey . '.court_names.' . ($i - 1), $courtNames[$i - 1] ?? __('club.court_default_name_' . $directionKey, ['n' => $i])) }}"
                                            maxlength="100">
                                     <input type="hidden" name="directions[{{ $directionKey }}][court_indoor][{{ $i - 1 }}]" value="0">
-                                    <label class="d-flex fvc gap-1 mt-1 f-14">
+                                    <label class="checkbox-item f-14">
                                         <input type="checkbox" name="directions[{{ $directionKey }}][court_indoor][{{ $i - 1 }}]" value="1"
                                                @checked(old('directions.' . $directionKey . '.court_indoor.' . ($i - 1), $courtIndoor[$i - 1] ?? false))>
-                                        {{ __('club.court_is_indoor') }}
+                                        <div class="custom-checkbox"></div>
+                                        <span>{{ __('club.court_is_indoor') }}</span>
                                     </label>
                                 </div>
                             </div>
@@ -825,7 +827,10 @@
                                                 <input type="time" name="directions[{{ $directionKey }}][hours][{{ $day }}][closes_at]" value="{{ $closesAt }}" @disabled($isDayOff)>
                                             </td>
                                             <td style="text-align:center">
-                                                <input type="checkbox" class="day-off-toggle" name="directions[{{ $directionKey }}][hours][{{ $day }}][is_day_off]" value="1" @checked($isDayOff)>
+                                                <label class="checkbox-item" style="display:inline-flex;justify-content:center">
+                                                    <input type="checkbox" class="day-off-toggle" name="directions[{{ $directionKey }}][hours][{{ $day }}][is_day_off]" value="1" @checked($isDayOff)>
+                                                    <div class="custom-checkbox"></div>
+                                                </label>
                                             </td>
                                         </tr>
                                         @endfor

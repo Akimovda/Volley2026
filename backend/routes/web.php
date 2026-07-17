@@ -733,6 +733,9 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
 		
 		Route::post('/profile/extra', [\App\Http\Controllers\ProfileExtraController::class, 'update'])
         ->name('profile.extra.update');
+
+		Route::post('/profile/notification-settings', [\App\Http\Controllers\ProfileNotificationSettingsController::class, 'update'])
+        ->name('profile.notification_settings.update');
 		
 		// edit other (admin/organizer only)
 		Route::post('/profile/extra/{user}', [\App\Http\Controllers\ProfileExtraController::class, 'updateOther'])
