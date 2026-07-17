@@ -358,6 +358,7 @@
                             <th>{{ __('admin.sub_col_amount') }}</th>
                             <th>{{ __('admin.sub_col_status') }}</th>
                             <th>{{ __('admin.sub_col_date') }}</th>
+                            <th></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -369,9 +370,18 @@
                             <td>{{ number_format($row->amount_minor / 100, 0, ',', ' ') }} ₽</td>
                             <td>{{ __('admin.sub_pay_status_' . $row->payment_status) }}</td>
                             <td class="f-14" style="opacity:.7">{{ \Carbon\Carbon::parse($row->payment_created_at)->format('d.m.Y H:i') }}</td>
+                            <td class="text-right">
+                                @if($row->is_currently_active)
+                                    @php($formId = 'deactivate-sub-' . $row->kind . '-' . $row->sub_id)
+                                    <form id="{{ $formId }}" method="POST" action="{{ route($row->kind === 'premium' ? 'admin.subscriptions.premium_deactivate' : 'admin.subscriptions.pro_deactivate', $row->sub_id) }}" style="display:inline">
+                                        @csrf
+                                    </form>
+                                    <button type="button" class="btn btn-sm btn-secondary" style="color:#e74c3c" onclick="confirmDeactivateSub('{{ $formId }}')">{{ __('admin.sub_deactivate_btn') }}</button>
+                                @endif
+                            </td>
                         </tr>
                     @empty
-                        <tr><td colspan="6" class="f-14" style="opacity:.6">{{ __('admin.no_data') }}</td></tr>
+                        <tr><td colspan="7" class="f-14" style="opacity:.6">{{ __('admin.no_data') }}</td></tr>
                     @endforelse
                     </tbody>
                 </table>
@@ -381,6 +391,29 @@
     </div>
 
 </x-voll-layout>
+
+<script>
+function confirmDeactivateSub(formId) {
+    swal({
+        title: @json(__('admin.sub_deactivate_confirm_title')),
+        text: @json(__('admin.sub_deactivate_confirm_text')),
+        icon: 'warning',
+        buttons: {
+            cancel: @json(__('admin.sub_deactivate_cancel')),
+            confirm: {
+                text: @json(__('admin.sub_deactivate_btn')),
+                value: 'deactivate',
+                className: 'btn-danger'
+            }
+        },
+        dangerMode: true,
+    }).then(function (value) {
+        if (value === 'deactivate') {
+            document.getElementById(formId).submit();
+        }
+    });
+}
+</script>
 
 <script>
 (function () {

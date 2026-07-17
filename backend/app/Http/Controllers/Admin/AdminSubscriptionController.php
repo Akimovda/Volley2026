@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\OrganizerSubscription;
 use App\Models\Payment;
+use App\Models\PremiumSubscription;
 use App\Models\User;
 use App\Services\PremiumService;
 use App\Services\UserNotificationService;
@@ -43,17 +45,79 @@ class AdminSubscriptionController extends Controller
             'org_confirmed_at' => now(),
         ]);
 
-        try {
-            $player = User::find($payment->user_id);
-            if ($player) {
-                app(UserNotificationService::class)
-                    ->createPremiumActivatedNotification($player->id, $subscription);
+        // Платёж мог зависнуть в pending месяцами — если срок, посчитанный от даты платежа,
+        // уже истёк к моменту подтверждения, реального доступа игрок не получает. Сообщать ему
+        // «Premium активирован до {дата в прошлом}» в этом случае бессмысленно и вводит в заблуждение.
+        if ($subscription->isActive()) {
+            try {
+                $player = User::find($payment->user_id);
+                if ($player) {
+                    app(UserNotificationService::class)
+                        ->createPremiumActivatedNotification($player->id, $subscription);
+                }
+            } catch (\Throwable $e) {
+                Log::warning('AdminSubscriptionController::confirmPremium notify failed: ' . $e->getMessage());
             }
-        } catch (\Throwable $e) {
-            Log::warning('AdminSubscriptionController::confirmPremium notify failed: ' . $e->getMessage());
+
+            return redirect()->route('admin.dashboard')
+                ->with('success', '✅ Premium подтверждён и активирован до ' . $subscription->expires_at->format('d.m.Y') . '.');
         }
 
         return redirect()->route('admin.dashboard')
-            ->with('success', '✅ Premium подтверждён и активирован до ' . $subscription->expires_at->format('d.m.Y') . '.');
+            ->with('success', '✅ Платёж подтверждён, но срок подписки (от даты платежа) уже истёк — ' . $subscription->expires_at->format('d.m.Y') . '. Игрок не уведомлён, реального доступа не получил.');
+    }
+
+    public function deactivatePremium(PremiumSubscription $premiumSubscription): RedirectResponse
+    {
+        if ($premiumSubscription->status !== 'active') {
+            return redirect()->route('admin.dashboard')->with('error', 'Подписка уже не активна.');
+        }
+
+        $premiumSubscription->update(['status' => 'cancelled']);
+
+        try {
+            $user = User::find($premiumSubscription->user_id);
+            if ($user) {
+                app(UserNotificationService::class)->create(
+                    userId:   $user->id,
+                    type:     'premium_deactivated',
+                    title:    '⛔ Premium отключён',
+                    body:     'Ваша подписка Premium была отключена администратором.',
+                    payload:  ['subscription_id' => $premiumSubscription->id],
+                    channels: ['in_app', 'telegram', 'vk', 'max'],
+                );
+            }
+        } catch (\Throwable $e) {
+            Log::warning('AdminSubscriptionController::deactivatePremium notify failed: ' . $e->getMessage());
+        }
+
+        return redirect()->route('admin.dashboard')->with('success', '✅ Premium-подписка деактивирована.');
+    }
+
+    public function deactivatePro(OrganizerSubscription $organizerSubscription): RedirectResponse
+    {
+        if ($organizerSubscription->status !== 'active') {
+            return redirect()->route('admin.dashboard')->with('error', 'Подписка уже не активна.');
+        }
+
+        $organizerSubscription->update(['status' => 'cancelled']);
+
+        try {
+            $user = User::find($organizerSubscription->user_id);
+            if ($user) {
+                app(UserNotificationService::class)->create(
+                    userId:   $user->id,
+                    type:     'organizer_pro_deactivated',
+                    title:    '⛔ Организатор PRO отключён',
+                    body:     'Ваша подписка Организатор PRO была отключена администратором.',
+                    payload:  ['subscription_id' => $organizerSubscription->id],
+                    channels: ['in_app', 'telegram', 'vk', 'max'],
+                );
+            }
+        } catch (\Throwable $e) {
+            Log::warning('AdminSubscriptionController::deactivatePro notify failed: ' . $e->getMessage());
+        }
+
+        return redirect()->route('admin.dashboard')->with('success', '✅ PRO-подписка деактивирована.');
     }
 }

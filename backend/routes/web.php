@@ -903,6 +903,10 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
         // Premium / PRO подписки
         Route::get('/subscriptions/premium/{payment}/confirm', [\App\Http\Controllers\Admin\AdminSubscriptionController::class, 'confirmPremium'])
             ->name('subscriptions.premium_confirm');
+        Route::post('/subscriptions/premium/{premiumSubscription}/deactivate', [\App\Http\Controllers\Admin\AdminSubscriptionController::class, 'deactivatePremium'])
+            ->name('subscriptions.premium_deactivate');
+        Route::post('/subscriptions/pro/{organizerSubscription}/deactivate', [\App\Http\Controllers\Admin\AdminSubscriptionController::class, 'deactivatePro'])
+            ->name('subscriptions.pro_deactivate');
 		
         Route::post('/users/{user}/restrictions/events', [AdminUserRestrictionController::class, 'banEvents'])
 		->name('users.restrictions.events');

@@ -56,19 +56,26 @@ class PremiumService
             ->where('status', 'pending')
             ->firstOrFail();
 
-        // Деактивируем прежний активный (если есть) — та же логика, что в activate()
-        PremiumSubscription::where('user_id', $sub->user_id)
-            ->where('id', '!=', $sub->id)
-            ->where('status', 'active')
-            ->update(['status' => 'expired']);
+        $startsAt  = $payment->created_at->copy();
+        $days      = PremiumSubscription::planDays($sub->plan);
+        $expiresAt = $startsAt->copy()->addDays($days);
 
-        $startsAt = $payment->created_at->copy();
-        $days     = PremiumSubscription::planDays($sub->plan);
+        // Платёж мог зависнуть в pending месяцами (апрельские кейсы) — если срок, посчитанный
+        // от даты платежа, уже истёк, подтверждение НЕ должно давать реальный доступ и тем более
+        // не должно гасить чью-то ДЕЙСТВИТЕЛЬНО активную подписку той же дедуп-логикой ниже.
+        $isCurrentlyValid = $expiresAt->isFuture();
+
+        if ($isCurrentlyValid) {
+            PremiumSubscription::where('user_id', $sub->user_id)
+                ->where('id', '!=', $sub->id)
+                ->where('status', 'active')
+                ->update(['status' => 'expired']);
+        }
 
         $sub->update([
-            'status'     => 'active',
+            'status'     => $isCurrentlyValid ? 'active' : 'expired',
             'starts_at'  => $startsAt,
-            'expires_at' => $startsAt->copy()->addDays($days),
+            'expires_at' => $expiresAt,
         ]);
 
         return $sub->fresh();
