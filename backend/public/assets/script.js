@@ -650,44 +650,53 @@ const $dropdown = $('<div>', {
 			
 			// Обновляем отображаемое значение
 			updateCustomSelect($select, $wrapper);
-			
+
 			// Закрываем dropdown
 			$customSelect.removeClass('form-select-custom--active');
 			$dropdown.removeClass('form-select-dropdown--active');
+			$wrapper.closest('.ramka, .card-ramka').removeClass('select-dropdown-open');
 		});
-		
+
 		$dropdown.append($customOption);
 	});
-	
+
 	// Собираем всё вместе
 	$wrapper.append($customSelect, $dropdown);
-	
+
 	// Вставляем перед оригинальным селектом
 	$select.before($wrapper);
-	
+
 	// Обновляем отображение
 	updateCustomSelect($select, $wrapper);
-	
+
 	// Обработчики событий для кастомного селекта
 	$customSelect.on('click', function(e) {
 		if ($select.is(':disabled')) return;
-		
+
 		e.stopPropagation();
-		
-		// Закрываем другие открытые селекты
+
+		const willOpen = !$customSelect.hasClass('form-select-custom--active');
+
+		// Закрываем другие открытые селекты (и опускаем их ramka обратно)
 		$('.form-select-custom--active').not($customSelect).removeClass('form-select-custom--active');
 		$('.form-select-dropdown--active').not($dropdown).removeClass('form-select-dropdown--active');
-		
+		$('.ramka.select-dropdown-open, .card-ramka.select-dropdown-open').not($wrapper.closest('.ramka, .card-ramka')).removeClass('select-dropdown-open');
+
 		// Переключаем состояние текущего
 		$customSelect.toggleClass('form-select-custom--active');
 		$dropdown.toggleClass('form-select-dropdown--active');
+		// Поднимаем свою ramka над соседними на время открытого dropdown —
+		// без этого дропдаун уходит под следующую ramka (backdrop-filter создаёт
+		// свой stacking context, см. style.css рядом с .select-dropdown-open)
+		$wrapper.closest('.ramka, .card-ramka').toggleClass('select-dropdown-open', willOpen);
 	});
-	
+
 	// Закрытие при клике вне
 	$(document).on('click', function(e) {
 		if (!$wrapper.is(e.target) && $wrapper.has(e.target).length === 0) {
 			$customSelect.removeClass('form-select-custom--active');
 			$dropdown.removeClass('form-select-dropdown--active');
+			$wrapper.closest('.ramka, .card-ramka').removeClass('select-dropdown-open');
 		}
 	});
 	
