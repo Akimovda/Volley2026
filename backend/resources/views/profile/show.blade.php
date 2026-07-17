@@ -1164,8 +1164,8 @@
 					<h2 class="-mt-05">{{ __('profile.sec_premium') }}</h2>
 					<div class="card">
 						@if($activePremium)
-						<div class="d-flex between fvc">
-							<div>
+						<div class="d-flex between gap-1 fvc card-actions-row">
+							<div class="card-actions-info">
 								<div class="f-18 b-600" style="color:#f5c842;">{{ __('profile.premium_active') }}</div>
 								<div class="f-15 mt-05" style="opacity:.6;">
 									{{ __('profile.premium_until', ['date' => $activePremium->expires_at->format('d.m.Y')]) }}
@@ -1177,7 +1177,7 @@
 									} }}
 								</div>
 							</div>
-							<div class="d-flex gap-1">
+							<div class="d-flex gap-1 flex-wrap card-actions-buttons">
 								<a href="{{ route('premium.settings') }}" class="btn btn-secondary">{{ __('profile.premium_settings_btn') }}</a>
 								<a href="{{ route('premium.index') }}" class="btn btn-secondary">{{ __('profile.premium_renew_btn') }}</a>
 							</div>
