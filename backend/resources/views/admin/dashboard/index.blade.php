@@ -320,71 +320,77 @@
                     <div class="f-16 b-700" style="color:#e67e22">{{ $pendingPremiumPayments->count() }}</div>
                 </div>
                 <div class="f-14 mb-2" style="opacity:.6">{{ __('admin.sub_pending_hint') }}</div>
-                <table class="table f-16">
-                    <thead>
-                        <tr>
-                            <th>{{ __('admin.sub_col_user') }}</th>
-                            <th>{{ __('admin.sub_col_plan') }}</th>
-                            <th>{{ __('admin.sub_col_amount') }}</th>
-                            <th>{{ __('admin.sub_pending_col_age') }}</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    @foreach($pendingPremiumPayments as $row)
-                        <tr @if($row->age_days >= 3) style="background:rgba(231,76,60,.08)" @endif>
-                            <td><a href="{{ route('admin.users.show', $row->user_id) }}">{{ $row->last_name }} {{ $row->first_name }}</a></td>
-                            <td>{{ __('admin.sub_plan_' . $row->plan) }}</td>
-                            <td>{{ number_format($row->amount_minor / 100, 0, ',', ' ') }} ₽</td>
-                            <td class="{{ $row->age_days >= 3 ? 'red b-600' : '' }}">{{ __('admin.sub_pending_days', ['n' => $row->age_days]) }}</td>
-                            <td class="text-right">
-                                <a href="{{ route('admin.subscriptions.premium_confirm', $row->payment_id) }}" class="btn btn-sm btn-primary">{{ __('admin.sub_pending_confirm_btn') }}</a>
-                            </td>
-                        </tr>
-                    @endforeach
-                    </tbody>
-                </table>
+                <div class="table-scrollable mb-0">
+                    <div class="table-drag-indicator"></div>
+                    <table class="table f-16">
+                        <thead>
+                            <tr>
+                                <th>{{ __('admin.sub_col_user') }}</th>
+                                <th>{{ __('admin.sub_col_plan') }}</th>
+                                <th>{{ __('admin.sub_col_amount') }}</th>
+                                <th>{{ __('admin.sub_pending_col_age') }}</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach($pendingPremiumPayments as $row)
+                            <tr @if($row->age_days >= 3) style="background:rgba(231,76,60,.08)" @endif>
+                                <td><a href="{{ route('admin.users.show', $row->user_id) }}">{{ $row->last_name }} {{ $row->first_name }}</a></td>
+                                <td>{{ __('admin.sub_plan_' . $row->plan) }}</td>
+                                <td>{{ number_format($row->amount_minor / 100, 0, ',', ' ') }} ₽</td>
+                                <td class="{{ $row->age_days >= 3 ? 'red b-600' : '' }}">{{ __('admin.sub_pending_days', ['n' => $row->age_days]) }}</td>
+                                <td class="text-right">
+                                    <a href="{{ route('admin.subscriptions.premium_confirm', $row->payment_id) }}" class="btn btn-sm btn-primary">{{ __('admin.sub_pending_confirm_btn') }}</a>
+                                </td>
+                            </tr>
+                        @endforeach
+                        </tbody>
+                    </table>
+                </div>
             </div>
             @endif
 
             <div class="card mt-3">
                 <div class="b-600 mb-2">{{ __('admin.sub_recent_title') }}</div>
-                <table class="table f-16">
-                    <thead>
-                        <tr>
-                            <th>{{ __('admin.sub_col_user') }}</th>
-                            <th>{{ __('admin.sub_col_type') }}</th>
-                            <th>{{ __('admin.sub_col_plan') }}</th>
-                            <th>{{ __('admin.sub_col_amount') }}</th>
-                            <th>{{ __('admin.sub_col_status') }}</th>
-                            <th>{{ __('admin.sub_col_date') }}</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    @forelse($recentPayments as $row)
-                        <tr>
-                            <td><a href="{{ route('admin.users.show', $row->user_id) }}">{{ $row->last_name }} {{ $row->first_name }}</a></td>
-                            <td>{{ __('admin.sub_kind_' . $row->kind) }}</td>
-                            <td>{{ __('admin.sub_plan_' . $row->plan) }}</td>
-                            <td>{{ number_format($row->amount_minor / 100, 0, ',', ' ') }} ₽</td>
-                            <td>{{ __('admin.sub_pay_status_' . $row->payment_status) }}</td>
-                            <td class="f-14" style="opacity:.7">{{ \Carbon\Carbon::parse($row->payment_created_at)->format('d.m.Y H:i') }}</td>
-                            <td class="text-right">
-                                @if($row->is_currently_active)
-                                    @php($formId = 'deactivate-sub-' . $row->kind . '-' . $row->sub_id)
-                                    <form id="{{ $formId }}" method="POST" action="{{ route($row->kind === 'premium' ? 'admin.subscriptions.premium_deactivate' : 'admin.subscriptions.pro_deactivate', $row->sub_id) }}" style="display:inline">
-                                        @csrf
-                                    </form>
-                                    <button type="button" class="btn btn-sm btn-secondary" style="color:#e74c3c" onclick="confirmDeactivateSub('{{ $formId }}')">{{ __('admin.sub_deactivate_btn') }}</button>
-                                @endif
-                            </td>
-                        </tr>
-                    @empty
-                        <tr><td colspan="7" class="f-14" style="opacity:.6">{{ __('admin.no_data') }}</td></tr>
-                    @endforelse
-                    </tbody>
-                </table>
+                <div class="table-scrollable mb-0">
+                    <div class="table-drag-indicator"></div>
+                    <table class="table f-16">
+                        <thead>
+                            <tr>
+                                <th>{{ __('admin.sub_col_user') }}</th>
+                                <th>{{ __('admin.sub_col_type') }}</th>
+                                <th>{{ __('admin.sub_col_plan') }}</th>
+                                <th>{{ __('admin.sub_col_amount') }}</th>
+                                <th>{{ __('admin.sub_col_status') }}</th>
+                                <th>{{ __('admin.sub_col_date') }}</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @forelse($recentPayments as $row)
+                            <tr>
+                                <td><a href="{{ route('admin.users.show', $row->user_id) }}">{{ $row->last_name }} {{ $row->first_name }}</a></td>
+                                <td>{{ __('admin.sub_kind_' . $row->kind) }}</td>
+                                <td>{{ __('admin.sub_plan_' . $row->plan) }}</td>
+                                <td>{{ number_format($row->amount_minor / 100, 0, ',', ' ') }} ₽</td>
+                                <td>{{ __('admin.sub_pay_status_' . $row->payment_status) }}</td>
+                                <td class="f-14" style="opacity:.7">{{ \Carbon\Carbon::parse($row->payment_created_at)->format('d.m.Y H:i') }}</td>
+                                <td class="text-right">
+                                    @if($row->is_currently_active)
+                                        @php($formId = 'deactivate-sub-' . $row->kind . '-' . $row->sub_id)
+                                        <form id="{{ $formId }}" method="POST" action="{{ route($row->kind === 'premium' ? 'admin.subscriptions.premium_deactivate' : 'admin.subscriptions.pro_deactivate', $row->sub_id) }}" style="display:inline">
+                                            @csrf
+                                        </form>
+                                        <button type="button" class="btn btn-sm btn-secondary" style="color:#e74c3c" onclick="confirmDeactivateSub('{{ $formId }}')">{{ __('admin.sub_deactivate_btn') }}</button>
+                                    @endif
+                                </td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="7" class="f-14" style="opacity:.6">{{ __('admin.no_data') }}</td></tr>
+                        @endforelse
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
