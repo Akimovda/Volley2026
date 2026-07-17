@@ -219,8 +219,13 @@
 </div>
 @endif
 
+@php
+    $widgetAppUrl  = rtrim((string) config('app.url'), '/');
+    $widgetHost    = parse_url($widgetAppUrl, PHP_URL_HOST) ?: $widgetAppUrl;
+    $widgetHostLink = '<a href="' . e($widgetAppUrl) . '" target="_blank">' . e($widgetHost) . '</a>';
+@endphp
 <div class="widget-footer">
-    на базе <a href="https://volley-bot.store" target="_blank">volley-bot.store</a>
+    {!! __('profile.widget_powered_by', ['host' => $widgetHostLink]) !!}
 </div>
 
 </body>
