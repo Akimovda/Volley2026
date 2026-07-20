@@ -23,6 +23,10 @@ $kbUnassignedIds = $kbRegisteredIds->diff($kbAssignedIds)->values();
 $kbUnassignedPlayers = User::whereIn('id', $kbUnassignedIds)->get()
     ->sortBy(fn($u) => trim(($u->last_name ?? '') . ($u->first_name ?? '')))
     ->values();
+
+// Терминология уровней игроков — по географии СОБЫТИЯ (турнир проходит
+// в конкретном городе), а не по городу каждого игрока.
+$kbLevelScope = level_terminology_scope_for_event($stage->event);
 $kbCourts = array_values(array_filter((array) $stage->configValue('courts', [])));
 
 // Дивизионы Hard/Medium/Lite после группового этапа
@@ -264,7 +268,7 @@ $kbHasSpawnedDivisions = $stage->event->tournamentStages()
 								<div class="f-13" style="opacity:.85">
 									<span style="color:{{ $kbGenderColor }};font-weight:700">{{ $kbGenderSign }}</span> ·
 									@if($kbLevel)
-									<span class="levelmark levelmark--event level-{{ $kbLevel }}">{{ __('events.level_short_' . $kbLevel) }}</span>
+									<span class="levelmark levelmark--event level-{{ $kbLevel }}">{{ level_name_short($kbLevel, $kbLevelScope) }}</span>
 									@else
 									<span class="levelmark levelmark--event level-na">!?</span>
 									@endif
@@ -324,7 +328,7 @@ $kbHasSpawnedDivisions = $stage->event->tournamentStages()
 												<div class="f-13" style="opacity:.85">
 													<span style="color:{{ $kbGenderColor2 }};font-weight:700">{{ $kbGenderSign2 }}</span>
 													@if($kbLevel2)
-													<span class="levelmark levelmark--event level-{{ $kbLevel2 }}">{{ __('events.level_short_' . $kbLevel2) }}</span>
+													<span class="levelmark levelmark--event level-{{ $kbLevel2 }}">{{ level_name_short($kbLevel2, $kbLevelScope) }}</span>
 													@else
 													<span class="levelmark levelmark--event level-na">!?</span>
 													@endif

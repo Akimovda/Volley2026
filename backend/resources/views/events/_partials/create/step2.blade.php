@@ -41,6 +41,7 @@
 										data-current-user-id="{{ auth()->id() }}"
 										data-is-club-manager="{{ auth()->user() && auth()->user()->is_club_manager ? '1' : '0' }}"
 										data-booking-windows-url-template="{{ route('locations.booking_windows', ['location' => '__LOCID__']) }}"
+										data-organizer-level-scope="{{ $levelScope ?? 'standard' }}"
 										>
 
 											{{-- Поле для отображения --}}

@@ -6,6 +6,7 @@
 	/** @var \App\Models\User $user */
 	$age = method_exists($user, 'ageYears') ? $user->ageYears() : null;
 	$isSelf = auth()->check() && auth()->id() === $user->id;
+	$levelScope = level_terminology_scope_for_user($user);
 	
 	$posMap = [
 	'setter'   => 'Связующий',
@@ -321,7 +322,7 @@ body.dark .gradient-marker-line,
 									<div class="level-levelmark levelmark level-{{ $user->classic_level ?? '—' }}">
 										<div class="f-11">Уровень: </div>
 										<div class="f-22 l-13">{{ $user->classic_level ?? '—' }}</div>
-										<div class="f-11">{{ level_name($user->classic_level) ?? '—' }}</div>
+										<div class="f-11">{{ level_name($user->classic_level, $levelScope) ?? '—' }}</div>
 									</div>	
 									<div class="level-level">	
 										<ul class="list">
@@ -351,7 +352,7 @@ body.dark .gradient-marker-line,
 									<div class="level-levelmark levelmark level-{{ $user->beach_level ?? '—' }}">
 										<div class="f-11">Уровень: </div>
 										<div class="f-22 l-13">{{ $user->beach_level ?? '—' }}</div>
-										<div class="f-11">{{ level_name($user->beach_level) ?? '—' }}</div>
+										<div class="f-11">{{ level_name($user->beach_level, $levelScope) ?? '—' }}</div>
 									</div>	
 									<div class="level-level">	
 										<ul class="list">
@@ -406,7 +407,7 @@ body.dark .gradient-marker-line,
                                         @foreach($levelEmojis as $lvl => $emoji)
                                         <button type="submit" name="level" value="{{ $lvl }}"
 										class="btn btn-small {{ $myClassicVote == $lvl ? '' : 'btn-secondary' }}"
-										title="{{ $lvl }} — {{ level_name($lvl) }}"
+										title="{{ $lvl }} — {{ level_name($lvl, $levelScope) }}"
 										style="font-size:2rem; padding: 0.6rem; {{ $myClassicVote == $lvl ? 'outline: 2px solid var(--cd)' : '' }}">
                                             {{ $emoji }}
 										</button>
@@ -475,7 +476,7 @@ body.dark .gradient-marker-line,
                 @foreach($levelEmojis as $lvl => $emoji)
                 <button type="submit" name="level" value="{{ $lvl }}"
                 class="btn btn-small {{ $myBeachVote == $lvl ? '' : 'btn-secondary' }}"
-                title="{{ $lvl }} — {{ level_name($lvl) }}"
+                title="{{ $lvl }} — {{ level_name($lvl, $levelScope) }}"
                 style="font-size:2rem; padding: 0.6rem; {{ $myBeachVote == $lvl ? 'outline: 2px solid var(--cd)' : '' }}">
                     {{ $emoji }}
                 </button>

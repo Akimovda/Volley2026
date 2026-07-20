@@ -147,10 +147,12 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 			}
 			
 			
+			$levelScope = level_terminology_scope_for_event($event);
+
 			$levelLabel = null;
 			if ($lvMin !== null || $lvMax !== null) {
-			$minText = $lvMin !== null ? level_name_short($lvMin) : '—';
-			$maxText = $lvMax !== null ? level_name_short($lvMax) : '—';
+			$minText = $lvMin !== null ? level_name_short($lvMin, $levelScope) : '—';
+			$maxText = $lvMax !== null ? level_name_short($lvMax, $levelScope) : '—';
 			$minSpan = $lvMin !== null
 			? "<span class=\"levelmark levelmark--event level-{$lvMin}\">" . e($minText) . "</span>"
 			: '<span class="levelmark levelmark--event level-minus">—</span>';

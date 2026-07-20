@@ -95,7 +95,8 @@
 	$u->refresh();
 	
     $u->loadMissing(['city', 'classicPositions', 'beachZones']);
-    
+    $levelScope = level_terminology_scope_for_user($u);
+
     $posMap = __('profile.pos_long');
     
     $classicPrimary = optional($u->classicPositions)->firstWhere('is_primary', true)?->position;
@@ -299,7 +300,7 @@
 									<div class="level-levelmark levelmark level-{{ $u->classic_level ?? '—' }}">
 										<div class="f-11">{{ __('profile.skill_level') }} </div>
 										<div class="f-22 l-13">{{ $u->classic_level ?? '—' }}</div>
-										<div class="f-11">{{ level_name($u->classic_level) ?? '—' }}</div>
+										<div class="f-11">{{ level_name($u->classic_level, $levelScope) ?? '—' }}</div>
 									</div>	
 									<div class="level-level">	
 										<ul class="list">
@@ -329,7 +330,7 @@
 									<div class="level-levelmark levelmark level-{{ $u->beach_level ?? '—' }}">
 										<div class="f-11">{{ __('profile.skill_level') }} </div>
 										<div class="f-22 l-13">{{ $u->beach_level ?? '—' }}</div>
-										<div class="f-11">{{ level_name($u->beach_level) ?? '—' }}</div>
+										<div class="f-11">{{ level_name($u->beach_level, $levelScope) ?? '—' }}</div>
 									</div>	
 									<div class="level-level">	
 										<ul class="list">

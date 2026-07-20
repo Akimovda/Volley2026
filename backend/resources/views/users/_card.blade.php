@@ -23,6 +23,8 @@
     $classicLevel = !is_null($classic) && $classic !== '' ? (int)$classic : null;
     $beachLevel = !is_null($beach) && $beach !== '' ? (int)$beach : null;
 
+    $levelScope = level_terminology_scope_for_user($u);
+
     $profileUrl = route('users.show', ['user' => $u->id]);
 @endphp
 
@@ -130,7 +132,7 @@
             <div class="user-level-label">{{ __('profile.card_lvl_classic') }}</div>
             <div class="user-level-value">
                 @if($classicLevel)
-                    <span class="levelmark level-{{ $classicLevel }}">{{ __('events.level_short_' . $classicLevel) }}</span>
+                    <span class="levelmark level-{{ $classicLevel }}">{{ level_name_short($classicLevel, $levelScope) }}</span>
                 @else
                     <span class="levelmark level-na">!?</span>
                 @endif
@@ -140,7 +142,7 @@
             <div class="user-level-label">{{ __('profile.card_lvl_beach') }}</div>
             <div class="user-level-value">
                 @if($beachLevel)
-                    <span class="levelmark level-{{ $beachLevel }}">{{ __('events.level_short_' . $beachLevel) }}</span>
+                    <span class="levelmark level-{{ $beachLevel }}">{{ level_name_short($beachLevel, $levelScope) }}</span>
                 @else
                     <span class="levelmark level-na">!?</span>
                 @endif

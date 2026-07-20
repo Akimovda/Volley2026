@@ -94,6 +94,7 @@ $groupedByDate[$dateKey] = ['date' => $date, 'occurrences' => []];
     }
     ksort($formatOptions);
     $levelOptions = [1, 2, 3, 4, 5, 6, 7];
+    $levelScope = level_terminology_scope_for_user(auth()->user());
 	@endphp
 	
 	<x-voll-layout body_class="events-page">
@@ -215,7 +216,7 @@ $fCity     = request('city', '');
 									<select name="level" class="form-select">
 										<option value="" {{ $fLevel==='' ? 'selected' : '' }}>{{ __('events.filter_any_level') }}</option>
 										@foreach(($levelOptions ?? []) as $lv)
-										<option value="{{ (int)$lv }}" {{ (string)$fLevel===(string)$lv ? 'selected' : '' }}>{{ __('events.filter_level_' . $lv) }}</option>
+										<option value="{{ (int)$lv }}" {{ (string)$fLevel===(string)$lv ? 'selected' : '' }}>{{ level_filter_label($lv, $levelScope) }}</option>
 										@endforeach
 									</select>
 								</div>

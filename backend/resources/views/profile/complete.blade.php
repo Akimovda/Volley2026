@@ -19,6 +19,7 @@
 		
 		/** @var \App\Models\User $user */
 		$user = $target; // кого редактируем в blade
+		$levelScope = level_terminology_scope_for_user($user);
 		
 		$mode = $mode ?? 'self'; // self|admin_self|admin_other|organizer_other
 		
@@ -809,7 +810,7 @@
 																@if($isDisabled) aria-disabled="true" @endif
 																>
 																	<div class="level-number">{{ $lvl }}</div>
-																	<div class="level-name">{{ level_name($lvl) }}</div>
+																	<div class="level-name">{{ level_name($lvl, $levelScope) }}</div>
 																</div>
 															</div>
 															@endforeach
@@ -935,7 +936,7 @@
 																@if($isDisabled) aria-disabled="true" @endif
 																>
 																	<div class="level-number">{{ $lvl }}</div>
-																	<div class="level-name">{{ level_name($lvl) }}</div>
+																	<div class="level-name">{{ level_name($lvl, $levelScope) }}</div>
 																</div>
 															</div>
 															@endforeach

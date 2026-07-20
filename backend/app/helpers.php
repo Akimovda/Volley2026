@@ -18,9 +18,69 @@ if (! function_exists('getAppSetting')) {
 // Levels
 // =========================
 
-if (! function_exists('level_name')) {
-    function level_name($level): string
+if (! function_exists('level_terminology_scope_for_region')) {
+    /**
+     * Единая точка определения терминологии уровней по сырой строке региона
+     * (cities.region): 'spb' для Санкт-Петербурга и Ленинградской области,
+     * иначе 'standard'. Используется и для Eloquent City, и для построчных
+     * SQL-выборок (например виджет), где модели City нет.
+     */
+    function level_terminology_scope_for_region(?string $region): string
     {
+        $region = trim((string) $region);
+
+        return in_array($region, ['Санкт-Петербург', 'Ленинградская область'], true)
+            ? 'spb'
+            : 'standard';
+    }
+}
+
+if (! function_exists('level_terminology_scope_for_city')) {
+    function level_terminology_scope_for_city(?\App\Models\City $city): string
+    {
+        if (!$city) {
+            return 'standard';
+        }
+
+        return level_terminology_scope_for_region($city->region);
+    }
+}
+
+if (! function_exists('level_terminology_scope_for_user')) {
+    function level_terminology_scope_for_user(?\App\Models\User $user): string
+    {
+        if (!$user) {
+            return 'standard';
+        }
+
+        return level_terminology_scope_for_city($user->city);
+    }
+}
+
+if (! function_exists('level_terminology_scope_for_event')) {
+    function level_terminology_scope_for_event(?\App\Models\Event $event): string
+    {
+        if (!$event) {
+            return 'standard';
+        }
+
+        return level_terminology_scope_for_city($event->location?->city);
+    }
+}
+
+if (! function_exists('level_name')) {
+    function level_name($level, string $scope = 'standard'): string
+    {
+        $level = (int) $level;
+
+        if ($scope === 'spb') {
+            $key = 'events.spb_level_' . $level;
+            $translated = __($key);
+            if ($translated !== $key) {
+                return $translated;
+            }
+        }
+
         $levels = [
             1 => 'Начальный',
             2 => 'Начальный +',
@@ -31,19 +91,57 @@ if (! function_exists('level_name')) {
             7 => 'Профи (М.С.)',
         ];
 
-        $level = (int) $level;
-
         return $levels[$level] ?? '—';
     }
 }
 
 if (! function_exists('level_name_short')) {
-    function level_name_short($level): string
+    function level_name_short($level, string $scope = 'standard'): string
     {
         $level = (int) $level;
-        $key = 'events.level_short_' . $level;
+        $key = $scope === 'spb' ? 'events.spb_level_short_' . $level : 'events.level_short_' . $level;
         $translated = __($key);
         return $translated !== $key ? $translated : (string) $level;
+    }
+}
+
+if (! function_exists('level_filter_label')) {
+    /**
+     * Текст для выпадающего фильтра уровня (полное название). Для 'standard'
+     * сохраняет существующие тексты events.filter_level_N без изменений.
+     */
+    function level_filter_label($level, string $scope = 'standard'): string
+    {
+        $level = (int) $level;
+
+        if ($scope === 'spb') {
+            return level_name($level, 'spb');
+        }
+
+        $key = 'events.filter_level_' . $level;
+        $translated = __($key);
+        return $translated !== $key ? $translated : (string) $level;
+    }
+}
+
+if (! function_exists('level_spb_description')) {
+    /**
+     * Описание уровня для питерского набора (только /level_players).
+     * Для уровней 2-6 — специфичные питерские тексты (events.spb_level_desc_N).
+     * Для 1 и 7 — стандартные тексты страницы (pages.lp_adult_{direction}_N),
+     * т.к. отдельного питерского описания для граничных уровней нет.
+     */
+    function level_spb_description(int $level, string $direction): ?string
+    {
+        if ($level >= 2 && $level <= 6) {
+            $key = 'events.spb_level_desc_' . $level;
+            $translated = __($key);
+            return $translated !== $key ? $translated : null;
+        }
+
+        $key = 'pages.lp_adult_' . $direction . '_' . $level;
+        $translated = __($key);
+        return $translated !== $key ? $translated : null;
     }
 }
 
