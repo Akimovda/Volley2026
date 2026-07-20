@@ -69,7 +69,11 @@
 	
 	
 	
-    <div class="container">	
+    @php
+        $levelScope = level_terminology_scope_for_user(auth()->user());
+    @endphp
+
+    <div class="container">
         <div class="users-filter">
             <div class="ramka">
                 <form method="GET" action="{{ route('users.index') }}" class="form">
@@ -111,7 +115,7 @@
                             <select name="classic_level">
                                 <option value="">{{ __('profile.idx_any') }}</option>
                                 @foreach(range(1,7) as $lvl)
-                                <option value="{{ $lvl }}" @selected((string)($filters['classic_level'] ?? '') === (string)$lvl)>{{ $lvl }} — {{ level_name($lvl) }}</option>
+                                <option value="{{ $lvl }}" @selected((string)($filters['classic_level'] ?? '') === (string)$lvl)>{{ $lvl }} — {{ level_name($lvl, $levelScope) }}</option>
                                 @endforeach
                             </select>
                         </div>

@@ -149,22 +149,23 @@
 						)
 						
 						@php
-						
+
 						$levelMin = $event->classic_level_min ?? $event->beach_level_min;
 						$levelMax = $event->classic_level_max ?? $event->beach_level_max;
-						
+						$levelScope = level_terminology_scope_for_event($event);
+
 						@endphp
-						
+
 						@if($levelMin || $levelMax)
 						<div class="event-row between" style="flex-wrap: wrap;gap:.5rem;">
 							<span class="b-600">{{ __('events.show_desc_level_label') }}</span>
 							<span>
 								@if($levelMin)
-								<span class="level-color-badge" style="color:{{ level_color((int)$levelMin) }};font-weight:700;">{{ level_name($levelMin) }}</span>
+								<span class="level-color-badge" style="color:{{ level_color((int)$levelMin) }};font-weight:700;">{{ level_name($levelMin, $levelScope) }}</span>
 								@endif
 								@if($levelMin && $levelMax && $levelMin != $levelMax)
 								<span style="opacity:.5;"> – </span>
-								<span class="level-color-badge" style="color:{{ level_color((int)$levelMax) }};font-weight:700;">{{ level_name($levelMax) }}</span>
+								<span class="level-color-badge" style="color:{{ level_color((int)$levelMax) }};font-weight:700;">{{ level_name($levelMax, $levelScope) }}</span>
 								@endif
 							</span>
 						</div>
@@ -223,17 +224,18 @@
 					@php
 					$levelMin = $event->classic_level_min ?? $event->beach_level_min;
 					$levelMax = $event->classic_level_max ?? $event->beach_level_max;
+					$levelScope = level_terminology_scope_for_event($event);
 					@endphp
 					@if($levelMin || $levelMax)
 					<div class="event-row" style="flex-direction:column;gap:.5rem;">
 					<span class="b-600">{{ __('events.show_desc_level_label') }}</span>
 					<span>
 					@if($levelMin)
-					<span class="level-color-badge" style="color:{{ level_color((int)$levelMin) }};font-weight:700;">{{ level_name($levelMin) }}</span>
+					<span class="level-color-badge" style="color:{{ level_color((int)$levelMin) }};font-weight:700;">{{ level_name($levelMin, $levelScope) }}</span>
 					@endif
 					@if($levelMin && $levelMax && $levelMin != $levelMax)
 					<span style="opacity:.5;"> – </span>
-					<span class="level-color-badge" style="color:{{ level_color((int)$levelMax) }};font-weight:700;">{{ level_name($levelMax) }}</span>
+					<span class="level-color-badge" style="color:{{ level_color((int)$levelMax) }};font-weight:700;">{{ level_name($levelMax, $levelScope) }}</span>
 					@endif
 					</span>
 					</div>

@@ -1512,6 +1512,38 @@ document.addEventListener("trix-file-accept", function (event) {
 			inputShowCountry: true,   // Показывать страну в инпуте после выбора
 			inputShowRegion: true     // Показывать регион в инпуте после выбора
 		};
+
+		// Терминология уровней (см. app/helpers.php level_terminology_scope_for_region()
+		// на сервере — те же 2 значения региона, единая точка правды продублирована
+		// здесь намеренно, т.к. смена города происходит без перезагрузки страницы).
+		function levelScopeForRegion(region) {
+			return (region === 'Санкт-Петербург' || region === 'Ленинградская область') ? 'spb' : 'standard';
+		}
+
+		function relabelLevelSelects(scope) {
+			const names = (window.__levelTerminologyNames || {})[scope] || (window.__levelTerminologyNames || {}).standard;
+			if (!names) return;
+
+			['classic_level_min', 'classic_level_max', 'beach_level_min', 'beach_level_max'].forEach(function(id) {
+				const select = document.getElementById(id);
+				if (!select) return;
+
+				Array.prototype.forEach.call(select.options, function(opt) {
+					const n = parseInt(opt.value, 10);
+					if (!n || !names[n]) return;
+					opt.textContent = n + ' - ' + names[n];
+				});
+
+				// select обёрнут createCustomSelect() (script.js) — перезаполнение
+				// <option> не подхватывается кастомной обёрткой само по себе,
+				// нужно пересоздать её (см. CLAUDE.md про createCustomSelect).
+				if (window.customSelect && typeof window.customSelect.destroy === 'function'
+					&& typeof window.createCustomSelect === 'function' && window.jQuery) {
+					window.customSelect.destroy(id);
+					window.createCustomSelect(window.jQuery(select));
+				}
+			});
+		}
 		
 		function extractCityNameForSearch(fullLabel) {
 			if (!fullLabel) return '';
@@ -1713,7 +1745,11 @@ document.addEventListener("trix-file-accept", function (event) {
 		
 		function applySelected(id, name, countryCode, region, timezone) {
 			if (cityHiddenId) cityHiddenId.value = id ? String(id) : '';
-			
+
+			// Терминология уровней на step1 — по географии только что выбранного
+			// города (после выбора локации/города география важнее города организатора).
+			relabelLevelSelects(id ? levelScopeForRegion(region) : (cityWrap.getAttribute('data-organizer-level-scope') || 'standard'));
+
 			if (cityInput) {
 				let displayName = name;
 				
@@ -1845,6 +1881,8 @@ document.addEventListener("trix-file-accept", function (event) {
 		cityInput.addEventListener('input', () => {
 			// Пользователь меняет текст - сбрасываем city_id и показываем dropdown
 			if (cityHiddenId) cityHiddenId.value = '';
+			// Город не выбран -> терминология снова по городу организатора
+			relabelLevelSelects(cityWrap.getAttribute('data-organizer-level-scope') || 'standard');
 			runSearch(); // runSearch сам покажет dropdown если есть 2+ символа
 		});
 		

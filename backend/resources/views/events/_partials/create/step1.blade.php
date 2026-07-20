@@ -774,20 +774,20 @@
 													<div class="row">
 														<div class="col-6">
 															<label>{{ __('events.level_from') }} </label>
-															<select name="classic_level_min" class="w-full rounded-lg border-gray-200">
+															<select name="classic_level_min" id="classic_level_min" class="w-full rounded-lg border-gray-200">
 																<option value="">—</option>
 																@for ($i = 1; $i <= 7; $i++)
-																<option value="{{ $i }}" @selected((string)$classicMin === (string)$i)>{{ $i }} - {{ level_name($i) }}</option>
+																<option value="{{ $i }}" @selected((string)$classicMin === (string)$i)>{{ $i }} - {{ level_name($i, $levelScope ?? 'standard') }}</option>
 																@endfor
 															</select>
 														</div>
 														
 														<div class="col-6">
 															<label>{{ __('events.level_to') }} </label>
-															<select name="classic_level_max" class="w-full rounded-lg border-gray-200">
+															<select name="classic_level_max" id="classic_level_max" class="w-full rounded-lg border-gray-200">
 																<option value="">—</option>
 																@for ($i = 1; $i <= 7; $i++)
-																<option value="{{ $i }}" @selected((string)$classicMax === (string)$i)>{{ $i }} - {{ level_name($i) }}</option>
+																<option value="{{ $i }}" @selected((string)$classicMax === (string)$i)>{{ $i }} - {{ level_name($i, $levelScope ?? 'standard') }}</option>
 																@endfor
 															</select>
 														</div>
@@ -801,10 +801,10 @@
 													<div class="row">
 														<div class="col-6">
 															<label>{{ __('events.level_from') }} </label>
-															<select name="beach_level_min" class="w-full rounded-lg border-gray-200">
+															<select name="beach_level_min" id="beach_level_min" class="w-full rounded-lg border-gray-200">
 																<option value="">-</option>
 																@for ($i = 1; $i <= 7; $i++)
-																<option value="{{ $i }}" @selected((string)$beachMin === (string)$i)>{{ $i }} - {{ level_name($i) }}</option>
+																<option value="{{ $i }}" @selected((string)$beachMin === (string)$i)>{{ $i }} - {{ level_name($i, $levelScope ?? 'standard') }}</option>
 																@endfor
 															</select>
 															@error('beach_level_min')<div class="text-xs text-red-600 mt-1">{{ $message }}</div>@enderror
@@ -812,10 +812,10 @@
 														
 														<div class="col-6">
 															<label>{{ __('events.level_to') }} </label>
-															<select name="beach_level_max" class="w-full rounded-lg border-gray-200">
+															<select name="beach_level_max" id="beach_level_max" class="w-full rounded-lg border-gray-200">
 																<option value="">-</option>
 																@for ($i = 1; $i <= 7; $i++)
-																<option value="{{ $i }}" @selected((string)$beachMax === (string)$i)>{{ $i }} - {{ level_name($i) }}</option>
+																<option value="{{ $i }}" @selected((string)$beachMax === (string)$i)>{{ $i }} - {{ level_name($i, $levelScope ?? 'standard') }}</option>
 																@endfor
 															</select>
 															@error('beach_level_max')<div class="text-xs text-red-600 mt-1">{{ $message }}</div>@enderror
@@ -828,11 +828,22 @@
 												
 												<ul class="list f-16 mt-1">
 													<li>{{ __('events.level_range_hint') }}</li>
-												</ul>											
-												
+												</ul>
+
 											</div>
-										</div>								
-										
+										</div>
+
+										<script>
+										// Терминология уровней (питерская/стандартная) для 4 select'ов выше.
+										// $levelScope здесь — по городу организатора (до выбора локации);
+										// смена города на step2 (events-create.js, applySelected()) может
+										// перерисовать эти названия под выбранный город без перезагрузки.
+										window.__levelTerminologyNames = {
+											standard: @json(collect(range(1, 7))->mapWithKeys(fn ($l) => [$l => level_name($l, 'standard')])),
+											spb: @json(collect(range(1, 7))->mapWithKeys(fn ($l) => [$l => level_name($l, 'spb')])),
+										};
+										</script>
+
 										{{-- allow_registration --}}
 										<div class="col-md-6">
 											<div class="card">

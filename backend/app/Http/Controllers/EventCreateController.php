@@ -379,6 +379,14 @@ use App\Services\StaffLogService;
 			}
 			
             $trainerLabel = $this->buildTrainerPrefillLabel($prefill);
+
+            // Терминология уровней на step1: до выбора локации — по городу организатора
+            // (см. $cityId выше); old('city_id') — на случай редисплея формы после ошибки
+            // валидации, когда организатор уже успел выбрать другой город на step2.
+            $levelScopeCityId = (int) old('city_id', $cityId);
+            $levelScope = $levelScopeCityId > 0
+                ? level_terminology_scope_for_city(City::find($levelScopeCityId))
+                : 'standard';
 			
             $userCovers = Media::query()
 			->where('model_type', 'App\\Models\\User')
@@ -416,6 +424,7 @@ use App\Services\StaffLogService;
 			'tzGroups' => $tzGroups,
 			'tzDefault' => $tzDefault,
 'organizerSeasons' => $organizerSeasons,
+			'levelScope' => $levelScope,
             ]);
 		}
 		// GET /events/create/locations?city_id=123

@@ -2,6 +2,10 @@
 	@php
     $direction = $event->direction ?? 'classic';
     $isBeach = $direction === 'beach';
+    // Терминология уровней игроков на этой странице — по географии СОБЫТИЯ
+    // (турнир проходит в конкретном городе), а не по городу каждого игрока —
+    // иначе в одном ростере была бы смесь терминологий.
+    $levelScope = level_terminology_scope_for_event($event);
 	@endphp
 	<x-slot name="title">{{ __('tournaments.setup_title_with', ['title' => $event->title]) }}</x-slot>
 	
@@ -868,7 +872,7 @@ $tourNumber = $seasonData
 									<span style="color:{{ $pGenderColor }};font-weight:700">{{ $pGenderSign }}</span> ·
 									{{ __('tournaments.setup_unassigned_level') }}:
 									@if($pLevel)
-									<span class="levelmark levelmark--event level-{{ $pLevel }}">{{ __('events.level_short_' . $pLevel) }}</span>
+									<span class="levelmark levelmark--event level-{{ $pLevel }}">{{ level_name_short($pLevel, $levelScope) }}</span>
 									@else
 									<span class="levelmark levelmark--event level-na">!?</span>
 									@endif

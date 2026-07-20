@@ -37,6 +37,11 @@
 		</div>
 	</x-slot>
 
+    @php
+        // Питерская терминология уровней — по городу зрителя (гость → стандарт)
+        $levelScope = level_terminology_scope_for_user(auth()->user());
+    @endphp
+
     <div class="container">
         <div class="ramka">
 			<div class="level-section">
@@ -92,32 +97,32 @@
 												</thead>
 												<tbody>
 													<tr>
-														<td><div class="text-center"><strong class="levelmark level-1">{{ __('pages.lp_lvl_1') }}</strong></div></td>
-														<td>{{ __('pages.lp_adult_classic_1') }}</td>
+														<td><div class="text-center"><strong class="levelmark level-1">1 - {{ level_name(1, $levelScope) }}</strong></div></td>
+														<td>{{ ($levelScope === 'spb' ? level_spb_description(1, 'classic') : null) ?? __('pages.lp_adult_classic_1') }}</td>
 													</tr>
 													<tr>
-														<td><div class="text-center"><strong class="levelmark level-2">{{ __('pages.lp_lvl_2') }}</strong></div></td>
-														<td>{{ __('pages.lp_adult_classic_2') }}</td>
+														<td><div class="text-center"><strong class="levelmark level-2">2 - {{ level_name(2, $levelScope) }}</strong></div></td>
+														<td>{{ ($levelScope === 'spb' ? level_spb_description(2, 'classic') : null) ?? __('pages.lp_adult_classic_2') }}</td>
 													</tr>
 													<tr>
-														<td><div class="text-center"><strong class="levelmark level-3">{{ __('pages.lp_lvl_3') }}</strong></div></td>
-														<td>{{ __('pages.lp_adult_classic_3') }}</td>
+														<td><div class="text-center"><strong class="levelmark level-3">3 - {{ level_name(3, $levelScope) }}</strong></div></td>
+														<td>{{ ($levelScope === 'spb' ? level_spb_description(3, 'classic') : null) ?? __('pages.lp_adult_classic_3') }}</td>
 													</tr>
 													<tr>
-														<td><div class="text-center"><strong class="levelmark level-4">{{ __('pages.lp_lvl_4') }}</strong></div></td>
-														<td>{{ __('pages.lp_adult_classic_4') }}</td>
+														<td><div class="text-center"><strong class="levelmark level-4">4 - {{ level_name(4, $levelScope) }}</strong></div></td>
+														<td>{{ ($levelScope === 'spb' ? level_spb_description(4, 'classic') : null) ?? __('pages.lp_adult_classic_4') }}</td>
 													</tr>
 													<tr>
-														<td><div class="text-center"><strong class="levelmark level-5">{{ __('pages.lp_lvl_5') }}</strong></div></td>
-														<td>{{ __('pages.lp_adult_classic_5') }}</td>
+														<td><div class="text-center"><strong class="levelmark level-5">5 - {{ level_name(5, $levelScope) }}</strong></div></td>
+														<td>{{ ($levelScope === 'spb' ? level_spb_description(5, 'classic') : null) ?? __('pages.lp_adult_classic_5') }}</td>
 													</tr>
 													<tr class="level-pro">
-														<td><div class="text-center"><strong class="levelmark level-6">{{ __('pages.lp_lvl_6') }}</strong></div></td>
-														<td>{{ __('pages.lp_adult_classic_6') }}</td>
+														<td><div class="text-center"><strong class="levelmark level-6">6 - {{ level_name(6, $levelScope) }}</strong></div></td>
+														<td>{{ ($levelScope === 'spb' ? level_spb_description(6, 'classic') : null) ?? __('pages.lp_adult_classic_6') }}</td>
 													</tr>
 													<tr class="level-pro">
-														<td><div class="text-center"><strong class="levelmark level-7">{{ __('pages.lp_lvl_7') }}</strong></div></td>
-														<td>{{ __('pages.lp_adult_classic_7') }}</td>
+														<td><div class="text-center"><strong class="levelmark level-7">7 - {{ level_name(7, $levelScope) }}</strong></div></td>
+														<td>{{ ($levelScope === 'spb' ? level_spb_description(7, 'classic') : null) ?? __('pages.lp_adult_classic_7') }}</td>
 													</tr>
 													<tr class="level-banned">
 														<td>
@@ -179,32 +184,32 @@
 												</thead>
 												<tbody>
 													<tr>
-														<td><div class="text-center"><strong class="levelmark level-1">{{ __('pages.lp_lvl_1') }}</strong></div></td>
-														<td>{{ __('pages.lp_adult_beach_1') }}</td>
+														<td><div class="text-center"><strong class="levelmark level-1">1 - {{ level_name(1, $levelScope) }}</strong></div></td>
+														<td>{{ ($levelScope === 'spb' ? level_spb_description(1, 'beach') : null) ?? __('pages.lp_adult_beach_1') }}</td>
 													</tr>
 													<tr>
-														<td><div class="text-center"><strong class="levelmark level-2">{{ __('pages.lp_lvl_2') }}</strong></div></td>
-														<td>{{ __('pages.lp_adult_beach_2') }}</td>
+														<td><div class="text-center"><strong class="levelmark level-2">2 - {{ level_name(2, $levelScope) }}</strong></div></td>
+														<td>{{ ($levelScope === 'spb' ? level_spb_description(2, 'beach') : null) ?? __('pages.lp_adult_beach_2') }}</td>
 													</tr>
 													<tr>
-														<td><div class="text-center"><strong class="levelmark level-3">{{ __('pages.lp_lvl_3') }}</strong></div></td>
-														<td>{{ __('pages.lp_adult_beach_3') }}</td>
+														<td><div class="text-center"><strong class="levelmark level-3">3 - {{ level_name(3, $levelScope) }}</strong></div></td>
+														<td>{{ ($levelScope === 'spb' ? level_spb_description(3, 'beach') : null) ?? __('pages.lp_adult_beach_3') }}</td>
 													</tr>
 													<tr>
-														<td><div class="text-center"><strong class="levelmark level-4">{{ __('pages.lp_lvl_4') }}</strong></div></td>
-														<td>{{ __('pages.lp_adult_beach_4') }}</td>
+														<td><div class="text-center"><strong class="levelmark level-4">4 - {{ level_name(4, $levelScope) }}</strong></div></td>
+														<td>{{ ($levelScope === 'spb' ? level_spb_description(4, 'beach') : null) ?? __('pages.lp_adult_beach_4') }}</td>
 													</tr>
 													<tr>
-														<td><div class="text-center"><strong class="levelmark level-5">{{ __('pages.lp_lvl_5') }}</strong></div></td>
-														<td>{{ __('pages.lp_adult_beach_5') }}</td>
+														<td><div class="text-center"><strong class="levelmark level-5">5 - {{ level_name(5, $levelScope) }}</strong></div></td>
+														<td>{{ ($levelScope === 'spb' ? level_spb_description(5, 'beach') : null) ?? __('pages.lp_adult_beach_5') }}</td>
 													</tr>
 													<tr class="level-pro">
-														<td><div class="text-center"><strong class="levelmark level-6">{{ __('pages.lp_lvl_6') }}</strong></div></td>
-														<td>{{ __('pages.lp_adult_beach_6') }}</td>
+														<td><div class="text-center"><strong class="levelmark level-6">6 - {{ level_name(6, $levelScope) }}</strong></div></td>
+														<td>{{ ($levelScope === 'spb' ? level_spb_description(6, 'beach') : null) ?? __('pages.lp_adult_beach_6') }}</td>
 													</tr>
 													<tr class="level-pro">
-														<td><div class="text-center"><strong class="levelmark level-7">{{ __('pages.lp_lvl_7') }}</strong></div></td>
-														<td>{{ __('pages.lp_adult_beach_7') }}</td>
+														<td><div class="text-center"><strong class="levelmark level-7">7 - {{ level_name(7, $levelScope) }}</strong></div></td>
+														<td>{{ ($levelScope === 'spb' ? level_spb_description(7, 'beach') : null) ?? __('pages.lp_adult_beach_7') }}</td>
 													</tr>
 												</tbody>
 											</table>

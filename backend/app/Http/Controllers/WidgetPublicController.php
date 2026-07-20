@@ -218,6 +218,7 @@ JS;
                     'locations.name as location_name',
                     'locations.address as location_address',
                     'cities.name as city_name',
+                    'cities.region as city_region',
                     'egs.max_players as egs_max_players',
                     'egs.reserve_players_max as egs_reserve_players_max',
                     'egs.teams_count as egs_teams_count',
@@ -247,6 +248,7 @@ JS;
                 $dir = $occ->direction ?? 'classic';
                 $lvMin = $dir === 'beach' ? $occ->beach_level_min : $occ->classic_level_min;
                 $lvMax = $dir === 'beach' ? $occ->beach_level_max : $occ->classic_level_max;
+                $levelScope = level_terminology_scope_for_region($occ->city_region ?? null);
 
                 // Цена
                 $priceLabel = null;
@@ -267,6 +269,7 @@ JS;
                     'slots_info' => $slotsInfo,
                     'level_min'  => $lvMin,
                     'level_max'  => $lvMax,
+                    'level_scope' => $levelScope,
                     'price'      => $priceLabel,
                     'is_private' => (bool) $occ->is_private,
                     'url'        => route('events.show', [
