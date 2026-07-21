@@ -96,13 +96,28 @@ class ActivitySession extends Model
 
     /**
      * "Призрачная" тренировка — сессия без реальных данных (обрыв связи сразу после старта,
-     * случайный тап на кнопку записи и т.п.): короткая, без сэмплов пульса и без прыжков.
+     * случайный тап на кнопку записи и т.п.): без сэмплов пульса и без прыжков, и либо короткая
+     * завершённая, либо зависшая в status=live дольше sync_stale_hours (см.
+     * report_activity_ghost_duplicates_2026-07-21.md — такие session никогда не получат finalize(),
+     * activity:cleanup-stale-sessions уберёт их физически, но до ближайшего часового прогона
+     * они не должны маячить в списке как "неизвестно что происходит").
      */
     public function getIsGhostAttribute(): bool
     {
-        return $this->status === 'completed'
-            && ($this->duration_sec ?? 0) < 30
-            && ($this->samples_count ?? 0) === 0
-            && ($this->jump_count ?? 0) === 0;
+        if (($this->samples_count ?? 0) !== 0 || ($this->jump_count ?? 0) !== 0) {
+            return false;
+        }
+
+        if ($this->status === 'completed') {
+            return ($this->duration_sec ?? 0) < 30;
+        }
+
+        if ($this->status === 'live') {
+            $ageHours = (now()->timestamp - $this->started_at->timestamp) / 3600;
+
+            return $ageHours >= config('activity.sync_stale_hours', 6);
+        }
+
+        return false;
     }
 }

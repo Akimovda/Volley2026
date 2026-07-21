@@ -131,6 +131,13 @@ Schedule::command('activity:prompt-recording')
     ->everyMinute()
     ->withoutOverlapping();
 
+// Зависшие status=live сессии (см. report_activity_ghost_duplicates_2026-07-21.md) — старше
+// activity.sync_stale_hours данные с устройства уже не придут: пустые удаляются, частичные
+// финализируются по последним реальным сэмплам/прыжкам.
+Schedule::command('activity:cleanup-stale-sessions')
+    ->hourly()
+    ->withoutOverlapping();
+
 // Club module: истечение неоплаченных броней кортов (TTL 30 минут, каждые 5 минут):
 // pending-брони с payment_mode=prepaid, у которых наступил expires_at, переводятся
 // в expired — освобождают слот, чтобы им мог воспользоваться другой организатор.
