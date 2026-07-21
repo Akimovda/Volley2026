@@ -28,9 +28,26 @@ class ActivitySessionService
      *                                на устройстве. Используется только при создании НОВОЙ
      *                                сессии — если сессия уже существует (идемпотентность по
      *                                client_uuid), started_at первого запроса не трогаем.
+     * @param string|null $userAgent User-Agent запроса — только для диагностики (см. Log::warning
+     *                                ниже), на бизнес-логику не влияет.
      */
-    public function start(User $user, ?EventOccurrence $occurrence, ?AthleteDevice $device, ?string $clientUuid = null, ?float $startedAtTs = null): ActivitySession
+    public function start(User $user, ?EventOccurrence $occurrence, ?AthleteDevice $device, ?string $clientUuid = null, ?float $startedAtTs = null, ?string $userAgent = null): ActivitySession
     {
+        // Мониторинг диагностированной дыры дедупа (report_activity_ghost_duplicates_2026-07-21.md):
+        // UNIQUE(user_id, client_uuid) в PostgreSQL не считает NULL=NULL, поэтому вызов без uuid
+        // полностью обходит защиту от дублей ниже и создаёт неубиваемый "призрак" (см. cleanup-команду).
+        // Фаза 1: только наблюдаем, кто именно шлёт без uuid — НЕ генерируем и НЕ отклоняем,
+        // чтобы не потерять реальную тренировку, пока не подтверждено логами "старых клиентов нет".
+        if ($clientUuid === null) {
+            Log::warning('[Activity] start() без client_uuid', [
+                'user_id'       => $user->id,
+                'occurrence_id' => $occurrence?->id,
+                'device_id'     => $device?->id,
+                'device_protocol' => $device?->protocol,
+                'user_agent'    => $userAgent,
+            ]);
+        }
+
         // Идемпотентность: часы повторяют доставку (sendMessage/transferUserInfo/HTTP retry)
         // с одним и тем же client_uuid — возвращаем уже созданную сессию, не плодим дубли.
         // started_at НЕ обновляем — она зафиксирована первым запросом; повторный (например,

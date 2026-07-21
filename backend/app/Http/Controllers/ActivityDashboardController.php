@@ -38,15 +38,22 @@ class ActivityDashboardController extends Controller
             $query->where('direction', $direction);
         }
 
-        // "Призрачные" тренировки (см. ActivitySession::getIsGhostAttribute) — короткие,
-        // без пульса и прыжков; по умолчанию скрыты из списка, но не удаляются автоматически.
-        $isGhostSql = "status = 'completed' AND COALESCE(duration_sec, 0) < 30 "
-            . "AND COALESCE(samples_count, 0) = 0 AND COALESCE(jump_count, 0) = 0";
+        // "Призрачные" тренировки (см. ActivitySession::getIsGhostAttribute) — без пульса и прыжков;
+        // либо короткая completed-заглушка, либо status=live, зависшая дольше sync_stale_hours
+        // (см. report_activity_ghost_duplicates_2026-07-21.md — такие никогда не получат finalize(),
+        // activity:cleanup-stale-sessions уберёт их физически не раньше ближайшего часового прогона —
+        // до этого момента прячем их тем же фильтром, что и completed-пустышки).
+        // По умолчанию скрыты из списка, но не удаляются автоматически.
+        $isGhostSql = "COALESCE(samples_count, 0) = 0 AND COALESCE(jump_count, 0) = 0 AND ("
+            . "(status = 'completed' AND COALESCE(duration_sec, 0) < 30)"
+            . " OR (status = 'live' AND started_at < ?)"
+            . ")";
+        $isGhostBindings = [now()->subHours((int) config('activity.sync_stale_hours', 6))];
 
-        $ghostCount = (clone $query)->whereRaw($isGhostSql)->count();
+        $ghostCount = (clone $query)->whereRaw($isGhostSql, $isGhostBindings)->count();
 
         if (!$showGhosts) {
-            $query->whereRaw("NOT ($isGhostSql)");
+            $query->whereRaw("NOT ($isGhostSql)", $isGhostBindings);
         }
 
         $sessions = $query->paginate(20)->withQueryString();

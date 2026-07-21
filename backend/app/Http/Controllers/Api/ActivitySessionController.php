@@ -49,7 +49,14 @@ class ActivitySessionController extends Controller
         $clientUuid  = $this->resolveClientUuid($data);
         $startedAtTs = isset($data['started_at']) ? (float) $data['started_at'] : null;
 
-        $session = $this->service->start($request->user(), $occurrence, $device, $clientUuid, $startedAtTs);
+        $session = $this->service->start(
+            $request->user(),
+            $occurrence,
+            $device,
+            $clientUuid,
+            $startedAtTs,
+            $request->userAgent(),
+        );
 
         $jumpHeightCoeff = $this->profileService->effectiveJumpCoeff($request->user(), $device);
 
