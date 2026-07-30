@@ -89,6 +89,7 @@ return [
     // Top messages
     'private_link' => 'Private link 🔗:',
     'empty_list'   => 'No events yet. They\'ll appear soon 🙂',
+    'empty_list_day' => 'No events on this day.',
 
     // Days strip
     'days_prev'   => 'Previous',

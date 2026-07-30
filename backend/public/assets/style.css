@@ -993,6 +993,19 @@ body.dark input[type="datetime-local"]::-webkit-calendar-picker-indicator {
 .card-ramka.select-dropdown-open {
     z-index: 100 !important;
 }
+/* .top-section .container уже имеет свой z-index:2 (своя stacking context) —
+   select внутри нового events-topbar (см. events/index.blade.php) выше ничего
+   не поднимает без этого правила, дропдаун уходит под .main-container (z-index:3),
+   где рендерятся чипы дней/карточки. Тот же приём — поднимаем ancestor целиком. */
+.top-section.select-dropdown-open {
+    z-index: 100 !important;
+}
+/* Открытый .info-tip на карточке мероприятия (уровни/подтип/гендер) — поднимаем
+   карточку (.card-ramka) целиком над соседними, иначе тултип уходит под
+   следующую карточку в сетке (см. script.js .js-info-tip). */
+.card-ramka.info-tip-open {
+    z-index: 50 !important;
+}
 .form-select-option {
     padding: 0.8rem 2rem;
     font-size: 1.6rem;
@@ -4267,6 +4280,13 @@ body.dark .badge.badge-muted {
 /* ── Тултипы карточки мероприятия (уровни, подтип игры, гендерная политика) ──
    Тап открывает/закрывает (см. script.js .js-info-tip) — работает и на мобиле
    (WKWebView), не завязано на :hover. */
+/* Бейджи подтипа игры/гендерной политики на карточке мероприятия — крупнее и
+   жирнее базового .badge.badge-sm (тот рассчитан на мелкие служебные пометки). */
+.event-badges-row .badge.badge-sm {
+	font-size: 1.3rem;
+	font-weight: 700;
+	padding: 0.4rem 1rem;
+}
 .info-tip {
 	position: relative;
 	display: inline-block;
@@ -4565,6 +4585,8 @@ body.dark .wizard-pill.is-active {
     margin: 0.5rem auto 0;
 }
 .events-page .day-chip.last-tab .dc-dot { display: none; }
+/* День без мероприятий — точка резервирует место (не двигает высоту чипа), но невидима */
+.events-page .day-chip .dc-dot.dc-dot--empty { background: transparent; }
 .events-page .day-chip.last-tab .dc-date { font-size: 1.3rem; font-weight: 600; }
 .events-page .day-chip.last-tab .dc-dow  { font-size: 12px; opacity: .85; text-transform: none; }
 /* Выходные (СБ/ВС) — день недели красным, будни — серым (уже задано через opacity выше) */

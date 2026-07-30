@@ -4,6 +4,13 @@ $nowUtc  = \Illuminate\Support\Carbon::now('UTC');
 $occList = $occurrences ?? collect();
 $evList  = $events ?? collect();
 
+// Occurrence-режим определяется ТИПОМ переданной коллекции: occurrenceIndex()
+// в EventIndexService всегда отдаёт Paginator (даже если в 10-дневном окне
+// 0 записей), legacyIndex() отдаёт обычную Collection через $events. Если бы
+// определяли режим по "hasOcc" (наличие данных), пустое окно ошибочно считалось
+// бы legacy-режимом и чипы дней вообще не рисовались бы.
+$isOccurrenceMode = $occList instanceof \Illuminate\Contracts\Pagination\Paginator;
+
 $hasOcc = false;
 if ($occList instanceof \Illuminate\Contracts\Pagination\Paginator) {
 $hasOcc = $occList->count() > 0;
@@ -12,7 +19,7 @@ $hasOcc = $occList->isNotEmpty();
 }
 
 $hasEvents = false;
-if (!$hasOcc) {
+if (!$isOccurrenceMode) {
 if ($evList instanceof \Illuminate\Contracts\Pagination\Paginator) {
 $hasEvents = $evList->count() > 0;
 } elseif ($evList instanceof \Illuminate\Support\Collection) {
@@ -51,12 +58,20 @@ $trainersById   = $trainersById ?? [];
 $trainerColumn  = $trainerColumn ?? null;
 $trainerIconUrl = asset('icons/trainer.png');
 
-// ✅ Группировка по датам — по TZ пользователя
+// ✅ Полное окно — 10 календарных дней подряд начиная с "сегодня" (+ offset*10),
+// по TZ пользователя. Каждый день попадает в чипы НЕЗАВИСИМО от наличия событий
+// (иначе зелёная точка "есть события" бессмысленна — она была бы у всех
+// показанных дней). offset — та же пагинация, что читает EventIndexService.
+$dayOffset = max(0, (int) request('offset', 0));
 $groupedByDate = [];
-$today    = \Illuminate\Support\Carbon::now($userTz)->startOfDay();
-$todayKey = $today->format('Y-m-d');
 
-if ($hasOcc) {
+if ($isOccurrenceMode) {
+$windowStart = \Illuminate\Support\Carbon::now($userTz)->startOfDay()->addDays($dayOffset * 10);
+for ($i = 0; $i < 10; $i++) {
+$d = (clone $windowStart)->addDays($i);
+$groupedByDate[$d->format('Y-m-d')] = ['date' => $d, 'occurrences' => []];
+}
+
 foreach ($occList as $occ) {
 $date = $occ->starts_at
 ? \Illuminate\Support\Carbon::parse($occ->starts_at, 'UTC')->setTimezone($userTz)->startOfDay()
@@ -64,36 +79,16 @@ $date = $occ->starts_at
 if (!$date) continue;
 
 $dateKey = $date->format('Y-m-d');
-if ($dateKey < $todayKey) continue;
+if (!isset($groupedByDate[$dateKey])) continue; // вне текущего 10-дневного окна
 
-if (!isset($groupedByDate[$dateKey])) {
-$groupedByDate[$dateKey] = ['date' => $date, 'occurrences' => []];
-	}
-	$groupedByDate[$dateKey]['occurrences'][] = $occ;
-	}
-	
-	if (!empty($groupedByDate) && is_array($groupedByDate)) {
-	ksort($groupedByDate);
-	$groupedByDate = array_slice($groupedByDate, 0, 10, true);
-	} else {
-	$groupedByDate = [];
-	}
-    }
-	
-    $months = __('events.month_short');
-    $daysOfWeek = __('events.dow_short');
-	
-    $formatOptions = [];
-    if ($hasOcc) {
-	foreach ($occList as $occ) {
-	$e = $occ->event;
-	if (!$e) continue;
-	$fmt = (string)($e->format ?? '');
-	if ($fmt !== '') $formatOptions[$fmt] = $fmt;
-	}
-    }
-    ksort($formatOptions);
-    $levelOptions = [1, 2, 3, 4, 5, 6, 7];
+$groupedByDate[$dateKey]['occurrences'][] = $occ;
+}
+}
+
+$months = __('events.month_short');
+$daysOfWeek = __('events.dow_short');
+
+$levelOptions = [1, 2, 3, 4, 5, 6, 7];
     $levelScope = level_terminology_scope_for_user(auth()->user());
 
     // ✅ Текущие значения фильтров — считаем один раз здесь, используем и в
@@ -155,7 +150,7 @@ $groupedByDate[$dateKey] = ['date' => $date, 'occurrences' => []];
 		<x-slot name="h1">{{ __('events.index_h1') }}</x-slot>
 		
 		<x-slot name="h2">
-            @if($hasOcc && !empty($groupedByDate))
+            @if($isOccurrenceMode && !empty($groupedByDate))
 			@php
 			$firstKey = array_key_first($groupedByDate);
 			$lastKey  = array_key_last($groupedByDate);
@@ -323,7 +318,7 @@ $groupedByDate[$dateKey] = ['date' => $date, 'occurrences' => []];
 			{{-- =========================
 			ВАРИАНТ 1: OCCURRENCES
 			========================= --}}
-			@if ($hasOcc)
+			@if ($isOccurrenceMode)
 			{{-- Верхняя лента дней --}}
 			<div id="eventsTabsRoot" data-today="{{ \Illuminate\Support\Carbon::now($userTz)->format('Y-m-d') }}"></div>
 			<div class="tabs-content">	
@@ -342,6 +337,7 @@ $groupedByDate[$dateKey] = ['date' => $date, 'occurrences' => []];
 							$labelDate = $day . ' ' . ($months[$month] ?? '');
 							$dow = $daysOfWeek[$weekday] ?? '';
 							$isWeekend = $weekday >= 6;
+							$dayHasEvents = !empty($dayData['occurrences']);
                             @endphp
                             <a href="#days" class="tab day-chip {{ $isWeekend ? 'is-weekend' : '' }} {{ $loop->first ? 'active' : '' }}"
 							data-tab="day-{{ $loop->iteration }}"
@@ -349,12 +345,13 @@ $groupedByDate[$dateKey] = ['date' => $date, 'occurrences' => []];
 							title="{{ $labelDate }}">
                                 <div class="dc-dow">{{ $dow }}</div>
                                 <div class="dc-date">{{ $day }}</div>
-                                <span class="dc-dot" aria-hidden="true"></span>
+                                <span class="dc-dot {{ $dayHasEvents ? '' : 'dc-dot--empty' }}" aria-hidden="true"></span>
 							</a>
                             @endforeach
 							
-                            {{-- Навигация prev/next --}}
-                            @if(count($groupedByDate) >= 10 || request('offset', 0) > 0)
+                            {{-- Навигация prev/next — окно всегда ровно 10 календарных дней,
+                            поэтому "следующие 10 дней" показываем всегда, а "предыдущие" —
+                            только если мы не на первом окне (offset>0). --}}
                             @php
 							$currentOffset = (int) request('offset', 0);
 							$nextOffset    = $currentOffset + 10;
@@ -367,7 +364,7 @@ $groupedByDate[$dateKey] = ['date' => $date, 'occurrences' => []];
 							'city'      => request('city'),
 							], fn($v) => $v !== '' && $v !== null);
                             @endphp
-							
+
                             @if($currentOffset > 0)
                             <a href="{{ route('events.index', array_merge($baseParams, ['offset' => $prevOffset])) }}"
 							class="no-highlight day-chip last-tab tab">
@@ -375,15 +372,12 @@ $groupedByDate[$dateKey] = ['date' => $date, 'occurrences' => []];
                                 <div class="dc-date">{{ __('events.days_n_days') }}</div>
 							</a>
                             @endif
-							
-                            @if(count($groupedByDate) >= 10)
+
                             <a href="{{ route('events.index', array_merge($baseParams, ['offset' => $nextOffset])) }}"
 							class="no-highlight day-chip last-tab tab">
                                 <div class="dc-dow">{{ __('events.days_next') }}</div>
                                 <div class="dc-date">{{ __('events.days_n_days') }}</div>
-							</a>
-                            @endif
-                            @endif
+						</a>
                             <div class="tab-highlight"></div>
 						</div>
 					</div>
@@ -393,11 +387,17 @@ $groupedByDate[$dateKey] = ['date' => $date, 'occurrences' => []];
 				<div class="tab-panes">
                     @foreach($groupedByDate as $dateKey => $dayData)
                     <div class="tab-pane {{ $loop->first ? 'active' : '' }}" id="day-{{ $loop->iteration }}">
+                        @if(empty($dayData['occurrences']))
+                        <div class="ramka">
+                            <div class="alert alert-info">{{ __('events.empty_list_day') }}</div>
+                        </div>
+                        @else
                         <div class="row mb-0">
                             @foreach ($dayData['occurrences'] as $occ)
 							@include('events._card')
                             @endforeach
 						</div>
+						@endif
 					</div>
                     @endforeach
 				</div>

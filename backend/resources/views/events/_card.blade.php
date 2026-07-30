@@ -401,15 +401,17 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
                         @endif
                         @endif
 
-						@if($subtypeTipText || $genderBadgeLabel)
-						<div class="d-flex flex-wrap gap-1 mb-05">
+						@if($gsSubtype !== '' || $genderBadgeLabel)
+						<div class="event-badges-row d-flex flex-wrap gap-1 mb-05">
 							@if($gsSubtype !== '')
-							<span class="info-tip js-info-tip">
-								<span class="info-tip-trigger badge badge-sm">{{ $gsSubtype }}</span>
 								@if($subtypeTipText)
-								<span class="info-tip-content">{{ $subtypeTipText }}</span>
+								<span class="info-tip js-info-tip">
+									<span class="info-tip-trigger badge badge-sm">{{ $gsSubtype }}</span>
+									<span class="info-tip-content">{{ $subtypeTipText }}</span>
+								</span>
+								@else
+								<span class="badge badge-sm">{{ $gsSubtype }}</span>
 								@endif
-							</span>
 							@endif
 							@if($genderBadgeLabel)
 							<span class="info-tip js-info-tip">

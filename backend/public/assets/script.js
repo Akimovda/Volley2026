@@ -654,7 +654,7 @@ const $dropdown = $('<div>', {
 			// Закрываем dropdown
 			$customSelect.removeClass('form-select-custom--active');
 			$dropdown.removeClass('form-select-dropdown--active');
-			$wrapper.closest('.ramka, .card-ramka').removeClass('select-dropdown-open');
+			$wrapper.closest('.ramka, .card-ramka, .top-section').removeClass('select-dropdown-open');
 		});
 
 		$dropdown.append($customOption);
@@ -680,7 +680,7 @@ const $dropdown = $('<div>', {
 		// Закрываем другие открытые селекты (и опускаем их ramka обратно)
 		$('.form-select-custom--active').not($customSelect).removeClass('form-select-custom--active');
 		$('.form-select-dropdown--active').not($dropdown).removeClass('form-select-dropdown--active');
-		$('.ramka.select-dropdown-open, .card-ramka.select-dropdown-open').not($wrapper.closest('.ramka, .card-ramka')).removeClass('select-dropdown-open');
+		$('.ramka.select-dropdown-open, .card-ramka.select-dropdown-open').not($wrapper.closest('.ramka, .card-ramka, .top-section')).removeClass('select-dropdown-open');
 
 		// Переключаем состояние текущего
 		$customSelect.toggleClass('form-select-custom--active');
@@ -688,7 +688,7 @@ const $dropdown = $('<div>', {
 		// Поднимаем свою ramka над соседними на время открытого dropdown —
 		// без этого дропдаун уходит под следующую ramka (backdrop-filter создаёт
 		// свой stacking context, см. style.css рядом с .select-dropdown-open)
-		$wrapper.closest('.ramka, .card-ramka').toggleClass('select-dropdown-open', willOpen);
+		$wrapper.closest('.ramka, .card-ramka, .top-section').toggleClass('select-dropdown-open', willOpen);
 	});
 
 	// Закрытие при клике вне
@@ -696,7 +696,7 @@ const $dropdown = $('<div>', {
 		if (!$wrapper.is(e.target) && $wrapper.has(e.target).length === 0) {
 			$customSelect.removeClass('form-select-custom--active');
 			$dropdown.removeClass('form-select-dropdown--active');
-			$wrapper.closest('.ramka, .card-ramka').removeClass('select-dropdown-open');
+			$wrapper.closest('.ramka, .card-ramka, .top-section').removeClass('select-dropdown-open');
 		}
 	});
 	
@@ -822,15 +822,23 @@ $('.ufilter-btn').on('click', function() {
 
 // Тултипы карточки мероприятия (уровни, подтип игры, гендерная политика) —
 // тап открывает/закрывает, тап вне закрывает. Не hover — должно работать в WKWebView.
+// .event-card/.card-ramka создают свою stacking context (backdrop-filter) — открытый
+// тултип нужно поднимать вместе с родительской карточкой, иначе соседняя карточка
+// (позже в DOM) перекрывает всплывающее окно (тот же приём, что у select-dropdown-open).
 $(document).on('click', '.js-info-tip > .info-tip-trigger', function(e) {
 	e.stopPropagation();
 	const $tip = $(this).closest('.info-tip');
 	const wasOpen = $tip.hasClass('is-open');
 	$('.info-tip.is-open').removeClass('is-open');
-	if (!wasOpen) $tip.addClass('is-open');
+	$('.card-ramka.info-tip-open').removeClass('info-tip-open');
+	if (!wasOpen) {
+		$tip.addClass('is-open');
+		$tip.closest('.card-ramka').addClass('info-tip-open');
+	}
 });
 $(document).on('click', function() {
 	$('.info-tip.is-open').removeClass('is-open');
+	$('.card-ramka.info-tip-open').removeClass('info-tip-open');
 });
 
 

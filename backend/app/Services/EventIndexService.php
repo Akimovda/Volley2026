@@ -204,29 +204,20 @@ class EventIndexService
             }
         });
 
-        // Берём ближайшие 10 уникальных дат
-
+        // Окно — 10 календарных дней подряд начиная с "сегодня" пользователя
+        // (+ offset*10 дней), а НЕ 10 ближайших дат где реально есть события —
+        // иначе чипы дней показывали только дни с событиями, и зелёная точка
+        // "есть события" была бессмысленна (у всех показанных дней она есть).
         $offset = max(0, (int) request('offset', 0));
-        
-        $allDates = (clone $occQ)
-            ->reorder()
-            ->selectRaw('DATE(starts_at) as day')
-            ->groupBy('day')
-            ->orderBy('day')
-            ->skip($offset)
-            ->take(10)
-            ->pluck('day');
-        
-        if ($allDates->isEmpty()) {
-            $occurrences = $occQ->paginate(30);
-        } else {
-            $firstDate = $allDates->first();
-            $lastDate  = $allDates->last();
-            $occurrences = $occQ
-                ->whereDate('starts_at', '>=', $firstDate)
-                ->whereDate('starts_at', '<=', $lastDate)
-                ->paginate(500);
-        }
+
+        $windowTz    = \App\Support\DateTime::effectiveUserTz($user);
+        $windowStart = Carbon::now($windowTz)->startOfDay()->addDays($offset * 10);
+        $windowEnd   = (clone $windowStart)->addDays(9)->endOfDay();
+
+        $occurrences = $occQ
+            ->where('starts_at', '>=', $windowStart->clone()->setTimezone('UTC'))
+            ->where('starts_at', '<=', $windowEnd->clone()->setTimezone('UTC'))
+            ->paginate(500);
 
         /*
         |--------------------------------------------------------------------------
