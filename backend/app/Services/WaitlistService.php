@@ -383,6 +383,20 @@ class WaitlistService
                     }
                 }
 
+                // Гендерная квота mixed_limited (потолок ОСНОВНОГО состава для
+                // ограниченного пола) — checkEligibility() её больше не проверяет
+                // (иначе постановка в очередь блокировалась бы по текущему снимку
+                // занятости, см. diagnosis_event380_waitlist_gender_2026-07-30.md).
+                // Проверяем здесь, строго в привязке к $position — если она не входит
+                // в gender_limited_positions, quota-проверка внутри вернёт allowed=true
+                // без учёта count по другим, не связанным с этим слотом позициям.
+                if ($position !== '') {
+                    $quotaResult = $guard->checkGenderQuotaForUser($user, $occurrence, null, $position);
+                    if (!empty($quotaResult->errors)) {
+                        continue;
+                    }
+                }
+
                 // Захват слота для классических основных позиций
                 $isReserve = $position === 'reserve';
                 if ($direction === 'classic' && $position !== '' && !$isReserve) {

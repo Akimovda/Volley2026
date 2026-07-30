@@ -854,7 +854,26 @@
 
 		/**
 		 * Проверяет право участника записаться/встать в резерв без проверки мест.
-		 * Используется в листе ожидания.
+		 * Используется в листе ожидания (постановка в очередь) и в autoBookNext()
+		 * (реальная посадка).
+		 *
+		 * Гендерная политика проверяется в два разных места по-разному:
+		 * - only_male / only_female / mixed_5050 — хард-правило и квота по общему
+		 *   количеству, не завязаны на конкретную позицию, проверяются здесь как
+		 *   и раньше (иначе игрок "не того" пола мог бы встать в очередь на
+		 *   событие, где ему в принципе нет места).
+		 * - mixed_limited — КВОТУ (кол-во уже занятых мест на позиции) здесь НЕ
+		 *   проверяем: это условие момента ПОСАДКИ, а не входа в очередь, т.к.
+		 *   к моменту реальной посадки состав очереди/занятость могут измениться
+		 *   (см. diagnosis_event380_waitlist_gender_2026-07-30.md). ДОПУСК позиции
+		 *   ("куда вообще можно", в отличие от "сколько уже занято") сюда
+		 *   намеренно НЕ включён — этот метод не знает, какие позиции выберет
+		 *   вызывающий код (в OccurrenceWaitlistController позиции могут ещё
+		 *   доопределяться после этого вызова, см. gender_window_closed ветку) —
+		 *   допуск проверяется отдельным методом checkGenderPositionsAllowed()
+		 *   на ФИНАЛЬНОМ наборе позиций. autoBookNext() проверяет и квоту, и
+		 *   допуск самостоятельно, в привязке к конкретной освобождающейся
+		 *   позиции — см. WaitlistService::autoBookNext().
 		 */
 		public function checkEligibility(?User $user, EventOccurrence $occurrence, bool $skipGenderWindow = false): GuardResult
 		{
@@ -873,9 +892,8 @@
 			$this->checkAgePolicy($user, $occurrence, $event, $agePolicy, $result);
 			$this->checkLevelPolicy($user, $occurrence, $event, $result);
 
-			// Гендерная политика — нужна чтобы autoBookNext не записал неподходящий пол
 			if ($user && empty($result->errors)) {
-				$genderResult = $this->checkGenderQuotaForUser($user, $occurrence);
+				$genderResult = $this->checkGenderQuotaForUser($user, $occurrence, null, null, true);
 				foreach ($genderResult->errors as $genderError) {
 					$result->errors[] = $genderError;
 				}
@@ -892,19 +910,109 @@
 		}
 
 		/**
+		 * Хард-допуск позиций при mixed_limited: ограниченному полу разрешены
+		 * ТОЛЬКО позиции из gender_limited_positions — это правило политики (кто
+		 * вообще имеет право туда встать), а не квота (сколько уже занято),
+		 * поэтому проверяется независимо от текущей занятости и НЕ пропускается
+		 * при входе в очередь.
+		 *
+		 * Вызывать на ФИНАЛЬНОМ наборе позиций (после любых auto-fill/нормализации
+		 * на стороне вызывающего кода) — иначе пустой или подменённый на входе
+		 * $positions обходит проверку. См. OccurrenceWaitlistController::store()
+		 * и diagnosis_event380_waitlist_gender_2026-07-30.md.
+		 *
+		 * $positions пустым быть не должно к моменту вызова — это ответственность
+		 * вызывающего кода (форма обязана требовать явный выбор позиции для
+		 * classic-мероприятий); сам метод пустой список просто пропускает молча
+		 * (нечего проверять), поэтому "пусто = разрешено" здесь не работает как
+		 * лазейка — её закрывает вызывающий код требованием непустого выбора.
+		 */
+		public function checkGenderPositionsAllowed(?User $user, $settings, array $positions): GuardResult
+		{
+			$result = GuardResult::allow();
+
+			if (!$user || empty($positions)) {
+				return $result;
+			}
+
+			$policy = (string)($settings?->gender_policy ?? 'mixed_open');
+			if ($policy !== 'mixed_limited' || !$settings) {
+				return $result;
+			}
+
+			$g = strtolower(trim((string)($user->gender ?? '')));
+			$viewerGender = null;
+			if (in_array($g, ['m', 'male'], true)) $viewerGender = 'm';
+			if (in_array($g, ['f', 'female'], true)) $viewerGender = 'f';
+			if (!$viewerGender) {
+				return $result;
+			}
+
+			$targetGender = match ($settings->gender_limited_side ?? null) {
+				'male'   => 'm',
+				'female' => 'f',
+				default  => null,
+			};
+			if (!$targetGender || $viewerGender !== $targetGender) {
+				return $result; // политика не касается пола этого пользователя
+			}
+
+			$allowedPositions = $settings->gender_limited_positions ?? [];
+			if (is_string($allowedPositions)) {
+				$allowedPositions = json_decode($allowedPositions, true) ?: [];
+			}
+
+			$forbidden = array_values(array_diff($positions, $allowedPositions));
+			if (empty($forbidden)) {
+				return $result;
+			}
+
+			// Показываем РАЗРЕШЁННЫЕ позиции (не запрещённые) — это то, что игроку
+			// реально нужно знать, чтобы поправить выбор. Раньше здесь ошибочно
+			// подставлялся список запрещённых позиций под текст "доступны только:"
+			// (получалось бы "доступны только: outside", хотя outside как раз
+			// недоступна) — исправлено 2026-07-30.
+			$allowedLabels = array_filter(array_map(fn($p) => __('events.positions.' . $p), $allowedPositions));
+
+			$result->allowed = false;
+			$result->errors[] = !empty($allowedLabels)
+				? __('events.gender_position_not_allowed', ['positions' => implode(', ', $allowedLabels)])
+				: __('events.gender_position_not_allowed_generic');
+
+			return $result;
+		}
+
+		/**
 		 * Проверяет гендерную квоту (only_male/only_female/mixed_5050/mixed_limited)
 		 * для конкретного пользователя без остальных проверок checkEligibility().
 		 * Используется при ручном назначении/смене позиции организатором
-		 * (EventRegistrationsManagementController), чтобы не дублировать
-		 * логику applyGenderPolicy().
+		 * (EventRegistrationsManagementController) и в WaitlistService::autoBookNext()
+		 * (посадка из очереди на конкретную освободившуюся позицию), чтобы не
+		 * дублировать логику applyGenderPolicy().
 		 *
 		 * $excludeRegistrationId — исключить эту регистрацию из подсчёта уже
 		 * занятых мест (например, саму перемещаемую запись).
+		 *
+		 * $onlyPosition — позиция, на которую реально претендует пользователь ПРЯМО
+		 * СЕЙЧАС (например, освободившийся слот в autoBookNext). Если задана и не
+		 * входит в gender_limited_positions — квота mixed_limited вообще не
+		 * применяется (позиция вне её области действия), даже если count по ДРУГИМ
+		 * ограниченным позициям того же события уже на потолке. Без этого параметра
+		 * (null, поведение по умолчанию — как у существующих вызовов из
+		 * EventRegistrationsManagementController) квота считается как раньше.
+		 *
+		 * $excludeLimitedQuota — полностью отключить числовую квоту mixed_limited
+		 * (блок "count >= limit"), не трогая остальные политики (only_male/
+		 * only_female/mixed_5050). Используется ТОЛЬКО из checkEligibility() —
+		 * квота mixed_limited должна проверяться в момент реальной посадки
+		 * (autoBookNext), а не при постановке в очередь.
 		 */
 		public function checkGenderQuotaForUser(
 			User $user,
 			EventOccurrence $occurrence,
-			?int $excludeRegistrationId = null
+			?int $excludeRegistrationId = null,
+			?string $onlyPosition = null,
+			bool $excludeLimitedQuota = false
 		): GuardResult {
 			$result = GuardResult::allow();
 			$event  = $occurrence->event;
@@ -927,7 +1035,7 @@
 
 			$registrations = $query->get();
 
-			$this->applyGenderPolicy($user, $settings, $registrations, $maxPlayers, $result);
+			$this->applyGenderPolicy($user, $settings, $registrations, $maxPlayers, $result, $onlyPosition, $excludeLimitedQuota);
 
 			return $result;
 		}
@@ -1041,7 +1149,9 @@
             $settings,
             Collection $registrations,
             int $maxPlayers,
-            GuardResult $result
+            GuardResult $result,
+            ?string $onlyPosition = null,
+            bool $excludeLimitedQuota = false
         ): array {
 			
 			$policy = (string)($settings?->gender_policy ?? 'mixed_open');
@@ -1113,12 +1223,22 @@
 				}
 				
 				$targetGender = null;
-				
+
 				if ($side === 'male')   $targetGender = 'm';
 				if ($side === 'female') $targetGender = 'f';
-				
-				if ($targetGender && $viewerGender === $targetGender) {
-					
+
+				// Квота привязана к конкретной позиции: если позиция, на которую
+				// претендует пользователь ПРЯМО СЕЙЧАС ($onlyPosition — например,
+				// освободившийся слот в autoBookNext), не входит в
+				// gender_limited_positions — квота к ней не относится вообще, даже
+				// если count по ДРУГИМ ограниченным позициям того же события уже на
+				// потолке (см. diagnosis_event380_waitlist_gender_2026-07-30.md).
+				// $onlyPosition === null (вызовы без этого параметра, напр. ручное
+				// назначение организатором) — поведение как раньше, без сужения.
+				$positionRelevant = $onlyPosition === null || in_array($onlyPosition, $positions, true);
+
+				if ($targetGender && $viewerGender === $targetGender && $positionRelevant && !$excludeLimitedQuota) {
+
 					$count = 0;
 					
 					foreach ($registrations as $r) {
