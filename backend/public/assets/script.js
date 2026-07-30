@@ -63,15 +63,16 @@ function resetMenus() {
 
 
 /* =========================
-	ПОЗИЦИЯ МЕНЮ (top от реальной высоты шапки)
+	ПОЗИЦИЯ МЕНЮ (top от реальной высоты шапки) — ТОЛЬКО ДЕСКТОП
 ========================= */
-// .fix-header-menu теперь position:fixed с фиксированным top в CSS не задан —
+// На десктопе .fix-header-menu — position:fixed поповер (top в CSS не задан) —
 // в .is-app высота шапки зависит от env(safe-area-inset-top), который разный
-// на каждом устройстве (нет notch/Dynamic Island/обычный экран), поэтому
-// единственный надёжный способ — измерить реальный getBoundingClientRect()
-// шапки и поставить меню сразу под ней.
+// на каждом устройстве, поэтому единственный надёжный способ — измерить
+// реальный getBoundingClientRect() шапки и поставить меню сразу под ней.
+// На мобильных меню — гармошка (position не задан, обычный document flow),
+// там top ни на что не влияет — пересчёт там не нужен и не запускается.
 function positionMenus() {
-	if (!$header.length) return;
+	if (!isDesktop() || !$header.length) return;
 	const rect = $header[0].getBoundingClientRect();
 	const top = Math.ceil(rect.bottom) + 12; // px, небольшой отступ от шапки
 	allMenus.css('top', top + 'px');
