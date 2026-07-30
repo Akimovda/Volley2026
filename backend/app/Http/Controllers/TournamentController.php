@@ -2044,11 +2044,9 @@ class TournamentController extends Controller
         $user = $request->user();
         if (! $user) abort(403);
 
-        $isAdmin = $user->isAdmin();
-        $isOwner = (int) $event->organizer_id === (int) $user->id;
-        $isStaff = $user->isStaff() && (int) $user->getOrganizerIdForStaff() === (int) $event->organizer_id;
-
-        if (! $isAdmin && ! $isOwner && ! $isStaff) {
+        // Владелец ИЛИ staff у владельца — роль organizer не отменяет
+        // staff-назначение на чужих мероприятиях.
+        if (!app(\App\Services\EventAccessService::class)->canManageEvent($user, (int) $event->organizer_id)) {
             abort(403, 'Нет прав на управление турниром.');
         }
     }

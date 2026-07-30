@@ -134,4 +134,47 @@ class EventAccessService
             default => 0, // admin
         };
     }
+
+    /**
+     * Доступ к управлению КОНКРЕТНЫМ мероприятием: владелец ИЛИ staff у
+     * владельца (запись в organizer_staff) — независимо от текущей роли
+     * пользователя. Повышение staff до organizer (собственные мероприятия)
+     * НЕ отменяет ранее выданное staff-назначение на чужих мероприятиях —
+     * см. баг "Staff теряет доступ к чужим мероприятиям, став организатором".
+     */
+    public function canManageEvent(User $user, int $eventOrganizerId): bool
+    {
+        if ($user->isAdmin()) {
+            return true;
+        }
+
+        if ($eventOrganizerId <= 0) {
+            return false;
+        }
+
+        if ((int) $eventOrganizerId === (int) $user->id) {
+            return true;
+        }
+
+        return DB::table('organizer_staff')
+            ->where('organizer_id', $eventOrganizerId)
+            ->where('staff_user_id', (int) $user->id)
+            ->exists();
+    }
+
+    /**
+     * organizer_id'ы, чьи мероприятия пользователь вправе администрировать:
+     * свой собственный + все, у кого он числится staff (organizer_staff).
+     * Не зависит от роли пользователя — см. canManageEvent().
+     */
+    public function manageableOrganizerIds(User $user): array
+    {
+        $staffOrgIds = DB::table('organizer_staff')
+            ->where('staff_user_id', (int) $user->id)
+            ->pluck('organizer_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        return array_values(array_unique(array_merge([(int) $user->id], $staffOrgIds)));
+    }
 }

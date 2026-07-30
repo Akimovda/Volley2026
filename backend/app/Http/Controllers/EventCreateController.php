@@ -227,22 +227,13 @@ use App\Services\StaffLogService;
 			if (!$user) return redirect()->route('login');
 			
 			$this->accessService->ensureCanCreateEvents($user);
-			
-			$role = (string)($user->role ?? 'user');
-			
-			// права: admin может всё, organizer только свои, staff только своего organizer
-			if ($role !== 'admin') {
-				if ($role === 'organizer') {
-					if ((int)$event->organizer_id !== (int)$user->id) abort(403);
-					} elseif ($role === 'staff') {
-			    	$orgId = $this->accessService->resolveOrganizerIdForCreator($user);
-					if ((int)$orgId <= 0) abort(403);
-					if ((int)$event->organizer_id !== (int)$orgId) abort(403);
-					} else {
-					abort(403);
-				}
+
+			// Владелец ИЛИ staff у владельца — роль organizer не отменяет
+			// staff-назначение на чужих мероприятиях.
+			if (!$this->accessService->canManageEvent($user, (int) $event->organizer_id)) {
+				abort(403);
 			}
-			
+
 			return redirect()->to('/events/create?from_event_id=' . (int)$event->id);
 		}
 		
