@@ -226,6 +226,16 @@
     <script src="@asset_v('js/occurrence-edit.js')"></script>
     <script src="@asset_v('assets/trix.js')"></script>
     <script>
+    // Терминология уровней (питерская/стандартная) — тот же паттерн, что в
+    // create/step1.blade.php. Здесь локация выбирается плоским select'ом без
+    // city-autocomplete (см. location_players.blade.php, data-level-scope на
+    // каждой option) — переключение ниже, в change-обработчике #occ_location_id.
+    window.__levelTerminologyNames = {
+        standard: @json(collect(range(1, 7))->mapWithKeys(fn ($l) => [$l => level_name($l, 'standard')])),
+        spb: @json(collect(range(1, 7))->mapWithKeys(fn ($l) => [$l => level_name($l, 'spb')])),
+    };
+    </script>
+    <script>
     document.addEventListener('DOMContentLoaded', function() {
         // ===== Часы/минуты → скрытое поле минут =====
         function syncHM(hSel, mSel, hidden) {
@@ -312,6 +322,43 @@
                 }
             });
         });
+
+        // ===== Уровень: переключение терминологии (стандарт/питер) при смене локации =====
+        // Локация здесь — плоский select без city-autocomplete (в отличие от
+        // event_management_edit.blade.php), поэтому scope берём прямо из
+        // data-level-scope выбранной option (посчитан на сервере, см.
+        // location_players.blade.php), без похода на сервер за городом.
+        (function() {
+            var locSelect = document.getElementById('occ_location_id');
+            if (!locSelect) return;
+
+            function relabelLevelSelects(scope) {
+                var names = (window.__levelTerminologyNames || {})[scope] || (window.__levelTerminologyNames || {}).standard;
+                if (!names) return;
+                ['classic_level_min', 'classic_level_max', 'beach_level_min', 'beach_level_max'].forEach(function(id) {
+                    var select = document.getElementById(id);
+                    if (!select) return;
+                    Array.prototype.forEach.call(select.options, function(opt) {
+                        var n = parseInt(opt.value, 10);
+                        if (!n || !names[n]) return;
+                        opt.textContent = n + ' - ' + names[n];
+                    });
+                    // select обёрнут createCustomSelect() (script.js) — перезаполнение
+                    // текста опций не подхватывается кастомной обёрткой само по себе,
+                    // нужно пересоздать её (см. CLAUDE.md про createCustomSelect).
+                    if (window.customSelect && typeof window.customSelect.destroy === 'function'
+                        && typeof window.createCustomSelect === 'function' && window.jQuery) {
+                        window.customSelect.destroy(id);
+                        window.createCustomSelect(window.jQuery(select));
+                    }
+                });
+            }
+
+            locSelect.addEventListener('change', function() {
+                var opt = locSelect.options[locSelect.selectedIndex];
+                relabelLevelSelects(opt ? (opt.getAttribute('data-level-scope') || 'standard') : 'standard');
+            });
+        })();
 
         // ===== Гендерная политика — показ блока лимитов =====
         var genderLimitedWrap = document.getElementById('gender_limited_wrap');

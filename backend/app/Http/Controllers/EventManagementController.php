@@ -236,6 +236,12 @@ if ($role === 'admin') {
         $currentCity = $event->location?->city;
         $currentCityId = $currentCity?->id;
 
+        // Терминология уровня («Средний−» / «Lite+») — по городу ЛОКАЦИИ события
+        // (уже выбрана, в отличие от формы создания). При смене города через
+        // city-autocomplete на этой же форме JS пересчитывает термины сам
+        // (см. event_management_edit.blade.php, loadCityMeta()).
+        $levelScope = level_terminology_scope_for_event($event);
+
         $locations = Location::query()
             ->with(['media', 'city'])
             ->orderBy('name')
@@ -318,6 +324,7 @@ if ($role === 'admin') {
             'seasonDivisions'  => $seasonDivisions,
             'currentDivisionId' => $currentDivisionId,
             'orgPaySettings'   => $orgPaySettings,
+            'levelScope'       => $levelScope,
         ]);
     }
 
@@ -543,7 +550,11 @@ if ($role === 'admin') {
             ? \Carbon\Carbon::parse($occurrence->starts_at, 'UTC')->setTimezone($tz)->format('Y-m-d\TH:i')
             : '';
 
-        $locations = \App\Models\Location::orderBy('name')
+        // city нужен для терминологии уровня (data-level-scope на каждой option —
+        // локация меняется select'ом без city-autocomplete, JS пересчитывает
+        // термины по этому атрибуту при смене location_id, см. occurrence_edit.blade.php).
+        $locations = \App\Models\Location::with('city:id,region')
+            ->orderBy('name')
             ->get(['id', 'name', 'address', 'city_id']);
 
         // Доступные подтипы для direction
@@ -588,6 +599,13 @@ if ($role === 'admin') {
         $locationId    = $eff($occurrence->location_id, $event->location_id);
         $minPlayersVal = $gs->min_players ?? null;
 
+        // Терминология уровня — по городу ЭФФЕКТИВНОЙ (occurrence override ?? event)
+        // локации этого конкретного тура, не по локации события в целом.
+        $currentLocationForScope = $locationId
+            ? $locations->firstWhere('id', (int) $locationId)
+            : null;
+        $levelScope = level_terminology_scope_for_city($currentLocationForScope?->city);
+
         return view('events.occurrence_edit', compact(
             'event', 'occurrence', 'startsLocal', 'tz', 'locations',
             'subtypes', 'gs', 'trainers', 'trainerInherited',
@@ -595,7 +613,8 @@ if ($role === 'admin') {
             'classicLevelMin', 'classicLevelMax', 'beachLevelMin', 'beachLevelMax',
             'agePolicy', 'childAgeMin', 'childAgeMax',
             'isPaid', 'priceRub', 'locationId', 'minPlayersVal',
-            'subtypeVal', 'genderPolicyVal', 'genderLimitedSideVal', 'genderLimitedMaxVal'
+            'subtypeVal', 'genderPolicyVal', 'genderLimitedSideVal', 'genderLimitedMaxVal',
+            'levelScope'
         ));
     }
 
