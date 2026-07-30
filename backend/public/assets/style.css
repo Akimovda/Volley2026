@@ -4264,6 +4264,64 @@ body.dark .badge.badge-muted {
 	color: #ef4444;
 }
 
+/* ── Тултипы карточки мероприятия (уровни, подтип игры, гендерная политика) ──
+   Тап открывает/закрывает (см. script.js .js-info-tip) — работает и на мобиле
+   (WKWebView), не завязано на :hover. */
+.info-tip {
+	position: relative;
+	display: inline-block;
+	cursor: pointer;
+}
+.info-tip-trigger {
+	display: inline-block;
+}
+.info-tip-content {
+	display: none;
+	position: absolute;
+	z-index: 40;
+	bottom: 100%;
+	left: 50%;
+	transform: translateX(-50%);
+	margin-bottom: 0.6rem;
+	width: max-content;
+	max-width: min(26rem, calc(100vw - 3.2rem));
+	background: #fff;
+	border: 0.1rem solid rgba(0,0,0,0.08);
+	border-radius: 0.8rem;
+	box-shadow: 0 0.6rem 1.6rem rgba(0,0,0,0.12);
+	padding: 1rem 1.2rem;
+	font-size: 1.3rem;
+	line-height: 1.4;
+	color: #222333;
+}
+.info-tip.is-open .info-tip-content {
+	display: block;
+}
+.info-tip-content .level-tip-row + .level-tip-row {
+	margin-top: 0.6rem;
+	padding-top: 0.6rem;
+	border-top: 0.1rem solid rgba(0,0,0,0.08);
+}
+.info-tip-content .level-tip-desc {
+	color: #555;
+	font-weight: 400;
+	margin-top: 0.2rem;
+}
+body.dark .info-tip-content {
+	background: #222333;
+	border-color: rgba(255,255,255,0.1);
+	color: #cacaca;
+}
+body.dark .info-tip-content .level-tip-desc {
+	color: #999;
+}
+body.dark .info-tip-content .level-tip-row + .level-tip-row {
+	border-top-color: rgba(255,255,255,0.1);
+}
+@media (max-width: 480px) {
+	.info-tip-content { max-width: 22rem; font-size: 1.2rem; }
+}
+
 
 
 /* Telegram специальные стили */

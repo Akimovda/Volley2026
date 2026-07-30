@@ -820,6 +820,19 @@ $('.ufilter-btn').on('click', function() {
 	$('.top-section-img').toggleClass('mhide');
 });
 
+// Тултипы карточки мероприятия (уровни, подтип игры, гендерная политика) —
+// тап открывает/закрывает, тап вне закрывает. Не hover — должно работать в WKWebView.
+$(document).on('click', '.js-info-tip > .info-tip-trigger', function(e) {
+	e.stopPropagation();
+	const $tip = $(this).closest('.info-tip');
+	const wasOpen = $tip.hasClass('is-open');
+	$('.info-tip.is-open').removeClass('is-open');
+	if (!wasOpen) $tip.addClass('is-open');
+});
+$(document).on('click', function() {
+	$('.info-tip.is-open').removeClass('is-open');
+});
+
 
 
 document.addEventListener('DOMContentLoaded', function() {

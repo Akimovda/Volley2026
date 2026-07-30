@@ -588,6 +588,28 @@ return [
     'gender_only_male'    => 'Men only',
     'gender_only_female'  => 'Women only',
     'gender_mixed_limited' => 'M/F (with limits)',
+
+    // Card tooltips: game subtype + gender policy (after the organizer line)
+    'gender_tooltip_only_male'    => 'Only men can sign up for this event.',
+    'gender_tooltip_only_female'  => 'Only women can sign up for this event.',
+    'gender_tooltip_mixed_5050'   => 'Equal number of men and women on the court (50/50).',
+    'gender_tooltip_mixed_limited_with_limit' => 'Mixed lineup: :side — no more than :limit people.',
+    'gender_tooltip_mixed_limited' => 'Mixed lineup with a limit on one of the genders.',
+    'gender_limit_side_male_gen'   => 'men',
+    'gender_limit_side_female_gen' => 'women',
+
+    'subtype_tooltip' => [
+        'classic' => [
+            '4x2'        => '4-2 system: 4 hitters and 2 setters.',
+            '5x1'        => '5-1 system: 5 hitters and 1 setter.',
+            '5x1_libero' => '5-1 system with libero: 5 hitters, 1 setter and a libero.',
+        ],
+        'beach' => [
+            '2x2' => 'Beach pairs — 2 players per team.',
+            '3x3' => 'Teams of 3 players.',
+            '4x4' => 'Teams of 4 players.',
+        ],
+    ],
     'gender_limited_who'  => 'Whom to limit',
     'gender_limited_female' => 'Women',
     'gender_limited_male' => 'Men',

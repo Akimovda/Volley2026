@@ -89,6 +89,33 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 				$showSeatLine   = true;
 			}
 
+			// Бейджи "подтип игры" + "гендерная политика" (после строки организатора,
+			// см. events/_card.blade.php ниже) — только если реально заданы.
+			$subtypeDirKey  = $dir === 'beach' ? 'beach' : 'classic';
+			$subtypeTipText = $gsSubtype !== '' ? __('events.subtype_tooltip.' . $subtypeDirKey . '.' . $gsSubtype) : null;
+			if ($subtypeTipText === 'events.subtype_tooltip.' . $subtypeDirKey . '.' . $gsSubtype) {
+				$subtypeTipText = null; // нет описания для этой схемы — бейдж без тултипа не показываем
+			}
+
+			$genderPolicy = (string) ($gs?->gender_policy ?? '');
+			$genderBadgeLabel = null;
+			$genderTipText = null;
+			if (in_array($genderPolicy, ['only_male', 'only_female', 'mixed_5050', 'mixed_limited'], true)) {
+				$genderBadgeLabel = __('events.gender_' . ($genderPolicy === 'mixed_5050' ? '5050' : $genderPolicy));
+				if ($genderPolicy === 'mixed_limited') {
+					$gLimitSide = $gs?->gender_limited_side;
+					$gLimitMax  = $gs?->gender_limited_max;
+					if ($gLimitSide && $gLimitMax) {
+						$sideLabel = __('events.gender_limit_side_' . $gLimitSide . '_gen');
+						$genderTipText = __('events.gender_tooltip_mixed_limited_with_limit', ['side' => $sideLabel, 'limit' => $gLimitMax]);
+					} else {
+						$genderTipText = __('events.gender_tooltip_mixed_limited');
+					}
+				} else {
+					$genderTipText = __('events.gender_tooltip_' . ($genderPolicy === 'mixed_5050' ? 'mixed_5050' : $genderPolicy));
+				}
+			}
+
 			$clMin = is_null($event?->classic_level_min) ? '' : (int)$event->classic_level_min;
 			$clMax = is_null($event?->classic_level_max) ? '' : (int)$event->classic_level_max;
 			$bMin  = is_null($event?->beach_level_min) ? '' : (int)$event->beach_level_min;
@@ -150,6 +177,7 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 			$levelScope = level_terminology_scope_for_event($event);
 
 			$levelLabel = null;
+			$levelTooltipHtml = null;
 			if ($lvMin !== null || $lvMax !== null) {
 			$minText = $lvMin !== null ? level_name_short($lvMin, $levelScope) : '—';
 			$maxText = $lvMax !== null ? level_name_short($lvMax, $levelScope) : '—';
@@ -162,6 +190,25 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 			: '<span class="levelmark levelmark--event level-minus">—</span>';
 
 			$levelLabel = '<div class="level-range">' . $minSpan . '<span class="level-range-sep">—</span>' . $maxSpan . '</div>';
+
+			// Тултип: полное название каждого уровня диапазона, окрашенное в его цвет
+			// (level_color()), + краткое описание диапазона уровня (терминология —
+			// по scope события, как и сами бейджи).
+			$levelTooltipDir = $dir === 'beach' ? 'beach' : 'classic';
+			$levelsForTooltip = array_values(array_unique(array_filter([$lvMin, $lvMax], fn($v) => $v !== null)));
+			$tooltipRows = [];
+			foreach ($levelsForTooltip as $lv) {
+			$fullName = level_name((int)$lv, $levelScope);
+			$color = level_color((int)$lv);
+			$desc = level_tooltip_description((int)$lv, $levelTooltipDir, $levelScope);
+			$row = '<div class="level-tip-row"><strong style="color:' . e($color) . '">' . e($fullName) . '</strong>';
+			if ($desc) {
+			$row .= '<div class="level-tip-desc">' . e($desc) . '</div>';
+			}
+			$row .= '</div>';
+			$tooltipRows[] = $row;
+			}
+			$levelTooltipHtml = implode('', $tooltipRows);
 			}
 			
 			
@@ -256,7 +303,10 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 							<div class="event-col">
 								<div class="event-col-icon icon-level"></div>
 								<div class="event-col-data">
-									{!! $levelLabel !!}
+									<span class="info-tip js-info-tip">
+										<span class="info-tip-trigger">{!! $levelLabel !!}</span>
+										<span class="info-tip-content">{!! $levelTooltipHtml !!}</span>
+									</span>
 								</div>
 							</div>
 							@endif
@@ -350,6 +400,25 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 						</div>
                         @endif
                         @endif
+
+						@if($subtypeTipText || $genderBadgeLabel)
+						<div class="d-flex flex-wrap gap-1 mb-05">
+							@if($gsSubtype !== '')
+							<span class="info-tip js-info-tip">
+								<span class="info-tip-trigger badge badge-sm">{{ $gsSubtype }}</span>
+								@if($subtypeTipText)
+								<span class="info-tip-content">{{ $subtypeTipText }}</span>
+								@endif
+							</span>
+							@endif
+							@if($genderBadgeLabel)
+							<span class="info-tip js-info-tip">
+								<span class="info-tip-trigger badge badge-sm">{{ $genderBadgeLabel }}</span>
+								<span class="info-tip-content">{{ $genderTipText }}</span>
+							</span>
+							@endif
+						</div>
+						@endif
 						
 						{{--
                         @if($levelLabel)
