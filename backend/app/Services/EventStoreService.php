@@ -360,6 +360,11 @@ class EventStoreService
 
             $event->allow_registration = $allowReg;
 
+            $event->registration_starts_at = $data['registration_starts_at'] ?? null;
+            $event->registration_ends_at = $data['registration_ends_at'] ?? null;
+            $event->cancel_self_until = $data['cancel_self_until'] ?? null;
+            $event->cancel_self_until_waitlist = $data['cancel_self_until_waitlist'] ?? null;
+
             $event->classic_level_min = $data['classic_level_min'] ?? null;
             $event->classic_level_max = $data['classic_level_max'] ?? null;
             $event->beach_level_min = $data['beach_level_min'] ?? null;

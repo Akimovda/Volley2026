@@ -324,6 +324,7 @@ if ($endType === 'until') {
             'registration_starts_at',
             'registration_ends_at',
             'cancel_self_until',
+            'cancel_self_until_waitlist',
 			] as $col) {
 				
 				if (Schema::hasColumn('event_occurrences', $col)) {
