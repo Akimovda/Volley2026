@@ -70,6 +70,8 @@ return [
     'filter_all_cities'  => 'All cities',
     'filter_apply'       => 'Apply',
     'filter_reset'       => 'Reset',
+    'filter_city_my_title'  => 'Showing only your city — click to show all cities',
+    'filter_city_all_title' => 'Showing all cities — click to return to your city',
 
     // Formats
     'fmt_game'               => 'Game',
