@@ -4390,6 +4390,21 @@ body.dark .level-tip-modal-body .level-tip-desc {
 	overflow-y: auto;
 	-webkit-overflow-scrolling: touch;
 }
+/* На мобильных заголовок иногда всё равно оказывался под шапкой сайта: max-height
+   выше ограничивает только ВЫСОТУ карточки, а не то, где её ставит вертикальное
+   центрирование fancybox (.fancybox-slide::before{vertical-align:middle}) — при
+   достаточно длинном списке уровней центр экрана поднимает верх карточки почти
+   к самому верху вьюпорта, под шапку (.fix-header, ~7.5rem + safe-area). Жёстко
+   резервируем этот верхний отступ через padding-top на .fancybox-slide — область
+   центрирования начинается СТРОГО ниже шапки, независимо от высоты контента. */
+@media (max-width: 767px) {
+	.fancybox-container.level-info-fancybox .fancybox-slide {
+		padding-top: calc(env(safe-area-inset-top, 0px) + 9.5rem);
+	}
+	.fancybox-container.level-info-fancybox .fancybox-content {
+		max-height: calc(100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 11.5rem);
+	}
+}
 .info-tip {
 	position: relative;
 	display: inline-block;
