@@ -2525,54 +2525,48 @@ body.dark .theme-icon {
 		fill: #FFB171;
 	}
 }
-/* БАЗА — mobile */
-/* position:fixed + right:1rem (совпадает с инсетом .fix-header) вместо старого
-   position:absolute с offsetParent'ом от DOM-вложенности — тот падал на BODY,
-   если между .fix-header-menu и .fix-header не было позиционированного предка
-   (меню уезжало в низ страницы). top НЕ хардкодится в rem — считается в JS
-   (script.js, positionMenus()) от реальной getBoundingClientRect() шапки: в
-   .is-app высота шапки зависит от env(safe-area-inset-top), который разный на
-   каждом устройстве, поэтому фиксированный rem-отступ либо обрезал меню, либо
-   оставлял дыру. Background/border-radius/тень вынесены из-под @media(768px) —
-   раньше мобильная версия открытого меню была вообще без фона (прозрачный
-   слой поверх страницы), т.к. эти правила были только в десктопной секции. */
+/* БАЗА — mobile: гармошка (jQuery slideDown/slideUp в script.js), а не
+   поповер. Меню — обычный блок в потоке <header> (см. voll-layout.blade.php,
+   .fix-header-menu-1/2/3 — сиблинги .fix-header, НЕ его дети), поэтому при
+   открытии просто раздвигает страницу под собой — без фона/тени/border-radius
+   и без position (это ключевое: раз меню не спозиционировано, оно не может
+   наложиться на контент, и не нуждается в JS-расчёте top под разную высоту
+   шапки — обычный document flow адаптируется сам). Так было исторически;
+   восстановлено после того, как попытка сделать mobile тоже position:fixed
+   card-поповером (для унификации с десктопом) визуально заменила гармошку на
+   плавающую карточку — по фидбэку это не то, что нужно. */
 .fix-header-menu {
 	display: none;
-	position: fixed;
-	right: 1rem;
 	padding: 2rem;
 	will-change: transform;
-	z-index: 1000;
-	border-radius: 2rem;
-	background-color: rgba(255,255,255,1);
-	box-shadow: 0 1rem 2.2rem rgba(0, 0, 0, 0.05), 0 0.5rem 1.2rem rgba(0, 0, 0, 0.03);
-	max-height: calc(100vh - 4rem);
-	overflow-y: auto;
-	box-sizing: border-box;
-}
-body.dark .fix-header-menu {
-	background-color: #222333;
-	box-shadow: 0 1rem 2.2rem rgba(0, 0, 0, 0.1), 0 0.5rem 1.2rem rgba(0, 0, 0, 0.05);
-}
-@media (max-width: 767px) {
-	.fix-header-menu {
-		left: 1rem;
-	}
-}
-@media (max-width: 480px) {
-	.fix-header-menu {
-		left: 0.5rem;
-		right: 0.5rem;
-	}
 }
 @media (min-width: 768px) {
+	/* Десктоп — поповер: position:fixed + right:1rem (совпадает с инсетом
+	   .fix-header) вместо старого position:absolute, у которого offsetParent
+	   зависел от DOM-вложенности (падал на BODY, меню уезжало в низ страницы).
+	   top НЕ хардкодится — считается в JS (script.js, positionMenus()) от
+	   реальной getBoundingClientRect() шапки: в .is-app высота шапки зависит
+	   от env(safe-area-inset-top), который разный на каждом устройстве. */
 	.fix-header-menu {
 		display: block;
+		position: fixed;
+		right: 1rem;
 		opacity: 0;
 		transform: translateY(1rem) scale(0.95);
 		pointer-events: none;
 		min-width: 20rem;
+		border-radius: 2rem;
+		background-color: rgba(255,255,255,1);
+		box-shadow: 0 1rem 2.2rem rgba(0, 0, 0, 0.05), 0 0.5rem 1.2rem rgba(0, 0, 0, 0.03);
+		max-height: calc(100vh - 4rem);
+		overflow-y: auto;
+		box-sizing: border-box;
+		z-index: 1000;
 		transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+	}
+	body.dark .fix-header-menu {
+		background-color: #222333;
+		box-shadow: 0 1rem 2.2rem rgba(0, 0, 0, 0.1), 0 0.5rem 1.2rem rgba(0, 0, 0, 0.05);
 	}
 	.fix-header-menu.open {
 		opacity: 1;
