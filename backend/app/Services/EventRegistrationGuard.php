@@ -533,27 +533,57 @@
 			
 			$freePositions = [];
 			$slots = $this->slotService->getSlots($event);
-			
+
 			/*
 				|--------------------------------------------------------------------------
 				| REAL TAKEN PER POSITION
 				|--------------------------------------------------------------------------
 			*/
-			
+
+			// Единственная не-reserve роль на событие (пляжка/king_beach: только
+			// 'player', в отличие от классики с несколькими именованными позициями).
+			// В этом случае считаем ЛЮБУЮ активную регистрацию, кроме reserve, занявшей
+			// эту роль — не сверяя строго position === role. Причина: организатор мог
+			// добавить игрока вручную через EventRegistrationsManagementController::
+			// addPlayer() — для не-classic направлений форма не показывает выбор позиции,
+			// и до фикса (2026-07-30) position писался пустой строкой. Такие
+			// регистрации молча выпадали из строгого подсчёта — карточка позиции
+			// показывала больше свободных мест, чем реально есть, расходясь с верхним
+			// счётчиком "Свободных мест" (тот считает просто все активные регистрации).
+			$isSingleMainRole = $slots->where('role', '!=', 'reserve')->count() === 1;
+
 			$takenPerRole = [];
-			
+
 			foreach ($slots as $slot) {
-				
-				$taken = $registrationsByPosition
-					->get($slot->role)?->count() ?? 0;
-				
-				if (
-					($userRegistration)
-					&& $userRegistration->position === $slot->role
-				) {
-					$taken--;
+
+				if ($isSingleMainRole && $slot->role !== 'reserve') {
+					// Без except()/collapse(): $registrationsByPosition иногда приходит как
+					// Eloquent\Collection (наследует Support\Collection, поэтому проверка типа
+					// выше её не конвертирует) — Eloquent\Collection::except() ожидает модели
+					// с getKey(), а тут элементы это группы-коллекции, не модели.
+					$taken = 0;
+					foreach ($registrationsByPosition as $posKey => $group) {
+						if ($posKey === 'reserve') {
+							continue;
+						}
+						$taken += $group->count();
+					}
+
+					if ($userRegistration && $userRegistration->position !== 'reserve') {
+						$taken--;
+					}
+				} else {
+					$taken = $registrationsByPosition
+						->get($slot->role)?->count() ?? 0;
+
+					if (
+						($userRegistration)
+						&& $userRegistration->position === $slot->role
+					) {
+						$taken--;
+					}
 				}
-				
+
 				$takenPerRole[$slot->role] = $taken;
 			}
 			
