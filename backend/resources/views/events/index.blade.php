@@ -176,66 +176,6 @@ $levelOptions = [1, 2, 3, 4, 5, 6, 7];
 			</div>
 		</x-slot>
 
-		<x-slot name="d_description">
-			<div class="events-topbar mt-2" data-aos-delay="250" data-aos="fade-up">
-				<button type="button"
-					id="btnOpenFilters"
-					class="topbar-icon-btn{{ $hasActiveSecondaryFilters ? ' has-active' : '' }}"
-					title="{{ __('events.btn_filter') }}"
-					aria-label="{{ __('events.btn_filter') }}">
-					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-						<line x1="4" y1="6" x2="20" y2="6"></line>
-						<circle cx="9" cy="6" r="2" fill="currentColor" stroke="none"></circle>
-						<line x1="4" y1="12" x2="20" y2="12"></line>
-						<circle cx="16" cy="12" r="2" fill="currentColor" stroke="none"></circle>
-						<line x1="4" y1="18" x2="20" y2="18"></line>
-						<circle cx="11" cy="18" r="2" fill="currentColor" stroke="none"></circle>
-					</svg>
-				</button>
-
-				<form method="GET" action="{{ route('events.index') }}" class="form topbar-direction-form">
-					<input type="hidden" name="format" value="{{ $fFormat }}">
-					<input type="hidden" name="level" value="{{ $fLevel }}">
-					<input type="hidden" name="location" value="{{ $fLocation }}">
-					<input type="hidden" name="city" value="{{ $fCity }}">
-					<select name="direction" id="direction" class="form-select" onchange="this.form.submit()">
-						<option value="" {{ $fDir==='' ? 'selected' : '' }}>{{ __('events.filter_any') }}</option>
-						<option value="classic" {{ $fDir==='classic' ? 'selected' : '' }}>{{ __('events.filter_classic') }}</option>
-						<option value="beach" {{ $fDir==='beach' ? 'selected' : '' }}>{{ __('events.filter_beach') }}</option>
-					</select>
-				</form>
-
-				<button type="button" id="btn-toggle-all-imgs" class="topbar-icon-btn" onclick="toggleAllImgs(this)" title="{{ __('events.btn_hide_photos') }}" aria-label="{{ __('events.btn_hide_photos') }}">
-					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-						<path d="M4 8h3l2-2h6l2 2h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"></path>
-						<circle cx="12" cy="14" r="3.2"></circle>
-						<line x1="3" y1="4" x2="21" y2="20"></line>
-					</svg>
-				</button>
-
-				@auth
-				@if($userCityId)
-				<form method="GET" action="{{ route('events.index') }}" id="cityToggleForm">
-					<input type="hidden" name="direction" value="{{ $fDir }}">
-					<input type="hidden" name="format" value="{{ $fFormat }}">
-					<input type="hidden" name="level" value="{{ $fLevel }}">
-					<input type="hidden" name="location" value="{{ $fLocation }}">
-					<input type="hidden" name="city" value="{{ $fCity === 'all' ? '' : 'all' }}">
-				</form>
-				<button type="submit" form="cityToggleForm"
-					class="topbar-icon-btn{{ $fCity === 'all' ? ' is-active' : '' }}"
-					title="{{ $fCity === 'all' ? __('events.filter_city_all_title') : __('events.filter_city_my_title') }}"
-					aria-label="{{ __('events.filter_all_cities') }}">
-					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-						<path d="M12 22s7-7.58 7-12A7 7 0 1 0 5 10c0 4.42 7 12 7 12z"></path>
-						<circle cx="12" cy="10" r="2.5"></circle>
-					</svg>
-				</button>
-				@endif
-				@endauth
-			</div>
-		</x-slot>
-		
 		<x-slot name="style">
             <style>
 				
@@ -325,7 +265,65 @@ $levelOptions = [1, 2, 3, 4, 5, 6, 7];
 				<div id="days"></div>	
 				<div class="mob-sticky">
 					<div class="card-ramka event-dates-ramka">
-						
+
+						<div class="events-topbar" data-aos-delay="250" data-aos="fade-up">
+							<button type="button"
+								id="btnOpenFilters"
+								class="topbar-icon-btn{{ $hasActiveSecondaryFilters ? ' has-active' : '' }}"
+								title="{{ __('events.btn_filter') }}"
+								aria-label="{{ __('events.btn_filter') }}">
+								<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+									<line x1="4" y1="6" x2="20" y2="6"></line>
+									<circle cx="9" cy="6" r="2" fill="currentColor" stroke="none"></circle>
+									<line x1="4" y1="12" x2="20" y2="12"></line>
+									<circle cx="16" cy="12" r="2" fill="currentColor" stroke="none"></circle>
+									<line x1="4" y1="18" x2="20" y2="18"></line>
+									<circle cx="11" cy="18" r="2" fill="currentColor" stroke="none"></circle>
+								</svg>
+							</button>
+
+							<form method="GET" action="{{ route('events.index') }}" class="form topbar-direction-form">
+								<input type="hidden" name="format" value="{{ $fFormat }}">
+								<input type="hidden" name="level" value="{{ $fLevel }}">
+								<input type="hidden" name="location" value="{{ $fLocation }}">
+								<input type="hidden" name="city" value="{{ $fCity }}">
+								<select name="direction" id="direction" class="form-select" onchange="this.form.submit()">
+									<option value="" {{ $fDir==='' ? 'selected' : '' }}>{{ __('events.filter_any') }}</option>
+									<option value="classic" {{ $fDir==='classic' ? 'selected' : '' }}>{{ __('events.filter_classic') }}</option>
+									<option value="beach" {{ $fDir==='beach' ? 'selected' : '' }}>{{ __('events.filter_beach') }}</option>
+								</select>
+							</form>
+
+							<button type="button" id="btn-toggle-all-imgs" class="topbar-icon-btn" onclick="toggleAllImgs(this)" title="{{ __('events.btn_hide_photos') }}" aria-label="{{ __('events.btn_hide_photos') }}">
+								<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<path d="M4 8h3l2-2h6l2 2h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"></path>
+									<circle cx="12" cy="14" r="3.2"></circle>
+									<line x1="3" y1="4" x2="21" y2="20"></line>
+								</svg>
+							</button>
+
+							@auth
+							@if($userCityId)
+							<form method="GET" action="{{ route('events.index') }}" id="cityToggleForm">
+								<input type="hidden" name="direction" value="{{ $fDir }}">
+								<input type="hidden" name="format" value="{{ $fFormat }}">
+								<input type="hidden" name="level" value="{{ $fLevel }}">
+								<input type="hidden" name="location" value="{{ $fLocation }}">
+								<input type="hidden" name="city" value="{{ $fCity === 'all' ? '' : 'all' }}">
+							</form>
+							<button type="submit" form="cityToggleForm"
+								class="topbar-icon-btn{{ $fCity === 'all' ? ' is-active' : '' }}"
+								title="{{ $fCity === 'all' ? __('events.filter_city_all_title') : __('events.filter_city_my_title') }}"
+								aria-label="{{ __('events.filter_all_cities') }}">
+								<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<path d="M12 22s7-7.58 7-12A7 7 0 1 0 5 10c0 4.42 7 12 7 12z"></path>
+									<circle cx="12" cy="10" r="2.5"></circle>
+								</svg>
+							</button>
+							@endif
+							@endauth
+						</div>
+
 						<div class="days-strip tabs mb-0" id="daysStrip">
                             {{-- Чипы дат --}}
                             @foreach($groupedByDate as $dateKey => $dayData)
