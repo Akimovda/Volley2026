@@ -23,8 +23,8 @@ return [
     // Фильтр
     'filter_direction'      => 'Направление',
     'filter_any'            => 'Все',
-    'filter_classic'        => '🏐 Классика',
-    'filter_beach'          => '🏖 Пляжка',
+    'filter_classic'        => 'Классика',
+    'filter_beach'          => 'Пляжка',
     'filter_event_type'     => 'Тип мероприятия',
     'filter_level'          => 'Уровень',
     'level_info_title'      => 'Уровень мероприятия',

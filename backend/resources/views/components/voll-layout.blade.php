@@ -391,36 +391,36 @@
 								{{-- 6. Брони кортов — только для арендодателей кортов --}}
 								@if(auth()->user()->is_club_manager && auth()->user()->ownedLocations()->exists())
 								<a href="{{ route('club.bookings.index') }}" class="menu-item">
-									<span class="menu-text">🎪 {{ __('club.bookings_title') }}</span>
+									<span class="menu-text"><x-menu-icon name="court" /> {{ __('club.bookings_title') }}</span>
 								</a>
 								@endif
 								{{-- 7. Создать мероприятие --}}
 								<a href="/events/create" class="menu-item">
-									<span class="menu-text">📆 {{ __('ui.org_create_event') }}</span>
+									<span class="menu-text"><x-menu-icon name="calendar-plus" /> {{ __('ui.org_create_event') }}</span>
 								</a>
 								{{-- 8. Абонементы --}}
 								<a href="/subscriptions/templates" class="menu-item">
-									<span class="menu-text">🪪 {{ __('ui.org_subscriptions') }}</span>
+									<span class="menu-text"><x-menu-icon name="id-card" /> {{ __('ui.org_subscriptions') }}</span>
 								</a>
 								{{-- 9. Купоны --}}
 								<a href="/coupons/templates" class="menu-item">
-									<span class="menu-text">🎟  {{ __('ui.org_coupons') }}</span>
+									<span class="menu-text"><x-menu-icon name="ticket" /> {{ __('ui.org_coupons') }}</span>
 								</a>
 								{{-- 10. Мои лиги и сезоны --}}
 								<a href="/leagues" class="menu-item">
-									<span class="menu-text">{{ __('ui.org_my_leagues') }}</span>
+									<span class="menu-text"><x-menu-icon name="trophy" /> {{ __('ui.org_my_leagues') }}</span>
 								</a>
 								{{-- 11. Каналы уведомлений --}}
 								<a href="/user/profile/notification-channels" class="menu-item">
-									<span class="menu-text">📣 {{ __('ui.org_notif_channels') }}</span>
+									<span class="menu-text"><x-menu-icon name="megaphone" /> {{ __('ui.org_notif_channels') }}</span>
 								</a>
 								{{-- 12. Виджет на сайт --}}
 								<a href="/profile/widget" class="menu-item">
-									<span class="menu-text">{{ __('ui.org_widget') }}</span>
+									<span class="menu-text"><x-menu-icon name="globe" /> {{ __('ui.org_widget') }}</span>
 								</a>
 								{{-- 13. Организатор Pro --}}
 								<a href="/organizer-pro" class="menu-item">
-									<span class="menu-text">{{ __('ui.org_pro') }}</span>
+									<span class="menu-text"><x-menu-icon name="star" /> {{ __('ui.org_pro') }}</span>
 								</a>
 							</nav>
 						</div>	
@@ -480,7 +480,7 @@
 						<a href="{{ route('notifications.index', ['#notification-' . $notification->id]) }}" class="menu-item">
 							<div class="d-flex between w-100">
 								<span class="notification-text menu-text f-18 d-flex -ml-1">
-									<span class="emo f-13" style="padding-top: 0.3rem;">🔴</span>
+									<span class="menu-notification-dot" style="margin-top: 0.6rem;" aria-hidden="true"></span>
 									<span>{{ Str::limit($notification->title, 35) }}</span>
 								</span>
 								<span class="menu-date f-15 pl-2" style="padding-top: 0.3rem; flex: 0 0 11rem">

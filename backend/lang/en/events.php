@@ -23,8 +23,8 @@ return [
     // Filter
     'filter_direction'   => 'Discipline',
     'filter_any'         => 'All',
-    'filter_classic'     => '🏐 Classic',
-    'filter_beach'       => '🏖 Beach',
+    'filter_classic'     => 'Classic',
+    'filter_beach'       => 'Beach',
     'filter_event_type'  => 'Event type',
     'filter_level'       => 'Level',
     'level_info_title'   => 'Event level',

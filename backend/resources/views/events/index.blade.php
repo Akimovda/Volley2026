@@ -593,7 +593,33 @@ $levelOptions = [1, 2, 3, 4, 5, 6, 7];
 						activateTab(chips[0].dataset.tab);
 					}
 				})();
-				
+
+				// ===== Сворачивание топбара при "прилипании" ленты дат =====
+				// .mob-sticky прилипает к верху при скролле — в этот момент топбар
+				// (фильтр/направление/фото/гео) внутри той же карточки сворачивается,
+				// остаются видны только чипы дат. Проверяем через getBoundingClientRect
+				// против реального top из CSS (9.4rem/8.5rem на ≤480px) — так брейкпоинт
+				// не приходится дублировать в JS.
+				(function initStickyCollapse() {
+					const mobSticky = document.querySelector('.events-page .mob-sticky');
+					const ramka = document.querySelector('.event-dates-ramka');
+					if (!mobSticky || !ramka) return;
+
+					let ticking = false;
+					function checkStuck() {
+						ticking = false;
+						const stickyTop = parseFloat(getComputedStyle(mobSticky).top) || 0;
+						const rectTop = mobSticky.getBoundingClientRect().top;
+						ramka.classList.toggle('is-scrolled', rectTop <= stickyTop + 1);
+					}
+					window.addEventListener('scroll', function() {
+						if (ticking) return;
+						ticking = true;
+						requestAnimationFrame(checkStuck);
+					}, { passive: true });
+					checkStuck();
+				})();
+
 				// ===== Countdown =====
 				function pad2(n) { n = Math.max(0, n|0); return (n < 10 ? '0' : '') + n; }
 				function tickCountdown(el) {

@@ -3065,7 +3065,34 @@ body.dark .menu-user-login .user-name {
 .sidebar-menu .menu-item {
 	padding: 0.4rem 1.2rem 1rem;
 	border-radius: 1rem;
-	
+
+}
+/* Иконки пунктов меню (замена эмодзи — см. components/menu-icon.blade.php) —
+   инлайн-SVG, окрашивается через currentColor вместе с текстом пункта меню. */
+.menu-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 1.8rem;
+	height: 1.8rem;
+	margin-right: 0.6rem;
+	vertical-align: -0.4rem;
+	flex-shrink: 0;
+}
+.menu-icon svg {
+	width: 100%;
+	height: 100%;
+}
+/* Точка непрочитанного уведомления в меню — раньше эмодзи 🔴 (нестабильный
+   размер/цвет на разных платформах), теперь простой круг через CSS. */
+.menu-notification-dot {
+	display: inline-block;
+	width: 1.6rem;
+	height: 1.6rem;
+	border-radius: 50%;
+	background: #ef4444;
+	flex-shrink: 0;
+	margin-right: 0.8rem;
 }
 body.dark .menu-item,
 body.dark .menu-item-title {
@@ -4666,6 +4693,12 @@ body.dark.events-page .day-chip.active .dc-date {
     align-items: center;
     gap: 0.8rem;
     flex-wrap: nowrap;
+    max-width: 100%;
+    /* overflow-x:auto здесь ЛОМАЕТ дропдаун направления — если задать
+       overflow-x без overflow-y, браузер молча делает overflow-y:auto тоже
+       (правило CSS), и position:absolute дропдаун (открывается вниз, ниже
+       границ этого блока) обрезается тем же контейнером. Не включать снова
+       без переноса дропдауна в отдельный портал/fixed-слой. */
 }
 .events-topbar .topbar-icon-btn {
     position: relative;
@@ -4718,12 +4751,14 @@ body.dark .events-topbar .topbar-icon-btn.has-active::after {
     border-color: #1a1b27;
 }
 .events-topbar .topbar-direction-form {
-    flex: 0 1 15rem;
-    min-width: 0;
+    flex: 0 0 auto;
+    width: 11rem;
+    min-width: 11rem;
 }
 @media (max-width: 480px) {
     .events-topbar .topbar-direction-form {
-        flex-basis: 8rem;
+        width: 10rem;
+        min-width: 10rem;
     }
     .events-topbar .topbar-direction-form .form-select-custom {
         padding: 0.8rem 1rem;
@@ -4904,6 +4939,27 @@ body.dark .btn-outline-primary:hover {
 }
 .event-dates-ramka .events-topbar {
 	flex: 0 0 auto;
+	max-height: 6rem;
+	opacity: 1;
+	transition: max-height .25s ease, opacity .2s ease, margin .25s ease;
+}
+/* Липкая лента дат "прилипает" к верху при скролле (.mob-sticky) — в этот
+   момент топбар (фильтр/направление/фото/гео) сворачивается, оставляя видимой
+   только ленту дат (см. JS-переключатель is-scrolled в events/index.blade.php).
+   Только на узких экранах — на широких топбар остаётся виден в одной строке
+   с чипами (там место не в дефиците, и одна строка не выглядит перегруженной).
+   overflow:hidden — ТОЛЬКО в свёрнутом состоянии: если повесить его безусловно
+   (для плавности transition), он обрезает дропдаун селекта "Направление"
+   (position:absolute, открывается вниз) даже когда топбар полностью развёрнут —
+   тот же баг из CLAUDE.md про createCustomSelect и overflow:hidden у карточки. */
+@media (max-width: 767px) {
+	.event-dates-ramka.is-scrolled .events-topbar {
+		max-height: 0;
+		overflow: hidden;
+		opacity: 0;
+		margin: 0 !important;
+		pointer-events: none;
+	}
 }
 .events-page #daysStrip {
 	flex: 1 1 auto;

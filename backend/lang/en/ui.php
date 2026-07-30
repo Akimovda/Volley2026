@@ -61,10 +61,10 @@ return [
     'org_create_event'      => 'Create event',
     'org_subscriptions'     => 'Subscriptions',
     'org_coupons'           => 'Coupons',
-    'org_my_leagues'        => '🏆 My leagues & seasons',
+    'org_my_leagues'        => 'My leagues & seasons',
     'org_notif_channels'    => 'Notification channels',
-    'org_widget'            => '🌐 Site widget',
-    'org_pro'               => '⭐ Organizer Pro',
+    'org_widget'            => 'Site widget',
+    'org_pro'               => 'Organizer Pro',
 
     // Admin menu
     'admin_menu_title'             => 'Admin menu',
