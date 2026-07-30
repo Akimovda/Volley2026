@@ -192,6 +192,9 @@ return [
     'gender_quota_position_full' => 'Position ":position" already has :count of :max slots filled for :gender.',
     'gender_women' => 'women',
     'gender_men' => 'men',
+    'gender_position_not_allowed' => 'For your gender only these positions are available at this event: :positions.',
+    'gender_position_not_allowed_generic' => 'This position is not available for your gender.',
+    'waitlist_select_position' => 'Select at least one position to join the waitlist.',
 
     // ===== events/show/tournament.blade.php =====
     'show_tournament_results_btn' => '📊 Tournament tables and results',

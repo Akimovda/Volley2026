@@ -193,6 +193,9 @@ return [
     'gender_quota_position_full' => 'На позиции «:position» уже занято :count из :max мест для :gender.',
     'gender_women' => 'женщин',
     'gender_men' => 'мужчин',
+    'gender_position_not_allowed' => 'Для вашего пола на этом мероприятии доступны только позиции: :positions.',
+    'gender_position_not_allowed_generic' => 'Эта позиция недоступна для вашего пола.',
+    'waitlist_select_position' => 'Выберите хотя бы одну позицию, чтобы встать в очередь.',
 
     // ===== events/show/tournament.blade.php =====
     'show_tournament_results_btn' => '📊 Таблицы и результаты турнира',

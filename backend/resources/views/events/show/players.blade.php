@@ -756,8 +756,16 @@ $showWaitlistViewer = !$isTournament && !$eventStarted && $isOrganizer && $waitl
 		// При $isFull все заняты → все позиции. Иначе — только занятые.
 		$wlCheckboxPositions = !empty($occupiedPositions) ? $occupiedPositions : $allPositions;
 
-		// Фильтруем позиции по гендерной политике: показываем только те,
-		// на которые текущий пользователь может претендовать.
+		// Допуск позиций по гендерной политике (mixed_limited) — НЕ квота.
+		// Ограниченному полу (напр. женщины при positions=["setter"]) разрешено
+		// вставать в очередь ТОЛЬКО на позиции из gender_limited_positions —
+		// это правило "куда вообще можно", а не "сколько уже занято", поэтому
+		// применяется независимо от текущей занятости квоты (иначе, например,
+		// setter будет доступен даже когда женская квота на нём уже выбрана —
+		// это нормально, автопосадка отклонит, когда придёт очередь; но outside
+		// для женщины не должен появляться вообще). См.
+		// diagnosis_event380_waitlist_gender_2026-07-30.md — не путать с ранее
+		// убранной фильтрацией по квоте (та была ошибочной и удалена).
 		if ($gs && $gs->gender_policy === 'mixed_limited' && auth()->check()) {
 		    $wlUserGender    = strtolower((string)(auth()->user()->gender ?? ''));
 		    $wlSide          = $gs->gender_limited_side ?? '';

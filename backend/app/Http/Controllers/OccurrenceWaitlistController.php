@@ -33,16 +33,24 @@ class OccurrenceWaitlistController extends Controller
             return back()->with('error', 'Вы уже записаны на это мероприятие. Сначала отмените запись, чтобы встать в резерв.');
         }
 
-        // Проверяем возраст, уровень и прочие условия допуска.
+        $positions = $request->input('positions', []);
+        if (!is_array($positions)) $positions = [];
+        $positions = array_values(array_unique(array_filter($positions, fn($p) => $p !== null && $p !== '')));
+
+        $direction = (string) ($occurrence->event->direction ?? 'classic');
+
+        // Проверяем возраст, уровень и хард-гендерные политики (only_male/only_female/
+        // mixed_5050). Допуск конкретных позиций (mixed_limited) проверяется отдельно
+        // ниже, НА ФИНАЛЬНОМ наборе позиций — гендерное окно ниже может ещё доопределить
+        // $positions, поэтому проверять допуск раньше этого момента бессмысленно (и
+        // именно так пустой positions[] раньше обходил проверку — исправлено 2026-07-30,
+        // см. diagnosis_event380_waitlist_gender_2026-07-30.md).
         // Гендерное окно пропускаем — записаться в очередь до открытия окна разрешено;
         // autoBookNext запустится только когда окно откроется (ProcessWaitlistGenderWindows).
         $eligibility = app(EventRegistrationGuard::class)->checkEligibility($user, $occurrence, skipGenderWindow: true);
         if (!$eligibility->allowed) {
             return back()->with('error', implode(' ', $eligibility->errors));
         }
-
-        $positions = $request->input('positions', []);
-        if (!is_array($positions)) $positions = [];
 
         // Если гендерное окно закрыто — только разрешённые позиции
         if ($eligibility->meta['gender_window_closed'] ?? false) {
@@ -56,6 +64,24 @@ class OccurrenceWaitlistController extends Controller
             if (empty($positions)) {
                 $positions = $allowedPos;
             }
+        }
+
+        // Для classic обязателен явный выбор хотя бы одной позиции. Пустой positions[]
+        // (не выбрано ничего, или после фильтрации остались только запрещённые — см.
+        // проверку допуска ниже) НЕ пропускаем молча заполнением "занятых по умолчанию":
+        // это обходило бы допуск по mixed_limited (пустой список нечем проверять).
+        // Для beach позиций нет — ограничение неприменимо.
+        if ($direction !== 'beach' && empty($positions)) {
+            return back()->with('error', __('events.waitlist_select_position'));
+        }
+
+        // Допуск позиций по гендерной политике (mixed_limited) — на ФИНАЛЬНОМ наборе
+        // позиций (после auto-fill по гендерному окну выше и проверки "выбрано хотя бы
+        // одно"). Это НЕ квота (сколько уже занято) — та проверяется в autoBookNext при
+        // реальной посадке; здесь только "куда вообще можно" для этого пола.
+        $genderPosCheck = app(EventRegistrationGuard::class)->checkGenderPositionsAllowed($user, $occurrence->event->gameSettings, $positions);
+        if (!$genderPosCheck->allowed) {
+            return back()->with('error', implode(' ', $genderPosCheck->errors));
         }
 
         // Проверяем лимит резерва (не больше max_players)
