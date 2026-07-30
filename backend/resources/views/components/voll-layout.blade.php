@@ -271,7 +271,6 @@
 							</span>
 						</div>							
 					</div>		
-				</div>			
 				@if(!$isErrorPage)
 				<div class="fix-header-menu fix-header-menu-2">
 					@auth
@@ -582,6 +581,11 @@
 					</div>
 				</div>
 			</div>
+				<!-- .fix-header закрывается здесь (не сразу после fix-header-main) —
+				     чтобы .fix-header-menu-1/2/3 были ВНУТРИ position:fixed контейнера
+				     и корректно позиционировались (top:calc(100% + ...)) относительно
+				     него, а не относительно body (иначе меню уезжало вниз страницы). -->
+				</div>
 		</header>
 		<main>	 	
 			<section class="top-section">
