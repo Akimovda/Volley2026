@@ -869,7 +869,16 @@ $(document).on('click', '.js-open-level-info', function(e) {
 	jQuery.fancybox.open({
 		src: '#' + targetId,
 		type: 'inline',
-		opts: { hideScrollbar: false, touch: false, toolbar: false, smallBtn: true, animationEffect: 'zoom-in-out', transitionEffect: 'zoom-in-out' }
+		opts: {
+			hideScrollbar: false, touch: false, toolbar: false, smallBtn: true,
+			animationEffect: 'zoom-in-out', transitionEffect: 'zoom-in-out',
+			// baseClass — см. CLAUDE.md "Надёжный способ задать размер fancybox-модалки":
+			// без явного max-height на .fancybox-content длинный контент (3+ уровня)
+			// раздувал модалку выше вьюпорта, verticalAlign:middle-центрирование fancybox
+			// толкало верх карточки (и close-кнопку) ЗА пределы экрана (под статус-бар
+			// в .is-app), а .fancybox-slide{overflow:auto} не давал реально скроллить.
+			baseClass: 'level-info-fancybox'
+		}
 	});
 });
 

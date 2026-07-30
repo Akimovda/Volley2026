@@ -4380,6 +4380,22 @@ body.dark .level-tip-modal-body .level-tip-row + .level-tip-row {
 body.dark .level-tip-modal-body .level-tip-desc {
 	color: #999;
 }
+/* Модалка "Уровень мероприятия" (fancybox) — та же техника, что у
+   booking-modal-fancybox (см. CLAUDE.md): размер задаём НЕПОСРЕДСТВЕННО на
+   .fancybox-content, а не на вложенном #level-info-{id}. Без явного max-height
+   контент с 3+ уровнями раздувал .fancybox-content выше вьюпорта — вертикальное
+   центрирование fancybox (.fancybox-slide::before{vertical-align:middle}) в этом
+   случае толкает верх карточки (заголовок + close-кнопку) ЗА пределы экрана
+   вверх, под статус-бар/шапку в .is-app, а .fancybox-slide{overflow:auto} не
+   даёт реально проскроллить до верха — известная особенность связки
+   inline-block+vertical-align:middle+overflow. Ограничиваем высоту и включаем
+   collapse-safe скролл ПРЯМО на .fancybox-content — контент всегда целиком
+   в границах экрана, независимо от длины списка уровней. */
+.fancybox-container.level-info-fancybox .fancybox-content {
+	max-height: calc(100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 6rem);
+	overflow-y: auto;
+	-webkit-overflow-scrolling: touch;
+}
 .info-tip {
 	position: relative;
 	display: inline-block;
