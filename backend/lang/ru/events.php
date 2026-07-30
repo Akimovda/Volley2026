@@ -23,10 +23,11 @@ return [
     // Фильтр
     'filter_direction'      => 'Направление',
     'filter_any'            => 'Все',
-    'filter_classic'        => '🏐 Классика',
-    'filter_beach'          => '🏖 Пляжка',
+    'filter_classic'        => 'Классика',
+    'filter_beach'          => 'Пляжка',
     'filter_event_type'     => 'Тип мероприятия',
     'filter_level'          => 'Уровень',
+    'level_info_title'      => 'Уровень мероприятия',
     'filter_any_level'      => 'Любой',
     'filter_level_1'        => 'Начальный',
     'filter_level_2'        => 'Начальный+',
@@ -70,6 +71,8 @@ return [
     'filter_all_cities'     => 'Все города',
     'filter_apply'          => 'Применить',
     'filter_reset'          => 'Сброс',
+    'filter_city_my_title'  => 'Показан только ваш город — нажмите, чтобы показать все города',
+    'filter_city_all_title' => 'Показаны все города — нажмите, чтобы вернуть свой город',
 
     // Форматы
     'fmt_game'               => 'Игра',
@@ -87,6 +90,7 @@ return [
     // Сообщения сверху
     'private_link' => 'Приватная ссылка 🔗:',
     'empty_list'   => 'Пока мероприятий нет. Но скоро появятся 🙂',
+    'empty_list_day' => 'В этот день мероприятий нет.',
 
     // Лента дней
     'days_prev' => 'Предыдущие',
@@ -133,6 +137,7 @@ return [
     'card_seats_teams'    => ' команд',
     'card_seats_players'  => ' игроков',
     'card_no_limit'       => 'Лимит не задан',
+    'card_seats_full'     => 'Мест нет',
     'widget_reserve_suffix' => ' (+:count в резерве)',
 
     // Сокращения длительности
@@ -586,6 +591,28 @@ return [
     'gender_only_male'    => 'Только М',
     'gender_only_female'  => 'Только Ж',
     'gender_mixed_limited' => 'М/Ж (с ограничениями)',
+
+    // Тултипы карточки: подтип игры + гендерная политика (после строки организатора)
+    'gender_tooltip_only_male'    => 'На это мероприятие могут записаться только мужчины.',
+    'gender_tooltip_only_female'  => 'На это мероприятие могут записаться только женщины.',
+    'gender_tooltip_mixed_5050'   => 'Равное количество мужчин и женщин на площадке (50/50).',
+    'gender_tooltip_mixed_limited_with_limit' => 'Смешанный состав: :side — не более :limit человек.',
+    'gender_tooltip_mixed_limited' => 'Смешанный состав с ограничением по количеству одного из полов.',
+    'gender_limit_side_male_gen'   => 'мужчины',
+    'gender_limit_side_female_gen' => 'женщины',
+
+    'subtype_tooltip' => [
+        'classic' => [
+            '4x2'        => 'Схема «4-2»: 4 нападающих и 2 связующих.',
+            '5x1'        => 'Схема «5-1»: 5 нападающих и 1 связующий.',
+            '5x1_libero' => 'Схема «5-1» с либеро: 5 нападающих, 1 связующий и либеро.',
+        ],
+        'beach' => [
+            '2x2' => 'Пляжные пары — по 2 игрока в команде.',
+            '3x3' => 'Команды по 3 игрока.',
+            '4x4' => 'Команды по 4 игрока.',
+        ],
+    ],
     'gender_limited_who'  => 'Кого ограничиваем',
     'gender_limited_female' => 'Женщин',
     'gender_limited_male' => 'Мужчин',

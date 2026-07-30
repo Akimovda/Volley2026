@@ -4,6 +4,13 @@ $nowUtc  = \Illuminate\Support\Carbon::now('UTC');
 $occList = $occurrences ?? collect();
 $evList  = $events ?? collect();
 
+// Occurrence-режим определяется ТИПОМ переданной коллекции: occurrenceIndex()
+// в EventIndexService всегда отдаёт Paginator (даже если в 10-дневном окне
+// 0 записей), legacyIndex() отдаёт обычную Collection через $events. Если бы
+// определяли режим по "hasOcc" (наличие данных), пустое окно ошибочно считалось
+// бы legacy-режимом и чипы дней вообще не рисовались бы.
+$isOccurrenceMode = $occList instanceof \Illuminate\Contracts\Pagination\Paginator;
+
 $hasOcc = false;
 if ($occList instanceof \Illuminate\Contracts\Pagination\Paginator) {
 $hasOcc = $occList->count() > 0;
@@ -12,7 +19,7 @@ $hasOcc = $occList->isNotEmpty();
 }
 
 $hasEvents = false;
-if (!$hasOcc) {
+if (!$isOccurrenceMode) {
 if ($evList instanceof \Illuminate\Contracts\Pagination\Paginator) {
 $hasEvents = $evList->count() > 0;
 } elseif ($evList instanceof \Illuminate\Support\Collection) {
@@ -51,12 +58,20 @@ $trainersById   = $trainersById ?? [];
 $trainerColumn  = $trainerColumn ?? null;
 $trainerIconUrl = asset('icons/trainer.png');
 
-// ✅ Группировка по датам — по TZ пользователя
+// ✅ Полное окно — 10 календарных дней подряд начиная с "сегодня" (+ offset*10),
+// по TZ пользователя. Каждый день попадает в чипы НЕЗАВИСИМО от наличия событий
+// (иначе зелёная точка "есть события" бессмысленна — она была бы у всех
+// показанных дней). offset — та же пагинация, что читает EventIndexService.
+$dayOffset = max(0, (int) request('offset', 0));
 $groupedByDate = [];
-$today    = \Illuminate\Support\Carbon::now($userTz)->startOfDay();
-$todayKey = $today->format('Y-m-d');
 
-if ($hasOcc) {
+if ($isOccurrenceMode) {
+$windowStart = \Illuminate\Support\Carbon::now($userTz)->startOfDay()->addDays($dayOffset * 10);
+for ($i = 0; $i < 10; $i++) {
+$d = (clone $windowStart)->addDays($i);
+$groupedByDate[$d->format('Y-m-d')] = ['date' => $d, 'occurrences' => []];
+}
+
 foreach ($occList as $occ) {
 $date = $occ->starts_at
 ? \Illuminate\Support\Carbon::parse($occ->starts_at, 'UTC')->setTimezone($userTz)->startOfDay()
@@ -64,37 +79,58 @@ $date = $occ->starts_at
 if (!$date) continue;
 
 $dateKey = $date->format('Y-m-d');
-if ($dateKey < $todayKey) continue;
+if (!isset($groupedByDate[$dateKey])) continue; // вне текущего 10-дневного окна
 
-if (!isset($groupedByDate[$dateKey])) {
-$groupedByDate[$dateKey] = ['date' => $date, 'occurrences' => []];
-	}
-	$groupedByDate[$dateKey]['occurrences'][] = $occ;
-	}
-	
-	if (!empty($groupedByDate) && is_array($groupedByDate)) {
-	ksort($groupedByDate);
-	$groupedByDate = array_slice($groupedByDate, 0, 10, true);
-	} else {
-	$groupedByDate = [];
-	}
-    }
-	
-    $months = __('events.month_short');
-    $daysOfWeek = __('events.dow_short');
-	
-    $formatOptions = [];
-    if ($hasOcc) {
-	foreach ($occList as $occ) {
-	$e = $occ->event;
-	if (!$e) continue;
-	$fmt = (string)($e->format ?? '');
-	if ($fmt !== '') $formatOptions[$fmt] = $fmt;
-	}
-    }
-    ksort($formatOptions);
-    $levelOptions = [1, 2, 3, 4, 5, 6, 7];
+$groupedByDate[$dateKey]['occurrences'][] = $occ;
+}
+}
+
+$months = __('events.month_short');
+$daysOfWeek = __('events.dow_short');
+
+$levelOptions = [1, 2, 3, 4, 5, 6, 7];
     $levelScope = level_terminology_scope_for_user(auth()->user());
+
+    // ✅ Текущие значения фильтров — считаем один раз здесь, используем и в
+    // компактной верхней панели, и в поп-апе фильтров, и в мини-формах.
+    $fDir      = request('direction', '');
+    $fFormat   = request('format', '');
+    $fLevel    = request('level', '');
+    $fLocation = request('location', '');
+    $fCity     = request('city', '');
+
+    $formatLabels = [
+        'game'               => __('events.fmt_game'),
+        'training'           => __('events.fmt_training'),
+        'training_game'      => __('events.fmt_training_game'),
+        'coach_student'      => __('events.fmt_coach_student'),
+        'tournament'         => __('events.fmt_tournament'),
+        'tournament_classic' => __('events.fmt_tournament_classic'),
+        'tournament_beach'   => __('events.fmt_tournament_beach'),
+        'camp'               => __('events.fmt_camp'),
+    ];
+
+    // Связь типа с направлением — тип без явной привязки (game/training/
+    // training_game/tournament/camp) доступен для обоих направлений;
+    // coach_student реально создаётся только для пляжа (см.
+    // events-create.js allowBeach), tournament_classic/tournament_beach —
+    // направление зашито в самом названии типа.
+    $formatDirections = [
+        'coach_student'      => ['beach'],
+        'tournament_classic' => ['classic'],
+        'tournament_beach'   => ['beach'],
+    ];
+
+    $formatLabelsFiltered = $fDir === ''
+        ? $formatLabels
+        : array_filter(
+            $formatLabels,
+            fn($k) => in_array($fDir, $formatDirections[$k] ?? ['classic', 'beach'], true),
+            ARRAY_FILTER_USE_KEY
+        );
+
+    $hasActiveSecondaryFilters = $fFormat !== '' || $fLevel !== '' || $fLocation !== '';
+    $userCityId = auth()->user()?->city_id;
 	@endphp
 	
 	<x-voll-layout body_class="events-page">
@@ -114,7 +150,7 @@ $groupedByDate[$dateKey] = ['date' => $date, 'occurrences' => []];
 		<x-slot name="h1">{{ __('events.index_h1') }}</x-slot>
 		
 		<x-slot name="h2">
-            @if($hasOcc && !empty($groupedByDate))
+            @if($isOccurrenceMode && !empty($groupedByDate))
 			@php
 			$firstKey = array_key_first($groupedByDate);
 			$lastKey  = array_key_last($groupedByDate);
@@ -140,17 +176,6 @@ $groupedByDate[$dateKey] = ['date' => $date, 'occurrences' => []];
 			</div>
 		</x-slot>
 
-		<x-slot name="d_description">
-			<div class="d-flex flex-wrap gap-1 m-center">
-				<div class="mt-2" data-aos-delay="250" data-aos="fade-up">
-					<button class="btn ufilter-btn">{{ __('events.btn_filter') }}</button>
-				</div>
-				<div class="mt-2" data-aos-delay="350" data-aos="fade-up">
-					<button type="button" id="btn-toggle-all-imgs" class="btn btn-secondary" onclick="toggleAllImgs(this)">{{ __('events.btn_hide_photos') }}</button>
-				</div>						
-			</div>
-		</x-slot>
-		
 		<x-slot name="style">
             <style>
 				
@@ -160,114 +185,54 @@ $groupedByDate[$dateKey] = ['date' => $date, 'occurrences' => []];
 		
 		
 		<div class="container">
-			@php
-			$fDir    = request('direction', '');
-			$fFormat = request('format', '');
-			$fLevel  = request('level', '');
-			@endphp
-			
-			
-			
-			<div class="users-filter">
-				<div class="ramka">
-					<div class="form">
-						@php
-						$fDir      = request('direction', '');
-						$fFormat   = request('format', '');
-						$fLevel    = request('level', '');
-						$fLocation = request('location', '');
-$fCity     = request('city', '');
-						
-						$formatLabels = [
-						'game'               => __('events.fmt_game'),
-						'training'           => __('events.fmt_training'),
-						'training_game'      => __('events.fmt_training_game'),
-						'coach_student'      => __('events.fmt_coach_student'),
-						'tournament'         => __('events.fmt_tournament'),
-						'tournament_classic' => __('events.fmt_tournament_classic'),
-						'tournament_beach'   => __('events.fmt_tournament_beach'),
-						'camp'               => __('events.fmt_camp'),
-						];
 
-						// Связь типа с направлением — тип без явной привязки (game/training/
-						// training_game/tournament/camp) доступен для обоих направлений;
-						// coach_student реально создаётся только для пляжа (см.
-						// events-create.js allowBeach), tournament_classic/tournament_beach —
-						// направление зашито в самом названии типа.
-						$formatDirections = [
-						'coach_student'      => ['beach'],
-						'tournament_classic' => ['classic'],
-						'tournament_beach'   => ['beach'],
-						];
-
-						$formatLabelsFiltered = $fDir === ''
-						? $formatLabels
-						: array_filter(
-						$formatLabels,
-						fn($k) => in_array($fDir, $formatDirections[$k] ?? ['classic', 'beach'], true),
-						ARRAY_FILTER_USE_KEY
-						);
-						@endphp
-						<form method="GET" action="{{ route('events.index') }}">
-							<div class="row g-2">
-								<div class="col-12 col-md-3">
-									<label class="form-label mb-1">{{ __('events.filter_direction') }}</label>
-									<select name="direction" id="direction" class="form-select">
-										<option value="" {{ $fDir==='' ? 'selected' : '' }}>{{ __('events.filter_any') }}</option>
-										<option value="classic" {{ $fDir==='classic' ? 'selected' : '' }}>{{ __('events.filter_classic') }}</option>
-										<option value="beach" {{ $fDir==='beach' ? 'selected' : '' }}>{{ __('events.filter_beach') }}</option>
-									</select>
-								</div>
-
-								<div class="col-12 col-md-3">
-									<label class="form-label mb-1">{{ __('events.filter_event_type') }}</label>
-									<select name="format" id="format" class="form-select">
-										<option value="" {{ $fFormat==='' ? 'selected' : '' }}>{{ __('events.filter_any') }}</option>
-										@foreach($formatLabelsFiltered as $k => $lbl)
-										<option value="{{ $k }}" {{ $fFormat===$k ? 'selected' : '' }}>{{ $lbl }}</option>
-										@endforeach
-									</select>
-								</div>
-								
-								<div class="col-12 col-md-2">
-									<label class="form-label mb-1">{{ __('events.filter_level') }}</label>
-									<select name="level" class="form-select">
-										<option value="" {{ $fLevel==='' ? 'selected' : '' }}>{{ __('events.filter_any_level') }}</option>
-										@foreach(($levelOptions ?? []) as $lv)
-										<option value="{{ (int)$lv }}" {{ (string)$fLevel===(string)$lv ? 'selected' : '' }}>{{ level_filter_label($lv, $levelScope) }}</option>
-										@endforeach
-									</select>
-								</div>
-								
-                                <div class="col-12 col-md-4">
-                                    <label class="form-label mb-1">{{ __('events.filter_location') }}</label>
-                                    <select name="location" class="form-select">
-                                        <option value="">{{ __('events.filter_any') }}</option>
-                                        @foreach($activeLocationNames ?? [] as $locName)
-                                        <option value="{{ e($locName) }}" {{ $fLocation === $locName ? 'selected' : '' }}>{{ e($locName) }}</option>
-                                        @endforeach
-                                    </select>
-								</div>
-								
-								<div class="col-12 d-flex flex-wrap gap-2 align-items-center">
-@auth
-@if(auth()->user()->city_id)
-<label class="checkbox-item">
-<input type="checkbox" name="city" value="all" {{ $fCity === 'all' ? 'checked' : '' }}>
-<div class="custom-checkbox"></div>
-<span>{{ __('events.filter_all_cities') }}</span>
-</label>
-@endif
-@endauth
-									<button type="submit" class="btn">{{ __('events.filter_apply') }}</button>
-									<a href="{{ route('events.index') }}" class="btn btn-secondary">{{ __('events.filter_reset') }}</a>
-								</div>
+			{{-- Поп-ап "Фильтры" (fancybox inline) — тип/уровень/локация, скрыто на странице --}}
+			<div id="eventsFilterModal" style="display:none; max-width: 48rem">
+				<h2 class="title-h -mt-05">{{ __('events.btn_filter') }}</h2>
+				<div class="form" style="overflow: visible">
+					<form method="GET" action="{{ route('events.index') }}">
+						<input type="hidden" name="direction" value="{{ $fDir }}">
+						<input type="hidden" name="city" value="{{ $fCity }}">
+						<div class="row g-2">
+							<div class="col-12">
+								<label class="form-label mb-1">{{ __('events.filter_event_type') }}</label>
+								<select name="format" id="format" class="form-select">
+									<option value="" {{ $fFormat==='' ? 'selected' : '' }}>{{ __('events.filter_any') }}</option>
+									@foreach($formatLabelsFiltered as $k => $lbl)
+									<option value="{{ $k }}" {{ $fFormat===$k ? 'selected' : '' }}>{{ $lbl }}</option>
+									@endforeach
+								</select>
 							</div>
-						</form>
-					</div>
+
+							<div class="col-12">
+								<label class="form-label mb-1">{{ __('events.filter_level') }}</label>
+								<select name="level" class="form-select">
+									<option value="" {{ $fLevel==='' ? 'selected' : '' }}>{{ __('events.filter_any_level') }}</option>
+									@foreach(($levelOptions ?? []) as $lv)
+									<option value="{{ (int)$lv }}" {{ (string)$fLevel===(string)$lv ? 'selected' : '' }}>{{ level_filter_label($lv, $levelScope) }}</option>
+									@endforeach
+								</select>
+							</div>
+
+                            <div class="col-12">
+                                <label class="form-label mb-1">{{ __('events.filter_location') }}</label>
+                                <select name="location" class="form-select">
+                                    <option value="">{{ __('events.filter_any') }}</option>
+                                    @foreach($activeLocationNames ?? [] as $locName)
+                                    <option value="{{ e($locName) }}" {{ $fLocation === $locName ? 'selected' : '' }}>{{ e($locName) }}</option>
+                                    @endforeach
+                                </select>
+							</div>
+
+							<div class="col-12 d-flex flex-wrap gap-2 align-items-center mt-1">
+								<button type="submit" class="btn">{{ __('events.filter_apply') }}</button>
+								<a href="{{ route('events.index') }}" class="btn btn-secondary">{{ __('events.filter_reset') }}</a>
+							</div>
+						</div>
+					</form>
 				</div>
 			</div>
-			
+
 			@if (session('status'))
 			<div class="ramka">
 				<div class="alert alert-success">
@@ -293,15 +258,113 @@ $fCity     = request('city', '');
 			{{-- =========================
 			ВАРИАНТ 1: OCCURRENCES
 			========================= --}}
-			@if ($hasOcc)
+			@if ($isOccurrenceMode)
 			{{-- Верхняя лента дней --}}
 			<div id="eventsTabsRoot" data-today="{{ \Illuminate\Support\Carbon::now($userTz)->format('Y-m-d') }}"></div>
 			<div class="tabs-content">	
 				<div id="days"></div>	
 				<div class="mob-sticky">
 					<div class="card-ramka event-dates-ramka">
-						
-						<div class="days-strip tabs mb-0" id="daysStrip">
+
+						<div class="events-topbar" data-aos-delay="250" data-aos="fade-up">
+							<button type="button"
+								id="btnOpenFilters"
+								class="topbar-icon-btn{{ $hasActiveSecondaryFilters ? ' has-active' : '' }}"
+								title="{{ __('events.btn_filter') }}"
+								aria-label="{{ __('events.btn_filter') }}">
+								<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+									<line x1="4" y1="6" x2="20" y2="6"></line>
+									<circle cx="9" cy="6" r="2" fill="currentColor" stroke="none"></circle>
+									<line x1="4" y1="12" x2="20" y2="12"></line>
+									<circle cx="16" cy="12" r="2" fill="currentColor" stroke="none"></circle>
+									<line x1="4" y1="18" x2="20" y2="18"></line>
+									<circle cx="11" cy="18" r="2" fill="currentColor" stroke="none"></circle>
+								</svg>
+							</button>
+
+							<form method="GET" action="{{ route('events.index') }}" class="form topbar-direction-form">
+								<input type="hidden" name="format" value="{{ $fFormat }}">
+								<input type="hidden" name="level" value="{{ $fLevel }}">
+								<input type="hidden" name="location" value="{{ $fLocation }}">
+								<input type="hidden" name="city" value="{{ $fCity }}">
+								<select name="direction" id="direction" class="form-select" onchange="this.form.submit()">
+									<option value="" {{ $fDir==='' ? 'selected' : '' }}>{{ __('events.filter_any') }}</option>
+									<option value="classic" {{ $fDir==='classic' ? 'selected' : '' }}>{{ __('events.filter_classic') }}</option>
+									<option value="beach" {{ $fDir==='beach' ? 'selected' : '' }}>{{ __('events.filter_beach') }}</option>
+								</select>
+							</form>
+
+							<button type="button" id="btn-toggle-all-imgs" class="topbar-icon-btn" onclick="toggleAllImgs(this)" title="{{ __('events.btn_hide_photos') }}" aria-label="{{ __('events.btn_hide_photos') }}">
+								<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<path d="M4 8h3l2-2h6l2 2h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"></path>
+									<circle cx="12" cy="14" r="3.2"></circle>
+									<line x1="3" y1="4" x2="21" y2="20"></line>
+								</svg>
+							</button>
+
+							@auth
+							@if($userCityId)
+							<form method="GET" action="{{ route('events.index') }}" id="cityToggleForm">
+								<input type="hidden" name="direction" value="{{ $fDir }}">
+								<input type="hidden" name="format" value="{{ $fFormat }}">
+								<input type="hidden" name="level" value="{{ $fLevel }}">
+								<input type="hidden" name="location" value="{{ $fLocation }}">
+								<input type="hidden" name="city" value="{{ $fCity === 'all' ? '' : 'all' }}">
+							</form>
+							<button type="submit" form="cityToggleForm"
+								class="topbar-icon-btn{{ $fCity === 'all' ? ' is-active' : '' }}"
+								title="{{ $fCity === 'all' ? __('events.filter_city_all_title') : __('events.filter_city_my_title') }}"
+								aria-label="{{ __('events.filter_all_cities') }}">
+								<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<path d="M12 22s7-7.58 7-12A7 7 0 1 0 5 10c0 4.42 7 12 7 12z"></path>
+									<circle cx="12" cy="10" r="2.5"></circle>
+								</svg>
+							</button>
+							@endif
+							@endauth
+						</div>
+
+						{{-- Навигация prev/next — окно всегда ровно 10 календарных дней,
+						поэтому "следующие 10 дней" показываем всегда, а "предыдущие" —
+						только если мы не на первом окне (offset>0). Рендерится ДВАЖДЫ:
+						на узком экране — внутри скроллящейся ленты (day-nav-buttons--inline,
+						едет вместе с чипами), на широком — отдельным блоком справа
+						(day-nav-buttons--pinned, не скроллится). Показывается только одна
+						копия через CSS media query. --}}
+						@php
+						$currentOffset = (int) request('offset', 0);
+						$nextOffset    = $currentOffset + 10;
+						$prevOffset    = max(0, $currentOffset - 10);
+						$baseParams    = array_filter([
+						'direction' => request('direction'),
+						'format'    => request('format'),
+						'level'     => request('level'),
+						'location'  => request('location'),
+						'city'      => request('city'),
+						], fn($v) => $v !== '' && $v !== null);
+						@endphp
+						@php
+						$dayNavButtonsHtml = '';
+						ob_start();
+						@endphp
+						@if($currentOffset > 0)
+						<a href="{{ route('events.index', array_merge($baseParams, ['offset' => $prevOffset])) }}"
+						class="no-highlight day-chip last-tab tab">
+							<div class="dc-dow">{{ __('events.days_prev') }}</div>
+							<div class="dc-date">{{ __('events.days_n_days') }}</div>
+						</a>
+						@endif
+						<a href="{{ route('events.index', array_merge($baseParams, ['offset' => $nextOffset])) }}"
+						class="no-highlight day-chip last-tab tab">
+							<div class="dc-dow">{{ __('events.days_next') }}</div>
+							<div class="dc-date">{{ __('events.days_n_days') }}</div>
+						</a>
+						@php
+						$dayNavButtonsHtml = ob_get_clean();
+						@endphp
+
+						<div class="days-strip" id="daysStrip">
+						<div class="tabs mb-0">
                             {{-- Чипы дат --}}
                             @foreach($groupedByDate as $dateKey => $dayData)
                             @php
@@ -311,59 +374,48 @@ $fCity     = request('city', '');
 							$weekday = (int)$d->format('N');
 							$labelDate = $day . ' ' . ($months[$month] ?? '');
 							$dow = $daysOfWeek[$weekday] ?? '';
+							$isWeekend = $weekday >= 6;
+							$dayHasEvents = !empty($dayData['occurrences']);
                             @endphp
-                            <a href="#days" class="tab day-chip {{ $loop->first ? 'active' : '' }}"
+                            <a href="#days" class="tab day-chip {{ $isWeekend ? 'is-weekend' : '' }} {{ $loop->first ? 'active' : '' }}"
 							data-tab="day-{{ $loop->iteration }}"
-							data-date="{{ $dateKey }}">
-                                <div class="dc-date">{{ $labelDate }}</div>
+							data-date="{{ $dateKey }}"
+							title="{{ $labelDate }}">
                                 <div class="dc-dow">{{ $dow }}</div>
+                                <div class="dc-date">{{ $day }}</div>
+                                <span class="dc-dot {{ $dayHasEvents ? '' : 'dc-dot--empty' }}" aria-hidden="true"></span>
 							</a>
                             @endforeach
-							
-                            {{-- Навигация prev/next --}}
-                            @if(count($groupedByDate) >= 10 || request('offset', 0) > 0)
-                            @php
-							$currentOffset = (int) request('offset', 0);
-							$nextOffset    = $currentOffset + 10;
-							$prevOffset    = max(0, $currentOffset - 10);
-							$baseParams    = array_filter([
-							'direction' => request('direction'),
-							'format'    => request('format'),
-							'level'     => request('level'),
-							'location'  => request('location'),
-							], fn($v) => $v !== '' && $v !== null);
-                            @endphp
-							
-                            @if($currentOffset > 0)
-                            <a href="{{ route('events.index', array_merge($baseParams, ['offset' => $prevOffset])) }}"
-							class="no-highlight day-chip last-tab tab">
-                                <div class="dc-dow">{{ __('events.days_prev') }}</div>
-                                <div class="dc-date">{{ __('events.days_n_days') }}</div>
-							</a>
-                            @endif
-							
-                            @if(count($groupedByDate) >= 10)
-                            <a href="{{ route('events.index', array_merge($baseParams, ['offset' => $nextOffset])) }}"
-							class="no-highlight day-chip last-tab tab">
-                                <div class="dc-dow">{{ __('events.days_next') }}</div>
-                                <div class="dc-date">{{ __('events.days_n_days') }}</div>
-							</a>
-                            @endif
-                            @endif
                             <div class="tab-highlight"></div>
+							{{-- Узкий экран: кнопки едут вместе с чипами --}}
+							<div class="day-nav-buttons day-nav-buttons--inline">
+								{!! $dayNavButtonsHtml !!}
+							</div>
+						</div>
+						</div>
+
+						{{-- Широкий экран: кнопки отдельным блоком справа, не скроллятся --}}
+						<div class="day-nav-buttons day-nav-buttons--pinned">
+							{!! $dayNavButtonsHtml !!}
 						</div>
 					</div>
 				</div>
-				
-				
+
+
 				<div class="tab-panes">
                     @foreach($groupedByDate as $dateKey => $dayData)
                     <div class="tab-pane {{ $loop->first ? 'active' : '' }}" id="day-{{ $loop->iteration }}">
+                        @if(empty($dayData['occurrences']))
+                        <div class="ramka">
+                            <div class="alert alert-info">{{ __('events.empty_list_day') }}</div>
+                        </div>
+                        @else
                         <div class="row mb-0">
                             @foreach ($dayData['occurrences'] as $occ)
 							@include('events._card')
                             @endforeach
 						</div>
+						@endif
 					</div>
                     @endforeach
 				</div>
@@ -393,7 +445,11 @@ $fCity     = request('city', '');
 				@csrf
 				<input type="hidden" name="position" id="joinPosition" value="">
 			</form>
-			
+
+			@guest
+			@include('auth._login_popup')
+			@endguest
+
 		</div>
 		<x-slot name="script">
 			<script src="/assets/fas.js"></script>
@@ -537,7 +593,33 @@ $fCity     = request('city', '');
 						activateTab(chips[0].dataset.tab);
 					}
 				})();
-				
+
+				// ===== Сворачивание топбара при "прилипании" ленты дат =====
+				// .mob-sticky прилипает к верху при скролле — в этот момент топбар
+				// (фильтр/направление/фото/гео) внутри той же карточки сворачивается,
+				// остаются видны только чипы дат. Проверяем через getBoundingClientRect
+				// против реального top из CSS (9.4rem/8.5rem на ≤480px) — так брейкпоинт
+				// не приходится дублировать в JS.
+				(function initStickyCollapse() {
+					const mobSticky = document.querySelector('.events-page .mob-sticky');
+					const ramka = document.querySelector('.event-dates-ramka');
+					if (!mobSticky || !ramka) return;
+
+					let ticking = false;
+					function checkStuck() {
+						ticking = false;
+						const stickyTop = parseFloat(getComputedStyle(mobSticky).top) || 0;
+						const rectTop = mobSticky.getBoundingClientRect().top;
+						ramka.classList.toggle('is-scrolled', rectTop <= stickyTop + 1);
+					}
+					window.addEventListener('scroll', function() {
+						if (ticking) return;
+						ticking = true;
+						requestAnimationFrame(checkStuck);
+					}, { passive: true });
+					checkStuck();
+				})();
+
 				// ===== Countdown =====
 				function pad2(n) { n = Math.max(0, n|0); return (n < 10 ? '0' : '') + n; }
 				function tickCountdown(el) {
@@ -586,7 +668,12 @@ $fCity     = request('city', '');
 					});
 					
 					var btn = document.getElementById('btn-toggle-all-imgs');
-					if (btn) btn.textContent = hidden ? @json(__('events.btn_show_photos')) : @json(__('events.btn_hide_photos'));
+					if (btn) {
+						btn.classList.toggle('is-active', hidden);
+						var label = hidden ? @json(__('events.btn_show_photos')) : @json(__('events.btn_hide_photos'));
+						btn.setAttribute('title', label);
+						btn.setAttribute('aria-label', label);
+					}
 					localStorage.setItem('eventImgHidden', JSON.stringify({ hidden: hidden }));
 					_allHidden = hidden;
 				}
@@ -606,53 +693,18 @@ $fCity     = request('city', '');
 				window.toggleAllImgs = function(btn) {
 					applyImgState(!_allHidden);
 				};
-			</script>
-			<script>
-				// Фильтр "Тип мероприятия" зависит от выбранного "Направления" —
-				// при смене направления пересобираем список опций и переинициализируем
-				// кастомный select (createCustomSelect не подхватывает замену <option>
-				// сам по себе — нужен явный destroy()+recreate, см. CLAUDE.md).
-				(function() {
-					var formatLabels = @json($formatLabels);
-					var formatDirections = @json($formatDirections);
-					var anyLabel = @json(__('events.filter_any'));
 
-					var $direction = window.jQuery('#direction');
-					var $format = window.jQuery('#format');
-					if (!$direction.length || !$format.length) return;
-
-					function rebuildFormatOptions() {
-						var dir = $direction.val();
-						var current = $format.val();
-						var stillValid = (current === '');
-						var html = '<option value="">' + anyLabel + '</option>';
-
-						Object.keys(formatLabels).forEach(function(key) {
-							var dirs = formatDirections[key] || ['classic', 'beach'];
-							if (dir !== '' && dirs.indexOf(dir) === -1) return;
-
-							var isSelected = key === current;
-							if (isSelected) stillValid = true;
-
-							html += '<option value="' + key + '"' + (isSelected ? ' selected' : '') + '>'
-								+ formatLabels[key] + '</option>';
+				// ===== Поп-ап "Фильтры" (тип/уровень/локация) =====
+				var btnOpenFilters = document.getElementById('btnOpenFilters');
+				if (btnOpenFilters) {
+					btnOpenFilters.addEventListener('click', function() {
+						jQuery.fancybox.open({
+							src: '#eventsFilterModal',
+							type: 'inline',
+							opts: { hideScrollbar: false, touch: false, toolbar: false, smallBtn: true, animationEffect: 'zoom-in-out', transitionEffect: 'zoom-in-out', baseClass: 'events-filter-fancybox' }
 						});
-
-						$format.html(html);
-						if (!stillValid) {
-							$format.val('');
-						}
-
-						if (window.customSelect) {
-							window.customSelect.destroy('format');
-						}
-						if (typeof window.createCustomSelect === 'function') {
-							window.createCustomSelect($format);
-						}
-					}
-
-					$direction.on('change', rebuildFormatOptions);
-				})();
+					});
+				}
 			</script>
 		</x-slot>
 		

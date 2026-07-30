@@ -159,19 +159,23 @@
     $pCount = ($event->format === 'tournament' && !$isIndividualTournament) ? ($teamsRegistered ?? 0) : ($registeredTotal ?? 0);
     $pMax   = ($event->format === 'tournament' && !$isIndividualTournament) ? ($teamsMax ?? 0) : ($totalCapacity ?? 0);
     $percent = ($pMax > 0) ? min(100, ($pCount / $pMax) * 100) : 0;
-	
-	$barClass = 'bg-danger';
-	if ($percent >= 75) {
-	$barClass = 'bg-success';
-	} elseif ($percent >= 40) {
-	$barClass = 'bg-warning';
-	}
+
+    // Шкала заполненности: 0-50% свободно, 51-70% заполняется, 71-99% почти нет мест, 100% мест нет
+    if ($percent >= 100) {
+        $barClass = 'bg-full';
+    } elseif ($percent > 70) {
+        $barClass = 'bg-danger';
+    } elseif ($percent > 50) {
+        $barClass = 'bg-warning';
+    } else {
+        $barClass = 'bg-success';
+    }
     @endphp
-	
-	
-	
+
+
+
     @if($pMax > 0)
-	<div class="progress mb-2">
+	<div class="progress mb-1">
 		<div
 		id="players-progress"
 		class="progress-bar {{ $barClass }}"
@@ -182,6 +186,7 @@
 		style="width: {{ $percent }}%">
 		</div>
 	</div>
+	<div id="players-progress-full-label" class="text-muted small mb-2" style="{{ $percent >= 100 ? '' : 'display:none' }}">{{ __('events.card_seats_full') }}</div>
     @endif
 	
     {{-- ===============================

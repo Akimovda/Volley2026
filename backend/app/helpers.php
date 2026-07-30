@@ -124,6 +124,25 @@ if (! function_exists('level_filter_label')) {
     }
 }
 
+if (! function_exists('level_tooltip_description')) {
+    /**
+     * Краткое описание уровня для тултипа на карточке мероприятия (events/_card.blade.php).
+     * spb-scope — level_spb_description() (свой текст для 2-6, фолбэк pages.lp_adult_* для 1/7);
+     * standard-scope — напрямую pages.lp_adult_{direction}_{level}, т.к. отдельного
+     * набора коротких standard-описаний в проекте не заведено.
+     */
+    function level_tooltip_description(int $level, string $direction, string $scope = 'standard'): ?string
+    {
+        if ($scope === 'spb') {
+            return level_spb_description($level, $direction);
+        }
+
+        $key = 'pages.lp_adult_' . $direction . '_' . $level;
+        $translated = __($key);
+        return $translated !== $key ? $translated : null;
+    }
+}
+
 if (! function_exists('level_spb_description')) {
     /**
      * Описание уровня для питерского набора (только /level_players).

@@ -993,6 +993,19 @@ body.dark input[type="datetime-local"]::-webkit-calendar-picker-indicator {
 .card-ramka.select-dropdown-open {
     z-index: 100 !important;
 }
+/* .top-section .container уже имеет свой z-index:2 (своя stacking context) —
+   select внутри нового events-topbar (см. events/index.blade.php) выше ничего
+   не поднимает без этого правила, дропдаун уходит под .main-container (z-index:3),
+   где рендерятся чипы дней/карточки. Тот же приём — поднимаем ancestor целиком. */
+.top-section.select-dropdown-open {
+    z-index: 100 !important;
+}
+/* Открытый .info-tip на карточке мероприятия (уровни/подтип/гендер) — поднимаем
+   карточку (.card-ramka) целиком над соседними, иначе тултип уходит под
+   следующую карточку в сетке (см. script.js .js-info-tip). */
+.card-ramka.info-tip-open {
+    z-index: 50 !important;
+}
 .form-select-option {
     padding: 0.8rem 2rem;
     font-size: 1.6rem;
@@ -2644,6 +2657,23 @@ body.dark .theme-icon {
 .fix-header-menu.open .auth-btn:nth-child(3) { animation-delay: 0.3s; }
 .fix-header-menu.open .auth-btn:nth-child(4) { animation-delay: 0.4s; }
 .fix-header-menu.open .auth-btn:nth-child(5) { animation-delay: 0.5s; }
+/* .auth-btn по умолчанию opacity:0 (entrance-анимация, включается только внутри
+   .auth-page — страница /login — или открытого .fix-header-menu). Общий поп-ап
+   логина (auth/_login_popup.blade.php, открывается на /events и т.п. — НЕ
+   auth-page и НЕ шапка) без этого правила показывал пустой поп-ап без кнопок. */
+#loginPopupContent .auth-btn {
+	opacity: 1;
+	transform: translateY(0);
+}
+/* Заголовок поп-апа логина — центрируем (сам .title-h везде на сайте left-aligned
+   с подчёркиванием слева, здесь одиночный узкий диалог смотрится лучше по центру) */
+.login-popup-title {
+	text-align: center;
+}
+.login-popup-title::after {
+	left: 50%;
+	transform: translateX(-50%);
+}
 @keyframes fadeInUp {
 	from {
 		opacity: 0;
@@ -3035,7 +3065,34 @@ body.dark .menu-user-login .user-name {
 .sidebar-menu .menu-item {
 	padding: 0.4rem 1.2rem 1rem;
 	border-radius: 1rem;
-	
+
+}
+/* Иконки пунктов меню (замена эмодзи — см. components/menu-icon.blade.php) —
+   инлайн-SVG, окрашивается через currentColor вместе с текстом пункта меню. */
+.menu-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 1.8rem;
+	height: 1.8rem;
+	margin-right: 0.6rem;
+	vertical-align: -0.4rem;
+	flex-shrink: 0;
+}
+.menu-icon svg {
+	width: 100%;
+	height: 100%;
+}
+/* Точка непрочитанного уведомления в меню — раньше эмодзи 🔴 (нестабильный
+   размер/цвет на разных платформах), теперь простой круг через CSS. */
+.menu-notification-dot {
+	display: inline-block;
+	width: 1.6rem;
+	height: 1.6rem;
+	border-radius: 50%;
+	background: #ef4444;
+	flex-shrink: 0;
+	margin-right: 0.8rem;
 }
 body.dark .menu-item,
 body.dark .menu-item-title {
@@ -4264,6 +4321,101 @@ body.dark .badge.badge-muted {
 	color: #ef4444;
 }
 
+/* ── Тултипы карточки мероприятия (уровни, подтип игры, гендерная политика) ──
+   Тап открывает/закрывает (см. script.js .js-info-tip) — работает и на мобиле
+   (WKWebView), не завязано на :hover. */
+/* Бейджи подтипа игры/гендерной политики на карточке мероприятия — крупнее и
+   жирнее базового .badge.badge-sm (тот рассчитан на мелкие служебные пометки). */
+.event-badges-row .badge.badge-sm {
+	font-size: 1.3rem;
+	font-weight: 700;
+	padding: 0.4rem 1rem;
+}
+/* Кнопка-бейдж уровня на карточке мероприятия — открывает поп-ап (fancybox),
+   визуально должна выглядеть как обычный текст/бейдж, не как <button>. */
+.level-badge-trigger {
+	background: none;
+	border: none;
+	padding: 0;
+	margin: 0;
+	cursor: pointer;
+	font: inherit;
+	color: inherit;
+	display: inline-block;
+}
+.level-tip-modal-body .level-tip-row + .level-tip-row {
+	margin-top: 1rem;
+	padding-top: 1rem;
+	border-top: 0.1rem solid rgba(0,0,0,0.08);
+}
+.level-tip-modal-body .level-tip-desc {
+	color: #555;
+	font-weight: 400;
+	margin-top: 0.5rem;
+	font-size: 1.4rem;
+	line-height: 1.5;
+}
+body.dark .level-tip-modal-body .level-tip-row + .level-tip-row {
+	border-top-color: rgba(255,255,255,0.1);
+}
+body.dark .level-tip-modal-body .level-tip-desc {
+	color: #999;
+}
+.info-tip {
+	position: relative;
+	display: inline-block;
+	cursor: pointer;
+}
+.info-tip-trigger {
+	display: inline-block;
+}
+.info-tip-content {
+	display: none;
+	position: absolute;
+	z-index: 40;
+	bottom: 100%;
+	left: 50%;
+	transform: translateX(-50%);
+	margin-bottom: 0.6rem;
+	width: max-content;
+	max-width: min(26rem, calc(100vw - 3.2rem));
+	background: #fff;
+	border: 0.1rem solid rgba(0,0,0,0.08);
+	border-radius: 0.8rem;
+	box-shadow: 0 0.6rem 1.6rem rgba(0,0,0,0.12);
+	padding: 1rem 1.2rem;
+	font-size: 1.3rem;
+	line-height: 1.4;
+	color: #222333;
+}
+.info-tip.is-open .info-tip-content {
+	display: block;
+}
+.info-tip-content .level-tip-row + .level-tip-row {
+	margin-top: 0.6rem;
+	padding-top: 0.6rem;
+	border-top: 0.1rem solid rgba(0,0,0,0.08);
+}
+.info-tip-content .level-tip-desc {
+	color: #555;
+	font-weight: 400;
+	margin-top: 0.2rem;
+}
+body.dark .info-tip-content {
+	background: #222333;
+	border-color: rgba(255,255,255,0.1);
+	color: #cacaca;
+}
+body.dark .info-tip-content .level-tip-desc {
+	color: #999;
+}
+body.dark .info-tip-content .level-tip-row + .level-tip-row {
+	border-top-color: rgba(255,255,255,0.1);
+}
+@media (max-width: 480px) {
+	.info-tip-content { max-width: 22rem; font-size: 1.2rem; }
+}
+
 
 
 /* Telegram специальные стили */
@@ -4485,23 +4637,169 @@ body.dark .wizard-pill.is-active {
 }	
 
 
-.events-page .day-chip { padding: 1rem 1.8rem 0.9rem; min-width: 5rem; scroll-snap-align: start; text-align:center; cursor:pointer; user-select:none; line-height: 1.15; border-bottom: 3px solid transparent; }
-.events-page .day-chip .dc-date { font-weight: 600; }
-.events-page .day-chip .dc-dow  { font-size: 12px; opacity: .85; margin-top: 2px; }
+.events-page .day-chip {
+    padding: 0.9rem 1.5rem 1rem;
+    min-width: 5.2rem;
+    scroll-snap-align: start;
+    text-align: center;
+    cursor: pointer;
+    user-select: none;
+    line-height: 1.15;
+    border-radius: 1.2rem;
+    transition: background .2s ease;
+}
+.events-page .day-chip .dc-dow  { font-size: 12px; font-weight: 700; text-transform: uppercase; opacity: .7; }
+.events-page .day-chip .dc-date { font-weight: 700; font-size: 2.1rem; margin-top: 0.1rem; }
+.events-page .day-chip .dc-dot  {
+    display: block;
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: 50%;
+    background: #10b981;
+    margin: 0.5rem auto 0;
+}
+.events-page .day-chip.last-tab .dc-dot { display: none; }
+/* День без мероприятий — точка резервирует место (не двигает высоту чипа), но невидима */
+.events-page .day-chip .dc-dot.dc-dot--empty { background: transparent; }
+.events-page .day-chip.last-tab .dc-date { font-size: 1.3rem; font-weight: 600; }
+.events-page .day-chip.last-tab .dc-dow  { font-size: 12px; opacity: .85; text-transform: none; }
+/* Выходные (СБ/ВС) — день недели красным, будни — серым (уже задано через opacity выше) */
+.events-page .day-chip.is-weekend .dc-dow { color: #ef4444; opacity: 1; }
 /* Убираем подвижный пилл — только для пикера дней на /events */
 .events-page .event-dates-ramka .tab-highlight { display: none; }
-/* Активный день — подчёркивание вместо заливки */
+/* Активный день — подчёркивание снизу (inset box-shadow повторяет скругление
+   углов чипа, а не прямоугольный border) + текст в акцентном цвете, без заливки. */
 .events-page .day-chip.active {
     background: transparent;
+    box-shadow: inset 0 -0.3rem 0 0 #2967BA;
+}
+.events-page .day-chip.active .dc-dow,
+.events-page .day-chip.active .dc-date {
     color: #2967BA;
-    border-bottom-color: #2967BA;
-    border-radius: 0;
-    text-shadow: none;
+    opacity: 1;
 }
 /* Тёмная тема — оранжевое подчёркивание (events-page на самом body) */
 body.dark.events-page .day-chip.active {
+    box-shadow: inset 0 -0.3rem 0 0 #E7612F;
+}
+body.dark.events-page .day-chip.active .dc-dow,
+body.dark.events-page .day-chip.active .dc-date {
     color: #E7612F;
-    border-bottom-color: #E7612F;
+}
+
+/* ── Компактная верхняя панель /events (фильтры/направление/фото/город) ── */
+.events-topbar {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    flex-wrap: nowrap;
+    max-width: 100%;
+    /* overflow-x:auto здесь ЛОМАЕТ дропдаун направления — если задать
+       overflow-x без overflow-y, браузер молча делает overflow-y:auto тоже
+       (правило CSS), и position:absolute дропдаун (открывается вниз, ниже
+       границ этого блока) обрезается тем же контейнером. Не включать снова
+       без переноса дропдауна в отдельный портал/fixed-слой. */
+}
+.events-topbar .topbar-icon-btn {
+    position: relative;
+    width: 4.8rem;
+    height: 4.8rem;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: 0.2rem solid rgba(41, 103, 186, 0.25);
+    background: rgba(255, 255, 255, 0.7);
+    color: #2967BA;
+    cursor: pointer;
+    transition: all .2s ease;
+}
+.events-topbar .topbar-icon-btn:hover {
+    background: #2967BA;
+    color: #fff;
+    border-color: #2967BA;
+}
+.events-topbar .topbar-icon-btn.is-active {
+    background: #2967BA;
+    color: #fff;
+    border-color: #2967BA;
+}
+.events-topbar .topbar-icon-btn.has-active::after {
+    content: '';
+    position: absolute;
+    top: 0.1rem;
+    right: 0.1rem;
+    width: 1rem;
+    height: 1rem;
+    border-radius: 50%;
+    background: #E7612F;
+    border: 0.2rem solid #fff;
+}
+body.dark .events-topbar .topbar-icon-btn {
+    background: rgba(255, 255, 255, 0.06);
+    color: #E7612F;
+    border-color: rgba(231, 97, 45, 0.35);
+}
+body.dark .events-topbar .topbar-icon-btn:hover,
+body.dark .events-topbar .topbar-icon-btn.is-active {
+    background: #E7612F;
+    color: #fff;
+    border-color: #E7612F;
+}
+body.dark .events-topbar .topbar-icon-btn.has-active::after {
+    border-color: #1a1b27;
+}
+.events-topbar .topbar-direction-form {
+    flex: 0 0 auto;
+    width: 11rem;
+    min-width: 11rem;
+}
+@media (max-width: 480px) {
+    .events-topbar .topbar-direction-form {
+        width: 10rem;
+        min-width: 10rem;
+    }
+    .events-topbar .topbar-direction-form .form-select-custom {
+        padding: 0.8rem 1rem;
+        font-size: 1.4rem;
+    }
+}
+.events-topbar .topbar-direction-form .form-select-wrapper {
+    min-height: 4.8rem;
+}
+.events-topbar .topbar-direction-form .form-select-custom {
+    padding: 0.8rem 1.6rem;
+    font-size: 1.6rem;
+    min-height: 4.8rem;
+}
+
+/* Поп-ап фильтров /events — дропдаун кастомного select не должен обрезаться
+   overflow:auto у .fancybox-content (см. CLAUDE.md про createCustomSelect) */
+.fancybox-container.events-filter-fancybox .fancybox-content {
+    overflow: visible;
+}
+
+/* ── Компактный заголовок "Мероприятия + даты" (только /events) ───────── */
+.events-page .top-section {
+    padding-top: 9rem;
+    padding-bottom: 0.6rem;
+}
+.events-page .top-section h1,
+.events-page .top-section h2 {
+    font-size: 2.6rem;
+}
+.events-page .top-section-txt {
+    padding-bottom: 1.2rem;
+}
+@media (max-width: 767px) {
+    .events-page .top-section {
+        padding-top: 9.5rem;
+    }
+    .events-page .top-section h1,
+    .events-page .top-section h2 {
+        font-size: 2.2rem;
+    }
 }
 
 /* ── btn-sm + btn-outline-primary (org dashboard) ─────────────────────── */
@@ -4613,35 +4911,95 @@ body.dark .btn-outline-primary:hover {
 .events-page .event-dates-ramka .tabs {
 	display: flex;
 	flex-wrap: nowrap;
-	width: max-content;  
-	min-width: 100%; 
+	width: max-content;
 	gap: 0.4rem;
 	padding: 0.4rem 0;
-	margin: 0;
-}				
+	margin: 0 auto; /* центр, когда чипов меньше ширины контейнера; при переполнении просто скроллится */
+	background: none!important;
+	box-shadow: none;
+}
 .event-dates-ramka .tab {
 	flex: 0 0 auto;
 	padding: 1rem 1.8rem;
 	white-space: nowrap;
-}								
+}
 
+/* Карточка чипов дней — на широких экранах топбар (фильтр/направление/фото/
+   гео) слева, лента дат по центру (скроллится сама, топбар и кнопки next/prev
+   не скроллятся), кнопки "следующие/предыдущие 10 дней" справа — вынесены из
+   ленты в свой блок (day-nav-buttons), не уезжают вместе с чипами. На узких —
+   всё в столбик. Раньше overflow-x был на самой .event-dates-ramka (скроллилась
+   целиком вместе с топбаром) — перенесено на #daysStrip, см. ниже. */
 .event-dates-ramka {
+	display: flex;
+	align-items: center;
+	gap: 1.6rem;
 	padding: 0.8rem 1.4rem;
 	backdrop-filter: blur(8px);
-	overflow-x:auto; 
-	-webkit-overflow-scrolling: touch; 
-	scroll-snap-type: x mandatory;		
-	scroll-padding: 0 1rem;			
 }
-.event-dates-ramka .tabs {
-	display: flex;
-	flex-wrap: nowrap;
-	background: none!important;
-	box-shadow: none;
-}
-.event-dates-ramka a.last-tab {			
-	margin-left: auto;
+.event-dates-ramka .events-topbar {
 	flex: 0 0 auto;
+	max-height: 6rem;
+	opacity: 1;
+	transition: max-height .25s ease, opacity .2s ease, margin .25s ease;
+}
+/* Липкая лента дат "прилипает" к верху при скролле (.mob-sticky) — в этот
+   момент топбар (фильтр/направление/фото/гео) сворачивается, оставляя видимой
+   только ленту дат (см. JS-переключатель is-scrolled в events/index.blade.php).
+   Только на узких экранах — на широких топбар остаётся виден в одной строке
+   с чипами (там место не в дефиците, и одна строка не выглядит перегруженной).
+   overflow:hidden — ТОЛЬКО в свёрнутом состоянии: если повесить его безусловно
+   (для плавности transition), он обрезает дропдаун селекта "Направление"
+   (position:absolute, открывается вниз) даже когда топбар полностью развёрнут —
+   тот же баг из CLAUDE.md про createCustomSelect и overflow:hidden у карточки. */
+@media (max-width: 767px) {
+	.event-dates-ramka.is-scrolled .events-topbar {
+		max-height: 0;
+		overflow: hidden;
+		opacity: 0;
+		margin: 0 !important;
+		pointer-events: none;
+	}
+}
+.events-page #daysStrip {
+	flex: 1 1 auto;
+	width: 100%;
+	min-width: 0;
+	overflow-x: auto;
+	-webkit-overflow-scrolling: touch;
+	scroll-snap-type: x mandatory;
+	scroll-padding: 0 1rem;
+}
+.event-dates-ramka .day-nav-buttons {
+	display: flex;
+	gap: 0.4rem;
+	flex: 0 0 auto;
+}
+/* Кнопки prev/next рендерятся дважды (см. events/index.blade.php) — на узком
+   экране едут вместе с чипами внутри скролла (inline), на широком стоят особым
+   блоком справа и не скроллятся (pinned). Показываем только подходящую копию. */
+.event-dates-ramka .day-nav-buttons--inline {
+	margin-left: 0.4rem;
+}
+.event-dates-ramka .day-nav-buttons--pinned {
+	display: none;
+}
+@media (max-width: 767px) {
+	.event-dates-ramka {
+		flex-direction: column;
+		align-items: stretch;
+	}
+	.event-dates-ramka .events-topbar {
+		justify-content: center;
+	}
+}
+@media (min-width: 768px) {
+	.event-dates-ramka .day-nav-buttons--inline {
+		display: none;
+	}
+	.event-dates-ramka .day-nav-buttons--pinned {
+		display: flex;
+	}
 }
 .events-page .mob-sticky {
 	position: sticky;
@@ -5060,13 +5418,18 @@ body.dark .menu-move-btn:hover {
     background: #2a2a3a;
     border-color: rgba(255, 255, 255, 0.2);
 }
-/* Progress bar */
+/* Progress bar — шкала заполненности мест (0-50% свободно, 51-70% заполняется,
+   71-99% почти нет мест, 100% мест нет). Названия классов (bg-success/warning/
+   danger) сохранены ради обратной совместимости с players.blade.php/scripts.blade.php,
+   смысл цветов теперь обратный: зелёный = много мест, красный = почти всё занято. */
 .progress { display: block !important; width: 100% !important; height: 10px !important; background: rgba(17,24,39,0.10); border-radius: 6px; overflow: hidden; margin-bottom: 0.5rem; box-sizing: border-box !important; }
 .progress .progress-bar { display: block !important; height: 100% !important; border-radius: 6px; transition: width 0.4s ease; min-width: 1px; }
-.progress .progress-bar.bg-success { background: #10b981 !important; }
-.progress .progress-bar.bg-warning { background: #f59e0b !important; }
-.progress .progress-bar.bg-danger { background: #ef4444 !important; }
+.progress .progress-bar.bg-success { background: #10b981 !important; } /* 0-50% */
+.progress .progress-bar.bg-warning { background: #E7612F !important; } /* 51-70% — брендовый оранж */
+.progress .progress-bar.bg-danger { background: #ef4444 !important; } /* 71-99% */
+.progress .progress-bar.bg-full { background: #9ca3af !important; } /* 100% — мест нет */
 body.dark .progress { background: rgba(255,255,255,0.12); }
+body.dark .progress .progress-bar.bg-full { background: #6b7280 !important; }
 
 /* iOS safe area — Capacitor WebView (VolleyPlayApp) */
 .is-app .fix-header {

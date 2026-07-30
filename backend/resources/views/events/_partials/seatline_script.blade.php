@@ -4,6 +4,31 @@
 // ===== Seats line =====
 const seatLines = Array.from(document.querySelectorAll('[data-seatline]'));
 
+// Шкала заполненности: 0-50% свободно (зелёный), 51-70% заполняется (оранж),
+// 71-99% почти нет мест (красный), 100% мест нет (серый) — та же шкала, что на
+// странице мероприятия (players.blade.php/scripts.blade.php).
+function applySeatProgress(el, registered, max) {
+	const barWrap  = el.querySelector('[data-seat-progress-wrap]');
+	const bar      = el.querySelector('[data-seat-progress-bar]');
+	const fullLbl  = el.querySelector('[data-seat-progress-full]');
+	if (!bar) return;
+	if (!(max > 0)) { if (barWrap) barWrap.style.display = 'none'; return; }
+
+	const percent = Math.max(0, Math.min(100, (registered / max) * 100));
+	bar.style.width = percent + '%';
+	bar.classList.remove('bg-success', 'bg-warning', 'bg-danger', 'bg-full');
+	if (percent >= 100) {
+		bar.classList.add('bg-full');
+	} else if (percent > 70) {
+		bar.classList.add('bg-danger');
+	} else if (percent > 50) {
+		bar.classList.add('bg-warning');
+	} else {
+		bar.classList.add('bg-success');
+	}
+	if (fullLbl) fullLbl.style.display = percent >= 100 ? '' : 'none';
+}
+
 async function loadSeatLine(el) {
 	const occId        = el.dataset.occurrenceId;
 	const regEnabled   = el.dataset.registrationEnabled === '1';
@@ -16,6 +41,7 @@ async function loadSeatLine(el) {
 
 	if (!regEnabled) {
 		if (leftEl) leftEl.textContent = '0';
+		applySeatProgress(el, 0, maxCard);
 		return;
 	}
 
@@ -31,6 +57,7 @@ async function loadSeatLine(el) {
 		const meta = data?.meta || data?.data?.meta || null;
 		if (!data || !meta) {
 			if (leftEl) leftEl.textContent = '0';
+			applySeatProgress(el, 0, maxCard);
 			return;
 		}
 
@@ -42,6 +69,7 @@ async function loadSeatLine(el) {
 			if (leftEl)  leftEl.textContent  = String(tReg);
 			if (totalEl) totalEl.textContent = String(tMax);
 			if (unitEl)  unitEl.textContent  = unitEl.dataset.unitTeams ?? unitEl.textContent;
+			applySeatProgress(el, tReg, tMax);
 		} else {
 			const apiMax       = Number(meta.total_capacity ?? meta.max_players ?? 0) || 0;
 			const effectiveMax = apiMax > 0 ? apiMax : maxCard;
@@ -51,6 +79,7 @@ async function loadSeatLine(el) {
 			// Турнир без данных по командам (напр. tournament_individual без настроенного лимита) —
 			// не выдаём число игроков за число команд, честно подписываем юнит "игроков".
 			if (isTournament && unitEl) unitEl.textContent = unitEl.dataset.unitPlayers ?? unitEl.textContent;
+			applySeatProgress(el, registeredTotal, effectiveMax);
 		}
 	} catch (e) {}
 }

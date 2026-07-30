@@ -478,7 +478,11 @@
 		@csrf
 		<input type="hidden" name="position" id="joinPosition" value="">
 	</form>
-	
+
+	@guest
+	@include('auth._login_popup')
+	@endguest
+
 	<x-slot name="script">
 		<script src="/assets/fas.js"></script>
 		<script>

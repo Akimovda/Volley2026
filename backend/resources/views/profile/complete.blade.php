@@ -192,7 +192,24 @@
 
 			<x-slot name="style">
 				<style>
-					
+					/* День/месяц/год рождения — 3 select в один ряд (.d-flex). createCustomSelect
+					   оборачивает каждый select в свой .form-select-wrapper, но НЕ переносит
+					   инлайн width/flex исходного <select> на обёртку — обёртка по умолчанию
+					   width:100%, из-за чего год "вылезал" за пределы строки на узких экранах.
+					   data-select-id ставит сам createCustomSelect (id исходного select). */
+					.form-select-wrapper[data-select-id="birth_day"] {
+					width: 8rem;
+					flex: 0 0 auto;
+					}
+					.form-select-wrapper[data-select-id="birth_month"] {
+					flex: 1 1 auto;
+					min-width: 0;
+					}
+					.form-select-wrapper[data-select-id="birth_year"] {
+					width: 9rem;
+					flex: 0 0 auto;
+					}
+
 					/* Общие стили для контейнеров */
 					.levelmark-row .swiper-slide {
 					height: auto;

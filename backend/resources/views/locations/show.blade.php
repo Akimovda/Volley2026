@@ -349,6 +349,10 @@
             <input type="hidden" name="position" id="joinPosition" value="">
         </form>
         <style>.join-backdrop.hidden{display:none!important;}.hidden{display:none!important;}</style>
+
+        @guest
+        @include('auth._login_popup')
+        @endguest
 	</div>
 	
     <x-slot name="script">

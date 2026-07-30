@@ -61,10 +61,10 @@ return [
     'org_create_event'      => 'Создать мероприятие',
     'org_subscriptions'     => 'Абонементы',
     'org_coupons'           => 'Купоны',
-    'org_my_leagues'        => '🏆 Мои лиги и сезоны',
+    'org_my_leagues'        => 'Мои лиги и сезоны',
     'org_notif_channels'    => 'Каналы уведомлений',
-    'org_widget'            => '🌐 Виджет на сайт',
-    'org_pro'               => '⭐ Организатор Pro',
+    'org_widget'            => 'Виджет на сайт',
+    'org_pro'               => 'Организатор Pro',
 
     // Меню администратора
     'admin_menu_title'           => 'Меню администратора',

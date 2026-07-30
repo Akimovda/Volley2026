@@ -13,4 +13,8 @@ return [
     'login_h2'            => 'Welcome back',
     'login_t_description' => 'Sign in to continue',
     'login_breadcrumb'    => 'Sign in',
+
+    // Guest login popup (the "Join" button on an event card/page)
+    'login_popup_title'    => 'Sign in to continue',
+    'login_popup_subtitle' => 'After signing in you\'ll return to this event and can join.',
 ];

@@ -223,9 +223,9 @@
                 <a href="{{ route('club.bookings.index') }}"
                    class="menu-item {{ $activeMenu === 'club_bookings' ? 'active' : '' }}">
                     @if($activeMenu === 'club_bookings')
-                        <strong class="cd menu-text">🎪 {{ __('club.bookings_title') }}</strong>
+                        <strong class="cd menu-text"><x-menu-icon name="court" /> {{ __('club.bookings_title') }}</strong>
                     @else
-                        <span class="menu-text">🎪 {{ __('club.bookings_title') }}</span>
+                        <span class="menu-text"><x-menu-icon name="court" /> {{ __('club.bookings_title') }}</span>
                     @endif
                 </a>
                 @endif
@@ -233,63 +233,63 @@
                 <a href="{{ route('events.create') }}"
                    class="menu-item {{ $activeMenu === 'event_create' ? 'active' : '' }}">
                     @if($activeMenu === 'event_create')
-                        <strong class="cd menu-text">📆 {{ __('profile.menu_org_create_event') }}</strong>
+                        <strong class="cd menu-text"><x-menu-icon name="calendar-plus" /> {{ __('profile.menu_org_create_event') }}</strong>
                     @else
-                        <span class="menu-text">📆 {{ __('profile.menu_org_create_event') }}</span>
+                        <span class="menu-text"><x-menu-icon name="calendar-plus" /> {{ __('profile.menu_org_create_event') }}</span>
                     @endif
                 </a>
                 {{-- 8. Абонементы --}}
                 <a href="{{ route('subscription_templates.index') }}"
                    class="menu-item {{ $activeMenu === 'sub_templates' ? 'active' : '' }}">
                     @if($activeMenu === 'sub_templates')
-                        <strong class="cd menu-text">🪪 {{ __('ui.org_subscriptions') }}</strong>
+                        <strong class="cd menu-text"><x-menu-icon name="id-card" /> {{ __('ui.org_subscriptions') }}</strong>
                     @else
-                        <span class="menu-text">🪪 {{ __('ui.org_subscriptions') }}</span>
+                        <span class="menu-text"><x-menu-icon name="id-card" /> {{ __('ui.org_subscriptions') }}</span>
                     @endif
                 </a>
                 {{-- 9. Купоны --}}
                 <a href="{{ route('coupon_templates.index') }}"
                    class="menu-item {{ $activeMenu === 'coupon_templates' ? 'active' : '' }}">
                     @if($activeMenu === 'coupon_templates')
-                        <strong class="cd menu-text">🎟  {{ __('ui.org_coupons') }}</strong>
+                        <strong class="cd menu-text"><x-menu-icon name="ticket" /> {{ __('ui.org_coupons') }}</strong>
                     @else
-                        <span class="menu-text">🎟  {{ __('ui.org_coupons') }}</span>
+                        <span class="menu-text"><x-menu-icon name="ticket" /> {{ __('ui.org_coupons') }}</span>
                     @endif
                 </a>
                 {{-- 10. Мои лиги и сезоны --}}
                 <a href="{{ route('leagues.index') }}"
                    class="menu-item {{ $activeMenu === 'org_leagues' ? 'active' : '' }}">
                     @if($activeMenu === 'org_leagues')
-                        <strong class="cd menu-text">{{ __('ui.org_my_leagues') }}</strong>
+                        <strong class="cd menu-text"><x-menu-icon name="trophy" /> {{ __('ui.org_my_leagues') }}</strong>
                     @else
-                        <span class="menu-text">{{ __('ui.org_my_leagues') }}</span>
+                        <span class="menu-text"><x-menu-icon name="trophy" /> {{ __('ui.org_my_leagues') }}</span>
                     @endif
                 </a>
                 {{-- 11. Каналы уведомлений --}}
                 <a href="{{ route('profile.notification_channels') }}"
                    class="menu-item {{ $activeMenu === 'org_notif_channels' ? 'active' : '' }}">
                     @if($activeMenu === 'org_notif_channels')
-                        <strong class="cd menu-text">📣 {{ __('ui.org_notif_channels') }}</strong>
+                        <strong class="cd menu-text"><x-menu-icon name="megaphone" /> {{ __('ui.org_notif_channels') }}</strong>
                     @else
-                        <span class="menu-text">📣 {{ __('ui.org_notif_channels') }}</span>
+                        <span class="menu-text"><x-menu-icon name="megaphone" /> {{ __('ui.org_notif_channels') }}</span>
                     @endif
                 </a>
                 {{-- 12. Виджет на сайт --}}
                 <a href="{{ route('profile.widget') }}"
                    class="menu-item {{ $activeMenu === 'org_widget' ? 'active' : '' }}">
                     @if($activeMenu === 'org_widget')
-                        <strong class="cd menu-text">{{ __('ui.org_widget') }}</strong>
+                        <strong class="cd menu-text"><x-menu-icon name="globe" /> {{ __('ui.org_widget') }}</strong>
                     @else
-                        <span class="menu-text">{{ __('ui.org_widget') }}</span>
+                        <span class="menu-text"><x-menu-icon name="globe" /> {{ __('ui.org_widget') }}</span>
                     @endif
                 </a>
                 {{-- 13. Организатор Pro --}}
                 <a href="{{ route('organizer_pro.index') }}"
                    class="menu-item {{ $activeMenu === 'org_pro' ? 'active' : '' }}">
                     @if($activeMenu === 'org_pro')
-                        <strong class="cd menu-text">{{ __('ui.org_pro') }}</strong>
+                        <strong class="cd menu-text"><x-menu-icon name="star" /> {{ __('ui.org_pro') }}</strong>
                     @else
-                        <span class="menu-text">{{ __('ui.org_pro') }}</span>
+                        <span class="menu-text"><x-menu-icon name="star" /> {{ __('ui.org_pro') }}</span>
                     @endif
                 </a>
 
