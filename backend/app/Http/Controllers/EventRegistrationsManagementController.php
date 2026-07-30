@@ -392,6 +392,22 @@ class EventRegistrationsManagementController extends Controller
         $userId = (int) $data['user_id'];
         $pos = trim((string) ($data['position'] ?? ''));
 
+        // Для не-classic направлений (пляжка/king_beach и т.п.) форма не показывает
+        // выбор позиции — $pos приходил пустой строкой, хотя event_role_slots всё
+        // равно хранит единственную роль (обычно 'player') для учёта вместимости.
+        // Без явного position='player' на регистрации она выпадала из live-подсчёта
+        // (EventRoleSlotService::countActive(), EventRegistrationGuard::calculatePositions())
+        // — карточка позиции расходилась со счётчиком мест (баг найден на событии 401,
+        // First Summer Club, 26.07.2026). Проставляем автоматически, если позиций
+        // на выбор нет и роль на событие всего одна (иначе не трогаем — двусмысленно).
+        if ($pos === '' && $addDirection !== 'classic') {
+            $addNonClassicSlots = $addSlots ?? app(\App\Services\EventRoleSlotService::class)->getSlots($event);
+            $addMainSlots = $addNonClassicSlots->where('role', '!=', 'reserve');
+            if ($addMainSlots->count() === 1) {
+                $pos = (string) $addMainSlots->first()->role;
+            }
+        }
+
         // Определяем occurrence_id из запроса или ближайший
         $occurrenceId = (int) $request->input('occurrence_id', $request->query('occurrence', 0));
         if (!$occurrenceId) {

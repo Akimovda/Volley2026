@@ -64,15 +64,38 @@ class EventRoleSlotService
      * Живой COUNT активных регистраций на роль в рамках конкретной occurrence.
      * Единственный источник истины — event_role_slots.taken_slots не occurrence-scoped
      * (один счётчик на всё повторяющееся событие) и структурно не может быть верным.
+     *
+     * $isSingleMainRole — у события ровно ОДНА не-reserve роль (пляжка/king_beach:
+     * единственная роль 'player', в отличие от классики с несколькими именованными
+     * позициями). В этом случае считаем ЛЮБУЮ активную регистрацию, кроме reserve,
+     * занявшей эту роль — НЕ сверяя строго position === role. Причина: организатор
+     * мог добавить игрока вручную через EventRegistrationsManagementController::
+     * addPlayer() — для не-classic направлений форма не показывает выбор позиции,
+     * и до фикса (2026-07-30) position писался пустой строкой. Такие регистрации
+     * молча выпадали из строгого подсчёта, давая заниженный "занято"/завышенный
+     * "свободно" и риск реального перебора вместимости через tryTakeSlot() (учитывал
+     * меньше реально живых регистраций, чем есть). Для классики (несколько ролей)
+     * поведение не меняется — там строгое сравнение обязательно.
      */
-    private function countActive(int $occurrenceId, string $role): int
+    private function countActive(int $occurrenceId, string $role, bool $isSingleMainRole = false): int
     {
-        return \DB::table('event_registrations')
+        $query = \DB::table('event_registrations')
             ->where('occurrence_id', $occurrenceId)
-            ->where('position', $role)
             ->whereNull('cancelled_at')
-            ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
-            ->count();
+            ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)');
+
+        if ($role !== 'reserve' && $isSingleMainRole) {
+            $query->where('position', '!=', 'reserve');
+        } else {
+            $query->where('position', $role);
+        }
+
+        return $query->count();
+    }
+
+    private function isSingleMainRole(Collection $slots): bool
+    {
+        return $slots->where('role', '!=', 'reserve')->count() === 1;
     }
 
     /**
@@ -83,15 +106,14 @@ class EventRoleSlotService
      */
     public function tryTakeSlot(Event $event, string $role, int $occurrenceId): bool
     {
-        $slot = EventRoleSlot::where('event_id', $event->id)
-            ->where('role', $role)
-            ->first();
+        $slots = EventRoleSlot::where('event_id', $event->id)->get();
+        $slot  = $slots->firstWhere('role', $role);
 
         if (!$slot) {
             return false;
         }
 
-        $taken = $this->countActive($occurrenceId, $role);
+        $taken = $this->countActive($occurrenceId, $role, $this->isSingleMainRole($slots));
 
         if ($taken >= $slot->max_slots) {
             return false;
@@ -118,15 +140,14 @@ class EventRoleSlotService
             return false;
         }
 
-        $slot = EventRoleSlot::where('event_id', $eventId)
-            ->where('role', $role)
-            ->first();
+        $slots = EventRoleSlot::where('event_id', $eventId)->get();
+        $slot  = $slots->firstWhere('role', $role);
 
         if (!$slot) {
             return false;
         }
 
-        return $this->countActive($occurrenceId, $role) < $slot->max_slots;
+        return $this->countActive($occurrenceId, $role, $this->isSingleMainRole($slots)) < $slot->max_slots;
     }
 
     public function clear(Event $event): void
