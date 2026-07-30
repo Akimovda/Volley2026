@@ -238,25 +238,10 @@ class EventWaitlistManagementController extends Controller
     {
         if (!$user) abort(403);
 
-        $role = (string) ($user->role ?? 'user');
-
-        if ($role === 'admin') return;
-
-        if ($role === 'organizer') {
-            if ((int) $event->organizer_id !== (int) $user->id) abort(403);
-            return;
+        // Владелец ИЛИ staff у владельца — роль organizer не отменяет
+        // staff-назначение на чужих мероприятиях.
+        if (!app(\App\Services\EventAccessService::class)->canManageEvent($user, (int) $event->organizer_id)) {
+            abort(403);
         }
-
-        if ($role === 'staff') {
-            $row = DB::table('organizer_staff')
-                ->where('staff_user_id', (int) $user->id)
-                ->orderBy('id')
-                ->first(['organizer_id']);
-            $orgId = $row ? (int) $row->organizer_id : 0;
-            if ($orgId <= 0 || (int) $event->organizer_id !== $orgId) abort(403);
-            return;
-        }
-
-        abort(403);
     }
 }

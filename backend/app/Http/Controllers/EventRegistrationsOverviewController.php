@@ -24,15 +24,6 @@ class EventRegistrationsOverviewController extends Controller
 
         $sort = in_array($sort, ['date', 'title', 'address'], true) ? $sort : 'date';
 
-        $organizerIdForStaff = 0;
-        if ($role === 'staff') {
-            $row = DB::table('organizer_staff')
-                ->where('staff_user_id', (int) $user->id)
-                ->orderBy('id')
-                ->first(['organizer_id']);
-            $organizerIdForStaff = $row ? (int) $row->organizer_id : 0;
-        }
-
         $today = Carbon::now('UTC')->startOfDay();
 
         // Регистрации для обычных событий (по occurrence_id)
@@ -89,30 +80,22 @@ class EventRegistrationsOverviewController extends Controller
             $q->where('eo.starts_at', '>=', $today);
         }
 
-        // Доступ
+        // Доступ: владелец ИЛИ staff у владельца (роль organizer не отменяет
+        // staff-назначение на чужих мероприятиях), ИЛИ назначен тренером на
+        // конкретный occurrence.
         if ($role === 'admin') {
             // все события
-        } elseif ($role === 'organizer') {
-            $q->where('e.organizer_id', (int) $user->id);
-        } elseif ($role === 'staff') {
-            if ($organizerIdForStaff > 0) {
-                $q->where(function ($w) use ($user, $organizerIdForStaff) {
-                    $w->where('e.organizer_id', $organizerIdForStaff)
-                        ->orWhereExists(function ($sub) use ($user) {
-                            $sub->select(DB::raw(1))
-                                ->from('event_occurrence_trainers as eot')
-                                ->whereColumn('eot.occurrence_id', 'eo.id')
-                                ->where('eot.user_id', (int) $user->id);
-                        });
-                });
-            } else {
-                $q->whereExists(function ($sub) use ($user) {
-                    $sub->select(DB::raw(1))
-                        ->from('event_occurrence_trainers as eot')
-                        ->whereColumn('eot.occurrence_id', 'eo.id')
-                        ->where('eot.user_id', (int) $user->id);
-                });
-            }
+        } elseif ($role === 'organizer' || $role === 'staff') {
+            $organizerIds = app(\App\Services\EventAccessService::class)->manageableOrganizerIds($user);
+            $q->where(function ($w) use ($user, $organizerIds) {
+                $w->whereIn('e.organizer_id', $organizerIds)
+                    ->orWhereExists(function ($sub) use ($user) {
+                        $sub->select(DB::raw(1))
+                            ->from('event_occurrence_trainers as eot')
+                            ->whereColumn('eot.occurrence_id', 'eo.id')
+                            ->where('eot.user_id', (int) $user->id);
+                    });
+            });
         } else {
             $q->whereRaw('1=0');
         }

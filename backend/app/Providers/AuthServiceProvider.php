@@ -5,7 +5,6 @@ namespace App\Providers;
 use App\Models\User;
 use App\Policies\UserPolicy;
 use App\Services\ProfileUpdateGuard;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 
@@ -97,26 +96,8 @@ class AuthServiceProvider extends ServiceProvider
         // --------------------------------------------------
 
         Gate::define('manage-event', function (User $user, $event) {
-            if ($user->isAdmin()) {
-                return true;
-            }
-
-            if ($user->isOrganizer()) {
-                return (int) $event->organizer_id === (int) $user->id;
-            }
-
-            if (method_exists($user, 'isStaff') && $user->isStaff()) {
-                if (empty($event->organizer_id)) {
-                    return false;
-                }
-
-                return DB::table('organizer_staff')
-                    ->where('organizer_id', (int) $event->organizer_id)
-                    ->where('staff_user_id', (int) $user->id)
-                    ->exists();
-            }
-
-            return false;
+            return app(\App\Services\EventAccessService::class)
+                ->canManageEvent($user, (int) ($event->organizer_id ?? 0));
         });
 
         Gate::define('delete-event', function (User $user, $event) {

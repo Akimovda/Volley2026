@@ -182,30 +182,48 @@ $fCity     = request('city', '');
 						'game'               => __('events.fmt_game'),
 						'training'           => __('events.fmt_training'),
 						'training_game'      => __('events.fmt_training_game'),
-						'training_pro_am'    => __('events.fmt_training_pro_am'),
 						'coach_student'      => __('events.fmt_coach_student'),
 						'tournament'         => __('events.fmt_tournament'),
 						'tournament_classic' => __('events.fmt_tournament_classic'),
 						'tournament_beach'   => __('events.fmt_tournament_beach'),
 						'camp'               => __('events.fmt_camp'),
 						];
+
+						// Связь типа с направлением — тип без явной привязки (game/training/
+						// training_game/tournament/camp) доступен для обоих направлений;
+						// coach_student реально создаётся только для пляжа (см.
+						// events-create.js allowBeach), tournament_classic/tournament_beach —
+						// направление зашито в самом названии типа.
+						$formatDirections = [
+						'coach_student'      => ['beach'],
+						'tournament_classic' => ['classic'],
+						'tournament_beach'   => ['beach'],
+						];
+
+						$formatLabelsFiltered = $fDir === ''
+						? $formatLabels
+						: array_filter(
+						$formatLabels,
+						fn($k) => in_array($fDir, $formatDirections[$k] ?? ['classic', 'beach'], true),
+						ARRAY_FILTER_USE_KEY
+						);
 						@endphp
 						<form method="GET" action="{{ route('events.index') }}">
 							<div class="row g-2">
 								<div class="col-12 col-md-3">
 									<label class="form-label mb-1">{{ __('events.filter_direction') }}</label>
-									<select name="direction" class="form-select">
+									<select name="direction" id="direction" class="form-select">
 										<option value="" {{ $fDir==='' ? 'selected' : '' }}>{{ __('events.filter_any') }}</option>
 										<option value="classic" {{ $fDir==='classic' ? 'selected' : '' }}>{{ __('events.filter_classic') }}</option>
 										<option value="beach" {{ $fDir==='beach' ? 'selected' : '' }}>{{ __('events.filter_beach') }}</option>
 									</select>
 								</div>
-								
+
 								<div class="col-12 col-md-3">
 									<label class="form-label mb-1">{{ __('events.filter_event_type') }}</label>
-									<select name="format" class="form-select">
+									<select name="format" id="format" class="form-select">
 										<option value="" {{ $fFormat==='' ? 'selected' : '' }}>{{ __('events.filter_any') }}</option>
-										@foreach($formatLabels as $k => $lbl)
+										@foreach($formatLabelsFiltered as $k => $lbl)
 										<option value="{{ $k }}" {{ $fFormat===$k ? 'selected' : '' }}>{{ $lbl }}</option>
 										@endforeach
 									</select>
@@ -589,7 +607,54 @@ $fCity     = request('city', '');
 					applyImgState(!_allHidden);
 				};
 			</script>
-		</x-slot>	
+			<script>
+				// Фильтр "Тип мероприятия" зависит от выбранного "Направления" —
+				// при смене направления пересобираем список опций и переинициализируем
+				// кастомный select (createCustomSelect не подхватывает замену <option>
+				// сам по себе — нужен явный destroy()+recreate, см. CLAUDE.md).
+				(function() {
+					var formatLabels = @json($formatLabels);
+					var formatDirections = @json($formatDirections);
+					var anyLabel = @json(__('events.filter_any'));
+
+					var $direction = window.jQuery('#direction');
+					var $format = window.jQuery('#format');
+					if (!$direction.length || !$format.length) return;
+
+					function rebuildFormatOptions() {
+						var dir = $direction.val();
+						var current = $format.val();
+						var stillValid = (current === '');
+						var html = '<option value="">' + anyLabel + '</option>';
+
+						Object.keys(formatLabels).forEach(function(key) {
+							var dirs = formatDirections[key] || ['classic', 'beach'];
+							if (dir !== '' && dirs.indexOf(dir) === -1) return;
+
+							var isSelected = key === current;
+							if (isSelected) stillValid = true;
+
+							html += '<option value="' + key + '"' + (isSelected ? ' selected' : '') + '>'
+								+ formatLabels[key] + '</option>';
+						});
+
+						$format.html(html);
+						if (!stillValid) {
+							$format.val('');
+						}
+
+						if (window.customSelect) {
+							window.customSelect.destroy('format');
+						}
+						if (typeof window.createCustomSelect === 'function') {
+							window.createCustomSelect($format);
+						}
+					}
+
+					$direction.on('change', rebuildFormatOptions);
+				})();
+			</script>
+		</x-slot>
 		
 		
 	</x-voll-layout>

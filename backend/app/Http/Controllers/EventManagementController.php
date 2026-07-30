@@ -38,7 +38,6 @@ class EventManagementController extends Controller
         $tab = in_array($tab, ['archive', 'mine'], true) ? $tab : 'mine';
 
         $role = (string) ($user->role ?? 'user');
-        $organizerIdForStaff = $this->resolveOrganizerIdForCreator($user);
         $nowUtc = Carbon::now('UTC');
 
         $organizerFilter = 0;
@@ -121,12 +120,13 @@ class EventManagementController extends Controller
             if ($organizerFilter > 0) {
                 $q->where('events.organizer_id', $organizerFilter);
             }
-        } elseif ($role === 'organizer') {
-            $q->where('events.organizer_id', (int) $user->id);
-        } elseif ($role === 'staff') {
-            $q->where('events.organizer_id', (int) $organizerIdForStaff);
         } else {
-            $q->whereRaw('1=0');
+            // Владелец ИЛИ staff у любого из своих организаторов — роль
+            // organizer не отменяет staff-назначение на чужих мероприятиях.
+            $q->whereIn(
+                'events.organizer_id',
+                app(\App\Services\EventAccessService::class)->manageableOrganizerIds($user)
+            );
         }
 
         if ($tab === 'mine') {
@@ -181,11 +181,9 @@ if ($role === 'admin') {
 
         $this->ensureCanCreateEvents($user);
 
-        $role = (string) ($user->role ?? 'user');
-        $organizerIdForStaff = $this->resolveOrganizerIdForCreator($user);
-
-        if ($role === 'organizer' && (int) $event->organizer_id !== (int) $user->id) abort(403);
-        if ($role === 'staff' && (int) $event->organizer_id !== (int) $organizerIdForStaff) abort(403);
+        if (!app(\App\Services\EventAccessService::class)->canManageEvent($user, (int) $event->organizer_id)) {
+            abort(403);
+        }
 
         $event->load(['location.city', 'gameSettings', 'tournamentSetting']);
 
@@ -329,10 +327,9 @@ if ($role === 'admin') {
         if (!$user) return redirect()->route('login');
 
         $this->ensureCanCreateEvents($user);
-        $role = (string) ($user->role ?? 'user');
-        $organizerIdForStaff = $this->resolveOrganizerIdForCreator($user);
-        if ($role === 'organizer' && (int) $event->organizer_id !== (int) $user->id) abort(403);
-        if ($role === 'staff' && (int) $event->organizer_id !== (int) $organizerIdForStaff) abort(403);
+        if (!app(\App\Services\EventAccessService::class)->canManageEvent($user, (int) $event->organizer_id)) {
+            abort(403);
+        }
 
         $request->validate([
             'division_id' => ['required', 'integer', 'exists:tournament_leagues,id'],
@@ -434,9 +431,9 @@ if ($role === 'admin') {
         $user = $request->user();
         if (!$user) return redirect()->route('login');
 
-        $role = (string)($user->role ?? 'user');
-        if ($role === 'organizer' && (int)$event->organizer_id !== (int)$user->id) abort(403);
-        if ($role === 'staff' && (int)$event->organizer_id !== (int)$this->resolveOrganizerIdForCreator($user)) abort(403);
+        if (!app(\App\Services\EventAccessService::class)->canManageEvent($user, (int) $event->organizer_id)) {
+            abort(403);
+        }
 
         $nowUtc  = \Carbon\Carbon::now('UTC');
         $occStart = \Carbon\Carbon::parse($occurrence->starts_at, 'UTC');
@@ -859,18 +856,11 @@ if ($role === 'admin') {
         }
     
         $this->ensureCanCreateEvents($user);
-    
-        $role = (string) ($user->role ?? 'user');
-        $organizerIdForStaff = $this->resolveOrganizerIdForCreator($user);
-    
-        if ($role === 'organizer' && (int) $event->organizer_id !== (int) $user->id) {
+
+        if (!app(\App\Services\EventAccessService::class)->canManageEvent($user, (int) $event->organizer_id)) {
             abort(403);
         }
-    
-        if ($role === 'staff' && (int) $event->organizer_id !== (int) $organizerIdForStaff) {
-            abort(403);
-        }
-    
+
         // Допустимые методы оплаты: настроенные у организатора + текущий сохранённый (чтобы не сломать редактирование)
         $payMethodAllowed = \App\Models\PaymentSetting::availableMethodsFor((int) $event->organizer_id);
         if ($event->payment_method && !in_array($event->payment_method, $payMethodAllowed)) {
@@ -1580,16 +1570,11 @@ if ($role === 'admin') {
         $this->ensureCanCreateEvents($user);
     
         $role = (string) ($user->role ?? 'user');
-        $organizerIdForStaff = $this->resolveOrganizerIdForCreator($user);
-    
-        if ($role === 'organizer' && (int) $event->organizer_id !== (int) $user->id) {
+
+        if (!app(\App\Services\EventAccessService::class)->canManageEvent($user, (int) $event->organizer_id)) {
             abort(403);
         }
-    
-        if ($role === 'staff' && (int) $event->organizer_id !== (int) $organizerIdForStaff) {
-            abort(403);
-        }
-    
+
         $mode = (string) $request->input('delete_mode', 'cancel');
     
         if ($mode === 'force') {
@@ -1754,39 +1739,36 @@ if ($role === 'admin') {
         $tab = in_array($tab, ['archive', 'mine'], true) ? $tab : 'mine';
     
         $role = (string) ($user->role ?? 'user');
-        $organizerIdForStaff = $this->resolveOrganizerIdForCreator($user);
-    
+
         $deleteMode = (string) $request->input('delete_mode', 'cancel');
         $deleteMode = in_array($deleteMode, ['cancel', 'force'], true) ? $deleteMode : 'cancel';
-    
+
         if ($deleteMode === 'force' && $role !== 'admin') {
             return back()->with('error', 'Полное удаление доступно только администратору.');
         }
-    
+
         $ids = $request->input('ids', []);
         if (!is_array($ids)) {
             $ids = [];
         }
-    
+
         $ids = array_values(array_unique(array_map('intval', $ids)));
         $ids = array_values(array_filter($ids, fn ($v) => $v > 0));
-    
+
         if (empty($ids)) {
             return back()->with('error', 'Ничего не выбрано для удаления.');
         }
-    
+
         $q = Event::query()->whereIn('id', $ids);
-    
-        if ($role === 'admin') {
-            // admin может любые
-        } elseif ($role === 'organizer') {
-            $q->where('organizer_id', (int) $user->id);
-        } elseif ($role === 'staff') {
-            $q->where('organizer_id', (int) $organizerIdForStaff);
-        } else {
-            $q->whereRaw('1=0');
+
+        if ($role !== 'admin') {
+            // Владелец ИЛИ staff у любого из своих организаторов.
+            $q->whereIn(
+                'organizer_id',
+                app(\App\Services\EventAccessService::class)->manageableOrganizerIds($user)
+            );
         }
-    
+
         $events = $q->get();
     
         $affected = 0;
@@ -2071,23 +2053,4 @@ if ($role === 'admin') {
         }
     }
 
-    private function resolveOrganizerIdForCreator($user): int
-    {
-        $role = (string) ($user->role ?? 'user');
-
-        if ($role === 'organizer') {
-            return (int) $user->id;
-        }
-
-        if ($role === 'staff') {
-            $row = DB::table('organizer_staff')
-                ->where('staff_user_id', (int) $user->id)
-                ->orderBy('id')
-                ->first(['organizer_id']);
-
-            return $row ? (int) $row->organizer_id : 0;
-        }
-
-        return 0;
-    }
 }

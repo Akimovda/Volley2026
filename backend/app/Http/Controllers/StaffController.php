@@ -42,9 +42,12 @@ class StaffController extends Controller
             $organizerId = $currentUser->id;
         }
 
-        // Проверяем что пользователь не является организатором/админом
-        if ($staffUser->isAdmin() || $staffUser->isOrganizer()) {
-            return back()->with('error', 'Нельзя назначить организатора или администратора помощником.');
+        // Админа помощником назначить нельзя (у него и так полный доступ),
+        // организатора — можно: роль organizer не отменяет staff-назначение
+        // на чужих мероприятиях (см. баг "Staff теряет доступ к чужим
+        // мероприятиям, став организатором").
+        if ($staffUser->isAdmin()) {
+            return back()->with('error', 'Нельзя назначить администратора помощником.');
         }
 
         // Проверяем что у этого пользователя ещё нет назначения
@@ -52,8 +55,17 @@ class StaffController extends Controller
             return back()->with('error', 'Этот пользователь уже является помощником другого организатора.');
         }
 
-        // Назначаем роль staff
-        $staffUser->update(['role' => 'staff']);
+        // Роль повышаем до staff только простому пользователю — у organizer
+        // (и любой более сильной роли) она остаётся как есть, иначе
+        // назначение в staff стирало бы его собственный организаторский статус.
+        // ВАЖНО: 'role' нет в $fillable у User (осознанно, во избежание
+        // самоповышения через массовое присвоение) — update(['role' => ...])
+        // тут молча ничего не делает. Присваиваем напрямую, как в
+        // AdminRoleController — единственном месте, где role меняется намеренно.
+        if ($staffUser->role === 'user') {
+            $staffUser->role = 'staff';
+            $staffUser->save();
+        }
 
         StaffAssignment::create([
             'staff_user_id' => $staffUser->id,
@@ -75,8 +87,14 @@ class StaffController extends Controller
         $staffUser = $assignment->staff;
         $assignment->delete();
 
-        // Возвращаем роль user
-        $staffUser?->update(['role' => 'user']);
+        // Возвращаем роль user, только если она реально была повышена до staff
+        // этим назначением (organizer/admin, ставшие staff чужого организатора,
+        // сохраняют свою настоящую роль — снятие staff не должно её стирать).
+        // Прямое присваивание — см. комментарий в store() про $fillable.
+        if ($staffUser && $staffUser->role === 'staff') {
+            $staffUser->role = 'user';
+            $staffUser->save();
+        }
 
         return back()->with('status', '✅ Помощник снят с должности.');
     }

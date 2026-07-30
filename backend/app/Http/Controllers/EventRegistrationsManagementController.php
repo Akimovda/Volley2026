@@ -1391,40 +1391,10 @@ class EventRegistrationsManagementController extends Controller
 
     private function ensureCanManageEvent($user, Event $event): void
     {
-        $role = (string) ($user->role ?? 'user');
-
-        if ($role === 'admin') return;
-
-        if ($role === 'organizer') {
-            if ((int) $event->organizer_id !== (int) $user->id) abort(403);
-            return;
+        // Владелец ИЛИ staff у владельца — роль organizer не отменяет
+        // staff-назначение на чужих мероприятиях.
+        if (!app(\App\Services\EventAccessService::class)->canManageEvent($user, (int) $event->organizer_id)) {
+            abort(403);
         }
-
-        if ($role === 'staff') {
-            $orgId = $this->resolveOrganizerIdForCreator($user);
-            if ((int) $orgId <= 0) abort(403);
-            if ((int) $event->organizer_id !== (int) $orgId) abort(403);
-            return;
-        }
-
-        abort(403);
-    }
-
-    private function resolveOrganizerIdForCreator($user): int
-    {
-        $role = (string) ($user->role ?? 'user');
-
-        if ($role === 'organizer') return (int) $user->id;
-
-        if ($role === 'staff') {
-            $row = DB::table('organizer_staff')
-                ->where('staff_user_id', (int) $user->id)
-                ->orderBy('id')
-                ->first(['organizer_id']);
-
-            return $row ? (int) $row->organizer_id : 0;
-        }
-
-        return 0;
     }
 }
