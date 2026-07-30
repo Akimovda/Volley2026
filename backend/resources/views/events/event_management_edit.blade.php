@@ -663,15 +663,21 @@
                                 <div class="row row2">
                                     <div class="col-6">
                                         <label>{{ __('events.level_from') }}</label>
-                                        <input type="number" name="classic_level_min" min="1" max="7"
-                                            value="{{ old('classic_level_min', $event->classic_level_min) }}"
-                                            placeholder="—">
+                                        <select name="classic_level_min" id="classic_level_min">
+                                            <option value="">—</option>
+                                            @for ($i = 1; $i <= 7; $i++)
+                                            <option value="{{ $i }}" @selected(old('classic_level_min', $event->classic_level_min) == $i)>{{ $i }} - {{ level_name($i, $levelScope ?? 'standard') }}</option>
+                                            @endfor
+                                        </select>
                                     </div>
                                     <div class="col-6">
                                         <label>{{ __('events.level_to') }}</label>
-                                        <input type="number" name="classic_level_max" min="1" max="7"
-                                            value="{{ old('classic_level_max', $event->classic_level_max) }}"
-                                            placeholder="—">
+                                        <select name="classic_level_max" id="classic_level_max">
+                                            <option value="">—</option>
+                                            @for ($i = 1; $i <= 7; $i++)
+                                            <option value="{{ $i }}" @selected(old('classic_level_max', $event->classic_level_max) == $i)>{{ $i }} - {{ level_name($i, $levelScope ?? 'standard') }}</option>
+                                            @endfor
+                                        </select>
                                     </div>
                                 </div>
                             </div>
@@ -685,15 +691,21 @@
                                 <div class="row row2">
                                     <div class="col-6">
                                         <label>{{ __('events.level_from') }}</label>
-                                        <input type="number" name="beach_level_min" min="1" max="7"
-                                            value="{{ old('beach_level_min', $event->beach_level_min) }}"
-                                            placeholder="—">
+                                        <select name="beach_level_min" id="beach_level_min">
+                                            <option value="">—</option>
+                                            @for ($i = 1; $i <= 7; $i++)
+                                            <option value="{{ $i }}" @selected(old('beach_level_min', $event->beach_level_min) == $i)>{{ $i }} - {{ level_name($i, $levelScope ?? 'standard') }}</option>
+                                            @endfor
+                                        </select>
                                     </div>
                                     <div class="col-6">
                                         <label>{{ __('events.level_to') }}</label>
-                                        <input type="number" name="beach_level_max" min="1" max="7"
-                                            value="{{ old('beach_level_max', $event->beach_level_max) }}"
-                                            placeholder="—">
+                                        <select name="beach_level_max" id="beach_level_max">
+                                            <option value="">—</option>
+                                            @for ($i = 1; $i <= 7; $i++)
+                                            <option value="{{ $i }}" @selected(old('beach_level_max', $event->beach_level_max) == $i)>{{ $i }} - {{ level_name($i, $levelScope ?? 'standard') }}</option>
+                                            @endfor
+                                        </select>
                                     </div>
                                 </div>
                             </div>
@@ -1435,6 +1447,16 @@
         <script src="/assets/org.js"></script>
 
         <script>
+        // Терминология уровней (питерская/стандартная) — тот же паттерн, что в
+        // create/step1.blade.php. Город здесь можно менять динамически (city-
+        // autocomplete ниже) — переключение вызывается из loadCityMeta().
+        window.__levelTerminologyNames = {
+            standard: @json(collect(range(1, 7))->mapWithKeys(fn ($l) => [$l => level_name($l, 'standard')])),
+            spb: @json(collect(range(1, 7))->mapWithKeys(fn ($l) => [$l => level_name($l, 'spb')])),
+        };
+        </script>
+
+        <script>
         function initMgmtForm() {
 
             // --- Длительность ---
@@ -1616,6 +1638,37 @@
                 function showDd() { dd && dd.classList.add('form-select-dropdown--active'); }
                 function hideDd() { dd && dd.classList.remove('form-select-dropdown--active'); }
 
+                // Терминология уровней при смене города — см. app/helpers.php
+                // level_terminology_scope_for_region() на сервере (единая точка
+                // правды продублирована здесь намеренно: город меняется без
+                // перезагрузки страницы). НЕ используем item.region_display из
+                // ответа поиска городов — тот схлопывает регион в null, если
+                // совпадает с именем города (ровно случай Санкт-Петербурга), лучше
+                // сырое region из ajax.cities.meta (см. CityMetaController).
+                function levelScopeForRegion(region) {
+                    return (region === 'Санкт-Петербург' || region === 'Ленинградская область') ? 'spb' : 'standard';
+                }
+                function relabelLevelSelects(scope) {
+                    var names = (window.__levelTerminologyNames || {})[scope] || (window.__levelTerminologyNames || {}).standard;
+                    if (!names) return;
+                    ['classic_level_min', 'classic_level_max', 'beach_level_min', 'beach_level_max'].forEach(function(id) {
+                        var select = document.getElementById(id);
+                        if (!select) return;
+                        Array.prototype.forEach.call(select.options, function(opt) {
+                            var n = parseInt(opt.value, 10);
+                            if (!n || !names[n]) return;
+                            opt.textContent = n + ' - ' + names[n];
+                        });
+                        // грабля createCustomSelect: перезаполнение опций не подхватывается
+                        // кастомной обёрткой само по себе, нужно пересоздать её.
+                        if (window.customSelect && typeof window.customSelect.destroy === 'function'
+                            && typeof window.createCustomSelect === 'function' && window.jQuery) {
+                            window.customSelect.destroy(id);
+                            window.createCustomSelect(window.jQuery(select));
+                        }
+                    });
+                }
+
                 function fetchJson(url, cb) {
                     var xhr = new XMLHttpRequest();
                     xhr.open('GET', url);
@@ -1667,6 +1720,7 @@
                         if (!data || !data.ok) return;
                         if (tzHidden && data.timezone) tzHidden.value = data.timezone;
                         if (tzLabel) tzLabel.textContent = data.timezone || '';
+                        relabelLevelSelects(levelScopeForRegion(data.region));
                         // syncRemind находится в DOMContentLoaded, не глобальна — hint обновится при следующем изменении remind полей
                     });
                 }

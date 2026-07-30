@@ -15,6 +15,8 @@
       - $agePolicy        (string)  — adult|child|any
       - $childAgeMin      (int|null)
       - $childAgeMax      (int|null)
+      - $levelScope       (string)  — standard|spb, по городу эффективной локации тура
+                                       (см. level_terminology_scope_for_city() в EventManagementController::editOccurrence())
 
     JS (в occurrence_edit): child_age_wrap показывается при age_policy=child.
     В create использовались radio + JS applyShowIf, здесь inline style
@@ -27,10 +29,10 @@
         <div class="col-md-3">
             <div class="card">
                 <label>{{ __('events.level_min_beach') }}</label>
-                <select name="beach_level_min">
+                <select name="beach_level_min" id="beach_level_min">
                     <option value="">—</option>
-                    @for($l = 1; $l <= 10; $l++)
-                        <option value="{{ $l }}" @selected(old('beach_level_min', $beachLevelMin) == $l)>{{ $l }}</option>
+                    @for($l = 1; $l <= 7; $l++)
+                        <option value="{{ $l }}" @selected(old('beach_level_min', $beachLevelMin) == $l)>{{ $l }} - {{ level_name($l, $levelScope ?? 'standard') }}</option>
                     @endfor
                 </select>
             </div>
@@ -38,10 +40,10 @@
         <div class="col-md-3">
             <div class="card">
                 <label>{{ __('events.level_max_beach') }}</label>
-                <select name="beach_level_max">
+                <select name="beach_level_max" id="beach_level_max">
                     <option value="">—</option>
-                    @for($l = 1; $l <= 10; $l++)
-                        <option value="{{ $l }}" @selected(old('beach_level_max', $beachLevelMax) == $l)>{{ $l }}</option>
+                    @for($l = 1; $l <= 7; $l++)
+                        <option value="{{ $l }}" @selected(old('beach_level_max', $beachLevelMax) == $l)>{{ $l }} - {{ level_name($l, $levelScope ?? 'standard') }}</option>
                     @endfor
                 </select>
             </div>
@@ -50,10 +52,10 @@
         <div class="col-md-3">
             <div class="card">
                 <label>{{ __('events.level_min_classic') }}</label>
-                <select name="classic_level_min">
+                <select name="classic_level_min" id="classic_level_min">
                     <option value="">—</option>
-                    @for($l = 1; $l <= 10; $l++)
-                        <option value="{{ $l }}" @selected(old('classic_level_min', $classicLevelMin) == $l)>{{ $l }}</option>
+                    @for($l = 1; $l <= 7; $l++)
+                        <option value="{{ $l }}" @selected(old('classic_level_min', $classicLevelMin) == $l)>{{ $l }} - {{ level_name($l, $levelScope ?? 'standard') }}</option>
                     @endfor
                 </select>
             </div>
@@ -61,10 +63,10 @@
         <div class="col-md-3">
             <div class="card">
                 <label>{{ __('events.level_max_classic') }}</label>
-                <select name="classic_level_max">
+                <select name="classic_level_max" id="classic_level_max">
                     <option value="">—</option>
-                    @for($l = 1; $l <= 10; $l++)
-                        <option value="{{ $l }}" @selected(old('classic_level_max', $classicLevelMax) == $l)>{{ $l }}</option>
+                    @for($l = 1; $l <= 7; $l++)
+                        <option value="{{ $l }}" @selected(old('classic_level_max', $classicLevelMax) == $l)>{{ $l }} - {{ level_name($l, $levelScope ?? 'standard') }}</option>
                     @endfor
                 </select>
             </div>

@@ -5,9 +5,13 @@
     и минимальное число игроков (порог отмены).
 
     Expects in scope (effective-переменные из контроллера):
-      - $locations      (Collection) — список доступных локаций (id, name, address)
+      - $locations      (Collection) — список доступных локаций (id, name, address, city — с city для терминологии уровня)
       - $locationId     (int|null)   — effective location_id
       - $minPlayersVal  (int|null)   — effective min_players
+
+    Каждая option несёт data-level-scope (standard|spb) по городу локации — JS в
+    occurrence_edit.blade.php слушает change на #occ_location_id и пересчитывает
+    названия уровней в select'ах level_age.blade.php (см. window.__levelTerminologyNames).
 --}}
 <div class="ramka">
     <h2 class="-mt-05">{{ __('events.occ_loc_players_title') }}</h2>
@@ -15,9 +19,9 @@
         <div class="col-md-8">
             <div class="card">
                 <label>{{ __('events.location_label') }}</label>
-                <select name="location_id">
+                <select name="location_id" id="occ_location_id">
                     @foreach($locations as $loc)
-                        <option value="{{ $loc->id }}" @selected(old('location_id', $locationId) == $loc->id)>
+                        <option value="{{ $loc->id }}" data-level-scope="{{ level_terminology_scope_for_city($loc->city) }}" @selected(old('location_id', $locationId) == $loc->id)>
                             {{ $loc->name }} — {{ $loc->address }}
                         </option>
                     @endforeach
