@@ -285,11 +285,15 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 										>{{ __('events.card_seats_teams') }}</span>
 										@endif
 									</div>
+									<div class="progress mt-1 mb-0" data-seat-progress-wrap>
+										<div class="progress-bar bg-success" data-seat-progress-bar style="width:0%"></div>
+									</div>
+									<div class="text-muted f-12" data-seat-progress-full style="display:none">{{ __('events.card_seats_full') }}</div>
 								</div>
 								@elseif($regEnabled)
 								{{ __('events.card_no_limit') }}
 								@endif
-							</div> 
+							</div>
 						</div>				
 						
 						

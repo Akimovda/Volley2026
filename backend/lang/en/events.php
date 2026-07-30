@@ -134,6 +134,7 @@ return [
     'card_seats_teams'   => ' teams',
     'card_seats_players' => ' players',
     'card_no_limit'      => 'No limit set',
+    'card_seats_full'    => 'No seats left',
     'widget_reserve_suffix' => ' (+:count in reserve)',
 
     // Duration short labels
