@@ -27,6 +27,7 @@ return [
     'filter_beach'       => '🏖 Beach',
     'filter_event_type'  => 'Event type',
     'filter_level'       => 'Level',
+    'level_info_title'   => 'Event level',
     'filter_any_level'   => 'Any',
     'filter_level_1'     => 'Beginner',
     'filter_level_2'     => 'Beginner+',

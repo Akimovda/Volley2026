@@ -427,7 +427,11 @@ $levelOptions = [1, 2, 3, 4, 5, 6, 7];
 				@csrf
 				<input type="hidden" name="position" id="joinPosition" value="">
 			</form>
-			
+
+			@guest
+			@include('auth._login_popup')
+			@endguest
+
 		</div>
 		<x-slot name="script">
 			<script src="/assets/fas.js"></script>

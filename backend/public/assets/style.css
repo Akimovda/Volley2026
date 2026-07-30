@@ -2657,6 +2657,23 @@ body.dark .theme-icon {
 .fix-header-menu.open .auth-btn:nth-child(3) { animation-delay: 0.3s; }
 .fix-header-menu.open .auth-btn:nth-child(4) { animation-delay: 0.4s; }
 .fix-header-menu.open .auth-btn:nth-child(5) { animation-delay: 0.5s; }
+/* .auth-btn по умолчанию opacity:0 (entrance-анимация, включается только внутри
+   .auth-page — страница /login — или открытого .fix-header-menu). Общий поп-ап
+   логина (auth/_login_popup.blade.php, открывается на /events и т.п. — НЕ
+   auth-page и НЕ шапка) без этого правила показывал пустой поп-ап без кнопок. */
+#loginPopupContent .auth-btn {
+	opacity: 1;
+	transform: translateY(0);
+}
+/* Заголовок поп-апа логина — центрируем (сам .title-h везде на сайте left-aligned
+   с подчёркиванием слева, здесь одиночный узкий диалог смотрится лучше по центру) */
+.login-popup-title {
+	text-align: center;
+}
+.login-popup-title::after {
+	left: 50%;
+	transform: translateX(-50%);
+}
 @keyframes fadeInUp {
 	from {
 		opacity: 0;
@@ -4286,6 +4303,36 @@ body.dark .badge.badge-muted {
 	font-size: 1.3rem;
 	font-weight: 700;
 	padding: 0.4rem 1rem;
+}
+/* Кнопка-бейдж уровня на карточке мероприятия — открывает поп-ап (fancybox),
+   визуально должна выглядеть как обычный текст/бейдж, не как <button>. */
+.level-badge-trigger {
+	background: none;
+	border: none;
+	padding: 0;
+	margin: 0;
+	cursor: pointer;
+	font: inherit;
+	color: inherit;
+	display: inline-block;
+}
+.level-tip-modal-body .level-tip-row + .level-tip-row {
+	margin-top: 1rem;
+	padding-top: 1rem;
+	border-top: 0.1rem solid rgba(0,0,0,0.08);
+}
+.level-tip-modal-body .level-tip-desc {
+	color: #555;
+	font-weight: 400;
+	margin-top: 0.5rem;
+	font-size: 1.4rem;
+	line-height: 1.5;
+}
+body.dark .level-tip-modal-body .level-tip-row + .level-tip-row {
+	border-top-color: rgba(255,255,255,0.1);
+}
+body.dark .level-tip-modal-body .level-tip-desc {
+	color: #999;
 }
 .info-tip {
 	position: relative;

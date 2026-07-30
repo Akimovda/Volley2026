@@ -841,6 +841,20 @@ $(document).on('click', function() {
 	$('.card-ramka.info-tip-open').removeClass('info-tip-open');
 });
 
+// Уровень мероприятия на карточке — поп-ап (fancybox), а не inline-тултип:
+// при диапазоне 3+ уровней описание не помещается и не скроллится на экране
+// внутри position:absolute блока, а .fancybox-content уже умеет overflow:auto.
+$(document).on('click', '.js-open-level-info', function(e) {
+	e.preventDefault();
+	const targetId = $(this).data('target');
+	if (!targetId || !window.jQuery || !jQuery.fancybox) return;
+	jQuery.fancybox.open({
+		src: '#' + targetId,
+		type: 'inline',
+		opts: { hideScrollbar: false, touch: false, toolbar: false, smallBtn: true, animationEffect: 'zoom-in-out', transitionEffect: 'zoom-in-out' }
+	});
+});
+
 
 
 document.addEventListener('DOMContentLoaded', function() {

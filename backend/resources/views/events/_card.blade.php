@@ -308,10 +308,18 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 							<div class="event-col">
 								<div class="event-col-icon icon-level"></div>
 								<div class="event-col-data">
-									<span class="info-tip js-info-tip">
-										<span class="info-tip-trigger">{!! $levelLabel !!}</span>
-										<span class="info-tip-content">{!! $levelTooltipHtml !!}</span>
-									</span>
+									<button type="button" class="level-badge-trigger js-open-level-info" data-target="level-info-{{ (int)$occ->id }}">
+										{!! $levelLabel !!}
+									</button>
+								</div>
+							</div>
+							{{-- Поп-ап (fancybox) с полным описанием диапазона уровня — было
+							тултипом-подсказкой, но при 3+ уровнях в диапазоне контент не
+							помещался и не скроллился на экране. --}}
+							<div id="level-info-{{ (int)$occ->id }}" style="display:none; max-width: 44rem">
+								<h2 class="title-h -mt-05">{{ __('events.level_info_title') }}</h2>
+								<div class="level-tip-modal-body">
+									{!! $levelTooltipHtml !!}
 								</div>
 							</div>
 							@endif
@@ -478,8 +486,8 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
                         <div class="alert alert-info">{{ __('events.msg_event_started') }}</div>
 						
 						@elseif (!auth()->check())
-                        <div class="alert alert-info">{{ __('events.msg_login_required') }}</div>
-						
+                        <button type="button" class="btn w-100 js-open-login-popup" data-return-url="{{ $eventPageUrl }}">{{ __('events.btn_join') }}</button>
+
 						@elseif ($joinCode === 'age_blocked')
                         <div class="alert alert-info">{{ $join->message }}</div>
 						

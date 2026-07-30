@@ -27,6 +27,7 @@ return [
     'filter_beach'          => '🏖 Пляжка',
     'filter_event_type'     => 'Тип мероприятия',
     'filter_level'          => 'Уровень',
+    'level_info_title'      => 'Уровень мероприятия',
     'filter_any_level'      => 'Любой',
     'filter_level_1'        => 'Начальный',
     'filter_level_2'        => 'Начальный+',
