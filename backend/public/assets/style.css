@@ -2526,28 +2526,53 @@ body.dark .theme-icon {
 	}
 }
 /* БАЗА — mobile */
+/* position:fixed + right:1rem (совпадает с инсетом .fix-header) вместо старого
+   position:absolute с offsetParent'ом от DOM-вложенности — тот падал на BODY,
+   если между .fix-header-menu и .fix-header не было позиционированного предка
+   (меню уезжало в низ страницы). top НЕ хардкодится в rem — считается в JS
+   (script.js, positionMenus()) от реальной getBoundingClientRect() шапки: в
+   .is-app высота шапки зависит от env(safe-area-inset-top), который разный на
+   каждом устройстве, поэтому фиксированный rem-отступ либо обрезал меню, либо
+   оставлял дыру. Background/border-radius/тень вынесены из-под @media(768px) —
+   раньше мобильная версия открытого меню была вообще без фона (прозрачный
+   слой поверх страницы), т.к. эти правила были только в десктопной секции. */
 .fix-header-menu {
 	display: none;
+	position: fixed;
+	right: 1rem;
 	padding: 2rem;
 	will-change: transform;
+	z-index: 1000;
+	border-radius: 2rem;
+	background-color: rgba(255,255,255,1);
+	box-shadow: 0 1rem 2.2rem rgba(0, 0, 0, 0.05), 0 0.5rem 1.2rem rgba(0, 0, 0, 0.03);
+	max-height: calc(100vh - 4rem);
+	overflow-y: auto;
+	box-sizing: border-box;
+}
+body.dark .fix-header-menu {
+	background-color: #222333;
+	box-shadow: 0 1rem 2.2rem rgba(0, 0, 0, 0.1), 0 0.5rem 1.2rem rgba(0, 0, 0, 0.05);
+}
+@media (max-width: 767px) {
+	.fix-header-menu {
+		left: 1rem;
+	}
+}
+@media (max-width: 480px) {
+	.fix-header-menu {
+		left: 0.5rem;
+		right: 0.5rem;
+	}
 }
 @media (min-width: 768px) {
 	.fix-header-menu {
-		display: block; 
-		position: absolute;
-		top: calc(100% + 1.8rem);
-		right: 0;
+		display: block;
 		opacity: 0;
 		transform: translateY(1rem) scale(0.95);
 		pointer-events: none;
 		min-width: 20rem;
-		padding: 2rem;
-		border-radius: 2rem;
-		/*border: 0.2rem solid rgba(255,255,255,0.2);*/
-		background-color: rgba(255,255,255,1);
-		box-shadow: 0 1rem 2.2rem rgba(0, 0, 0, 0.05), 0 0.5rem 1.2rem rgba(0, 0, 0, 0.03);
 		transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-		z-index: 1000;		
 	}
 	.fix-header-menu.open {
 		opacity: 1;
@@ -2569,22 +2594,16 @@ body.dark .theme-icon {
 		border-top: 1px solid rgba(255, 255, 255, 0.4);
 		box-shadow: -1px -1px 1px rgba(0, 0, 0, 0.05);
 		z-index: 1;
-	}	
-	
-	body.dark .fix-header-menu {
-		/*border: 0.2rem solid rgba(0,0,0,0.2);*/
-		background-color: #222333;
-		box-shadow: 0 1rem 2.2rem rgba(0, 0, 0, 0.1), 0 0.5rem 1.2rem rgba(0, 0, 0, 0.05);
 	}
-	/* Стрелка */
+
 	body.dark .fix-header-menu::before {
 		background: #222333;
 		border-left: 1px solid rgba(0, 0, 0, 0.4);
 		border-top: 1px solid rgba(0, 0, 0, 0.4);
 		box-shadow: -1px -1px 1px rgba(0, 0, 0, 0.05);
-	}		
-	
-	
+	}
+
+
 	/* Анимация появления */
 	@keyframes menuAppear {
 		0% {
@@ -2601,13 +2620,13 @@ body.dark .theme-icon {
 	}
 	.fix-header-menu-2::before {
 		right: 23.8rem; /* пользователь */
-	}	
+	}
 	.fix-header-menu-3::before {
 		right: 9.8rem; /* гамбургер */
-	}	
+	}
 	.notification-text {
 		white-space: nowrap
-	}	
+	}
 }
 /* Общие стили для всех кнопок */
 .social-auth {

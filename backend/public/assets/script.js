@@ -63,6 +63,22 @@ function resetMenus() {
 
 
 /* =========================
+	ПОЗИЦИЯ МЕНЮ (top от реальной высоты шапки)
+========================= */
+// .fix-header-menu теперь position:fixed с фиксированным top в CSS не задан —
+// в .is-app высота шапки зависит от env(safe-area-inset-top), который разный
+// на каждом устройстве (нет notch/Dynamic Island/обычный экран), поэтому
+// единственный надёжный способ — измерить реальный getBoundingClientRect()
+// шапки и поставить меню сразу под ней.
+function positionMenus() {
+	if (!$header.length) return;
+	const rect = $header[0].getBoundingClientRect();
+	const top = Math.ceil(rect.bottom) + 12; // px, небольшой отступ от шапки
+	allMenus.css('top', top + 'px');
+}
+
+
+/* =========================
 	ЗАКРЫТИЕ ВСЕХ МЕНЮ
 ========================= */
 function closeAll() {
@@ -91,13 +107,14 @@ function openMenu($button, $menu) {
 	}
 	
 	closeAll();
+	positionMenus();
 	$button.addClass('active');
 	$menu.addClass('open');
 	if (!isDesktop()) {
 		$menu
 		.stop(true, true)
 		.slideDown(300);
-	}	
+	}
 }
 
 
@@ -166,6 +183,7 @@ $(window).on('resize', function () {
 		resetMenus();
 		isDesktopState = nowDesktop;
 	}
+	positionMenus();
 });
 
 function margin() {	

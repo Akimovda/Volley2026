@@ -594,12 +594,33 @@ $levelOptions = [1, 2, 3, 4, 5, 6, 7];
 					}
 				})();
 
+				// ===== Отступ прилипания ленты дат от реальной высоты шапки =====
+				// .mob-sticky имел top в rem (9.4rem/8.5rem на ≤480px), но в .is-app
+				// высота шапки зависит от env(safe-area-inset-top) — разного на каждом
+				// устройстве (notch/Dynamic Island/без выреза). Хардкод в rem был МЕНЬШЕ
+				// реальной высоты шапки на телефонах с вырезом → прилипшая лента съезжала
+				// ПОД шапку, верх чипов (день недели) обрезался. Меряем реальный
+				// getBoundingClientRect() .fix-header и ставим top инлайн-стилем — CSS
+				// значения остаются как безопасный дефолт до первого запуска этого кода.
+				(function syncStickyOffset() {
+					const mobSticky = document.querySelector('.events-page .mob-sticky');
+					const fixHeader = document.querySelector('.fix-header');
+					if (!mobSticky || !fixHeader) return;
+					function apply() {
+						const rect = fixHeader.getBoundingClientRect();
+						mobSticky.style.top = Math.ceil(rect.bottom + 12) + 'px';
+					}
+					apply();
+					window.addEventListener('resize', apply);
+					window.addEventListener('orientationchange', apply);
+				})();
+
 				// ===== Сворачивание топбара при "прилипании" ленты дат =====
 				// .mob-sticky прилипает к верху при скролле — в этот момент топбар
 				// (фильтр/направление/фото/гео) внутри той же карточки сворачивается,
 				// остаются видны только чипы дат. Проверяем через getBoundingClientRect
-				// против реального top из CSS (9.4rem/8.5rem на ≤480px) — так брейкпоинт
-				// не приходится дублировать в JS.
+				// против реального top (теперь считается в syncStickyOffset выше, а не
+				// хардкодится в rem) — так брейкпоинт не приходится дублировать в JS.
 				(function initStickyCollapse() {
 					const mobSticky = document.querySelector('.events-page .mob-sticky');
 					const ramka = document.querySelector('.event-dates-ramka');
