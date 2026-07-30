@@ -191,17 +191,22 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 
 			$levelLabel = '<div class="level-range">' . $minSpan . '<span class="level-range-sep">—</span>' . $maxSpan . '</div>';
 
-			// Тултип: полное название каждого уровня диапазона, окрашенное в его цвет
-			// (level_color()), + краткое описание диапазона уровня (терминология —
-			// по scope события, как и сами бейджи).
+			// Тултип: ВСЕ уровни диапазона (включая промежуточные, не только края!),
+			// полное название на бейдже .levelmark.level-N (та же плашка, что на
+			// /level_players — гарантированный контраст текста в обеих темах, в
+			// отличие от голого level_color() текстом на фоне тултипа), + краткое
+			// описание (терминология — по scope события, как и сами бейджи).
 			$levelTooltipDir = $dir === 'beach' ? 'beach' : 'classic';
-			$levelsForTooltip = array_values(array_unique(array_filter([$lvMin, $lvMax], fn($v) => $v !== null)));
+			$rangeStart = $lvMin ?? $lvMax;
+			$rangeEnd   = $lvMax ?? $lvMin;
+			$levelsForTooltip = ($rangeStart !== null && $rangeEnd !== null)
+			? range(min($rangeStart, $rangeEnd), max($rangeStart, $rangeEnd))
+			: [];
 			$tooltipRows = [];
 			foreach ($levelsForTooltip as $lv) {
 			$fullName = level_name((int)$lv, $levelScope);
-			$color = level_color((int)$lv);
 			$desc = level_tooltip_description((int)$lv, $levelTooltipDir, $levelScope);
-			$row = '<div class="level-tip-row"><strong style="color:' . e($color) . '">' . e($fullName) . '</strong>';
+			$row = '<div class="level-tip-row"><span class="levelmark level-' . (int)$lv . '">' . e($fullName) . '</span>';
 			if ($desc) {
 			$row .= '<div class="level-tip-desc">' . e($desc) . '</div>';
 			}
