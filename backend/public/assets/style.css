@@ -4665,7 +4665,7 @@ body.dark.events-page .day-chip.active .dc-date {
     display: flex;
     align-items: center;
     gap: 0.8rem;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
 }
 .events-topbar .topbar-icon-btn {
     position: relative;
@@ -4719,7 +4719,16 @@ body.dark .events-topbar .topbar-icon-btn.has-active::after {
 }
 .events-topbar .topbar-direction-form {
     flex: 0 1 15rem;
-    min-width: 11rem;
+    min-width: 0;
+}
+@media (max-width: 480px) {
+    .events-topbar .topbar-direction-form {
+        flex-basis: 8rem;
+    }
+    .events-topbar .topbar-direction-form .form-select-custom {
+        padding: 0.8rem 1rem;
+        font-size: 1.4rem;
+    }
 }
 .events-topbar .topbar-direction-form .form-select-wrapper {
     min-height: 4.8rem;
@@ -4867,27 +4876,29 @@ body.dark .btn-outline-primary:hover {
 .events-page .event-dates-ramka .tabs {
 	display: flex;
 	flex-wrap: nowrap;
-	width: max-content;  
-	min-width: 100%; 
+	width: max-content;
 	gap: 0.4rem;
 	padding: 0.4rem 0;
-	margin: 0;
-}				
+	margin: 0 auto; /* центр, когда чипов меньше ширины контейнера; при переполнении просто скроллится */
+	background: none!important;
+	box-shadow: none;
+}
 .event-dates-ramka .tab {
 	flex: 0 0 auto;
 	padding: 1rem 1.8rem;
 	white-space: nowrap;
-}								
+}
 
 /* Карточка чипов дней — на широких экранах топбар (фильтр/направление/фото/
-   гео) и лента дат в ОДИН ряд (топбар не скроллится, лента скроллится сама);
-   на узких — топбар над лентой, каждый на всю ширину. Раньше overflow-x был
-   на самой .event-dates-ramka (скроллилась целиком вместе с топбаром) —
-   перенесено на #daysStrip, см. ниже. */
+   гео) слева, лента дат по центру (скроллится сама, топбар и кнопки next/prev
+   не скроллятся), кнопки "следующие/предыдущие 10 дней" справа — вынесены из
+   ленты в свой блок (day-nav-buttons), не уезжают вместе с чипами. На узких —
+   всё в столбик. Раньше overflow-x был на самой .event-dates-ramka (скроллилась
+   целиком вместе с топбаром) — перенесено на #daysStrip, см. ниже. */
 .event-dates-ramka {
 	display: flex;
 	align-items: center;
-	gap: 1rem;
+	gap: 1.6rem;
 	padding: 0.8rem 1.4rem;
 	backdrop-filter: blur(8px);
 }
@@ -4896,21 +4907,26 @@ body.dark .btn-outline-primary:hover {
 }
 .events-page #daysStrip {
 	flex: 1 1 auto;
+	width: 100%;
 	min-width: 0;
 	overflow-x: auto;
 	-webkit-overflow-scrolling: touch;
 	scroll-snap-type: x mandatory;
 	scroll-padding: 0 1rem;
 }
-.event-dates-ramka .tabs {
+.event-dates-ramka .day-nav-buttons {
 	display: flex;
-	flex-wrap: nowrap;
-	background: none!important;
-	box-shadow: none;
-}
-.event-dates-ramka a.last-tab {
-	margin-left: auto;
+	gap: 0.4rem;
 	flex: 0 0 auto;
+}
+/* Кнопки prev/next рендерятся дважды (см. events/index.blade.php) — на узком
+   экране едут вместе с чипами внутри скролла (inline), на широком стоят особым
+   блоком справа и не скроллятся (pinned). Показываем только подходящую копию. */
+.event-dates-ramka .day-nav-buttons--inline {
+	margin-left: 0.4rem;
+}
+.event-dates-ramka .day-nav-buttons--pinned {
+	display: none;
 }
 @media (max-width: 767px) {
 	.event-dates-ramka {
@@ -4919,6 +4935,14 @@ body.dark .btn-outline-primary:hover {
 	}
 	.event-dates-ramka .events-topbar {
 		justify-content: center;
+	}
+}
+@media (min-width: 768px) {
+	.event-dates-ramka .day-nav-buttons--inline {
+		display: none;
+	}
+	.event-dates-ramka .day-nav-buttons--pinned {
+		display: flex;
 	}
 }
 .events-page .mob-sticky {

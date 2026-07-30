@@ -324,7 +324,47 @@ $levelOptions = [1, 2, 3, 4, 5, 6, 7];
 							@endauth
 						</div>
 
-						<div class="days-strip tabs mb-0" id="daysStrip">
+						{{-- Навигация prev/next — окно всегда ровно 10 календарных дней,
+						поэтому "следующие 10 дней" показываем всегда, а "предыдущие" —
+						только если мы не на первом окне (offset>0). Рендерится ДВАЖДЫ:
+						на узком экране — внутри скроллящейся ленты (day-nav-buttons--inline,
+						едет вместе с чипами), на широком — отдельным блоком справа
+						(day-nav-buttons--pinned, не скроллится). Показывается только одна
+						копия через CSS media query. --}}
+						@php
+						$currentOffset = (int) request('offset', 0);
+						$nextOffset    = $currentOffset + 10;
+						$prevOffset    = max(0, $currentOffset - 10);
+						$baseParams    = array_filter([
+						'direction' => request('direction'),
+						'format'    => request('format'),
+						'level'     => request('level'),
+						'location'  => request('location'),
+						'city'      => request('city'),
+						], fn($v) => $v !== '' && $v !== null);
+						@endphp
+						@php
+						$dayNavButtonsHtml = '';
+						ob_start();
+						@endphp
+						@if($currentOffset > 0)
+						<a href="{{ route('events.index', array_merge($baseParams, ['offset' => $prevOffset])) }}"
+						class="no-highlight day-chip last-tab tab">
+							<div class="dc-dow">{{ __('events.days_prev') }}</div>
+							<div class="dc-date">{{ __('events.days_n_days') }}</div>
+						</a>
+						@endif
+						<a href="{{ route('events.index', array_merge($baseParams, ['offset' => $nextOffset])) }}"
+						class="no-highlight day-chip last-tab tab">
+							<div class="dc-dow">{{ __('events.days_next') }}</div>
+							<div class="dc-date">{{ __('events.days_n_days') }}</div>
+						</a>
+						@php
+						$dayNavButtonsHtml = ob_get_clean();
+						@endphp
+
+						<div class="days-strip" id="daysStrip">
+						<div class="tabs mb-0">
                             {{-- Чипы дат --}}
                             @foreach($groupedByDate as $dateKey => $dayData)
                             @php
@@ -346,42 +386,22 @@ $levelOptions = [1, 2, 3, 4, 5, 6, 7];
                                 <span class="dc-dot {{ $dayHasEvents ? '' : 'dc-dot--empty' }}" aria-hidden="true"></span>
 							</a>
                             @endforeach
-							
-                            {{-- Навигация prev/next — окно всегда ровно 10 календарных дней,
-                            поэтому "следующие 10 дней" показываем всегда, а "предыдущие" —
-                            только если мы не на первом окне (offset>0). --}}
-                            @php
-							$currentOffset = (int) request('offset', 0);
-							$nextOffset    = $currentOffset + 10;
-							$prevOffset    = max(0, $currentOffset - 10);
-							$baseParams    = array_filter([
-							'direction' => request('direction'),
-							'format'    => request('format'),
-							'level'     => request('level'),
-							'location'  => request('location'),
-							'city'      => request('city'),
-							], fn($v) => $v !== '' && $v !== null);
-                            @endphp
-
-                            @if($currentOffset > 0)
-                            <a href="{{ route('events.index', array_merge($baseParams, ['offset' => $prevOffset])) }}"
-							class="no-highlight day-chip last-tab tab">
-                                <div class="dc-dow">{{ __('events.days_prev') }}</div>
-                                <div class="dc-date">{{ __('events.days_n_days') }}</div>
-							</a>
-                            @endif
-
-                            <a href="{{ route('events.index', array_merge($baseParams, ['offset' => $nextOffset])) }}"
-							class="no-highlight day-chip last-tab tab">
-                                <div class="dc-dow">{{ __('events.days_next') }}</div>
-                                <div class="dc-date">{{ __('events.days_n_days') }}</div>
-						</a>
                             <div class="tab-highlight"></div>
+							{{-- Узкий экран: кнопки едут вместе с чипами --}}
+							<div class="day-nav-buttons day-nav-buttons--inline">
+								{!! $dayNavButtonsHtml !!}
+							</div>
+						</div>
+						</div>
+
+						{{-- Широкий экран: кнопки отдельным блоком справа, не скроллятся --}}
+						<div class="day-nav-buttons day-nav-buttons--pinned">
+							{!! $dayNavButtonsHtml !!}
 						</div>
 					</div>
 				</div>
-				
-				
+
+
 				<div class="tab-panes">
                     @foreach($groupedByDate as $dateKey => $dayData)
                     <div class="tab-pane {{ $loop->first ? 'active' : '' }}" id="day-{{ $loop->iteration }}">
