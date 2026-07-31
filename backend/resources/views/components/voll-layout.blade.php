@@ -130,6 +130,7 @@
 					if (typeof swal === 'undefined') return;
 					if (document.documentElement.classList.contains('is-app')) return;
 					if (document.body.classList.contains('tg-webapp')) return;
+					if (document.body.classList.contains('max-webapp')) return;
 					swal({
 						title: @json(__('ui.app_banner_title')),
 						buttons: {
