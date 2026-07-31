@@ -581,95 +581,30 @@ $levelOptions = [1, 2, 3, 4, 5, 6, 7];
 				});
 				
 				@include('events._partials.seatline_script')
-				
-				// ===== Лента дней: чипы ↔ скролл (двусторонняя связь) =====
-				// Клик по чипу — плавный скролл к разделу дня, с учётом реальной
-				// высоты липкой ленты дат (.mob-sticky), измеренной getBoundingClientRect
-				// (тот же приём, что и в syncStickyOffset ниже) — без этого раздел дня
-				// уезжал бы ПОД шапку/ленту. Обратная связь (скролл → активный чип) —
-				// через IntersectionObserver: он поддержан WKWebView и надёжнее ручных
-				// scroll-хендлеров (не требует throttle/rAF, не дёргается на инерционном
-				// скролле iOS).
-				function scrollToDaySection(dateKey) {
-					const target = document.querySelector('.day-section[data-date="' + dateKey + '"]');
-					if (!target) return;
-
-					function alignedTop() {
-						const stickyBar = document.querySelector('.events-page .mob-sticky');
-						const clearance = stickyBar ? stickyBar.getBoundingClientRect().bottom : 0;
-						return Math.max(0, target.getBoundingClientRect().top + window.pageYOffset - clearance - 12);
-					}
-
-					window.scrollTo({ top: alignedTop(), behavior: 'smooth' });
-
-					// Топбар дат (фильтр/направление/фото/гео) сворачивается/разворачивается
-					// при пересечении порога "прилипания" (is-scrolled) — если скролл
-					// проходит через этот порог, высота .mob-sticky меняется ПРЯМО ВО ВРЕМЯ
-					// анимации, и разовый расчёт до старта промахивается. Одна корректирующая
-					// доводка после завершения анимации по актуальной (уже осевшей) высоте.
-					setTimeout(() => {
-						window.scrollTo({ top: alignedTop(), behavior: 'auto' });
-					}, 450);
-				}
-
-				function setActiveChip(dateKey, options) {
-					options = options || {};
-					document.querySelectorAll('.day-chip[data-date]').forEach(c => {
-						c.classList.toggle('active', c.dataset.date === dateKey);
-					});
-					if (options.centerChip) {
-						const chip = document.querySelector('.day-chip[data-date="' + dateKey + '"]');
-						if (chip) chip.scrollIntoView({ behavior: 'instant', inline: 'center', block: 'nearest' });
-					}
-					if (options.updateUrl && window.history && window.history.replaceState) {
-						const url = new URL(window.location.href);
-						url.searchParams.set('date', dateKey);
-						window.history.replaceState(null, '', url.toString());
-					}
-				}
-
-				document.querySelectorAll('.day-chip[data-date]').forEach(chip => {
-					chip.addEventListener('click', () => {
-						setActiveChip(chip.dataset.date, { centerChip: true, updateUrl: true });
-						scrollToDaySection(chip.dataset.date);
-					});
-				});
-
-				(function observeDaySections() {
-					const sections = Array.from(document.querySelectorAll('.day-section[data-date]'));
-					if (!sections.length) return;
-					const stickyBar = document.querySelector('.events-page .mob-sticky');
-					const stickyH = stickyBar ? stickyBar.getBoundingClientRect().height : 100;
-
-					const observer = new IntersectionObserver((entries) => {
-						const visible = entries.filter(e => e.isIntersecting);
-						if (!visible.length) return;
-						visible.sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
-						setActiveChip(visible[0].target.dataset.date, { centerChip: true, updateUrl: true });
-					}, {
-						root: null,
-						rootMargin: '-' + Math.ceil(stickyH + 20) + 'px 0px -70% 0px',
-						threshold: 0,
-					});
-
-					sections.forEach(s => observer.observe(s));
-				})();
 
 				// ===== Отступ прилипания ленты дат от реальной высоты шапки =====
 				// .mob-sticky имел top в rem (9.4rem/8.5rem на ≤480px), но в .is-app
 				// высота шапки зависит от env(safe-area-inset-top) — разного на каждом
 				// устройстве (notch/Dynamic Island/без выреза). Хардкод в rem был МЕНЬШЕ
 				// реальной высоты шапки на телефонах с вырезом → прилипшая лента съезжала
-				// ПОД шапку, верх чипов (день недели) обрезался. Меряем реальный
-				// getBoundingClientRect() .fix-header и ставим top инлайн-стилем — CSS
-				// значения остаются как безопасный дефолт до первого запуска этого кода.
+				// ПОД шапку, верх чипов (день недели) обрезался. window.getFixedHeaderBottom()
+				// (script.js) — единая утилита для этого расчёта, используется и здесь, и
+				// десктопным поповером шапки (positionMenus в script.js) — раньше расчёт
+				// был продублирован в двух местах.
+				// КРИТИЧНО: этот блок должен выполняться РАНЬШЕ любого потенциально
+				// рискованного кода ниже (лента дней/IntersectionObserver и т.п.) — весь
+				// этот <script> выполняется последовательно как ОДИН блок, и необработанное
+				// исключение в любом statement останавливает ВСЁ, что идёт после него в
+				// этом же тэге (регресс 2026-08: IntersectionObserver без feature-detection
+				// был объявлен раньше этого блока и в одном из билдов приложения ронял его
+				// целиком — чипы дат уезжали под шапку, потому что этот код просто не
+				// успевал выполниться). CSS top остаётся безопасным дефолтом, если что-то
+				// в скрипте всё же упадёт.
 				(function syncStickyOffset() {
 					const mobSticky = document.querySelector('.events-page .mob-sticky');
-					const fixHeader = document.querySelector('.fix-header');
-					if (!mobSticky || !fixHeader) return;
+					if (!mobSticky || !document.querySelector('.fix-header')) return;
 					function apply() {
-						const rect = fixHeader.getBoundingClientRect();
-						mobSticky.style.top = Math.ceil(rect.bottom + 12) + 'px';
+						mobSticky.style.top = window.getFixedHeaderBottom(12) + 'px';
 					}
 					apply();
 					window.addEventListener('resize', apply);
@@ -701,6 +636,89 @@ $levelOptions = [1, 2, 3, 4, 5, 6, 7];
 					}, { passive: true });
 					checkStuck();
 				})();
+
+				// ===== Лента дней: чипы ↔ скролл (двусторонняя связь) =====
+				// Клик по чипу — плавный скролл к разделу дня, с учётом реальной
+				// высоты липкой ленты дат (.mob-sticky), измеренной getBoundingClientRect
+				// (тот же приём, что и в syncStickyOffset выше) — без этого раздел дня
+				// уезжал бы ПОД шапку/ленту. Обратная связь (скролл → активный чип) —
+				// через IntersectionObserver, с явной проверкой поддержки (как и
+				// lazyMaps в script.js) — не все WebView-сборки приложения его
+				// поддерживают одинаково надёжно, а необработанное исключение здесь
+				// остановило бы остальной код в этом <script>-теге. Весь блок в
+				// try/catch — тоже профилактика от каскадного отказа: критичный
+				// layout-код (syncStickyOffset/initStickyCollapse) уже отработал ВЫШЕ,
+				// но countdown/toggle-фото/поп-ап фильтров идут ПОСЛЕ этого блока и не
+				// должны от него зависеть.
+				try {
+					function scrollToDaySection(dateKey) {
+						const target = document.querySelector('.day-section[data-date="' + dateKey + '"]');
+						if (!target) return;
+
+						function alignedTop() {
+							const stickyBar = document.querySelector('.events-page .mob-sticky');
+							const clearance = stickyBar ? stickyBar.getBoundingClientRect().bottom : 0;
+							return Math.max(0, target.getBoundingClientRect().top + window.pageYOffset - clearance - 12);
+						}
+
+						window.scrollTo({ top: alignedTop(), behavior: 'smooth' });
+
+						// Топбар дат (фильтр/направление/фото/гео) сворачивается/разворачивается
+						// при пересечении порога "прилипания" (is-scrolled) — если скролл
+						// проходит через этот порог, высота .mob-sticky меняется ПРЯМО ВО ВРЕМЯ
+						// анимации, и разовый расчёт до старта промахивается. Одна корректирующая
+						// доводка после завершения анимации по актуальной (уже осевшей) высоте.
+						setTimeout(() => {
+							window.scrollTo({ top: alignedTop(), behavior: 'auto' });
+						}, 450);
+					}
+
+					function setActiveChip(dateKey, options) {
+						options = options || {};
+						document.querySelectorAll('.day-chip[data-date]').forEach(c => {
+							c.classList.toggle('active', c.dataset.date === dateKey);
+						});
+						if (options.centerChip) {
+							const chip = document.querySelector('.day-chip[data-date="' + dateKey + '"]');
+							if (chip) chip.scrollIntoView({ behavior: 'instant', inline: 'center', block: 'nearest' });
+						}
+						if (options.updateUrl && window.history && window.history.replaceState) {
+							const url = new URL(window.location.href);
+							url.searchParams.set('date', dateKey);
+							window.history.replaceState(null, '', url.toString());
+						}
+					}
+
+					document.querySelectorAll('.day-chip[data-date]').forEach(chip => {
+						chip.addEventListener('click', () => {
+							setActiveChip(chip.dataset.date, { centerChip: true, updateUrl: true });
+							scrollToDaySection(chip.dataset.date);
+						});
+					});
+
+					if ('IntersectionObserver' in window) {
+						const sections = Array.from(document.querySelectorAll('.day-section[data-date]'));
+						if (sections.length) {
+							const stickyBar = document.querySelector('.events-page .mob-sticky');
+							const stickyH = stickyBar ? stickyBar.getBoundingClientRect().height : 100;
+
+							const observer = new IntersectionObserver((entries) => {
+								const visible = entries.filter(e => e.isIntersecting);
+								if (!visible.length) return;
+								visible.sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+								setActiveChip(visible[0].target.dataset.date, { centerChip: true, updateUrl: true });
+							}, {
+								root: null,
+								rootMargin: '-' + Math.ceil(stickyH + 20) + 'px 0px -70% 0px',
+								threshold: 0,
+							});
+
+							sections.forEach(s => observer.observe(s));
+						}
+					}
+				} catch (e) {
+					console.error('events day-feed scroll sync error', e);
+				}
 
 				// ===== Countdown =====
 				function pad2(n) { n = Math.max(0, n|0); return (n < 10 ? '0' : '') + n; }
