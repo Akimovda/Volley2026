@@ -145,6 +145,19 @@
 		</script>
 		<script>
 			(function() {
+				// MAX не имеет полноценной Mini App интеграции (бот шлёт обычные
+				// button_url-ссылки, не web_app/startapp) — нет JS SDK, который явно
+				// сообщил бы "мы внутри MAX", как window.Telegram.WebApp у Telegram.
+				// Детект по User-Agent — тот же НЕПРОВЕРЕННЫЙ паттерн, что уже
+				// используется в events/create.blade.php (баннер "откройте в браузере"),
+				// переиспользован здесь для консистентности. Не гарантирует 100% точность.
+				if (/MAX/i.test(navigator.userAgent || '')) {
+					document.body.classList.add('max-webapp');
+				}
+			})();
+		</script>
+		<script>
+			(function() {
 				var tg = window.Telegram && window.Telegram.WebApp;
 				if (!tg) return;
 				document.body.classList.add('tg-webapp');
@@ -161,6 +174,15 @@
 					}
 					document.documentElement.style.setProperty('--tg-safe-area-inset-top', top + 'px');
 					document.documentElement.style.setProperty('--tg-safe-area-inset-bottom', bottom + 'px');
+					// safe area в Telegram WebApp приходит АСИНХРОННО через SDK (viewportChanged/
+					// safeAreaChanged), уже ПОСЛЕ первого рендера страницы — обычный
+					// window.resize/orientationchange на это не реагирует (размер viewport
+					// может не меняться, меняется только inset). Любой sticky-блок, который
+					// мерил высоту .fix-header ДО этого момента, остаётся с заниженным
+					// отступом навсегда. Кастомное событие — единая точка, на которую
+					// подписываются syncStickyOffset (events/index.blade.php) и positionMenus
+					// (script.js), см. window.getFixedHeaderBottom().
+					window.dispatchEvent(new Event('vp:header-resize'));
 				}
 				setTgSafeArea();
 				if (tg.onEvent) {

@@ -609,6 +609,12 @@ $levelOptions = [1, 2, 3, 4, 5, 6, 7];
 					apply();
 					window.addEventListener('resize', apply);
 					window.addEventListener('orientationchange', apply);
+					window.addEventListener('load', apply);
+					// Telegram WebApp SDK сообщает safe area АСИНХРОННО (viewportChanged/
+					// safeAreaChanged), уже после первого рендера — обычный resize на это
+					// не реагирует. voll-layout.blade.php диспатчит это кастомное событие
+					// при каждом обновлении --tg-safe-area-inset-top.
+					window.addEventListener('vp:header-resize', apply);
 				})();
 
 				// ===== Сворачивание топбара при "прилипании" ленты дат =====
