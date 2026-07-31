@@ -71,11 +71,11 @@ function resetMenus() {
 // реальный getBoundingClientRect() шапки и поставить меню сразу под ней.
 // На мобильных меню — гармошка (position не задан, обычный document flow),
 // там top ни на что не влияет — пересчёт там не нужен и не запускается.
+// Расчёт вынесен в window.getFixedHeaderBottom() (см. конец файла) — та же
+// утилита используется на /events для липкой ленты дат (mob-sticky).
 function positionMenus() {
 	if (!isDesktop() || !$header.length) return;
-	const rect = $header[0].getBoundingClientRect();
-	const top = Math.ceil(rect.bottom) + 12; // px, небольшой отступ от шапки
-	allMenus.css('top', top + 'px');
+	allMenus.css('top', window.getFixedHeaderBottom(12) + 'px');
 }
 
 
@@ -1180,3 +1180,16 @@ $(document).ready(function() {
     
     setMenuShifted(isShifted, false);
 });
+// ===== Единая утилита: нижняя граница фикс-шапки (.fix-header) =====
+// Любой sticky/fixed-под-шапкой блок должен мерить реальный отступ через эту
+// функцию, НЕ хардкодить top в rem/px. В .is-app высота шапки зависит от
+// env(safe-area-inset-top) (notch/Dynamic Island) — разная на каждом
+// устройстве, поэтому статичный CSS top всегда рано или поздно расходится
+// с реальной высотой и прячет sticky-контент под шапку (регресс на /events
+// 2026-08 — см. CLAUDE.md). Возвращает 0, если .fix-header нет на странице.
+window.getFixedHeaderBottom = function(extra) {
+	var header = document.querySelector(".fix-header");
+	if (!header) return extra || 0;
+	var rect = header.getBoundingClientRect();
+	return Math.ceil(rect.bottom + (extra || 0));
+};
