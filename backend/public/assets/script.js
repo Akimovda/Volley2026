@@ -71,19 +71,40 @@ function resetMenus() {
 
 
 /* =========================
-	ПОЗИЦИЯ МЕНЮ (top от реальной высоты шапки) — ТОЛЬКО ДЕСКТОП
+	ПОЗИЦИЯ МЕНЮ (отступ от реальной высоты шапки) — ДЕСКТОП И ГАРМОШКА
 ========================= */
 // На десктопе .fix-header-menu — position:fixed поповер (top в CSS не задан) —
-// в .is-app высота шапки зависит от env(safe-area-inset-top), который разный
-// на каждом устройстве, поэтому единственный надёжный способ — измерить
-// реальный getBoundingClientRect() шапки и поставить меню сразу под ней.
-// На мобильных меню — гармошка (position не задан, обычный document flow),
-// там top ни на что не влияет — пересчёт там не нужен и не запускается.
+// единственный надёжный способ поставить его под шапкой — измерить реальный
+// getBoundingClientRect() шапки (в .is-app/.tg-webapp/.max-webapp высота
+// шапки зависит от safe-area, разного на каждом устройстве/мессенджере).
+//
+// На мобильных (гармошка) баг обнаружился отдельно (2026-08): .fix-header-menu
+// в этом режиме — обычный document-flow блок БЕЗ position. Разметка НЕОДНОРОДНА
+// (voll-layout.blade.php): .fix-header-menu-2 (пользователь/логин) физически
+// ВЛОЖЕНО внутрь .fix-header (position:fixed), а .fix-header-menu-1/3
+// (уведомления/гамбургер) — вне её, где-то в <body>. Для меню ВНЕ шапки
+// document-flow начинается с Y=0 страницы — без margin-top фикс-шапка
+// (z-index:20) рисуется ПОВЕРХ верхних пунктов. Для меню ВНУТРИ шапки
+// margin-top, наоборот, ТОЛЬКО раздувает саму .fix-header вниз (её высота
+// считается по содержимому) — там открытое меню и так корректно стоит в
+// потоке ПОСЛЕ .fix-header-main, доп. отступ от верха страницы не нужен.
+// Проверяем через contains() программно, не хардкодя конкретный класс —
+// разница чисто историческая, не архитектурный выбор.
+//
 // Расчёт вынесен в window.getFixedHeaderBottom() (см. конец файла) — та же
 // утилита используется на /events для липкой ленты дат (mob-sticky).
 function positionMenus() {
-	if (!isDesktop() || !$header.length) return;
-	allMenus.css('top', window.getFixedHeaderBottom(12) + 'px');
+	if (!$header.length) return;
+	const offset = window.getFixedHeaderBottom(12);
+	const headerEl = $header[0];
+	if (isDesktop()) {
+		allMenus.css({ top: offset + 'px', marginTop: '' });
+		return;
+	}
+	allMenus.each(function() {
+		const insideHeader = headerEl.contains(this);
+		$(this).css({ top: '', marginTop: insideHeader ? '' : (offset + 'px') });
+	});
 }
 
 
@@ -186,7 +207,7 @@ $(document).on('keyup', function (e) {
 ========================= */
 $(window).on('resize', function () {
 	const nowDesktop = isDesktop();
-	
+
 	// сбрасываем ТОЛЬКО при смене режима
 	if (nowDesktop !== isDesktopState) {
 		resetMenus();
@@ -194,6 +215,13 @@ $(window).on('resize', function () {
 	}
 	positionMenus();
 });
+// Telegram WebApp SDK сообщает safe area АСИНХРОННО (viewportChanged/
+// safeAreaChanged), уже после первого рендера — обычный resize на это не
+// реагирует (voll-layout.blade.php диспатчит vp:header-resize при каждом
+// обновлении --tg-safe-area-inset-top). window.load — перемер после полной
+// загрузки шрифтов/картинок шапки (может незначительно сдвинуть её высоту).
+window.addEventListener('load', positionMenus);
+window.addEventListener('vp:header-resize', positionMenus);
 
 function margin() {	
 	// Проверяем видимую ширину окна
