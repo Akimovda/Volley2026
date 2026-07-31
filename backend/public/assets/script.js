@@ -42,7 +42,15 @@ const allButtons  = $('.fix-header-btn-user, .fix-header-btn-hamm, .fix-header-u
 /* =========================
 	BREAKPOINT
 ========================= */
+// Мини-приложения/встроенные браузеры мессенджеров (Telegram — .tg-webapp,
+// MAX — .max-webapp, см. voll-layout.blade.php) часто открываются в ШИРОКОМ
+// окне десктопного клиента — window.matchMedia по одной ширине экрана
+// посчитал бы это "десктопом" и переключил меню в position:fixed поповер
+// (positionMenus ниже), который в embedded WebView мессенджера
+// позиционируется ненадёжно ("уезжает"). Внутри мессенджера меню всегда
+// должно быть гармошкой (как в нативном .is-app), независимо от ширины.
 function isDesktop() {
+	if (document.body.classList.contains('tg-webapp') || document.body.classList.contains('max-webapp')) return false;
 	return window.matchMedia('(min-width: 768px)').matches;
 }
 
