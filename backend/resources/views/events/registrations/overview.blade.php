@@ -214,7 +214,7 @@ $baseQuery  = request()->except(['dir', 'page']);
 									</a>
 								</div>
 								@if($fmtAddress($row) !== '—')
-								<div class="f-13 text-muted">📍 {{ $fmtAddress($row) }}</div>
+								<div class="f-13 text-muted"><x-menu-icon name="pin" class="cd" /> {{ $fmtAddress($row) }}</div>
 								@endif
 							</div>
 							<div class="d-flex flex-column align-items-end gap-1" style="flex-shrink:0;">

@@ -269,9 +269,9 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 							</a>
 						</div>	
 						<div class="d-flex event-address">
-							<div class="emo f-16">📍</div>
-							<div class="f-16">{{ $address }}</div>						
-						</div>					
+							<div class="emo f-16"><x-menu-icon name="pin" class="cd" /></div>
+							<div class="f-16">{{ $address }}</div>
+						</div>
 						
 						
 						<div class="border f-0 mb-1 card-img-top">
@@ -408,8 +408,8 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
                         @if($organizerLabel)
 						
 						<div class="d-flex mb-05">
-							<div class="emo f-16">🎪</div>
-							<div class="f-16">{{ __('events.card_organizer') }}  <a href="{{ $organizerUrl }}">{{ $organizerLabel }}</a></div>						
+							<div class="emo f-16"><x-menu-icon name="organizer" class="cd" /></div>
+							<div class="f-16">{{ __('events.card_organizer') }}  <a href="{{ $organizerUrl }}">{{ $organizerLabel }}</a></div>
 						</div>
                         @endif
                         @endif

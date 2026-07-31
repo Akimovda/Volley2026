@@ -28,7 +28,7 @@
 
 	@if($address)
 	<div class="mb-1 d-flex">
-		<span class="emo">📍</span>
+		<span class="emo"><x-menu-icon name="pin" class="cd" /></span>
 		<span>
 			<strong>{{ __('events.show_info_place') }}</strong> {{ $address }}
 		</span>

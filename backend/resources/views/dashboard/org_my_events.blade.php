@@ -89,7 +89,7 @@ $fmtAddress = function ($row) {
 							</a>
 							<div>🗓 {{ $fmtDate($row->starts_at, $row->timezone) }}</div>
 							@if($fmtAddress($row) !== '—')
-							<div>📍 {{ $fmtAddress($row) }}</div>
+							<div><x-menu-icon name="pin" class="cd" /> {{ $fmtAddress($row) }}</div>
 							@endif
 						</div>
 						<div class="d-flex flex-column gap-1 card-actions-buttons card-actions-buttons--stack">

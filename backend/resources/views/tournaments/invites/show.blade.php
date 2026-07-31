@@ -62,7 +62,7 @@ $locationLine = collect([$event?->location?->city?->name,$event?->location?->nam
         <div class="f-15 mb-05">🏆 <strong>{{ $event->title }}</strong></div>
         @endif
         @if($locationLine)
-        <div class="f-14 mb-05" style="opacity:.6">📍 {{ $locationLine }}</div>
+        <div class="f-14 mb-05" style="opacity:.6"><x-menu-icon name="pin" class="cd" /> {{ $locationLine }}</div>
         @endif
         @if(!empty($event?->starts_at))
         <div class="f-14 mb-2" style="opacity:.6">
