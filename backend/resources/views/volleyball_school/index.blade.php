@@ -135,7 +135,7 @@
 
                                         {{-- Город --}}
                                         @if($school->city)
-                                        <div class="f-14 text-center mb-05" style="opacity:.6;">📍 {{ $school->city }}</div>
+                                        <div class="f-14 text-center mb-05" style="opacity:.6;"><x-menu-icon name="pin" class="cd" /> {{ $school->city }}</div>
                                         @endif
 
                                         {{-- Организатор --}}

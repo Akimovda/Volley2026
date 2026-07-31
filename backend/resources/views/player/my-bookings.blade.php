@@ -95,7 +95,7 @@
 									{{ $reg->title }}
 								</a>
 								@if($reg->location_name)
-								<div>📍 {{ $reg->location_name }}{{ $reg->city_name ? ', ' . $reg->city_name : '' }}</div>
+								<div><x-menu-icon name="pin" class="cd" /> {{ $reg->location_name }}{{ $reg->city_name ? ', ' . $reg->city_name : '' }}</div>
 								@endif
 								@if($posLabel)
 								<div>🎯 {{ $posLabel }}</div>

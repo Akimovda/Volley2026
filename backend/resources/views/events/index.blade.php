@@ -58,15 +58,19 @@ $trainersById   = $trainersById ?? [];
 $trainerColumn  = $trainerColumn ?? null;
 $trainerIconUrl = asset('icons/trainer.png');
 
-// ✅ Полное окно — 10 календарных дней подряд начиная с "сегодня" (+ offset*10),
-// по TZ пользователя. Каждый день попадает в чипы НЕЗАВИСИМО от наличия событий
-// (иначе зелёная точка "есть события" бессмысленна — она была бы у всех
-// показанных дней). offset — та же пагинация, что читает EventIndexService.
-$dayOffset = max(0, (int) request('offset', 0));
+// ✅ Полное окно — 10 календарных дней подряд, по TZ пользователя. Каждый день
+// попадает в чипы НЕЗАВИСИМО от наличия событий (иначе зелёная точка "есть
+// события" бессмысленна — она была бы у всех показанных дней). Старт окна
+// ($windowStartDate) вычислен в EventIndexService::occurrenceIndex() —
+// явный ?date=, иначе legacy ?offset=, иначе ближайший день с событиями —
+// здесь просто читаем готовое значение, чтобы не дублировать эту логику.
+$today = \Illuminate\Support\Carbon::now($userTz)->startOfDay();
 $groupedByDate = [];
 
 if ($isOccurrenceMode) {
-$windowStart = \Illuminate\Support\Carbon::now($userTz)->startOfDay()->addDays($dayOffset * 10);
+$windowStart = !empty($windowStartDate)
+? \Illuminate\Support\Carbon::createFromFormat('Y-m-d', $windowStartDate, $userTz)->startOfDay()
+: (clone $today);
 for ($i = 0; $i < 10; $i++) {
 $d = (clone $windowStart)->addDays($i);
 $groupedByDate[$d->format('Y-m-d')] = ['date' => $d, 'occurrences' => []];
@@ -260,8 +264,7 @@ $levelOptions = [1, 2, 3, 4, 5, 6, 7];
 			========================= --}}
 			@if ($isOccurrenceMode)
 			{{-- Верхняя лента дней --}}
-			<div id="eventsTabsRoot" data-today="{{ \Illuminate\Support\Carbon::now($userTz)->format('Y-m-d') }}"></div>
-			<div class="tabs-content">	
+			<div class="tabs-content">
 				<div id="days"></div>	
 				<div class="mob-sticky">
 					<div class="card-ramka event-dates-ramka">
@@ -324,17 +327,21 @@ $levelOptions = [1, 2, 3, 4, 5, 6, 7];
 							@endauth
 						</div>
 
-						{{-- Навигация prev/next — окно всегда ровно 10 календарных дней,
-						поэтому "следующие 10 дней" показываем всегда, а "предыдущие" —
-						только если мы не на первом окне (offset>0). Рендерится ДВАЖДЫ:
-						на узком экране — внутри скроллящейся ленты (day-nav-buttons--inline,
-						едет вместе с чипами), на широком — отдельным блоком справа
-						(day-nav-buttons--pinned, не скроллится). Показывается только одна
-						копия через CSS media query. --}}
+						{{-- Навигация prev/next — окно всегда ровно 10 календарных дней от
+						$windowStart (который может быть не выровнен по границе "сегодня +
+						N*10", если старт был вычислен как "ближайший день с событиями"),
+						поэтому вперёд/назад считаем от него, не по offset-арифметике.
+						"Предыдущие" — только если окно не упирается в сегодня. Рендерится
+						ДВАЖДЫ: на узком экране — внутри скроллящейся ленты
+						(day-nav-buttons--inline, едет вместе с чипами), на широком —
+						отдельным блоком справа (day-nav-buttons--pinned, не скроллится).
+						Показывается только одна копия через CSS media query. --}}
 						@php
-						$currentOffset = (int) request('offset', 0);
-						$nextOffset    = $currentOffset + 10;
-						$prevOffset    = max(0, $currentOffset - 10);
+						$prevWindowStart = (clone $windowStart)->subDays(10);
+						if ($prevWindowStart->lt($today)) $prevWindowStart = clone $today;
+						$showPrevNav = $windowStart->gt($today);
+						$nextDateParam = (clone $windowStart)->addDays(10)->format('Y-m-d');
+						$prevDateParam = $prevWindowStart->format('Y-m-d');
 						$baseParams    = array_filter([
 						'direction' => request('direction'),
 						'format'    => request('format'),
@@ -347,14 +354,14 @@ $levelOptions = [1, 2, 3, 4, 5, 6, 7];
 						$dayNavButtonsHtml = '';
 						ob_start();
 						@endphp
-						@if($currentOffset > 0)
-						<a href="{{ route('events.index', array_merge($baseParams, ['offset' => $prevOffset])) }}"
+						@if($showPrevNav)
+						<a href="{{ route('events.index', array_merge($baseParams, ['date' => $prevDateParam])) }}"
 						class="no-highlight day-chip last-tab tab">
 							<div class="dc-dow">{{ __('events.days_prev') }}</div>
 							<div class="dc-date">{{ __('events.days_n_days') }}</div>
 						</a>
 						@endif
-						<a href="{{ route('events.index', array_merge($baseParams, ['offset' => $nextOffset])) }}"
+						<a href="{{ route('events.index', array_merge($baseParams, ['date' => $nextDateParam])) }}"
 						class="no-highlight day-chip last-tab tab">
 							<div class="dc-dow">{{ __('events.days_next') }}</div>
 							<div class="dc-date">{{ __('events.days_n_days') }}</div>
@@ -377,8 +384,7 @@ $levelOptions = [1, 2, 3, 4, 5, 6, 7];
 							$isWeekend = $weekday >= 6;
 							$dayHasEvents = !empty($dayData['occurrences']);
                             @endphp
-                            <a href="#days" class="tab day-chip {{ $isWeekend ? 'is-weekend' : '' }} {{ $loop->first ? 'active' : '' }}"
-							data-tab="day-{{ $loop->iteration }}"
+                            <a href="javascript:void(0)" class="tab no-highlight day-chip {{ $isWeekend ? 'is-weekend' : '' }} {{ $loop->first ? 'active' : '' }}"
 							data-date="{{ $dateKey }}"
 							title="{{ $labelDate }}">
                                 <div class="dc-dow">{{ $dow }}</div>
@@ -402,12 +408,27 @@ $levelOptions = [1, 2, 3, 4, 5, 6, 7];
 				</div>
 
 
-				<div class="tab-panes">
+				<div class="days-feed" id="daysFeed">
                     @foreach($groupedByDate as $dateKey => $dayData)
-                    <div class="tab-pane {{ $loop->first ? 'active' : '' }}" id="day-{{ $loop->iteration }}">
+                    @php
+                    $d       = $dayData['date'];
+                    $weekday = (int)$d->format('N');
+                    $isWeekend = $weekday >= 6;
+                    $dow = $daysOfWeek[$weekday] ?? '';
+                    $dateLabel = $d->locale(app()->getLocale())->translatedFormat('j F');
+                    $isToday = $d->isSameDay($today);
+                    $isTomorrow = $d->isSameDay((clone $today)->addDay());
+                    $dayPrefix = $isToday ? __('events.day_header_today') : ($isTomorrow ? __('events.day_header_tomorrow') : null);
+                    $dayHeaderLabel = ($dayPrefix ? $dayPrefix . ' · ' : '') . $dow . ', ' . $dateLabel;
+                    @endphp
+                    <section class="day-section" data-date="{{ $dateKey }}">
+                        <h3 class="day-section-title {{ $isWeekend ? 'is-weekend' : '' }}">{{ $dayHeaderLabel }}</h3>
                         @if(empty($dayData['occurrences']))
                         <div class="ramka">
-                            <div class="alert alert-info">{{ __('events.empty_list_day') }}</div>
+                            <div class="alert alert-info day-empty-plaque">
+                                <div>{{ __('events.empty_list_day') }}</div>
+                                <div class="f-13 text-muted mt-05">{{ __('events.empty_list_day_notify') }}</div>
+                            </div>
                         </div>
                         @else
                         <div class="row mb-0">
@@ -416,10 +437,10 @@ $levelOptions = [1, 2, 3, 4, 5, 6, 7];
                             @endforeach
 						</div>
 						@endif
-					</div>
+					</section>
                     @endforeach
 				</div>
-				
+
 			</div>{{-- .tabs-content --}}
 			
 			@else
@@ -561,37 +582,77 @@ $levelOptions = [1, 2, 3, 4, 5, 6, 7];
 				
 				@include('events._partials.seatline_script')
 				
-				// ===== Days strip =====
-				function activateTab(tabId) {
-					document.querySelectorAll('.tab-pane').forEach(p => p.classList.add('hidden'));
-					const pane = document.getElementById(tabId);
-					if (pane) pane.classList.remove('hidden');
-					document.querySelectorAll('.day-chip').forEach(c => c.classList.remove('active'));
-					const chip = document.querySelector(`.day-chip[data-tab="${tabId}"]`);
-					if (chip) chip.classList.add('active');
+				// ===== Лента дней: чипы ↔ скролл (двусторонняя связь) =====
+				// Клик по чипу — плавный скролл к разделу дня, с учётом реальной
+				// высоты липкой ленты дат (.mob-sticky), измеренной getBoundingClientRect
+				// (тот же приём, что и в syncStickyOffset ниже) — без этого раздел дня
+				// уезжал бы ПОД шапку/ленту. Обратная связь (скролл → активный чип) —
+				// через IntersectionObserver: он поддержан WKWebView и надёжнее ручных
+				// scroll-хендлеров (не требует throttle/rAF, не дёргается на инерционном
+				// скролле iOS).
+				function scrollToDaySection(dateKey) {
+					const target = document.querySelector('.day-section[data-date="' + dateKey + '"]');
+					if (!target) return;
+
+					function alignedTop() {
+						const stickyBar = document.querySelector('.events-page .mob-sticky');
+						const clearance = stickyBar ? stickyBar.getBoundingClientRect().bottom : 0;
+						return Math.max(0, target.getBoundingClientRect().top + window.pageYOffset - clearance - 12);
+					}
+
+					window.scrollTo({ top: alignedTop(), behavior: 'smooth' });
+
+					// Топбар дат (фильтр/направление/фото/гео) сворачивается/разворачивается
+					// при пересечении порога "прилипания" (is-scrolled) — если скролл
+					// проходит через этот порог, высота .mob-sticky меняется ПРЯМО ВО ВРЕМЯ
+					// анимации, и разовый расчёт до старта промахивается. Одна корректирующая
+					// доводка после завершения анимации по актуальной (уже осевшей) высоте.
+					setTimeout(() => {
+						window.scrollTo({ top: alignedTop(), behavior: 'auto' });
+					}, 450);
 				}
-				
-				document.querySelectorAll('.day-chip').forEach(chip => {
-					chip.addEventListener('click', (e) => {
-						if (!chip.dataset.tab) return; // кнопка смены диапазона — пропускаем href
-						e.preventDefault();
-						activateTab(chip.dataset.tab);
+
+				function setActiveChip(dateKey, options) {
+					options = options || {};
+					document.querySelectorAll('.day-chip[data-date]').forEach(c => {
+						c.classList.toggle('active', c.dataset.date === dateKey);
+					});
+					if (options.centerChip) {
+						const chip = document.querySelector('.day-chip[data-date="' + dateKey + '"]');
+						if (chip) chip.scrollIntoView({ behavior: 'instant', inline: 'center', block: 'nearest' });
+					}
+					if (options.updateUrl && window.history && window.history.replaceState) {
+						const url = new URL(window.location.href);
+						url.searchParams.set('date', dateKey);
+						window.history.replaceState(null, '', url.toString());
+					}
+				}
+
+				document.querySelectorAll('.day-chip[data-date]').forEach(chip => {
+					chip.addEventListener('click', () => {
+						setActiveChip(chip.dataset.date, { centerChip: true, updateUrl: true });
+						scrollToDaySection(chip.dataset.date);
 					});
 				});
-				
-				(function initToday() {
-					const chips = Array.from(document.querySelectorAll('.day-chip'));
-					if (!chips.length) return;
-					const root     = document.getElementById('eventsTabsRoot');
-					const todayKey = root?.dataset?.today ?? null;
-					const todayChip = todayKey ? chips.find(c => c.dataset.date === todayKey) : null;
-					if (todayChip) {
-						activateTab(todayChip.dataset.tab);
-						// горизонтальный скролл полосы дней — только inline, без вертикального сдвига страницы
-						todayChip.scrollIntoView({ behavior: 'instant', inline: 'center', block: 'nearest' });
-					} else {
-						activateTab(chips[0].dataset.tab);
-					}
+
+				(function observeDaySections() {
+					const sections = Array.from(document.querySelectorAll('.day-section[data-date]'));
+					if (!sections.length) return;
+					const stickyBar = document.querySelector('.events-page .mob-sticky');
+					const stickyH = stickyBar ? stickyBar.getBoundingClientRect().height : 100;
+
+					const observer = new IntersectionObserver((entries) => {
+						const visible = entries.filter(e => e.isIntersecting);
+						if (!visible.length) return;
+						visible.sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+						setActiveChip(visible[0].target.dataset.date, { centerChip: true, updateUrl: true });
+					}, {
+						root: null,
+						rootMargin: '-' + Math.ceil(stickyH + 20) + 'px 0px -70% 0px',
+						threshold: 0,
+					});
+
+					sections.forEach(s => observer.observe(s));
 				})();
 
 				// ===== Отступ прилипания ленты дат от реальной высоты шапки =====

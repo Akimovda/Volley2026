@@ -164,7 +164,7 @@
                 {{-- Адрес --}}
                 @if(!empty($ev['address']))
                 <div class="widget-meta-row">
-                    <span class="emo">📍</span>
+                    <span class="emo"><x-menu-icon name="pin" class="cd" /></span>
                     <span>{{ $ev['address'] }}</span>
                 </div>
                 @endif

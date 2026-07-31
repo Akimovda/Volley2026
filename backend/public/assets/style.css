@@ -3096,6 +3096,17 @@ body.dark .menu-user-login .user-name {
 	width: 100%;
 	height: 100%;
 }
+/* Те же SVG-иконки внутри карточек (замена 📍/🎪) — .emo уже центрирует
+   контент в колонке 3rem (см. .emo), margin-right меню здесь не нужен.
+   Цвет — класс .cd (см. выше), тот же фирменный синий/оранжевый, что и у
+   заголовка карточки мероприятия (card-title), не унаследованный цвет
+   текста строки. */
+.emo .menu-icon {
+	width: 1.6rem;
+	height: 1.6rem;
+	margin-right: 0;
+	vertical-align: -0.3rem;
+}
 /* Точка непрочитанного уведомления в меню — раньше эмодзи 🔴 (нестабильный
    размер/цвет на разных платформах), теперь простой круг через CSS. */
 .menu-notification-dot {
@@ -4836,6 +4847,12 @@ body.dark .events-topbar .topbar-icon-btn.has-active::after {
 .events-page .top-section-txt {
     padding-bottom: 1.2rem;
 }
+/* В приложении (WebView-обёртка, класс is-app на <html>) подзаголовок
+   "Игры и тренировки на Вашей платформе" не нужен — экран и так маленький,
+   а фраза дублирует смысл самого приложения */
+html.is-app .events-page .title-description {
+    display: none;
+}
 @media (max-width: 767px) {
     .events-page .top-section {
         padding-top: 9.5rem;
@@ -5069,6 +5086,43 @@ body.dark .btn-outline-primary:hover {
 
 .events-page .tabs-content {
 	position: relative;
+}
+
+/* ── Непрерывная лента 10 дней (замена tab-panes) ─────────────────────────
+   Разделы дней рендерятся ВСЕ сразу, друг под другом; активный чип теперь
+   отражает раздел в вьюпорте (IntersectionObserver в index.blade.php), а не
+   единственную видимую панель. */
+.events-page .days-feed .day-section {
+	margin-bottom: 2rem;
+}
+.events-page .day-section-title {
+	display: flex;
+	align-items: center;
+	gap: 1.2rem;
+	font-size: 1.5rem;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.02em;
+	opacity: .75;
+	margin: 0 0 1rem;
+	padding-left: 0.2rem;
+	white-space: nowrap;
+}
+/* Полоска-разделитель справа от заголовка дня, заполняет остаток строки */
+.events-page .day-section-title::after {
+	content: '';
+	flex: 1 1 auto;
+	height: 1px;
+	background: currentColor;
+	opacity: .3;
+}
+/* Выходные (СБ/ВС) — заголовок дня красным, будни — в обычном цвете сайта */
+.events-page .day-section-title.is-weekend {
+	color: #ef4444;
+	opacity: 1;
+}
+.events-page .day-empty-plaque {
+	line-height: 1.5;
 }
 
 /* === Вкладки публичной турнирной страницы: одна скроллируемая строка ==== */

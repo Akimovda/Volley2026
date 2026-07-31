@@ -22,9 +22,13 @@ $icons = [
     'globe' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><line x1="3" y1="12" x2="21" y2="12"></line><path d="M12 3a15 15 0 0 1 0 18"></path><path d="M12 3a15 15 0 0 0 0 18"></path></svg>',
     // Организатор Pro
     'star' => '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14l-5-4.87 6.91-1.01L12 2z"></path></svg>',
+    // Адрес/локация (замена 📍 в карточках) — тот же пин, что в топбаре /events
+    'pin' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-7.58 7-12A7 7 0 1 0 5 10c0 4.42 7 12 7 12z"></path><circle cx="12" cy="10" r="2.5"></circle></svg>',
+    // Организатор (замена 🎪 в карточках) — силуэт человека + бейдж-звезда
+    'organizer' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="4"></circle><path d="M2 21v-1a6 6 0 0 1 6-6h2a6 6 0 0 1 5 2.7"></path><g transform="translate(13,11) scale(0.42)" fill="currentColor" stroke="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14l-5-4.87 6.91-1.01L12 2z"></path></g></svg>',
 ];
 $svg = $icons[$name] ?? '';
 @endphp
 @if($svg)
-<span class="menu-icon menu-icon-{{ $name }}" aria-hidden="true">{!! $svg !!}</span>
+<span {{ $attributes->merge(['class' => "menu-icon menu-icon-{$name}"]) }} aria-hidden="true">{!! $svg !!}</span>
 @endif

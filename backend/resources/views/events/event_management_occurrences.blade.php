@@ -55,8 +55,8 @@ return ['label' => __('events.seats_dash'), 'registered' => $registered];
 		<x-slot name="t_description">
 			{{ strtoupper((string)$event->direction) }} · {{ (string)$event->format }}
 			<div class="f-16 pt-1">
-				📍 {{ $fmtLocation($event) }}
-			</div>		
+				<x-menu-icon name="pin" class="cd" /> {{ $fmtLocation($event) }}
+			</div>
 		</x-slot>
 		
 		<x-slot name="d_description">

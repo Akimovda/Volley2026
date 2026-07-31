@@ -78,7 +78,7 @@
 					<div>	
 						
 						<div class="d-flex mb-05">
-							<div class="emo f-16">🎪</div>
+							<div class="emo f-16"><x-menu-icon name="organizer" class="cd" /></div>
 							<div class="f-16">{{ __('seasons.leagues_organizer_label') }} : <strong class="cd">{{ trim(($league->organizer->first_name ?? '') . ' ' . ($league->organizer->last_name ?? '')) ?: $league->organizer->name }}</strong></div>
 						</div>					
 						
