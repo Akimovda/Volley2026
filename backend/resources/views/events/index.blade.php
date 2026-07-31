@@ -657,14 +657,39 @@ $levelOptions = [1, 2, 3, 4, 5, 6, 7];
 				// но countdown/toggle-фото/поп-ап фильтров идут ПОСЛЕ этого блока и не
 				// должны от него зависеть.
 				try {
+					// Единая точка правды для "где заканчивается прилипший верх страницы"
+					// (шапка сайта + топбар фильтров + лента чипов дат, весь .mob-sticky,
+					// НЕ только .fix-header — они разной высоты!). Используется и при
+					// скролле к разделу дня (scrollToDaySection), и при определении
+					// активного дня по скроллу (recomputeActiveDay) — нашли на реальном
+					// баге (2026-08), что использование ДВУХ РАЗНЫХ границ (одна через
+					// .mob-sticky.bottom, другая по ошибке через window.getFixedHeaderBottom()
+					// — это высота ТОЛЬКО шапки сайта, без топбара/чипов) давало
+					// систематическое смещение активного дня "на один" относительно
+					// реальной прокрученной позиции.
+					function stickyBottom() {
+						const stickyBar = document.querySelector('.events-page .mob-sticky');
+						return stickyBar ? stickyBar.getBoundingClientRect().bottom : 0;
+					}
+
+					// Явный клик по чипу — приоритетнее фоновой эвристики IntersectionObserver
+					// на короткое окно после клика. Нашли на реальном баге (2026-08): IO
+					// продолжает срабатывать ещё ~200мс ПОСЛЕ финальной scrollend-коррекции
+					// (микро-сдвиг в несколько px из-за сворачивания/разворачивания топбара
+					// у самого начала ленты — там порог is-scrolled особенно чувствителен),
+					// и это позднее срабатывание иногда переопределяло только что
+					// зафиксированный явным кликом активный день обратно на соседний.
+					// Пользователь явно выбрал день тапом — эвристика скролла не должна его
+					// перебивать, пока он ещё не начал скроллить сам.
+					let suppressObserverUntil = 0;
+
 					function scrollToDaySection(dateKey) {
+						suppressObserverUntil = performance.now() + 1500;
 						const target = document.querySelector('.day-section[data-date="' + dateKey + '"]');
 						if (!target) return;
 
 						function alignedTop() {
-							const stickyBar = document.querySelector('.events-page .mob-sticky');
-							const clearance = stickyBar ? stickyBar.getBoundingClientRect().bottom : 0;
-							return Math.max(0, target.getBoundingClientRect().top + window.pageYOffset - clearance - 12);
+							return Math.max(0, target.getBoundingClientRect().top + window.pageYOffset - stickyBottom() - 12);
 						}
 
 						window.scrollTo({ top: alignedTop(), behavior: 'smooth' });
@@ -672,11 +697,86 @@ $levelOptions = [1, 2, 3, 4, 5, 6, 7];
 						// Топбар дат (фильтр/направление/фото/гео) сворачивается/разворачивается
 						// при пересечении порога "прилипания" (is-scrolled) — если скролл
 						// проходит через этот порог, высота .mob-sticky меняется ПРЯМО ВО ВРЕМЯ
-						// анимации, и разовый расчёт до старта промахивается. Одна корректирующая
-						// доводка после завершения анимации по актуальной (уже осевшей) высоте.
-						setTimeout(() => {
-							window.scrollTo({ top: alignedTop(), behavior: 'auto' });
-						}, 450);
+						// анимации, и разовый расчёт до старта промахивается. РАНЬШЕ здесь была
+						// доводка через фиксированный setTimeout(450) — не подошло: реальная
+						// длительность smooth-скролла зависит от дистанции и может занимать
+						// больше секунды на длинных прокрутках (замерено), поэтому таймаут либо
+						// стрелял раньше окончания анимации (WebKit может игнорировать/откладывать
+						// scrollTo, вызванный ПОКА идёт другая smooth-анимация — итоговая позиция
+						// оставалась по старому, неверному расчёту), либо позже необходимого.
+						// Теперь ждём РЕАЛЬНОГО завершения скролла: нативное событие 'scrollend'
+						// (Chrome/Safari 16.4+), либо RAF-поллинг "scrollY не меняется N кадров
+						// подряд" как фоллбэк — и только тогда одна корректирующая доводка по
+						// уже осевшей (после сворачивания/разворачивания топбара) высоте.
+						// После окончания скролла ЯВНО фиксируем активный чип на dateKey —
+						// не полагаемся только на IntersectionObserver. Нашли на реальном
+						// баге (2026-08): IO закономерно перехватывает ПРОМЕЖУТОЧНЫЙ день во
+						// время самой анимации (пролетая мимо него), а после финальной
+						// доводки в несколько px (недостаточно для нового пересечения) НЕ
+						// перевычисляется заново — активным навсегда "застревал" день,
+						// увиденный мельком в процессе скролла, а не тот, что реально выбрал
+						// пользователь.
+						function finalizeActiveChip() {
+							setActiveChip(dateKey, { centerChip: true, updateUrl: true });
+							// IntersectionObserver — асинхронный (колбэк всегда в отдельной
+							// задаче/микротаске) и может сработать ЧУТЬ ПОЗЖЕ этого вызова,
+							// перезаписав активный чип обратно на промежуточный — особенно
+							// заметно на коротких скроллах между соседними днями (анимация
+							// почти мгновенная, гонка более вероятна). Повторное подтверждение
+							// на следующем кадре гарантированно побеждает такую гонку.
+							requestAnimationFrame(() => setActiveChip(dateKey, { centerChip: true, updateUrl: true }));
+						}
+
+						if ('onscrollend' in window) {
+							const onEnd = () => {
+								window.removeEventListener('scrollend', onEnd);
+								window.scrollTo({ top: alignedTop(), behavior: 'auto' });
+								finalizeActiveChip();
+							};
+							window.addEventListener('scrollend', onEnd);
+						} else {
+							let lastY = window.scrollY;
+							let stableFrames = 0;
+							let ticks = 0;
+							const maxTicks = 180; // ~3с на 60fps — страховка от бесконечного polling
+							function poll() {
+								ticks++;
+								const y = window.scrollY;
+								if (y === lastY) {
+									stableFrames++;
+								} else {
+									stableFrames = 0;
+									lastY = y;
+								}
+								if (stableFrames >= 3 || ticks >= maxTicks) {
+									window.scrollTo({ top: alignedTop(), behavior: 'auto' });
+									finalizeActiveChip();
+									return;
+								}
+								requestAnimationFrame(poll);
+							}
+							requestAnimationFrame(poll);
+						}
+					}
+
+					// Центрирует чип в горизонтальной ленте вручную через scrollLeft — НЕ
+					// через chip.scrollIntoView(). Найдено на реальном баге (2026-08):
+					// scrollIntoView({inline:'center'}) официально скроллит только СВОЙ
+					// ближайший scroll-контейнер по нужной оси, но реализация в части
+					// движков (в т.ч. воспроизведено в headless Chromium через
+					// IntersectionObserver, вызывающий эту функцию ПРЯМО ВО ВРЕМЯ вертикальной
+					// smooth-анимации скролла страницы) может задеть и вертикальный скролл
+					// СТРАНИЦЫ как побочный эффект — из-за этого тап по чипу иногда уводил
+					// страницу на сотни-тысячи px мимо цели (особенно при скролле вверх).
+					// Прямая работа с scrollLeft полностью исключает любое влияние на
+					// вертикальный скролл — эта функция гарантированно трогает только ленту.
+					function centerChipInStrip(chip) {
+						const strip = document.getElementById('daysStrip');
+						if (!strip || !chip) return;
+						const stripRect = strip.getBoundingClientRect();
+						const chipRect = chip.getBoundingClientRect();
+						const delta = (chipRect.left + chipRect.right) / 2 - (stripRect.left + stripRect.right) / 2;
+						strip.scrollLeft += delta;
 					}
 
 					function setActiveChip(dateKey, options) {
@@ -686,7 +786,7 @@ $levelOptions = [1, 2, 3, 4, 5, 6, 7];
 						});
 						if (options.centerChip) {
 							const chip = document.querySelector('.day-chip[data-date="' + dateKey + '"]');
-							if (chip) chip.scrollIntoView({ behavior: 'instant', inline: 'center', block: 'nearest' });
+							if (chip) centerChipInStrip(chip);
 						}
 						if (options.updateUrl && window.history && window.history.replaceState) {
 							const url = new URL(window.location.href);
@@ -705,15 +805,41 @@ $levelOptions = [1, 2, 3, 4, 5, 6, 7];
 					if ('IntersectionObserver' in window) {
 						const sections = Array.from(document.querySelectorAll('.day-section[data-date]'));
 						if (sections.length) {
+							// Нашли на реальном баге (2026-08): IntersectionObserver присылает в
+							// entries ТОЛЬКО элементы, чьё пересечение ИЗМЕНИЛОСЬ с прошлого
+							// вызова, а не полный снимок всех видимых секций — выбор "активной"
+							// ТОЛЬКО среди entries этого конкретного batch (и даже среди всех
+							// currently-intersecting, если секция физически высокая и её top
+							// давно ушёл далеко за экран, а bottom ещё в зоне) регулярно давал
+							// не тот день, особенно при скролле вверх. Надёжный паттерн —
+							// IntersectionObserver ТОЛЬКО как триггер "что-то изменилось,
+							// пересчитай", а сам выбор активного дня — прямой запрос
+							// getBoundingClientRect() ПО ВСЕМ секциям заново при каждом
+							// срабатывании: "последняя секция, чей заголовок уже пересёк
+							// границу под шапкой" (максимальный top среди top ≤ границы).
+							function recomputeActiveDay() {
+								if (performance.now() < suppressObserverUntil) return;
+								// stickyBottom()+12 — ТА ЖЕ граница и тот же запас, что и в
+								// alignedTop() при скролле к разделу (иначе систематическое
+								// смещение активного дня "на один", см. комментарий выше про
+								// stickyBottom()).
+								const boundary = stickyBottom() + 12;
+								let bestDate = null;
+								let bestTop = -Infinity;
+								sections.forEach(s => {
+									const top = s.getBoundingClientRect().top;
+									if (top <= boundary + 1 && top > bestTop) {
+										bestTop = top;
+										bestDate = s.dataset.date;
+									}
+								});
+								if (!bestDate) bestDate = sections[0].dataset.date;
+								setActiveChip(bestDate, { centerChip: true, updateUrl: true });
+							}
+
 							const stickyBar = document.querySelector('.events-page .mob-sticky');
 							const stickyH = stickyBar ? stickyBar.getBoundingClientRect().height : 100;
-
-							const observer = new IntersectionObserver((entries) => {
-								const visible = entries.filter(e => e.isIntersecting);
-								if (!visible.length) return;
-								visible.sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
-								setActiveChip(visible[0].target.dataset.date, { centerChip: true, updateUrl: true });
-							}, {
+							const observer = new IntersectionObserver(recomputeActiveDay, {
 								root: null,
 								rootMargin: '-' + Math.ceil(stickyH + 20) + 'px 0px -70% 0px',
 								threshold: 0,
