@@ -4836,6 +4836,12 @@ body.dark .events-topbar .topbar-icon-btn.has-active::after {
 .events-page .top-section-txt {
     padding-bottom: 1.2rem;
 }
+/* В приложении (WebView-обёртка, класс is-app на <html>) подзаголовок
+   "Игры и тренировки на Вашей платформе" не нужен — экран и так маленький,
+   а фраза дублирует смысл самого приложения */
+html.is-app .events-page .title-description {
+    display: none;
+}
 @media (max-width: 767px) {
     .events-page .top-section {
         padding-top: 9.5rem;

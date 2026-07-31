@@ -13,7 +13,7 @@ return [
     // Events list: meta + header
     'index_title'         => 'Events',
     'index_h1'            => 'Events',
-    'index_t_description' => 'Games and training on our platform',
+    'index_t_description' => 'Games and training on your platform',
 
     // Top buttons
     'btn_filter'      => 'Filter',
