@@ -5071,6 +5071,43 @@ body.dark .btn-outline-primary:hover {
 	position: relative;
 }
 
+/* ── Непрерывная лента 10 дней (замена tab-panes) ─────────────────────────
+   Разделы дней рендерятся ВСЕ сразу, друг под другом; активный чип теперь
+   отражает раздел в вьюпорте (IntersectionObserver в index.blade.php), а не
+   единственную видимую панель. */
+.events-page .days-feed .day-section {
+	margin-bottom: 2rem;
+}
+.events-page .day-section-title {
+	display: flex;
+	align-items: center;
+	gap: 1.2rem;
+	font-size: 1.5rem;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.02em;
+	opacity: .75;
+	margin: 0 0 1rem;
+	padding-left: 0.2rem;
+	white-space: nowrap;
+}
+/* Полоска-разделитель справа от заголовка дня, заполняет остаток строки */
+.events-page .day-section-title::after {
+	content: '';
+	flex: 1 1 auto;
+	height: 1px;
+	background: currentColor;
+	opacity: .3;
+}
+/* Выходные (СБ/ВС) — заголовок дня красным, будни — в обычном цвете сайта */
+.events-page .day-section-title.is-weekend {
+	color: #ef4444;
+	opacity: 1;
+}
+.events-page .day-empty-plaque {
+	line-height: 1.5;
+}
+
 /* === Вкладки публичной турнирной страницы: одна скроллируемая строка ==== */
 .tourn-tabs {
 	display: flex;

@@ -90,12 +90,15 @@ return [
     // Top messages
     'private_link' => 'Private link 🔗:',
     'empty_list'   => 'No events yet. They\'ll appear soon 🙂',
-    'empty_list_day' => 'No events on this day.',
+    'empty_list_day' => 'No events on this day yet!',
+    'empty_list_day_notify' => 'We\'ll notify you as soon as an organizer creates an event',
 
     // Days strip
     'days_prev'   => 'Previous',
     'days_next'   => 'Next',
     'days_n_days' => '10 days',
+    'day_header_today' => 'Today',
+    'day_header_tomorrow' => 'Tomorrow',
 
     // Month and weekday short names
     'month_short' => [
