@@ -2526,19 +2526,32 @@ body.dark .theme-icon {
 	}
 }
 /* БАЗА — mobile: гармошка (jQuery slideDown/slideUp в script.js), а не
-   поповер. Меню — обычный блок в потоке <header> (см. voll-layout.blade.php,
-   .fix-header-menu-1/2/3 — сиблинги .fix-header, НЕ его дети), поэтому при
-   открытии просто раздвигает страницу под собой — без фона/тени/border-radius
-   и без position (это ключевое: раз меню не спозиционировано, оно не может
-   наложиться на контент, и не нуждается в JS-расчёте top под разную высоту
-   шапки — обычный document flow адаптируется сам). Так было исторически;
-   восстановлено после того, как попытка сделать mobile тоже position:fixed
-   card-поповером (для унификации с десктопом) визуально заменила гармошку на
-   плавающую карточку — по фидбэку это не то, что нужно. */
+   поповер. Меню — обычный блок в document flow (без position — это ключевое:
+   раз меню не спозиционировано, оно не может наложиться на контент, и не
+   нуждается в JS-расчёте top под разную высоту шапки — обычный document flow
+   адаптируется сам). Так было исторически; восстановлено после того, как
+   попытка сделать mobile тоже position:fixed card-поповером (для унификации
+   с десктопом) визуально заменила гармошку на плавающую карточку — по
+   фидбэку это не то, что нужно.
+   Карточка-подложка (фон/скругление/тень) добавлена сюда 2026-08 — раньше
+   её не было ВООБЩЕ ни в одной среде (проверено headless: браузер/is-app/
+   tg-webapp/max-webapp — везде background:transparent, byte-identical).
+   .fix-header-menu-2 (пользователь/логин) визуально "работал" только
+   потому, что физически вложен в .fix-header и наследует ЕЁ фон как
+   DOM-родитель — menu-1/3 (вне .fix-header) стояли на голом фоне страницы.
+   Один общий класс для всех трёх — без развилок по номеру меню. */
 .fix-header-menu {
 	display: none;
 	padding: 2rem;
+	margin: 0 1rem;
 	will-change: transform;
+	background-color: rgba(255,255,255,1);
+	border-radius: 1.6rem;
+	box-shadow: 0 1rem 2.2rem rgba(0, 0, 0, 0.05), 0 0.5rem 1.2rem rgba(0, 0, 0, 0.03);
+}
+body.dark .fix-header-menu {
+	background-color: #222333;
+	box-shadow: 0 1rem 2.2rem rgba(0, 0, 0, 0.1), 0 0.5rem 1.2rem rgba(0, 0, 0, 0.05);
 }
 @media (min-width: 768px) {
 	/* Десктоп — поповер: position:fixed + right:1rem (совпадает с инсетом
@@ -2551,6 +2564,7 @@ body.dark .theme-icon {
 		display: block;
 		position: fixed;
 		right: 1rem;
+		margin: 0;
 		opacity: 0;
 		transform: translateY(1rem) scale(0.95);
 		pointer-events: none;
