@@ -58,15 +58,19 @@ $trainersById   = $trainersById ?? [];
 $trainerColumn  = $trainerColumn ?? null;
 $trainerIconUrl = asset('icons/trainer.png');
 
-// ✅ Полное окно — 10 календарных дней подряд начиная с "сегодня" (+ offset*10),
-// по TZ пользователя. Каждый день попадает в чипы НЕЗАВИСИМО от наличия событий
-// (иначе зелёная точка "есть события" бессмысленна — она была бы у всех
-// показанных дней). offset — та же пагинация, что читает EventIndexService.
-$dayOffset = max(0, (int) request('offset', 0));
+// ✅ Полное окно — 10 календарных дней подряд, по TZ пользователя. Каждый день
+// попадает в чипы НЕЗАВИСИМО от наличия событий (иначе зелёная точка "есть
+// события" бессмысленна — она была бы у всех показанных дней). Старт окна
+// ($windowStartDate) вычислен в EventIndexService::occurrenceIndex() —
+// явный ?date=, иначе legacy ?offset=, иначе ближайший день с событиями —
+// здесь просто читаем готовое значение, чтобы не дублировать эту логику.
+$today = \Illuminate\Support\Carbon::now($userTz)->startOfDay();
 $groupedByDate = [];
 
 if ($isOccurrenceMode) {
-$windowStart = \Illuminate\Support\Carbon::now($userTz)->startOfDay()->addDays($dayOffset * 10);
+$windowStart = !empty($windowStartDate)
+? \Illuminate\Support\Carbon::createFromFormat('Y-m-d', $windowStartDate, $userTz)->startOfDay()
+: (clone $today);
 for ($i = 0; $i < 10; $i++) {
 $d = (clone $windowStart)->addDays($i);
 $groupedByDate[$d->format('Y-m-d')] = ['date' => $d, 'occurrences' => []];
@@ -324,17 +328,21 @@ $levelOptions = [1, 2, 3, 4, 5, 6, 7];
 							@endauth
 						</div>
 
-						{{-- Навигация prev/next — окно всегда ровно 10 календарных дней,
-						поэтому "следующие 10 дней" показываем всегда, а "предыдущие" —
-						только если мы не на первом окне (offset>0). Рендерится ДВАЖДЫ:
-						на узком экране — внутри скроллящейся ленты (day-nav-buttons--inline,
-						едет вместе с чипами), на широком — отдельным блоком справа
-						(day-nav-buttons--pinned, не скроллится). Показывается только одна
-						копия через CSS media query. --}}
+						{{-- Навигация prev/next — окно всегда ровно 10 календарных дней от
+						$windowStart (который может быть не выровнен по границе "сегодня +
+						N*10", если старт был вычислен как "ближайший день с событиями"),
+						поэтому вперёд/назад считаем от него, не по offset-арифметике.
+						"Предыдущие" — только если окно не упирается в сегодня. Рендерится
+						ДВАЖДЫ: на узком экране — внутри скроллящейся ленты
+						(day-nav-buttons--inline, едет вместе с чипами), на широком —
+						отдельным блоком справа (day-nav-buttons--pinned, не скроллится).
+						Показывается только одна копия через CSS media query. --}}
 						@php
-						$currentOffset = (int) request('offset', 0);
-						$nextOffset    = $currentOffset + 10;
-						$prevOffset    = max(0, $currentOffset - 10);
+						$prevWindowStart = (clone $windowStart)->subDays(10);
+						if ($prevWindowStart->lt($today)) $prevWindowStart = clone $today;
+						$showPrevNav = $windowStart->gt($today);
+						$nextDateParam = (clone $windowStart)->addDays(10)->format('Y-m-d');
+						$prevDateParam = $prevWindowStart->format('Y-m-d');
 						$baseParams    = array_filter([
 						'direction' => request('direction'),
 						'format'    => request('format'),
@@ -347,14 +355,14 @@ $levelOptions = [1, 2, 3, 4, 5, 6, 7];
 						$dayNavButtonsHtml = '';
 						ob_start();
 						@endphp
-						@if($currentOffset > 0)
-						<a href="{{ route('events.index', array_merge($baseParams, ['offset' => $prevOffset])) }}"
+						@if($showPrevNav)
+						<a href="{{ route('events.index', array_merge($baseParams, ['date' => $prevDateParam])) }}"
 						class="no-highlight day-chip last-tab tab">
 							<div class="dc-dow">{{ __('events.days_prev') }}</div>
 							<div class="dc-date">{{ __('events.days_n_days') }}</div>
 						</a>
 						@endif
-						<a href="{{ route('events.index', array_merge($baseParams, ['offset' => $nextOffset])) }}"
+						<a href="{{ route('events.index', array_merge($baseParams, ['date' => $nextDateParam])) }}"
 						class="no-highlight day-chip last-tab tab">
 							<div class="dc-dow">{{ __('events.days_next') }}</div>
 							<div class="dc-date">{{ __('events.days_n_days') }}</div>

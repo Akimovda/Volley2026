@@ -204,15 +204,50 @@ class EventIndexService
             }
         });
 
-        // Окно — 10 календарных дней подряд начиная с "сегодня" пользователя
-        // (+ offset*10 дней), а НЕ 10 ближайших дат где реально есть события —
-        // иначе чипы дней показывали только дни с событиями, и зелёная точка
-        // "есть события" была бессмысленна (у всех показанных дней она есть).
-        $offset = max(0, (int) request('offset', 0));
+        // Окно — 10 календарных дней подряд, а НЕ 10 ближайших дат где реально
+        // есть события — иначе чипы дней показывали бы только дни с событиями,
+        // и зелёная точка "есть события" была бы бессмысленна (у всех показанных
+        // дней она есть). Стартовый день окна определяется так:
+        // 1) явный ?date=YYYY-MM-DD — уважаем всегда (не ломать ссылки шаринга/
+        //    анонсов, которые могут указывать на конкретный день серии);
+        // 2) иначе ?offset= (legacy-пагинация ±10 дней, старые ссылки/закладки);
+        // 3) иначе — ближайший день (от сегодня), где по ТЕКУЩИМ фильтрам
+        //    (направление/город/уровень/локация — уже применены в whereHas выше)
+        //    есть хотя бы одно мероприятие; если фильтрам ничего не соответствует
+        //    вообще — сегодня (пустая лента с плашками "нет мероприятий").
+        $windowTz = \App\Support\DateTime::effectiveUserTz($user);
+        $today    = Carbon::now($windowTz)->startOfDay();
 
-        $windowTz    = \App\Support\DateTime::effectiveUserTz($user);
-        $windowStart = Carbon::now($windowTz)->startOfDay()->addDays($offset * 10);
-        $windowEnd   = (clone $windowStart)->addDays(9)->endOfDay();
+        $dateParam    = trim((string) request('date', ''));
+        $explicitDate = null;
+        if ($dateParam !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateParam)) {
+            try {
+                $explicitDate = Carbon::createFromFormat('Y-m-d', $dateParam, $windowTz)->startOfDay();
+            } catch (\Throwable $e) {
+                $explicitDate = null;
+            }
+        }
+
+        if ($explicitDate) {
+            // Не даём старой/битой ссылке с прошедшей датой открыть заведомо
+            // пустое окно — прошедшие occurrences и так исключены applyDateFilter().
+            $windowStart = $explicitDate->lt($today) ? $today : $explicitDate;
+        } else {
+            $offset = max(0, (int) request('offset', 0));
+            if ($offset > 0) {
+                $windowStart = (clone $today)->addDays($offset * 10);
+            } else {
+                $nearestStartsAtUtc = (clone $occQ)->orderBy('starts_at')->value('starts_at');
+                if ($nearestStartsAtUtc) {
+                    $nearestLocalDay = Carbon::parse($nearestStartsAtUtc, 'UTC')->setTimezone($windowTz)->startOfDay();
+                    $windowStart = $nearestLocalDay->lt($today) ? $today : $nearestLocalDay;
+                } else {
+                    $windowStart = $today;
+                }
+            }
+        }
+
+        $windowEnd = (clone $windowStart)->addDays(9)->endOfDay();
 
         $occurrences = $occQ
             ->where('starts_at', '>=', $windowStart->clone()->setTimezone('UTC'))
@@ -299,6 +334,7 @@ class EventIndexService
             'joinedEventIds' => [],
             'restrictedEventIds' => [],
             'activeLocationNames' => $activeLocationNames,
+            'windowStartDate' => $windowStart->format('Y-m-d'),
         ]);
     }
 
