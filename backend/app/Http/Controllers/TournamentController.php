@@ -1421,6 +1421,46 @@ class TournamentController extends Controller
         }
     }
 
+    /**
+     * "Прямые матчи по местам" — альтернатива advance() для турниров ровно
+     * с 2 группами: 1-е места групп играют за 1-2 место, 2-е — за 3-4,
+     * без дополнительного раунда полуфиналов между группами (см. докстринг
+     * TournamentBracketService::generateGroupCrossover()).
+     */
+    public function advanceCrossover(Request $request, TournamentStage $stage)
+    {
+        $event = $stage->event;
+        $this->authorizeOrganizer($request, $event);
+
+        if (! $stage->isCompleted()) {
+            return back()->with('error', 'Групповая стадия ещё не завершена.');
+        }
+
+        $validated = $request->validate([
+            'playoff_stage_id' => 'required|exists:tournament_stages,id',
+            'places_count' => 'required|integer|in:2,4,6,8',
+        ]);
+
+        $playoffStage = TournamentStage::where('id', $validated['playoff_stage_id'])
+            ->where('event_id', $event->id)
+            ->firstOrFail();
+
+        try {
+            $this->bracketService->generateGroupCrossover(
+                $stage, $playoffStage,
+                (int) $validated['places_count'],
+                $this->standingsService,
+            );
+
+            $playoffStage->update(['status' => TournamentStage::STATUS_IN_PROGRESS]);
+
+            return $this->redirectToSetup($event, 'Матчи по местам созданы.');
+
+        } catch (\InvalidArgumentException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+    }
+
     /* ================================================================
      *  Удаление стадии (reset)
      * ================================================================ */
