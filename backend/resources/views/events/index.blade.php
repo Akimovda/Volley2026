@@ -602,7 +602,8 @@ $levelOptions = [1, 2, 3, 4, 5, 6, 7];
 				// в скрипте всё же упадёт.
 				(function syncStickyOffset() {
 					const mobSticky = document.querySelector('.events-page .mob-sticky');
-					if (!mobSticky || !document.querySelector('.fix-header')) return;
+					const headerEl = document.querySelector('.fix-header');
+					if (!mobSticky || !headerEl) return;
 					function apply() {
 						mobSticky.style.top = window.getFixedHeaderBottom(12) + 'px';
 					}
@@ -615,6 +616,28 @@ $levelOptions = [1, 2, 3, 4, 5, 6, 7];
 					// не реагирует. voll-layout.blade.php диспатчит это кастомное событие
 					// при каждом обновлении --tg-safe-area-inset-top.
 					window.addEventListener('vp:header-resize', apply);
+					// Догрузка шрифтов может незначительно сдвинуть высоту шапки уже
+					// ПОСЛЕ 'load' (веб-шрифты часто ставятся в очередь, а не блокируют
+					// load) — пересчитываем ещё раз, когда шрифты гарантированно готовы.
+					if (document.fonts && document.fonts.ready) {
+						document.fonts.ready.then(apply).catch(function(){});
+					}
+					// Возврат из фона (свёрнутое приложение/вкладка) — на некоторых
+					// платформах safe-area/высота статус-бара пересчитывается заново
+					// только в этот момент, не через resize.
+					document.addEventListener('visibilitychange', function() {
+						if (!document.hidden) apply();
+					});
+					// Самый надёжный триггер: ResizeObserver прямо на .fix-header —
+					// ловит ЛЮБУЮ причину изменения её реальной высоты (safe-area,
+					// сворачивание топбара, переносы текста и т.п.) одним общим
+					// механизмом, без необходимости перечислять причины по отдельности.
+					// apply() дешёвый (просто пишет style.top), дёргать его часто
+					// безопасно. Поддержан WKWebView; на средах без ResizeObserver
+					// (крайне маловероятно) остаются остальные обработчики выше.
+					if ('ResizeObserver' in window) {
+						new ResizeObserver(apply).observe(headerEl);
+					}
 				})();
 
 				// ===== Сворачивание топбара при "прилипании" ленты дат =====

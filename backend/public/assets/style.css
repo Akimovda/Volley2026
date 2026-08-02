@@ -2526,45 +2526,46 @@ body.dark .theme-icon {
 	}
 }
 /* БАЗА — mobile: гармошка (jQuery slideDown/slideUp в script.js), а не
-   поповер. Меню — обычный блок в document flow (без position — это ключевое:
-   раз меню не спозиционировано, оно не может наложиться на контент, и не
-   нуждается в JS-расчёте top под разную высоту шапки — обычный document flow
-   адаптируется сам). Так было исторически; восстановлено после того, как
-   попытка сделать mobile тоже position:fixed card-поповером (для унификации
-   с десктопом) визуально заменила гармошку на плавающую карточку — по
-   фидбэку это не то, что нужно.
-   Карточка-подложка (фон/скругление/тень) добавлена сюда 2026-08 — раньше
-   её не было ВООБЩЕ ни в одной среде (проверено headless: браузер/is-app/
-   tg-webapp/max-webapp — везде background:transparent, byte-identical).
-   .fix-header-menu-2 (пользователь/логин) визуально "работал" только
-   потому, что физически вложен в .fix-header и наследует ЕЁ фон как
-   DOM-родитель — menu-1/3 (вне .fix-header) стояли на голом фоне страницы.
-   Один общий класс для всех трёх — без развилок по номеру меню. */
+   поповер. Меню — обычный блок в document flow, БЕЗ position и БЕЗ своего
+   background — это подтверждённый эталон (2026-08-02, скриншоты ревизий
+   7d5f3b55/eb116be1 в menu_history/, сверено с пользователем): гармошка
+   физически вложена в .fix-header (position:fixed, свой градиент+blur) и
+   намеренно ПРОСВЕЧИВАЕТ его фон — так было изначально и так должно быть,
+   это не баг с "пропавшим фоном". Между 2026-07-30 и 2026-08-01 сюда дважды
+   пытались добавить сплошную белую карточку (сначала `4ee86170`, отклонено
+   тем же вечером в `b8b0758e`; затем повторно, уже не зная о первом отказе,
+   в `7f5b0245`, откуда это дошло до прода) — оба раза вместе с этим меню
+   выносили ИЗ `.fix-header` (другой баг, "уезжает под шапку"), и позже эти
+   два независимых решения путали друг с другом. Не повторять — если кто-то
+   снова "найдёт" отсутствие фона и захочет его добавить, сначала свериться
+   с этим комментарием и menu_history/. */
 .fix-header-menu {
 	display: none;
 	padding: 2rem;
-	margin: 0 1rem;
 	will-change: transform;
-	background-color: rgba(255,255,255,1);
-	border-radius: 1.6rem;
-	box-shadow: 0 1rem 2.2rem rgba(0, 0, 0, 0.05), 0 0.5rem 1.2rem rgba(0, 0, 0, 0.03);
-}
-body.dark .fix-header-menu {
-	background-color: #222333;
-	box-shadow: 0 1rem 2.2rem rgba(0, 0, 0, 0.1), 0 0.5rem 1.2rem rgba(0, 0, 0, 0.05);
 }
 @media (min-width: 768px) {
-	/* Десктоп — поповер: position:fixed + right:1rem (совпадает с инсетом
-	   .fix-header) вместо старого position:absolute, у которого offsetParent
-	   зависел от DOM-вложенности (падал на BODY, меню уезжало в низ страницы).
-	   top НЕ хардкодится — считается в JS (script.js, positionMenus()) от
-	   реальной getBoundingClientRect() шапки: в .is-app высота шапки зависит
-	   от env(safe-area-inset-top), который разный на каждом устройстве. */
+	/* Десктоп — поповер: position:absolute + top:calc(100% + gap), нативная
+	   CSS-раскладка без JS. Работает надёжно только благодаря тому, что
+	   .fix-header-menu-1/2/3 физически ВЛОЖЕНЫ в .fix-header (см.
+	   voll-layout.blade.php) — .fix-header имеет position:fixed, значит
+	   является containing block для абсолютно спозиционированных потомков:
+	   top:100% всегда означает "нижний край .fix-header", какой бы ни была
+	   его реальная высота (safe-area/notch и т.п.) — без единой строчки JS.
+	   Раньше здесь стоял position:fixed + JS-расчёт top (positionMenus() в
+	   script.js) — это было вынужденной заплаткой ПОСЛЕ того, как меню
+	   временно вынесли из .fix-header (см. историю в CLAUDE.md); теперь,
+	   когда вложенность восстановлена, JS-расчёт не нужен вообще.
+	   Сплошной белый фон здесь (в отличие от прозрачной гармошки на мобиле
+	   выше) — не регресс: десктопный поповер был белой карточкой с тенью ещё
+	   в эталонных 7d5f3b55/eb116be1, это не менялось. */
 	.fix-header-menu {
 		display: block;
-		position: fixed;
-		right: 1rem;
+		position: absolute;
+		top: calc(100% + 1.8rem);
+		right: 0;
 		margin: 0;
+		padding: 2rem;
 		opacity: 0;
 		transform: translateY(1rem) scale(0.95);
 		pointer-events: none;
@@ -2572,9 +2573,6 @@ body.dark .fix-header-menu {
 		border-radius: 2rem;
 		background-color: rgba(255,255,255,1);
 		box-shadow: 0 1rem 2.2rem rgba(0, 0, 0, 0.05), 0 0.5rem 1.2rem rgba(0, 0, 0, 0.03);
-		max-height: calc(100vh - 4rem);
-		overflow-y: auto;
-		box-sizing: border-box;
 		z-index: 1000;
 		transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 	}
@@ -3229,8 +3227,16 @@ body.dark .role-organizer .role-badge {
 .menu-user-login .user-info {
 	padding: 0 1rem;
 }
-/* Адаптивность */
-@media (max-width: 580px) {
+/* Адаптивность — брейкпоинт СОВПАДАЕТ с гармошка/поповер (768px), не 580px:
+   между 581-767px .menu-site/.menu-user-login оставались в flex-row (две
+   колонки бок о бок) БЕЗ desktop-поповера (position:absolute/фон/min-width) —
+   гармошка в этом промежутке пыталась влезть двумя колонками в узкий
+   full-width блок, сжимаясь и наезжая на соседний контент (найдено
+   пользователем на скриншоте, реальное устройство в этом диапазоне ширин).
+   Раньше 580px совпадало с шириной, ниже которой запускалась гармошка (до
+   введения единого брейкпоинта 768px для десктоп/мобайл) — с тех пор два
+   брейкпоинта разошлись и никто не заметил. */
+@media (max-width: 767px) {
 	.menu-user-login,
 	.menu-site {
 		scrollbar-width: thin;
@@ -5016,7 +5022,8 @@ body.dark .btn-outline-primary:hover {
 	flex: 0 0 auto;
 	max-height: 6rem;
 	opacity: 1;
-	transition: max-height .25s ease, opacity .2s ease, margin .25s ease;
+	visibility: visible;
+	transition: max-height .25s ease, opacity .2s ease, margin .25s ease, border-color .2s ease, visibility 0s linear 0s;
 }
 /* Липкая лента дат "прилипает" к верху при скролле (.mob-sticky) — в этот
    момент топбар (фильтр/направление/фото/гео) сворачивается, оставляя видимой
@@ -5028,10 +5035,36 @@ body.dark .btn-outline-primary:hover {
    (position:absolute, открывается вниз) даже когда топбар полностью развёрнут —
    тот же баг из CLAUDE.md про createCustomSelect и overflow:hidden у карточки. */
 @media (max-width: 767px) {
+	/* Разделитель топбар/лента чипов — только на мобильных, где топбар стоит
+	   СТРОКОЙ НАД чипами (column-раскладка ниже); на широких экранах топбар и
+	   чипы в одной строке, разделитель там не нужен. Цвет — тот же акцент, что
+	   у body *::selection (единственное уже существующее место в проекте с
+	   этой парой цветов светлая/тёмная тема). */
+	.event-dates-ramka .events-topbar {
+		padding-bottom: 0.8rem;
+		margin-bottom: 0.8rem;
+		border-bottom: 2px solid #2967BA;
+	}
+	body.dark .event-dates-ramka .events-topbar {
+		border-bottom-color: #E7612F;
+	}
 	.event-dates-ramka.is-scrolled .events-topbar {
 		max-height: 0;
 		overflow: hidden;
-		opacity: 0;
+		border-color: transparent;
+		/* !important обязателен: .events-topbar имеет data-aos="fade-up" (только
+		   для входной анимации при первой загрузке страницы) — стили AOS
+		   (lib.css) содержат правило [data-aos^=fade].aos-animate{opacity:1}
+		   с более высокой специфичностью (за счёт html:not(.no-js) +
+		   задвоенного атрибутного селектора), чем наше .is-scrolled-правило —
+		   без !important браузер оставлял opacity:1 НАВСЕГДА после первого
+		   появления топбара, а единственной реальной защитой от "просвечивания"
+		   оставался max-height:0+overflow:hidden — во время самой CSS-транзиции
+		   (пока max-height ещё анимируется) непрозрачный топбар с backdrop-filter
+		   успевал показать смазанный кусок себя поверх чипов. */
+		opacity: 0 !important;
+		visibility: hidden;
+		transition: max-height .25s ease, opacity .2s ease, margin .25s ease, border-color .2s ease, visibility 0s linear .2s;
 		margin: 0 !important;
 		pointer-events: none;
 	}

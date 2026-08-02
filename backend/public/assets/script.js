@@ -26,7 +26,6 @@ $('.anima').each(function() {
 /* =========================
 	КЭШ ЭЛЕМЕНТОВ
 ========================= */
-const $header     = $('.fix-header');
 const $userBtn    = $('.fix-header-btn-user, .fix-header-user');
 const $hammBtn    = $('.fix-header-btn-hamm');
 const $mailBtn    = $('.fix-header-btn-mail');
@@ -42,15 +41,7 @@ const allButtons  = $('.fix-header-btn-user, .fix-header-btn-hamm, .fix-header-u
 /* =========================
 	BREAKPOINT
 ========================= */
-// Мини-приложения/встроенные браузеры мессенджеров (Telegram — .tg-webapp,
-// MAX — .max-webapp, см. voll-layout.blade.php) часто открываются в ШИРОКОМ
-// окне десктопного клиента — window.matchMedia по одной ширине экрана
-// посчитал бы это "десктопом" и переключил меню в position:fixed поповер
-// (positionMenus ниже), который в embedded WebView мессенджера
-// позиционируется ненадёжно ("уезжает"). Внутри мессенджера меню всегда
-// должно быть гармошкой (как в нативном .is-app), независимо от ширины.
 function isDesktop() {
-	if (document.body.classList.contains('tg-webapp') || document.body.classList.contains('max-webapp')) return false;
 	return window.matchMedia('(min-width: 768px)').matches;
 }
 
@@ -67,44 +58,6 @@ function resetMenus() {
 	// Убираем классы состояний
 	allMenus.removeClass('open');
 	allButtons.removeClass('active');
-}
-
-
-/* =========================
-	ПОЗИЦИЯ МЕНЮ (отступ от реальной высоты шапки) — ДЕСКТОП И ГАРМОШКА
-========================= */
-// На десктопе .fix-header-menu — position:fixed поповер (top в CSS не задан) —
-// единственный надёжный способ поставить его под шапкой — измерить реальный
-// getBoundingClientRect() шапки (в .is-app/.tg-webapp/.max-webapp высота
-// шапки зависит от safe-area, разного на каждом устройстве/мессенджере).
-//
-// На мобильных (гармошка) баг обнаружился отдельно (2026-08): .fix-header-menu
-// в этом режиме — обычный document-flow блок БЕЗ position. Разметка НЕОДНОРОДНА
-// (voll-layout.blade.php): .fix-header-menu-2 (пользователь/логин) физически
-// ВЛОЖЕНО внутрь .fix-header (position:fixed), а .fix-header-menu-1/3
-// (уведомления/гамбургер) — вне её, где-то в <body>. Для меню ВНЕ шапки
-// document-flow начинается с Y=0 страницы — без margin-top фикс-шапка
-// (z-index:20) рисуется ПОВЕРХ верхних пунктов. Для меню ВНУТРИ шапки
-// margin-top, наоборот, ТОЛЬКО раздувает саму .fix-header вниз (её высота
-// считается по содержимому) — там открытое меню и так корректно стоит в
-// потоке ПОСЛЕ .fix-header-main, доп. отступ от верха страницы не нужен.
-// Проверяем через contains() программно, не хардкодя конкретный класс —
-// разница чисто историческая, не архитектурный выбор.
-//
-// Расчёт вынесен в window.getFixedHeaderBottom() (см. конец файла) — та же
-// утилита используется на /events для липкой ленты дат (mob-sticky).
-function positionMenus() {
-	if (!$header.length) return;
-	const offset = window.getFixedHeaderBottom(12);
-	const headerEl = $header[0];
-	if (isDesktop()) {
-		allMenus.css({ top: offset + 'px', marginTop: '' });
-		return;
-	}
-	allMenus.each(function() {
-		const insideHeader = headerEl.contains(this);
-		$(this).css({ top: '', marginTop: insideHeader ? '' : (offset + 'px') });
-	});
 }
 
 
@@ -137,7 +90,6 @@ function openMenu($button, $menu) {
 	}
 	
 	closeAll();
-	positionMenus();
 	$button.addClass('active');
 	$menu.addClass('open');
 	if (!isDesktop()) {
@@ -213,15 +165,7 @@ $(window).on('resize', function () {
 		resetMenus();
 		isDesktopState = nowDesktop;
 	}
-	positionMenus();
 });
-// Telegram WebApp SDK сообщает safe area АСИНХРОННО (viewportChanged/
-// safeAreaChanged), уже после первого рендера — обычный resize на это не
-// реагирует (voll-layout.blade.php диспатчит vp:header-resize при каждом
-// обновлении --tg-safe-area-inset-top). window.load — перемер после полной
-// загрузки шрифтов/картинок шапки (может незначительно сдвинуть её высоту).
-window.addEventListener('load', positionMenus);
-window.addEventListener('vp:header-resize', positionMenus);
 
 function margin() {	
 	// Проверяем видимую ширину окна
