@@ -664,6 +664,11 @@ return [
     'setup_promote_advance'  => 'Выходят',
     'setup_promote_btn'      => 'Продвинуть',
 
+    'setup_crossover_title' => 'Прямые матчи по местам (2 группы)',
+    'setup_crossover_hint'  => '1-е места групп играют за 1-2 место, 2-е места — за 3-4, без дополнительного раунда полуфиналов между группами.',
+    'setup_crossover_places' => 'Разыгрываемых мест',
+    'setup_crossover_btn'    => 'Создать матчи по местам',
+
     'setup_groups_completed_h3' => '✅ Все группы завершены',
     'setup_groups_completed_text' => 'По правилам сезона: все команды Hard остаются, из Lite — top-2 остаются:medium, остальные уходят в резерв. Освободившиеся места заполняются из резерва.',
     'setup_groups_with_medium' => ', из Medium — top-3 остаются',

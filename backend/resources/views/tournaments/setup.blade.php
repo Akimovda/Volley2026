@@ -2097,6 +2097,31 @@ $tourNumber = $seasonData
 				<button type="submit" class="btn btn-primary">{{ __('tournaments.setup_promote_btn') }}</button>
 			</form>
 		</div>
+		@if($stage->groups->count() === 2)
+		<div class="p-3 mt-2" style="background:rgba(41,103,186,.08);border-radius:10px">
+			<div class="b-700 mb-1">{{ __('tournaments.setup_crossover_title') }}</div>
+			<p class="f-13" style="color:#6b7280;margin-bottom:10px">{{ __('tournaments.setup_crossover_hint') }}</p>
+			<form method="POST" action="{{ route('tournament.stages.advanceCrossover', $stage) }}" class="d-flex fvc" style="gap:10px;flex-wrap:wrap">
+				@csrf
+				<div>
+					<label class="f-13 b-600 mb-1 d-block">{{ __('tournaments.setup_promote_stage') }}</label>
+					<select name="playoff_stage_id">
+						@foreach($nextStages as $ns)
+						<option value="{{ $ns->id }}">{{ $ns->name }}</option>
+						@endforeach
+					</select>
+				</div>
+				<div>
+					<label class="f-13 b-600 mb-1 d-block">{{ __('tournaments.setup_crossover_places') }}</label>
+					<select name="places_count">
+						<option value="2">2 ({{ __('tournaments.setup_promote_to_playoff') }})</option>
+						<option value="4">4 (+ 3-4)</option>
+					</select>
+				</div>
+				<button type="submit" class="btn btn-primary">{{ __('tournaments.setup_crossover_btn') }}</button>
+			</form>
+		</div>
+		@endif
 		@endif
 		@endif
 		@endif

@@ -645,6 +645,11 @@ return [
     'setup_promote_advance'  => 'Advance',
     'setup_promote_btn'      => 'Promote',
 
+    'setup_crossover_title' => 'Direct placement matches (2 groups)',
+    'setup_crossover_hint'  => 'Group winners play directly for 1st-2nd place, runners-up play for 3rd-4th place, without an extra cross-group semifinal round.',
+    'setup_crossover_places' => 'Places to decide',
+    'setup_crossover_btn'    => 'Create placement matches',
+
     'setup_groups_completed_h3' => '✅ All groups finished',
     'setup_groups_completed_text' => 'By season rules: all Hard teams stay, top-2 from Lite stay:medium, the rest move to reserve. Vacated spots are filled from the reserve.',
     'setup_groups_with_medium' => ', from Medium top-3 stay',

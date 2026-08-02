@@ -1096,6 +1096,9 @@ Route::middleware([
     Route::post('/tournament-stages/{stage}/advance', [TournamentController::class, 'advance'])
         ->name('tournament.stages.advance');
 
+    Route::post('/tournament-stages/{stage}/advance-crossover', [TournamentController::class, 'advanceCrossover'])
+        ->name('tournament.stages.advanceCrossover');
+
 
     Route::post('/tournament-stages/{stage}/schedule', [TournamentController::class, 'generateSchedule'])
         ->name('tournament.stages.schedule');

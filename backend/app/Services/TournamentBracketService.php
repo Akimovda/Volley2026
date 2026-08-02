@@ -407,4 +407,59 @@ class TournamentBracketService
 
         return $this->generateSingleElimination($playoffStage, $advancing, $thirdPlace);
     }
+
+    /**
+     * "Прямые матчи по местам" — альтернатива advanceToPlayoff() для РОВНО
+     * 2 групп, когда группового этапа уже достаточно, чтобы считать его
+     * полуфиналом: 1-е места групп играют напрямую за 1-2 место, 2-е места —
+     * за 3-4 место, без дополнительного раунда полуфиналов между группами.
+     * В отличие от generateSingleElimination() (полная сетка на bracketSize
+     * участников, для 4 команд — ВСЕГДА 2 раунда), здесь ровно N матчей
+     * (по числу учитываемых мест), все одновременно играбельны, без
+     * next_match_id/loser_next_match_id связей — каждый матч сам по себе
+     * определяет итоговое место, не продвигает никого дальше.
+     *
+     * @param  TournamentStage  $groupStage    Стадия с группами (completed), РОВНО 2 группы
+     * @param  TournamentStage  $playoffStage  Стадия single_elim (pending)
+     * @param  int              $placesCount   Сколько мест разыгрывать напрямую (2 = только за 1-2; 4 = ещё и за 3-4)
+     */
+    public function generateGroupCrossover(
+        TournamentStage $groupStage,
+        TournamentStage $playoffStage,
+        int $placesCount,
+        TournamentStandingsService $standingsService,
+    ): Collection {
+        $groups = $groupStage->groups()->orderBy('sort_order')->get();
+
+        if ($groups->count() !== 2) {
+            throw new \InvalidArgumentException('Прямые матчи по местам доступны только для турниров ровно с 2 группами.');
+        }
+
+        $ranksNeeded = (int) ceil($placesCount / 2);
+        $rankedA = $standingsService->getAdvancingTeams($groupStage->id, $groups[0]->id, $ranksNeeded);
+        $rankedB = $standingsService->getAdvancingTeams($groupStage->id, $groups[1]->id, $ranksNeeded);
+
+        if ($rankedA->count() < $ranksNeeded || $rankedB->count() < $ranksNeeded) {
+            throw new \InvalidArgumentException('Недостаточно команд в группах для запрошенного числа мест.');
+        }
+
+        return DB::transaction(function () use ($rankedA, $rankedB, $playoffStage, $ranksNeeded) {
+            $matches = collect();
+            for ($i = 0; $i < $ranksNeeded; $i++) {
+                $placeFrom = $i * 2 + 1;
+                $placeTo   = $i * 2 + 2;
+                $match = TournamentMatch::create([
+                    'stage_id'     => $playoffStage->id,
+                    'round'        => 1,
+                    'match_number' => $i + 1,
+                    'team_home_id' => $rankedA[$i]->team_id,
+                    'team_away_id' => $rankedB[$i]->team_id,
+                    'status'       => TournamentMatch::STATUS_SCHEDULED,
+                    'court'        => "Матч за {$placeFrom}-{$placeTo} место",
+                ]);
+                $matches->push($match);
+            }
+            return $matches;
+        });
+    }
 }
