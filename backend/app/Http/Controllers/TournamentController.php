@@ -260,6 +260,34 @@ class TournamentController extends Controller
             'occurrence_id' => $occurrenceId ? (int) $occurrenceId : null,
         ]);
 
+        // "Групповой этап + плей-офф" — организатор настраивает ОДНУ стадию, ожидая,
+        // что плей-офф после групп появится сам (advance_count/third_place_match
+        // заданы прямо в её конфиге). На деле плей-офф — ОТДЕЛЬНАЯ стадия
+        // (single_elim), и кнопка "Продвинуть в плей-офф" (tournament.stages.advance)
+        // показывается только если такая стадия УЖЕ существует (pending) — иначе после
+        // завершения групповых матчей checkStageCompletion() видит "все стадии
+        // завершены" (стадия-то одна) и тут же объявляет ВЕСЬ ТУРНИР завершённым,
+        // минуя плей-офф безвозвратно (найдено на событии 402, воспроизведено на dev).
+        // Фикс — создавать стадию плей-офф автоматически вместе с групповой, тем же
+        // конфигом (формат/очки/корты/матч за 3-е место), status=pending — тогда
+        // и кнопка появляется сразу, и checkStageCompletion не завершает турнир
+        // раньше, чем плей-офф стадия тоже станет completed.
+        if ($validated['type'] === TournamentStage::TYPE_GROUPS_PLAYOFF) {
+            $this->setupService->createStage($event, [
+                'type'          => TournamentStage::TYPE_SINGLE_ELIM,
+                'name'          => 'Плей-офф',
+                'sort_order'    => $sortOrder + 1,
+                'config'        => [
+                    'match_format'        => $config['match_format'],
+                    'set_points'          => $config['set_points'],
+                    'deciding_set_points' => $config['deciding_set_points'],
+                    'third_place_match'   => $config['third_place_match'],
+                    'courts'              => $config['courts'],
+                ],
+                'occurrence_id' => $occurrenceId ? (int) $occurrenceId : null,
+            ]);
+        }
+
         // Для Round Robin / Groups+Playoff — автосоздание групп + жеребьёвка
         if (in_array($validated['type'], ['round_robin', 'groups_playoff']) && $config['groups_count'] > 0) {
             $this->setupService->createGroupsAuto($stage, $config['groups_count']);
