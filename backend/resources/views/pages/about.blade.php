@@ -33,7 +33,7 @@
     <div class="row row2">
         <div class="col-md-6">
             <div class="card" style="height:100%">
-                <h3 style="margin:.25rem 0 .75rem">Почему игроку</h3>
+                <h3 style="margin:.25rem 0 .75rem">Зачем игроку:</h3>
                 <p class="f-15" style="opacity:.85">Хватит искать игру в чатах и созвонах — открой приложение и запишись за минуту.</p>
                 <ul class="list f-15">
                     <li>Найди игру своего уровня прямо сейчас — фильтр по городу, формату и рейтингу</li>
@@ -47,7 +47,7 @@
         </div>
         <div class="col-md-6">
             <div class="card" style="height:100%">
-                <h3 style="margin:.25rem 0 .75rem">Почему организатору</h3>
+                <h3 style="margin:.25rem 0 .75rem">Зачем организатору:</h3>
                 <p class="f-15" style="opacity:.85">Меньше администрирования в мессенджерах — больше времени на саму игру.</p>
                 <ul class="list f-15">
                     <li>Запись, лист ожидания и оплата — в одном месте, без ручных списков</li>

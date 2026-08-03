@@ -4,14 +4,14 @@
 
 
 	<div class="mb-1 d-flex">
-		<span class="emo">📅</span>
+		<span class="emo"><x-menu-icon name="calendar" class="cd" /></span>
 		<span>
 			<strong>{{ __('events.show_info_date') }}</strong> {{ $dateHuman }}
 		</span>
 	</div>
 
 	<div class="mb-1 d-flex">
-		<span class="emo">⏰</span>
+		<span class="emo"><x-menu-icon name="clock" class="cd" /></span>
 		<span>
 			<strong>{{ __('events.show_info_time') }}</strong> {{ $timeLabel }}
 		</span>
@@ -19,7 +19,7 @@
 
 	@if($durationLabel)
 	<div class="mb-1 d-flex">
-		<span class="emo">⏱️</span>
+		<span class="emo"><x-menu-icon name="stopwatch" class="cd" /></span>
 		<span>
 			<strong>{{ __('events.show_info_duration') }}</strong> {{ $durationLabel }}
 		</span>
@@ -36,8 +36,8 @@
 	@endif
 
 	<div class="event-share-actions mt-1 mb-1">
-		<button type="button" class="btn btn-secondary btn-haptic" id="btn-share-event">{{ __('events.show_share_btn') }}</button>
-		<button type="button" class="btn btn-secondary btn-haptic" id="btn-add-calendar">{{ __('events.show_info_calendar') }}</button>
+		<button type="button" class="btn btn-secondary btn-haptic" id="btn-share-event"><x-menu-icon name="share" class="btn-icon" /> {{ __('events.show_share_btn') }}</button>
+		<button type="button" class="btn btn-secondary btn-haptic" id="btn-add-calendar"><x-menu-icon name="calendar" class="btn-icon" /> {{ __('events.show_info_calendar') }}</button>
 	</div>
 
 	@if($hasCoords)
