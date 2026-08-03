@@ -5114,7 +5114,26 @@ body.dark .btn-outline-primary:hover {
 	top: 9.4rem;
 	z-index: 2;
 	margin-bottom: 2rem;
-}	
+}
+/* .is-app (Capacitor iOS/Android): чистая CSS-формула вместо JS-снимка
+   getBoundingClientRect(). ВАЖНО: у .is-app СВОЯ модель шапки, отдельная
+   от общего ".fix-header{top:calc(env()+1rem)}" — правило
+   ".is-app .fix-header" (см. выше в этом файле) задаёт top:0 и добавляет
+   safe-area через padding-top:env(...), т.е. safe-area у is-app "сидит"
+   в ВЫСОТЕ шапки, а не в её позиции. Поэтому формула ниже БЕЗ "+1rem"
+   (та константа нужна только top-based модели остальных сред) и без
+   двойного учёта safe-area: --fh-content-h — это высота шапки БЕЗ
+   padding-top (JS вычитает его отдельно), сама safe-area добавлена один
+   раз явным env(...). env() браузер пересчитывает сам при каждом
+   relayout — гонки в этой части нет в принципе, в отличие от инлайн
+   style.top, который JS пишет один раз и не обновляет, если не получит
+   сигнал (а WKWebView/Android WebView применяют safe-area асинхронно,
+   без такого сигнала). !important — чтобы гарантированно перебить
+   инлайн style.top, который JS всё ещё пишет для остальных сред через
+   window.getFixedHeaderBottom(). */
+.is-app .events-page .mob-sticky {
+	top: calc(env(safe-area-inset-top, 0px) + var(--fh-content-h, 5.6rem) + 12px) !important;
+}
 .events-page  #days {
 	position: absolute; 
 	top: -9rem;

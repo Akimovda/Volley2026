@@ -604,8 +604,24 @@ $levelOptions = [1, 2, 3, 4, 5, 6, 7];
 					const mobSticky = document.querySelector('.events-page .mob-sticky');
 					const headerEl = document.querySelector('.fix-header');
 					if (!mobSticky || !headerEl) return;
+					// В .is-app (Capacitor iOS/Android) top задаёт ЧИСТЫЙ CSS в style.css
+					// (`.is-app .events-page .mob-sticky`, calc с env(safe-area-inset-top))
+					// — env() браузер пересчитывает сам при каждом relayout, гонки в этой
+					// части нет в принципе (в отличие от JS-снимка style.top, который не
+					// обновляется сам, если WKWebView/Android WebView применит safe-area
+					// асинхронно уже после первого apply()). Единственное, что здесь всё ещё
+					// нужно от JS для .is-app — актуальная высота СОДЕРЖИМОГО шапки БЕЗ
+					// safe-area (--fh-content-h: гармошка меню/шрифты/перенос текста) — это
+					// уже настоящее изменение размера бокса, которое ResizeObserver ловит
+					// корректно и без задержек. У .is-app своя модель шапки (top:0 +
+					// padding-top:env(...), см. ".is-app .fix-header" в style.css) — safe-area
+					// у неё «сидит» в padding-top, поэтому чтобы не учесть её дважды (один раз
+					// в offsetHeight, второй раз явным env() в CSS-формуле чипов), вычитаем
+					// текущий padding-top перед записью переменной.
 					function apply() {
 						mobSticky.style.top = window.getFixedHeaderBottom(12) + 'px';
+						var safeTopPx = parseFloat(getComputedStyle(headerEl).paddingTop) || 0;
+						document.documentElement.style.setProperty('--fh-content-h', (headerEl.offsetHeight - safeTopPx) + 'px');
 					}
 					apply();
 					window.addEventListener('resize', apply);
@@ -637,41 +653,6 @@ $levelOptions = [1, 2, 3, 4, 5, 6, 7];
 					// (крайне маловероятно) остаются остальные обработчики выше.
 					if ('ResizeObserver' in window) {
 						new ResizeObserver(apply).observe(headerEl);
-					}
-					// ===== .is-app (Capacitor iOS/Android): safe-area — гонка при старте =====
-					// В нативном приложении env(safe-area-inset-top) влияет ТОЛЬКО на top
-					// шапки (position:fixed), а не на размер её бокса — ResizeObserver в
-					// принципе не может поймать это изменение (он реагирует на размер, не
-					// на позицию). vp:header-resize тоже не помогает — событие целиком
-					// завязано на Telegram WebApp SDK, которого в .is-app нет. WKWebView/
-					// Android WebView применяют safe-area АСИНХРОННО, уже после первого
-					// рендера — отсюда эффект "уехало, потом само поправилось". Раз
-					// надёжного события нет — коротко поллим сам top шапки через rAF,
-					// пока он не перестанет меняться (+ контрольные setTimeout на случай
-					// троттлинга rAF в фоне).
-					if (document.documentElement.classList.contains('is-app')) {
-						(function pollUntilStable() {
-							var lastTop = headerEl.getBoundingClientRect().top;
-							var stableFrames = 0;
-							var deadline = Date.now() + 1500;
-							function tick() {
-								var top = headerEl.getBoundingClientRect().top;
-								if (top !== lastTop) {
-									lastTop = top;
-									stableFrames = 0;
-									apply();
-								} else {
-									stableFrames++;
-								}
-								if (stableFrames < 6 && Date.now() < deadline) {
-									requestAnimationFrame(tick);
-								}
-							}
-							requestAnimationFrame(tick);
-						})();
-						[100, 300, 600, 1000, 1500].forEach(function(ms) {
-							setTimeout(apply, ms);
-						});
 					}
 				})();
 
