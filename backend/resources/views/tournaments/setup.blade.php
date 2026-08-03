@@ -1633,7 +1633,7 @@ $tourNumber = $seasonData
 					@endif
 					<form method="POST" action="{{ route('tournament.stages.destroy', $stage) }}">
 						@csrf @method('DELETE')
-						<button class="btn btn-danger f-12 btn-alert" data-title="{{ __('tournaments.setup_delete_stage_title') }}" data-icon="warning" data-confirm-text="{{ __('tournaments.btn_delete') }}" data-cancel-text="{{ __('tournaments.btn_cancel') }}">{{ __('tournaments.setup_btn_delete_stage') }}</button>
+						<button class="btn btn-danger f-12 btn-alert" data-title="{{ __('tournaments.setup_delete_stage_title', ['name' => $stage->name]) }}" data-text="{{ __('tournaments.setup_delete_stage_text') }}" data-icon="warning" data-confirm-text="{{ __('tournaments.btn_delete') }}" data-cancel-text="{{ __('tournaments.btn_cancel') }}">{{ __('tournaments.setup_btn_delete_stage') }}</button>
 					</form>
 				</div>
 			</div>

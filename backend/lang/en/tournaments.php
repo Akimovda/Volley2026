@@ -575,7 +575,8 @@ return [
     'setup_rollback_title'  => 'Rollback the stage?',
     'setup_rollback_yes'    => 'Yes, rollback',
     'setup_btn_delete_stage' => 'Delete',
-    'setup_delete_stage_title' => 'Delete the stage and all its matches?',
+    'setup_delete_stage_title' => 'Delete stage ":name" and ALL its matches?',
+    'setup_delete_stage_text'  => 'This cannot be undone — there is no recovery.',
 
     'setup_standings_col_pos' => 'Pos',
     'setup_standings_col_pts' => 'Pts',

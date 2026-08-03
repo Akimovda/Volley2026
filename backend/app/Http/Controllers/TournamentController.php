@@ -1538,7 +1538,8 @@ class TournamentController extends Controller
             return $this->redirectToSetup($stage->event, 'Стадия King of the Beach сброшена.', false, "stage_{$stage->id}");
         }
 
-        DB::transaction(function () use ($stage) {
+        $resetCount = 0;
+        DB::transaction(function () use ($stage, &$resetCount) {
             // Удаляем связанные группы Hard/Lite (если это групповой этап)
             if (in_array($stage->type, ['round_robin', 'groups_playoff'])) {
                 $divQuery = $stage->event->tournamentStages()
@@ -1551,7 +1552,7 @@ class TournamentController extends Controller
             }
 
             // Сбрасываем все матчи
-            $stage->matches()->update([
+            $resetCount = $stage->matches()->update([
                 'status'            => TournamentMatch::STATUS_SCHEDULED,
                 'winner_team_id'    => null,
                 'score_home'        => null,
@@ -1604,7 +1605,13 @@ class TournamentController extends Controller
             \Log::warning('Stats rebuild after stage revert failed: ' . $e->getMessage());
         }
 
-        return $this->redirectToSetup($event, "Стадия \"{$stage->name}\" откачена — все счета сброшены.");
+        $matchesWord = trans_choice('матч|матча|матчей', $resetCount);
+        return $this->redirectToSetup(
+            $event,
+            "Стадия \"{$stage->name}\" откачена — сброшены счета {$resetCount} {$matchesWord}, стадия снова активна.",
+            false,
+            "stage_{$stage->id}"
+        );
     }
 
         public function destroyStage(Request $request, TournamentStage $stage)
@@ -1614,6 +1621,8 @@ class TournamentController extends Controller
 
         $name = $stage->name;
         $divNames = '';
+        $deletedStageId = $stage->id;
+        $occurrenceId = $stage->occurrence_id;
 
         // Если удаляем групповой этап — удалить и связанные группы Hard/Lite
         if (in_array($stage->type, ['round_robin', 'groups_playoff'])) {
@@ -1634,6 +1643,19 @@ class TournamentController extends Controller
 
         $stage->delete(); // cascadeOnDelete очистит groups, matches, standings
 
+        // Якорь для редиректа: если после удаления осталась групповая стадия
+        // (обычно так и есть — удаляют именно плей-офф, группа жива) —
+        // приземляем организатора на её карточку, а не в начало страницы
+        // (~2700 строк setup.blade.php). Если групповой стадии тоже нет —
+        // anchor=null, редирект наверх списка стадий.
+        $anchorStage = $event->tournamentStages()
+            ->where('id', '!=', $deletedStageId)
+            ->whereIn('type', ['round_robin', 'groups_playoff'])
+            ->when($occurrenceId, fn($q) => $q->where('occurrence_id', $occurrenceId))
+            ->orderBy('sort_order')
+            ->first();
+        $anchor = $anchorStage ? "stage_{$anchorStage->id}" : null;
+
         // Удаление стадии с уже завершёнными матчами раньше не запускало никакого
         // пересчёта — их вклад в Elo/OpenSkill/player_tournament_stats оставался
         // навсегда, хотя сами результаты уже удалены (найдено при аудите системы
@@ -1649,7 +1671,7 @@ class TournamentController extends Controller
             $msg .= " Также удалены: {$divNames}.";
         }
 
-        return $this->redirectToSetup($event, $msg);
+        return $this->redirectToSetup($event, $msg, false, $anchor);
     }
 
     /* ================================================================

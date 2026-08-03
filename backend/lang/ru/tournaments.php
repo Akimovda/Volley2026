@@ -594,7 +594,8 @@ return [
     'setup_rollback_title'  => 'Откатить стадию?',
     'setup_rollback_yes'    => 'Да, откатить',
     'setup_btn_delete_stage' => 'Удалить',
-    'setup_delete_stage_title' => 'Удалить стадию и все её матчи?',
+    'setup_delete_stage_title' => 'Удалить стадию ":name" и ВСЕ её матчи?',
+    'setup_delete_stage_text'  => 'Необратимо, восстановления нет.',
 
     'setup_standings_col_pos' => 'Место',
     'setup_standings_col_pts' => 'Очки',
