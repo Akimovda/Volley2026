@@ -2183,10 +2183,19 @@ $tourNumber = $seasonData
 				});
 			})();
 		</script>
+		@else
+		<div class="p-3 mt-2 alert-warning" style="border-radius:10px">
+			<div class="b-700 mb-1">{{ __('tournaments.setup_no_finals_stage_h4') }}</div>
+			<p class="f-13" style="margin-bottom:10px">{{ __('tournaments.setup_no_finals_stage_hint') }}</p>
+			<form method="POST" action="{{ route('tournament.stages.quickCreateFinals', $stage) }}">
+				@csrf
+				<button type="submit" class="btn btn-primary btn-alert" data-title="{{ __('tournaments.setup_no_finals_stage_confirm_title') }}" data-icon="question" data-confirm-text="{{ __('tournaments.yes') }}" data-cancel-text="{{ __('tournaments.btn_cancel') }}">{{ __('tournaments.setup_no_finals_stage_btn') }}</button>
+			</form>
+		</div>
 		@endif
 		@endif
 		@endif
-		
+
 		@endforeach
 		
 		{{-- Промоушен после групп --}}

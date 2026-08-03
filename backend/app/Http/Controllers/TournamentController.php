@@ -1523,7 +1523,61 @@ class TournamentController extends Controller
         }
     }
 
-    
+    /**
+     * Быстрое создание финальной стадии одним кликом — для случая, когда
+     * организатор удалил единственную single_elim стадию (revert/delete,
+     * см. инцидент event 402) и застрял без штатного способа создать её
+     * заново, кроме ручного заполнения формы "Добавить стадию". Создаёт
+     * стадию с параметрами групповой (формат/очки/корты/матч за 3-е место)
+     * и сразу генерирует финалы по finals_mode групповой стадии.
+     */
+    public function quickCreateFinals(Request $request, TournamentStage $stage)
+    {
+        $event = $stage->event;
+        $this->authorizeOrganizer($request, $event);
+
+        if (!in_array($stage->type, ['round_robin', 'groups_playoff']) || !$stage->isCompleted()) {
+            return back()->with('error', 'Групповая стадия должна быть завершена.');
+        }
+
+        $isTwoGroups = $stage->groups->count() === 2;
+        $finalsMode = $stage->cfg('finals_mode', $isTwoGroups ? 'placement' : 'bracket');
+        if (!$isTwoGroups) {
+            $finalsMode = 'bracket';
+        }
+
+        $sortOrder = ($event->tournamentStages()->max('sort_order') ?? 0) + 1;
+        $playoffStage = $this->setupService->createStage($event, [
+            'type'          => TournamentStage::TYPE_SINGLE_ELIM,
+            'name'          => 'Плей-офф',
+            'sort_order'    => $sortOrder,
+            'config'        => [
+                'match_format'        => $stage->cfg('match_format', 'bo3'),
+                'set_points'          => $stage->cfg('set_points', 25),
+                'deciding_set_points' => $stage->cfg('deciding_set_points', 15),
+                'third_place_match'   => $stage->cfg('third_place_match', false),
+                'courts'              => $stage->cfg('courts', []),
+            ],
+            'occurrence_id' => $stage->occurrence_id,
+        ]);
+
+        try {
+            if ($finalsMode === 'placement') {
+                $placesCount = $stage->groups->count() * 2;
+                $this->bracketService->generateGroupCrossover($stage, $playoffStage, $placesCount, $this->standingsService);
+            } else {
+                $advancePerGroup = (int) $stage->cfg('advance_count', 2);
+                $this->bracketService->advanceToPlayoff($stage, $playoffStage, $advancePerGroup, $this->standingsService);
+            }
+            $playoffStage->update(['status' => TournamentStage::STATUS_IN_PROGRESS]);
+        } catch (\InvalidArgumentException $e) {
+            return $this->redirectToSetup($event, $e->getMessage(), true, "stage_{$playoffStage->id}");
+        }
+
+        return $this->redirectToSetup($event, 'Финальная стадия создана, матчи готовы к вводу счёта.', false, "stage_{$playoffStage->id}");
+    }
+
+
     /**
      * Откат стадии — сброс всех матчей и standings с сохранением структуры.
      */

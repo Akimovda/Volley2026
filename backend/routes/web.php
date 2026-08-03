@@ -1122,6 +1122,9 @@ Route::middleware([
     Route::post('/tournament-stages/{stage}/revert', [TournamentController::class, 'revertStage'])
         ->name('tournament.stages.revert');
 
+    Route::post('/tournament-stages/{stage}/quick-create-finals', [TournamentController::class, 'quickCreateFinals'])
+        ->name('tournament.stages.quickCreateFinals');
+
     Route::delete('/tournament-stages/{stage}', [TournamentController::class, 'destroyStage'])
         ->name('tournament.stages.destroy');
 });

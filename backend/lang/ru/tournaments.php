@@ -681,6 +681,11 @@ return [
     'setup_finals_mode_override_label' => 'Формат',
     'setup_finals_mode_disabled_short' => 'только при 2 группах',
 
+    'setup_no_finals_stage_h4' => '⚠️ Финальная стадия не создана',
+    'setup_no_finals_stage_hint' => 'Группы завершены, но стадии для финалов ещё нет (например, была удалена). Одним кликом создайте её и сразу получите готовые матчи финалов.',
+    'setup_no_finals_stage_confirm_title' => 'Создать финальную стадию и сгенерировать матчи?',
+    'setup_no_finals_stage_btn' => 'Создать финалы',
+
     'setup_groups_completed_h3' => '✅ Все группы завершены',
     'setup_groups_completed_text' => 'По правилам сезона: все команды Hard остаются, из Lite — top-2 остаются:medium, остальные уходят в резерв. Освободившиеся места заполняются из резерва.',
     'setup_groups_with_medium' => ', из Medium — top-3 остаются',

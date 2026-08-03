@@ -662,6 +662,11 @@ return [
     'setup_finals_mode_override_label' => 'Format',
     'setup_finals_mode_disabled_short' => 'only with 2 groups',
 
+    'setup_no_finals_stage_h4' => '⚠️ No finals stage yet',
+    'setup_no_finals_stage_hint' => 'Groups are complete, but there is no finals stage yet (e.g. it was deleted). Create it in one click and get ready-to-play final matches instantly.',
+    'setup_no_finals_stage_confirm_title' => 'Create the finals stage and generate matches?',
+    'setup_no_finals_stage_btn' => 'Create finals',
+
     'setup_groups_completed_h3' => '✅ All groups finished',
     'setup_groups_completed_text' => 'By season rules: all Hard teams stay, top-2 from Lite stay:medium, the rest move to reserve. Vacated spots are filled from the reserve.',
     'setup_groups_with_medium' => ', from Medium top-3 stay',
