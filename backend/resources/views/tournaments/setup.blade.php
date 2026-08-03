@@ -1224,6 +1224,25 @@ $tourNumber = $seasonData
 							</div>
 						</div>
 
+						<div class="row mt-2" id="finals_mode_fields">
+							<div class="col-12">
+								<div class="card">
+									<label>{{ __('tournaments.setup_finals_mode_label') }}</label>
+									<label class="radio-item">
+										<input type="radio" name="finals_mode" value="placement" id="finals_mode_placement" checked>
+										<div class="custom-radio"></div>
+										<span>{{ __('tournaments.setup_finals_mode_placement') }}</span>
+									</label>
+									<p class="f-13" id="finals_mode_placement_hint" style="color:#6b7280;margin:0 0 8px 28px">{{ __('tournaments.setup_finals_mode_placement_hint') }}</p>
+									<label class="radio-item">
+										<input type="radio" name="finals_mode" value="bracket" id="finals_mode_bracket">
+										<div class="custom-radio"></div>
+										<span>{{ __('tournaments.setup_finals_mode_bracket') }}</span>
+									</label>
+								</div>
+							</div>
+						</div>
+
 						{{-- Жеребьёвка --}}
 						<div class="row mt-2">
 							<div class="col-xl-3">
@@ -2075,62 +2094,95 @@ $tourNumber = $seasonData
 			</div>
 		</div>
 		@else
-		{{-- Обычный → плей-офф --}}
+		{{-- Обычный → плей-офф: единый блок "Сгенерировать финалы" --}}
 		@php
-			$nextStages = $stages->where('type', 'single_elim')->where('status', 'pending');
-			// Для "Прямых матчей по местам" целевая стадия может быть уже
-			// completed (organizer изначально запросил только 2 места, а
-			// позже решил дозаполнить матч за 3-4 в ту же стадию) — в отличие
-			// от обычного "Продвинуть в плей-офф" (generateSingleElimination,
-			// не идемпотентен), generateGroupCrossover() safe для повторного
-			// вызова, пропускает уже созданные пары мест.
-			$crossoverTargetStages = $stages->where('type', 'single_elim')->whereIn('status', ['pending', 'completed']);
+			$finalsTargetStages = $stages->where('type', 'single_elim')->whereIn('status', ['pending', 'completed']);
+			$isTwoGroups = $stage->groups->count() === 2;
+			$finalsModeDefault = $stage->cfg('finals_mode', $isTwoGroups ? 'placement' : 'bracket');
+			if (!$isTwoGroups) { $finalsModeDefault = 'bracket'; }
 		@endphp
-		@if($nextStages->isNotEmpty())
-		<div class="p-3 mt-2" style="background:rgba(41,103,186,.08);border-radius:10px">
-			<div class="b-700 mb-2">{{ __('tournaments.setup_promote_to_playoff') }}</div>
-			<form method="POST" action="{{ route('tournament.stages.advance', $stage) }}" class="d-flex fvc" style="gap:10px;flex-wrap:wrap">
-				@csrf
+		@if($finalsTargetStages->isNotEmpty())
+		<div class="p-3 mt-2" style="background:rgba(41,103,186,.08);border-radius:10px" id="generate_finals_block">
+			<div class="b-700 mb-2">{{ __('tournaments.setup_generate_finals_h4') }}</div>
+			<div class="d-flex fvc" style="gap:10px;flex-wrap:wrap">
 				<div>
 					<label class="f-13 b-600 mb-1 d-block">{{ __('tournaments.setup_promote_stage') }}</label>
-					<select name="playoff_stage_id">
-						@foreach($nextStages as $ns)
+					<select id="finals_target_stage_select">
+						@foreach($finalsTargetStages as $ns)
 						<option value="{{ $ns->id }}">{{ $ns->name }}</option>
 						@endforeach
 					</select>
 				</div>
 				<div>
+					<label class="f-13 b-600 mb-1 d-block">{{ __('tournaments.setup_finals_mode_override_label') }}</label>
+					<select id="finals_mode_override_select">
+						<option value="placement" {{ $finalsModeDefault === 'placement' ? 'selected' : '' }} {{ !$isTwoGroups ? 'disabled' : '' }}>
+							{{ __('tournaments.setup_finals_mode_placement') }}{{ !$isTwoGroups ? ' (' . __('tournaments.setup_finals_mode_disabled_short') . ')' : '' }}
+						</option>
+						<option value="bracket" {{ $finalsModeDefault === 'bracket' ? 'selected' : '' }}>{{ __('tournaments.setup_finals_mode_bracket') }}</option>
+					</select>
+				</div>
+				<div id="finals_bracket_extra">
 					<label class="f-13 b-600 mb-1 d-block">{{ __('tournaments.setup_promote_advance') }}</label>
-					<input name="advance_per_group" type="number" value="{{ $stage->cfg('advance_count', 2) }}" min="1" max="8" style="width:120px">
+					<input type="number" id="finals_advance_per_group" value="{{ $stage->cfg('advance_count', 2) }}" min="1" max="8" style="width:100px">
 				</div>
-				<button type="submit" class="btn btn-primary">{{ __('tournaments.setup_promote_btn') }}</button>
-			</form>
-		</div>
-		@endif
-		@if($stage->groups->count() === 2 && $crossoverTargetStages->isNotEmpty())
-		<div class="p-3 mt-2" style="background:rgba(41,103,186,.08);border-radius:10px">
-			<div class="b-700 mb-1">{{ __('tournaments.setup_crossover_title') }}</div>
-			<p class="f-13" style="color:#6b7280;margin-bottom:10px">{{ __('tournaments.setup_crossover_hint') }}</p>
-			<form method="POST" action="{{ route('tournament.stages.advanceCrossover', $stage) }}" class="d-flex fvc" style="gap:10px;flex-wrap:wrap">
-				@csrf
-				<div>
-					<label class="f-13 b-600 mb-1 d-block">{{ __('tournaments.setup_promote_stage') }}</label>
-					<select name="playoff_stage_id">
-						@foreach($crossoverTargetStages as $ns)
-						<option value="{{ $ns->id }}">{{ $ns->name }}</option>
-						@endforeach
-					</select>
-				</div>
-				<div>
+				<div id="finals_placement_extra" style="display:none">
 					<label class="f-13 b-600 mb-1 d-block">{{ __('tournaments.setup_crossover_places') }}</label>
-					<select name="places_count">
+					<select id="finals_places_count">
 						<option value="2">{{ __('tournaments.setup_crossover_places_2') }}</option>
 						<option value="4" selected>{{ __('tournaments.setup_crossover_places_4') }}</option>
 					</select>
 				</div>
-				<button type="submit" class="btn btn-primary">{{ __('tournaments.setup_crossover_btn') }}</button>
+				<button type="button" id="finals_generate_btn" class="btn btn-primary">{{ __('tournaments.setup_generate_finals_btn') }}</button>
+			</div>
+
+			{{-- Реальные формы — скрыты, JS сабмитит нужную по выбранному режиму --}}
+			<form method="POST" action="{{ route('tournament.stages.advance', $stage) }}" id="finals_bracket_form" style="display:none">
+				@csrf
+				<input type="hidden" name="playoff_stage_id">
+				<input type="hidden" name="advance_per_group">
+			</form>
+			<form method="POST" action="{{ route('tournament.stages.advanceCrossover', $stage) }}" id="finals_placement_form" style="display:none">
+				@csrf
+				<input type="hidden" name="playoff_stage_id">
+				<input type="hidden" name="places_count">
 			</form>
 		</div>
+		<script>
+			(function() {
+				var modeSel = document.getElementById('finals_mode_override_select');
+				var targetSel = document.getElementById('finals_target_stage_select');
+				var bracketExtra = document.getElementById('finals_bracket_extra');
+				var placementExtra = document.getElementById('finals_placement_extra');
+				var advanceInput = document.getElementById('finals_advance_per_group');
+				var placesSelect = document.getElementById('finals_places_count');
+				var btn = document.getElementById('finals_generate_btn');
+				var bracketForm = document.getElementById('finals_bracket_form');
+				var placementForm = document.getElementById('finals_placement_form');
+				if (!modeSel || !btn) return;
+
+				function syncVisibility() {
+					var isPlacement = modeSel.value === 'placement';
+					bracketExtra.style.display = isPlacement ? 'none' : '';
+					placementExtra.style.display = isPlacement ? '' : 'none';
+				}
+				modeSel.addEventListener('change', syncVisibility);
+				syncVisibility();
+
+				btn.addEventListener('click', function() {
+					var stageId = targetSel.value;
+					if (modeSel.value === 'placement') {
+						placementForm.querySelector('[name="playoff_stage_id"]').value = stageId;
+						placementForm.querySelector('[name="places_count"]').value = placesSelect.value;
+						placementForm.submit();
+					} else {
+						bracketForm.querySelector('[name="playoff_stage_id"]').value = stageId;
+						bracketForm.querySelector('[name="advance_per_group"]').value = advanceInput.value;
+						bracketForm.submit();
+					}
+				});
+			})();
+		</script>
 		@endif
 		@endif
 		@endif
@@ -2193,6 +2245,11 @@ $tourNumber = $seasonData
 			var groupFields = document.getElementById('group_fields');
 			var kbFields = document.getElementById('king_beach_fields');
 			var courtsFields = document.getElementById('courts_shared_fields');
+			var finalsModeFields = document.getElementById('finals_mode_fields');
+			var groupsCountInput = document.querySelector('input[name="groups_count"]');
+			var finalsModePlacement = document.getElementById('finals_mode_placement');
+			var finalsModeBracket = document.getElementById('finals_mode_bracket');
+			var finalsModePlacementHint = document.getElementById('finals_mode_placement_hint');
 			// group_fields и king_beach_fields содержат поля с ОДИНАКОВЫМИ name (draw_mode) —
 			// display:none не мешает браузеру отправить их оба на сервер. Отключаем инпуты
 			// скрытого блока через disabled, чтобы в форму попадали только видимые поля.
@@ -2203,6 +2260,23 @@ $tourNumber = $seasonData
 					el.disabled = !active;
 				});
 			}
+			// "Прямые матчи за места" однозначны только при РОВНО 2 группах —
+			// при другом числе групп задизейблить радио и форсировать 'bracket'
+			// (бэкенд тоже это форсирует, см. createStage() — это чисто UX-гейт).
+			function syncFinalsModeGuard() {
+				if (!groupsCountInput || !finalsModePlacement) return;
+				var isTwoGroups = parseInt(groupsCountInput.value, 10) === 2;
+				finalsModePlacement.disabled = !isTwoGroups;
+				if (finalsModePlacementHint) finalsModePlacementHint.style.display = isTwoGroups ? 'none' : '';
+				if (!isTwoGroups && finalsModePlacement.checked) {
+					finalsModePlacement.checked = false;
+					if (finalsModeBracket) finalsModeBracket.checked = true;
+				}
+			}
+			if (groupsCountInput) {
+				groupsCountInput.addEventListener('input', syncFinalsModeGuard);
+				syncFinalsModeGuard();
+			}
 			if (typeSelect) {
 				function toggle() {
 					var t = typeSelect.value;
@@ -2212,6 +2286,10 @@ $tourNumber = $seasonData
 					setBlockActive(kbFields, showKb);
 					// Корты — общий блок для групповых форматов и King of the Beach
 					setBlockActive(courtsFields, showGroup || showKb);
+					// finals_mode актуален только для groups_playoff (только этот тип
+					// авто-создаёт парную стадию плей-офф) — round_robin/thai его не используют.
+					setBlockActive(finalsModeFields, t === 'groups_playoff');
+					if (t === 'groups_playoff') syncFinalsModeGuard();
 				}
 				typeSelect.addEventListener('change', toggle);
 				toggle();

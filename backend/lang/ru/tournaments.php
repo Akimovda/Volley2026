@@ -494,6 +494,10 @@ return [
     'setup_stage_groups_advance' => 'Выходят из группы',
     'setup_stage_groups_advance_hint' => 'Учитывается только если вы позже создадите отдельную стадию плей-офф. Если групповой этап — единственная стадия турнира (места определяются по итогам круговой системы), это поле можно не менять.',
     'setup_stage_third_place' => 'Матч за 3-е место',
+    'setup_finals_mode_label' => 'Формат финалов после групп',
+    'setup_finals_mode_bracket' => 'Плей-офф с финалами (полуфиналы кросс-посевом → финал + матч за 3-4)',
+    'setup_finals_mode_placement' => 'Прямые матчи за места (1-е места за 1-2, 2-е за 3-4, без полуфиналов)',
+    'setup_finals_mode_placement_hint' => 'Доступно только при ровно 2 группах',
     'setup_stage_courts_count' => 'Кол-во площадок',
     'setup_stage_courts_for_groups' => 'Площадки для групп',
     'setup_stage_seed'      => 'Жеребьёвка',
@@ -671,6 +675,11 @@ return [
     'setup_crossover_places_2' => '2 — только за 1-2 место',
     'setup_crossover_places_4' => '4 — за 1-2 и за 3-4 место',
     'setup_crossover_btn'    => 'Создать матчи по местам',
+
+    'setup_generate_finals_h4' => 'Сгенерировать финалы',
+    'setup_generate_finals_btn' => 'Сгенерировать финалы',
+    'setup_finals_mode_override_label' => 'Формат',
+    'setup_finals_mode_disabled_short' => 'только при 2 группах',
 
     'setup_groups_completed_h3' => '✅ Все группы завершены',
     'setup_groups_completed_text' => 'По правилам сезона: все команды Hard остаются, из Lite — top-2 остаются:medium, остальные уходят в резерв. Освободившиеся места заполняются из резерва.',

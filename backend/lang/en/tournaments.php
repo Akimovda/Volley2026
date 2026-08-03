@@ -475,6 +475,10 @@ return [
     'setup_stage_groups_advance' => 'Advance from group',
     'setup_stage_groups_advance_hint' => 'Only used if you later create a separate playoff stage. If the group stage is the tournament\'s only stage (places are decided by round-robin results), you can leave this field as is.',
     'setup_stage_third_place' => '3rd place match',
+    'setup_finals_mode_label' => 'Finals format after groups',
+    'setup_finals_mode_bracket' => 'Playoff bracket (cross-seeded semifinals → final + 3rd place match)',
+    'setup_finals_mode_placement' => 'Direct placement matches (1st places for 1-2, 2nd places for 3-4, no semifinals)',
+    'setup_finals_mode_placement_hint' => 'Only available with exactly 2 groups',
     'setup_stage_courts_count' => 'Courts count',
     'setup_stage_courts_for_groups' => 'Courts for groups',
     'setup_stage_seed'      => 'Seeding',
@@ -652,6 +656,11 @@ return [
     'setup_crossover_places_2' => '2 — 1st-2nd place only',
     'setup_crossover_places_4' => '4 — 1st-2nd and 3rd-4th place',
     'setup_crossover_btn'    => 'Create placement matches',
+
+    'setup_generate_finals_h4' => 'Generate finals',
+    'setup_generate_finals_btn' => 'Generate finals',
+    'setup_finals_mode_override_label' => 'Format',
+    'setup_finals_mode_disabled_short' => 'only with 2 groups',
 
     'setup_groups_completed_h3' => '✅ All groups finished',
     'setup_groups_completed_text' => 'By season rules: all Hard teams stay, top-2 from Lite stay:medium, the rest move to reserve. Vacated spots are filled from the reserve.',
