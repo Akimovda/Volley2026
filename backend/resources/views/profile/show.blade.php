@@ -1247,7 +1247,7 @@
 				{{-- ========================= ORGANIZER REQUEST ========================= --}}
 				@auth
 				@if (($user->role ?? 'user') === 'user')
-				<div class="ramka form">  	
+				<div class="ramka form" id="organizer-request">
 					<h2 class="-mt-05">{{ __('profile.sec_organizer_request') }}</h2>
 					
 					<p>{{ __('profile.org_request_lead') }}</p>
