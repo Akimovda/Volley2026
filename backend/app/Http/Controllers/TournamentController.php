@@ -227,9 +227,23 @@ class TournamentController extends Controller
             'third_place_match' => 'nullable|boolean',
             'courts'          => 'nullable|string|max:500',
             'kb_group_size'   => ['nullable', 'integer', Rule::in(TournamentKingBeachService::GROUP_SIZES)],
+            'finals_mode'     => 'nullable|in:bracket,placement',
         ]);
 
         $sortOrder = ($event->tournamentStages()->max('sort_order') ?? 0) + 1;
+
+        $groupsCount = (int) ($validated['groups_count'] ?? 0);
+
+        // Режим финалов после групп: 'placement' (прямые матчи за места, без
+        // полуфиналов) доступен только при РОВНО 2 группах — при другом числе
+        // групп кросс-посев мест неоднозначен, форсируем 'bracket'. Если
+        // организатор явно выбрал 'placement' при groups_count!=2 (например,
+        // изменил число групп после выбора радио, JS не успел среагировать) —
+        // всё равно форсируем 'bracket' на бэкенде, не доверяя одному JS-гейту.
+        $finalsMode = $validated['finals_mode'] ?? ($groupsCount === 2 ? 'placement' : 'bracket');
+        if ($groupsCount !== 2) {
+            $finalsMode = 'bracket';
+        }
 
         // Блок кортов (courts_count/courts) общий для групповых форматов и King of the Beach —
         // единое поле "courts" для обоих случаев (advance_count/группы для king_beach
@@ -238,7 +252,7 @@ class TournamentController extends Controller
             'match_format'       => $validated['match_format'],
             'set_points'         => (int) $validated['set_points'],
             'deciding_set_points' => (int) $validated['deciding_set_points'],
-            'groups_count'       => (int) ($validated['groups_count'] ?? 0),
+            'groups_count'       => $groupsCount,
             'advance_count'      => (int) ($validated['advance_count'] ?? 2),
             'third_place_match'  => (bool) ($validated['third_place_match'] ?? false),
             'courts'             => !empty($validated['courts'])
@@ -247,6 +261,7 @@ class TournamentController extends Controller
             'draw_mode'          => $request->input('draw_mode', 'random'),
             'round_number'       => 1,
             'group_size'         => (int) ($validated['kb_group_size'] ?? 4),
+            'finals_mode'        => $finalsMode,
         ];
 
         // occurrence_id из hidden field (если сезонный турнир)
@@ -1508,7 +1523,61 @@ class TournamentController extends Controller
         }
     }
 
-    
+    /**
+     * Быстрое создание финальной стадии одним кликом — для случая, когда
+     * организатор удалил единственную single_elim стадию (revert/delete,
+     * см. инцидент event 402) и застрял без штатного способа создать её
+     * заново, кроме ручного заполнения формы "Добавить стадию". Создаёт
+     * стадию с параметрами групповой (формат/очки/корты/матч за 3-е место)
+     * и сразу генерирует финалы по finals_mode групповой стадии.
+     */
+    public function quickCreateFinals(Request $request, TournamentStage $stage)
+    {
+        $event = $stage->event;
+        $this->authorizeOrganizer($request, $event);
+
+        if (!in_array($stage->type, ['round_robin', 'groups_playoff']) || !$stage->isCompleted()) {
+            return back()->with('error', 'Групповая стадия должна быть завершена.');
+        }
+
+        $isTwoGroups = $stage->groups->count() === 2;
+        $finalsMode = $stage->cfg('finals_mode', $isTwoGroups ? 'placement' : 'bracket');
+        if (!$isTwoGroups) {
+            $finalsMode = 'bracket';
+        }
+
+        $sortOrder = ($event->tournamentStages()->max('sort_order') ?? 0) + 1;
+        $playoffStage = $this->setupService->createStage($event, [
+            'type'          => TournamentStage::TYPE_SINGLE_ELIM,
+            'name'          => 'Плей-офф',
+            'sort_order'    => $sortOrder,
+            'config'        => [
+                'match_format'        => $stage->cfg('match_format', 'bo3'),
+                'set_points'          => $stage->cfg('set_points', 25),
+                'deciding_set_points' => $stage->cfg('deciding_set_points', 15),
+                'third_place_match'   => $stage->cfg('third_place_match', false),
+                'courts'              => $stage->cfg('courts', []),
+            ],
+            'occurrence_id' => $stage->occurrence_id,
+        ]);
+
+        try {
+            if ($finalsMode === 'placement') {
+                $placesCount = $stage->groups->count() * 2;
+                $this->bracketService->generateGroupCrossover($stage, $playoffStage, $placesCount, $this->standingsService);
+            } else {
+                $advancePerGroup = (int) $stage->cfg('advance_count', 2);
+                $this->bracketService->advanceToPlayoff($stage, $playoffStage, $advancePerGroup, $this->standingsService);
+            }
+            $playoffStage->update(['status' => TournamentStage::STATUS_IN_PROGRESS]);
+        } catch (\InvalidArgumentException $e) {
+            return $this->redirectToSetup($event, $e->getMessage(), true, "stage_{$playoffStage->id}");
+        }
+
+        return $this->redirectToSetup($event, 'Финальная стадия создана, матчи готовы к вводу счёта.', false, "stage_{$playoffStage->id}");
+    }
+
+
     /**
      * Откат стадии — сброс всех матчей и standings с сохранением структуры.
      */
@@ -1523,7 +1592,8 @@ class TournamentController extends Controller
             return $this->redirectToSetup($stage->event, 'Стадия King of the Beach сброшена.', false, "stage_{$stage->id}");
         }
 
-        DB::transaction(function () use ($stage) {
+        $resetCount = 0;
+        DB::transaction(function () use ($stage, &$resetCount) {
             // Удаляем связанные группы Hard/Lite (если это групповой этап)
             if (in_array($stage->type, ['round_robin', 'groups_playoff'])) {
                 $divQuery = $stage->event->tournamentStages()
@@ -1536,7 +1606,7 @@ class TournamentController extends Controller
             }
 
             // Сбрасываем все матчи
-            $stage->matches()->update([
+            $resetCount = $stage->matches()->update([
                 'status'            => TournamentMatch::STATUS_SCHEDULED,
                 'winner_team_id'    => null,
                 'score_home'        => null,
@@ -1589,7 +1659,13 @@ class TournamentController extends Controller
             \Log::warning('Stats rebuild after stage revert failed: ' . $e->getMessage());
         }
 
-        return $this->redirectToSetup($event, "Стадия \"{$stage->name}\" откачена — все счета сброшены.");
+        $matchesWord = trans_choice('матч|матча|матчей', $resetCount);
+        return $this->redirectToSetup(
+            $event,
+            "Стадия \"{$stage->name}\" откачена — сброшены счета {$resetCount} {$matchesWord}, стадия снова активна.",
+            false,
+            "stage_{$stage->id}"
+        );
     }
 
         public function destroyStage(Request $request, TournamentStage $stage)
@@ -1599,6 +1675,8 @@ class TournamentController extends Controller
 
         $name = $stage->name;
         $divNames = '';
+        $deletedStageId = $stage->id;
+        $occurrenceId = $stage->occurrence_id;
 
         // Если удаляем групповой этап — удалить и связанные группы Hard/Lite
         if (in_array($stage->type, ['round_robin', 'groups_playoff'])) {
@@ -1619,6 +1697,19 @@ class TournamentController extends Controller
 
         $stage->delete(); // cascadeOnDelete очистит groups, matches, standings
 
+        // Якорь для редиректа: если после удаления осталась групповая стадия
+        // (обычно так и есть — удаляют именно плей-офф, группа жива) —
+        // приземляем организатора на её карточку, а не в начало страницы
+        // (~2700 строк setup.blade.php). Если групповой стадии тоже нет —
+        // anchor=null, редирект наверх списка стадий.
+        $anchorStage = $event->tournamentStages()
+            ->where('id', '!=', $deletedStageId)
+            ->whereIn('type', ['round_robin', 'groups_playoff'])
+            ->when($occurrenceId, fn($q) => $q->where('occurrence_id', $occurrenceId))
+            ->orderBy('sort_order')
+            ->first();
+        $anchor = $anchorStage ? "stage_{$anchorStage->id}" : null;
+
         // Удаление стадии с уже завершёнными матчами раньше не запускало никакого
         // пересчёта — их вклад в Elo/OpenSkill/player_tournament_stats оставался
         // навсегда, хотя сами результаты уже удалены (найдено при аудите системы
@@ -1634,7 +1725,7 @@ class TournamentController extends Controller
             $msg .= " Также удалены: {$divNames}.";
         }
 
-        return $this->redirectToSetup($event, $msg);
+        return $this->redirectToSetup($event, $msg, false, $anchor);
     }
 
     /* ================================================================
