@@ -83,7 +83,105 @@ class VolleyballSchoolController extends Controller
                 ->get();
         }
 
-        return view('volleyball_school.show', compact('school', 'occurrences', 'subscriptionTemplates'));
+        // Турниры школы (для списка на странице — последние 10) и топ-игроки
+        // (метрика — OpenSkill Conservative Rating из player_career_stats,
+        // та же официальная система, что на /players/rating, а не сырой
+        // win-rate. Пул участников — весь период "всё время", без ограничения
+        // на последние N турниров.)
+        $schoolTournaments = Event::where('organizer_id', $school->organizer_id)
+            ->where('format', 'tournament')
+            ->whereHas('tournamentStages')
+            ->with(['location:id,name', 'tournamentStages' => fn($q) => $q->withCount('matches')])
+            ->orderByDesc('starts_at')
+            ->limit(10)
+            ->get();
+
+        $schoolTopPlayers = collect();
+        if ($schoolTournaments->isNotEmpty()) {
+            $schoolTopPlayers = $this->buildSchoolTopPlayers($school->organizer_id);
+        }
+
+        return view('volleyball_school.show', compact('school', 'occurrences', 'subscriptionTemplates', 'schoolTournaments', 'schoolTopPlayers'));
+    }
+
+    /**
+     * Топ-5 игроков школы по OpenSkill Conservative Rating (mu - 3*sigma),
+     * среди участников турниров школы за ВСЁ ВРЕМЯ (не последние 10 турниров),
+     * с порогом минимум 3 сыгранных матча в турнирах школы (защита от
+     * искажения малой выборкой — 1 победа в 1 матче раньше могла обогнать
+     * игрока с 9 победами из 10).
+     */
+    private function buildSchoolTopPlayers(int $organizerId)
+    {
+        $tournamentEvents = Event::where('organizer_id', $organizerId)
+            ->where('format', 'tournament')
+            ->whereHas('tournamentStages')
+            ->get(['id', 'direction']);
+
+        if ($tournamentEvents->isEmpty()) {
+            return collect();
+        }
+
+        $eventDirection = $tournamentEvents->pluck('direction', 'id');
+
+        $statsRows = \App\Models\PlayerTournamentStats::whereIn('event_id', $tournamentEvents->pluck('id'))
+            ->where('matches_played', '>', 0)
+            ->get(['user_id', 'event_id', 'matches_played', 'matches_won']);
+
+        $perUser = [];
+        foreach ($statsRows as $row) {
+            $perUser[$row->user_id]['played'] = ($perUser[$row->user_id]['played'] ?? 0) + $row->matches_played;
+            $perUser[$row->user_id]['won']    = ($perUser[$row->user_id]['won'] ?? 0) + $row->matches_won;
+            $dir = $eventDirection[$row->event_id] ?? null;
+            if ($dir) {
+                $perUser[$row->user_id]['byDirection'][$dir] = ($perUser[$row->user_id]['byDirection'][$dir] ?? 0) + $row->matches_played;
+            }
+        }
+
+        $minMatches = 3;
+        $eligibleUserIds = collect($perUser)
+            ->filter(fn($v) => ($v['played'] ?? 0) >= $minMatches)
+            ->keys();
+
+        if ($eligibleUserIds->isEmpty()) {
+            return collect();
+        }
+
+        $careerRowsByUser = \App\Models\PlayerCareerStats::whereIn('user_id', $eligibleUserIds)
+            ->whereNotNull('mu')
+            ->whereNotNull('sigma')
+            ->get(['user_id', 'direction', 'mu', 'sigma'])
+            ->groupBy('user_id');
+
+        $users = User::whereIn('id', $eligibleUserIds)->get()->keyBy('id');
+
+        $result = collect();
+        foreach ($eligibleUserIds as $uid) {
+            $rows = $careerRowsByUser->get($uid, collect());
+            if ($rows->isEmpty()) {
+                continue;
+            }
+
+            $dominantDirection = collect($perUser[$uid]['byDirection'] ?? [])
+                ->sortDesc()
+                ->keys()
+                ->first();
+
+            $crOf = fn($row) => max(0, (float) $row->mu - 3 * (float) $row->sigma);
+
+            $row = $rows->firstWhere('direction', $dominantDirection)
+                ?? $rows->sortByDesc($crOf)->first();
+
+            $result->push((object) [
+                'user_id' => $uid,
+                'user'    => $users->get($uid),
+                'cr'      => $crOf($row),
+                'played'  => $perUser[$uid]['played'],
+                'won'     => $perUser[$uid]['won'],
+            ]);
+        }
+
+        return $result->sortByDesc('cr')->take(5)->values();
     }
 
     public function create(Request $request)

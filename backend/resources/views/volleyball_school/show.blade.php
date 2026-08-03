@@ -211,48 +211,22 @@
 		
 		
 {{-- ТУРНИРЫ ШКОЛЫ --}}
-@php
-    $schoolTournaments = \App\Models\Event::where('organizer_id', $school->organizer_id)
-        ->where('format', 'tournament')
-        ->whereHas('tournamentStages')
-        ->with(['location:id,name', 'tournamentStages' => fn($q) => $q->withCount('matches')])
-        ->orderByDesc('starts_at')
-        ->limit(10)
-        ->get();
-
-    $schoolTopPlayers = collect();
-    if ($schoolTournaments->isNotEmpty()) {
-        $tournamentEventIds = $schoolTournaments->pluck('id');
-        $schoolTopPlayers = \App\Models\PlayerTournamentStats::whereIn('event_id', $tournamentEventIds)
-            ->where('matches_played', '>', 0)
-            ->with('user')
-            ->selectRaw('user_id, SUM(matches_played) as total_played, SUM(matches_won) as total_won, SUM(sets_won) as total_sets_won, SUM(sets_lost) as total_sets_lost')
-            ->groupBy('user_id')
-            ->orderByRaw('SUM(matches_won)::float / GREATEST(SUM(matches_played), 1) DESC')
-            ->limit(5)
-            ->get();
-    }
-@endphp
-
 @if($schoolTournaments->isNotEmpty())
 <div class="ramka">
     <h2 class="-mt-05">Турниры</h2>
 
-    {{-- Топ-5 игроков --}}
+    {{-- Топ-5 игроков (OpenSkill Conservative Rating, см. /players/rating) --}}
     @if($schoolTopPlayers->isNotEmpty())
         <div class="card p-3 mb-3">
-            <div class="b-600 f-14 mb-2">🏆 Лучшие игроки</div>
+            <div class="b-600 f-14 mb-2">{{ __('tournaments.school_top_players_title') }}</div>
             @foreach($schoolTopPlayers as $i => $tp)
-                @php
-                    $wr = $tp->total_played > 0 ? round($tp->total_won / $tp->total_played * 100, 1) : 0;
-                @endphp
                 <div class="d-flex f-13" style="padding:5px 0;border-bottom:1px solid rgba(128,128,128,.08);gap:8px;align-items:center">
                     <span class="b-700" style="width:20px">{{ $i + 1 }}</span>
                     <a href="{{ route('users.show', $tp->user_id) }}" class="blink" style="flex:1">
-                        {{ $tp->user->displayName() }}
+                        {{ $tp->user?->displayName() }}
                     </a>
-                    <span class="b-700" style="color:#E7612F">{{ $wr }}%</span>
-                    <span style="opacity:.5">{{ $tp->total_won }}В/{{ $tp->total_played }}М</span>
+                    <span class="b-700" style="color:#E7612F">{{ round($tp->cr, 1) }}</span>
+                    <span style="opacity:.5">{{ $tp->won }}В/{{ $tp->played }}М</span>
                 </div>
             @endforeach
         </div>
