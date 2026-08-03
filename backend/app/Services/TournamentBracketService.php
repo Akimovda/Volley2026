@@ -377,6 +377,15 @@ class TournamentBracketService
     /**
      * Продвижение команд из групповой стадии в стадию плей-офф.
      *
+     * Идемпотентно/регенерируемо: в отличие от generateGroupCrossover()
+     * (плоский список мест, можно дозаполнять), полная сетка либо
+     * пересоздаётся целиком, либо не трогается — топ-ап невозможен, т.к.
+     * next_match_id/loser_next_match_id связывают раунды между собой.
+     * Если в стадии уже есть хоть один сыгранный (completed) матч — отказ,
+     * нужен явный revert. Если все матчи ещё scheduled (например, повторная
+     * генерация после ошибочного посева) — старые матчи удаляются и сетка
+     * строится заново.
+     *
      * @param  TournamentStage  $groupStage   Стадия с группами (completed)
      * @param  TournamentStage  $playoffStage  Стадия single_elim (pending)
      * @param  int              $advancePerGroup  Сколько команд выходит из каждой группы
@@ -387,6 +396,11 @@ class TournamentBracketService
         int $advancePerGroup,
         TournamentStandingsService $standingsService,
     ): Collection {
+        if ($playoffStage->matches()->where('status', TournamentMatch::STATUS_COMPLETED)->exists()) {
+            throw new \InvalidArgumentException('В стадии уже есть сыгранные матчи. Сначала откатите стадию, чтобы пересоздать сетку.');
+        }
+        $playoffStage->matches()->delete();
+
         $groups = $groupStage->groups()->orderBy('sort_order')->get();
         $advancing = [];
 
