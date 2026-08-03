@@ -7,6 +7,7 @@ return [
     'index_t_description' => 'Volleyball courts and gyms',
     'breadcrumb_index'    => 'Venues',
 
+    'view_mode_title' => 'View',
     'view_cards' => 'Cards',
     'view_card'  => 'By pages',
     'view_rows'  => 'List',

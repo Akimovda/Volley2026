@@ -9,6 +9,7 @@ return [
     'breadcrumb_index'    => 'Локации',
 
     // Кнопки переключателя вида
+    'view_mode_title' => 'Вид',
     'view_cards'   => 'Карточки',
     'view_card'    => 'По страницам',
     'view_rows'    => 'Список',

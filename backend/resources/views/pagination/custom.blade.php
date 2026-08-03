@@ -57,9 +57,13 @@
     (function () {
         var container = document.currentScript.previousElementSibling;
         var active = container ? container.querySelector('.pagination-scroll-active') : null;
-        if (active && active.scrollIntoView) {
-            active.scrollIntoView({ inline: 'center', block: 'nearest' });
-        }
+        if (!active || !container) return;
+        {{-- container.scrollLeft напрямую, а не element.scrollIntoView() — у .pagination-scroll
+        только горизонтальный overflow (см. style.css), для вертикальной оси "ближайший
+        скроллируемый предок" — само окно, из-за чего scrollIntoView({block:'nearest'})
+        прокручивало всю страницу вниз к пагинации при каждой загрузке страницы. --}}
+        var targetLeft = active.offsetLeft - (container.clientWidth - active.offsetWidth) / 2;
+        container.scrollLeft = Math.max(0, targetLeft);
     })();
     </script>
 @endif

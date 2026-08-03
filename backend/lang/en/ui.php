@@ -99,8 +99,8 @@ return [
     'footer_copyright'      => '© VolleyPlay :year. All rights reserved.',
 
     // SEO / meta
-    'site_title'       => 'Your Volley Club — volleyball service',
-    'site_description' => 'Your Volley Club — volleyball service',
+    'site_title'       => 'VOLLEY CLUB — volleyball service',
+    'site_description' => 'VOLLEY CLUB — volleyball service',
 
     // App banner (RuStore / App Store)
     'app_banner_title' => 'We have an app for iOS and Android! Want to install?',

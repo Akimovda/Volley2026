@@ -2,7 +2,7 @@
 
 return [
     // Meta + slots
-    'meta_title'       => 'Your Volley Club — volleyball service',
+    'meta_title'       => 'VOLLEY CLUB — volleyball service',
     'meta_description' => 'A platform for volleyball players, coaches, organizers and sports venues. Sign up for games, find partners, manage events.',
     'h2'               => 'Volleyball service',
     'tagline'          => 'Bringing the volleyball community together — from amateurs to pros',
@@ -17,6 +17,7 @@ return [
 
     // «For whom»
     'audience_title' => 'Who is it for',
+    'details_more'   => 'Learn more →',
 
     // 1. Players
     'players_alt'        => 'For players',
