@@ -638,6 +638,41 @@ $levelOptions = [1, 2, 3, 4, 5, 6, 7];
 					if ('ResizeObserver' in window) {
 						new ResizeObserver(apply).observe(headerEl);
 					}
+					// ===== .is-app (Capacitor iOS/Android): safe-area — гонка при старте =====
+					// В нативном приложении env(safe-area-inset-top) влияет ТОЛЬКО на top
+					// шапки (position:fixed), а не на размер её бокса — ResizeObserver в
+					// принципе не может поймать это изменение (он реагирует на размер, не
+					// на позицию). vp:header-resize тоже не помогает — событие целиком
+					// завязано на Telegram WebApp SDK, которого в .is-app нет. WKWebView/
+					// Android WebView применяют safe-area АСИНХРОННО, уже после первого
+					// рендера — отсюда эффект "уехало, потом само поправилось". Раз
+					// надёжного события нет — коротко поллим сам top шапки через rAF,
+					// пока он не перестанет меняться (+ контрольные setTimeout на случай
+					// троттлинга rAF в фоне).
+					if (document.documentElement.classList.contains('is-app')) {
+						(function pollUntilStable() {
+							var lastTop = headerEl.getBoundingClientRect().top;
+							var stableFrames = 0;
+							var deadline = Date.now() + 1500;
+							function tick() {
+								var top = headerEl.getBoundingClientRect().top;
+								if (top !== lastTop) {
+									lastTop = top;
+									stableFrames = 0;
+									apply();
+								} else {
+									stableFrames++;
+								}
+								if (stableFrames < 6 && Date.now() < deadline) {
+									requestAnimationFrame(tick);
+								}
+							}
+							requestAnimationFrame(tick);
+						})();
+						[100, 300, 600, 1000, 1500].forEach(function(ms) {
+							setTimeout(apply, ms);
+						});
+					}
 				})();
 
 				// ===== Сворачивание топбара при "прилипании" ленты дат =====
