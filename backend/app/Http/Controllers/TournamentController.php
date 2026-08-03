@@ -227,9 +227,23 @@ class TournamentController extends Controller
             'third_place_match' => 'nullable|boolean',
             'courts'          => 'nullable|string|max:500',
             'kb_group_size'   => ['nullable', 'integer', Rule::in(TournamentKingBeachService::GROUP_SIZES)],
+            'finals_mode'     => 'nullable|in:bracket,placement',
         ]);
 
         $sortOrder = ($event->tournamentStages()->max('sort_order') ?? 0) + 1;
+
+        $groupsCount = (int) ($validated['groups_count'] ?? 0);
+
+        // Режим финалов после групп: 'placement' (прямые матчи за места, без
+        // полуфиналов) доступен только при РОВНО 2 группах — при другом числе
+        // групп кросс-посев мест неоднозначен, форсируем 'bracket'. Если
+        // организатор явно выбрал 'placement' при groups_count!=2 (например,
+        // изменил число групп после выбора радио, JS не успел среагировать) —
+        // всё равно форсируем 'bracket' на бэкенде, не доверяя одному JS-гейту.
+        $finalsMode = $validated['finals_mode'] ?? ($groupsCount === 2 ? 'placement' : 'bracket');
+        if ($groupsCount !== 2) {
+            $finalsMode = 'bracket';
+        }
 
         // Блок кортов (courts_count/courts) общий для групповых форматов и King of the Beach —
         // единое поле "courts" для обоих случаев (advance_count/группы для king_beach
@@ -238,7 +252,7 @@ class TournamentController extends Controller
             'match_format'       => $validated['match_format'],
             'set_points'         => (int) $validated['set_points'],
             'deciding_set_points' => (int) $validated['deciding_set_points'],
-            'groups_count'       => (int) ($validated['groups_count'] ?? 0),
+            'groups_count'       => $groupsCount,
             'advance_count'      => (int) ($validated['advance_count'] ?? 2),
             'third_place_match'  => (bool) ($validated['third_place_match'] ?? false),
             'courts'             => !empty($validated['courts'])
@@ -247,6 +261,7 @@ class TournamentController extends Controller
             'draw_mode'          => $request->input('draw_mode', 'random'),
             'round_number'       => 1,
             'group_size'         => (int) ($validated['kb_group_size'] ?? 4),
+            'finals_mode'        => $finalsMode,
         ];
 
         // occurrence_id из hidden field (если сезонный турнир)
