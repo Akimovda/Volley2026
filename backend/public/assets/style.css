@@ -826,6 +826,208 @@ body.dark .form .custom-checkbox::after {
 	background: rgba(255, 255, 255, 0.05);
 	}
 */
+/* ===== Поп-ап/панель фильтров: секционные подписи, сегментированный
+   переключатель, иконки внутри полей (events-style фильтры на /locations и
+   /users) ===== */
+.filter-section-label {
+	display: flex;
+	align-items: center;
+	gap: 0.6rem;
+	margin-bottom: 0.8rem;
+	font-weight: 700;
+	font-size: 1.3rem;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	color: rgba(41, 103, 186, 0.7);
+}
+.filter-section-label svg {
+	flex-shrink: 0;
+}
+body.dark .filter-section-label {
+	color: rgba(231, 97, 45, 0.8);
+}
+
+.seg-control {
+	display: flex;
+	align-items: stretch;
+	gap: 0.2rem;
+	border-radius: 999px;
+	background: rgba(41, 103, 186, 0.06);
+	padding: 0.4rem;
+}
+.seg-control .seg-btn {
+	display: flex;
+	align-items: stretch;
+	flex: 1;
+	min-width: 0;
+	margin-bottom: 0;
+	cursor: pointer;
+	text-decoration: none;
+	color: inherit;
+}
+.seg-control .seg-btn svg {
+	flex-shrink: 0;
+}
+.seg-control a.seg-btn,
+.seg-control label.seg-btn span {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.4rem;
+	width: 100%;
+	height: 100%;
+	box-sizing: border-box;
+	padding: 1rem 0.8rem;
+	border-radius: 999px;
+	font-weight: 600;
+	font-size: 1.3rem;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	transition: background 0.2s, color 0.2s;
+}
+.seg-control a.seg-btn.active,
+.seg-control label.seg-btn input:checked + span {
+	background: #2967BA;
+	color: #fff;
+}
+.seg-control label.seg-btn input {
+	display: none;
+}
+body.dark .seg-control {
+	background: rgba(255, 255, 255, 0.05);
+}
+body.dark .seg-control a.seg-btn.active,
+body.dark .seg-control label.seg-btn input:checked + span {
+	background: #E7612F;
+}
+
+/* Иконка слева внутри input/select (поиск/город/уровень в поп-апе фильтров) */
+.pfx-field-icon {
+	position: relative;
+}
+.pfx-field-icon > svg {
+	position: absolute;
+	left: 1.6rem;
+	top: 50%;
+	transform: translateY(-50%);
+	z-index: 2;
+	pointer-events: none;
+	color: rgba(0, 0, 0, 0.35);
+}
+.form .pfx-field-icon input {
+	padding-left: 4.6rem !important;
+}
+.pfx-field-icon .form-select-custom {
+	padding-left: 4.6rem;
+}
+body.dark .pfx-field-icon > svg {
+	color: rgba(255, 255, 255, 0.35);
+}
+
+/* /locations — панель "Вид отображения" + тумблер "только с мероприятиями" */
+.loc-view-header {
+	display: flex;
+	align-items: center;
+	gap: 0.8rem;
+	margin-bottom: 1.4rem;
+	color: #2967BA;
+}
+body.dark .loc-view-header {
+	color: #E7612F;
+}
+.loc-view-header .filter-section-label {
+	margin-bottom: 0;
+}
+.loc-view-divider {
+	border: 0;
+	border-top: 0.1rem solid rgba(0, 0, 0, 0.08);
+	margin: 1.8rem 0;
+}
+body.dark .loc-view-divider {
+	border-top-color: rgba(255, 255, 255, 0.08);
+}
+.loc-toggle-row {
+	display: flex;
+	align-items: center;
+	gap: 1.2rem;
+	text-decoration: none;
+	color: inherit;
+	min-height: 4.4rem;
+}
+.loc-toggle-row .loc-toggle-icon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 4.4rem;
+	height: 4.4rem;
+	border-radius: 50%;
+	background: rgba(231, 97, 45, 0.12);
+	color: #E7612F;
+	flex-shrink: 0;
+}
+body.dark .loc-toggle-row .loc-toggle-icon {
+	background: rgba(231, 97, 45, 0.18);
+}
+.loc-toggle-row .loc-toggle-label {
+	flex: 1;
+	min-width: 0;
+	font-size: 1.6rem;
+	font-weight: 500;
+}
+.loc-toggle-switch {
+	position: relative;
+	width: 5.2rem;
+	height: 2.8rem;
+	border-radius: 999px;
+	background: rgba(0, 0, 0, 0.15);
+	flex-shrink: 0;
+	transition: background 0.2s;
+}
+.loc-toggle-switch::after {
+	content: '';
+	position: absolute;
+	top: 0.3rem;
+	left: 0.3rem;
+	width: 2.2rem;
+	height: 2.2rem;
+	border-radius: 50%;
+	background: #fff;
+	box-shadow: 0 0.1rem 0.3rem rgba(0, 0, 0, 0.3);
+	transition: transform 0.2s;
+}
+.loc-toggle-switch.is-on {
+	background: #2967BA;
+}
+.loc-toggle-switch.is-on::after {
+	transform: translateX(2.4rem);
+}
+body.dark .loc-toggle-switch {
+	background: rgba(255, 255, 255, 0.15);
+}
+body.dark .loc-toggle-switch.is-on {
+	background: #E7612F;
+}
+/* Широкий экран — заголовок и переключатель вида в одну строку (тумблер — второй строкой) */
+@media (min-width: 768px) {
+	.loc-view-row1 {
+		display: flex;
+		align-items: center;
+		gap: 2rem;
+	}
+	.loc-view-row1 .loc-view-header {
+		margin-bottom: 0;
+		flex-shrink: 0;
+	}
+	.loc-view-row1 .seg-control {
+		flex: 0 1 40rem;
+	}
+	.loc-toggle-row .loc-toggle-icon {
+		width: 3.6rem;
+		height: 3.6rem;
+	}
+}
+
 /* ===== СТИЛИ ДЛЯ СЕЛЕКТА (ПРОМЕЖУТОЧНЫЕ) ===== */
 .form select {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23222333' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");

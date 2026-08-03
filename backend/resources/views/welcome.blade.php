@@ -4,7 +4,7 @@
     <x-slot name="title">{{ __('welcome.meta_title') }}</x-slot>
     <x-slot name="description">{{ __('welcome.meta_description') }}</x-slot>
     <x-slot name="canonical">{{ url('/') }}</x-slot>
-    <x-slot name="h1">Your Volley Club</x-slot>
+    <x-slot name="h1">VOLLEY CLUB</x-slot>
     <x-slot name="h2">{{ __('welcome.h2') }}</x-slot>
     <x-slot name="t_description">{{ __('welcome.tagline') }}</x-slot>
 	
@@ -595,18 +595,13 @@ border:1rem solid #fff;
 							<ul class="list f-16">
 								<li>{{ __('welcome.players_li_1') }}</li>
 								<li>{{ __('welcome.players_li_2') }}</li>
-								<li>{{ __('welcome.players_li_3') }}</li>
 								<li>{{ __('welcome.players_li_4') }}</li>
-								<li>{{ __('welcome.players_li_5') }}</li>
-								<li>{{ __('welcome.players_li_6') }}</li>
-								<li>{{ __('welcome.players_li_7') }}</li>
-								<li>{{ __('welcome.players_li_8') }}</li>
 								<li>{{ __('welcome.players_li_9') }}</li>
-								<li>{{ __('welcome.players_li_10') }}</li>
 							</ul>
 						</div>
 						<div class="mt-1 text-center">
 							<a href="{{ route('events.index') }}" class="btn">{{ __('welcome.cta_find_game') }}</a>
+							<a href="{{ route('about') }}#players" class="btn btn-secondary">{{ __('welcome.details_more') }}</a>
 						</div>
 					</div>
 				</div>
@@ -627,7 +622,6 @@ border:1rem solid #fff;
 								<li>{{ __('welcome.community_li_2') }}</li>
 								<li>{{ __('welcome.community_li_3') }}</li>
 								<li>{{ __('welcome.community_li_4') }}</li>
-								<li>{{ __('welcome.community_li_5') }}</li>
 							</ul>
 						</div>
 						<div class="mt-1 text-center">
@@ -658,18 +652,14 @@ border:1rem solid #fff;
 							</div>																	
 							<ul class="list f-16">
 								<li>{{ __('welcome.coaches_li_1') }}</li>
-								<li>{{ __('welcome.coaches_li_2') }}</li>
 								<li>{{ __('welcome.coaches_li_3') }}</li>
-								<li>{{ __('welcome.coaches_li_4') }}</li>
-								<li>{{ __('welcome.coaches_li_5') }}</li>
-								<li>{{ __('welcome.coaches_li_6') }}</li>
-								<li>{{ __('welcome.coaches_li_7') }}</li>
 								<li>{{ __('welcome.coaches_li_8') }}</li>
 								<li>{{ __('welcome.coaches_li_9') }}</li>
 							</ul>
 						</div>
 						<div class="mt-1 text-center">
 							<a href="{{ route('volleyball_school.index') }}" class="btn">{{ __('welcome.coaches_btn') }}</a>
+							<a href="{{ route('about') }}#school" class="btn btn-secondary">{{ __('welcome.details_more') }}</a>
 						</div>
 					</div>
 				</div>
@@ -722,16 +712,8 @@ border:1rem solid #fff;
 									{{ __('welcome.org_card_lead') }}
 								</div>									
 							</div>								
-							<ul class="list f-16">								
+							<ul class="list f-16">
 								<li>{{ __('welcome.org_li_1') }}</li>
-								<li>{{ __('welcome.org_li_2') }}</li>
-								<li>{{ __('welcome.org_li_3') }}</li>
-								<li>{{ __('welcome.org_li_4') }}</li>
-								<li>{{ __('welcome.org_li_5') }}</li>
-								<li>{{ __('welcome.org_li_6') }}</li>
-								<li>{{ __('welcome.org_li_7') }}</li>
-								<li>{{ __('welcome.org_li_8') }}</li>
-								<li>{{ __('welcome.org_li_9') }}</li>
 								<li>{{ __('welcome.org_li_10') }}</li>
 								<li>{{ __('welcome.org_li_11') }}</li>
 								<li>{{ __('welcome.org_li_12') }}</li>
@@ -739,6 +721,7 @@ border:1rem solid #fff;
 						</div>
 						<div class="mt-1 text-center">
 							<a href="{{ route('events.create.event_management') }}" class="btn">{{ __('welcome.org_btn') }}</a>
+							<a href="{{ route('about') }}#org" class="btn btn-secondary">{{ __('welcome.details_more') }}</a>
 						</div>
 					</div>
 				</div>
@@ -754,17 +737,15 @@ border:1rem solid #fff;
 									{{ __('welcome.announce_lead') }}
 								</div>									
 							</div>								
-							<ul class="list f-16">										
+							<ul class="list f-16">
 								<li>{{ __('welcome.announce_li_1') }}</li>
-								<li>{{ __('welcome.announce_li_2') }}</li>
 								<li>{{ __('welcome.announce_li_3') }}</li>
-								<li>{{ __('welcome.announce_li_4') }}</li>
-								<li>{{ __('welcome.announce_li_5') }}</li>
 								<li>{{ __('welcome.announce_li_6') }}</li>
 							</ul>
 						</div>
 						<div class="mt-1 text-center">
 							<a href="{{ route('events.create') }}" class="btn">{{ __('welcome.announce_btn') }}</a>
+							<a href="{{ route('about') }}#org" class="btn btn-secondary">{{ __('welcome.details_more') }}</a>
 						</div>
 					</div>
 				</div>
@@ -789,19 +770,16 @@ border:1rem solid #fff;
 									{{ __('welcome.venues_card_lead') }}
 								</div>									
 							</div>								
-							<ul class="list f-16">									
+							<ul class="list f-16">
 								<li>{{ __('welcome.venues_li_1') }}</li>
 								<li>{{ __('welcome.venues_li_2') }}</li>
 								<li>{{ __('welcome.venues_li_3') }}</li>
-								<li>{{ __('welcome.venues_li_4') }}</li>
 								<li>{{ __('welcome.venues_li_5') }}</li>
-								<li>{{ __('welcome.venues_li_6') }}</li>
-								<li>{{ __('welcome.venues_li_7') }}</li>
-								<li>{{ __('welcome.venues_li_8') }}</li>
 							</ul>
 						</div>
 						<div class="mt-1 text-center">
 							<a href="{{ route('locations.index') }}" class="btn">{{ __('welcome.venues_btn') }}</a>
+							<a href="{{ route('about') }}#club" class="btn btn-secondary">{{ __('welcome.details_more') }}</a>
 						</div>
 					</div>
 				</div>
@@ -817,17 +795,15 @@ border:1rem solid #fff;
 									{{ __('welcome.school_lead') }}
 								</div>									
 							</div>								
-							<ul class="list f-16">									
+							<ul class="list f-16">
 								<li>{{ __('welcome.school_li_1') }}</li>
 								<li>{{ __('welcome.school_li_2') }}</li>
-								<li>{{ __('welcome.school_li_3') }}</li>
-								<li>{{ __('welcome.school_li_4') }}</li>
-								<li>{{ __('welcome.school_li_5') }}</li>
 								<li>{{ __('welcome.school_li_6') }}</li>
 							</ul>
 						</div>
 						<div class="mt-1 text-center">
 							<a href="{{ route('volleyball_school.index') }}" class="btn">{{ __('welcome.coaches_btn') }}</a>
+							<a href="{{ route('about') }}#school" class="btn btn-secondary">{{ __('welcome.details_more') }}</a>
 						</div>
 					</div>
 				</div>

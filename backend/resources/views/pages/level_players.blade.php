@@ -241,7 +241,7 @@
 					<p><small>{{ __('pages.lp_formula2_note') }}</small></p>
 				</div>
 
-				<p class="mt-1 text-right">{{ __('pages.lp_signoff') }} <strong class="c3">Your Volley Club!</strong></p>
+				<p class="mt-1 text-right">{{ __('pages.lp_signoff') }} <strong class="c3">VOLLEY CLUB!</strong></p>
 			</div>
 		</div>
 	</div>

@@ -32,36 +32,67 @@
 		$active = (int)($activeOnly ?? 0);
         @endphp
 
-		<div class="d-flex flex-wrap gap-1 m-center">
-			<div class="mt-2" data-aos-delay="250" data-aos="fade-up">
-				<a href="{{ request()->fullUrlWithQuery(array_merge($base, ['view' => 'cards'])) }}"
-				class="btn {{ $mode === 'cards' ? '' : 'btn-secondary' }}">
-					{{ __('locations.view_cards') }}
-				</a>
+		<div class="ramka loc-view-panel mt-2" data-aos="fade-up" data-aos-delay="250">
+			<div class="loc-view-row1">
+				<div class="loc-view-header">
+					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<rect x="3" y="3" width="7" height="7" rx="1"></rect>
+						<rect x="14" y="3" width="7" height="7" rx="1"></rect>
+						<rect x="3" y="14" width="7" height="7" rx="1"></rect>
+						<rect x="14" y="14" width="7" height="7" rx="1"></rect>
+					</svg>
+					<span class="filter-section-label">{{ __('locations.view_mode_title') }}</span>
+				</div>
+
+				<div class="seg-control">
+					<a href="{{ request()->fullUrlWithQuery(array_merge($base, ['view' => 'cards'])) }}"
+						class="seg-btn {{ $mode === 'cards' ? 'active' : '' }}">
+						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<rect x="3" y="3" width="7" height="7" rx="1"></rect>
+							<rect x="14" y="3" width="7" height="7" rx="1"></rect>
+							<rect x="3" y="14" width="7" height="7" rx="1"></rect>
+							<rect x="14" y="14" width="7" height="7" rx="1"></rect>
+						</svg>
+						{{ __('locations.view_cards') }}
+					</a>
+					<a href="{{ request()->fullUrlWithQuery(array_merge($base, ['view' => 'rows'])) }}"
+						class="seg-btn {{ $mode === 'rows' ? 'active' : '' }}">
+						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<line x1="8" y1="6" x2="21" y2="6"></line>
+							<line x1="8" y1="12" x2="21" y2="12"></line>
+							<line x1="8" y1="18" x2="21" y2="18"></line>
+							<line x1="3" y1="6" x2="3.01" y2="6"></line>
+							<line x1="3" y1="12" x2="3.01" y2="12"></line>
+							<line x1="3" y1="18" x2="3.01" y2="18"></line>
+						</svg>
+						{{ __('locations.view_rows') }}
+					</a>
+					<a href="{{ request()->fullUrlWithQuery(array_merge($base, ['view' => 'map'])) }}"
+						class="seg-btn {{ $mode === 'map' ? 'active' : '' }}">
+						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon>
+							<line x1="8" y1="2" x2="8" y2="18"></line>
+							<line x1="16" y1="6" x2="16" y2="22"></line>
+						</svg>
+						{{ __('locations.view_map') }}
+					</a>
+				</div>
 			</div>
-			<div class="mt-2" data-aos-delay="300" data-aos="fade-up">
-				<a href="{{ request()->fullUrlWithQuery(array_merge($base, ['view' => 'card', 'page' => 1])) }}"
-				class="btn {{ $mode === 'card' ? '' : 'btn-secondary' }}">
-					{{ __('locations.view_card') }}
-				</a>
-			</div>
-			<div class="mt-2" data-aos-delay="350" data-aos="fade-up">
-				<a href="{{ request()->fullUrlWithQuery(array_merge($base, ['view' => 'rows'])) }}"
-				class="btn {{ $mode === 'rows' ? '' : 'btn-secondary' }}">
-					{{ __('locations.view_rows') }}
-				</a>
-			</div>
-			<div class="mt-2" data-aos-delay="450" data-aos="fade-up">
-				<a href="{{ request()->fullUrlWithQuery(array_merge($base, ['view' => 'map'])) }}"
-				class="btn {{ $mode === 'map' ? '' : 'btn-secondary' }}">
-					{{ __('locations.view_map') }}
-				</a>
-			</div>
-		</div>
-		<div class="d-flex m-center mt-1" data-aos="fade-up" data-aos-delay="550">
-			<a href="{{ request()->fullUrlWithQuery(array_merge($base, ['active' => $active ? 0 : 1])) }}"
-			class="btn btn-secondary">
-                {{ $active ? __('locations.show_all') : __('locations.only_with_events') }}
+
+			<hr class="loc-view-divider">
+
+			<a href="{{ request()->fullUrlWithQuery(array_merge($base, ['active' => $active ? 0 : 1])) }}" class="loc-toggle-row">
+				<span class="loc-toggle-icon">
+					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<rect x="3" y="4" width="18" height="18" rx="2"></rect>
+						<line x1="16" y1="2" x2="16" y2="6"></line>
+						<line x1="8" y1="2" x2="8" y2="6"></line>
+						<line x1="3" y1="10" x2="21" y2="10"></line>
+						<polyline points="8 14 11 17 16 12"></polyline>
+					</svg>
+				</span>
+				<span class="loc-toggle-label">{{ __('locations.only_with_events') }}</span>
+				<span class="loc-toggle-switch{{ $active ? ' is-on' : '' }}"></span>
 			</a>
 		</div>
 
