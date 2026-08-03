@@ -26,14 +26,24 @@ class TournamentEloService
     {
         $direction = $event->direction ?? 'classic';
 
+        // elo_processed_at — защита от повторного начисления: recalculateForEvent()
+        // проходит ВСЕ завершённые матчи события целиком, а не только новые.
+        // Вызывается из checkStageCompletion() при КАЖДОМ переходе турнира в
+        // "полностью завершён" — если это происходит больше одного раза за
+        // время жизни турнира (например, в уже завершённый плей-офф позже
+        // дозаполнили матч за 3-4 место), старые матчи без guard'а
+        // пересчитывались бы повторно, задваивая elo_rating игроков. Тот же
+        // паттерн, что и у tournament_matches.stats_processed_at (OpenSkill).
         $matches = TournamentMatch::whereHas('stage', fn($q) => $q->where('event_id', $event->id))
             ->where('status', TournamentMatch::STATUS_COMPLETED)
             ->whereNotNull('winner_team_id')
+            ->whereNull('elo_processed_at')
             ->orderBy('scored_at')
             ->get();
 
         foreach ($matches as $match) {
             $this->processMatch($match, $direction);
+            $match->update(['elo_processed_at' => now()]);
         }
     }
 

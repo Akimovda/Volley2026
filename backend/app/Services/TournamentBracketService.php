@@ -420,8 +420,17 @@ class TournamentBracketService
      * определяет итоговое место, не продвигает никого дальше.
      *
      * @param  TournamentStage  $groupStage    Стадия с группами (completed), РОВНО 2 группы
-     * @param  TournamentStage  $playoffStage  Стадия single_elim (pending)
+     * @param  TournamentStage  $playoffStage  Стадия single_elim (pending ИЛИ уже completed —
+     *                                         например, организатор изначально запросил
+     *                                         только 2 места, а позже решил дозаполнить
+     *                                         матч за 3-4 в ту же стадию)
      * @param  int              $placesCount   Сколько мест разыгрывать напрямую (2 = только за 1-2; 4 = ещё и за 3-4)
+     *
+     * Идемпотентно/инкрементально: если матч для какой-то пары рангов уже
+     * существует в этой стадии (организатор раньше вызывал с меньшим
+     * placesCount) — он НЕ пересоздаётся, создаются только недостающие ранги.
+     * Это защищает от дубля матча "за 1-2" при повторном вызове с
+     * placesCount=4 после того, как "за 1-2" уже был создан и сыгран.
      */
     public function generateGroupCrossover(
         TournamentStage $groupStage,
@@ -443,17 +452,31 @@ class TournamentBracketService
             throw new \InvalidArgumentException('Недостаточно команд в группах для запрошенного числа мест.');
         }
 
-        return DB::transaction(function () use ($rankedA, $rankedB, $playoffStage, $ranksNeeded) {
+        $existing = $playoffStage->matches()->get(['team_home_id', 'team_away_id']);
+        $existsForPair = fn($homeId, $awayId) => $existing->contains(
+            fn($m) => $m->team_home_id === $homeId && $m->team_away_id === $awayId
+        );
+
+        return DB::transaction(function () use ($rankedA, $rankedB, $playoffStage, $ranksNeeded, $existsForPair) {
             $matches = collect();
+            $nextMatchNumber = (int) ($playoffStage->matches()->max('match_number') ?? 0) + 1;
+
             for ($i = 0; $i < $ranksNeeded; $i++) {
+                $homeId = $rankedA[$i]->team_id;
+                $awayId = $rankedB[$i]->team_id;
+
+                if ($existsForPair($homeId, $awayId)) {
+                    continue;
+                }
+
                 $placeFrom = $i * 2 + 1;
                 $placeTo   = $i * 2 + 2;
                 $match = TournamentMatch::create([
                     'stage_id'     => $playoffStage->id,
                     'round'        => 1,
-                    'match_number' => $i + 1,
-                    'team_home_id' => $rankedA[$i]->team_id,
-                    'team_away_id' => $rankedB[$i]->team_id,
+                    'match_number' => $nextMatchNumber++,
+                    'team_home_id' => $homeId,
+                    'team_away_id' => $awayId,
                     'status'       => TournamentMatch::STATUS_SCHEDULED,
                     'court'        => "Матч за {$placeFrom}-{$placeTo} место",
                 ]);

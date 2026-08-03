@@ -202,7 +202,7 @@ $renderTeam = function(?object $team, bool $isWinner, ?int $sets, bool $isComple
             $url      = route('users.show', $captain->id);
             $photoUrl = $captain->profile_photo_url;
 
-            $html .= '<a href="' . e($url) . '" class="bk-player" target="_blank">';
+            $html .= '<a href="' . e($url) . '" class="bk-player">';
             if ($photoUrl) {
                 $html .= '<img src="' . e($photoUrl) . '" class="bk-player-avatar" alt="' . e($display) . '" loading="lazy">';
             } else {
@@ -234,7 +234,7 @@ $renderTeam = function(?object $team, bool $isWinner, ?int $sets, bool $isComple
                 //   либо автоматический ui-avatars.com — всегда возвращает URL
                 $photoUrl = $u ? $u->profile_photo_url : '';
 
-                $html .= '<a href="' . e($url) . '" class="bk-player" target="_blank">';
+                $html .= '<a href="' . e($url) . '" class="bk-player">';
                 if ($photoUrl) {
                     $html .= '<img src="' . e($photoUrl) . '" class="bk-player-avatar" alt="' . e($display) . '" loading="lazy">';
                 } else {

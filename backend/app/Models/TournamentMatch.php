@@ -37,6 +37,7 @@ class TournamentMatch extends Model
         'is_tiebreaker',
         'notified_upcoming_at',
         'stats_processed_at',
+        'elo_processed_at',
         'meta',
     ];
 
@@ -47,6 +48,7 @@ class TournamentMatch extends Model
         'scored_at'              => 'datetime',
         'notified_upcoming_at'   => 'datetime',
         'stats_processed_at'     => 'datetime',
+        'elo_processed_at'       => 'datetime',
         'is_tiebreaker'          => 'boolean',
         'meta'                   => 'array',
     ];

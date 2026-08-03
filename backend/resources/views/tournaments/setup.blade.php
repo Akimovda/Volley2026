@@ -2076,7 +2076,16 @@ $tourNumber = $seasonData
 		</div>
 		@else
 		{{-- Обычный → плей-офф --}}
-		@php $nextStages = $stages->where('type', 'single_elim')->where('status', 'pending'); @endphp
+		@php
+			$nextStages = $stages->where('type', 'single_elim')->where('status', 'pending');
+			// Для "Прямых матчей по местам" целевая стадия может быть уже
+			// completed (organizer изначально запросил только 2 места, а
+			// позже решил дозаполнить матч за 3-4 в ту же стадию) — в отличие
+			// от обычного "Продвинуть в плей-офф" (generateSingleElimination,
+			// не идемпотентен), generateGroupCrossover() safe для повторного
+			// вызова, пропускает уже созданные пары мест.
+			$crossoverTargetStages = $stages->where('type', 'single_elim')->whereIn('status', ['pending', 'completed']);
+		@endphp
 		@if($nextStages->isNotEmpty())
 		<div class="p-3 mt-2" style="background:rgba(41,103,186,.08);border-radius:10px">
 			<div class="b-700 mb-2">{{ __('tournaments.setup_promote_to_playoff') }}</div>
@@ -2097,7 +2106,8 @@ $tourNumber = $seasonData
 				<button type="submit" class="btn btn-primary">{{ __('tournaments.setup_promote_btn') }}</button>
 			</form>
 		</div>
-		@if($stage->groups->count() === 2)
+		@endif
+		@if($stage->groups->count() === 2 && $crossoverTargetStages->isNotEmpty())
 		<div class="p-3 mt-2" style="background:rgba(41,103,186,.08);border-radius:10px">
 			<div class="b-700 mb-1">{{ __('tournaments.setup_crossover_title') }}</div>
 			<p class="f-13" style="color:#6b7280;margin-bottom:10px">{{ __('tournaments.setup_crossover_hint') }}</p>
@@ -2106,7 +2116,7 @@ $tourNumber = $seasonData
 				<div>
 					<label class="f-13 b-600 mb-1 d-block">{{ __('tournaments.setup_promote_stage') }}</label>
 					<select name="playoff_stage_id">
-						@foreach($nextStages as $ns)
+						@foreach($crossoverTargetStages as $ns)
 						<option value="{{ $ns->id }}">{{ $ns->name }}</option>
 						@endforeach
 					</select>
@@ -2114,14 +2124,13 @@ $tourNumber = $seasonData
 				<div>
 					<label class="f-13 b-600 mb-1 d-block">{{ __('tournaments.setup_crossover_places') }}</label>
 					<select name="places_count">
-						<option value="2">2 ({{ __('tournaments.setup_promote_to_playoff') }})</option>
-						<option value="4">4 (+ 3-4)</option>
+						<option value="2">{{ __('tournaments.setup_crossover_places_2') }}</option>
+						<option value="4" selected>{{ __('tournaments.setup_crossover_places_4') }}</option>
 					</select>
 				</div>
 				<button type="submit" class="btn btn-primary">{{ __('tournaments.setup_crossover_btn') }}</button>
 			</form>
 		</div>
-		@endif
 		@endif
 		@endif
 		@endif

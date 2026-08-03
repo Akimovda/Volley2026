@@ -667,6 +667,8 @@ return [
     'setup_crossover_title' => 'Прямые матчи по местам (2 группы)',
     'setup_crossover_hint'  => '1-е места групп играют за 1-2 место, 2-е места — за 3-4, без дополнительного раунда полуфиналов между группами.',
     'setup_crossover_places' => 'Разыгрываемых мест',
+    'setup_crossover_places_2' => '2 — только за 1-2 место',
+    'setup_crossover_places_4' => '4 — за 1-2 и за 3-4 место',
     'setup_crossover_btn'    => 'Создать матчи по местам',
 
     'setup_groups_completed_h3' => '✅ Все группы завершены',
