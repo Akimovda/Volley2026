@@ -87,6 +87,15 @@
 .bk-player-name--tbd{color:#9ca3af;font-style:italic;font-weight:500}
 .bk-team--win .bk-player-name{color:#065f46;font-weight:700}
 
+/* ── Название команды (классика) + капитан ── */
+.bk-team-classic{flex:1;display:flex;flex-direction:column;gap:6px;min-width:0}
+.bk-team-name-link{
+    font-size:.85rem;font-weight:700;color:#2967BA;text-decoration:none;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;
+}
+.bk-team-name-link:hover{text-decoration:underline}
+.bk-team--win .bk-team-name-link{color:#065f46}
+
 /* ── Счёт ── */
 .bk-score{
     width:32px;height:32px;border-radius:8px;
@@ -115,6 +124,8 @@ body.dark .bk-player-name{color:#e2e8f0}
 body.dark .bk-team--win .bk-player-name{color:#6ee7b7;font-weight:700}
 body.dark .bk-score--lose{background:rgba(255,255,255,.1);color:#94a3b8}
 body.dark .bk-third-section{border-color:rgba(255,255,255,.08)}
+body.dark .bk-team-name-link{color:#93c5fd}
+body.dark .bk-team--win .bk-team-name-link{color:#6ee7b7}
 </style>
 @endonce
 
@@ -175,44 +186,75 @@ $initials = function(?string $first, ?string $last): string {
 // Отрисовка секции команды (home или away)
 $renderTeam = function(?object $team, bool $isWinner, ?int $sets, bool $isCompleted) use ($avatarColor, $initials): string {
     $html  = '<div class="bk-team' . ($isWinner ? ' bk-team--win' : '') . '">';
-    $html .= '<div class="bk-players">';
 
-    if ($team) {
-        // captain first, then others, max 2
-        $members = $team->members
-            ->sortByDesc(fn($m) => $m->role_code === 'captain' ? 1 : 0)
-            ->take(2);
+    if ($team && $team->team_kind === 'classic_team') {
+        // Классика: название команды (ссылка на состав) + капитан отдельной строкой
+        $teamUrl = route('tournament.public.team', [$team->event_id, $team->id]);
+        $captain = $team->captain;
 
-        foreach ($members as $member) {
-            $u       = $member->user;
-            $first   = $u?->first_name ?? '';
-            $last    = $u?->last_name  ?? '';
-            $display = trim("{$last} {$first}") ?: ($u?->name ?? 'Игрок');
-            $url      = $u ? route('users.show', $u->id) : '#';
-            // profile_photo_url: фото из коллекции photos (avatar_media_id)
-            //   либо автоматический ui-avatars.com — всегда возвращает URL
-            $photoUrl = $u ? $u->profile_photo_url : '';
+        $html .= '<div class="bk-team-classic">';
+        $html .= '<a href="' . e($teamUrl) . '" class="bk-team-name-link">' . e($team->name ?: '?') . '</a>';
+
+        if ($captain) {
+            $first    = $captain->first_name ?? '';
+            $last     = $captain->last_name  ?? '';
+            $display  = trim("{$last} {$first}") ?: ($captain->name ?? 'Игрок');
+            $url      = route('users.show', $captain->id);
+            $photoUrl = $captain->profile_photo_url;
 
             $html .= '<a href="' . e($url) . '" class="bk-player" target="_blank">';
             if ($photoUrl) {
                 $html .= '<img src="' . e($photoUrl) . '" class="bk-player-avatar" alt="' . e($display) . '" loading="lazy">';
             } else {
-                $color = $avatarColor($u?->name ?? $display);
+                $color = $avatarColor($captain->name ?? $display);
                 $ini   = $initials($first, $last);
                 $html .= '<div class="bk-player-avatar bk-player-avatar--initials" style="background:' . $color . '">' . e($ini) . '</div>';
             }
             $html .= '<span class="bk-player-name">' . e($display) . '</span>';
             $html .= '</a>';
         }
-    } else {
-        // TBD
-        $html .= '<div class="bk-player">';
-        $html .= '<div class="bk-player-avatar bk-player-avatar--initials" style="background:#e5e7eb;color:#9ca3af">?</div>';
-        $html .= '<span class="bk-player-name bk-player-name--tbd">TBD</span>';
-        $html .= '</div>';
-    }
 
-    $html .= '</div>'; // .bk-players
+        $html .= '</div>'; // .bk-team-classic
+    } else {
+        $html .= '<div class="bk-players">';
+
+        if ($team) {
+            // Пляжка: до 2 участников пары, капитан первым
+            $members = $team->members
+                ->sortByDesc(fn($m) => $m->role_code === 'captain' ? 1 : 0)
+                ->take(2);
+
+            foreach ($members as $member) {
+                $u       = $member->user;
+                $first   = $u?->first_name ?? '';
+                $last    = $u?->last_name  ?? '';
+                $display = trim("{$last} {$first}") ?: ($u?->name ?? 'Игрок');
+                $url      = $u ? route('users.show', $u->id) : '#';
+                // profile_photo_url: фото из коллекции photos (avatar_media_id)
+                //   либо автоматический ui-avatars.com — всегда возвращает URL
+                $photoUrl = $u ? $u->profile_photo_url : '';
+
+                $html .= '<a href="' . e($url) . '" class="bk-player" target="_blank">';
+                if ($photoUrl) {
+                    $html .= '<img src="' . e($photoUrl) . '" class="bk-player-avatar" alt="' . e($display) . '" loading="lazy">';
+                } else {
+                    $color = $avatarColor($u?->name ?? $display);
+                    $ini   = $initials($first, $last);
+                    $html .= '<div class="bk-player-avatar bk-player-avatar--initials" style="background:' . $color . '">' . e($ini) . '</div>';
+                }
+                $html .= '<span class="bk-player-name">' . e($display) . '</span>';
+                $html .= '</a>';
+            }
+        } else {
+            // TBD
+            $html .= '<div class="bk-player">';
+            $html .= '<div class="bk-player-avatar bk-player-avatar--initials" style="background:#e5e7eb;color:#9ca3af">?</div>';
+            $html .= '<span class="bk-player-name bk-player-name--tbd">TBD</span>';
+            $html .= '</div>';
+        }
+
+        $html .= '</div>'; // .bk-players
+    }
 
     if ($isCompleted && $sets !== null) {
         $cls   = $isWinner ? 'bk-score--win' : 'bk-score--lose';
