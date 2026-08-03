@@ -1446,12 +1446,19 @@ class TournamentController extends Controller
             ->firstOrFail();
 
         try {
-            $this->bracketService->generateGroupCrossover(
+            $created = $this->bracketService->generateGroupCrossover(
                 $stage, $playoffStage,
                 (int) $validated['places_count'],
                 $this->standingsService,
             );
 
+            if ($created->isEmpty()) {
+                return $this->redirectToSetup($event, 'Все запрошенные места уже разыграны — новых матчей не создано.');
+            }
+
+            // Стадия могла уже быть completed (например, дозаполнение матча
+            // за 3-4 после того, как "за 1-2" уже сыгран) — возвращаем её в
+            // активное состояние, чтобы новый матч можно было ввести штатно.
             $playoffStage->update(['status' => TournamentStage::STATUS_IN_PROGRESS]);
 
             return $this->redirectToSetup($event, 'Матчи по местам созданы.');
@@ -2155,14 +2162,31 @@ class TournamentController extends Controller
 
             if ($allStages > 0 && $allStages === $completedStages) {
                 try {
-                    app(\App\Services\TournamentNotificationService::class)
-                        ->notifyTournamentCompleted($event);
+                    // Атомарный claim: "турнир завершён" — событие, которое должно
+                    // произойти РОВНО ОДИН РАЗ за жизнь турнира. Без guard'а этот
+                    // блок срабатывает при КАЖДОМ переходе allStages===completedStages
+                    // в true — если в уже завершённый турнир позже дозаполняется и
+                    // завершается ещё один матч (например, дозаполнение плей-офф
+                    // матчем за 3-4 место), участники получали бы повторное
+                    // "Турнир завершён!" уведомление. Тот же паттерн, что и
+                    // events.city_notified_at.
+                    $claimed = DB::table('events')
+                        ->where('id', $event->id)
+                        ->whereNull('tournament_completed_notified_at')
+                        ->update(['tournament_completed_notified_at' => now()]);
 
-                    // Пересчитываем career stats
+                    if ($claimed) {
+                        app(\App\Services\TournamentNotificationService::class)
+                            ->notifyTournamentCompleted($event);
+                    }
+
+                    // Пересчитываем career stats (идемпотентно — полный пересчёт
+                    // с нуля из текущих данных, безопасно вызывать повторно)
                     app(\App\Services\TournamentStatsService::class)
                         ->rebuildAllCareerStatsForEvent($event);
 
-                    // Обновляем Elo
+                    // Обновляем Elo (elo_processed_at защищает от повторного
+                    // начисления уже обработанным матчам — см. TournamentEloService)
                     app(\App\Services\TournamentEloService::class)
                         ->recalculateForEvent($event);
 
