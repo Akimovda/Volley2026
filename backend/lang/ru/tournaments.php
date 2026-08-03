@@ -849,4 +849,7 @@ return [
     'points'                        => 'Очки',
     'full_rating_link'              => 'Полный рейтинг игроков',
     'rating_hidden_no_games'        => 'Ещё :count игроков без сыгранных матчей',
+
+    // Топ-игроки школы (volleyball_school/show.blade.php)
+    'school_top_players_title'      => '🏆 Лучшие игроки',
 ];

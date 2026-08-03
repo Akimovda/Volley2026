@@ -830,4 +830,7 @@ return [
     'points'                        => 'Points',
     'full_rating_link'              => 'Full player rating',
     'rating_hidden_no_games'        => ':count more players with no matches played',
+
+    // Top players of a school (volleyball_school/show.blade.php)
+    'school_top_players_title'      => '🏆 Top players',
 ];
