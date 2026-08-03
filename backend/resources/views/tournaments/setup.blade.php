@@ -2114,8 +2114,8 @@ $tourNumber = $seasonData
 				<div>
 					<label class="f-13 b-600 mb-1 d-block">{{ __('tournaments.setup_crossover_places') }}</label>
 					<select name="places_count">
-						<option value="2">2 ({{ __('tournaments.setup_promote_to_playoff') }})</option>
-						<option value="4">4 (+ 3-4)</option>
+						<option value="2">{{ __('tournaments.setup_crossover_places_2') }}</option>
+						<option value="4" selected>{{ __('tournaments.setup_crossover_places_4') }}</option>
 					</select>
 				</div>
 				<button type="submit" class="btn btn-primary">{{ __('tournaments.setup_crossover_btn') }}</button>

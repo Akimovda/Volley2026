@@ -648,6 +648,8 @@ return [
     'setup_crossover_title' => 'Direct placement matches (2 groups)',
     'setup_crossover_hint'  => 'Group winners play directly for 1st-2nd place, runners-up play for 3rd-4th place, without an extra cross-group semifinal round.',
     'setup_crossover_places' => 'Places to decide',
+    'setup_crossover_places_2' => '2 — 1st-2nd place only',
+    'setup_crossover_places_4' => '4 — 1st-2nd and 3rd-4th place',
     'setup_crossover_btn'    => 'Create placement matches',
 
     'setup_groups_completed_h3' => '✅ All groups finished',
