@@ -557,7 +557,7 @@
 		</div>
 		@elseif($activeCoupon)
 		<div class="alert alert-warning mt-1 mb-2">
-			{!! __('events.show_pl_coupon_label') !!} {{ $activeCoupon->template->name }}
+			<x-menu-icon name="ticket" class="cd" style="width:1.6rem;height:1.6rem;vertical-align:-0.3rem;margin-right:0.3rem" /> {!! __('events.show_pl_coupon_label') !!} {{ $activeCoupon->template->name }}
 			{!! __('events.show_pl_coupon_discount', ['pct' => $activeCoupon->getDiscountPct()]) !!}
 		</div>
 		@endif
@@ -1200,7 +1200,7 @@ $showWaitlistViewer = !$isTournament && !$eventStarted && $isOrganizer && $waitl
 			<div id="players-list"></div>
 			@if($reserveMax > 0)
 			<div id="reserve-players-section" style="display:none;margin-top:1rem;">
-				<div class="text-muted small b-600 mb-05">{{ __('events.show_pl_reserve_players') }}</div>
+				<div class="text-muted small b-600 mb-05"><x-menu-icon name="players" class="cd" style="width:1.5rem;height:1.5rem;vertical-align:-0.25rem;margin-right:0.3rem" /> {{ __('events.show_pl_reserve_players') }}</div>
 				<div id="reserve-players-list"></div>
 			</div>
 			@endif

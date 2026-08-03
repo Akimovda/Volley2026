@@ -3316,10 +3316,33 @@ body.dark .menu-user-login .user-name {
    заголовка карточки мероприятия (card-title), не унаследованный цвет
    текста строки. */
 .emo .menu-icon {
-	width: 1.6rem;
-	height: 1.6rem;
+	width: 2rem;
+	height: 2rem;
 	margin-right: 0;
-	vertical-align: -0.3rem;
+	vertical-align: -0.4rem;
+}
+/* Компактная инлайн-иконка перед подписью в плотных строках (Сводка события,
+   подписи "Направление:"/"Формат:" и т.п.) — вне .emo-колонки. Родитель
+   (.event-row .b-600) — inline-flex, поэтому центрирование идёт через
+   align-items, а не через vertical-align "на глаз" (тот способ хуже совпадает
+   с высотой жирного текста, чем flex). */
+.event-row .b-600 {
+	display: inline-flex;
+	align-items: center;
+}
+.event-row-icon {
+	width: 1.8rem;
+	height: 1.8rem;
+	margin-right: 0.5rem;
+	flex-shrink: 0;
+}
+/* Иконка внутри .btn (Поделиться/В календарь) — .btn уже inline-flex с
+   align-items:center, дополнительное позиционирование не требуется. */
+.btn-icon {
+	width: 1.8rem;
+	height: 1.8rem;
+	margin-right: 0.6rem;
+	flex-shrink: 0;
 }
 /* Точка непрочитанного уведомления в меню — раньше эмодзи 🔴 (нестабильный
    размер/цвет на разных платформах), теперь простой круг через CSS. */

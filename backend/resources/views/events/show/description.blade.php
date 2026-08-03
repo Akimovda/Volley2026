@@ -20,12 +20,7 @@
 				'beach' => __('events.show_desc_dir_beach'),
 				default => __('events.show_desc_dir_default')
 				};
-				
-				$levels = [
-				1=>'⚪️',2=>'🟡',3=>'🟠',
-				4=>'🔵',5=>'🟣',6=>'🔴',7=>'⚫️'
-				];
-				
+
 				@endphp
 				
 
@@ -49,14 +44,14 @@
         </a>
         @if($orgSchool)
         <div class="f-13 mt-05">
-            <a class="blink" href="{{ route('volleyball_school.show', $orgSchool->slug) }}">🏐 {{ $orgSchool->name }}</a>
+            <a class="blink" href="{{ route('volleyball_school.show', $orgSchool->slug) }}"><x-menu-icon name="volleyball" class="cd" style="width:1.4rem;height:1.4rem;margin-right:0.3rem;vertical-align:-0.25rem" /> {{ $orgSchool->name }}</a>
         </div>
         @endif
     </div>
 </div>	
 				@if($event->organizer && $event->organizer->phone)
-				<div class="d-flex mt-1">	
-					<span class="emo">📞</span>
+				<div class="d-flex mt-1">
+					<span class="emo"><x-menu-icon name="phone" class="cd" /></span>
 					<a class="blink" href="tel:{{ $event->organizer->phone }}">
 						 {{ $event->organizer->formatted_phone }}
 					</a>
@@ -71,8 +66,8 @@
 				{{-- ТРЕНЕР --}}
 				@if($event->trainers && $event->trainers->count())
 				
-				<div class="d-flex">	
-					<span class="emo">‍👨‍🏫‍</span>
+				<div class="d-flex">
+					<span class="emo"><x-menu-icon name="coach" class="cd" /></span>
 					<div>
 						<div class="b-600">{{ __('events.show_desc_coach') }}</div>
 						
@@ -104,7 +99,7 @@
 					<div class="event-summary">
 						
 						<div class="event-row">
-							<span class="b-600">{{ __('events.show_desc_direction_label') }}</span>
+							<span class="b-600"><x-menu-icon name="direction" class="cd event-row-icon" /> {{ __('events.show_desc_direction_label') }}</span>
 							<span>{{ $dirLabel }}</span>
 						</div>
 						
@@ -118,7 +113,7 @@
 						@endphp
 						@if($formatLabel)
 						<div class="event-row">
-							<span class="b-600">{{ __('events.show_desc_format_label') }}</span>
+							<span class="b-600"><x-menu-icon name="volleyball" class="cd event-row-icon" /> {{ __('events.show_desc_format_label') }}</span>
 							<span>{{ $formatLabel }}</span>
 						</div>
 						@endif
@@ -126,7 +121,7 @@
 						
 						@if($event->gameSettings->min_players && $event->gameSettings->max_players)
 						<div class="event-row">
-							<span class="b-600">{{ __('events.show_desc_players_label') }}</span>
+							<span class="b-600"><x-menu-icon name="players" class="cd event-row-icon" /> {{ __('events.show_desc_players_label') }}</span>
 							<span>
 								{{ $event->gameSettings->min_players }}
 								–
@@ -137,7 +132,7 @@
 
 						@if($event->format === 'tournament' && $event->tournament_teams_count)
 						<div class="event-row">
-							<span class="b-600">{{ __('events.show_desc_teams_label') }}</span>
+							<span class="b-600"><x-menu-icon name="trophy" class="cd event-row-icon" /> {{ __('events.show_desc_teams_label') }}</span>
 							<span>{{ $event->tournament_teams_count }}</span>
 						</div>
 						@endif
@@ -158,7 +153,7 @@
 
 						@if($levelMin || $levelMax)
 						<div class="event-row between" style="flex-wrap: wrap;gap:.5rem;">
-							<span class="b-600">{{ __('events.show_desc_level_label') }}</span>
+							<span class="b-600"><x-menu-icon name="level" class="cd event-row-icon" /> {{ __('events.show_desc_level_label') }}</span>
 							<span>
 								@if($levelMin)
 								<span class="level-color-badge" style="color:{{ level_color((int)$levelMin) }};font-weight:700;">{{ level_name($levelMin, $levelScope) }}</span>
@@ -177,12 +172,12 @@
 						{{-- ОПЛАТА --}}
 						@if(!is_null($event->price_minor))
 						<div class="event-row">
-							<span class="b-600">{{ __('events.show_desc_payment_label') }}</span>
+							<span class="b-600"><x-menu-icon name="money" class="cd event-row-icon" /> {{ __('events.show_desc_payment_label') }}</span>
 							<span>{{ money_human($event->price_minor, $event->price_currency) }}</span>
 						</div>
 						@elseif(!empty($event->price_text))
 						<div class="event-row">
-							<span class="b-600">{{ __('events.show_desc_payment_label') }}</span>
+							<span class="b-600"><x-menu-icon name="money" class="cd event-row-icon" /> {{ __('events.show_desc_payment_label') }}</span>
 							<span>{{ $event->price_text }}</span>
 						</div>
 						@endif
@@ -195,27 +190,27 @@
 					<div class="event-summary">
 
 					<div class="event-row">
-					<span class="b-600">{{ __('events.show_desc_direction_label') }}</span>
+					<span class="b-600"><x-menu-icon name="direction" class="cd event-row-icon" /> {{ __('events.show_desc_direction_label') }}</span>
 					<span>{{ $dirLabel }}</span>
 					</div>
 
 					@if($tSetting->game_scheme)
 					<div class="event-row">
-					<span class="b-600">{{ __('events.show_desc_format_label') }}</span>
+					<span class="b-600"><x-menu-icon name="volleyball" class="cd event-row-icon" /> {{ __('events.show_desc_format_label') }}</span>
 					<span>{{ $tSetting->game_scheme }}</span>
 					</div>
 					@endif
 
 					@if($tSetting->team_size_min || $tSetting->team_size_max)
 					<div class="event-row">
-					<span class="b-600">{{ __('events.show_desc_lineup_label') }}</span>
+					<span class="b-600"><x-menu-icon name="players" class="cd event-row-icon" /> {{ __('events.show_desc_lineup_label') }}</span>
 					<span>{{ $tSetting->team_size_min ?? '?' }} – {{ $tSetting->team_size_max ?? '?' }}</span>
 					</div>
 					@endif
 
 					@if($tSetting->teams_count)
 					<div class="event-row">
-					<span class="b-600">{{ __('events.show_desc_teams_label') }}</span>
+					<span class="b-600"><x-menu-icon name="trophy" class="cd event-row-icon" /> {{ __('events.show_desc_teams_label') }}</span>
 					<span>{{ $tSetting->teams_count }}</span>
 					</div>
 					@endif
@@ -228,7 +223,7 @@
 					@endphp
 					@if($levelMin || $levelMax)
 					<div class="event-row" style="flex-direction:column;gap:.5rem;">
-					<span class="b-600">{{ __('events.show_desc_level_label') }}</span>
+					<span class="b-600"><x-menu-icon name="level" class="cd event-row-icon" /> {{ __('events.show_desc_level_label') }}</span>
 					<span>
 					@if($levelMin)
 					<span class="level-color-badge" style="color:{{ level_color((int)$levelMin) }};font-weight:700;">{{ level_name($levelMin, $levelScope) }}</span>
@@ -244,12 +239,12 @@
 
 					@if(!is_null($event->price_minor))
 					<div class="event-row">
-					<span class="b-600">{{ __('events.show_desc_payment_label') }}</span>
+					<span class="b-600"><x-menu-icon name="money" class="cd event-row-icon" /> {{ __('events.show_desc_payment_label') }}</span>
 					<span>{{ money_human($event->price_minor, $event->price_currency) }}</span>
 					</div>
 					@elseif(!empty($event->price_text))
 					<div class="event-row">
-					<span class="b-600">{{ __('events.show_desc_payment_label') }}</span>
+					<span class="b-600"><x-menu-icon name="money" class="cd event-row-icon" /> {{ __('events.show_desc_payment_label') }}</span>
 					<span>{{ $event->price_text }}</span>
 					</div>
 					@endif
@@ -313,7 +308,7 @@
 					<div class="event-summary">
 						
 						<div class="event-row d-block">
-							<span class="b-600">{{ __('events.show_desc_restrictions_label') }}</span>
+							<span class="b-600"><x-menu-icon name="warning" class="cd event-row-icon" /> {{ __('events.show_desc_restrictions_label') }}</span>
 							
 							
 							
