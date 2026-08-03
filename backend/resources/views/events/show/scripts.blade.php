@@ -293,10 +293,22 @@
 					const percent = Math.min(100, (data.registered_total / maxPlayers) * 100);
 					progress.style.transition = 'width 0.4s ease';
 					progress.style.width = percent + '%';
-					progress.classList.remove('bg-danger', 'bg-warning', 'bg-success');
-					if (percent >= 75) progress.classList.add('bg-success');
-					else if (percent >= 40) progress.classList.add('bg-warning');
-					else progress.classList.add('bg-danger');
+					progress.classList.remove('bg-danger', 'bg-warning', 'bg-success', 'bg-full');
+
+					// Шкала заполненности: 0-50% свободно, 51-70% заполняется,
+					// 71-99% почти нет мест, 100% мест нет (см. players.blade.php)
+					if (percent >= 100) {
+						progress.classList.add('bg-full');
+					} else if (percent > 70) {
+						progress.classList.add('bg-danger');
+					} else if (percent > 50) {
+						progress.classList.add('bg-warning');
+					} else {
+						progress.classList.add('bg-success');
+					}
+
+					const fullLabel = document.getElementById('players-progress-full-label');
+					if (fullLabel) fullLabel.style.display = percent >= 100 ? '' : 'none';
 				}
 				} catch (e) {
 				console.error('stats update error', e);
