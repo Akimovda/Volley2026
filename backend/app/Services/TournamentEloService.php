@@ -7,44 +7,68 @@ use App\Models\TournamentMatch;
 use App\Models\PlayerCareerStats;
 use App\Models\PlayerTournamentStats;
 use App\Models\TournamentSeasonStats;
+use App\Jobs\RecalculateTournamentRatingsJob;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class TournamentEloService
 {
     private const K_FACTOR = 32;
     private const DEFAULT_ELO = 1500;
 
+    // Общий с TournamentOpenSkillService::LOCK_KEY ключ pg_advisory_xact_lock —
+    // Elo и OpenSkill сериализуются друг с другом при полном пересчёте (см. rebuildAll()
+    // в обоих сервисах). crc32('tournament_ratings_rebuild') & 0x7fffffff — тот же
+    // паттерн, что у roleKey в WaitlistService/EventRegistrationController.
+    public const LOCK_KEY = 1_927_530_612;
+
     /**
-     * Пересчитать Elo для всех игроков после завершения турнира.
-     *
-     * Логика:
-     * - Проходим все матчи турнира в хронологическом порядке
-     * - Для каждого матча считаем средний Elo команд
-     * - Обновляем Elo каждого игрока по формуле
+     * Точка вызова для существующих мест (checkStageCompletion и т.п.) — Elo
+     * общекарьерный и path-dependent, поэтому корректно пересчитать можно
+     * только ВСЮ платформу целиком (см. rebuildAll()), не один турнир отдельно.
+     * Событие само не используется для скоупа — оставлено параметром, чтобы
+     * не менять сигнатуру у существующих вызывающих мест.
      */
     public function recalculateForEvent(Event $event): void
     {
-        $direction = $event->direction ?? 'classic';
+        RecalculateTournamentRatingsJob::dispatch($event->id)->afterCommit();
+    }
 
-        // elo_processed_at — защита от повторного начисления: recalculateForEvent()
-        // проходит ВСЕ завершённые матчи события целиком, а не только новые.
-        // Вызывается из checkStageCompletion() при КАЖДОМ переходе турнира в
-        // "полностью завершён" — если это происходит больше одного раза за
-        // время жизни турнира (например, в уже завершённый плей-офф позже
-        // дозаполнили матч за 3-4 место), старые матчи без guard'а
-        // пересчитывались бы повторно, задваивая elo_rating игроков. Тот же
-        // паттерн, что и у tournament_matches.stats_processed_at (OpenSkill).
-        $matches = TournamentMatch::whereHas('stage', fn($q) => $q->where('event_id', $event->id))
-            ->where('status', TournamentMatch::STATUS_COMPLETED)
-            ->whereNotNull('winner_team_id')
-            ->whereNull('elo_processed_at')
-            ->orderBy('scored_at')
-            ->get();
+    /**
+     * Полный пересчёт Elo с нуля по всей истории турнирных матчей платформы.
+     * Симметрично TournamentOpenSkillService::rebuildAll() — та же причина:
+     * elo_rating общекарьерный (across всех турниров игрока) и path-dependent,
+     * корректный пересчёт возможен только полной переигровкой от базового
+     * значения, а не точечной правкой одного турнира/матча.
+     */
+    public function rebuildAll(): void
+    {
+        DB::transaction(function () {
+            DB::select('SELECT pg_advisory_xact_lock(?)', [self::LOCK_KEY]);
 
-        foreach ($matches as $match) {
-            $this->processMatch($match, $direction);
-            $match->update(['elo_processed_at' => now()]);
-        }
+            Log::info('[Elo] Starting full rebuild...');
+
+            $this->resetAll();
+
+            $matches = TournamentMatch::with('stage.event')
+                ->where('status', TournamentMatch::STATUS_COMPLETED)
+                ->whereNotNull('winner_team_id')
+                ->orderBy(DB::raw('COALESCE(scored_at, created_at)'))
+                ->get();
+
+            $processed = 0;
+            foreach ($matches as $match) {
+                $event = $match->stage?->event;
+                if (!$event) continue;
+
+                $direction = $event->direction ?? 'classic';
+                $this->processMatch($match, $direction);
+                $match->forceFill(['elo_processed_at' => now()])->saveQuietly();
+                $processed++;
+            }
+
+            Log::info("[Elo] Rebuilt {$processed} matches.");
+        });
     }
 
     /**
