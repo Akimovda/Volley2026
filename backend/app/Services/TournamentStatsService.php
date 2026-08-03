@@ -12,7 +12,7 @@ use App\Models\PlayerCareerStats;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\App;
-use App\Services\TournamentOpenSkillService;
+use App\Jobs\RecalculateTournamentRatingsJob;
 
 class TournamentStatsService
 {
@@ -38,70 +38,12 @@ class TournamentStatsService
             $this->updateTeamPlayersStats($event, $side['team_id'], $side);
         }
 
-        // OpenSkill/пары/соперники — накопительные счётчики (matches_together и т.п.),
-        // НЕ пересчитываются с нуля, а инкрементируются. rebuildTournamentStats() вызывает
-        // updateAfterMatch() для ВСЕХ завершённых матчей события при КАЖДОМ сохранении
-        // счёта любого матча турнира — без этой защиты счётчики накручивались бы повторно
-        // на каждое новое сохранение (баг, обнаруженный и исправленный 2026-07-04).
-        if ($match->stats_processed_at) {
-            return;
-        }
-
-        // OpenSkill — обновляем mu/sigma после каждого матча
-        $homeWon       = $match->winner_team_id === $match->team_home_id;
-        $winnerTeamId  = $homeWon ? $match->team_home_id : $match->team_away_id;
-        $loserTeamId   = $homeWon ? $match->team_away_id : $match->team_home_id;
-
-        $winnerIds = DB::table('event_team_members')
-            ->where('event_team_id', $winnerTeamId)
-            ->where('confirmation_status', 'confirmed')
-            ->pluck('user_id')->toArray();
-
-        $loserIds = DB::table('event_team_members')
-            ->where('event_team_id', $loserTeamId)
-            ->where('confirmation_status', 'confirmed')
-            ->pluck('user_id')->toArray();
-
-        $direction = $event->direction ?? 'beach';
-        $seasonId  = $event->season_id;
-        $leagueId  = null;
-        if ($seasonId) {
-            $leagueId = DB::table('tournament_season_events')
-                ->where('event_id', $event->id)
-                ->value('league_id');
-            if (!$leagueId) {
-                $leagueId = DB::table('tournament_leagues')
-                    ->where('season_id', $seasonId)
-                    ->value('id');
-            }
-        }
-
-        App::make(TournamentOpenSkillService::class)
-            ->processMatchByIds($winnerIds, $loserIds, $direction, $seasonId, $leagueId, $event->id, $match->id);
-
-        $match->forceFill(['stats_processed_at' => now()])->saveQuietly();
-    }
-
-    /**
-     * Откатить статистику игроков для матча.
-     */
-    public function revertMatch(TournamentMatch $match): void
-    {
-        if (! $match->isCompleted()) return;
-
-        $stage = $match->stage;
-        $event = $stage->event;
-
-        foreach ([
-            ['team_id' => $match->team_home_id, 'won' => $match->sets_home, 'lost' => $match->sets_away,
-             'scored' => $match->total_points_home, 'conceded' => $match->total_points_away,
-             'isWinner' => $match->winner_team_id === $match->team_home_id],
-            ['team_id' => $match->team_away_id, 'won' => $match->sets_away, 'lost' => $match->sets_home,
-             'scored' => $match->total_points_away, 'conceded' => $match->total_points_home,
-             'isWinner' => $match->winner_team_id === $match->team_away_id],
-        ] as $side) {
-            $this->revertTeamPlayersStats($event, $side['team_id'], $side);
-        }
+        // OpenSkill mu/sigma больше НЕ обновляются здесь инкрементально (был источник
+        // задвоения при коррекции счёта уже обработанного матча — исправление счёта
+        // сбрасывало stats_processed_at, но mu/sigma пересчитывались поверх текущего,
+        // уже включающего старую дельту, значения). Единственный источник правды теперь —
+        // TournamentOpenSkillService::rebuildAll() (полная переигровка с нуля), вызывается
+        // из recalculateTournament() ниже через RecalculateTournamentRatingsJob.
     }
 
     /**
@@ -127,35 +69,6 @@ class TournamentStatsService
             $stat->sets_lost       += $side['lost'];
             $stat->points_scored   += $side['scored'];
             $stat->points_conceded += $side['conceded'];
-
-            $stat->recalcRates()->save();
-        }
-    }
-
-    /**
-     * Откат stats для всех игроков команды.
-     */
-    private function revertTeamPlayersStats(Event $event, int $teamId, array $side): void
-    {
-        $memberUserIds = DB::table('event_team_members')
-            ->where('event_team_id', $teamId)
-            ->where('confirmation_status', 'confirmed')
-            ->pluck('user_id');
-
-        foreach ($memberUserIds as $userId) {
-            $stat = PlayerTournamentStats::where('event_id', $event->id)
-                ->where('user_id', $userId)
-                ->where('team_id', $teamId)
-                ->first();
-
-            if (! $stat) continue;
-
-            $stat->matches_played = max(0, $stat->matches_played - 1);
-            if ($side['isWinner']) $stat->matches_won = max(0, $stat->matches_won - 1);
-            $stat->sets_won        = max(0, $stat->sets_won - $side['won']);
-            $stat->sets_lost       = max(0, $stat->sets_lost - $side['lost']);
-            $stat->points_scored   = max(0, $stat->points_scored - $side['scored']);
-            $stat->points_conceded = max(0, $stat->points_conceded - $side['conceded']);
 
             $stat->recalcRates()->save();
         }
@@ -253,6 +166,35 @@ class TournamentStatsService
                 App::make(TournamentSeasonStatsService::class)->rebuildForSeason($season);
             }
         }
+    }
+
+    /**
+     * Единая точка входа "полностью пересчитать турнир из текущих результатов матчей".
+     * Вызывается на КАЖДОМ пути, меняющем набор/содержимое результатов события: первый
+     * ввод счёта, исправление счёта, откат стадии, удаление стадии — единый путь, без
+     * отдельного "инкрементального" варианта (см. report_recalc_implementation_plan).
+     *
+     * 1) event-scoped часть (player_tournament_stats/career-totals) — полный delete+rebuild,
+     *    уже безопасна сама по себе (rebuildAll($event)).
+     * 2) standings ВСЕХ групп события — submitScore()/resetScore() пересчитывают только
+     *    группу конкретного матча; revertStage()/destroyStage() вообще не проходят через
+     *    них, поэтому здесь явно прогоняем все группы турнира.
+     * 3) Elo/OpenSkill — общекарьерные, path-dependent (см. TournamentEloService::rebuildAll())
+     *    — корректно пересчитываются только полной переигровкой ВСЕЙ платформы, не одного
+     *    турнира, поэтому это отдельная асинхронная job, а не часть этого метода.
+     */
+    public function recalculateTournament(Event $event): void
+    {
+        $this->rebuildAll($event);
+
+        $standingsService = App::make(TournamentStandingsService::class);
+        foreach ($event->tournamentStages as $stage) {
+            foreach ($stage->groups as $group) {
+                $standingsService->recalculateGroup($stage, $group);
+            }
+        }
+
+        RecalculateTournamentRatingsJob::dispatch($event->id)->afterCommit();
     }
 
     /**

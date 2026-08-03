@@ -716,7 +716,7 @@ class TournamentController extends Controller
             );
 
             try {
-                app(\App\Services\TournamentStatsService::class)->rebuildAll($event);
+                app(\App\Services\TournamentStatsService::class)->recalculateTournament($event);
             } catch (\Throwable $e) {
                 \Log::warning('Stats rebuild failed: ' . $e->getMessage());
             }
@@ -845,7 +845,7 @@ class TournamentController extends Controller
             });
 
             try {
-                app(\App\Services\TournamentStatsService::class)->rebuildAll($event);
+                app(\App\Services\TournamentStatsService::class)->recalculateTournament($event);
             } catch (\Throwable $e) {
                 \Log::warning('Stats rebuild after rescore failed: ' . $e->getMessage());
             }
@@ -1580,6 +1580,15 @@ class TournamentController extends Controller
             $stage->update(['status' => TournamentStage::STATUS_IN_PROGRESS]);
         });
 
+        // Откат стадии раньше не запускал никакого пересчёта вообще — переигранный
+        // после отката матч не был бы учтён ни в Elo, ни в OpenSkill, ни в standings
+        // события за пределами этой стадии (см. report_recalc_system_diagnosis).
+        try {
+            app(\App\Services\TournamentStatsService::class)->recalculateTournament($event);
+        } catch (\Throwable $e) {
+            \Log::warning('Stats rebuild after stage revert failed: ' . $e->getMessage());
+        }
+
         return $this->redirectToSetup($event, "Стадия \"{$stage->name}\" откачена — все счета сброшены.");
     }
 
@@ -1609,6 +1618,16 @@ class TournamentController extends Controller
         }
 
         $stage->delete(); // cascadeOnDelete очистит groups, matches, standings
+
+        // Удаление стадии с уже завершёнными матчами раньше не запускало никакого
+        // пересчёта — их вклад в Elo/OpenSkill/player_tournament_stats оставался
+        // навсегда, хотя сами результаты уже удалены (найдено при аудите системы
+        // пересчёта, см. report_recalc_implementation_plan).
+        try {
+            app(\App\Services\TournamentStatsService::class)->recalculateTournament($event);
+        } catch (\Throwable $e) {
+            \Log::warning('Stats rebuild after stage delete failed: ' . $e->getMessage());
+        }
 
         $msg = "Стадия \"{$name}\" удалена.";
         if (!empty($divNames)) {
@@ -2180,15 +2199,15 @@ class TournamentController extends Controller
                             ->notifyTournamentCompleted($event);
                     }
 
-                    // Пересчитываем career stats (идемпотентно — полный пересчёт
-                    // с нуля из текущих данных, безопасно вызывать повторно)
-                    app(\App\Services\TournamentStatsService::class)
-                        ->rebuildAllCareerStatsForEvent($event);
-
-                    // Обновляем Elo (elo_processed_at защищает от повторного
-                    // начисления уже обработанным матчам — см. TournamentEloService)
-                    app(\App\Services\TournamentEloService::class)
-                        ->recalculateForEvent($event);
+                    // Пересчёт статистики/Elo/OpenSkill НЕ дублируем здесь: единственные
+                    // реальные вызывающие пути этого метода — score()/rescoreMatch() — уже
+                    // вызывают TournamentStatsService::recalculateTournament($event) (полный
+                    // пересчёт + ratings job) непосредственно перед checkStageCompletion() в
+                    // том же запросе. Повторный вызов здесь означал бы дважды ставить в
+                    // очередь один и тот же RecalculateTournamentRatingsJob на каждое
+                    // сохранение счёта. (scoreKingBeach() тоже зовёт этот метод, но не через
+                    // team_home_id/winner_team_id — для king_beach recalculateTournament()
+                    // безрезультатен и раньше не вызывался вовсе, см. отдельный backlog.)
 
                     // Авто-продвижение в сезоне (promote/relegate/reserve)
                     app(\App\Services\TournamentPromotionService::class)

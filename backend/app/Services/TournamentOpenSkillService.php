@@ -117,76 +117,83 @@ class TournamentOpenSkillService
      */
     public function rebuildAll(): void
     {
-        Log::info('[OpenSkill] Starting full rebuild...');
+        DB::transaction(function () {
+            // Общий с TournamentEloService::LOCK_KEY ключ — Elo и OpenSkill full-rebuild
+            // сериализуются друг с другом (и сами с собой при параллельном запуске),
+            // тот же паттерн advisory lock, что в WaitlistService/EventRegistrationController.
+            DB::select('SELECT pg_advisory_xact_lock(?)', [TournamentEloService::LOCK_KEY]);
 
-        // Сброс — все таблицы с нуля
-        DB::table('player_rating_history')->truncate();
-        DB::table('player_pair_stats')->truncate();
-        DB::table('player_opponent_stats')->truncate();
+            Log::info('[OpenSkill] Starting full rebuild...');
 
-        PlayerCareerStats::query()->update([
-            'mu'                => self::INITIAL_MU,
-            'sigma'             => self::INITIAL_SIGMA,
-            'mu_peak'           => self::INITIAL_MU,
-            'mu_peak_date'      => null,
-            'unique_opponents'  => 0,
-            'unique_partners'   => 0,
-            'main_partner_id'   => null,
-            'main_partner_games'=> 0,
-            'pair_stability'    => 0,
-            'last_5_form'       => null,
-            'last_10_form'      => null,
-            'points_ratio'      => 1.0,
-        ]);
+            // Сброс — все таблицы с нуля
+            DB::table('player_rating_history')->truncate();
+            DB::table('player_pair_stats')->truncate();
+            DB::table('player_opponent_stats')->truncate();
 
-        TournamentSeasonStats::query()->update([
-            'mu_season'    => self::INITIAL_MU,
-            'sigma_season' => self::INITIAL_SIGMA,
-        ]);
+            PlayerCareerStats::query()->update([
+                'mu'                => self::INITIAL_MU,
+                'sigma'             => self::INITIAL_SIGMA,
+                'mu_peak'           => self::INITIAL_MU,
+                'mu_peak_date'      => null,
+                'unique_opponents'  => 0,
+                'unique_partners'   => 0,
+                'main_partner_id'   => null,
+                'main_partner_games'=> 0,
+                'pair_stability'    => 0,
+                'last_5_form'       => null,
+                'last_10_form'      => null,
+                'points_ratio'      => 1.0,
+            ]);
 
-        $matches = TournamentMatch::with('stage.event')
-            ->where('status', TournamentMatch::STATUS_COMPLETED)
-            ->whereNotNull('winner_team_id')
-            ->orderBy(DB::raw('COALESCE(scored_at, created_at)'))
-            ->get();
+            TournamentSeasonStats::query()->update([
+                'mu_season'    => self::INITIAL_MU,
+                'sigma_season' => self::INITIAL_SIGMA,
+            ]);
 
-        $processed = 0;
+            $matches = TournamentMatch::with('stage.event')
+                ->where('status', TournamentMatch::STATUS_COMPLETED)
+                ->whereNotNull('winner_team_id')
+                ->orderBy(DB::raw('COALESCE(scored_at, created_at)'))
+                ->get();
 
-        foreach ($matches as $match) {
-            $event = $match->stage?->event;
-            if (!$event) continue;
+            $processed = 0;
 
-            $direction = $event->direction ?? 'beach';
-            $homeWon   = $match->winner_team_id === $match->team_home_id;
+            foreach ($matches as $match) {
+                $event = $match->stage?->event;
+                if (!$event) continue;
 
-            $winnerTeamId = $homeWon ? $match->team_home_id : $match->team_away_id;
-            $loserTeamId  = $homeWon ? $match->team_away_id : $match->team_home_id;
+                $direction = $event->direction ?? 'beach';
+                $homeWon   = $match->winner_team_id === $match->team_home_id;
 
-            $winnerIds = $this->getTeamPlayerIds($winnerTeamId);
-            $loserIds  = $this->getTeamPlayerIds($loserTeamId);
+                $winnerTeamId = $homeWon ? $match->team_home_id : $match->team_away_id;
+                $loserTeamId  = $homeWon ? $match->team_away_id : $match->team_home_id;
 
-            $seasonId = $event->season_id;
-            $leagueId = null;
-            if ($seasonId) {
-                $leagueId = DB::table('tournament_season_events')
-                    ->where('event_id', $event->id)
-                    ->value('league_id');
-                if (!$leagueId) {
-                    $leagueId = DB::table('tournament_leagues')
-                        ->where('season_id', $seasonId)
-                        ->value('id');
+                $winnerIds = $this->getTeamPlayerIds($winnerTeamId);
+                $loserIds  = $this->getTeamPlayerIds($loserTeamId);
+
+                $seasonId = $event->season_id;
+                $leagueId = null;
+                if ($seasonId) {
+                    $leagueId = DB::table('tournament_season_events')
+                        ->where('event_id', $event->id)
+                        ->value('league_id');
+                    if (!$leagueId) {
+                        $leagueId = DB::table('tournament_leagues')
+                            ->where('season_id', $seasonId)
+                            ->value('id');
+                    }
                 }
+
+                $this->processMatchByIds(
+                    $winnerIds, $loserIds, $direction,
+                    $seasonId, $leagueId, $event->id, $match->id
+                );
+                $match->forceFill(['stats_processed_at' => now()])->saveQuietly();
+                $processed++;
             }
 
-            $this->processMatchByIds(
-                $winnerIds, $loserIds, $direction,
-                $seasonId, $leagueId, $event->id, $match->id
-            );
-            $match->forceFill(['stats_processed_at' => now()])->saveQuietly();
-            $processed++;
-        }
-
-        Log::info("[OpenSkill] Rebuilt {$processed} matches.");
+            Log::info("[OpenSkill] Rebuilt {$processed} matches.");
+        });
     }
 
     // ---------------------------------------------------------------
@@ -394,8 +401,18 @@ class TournamentOpenSkillService
                 ? (int) $topPair->player2_id
                 : (int) $topPair->player1_id;
             $cs->main_partner_games = (int) $topPair->matches_together;
+            // pair_stability — "какая доля МОИХ матчей (в этом направлении) сыграна с этим
+            // партнёром" — по смыслу процент, не может законно превышать 100%. matches_together
+            // в player_pair_stats считается ГЛОБАЛЬНО (без учёта direction — один ряд на пару
+            // игроков на классику+пляжку вместе, см. updatePairStats()/ON CONFLICT (player1_id,
+            // player2_id) без direction в ключе), а total_matches здесь — per-direction, поэтому
+            // для пары, играющей в обоих направлениях, сырое отношение может формально превысить
+            // 100% (переполняет DECIMAL(5,2), до 999.99) — это не "легитимный рост величины", а
+            // рассинхронизация двух разных по объёму знаменателей, поэтому клампим к [0,100], а не
+            // расширяем колонку (расширение спрятало бы бессмысленные >100% значения, а не решило
+            // семантику).
             $cs->pair_stability     = ($cs->total_matches ?? 0) > 0
-                ? round($topPair->matches_together / $cs->total_matches * 100, 2)
+                ? min(100.0, max(0.0, round($topPair->matches_together / $cs->total_matches * 100, 2)))
                 : 0.0;
         } else {
             $cs->main_partner_id    = null;

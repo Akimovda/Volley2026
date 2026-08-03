@@ -138,9 +138,6 @@ class TournamentMatchService
                 'status'            => TournamentMatch::STATUS_SCHEDULED,
                 'scored_by_user_id' => null,
                 'scored_at'         => null,
-                // Сбрасываем флаг, чтобы TournamentStatsService::updateAfterMatch() заново
-                // обработал OpenSkill/пары/соперники для исправленного счёта (см. guard там же).
-                'stats_processed_at' => null,
             ]);
 
             if ($match->group_id) {
