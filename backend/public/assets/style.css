@@ -2053,16 +2053,11 @@ body.dark .tab-highlight {
 }
 .tab-pane {
     display: none;
-	animation: tabfadeIn 0.6s ease;
 }
 .tab-pane.active {
     display: block;
 	z-index: 2;
 	position: relative;
-}
-@keyframes tabfadeIn {
-    from { opacity: 0; transform: translateY(1rem); }
-    to { opacity: 1; transform: translateY(0); }
 }
 
 /* Темная тема */
@@ -2092,10 +2087,6 @@ body.dark .tab-highlight {
 .level .tab {
 	min-width: 16rem;
 	text-align: center;
-}
-
-.level .tab-pane {
-	animation: unset;
 }
 
 
