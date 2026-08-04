@@ -828,11 +828,12 @@ class TournamentController extends Controller
             return back()->with('error', 'Матч не завершён — используйте обычный ввод счёта.');
         }
 
-        $stageIsDivStage = str_starts_with($stage->name, 'Группа ');
+        $stageIsDivStage = $stage->division_tier !== null || str_starts_with($stage->name, 'Группа ');
         if (!$stageIsDivStage) {
             $hasDivStages = $event->tournamentStages()
-                ->where('name', 'like', 'Группа %')
                 ->where('occurrence_id', $stage->occurrence_id)
+                ->where(fn($q) => $q->whereNotNull('division_tier')
+                    ->orWhere('name', 'like', 'Группа %'))
                 ->exists();
             if ($hasDivStages) {
                 return back()->with('error', 'Нельзя исправить счёт — группы уже сформированы. Откатите распределение и повторите.');
@@ -928,10 +929,12 @@ class TournamentController extends Controller
             return back()->with('error', 'Дивизион не найден.');
         }
 
-        // Стадии текущего тура (Hard/Lite/Medium группы)
+        // Стадии текущего тура (Hard/Lite/Medium группы). division_tier — основной
+        // признак, паттерн по имени — фоллбэк для стадий без backfill (см. план миграции).
         $stagesQuery = $event->tournamentStages()
-            ->where('name', 'like', 'Группа %')
-            ->where('name', '!=', 'Групповой этап');
+            ->where(fn($q) => $q->whereNotNull('division_tier')
+                ->orWhere(fn($q2) => $q2->where('name', 'like', 'Группа %')
+                    ->where('name', '!=', 'Групповой этап')));
         if ($occurrenceId > 0) {
             $stagesQuery->where('occurrence_id', $occurrenceId);
         }
@@ -981,12 +984,25 @@ class TournamentController extends Controller
             $penaltyCaptainIds[] = $cap;
         };
 
-        foreach ($stages->filter(fn($s) => str_contains($s->name, 'Lite')) as $stage) {
+        // division_tier — основной признак "самый слабый дивизион (Lite)" / "средний
+        // (Medium)": максимальный tier в наборе = Lite, всё между Hard(=1) и Lite = Medium.
+        // Фоллбэк на текстовый паттерн — только для стадий без проставленного tier.
+        $tiersPresent = $stages->pluck('division_tier')->filter(fn($t) => $t !== null);
+        $maxTier = $tiersPresent->isNotEmpty() ? $tiersPresent->max() : null;
+
+        $isLiteStage = fn($s) => $s->division_tier !== null
+            ? $s->division_tier === $maxTier
+            : str_contains($s->name, 'Lite');
+        $isMediumStage = fn($s) => $s->division_tier !== null
+            ? ($s->division_tier > 1 && $s->division_tier !== $maxTier)
+            : str_contains($s->name, 'Medium');
+
+        foreach ($stages->filter($isLiteStage) as $stage) {
             foreach (\App\Models\TournamentStanding::where('stage_id', $stage->id)->orderBy('rank')->get() as $s) {
                 if ($s->rank > 2) $collectRelegated($s->team_id);
             }
         }
-        foreach ($stages->filter(fn($s) => str_contains($s->name, 'Medium')) as $stage) {
+        foreach ($stages->filter($isMediumStage) as $stage) {
             foreach (\App\Models\TournamentStanding::where('stage_id', $stage->id)->orderBy('rank')->get() as $s) {
                 if ($s->rank > 3) $collectRelegated($s->team_id);
             }
@@ -1266,11 +1282,14 @@ class TournamentController extends Controller
         \Illuminate\Support\Facades\DB::transaction(function () use (
             $event, $setupService, $divisionNames, $hardTeamIds, $liteTeamIds, $mediumTeamIds, $stage, $occurrenceId, $divFormats, $request
         ) {
-            // Удаляем ранее созданные дивизионные стадии (Hard/Medium/Lite) перед пересозданием
+            // Удаляем ранее созданные дивизионные стадии (Hard/Medium/Lite) перед пересозданием.
+            // division_tier — основной признак; паттерн по имени остаётся фоллбэком для
+            // стадий, созданных до появления этого поля (см. report_division_tier_migration_plan_2026-08-04.md).
             $existing = $event->tournamentStages()
-                ->where('name', 'like', 'Группа %')
-                ->where('name', '!=', 'Групповой этап')
                 ->where('occurrence_id', $stage->occurrence_id)
+                ->where(fn($q) => $q->whereNotNull('division_tier')
+                    ->orWhere(fn($q2) => $q2->where('name', 'like', 'Группа %')
+                        ->where('name', '!=', 'Групповой этап')))
                 ->get();
             foreach ($existing as $ex) {
                 foreach ($ex->groups as $grp) {
@@ -1290,7 +1309,7 @@ class TournamentController extends Controller
 
             $sortOrder = ($event->tournamentStages()->max('sort_order') ?? 0) + 1;
 
-            foreach ($divisionNames as $divName) {
+            foreach ($divisionNames as $divIndex => $divName) {
                 $teamIds = $divisions[$divName] ?? ($divisions[explode('-', $divName)[0]] ?? []);
                 if (empty($teamIds)) continue;
 
@@ -1298,6 +1317,8 @@ class TournamentController extends Controller
                 $divStage = $setupService->createStage($event, [
                     'type'          => 'round_robin',
                     'name'          => 'Группа ' . $divName,
+                    // 1 = самый сильный (Hard) — позиция в $divisionNames, не текст имени.
+                    'division_tier' => $divIndex + 1,
                     'sort_order'    => $sortOrder++,
                     'occurrence_id' => $occurrenceId,
                     'config'        => array_merge($stage->config ?? [],
@@ -1617,11 +1638,13 @@ class TournamentController extends Controller
 
         $resetCount = 0;
         DB::transaction(function () use ($stage, &$resetCount) {
-            // Удаляем связанные группы Hard/Lite (если это групповой этап)
+            // Удаляем связанные группы Hard/Lite (если это групповой этап).
+            // division_tier — основной признак, паттерн по имени — фоллбэк.
             if (in_array($stage->type, ['round_robin', 'groups_playoff'])) {
                 $divQuery = $stage->event->tournamentStages()
                     ->where('id', '!=', $stage->id)
-                    ->where('name', 'like', 'Группа %');
+                    ->where(fn($q) => $q->whereNotNull('division_tier')
+                        ->orWhere('name', 'like', 'Группа %'));
                 if ($stage->occurrence_id) {
                     $divQuery->where('occurrence_id', $stage->occurrence_id);
                 }
@@ -1701,12 +1724,14 @@ class TournamentController extends Controller
         $deletedStageId = $stage->id;
         $occurrenceId = $stage->occurrence_id;
 
-        // Если удаляем групповой этап — удалить и связанные группы Hard/Lite
+        // Если удаляем групповой этап — удалить и связанные группы Hard/Lite.
+        // division_tier — основной признак, паттерн по имени — фоллбэк.
         if (in_array($stage->type, ['round_robin', 'groups_playoff'])) {
             $divStages = $event->tournamentStages()
                 ->where('id', '!=', $stage->id)
                 ->where(function($q) {
-                    $q->where('name', 'like', 'Группа %');
+                    $q->whereNotNull('division_tier')
+                        ->orWhere('name', 'like', 'Группа %');
                 });
             if ($stage->occurrence_id) {
                 $divStages->where('occurrence_id', $stage->occurrence_id);
@@ -2658,11 +2683,12 @@ class TournamentController extends Controller
             return redirect()->route('tournament.matches.rally.form', $match);
         }
 
-        $stageIsDivStage = str_starts_with($stage->name, 'Группа ');
+        $stageIsDivStage = $stage->division_tier !== null || str_starts_with($stage->name, 'Группа ');
         if (!$stageIsDivStage) {
             $hasDivStages = $event->tournamentStages()
-                ->where('name', 'like', 'Группа %')
                 ->where('occurrence_id', $stage->occurrence_id)
+                ->where(fn($q) => $q->whereNotNull('division_tier')
+                    ->orWhere('name', 'like', 'Группа %'))
                 ->exists();
             if ($hasDivStages) {
                 return redirect()
