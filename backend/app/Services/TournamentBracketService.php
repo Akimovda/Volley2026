@@ -419,7 +419,14 @@ class TournamentBracketService
 
         $thirdPlace = (bool) $playoffStage->cfg('third_place_match', false);
 
-        return $this->generateSingleElimination($playoffStage, $advancing, $thirdPlace);
+        $matches = $this->generateSingleElimination($playoffStage, $advancing, $thirdPlace);
+
+        // Источник правды для TournamentStatsService::calculateFinalClassification() —
+        // явный finals_mode в config, а не угадывание по названию корта/раунду
+        // (см. report_402_finals_bug.md).
+        $playoffStage->update(['config' => array_merge($playoffStage->config ?? [], ['finals_mode' => 'bracket'])]);
+
+        return $matches;
     }
 
     /**
@@ -471,7 +478,7 @@ class TournamentBracketService
             fn($m) => $m->team_home_id === $homeId && $m->team_away_id === $awayId
         );
 
-        return DB::transaction(function () use ($rankedA, $rankedB, $playoffStage, $ranksNeeded, $existsForPair) {
+        $matches = DB::transaction(function () use ($rankedA, $rankedB, $playoffStage, $ranksNeeded, $existsForPair) {
             $matches = collect();
             $nextMatchNumber = (int) ($playoffStage->matches()->max('match_number') ?? 0) + 1;
 
@@ -498,5 +505,12 @@ class TournamentBracketService
             }
             return $matches;
         });
+
+        // Источник правды для TournamentStatsService::calculateFinalClassification() —
+        // явный finals_mode в config, а не угадывание по названию корта/раунду
+        // (см. report_402_finals_bug.md).
+        $playoffStage->update(['config' => array_merge($playoffStage->config ?? [], ['finals_mode' => 'placement'])]);
+
+        return $matches;
     }
 }
