@@ -439,6 +439,9 @@ class TournamentKingBeachService
                     'occurrence_id' => $stage->occurrence_id,
                     'type'          => TournamentStage::TYPE_KING_BEACH,
                     'name'          => $name,
+                    // 1 = самый сильный (Hard) — порядок создания уже соответствует
+                    // силе дивизиона ($divisionPlayerIds строится Hard->Medium->Lite).
+                    'division_tier' => $i,
                     'sort_order'    => $sortOrderBase + $i,
                     'config'        => $stage->config,
                     'status'        => TournamentStage::STATUS_PENDING,

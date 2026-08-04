@@ -317,11 +317,20 @@ class TournamentStatsService
         $place = 1;
         $assignedTeams = [];
 
-        // Если есть группы Hard/Lite — классификация по ним (Hard первый, потом Lite)
-        $divisionStages = $stages->filter(fn($s) => str_starts_with($s->name, 'Группа '));
+        // Если есть дивизионные стадии (Hard/Medium/Lite) — классификация по ним
+        // (Hard первый, потом Medium, потом Lite). division_tier — основной признак;
+        // паттерн по имени "Группа " — фоллбэк для стадий без backfill (см.
+        // report_division_tier_migration_plan_2026-08-04.md). division_tier также
+        // ловит king_beach-дивизионы (называются без префикса "Группа ") — но ниже
+        // есть защита: если для найденных "дивизионных" стадий не набралось ни одной
+        // строки classification (у king_beach standings лежат в KingBeachStanding, а
+        // не TournamentStanding — эта ветка их не читает), проваливаемся в остальную
+        // логику метода вместо возврата пустого результата.
+        $divisionStages = $stages->filter(fn($s) => $s->division_tier !== null || str_starts_with($s->name, 'Группа '));
         if ($divisionStages->isNotEmpty()) {
             // Сортируем: Hard первый, Medium потом, Lite последний
             $sorted = $divisionStages->sortBy(function($s) {
+                if ($s->division_tier !== null) return $s->division_tier;
                 if (str_contains($s->name, 'Hard')) return 0;
                 if (str_contains($s->name, 'Medium')) return 1;
                 return 2; // Lite
@@ -350,7 +359,9 @@ class TournamentStatsService
                 }
             }
 
-            return $classification;
+            if (!empty($classification)) {
+                return $classification;
+            }
         }
 
         // 1. Bracket стадия (single/double elim) — финал определяет 1-2 место

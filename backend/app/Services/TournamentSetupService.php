@@ -52,6 +52,7 @@ class TournamentSetupService
             'occurrence_id' => $data['occurrence_id'] ?? null,
             'type'          => $data['type'],
             'name'          => $data['name'],
+            'division_tier' => $data['division_tier'] ?? null,
             'sort_order'    => $data['sort_order'] ?? ($maxOrder + 1),
             'config'        => $data['config'] ?? [],
             'status'        => TournamentStage::STATUS_PENDING,

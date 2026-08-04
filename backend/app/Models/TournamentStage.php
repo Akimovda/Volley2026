@@ -13,6 +13,7 @@ class TournamentStage extends Model
         'occurrence_id',
         'type',
         'name',
+        'division_tier',
         'sort_order',
         'config',
         'status',

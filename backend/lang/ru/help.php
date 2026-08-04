@@ -46,9 +46,9 @@ return [
     'p2_p4' => '<strong>Доступные провайдеры:</strong> Telegram, ВКонтакте, Яндекс, Google, Apple (только iOS).',
 
     'p_app_h'    => 'Мобильное приложение',
-    'p_app_p1'   => 'VolleyPlay.Club доступен в виде нативного приложения для смартфонов. Скачайте его из магазина приложений вашего устройства:',
-    'p_app_li1'  => '<strong>iPhone / iPad:</strong> App Store → «VolleyPlay»',
-    'p_app_li2'  => '<strong>Android:</strong> RuStore → «VolleyPlay»',
+    'p_app_p1'   => 'VolleyPlay.Club доступен в виде нативного приложения VolleyClub для смартфонов. Скачайте его из магазина приложений вашего устройства:',
+    'p_app_li1'  => '<strong>iPhone / iPad:</strong> App Store → «VolleyClub»',
+    'p_app_li2'  => '<strong>Android:</strong> RuStore → «VolleyClub»',
     'p_app_p2'   => 'Приложение даёт ряд преимуществ по сравнению с браузером:',
     'p_app_li3'  => '<strong>Push-уведомления</strong> — мгновенные оповещения о записи, изменениях и напоминаниях прямо на экран телефона, без мессенджеров',
     'p_app_li4'  => '<strong>Вход по Face ID / Touch ID</strong> — после первого входа можно авторизоваться биометрией, без нажатия кнопок',
