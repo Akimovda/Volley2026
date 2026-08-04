@@ -2107,7 +2107,7 @@ $tourNumber = $seasonData
 			$finalsModeDefault = $stage->cfg('finals_mode', $isTwoGroups ? 'placement' : 'bracket');
 			if (!$isTwoGroups) { $finalsModeDefault = 'bracket'; }
 		@endphp
-		@if($finalsTargetStages->isNotEmpty())
+		@if($finalsTargetStages->contains(fn($s) => !$s->isCompleted()))
 		<div class="p-3 mt-2" style="background:rgba(41,103,186,.08);border-radius:10px" id="generate_finals_block">
 			<div class="b-700 mb-2">{{ __('tournaments.setup_generate_finals_h4') }}</div>
 			<div class="d-flex fvc" style="gap:10px;flex-wrap:wrap">
