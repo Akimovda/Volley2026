@@ -548,6 +548,7 @@ return [
     'setup_stage_lbl_round_robin' => 'Круговая система',
     'setup_stage_lbl_groups_playoff' => 'Группы + плей-офф',
     'setup_stage_lbl_single_elim' => 'Олимпийка',
+    'setup_stage_lbl_placement_final' => 'Матчи за места',
     'setup_stage_lbl_swiss' => 'Швейцарская',
     'setup_stage_lbl_double_elim' => 'Двойное выбывание',
     'setup_stage_lbl_king_of_court' => 'Король площадки',

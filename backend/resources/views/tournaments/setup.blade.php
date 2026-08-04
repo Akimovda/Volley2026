@@ -1638,6 +1638,12 @@ $tourNumber = $seasonData
 						'thai' => __('tournaments.setup_stage_lbl_thai'),
 						'king_beach' => __('tournaments.setup_stage_lbl_king_beach'),
 						];
+						// Финал за места напрямую (finals_mode='placement') — плей-офф
+						// (сетка) пропущен, "Олимпийка" описывала бы механику, которой
+						// не было — подписываем явно (report_402_finals_bug.md).
+						if ($stage->isPlacementFinal()) {
+							$stageTypeLabels['single_elim'] = __('tournaments.setup_stage_lbl_placement_final');
+						}
 						$matchFormatLabels = ['bo1' => 'Best of 1', 'bo3' => 'Best of 3', 'bo5' => 'Best of 5'];
 						@endphp
 						{{ $stageTypeLabels[$stage->type] ?? $stage->type }} · {{ $matchFormatLabels[$stage->matchFormat()] ?? strtoupper($stage->matchFormat()) }} · {{ __('tournaments.score_to_pts') }} {{ $stage->setPoints() }} {{ __('tournaments.pub_pts_label') }}
@@ -2096,7 +2102,7 @@ $tourNumber = $seasonData
 		@else
 		{{-- Обычный → плей-офф: единый блок "Сгенерировать финалы" --}}
 		@php
-			$finalsTargetStages = $stages->where('type', 'single_elim')->whereIn('status', ['pending', 'completed']);
+			$finalsTargetStages = $stages->where('type', 'single_elim')->whereIn('status', ['pending', 'in_progress', 'completed']);
 			$isTwoGroups = $stage->groups->count() === 2;
 			$finalsModeDefault = $stage->cfg('finals_mode', $isTwoGroups ? 'placement' : 'bracket');
 			if (!$isTwoGroups) { $finalsModeDefault = 'bracket'; }

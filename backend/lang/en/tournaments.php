@@ -529,6 +529,7 @@ return [
     'setup_stage_lbl_round_robin' => 'Round Robin',
     'setup_stage_lbl_groups_playoff' => 'Groups + playoff',
     'setup_stage_lbl_single_elim' => 'Single elimination',
+    'setup_stage_lbl_placement_final' => 'Placement matches',
     'setup_stage_lbl_swiss' => 'Swiss',
     'setup_stage_lbl_double_elim' => 'Double elimination',
     'setup_stage_lbl_king_of_court' => 'King of the Court',
