@@ -2795,8 +2795,18 @@ $tourNumber = $seasonData
 				var crossEl = document.querySelector('.ct-view-crosstable[data-group="' + groupId + '"]');
 				var btns    = document.querySelectorAll('.ct-view-btn[data-group="' + groupId + '"]');
 				if (!listEl) return;
+				// Шахматки для этой группы/стадии нет (напр. финальная стадия — у
+				// single_elim нет $stage->groups, $hasCrosstable=false, .ct-view-crosstable
+				// вообще не рендерится) — список всегда виден. Раньше глобальный
+				// localStorage-предпочтение 'crosstable' (сохранённое на ДРУГОЙ, групповой
+				// панели) на инициализации прогонялось по ВСЕМ .ct-view-list на странице и
+				// прятало список без чего-либо взамен — панель схлопывалась в 0 высоты.
+				if (!crossEl) {
+					listEl.style.display = '';
+					return;
+				}
 				listEl.style.display  = view === 'list'       ? '' : 'none';
-				if (crossEl) crossEl.style.display = view === 'crosstable' ? '' : 'none';
+				crossEl.style.display = view === 'crosstable' ? '' : 'none';
 				btns.forEach(function (b) {
 					b.classList.toggle('ct-view-btn--active', b.dataset.view === view);
 				});
