@@ -2460,8 +2460,19 @@ $tourNumber = $seasonData
 	})();
 	</script>
 
-	<script src="/assets/fas.js"></script>
-	<script src="/js/cropper.min.js"></script>
+	{{-- fas.js подключает jQuery.fancybox/Swiper и на верхнем уровне зовёт jQuery —
+	jQuery определяется в lib.js, который грузится в общем layout (voll-layout.blade.php)
+	ПОСЛЕ основного контента страницы. Здесь, в отличие от всех остальных
+	blade-страниц с fas.js, тег стоял в общем $slot (внутри <main>) — то есть
+	раньше lib.js в итоговом HTML. Chrome это прощал по таймингу, Safari/WebKit —
+	нет ("Can't find variable: jQuery", fas.js падает целиком). Оборачиваем в
+	x-slot="script" — тот же механизм, что и на всех остальных страницах с
+	fas.js (events/create.blade.php и др.): контент рендерится в layout ПОСЛЕ
+	lib.js/script.js, независимо от места объявления x-slot в этом файле. --}}
+	<x-slot name="script">
+		<script src="/assets/fas.js"></script>
+		<script src="/js/cropper.min.js"></script>
+	</x-slot>
 	<script>
 		document.addEventListener('DOMContentLoaded', function() {
 			// Tournament Photos Swiper
