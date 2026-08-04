@@ -355,7 +355,47 @@ class TournamentStatsService
 
         // 1. Bracket стадия (single/double elim) — финал определяет 1-2 место
         $bracketStage = $stages->whereIn('type', ['single_elim', 'double_elim'])->last();
-        if ($bracketStage) {
+        if ($bracketStage && $bracketStage->isPlacementFinal()) {
+            // Финал за места напрямую (crossover, finals_mode='placement') — два
+            // равноправных матча первого раунда без иерархии bracket-раундов,
+            // различаем по placeFrom ("за 1-2 место" / "за 3-4 место"), а не по
+            // round/match_number и не по литералу '3rd place' (см. ветку else —
+            // это ровно то, что было причиной неверного победителя у event 402,
+            // report_402_finals_bug.md).
+            $finalMatch = $bracketStage->placementMatch(1);
+            if ($finalMatch && $finalMatch->status === TournamentMatch::STATUS_COMPLETED && $finalMatch->winner_team_id) {
+                $winner = EventTeam::find($finalMatch->winner_team_id);
+                $loser = EventTeam::find($finalMatch->loserId());
+
+                if ($winner) {
+                    $classification[] = ['place' => $place++, 'team_id' => $winner->id, 'team_name' => $winner->name];
+                    $assignedTeams[] = $winner->id;
+                }
+                if ($loser) {
+                    $classification[] = ['place' => $place++, 'team_id' => $loser->id, 'team_name' => $loser->name];
+                    $assignedTeams[] = $loser->id;
+                }
+            }
+
+            $thirdMatch = $bracketStage->placementMatch(3);
+            if ($thirdMatch && $thirdMatch->status === TournamentMatch::STATUS_COMPLETED && $thirdMatch->winner_team_id) {
+                $third = EventTeam::find($thirdMatch->winner_team_id);
+                $fourth = EventTeam::find($thirdMatch->loserId());
+
+                if ($third && !in_array($third->id, $assignedTeams)) {
+                    $classification[] = ['place' => $place++, 'team_id' => $third->id, 'team_name' => $third->name];
+                    $assignedTeams[] = $third->id;
+                }
+                if ($fourth && !in_array($fourth->id, $assignedTeams)) {
+                    $classification[] = ['place' => $place++, 'team_id' => $fourth->id, 'team_name' => $fourth->name];
+                    $assignedTeams[] = $fourth->id;
+                }
+            }
+        } elseif ($bracketStage) {
+            // Обычная сетка (finals_mode='bracket') — финал — самый глубокий
+            // раунд, матч за 3-е место маркирован литералом court='3rd place'
+            // (TournamentBracketService::generateSingleElimination()). Логика
+            // не менялась.
             $finalMatch = $bracketStage->matches()
                 ->where('status', TournamentMatch::STATUS_COMPLETED)
                 ->orderByDesc('round')
