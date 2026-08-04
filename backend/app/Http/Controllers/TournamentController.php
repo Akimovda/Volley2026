@@ -1474,7 +1474,14 @@ class TournamentController extends Controller
             // Стадия могла уже быть completed (например, дозаполнение матча
             // за 3-4 после того, как "за 1-2" уже сыгран) — возвращаем её в
             // активное состояние, чтобы новый матч можно было ввести штатно.
-            $playoffStage->update(['status' => TournamentStage::STATUS_IN_PROGRESS]);
+            // Название переименовываем в "Финал" только если оно ещё дефолтное
+            // ("Плей-офф", проставленное при автосоздании парной стадии) — не
+            // затираем имя, если организатор уже переименовал стадию сам.
+            $updateData = ['status' => TournamentStage::STATUS_IN_PROGRESS];
+            if ($playoffStage->name === 'Плей-офф') {
+                $updateData['name'] = 'Финал';
+            }
+            $playoffStage->update($updateData);
 
             return $this->redirectToSetup($event, 'Матчи по местам созданы.');
 
@@ -1540,6 +1547,22 @@ class TournamentController extends Controller
             return back()->with('error', 'Групповая стадия должна быть завершена.');
         }
 
+        // Турнир одного типа "группы+плей-офф" может иметь только ОДНУ финальную
+        // стадию — либо сетку, либо прямые матчи за места, но не обе сразу
+        // (см. report_402_finals_bug.md, дубль стадий 107/108 у event 402).
+        $existingPlayoff = $event->tournamentStages()
+            ->where('type', TournamentStage::TYPE_SINGLE_ELIM)
+            ->where('occurrence_id', $stage->occurrence_id)
+            ->first();
+        if ($existingPlayoff) {
+            return $this->redirectToSetup(
+                $event,
+                "Финальная стадия «{$existingPlayoff->name}» уже создана — используйте блок «Сгенерировать финалы» ниже, а не повторное создание.",
+                true,
+                "stage_{$existingPlayoff->id}"
+            );
+        }
+
         $isTwoGroups = $stage->groups->count() === 2;
         $finalsMode = $stage->cfg('finals_mode', $isTwoGroups ? 'placement' : 'bracket');
         if (!$isTwoGroups) {
@@ -1549,7 +1572,7 @@ class TournamentController extends Controller
         $sortOrder = ($event->tournamentStages()->max('sort_order') ?? 0) + 1;
         $playoffStage = $this->setupService->createStage($event, [
             'type'          => TournamentStage::TYPE_SINGLE_ELIM,
-            'name'          => 'Плей-офф',
+            'name'          => $finalsMode === 'placement' ? 'Финал' : 'Плей-офф',
             'sort_order'    => $sortOrder,
             'config'        => [
                 'match_format'        => $stage->cfg('match_format', 'bo3'),
