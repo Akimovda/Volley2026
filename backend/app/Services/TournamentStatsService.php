@@ -365,7 +365,7 @@ class TournamentStatsService
         }
 
         // 1. Bracket стадия (single/double elim) — финал определяет 1-2 место
-        $bracketStage = $stages->whereIn('type', ['single_elim', 'double_elim'])->last();
+        $bracketStage = $stages->filter(fn($s) => $s->isBracketStage())->last();
         if ($bracketStage && $bracketStage->isPlacementFinal()) {
             // Финал за места напрямую (crossover, finals_mode='placement') — два
             // равноправных матча первого раунда без иерархии bracket-раундов,
