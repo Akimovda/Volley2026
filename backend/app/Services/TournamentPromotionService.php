@@ -696,7 +696,7 @@ class TournamentPromotionService
 
         if (!$lastStage) return collect();
 
-        if (in_array($lastStage->type, ['single_elim', 'double_elim'])) {
+        if ($lastStage->isBracketStage()) {
             return $this->classificationFromBracket($lastStage);
         }
 

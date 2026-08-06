@@ -287,7 +287,7 @@ class TournamentController extends Controller
         // конфигом (формат/очки/корты/матч за 3-е место), status=pending — тогда
         // и кнопка появляется сразу, и checkStageCompletion не завершает турнир
         // раньше, чем плей-офф стадия тоже станет completed.
-        if ($validated['type'] === TournamentStage::TYPE_GROUPS_PLAYOFF) {
+        if ($stage->canHaveFollowupStage()) {
             $this->setupService->createStage($event, [
                 'type'          => TournamentStage::TYPE_SINGLE_ELIM,
                 'name'          => 'Плей-офф',
@@ -304,7 +304,7 @@ class TournamentController extends Controller
         }
 
         // Для Round Robin / Groups+Playoff — автосоздание групп + жеребьёвка
-        if (in_array($validated['type'], ['round_robin', 'groups_playoff']) && $config['groups_count'] > 0) {
+        if ($stage->canHaveFollowupStage() && $config['groups_count'] > 0) {
             $this->setupService->createGroupsAuto($stage, $config['groups_count']);
 
             // Автоматическая жеребьёвка
@@ -467,7 +467,7 @@ class TournamentController extends Controller
             return back()->with('error', 'Нужно минимум 2 подтверждённых команды.');
         }
 
-        if (in_array($stage->type, ['round_robin', 'groups_playoff'])) {
+        if ($stage->canHaveFollowupStage()) {
             if ($groups->isEmpty()) {
                 return back()->with('error', 'Сначала создайте группы.');
             }
@@ -526,7 +526,7 @@ class TournamentController extends Controller
             $this->kingService->initialize($stage, $teamIds);
             $this->kingService->generateNextMatch($stage);
 
-        } elseif ($stage->type === TournamentStage::TYPE_KING_BEACH) {
+        } elseif ($stage->isPlayerBasedMatches()) {
             $playerIds = $this->resolveKingBeachPlayers($event, $occurrenceId, $request);
             if (count($playerIds) < 4) {
                 return $this->redirectToSetup($event, 'Недостаточно игроков для King of the Beach (минимум 4).', true, "stage_{$stage->id}");
@@ -701,7 +701,7 @@ class TournamentController extends Controller
         $this->authorizeOrganizer($request, $event);
 
         // King of the Beach: отдельный обработчик (нет team_home/away_id)
-        if ($stage->type === TournamentStage::TYPE_KING_BEACH) {
+        if ($stage->isPlayerBasedMatches()) {
             return $this->scoreKingBeach($request, $match, $stage);
         }
 
@@ -818,7 +818,7 @@ class TournamentController extends Controller
         $this->authorizeOrganizer($request, $event);
 
         // King of the Beach: редактирование счёта через scoreKingBeach
-        if ($stage->type === TournamentStage::TYPE_KING_BEACH) {
+        if ($stage->isPlayerBasedMatches()) {
             // Сбрасываем статус чтобы scoreKingBeach мог принять (он проверяет только данные)
             $match->update(['status' => TournamentMatch::STATUS_SCHEDULED]);
             return $this->scoreKingBeach($request, $match, $stage);
@@ -886,11 +886,11 @@ class TournamentController extends Controller
         $match->load(['teamHome.members.user', 'teamAway.members.user', 'stage']);
 
         $hasRallyData = !$match->isCompleted()
-            && $stage->type !== TournamentStage::TYPE_KING_BEACH
+            && !$stage->isPlayerBasedMatches()
             && MatchRallyEvent::where('match_id', $match->id)->exists();
 
         $canReopenViaRally = $match->isCompleted()
-            && $stage->type !== TournamentStage::TYPE_KING_BEACH
+            && !$stage->isPlayerBasedMatches()
             && $match->hasTeams();
 
         return view('tournaments.score', compact('event', 'match', 'stage', 'hasRallyData', 'canReopenViaRally'));
@@ -1536,7 +1536,7 @@ class TournamentController extends Controller
                 }
                 return $this->redirectToSetup($event, 'Следующий матч King of the Court создан.');
 
-            } elseif ($stage->type === TournamentStage::TYPE_KING_BEACH) {
+            } elseif ($stage->isPlayerBasedMatches()) {
                 $nextStage = $this->kingBeachService->advanceToNextRound($stage);
                 if (!$nextStage) {
                     return back()->with('error', 'Недостаточно игроков для следующего раунда (нужно минимум 4).');
@@ -1564,7 +1564,7 @@ class TournamentController extends Controller
         $event = $stage->event;
         $this->authorizeOrganizer($request, $event);
 
-        if (!in_array($stage->type, ['round_robin', 'groups_playoff']) || !$stage->isCompleted()) {
+        if (!$stage->canHaveFollowupStage() || !$stage->isCompleted()) {
             return back()->with('error', 'Групповая стадия должна быть завершена.');
         }
 
@@ -1631,7 +1631,7 @@ class TournamentController extends Controller
         $this->authorizeOrganizer($request, $event);
 
         // King of the Beach: полный сброс (группы + матчи + standings)
-        if ($stage->type === TournamentStage::TYPE_KING_BEACH) {
+        if ($stage->isPlayerBasedMatches()) {
             $this->kingBeachService->revertStage($stage);
             return $this->redirectToSetup($stage->event, 'Стадия King of the Beach сброшена.', false, "stage_{$stage->id}");
         }
@@ -1640,7 +1640,7 @@ class TournamentController extends Controller
         DB::transaction(function () use ($stage, &$resetCount) {
             // Удаляем связанные группы Hard/Lite (если это групповой этап).
             // division_tier — основной признак, паттерн по имени — фоллбэк.
-            if (in_array($stage->type, ['round_robin', 'groups_playoff'])) {
+            if ($stage->canHaveFollowupStage()) {
                 $divQuery = $stage->event->tournamentStages()
                     ->where('id', '!=', $stage->id)
                     ->where(fn($q) => $q->whereNotNull('division_tier')
@@ -1666,7 +1666,7 @@ class TournamentController extends Controller
             ]);
 
             // Для bracket — очищаем team_id из матчей раунда > 1 (кроме single_elim первого раунда)
-            if (in_array($stage->type, ['single_elim', 'double_elim'])) {
+            if ($stage->isBracketStage()) {
                 $stage->matches()->where('round', '>', 1)->update([
                     'team_home_id' => null,
                     'team_away_id' => null,
@@ -1726,7 +1726,7 @@ class TournamentController extends Controller
 
         // Если удаляем групповой этап — удалить и связанные группы Hard/Lite.
         // division_tier — основной признак, паттерн по имени — фоллбэк.
-        if (in_array($stage->type, ['round_robin', 'groups_playoff'])) {
+        if ($stage->canHaveFollowupStage()) {
             $divStages = $event->tournamentStages()
                 ->where('id', '!=', $stage->id)
                 ->where(function($q) {
@@ -2313,10 +2313,32 @@ class TournamentController extends Controller
                 return;
             }
 
-            $allStages = $event->tournamentStages()->count();
-            $completedStages = $event->tournamentStages()
-                ->where('status', TournamentStage::STATUS_COMPLETED)
-                ->count();
+            // Инкрементальные форматы (swiss/king_of_court/king_beach) генерируют матчи
+            // по ходу турнира — "все СОЗДАННЫЕ на сейчас матчи сыграны" (наивный критерий
+            // строкой выше, применённый к $stage) ложно совпадает с "формат закончен":
+            // king_of_court может закрыться после первого же матча (очередь ещё не
+            // пуста, просто следующий матч ещё не сгенерирован), swiss — после первого
+            // раунда, до клика "Следующий тур" (см. report_stage_type_branching_audit.md
+            // §3/§4.4). Поэтому при решении "весь ТУРНИР завершён" инкрементальные
+            // стадии не учитываются вовсе, если в событии есть хотя бы одна batch/bracket
+            // стадия (round_robin/groups_playoff/single_elim/double_elim/thai) —
+            // завершённость турнира определяется ТОЛЬКО ими.
+            $stages = $event->tournamentStages()->get();
+            $batchStages = $stages->reject(fn($s) => $s->hasIncrementalMatchGeneration());
+
+            if ($batchStages->isEmpty()) {
+                // Событие целиком состоит из инкрементальных стадий (например, один
+                // swiss/king_of_court/king_beach без companion-стадии) — консервативно
+                // НЕ закрываем турнир автоматически вообще: лучше не закрыть вовремя,
+                // чем закрыть раньше времени. ИЗВЕСТНОЕ ОГРАНИЧЕНИЕ: для таких турниров
+                // "Турнир завершён!" не отправится автоматически никогда — явная кнопка
+                // "Завершить стадию" для организатора остаётся в backlog
+                // (report_stage_type_branching_audit.md §4.4), не реализована в этом проходе.
+                return;
+            }
+
+            $allStages = $batchStages->count();
+            $completedStages = $batchStages->filter(fn($s) => $s->isCompleted())->count();
 
             if ($allStages > 0 && $allStages === $completedStages) {
                 try {
@@ -2512,7 +2534,7 @@ class TournamentController extends Controller
         $event = $stage->event;
         $this->authorizeOrganizer($request, $event);
 
-        if ($stage->type === TournamentStage::TYPE_KING_BEACH) {
+        if ($stage->isPlayerBasedMatches()) {
             return redirect()
                 ->route('tournament.matches.score.form', $match)
                 ->with('error', 'Поочковый ввод недоступен для формата "Король пляжа".');
@@ -2673,7 +2695,7 @@ class TournamentController extends Controller
         $event = $stage->event;
         $this->authorizeOrganizer($request, $event);
 
-        if ($stage->type === TournamentStage::TYPE_KING_BEACH) {
+        if ($stage->isPlayerBasedMatches()) {
             return redirect()
                 ->route('tournament.matches.score.form', $match)
                 ->with('error', 'Поочковый ввод недоступен для формата "Король пляжа".');

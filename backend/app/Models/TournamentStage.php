@@ -72,6 +72,115 @@ class TournamentStage extends Model
         self::TYPE_KING_BEACH,
     ];
 
+    /* ---------- type traits: единая точка правды вместо разбросанных списков типов ----------
+     * См. report_stage_type_branching_audit.md — до этого рефакторинга >20 мест в
+     * TournamentController.php/сервисах/setup.blade.php независимо перечисляли типы
+     * (['round_robin','groups_playoff'] и т.п.), и один из списков (auto-pairing
+     * companion-стадии плей-офф) отстал от остальных — round_robin не получал
+     * авто-созданную стадию плей-офф, турнир закрывался сразу после группового
+     * этапа (диагностика report_diagnosis_round_robin_finals_557.md, event 557).
+     *
+     * Трейты:
+     *  - group_stage          — групповой этап (раунд-робин внутри групп)
+     *  - can_have_followup    — при создании стадии этого типа ДОЛЖНА сразу создаваться
+     *                           парная стадия-продолжение (иначе checkStageCompletion()
+     *                           закрывает турнир сразу после этой стадии)
+     *  - batch_matches        — все матчи создаются сразу жеребьёвкой, не по ходу турнира
+     *  - bracket_stage        — сетка на выбывание, даёт финальную классификацию 1-4 места
+     *  - incremental_matches  — матчи создаются по ходу (раунд/матч за раз), не все сразу;
+     *                           checkStageCompletion() для них ненадёжен (не трогается в
+     *                           этом рефакторинге — отдельный Проход 2)
+     *  - player_based_matches — матчи хранят участников в meta (по игрокам), без
+     *                           team_home_id/team_away_id
+     *
+     * thai помечен ТОЛЬКО group_stage, БЕЗ can_have_followup: TournamentThaiService
+     * (initialize()/createDivisions()) не вызывается ни в одном контроллере — стадия
+     * этого типа сегодня нефункциональна (createStage()/draw() не генерируют для неё
+     * ни группы, ни матчи). Включение can_have_followup для thai до реализации вызова
+     * сервиса создало бы регресс "наоборот" — auto-pairing начал бы создавать
+     * companion-стадию плей-офф для формата, который сам ничего не генерирует.
+     */
+    private const TYPE_TRAITS = [
+        self::TYPE_ROUND_ROBIN    => ['group_stage', 'can_have_followup', 'batch_matches'],
+        self::TYPE_GROUPS_PLAYOFF => ['group_stage', 'can_have_followup', 'batch_matches'],
+        self::TYPE_THAI           => ['group_stage'],
+        self::TYPE_SINGLE_ELIM    => ['bracket_stage', 'batch_matches'],
+        self::TYPE_DOUBLE_ELIM    => ['bracket_stage', 'batch_matches'],
+        self::TYPE_SWISS          => ['incremental_matches'],
+        self::TYPE_KING_OF_COURT  => ['incremental_matches'],
+        self::TYPE_KING_BEACH     => ['incremental_matches', 'player_based_matches'],
+    ];
+
+    private function hasTrait(string $trait): bool
+    {
+        return in_array($trait, self::TYPE_TRAITS[$this->type] ?? [], true);
+    }
+
+    /**
+     * Групповой этап (раунд-робин внутри групп) — round_robin, groups_playoff, thai.
+     * ВНИМАНИЕ: включает thai (у него пока нет подключённого сервиса) — не использовать
+     * этот предикат там, где thai должен оставаться неактивным (там нужна
+     * canHaveFollowupStage(), которая thai не включает).
+     */
+    public function isGroupStage(): bool
+    {
+        return $this->hasTrait('group_stage');
+    }
+
+    /**
+     * Сетка на выбывание (single_elim, double_elim) — даёт финальную классификацию мест
+     * турнира (замена разрозненных whereIn('type', ['single_elim','double_elim'])).
+     */
+    public function isBracketStage(): bool
+    {
+        return $this->hasTrait('bracket_stage');
+    }
+
+    /**
+     * При создании стадии этого типа нужно сразу создать парную стадию-продолжение —
+     * иначе checkStageCompletion() закроет турнир сразу после этой стадии
+     * (round_robin, groups_playoff; НЕ thai — см. докстринг TYPE_TRAITS выше).
+     */
+    public function canHaveFollowupStage(): bool
+    {
+        return $this->hasTrait('can_have_followup');
+    }
+
+    /**
+     * Матчи создаются по ходу турнира (раунд/матч за раз), не все сразу жеребьёвкой —
+     * swiss, king_of_court, king_beach. checkStageCompletion() для них ненадёжен
+     * (см. report_stage_type_branching_audit.md §3) — предикат не меняет его поведение
+     * в этом рефакторинге, только называет факт, который раньше был неявным.
+     */
+    public function hasIncrementalMatchGeneration(): bool
+    {
+        return $this->hasTrait('incremental_matches');
+    }
+
+    /**
+     * Матчи хранят участников в meta (по игрокам), без team_home_id/team_away_id —
+     * сегодня только king_beach.
+     */
+    public function isPlayerBasedMatches(): bool
+    {
+        return $this->hasTrait('player_based_matches');
+    }
+
+    /**
+     * Значения типов с трейтом group_stage — единый источник для JS-списка в
+     * setup.blade.php (форма "Добавить стадию", поля групп), чтобы не держать
+     * независимую копию списка в JS.
+     *
+     * @return array<int, string>
+     */
+    public static function groupTypeValues(): array
+    {
+        return array_values(array_filter(
+            self::TYPES,
+            fn (string $type) => in_array('group_stage', self::TYPE_TRAITS[$type] ?? [], true)
+        ));
+    }
+
     /* ---------- relations ---------- */
 
     public function event(): BelongsTo
