@@ -81,6 +81,9 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
 @if(session('error'))
 <div class="alert alert-danger">❌ {{ session('error') }}</div>
 @endif
+@if(session('warning'))
+<div class="alert alert-warning">⚠️ {{ session('warning') }}</div>
+@endif
 @if($errors->any())
 <div class="alert alert-danger">
     @foreach($errors->all() as $e)<div>{{ $e }}</div>@endforeach

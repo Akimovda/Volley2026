@@ -229,21 +229,31 @@ class TournamentTeamController extends Controller
 
             $this->dispatchAnnounceRefresh($event, !empty($data['occurrence_id']) ? (int) $data['occurrence_id'] : null);
 
+            // М/Ж-несоответствие настройкам регистрации — предупреждение, не блокировка.
+            $genderWarnings = $service->teamGenderWarnings($team);
+            $genderWarningMsg = !empty($genderWarnings)
+                ? 'Состав не соответствует заявленным параметрам регистрации: ' . $genderWarnings[0]
+                : null;
+
             // Организатор/админ создаёт команду со страницы управления турниром —
             // удобнее остаться там же, чтобы сразу создать следующую, а не прыгать
             // на страницу только что созданной команды.
             if ($isOrganizerOrAdmin) {
-                return redirect()
+                $redirect = redirect()
                     ->route('tournament.setup', array_filter([
                         'event'         => $event->id,
                         'occurrence_id' => !empty($data['occurrence_id']) ? (int) $data['occurrence_id'] : null,
                     ]))
                     ->with('success', 'Команда создана ✅');
+                if ($genderWarningMsg) $redirect->with('warning', $genderWarningMsg);
+                return $redirect;
             }
 
-            return redirect()
+            $redirect = redirect()
                 ->route('tournamentTeams.show', [$event, $team])
                 ->with('success', 'Команда создана ✅');
+            if ($genderWarningMsg) $redirect->with('warning', $genderWarningMsg);
+            return $redirect;
         } catch (DomainException $e) {
             return back()
                 ->withErrors(['team' => $e->getMessage()])
@@ -427,7 +437,24 @@ class TournamentTeamController extends Controller
                 positionCode: $data['position_code'] ?? null,
             );
             $this->dispatchAnnounceRefresh($event, $team->occurrence_id ? (int) $team->occurrence_id : null);
-            return back()->with('success', 'Игрок добавлен в команду ✅');
+
+            $redirect = back()->with('success', 'Игрок добавлен в команду ✅');
+            // М/Ж-несоответствие настройкам регистрации — НЕ блокирует сохранение,
+            // только предупреждение организатору (по явному решению задачи).
+            // Два независимых источника: (1) сам добавленный игрок против
+            // only_male/only_female (обычно блокирует MemberEligibilityService,
+            // но для этого пути отключено — см. addMemberByOrganizer()), (2) состав
+            // команды целиком против mixed_5050/mixed_limited (TournamentTeamService::
+            // teamGenderWarnings()).
+            $genderWarning = app(\App\Services\MemberEligibilityService::class)->genderIssueFor($player, $event);
+            $teamWarnings  = $service->teamGenderWarnings($team);
+            $warningText = $genderWarning
+                ? 'Состав не соответствует заявленным параметрам регистрации: ' . $genderWarning
+                : (!empty($teamWarnings) ? 'Состав не соответствует заявленным параметрам регистрации: ' . $teamWarnings[0] : null);
+            if ($warningText) {
+                $redirect->with('warning', $warningText);
+            }
+            return $redirect;
         } catch (DomainException $e) {
             return back()->withErrors(['add_member' => $e->getMessage()]);
         }
