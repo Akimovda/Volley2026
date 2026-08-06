@@ -52,10 +52,12 @@ $rankNumerals = [1=>'I', 2=>'II', 3=>'III', 4=>'IV', 5=>'V', 6=>'VI', 7=>'VII', 
                 <td style="text-align:center;color:#6b7280;padding:4px">{{ $rowIdx + 1 }}</td>
                 <td class="p-1">
                     <div class="b-600 cd">@include('tournaments._partials.team_name_link', ['team' => $standing?->team])@if($isOutsider) <span class="f-12" style="font-weight:400"> · аут.</span>@endif</div>
-                    @include('tournaments._partials.team_roster_line', ['team' => $standing?->team, 'class' => 'f-12', 'style' => 'color:#6b7280'])
+                    @include('tournaments._partials.team_roster_line', ['team' => $standing?->team, 'class' => 'f-12', 'style' => 'color:#6b7280', 'showAvatar' => true])
                 </td>
                 @foreach($teamIds as $colIdx => $oppId)
                 @php
+                $m = null;
+                $cellHref = null;
                 if ((int)$teamId === (int)$oppId) {
                     $cellText  = '×';
                     $cellStyle = 'background:rgba(0,0,0,.06)';
@@ -69,13 +71,28 @@ $rankNumerals = [1=>'I', 2=>'II', 3=>'III', 4=>'IV', 5=>'V', 6=>'VI', 7=>'VII', 
                         $cellStyle = $sw > $sl
                             ? 'background:rgba(16,185,129,.12);color:#065f46;font-weight:600'
                             : 'background:rgba(239,68,68,.1);color:#991b1b';
+                        if (!($stageHasDivDistribution ?? false)) {
+                            $cellHref = route('tournament.matches.score.form', $m) . '?edit=1';
+                        }
+                    } elseif ($m && ($m->isScheduled() || $m->isLive()) && $m->hasTeams()) {
+                        $cellText  = $m->isLive() ? 'LIVE' : '—';
+                        $cellStyle = $m->isLive()
+                            ? 'background:rgba(239,68,68,.12);color:#991b1b;font-weight:600'
+                            : 'background:rgba(0,0,0,.02);color:#9ca3af';
+                        $cellHref = route('tournament.matches.score.form', $m);
                     } else {
                         $cellText  = '—';
                         $cellStyle = 'background:rgba(0,0,0,.02);color:#9ca3af';
                     }
                 }
                 @endphp
+                {{-- Клик по ячейке ведёт на ту же форму ввода счёта, что кнопка «СЧЁТ»/✎
+                     в виде "Список" — переиспользуем route+условия видимости оттуда. --}}
+                @if($cellHref)
+                <td style="text-align:center;padding:0;{{ $cellStyle }}"><a href="{{ $cellHref }}" class="crosstable-cell-link">{{ $cellText }}</a></td>
+                @else
                 <td style="text-align:center;padding:4px 2px;{{ $cellStyle }}">{{ $cellText }}</td>
+                @endif
                 @endforeach
                 <td style="text-align:center;padding:4px"><span class="b-600 alert-info pt-05 pb-05 p-1">{{ $standing?->played ?? '—' }}</span></td>
                 <td style="text-align:center;padding:4px"><span class="b-600 alert-success pt-05 pb-05 p-1">{{ $standing?->wins ?? '—' }}</span></td>

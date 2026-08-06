@@ -1864,6 +1864,37 @@ body.dark .alert-error {
     color: #ffaaa3;
 }
 
+/* Пилюли шапки матча (tournaments/score.blade.php) — те же цветовые токены,
+   что у .alert-info/-success/-warning/-danger выше, но без ::before-иконки
+   (та рассчитана на полноразмерный алерт, а не на маленькую инлайн-пилюлю). */
+.score-pill {
+	display: inline-block;
+	padding: .3rem 1rem;
+	margin: .2rem .3rem;
+	border-radius: 999px;
+	font-size: 1.3rem;
+	font-weight: 600;
+}
+.score-pill--blue { background: rgba(41, 103, 186, .12); color: #1a4a8a; }
+.score-pill--green { background: rgba(46, 204, 113, .15); color: #1e8449; }
+.score-pill--orange { background: rgba(255, 177, 113, .2); color: #b84d00; }
+.score-pill--red { background: rgba(231, 97, 47, .14); color: #a8231a; }
+body.dark .score-pill--blue { background: rgba(41, 103, 186, .22); color: #a5c4eb; }
+body.dark .score-pill--green { background: rgba(46, 204, 113, .22); color: #8bde9b; }
+body.dark .score-pill--orange { background: rgba(255, 177, 113, .22); color: #ffc085; }
+body.dark .score-pill--red { background: rgba(231, 97, 47, .22); color: #ffaaa3; }
+
+/* Ввод счёта (tournaments/score.blade.php) — на десктопе поля сетов растягивались
+   на всю ширину .ramka (лейбл "Сет N" у левого края, счёт у правого); центрируем
+   блок и сужаем до ширины, сопоставимой с рядом названий команд выше. */
+@media (min-width: 768px) {
+	#sets_container {
+		max-width: 40rem;
+		margin-left: auto;
+		margin-right: auto;
+	}
+}
+
 /* Volleyball Alert */
 .alert-volleyball {
     background: linear-gradient(135deg, rgba(255, 177, 113, 0.1) 0%, rgba(41, 103, 186, 0.05) 100%);

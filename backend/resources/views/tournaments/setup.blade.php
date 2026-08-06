@@ -70,6 +70,165 @@
 			}
 			.cropper-modal-overlay.loading .cropper-modal-container * { pointer-events: none; }
 			.cropper-modal-overlay.loading .fancybox-loading { display: block !important; }
+
+			/* Форма "Настройки турнира" — визуальная перегруппировка в 4 секции.
+			   Токены — из style.css: акцент #2967BA/#E7612F (dark), .filter-section-label
+			   (uppercase/1.3rem/700), .seg-control (паттерн выбираемых плиток), .card
+			   (border 0.2rem rgba(0,0,0,.1), radius 1rem). Ничего нового в общий style.css
+			   не выносим — компонент специфичен для этой страницы. */
+			.stage-section-label {
+				display: flex; align-items: center; gap: .8rem;
+				margin-bottom: 1.4rem; font-weight: 700; font-size: 1.3rem;
+				letter-spacing: .04em; text-transform: uppercase;
+				color: rgba(41, 103, 186, .7);
+			}
+			body.dark .stage-section-label { color: rgba(231, 97, 45, .8); }
+			.stage-section { margin-bottom: 2rem; }
+			/* Цифровой бейдж секции — тот же акцент, что и рамка выбранной
+			   finals-mode-card (#2967BA/#E7612F), просто в форме кружка с числом. */
+			.stage-section-num {
+				display: inline-flex; align-items: center; justify-content: center;
+				width: 2.2rem; height: 2.2rem; flex-shrink: 0;
+				border-radius: 50%; background: #2967BA; color: #fff;
+				font-size: 1.2rem; font-weight: 700; letter-spacing: 0;
+				text-transform: none;
+			}
+			body.dark .stage-section-num { background: #E7612F; }
+
+			/* Тоггл "Добавить стадию" — приглушённый вид, когда стадии уже есть
+			   (не конкурирует визуально с карточками активных стадий ниже);
+			   функциональность (разворачивание формы) не меняется, только вес. */
+			.stage-toggle-subdued {
+				display: inline-flex; align-items: center; gap: .4rem;
+				font-size: 1.4rem; font-weight: 500; color: #6b7280;
+				cursor: pointer; background: none; border: none; padding: 0;
+			}
+			.stage-toggle-subdued:hover { color: #2967BA; }
+			body.dark .stage-toggle-subdued:hover { color: #E7612F; }
+			.stage-form-warning {
+				display: flex; align-items: center; gap: .8rem;
+				margin-bottom: 1.6rem; padding: 1rem 1.4rem;
+				border-radius: .8rem; background: rgba(231, 97, 45, .08);
+				color: #E7612F; font-size: 1.4rem; font-weight: 500;
+			}
+			body.dark .stage-form-warning { background: rgba(231, 97, 45, .12); color: #FFB171; }
+
+			/* .radio-item.finals-mode-card (3 класса) — сознательно ВЫШЕ специфичности
+			   .form .radio-item (2 класса) из style.css: класс radio-item здесь нужен
+			   ТОЛЬКО чтобы сработало сайтовое правило "скрыть нативный input radio"
+			   (.form .radio-item input{display:none}) — без него виден настоящий
+			   браузерный radio рядом с кастомным кругом, что и давало разнобой
+			   размера (нативный чекнутый radio крупнее/иначе стилизован браузером).
+			   Но у .radio-item свои display:flex/padding:0/border-radius:0.6rem —
+			   переопределяем их здесь явно, а не полагаемся на порядок в каскаде. */
+			.radio-item.finals-mode-card {
+				display: block; width: 100%; padding: 1.5rem 2rem;
+				border: 0.2rem solid rgba(0, 0, 0, .1); border-radius: 1rem;
+				margin-bottom: 1.2rem; cursor: pointer;
+				transition: border-color .2s ease, background .2s ease;
+			}
+			.finals-mode-card:last-child { margin-bottom: 0; }
+			.finals-mode-card-head { display: flex; align-items: flex-start; gap: 1.2rem; }
+			.finals-mode-card-head .custom-radio { margin-top: .2rem; }
+			.finals-mode-card-title { font-weight: 600; font-size: 1.7rem; }
+			.finals-mode-card-hint { font-size: 1.3rem; color: #6b7280; margin: .4rem 0 0; }
+			/* Акцентная 2px рамка выбранной карточки — сознательное исключение из
+			   паттерна тонких (0.2rem rgba(0,0,0,.1)) рамок сайта, только для этого
+			   единственного места, где нужно явно выделить сделанный выбор. */
+			.finals-mode-card.is-selected {
+				border: 2px solid #2967BA;
+				background: rgba(41, 103, 186, .06);
+			}
+			body.dark .finals-mode-card { border-color: rgba(255, 255, 255, .1); }
+			body.dark .finals-mode-card.is-selected {
+				border-color: #E7612F;
+				background: rgba(231, 97, 45, .08);
+			}
+			.finals-mode-card-extra {
+				margin: 1.6rem 0 0 3.8rem; padding-top: 1.4rem;
+				border-top: .1rem solid rgba(0, 0, 0, .08);
+			}
+			.finals-mode-card-extra select { max-width: 16rem; }
+			body.dark .finals-mode-card-extra { border-top-color: rgba(255, 255, 255, .08); }
+
+			/* Плитки-теги кортов — тот же приём, что .seg-control (акцентный фон на
+			   выбранном), но как самостоятельные теги, а не связанный pill-бар: число
+			   кортов переменное (0-20), связанная сегмент-полоса тут не подходит. */
+			.court-tag {
+				display: inline-flex; align-items: center; justify-content: center;
+				padding: .8rem 1.6rem; border-radius: 999px;
+				border: 0.2rem solid rgba(0, 0, 0, .1); background: rgba(0, 0, 0, .02);
+				cursor: pointer; font-size: 1.4rem; font-weight: 500;
+				transition: all .2s ease; user-select: none; margin: 0 !important;
+			}
+			.court-tag.is-selected { background: #2967BA; border-color: #2967BA; color: #fff; }
+			body.dark .court-tag { border-color: rgba(255, 255, 255, .1); background: rgba(255, 255, 255, .02); }
+			body.dark .court-tag.is-selected { background: #E7612F; border-color: #E7612F; color: #fff; }
+
+			/* Состав команды (team_roster_line.blade.php) с аватарами — всегда
+			   вертикальный список (по игроку на строке), а не "Имя1 / Имя2" в одну
+			   строку — так лучше видно аватар+уровень каждого. Только когда показаны
+			   аватары ($avatar=true, т.е. только на пульте) — на публичных/TV/score
+			   страницах, где партиал используется без аватаров, поведение не менялось. */
+			.team-roster-line--avatars { display: flex; flex-direction: column; gap: .4rem; }
+			.team-roster-line--avatars .team-roster-member { display: flex; align-items: center; }
+			.team-roster-line--avatars .team-roster-sep { display: none; }
+
+			/* Модификатор общего сайтового .tabs/.tab/.tab-highlight (style.css) —
+			   ТОЛЬКО на этой странице (карточка стадии). Базовый компонент
+			   переиспользуется на других страницах (event_management, player
+			   dashboard и др.) как сплошная pill-кнопка — там не трогаем, здесь
+			   только переопределяем визуал через модификатор, JS (script.js
+			   updateAllTabHighlights/initTabSet) не меняли и не дублировали. */
+			.tabs.tabs--underline {
+				display: flex; background: none; box-shadow: none;
+				padding: 0; border-radius: 0; gap: 0;
+				border-bottom: .1rem solid rgba(0, 0, 0, .1);
+			}
+			body.dark .tabs.tabs--underline { border-bottom-color: rgba(255, 255, 255, .1); }
+			.tabs--underline .tab {
+				min-width: auto; padding: 1rem 1.8rem; border-radius: 0;
+				color: #6b7280; font-size: 1.4rem;
+			}
+			.tabs--underline .tab:hover:not(.active) { color: #2967BA; }
+			body.dark .tabs--underline .tab:hover:not(.active) { color: #FFB171; }
+			.tabs--underline .tab.active { color: #2967BA; text-shadow: none; }
+			body.dark .tabs--underline .tab.active { color: #FFB171; }
+			/* JS выставляет inline top:0/height:<высота таба> для pill-варианта —
+			   переопределяем в тонкую полосу СНИЗУ; translate(x,y) от JS остаётся
+			   (y=0 для однострочного ряда табов, двигает только по X). */
+			.tabs--underline .tab-highlight {
+				top: auto !important; bottom: 0; height: .3rem !important;
+				border-radius: 0; box-shadow: none; background: #2967BA;
+			}
+			body.dark .tabs--underline .tab-highlight { background: #E7612F; }
+
+			/* Тумблер Список/Шахматка (.ct-view-btn, тот же <style> компонент см.
+			   ниже в файле) — сплошная кнопка → приглушённый текст/акцент без фона. */
+			.ct-view-btn {
+				background: none !important; border: none !important; box-shadow: none !important;
+				color: #6b7280; padding: .4rem .2rem !important; border-radius: 0 !important;
+				border-bottom: .2rem solid transparent !important;
+			}
+			.ct-view-btn--active {
+				color: #2967BA !important; border-bottom-color: #2967BA !important;
+			}
+			body.dark .ct-view-btn--active { color: #FFB171 !important; border-bottom-color: #E7612F !important; }
+
+			/* Кликабельная ячейка шахматки (group_crosstable.blade.php) — заливает
+			   всю <td>, наследует цвет/фон ячейки (не перекрашивает как обычная .blink). */
+			.crosstable-cell-link {
+				display: block;
+				padding: 4px 2px;
+				color: inherit;
+				text-decoration: none;
+				cursor: pointer;
+			}
+			.crosstable-cell-link:hover {
+				text-decoration: underline;
+				filter: brightness(0.95);
+			}
+			body.dark .crosstable-cell-link:hover { filter: brightness(1.15); }
 		</style>
 	</x-slot>
 
@@ -238,6 +397,26 @@ $tourNumber = $seasonData
 						title: @json(session("success") ? __('tournaments.setup_swal_done') : __('tournaments.setup_swal_error')),
 						text: {!! json_encode(session('success') ?: session('error')) !!},
 						timer: 3000,
+						showConfirmButton: false,
+						toast: true,
+						position: 'top-end',
+					});
+				}
+			});
+		</script>
+		@endif
+		@if(session('warning'))
+		{{-- Неблокирующее предупреждение (напр. состав команды не соответствует
+		     гендерной политике турнира) — сохранение уже прошло успешно, это
+		     ДОПОЛНИТЕЛЬНЫЙ тост, не альтернатива success/error выше. --}}
+		<script>
+			document.addEventListener('DOMContentLoaded', function() {
+				if (typeof Swal !== 'undefined') {
+					Swal.fire({
+						icon: 'warning',
+						title: @json(__('tournaments.setup_swal_warning')),
+						text: {!! json_encode(session('warning')) !!},
+						timer: 5000,
 						showConfirmButton: false,
 						toast: true,
 						position: 'top-end',
@@ -788,17 +967,39 @@ $tourNumber = $seasonData
 				@foreach($completeTeams as $team)
 				<div class="col-md-6 col-xl-3">
 					<div class="card">
+						@php
+							$members = $team->members->load('user');
+							// Уровень по направлению турнира — тот же паттерн, что в
+							// team_name_link.blade.php / team_roster_line.blade.php.
+							$isBeachPairCard = $team->team_kind === 'beach_pair';
+							$cardLvlColor = function ($user) use ($isBeachPairCard) {
+								if (!$user) return '#aaaaaa';
+								$lvl = $isBeachPairCard
+									? (int) ($user->beach_level ?? $user->classic_level ?? 0)
+									: (int) ($user->classic_level ?? $user->beach_level ?? 0);
+								return $lvl > 0 ? level_color($lvl) : '#aaaaaa';
+							};
+						@endphp
+						{{-- У команды нет "лица"/уровня — это агрегат игроков, аватар+уровень
+						     только на строках отдельных игроков ниже. --}}
 						<a href="{{ route('tournamentTeams.show', [$event, $team]) }}" class="blink b-600 d-block mb-1">
 							{{ $team->name }}
 						</a>
-						@php $members = $team->members->load('user'); @endphp
 						@if($members->count() <= 2)
 						@foreach($members as $m)
-						<div>{{ trim(($m->user->last_name ?? '') . ' ' . ($m->user->first_name ?? '')) ?: $m->user->name ?? '?' }}</div>
+						<div>
+							<img src="{{ $m->user->profile_photo_url }}" class="ms-player-avatar-mini" alt="" style="vertical-align:middle;margin-right:.4rem">
+							<span class="level-dot level-dot--sm" style="vertical-align:middle;margin-right:.4rem;background:{{ $cardLvlColor($m->user) }}"></span>
+							{{ trim(($m->user->last_name ?? '') . ' ' . ($m->user->first_name ?? '')) ?: $m->user->name ?? '?' }}
+						</div>
 						@endforeach
 						@else
 						@foreach($members->take(2) as $m)
-						<div>{{ trim(($m->user->last_name ?? '') . ' ' . ($m->user->first_name ?? '')) ?: $m->user->name ?? '?' }}</div>
+						<div>
+							<img src="{{ $m->user->profile_photo_url }}" class="ms-player-avatar-mini" alt="" style="vertical-align:middle;margin-right:.4rem">
+							<span class="level-dot level-dot--sm" style="vertical-align:middle;margin-right:.4rem;background:{{ $cardLvlColor($m->user) }}"></span>
+							{{ trim(($m->user->last_name ?? '') . ' ' . ($m->user->first_name ?? '')) ?: $m->user->name ?? '?' }}
+						</div>
 						@endforeach
 						<div style="font-style:italic">{{ __('tournaments.setup_team_others') }}</div>
 						@endif
@@ -960,8 +1161,15 @@ $tourNumber = $seasonData
 				if (!inp || !dd || !hidden) return;
 
 				function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-				function showDd() { dd.classList.add('form-select-dropdown--active'); }
-				function hideDd() { dd.classList.remove('form-select-dropdown--active'); }
+				// .ramka/.card-ramka создают свой stacking context (backdrop-filter,
+				// ≥992px) — абсолютный дропдаун ограничен z-index СВОЕЙ ramka и уходит
+				// под следующую по DOM (см. комментарий у .select-dropdown-open в
+				// style.css). createCustomSelect() в script.js уже решает это для
+				// .form-select-wrapper; этот автокомплит — отдельный самописный виджет,
+				// применяем тот же приём вручную.
+				var ramkaEl = wrap ? wrap.closest('.ramka, .card-ramka, .top-section') : null;
+				function showDd() { dd.classList.add('form-select-dropdown--active'); if (ramkaEl) ramkaEl.classList.add('select-dropdown-open'); }
+				function hideDd() { dd.classList.remove('form-select-dropdown--active'); if (ramkaEl) ramkaEl.classList.remove('select-dropdown-open'); }
 
 				function setCaptain(id, label) {
 					inp.value = label;
@@ -1082,92 +1290,106 @@ $tourNumber = $seasonData
 		{{-- ============================================================
 		Создание стадии (сворачивается если стадии уже есть)
 		============================================================ --}}
-		@php $hasStages = $event->tournamentStages->isNotEmpty(); @endphp
+		@php
+			$hasStages = $event->tournamentStages->isNotEmpty();
+			$lastStage = $stages->last();
+			$lastStageHasMatches = $lastStage && $lastStage->matches->isNotEmpty();
+		@endphp
 		<div class="ramka">
 			<h2 class="-mt-05">{{ __('tournaments.setup_add_stage_h2') }}</h2>
-			<div class="btn btn-secondary" style="cursor:pointer" onclick="var b=this.nextElementSibling;b.style.display=b.style.display==='none'?'':'none';this.querySelector('.toggle-icon').textContent=b.style.display==='none'?'+':'-'">{{ __('tournaments.setup_btn_add_stage') }}			
+			@if($hasStages)
+			{{-- Стадии уже есть — тоггл приглушён (не конкурирует визуально с
+			     карточками активных стадий ниже), но функция та же: разворачивает
+			     форму для добавления ЕЩЁ ОДНОЙ отдельной стадии. --}}
+			<span class="stage-toggle-subdued" style="cursor:pointer" onclick="var b=this.nextElementSibling;b.style.display=b.style.display==='none'?'':'none';this.querySelector('.toggle-icon').textContent=b.style.display==='none'?'+':'-'">{{ __('tournaments.setup_btn_add_stage_subdued') }}</span>
+			@else
+			<div class="btn btn-secondary" style="cursor:pointer" onclick="var b=this.nextElementSibling;b.style.display=b.style.display==='none'?'':'none';this.querySelector('.toggle-icon').textContent=b.style.display==='none'?'+':'-'">{{ __('tournaments.setup_btn_add_stage') }}
 			</div>
+			@endif
 			<div style="{{ $hasStages ? 'display:none' : '' }}">
+				@if($hasStages && $lastStageHasMatches)
+				<div class="stage-form-warning">⚠️ {{ __('tournaments.setup_new_stage_warning') }}</div>
+				@endif
 				<form class="mt-2 form" method="POST" action="{{ route('tournament.stages.store', $event) }}">
 					@csrf
 					@if($selectedOccurrence)
 					<input type="hidden" name="occurrence_id" value="{{ $selectedOccurrence->id }}">
 					@endif
-					<div class="row">
-						<div class="col-md-6">
-							<div class="card">
-								<label>{{ __('tournaments.setup_stage_type') }}</label>
-								<select name="type" id="stage_type_select">
-									<option value="round_robin">{{ __('tournaments.setup_stage_round_robin') }}</option>
-									<option value="groups_playoff">{{ __('tournaments.setup_stage_groups_playoff') }}</option>
-									<option value="single_elim">{{ __('tournaments.setup_stage_single_elim') }}</option>
-									<option value="swiss">{{ __('tournaments.setup_stage_swiss') }}</option>
-									<option value="double_elim">{{ __('tournaments.setup_stage_double_elim') }}</option>
-									<option value="king_of_court">{{ __('tournaments.setup_stage_king_of_court') }}</option>
-									<option value="thai">{{ __('tournaments.setup_stage_thai') }}</option>
-									<option value="king_beach">{{ __('tournaments.setup_stage_king_beach') }}</option>
-								</select>
-								<a href="{{ route('tournament_formats') }}" target="_blank" class="f-16 blink mt-1">{{ __('tournaments.setup_stage_formats_link') }}</a>
-								
-								<label class="mt-2">{{ __('tournaments.setup_stage_label_name') }}</label>
-								<input name="name" value="{{ old('name', __('tournaments.setup_stage_default_name')) }}" required>
+					<div class="stage-section">
+						<div class="stage-section-label"><span class="stage-section-num">1</span>{{ __('tournaments.setup_section_type_h') }}</div>
+						<div class="card">
+							<div class="row">
+								<div class="col-lg-4 col-md-6">
+									<label>{{ __('tournaments.setup_stage_type') }}</label>
+									<select name="type" id="stage_type_select">
+										<option value="round_robin">{{ __('tournaments.setup_stage_round_robin') }}</option>
+										<option value="groups_playoff">{{ __('tournaments.setup_stage_groups_playoff') }}</option>
+										<option value="single_elim">{{ __('tournaments.setup_stage_single_elim') }}</option>
+										<option value="swiss">{{ __('tournaments.setup_stage_swiss') }}</option>
+										<option value="double_elim">{{ __('tournaments.setup_stage_double_elim') }}</option>
+										<option value="king_of_court">{{ __('tournaments.setup_stage_king_of_court') }}</option>
+										<option value="thai">{{ __('tournaments.setup_stage_thai') }}</option>
+										<option value="king_beach">{{ __('tournaments.setup_stage_king_beach') }}</option>
+									</select>
+									<a href="{{ route('tournament_formats') }}" target="_blank" class="f-16 blink mt-1">{{ __('tournaments.setup_stage_formats_link') }}</a>
+								</div>
+								<div class="col-lg-4 col-md-6">
+									<label>{{ __('tournaments.setup_stage_label_name') }}</label>
+									<input name="name" value="{{ old('name', __('tournaments.setup_stage_default_name')) }}" required>
+								</div>
+								<div class="col-lg-4 col-md-6">
+									<label>{{ __('tournaments.setup_stage_match_format') }}</label>
+									<select name="match_format" id="match_format_select">
+										<option value="bo3">Best of 3 (Bo3)</option>
+										<option value="bo1">Best of 1 (Bo1)</option>
+										@if(!$isBeach)
+										<option value="bo5">Best of 5 (Bo5)</option>
+										@endif
+									</select>
+									<div id="match_format_hint" class="f-16 mt-1"></div>
+									<script>
+										(function(){
+											var hints = {
+												bo1: @json(__('tournaments.setup_stage_bo1_hint')),
+												bo3: @json(__('tournaments.setup_stage_bo3_hint')),
+												bo5: @json(__('tournaments.setup_stage_bo5_hint'))
+											};
+											var sel = document.getElementById('match_format_select');
+											var hint = document.getElementById('match_format_hint');
+											function upd() { hint.textContent = hints[sel.value] || ''; }
+											sel.addEventListener('change', upd);
+											sel.addEventListener('change', function() {
+												var wrap = document.getElementById('deciding_set_wrap');
+												if (wrap) wrap.style.display = (sel.value === 'bo1') ? 'none' : '';
+											});
+											upd();
+											var _dsw = document.getElementById('deciding_set_wrap'); if (_dsw && sel.value === 'bo1') _dsw.style.display = 'none';
+										})();
+									</script>
+								</div>
+							</div>
+							<div class="row mt-2">
+								<div class="col-md-6">
+									<label>{{ __('tournaments.setup_stage_set_pts') }}</label>
+									<select name="set_points">
+										@if(!$isBeach)
+										<option value="25" selected>{{ __('tournaments.setup_stage_set_pts_25') }}</option>
+										@endif
+										<option value="21" @if($isBeach) selected @endif>{{ __('tournaments.setup_stage_set_pts_21') }}</option>
+										<option value="15">{{ __('tournaments.setup_stage_set_pts_15') }}</option>
+									</select>
+								</div>
+								<div class="col-md-6" id="deciding_set_wrap">
+									<label>{{ __('tournaments.setup_stage_deciding_set') }}</label>
+									<select name="deciding_set_points">
+										<option value="15" selected>15</option>
+										@if(!$isBeach)
+										<option value="25">25</option>
+										@endif
+									</select>
+								</div>
 							</div>
 						</div>
-						<div class="col-md-6">
-							<div class="card">
-								<label>{{ __('tournaments.setup_stage_match_format') }}</label>
-								<select name="match_format" id="match_format_select">
-									<option value="bo3">Best of 3 (Bo3)</option>
-									<option value="bo1">Best of 1 (Bo1)</option>
-									@if(!$isBeach)
-									<option value="bo5">Best of 5 (Bo5)</option>
-									@endif
-								</select>
-								<div id="match_format_hint" class="f-16 mt-1"></div>
-								<script>
-									(function(){
-										var hints = {
-											bo1: @json(__('tournaments.setup_stage_bo1_hint')),
-											bo3: @json(__('tournaments.setup_stage_bo3_hint')),
-											bo5: @json(__('tournaments.setup_stage_bo5_hint'))
-										};
-										var sel = document.getElementById('match_format_select');
-										var hint = document.getElementById('match_format_hint');
-										function upd() { hint.textContent = hints[sel.value] || ''; }
-										sel.addEventListener('change', upd);
-										sel.addEventListener('change', function() {
-											var wrap = document.getElementById('deciding_set_wrap');
-											if (wrap) wrap.style.display = (sel.value === 'bo1') ? 'none' : '';
-										});
-										upd();
-										var _dsw = document.getElementById('deciding_set_wrap'); if (_dsw && sel.value === 'bo1') _dsw.style.display = 'none';
-									})();
-								</script>
-								
-								<div class="row row2">
-									<div class="col-md-6">
-										<label class="mt-2">{{ __('tournaments.setup_stage_set_pts') }}</label>
-										<select name="set_points">
-											@if(!$isBeach)
-											<option value="25" selected>{{ __('tournaments.setup_stage_set_pts_25') }}</option>
-											@endif
-											<option value="21" @if($isBeach) selected @endif>{{ __('tournaments.setup_stage_set_pts_21') }}</option>
-											<option value="15">{{ __('tournaments.setup_stage_set_pts_15') }}</option>
-										</select>
-									</div>
-									<div class="col-md-6" id="deciding_set_wrap">
-										<label class="mt-2">{{ __('tournaments.setup_stage_deciding_set') }}</label>
-										<select name="deciding_set_points">
-											<option value="15" selected>15</option>
-											@if(!$isBeach)
-											<option value="25">25</option>
-											@endif
-										</select>
-									</div>
-								</div>								
-							</div>
-						</div>
-						
 					</div>
 					{{-- King of the Beach: специфичные настройки --}}
 					<div class="mt-2" id="king_beach_fields" style="display:none">
@@ -1202,89 +1424,114 @@ $tourNumber = $seasonData
 					</div>
 
 					<div class="mt-2" id="group_fields">
-						<div class="row">
-							<div class="col-lg-4 col-md-6">
-								<div class="card"><label>{{ __('tournaments.setup_stage_groups_count') }}</label>
-									<input name="groups_count" type="number" value="2" min="1" max="16">
+						<div class="stage-section">
+							<div class="stage-section-label"><span class="stage-section-num">2</span>{{ __('tournaments.setup_section_group_h') }}</div>
+							<div class="card">
+								<div class="row">
+									<div class="col-lg-4 col-md-6">
+										<label>{{ __('tournaments.setup_stage_groups_count') }}</label>
+										<input name="groups_count" type="number" value="2" min="1" max="16">
+									</div>
+									<div class="col-lg-4 col-md-6">
+										<label>{{ __('tournaments.setup_stage_groups_advance') }}</label>
+										<input name="advance_count" type="number" value="2" min="1" max="8">
+										<p class="f-16">{{ __('tournaments.setup_stage_groups_advance_hint') }}</p>
+									</div>
+									<div class="col-lg-4 col-md-6">
+										<label>{{ __('tournaments.setup_stage_seed') }}</label>
+										<select name="draw_mode" id="draw_mode_select">
+											<option value="random">{{ __('tournaments.setup_stage_seed_random') }}</option>
+											<option value="seeded">{{ __('tournaments.setup_stage_seed_seeded') }}</option>
+											<option value="manual">{{ __('tournaments.setup_stage_seed_manual') }}</option>
+										</select>
+									</div>
 								</div>
 							</div>
-							<div class="col-lg-4 col-md-6">
-								<div class="card"><label>{{ __('tournaments.setup_stage_groups_advance') }}</label>
-									<input name="advance_count" type="number" value="2" min="1" max="8">
-									<p class="f-16">{{ __('tournaments.setup_stage_groups_advance_hint') }}</p>
+						</div>
+
+						<div class="stage-section" id="finals_mode_fields">
+							<div class="stage-section-label"><span class="stage-section-num">3</span>{{ __('tournaments.setup_finals_mode_label') }}</div>
+
+							<label class="finals-mode-card radio-item" id="finals_mode_card_placement">
+								<div class="finals-mode-card-head">
+									<input type="radio" name="finals_mode" value="placement" id="finals_mode_placement" checked>
+									<div class="custom-radio"></div>
+									<div>
+										<div class="finals-mode-card-title">{{ __('tournaments.setup_finals_mode_placement') }}</div>
+										<p class="finals-mode-card-hint" id="finals_mode_placement_hint">{{ __('tournaments.setup_finals_mode_placement_hint') }}</p>
+									</div>
 								</div>
-							</div>
-							<div class="col-lg-4 col-md-6">
-								<div class="card"><label>{{ __('tournaments.setup_stage_third_place') }}</label>
-									<select name="third_place_match">
+							</label>
+
+							<label class="finals-mode-card radio-item" id="finals_mode_card_bracket">
+								<div class="finals-mode-card-head">
+									<input type="radio" name="finals_mode" value="bracket" id="finals_mode_bracket">
+									<div class="custom-radio"></div>
+									<div class="finals-mode-card-title">{{ __('tournaments.setup_finals_mode_bracket') }}</div>
+								</div>
+								<div class="finals-mode-card-extra" id="third_place_match_field">
+									<label>{{ __('tournaments.setup_stage_third_place') }}</label>
+									<select name="third_place_match" style="max-width:16rem">
 										<option value="0">{{ __('tournaments.no') }}</option>
 										<option value="1">{{ __('tournaments.yes') }}</option>
 									</select>
 								</div>
-							</div>
-						</div>
+							</label>
 
-						<div class="row mt-2" id="finals_mode_fields">
-							<div class="col-12">
-								<div class="card">
-									<label>{{ __('tournaments.setup_finals_mode_label') }}</label>
-									<label class="radio-item">
-										<input type="radio" name="finals_mode" value="placement" id="finals_mode_placement" checked>
-										<div class="custom-radio"></div>
-										<span>{{ __('tournaments.setup_finals_mode_placement') }}</span>
-									</label>
-									<p class="f-13" id="finals_mode_placement_hint" style="color:#6b7280;margin:0 0 8px 28px">{{ __('tournaments.setup_finals_mode_placement_hint') }}</p>
-									<label class="radio-item">
-										<input type="radio" name="finals_mode" value="bracket" id="finals_mode_bracket">
-										<div class="custom-radio"></div>
-										<span>{{ __('tournaments.setup_finals_mode_bracket') }}</span>
-									</label>
-								</div>
-							</div>
-						</div>
-
-						{{-- Жеребьёвка --}}
-						<div class="row mt-2">
-							<div class="col-xl-3">
-								<div class="card">
-									<label>{{ __('tournaments.setup_stage_seed') }}</label>
-									<select name="draw_mode" id="draw_mode_select">
-										<option value="random">{{ __('tournaments.setup_stage_seed_random') }}</option>
-										<option value="seeded">{{ __('tournaments.setup_stage_seed_seeded') }}</option>
-										<option value="manual">{{ __('tournaments.setup_stage_seed_manual') }}</option>
-									</select>
-								</div>
-							</div>
-							
-							<div class="col-xl-9">	
-								{{-- Расписание (опционально) --}}
-								<div id="schedule_fields">
-									<div class="card">
-										<label>{{ __('tournaments.setup_stage_schedule') }}</label>
-										<hr class="mb-1">
-										<div class="row">
-											<div class="col-md-4">
-												<label>{{ __('tournaments.setup_stage_start') }}</label>
-												<input type="datetime-local" name="schedule_start" value="">
-											</div>
-											<div class="col-md-4">
-												<label>{{ __('tournaments.setup_stage_match_min') }}</label>
-												<input type="number" name="schedule_match_duration" value="30" min="15" max="180">
-											</div>
-											<div class="col-md-4">
-												<label>{{ __('tournaments.setup_stage_break_min') }}</label>
-												<input type="number" name="schedule_break_duration" value="5" min="0" max="60">
-											</div>
-										</div>
-										<ul class="list f-16 mt-1">
-											<li>{{ __('tournaments.setup_stage_schedule_hint') }}</li>
-										</ul>										
-										
+							<label class="finals-mode-card radio-item" id="finals_mode_card_divisions">
+								<div class="finals-mode-card-head">
+									<input type="radio" name="finals_mode" value="divisions" id="finals_mode_divisions">
+									<div class="custom-radio"></div>
+									<div>
+										<div class="finals-mode-card-title">{{ __('tournaments.setup_finals_mode_divisions') }}</div>
+										<p class="finals-mode-card-hint">{{ __('tournaments.setup_finals_mode_divisions_hint') }}</p>
 									</div>
-								</div>							
-							</div>	
+								</div>
+								<div class="finals-mode-card-extra" id="finals_mode_divisions_fields" style="display:none">
+									{{-- Больше не редактируемое поле — чистое вычисление
+									     groups_count × advance_count (Section 2 «Групповой этап»),
+									     не отправляется в форме. createStage() на бэкенде считает
+									     то же самое число тем же способом (см. контроллер). --}}
+									<p class="f-13" id="advance_per_group_summary" style="color:#6b7280;margin:0"></p>
+
+									{{-- Формат матча по дивизионам — только для 2/3 групп (Hard/Lite
+									     или Hard/Medium/Lite). При 4+ группах formDivisions() не читает
+									     per-division ключи вида Medium-N (см. report_diagnosis_advance_per_group_divisions.md) —
+									     показываем это поле на пульте после формирования, не здесь. --}}
+									<div class="mt-2" id="divisions_format_fields"></div>
+									<p class="f-13" id="divisions_format_note" style="color:#6b7280;display:none">{{ __('tournaments.setup_divisions_format_note_4plus') }}</p>
+								</div>
+							</label>
 						</div>
-						
+
+						{{-- Расписание (опционально) — структура не менялась, просто во всю ширину секции (draw_mode переехал в "Групповой этап" выше) --}}
+						<div class="stage-section">
+							<div id="schedule_fields">
+								<div class="card">
+									<label>{{ __('tournaments.setup_stage_schedule') }}</label>
+									<hr class="mb-1">
+									<div class="row">
+										<div class="col-md-4">
+											<label>{{ __('tournaments.setup_stage_start') }}</label>
+											<input type="datetime-local" name="schedule_start" value="">
+										</div>
+										<div class="col-md-4">
+											<label>{{ __('tournaments.setup_stage_match_min') }}</label>
+											<input type="number" name="schedule_match_duration" value="30" min="15" max="180">
+										</div>
+										<div class="col-md-4">
+											<label>{{ __('tournaments.setup_stage_break_min') }}</label>
+											<input type="number" name="schedule_break_duration" value="5" min="0" max="60">
+										</div>
+									</div>
+									<ul class="list f-16 mt-1">
+										<li>{{ __('tournaments.setup_stage_schedule_hint') }}</li>
+									</ul>
+
+								</div>
+							</div>
+						</div>
+
 						{{-- Ручное распределение --}}
 						<div class="mt-2" id="manual_draw_block" style="display:none">
 							<div class="card">
@@ -1334,45 +1581,47 @@ $tourNumber = $seasonData
 
 					{{-- Корты — общий блок для группового этапа и King of the Beach --}}
 					<div class="mt-2" id="courts_shared_fields" style="overflow:visible">
-						<div class="row">
-							<div class="col-lg-4 col-md-6">
-								<div class="card" style="overflow:visible">
-									<label>{{ __('tournaments.setup_stage_courts_count') }}</label>
-									<select name="courts_count" id="courts_count_select">
-										<option value="0">—</option>
-										<option value="1">1</option>
-										<option value="2">2</option>
-										<option value="3">3</option>
-										<option value="4">4</option>
-										<option value="5">5</option>
-										<option value="6">6</option>
-										<option value="7">7</option>
-										<option value="8">8</option>
-										<option value="9">9</option>
-										<option value="10">10</option>
-										<option value="11">11</option>
-										<option value="12">12</option>
-										<option value="13">13</option>
-										<option value="14">14</option>
-										<option value="15">15</option>
-										<option value="16">16</option>
-										<option value="17">17</option>
-										<option value="18">18</option>
-										<option value="19">19</option>
-										<option value="20">20</option>
-									</select>
-									<input type="hidden" name="courts" id="courts_hidden" value="">
+						<div class="stage-section">
+							<div class="stage-section-label"><span class="stage-section-num">4</span>{{ __('tournaments.setup_section_courts_h') }}</div>
+							<div class="card" style="overflow:visible">
+								<div class="row">
+									<div class="col-lg-4 col-md-6">
+										<label>{{ __('tournaments.setup_stage_courts_count') }}</label>
+										<select name="courts_count" id="courts_count_select">
+											<option value="0">—</option>
+											<option value="1">1</option>
+											<option value="2">2</option>
+											<option value="3">3</option>
+											<option value="4">4</option>
+											<option value="5">5</option>
+											<option value="6">6</option>
+											<option value="7">7</option>
+											<option value="8">8</option>
+											<option value="9">9</option>
+											<option value="10">10</option>
+											<option value="11">11</option>
+											<option value="12">12</option>
+											<option value="13">13</option>
+											<option value="14">14</option>
+											<option value="15">15</option>
+											<option value="16">16</option>
+											<option value="17">17</option>
+											<option value="18">18</option>
+											<option value="19">19</option>
+											<option value="20">20</option>
+										</select>
+										<input type="hidden" name="courts" id="courts_hidden" value="">
+									</div>
+								</div>
+
+								{{-- Назначение кортов группам (динамическое, только для форматов с группами) —
+								     плитки-теги вместо чекбоксов, рендерятся JS (rebuild() ниже) --}}
+								<div class="mt-2" id="courts_group_assign" style="display:none">
+									<label>{{ __('tournaments.setup_stage_courts_for_groups') }}</label>
+									<hr class="mb-1">
+									<div id="courts_group_boxes" class="row"></div>
 								</div>
 							</div>
-						</div>
-
-						{{-- Назначение кортов группам (динамическое, только для форматов с группами) --}}
-						<div class="mt-2" id="courts_group_assign" style="display:none">
-							<div class="card">
-								<label>{{ __('tournaments.setup_stage_courts_for_groups') }}</label>
-								<hr class="mb-1">
-								<div id="courts_group_boxes" class="row"></div>
-							</div>	
 						</div>
 					</div>
 
@@ -1384,6 +1633,21 @@ $tourNumber = $seasonData
 						// TournamentStage::groupTypeValues() (PHP), а не отдельная
 						// копия в каждом JS-блоке (см. report_stage_type_branching_audit.md §2.3).
 						window.__stageGroupTypes = @json(\App\Models\TournamentStage::groupTypeValues());
+						// Типы, для которых бэкенд авто-создаёт парную стадию-продолжение
+						// (canHaveFollowupStage()) — блок "Режим финалов" актуален только
+						// для них. round_robin И groups_playoff, НЕ thai (см. followupTypeValues()).
+						window.__stageFollowupTypes = @json(\App\Models\TournamentStage::followupTypeValues());
+						// Дисциплина турнира — дефолт радио "Режим финалов" зависит от неё
+						// (пляжка чаще играет финальные группы по уровням, классика — финал за места).
+						window.__eventDirection = @json($event->direction);
+						// Названия финальных групп по groups_count (1..16, тот же диапазон,
+						// что у input[name=groups_count] min/max) — считаем ОДИН РАЗ на
+						// бэкенде через TournamentStage::divisionNamesFor() (та же формула,
+						// что использует formDivisions()/пульт), JS просто индексирует по
+						// готовому массиву. НЕ пересчитывать эту формулу отдельно в JS.
+						window.__divisionNamesByGroupsCount = @json(
+							collect(range(1, 16))->mapWithKeys(fn ($n) => [$n => \App\Models\TournamentStage::divisionNamesFor($n)])
+						);
 					</script>
 					<script>
 						(function(){
@@ -1414,18 +1678,21 @@ $tourNumber = $seasonData
 								for (var gi = 0; gi < g; gi++) {
 									groupLabels.push(String.fromCharCode(65 + gi)); // A, B, C...
 								}
-								
+
 								var colSize = Math.floor(12 / g);
 								if (colSize < 3) colSize = 3;
 								var html = "";
 								groupLabels.forEach(function(label) {
 									html += '<div class="col-md-' + colSize + ' mb-2">';
 									html += '<label>' + @json(__('tournaments.setup_group_label', ['label' => 'X'])).replace('X', label) + '</label>';
-									html += '<div class="d-flex" style="flex-wrap:wrap;gap:1rem">';
+									// Плитки-теги (не чекбоксы): реальный чекбокс скрыт правилом
+									// ".form .checkbox-item input{display:none}" (глобальное, style.css) —
+									// клик по <label> нативно переключает его без доп. JS; отдельный
+									// delegated-listener ниже только синхронизирует визуальный класс.
+									html += '<div class="d-flex" style="flex-wrap:wrap;gap:.8rem">';
 									names.forEach(function(court) {
-										html += '<label class="checkbox-item f-13" style="min-width: 12rem; margin:0">';
+										html += '<label class="checkbox-item court-tag">';
 										html += '<input type="checkbox" name="group_courts[' + label + '][]" value="' + court + '">';
-										html += '<div class="custom-checkbox"></div>';
 										html += '<span>' + court + '</span>';
 										html += '</label>';
 									});
@@ -1433,10 +1700,18 @@ $tourNumber = $seasonData
 								});
 								boxesDiv.innerHTML = html;
 							}
-							
+
 							courtsSel.addEventListener("change", rebuild);
 							if (groupsSel) groupsSel.addEventListener("input", rebuild);
 							if (typeSel) typeSel.addEventListener("change", rebuild);
+							// Делегированный листенер переживает innerHTML-перестройку rebuild() —
+							// вешаем один раз на контейнер, не на каждую плитку.
+							boxesDiv.addEventListener("change", function(e) {
+								if (e.target && e.target.matches('input[type="checkbox"]')) {
+									var tag = e.target.closest('.court-tag');
+									if (tag) tag.classList.toggle('is-selected', e.target.checked);
+								}
+							});
 							rebuild();
 						})();
 					</script>
@@ -1672,7 +1947,7 @@ $tourNumber = $seasonData
 			{{-- Группы --}}
 			@if($stage->groups->isNotEmpty())
 			<div class="tabs-content mt-2">
-				<div class="tabs">
+				<div class="tabs tabs--underline">
 					@foreach($stage->groups as $index => $group)
 					<div class="tab" data-tab="group{{ $group->id }}">{{ $group->name }}</div>
 					@endforeach
@@ -1690,7 +1965,7 @@ $tourNumber = $seasonData
 								<thead>
 									<tr style="border-bottom:2px solid rgba(128,128,128,.2)">
 										<th class="p-1" style="text-align:center;width:30px">{{ __('tournaments.setup_standings_col_pos') }}</th>
-										<th class="p-1" style="text-align:left">{{ __('tournaments.standings_col_team') }}</th>
+										<th class="p-1" style="text-align:left;min-width:18rem">{{ __('tournaments.standings_col_team') }}</th>
 										<th class="p-1" style="text-align:center">{{ __('tournaments.standings_col_played') }}</th>
 										<th class="p-1" style="text-align:center">{{ __('tournaments.standings_col_w') }}</th>
 										<th class="p-1" style="text-align:center">{{ __('tournaments.standings_col_l') }}</th>
@@ -1715,8 +1990,8 @@ $tourNumber = $seasonData
 									<tr>
 										<td style="text-align:center">{{ $standing->rank }}</td>
 										<td>
-											<div class="b-600 cd">@include('tournaments._partials.team_name_link', ['team' => $standing->team])@if($isOutsider) <span class="f-16">{{ __('tournaments.setup_outsider_label') }}</span>@endif</div>
-											@include('tournaments._partials.team_roster_line', ['team' => $standing->team, 'class' => 'f-16'])
+											<div class="b-600 cd">@include('tournaments._partials.team_name_link', ['team' => $standing->team, 'showAvatar' => true])@if($isOutsider) <span class="f-16">{{ __('tournaments.setup_outsider_label') }}</span>@endif</div>
+											@include('tournaments._partials.team_roster_line', ['team' => $standing->team, 'class' => 'f-16', 'showAvatar' => true])
 										</td>
 										<td style="text-align:center"><span class="b-600 alert-info pt-05 pb-05 p-1">{{ $standing->played }}</span></td>
 										<td style="text-align:center;"><span class="b-600 alert-success pt-05 pb-05 p-1">{{ $standing->wins }}</span></td>
@@ -1859,7 +2134,7 @@ $tourNumber = $seasonData
 			@endphp
 			
 			<div class="tabs-content">
-				<div class="tabs">
+				<div class="tabs tabs--underline">
 					@foreach($matchesByGroup as $groupId => $groupMatches)
 					@php $groupName = $stage->groups->firstWhere('id', $groupId)?->name ?? ''; @endphp
 					<div class="tab" data-tab="matches-group{{ $groupId }}">{{ $groupName ? __('tournaments.setup_tab_matches_group', ['name' => $groupName]) : __('tournaments.setup_tab_matches') }}</div>
@@ -1893,14 +2168,14 @@ $tourNumber = $seasonData
 										<tr style="border-bottom:2px solid rgba(128,128,128,.2)">
 											<th class="p-1" style="text-align:left">#</th>
 											<th class="p-1" style="text-align:left">{{ __('tournaments.setup_matches_col_round') }}</th>
-											<th class="p-1" style="text-align:left">{{ __('tournaments.setup_matches_col_home') }}</th>
-											<th class="p-1" style="text-align:left">{{ __('tournaments.setup_matches_col_away') }}</th>
+											<th class="p-1" style="text-align:left;min-width:14rem">{{ __('tournaments.setup_matches_col_home') }}</th>
+											<th class="p-1" style="text-align:left;min-width:14rem">{{ __('tournaments.setup_matches_col_away') }}</th>
 											<th class="p-1" style="text-align:center">{{ __('tournaments.setup_mvp_col_sets') }}</th>
 											<th class="p-1" style="text-align:center">{{ __('tournaments.setup_matches_col_score') }}</th>
 											<th class="p-1" style="text-align:center">{{ __('tournaments.setup_matches_col_time') }}</th>
 											<th class="p-1" style="text-align:center">{{ __('tournaments.setup_matches_col_court') }}</th>
 											<th class="p-1" style="text-align:center">{{ __('tournaments.setup_matches_col_status') }}</th>
-											<th class="p-1"></th>
+											<th class="p-1" style="text-align:center">{{ __('tournaments.setup_matches_col_actions') }}</th>
 										</tr>
 									</thead>
 									<tbody>
@@ -1909,12 +2184,12 @@ $tourNumber = $seasonData
 											<td>{{ $match->match_number }}</td>
 											<td>R{{ $match->round }}</td>
 											<td>
-												<div class="{{ $match->winner_team_id === $match->team_home_id ? 'cd b-600' : '' }}">@include('tournaments._partials.team_name_link', ['team' => $match->teamHome, 'fallback' => 'TBD'])</div>
-												@include('tournaments._partials.team_roster_line', ['team' => $match->teamHome, 'class' => 'f-13'])
+												<div class="{{ $match->winner_team_id === $match->team_home_id ? 'cd b-600' : '' }}">@include('tournaments._partials.team_name_link', ['team' => $match->teamHome, 'fallback' => 'TBD', 'showAvatar' => true])</div>
+												@include('tournaments._partials.team_roster_line', ['team' => $match->teamHome, 'class' => 'f-13', 'showAvatar' => true])
 											</td>
 											<td>
-												<div class="{{ $match->winner_team_id === $match->team_away_id ? 'cd b-600' : '' }}">@include('tournaments._partials.team_name_link', ['team' => $match->teamAway, 'fallback' => 'TBD'])</div>
-												@include('tournaments._partials.team_roster_line', ['team' => $match->teamAway, 'class' => 'f-13'])
+												<div class="{{ $match->winner_team_id === $match->team_away_id ? 'cd b-600' : '' }}">@include('tournaments._partials.team_name_link', ['team' => $match->teamAway, 'fallback' => 'TBD', 'showAvatar' => true])</div>
+												@include('tournaments._partials.team_roster_line', ['team' => $match->teamAway, 'class' => 'f-13', 'showAvatar' => true])
 											</td>
 											<td style="text-align:center">{{ $match->setsScore() ?? '—' }}</td>
 											<td style="text-align:center">{{ $match->detailedScore() ?: '—' }}</td>
@@ -2018,46 +2293,23 @@ $tourNumber = $seasonData
 			<div style="{{ $hasDivStages ? 'display:none' : '' }}">
 				@php
 				$groupsCount = $stage->groups->count();
-				$divisionNames = match($groupsCount) {
-				2 => ['Hard', 'Lite'],
-				3 => ['Hard', 'Medium', 'Lite'],
-				default => array_merge(['Hard'], array_map(fn($i) => 'Medium-' . $i, range(1, max(1, $groupsCount - 2))), ['Lite']),
-				};
-				$advanceCount = (int) $stage->cfg('advance_count', 2);
+				$divisionNames = \App\Models\TournamentStage::divisionNamesFor($groupsCount);
 				$availCourts = $stage->cfg('courts', []);
 				@endphp
-				
+
 				<p>
 					{{ __('tournaments.setup_groups_redistribute', ['n' => count($divisionNames), 'plural' => count($divisionNames) > 2 ? '' : '']) }}
 					<strong>{{ implode(', ', $divisionNames) }}</strong>
 				</p>
-				
+
+				{{-- Формат матча по дивизионам и "выходят в Hard" задаются в мастере
+				     при создании стадии (finals_mode=divisions) — cfg('div_format_hard'
+				     /'_medium'/'_lite', 'advance_per_group'), formDivisions() читает их
+				     напрямую из конфига. На пульте остаются только площадки/расписание —
+				     логистика дня турнира, не решения формата. --}}
 				<form method="POST" action="{{ route('tournament.stages.formDivisions', $stage) }}" class="form">
 					@csrf
-					
-					{{-- Ряд 1: Кол-во + форматы --}}
-					<div class="row">
-						<div class="col-md-3 mb-2">
-							<div class="card">
-								<label>{{ __('tournaments.setup_groups_advance_to_div', ['name' => 'Hard']) }}</label>
-								<input name="advance_per_group" type="number" value="{{ $advanceCount }}" min="1" max="8" style="width:70px">
-								<p>{{ __('tournaments.setup_groups_per_group') }}</p>
-							</div>	
-						</div>
-						@foreach($divisionNames as $dn)
-						<div class="col-md-3 mb-2">
-							<div class="card">
-								<label>{{ __('tournaments.setup_groups_format_for', ['name' => $dn]) }}</label>
-								<select name="div_format_{{ strtolower($dn) }}" class="f-13" style="width:100%">
-									<option value="">{{ __('tournaments.setup_groups_format_default') }}</option>
-									<option value="bo1">Bo1</option>
-									<option value="bo3">Bo3</option>
-								</select>
-							</div>	
-						</div>
-						@endforeach
-					</div>
-					
+
 					{{-- Ряд 2: Площадки --}}
 					@if(count($availCourts) > 0)
 					<div class="card mb-2">
@@ -2270,9 +2522,17 @@ $tourNumber = $seasonData
 			var courtsFields = document.getElementById('courts_shared_fields');
 			var finalsModeFields = document.getElementById('finals_mode_fields');
 			var groupsCountInput = document.querySelector('input[name="groups_count"]');
+			var advanceCountInput = document.querySelector('input[name="advance_count"]');
 			var finalsModePlacement = document.getElementById('finals_mode_placement');
 			var finalsModeBracket = document.getElementById('finals_mode_bracket');
+			var finalsModeDivisions = document.getElementById('finals_mode_divisions');
 			var finalsModePlacementHint = document.getElementById('finals_mode_placement_hint');
+			var divisionsFields = document.getElementById('finals_mode_divisions_fields');
+			var thirdPlaceField = document.getElementById('third_place_match_field');
+			var advancePerGroupSummary = document.getElementById('advance_per_group_summary');
+			var divisionsFormatFields = document.getElementById('divisions_format_fields');
+			var divisionsFormatNote = document.getElementById('divisions_format_note');
+			var divisionsFormatTouched = {};
 			// group_fields и king_beach_fields содержат поля с ОДИНАКОВЫМИ name (draw_mode) —
 			// display:none не мешает браузеру отправить их оба на сервер. Отключаем инпуты
 			// скрытого блока через disabled, чтобы в форму попадали только видимые поля.
@@ -2286,6 +2546,8 @@ $tourNumber = $seasonData
 			// "Прямые матчи за места" однозначны только при РОВНО 2 группах —
 			// при другом числе групп задизейблить радио и форсировать 'bracket'
 			// (бэкенд тоже это форсирует, см. createStage() — это чисто UX-гейт).
+			// "Финальные группы по уровням" НЕ имеет такого ограничения — работает
+			// при любом числе групп (>=2), поэтому её радио этот гейт не трогает.
 			function syncFinalsModeGuard() {
 				if (!groupsCountInput || !finalsModePlacement) return;
 				var isTwoGroups = parseInt(groupsCountInput.value, 10) === 2;
@@ -2295,24 +2557,149 @@ $tourNumber = $seasonData
 					finalsModePlacement.checked = false;
 					if (finalsModeBracket) finalsModeBracket.checked = true;
 				}
+				syncFinalsModeCardVisuals();
 			}
+			// Акцентная рамка/фон на выбранной карточке "Режим финалов" — класс
+			// переключается JS-ом (не CSS :has(), ради совместимости с более старыми
+			// WKWebView/Safari), т.к. .checked меняется и программно (дефолт по
+			// direction, форс-гейт guard'а выше), не только пользовательским кликом.
+			function syncFinalsModeCardVisuals() {
+				[
+					['finals_mode_card_placement', finalsModePlacement],
+					['finals_mode_card_bracket', finalsModeBracket],
+					['finals_mode_card_divisions', finalsModeDivisions],
+				].forEach(function(pair) {
+					var card = document.getElementById(pair[0]);
+					if (card) card.classList.toggle('is-selected', !!(pair[1] && pair[1].checked));
+				});
+			}
+			// "Сколько команд выходит в финальный этап" — чистое вычисление
+			// (groups_count × advance_count из Section 2), НЕ редактируемое поле и
+			// НЕ отправляется в форме. createStage() на бэкенде считает то же самое
+			// число тем же способом при finals_mode=divisions (см. контроллер).
+			function syncDivisionsFields() {
+				var isDivisions = !!(finalsModeDivisions && finalsModeDivisions.checked);
+				setBlockActive(divisionsFields, isDivisions);
+				if (isDivisions) rebuildDivisionFormatFields();
+				if (!isDivisions || !advancePerGroupSummary) return;
+				var g = parseInt(groupsCountInput ? groupsCountInput.value : 0, 10) || 0;
+				var a = parseInt(advanceCountInput ? advanceCountInput.value : 0, 10) || 0;
+				advancePerGroupSummary.textContent = (g && a)
+					? @json(__('tournaments.setup_divisions_advance_summary', ['total' => 'X', 'per_group' => 'Y']))
+						.replace('X', g * a).replace('Y', a)
+					: '';
+			}
+			// Формат матча по дивизионам (div_format_hard/_medium/_lite) — только для
+			// 2/3 групп (Hard/Lite или Hard/Medium/Lite). Названия дивизионов берём из
+			// window.__divisionNamesByGroupsCount (посчитано PHP один раз при загрузке
+			// страницы — TournamentStage::divisionNamesFor(), та же формула, что и в
+			// formDivisions()/на пульте — НЕ дублировать формулу тут). При 4+ группах
+			// formDivisions() не читает per-division ключи вида Medium-N (известный
+			// gap, см. report_diagnosis_advance_per_group_divisions.md) — показываем
+			// заметку вместо полей, настройка остаётся на пульте после формирования.
+			function rebuildDivisionFormatFields() {
+				if (!divisionsFormatFields) return;
+				var g = parseInt(groupsCountInput ? groupsCountInput.value : 0, 10) || 0;
+				var names = window.__divisionNamesByGroupsCount[g] || [];
+				if (names.length > 3) {
+					divisionsFormatFields.innerHTML = '';
+					if (divisionsFormatNote) divisionsFormatNote.style.display = '';
+					return;
+				}
+				if (divisionsFormatNote) divisionsFormatNote.style.display = 'none';
+				var html = '';
+				names.forEach(function(name) {
+					var key = name.toLowerCase();
+					var current = divisionsFormatFields.querySelector('[name="div_format_' + key + '"]');
+					var val = current ? current.value : (divisionsFormatTouched[key] || '');
+					html += '<label class="mt-1">' + @json(__('tournaments.setup_groups_format_for', ['name' => 'X'])).replace('X', name) + '</label>';
+					html += '<select name="div_format_' + key + '" class="f-13" style="max-width:16rem">';
+					html += '<option value=""' + (val === '' ? ' selected' : '') + '>' + @json(__('tournaments.setup_groups_format_default')) + '</option>';
+					html += '<option value="bo1"' + (val === 'bo1' ? ' selected' : '') + '>Bo1</option>';
+					html += '<option value="bo3"' + (val === 'bo3' ? ' selected' : '') + '>Bo3</option>';
+					html += '</select>';
+				});
+				divisionsFormatFields.innerHTML = html;
+				divisionsFormatFields.querySelectorAll('select').forEach(function(sel) {
+					sel.addEventListener('change', function() { divisionsFormatTouched[sel.name.replace('div_format_', '')] = sel.value; });
+					// Динамически вставленный <select> внутри .form схлопывается в 1px
+					// сайтовым правилом (.form select{position:absolute;width:1px...}
+					// под @media(hover:hover)) без обёртки .form-select-wrapper — та же
+					// логика, что уже задокументирована в проекте и используется в
+					// admin/locations/edit.blade.php, occurrence_edit.blade.php и др.
+					if (window.createCustomSelect && window.jQuery) {
+						window.createCustomSelect(window.jQuery(sel));
+					}
+				});
+			}
+			[finalsModePlacement, finalsModeBracket, finalsModeDivisions].forEach(function(radio) {
+				if (radio) radio.addEventListener('change', syncDivisionsFields);
+			});
 			if (groupsCountInput) {
-				groupsCountInput.addEventListener('input', syncFinalsModeGuard);
+				groupsCountInput.addEventListener('input', function() { syncFinalsModeGuard(); syncDivisionsFields(); });
 				syncFinalsModeGuard();
+			}
+			if (advanceCountInput) {
+				advanceCountInput.addEventListener('input', syncDivisionsFields);
+			}
+			// "Матч за 3-е место" читается ТОЛЬКО генерацией полного плей-офф
+			// (bracket) — для placement (счёт по рангам) и divisions (нет бракета
+			// вообще) поле ни на что не влияет. Показываем его только при bracket,
+			// чтобы не сбивать организатора несуществующей настройкой. Для типов
+			// без finals_mode (thai и т.п.) поведение не трогаем — оставляем видимым.
+			function syncThirdPlaceMatchField() {
+				if (!thirdPlaceField || !typeSelect) return;
+				var t = typeSelect.value;
+				var showGroup = window.__stageGroupTypes.indexOf(t) !== -1;
+				// Для не-групповых типов (single_elim/swiss/king_of_court/...) сам
+				// #group_fields уже целиком задизейблен выше — не трогаем его потомков
+				// здесь повторно, иначе рискуем случайно РАЗдизейблить это поле.
+				if (!showGroup) return;
+				var isFollowup = window.__stageFollowupTypes.indexOf(t) !== -1;
+				if (!isFollowup) {
+					// thai — group_stage без finals_mode; поведение поля не трогаем.
+					setBlockActive(thirdPlaceField, true);
+					return;
+				}
+				setBlockActive(thirdPlaceField, !!(finalsModeBracket && finalsModeBracket.checked));
+			}
+			[finalsModePlacement, finalsModeBracket, finalsModeDivisions].forEach(function(radio) {
+				if (radio) radio.addEventListener('change', syncThirdPlaceMatchField);
+				if (radio) radio.addEventListener('change', syncFinalsModeCardVisuals);
+			});
+			// Дефолт радио "Режим финалов" по дисциплине турнира — пляжка чаще
+			// играет финальные группы по уровням, классика — финал за места.
+			// Это только дефолт: организатор переключает руками в любой момент,
+			// повторно применяется при каждой смене типа стадии на групповой.
+			function applyFinalsModeDefaultByDirection() {
+				if (window.__eventDirection === 'beach' && finalsModeDivisions) {
+					finalsModeDivisions.checked = true;
+				} else if (finalsModePlacement) {
+					finalsModePlacement.checked = true;
+				}
+				syncDivisionsFields();
+				syncThirdPlaceMatchField();
+				syncFinalsModeCardVisuals();
 			}
 			if (typeSelect) {
 				function toggle() {
 					var t = typeSelect.value;
 					var showGroup = window.__stageGroupTypes.indexOf(t) !== -1;
 					var showKb = (t === 'king_beach');
+					var isFollowup = window.__stageFollowupTypes.indexOf(t) !== -1;
 					setBlockActive(groupFields, showGroup);
 					setBlockActive(kbFields, showKb);
 					// Корты — общий блок для групповых форматов и King of the Beach
 					setBlockActive(courtsFields, showGroup || showKb);
-					// finals_mode актуален только для groups_playoff (только этот тип
-					// авто-создаёт парную стадию плей-офф) — round_robin/thai его не используют.
-					setBlockActive(finalsModeFields, t === 'groups_playoff');
-					if (t === 'groups_playoff') syncFinalsModeGuard();
+					// finals_mode актуален для типов с авто-продолжением (canHaveFollowupStage() —
+					// round_robin И groups_playoff, НЕ thai) — единый список из PHP, не хардкод.
+					setBlockActive(finalsModeFields, isFollowup);
+					if (isFollowup) {
+						syncFinalsModeGuard();
+						applyFinalsModeDefaultByDirection();
+					} else {
+						syncThirdPlaceMatchField();
+					}
 				}
 				typeSelect.addEventListener('change', toggle);
 				toggle();
@@ -2346,9 +2733,12 @@ $tourNumber = $seasonData
 			var timer = null;
 			
 			function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-			function showDd() { dd.classList.add('form-select-dropdown--active'); }
-			function hideDd() { dd.classList.remove('form-select-dropdown--active'); }
-			
+			// См. комментарий у manual-captain-search выше — тот же приём поднятия
+			// z-index родительской .ramka, что и у createCustomSelect() в script.js.
+			var ramkaEl = wrap ? wrap.closest('.ramka, .card-ramka, .top-section') : null;
+			function showDd() { dd.classList.add('form-select-dropdown--active'); if (ramkaEl) ramkaEl.classList.add('select-dropdown-open'); }
+			function hideDd() { dd.classList.remove('form-select-dropdown--active'); if (ramkaEl) ramkaEl.classList.remove('select-dropdown-open'); }
+
 			inp.addEventListener('input', function() {
 				clearTimeout(timer);
 				var q = inp.value.trim();
@@ -2410,8 +2800,11 @@ $tourNumber = $seasonData
 			if (!inp || !dd || !hidden) return;
 			var timer = null;
 			function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-			function showDd() { dd.classList.add('form-select-dropdown--active'); }
-			function hideDd() { dd.classList.remove('form-select-dropdown--active'); }
+			// См. комментарий у manual-captain-search — тот же приём поднятия
+			// z-index родительской .ramka, что и у createCustomSelect() в script.js.
+			var ramkaEl = wrap ? wrap.closest('.ramka, .card-ramka, .top-section') : null;
+			function showDd() { dd.classList.add('form-select-dropdown--active'); if (ramkaEl) ramkaEl.classList.add('select-dropdown-open'); }
+			function hideDd() { dd.classList.remove('form-select-dropdown--active'); if (ramkaEl) ramkaEl.classList.remove('select-dropdown-open'); }
 			inp.addEventListener('input', function() {
 				clearTimeout(timer);
 				hidden.value = '';
