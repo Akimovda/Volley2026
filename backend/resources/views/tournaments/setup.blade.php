@@ -1380,6 +1380,12 @@ $tourNumber = $seasonData
 						<button type="submit" class="btn btn-primary mt-2">{{ __('tournaments.setup_stage_btn_create_seed') }}</button>
 					</div>
 					<script>
+						// Единый источник списка "групповых" типов стадий — из
+						// TournamentStage::groupTypeValues() (PHP), а не отдельная
+						// копия в каждом JS-блоке (см. report_stage_type_branching_audit.md §2.3).
+						window.__stageGroupTypes = @json(\App\Models\TournamentStage::groupTypeValues());
+					</script>
+					<script>
 						(function(){
 							var courtsSel = document.getElementById("courts_count_select");
 							var groupsSel = document.querySelector('input[name="groups_count"]');
@@ -1387,10 +1393,10 @@ $tourNumber = $seasonData
 							var assignBlock = document.getElementById("courts_group_assign");
 							var boxesDiv = document.getElementById("courts_group_boxes");
 							var typeSel = document.getElementById("stage_type_select");
-							
+
 							function rebuild() {
 								var n = parseInt(courtsSel.value) || 0;
-								var isGroupType = typeSel && ['round_robin', 'groups_playoff', 'thai'].indexOf(typeSel.value) !== -1;
+								var isGroupType = typeSel && window.__stageGroupTypes.indexOf(typeSel.value) !== -1;
 								var g = isGroupType ? (parseInt(groupsSel ? groupsSel.value : 0) || 0) : 0;
 								
 								var names = [];
@@ -1997,7 +2003,7 @@ $tourNumber = $seasonData
 		
 		@endif
 		{{-- Продвижение / Группы --}}
-		@if($stage->isCompleted() && in_array($stage->type, ['round_robin', 'groups_playoff']))
+		@if($stage->isCompleted() && $stage->canHaveFollowupStage())
 		
 		{{-- Сезонный турнир → группы Hard/Lite --}}
 		@if($event->season_id && $stage->groups->count() >= 2)
@@ -2295,7 +2301,7 @@ $tourNumber = $seasonData
 			if (typeSelect) {
 				function toggle() {
 					var t = typeSelect.value;
-					var showGroup = (t === 'round_robin' || t === 'groups_playoff' || t === 'thai');
+					var showGroup = window.__stageGroupTypes.indexOf(t) !== -1;
 					var showKb = (t === 'king_beach');
 					setBlockActive(groupFields, showGroup);
 					setBlockActive(kbFields, showKb);
