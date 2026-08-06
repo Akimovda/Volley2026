@@ -279,7 +279,54 @@
 								</div>
 								
 								<div class="ramka" id="tournament_settings_block" data-show-if="format=tournament">
-									<h2 class="-mt-05">{{ __('events.tournament_settings') }}</h2>	
+									<h2 class="-mt-05">{{ __('events.tournament_settings') }}</h2>
+
+									{{-- Тип регистрации команд — единая radio-группа: обычная командная / King-Queen
+									     of Beach / индивидуальная. Управляет двумя скрытыми чекбоксами
+									     (king_beach_reg/tournament_individual_reg) программно — backend
+									     (EventStoreService/EventGameSettingsService/EventCreateValidator) продолжает
+									     читать именно эти два булевых поля, менять их не пришлось. --}}
+									<div class="row mt-2" id="tournament_reg_mode_row">
+										<div class="col-md-12">
+											<div class="card" style="background:var(--card-bg,#f9fafb)">
+												<label>{{ __('events.tournament_reg_mode_label') }}</label>
+												<div class="radio-group">
+													<label class="radio-item">
+														<input type="radio" name="tournament_reg_mode" id="tournament_reg_mode_team" value="team" @checked(!($kingBeachReg ?? false) && !($tournamentIndividualReg ?? false))>
+														<div class="custom-radio"></div>
+														<span class="b-500">{{ __('events.tournament_reg_mode_team_label') }}</span>
+													</label>
+													<ul class="list f-16" style="margin:.2rem 0 1rem 3.8rem"><li>{{ __('events.tournament_reg_mode_team_hint') }}</li></ul>
+
+													<div id="king_beach_reg_block" data-show-if="direction=beach,tournament_game_scheme=2x2">
+														<label class="radio-item">
+															<input type="radio" name="tournament_reg_mode" id="tournament_reg_mode_king_beach" value="king_beach" @checked($kingBeachReg ?? false)>
+															<div class="custom-radio"></div>
+															<span class="b-500">{{ __('events.king_beach_reg_label') }}</span>
+														</label>
+														<ul class="list f-16" style="margin:.2rem 0 1rem 3.8rem"><li>{{ __('events.king_beach_reg_hint') }}</li></ul>
+													</div>
+
+													<label class="radio-item">
+														<input type="radio" name="tournament_reg_mode" id="tournament_reg_mode_individual" value="individual" @checked($tournamentIndividualReg ?? false)>
+														<div class="custom-radio"></div>
+														<span class="b-500">{{ __('events.tournament_individual_reg_label') }}</span>
+													</label>
+													<ul class="list f-16" style="margin:.2rem 0 0 3.8rem"><li>{{ __('events.tournament_individual_reg_hint') }}</li></ul>
+													<div id="tournament_individual_reg_note" class="f-13 mt-1" style="opacity:.7;display:none;margin-left:3.8rem">
+														{{ __('events.tournament_individual_reg_note') }}
+													</div>
+												</div>
+
+												{{-- Легаси-поля: значения читает backend, видимость управляет radio-группа выше --}}
+												<input type="hidden" name="king_beach_reg" value="0">
+												<input type="checkbox" name="king_beach_reg" id="king_beach_reg" value="1" style="display:none" @checked($kingBeachReg ?? false)>
+												<input type="hidden" name="tournament_individual_reg" value="0">
+												<input type="checkbox" name="tournament_individual_reg" id="tournament_individual_reg" value="1" style="display:none" @checked($tournamentIndividualReg ?? false)>
+											</div>
+										</div>
+									</div>
+
 									<div class="row">
 										<div class="col-md-4">
                                             <div class="card">
@@ -300,27 +347,6 @@
 												@error('tournament_game_scheme')
 												<div class="text-xs text-red-600 mt-1">{{ $message }}</div>
 												@enderror
-
-												{{-- Король/Королева пляжа --}}
-												<div class="mt-2" id="king_beach_reg_block" data-show-if="direction=beach,tournament_game_scheme=2x2">
-													<div class="card" style="background:var(--card-bg,#f9fafb)">
-														<input type="hidden" name="king_beach_reg" value="0">
-														<label class="checkbox-item">
-															<input
-															type="checkbox"
-															name="king_beach_reg"
-															id="king_beach_reg"
-															value="1"
-															@checked($kingBeachReg ?? false)
-															>
-															<div class="custom-checkbox"></div>
-															<span class="b-500">{{ __('events.king_beach_reg_label') }}</span>
-														</label>
-														<ul class="list f-16 mt-1">
-															<li>{{ __('events.king_beach_reg_hint') }}</li>
-														</ul>
-													</div>
-												</div>
 
                                                 <div class="mt-2" id="tournament_teams_count_wrap">
                                                     <label for="tournament_teams_count">{{ __('events.tournament_teams_count') }}</label>
@@ -532,31 +558,6 @@
 										</div>
 									</div>
 
-									{{-- Индивидуальная запись игроков --}}
-									<div class="row mt-2" id="tournament_individual_reg_row">
-										<div class="col-md-12">
-											<div class="card" style="background:var(--card-bg,#f9fafb)">
-												<input type="hidden" name="tournament_individual_reg" value="0">
-												<label class="checkbox-item">
-													<input
-													type="checkbox"
-													name="tournament_individual_reg"
-													id="tournament_individual_reg"
-													value="1"
-													@checked($tournamentIndividualReg ?? false)
-													>
-													<div class="custom-checkbox"></div>
-													<span class="b-500">{{ __('events.tournament_individual_reg_label') }}</span>
-												</label>
-												<ul class="list f-16 mt-1">
-													<li>{{ __('events.tournament_individual_reg_hint') }}</li>
-												</ul>
-												<div id="tournament_individual_reg_note" class="f-13 mt-1" style="opacity:.7;display:none;">
-													{{ __('events.tournament_individual_reg_note') }}
-												</div>
-											</div>
-										</div>
-									</div>
 								</div>
 							</div>
 							<div class="col-md-12">
@@ -1024,31 +1025,45 @@
     applyAll();
 })();
 (function(){
-    // Слой 1, п.2 (откат): king_beach сам по себе индивидуальный режим на сервере
-    // (приоритет king_beach > individual в normalizeTournamentDefaults(), подтверждено
-    // тестом) — отдельный визуальный индикатор не нужен. При включении king_beach
-    // блок «Индивидуальная запись игроков» просто скрывается целиком.
+    // Единая radio-группа «Тип регистрации команд» (team/king_beach/individual) —
+    // мутуальная исключительность уже даёт сам <input type="radio">, здесь только
+    // синхронизация с двумя легаси-чекбоксами (king_beach_reg/tournament_individual_reg),
+    // которые остались настоящими checkbox-полями (не type=hidden) специально —
+    // events-create.js читает их через .checked в двух местах (парность 50/50,
+    // валидация перед сабмитом step2) и это должно продолжать работать без изменений.
+    var modeRadios = document.querySelectorAll('input[name="tournament_reg_mode"]');
     var kbCb = document.getElementById('king_beach_reg');
     var indivCb = document.getElementById('tournament_individual_reg');
-    var indivRow = document.getElementById('tournament_individual_reg_row');
-    if (!kbCb || !indivCb) return;
+    if (!modeRadios.length || !kbCb || !indivCb) return;
 
-    function apply() {
-        var kbOn = kbCb.checked;
-        if (kbOn) {
-            if (indivCb.checked) {
-                indivCb.checked = false;
-                indivCb.dispatchEvent(new Event('change'));
-            }
-            indivCb.disabled = true;
-            if (indivRow) indivRow.style.display = 'none';
-        } else {
-            indivCb.disabled = false;
-            if (indivRow) indivRow.style.display = '';
-        }
+    function currentMode() {
+        for (var i = 0; i < modeRadios.length; i++) if (modeRadios[i].checked) return modeRadios[i].value;
+        return 'team';
+    }
+    function selectRadio(mode) {
+        for (var i = 0; i < modeRadios.length; i++) modeRadios[i].checked = (modeRadios[i].value === mode);
+    }
+    function applyMode(mode) {
+        var kbOn = (mode === 'king_beach');
+        var indivOn = (mode === 'individual');
+        if (kbCb.checked !== kbOn) { kbCb.checked = kbOn; kbCb.dispatchEvent(new Event('change')); }
+        if (indivCb.checked !== indivOn) { indivCb.checked = indivOn; indivCb.dispatchEvent(new Event('change')); }
     }
 
-    kbCb.addEventListener('change', apply);
-    apply();
+    for (var i = 0; i < modeRadios.length; i++) {
+        modeRadios[i].addEventListener('change', function(){ applyMode(currentMode()); });
+    }
+
+    // Если king_beach стал недоступен (смена direction/scheme) — соседний IIFE выше
+    // (applyEligibility) сам снимает kbCb.checked без dispatchEvent; слушатели ниже
+    // регистрируются ПОСЛЕ него на тех же элементах, поэтому выполняются вторыми и
+    // видят уже актуальное kbCb.checked — откатываем радио на "team".
+    var directionEl = document.getElementById('direction');
+    var schemeEl = document.getElementById('tournament_game_scheme');
+    function syncRadioAfterEligibility() {
+        if (!kbCb.checked && currentMode() === 'king_beach') selectRadio('team');
+    }
+    if (directionEl) directionEl.addEventListener('change', syncRadioAfterEligibility);
+    if (schemeEl) schemeEl.addEventListener('change', syncRadioAfterEligibility);
 })();
 </script>
