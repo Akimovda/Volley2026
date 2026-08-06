@@ -651,7 +651,7 @@ return [
     'setup_btn_koc_next'    => 'Следующий матч King of the Court',
     'setup_btn_next_arrow'  => 'Далее →',
 
-    'setup_groups_h2'       => 'Формирование групп',
+    'setup_groups_h2'       => 'Финальные группы',
     'setup_groups_redistribute' => 'По результатам группового этапа команды распределяются в :n групп:plural:',
     'setup_groups_advance_to_div' => 'Выходят в :name',
     'setup_groups_per_group' => 'из каждой группы',

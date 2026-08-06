@@ -2005,8 +2005,10 @@ $tourNumber = $seasonData
 		{{-- Продвижение / Группы --}}
 		@if($stage->isCompleted() && $stage->canHaveFollowupStage())
 		
-		{{-- Сезонный турнир → группы Hard/Lite --}}
-		@if($event->season_id && $stage->groups->count() >= 2)
+		{{-- Финальные группы по уровням (Hard/Lite/Medium) — доступно и сезонным,
+		     и одиночным турнирам; промоушен между турами сезона (блок ниже,
+		     applyDivisionPromotion) остаётся только для сезонных. --}}
+		@if($stage->groups->count() >= 2)
 		@php $hasDivStages = $stages->filter(fn($s) => str_starts_with($s->name, 'Группа '))->isNotEmpty(); @endphp
 		<div class="ramka">
 			<div class="d-flex between fvc" style="cursor:pointer" onclick="var b=this.nextElementSibling;b.style.display=b.style.display==='none'?'':'none';this.querySelector('.toggle-icon').textContent=b.style.display==='none'?'+':'-'">
