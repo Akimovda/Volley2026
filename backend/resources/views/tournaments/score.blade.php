@@ -35,8 +35,14 @@
 			
 			{{-- Шапка матча --}}
 			<div class="card p-3 mb-2" style="text-align:center">
-				<div class="f-13 mb-2">
-					{{ __('tournaments.score_match_header', ['n' => $match->match_number, 'r' => $match->round]) }} · {{ strtoupper($stage->matchFormat()) }} · {{ __('tournaments.score_to_pts') }} {{ $stage->setPoints() }}@if($match->group) · {{ $match->group->name }}@endif
+				<div class="mb-2">
+					@if($match->group)
+					<div class="b-700 f-22 mb-1">{{ $match->group->name }}</div>
+					@endif
+					<span class="score-pill score-pill--blue">{{ __('tournaments.score_pill_match', ['n' => $match->match_number]) }}</span>
+					<span class="score-pill score-pill--green">{{ __('tournaments.score_pill_round', ['r' => $match->round]) }}</span>
+					<span class="score-pill score-pill--orange">{{ strtoupper($stage->matchFormat()) }}</span>
+					<span class="score-pill score-pill--red">{{ __('tournaments.score_to_pts') }} {{ $stage->setPoints() }}</span>
 				</div>
 				@php $kbMeta = ($stage->type === 'king_beach') ? ($match->meta ?? []) : null; @endphp
 				@if($kbMeta)

@@ -391,7 +391,11 @@ final class TournamentTeamService
             throw new DomainException('Добавить игрока напрямую может только организатор мероприятия или администратор.');
         }
 
-        // Используем inviteOrJoinMember с autoConfirm=true (содержит все проверки)
+        // Используем inviteOrJoinMember с autoConfirm=true (содержит все проверки).
+        // enforceGenderEligibility=false — гендерное несоответствие здесь НЕ
+        // блокирует добавление (по решению задачи), только предупреждение —
+        // см. TournamentTeamController::addMemberByOrganizer() (teamGenderWarnings()
+        // + genderIssueFor() после успешного добавления).
         $member = $this->inviteOrJoinMember(
             team: $team,
             user: $player,
@@ -399,6 +403,7 @@ final class TournamentTeamService
             teamRole: $teamRole,
             positionCode: $positionCode,
             autoConfirm: true,
+            enforceGenderEligibility: false,
         );
 
         // Уведомление игроку
@@ -441,22 +446,44 @@ final class TournamentTeamService
         ?int $invitedByUserId = null,
         string $teamRole = 'player',
         ?string $positionCode = null,
-        bool $autoConfirm = false
+        bool $autoConfirm = false,
+        bool $enforceGenderEligibility = true
     ): EventTeamMember {
-        return DB::transaction(function () use ($team, $user, $invitedByUserId, $teamRole, $positionCode, $autoConfirm) {
+        return DB::transaction(function () use ($team, $user, $invitedByUserId, $teamRole, $positionCode, $autoConfirm, $enforceGenderEligibility) {
             $existing = EventTeamMember::query()
                 ->where('event_team_id', $team->id)
                 ->where('user_id', $user->id)
                 ->first();
 
             if ($existing) {
-                throw new DomainException('Пользователь уже есть в составе команды.');
+                throw new DomainException('Этот игрок уже есть в составе команды.');
             }
 
-            // Проверка соответствия игрока требованиям мероприятия
+            // Игрок уже состоит в ДРУГОЙ активной команде этого же турнира/тура —
+            // жёсткий запрет (не предупреждение), тот же паттерн, что в joinRequest().
+            $otherTeam = EventTeamMember::query()
+                ->whereHas('team', function ($q) use ($team) {
+                    $q->where('event_id', $team->event_id)
+                        ->where('occurrence_id', $team->occurrence_id)
+                        ->where('id', '!=', $team->id)
+                        ->whereIn('status', ['ready', 'pending_members', 'submitted', 'confirmed', 'approved']);
+                })
+                ->where('user_id', $user->id)
+                ->whereIn('confirmation_status', ['confirmed', 'joined'])
+                ->with('team')
+                ->first();
+
+            if ($otherTeam) {
+                throw new DomainException("Данный игрок есть в другой команде! ({$otherTeam->team->name})");
+            }
+
+            // Проверка соответствия игрока требованиям мероприятия. Пол — отдельным
+            // флагом: при добавлении организатором (addMemberByOrganizer) это НЕ
+            // блокирует (только предупреждение выше по стеку), остальные пункты
+            // (уровень/возраст/профиль) продолжают блокировать как и раньше.
             $event = $team->event ?: $team->event()->first();
             if ($event) {
-                $issues = app(MemberEligibilityService::class)->checkMember($user, $event);
+                $issues = app(MemberEligibilityService::class)->checkMember($user, $event, $enforceGenderEligibility);
                 if (!empty($issues)) {
                     throw new DomainException('Игрок не соответствует требованиям мероприятия: ' . implode('; ', $issues));
                 }
@@ -1660,14 +1687,21 @@ final class TournamentTeamService
     /**
      * Проверка гендерных ограничений команды.
      */
-    private function validateTeamGender(EventTeam $team): void
+    /**
+     * Список текстовых нарушений гендерной политики турнира текущим составом
+     * команды — пустой массив = состав соответствует. Общая логика для строгой
+     * проверки при подаче заявки (validateTeamGender(), бросает) и для мягкого
+     * предупреждения при добавлении игрока организатором (teamGenderWarnings(),
+     * НЕ бросает — по этому пункту турнир прямо просил не блокировать).
+     */
+    private function teamGenderIssues(EventTeam $team): array
     {
         $event = $team->event;
         $gameSettings = \App\Models\EventGameSetting::where('event_id', $event->id)->first();
-        if (!$gameSettings) return;
+        if (!$gameSettings) return [];
 
         $policy = $gameSettings->gender_policy ?? 'mixed_open';
-        if ($policy === 'mixed_open') return;
+        if ($policy === 'mixed_open') return [];
 
         $members = $team->members()
             ->whereIn('confirmation_status', ['confirmed', 'self'])
@@ -1683,29 +1717,29 @@ final class TournamentTeamService
             $noGender = $members->filter(fn($m) => !in_array($m->user->gender ?? null, ['m', 'f']))
                 ->map(fn($m) => trim(($m->user->last_name ?? '') . ' ' . ($m->user->first_name ?? '')) ?: "Игрок #{$m->user_id}")
                 ->implode(', ');
-            throw new DomainException("У следующих игроков не указан пол: {$noGender}. Укажите пол в профиле.");
+            return ["У следующих игроков не указан пол: {$noGender}. Укажите пол в профиле."];
         }
 
         switch ($policy) {
             case 'only_male':
                 if ($females > 0) {
-                    throw new DomainException('Этот турнир только для мужчин. В команде есть женщины.');
+                    return ['Этот турнир только для мужчин. В команде есть женщины.'];
                 }
                 break;
 
             case 'only_female':
                 if ($males > 0) {
-                    throw new DomainException('Этот турнир только для женщин. В команде есть мужчины.');
+                    return ['Этот турнир только для женщин. В команде есть мужчины.'];
                 }
                 break;
 
             case 'mixed_5050':
                 $expectedPerGender = (int) floor($total / 2);
                 if ($males !== $expectedPerGender || $females !== $expectedPerGender) {
-                    throw new DomainException(
+                    return [
                         "Микс 50/50: нужно {$expectedPerGender}М + {$expectedPerGender}Ж. " .
                         "Сейчас: {$males}М + {$females}Ж."
-                    );
+                    ];
                 }
                 break;
 
@@ -1715,10 +1749,32 @@ final class TournamentTeamService
                 $count = $limitedSide === 'f' ? $females : $males;
                 $label = $limitedSide === 'f' ? 'женщин' : 'мужчин';
                 if ($count > $limitedMax) {
-                    throw new DomainException("Ограничение: максимум {$limitedMax} {$label} в команде. Сейчас: {$count}.");
+                    return ["Ограничение: максимум {$limitedMax} {$label} в команде. Сейчас: {$count}."];
                 }
                 break;
         }
+
+        return [];
+    }
+
+    private function validateTeamGender(EventTeam $team): void
+    {
+        $issues = $this->teamGenderIssues($team);
+        if (!empty($issues)) {
+            throw new DomainException($issues[0]);
+        }
+    }
+
+    /**
+     * Мягкая версия validateTeamGender() — НЕ бросает, возвращает issues для
+     * флеш-предупреждения. Используется при добавлении игрока организатором
+     * (TournamentTeamController::addMemberByOrganizer()/store()) — по явному
+     * решению не блокировать сохранение состава из-за гендерного несоответствия
+     * на этом шаге, только предупредить.
+     */
+    public function teamGenderWarnings(EventTeam $team): array
+    {
+        return $this->teamGenderIssues($team);
     }
 
     // ──────────────────────────────────────────────────────

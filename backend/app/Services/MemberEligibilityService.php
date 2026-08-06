@@ -22,7 +22,16 @@ class MemberEligibilityService
     /**
      * Проверка одного игрока против ограничений мероприятия.
      */
-    public function checkMember(User $user, Event $event): array
+    /**
+     * @param bool $includeGender false — пропустить пункт 4 (пол). Используется
+     *        TournamentTeamService::inviteOrJoinMember() при добавлении игрока
+     *        ОРГАНИЗАТОРОМ (addMemberByOrganizer) — по решению задачи гендерное
+     *        несоответствие для этого пути не блокирует, только предупреждает
+     *        (см. genderIssueFor() + TournamentTeamController::addMemberByOrganizer()).
+     *        Для остальных вызовов (самостоятельное вступление, заявка команды) —
+     *        includeGender=true, поведение не меняется.
+     */
+    public function checkMember(User $user, Event $event, bool $includeGender = true): array
     {
         $issues = [];
 
@@ -78,6 +87,24 @@ class MemberEligibilityService
         // 4. Пол игрока (для policy: only_male / only_female).
         // Лимит mixed_limited / mixed_5050 — это правило команды, проверяется отдельно
         // в TournamentTeamService::validateTeamGender.
+        if ($includeGender) {
+            $genderIssue = $this->genderIssueFor($user, $event);
+            if ($genderIssue) {
+                $issues[] = "{$userLabel}: {$genderIssue}";
+            }
+        }
+
+        return $issues;
+    }
+
+    /**
+     * Только гендерная часть проверки (пункт 4 checkMember(), без префикса с
+     * именем игрока) — переиспользуется checkMember() и вызывающим кодом,
+     * которому нужно ПРЕДУПРЕДИТЬ о несоответствии, а не заблокировать
+     * (TournamentTeamController::addMemberByOrganizer()). null = соответствует.
+     */
+    public function genderIssueFor(User $user, Event $event): ?string
+    {
         $gameSettings = $event->relationLoaded('gameSettings')
             ? $event->gameSettings
             : \App\Models\EventGameSetting::where('event_id', $event->id)->first();
@@ -86,13 +113,13 @@ class MemberEligibilityService
         $userGender = $user->gender ?? null;
 
         if ($policy === 'only_male' && $userGender === 'f') {
-            $issues[] = "{$userLabel}: турнир только для мужчин";
+            return 'турнир только для мужчин';
         }
         if ($policy === 'only_female' && $userGender === 'm') {
-            $issues[] = "{$userLabel}: турнир только для женщин";
+            return 'турнир только для женщин';
         }
 
-        return $issues;
+        return null;
     }
 
     /**

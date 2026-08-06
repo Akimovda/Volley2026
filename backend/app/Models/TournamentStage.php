@@ -181,6 +181,45 @@ class TournamentStage extends Model
         ));
     }
 
+    /**
+     * Значения типов с трейтом can_have_followup — единый источник для JS-списка
+     * в setup.blade.php (блок "Режим финалов" в форме "Добавить стадию"), чтобы
+     * не дублировать список типов отдельной хардкод-проверкой (t==='groups_playoff')
+     * в JS, расходящейся с canHaveFollowupStage() на бэкенде (round_robin тоже
+     * имеет этот трейт — см. докстринг canHaveFollowupStage() выше).
+     *
+     * @return array<int, string>
+     */
+    public static function followupTypeValues(): array
+    {
+        return array_values(array_filter(
+            self::TYPES,
+            fn (string $type) => in_array('can_have_followup', self::TYPE_TRAITS[$type] ?? [], true)
+        ));
+    }
+
+    /**
+     * Названия финальных групп по уровням (Hard/Medium/Lite) для заданного числа
+     * исходных групп — единый источник для TournamentController::formDivisions()
+     * и обоих blade-блоков (пульт + мастер, выбор finals_mode=divisions), которые
+     * раньше держали ЭТУ ЖЕ формулу как отдельные хардкод-копии (найдено при
+     * переносе div_format_* в мастер). При изменении формулы — менять только тут.
+     *
+     * @return array<int, string>
+     */
+    public static function divisionNamesFor(int $groupsCount): array
+    {
+        return match ($groupsCount) {
+            2 => ['Hard', 'Lite'],
+            3 => ['Hard', 'Medium', 'Lite'],
+            default => array_merge(
+                ['Hard'],
+                array_map(fn ($i) => 'Medium-' . $i, range(1, max(1, $groupsCount - 2))),
+                ['Lite']
+            ),
+        };
+    }
+
     /* ---------- relations ---------- */
 
     public function event(): BelongsTo

@@ -227,7 +227,16 @@ class TournamentController extends Controller
             'third_place_match' => 'nullable|boolean',
             'courts'          => 'nullable|string|max:500',
             'kb_group_size'   => ['nullable', 'integer', Rule::in(TournamentKingBeachService::GROUP_SIZES)],
-            'finals_mode'     => 'nullable|in:bracket,placement',
+            'finals_mode'     => 'nullable|in:bracket,placement,divisions',
+            // advance_per_group больше не отправляется формой — вычисляется ниже
+            // (groups_count × advance_count), см. $config.
+            // Только для finals_mode='divisions' при groups_count 2/3 (Hard/Lite или
+            // Hard/Medium/Lite) — при 4+ группах formDivisions() всё равно не читает
+            // per-division ключи вида Medium-N (известный gap), поэтому мастер этот
+            // случай не показывает и не собирает вовсе (см. blade).
+            'div_format_hard'   => 'nullable|in:bo1,bo3',
+            'div_format_medium' => 'nullable|in:bo1,bo3',
+            'div_format_lite'   => 'nullable|in:bo1,bo3',
         ]);
 
         $sortOrder = ($event->tournamentStages()->max('sort_order') ?? 0) + 1;
@@ -240,8 +249,11 @@ class TournamentController extends Controller
         // организатор явно выбрал 'placement' при groups_count!=2 (например,
         // изменил число групп после выбора радио, JS не успел среагировать) —
         // всё равно форсируем 'bracket' на бэкенде, не доверяя одному JS-гейту.
+        // 'divisions' (финальные группы по уровням) такого ограничения не имеет —
+        // formDivisions() работает при любом groups_count >= 2, форсировать
+        // 'bracket' для него не нужно и не должно (иначе ломается сам смысл выбора).
         $finalsMode = $validated['finals_mode'] ?? ($groupsCount === 2 ? 'placement' : 'bracket');
-        if ($groupsCount !== 2) {
+        if ($finalsMode === 'placement' && $groupsCount !== 2) {
             $finalsMode = 'bracket';
         }
 
@@ -262,6 +274,17 @@ class TournamentController extends Controller
             'round_number'       => 1,
             'group_size'         => (int) ($validated['kb_group_size'] ?? 4),
             'finals_mode'        => $finalsMode,
+            // Только для finals_mode='divisions' — сколько команд из каждой группы
+            // проходит в финальные группы по уровням. Больше не редактируемое поле
+            // в мастере (было избыточным ручным вводом) — вычисляется тем же
+            // способом, что и инфо-строка в setup.blade.php: groups_count × advance_count.
+            // Предзаполняет то же поле на пульте (formDivisions()).
+            'advance_per_group'  => $finalsMode === 'divisions' ? $groupsCount * (int) ($validated['advance_count'] ?? 2) : null,
+            // Дефолт per-division формата матча на пульте (formDivisions()) —
+            // overridable там же на день турнира, см. setup.blade.php :2172-2196.
+            'div_format_hard'    => $validated['div_format_hard'] ?? null,
+            'div_format_medium'  => $validated['div_format_medium'] ?? null,
+            'div_format_lite'    => $validated['div_format_lite'] ?? null,
         ];
 
         // occurrence_id из hidden field (если сезонный турнир)
@@ -287,7 +310,15 @@ class TournamentController extends Controller
         // конфигом (формат/очки/корты/матч за 3-е место), status=pending — тогда
         // и кнопка появляется сразу, и checkStageCompletion не завершает турнир
         // раньше, чем плей-офф стадия тоже станет completed.
-        if ($stage->canHaveFollowupStage()) {
+        //
+        // Исключение — finals_mode='divisions' (финальные группы по уровням):
+        // эта companion-стадия физически не может быть создана заранее — тип
+        // "финальные группы" не бракетная стадия, а formDivisions()-flow,
+        // которому нужны standings уже сыгранной группы (см. блок "Финальные
+        // группы по уровням" на пульте, ниже по этому файлу). Пропускаем
+        // автосоздание — иначе организатор увидел бы лишнюю pending-стадию
+        // "Плей-офф", которая никогда не будет использована.
+        if ($stage->canHaveFollowupStage() && $finalsMode !== 'divisions') {
             $this->setupService->createStage($event, [
                 'type'          => TournamentStage::TYPE_SINGLE_ELIM,
                 'name'          => 'Плей-офф',
@@ -1152,7 +1183,14 @@ class TournamentController extends Controller
             return back()->with('error', 'Стадия ещё не завершена.');
         }
 
-        $advancePerGroup = max(1, (int) $request->input('advance_per_group', 2));
+        // Поле убрано с пульта (избыточно/no-op при 3+ группах) — значение теперь
+        // всегда из конфига стадии, заданного в мастере при её создании. Оставляем
+        // $request->input() приоритетным на случай прямого API-вызова с явным
+        // параметром (форма его больше не отправляет).
+        $advancePerGroup = max(1, (int) $request->input(
+            'advance_per_group',
+            $stage->cfg('advance_per_group') ?? $stage->cfg('advance_count', 2)
+        ));
         $groups = $stage->groups()->with(['standings' => fn($q) => $q->orderBy('rank')])->get();
         $groupsCount = $groups->count();
 
@@ -1161,15 +1199,7 @@ class TournamentController extends Controller
         }
 
         // Определяем названия дивизионов
-        $divisionNames = match($groupsCount) {
-            2 => ['Hard', 'Lite'],
-            3 => ['Hard', 'Medium', 'Lite'],
-            default => array_merge(
-                ['Hard'],
-                array_map(fn($i) => 'Medium-' . $i, range(1, max(1, $groupsCount - 2))),
-                ['Lite']
-            ),
-        };
+        $divisionNames = TournamentStage::divisionNamesFor($groupsCount);
 
         // Собираем standings по рангам с очками для умного распределения
         $byRank = []; // rank => [['team_id' => X, 'points' => Y, 'group_name' => Z], ...]
@@ -1270,11 +1300,14 @@ class TournamentController extends Controller
         // occurrence_id из текущей стадии или из query
         $occurrenceId = $stage->occurrence_id;
 
-        // Форматы матчей для групп
+        // Форматы матчей для групп — поле убрано с пульта (аналогично
+        // advance_per_group), значение всегда из конфига стадии, заданного в
+        // мастере. $request->input() остаётся приоритетным на случай прямого
+        // API-вызова с явным параметром (форма его больше не отправляет).
         $divFormats = [
-            'Hard'   => $request->input('div_format_hard') ?: null,
-            'Medium' => $request->input('div_format_medium') ?: null,
-            'Lite'   => $request->input('div_format_lite') ?: null,
+            'Hard'   => $request->input('div_format_hard') ?: $stage->cfg('div_format_hard'),
+            'Medium' => $request->input('div_format_medium') ?: $stage->cfg('div_format_medium'),
+            'Lite'   => $request->input('div_format_lite') ?: $stage->cfg('div_format_lite'),
         ];
 
         $setupService = app(\App\Services\TournamentSetupService::class);
@@ -2310,6 +2343,23 @@ class TournamentController extends Controller
                     && $occStages->where('status', TournamentStage::STATUS_COMPLETED)->count() === $occStages->count();
 
                 // Ничего не делаем — организатор сам нажимает "Применить промоушен"
+                return;
+            }
+
+            // 'divisions' (финальные группы по уровням) — эта группа завершена,
+            // но турнир НЕ закончен: для divisions companion-стадия сознательно
+            // не создаётся при createStage() (см. комментарий там), поэтому без
+            // этой проверки завершённая группа была бы ЕДИНСТВЕННОЙ batch-стадией
+            // и турнир закрылся бы сразу — тот же баг, что чинили для event 402.
+            // Ждём, пока организатор явно нажмёт "Сформировать группы" на пульте
+            // (formDivisions() создаёт стадии "Группа Hard/Lite/...") — до этого
+            // момента считаем турнир незавершённым.
+            if (
+                $stage->canHaveFollowupStage()
+                && $stage->cfg('finals_mode') === 'divisions'
+                && $stage->groups->count() >= 2
+                && !$event->tournamentStages()->where('name', 'like', 'Группа %')->exists()
+            ) {
                 return;
             }
 

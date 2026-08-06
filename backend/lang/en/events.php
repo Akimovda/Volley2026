@@ -1053,6 +1053,11 @@ return [
     'regs_search_select'     => 'Pick a player from the list.',
     'regs_user_selected'     => '✅ Selected: :label',
 
+    // Team registration mode (radio: regular / king_beach / individual)
+    'tournament_reg_mode_label'        => 'Registration type',
+    'tournament_reg_mode_team_label'   => 'Regular team registration',
+    'tournament_reg_mode_team_hint'    => 'Players register as ready-made teams (a captain invites members).',
+
     // Individual tournament registration
     'tournament_individual_reg_label'  => 'Individual player registration',
     'tournament_individual_reg_hint'   => 'Players register by position; teams are formed by the organizer manually or via random distribution.',
