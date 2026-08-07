@@ -133,6 +133,35 @@
 		TAB: Обзор
 		============================================================ --}}
 		@if($tab === 'overview')
+		@php
+		// Bracket/placement-финал (single_elim/double_elim) НЕ имеет TournamentGroup —
+		// TournamentBracketService создаёт только TournamentMatch, поэтому ветка ниже
+		// по $stage->groups для такого финала пуста и пьедестал не рисовался вообще
+		// (диагностика: баг общий для любого одиночного турнира с сеткой/placement-
+		// финалом, не частность одного турнира). Переиспользуем ТОТ ЖЕ источник
+		// призёров, что и вкладка «Результаты» (calculateFinalClassification) — не
+		// дублируем логику определения победителя сетки. "Последняя" bracket-стадия —
+		// та же, что подставит сам calculateFinalClassification() внутри (берёт
+		// ->filter(isBracketStage())->last()) — сверяем по id, чтобы при нескольких
+		// bracket-стадиях в одном occurrence пьедестал не рисовался на каждой из них.
+		$overviewFinalBracketStageId = $stages->filter(fn($s) => $s->isBracketStage())->last()?->id;
+		$overviewClassification = $overviewFinalBracketStageId
+		    ? app(\App\Services\TournamentStatsService::class)->calculateFinalClassification($event, $selectedOccurrence?->id)
+		    : [];
+		$overviewClassificationTeams = \App\Models\EventTeam::whereIn('id', collect($overviewClassification)->pluck('team_id'))
+		    ->with(['members.user', 'captain'])
+		    ->get()
+		    ->keyBy('id');
+		// rank — локальный индекс (i+1), не сквозной 'place' — тот же нюанс, что и на
+		// вкладке «Результаты» (там же и объяснение, почему).
+		$overviewToPodiumItems = fn($rows) => collect($rows)->values()->map(fn($c, $i) => (object) [
+		    'rank'               => $i + 1,
+		    'team'               => $overviewClassificationTeams->get($c['team_id']),
+		    'team_name_fallback' => $c['team_name'] ?? null,
+		    'wins'               => $c['wins'] ?? null,
+		    'losses'             => $c['losses'] ?? null,
+		]);
+		@endphp
 		@foreach($stages as $stage)
 		<div class="ramka">
 			<h2 class="-mt-05">{{ $stage->name }}</h2>
@@ -144,7 +173,7 @@
 				@else ⏳ {{ __('tournaments.stages_status_pending') }}
 				@endif
 			</div>
-			
+
 			{{-- Мини-таблица групп --}}
 			@if($stage->groups->isNotEmpty())
 			<div class="row">
@@ -162,6 +191,11 @@
 					</div>
 				</div>
 				@endforeach
+			</div>
+			@elseif($stage->id === $overviewFinalBracketStageId && !empty($overviewClassification))
+			{{-- Финал-сетка/placement без групп — призёры из общей классификации турнира --}}
+			<div class="card">
+				@include('tournaments._partials.podium', ['items' => $overviewToPodiumItems($overviewClassification)])
 			</div>
 			@endif
 			
