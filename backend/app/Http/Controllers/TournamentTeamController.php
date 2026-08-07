@@ -133,6 +133,7 @@ class TournamentTeamController extends Controller
             'captain_user_id' => ['nullable', 'integer', 'exists:users,id'],
             'member_user_ids' => ['nullable', 'array'],
             'member_user_ids.*' => ['integer', 'exists:users,id', 'distinct'],
+            'from_setup' => ['nullable', 'boolean'],
         ]);
 
         try {
@@ -235,10 +236,18 @@ class TournamentTeamController extends Controller
                 ? 'Состав не соответствует заявленным параметрам регистрации: ' . $genderWarnings[0]
                 : null;
 
-            // Организатор/админ создаёт команду со страницы управления турниром —
-            // удобнее остаться там же, чтобы сразу создать следующую, а не прыгать
-            // на страницу только что созданной команды.
-            if ($isOrganizerOrAdmin) {
+            // Куда редиректить — решаем по КОНТЕКСТУ запроса (какая форма его отправила),
+            // не по роли и не по тому, первая ли это команда события:
+            // - форма на странице управления турниром (setup.blade.php) шлёт скрытое поле
+            //   from_setup=1 — организатор наполняет турнир командами, удобнее остаться
+            //   на той же странице, чтобы сразу создать следующую;
+            // - форма на публичной странице регистрации (players.blade.php) этого поля
+            //   не шлёт — обычный флоу самозаписи участника, ВСЕГДА на страницу своей
+            //   только что созданной команды, даже если регистрируется сам организатор/админ.
+            // isOrganizerOrAdmin здесь — доп. проверка прав (без неё игрок не смог бы просто
+            // подделав скрытое поле в чужой форме попасть в setup), сам факт наличия поля
+            // на решение "чья это команда" не влияет.
+            if ($request->boolean('from_setup') && $isOrganizerOrAdmin) {
                 $redirect = redirect()
                     ->route('tournament.setup', array_filter([
                         'event'         => $event->id,

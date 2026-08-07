@@ -1093,6 +1093,7 @@ $tourNumber = $seasonData
 					<summary class="btn btn-secondary">{{ __('tournaments.setup_btn_create_team') }}</summary>
                     <form method="POST" action="{{ route('tournamentTeams.store', $event) }}">
                         @csrf
+						<input type="hidden" name="from_setup" value="1">
 						@if($selectedOccurrence)
 						<input type="hidden" name="occurrence_id" value="{{ $selectedOccurrence->id }}">
 						@endif
@@ -1521,12 +1522,9 @@ $tourNumber = $seasonData
 									     то же самое число тем же способом (см. контроллер). --}}
 									<p class="f-13" id="advance_per_group_summary" style="color:#6b7280;margin:0"></p>
 
-									{{-- Формат матча по дивизионам — только для 2/3 групп (Hard/Lite
-									     или Hard/Medium/Lite). При 4+ группах formDivisions() не читает
-									     per-division ключи вида Medium-N (см. report_diagnosis_advance_per_group_divisions.md) —
-									     показываем это поле на пульте после формирования, не здесь. --}}
+									{{-- Формат матча по дивизионам — для любого числа групп (2, 3, 4+),
+									     ключ по точному имени дивизиона (div_format_medium-1 и т.п.). --}}
 									<div class="mt-2" id="divisions_format_fields"></div>
-									<p class="f-13" id="divisions_format_note" style="color:#6b7280;display:none">{{ __('tournaments.setup_divisions_format_note_4plus') }}</p>
 								</div>
 							</label>
 						</div>
@@ -2011,7 +2009,7 @@ $tourNumber = $seasonData
 										<td style="text-align:center">{{ $standing->rank }}</td>
 										<td>
 											<div class="b-600 cd">@include('tournaments._partials.team_name_link', ['team' => $standing->team, 'showAvatar' => true])@if($isOutsider) <span class="f-16">{{ __('tournaments.setup_outsider_label') }}</span>@endif</div>
-											@include('tournaments._partials.team_roster_line', ['team' => $standing->team, 'class' => 'f-16', 'showAvatar' => true])
+											@include('tournaments._partials.team_roster_line', ['team' => $standing->team, 'class' => 'f-13', 'showAvatar' => true])
 										</td>
 										<td style="text-align:center"><span class="b-600 alert-info pt-05 pb-05 p-1">{{ $standing->played }}</span></td>
 										<td style="text-align:center;"><span class="b-600 alert-success pt-05 pb-05 p-1">{{ $standing->wins }}</span></td>
@@ -2585,7 +2583,6 @@ $tourNumber = $seasonData
 			var thirdPlaceField = document.getElementById('third_place_match_field');
 			var advancePerGroupSummary = document.getElementById('advance_per_group_summary');
 			var divisionsFormatFields = document.getElementById('divisions_format_fields');
-			var divisionsFormatNote = document.getElementById('divisions_format_note');
 			var divisionsFormatTouched = {};
 			// group_fields и king_beach_fields содержат поля с ОДИНАКОВЫМИ name (draw_mode) —
 			// display:none не мешает браузеру отправить их оба на сервер. Отключаем инпуты
@@ -2643,24 +2640,18 @@ $tourNumber = $seasonData
 						.replace('X', g * a).replace('Y', a)
 					: '';
 			}
-			// Формат матча по дивизионам (div_format_hard/_medium/_lite) — только для
-			// 2/3 групп (Hard/Lite или Hard/Medium/Lite). Названия дивизионов берём из
+			// Формат матча по дивизионам (div_format_hard/_medium-N/_lite) — для
+			// любого числа групп (2, 3, 4+). Названия дивизионов берём из
 			// window.__divisionNamesByGroupsCount (посчитано PHP один раз при загрузке
 			// страницы — TournamentStage::divisionNamesFor(), та же формула, что и в
-			// formDivisions()/на пульте — НЕ дублировать формулу тут). При 4+ группах
-			// formDivisions() не читает per-division ключи вида Medium-N (известный
-			// gap, см. report_diagnosis_advance_per_group_divisions.md) — показываем
-			// заметку вместо полей, настройка остаётся на пульте после формирования.
+			// formDivisions()/на пульте — НЕ дублировать формулу тут). formDivisions()
+			// теперь читает per-division ключ по точному имени (div_format_medium-1,
+			// div_format_medium-2, ...) — раньше при 4+ группах поле для Medium-N не
+			// читалось вообще (см. CLAUDE.md, баг Medium-N), заметка про gap убрана.
 			function rebuildDivisionFormatFields() {
 				if (!divisionsFormatFields) return;
 				var g = parseInt(groupsCountInput ? groupsCountInput.value : 0, 10) || 0;
 				var names = window.__divisionNamesByGroupsCount[g] || [];
-				if (names.length > 3) {
-					divisionsFormatFields.innerHTML = '';
-					if (divisionsFormatNote) divisionsFormatNote.style.display = '';
-					return;
-				}
-				if (divisionsFormatNote) divisionsFormatNote.style.display = 'none';
 				var html = '';
 				names.forEach(function(name) {
 					var key = name.toLowerCase();
@@ -2728,8 +2719,13 @@ $tourNumber = $seasonData
 			function applyFinalsModeDefaultByDirection() {
 				if (window.__eventDirection === 'beach' && finalsModeDivisions) {
 					finalsModeDivisions.checked = true;
-				} else if (finalsModePlacement) {
+				} else if (finalsModePlacement && !finalsModePlacement.disabled) {
+					// placement доступен только при РОВНО 2 группах (см. syncFinalsModeGuard,
+					// вызывается ДО этой функции) — если он уже задизейблен гейтом, дефолт
+					// классики откатывается на bracket, а не перезаписывает disabled-радио.
 					finalsModePlacement.checked = true;
+				} else if (finalsModeBracket) {
+					finalsModeBracket.checked = true;
 				}
 				syncDivisionsFields();
 				syncThirdPlaceMatchField();

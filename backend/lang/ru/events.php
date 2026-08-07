@@ -1056,7 +1056,7 @@ return [
     'regs_user_selected'     => '✅ Выбран: :label',
 
     // === events/show/players.blade.php ===
-    'sp_h2'                 => 'Запись на мероприятие',
+    'sp_h2'                 => 'Регистрация участников',
     'sp_status_approved'    => 'Подтверждена',
     'sp_status_ready'       => 'Готова',
     'sp_status_submitted'   => 'Заявка подана',
@@ -1104,6 +1104,7 @@ return [
     'sp_team_status'        => 'Статус:',
     'sp_team_players'       => '· Игроков:',
     'sp_btn_open_team'      => 'Открыть команду',
+    'sp_btn_manage_team'    => 'Управлять командой',
     'sp_team_full_warn'     => '⚠️ Все командные места заняты. Вы можете подать заявку в <strong>резерв</strong> — организатор уведомит вас если освободится место.',
     'sp_team_name_ph'       => 'Название команды (необязательно)',
     'sp_position_in_team_ph' => '— ваша позиция в команде —',

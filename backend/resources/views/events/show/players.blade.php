@@ -397,13 +397,13 @@
         @endphp
         <div class="card mt-1">
             <div class="b-600 cd">{{ $myTeam->name }}</div>
-            <div class="f-16">
+            <div class="f-13" style="opacity:.6">
                 {{ __('events.sp_team_status') }}
-                <span style="display:inline-block;padding:1px 8px;border-radius:10px;font-size:13px;font-weight:600;background:{{ $myTeamStatusInfo['bg'] }};color:{{ $myTeamStatusInfo['color'] }}">{{ $myTeamStatusInfo['label'] }}</span>
+                <span style="display:inline-block;padding:1px 8px;border-radius:10px;font-size:12px;font-weight:600;background:{{ $myTeamStatusInfo['bg'] }};color:{{ $myTeamStatusInfo['color'] }}">{{ $myTeamStatusInfo['label'] }}</span>
                 {{ __('events.sp_team_players') }} {{ $myTeam->members->count() }}
             </div>
             <a href="{{ route('tournamentTeams.show', [$event, $myTeam]) }}" class="btn btn-small btn-secondary mt-1">
-                {{ __('events.sp_btn_open_team') }}
+                {{ __('events.sp_btn_manage_team') }}
 			</a>
 		</div>
         @endforeach

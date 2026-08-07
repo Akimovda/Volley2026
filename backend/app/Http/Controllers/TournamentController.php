@@ -1231,36 +1231,39 @@ class TournamentController extends Controller
         }
         unset($teams);
 
-        $hardTeamIds = [];
-        $mediumTeamIds = [];
-        $liteTeamIds = [];
+        // Команды по дивизионам — ключ ВСЕГДА точное имя дивизиона (Hard, Medium,
+        // Medium-1, Medium-2, ..., Lite), не свёрнутое "Hard/Medium/Lite" на троих.
+        // До фикса при 4+ группах все "Medium-N" дивизионы схлопывались в ОДИН
+        // общий пул $mediumTeamIds, и каждый из них (через explode('-',...)[0]
+        // фоллбэк ниже) получал ПОЛНУЮ объединённую копию — команды дублировались
+        // сразу в нескольких финальных группах одновременно. См. CLAUDE.md
+        // (раздел «Турниры» — баг Medium-N в formDivisions()).
+        $teamsByDivision = array_fill_keys($divisionNames, []);
 
         if ($groupsCount === 2) {
             // 2 группы: top-advance → Hard, остальные → Lite
+            [$hardName, $liteName] = $divisionNames;
             foreach ($groups as $group) {
                 $standings = $group->standings->sortBy('rank')->values();
                 foreach ($standings as $i => $standing) {
-                    if ($i < $advancePerGroup) {
-                        $hardTeamIds[] = $standing->team_id;
-                    } else {
-                        $liteTeamIds[] = $standing->team_id;
-                    }
+                    $teamsByDivision[$i < $advancePerGroup ? $hardName : $liteName][] = $standing->team_id;
                 }
             }
         } elseif ($groupsCount === 3) {
             // 3 группы: Hard = все 1-е + лучшее 2-е (= 4 команды)
             // Medium = оставшиеся 2-е + 2 лучших 3-х (= 4 команды)
             // Lite = все остальные
+            [$hardName, $mediumName, $liteName] = $divisionNames;
 
             // Все первые места → Hard
-            $hardTeamIds = array_column($byRank[1] ?? [], 'team_id');
+            $teamsByDivision[$hardName] = array_column($byRank[1] ?? [], 'team_id');
 
             // Вторые места: лучший → Hard, остальные → Medium
             $seconds = $byRank[2] ?? [];
             if (count($seconds) > 0) {
-                $hardTeamIds[] = $seconds[0]['team_id']; // лучший 2-й → Hard
+                $teamsByDivision[$hardName][] = $seconds[0]['team_id']; // лучший 2-й → Hard
                 for ($i = 1; $i < count($seconds); $i++) {
-                    $mediumTeamIds[] = $seconds[$i]['team_id'];
+                    $teamsByDivision[$mediumName][] = $seconds[$i]['team_id'];
                 }
             }
 
@@ -1269,9 +1272,9 @@ class TournamentController extends Controller
             $thirdToMedium = min(2, count($thirds));
             for ($i = 0; $i < count($thirds); $i++) {
                 if ($i < $thirdToMedium) {
-                    $mediumTeamIds[] = $thirds[$i]['team_id'];
+                    $teamsByDivision[$mediumName][] = $thirds[$i]['team_id'];
                 } else {
-                    $liteTeamIds[] = $thirds[$i]['team_id'];
+                    $teamsByDivision[$liteName][] = $thirds[$i]['team_id'];
                 }
             }
 
@@ -1279,11 +1282,13 @@ class TournamentController extends Controller
             foreach ($byRank as $rank => $teams) {
                 if ($rank <= 3) continue;
                 foreach ($teams as $t) {
-                    $liteTeamIds[] = $t['team_id'];
+                    $teamsByDivision[$liteName][] = $t['team_id'];
                 }
             }
         } else {
-            // 4+ групп: Hard = 1-е места + лучшие 2-е, далее по рангам
+            // 4+ групп: делим все команды на count($divisionNames) частей по
+            // качеству (1 = Hard, последняя = Lite), каждая часть — СВОЙ
+            // дивизион по индексу, включая отдельные Medium-1/Medium-2/...
             $allTeamsByQuality = [];
             foreach ($byRank as $rank => $teams) {
                 foreach ($teams as $t) {
@@ -1293,14 +1298,9 @@ class TournamentController extends Controller
             // Уже отсортированы по рангу + внутри ранга по очкам
             $perDiv = (int) ceil(count($allTeamsByQuality) / count($divisionNames));
             $chunks = array_chunk($allTeamsByQuality, $perDiv);
-            
-            $hardTeamIds = array_column($chunks[0] ?? [], 'team_id');
-            $liteTeamIds = array_column(end($chunks) ?: [], 'team_id');
-            // Средние группы
-            for ($i = 1; $i < count($chunks) - 1; $i++) {
-                foreach ($chunks[$i] as $t) {
-                    $mediumTeamIds[] = $t['team_id'];
-                }
+
+            foreach ($divisionNames as $idx => $name) {
+                $teamsByDivision[$name] = array_column($chunks[$idx] ?? [], 'team_id');
             }
         }
 
@@ -1311,16 +1311,19 @@ class TournamentController extends Controller
         // advance_per_group), значение всегда из конфига стадии, заданного в
         // мастере. $request->input() остаётся приоритетным на случай прямого
         // API-вызова с явным параметром (форма его больше не отправляет).
-        $divFormats = [
-            'Hard'   => $request->input('div_format_hard') ?: $stage->cfg('div_format_hard'),
-            'Medium' => $request->input('div_format_medium') ?: $stage->cfg('div_format_medium'),
-            'Lite'   => $request->input('div_format_lite') ?: $stage->cfg('div_format_lite'),
-        ];
+        // Ключ — точное имя дивизиона (div_format_medium-1, div_format_medium-2,
+        // ...), не свёрнутое "medium" на всех — иначе при 4+ группах формат для
+        // Medium-N никогда не читался (только 3 фикс-ключа hard/medium/lite).
+        $divFormats = [];
+        foreach ($divisionNames as $dn) {
+            $key = strtolower($dn);
+            $divFormats[$dn] = $request->input('div_format_' . $key) ?: $stage->cfg('div_format_' . $key);
+        }
 
         $setupService = app(\App\Services\TournamentSetupService::class);
 
         \Illuminate\Support\Facades\DB::transaction(function () use (
-            $event, $setupService, $divisionNames, $hardTeamIds, $liteTeamIds, $mediumTeamIds, $stage, $occurrenceId, $divFormats, $request
+            $event, $setupService, $divisionNames, $teamsByDivision, $stage, $occurrenceId, $divFormats, $request
         ) {
             // Удаляем ранее созданные дивизионные стадии (Hard/Medium/Lite) перед пересозданием.
             // division_tier — основной признак; паттерн по имени остаётся фоллбэком для
@@ -1341,16 +1344,10 @@ class TournamentController extends Controller
                 $ex->delete();
             }
 
-            $divisions = [
-                'Hard' => $hardTeamIds,
-                'Medium' => $mediumTeamIds,
-                'Lite' => $liteTeamIds,
-            ];
-
             $sortOrder = ($event->tournamentStages()->max('sort_order') ?? 0) + 1;
 
             foreach ($divisionNames as $divIndex => $divName) {
-                $teamIds = $divisions[$divName] ?? ($divisions[explode('-', $divName)[0]] ?? []);
+                $teamIds = $teamsByDivision[$divName] ?? [];
                 if (empty($teamIds)) continue;
 
                 // Создаём стадию-группу (Round Robin внутри)
