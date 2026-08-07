@@ -153,7 +153,7 @@
 					<div class="card">
 						<div class="b-600 cd mb-1">{{ $group->name }}</div>
 						@if($group->standings->isNotEmpty())
-						@include('tournaments._partials.podium', ['group' => $group])
+						@include('tournaments._partials.podium', ['group' => $group, 'stage' => $stage])
 						@else
 						<div class="f-13">
 							{{ $group->teams->pluck('name')->implode(', ') }}
@@ -348,27 +348,31 @@
 		    ->keyBy('id');
 		@endphp
 		
+		@php
+		// calculateFinalClassification() отдаёт ВСЕГДА готовую финальную классификацию
+		// (дивизион или общий финал турнира) — не квалификационные группы, поэтому
+		// здесь пьедестал (podium.blade.php, режим $items) уместен без дополнительной
+		// structural-проверки по стадии, в отличие от вкладки «Обзор».
+		// rank — ВСЕГДА локальный индекс внутри переданного списка (i+1), не глобальное
+		// 'place' из classification: для дивизионов 'place' сквозной по всему турниру
+		// (Hard 1-4, Lite 5-8, ...) — если взять его как rank, podium.blade.php
+		// (keyBy('rank'), ищет 1/2/3) не найдёт медальные места ни у одного дивизиона,
+		// кроме первого.
+		$toPodiumItems = fn($rows) => collect($rows)->values()->map(fn($c, $i) => (object) [
+		    'rank'               => $i + 1,
+		    'team'               => $classificationTeams->get($c['team_id']),
+		    'team_name_fallback' => $c['team_name'] ?? null,
+		    'wins'               => $c['wins'] ?? null,
+		    'losses'             => $c['losses'] ?? null,
+		]);
+		@endphp
 		@if($hasDivisions)
 		<div class="row mb-3" id="division_results">
 			@foreach($divisions as $divName => $divTeams)
 			<div class="col-md-{{ (int)(12 / $divisions->count()) }}" style="margin-bottom:16px">
 				<div class="card p-3">
 					<div class="b-700 f-16 mb-2">🏆 Итоги дивизиона {{ $divName }}</div>
-					@foreach($divTeams as $i => $c)
-					@php
-					$localPlace = $i + 1;
-					$team = $classificationTeams->get($c['team_id']);
-					@endphp
-					<div style="padding:6px 0;border-bottom:1px solid rgba(128,128,128,.08)">
-						<div class="d-flex f-14" style="gap:8px;align-items:center">
-							<span class="b-700" style="width:26px;{{ $localPlace <= 3 ? 'font-size:18px' : '' }}">
-								{{ $localPlace === 1 ? '🥇' : ($localPlace === 2 ? '🥈' : ($localPlace === 3 ? '🥉' : $localPlace . '.')) }}
-							</span>
-							<span class="{{ $localPlace <= 3 ? 'b-700' : '' }}">@include('tournaments._partials.team_name_link', ['team' => $team, 'fallback' => $c['team_name']])</span>
-						</div>
-						@include('tournaments._partials.team_roster_line', ['team' => $team, 'class' => 'f-12', 'style' => 'margin-left:34px;color:#6b7280'])
-					</div>
-					@endforeach
+					@include('tournaments._partials.podium', ['items' => $toPodiumItems($divTeams)])
 				</div>
 			</div>
 			@endforeach
@@ -377,20 +381,7 @@
 		{{-- Обычный турнир без дивизионов --}}
 		<div class="card p-3 mb-3">
 			<div class="b-700 f-16 mb-2">🏆 {{ __('tournaments.pub_final_standings') }}</div>
-			@foreach($classification as $c)
-			@php
-			$team = $classificationTeams->get($c['team_id']);
-			@endphp
-			<div style="padding:6px 0;border-bottom:1px solid rgba(128,128,128,.08)">
-				<div class="d-flex f-14" style="gap:8px;align-items:center">
-					<span class="b-700" style="width:26px;{{ $c['place'] <= 3 ? 'font-size:18px' : '' }}">
-						{{ $c['place'] === 1 ? '🥇' : ($c['place'] === 2 ? '🥈' : ($c['place'] === 3 ? '🥉' : $c['place'] . '.')) }}
-					</span>
-					<span class="{{ $c['place'] <= 3 ? 'b-700' : '' }}">@include('tournaments._partials.team_name_link', ['team' => $team, 'fallback' => $c['team_name']])</span>
-				</div>
-				@include('tournaments._partials.team_roster_line', ['team' => $team, 'class' => 'f-12', 'style' => 'margin-left:34px;color:#6b7280'])
-			</div>
-			@endforeach
+			@include('tournaments._partials.podium', ['items' => $toPodiumItems($classification)])
 		</div>
 		@endif
 		
