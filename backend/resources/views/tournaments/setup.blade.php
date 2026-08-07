@@ -1746,21 +1746,22 @@ $tourNumber = $seasonData
 			</form>
 		</div>
 		@endif
-
+		
 		{{-- ============================================================
 		Стадии
 		============================================================ --}}
 		
-		{{-- MVP турнира --}}
+		{{-- MVP турнира: кандидаты — ТОЛЬКО игроки команд-победителей (топ-1),
+		     не вся лига/турнир. Логика — TournamentStatsService::getMvpCandidates()
+		     (дивизионы → победитель каждой финальной группы; placement/bracket →
+		     чемпион; только круговая → 1-е место общей таблицы), переиспользует
+		     ту же классификацию мест, что и везде на сайте (calculateFinalClassification).
+		     $allCompleted вычислен выше, в блоке "Создание стадии". --}}
 		@php
-		// $allCompleted вычислен выше, в блоке "Создание стадии" (нужен там раньше
-		// по тексту шаблона) — здесь только $participants, зависящий от него.
 		$participants = collect();
 		if ($allCompleted) {
-		$participants = \App\Models\PlayerTournamentStats::where('event_id', $event->id)
-		->with('user')
-		->orderByDesc('match_win_rate')
-		->get();
+		$participants = app(\App\Services\TournamentStatsService::class)
+			->getMvpCandidates($event, $selectedOccurrence?->id);
 		}
 		@endphp
 		@if($allCompleted && $participants->isNotEmpty())

@@ -9,7 +9,9 @@ use App\Models\TournamentStage;
 use App\Models\TournamentStanding;
 use App\Models\PlayerTournamentStats;
 use App\Models\PlayerCareerStats;
+use App\Models\EventTeamMember;
 use App\Models\User;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\App;
 use App\Jobs\RecalculateTournamentRatingsJob;
@@ -514,6 +516,91 @@ class TournamentStatsService
         }
 
         return $classification;
+    }
+
+    /**
+     * Кандидаты на MVP турнира — топ-1, спроецированный по типу финала:
+     * дивизионы (division_tier) → по одному победителю с КАЖДОЙ финальной
+     * группы (Hard/Medium/Lite); placement-финал/bracket-сетка → чемпион
+     * (место 1); нет финальной стадии (только круговая) → 1-е место общей
+     * таблицы. Переиспользует calculateFinalClassification() — единую точку
+     * подсчёта мест, не отдельный подсчёт (та же классификация, что везде
+     * на сайте даёт 1-2-3-4 место).
+     *
+     * Возвращает ВСЕХ подтверждённых участников команды(-победителей), даже
+     * если у игрока нет ни одного завершённого матча (запасной, не выходивший
+     * на площадку) — organizer выбирает MVP вручную из полного состава.
+     * Для игроков без строки в player_tournament_stats возвращается заглушка
+     * с нулевыми показателями (не сохраняется в БД).
+     *
+     * @return Collection<int, PlayerTournamentStats>
+     */
+    public function getMvpCandidates(Event $event, ?int $occurrenceId = null): Collection
+    {
+        $classification = collect($this->calculateFinalClassification($event, $occurrenceId));
+        if ($classification->isEmpty()) {
+            return collect();
+        }
+
+        // ВАЖНО: не определять "это дивизионы" по наличию ключа 'division' в
+        // классификации — тот же ключ используется calculateFinalClassification()
+        // и для ОБЫЧНОЙ круговой стадии с 2+ группами без финала вообще (там
+        // 'division' = имя группы, "Группа A"/"Группа B", просто для отображения
+        // мини-таблиц, а не финальный дивизион). Взятие rank=1 каждой такой
+        // группы как "победителя" некорректно — при 2+ группах без финала нет
+        // единого победителя турнира структурно (для этого и нужен финал/дивизии).
+        // Поэтому "это дивизионы" проверяем структурно, по division_tier стадий
+        // этого occurrence — тот же признак, что и в setup.blade.php/rescoreMatch().
+        $hasDivisionTierStages = TournamentStage::where('event_id', $event->id)
+            ->when($occurrenceId, fn($q) => $q->where('occurrence_id', $occurrenceId))
+            ->where(fn($q) => $q->whereNotNull('division_tier')
+                ->orWhere('name', 'like', 'Группа %'))
+            ->exists();
+
+        if ($hasDivisionTierStages) {
+            // По одной команде-победителю (место 1 внутри дивизиона) с каждой финальной группы.
+            $winnerTeamIds = $classification->groupBy('division')
+                ->map(fn($rows) => collect($rows)->sortBy('place')->first()['team_id'])
+                ->values()
+                ->all();
+        } else {
+            $winnerEntry = $classification->firstWhere('place', 1);
+            $winnerTeamIds = $winnerEntry ? [$winnerEntry['team_id']] : [];
+        }
+
+        if (empty($winnerTeamIds)) {
+            return collect();
+        }
+
+        $statsRows = PlayerTournamentStats::where('event_id', $event->id)
+            ->whereIn('team_id', $winnerTeamIds)
+            ->with('user')
+            ->get();
+
+        $coveredUserIds = $statsRows->pluck('user_id')->all();
+
+        $missingMembers = EventTeamMember::whereIn('event_team_id', $winnerTeamIds)
+            ->where('confirmation_status', 'confirmed')
+            ->whereNotIn('user_id', $coveredUserIds)
+            ->with('user')
+            ->get();
+
+        $stubs = $missingMembers->map(function ($m) use ($event) {
+            $stub = new PlayerTournamentStats([
+                'event_id'       => $event->id,
+                'user_id'        => $m->user_id,
+                'team_id'        => $m->event_team_id,
+                'matches_played' => 0,
+                'matches_won'    => 0,
+                'sets_won'       => 0,
+                'sets_lost'      => 0,
+                'match_win_rate' => 0,
+            ]);
+            $stub->setRelation('user', $m->user);
+            return $stub;
+        });
+
+        return $statsRows->merge($stubs)->sortByDesc('match_win_rate')->values();
     }
 
 }
