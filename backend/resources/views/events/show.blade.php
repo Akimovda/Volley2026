@@ -386,6 +386,14 @@ $hasCoords =
 							function icsDate(d) {
 								return d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
 							}
+							// RFC 5545: экранировать бэкслеш, запятую, точку с запятой, перевод строки
+							function icsEscape(s) {
+								return (s || '')
+									.replace(/\\/g, '\\\\')
+									.replace(/;/g, '\\;')
+									.replace(/,/g, '\\,')
+									.replace(/\n/g, '\\n');
+							}
 							var uid = 'event-' + @json($occurrence->id ?? 0) + '@volleyplay.club';
 							var ics = [
 								'BEGIN:VCALENDAR',
@@ -396,9 +404,9 @@ $hasCoords =
 								'DTSTAMP:' + icsDate(new Date()),
 								'DTSTART:' + icsDate(start),
 								'DTEND:' + icsDate(end),
-								'SUMMARY:' + title.replace(/\n/g, '\\n'),
-								'LOCATION:' + location.replace(/\n/g, '\\n'),
-								'DESCRIPTION:' + notes.replace(/\n/g, '\\n').substring(0, 500),
+								'SUMMARY:' + icsEscape(title),
+								'LOCATION:' + icsEscape(location),
+								'DESCRIPTION:' + icsEscape(notes.substring(0, 500)),
 								'END:VEVENT',
 								'END:VCALENDAR'
 							].join('\r\n');
