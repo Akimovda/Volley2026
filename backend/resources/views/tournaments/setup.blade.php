@@ -2009,7 +2009,7 @@ $tourNumber = $seasonData
 										<td style="text-align:center">{{ $standing->rank }}</td>
 										<td>
 											<div class="b-600 cd">@include('tournaments._partials.team_name_link', ['team' => $standing->team, 'showAvatar' => true])@if($isOutsider) <span class="f-16">{{ __('tournaments.setup_outsider_label') }}</span>@endif</div>
-											@include('tournaments._partials.team_roster_line', ['team' => $standing->team, 'class' => 'f-16', 'showAvatar' => true])
+											@include('tournaments._partials.team_roster_line', ['team' => $standing->team, 'class' => 'f-13', 'showAvatar' => true])
 										</td>
 										<td style="text-align:center"><span class="b-600 alert-info pt-05 pb-05 p-1">{{ $standing->played }}</span></td>
 										<td style="text-align:center;"><span class="b-600 alert-success pt-05 pb-05 p-1">{{ $standing->wins }}</span></td>
@@ -2719,8 +2719,13 @@ $tourNumber = $seasonData
 			function applyFinalsModeDefaultByDirection() {
 				if (window.__eventDirection === 'beach' && finalsModeDivisions) {
 					finalsModeDivisions.checked = true;
-				} else if (finalsModePlacement) {
+				} else if (finalsModePlacement && !finalsModePlacement.disabled) {
+					// placement доступен только при РОВНО 2 группах (см. syncFinalsModeGuard,
+					// вызывается ДО этой функции) — если он уже задизейблен гейтом, дефолт
+					// классики откатывается на bracket, а не перезаписывает disabled-радио.
 					finalsModePlacement.checked = true;
+				} else if (finalsModeBracket) {
+					finalsModeBracket.checked = true;
 				}
 				syncDivisionsFields();
 				syncThirdPlaceMatchField();

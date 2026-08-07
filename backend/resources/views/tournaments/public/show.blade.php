@@ -237,7 +237,7 @@
 										<td>{{ $s->rank }}{{ $inTb ? ' 🎲' : '' }}</td>
 										<td>
 											<div class="cd b-600">@include('tournaments._partials.team_name_link', ['team' => $s->team])</div>
-											@include('tournaments._partials.team_roster_line', ['team' => $s->team, 'class' => 'f-16'])
+											@include('tournaments._partials.team_roster_line', ['team' => $s->team, 'class' => 'f-13'])
 										</td>
 										<td style="text-align:center">{{ $s->played }}</td>
 										<td style="text-align:center;color:#10b981">{{ $s->wins }}</td>

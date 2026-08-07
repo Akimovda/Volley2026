@@ -1091,6 +1091,8 @@ return [
     'tournament_individual_players_h2'        => 'Participants',
     'tournament_individual_no_players'        => 'No registered players.',
     'sp_individual_tournament_hint'           => 'Individual registration tournament. Choose your position and sign up.',
+    'sp_h2'                                   => 'Participant registration',
+    'sp_btn_manage_team'                      => 'Manage team',
 
     // Registrations overview
     'registrations_manage'    => 'Registration Management',
