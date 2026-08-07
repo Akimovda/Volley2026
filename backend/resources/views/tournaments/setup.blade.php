@@ -1288,22 +1288,49 @@ $tourNumber = $seasonData
 		
 		
 		{{-- ============================================================
-		Создание стадии (сворачивается если стадии уже есть)
+		Создание стадии (сворачивается если стадии уже есть; скрывается совсем
+		если турнир полностью завершён — $allCompleted, поднято сюда из блока
+		"MVP турнира" ниже, т.к. там он вычислялся слишком поздно для этого блока.
+		См. report_league_tournament_setup_diag_2026-08-07.md.
 		============================================================ --}}
 		@php
 			$hasStages = $event->tournamentStages->isNotEmpty();
 			$lastStage = $stages->last();
 			$lastStageHasMatches = $lastStage && $lastStage->matches->isNotEmpty();
+
+			$allCompleted = $stages->isNotEmpty() && $stages->every(fn($s) => $s->status === 'completed');
+			// Если сезонный турнир с 2+ группами, но групп Hard/Lite ещё нет — турнир не завершён
+			if ($allCompleted && $event->season_id) {
+				$groupStage = $stages->firstWhere('type', 'round_robin');
+				if ($groupStage && $groupStage->groups->count() >= 2) {
+					$hasDivisions = $stages->contains(fn($s) => $s->division_tier !== null || str_starts_with($s->name, 'Группа '));
+					if (!$hasDivisions) {
+						$allCompleted = false;
+					}
+				}
+			}
+			// Одиночный (несезонный) турнир с finals_mode=divisions: companion-стадия
+			// сознательно НЕ создаётся при createStage() (см. TournamentController::
+			// createStage()/checkStageCompletion() — тот же guard, что чинили для event 402),
+			// поэтому единственная завершённая групповая стадия ещё не значит "турнир закрыт",
+			// пока организатор не нажал "Сформировать группы" (formDivisions()).
+			if ($allCompleted && !$event->season_id) {
+				$divisionsStage = $stages->first(fn($s) => $s->canHaveFollowupStage() && $s->groups->count() >= 2 && $s->cfg('finals_mode') === 'divisions');
+				if ($divisionsStage && !$stages->contains(fn($s) => $s->division_tier !== null || str_starts_with($s->name, 'Группа '))) {
+					$allCompleted = false;
+				}
+			}
 		@endphp
+		@if(!$allCompleted)
 		<div class="ramka">
 			<h2 class="-mt-05">{{ __('tournaments.setup_add_stage_h2') }}</h2>
 			@if($hasStages)
 			{{-- Стадии уже есть — тоггл приглушён (не конкурирует визуально с
 			     карточками активных стадий ниже), но функция та же: разворачивает
 			     форму для добавления ЕЩЁ ОДНОЙ отдельной стадии. --}}
-			<span class="stage-toggle-subdued" style="cursor:pointer" onclick="var b=this.nextElementSibling;b.style.display=b.style.display==='none'?'':'none';this.querySelector('.toggle-icon').textContent=b.style.display==='none'?'+':'-'">{{ __('tournaments.setup_btn_add_stage_subdued') }}</span>
+			<span class="stage-toggle-subdued" style="cursor:pointer" onclick="var b=this.nextElementSibling;b.style.display=b.style.display==='none'?'':'none';var ic=this.querySelector('.toggle-icon');if(ic)ic.textContent=b.style.display==='none'?'+':'-'">{{ __('tournaments.setup_btn_add_stage_subdued') }}</span>
 			@else
-			<div class="btn btn-secondary" style="cursor:pointer" onclick="var b=this.nextElementSibling;b.style.display=b.style.display==='none'?'':'none';this.querySelector('.toggle-icon').textContent=b.style.display==='none'?'+':'-'">{{ __('tournaments.setup_btn_add_stage') }}
+			<div class="btn btn-secondary" style="cursor:pointer" onclick="var b=this.nextElementSibling;b.style.display=b.style.display==='none'?'':'none';var ic=this.querySelector('.toggle-icon');if(ic)ic.textContent=b.style.display==='none'?'+':'-'">{{ __('tournaments.setup_btn_add_stage') }}
 			</div>
 			@endif
 			<div style="{{ $hasStages ? 'display:none' : '' }}">
@@ -1718,30 +1745,23 @@ $tourNumber = $seasonData
 				</div>
 			</form>
 		</div>
+		@endif
 		
 		{{-- ============================================================
 		Стадии
 		============================================================ --}}
 		
-		{{-- MVP турнира --}}
+		{{-- MVP турнира: кандидаты — ТОЛЬКО игроки команд-победителей (топ-1),
+		     не вся лига/турнир. Логика — TournamentStatsService::getMvpCandidates()
+		     (дивизионы → победитель каждой финальной группы; placement/bracket →
+		     чемпион; только круговая → 1-е место общей таблицы), переиспользует
+		     ту же классификацию мест, что и везде на сайте (calculateFinalClassification).
+		     $allCompleted вычислен выше, в блоке "Создание стадии". --}}
 		@php
-		$allCompleted = $stages->isNotEmpty() && $stages->every(fn($s) => $s->status === 'completed');
-		// Если сезонный турнир с 2+ группами, но групп Hard/Lite ещё нет — турнир не завершён
-		if ($allCompleted && $event->season_id) {
-		$groupStage = $stages->firstWhere('type', 'round_robin');
-		if ($groupStage && $groupStage->groups->count() >= 2) {
-		$hasDivisions = $stages->contains(fn($s) => str_starts_with($s->name, 'Группа '));
-		if (!$hasDivisions) {
-		$allCompleted = false;
-		}
-		}
-		}
 		$participants = collect();
 		if ($allCompleted) {
-		$participants = \App\Models\PlayerTournamentStats::where('event_id', $event->id)
-		->with('user')
-		->orderByDesc('match_win_rate')
-		->get();
+		$participants = app(\App\Services\TournamentStatsService::class)
+			->getMvpCandidates($event, $selectedOccurrence?->id);
 		}
 		@endphp
 		@if($allCompleted && $participants->isNotEmpty())
@@ -2278,15 +2298,36 @@ $tourNumber = $seasonData
 		
 		@endif
 		{{-- Продвижение / Группы --}}
-		@if($stage->isCompleted() && $stage->canHaveFollowupStage())
-		
-		{{-- Финальные группы по уровням (Hard/Lite/Medium) — доступно и сезонным,
-		     и одиночным турнирам; промоушен между турами сезона (блок ниже,
-		     applyDivisionPromotion) остаётся только для сезонных. --}}
-		@if($stage->groups->count() >= 2)
-		@php $hasDivStages = $stages->filter(fn($s) => str_starts_with($s->name, 'Группа '))->isNotEmpty(); @endphp
+		@php
+			$finalsMode = $stage->cfg('finals_mode');
+			// division_tier — структурный признак дивизионных стадий (Hard/Medium/Lite),
+			// заполняется formDivisions() и для сезонных, и для несезонных турниров;
+			// паттерн по имени — фоллбэк для стадий, созданных до появления поля
+			// (см. report_division_tier_migration_plan_2026-08-04.md).
+			$divisionStagesForThis = $stages->filter(fn($s) => $s->division_tier !== null || str_starts_with($s->name, 'Группа '));
+			$hasDivStages = $divisionStagesForThis->isNotEmpty();
+			$divStagesAllCompleted = $hasDivStages && $divisionStagesForThis->every(fn($s) => $s->status === 'completed');
+			$finalsTargetStages = $stages->where('type', 'single_elim')->whereIn('status', ['pending', 'in_progress', 'completed']);
+			$isTwoGroups = $stage->groups->count() === 2;
+			$finalsModeDefault = $stage->cfg('finals_mode', $isTwoGroups ? 'placement' : 'bracket');
+			if (!$isTwoGroups) { $finalsModeDefault = 'bracket'; }
+		@endphp
+
+		{{-- Состояние 1 из 3 — "Настройка финальных групп" (Hard/Medium/Lite):
+		     ТОЛЬКО если организатор в мастере явно выбрал finals_mode=divisions
+		     (не placement, не bracket), групповой этап завершён, и сами дивизионные
+		     стадии либо ещё не сформированы, либо сформированы, но не все доиграны.
+		     Плюс общий гейт !$allCompleted — на полностью закрытом турнире формирование
+		     финалов невозможно по определению (и не должно предлагаться повторно).
+		     ВАЖНО: это НЕЗАВИСИМЫЙ @if, не @else состояния 2 — раньше здесь было
+		     @if($stage->groups->count() >= 2) / @else, из-за чего для ЛЮБОЙ стадии
+		     ровно с 2 группами (типичный случай placement/bracket-финала) состояние 2
+		     ("Сгенерировать финалы") становилось НЕДОСТИЖИМЫМ — регресс коммита
+		     6af49bad, ломавший 2-групповые placement-турниры (напр. event 402). --}}
+		@if(!$allCompleted && $stage->isCompleted() && $stage->canHaveFollowupStage()
+			&& $stage->groups->count() >= 2 && $finalsMode === 'divisions' && !$divStagesAllCompleted)
 		<div class="ramka">
-			<div class="d-flex between fvc" style="cursor:pointer" onclick="var b=this.nextElementSibling;b.style.display=b.style.display==='none'?'':'none';this.querySelector('.toggle-icon').textContent=b.style.display==='none'?'+':'-'">
+			<div class="d-flex between fvc" style="cursor:pointer" onclick="var b=this.nextElementSibling;b.style.display=b.style.display==='none'?'':'none';var ic=this.querySelector('.toggle-icon');if(ic)ic.textContent=b.style.display==='none'?'+':'-'">
 				<h2 class="-mt-05">{{ __('tournaments.setup_groups_h2') }}</h2>
 				<span class="toggle-icon b-600 f-20">{{ $hasDivStages ? '+' : '-' }}</span>
 			</div>
@@ -2359,15 +2400,22 @@ $tourNumber = $seasonData
 				</form>
 			</div>
 		</div>
-		@else
-		{{-- Обычный → плей-офф: единый блок "Сгенерировать финалы" --}}
-		@php
-			$finalsTargetStages = $stages->where('type', 'single_elim')->whereIn('status', ['pending', 'in_progress', 'completed']);
-			$isTwoGroups = $stage->groups->count() === 2;
-			$finalsModeDefault = $stage->cfg('finals_mode', $isTwoGroups ? 'placement' : 'bracket');
-			if (!$isTwoGroups) { $finalsModeDefault = 'bracket'; }
-		@endphp
-		@if($finalsTargetStages->contains(fn($s) => !$s->isCompleted()))
+		@endif
+
+		{{-- Состояние 2 из 3 — "Сгенерировать финалы" (placement-кроссовер или
+		     bracket-плей-офф): когда finals_mode НЕ divisions, и целевая single_elim
+		     стадия уже существует, но ещё не доиграна. Восстанавливает достижимость
+		     для 2-групповых стадий (event 402) — раньше была недостижима из-за
+		     структуры @if/@else с состоянием 1.
+		     !$hasDivStages — сезонные дивизионы (Группа Hard/Lite/...) создаются
+		     ДРУГИМ механизмом (formDivisions(), не finals_mode-мастером) и никогда
+		     не получают finals_mode='divisions' в config — без этого гейта состояния
+		     2/3 всплывали и для родительской "Групповой этап", и для уже терминальной
+		     "Группа Hard", хотя финалы (дивизионы) уже сформированы (event 376, см.
+		     report_league_tournament_setup_diag_2026-08-07.md). --}}
+		@if(!$allCompleted && $stage->isCompleted() && $stage->canHaveFollowupStage()
+			&& $finalsMode !== 'divisions' && !$hasDivStages && $finalsTargetStages->isNotEmpty()
+			&& $finalsTargetStages->contains(fn($s) => !$s->isCompleted()))
 		<div class="p-3 mt-2" style="background:rgba(41,103,186,.08);border-radius:10px" id="generate_finals_block">
 			<div class="b-700 mb-2">{{ __('tournaments.setup_generate_finals_h4') }}</div>
 			<div class="d-flex fvc" style="gap:10px;flex-wrap:wrap">
@@ -2449,7 +2497,15 @@ $tourNumber = $seasonData
 				});
 			})();
 		</script>
-		@else
+		@endif
+
+		{{-- Состояние 3 из 3 — "Финальная стадия не создана": целевой single_elim
+		     стадии нет вообще (ни pending, ни completed) — предлагаем быстро создать.
+		     !$hasDivStages — см. комментарий у состояния 2 выше: если дивизионы
+		     (Группа Hard/Lite/...) для этого occurrence уже созданы, финалы турнира
+		     уже сформированы этим путём — предлагать "Создать финалы" не нужно. --}}
+		@if(!$allCompleted && $stage->isCompleted() && $stage->canHaveFollowupStage()
+			&& $finalsMode !== 'divisions' && !$hasDivStages && $finalsTargetStages->isEmpty())
 		<div class="p-3 mt-2 alert-warning" style="border-radius:10px">
 			<div class="b-700 mb-1">{{ __('tournaments.setup_no_finals_stage_h4') }}</div>
 			<p class="f-13" style="margin-bottom:10px">{{ __('tournaments.setup_no_finals_stage_hint') }}</p>
@@ -2458,8 +2514,6 @@ $tourNumber = $seasonData
 				<button type="submit" class="btn btn-primary btn-alert" data-title="{{ __('tournaments.setup_no_finals_stage_confirm_title') }}" data-icon="question" data-confirm-text="{{ __('tournaments.yes') }}" data-cancel-text="{{ __('tournaments.btn_cancel') }}">{{ __('tournaments.setup_no_finals_stage_btn') }}</button>
 			</form>
 		</div>
-		@endif
-		@endif
 		@endif
 
 		@endforeach
