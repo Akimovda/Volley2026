@@ -511,7 +511,6 @@ return [
     'setup_stage_advance_per_group_label' => 'Сколько команд выходит в финальный этап',
     'setup_stage_advance_per_group_hint' => 'По умолчанию: :n (из расчёта групп × проход из группы), можно изменить',
     'setup_divisions_advance_summary' => 'В финальный этап выйдет :total команд: по :per_group из каждой группы',
-    'setup_divisions_format_note_4plus' => 'При 4+ группах формат матча по дивизионам настраивается на пульте после формирования финальных групп.',
     'setup_stage_courts_count' => 'Кол-во площадок',
     'setup_stage_courts_for_groups' => 'Площадки для групп',
     'setup_stage_seed'      => 'Жеребьёвка',

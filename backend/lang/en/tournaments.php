@@ -492,7 +492,6 @@ return [
     'setup_stage_advance_per_group_label' => 'How many teams advance to the final stage',
     'setup_stage_advance_per_group_hint' => 'Default: :n (groups × advance per group), can be changed',
     'setup_divisions_advance_summary' => ':total teams will advance to the final stage: :per_group from each group',
-    'setup_divisions_format_note_4plus' => 'With 4+ groups, per-division match format is set on the control panel after the final groups are formed.',
     'setup_stage_courts_count' => 'Courts count',
     'setup_stage_courts_for_groups' => 'Courts for groups',
     'setup_stage_seed'      => 'Seeding',
