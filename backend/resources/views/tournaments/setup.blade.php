@@ -1093,6 +1093,7 @@ $tourNumber = $seasonData
 					<summary class="btn btn-secondary">{{ __('tournaments.setup_btn_create_team') }}</summary>
                     <form method="POST" action="{{ route('tournamentTeams.store', $event) }}">
                         @csrf
+						<input type="hidden" name="from_setup" value="1">
 						@if($selectedOccurrence)
 						<input type="hidden" name="occurrence_id" value="{{ $selectedOccurrence->id }}">
 						@endif
