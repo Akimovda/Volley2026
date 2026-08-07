@@ -761,10 +761,15 @@ class TournamentController extends Controller
                 $request->user(),
             );
 
+            // Standings ЗАТРОНУТОЙ этим матчем группы уже пересчитаны синхронно
+            // внутри recordScore()/submitScore() (быстро, одна группа) — организатор
+            // видит верную таблицу без задержки. "Тяжёлый хвост" — player_tournament_stats
+            // всего события + career + (для сезонных) весь сезон — в очередь, не
+            // блокирует ответ страницы (report_league_tournament_setup_diag_2026-08-07.md).
             try {
-                app(\App\Services\TournamentStatsService::class)->recalculateTournament($event);
+                \App\Jobs\RecalculateTournamentStatsJob::dispatch($event->id)->afterCommit();
             } catch (\Throwable $e) {
-                \Log::warning('Stats rebuild failed: ' . $e->getMessage());
+                \Log::warning('Stats rebuild dispatch failed: ' . $e->getMessage());
             }
 
             // Если это тайбрейк-матч — разрезолвим тайбрейкер и пересчитаем standings
@@ -891,10 +896,12 @@ class TournamentController extends Controller
                 $this->matchService->recordScore($match->fresh(), $sets, $request->user());
             });
 
+            // См. комментарий в score() — standings группы уже пересчитаны синхронно
+            // внутри resetScore()/recordScore(), тяжёлый пересчёт события/сезона — в очередь.
             try {
-                app(\App\Services\TournamentStatsService::class)->recalculateTournament($event);
+                \App\Jobs\RecalculateTournamentStatsJob::dispatch($event->id)->afterCommit();
             } catch (\Throwable $e) {
-                \Log::warning('Stats rebuild after rescore failed: ' . $e->getMessage());
+                \Log::warning('Stats rebuild dispatch after rescore failed: ' . $e->getMessage());
             }
 
             $this->checkStageCompletion($stage);
@@ -1397,6 +1404,19 @@ class TournamentController extends Controller
             }
         });
 
+        // Повторное формирование дивизионов удаляет ранее созданные "Группа Hard/Lite"
+        // (строки выше, "Удаляем ранее созданные дивизионные стадии перед пересозданием")
+        // — если у них уже были сыгранные матчи, их вклад в player_tournament_stats/
+        // OpenSkill/career оставался фантомом без пересчёта (найдено при аудите
+        // recalculateTournament(), report_league_tournament_setup_diag_2026-08-07.md).
+        // При первом формировании (ничего не удалялось) — просто безвредный no-op
+        // пересчёт того, что уже верно.
+        try {
+            \App\Jobs\RecalculateTournamentStatsJob::dispatch($event->id)->afterCommit();
+        } catch (\Throwable $e) {
+            \Log::warning('Stats rebuild dispatch after formDivisions failed: ' . $e->getMessage());
+        }
+
         return $this->redirectToSetup($event, 'Группы сформированы: ' . implode(', ', $divisionNames), false, 'promotion_block');
     }
 
@@ -1732,10 +1752,11 @@ class TournamentController extends Controller
         // Откат стадии раньше не запускал никакого пересчёта вообще — переигранный
         // после отката матч не был бы учтён ни в Elo, ни в OpenSkill, ни в standings
         // события за пределами этой стадии (см. report_recalc_system_diagnosis).
+        // В очередь, не синхронно — та же причина, что и в score()/rescoreMatch().
         try {
-            app(\App\Services\TournamentStatsService::class)->recalculateTournament($event);
+            \App\Jobs\RecalculateTournamentStatsJob::dispatch($event->id)->afterCommit();
         } catch (\Throwable $e) {
-            \Log::warning('Stats rebuild after stage revert failed: ' . $e->getMessage());
+            \Log::warning('Stats rebuild dispatch after stage revert failed: ' . $e->getMessage());
         }
 
         $matchesWord = trans_choice('матч|матча|матчей', $resetCount);
@@ -1794,11 +1815,11 @@ class TournamentController extends Controller
         // Удаление стадии с уже завершёнными матчами раньше не запускало никакого
         // пересчёта — их вклад в Elo/OpenSkill/player_tournament_stats оставался
         // навсегда, хотя сами результаты уже удалены (найдено при аудите системы
-        // пересчёта, см. report_recalc_implementation_plan).
+        // пересчёта, см. report_recalc_implementation_plan). В очередь, не синхронно.
         try {
-            app(\App\Services\TournamentStatsService::class)->recalculateTournament($event);
+            \App\Jobs\RecalculateTournamentStatsJob::dispatch($event->id)->afterCommit();
         } catch (\Throwable $e) {
-            \Log::warning('Stats rebuild after stage delete failed: ' . $e->getMessage());
+            \Log::warning('Stats rebuild dispatch after stage delete failed: ' . $e->getMessage());
         }
 
         $msg = "Стадия \"{$name}\" удалена.";
@@ -2412,13 +2433,13 @@ class TournamentController extends Controller
 
                     // Пересчёт статистики/Elo/OpenSkill НЕ дублируем здесь: единственные
                     // реальные вызывающие пути этого метода — score()/rescoreMatch() — уже
-                    // вызывают TournamentStatsService::recalculateTournament($event) (полный
-                    // пересчёт + ratings job) непосредственно перед checkStageCompletion() в
-                    // том же запросе. Повторный вызов здесь означал бы дважды ставить в
-                    // очередь один и тот же RecalculateTournamentRatingsJob на каждое
-                    // сохранение счёта. (scoreKingBeach() тоже зовёт этот метод, но не через
-                    // team_home_id/winner_team_id — для king_beach recalculateTournament()
-                    // безрезультатен и раньше не вызывался вовсе, см. отдельный backlog.)
+                    // ставят RecalculateTournamentStatsJob (обёртка над recalculateTournament(),
+                    // сама ставит ratings job внутри себя) в очередь непосредственно перед
+                    // checkStageCompletion() в том же запросе — ShouldBeUnique по event_id
+                    // и так схлопнул бы повторный dispatch, но лишний вызов здесь не нужен.
+                    // (scoreKingBeach() тоже зовёт этот метод, но не через team_home_id/
+                    // winner_team_id — для king_beach recalculateTournament() безрезультатен
+                    // и раньше не вызывался вовсе, см. отдельный backlog.)
 
                     // Авто-продвижение в сезоне (promote/relegate/reserve)
                     app(\App\Services\TournamentPromotionService::class)
@@ -2770,6 +2791,17 @@ class TournamentController extends Controller
         }
 
         $this->matchService->resetScore($match);
+
+        // Обычно следом идёт rallyFinalize()→score(), который сам поставит пересчёт
+        // в очередь — но если организатор не доведёт до конца (уйдёт со страницы),
+        // сброшенный счёт иначе останется учтён в player_tournament_stats/OpenSkill
+        // до следующего чужого триггера в этом же событии. ShouldBeUnique схлопнёт
+        // этот dispatch с последующим из rallyFinalize(), если он всё же случится.
+        try {
+            \App\Jobs\RecalculateTournamentStatsJob::dispatch($event->id)->afterCommit();
+        } catch (\Throwable $e) {
+            \Log::warning('Stats rebuild dispatch after rally reopen failed: ' . $e->getMessage());
+        }
 
         return redirect()
             ->route('tournament.matches.rally.form', $match)
