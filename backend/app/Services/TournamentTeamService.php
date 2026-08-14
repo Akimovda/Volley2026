@@ -65,6 +65,10 @@ final class TournamentTeamService
                 }
             }
 
+            // Капитан уже состоит в ДРУГОЙ активной команде этого же турнира/тура —
+            // тот же запрет, что применяется к обычным участникам через inviteOrJoinMember().
+            $this->assertNotInAnotherTeam($event->id, $occurrenceId, $captain->id);
+
             $team = EventTeam::query()->create([
                 'event_id' => $event->id,
                 'occurrence_id' => $occurrenceId,
@@ -140,6 +144,33 @@ final class TournamentTeamService
 
             return $fresh;
         });
+    }
+
+    /**
+     * Игрок не должен состоять в ДРУГОЙ активной команде этого же события/тура —
+     * жёсткий запрет (не предупреждение). $exceptTeamId исключает текущую команду
+     * из проверки (для добавления участника в уже существующую команду).
+     */
+    private function assertNotInAnotherTeam(int $eventId, ?int $occurrenceId, int $userId, ?int $exceptTeamId = null): void
+    {
+        $otherTeam = EventTeamMember::query()
+            ->whereHas('team', function ($q) use ($eventId, $occurrenceId, $exceptTeamId) {
+                $q->where('event_id', $eventId)
+                    ->where('occurrence_id', $occurrenceId)
+                    ->whereIn('status', ['ready', 'pending_members', 'submitted', 'confirmed', 'approved']);
+
+                if ($exceptTeamId !== null) {
+                    $q->where('id', '!=', $exceptTeamId);
+                }
+            })
+            ->where('user_id', $userId)
+            ->whereIn('confirmation_status', ['confirmed', 'joined'])
+            ->with('team')
+            ->first();
+
+        if ($otherTeam) {
+            throw new DomainException("Данный игрок есть в другой команде! ({$otherTeam->team->name})");
+        }
     }
 
     /**
@@ -461,21 +492,7 @@ final class TournamentTeamService
 
             // Игрок уже состоит в ДРУГОЙ активной команде этого же турнира/тура —
             // жёсткий запрет (не предупреждение), тот же паттерн, что в joinRequest().
-            $otherTeam = EventTeamMember::query()
-                ->whereHas('team', function ($q) use ($team) {
-                    $q->where('event_id', $team->event_id)
-                        ->where('occurrence_id', $team->occurrence_id)
-                        ->where('id', '!=', $team->id)
-                        ->whereIn('status', ['ready', 'pending_members', 'submitted', 'confirmed', 'approved']);
-                })
-                ->where('user_id', $user->id)
-                ->whereIn('confirmation_status', ['confirmed', 'joined'])
-                ->with('team')
-                ->first();
-
-            if ($otherTeam) {
-                throw new DomainException("Данный игрок есть в другой команде! ({$otherTeam->team->name})");
-            }
+            $this->assertNotInAnotherTeam($team->event_id, $team->occurrence_id, $user->id, $team->id);
 
             // Проверка соответствия игрока требованиям мероприятия. Пол — отдельным
             // флагом: при добавлении организатором (addMemberByOrganizer) это НЕ

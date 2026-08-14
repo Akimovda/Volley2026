@@ -202,6 +202,7 @@ return [
     'pub_tiebreak_pending' => 'Tiebreaker pending between tied teams',
     'pub_no_playoff'       => 'No playoff stages to render the bracket.',
     'pub_final_standings'  => 'Final standings',
+    'pub_results_not_ready' => 'The tournament is not finished yet — final standings will appear once the group stage is completed.',
     'pub_no_finished_matches' => 'No finished matches.',
     'pub_player_ranking'   => 'Player ranking',
     'pub_swipe_left_hint'  => 'Swipe the table left',

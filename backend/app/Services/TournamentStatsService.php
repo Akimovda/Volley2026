@@ -458,10 +458,14 @@ class TournamentStatsService
             }
         }
 
-        // 2. Оставшиеся команды — по standings последней стадии с группами.
+        // 2. Оставшиеся команды — по standings последней ЗАВЕРШЁННОЙ стадии с группами.
         // Если групп несколько (Группа A/B/...) — выводим каждую как отдельный «дивизион»,
         // чтобы UI показал колонки с локальным ранжированием внутри группы.
-        $groupStage = $stages->filter(fn($s) => $s->groups->isNotEmpty())->last();
+        // Строгий гейт isCompleted(): у незавершённой стадии standings — пустой каркас
+        // (rank=1 у всех, played=0), сформированный сразу при жеребьёвке/создании группы,
+        // а не реальный результат — без гейта подиум рисовался на несыгранном турнире
+        // (диагностика: report/diagnosis_bug7_bug8_event404_2026-08-14.md, event 404).
+        $groupStage = $stages->filter(fn($s) => $s->groups->isNotEmpty() && $s->isCompleted())->last();
         if ($groupStage) {
             $stageGroups = $groupStage->groups->sortBy('name')->values();
 
