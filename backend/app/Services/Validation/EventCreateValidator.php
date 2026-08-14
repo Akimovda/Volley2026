@@ -285,6 +285,19 @@
                 'nullable',
                 'in:manual,random,rating'
             ],
+
+            /*
+				|--------------------------------------------------------------------------
+				| SEASON / LEAGUE (recurring tournament)
+				|--------------------------------------------------------------------------
+			*/
+
+            'create_season' => ['nullable', 'in:0,1'],
+            'season_league_mode' => ['nullable', 'in:new,existing'],
+            'new_league_name' => ['nullable', 'string', 'max:255'],
+            'existing_league_id' => ['nullable', 'integer', 'min:1'],
+            'existing_season_id' => ['nullable', 'integer', 'min:1'],
+
             /*
 				|--------------------------------------------------------------------------
 				| GENDER POLICY

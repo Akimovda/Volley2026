@@ -32,8 +32,8 @@ final class TournamentSeasonAutoCreateService
             return null;
         }
 
-        // Пользователь отказался от серии
-        if (!in_array($data['create_season'] ?? '1', [1, '1', true, 'true', 'on'], true)) {
+        // Пользователь явно не отметил создание серии — по умолчанию НЕ создаём
+        if (!in_array($data['create_season'] ?? '0', [1, '1', true, 'true', 'on'], true)) {
             return null;
         }
 
