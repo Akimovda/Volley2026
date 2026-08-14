@@ -429,9 +429,11 @@
 		</div>
 		@endif
 		@endif
+		@else
+		<div class="alert alert-info">{{ __('tournaments.pub_results_not_ready') }}</div>
 		@endif
-		
-		
+
+
 		@foreach($stages as $stage)
 		<div class="card p-3 mb-3">
 			<div class="b-700 f-16 mb-2">{{ $stage->name }}</div>
