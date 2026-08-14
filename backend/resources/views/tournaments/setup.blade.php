@@ -150,6 +150,23 @@
 			}
 			.finals-mode-card-extra select { max-width: 16rem; }
 			body.dark .finals-mode-card-extra { border-top-color: rgba(255, 255, 255, .08); }
+			/* Баг №5: третье место — select больше НЕ вложен в <label> карточки
+			   bracket (клик по кастомному дропдауну ловил браузерный click-forwarding
+			   на radio, дропдаун открывался и тут же закрывался обработчиком "клик
+			   вне"). Стоит СНАРУЖИ <label>, визуально имитирует "выдвижную" часть той
+			   же карточки: без зазора и верхней рамки сверху (продолжает bracket-card),
+			   со своей рамкой по бокам/снизу и скруглением только нижних углов. */
+			#finals_mode_card_bracket { margin-bottom: 0; }
+			.finals-mode-card-extra--outside {
+				margin: 0 0 1.2rem; padding: 1.4rem 2rem;
+				border: 0.2rem solid rgba(0, 0, 0, .1); border-top: none;
+				border-radius: 0 0 1rem 1rem;
+				background: rgba(0, 0, 0, .015);
+			}
+			body.dark .finals-mode-card-extra--outside {
+				border-color: rgba(255, 255, 255, .1);
+				background: rgba(255, 255, 255, .02);
+			}
 
 			/* Плитки-теги кортов — тот же приём, что .seg-control (акцентный фон на
 			   выбранном), но как самостоятельные теги, а не связанный pill-бар: число
@@ -1091,7 +1108,7 @@ $tourNumber = $seasonData
 			<div class="mt-1">
 				<details>
 					<summary class="btn btn-secondary">{{ __('tournaments.setup_btn_create_team') }}</summary>
-                    <form method="POST" action="{{ route('tournamentTeams.store', $event) }}">
+                    <form method="POST" action="{{ route('tournamentTeams.store', $event) }}" class="mt-2 form">
                         @csrf
 						<input type="hidden" name="from_setup" value="1">
 						@if($selectedOccurrence)
@@ -1497,14 +1514,21 @@ $tourNumber = $seasonData
 									<div class="custom-radio"></div>
 									<div class="finals-mode-card-title">{{ __('tournaments.setup_finals_mode_bracket') }}</div>
 								</div>
-								<div class="finals-mode-card-extra" id="third_place_match_field">
-									<label>{{ __('tournaments.setup_stage_third_place') }}</label>
-									<select name="third_place_match" style="max-width:16rem">
-										<option value="0">{{ __('tournaments.no') }}</option>
-										<option value="1">{{ __('tournaments.yes') }}</option>
-									</select>
-								</div>
 							</label>
+							{{-- ВНЕ <label> карточки bracket намеренно (баг №5): select внутри того же
+							     <label>, что и radio, ловил клик-форвардинг браузера на radio (дефолтное
+							     поведение label без "for" — не блокируется e.stopPropagation() в
+							     createCustomSelect(), т.к. это activation behavior, а не JS-слушатель).
+							     Клик по кастомному дропдауну открывал его и тут же закрывал обработчиком
+							     "клик вне" — select физически не открывался. Визуально блок остаётся
+							     "под" карточкой bracket за счёт margin-top/border-top ниже. --}}
+							<div class="finals-mode-card-extra finals-mode-card-extra--outside" id="third_place_match_field">
+								<label>{{ __('tournaments.setup_stage_third_place') }}</label>
+								<select name="third_place_match" style="max-width:16rem">
+									<option value="0">{{ __('tournaments.no') }}</option>
+									<option value="1">{{ __('tournaments.yes') }}</option>
+								</select>
+							</div>
 
 							<label class="finals-mode-card radio-item" id="finals_mode_card_divisions">
 								<div class="finals-mode-card-head">
@@ -1527,34 +1551,6 @@ $tourNumber = $seasonData
 									<div class="mt-2" id="divisions_format_fields"></div>
 								</div>
 							</label>
-						</div>
-
-						{{-- Расписание (опционально) — структура не менялась, просто во всю ширину секции (draw_mode переехал в "Групповой этап" выше) --}}
-						<div class="stage-section">
-							<div id="schedule_fields">
-								<div class="card">
-									<label>{{ __('tournaments.setup_stage_schedule') }}</label>
-									<hr class="mb-1">
-									<div class="row">
-										<div class="col-md-4">
-											<label>{{ __('tournaments.setup_stage_start') }}</label>
-											<input type="datetime-local" name="schedule_start" value="">
-										</div>
-										<div class="col-md-4">
-											<label>{{ __('tournaments.setup_stage_match_min') }}</label>
-											<input type="number" name="schedule_match_duration" value="30" min="15" max="180">
-										</div>
-										<div class="col-md-4">
-											<label>{{ __('tournaments.setup_stage_break_min') }}</label>
-											<input type="number" name="schedule_break_duration" value="5" min="0" max="60">
-										</div>
-									</div>
-									<ul class="list f-16 mt-1">
-										<li>{{ __('tournaments.setup_stage_schedule_hint') }}</li>
-									</ul>
-
-								</div>
-							</div>
 						</div>
 
 						{{-- Ручное распределение --}}
@@ -1608,6 +1604,35 @@ $tourNumber = $seasonData
 					<div class="mt-2" id="courts_shared_fields" style="overflow:visible">
 						<div class="stage-section">
 							<div class="stage-section-label"><span class="stage-section-num">4</span>{{ __('tournaments.setup_section_courts_h') }}</div>
+
+							{{-- Расписание (опционально) — объединено с "Площадками" в одну секцию
+							     (та же карточка настроек стадии). Видно только для группового формата,
+							     для King of the Beach схлопывается через schedule_fields в toggle() ниже —
+							     сам блок "Площадки" остаётся видимым для обоих форматов. --}}
+							<div class="stage-section" id="schedule_fields" style="display:none">
+								<div class="card">
+									<label>{{ __('tournaments.setup_stage_schedule') }}</label>
+									<hr class="mb-1">
+									<div class="row">
+										<div class="col-md-4">
+											<label>{{ __('tournaments.setup_stage_start') }}</label>
+											<input type="datetime-local" name="schedule_start" value="">
+										</div>
+										<div class="col-md-4">
+											<label>{{ __('tournaments.setup_stage_match_min') }}</label>
+											<input type="number" name="schedule_match_duration" value="30" min="15" max="180">
+										</div>
+										<div class="col-md-4">
+											<label>{{ __('tournaments.setup_stage_break_min') }}</label>
+											<input type="number" name="schedule_break_duration" value="5" min="0" max="60">
+										</div>
+									</div>
+									<ul class="list f-16 mt-1">
+										<li>{{ __('tournaments.setup_stage_schedule_hint') }}</li>
+									</ul>
+								</div>
+							</div>
+
 							<div class="card" style="overflow:visible">
 								<div class="row">
 									<div class="col-lg-4 col-md-6">
@@ -2572,6 +2597,7 @@ $tourNumber = $seasonData
 			var groupFields = document.getElementById('group_fields');
 			var kbFields = document.getElementById('king_beach_fields');
 			var courtsFields = document.getElementById('courts_shared_fields');
+			var scheduleFields = document.getElementById('schedule_fields');
 			var finalsModeFields = document.getElementById('finals_mode_fields');
 			var groupsCountInput = document.querySelector('input[name="groups_count"]');
 			var advanceCountInput = document.querySelector('input[name="advance_count"]');
@@ -2741,6 +2767,11 @@ $tourNumber = $seasonData
 					setBlockActive(kbFields, showKb);
 					// Корты — общий блок для групповых форматов и King of the Beach
 					setBlockActive(courtsFields, showGroup || showKb);
+					// Расписание — только для группового формата (объединено с "Площадками" в
+					// одну секцию "4", но видимость своя): вызывается ПОСЛЕ courtsFields, иначе
+					// activate(courtsFields, true) для king_beach снимет disabled со всех своих
+					// потомков, включая поля расписания.
+					setBlockActive(scheduleFields, showGroup);
 					// finals_mode актуален для типов с авто-продолжением (canHaveFollowupStage() —
 					// round_robin И groups_playoff, НЕ thai) — единый список из PHP, не хардкод.
 					setBlockActive(finalsModeFields, isFollowup);
