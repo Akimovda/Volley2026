@@ -209,24 +209,31 @@ class TournamentTeamController extends Controller
                 }
             }
 
-            $team = $service->createTeam(
-                event: $event,
-                captain: $captainUser,
-                name: $teamName,
-                occurrenceId: !empty($data['occurrence_id']) ? (int) $data['occurrence_id'] : null,
-                teamKind: $data['team_kind'] ?? null,
-                captainPositionCode: $data['captain_position_code'] ?? null,
-                autoApprove: $isOrganizerOrAdmin,
-            );
-
-            foreach ($additionalMemberIds as $memberId) {
-                $service->addMemberByOrganizer(
-                    team: $team,
-                    player: \App\Models\User::findOrFail($memberId),
-                    organizer: $request->user(),
-                    teamRole: 'player',
+            // Команда + все дополнительные участники — одной транзакцией: если добавление
+            // ЛЮБОГО участника упадёт (дубль в другой команде, лимит состава и т.п.),
+            // не должна оставаться полусозданная команда с частью участников.
+            $team = DB::transaction(function () use ($service, $event, $captainUser, $teamName, $data, $isOrganizerOrAdmin, $additionalMemberIds, $request) {
+                $team = $service->createTeam(
+                    event: $event,
+                    captain: $captainUser,
+                    name: $teamName,
+                    occurrenceId: !empty($data['occurrence_id']) ? (int) $data['occurrence_id'] : null,
+                    teamKind: $data['team_kind'] ?? null,
+                    captainPositionCode: $data['captain_position_code'] ?? null,
+                    autoApprove: $isOrganizerOrAdmin,
                 );
-            }
+
+                foreach ($additionalMemberIds as $memberId) {
+                    $service->addMemberByOrganizer(
+                        team: $team,
+                        player: \App\Models\User::findOrFail($memberId),
+                        organizer: $request->user(),
+                        teamRole: 'player',
+                    );
+                }
+
+                return $team;
+            });
 
             $this->dispatchAnnounceRefresh($event, !empty($data['occurrence_id']) ? (int) $data['occurrence_id'] : null);
 
