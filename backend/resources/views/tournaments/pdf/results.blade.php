@@ -25,7 +25,7 @@
     <h1>{{ $event->title }} — Итоги</h1>
     <div class="meta">
         {{ $event->direction === 'beach' ? 'Пляжный волейбол' : 'Классический волейбол' }}
-        @if($event->starts_at) · {{ $event->starts_at->format('d.m.Y') }} @endif
+        @if($event->starts_at) · {{ \App\Support\DateTime::formatLocal($event->starts_at, $event->timezone ?: 'UTC', 'd.m.Y') }} @endif
     </div>
 
 

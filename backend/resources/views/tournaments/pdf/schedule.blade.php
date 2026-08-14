@@ -20,7 +20,7 @@
     <h1>{{ $event->title }}</h1>
     <div class="meta">
         {{ $event->direction === 'beach' ? 'Пляжный волейбол' : 'Классический волейбол' }}
-        @if($event->starts_at) · {{ $event->starts_at->format('d.m.Y') }} @endif
+        @if($event->starts_at) · {{ \App\Support\DateTime::formatLocal($event->starts_at, $event->timezone ?: 'UTC', 'd.m.Y') }} @endif
         · Расписание турнира
     </div>
 
@@ -62,7 +62,7 @@
                             <td class="{{ $m->winner_team_id === $m->team_home_id ? 'bold' : '' }}">{{ $m->teamHome->name ?? 'TBD' }}</td>
                             <td class="{{ $m->winner_team_id === $m->team_away_id ? 'bold' : '' }}">{{ $m->teamAway->name ?? 'TBD' }}</td>
                             <td class="tc">{{ $m->court ?? '—' }}</td>
-                            <td class="tc">{{ $m->scheduled_at ? $m->scheduled_at->format('H:i') : '—' }}</td>
+                            <td class="tc">{{ $m->scheduled_at ? \App\Support\DateTime::formatLocal($m->scheduled_at, $event->timezone ?: 'UTC', 'H:i') : '—' }}</td>
                             <td class="tc bold">{{ $m->setsScore() ?? '—' }}</td>
                         </tr>
                     @endforeach
