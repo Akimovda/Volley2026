@@ -4,6 +4,12 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Models\MatchPlayerStats;
+use App\Models\PlayerCareerStats;
+use App\Models\PlayerOpponentStats;
+use App\Models\PlayerPairStats;
+use App\Models\PlayerTournamentStats;
+use App\Models\TournamentSeasonStats;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -228,11 +234,77 @@ class UserMergeService
 
             DB::table('friendships')->where('user_id', $secondary->id)->delete();
 
-            // 14. Статистика
-            DB::table('player_career_stats')->where('user_id', $secondary->id)->update(['user_id' => $primary->id]);
-            DB::table('player_tournament_stats')->where('user_id', $secondary->id)->update(['user_id' => $primary->id]);
-            DB::table('match_player_stats')->where('user_id', $secondary->id)->update(['user_id' => $primary->id]);
-            DB::table('tournament_season_stats')->where('user_id', $secondary->id)->update(['user_id' => $primary->id]);
+            // 14. Статистика — таблицы с UNIQUE(user_id, ...): наивный UPDATE падает,
+            // если у primary уже есть строка с тем же ключом (см. report/merge_users_bug_2026-08-15.md).
+            // Для пересекающихся строк агрегатные поля складываются в строку primary, старая удаляется.
+            // Рейтинговые поля (elo/mu/sigma и производные) НЕ трогаются — они path-dependent,
+            // пересчитываются только глобальным TournamentEloService/TournamentOpenSkillService::rebuildAll()
+            // отдельной батч-задачей, не синхронно внутри merge().
+
+            // 14a. player_tournament_stats — unique(event_id, user_id, team_id)
+            $this->mergeUserOwnedRows(
+                PlayerTournamentStats::class,
+                $primary->id,
+                $secondary->id,
+                ['event_id', 'team_id'],
+                [
+                    'matches_played', 'matches_won', 'sets_won', 'sets_lost',
+                    'points_scored', 'points_conceded',
+                    'total_serves', 'total_aces', 'total_serve_errors',
+                    'total_attacks', 'total_kills', 'total_attack_errors',
+                    'total_blocks', 'total_block_errors',
+                    'total_digs', 'total_reception_errors',
+                    'total_assists', 'mvp_count',
+                ],
+                fn (PlayerTournamentStats $row) => $row->recalcRates()
+            );
+
+            // 14b. match_player_stats — unique(match_id, set_number, user_id)
+            $this->mergeUserOwnedRows(
+                MatchPlayerStats::class,
+                $primary->id,
+                $secondary->id,
+                ['match_id', 'set_number'],
+                [
+                    'serves_total', 'aces', 'serve_errors',
+                    'attacks_total', 'kills', 'attack_errors',
+                    'blocks', 'block_errors',
+                    'digs', 'reception_errors',
+                    'assists', 'points_scored',
+                ]
+            );
+
+            // 14c. tournament_season_stats — unique(season_id, league_id, user_id)
+            $this->mergeUserOwnedRows(
+                TournamentSeasonStats::class,
+                $primary->id,
+                $secondary->id,
+                ['season_id', 'league_id'],
+                [
+                    'rounds_played', 'matches_played', 'matches_won',
+                    'sets_won', 'sets_lost', 'points_scored', 'points_conceded',
+                ],
+                function (TournamentSeasonStats $row) {
+                    $row->match_win_rate = $row->matches_played > 0
+                        ? round(($row->matches_won / $row->matches_played) * 100, 2) : 0;
+                    $totalSets = $row->sets_won + $row->sets_lost;
+                    $row->set_win_rate = $totalSets > 0
+                        ? round(($row->sets_won / $totalSets) * 100, 2) : 0;
+                    // best_placement — «лучший», не сумма; current_streak/elo_season/mu_season/
+                    // sigma_season — не суммируются, оставляем значения строки primary как есть.
+                }
+            );
+
+            // 14d. player_pair_stats / player_opponent_stats — user_id встречается в ДВУХ ролях
+            // (сам игрок и партнёр/соперник) + строки, где secondary и primary были парой/соперниками
+            // ДРУГ С ДРУГОМ, после слияния бессмысленны («сам себе пара») — удаляются.
+            $this->mergePairStats($primary->id, $secondary->id);
+            $this->mergeOpponentStats($primary->id, $secondary->id);
+
+            // 14e. career_stats пересчитывается НАЧИСТО из уже объединённых player_tournament_stats —
+            // проще и надёжнее, чем построчно суммировать (см. TournamentStatsService::rebuildCareerStats).
+            PlayerCareerStats::where('user_id', $secondary->id)->delete();
+            (new TournamentStatsService())->rebuildCareerStats($primary->id);
 
             // 15. Device tokens
             DB::table('device_tokens')->where('user_id', $secondary->id)->update(['user_id' => $primary->id]);
@@ -545,5 +617,147 @@ class UserMergeService
             ->whereRaw('(er.is_cancelled IS NULL OR er.is_cancelled = false)')
             ->where('eo.starts_at', '>', now('UTC'))
             ->count();
+    }
+
+    /**
+     * Переносит строки secondary→primary для моделей вида "статистика по user_id + доп. ключ"
+     * (player_tournament_stats, match_player_stats, tournament_season_stats). Без конфликта —
+     * простой перенос user_id. При конфликте (у primary уже есть строка с тем же доп. ключом) —
+     * суммирует числовые агрегатные поля в строку primary и удаляет строку secondary.
+     *
+     * @param class-string<\Illuminate\Database\Eloquent\Model> $modelClass
+     * @param string[] $extraKeyFields доп. поля ключа (без user_id), определяющие UNIQUE-констрейнт
+     * @param string[] $sumFields числовые поля, которые складываются при конфликте
+     * @param (callable(\Illuminate\Database\Eloquent\Model):void)|null $afterSum пересчёт производных полей (rates)
+     */
+    private function mergeUserOwnedRows(
+        string $modelClass,
+        int $primaryId,
+        int $secondaryId,
+        array $extraKeyFields,
+        array $sumFields,
+        ?callable $afterSum = null
+    ): void {
+        $keyOf = fn ($row) => implode('|', array_map(fn ($f) => $row->$f, $extraKeyFields));
+
+        $primaryKeys = $modelClass::where('user_id', $primaryId)->get($extraKeyFields)
+            ->map($keyOf)->flip();
+
+        foreach ($modelClass::where('user_id', $secondaryId)->get() as $row) {
+            $key = $keyOf($row);
+
+            if (!$primaryKeys->has($key)) {
+                $row->user_id = $primaryId;
+                $row->save();
+                $primaryKeys->put($key, true);
+                continue;
+            }
+
+            $query = $modelClass::where('user_id', $primaryId);
+            foreach ($extraKeyFields as $f) {
+                $query->where($f, $row->$f);
+            }
+            $target = $query->first();
+
+            foreach ($sumFields as $f) {
+                $target->$f = ($target->$f ?? 0) + ($row->$f ?? 0);
+            }
+            if ($afterSum) {
+                $afterSum($target);
+            }
+            $target->save();
+            $row->delete();
+        }
+    }
+
+    /**
+     * player_pair_stats: user_id встречается в player1_id ИЛИ player2_id, инвариант
+     * player1_id < player2_id (не FK, соглашение приложения). Строка, где secondary и primary были
+     * парой ДРУГ С ДРУГОМ — удаляется («сам себе пара» после слияния бессмысленна).
+     */
+    private function mergePairStats(int $primaryId, int $secondaryId): void
+    {
+        $rows = PlayerPairStats::where('player1_id', $secondaryId)
+            ->orWhere('player2_id', $secondaryId)
+            ->get();
+
+        foreach ($rows as $row) {
+            $partnerId = $row->player1_id === $secondaryId ? $row->player2_id : $row->player1_id;
+
+            if ($partnerId === $primaryId) {
+                $row->delete();
+                continue;
+            }
+
+            $newPlayer1 = min($partnerId, $primaryId);
+            $newPlayer2 = max($partnerId, $primaryId);
+
+            $target = PlayerPairStats::where('player1_id', $newPlayer1)
+                ->where('player2_id', $newPlayer2)
+                ->first();
+
+            if ($target && $target->id !== $row->id) {
+                $target->matches_together += $row->matches_together;
+                $target->wins_together += $row->wins_together;
+                $target->save();
+                $row->delete();
+            } else {
+                $row->player1_id = $newPlayer1;
+                $row->player2_id = $newPlayer2;
+                $row->save();
+            }
+        }
+    }
+
+    /**
+     * player_opponent_stats: user_id встречается в user_id ИЛИ opponent_id (несимметричные строки —
+     * "user против opponent" и "opponent против user" хранятся отдельно). Строка secondary↔primary
+     * (в любом направлении) удаляется — после слияния "сам против себя" не имеет смысла.
+     */
+    private function mergeOpponentStats(int $primaryId, int $secondaryId): void
+    {
+        // secondary как «игрок» (user_id = secondary)
+        foreach (PlayerOpponentStats::where('user_id', $secondaryId)->get() as $row) {
+            if ($row->opponent_id === $primaryId) {
+                $row->delete();
+                continue;
+            }
+
+            $target = PlayerOpponentStats::where('user_id', $primaryId)
+                ->where('opponent_id', $row->opponent_id)
+                ->first();
+
+            if ($target) {
+                $target->matches_against += $row->matches_against;
+                $target->wins_against += $row->wins_against;
+                $target->save();
+                $row->delete();
+            } else {
+                $row->user_id = $primaryId;
+                $row->save();
+            }
+        }
+
+        // secondary как «соперник» (opponent_id = secondary) у ДРУГИХ игроков
+        foreach (PlayerOpponentStats::where('opponent_id', $secondaryId)->get() as $row) {
+            if ($row->user_id === $primaryId) {
+                $row->delete();
+                continue;
+            }
+
+            $target = PlayerOpponentStats::where('user_id', $row->user_id)
+                ->where('opponent_id', $primaryId)
+                ->first();
+
+            if ($target) {
+                $target->matches_against += $row->matches_against;
+                $target->wins_against += $row->wins_against;
+                $target->save();
+                $row->delete();
+            } else {
+                $row->opponent_id = $primaryId;
+                $row->save();
+            }
+        }
     }
 }
