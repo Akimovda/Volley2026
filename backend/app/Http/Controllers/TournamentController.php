@@ -323,71 +323,46 @@ class TournamentController extends Controller
             'occurrence_id' => $occurrenceId ? (int) $occurrenceId : null,
         ]);
 
-        // "Групповой этап + плей-офф" — организатор настраивает ОДНУ стадию, ожидая,
-        // что плей-офф после групп появится сам (advance_count/third_place_match
-        // заданы прямо в её конфиге). На деле плей-офф — ОТДЕЛЬНАЯ стадия
-        // (single_elim), и кнопка "Продвинуть в плей-офф" (tournament.stages.advance)
-        // показывается только если такая стадия УЖЕ существует (pending) — иначе после
-        // завершения групповых матчей checkStageCompletion() видит "все стадии
-        // завершены" (стадия-то одна) и тут же объявляет ВЕСЬ ТУРНИР завершённым,
-        // минуя плей-офф безвозвратно (найдено на событии 402, воспроизведено на dev).
-        // Фикс — создавать стадию плей-офф автоматически вместе с групповой, тем же
-        // конфигом (формат/очки/корты/матч за 3-е место), status=pending — тогда
-        // и кнопка появляется сразу, и checkStageCompletion не завершает турнир
-        // раньше, чем плей-офф стадия тоже станет completed.
-        //
-        // Исключение — finals_mode='divisions' (финальные группы по уровням):
-        // эта companion-стадия физически не может быть создана заранее — тип
-        // "финальные группы" не бракетная стадия, а formDivisions()-flow,
-        // которому нужны standings уже сыгранной группы (см. блок "Финальные
-        // группы по уровням" на пульте, ниже по этому файлу). Пропускаем
-        // автосоздание — иначе организатор увидел бы лишнюю pending-стадию
-        // "Плей-офф", которая никогда не будет использована.
-        if ($stage->canHaveFollowupStage() && $finalsMode !== 'divisions') {
-            $this->setupService->createStage($event, [
-                'type'          => TournamentStage::TYPE_SINGLE_ELIM,
-                'name'          => 'Плей-офф',
-                'sort_order'    => $sortOrder + 1,
-                'config'        => [
-                    'match_format'        => $config['match_format'],
-                    'set_points'          => $config['set_points'],
-                    'deciding_set_points' => $config['deciding_set_points'],
-                    'third_place_match'   => $config['third_place_match'],
-                    'courts'              => $config['courts'],
-                    // Кусок 2, шаг 2а: раньше finals_mode дописывался в config этой
-                    // стадии ТОЛЬКО постфактум, внутри advanceToPlayoff()/
-                    // generateGroupCrossover() (TournamentBracketService.php) — до
-                    // первого запуска у companion-стадии не было явного признака,
-                    // какой она будет (bracket или placement). Пишем эагерно сразу
-                    // при создании — новый launchStage() читает finals_mode со
-                    // СКЕЛЕТА для ветвления, не дожидаясь запуска. Безвредно и для
-                    // старого пути: array_merge() в advanceToPlayoff()/
-                    // generateGroupCrossover() просто перезапишет тем же значением.
-                    'finals_mode'         => $finalsMode,
-                ],
-                'occurrence_id' => $occurrenceId ? (int) $occurrenceId : null,
-            ]);
-        }
-
-        // Кусок 2, шаг 2а (2026-08-15) — НОВАЯ, полностью опциональная возможность:
-        // явно создать "скелет" стадии-финала для divisions (pending, без матчей,
-        // без групп), чтобы её можно было запустить позже через launchStage(), а
-        // не только через существующий formDivisions()-путь (который продолжает
-        // читать advance_per_group/div_format_* из config ЭТОЙ группово стадии,
-        // как и раньше — см. formDivisions()/formDivisionsCore()). Гейт —
-        // отдельный boolean-флаг запроса, который НИ ОДНА существующая форма
-        // сегодня не отправляет: до 2b (переключение UI) это чисто аддитивная,
-        // никак не вызываемая штатным пультом возможность.
-        if ($stage->canHaveFollowupStage() && $finalsMode === 'divisions' && $request->boolean('create_finals_skeleton')) {
-            $this->setupService->createStage($event, [
-                'type'          => TournamentStage::TYPE_ROUND_ROBIN,
-                'name'          => 'Финальные группы',
-                'sort_order'    => $sortOrder + 1,
-                'config'        => [
-                    'finals_mode' => 'divisions',
-                ],
-                'occurrence_id' => $occurrenceId ? (int) $occurrenceId : null,
-            ]);
+        // Кусок 2, шаг 2b: явный скелет финальной стадии при создании турнира.
+        // Раньше companion создавался авто и ТОЛЬКО для bracket/placement,
+        // divisions пропускался. Теперь сразу создаётся явный скелет ЛЮБОГО из
+        // 3 типов финала (выбран в форме, $finalsMode), pending, без матчей —
+        // запускается позже кнопкой (launchStage). Баг класса 402 закрыт
+        // надёжнее: стадия 1 без стадии 2 не существует ни в один момент.
+        // Дубль при двойном сабмите отсекается dedup-guard'ом стадии 1 выше
+        // (return ДО этого блока).
+        if ($stage->canHaveFollowupStage()) {
+            if ($finalsMode === 'divisions') {
+                // round_robin-скелет БЕЗ groups_count — блок групп ниже
+                // (гейт groups_count > 0) его не тронет. launchStage() по нему
+                // вызовет formDivisionsCore() из standings стадии 1.
+                $this->setupService->createStage($event, [
+                    'type'          => TournamentStage::TYPE_ROUND_ROBIN,
+                    'name'          => 'Финальные группы',
+                    'sort_order'    => $sortOrder + 1,
+                    'config'        => [
+                        'finals_mode' => 'divisions',
+                    ],
+                    'occurrence_id' => $occurrenceId ? (int) $occurrenceId : null,
+                ]);
+            } else {
+                // bracket/placement — single_elim-скелет, тем же конфигом
+                // (формат/очки/корты/матч за 3-е), finals_mode эагерно.
+                $this->setupService->createStage($event, [
+                    'type'          => TournamentStage::TYPE_SINGLE_ELIM,
+                    'name'          => 'Плей-офф',
+                    'sort_order'    => $sortOrder + 1,
+                    'config'        => [
+                        'match_format'        => $config['match_format'],
+                        'set_points'          => $config['set_points'],
+                        'deciding_set_points' => $config['deciding_set_points'],
+                        'third_place_match'   => $config['third_place_match'],
+                        'courts'              => $config['courts'],
+                        'finals_mode'         => $finalsMode,
+                    ],
+                    'occurrence_id' => $occurrenceId ? (int) $occurrenceId : null,
+                ]);
+            }
         }
 
         // Для Round Robin / Groups+Playoff — автосоздание групп + жеребьёвка
@@ -1666,16 +1641,19 @@ class TournamentController extends Controller
             return back()->with('error', 'Эта стадия уже запущена или завершена.');
         }
 
-        $finalsMode = $stage->cfg('finals_mode');
-        if (!in_array($finalsMode, ['bracket', 'placement', 'divisions'], true)) {
-            return back()->with('error', 'У стадии не задан тип финала (finals_mode) — запуск невозможен.');
-        }
-
         $prevStage = $event->tournamentStages()
             ->where('occurrence_id', $stage->occurrence_id)
             ->where('sort_order', '<', $stage->sort_order)
             ->orderByDesc('sort_order')
             ->first();
+
+        // Кусок 2, шаг 2b: старые companion-стадии (созданы до 2a) не имеют
+        // finals_mode на себе — он лежит на родительской групповой стадии.
+        // Фолбэк на $prevStage сохраняет запуск для таких турниров (event 549).
+        $finalsMode = $stage->cfg('finals_mode') ?? $prevStage?->cfg('finals_mode');
+        if (!in_array($finalsMode, ['bracket', 'placement', 'divisions'], true)) {
+            return back()->with('error', 'У стадии не задан тип финала (finals_mode) — запуск невозможен.');
+        }
 
         if (!$prevStage || !$prevStage->isCompleted()) {
             return back()->with('error', 'Предыдущая стадия ещё не завершена.');
