@@ -354,6 +354,37 @@ class TournamentController extends Controller
                     'deciding_set_points' => $config['deciding_set_points'],
                     'third_place_match'   => $config['third_place_match'],
                     'courts'              => $config['courts'],
+                    // Кусок 2, шаг 2а: раньше finals_mode дописывался в config этой
+                    // стадии ТОЛЬКО постфактум, внутри advanceToPlayoff()/
+                    // generateGroupCrossover() (TournamentBracketService.php) — до
+                    // первого запуска у companion-стадии не было явного признака,
+                    // какой она будет (bracket или placement). Пишем эагерно сразу
+                    // при создании — новый launchStage() читает finals_mode со
+                    // СКЕЛЕТА для ветвления, не дожидаясь запуска. Безвредно и для
+                    // старого пути: array_merge() в advanceToPlayoff()/
+                    // generateGroupCrossover() просто перезапишет тем же значением.
+                    'finals_mode'         => $finalsMode,
+                ],
+                'occurrence_id' => $occurrenceId ? (int) $occurrenceId : null,
+            ]);
+        }
+
+        // Кусок 2, шаг 2а (2026-08-15) — НОВАЯ, полностью опциональная возможность:
+        // явно создать "скелет" стадии-финала для divisions (pending, без матчей,
+        // без групп), чтобы её можно было запустить позже через launchStage(), а
+        // не только через существующий formDivisions()-путь (который продолжает
+        // читать advance_per_group/div_format_* из config ЭТОЙ группово стадии,
+        // как и раньше — см. formDivisions()/formDivisionsCore()). Гейт —
+        // отдельный boolean-флаг запроса, который НИ ОДНА существующая форма
+        // сегодня не отправляет: до 2b (переключение UI) это чисто аддитивная,
+        // никак не вызываемая штатным пультом возможность.
+        if ($stage->canHaveFollowupStage() && $finalsMode === 'divisions' && $request->boolean('create_finals_skeleton')) {
+            $this->setupService->createStage($event, [
+                'type'          => TournamentStage::TYPE_ROUND_ROBIN,
+                'name'          => 'Финальные группы',
+                'sort_order'    => $sortOrder + 1,
+                'config'        => [
+                    'finals_mode' => 'divisions',
                 ],
                 'occurrence_id' => $occurrenceId ? (int) $occurrenceId : null,
             ]);
@@ -1215,6 +1246,31 @@ class TournamentController extends Controller
             return back()->with('error', 'Стадия ещё не завершена.');
         }
 
+        try {
+            $divisionNames = $this->formDivisionsCore($event, $stage, $request);
+        } catch (\InvalidArgumentException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return $this->redirectToSetup($event, 'Группы сформированы: ' . implode(', ', $divisionNames), false, 'promotion_block');
+    }
+
+    /**
+     * Кусок 2, шаг 2а (2026-08-15) — извлечено дословно из formDivisions() без
+     * изменения алгоритма, чтобы переиспользовать в НОВОМ launchStage()
+     * (divisions-ветка) для скелет-стадий, не дублируя ~150 строк
+     * распределения по дивизионам. $stage здесь — ТА ЖЕ завершённая групповая
+     * стадия, что и раньше (route-параметр formDivisions() или $prevStage из
+     * launchStage()) — advance_per_group/div_format_* по-прежнему читаются из
+     * ЕЁ конфига (см. комментарии ниже), а не из скелета: скелет divisions не
+     * дублирует эти поля, они и так лежат на групповой стадии с момента её
+     * создания (createStage(), config.advance_per_group/div_format_*).
+     *
+     * @return string[]  Названия сформированных дивизионов (Hard/Medium/Lite/...)
+     * @throws \InvalidArgumentException  Если группы ещё не сыграны (<2 групп)
+     */
+    protected function formDivisionsCore(Event $event, TournamentStage $stage, Request $request): array
+    {
         // Поле убрано с пульта (избыточно/no-op при 3+ группах) — значение теперь
         // всегда из конфига стадии, заданного в мастере при её создании. Оставляем
         // $request->input() приоритетным на случай прямого API-вызова с явным
@@ -1227,7 +1283,7 @@ class TournamentController extends Controller
         $groupsCount = $groups->count();
 
         if ($groupsCount < 2) {
-            return back()->with('error', 'Нужно минимум 2 группы для распределения.');
+            throw new \InvalidArgumentException('Нужно минимум 2 группы для распределения.');
         }
 
         // Определяем названия дивизионов
@@ -1439,7 +1495,7 @@ class TournamentController extends Controller
             \Log::warning('Stats rebuild dispatch after formDivisions failed: ' . $e->getMessage());
         }
 
-        return $this->redirectToSetup($event, 'Группы сформированы: ' . implode(', ', $divisionNames), false, 'promotion_block');
+        return $divisionNames;
     }
 
     /**
@@ -1584,6 +1640,68 @@ class TournamentController extends Controller
         } catch (\InvalidArgumentException $e) {
             return back()->with('error', $e->getMessage());
         }
+    }
+
+    /**
+     * Кусок 2, шаг 2а (2026-08-15) — единая точка «запустить стадию 2+» для
+     * НОВОЙ модели «скелет → запуск» (не заменяет старые advance()/
+     * advanceCrossover()/formDivisions() — те продолжают обслуживать
+     * companion-стадии, созданные ДО этого рефакторинга, см. CLAUDE.md).
+     *
+     * $stage — pending-скелет (single_elim с config.finals_mode=bracket|
+     * placement, ЛИБО round_robin-скелет с config.finals_mode=divisions,
+     * см. новый опциональный блок в createStage()). Предыдущая стадия
+     * ищется автоматически (тот же occurrence, ближайший меньший
+     * sort_order) — в отличие от advance()/advanceCrossover(), где
+     * наоборот $stage=групповая, а playoff-стадия передаётся явно
+     * (playoff_stage_id) — здесь URL уже указывает на конкретный скелет,
+     * второй ID в запросе не нужен.
+     */
+    public function launchStage(Request $request, TournamentStage $stage)
+    {
+        $event = $stage->event;
+        $this->authorizeOrganizer($request, $event);
+
+        if (!$stage->isPending()) {
+            return back()->with('error', 'Эта стадия уже запущена или завершена.');
+        }
+
+        $finalsMode = $stage->cfg('finals_mode');
+        if (!in_array($finalsMode, ['bracket', 'placement', 'divisions'], true)) {
+            return back()->with('error', 'У стадии не задан тип финала (finals_mode) — запуск невозможен.');
+        }
+
+        $prevStage = $event->tournamentStages()
+            ->where('occurrence_id', $stage->occurrence_id)
+            ->where('sort_order', '<', $stage->sort_order)
+            ->orderByDesc('sort_order')
+            ->first();
+
+        if (!$prevStage || !$prevStage->isCompleted()) {
+            return back()->with('error', 'Предыдущая стадия ещё не завершена.');
+        }
+
+        try {
+            if ($finalsMode === 'divisions') {
+                $divisionNames = $this->formDivisionsCore($event, $prevStage, $request);
+                // Скелет своей роли (носитель config.finals_mode=divisions до
+                // запуска) больше не несёт — реальные "Группа X" стадии уже
+                // созданы formDivisionsCore(). Помечаем completed (не удаляем —
+                // см. report/kusok2_shag2_plan_2026-08-15.md §1.6, "конкретика
+                // на усмотрение реализации 2a"), чтобы он не путался с
+                // pending-стадиями на пульте и не попадал в batch-подсчёт
+                // checkStageCompletion() как незавершённый.
+                $stage->update(['status' => TournamentStage::STATUS_COMPLETED]);
+                $message = 'Группы сформированы: ' . implode(', ', $divisionNames);
+            } else {
+                $result = $this->setupService->launchStage($stage, $prevStage, $request->all());
+                $message = $result['message'];
+            }
+        } catch (\InvalidArgumentException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return $this->redirectToSetup($event, $message, false, "stage_{$stage->id}");
     }
 
     /* ================================================================

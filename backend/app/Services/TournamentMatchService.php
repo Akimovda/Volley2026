@@ -13,6 +13,7 @@ class TournamentMatchService
 {
     public function __construct(
         protected TournamentStandingsService $standingsService,
+        protected TournamentScheduleService $scheduleService,
     ) {}
 
 
@@ -100,6 +101,7 @@ class TournamentMatchService
 
             $this->advanceWinner($match, $winnerId);
             $this->advanceLoser($match);
+            $this->maybeScheduleNextRound($match);
         });
 
         return $match->fresh();
@@ -181,6 +183,7 @@ class TournamentMatchService
 
             $this->advanceWinner($match, $winnerId);
             $this->advanceLoser($match);
+            $this->maybeScheduleNextRound($match);
         });
 
         return $match->fresh();
@@ -213,6 +216,71 @@ class TournamentMatchService
         TournamentMatch::where('id', $match->loser_next_match_id)->update([
             "team_{$slot}_id" => $loserId,
         ]);
+    }
+
+    /**
+     * Кусок 2, шаг 2а (2026-08-15): расписание bracket-сетки (single_elim) сегодня
+     * генерируется ОДИН раз при запуске стадии (только раунд 1, см.
+     * TournamentSetupService::maybeGenerateInitialSchedule()) — раунды 2+
+     * остаются без scheduled_at/court, пока предыдущий раунд не доиграется и
+     * advanceWinner()/advanceLoser() выше не заполнят team_home_id/team_away_id
+     * следующего раунда. Этот метод — тот самый повторный триггер: как только
+     * раунд ПОЛНОСТЬЮ укомплектован (обе команды у ВСЕХ его матчей, включая
+     * матч за 3-е место — он лежит в том же round, что и финал, и получает
+     * команду через advanceLoser() полуфинала) — генерируем расписание именно
+     * для него, продолжая от последнего уже расписанного слота стадии.
+     *
+     * No-op для НЕbracket-стадий и там, где расписание при запуске не
+     * запрашивалось (schedule_match_duration_min в config отсутствует —
+     * organizer не указал schedule_start ни в новом launchStage(), ни в
+     * старом advance()/advanceCrossover() — те его сегодня вообще не
+     * генерируют, см. CLAUDE.md) — старый companion-путь остаётся полностью
+     * незатронутым (условие ниже никогда не станет true для его стадий).
+     */
+    protected function maybeScheduleNextRound(TournamentMatch $match): void
+    {
+        $stage = $match->stage;
+        if ($stage->type !== TournamentStage::TYPE_SINGLE_ELIM) {
+            return;
+        }
+
+        $matchDuration = $stage->cfg('schedule_match_duration_min');
+        if ($matchDuration === null) {
+            return;
+        }
+        $breakDuration = (int) $stage->cfg('schedule_break_duration_min', 5);
+
+        $targetRound = $match->round + 1;
+        $roundMatches = TournamentMatch::where('stage_id', $stage->id)
+            ->where('round', $targetRound)
+            ->whereNotIn('status', [TournamentMatch::STATUS_CANCELLED])
+            ->get();
+
+        if ($roundMatches->isEmpty()) {
+            return; // финал был последним раундом — дальше некуда продвигать
+        }
+
+        $allFilled = $roundMatches->every(fn ($m) => $m->team_home_id && $m->team_away_id);
+        if (!$allFilled) {
+            return; // раунд ещё не укомплектован — ждём остальные матчи предыдущего
+        }
+
+        $alreadyScheduled = $roundMatches->contains(fn ($m) => $m->scheduled_at !== null);
+        if ($alreadyScheduled) {
+            return; // защита от повторного триггера (идемпотентность)
+        }
+
+        $lastScheduled = TournamentMatch::where('stage_id', $stage->id)
+            ->whereNotNull('scheduled_at')
+            ->max('scheduled_at');
+        if (!$lastScheduled) {
+            return; // раунд 1 никогда не был расписан — не от чего продолжать
+        }
+
+        $startTime = \Carbon\Carbon::parse($lastScheduled)->addMinutes((int) $matchDuration + $breakDuration);
+        $courts = $stage->cfg('courts', []);
+
+        $this->scheduleService->generateSchedule($stage, $startTime, (int) $matchDuration, $breakDuration, $courts, true);
     }
 
     /**

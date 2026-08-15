@@ -26,6 +26,7 @@ class TournamentScheduleService
         int $matchDurationMin = 60,
         int $breakMin = 10,
         array $courts = [],
+        bool $onlyUnscheduled = false,
     ): int {
         if (empty($courts)) {
             $courts = $stage->cfg('courts', []);
@@ -39,10 +40,21 @@ class TournamentScheduleService
         $courtsCount = count($courts);
         $slotDuration = $matchDurationMin + $breakMin;
 
+        // $onlyUnscheduled=true — инкрементальный режим (используется триггером
+        // повторного расписания раундов 2+ bracket-сетки, см.
+        // TournamentMatchService::maybeScheduleNextRound()): без него повторный
+        // вызов молча ПЕРЕЗАПИСАЛ бы scheduled_at/court уже расписанных матчей
+        // других раундов той же стадии (метод сам по себе не идемпотентен —
+        // выборка ниже фильтрует только по team_home_id/team_away_id, не по
+        // scheduled_at). Старые вызовы (createStage()/formDivisions(), где
+        // расписание генерируется РОВНО ОДИН РАЗ сразу после жеребьёвки, когда
+        // ничего ещё не расписано) передают $onlyUnscheduled=false по умолчанию —
+        // поведение не меняется.
         $matches = $stage->matches()
             ->where('status', TournamentMatch::STATUS_SCHEDULED)
             ->whereNotNull('team_home_id')
             ->whereNotNull('team_away_id')
+            ->when($onlyUnscheduled, fn ($q) => $q->whereNull('scheduled_at'))
             ->orderBy('round')
             ->orderBy('match_number')
             ->get();
