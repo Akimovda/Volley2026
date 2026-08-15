@@ -1099,6 +1099,12 @@ Route::middleware([
     Route::post('/tournament-stages/{stage}/advance-crossover', [TournamentController::class, 'advanceCrossover'])
         ->name('tournament.stages.advanceCrossover');
 
+    // Кусок 2, шаг 2а (2026-08-15): новая модель "скелет → запуск" — не
+    // заменяет advance/advanceCrossover/formDivisions выше (те продолжают
+    // обслуживать companion-стадии, созданные до этого рефакторинга).
+    Route::post('/tournament-stages/{stage}/launch', [TournamentController::class, 'launchStage'])
+        ->name('tournament.stages.launch');
+
 
     Route::post('/tournament-stages/{stage}/schedule', [TournamentController::class, 'generateSchedule'])
         ->name('tournament.stages.schedule');

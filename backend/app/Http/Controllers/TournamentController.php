@@ -323,40 +323,46 @@ class TournamentController extends Controller
             'occurrence_id' => $occurrenceId ? (int) $occurrenceId : null,
         ]);
 
-        // "Групповой этап + плей-офф" — организатор настраивает ОДНУ стадию, ожидая,
-        // что плей-офф после групп появится сам (advance_count/third_place_match
-        // заданы прямо в её конфиге). На деле плей-офф — ОТДЕЛЬНАЯ стадия
-        // (single_elim), и кнопка "Продвинуть в плей-офф" (tournament.stages.advance)
-        // показывается только если такая стадия УЖЕ существует (pending) — иначе после
-        // завершения групповых матчей checkStageCompletion() видит "все стадии
-        // завершены" (стадия-то одна) и тут же объявляет ВЕСЬ ТУРНИР завершённым,
-        // минуя плей-офф безвозвратно (найдено на событии 402, воспроизведено на dev).
-        // Фикс — создавать стадию плей-офф автоматически вместе с групповой, тем же
-        // конфигом (формат/очки/корты/матч за 3-е место), status=pending — тогда
-        // и кнопка появляется сразу, и checkStageCompletion не завершает турнир
-        // раньше, чем плей-офф стадия тоже станет completed.
-        //
-        // Исключение — finals_mode='divisions' (финальные группы по уровням):
-        // эта companion-стадия физически не может быть создана заранее — тип
-        // "финальные группы" не бракетная стадия, а formDivisions()-flow,
-        // которому нужны standings уже сыгранной группы (см. блок "Финальные
-        // группы по уровням" на пульте, ниже по этому файлу). Пропускаем
-        // автосоздание — иначе организатор увидел бы лишнюю pending-стадию
-        // "Плей-офф", которая никогда не будет использована.
-        if ($stage->canHaveFollowupStage() && $finalsMode !== 'divisions') {
-            $this->setupService->createStage($event, [
-                'type'          => TournamentStage::TYPE_SINGLE_ELIM,
-                'name'          => 'Плей-офф',
-                'sort_order'    => $sortOrder + 1,
-                'config'        => [
-                    'match_format'        => $config['match_format'],
-                    'set_points'          => $config['set_points'],
-                    'deciding_set_points' => $config['deciding_set_points'],
-                    'third_place_match'   => $config['third_place_match'],
-                    'courts'              => $config['courts'],
-                ],
-                'occurrence_id' => $occurrenceId ? (int) $occurrenceId : null,
-            ]);
+        // Кусок 2, шаг 2b: явный скелет финальной стадии при создании турнира.
+        // Раньше companion создавался авто и ТОЛЬКО для bracket/placement,
+        // divisions пропускался. Теперь сразу создаётся явный скелет ЛЮБОГО из
+        // 3 типов финала (выбран в форме, $finalsMode), pending, без матчей —
+        // запускается позже кнопкой (launchStage). Баг класса 402 закрыт
+        // надёжнее: стадия 1 без стадии 2 не существует ни в один момент.
+        // Дубль при двойном сабмите отсекается dedup-guard'ом стадии 1 выше
+        // (return ДО этого блока).
+        if ($stage->canHaveFollowupStage()) {
+            if ($finalsMode === 'divisions') {
+                // round_robin-скелет БЕЗ groups_count — блок групп ниже
+                // (гейт groups_count > 0) его не тронет. launchStage() по нему
+                // вызовет formDivisionsCore() из standings стадии 1.
+                $this->setupService->createStage($event, [
+                    'type'          => TournamentStage::TYPE_ROUND_ROBIN,
+                    'name'          => 'Финальные группы',
+                    'sort_order'    => $sortOrder + 1,
+                    'config'        => [
+                        'finals_mode' => 'divisions',
+                    ],
+                    'occurrence_id' => $occurrenceId ? (int) $occurrenceId : null,
+                ]);
+            } else {
+                // bracket/placement — single_elim-скелет, тем же конфигом
+                // (формат/очки/корты/матч за 3-е), finals_mode эагерно.
+                $this->setupService->createStage($event, [
+                    'type'          => TournamentStage::TYPE_SINGLE_ELIM,
+                    'name'          => 'Плей-офф',
+                    'sort_order'    => $sortOrder + 1,
+                    'config'        => [
+                        'match_format'        => $config['match_format'],
+                        'set_points'          => $config['set_points'],
+                        'deciding_set_points' => $config['deciding_set_points'],
+                        'third_place_match'   => $config['third_place_match'],
+                        'courts'              => $config['courts'],
+                        'finals_mode'         => $finalsMode,
+                    ],
+                    'occurrence_id' => $occurrenceId ? (int) $occurrenceId : null,
+                ]);
+            }
         }
 
         // Для Round Robin / Groups+Playoff — автосоздание групп + жеребьёвка
@@ -1215,6 +1221,31 @@ class TournamentController extends Controller
             return back()->with('error', 'Стадия ещё не завершена.');
         }
 
+        try {
+            $divisionNames = $this->formDivisionsCore($event, $stage, $request);
+        } catch (\InvalidArgumentException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return $this->redirectToSetup($event, 'Группы сформированы: ' . implode(', ', $divisionNames), false, 'promotion_block');
+    }
+
+    /**
+     * Кусок 2, шаг 2а (2026-08-15) — извлечено дословно из formDivisions() без
+     * изменения алгоритма, чтобы переиспользовать в НОВОМ launchStage()
+     * (divisions-ветка) для скелет-стадий, не дублируя ~150 строк
+     * распределения по дивизионам. $stage здесь — ТА ЖЕ завершённая групповая
+     * стадия, что и раньше (route-параметр formDivisions() или $prevStage из
+     * launchStage()) — advance_per_group/div_format_* по-прежнему читаются из
+     * ЕЁ конфига (см. комментарии ниже), а не из скелета: скелет divisions не
+     * дублирует эти поля, они и так лежат на групповой стадии с момента её
+     * создания (createStage(), config.advance_per_group/div_format_*).
+     *
+     * @return string[]  Названия сформированных дивизионов (Hard/Medium/Lite/...)
+     * @throws \InvalidArgumentException  Если группы ещё не сыграны (<2 групп)
+     */
+    protected function formDivisionsCore(Event $event, TournamentStage $stage, Request $request): array
+    {
         // Поле убрано с пульта (избыточно/no-op при 3+ группах) — значение теперь
         // всегда из конфига стадии, заданного в мастере при её создании. Оставляем
         // $request->input() приоритетным на случай прямого API-вызова с явным
@@ -1227,7 +1258,7 @@ class TournamentController extends Controller
         $groupsCount = $groups->count();
 
         if ($groupsCount < 2) {
-            return back()->with('error', 'Нужно минимум 2 группы для распределения.');
+            throw new \InvalidArgumentException('Нужно минимум 2 группы для распределения.');
         }
 
         // Определяем названия дивизионов
@@ -1439,7 +1470,7 @@ class TournamentController extends Controller
             \Log::warning('Stats rebuild dispatch after formDivisions failed: ' . $e->getMessage());
         }
 
-        return $this->redirectToSetup($event, 'Группы сформированы: ' . implode(', ', $divisionNames), false, 'promotion_block');
+        return $divisionNames;
     }
 
     /**
@@ -1584,6 +1615,71 @@ class TournamentController extends Controller
         } catch (\InvalidArgumentException $e) {
             return back()->with('error', $e->getMessage());
         }
+    }
+
+    /**
+     * Кусок 2, шаг 2а (2026-08-15) — единая точка «запустить стадию 2+» для
+     * НОВОЙ модели «скелет → запуск» (не заменяет старые advance()/
+     * advanceCrossover()/formDivisions() — те продолжают обслуживать
+     * companion-стадии, созданные ДО этого рефакторинга, см. CLAUDE.md).
+     *
+     * $stage — pending-скелет (single_elim с config.finals_mode=bracket|
+     * placement, ЛИБО round_robin-скелет с config.finals_mode=divisions,
+     * см. новый опциональный блок в createStage()). Предыдущая стадия
+     * ищется автоматически (тот же occurrence, ближайший меньший
+     * sort_order) — в отличие от advance()/advanceCrossover(), где
+     * наоборот $stage=групповая, а playoff-стадия передаётся явно
+     * (playoff_stage_id) — здесь URL уже указывает на конкретный скелет,
+     * второй ID в запросе не нужен.
+     */
+    public function launchStage(Request $request, TournamentStage $stage)
+    {
+        $event = $stage->event;
+        $this->authorizeOrganizer($request, $event);
+
+        if (!$stage->isPending()) {
+            return back()->with('error', 'Эта стадия уже запущена или завершена.');
+        }
+
+        $prevStage = $event->tournamentStages()
+            ->where('occurrence_id', $stage->occurrence_id)
+            ->where('sort_order', '<', $stage->sort_order)
+            ->orderByDesc('sort_order')
+            ->first();
+
+        // Кусок 2, шаг 2b: старые companion-стадии (созданы до 2a) не имеют
+        // finals_mode на себе — он лежит на родительской групповой стадии.
+        // Фолбэк на $prevStage сохраняет запуск для таких турниров (event 549).
+        $finalsMode = $stage->cfg('finals_mode') ?? $prevStage?->cfg('finals_mode');
+        if (!in_array($finalsMode, ['bracket', 'placement', 'divisions'], true)) {
+            return back()->with('error', 'У стадии не задан тип финала (finals_mode) — запуск невозможен.');
+        }
+
+        if (!$prevStage || !$prevStage->isCompleted()) {
+            return back()->with('error', 'Предыдущая стадия ещё не завершена.');
+        }
+
+        try {
+            if ($finalsMode === 'divisions') {
+                $divisionNames = $this->formDivisionsCore($event, $prevStage, $request);
+                // Скелет своей роли (носитель config.finals_mode=divisions до
+                // запуска) больше не несёт — реальные "Группа X" стадии уже
+                // созданы formDivisionsCore(). Помечаем completed (не удаляем —
+                // см. report/kusok2_shag2_plan_2026-08-15.md §1.6, "конкретика
+                // на усмотрение реализации 2a"), чтобы он не путался с
+                // pending-стадиями на пульте и не попадал в batch-подсчёт
+                // checkStageCompletion() как незавершённый.
+                $stage->update(['status' => TournamentStage::STATUS_COMPLETED]);
+                $message = 'Группы сформированы: ' . implode(', ', $divisionNames);
+            } else {
+                $result = $this->setupService->launchStage($stage, $prevStage, $request->all());
+                $message = $result['message'];
+            }
+        } catch (\InvalidArgumentException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return $this->redirectToSetup($event, $message, false, "stage_{$stage->id}");
     }
 
     /* ================================================================

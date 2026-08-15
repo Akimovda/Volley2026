@@ -648,6 +648,7 @@ return [
     'setup_btn_next_arrow'  => 'Next →',
 
     'setup_groups_h2'       => 'Final groups setup',
+    'setup_launch_wait_prev' => 'The group stage is not finished yet — launching final groups will be available afterwards.',
     'setup_groups_redistribute' => 'Based on group stage results, teams are split into :n groups:',
     'setup_groups_advance_to_div' => 'Advance to :name',
     'setup_groups_per_group' => 'from each group',

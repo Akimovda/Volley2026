@@ -13,9 +13,16 @@ use App\Models\PlayerCareerStats;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
+use Carbon\Carbon;
 
 class TournamentSetupService
 {
+    public function __construct(
+        private TournamentBracketService $bracketService,
+        private TournamentStandingsService $standingsService,
+        private TournamentScheduleService $scheduleService,
+    ) {}
+
     /*
     |----------------------------------------------------------------------
     | Stage CRUD
@@ -57,6 +64,127 @@ class TournamentSetupService
             'config'        => $data['config'] ?? [],
             'status'        => TournamentStage::STATUS_PENDING,
         ]);
+    }
+
+    /*
+    |----------------------------------------------------------------------
+    | Запуск стадии 2+ («скелет» → «запущено»)
+    |----------------------------------------------------------------------
+    | Кусок 2, шаг 2а (2026-08-15): единый оркестратор для bracket/placement
+    | скелетов (pending single_elim-стадия с config.finals_mode). Divisions
+    | обрабатывается ОТДЕЛЬНО в TournamentController::launchStage() —
+    | formDivisionsCore() тяжело завязан на контроллер (Request/redirect),
+    | не переносился сюда в 2a (аддитивный заход, не рефакторинг ради
+    | рефакторинга). См. CLAUDE.md.
+    |----------------------------------------------------------------------
+    */
+
+    /**
+     * Запустить bracket/placement-скелет: посев из standings предыдущей
+     * стадии + генерация сетки/матчей по местам + расписание раунда 1.
+     *
+     * @param  TournamentStage  $stage      Скелет (status=pending, single_elim,
+     *                                      config.finals_mode = bracket|placement)
+     * @param  TournamentStage  $prevStage  Предыдущая (групповая) стадия — уже completed
+     * @param  array            $params     Request-параметры запуска: advance_per_group
+     *                                      (bracket) / places_count (placement) /
+     *                                      schedule_start / schedule_match_duration /
+     *                                      schedule_break_duration / courts
+     * @return array{message: string}
+     */
+    public function launchStage(TournamentStage $stage, TournamentStage $prevStage, array $params): array
+    {
+        return match ($stage->cfg('finals_mode')) {
+            'bracket'   => $this->launchBracketStage($stage, $prevStage, $params),
+            'placement' => $this->launchPlacementStage($stage, $prevStage, $params),
+            default     => throw new InvalidArgumentException(
+                'launchStage(): неизвестный или необрабатываемый здесь finals_mode «' . $stage->cfg('finals_mode') . '».'
+            ),
+        };
+    }
+
+    protected function launchBracketStage(TournamentStage $stage, TournamentStage $prevStage, array $params): array
+    {
+        $advancePerGroup = max(1, (int) ($params['advance_per_group'] ?? $stage->cfg('advance_count', 2)));
+
+        $matches = $this->bracketService->advanceToPlayoff($prevStage, $stage, $advancePerGroup, $this->standingsService);
+
+        $stage->update(['status' => TournamentStage::STATUS_IN_PROGRESS]);
+
+        $scheduled = $this->maybeGenerateInitialSchedule($stage, $params);
+
+        return [
+            'message' => "Команды продвинуты в плей-офф ({$matches->count()} матчей)."
+                . ($scheduled > 0 ? " Расписание сгенерировано: {$scheduled} матчей." : ''),
+        ];
+    }
+
+    protected function launchPlacementStage(TournamentStage $stage, TournamentStage $prevStage, array $params): array
+    {
+        $placesCount = (int) ($params['places_count'] ?? 2);
+
+        $created = $this->bracketService->generateGroupCrossover($prevStage, $stage, $placesCount, $this->standingsService);
+
+        if ($created->isEmpty()) {
+            return ['message' => 'Все запрошенные места уже разыграны — новых матчей не создано.'];
+        }
+
+        // Тот же паттерн переименования, что и в существующем advanceCrossover() —
+        // не затираем имя, если организатор уже переименовал стадию сам.
+        $updateData = ['status' => TournamentStage::STATUS_IN_PROGRESS];
+        if ($stage->name === 'Плей-офф') {
+            $updateData['name'] = 'Финал';
+        }
+        $stage->update($updateData);
+
+        $scheduled = $this->maybeGenerateInitialSchedule($stage, $params);
+
+        return [
+            'message' => "Матчи по местам созданы ({$created->count()})."
+                . ($scheduled > 0 ? " Расписание сгенерировано: {$scheduled} матчей." : ''),
+        ];
+    }
+
+    /**
+     * Генерация расписания раунда 1 при запуске bracket/placement-стадии
+     * (сегодня advance()/advanceCrossover() вообще не расписывают матчи —
+     * это новая возможность, а не перенос существующей). Дополнительно
+     * персистит длительность матча/перерыва в config стадии —
+     * TournamentMatchService::maybeScheduleNextRound() читает эти значения
+     * при автоматическом расписании раундов 2+ по мере продвижения по
+     * сетке (сам не видит Request, вызывается из score()/rescoreMatch()).
+     *
+     * Без schedule_start в $params — no-op (как и в createStage()/
+     * formDivisions(): расписание не навязывается, если организатор не
+     * указал время начала).
+     */
+    protected function maybeGenerateInitialSchedule(TournamentStage $stage, array $params): int
+    {
+        $scheduleStart = $params['schedule_start'] ?? null;
+        if (!$scheduleStart) {
+            return 0;
+        }
+
+        $matchDuration = (int) ($params['schedule_match_duration'] ?? 30);
+        $breakDuration = (int) ($params['schedule_break_duration'] ?? 5);
+        $courts = array_values(array_filter(
+            !empty($params['courts']) ? (array) $params['courts'] : $stage->cfg('courts', [])
+        ));
+
+        $eventTz = $stage->event->timezone ?: 'Europe/Moscow';
+
+        $stage->update(['config' => array_merge($stage->config ?? [], [
+            'schedule_match_duration_min' => $matchDuration,
+            'schedule_break_duration_min' => $breakDuration,
+        ])]);
+
+        return $this->scheduleService->generateSchedule(
+            $stage,
+            Carbon::parse($scheduleStart, $eventTz)->utc(),
+            $matchDuration,
+            $breakDuration,
+            $courts,
+        );
     }
 
     /**

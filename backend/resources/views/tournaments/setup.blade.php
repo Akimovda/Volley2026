@@ -1324,14 +1324,18 @@ $tourNumber = $seasonData
 					}
 				}
 			}
-			// Одиночный (несезонный) турнир с finals_mode=divisions: companion-стадия
-			// сознательно НЕ создаётся при createStage() (см. TournamentController::
-			// createStage()/checkStageCompletion() — тот же guard, что чинили для event 402),
-			// поэтому единственная завершённая групповая стадия ещё не значит "турнир закрыт",
-			// пока организатор не нажал "Сформировать группы" (formDivisions()).
+			// Кусок 2, шаг 2b: новый divisions-турнир ВСЕГДА имеет pending-скелет
+			// "Финальные группы" → главная формула выше сама держит allCompleted=false
+			// до его запуска (launchStage). Здесь ловим только СТАРЫЕ divisions без
+			// скелета (event 557/561): группа завершена, finals_mode=divisions, но ни
+			// скелета, ни Групп ещё нет — турнир не закрыт, пока не нажмут fallback-форму.
 			if ($allCompleted && !$event->season_id) {
-				$divisionsStage = $stages->first(fn($s) => $s->canHaveFollowupStage() && $s->groups->count() >= 2 && $s->cfg('finals_mode') === 'divisions');
-				if ($divisionsStage && !$stages->contains(fn($s) => $s->division_tier !== null || str_starts_with($s->name, 'Группа '))) {
+				$oldDivisionsNoSkeleton = $stages->first(fn($s) => $s->canHaveFollowupStage()
+					&& $s->groups->count() >= 2 && $s->cfg('finals_mode') === 'divisions'
+					&& !$stages->contains(fn($o) => $o->id !== $s->id && $o->type === 'round_robin'
+						&& $o->cfg('finals_mode') === 'divisions')
+					&& !$stages->contains(fn($o) => $o->division_tier !== null || str_starts_with($o->name, 'Группа ')));
+				if ($oldDivisionsNoSkeleton) {
 					$allCompleted = false;
 				}
 			}
@@ -2362,6 +2366,62 @@ $tourNumber = $seasonData
 			if (!$isTwoGroups) { $finalsModeDefault = 'bracket'; }
 		@endphp
 
+		{{-- Кусок 2, шаг 2b: карточка запуска divisions-скелета ("Финальные группы").
+		     Показывается для pending round_robin-скелета с finals_mode=divisions, когда
+		     предыдущая (групповая) стадия завершена. Кнопка → launchStage → formDivisionsCore
+		     (создаёт Группы Hard/Lite из standings группы) + метит скелет completed. --}}
+		@php
+			$isDivSkeleton = $stage->type === 'round_robin' && $stage->isPending()
+				&& $stage->cfg('finals_mode') === 'divisions' && $stage->groups->isEmpty();
+			$divSkeletonPrev = $isDivSkeleton ? $stages->where('occurrence_id', $stage->occurrence_id)
+				->where('sort_order', '<', $stage->sort_order)->sortByDesc('sort_order')->first() : null;
+		@endphp
+		@if($isDivSkeleton)
+		<div class="ramka">
+			<h2 class="-mt-05">{{ __('tournaments.setup_groups_h2') }}</h2>
+			@if(!$divSkeletonPrev || !$divSkeletonPrev->isCompleted())
+				<p class="alert-info p-2">{{ __('tournaments.setup_launch_wait_prev') }}</p>
+			@else
+				@php
+				$prevGroupsCount = $divSkeletonPrev->groups->count();
+				$divNames = \App\Models\TournamentStage::divisionNamesFor($prevGroupsCount);
+				$prevCourts = $divSkeletonPrev->cfg('courts', []);
+				@endphp
+				<p>{{ __('tournaments.setup_groups_redistribute', ['n' => count($divNames), 'plural' => '']) }} <strong>{{ implode(', ', $divNames) }}</strong></p>
+				<form method="POST" action="{{ route('tournament.stages.launch', $stage) }}" class="form">
+					@csrf
+					@if(count($prevCourts) > 0)
+					<div class="card mb-2">
+						<label>{{ __('tournaments.setup_stage_courts_for_groups') }}</label><hr class="mb-1">
+						<div class="row">
+						@foreach($divNames as $dn)
+							<div class="col-md-{{ (int)(12 / max(1,count($divNames))) }} mb-2">
+								<label>{{ $dn }}:</label>
+								<div class="d-flex" style="flex-wrap:wrap;gap:6px">
+								@foreach($prevCourts as $court)
+									<label class="checkbox-item f-13 pr-2" style="margin:0"><input type="checkbox" name="div_courts_{{ strtolower($dn) }}[]" value="{{ $court }}"><div class="custom-checkbox"></div><span>{{ $court }}</span></label>
+								@endforeach
+								</div>
+							</div>
+						@endforeach
+						</div>
+					</div>
+					@endif
+					<div class="card mb-2">
+						<label>{{ __('tournaments.setup_stage_schedule') }}</label>
+						<p>{{ __('tournaments.setup_groups_schedule_hint') }}</p><hr class="mb-1">
+						<div class="d-flex" style="gap:12px;flex-wrap:wrap;align-items:flex-end">
+							<div><label>{{ __('tournaments.setup_stage_start') }}</label><input type="datetime-local" name="schedule_start" value="{{ \Carbon\Carbon::now($event->timezone ?? 'Europe/Moscow')->format('Y-m-d\TH:i') }}"></div>
+							<div><label>{{ __('tournaments.setup_stage_match_min') }}</label><input type="number" name="schedule_match_duration" value="30" min="15" max="180"></div>
+							<div><label>{{ __('tournaments.setup_stage_break_min') }}</label><input type="number" name="schedule_break_duration" value="5" min="0" max="60"></div>
+						</div>
+					</div>
+					<button type="submit" class="btn btn-primary btn-alert" data-title="{{ __('tournaments.setup_groups_create_title') }}" data-icon="question" data-confirm-text="{{ __('tournaments.setup_groups_create_yes') }}" data-cancel-text="{{ __('tournaments.btn_cancel') }}">{{ __('tournaments.setup_groups_btn_create') }}</button>
+				</form>
+			@endif
+		</div>
+		@endif
+
 		{{-- Состояние 1 из 3 — "Настройка финальных групп" (Hard/Medium/Lite):
 		     ТОЛЬКО если организатор в мастере явно выбрал finals_mode=divisions
 		     (не placement, не bracket), групповой этап завершён, и сами дивизионные
@@ -2374,7 +2434,10 @@ $tourNumber = $seasonData
 		     ("Сгенерировать финалы") становилось НЕДОСТИЖИМЫМ — регресс коммита
 		     6af49bad, ломавший 2-групповые placement-турниры (напр. event 402). --}}
 		@if(!$allCompleted && $stage->isCompleted() && $stage->canHaveFollowupStage()
-			&& $stage->groups->count() >= 2 && $finalsMode === 'divisions' && !$divStagesAllCompleted)
+			&& $stage->groups->count() >= 2 && $finalsMode === 'divisions' && !$divStagesAllCompleted
+			&& !$stages->contains(fn($sk) => $sk->type === 'round_robin' && $sk->isPending()
+				&& $sk->cfg('finals_mode') === 'divisions' && $sk->groups->isEmpty()
+				&& $sk->occurrence_id === $stage->occurrence_id))
 		<div class="ramka">
 			<div class="d-flex between fvc" style="cursor:pointer" onclick="var b=this.nextElementSibling;b.style.display=b.style.display==='none'?'':'none';var ic=this.querySelector('.toggle-icon');if(ic)ic.textContent=b.style.display==='none'?'+':'-'">
 				<h2 class="-mt-05">{{ __('tournaments.setup_groups_h2') }}</h2>
