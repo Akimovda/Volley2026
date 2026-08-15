@@ -497,7 +497,7 @@ return [
     'setup_stage_set_pts_25' => '25 (классика)',
     'setup_stage_set_pts_21' => '21 (пляж)',
     'setup_stage_set_pts_15' => '15 (мини)',
-    'setup_stage_deciding_set' => 'Решающий сет',
+    'setup_stage_deciding_set' => 'Решающий сет — очков для победы',
 
     'setup_stage_groups_count' => 'Кол-во групп',
     'setup_stage_groups_advance' => 'Выходят из группы',

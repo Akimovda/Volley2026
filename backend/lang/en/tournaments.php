@@ -478,7 +478,7 @@ return [
     'setup_stage_set_pts_25' => '25 (classic)',
     'setup_stage_set_pts_21' => '21 (beach)',
     'setup_stage_set_pts_15' => '15 (mini)',
-    'setup_stage_deciding_set' => 'Deciding set',
+    'setup_stage_deciding_set' => 'Deciding set — points to win',
 
     'setup_stage_groups_count' => 'Groups count',
     'setup_stage_groups_advance' => 'Advance from group',
