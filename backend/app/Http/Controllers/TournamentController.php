@@ -290,6 +290,31 @@ class TournamentController extends Controller
         // occurrence_id из hidden field (если сезонный турнир)
         $occurrenceId = $request->input('occurrence_id') ?: null;
 
+        // Dedup-guard против двойного сабмита формы (двойной клик / F5 / повторный POST) —
+        // баг класса event 402 (два независимых single_elim, оба pending, без взаимной
+        // защиты). Критерий скопирован ДОСЛОВНО из quickCreateFinals() (строки ~1624-1627):
+        // event_id + occurrence_id + type, БЕЗ sort_order — тот метод тоже не проверяет
+        // sort_order, значит и здесь не нужно для консистентности с уже проверенным подходом.
+        // Дивизионные под-стадии (Hard/Medium/Lite: division_tier IS NOT NULL ИЛИ имя вида
+        // "Группа %") исключены из выборки — они создаются ДРУГИМ путём (formDivisions(),
+        // не через этот HTTP-эндпоинт), но исключение оставлено защитно: без него организатор,
+        // легитимно создающий НОВУЮ top-level стадию round_robin/groups_playoff, пока в БД уже
+        // лежат готовые дивизионные стадии этого же типа от предыдущего этапа турнира, получил
+        // бы ложное "уже создана" — та же логика exclusion, что и в dependentStagesWithMatches().
+        $existingStage = $event->tournamentStages()
+            ->where('type', $validated['type'])
+            ->where('occurrence_id', $occurrenceId ? (int) $occurrenceId : null)
+            ->where(fn($q) => $q->whereNull('division_tier')->where('name', 'not like', 'Группа %'))
+            ->first();
+        if ($existingStage) {
+            return $this->redirectToSetup(
+                $event,
+                "Стадия «{$existingStage->name}» этого типа уже создана для этого тура — повторное создание пропущено (защита от двойной отправки формы).",
+                true,
+                "stage_{$existingStage->id}"
+            );
+        }
+
         $stage = $this->setupService->createStage($event, [
             'type'          => $validated['type'],
             'name'          => $validated['name'],
