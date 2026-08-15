@@ -405,19 +405,20 @@ $tourNumber = $seasonData
 		
 		
 		
+		{{-- БАГ №2 (2026-08-15): здесь стоял `Swal.fire({...})` (API SweetAlert2, глобал
+		     `Swal` с большой буквы) — в проекте подключён SweetAlert 1.x (глобал `swal`,
+		     см. CLAUDE.md/lib.js: window.swal из sweetalert.js.org), `Swal` нигде не
+		     определён → `typeof Swal !== 'undefined'` всегда false → блок не выполнялся
+		     НИКОГДА, ни guard-ошибка, ни успех отката/удаления не показывались. --}}
 		@if(session('success') || session('error'))
 		<script>
 			document.addEventListener('DOMContentLoaded', function() {
-				if (typeof Swal !== 'undefined') {
-					Swal.fire({
-						icon: '{{ session("success") ? "success" : "error" }}',
-						title: @json(session("success") ? __('tournaments.setup_swal_done') : __('tournaments.setup_swal_error')),
-						text: {!! json_encode(session('success') ?: session('error')) !!},
-						timer: 3000,
-						showConfirmButton: false,
-						toast: true,
-						position: 'top-end',
-					});
+				if (typeof swal !== 'undefined') {
+					swal(
+						@json(session("success") ? __('tournaments.setup_swal_done') : __('tournaments.setup_swal_error')),
+						@json(session('success') ?: session('error')),
+						'{{ session("success") ? "success" : "error" }}'
+					);
 				}
 			});
 		</script>
@@ -428,16 +429,12 @@ $tourNumber = $seasonData
 		     ДОПОЛНИТЕЛЬНЫЙ тост, не альтернатива success/error выше. --}}
 		<script>
 			document.addEventListener('DOMContentLoaded', function() {
-				if (typeof Swal !== 'undefined') {
-					Swal.fire({
-						icon: 'warning',
-						title: @json(__('tournaments.setup_swal_warning')),
-						text: {!! json_encode(session('warning')) !!},
-						timer: 5000,
-						showConfirmButton: false,
-						toast: true,
-						position: 'top-end',
-					});
+				if (typeof swal !== 'undefined') {
+					swal(
+						@json(__('tournaments.setup_swal_warning')),
+						@json(session('warning')),
+						'warning'
+					);
 				}
 			});
 		</script>
@@ -1335,6 +1332,29 @@ $tourNumber = $seasonData
 			if ($allCompleted && !$event->season_id) {
 				$divisionsStage = $stages->first(fn($s) => $s->canHaveFollowupStage() && $s->groups->count() >= 2 && $s->cfg('finals_mode') === 'divisions');
 				if ($divisionsStage && !$stages->contains(fn($s) => $s->division_tier !== null || str_starts_with($s->name, 'Группа '))) {
+					$allCompleted = false;
+				}
+			}
+			// БАГ №3 (2026-08-15): groups_playoff/round_robin с finals_mode=placement|bracket
+			// ВСЕГДА получает companion-стадию single_elim при createStage() (см. контроллер,
+			// автосоздание "Плей-офф" сразу после групповой). Если организатор удалил/откатил
+			// эту companion-стадию (destroyStage()/revertStage()) — единственная оставшаяся
+			// completed групповая стадия ошибочно давала "турнир завершён" по naive-формуле
+			// выше: "все существующие стадии completed" технически true, хотя по продуктовому
+			// правилу играть ещё есть что (плей-офф нужно пересоздать). Проверяем, что для
+			// каждой такой групповой стадии есть СУЩЕСТВУЮЩАЯ single_elim-стадия того же
+			// occurrence — если нет, турнир не завершён (блок "Финальная стадия не создана"
+			// ниже уже умеет предлагать её пересоздание через quickCreateFinals()).
+			if ($allCompleted && !$event->season_id) {
+				$groupStageMissingFinals = $stages->first(function ($s) use ($stages) {
+					if (!$s->canHaveFollowupStage() || $s->cfg('finals_mode') === 'divisions') {
+						return false;
+					}
+					return !$stages->contains(fn($o) => $o->id !== $s->id
+						&& $o->occurrence_id === $s->occurrence_id
+						&& $o->type === 'single_elim');
+				});
+				if ($groupStageMissingFinals) {
 					$allCompleted = false;
 				}
 			}
@@ -2578,8 +2598,13 @@ $tourNumber = $seasonData
 		@endif
 		@endif
 
-		{{-- Кнопка результатов турнира (без сезона — обычный/standalone турнир без дивизионов) --}}
-		@if(!$event->season_id && $stages->isNotEmpty() && $stages->every(fn($s) => $s->status === 'completed'))
+		{{-- Кнопка результатов турнира (без сезона — обычный/standalone турнир без дивизионов).
+		     БАГ №3 (2026-08-15): раньше здесь была независимая копия naive-формулы
+		     $stages->every(...) без season/divisions/companion-оговорок $allCompleted
+		     (вычисленного в блоке "Создание стадии" выше) — из-за этого кнопка
+		     "Результаты турнира" могла появиться даже когда $allCompleted уже корректно
+		     false (например, плей-офф-стадия удалена). Переиспользуем $allCompleted. --}}
+		@if(!$event->season_id && $allCompleted)
 		<div class="ramka" style="text-align:center">
 			<a href="{{ route('tournament.public.show', $event) }}{{ $selectedOccurrence ? '?occurrence_id=' . $selectedOccurrence->id : '' }}" class="btn btn-primary p-3 f-16" style="display:inline-block">
 				{{ __('tournaments.setup_btn_tournament_results') }}

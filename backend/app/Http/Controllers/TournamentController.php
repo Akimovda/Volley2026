@@ -1680,6 +1680,17 @@ class TournamentController extends Controller
         $event = $stage->event;
         $this->authorizeOrganizer($request, $event);
 
+        $blocking = $this->dependentStagesWithMatches($stage);
+        if ($blocking->isNotEmpty()) {
+            $names = $blocking->pluck('name')->implode(', ');
+            return $this->redirectToSetup(
+                $event,
+                "Сначала откатите следующую стадию: {$names} — у неё уже есть сыгранные матчи.",
+                true,
+                "stage_{$stage->id}"
+            );
+        }
+
         // King of the Beach: полный сброс (группы + матчи + standings)
         if ($stage->isPlayerBasedMatches()) {
             $this->kingBeachService->revertStage($stage);
@@ -1746,6 +1757,11 @@ class TournamentController extends Controller
             $stage->update(['status' => TournamentStage::STATUS_IN_PROGRESS]);
         });
 
+        // См. аналогичный сброс в destroyStage() (баг №3, 2026-08-15) — откат
+        // стадии тоже может лишить турнир завершённости, claim-флаг уведомления
+        // нужно снять, чтобы оно ушло заново при повторном реальном завершении.
+        DB::table('events')->where('id', $event->id)->update(['tournament_completed_notified_at' => null]);
+
         // Откат стадии раньше не запускал никакого пересчёта вообще — переигранный
         // после отката матч не был бы учтён ни в Elo, ни в OpenSkill, ни в standings
         // события за пределами этой стадии (см. report_recalc_system_diagnosis).
@@ -1769,6 +1785,17 @@ class TournamentController extends Controller
     {
         $event = $stage->event;
         $this->authorizeOrganizer($request, $event);
+
+        $blocking = $this->dependentStagesWithMatches($stage);
+        if ($blocking->isNotEmpty()) {
+            $names = $blocking->pluck('name')->implode(', ');
+            return $this->redirectToSetup(
+                $event,
+                "Сначала откатите/удалите следующую стадию: {$names} — у неё уже есть сыгранные матчи.",
+                true,
+                "stage_{$stage->id}"
+            );
+        }
 
         $name = $stage->name;
         $divNames = '';
@@ -1795,6 +1822,15 @@ class TournamentController extends Controller
         }
 
         $stage->delete(); // cascadeOnDelete очистит groups, matches, standings
+
+        // Удаление стадии может лишить турнир завершённости (баг №3, 2026-08-15):
+        // если turnament_completed_notified_at уже был проставлен (уведомление
+        // "Турнир завершён!" уже ушло), а мы только что удалили стадию, из-за
+        // которой турнир считался полностью сыгранным — снимаем claim-флаг, чтобы
+        // при повторном реальном завершении (после пересоздания и доигровки
+        // удалённой стадии) уведомление отправилось ещё раз, а не молчало навсегда.
+        // Безвредно, если флаг и так был NULL.
+        DB::table('events')->where('id', $event->id)->update(['tournament_completed_notified_at' => null]);
 
         // Якорь для редиректа: если после удаления осталась групповая стадия
         // (обычно так и есть — удаляют именно плей-офф, группа жива) —
@@ -1825,6 +1861,34 @@ class TournamentController extends Controller
         }
 
         return $this->redirectToSetup($event, $msg, false, $anchor);
+    }
+
+    /**
+     * Стадии того же турнира (и того же occurrence_id, если он задан) с
+     * sort_order строго больше, чем у $stage, у которых уже есть матчи —
+     * т.е. реально "запущенные" следующие стадии, зависящие от посева этой.
+     *
+     * Дивизионные под-стадии (Hard/Medium/Lite: division_tier IS NOT NULL
+     * ИЛИ имя вида "Группа %") исключаются — они не "следующая стадия", а
+     * ПОРОЖДЕНИЕ текущей: у них sort_order тоже больше (создаются через
+     * max(sort_order)+1 после родителя, см. formDivisions() ~1347-1359),
+     * но revertStage()/destroyStage() уже удаляют/сбрасывают их вместе с
+     * родителем в canHaveFollowupStage()-ветке выше по файлу — сами по себе
+     * они не блокирующая зависимость, а часть той же операции отката/удаления.
+     */
+    private function dependentStagesWithMatches(TournamentStage $stage): \Illuminate\Support\Collection
+    {
+        $query = $stage->event->tournamentStages()
+            ->where('id', '!=', $stage->id)
+            ->where('sort_order', '>', $stage->sort_order)
+            ->where(fn($q) => $q->whereNull('division_tier')
+                ->where('name', 'not like', 'Группа %'));
+
+        if ($stage->occurrence_id) {
+            $query->where('occurrence_id', $stage->occurrence_id);
+        }
+
+        return $query->get()->filter(fn($s) => $s->matches()->exists())->values();
     }
 
     /* ================================================================
