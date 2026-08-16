@@ -1498,7 +1498,8 @@ $tourNumber = $seasonData
 						</div>
 					</div>
 
-					<div class="mt-2" id="group_fields">
+					<div class="mt-2 stage-section" id="group_fields">
+						<div class="stage-section-label"><span class="stage-section-num">1</span>{{ __('tournaments.setup_stage_step_1_h') }}</div>
 						<div class="stage-section">
 							<div class="stage-section-label"><span class="stage-section-num">2</span>{{ __('tournaments.setup_section_group_h') }}</div>
 							<div class="card">
@@ -1524,7 +1525,17 @@ $tourNumber = $seasonData
 							</div>
 						</div>
 
+						{{-- Живой каскад-предпросмотр: сколько команд идёт напрямую в плей-офф
+						     и сколько добирается лучшими из невыходящих мест до полной сетки
+						     (Кусок 3, TournamentBracketService — практика FIVB). Пересчитывается
+						     JS-ом из groups_count/advance_count/finals_mode, ничего не отправляет
+						     на сервер — чистый предпросмотр. --}}
+						<div id="cascade_preview" class="alert-info p-2 mb-2" style="display:none">
+							<span id="cascade_text"></span>
+						</div>
+
 						<div class="stage-section" id="finals_mode_fields">
+							<div class="stage-section-label"><span class="stage-section-num">2</span>{{ __('tournaments.setup_stage_step_2_h') }}</div>
 							<div class="stage-section-label"><span class="stage-section-num">3</span>{{ __('tournaments.setup_finals_mode_label') }}</div>
 
 							<label class="finals-mode-card radio-item" id="finals_mode_card_placement">
@@ -2682,10 +2693,23 @@ $tourNumber = $seasonData
 			<p>{{ __('tournaments.setup_empty_text') }}</p>
 		</div>
 		@endif
-		
-		
+
+
 	</div>
-	
+
+	@php
+		// Живой каскад-предпросмотр: тексты через __() с placeholder'ами
+		// заранее в @php, НЕ напрямую внутри @json(__(...)) — вложенный
+		// массив-аргумент внутри @json(__(...)) ломает извлечение аргументов
+		// blade-директивы ("Unclosed '[' does not match ')'"), см. CLAUDE.md.
+		$cascadeSingleGroupText = __('tournaments.setup_cascade_single_group');
+		$cascadeDirectOnlyText = __('tournaments.setup_cascade_direct_only', ['direct' => 'DIRECT_N', 'size' => 'SIZE_N']);
+		$cascadeRank2Text = __('tournaments.setup_cascade_rank_2');
+		$cascadeRank3Text = __('tournaments.setup_cascade_rank_3');
+		$cascadeRankGenericText = __('tournaments.setup_cascade_rank_generic', ['n' => 'RANK_N']);
+		$cascadeDirectPlusBestText = __('tournaments.setup_cascade_direct_plus_best', ['direct' => 'DIRECT_N', 'take' => 'TAKE_N', 'rank' => 'RANK_WORD', 'size' => 'SIZE_N']);
+	@endphp
+
 	<script>
 		document.addEventListener('DOMContentLoaded', function() {
 			var typeSelect = document.getElementById('stage_type_select');
@@ -2705,6 +2729,8 @@ $tourNumber = $seasonData
 			var advancePerGroupSummary = document.getElementById('advance_per_group_summary');
 			var divisionsFormatFields = document.getElementById('divisions_format_fields');
 			var divisionsFormatTouched = {};
+			var cascadePreview = document.getElementById('cascade_preview');
+			var cascadeText = document.getElementById('cascade_text');
 			// group_fields и king_beach_fields содержат поля с ОДИНАКОВЫМИ name (draw_mode) —
 			// display:none не мешает браузеру отправить их оба на сервер. Отключаем инпуты
 			// скрытого блока через disabled, чтобы в форму попадали только видимые поля.
@@ -2761,6 +2787,53 @@ $tourNumber = $seasonData
 						.replace('X', g * a).replace('Y', a)
 					: '';
 			}
+			// Живой каскад-предпросмотр (Кусок 3, TournamentBracketService — добор
+			// лучших до полной сетки, практика FIVB): сколько команд идёт напрямую
+			// в плей-офф и сколько добирается лучшими из невыходящих мест, чтобы
+			// сетка была степенью двойки. Divisions уже показывает своё саммари
+			// (advancePerGroupSummary) — каскад для divisions скрыт, не дублируем.
+			function syncCascadePreview() {
+				if (!cascadePreview || !cascadeText) return;
+				var isDivisions = !!(finalsModeDivisions && finalsModeDivisions.checked);
+				if (isDivisions) {
+					cascadePreview.style.display = 'none';
+					return;
+				}
+				var g = parseInt(groupsCountInput ? groupsCountInput.value : 0, 10) || 0;
+				var a = parseInt(advanceCountInput ? advanceCountInput.value : 0, 10) || 0;
+				if (g === 1) {
+					cascadeText.textContent = @json($cascadeSingleGroupText);
+					cascadePreview.style.display = '';
+					return;
+				}
+				if (g < 2 || a < 1) {
+					cascadePreview.style.display = 'none';
+					return;
+				}
+				var direct = g * a;
+				if (direct < 2) {
+					cascadePreview.style.display = 'none';
+					return;
+				}
+				var size = 1;
+				while (size < direct) size *= 2;
+				var needed = size - direct;
+				if (needed <= 0) {
+					cascadeText.textContent = @json($cascadeDirectOnlyText)
+						.replace('DIRECT_N', direct).replace('SIZE_N', size);
+				} else {
+					var take = Math.min(needed, g);
+					var rankIdx = a + 1;
+					var rankWord = (rankIdx === 2)
+						? @json($cascadeRank2Text)
+						: (rankIdx === 3)
+							? @json($cascadeRank3Text)
+							: @json($cascadeRankGenericText).replace('RANK_N', rankIdx);
+					cascadeText.textContent = @json($cascadeDirectPlusBestText)
+						.replace('DIRECT_N', direct).replace('TAKE_N', take).replace('RANK_WORD', rankWord).replace('SIZE_N', size);
+				}
+				cascadePreview.style.display = '';
+			}
 			// Формат матча по дивизионам (div_format_hard/_medium-N/_lite) — для
 			// любого числа групп (2, 3, 4+). Названия дивизионов берём из
 			// window.__divisionNamesByGroupsCount (посчитано PHP один раз при загрузке
@@ -2800,13 +2873,14 @@ $tourNumber = $seasonData
 			}
 			[finalsModePlacement, finalsModeBracket, finalsModeDivisions].forEach(function(radio) {
 				if (radio) radio.addEventListener('change', syncDivisionsFields);
+				if (radio) radio.addEventListener('change', syncCascadePreview);
 			});
 			if (groupsCountInput) {
-				groupsCountInput.addEventListener('input', function() { syncFinalsModeGuard(); syncDivisionsFields(); });
+				groupsCountInput.addEventListener('input', function() { syncFinalsModeGuard(); syncDivisionsFields(); syncCascadePreview(); });
 				syncFinalsModeGuard();
 			}
 			if (advanceCountInput) {
-				advanceCountInput.addEventListener('input', syncDivisionsFields);
+				advanceCountInput.addEventListener('input', function() { syncDivisionsFields(); syncCascadePreview(); });
 			}
 			// "Матч за 3-е место" читается ТОЛЬКО генерацией полного плей-офф
 			// (bracket) — для placement (счёт по рангам) и divisions (нет бракета
@@ -2849,6 +2923,7 @@ $tourNumber = $seasonData
 					finalsModeBracket.checked = true;
 				}
 				syncDivisionsFields();
+				syncCascadePreview();
 				syncThirdPlaceMatchField();
 				syncFinalsModeCardVisuals();
 			}
