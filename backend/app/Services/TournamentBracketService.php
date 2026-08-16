@@ -413,6 +413,29 @@ class TournamentBracketService
             }
         }
 
+        // Кусок 3: добор лучших до полной сетки (практика FIVB — напр. 3 группы
+        // → 6 прямых + 2 лучших третьих = сетка на 8). Не хватает до степени
+        // двойки — добираем команды следующего непрошедшего ранга по всем
+        // группам, отсортированные compareStrength (очки→сеты→мячи). Добор ВВЕРХ:
+        // реально прошедшие не отсекаются; остаток закрывает BYE (крайний случай).
+        $directCount = count($advancing);
+        if ($directCount >= 2) {
+            $bracketSize = 1;
+            while ($bracketSize < $directCount) { $bracketSize *= 2; }
+            $needed = $bracketSize - $directCount;
+            if ($needed > 0) {
+                $wildcardRank = $advancePerGroup + 1;
+                $candidates = \App\Models\TournamentStanding::where('stage_id', $groupStage->id)
+                    ->where('rank', $wildcardRank)
+                    ->get()
+                    ->sort(fn($a, $b) => $standingsService->compareStrength($a, $b))
+                    ->values();
+                foreach ($candidates->take($needed) as $standing) {
+                    $advancing[] = $standing->team_id;
+                }
+            }
+        }
+
         if (count($advancing) < 2) {
             throw new \InvalidArgumentException('Недостаточно команд для плей-офф.');
         }

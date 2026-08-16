@@ -1351,7 +1351,7 @@ $tourNumber = $seasonData
 			// ниже уже умеет предлагать её пересоздание через quickCreateFinals()).
 			if ($allCompleted && !$event->season_id) {
 				$groupStageMissingFinals = $stages->first(function ($s) use ($stages) {
-					if (!$s->canHaveFollowupStage() || $s->cfg('finals_mode') === 'divisions') {
+					if (!$s->canHaveFollowupStage() || $s->cfg('finals_mode') === 'divisions' || $s->groups->count() < 2) {
 						return false;
 					}
 					return !$stages->contains(fn($o) => $o->id !== $s->id
@@ -2617,7 +2617,8 @@ $tourNumber = $seasonData
 		     (Группа Hard/Lite/...) для этого occurrence уже созданы, финалы турнира
 		     уже сформированы этим путём — предлагать "Создать финалы" не нужно. --}}
 		@if(!$allCompleted && $stage->isCompleted() && $stage->canHaveFollowupStage()
-			&& $finalsMode !== 'divisions' && !$hasDivStages && $finalsTargetStages->isEmpty())
+			&& $finalsMode !== 'divisions' && !$hasDivStages && $finalsTargetStages->isEmpty()
+			&& $stage->groups->count() >= 2)
 		<div class="p-3 mt-2 alert-warning" style="border-radius:10px">
 			<div class="b-700 mb-1">{{ __('tournaments.setup_no_finals_stage_h4') }}</div>
 			<p class="f-13" style="margin-bottom:10px">{{ __('tournaments.setup_no_finals_stage_hint') }}</p>

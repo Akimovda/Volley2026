@@ -473,6 +473,18 @@ class TournamentStandingsService
             ->get();
     }
 
+    /**
+     * Кусок 3: единый критерий "кто сильнее" среди команд одного ранга —
+     * источник правды для дивизионов и добора в плей-офф. Очки → разница
+     * сетов → разница мячей. Возвращает <=> результат для usort/sort.
+     */
+    public function compareStrength(\App\Models\TournamentStanding $a, \App\Models\TournamentStanding $b): int
+    {
+        return $b->rating_points <=> $a->rating_points
+            ?: ($b->sets_won - $b->sets_lost) <=> ($a->sets_won - $a->sets_lost)
+            ?: ($b->points_scored - $b->points_conceded) <=> ($a->points_scored - $a->points_conceded);
+    }
+
     public function recalculateStage(TournamentStage $stage): void
     {
         $groups = $stage->groups;

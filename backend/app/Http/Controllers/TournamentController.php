@@ -331,7 +331,7 @@ class TournamentController extends Controller
         // надёжнее: стадия 1 без стадии 2 не существует ни в один момент.
         // Дубль при двойном сабмите отсекается dedup-guard'ом стадии 1 выше
         // (return ДО этого блока).
-        if ($stage->canHaveFollowupStage()) {
+        if ($stage->canHaveFollowupStage() && $groupsCount >= 2) {
             if ($finalsMode === 'divisions') {
                 // round_robin-скелет БЕЗ groups_count — блок групп ниже
                 // (гейт groups_count > 0) его не тронет. launchStage() по нему
