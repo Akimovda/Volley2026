@@ -2741,13 +2741,24 @@ $tourNumber = $seasonData
 			// при любом числе групп (>=2), поэтому её радио этот гейт не трогает.
 			function syncFinalsModeGuard() {
 				if (!groupsCountInput || !finalsModePlacement) return;
-				var isTwoGroups = parseInt(groupsCountInput.value, 10) === 2;
+				var g = parseInt(groupsCountInput.value, 10) || 0;
+				var isTwoGroups = g === 2;
 				finalsModePlacement.disabled = !isTwoGroups;
 				if (finalsModePlacementHint) finalsModePlacementHint.style.display = isTwoGroups ? 'none' : '';
 				if (!isTwoGroups && finalsModePlacement.checked) {
 					finalsModePlacement.checked = false;
 					if (finalsModeBracket) finalsModeBracket.checked = true;
 				}
+				// Мягкий режим (1 группа): второй этап не нужен вообще — round_robin/
+				// groups_playoff с единственной группой сам даёт места 1-2-3 по итоговой
+				// таблице (см. cascadeSingleGroupText в syncCascadePreview), ни форма, ни
+				// бэкенд (createStage()/launchStage()) не создают скелет финала при N=1.
+				// Эта функция уже переисполняется и при смене groups_count (слушатель
+				// ниже), и при смене типа стадии (toggle()) — оба случая сворачивают/
+				// разворачивают блок живьём без доп. слушателей.
+				var t = typeSelect ? typeSelect.value : null;
+				var isFollowup = t !== null && window.__stageFollowupTypes.indexOf(t) !== -1;
+				setBlockActive(finalsModeFields, isFollowup && g !== 1);
 				syncFinalsModeCardVisuals();
 			}
 			// Акцентная рамка/фон на выбранной карточке "Режим финалов" — класс
