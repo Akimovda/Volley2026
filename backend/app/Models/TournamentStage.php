@@ -200,24 +200,52 @@ class TournamentStage extends Model
 
     /**
      * Названия финальных групп по уровням (Hard/Medium/Lite) для заданного числа
-     * исходных групп — единый источник для TournamentController::formDivisions()
-     * и обоих blade-блоков (пульт + мастер, выбор finals_mode=divisions), которые
-     * раньше держали ЭТУ ЖЕ формулу как отдельные хардкод-копии (найдено при
-     * переносе div_format_* в мастер). При изменении формулы — менять только тут.
+     * исходных групп — единый источник для TournamentController::formDivisions(),
+     * TournamentKingBeachService::formDivisions() и обоих blade-блоков (пульт +
+     * мастер, выбор finals_mode=divisions). При изменении формулы — менять только тут.
+     *
+     * Правило (баг "1,4,1" вместо "2,2,2" на N=6, исправлено 2026-08-18): раньше
+     * default-ветка всегда давала ровно 1 Hard + (N-2) Medium + 1 Lite — при
+     * росте N почти все дивизионы становились Medium. Теперь уровни делятся
+     * пропорционально: base=⌊N/3⌋, Hard=base+(есть остаток 1 или 2), Medium=base+
+     * (остаток 2), Lite=base — т.е. остаток 1 уходит в Hard, остаток 2 — в Hard
+     * И Medium. N=2 — спецслучай (Hard, Lite, без Medium). N<2 не используется
+     * реальным флоу (formDivisionsCore() требует >=2 групп), но сохранено прежнее
+     * поведение — не трогать, чтобы не менять window.__divisionNamesByGroupsCount
+     * для несуществующего N=1 в мастере.
      *
      * @return array<int, string>
      */
     public static function divisionNamesFor(int $groupsCount): array
     {
-        return match ($groupsCount) {
-            2 => ['Hard', 'Lite'],
-            3 => ['Hard', 'Medium', 'Lite'],
-            default => array_merge(
+        if ($groupsCount < 2) {
+            return array_merge(
                 ['Hard'],
                 array_map(fn ($i) => 'Medium-' . $i, range(1, max(1, $groupsCount - 2))),
                 ['Lite']
-            ),
-        };
+            );
+        }
+
+        if ($groupsCount === 2) {
+            return ['Hard', 'Lite'];
+        }
+
+        $base = intdiv($groupsCount, 3);
+        $rem = $groupsCount % 3;
+        $levelCounts = [
+            'Hard' => $base + ($rem >= 1 ? 1 : 0),
+            'Medium' => $base + ($rem >= 2 ? 1 : 0),
+            'Lite' => $base,
+        ];
+
+        $names = [];
+        foreach ($levelCounts as $level => $count) {
+            for ($i = 0; $i < $count; $i++) {
+                $names[] = $i === 0 ? $level : $level . '-' . $i;
+            }
+        }
+
+        return $names;
     }
 
     /* ---------- relations ---------- */
