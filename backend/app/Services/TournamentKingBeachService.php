@@ -412,11 +412,10 @@ class TournamentKingBeachService
             $perDiv = (int) ceil(count($allByQuality) / $groupsCount);
             $chunks = array_chunk($allByQuality, max(1, $perDiv));
 
-            $names = array_merge(
-                ['Hard'],
-                array_map(fn($i) => 'Medium-' . $i, range(1, max(0, count($chunks) - 2))),
-                ['Lite']
-            );
+            // Единый источник имён/пропорций уровней — TournamentStage::divisionNamesFor()
+            // (было отдельной хардкод-копией той же формулы, багованной на N>=4 — см.
+            // report_kusok4_divisions_dump_2026-08-16.md).
+            $names = TournamentStage::divisionNamesFor($groupsCount);
 
             foreach ($chunks as $i => $chunk) {
                 $name = $names[$i] ?? ('Medium-' . $i);
