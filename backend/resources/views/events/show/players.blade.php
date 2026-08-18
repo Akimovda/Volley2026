@@ -698,9 +698,10 @@ $showWaitlistJoinForm = !$isTournament && !$eventStarted && auth()->check() && !
     $isFull || ($isClassic && !empty($occupiedPositions)) || $genderWindowClosed
 );
 
-// Блок «просмотр очереди» — для организатора/админа. Не зависит от того, записан ли
-// он сам в состав мероприятия — организатор, который играет сам, тоже должен видеть очередь.
-$showWaitlistViewer = !$isTournament && !$eventStarted && $isOrganizer && $waitlistCount > 0;
+// Блок «просмотр очереди» — открыт всем (не только организатору/админу), кто видит
+// страницу события: список содержит только имя/позицию, без контактов и ссылок на
+// профиль. Не зависит от того, зарегистрирован ли сам смотрящий.
+$showWaitlistViewer = !$isTournament && !$eventStarted && $waitlistCount > 0;
 @endphp
 
 @if($showWaitlistJoinForm || $showWaitlistViewer)
