@@ -84,16 +84,6 @@
 			}
 			body.dark .stage-section-label { color: rgba(231, 97, 45, .8); }
 			.stage-section { margin-bottom: 2rem; }
-			/* Цифровой бейдж секции — тот же акцент, что и рамка выбранной
-			   finals-mode-card (#2967BA/#E7612F), просто в форме кружка с числом. */
-			.stage-section-num {
-				display: inline-flex; align-items: center; justify-content: center;
-				width: 2.2rem; height: 2.2rem; flex-shrink: 0;
-				border-radius: 50%; background: #2967BA; color: #fff;
-				font-size: 1.2rem; font-weight: 700; letter-spacing: 0;
-				text-transform: none;
-			}
-			body.dark .stage-section-num { background: #E7612F; }
 
 			/* Тоггл "Добавить стадию" — приглушённый вид, когда стадии уже есть
 			   (не конкурирует визуально с карточками активных стадий ниже);
@@ -1385,7 +1375,7 @@ $tourNumber = $seasonData
 					<input type="hidden" name="occurrence_id" value="{{ $selectedOccurrence->id }}">
 					@endif
 					<div class="stage-section">
-						<div class="stage-section-label"><span class="stage-section-num">1</span>{{ __('tournaments.setup_section_type_h') }}</div>
+						<div class="stage-section-label">{{ __('tournaments.setup_section_type_h') }}</div>
 						<div class="card">
 							<div class="row">
 								<div class="col-lg-4 col-md-6">
@@ -1499,9 +1489,9 @@ $tourNumber = $seasonData
 					</div>
 
 					<div class="mt-2 stage-section" id="group_fields">
-						<div class="stage-section-label"><span class="stage-section-num">1</span>{{ __('tournaments.setup_stage_step_1_h') }}</div>
+						<div class="stage-section-label">{{ __('tournaments.setup_stage_step_1_h') }}</div>
 						<div class="stage-section">
-							<div class="stage-section-label"><span class="stage-section-num">2</span>{{ __('tournaments.setup_section_group_h') }}</div>
+							<div class="stage-section-label">{{ __('tournaments.setup_section_group_h') }}</div>
 							<div class="card">
 								<div class="row">
 									<div class="col-lg-4 col-md-6">
@@ -1532,66 +1522,6 @@ $tourNumber = $seasonData
 						     на сервер — чистый предпросмотр. --}}
 						<div id="cascade_preview" class="alert-info p-2 mb-2" style="display:none">
 							<span id="cascade_text"></span>
-						</div>
-
-						<div class="stage-section" id="finals_mode_fields">
-							<div class="stage-section-label"><span class="stage-section-num">2</span>{{ __('tournaments.setup_stage_step_2_h') }}</div>
-							<div class="stage-section-label"><span class="stage-section-num">3</span>{{ __('tournaments.setup_finals_mode_label') }}</div>
-
-							<label class="finals-mode-card radio-item" id="finals_mode_card_placement">
-								<div class="finals-mode-card-head">
-									<input type="radio" name="finals_mode" value="placement" id="finals_mode_placement" checked>
-									<div class="custom-radio"></div>
-									<div>
-										<div class="finals-mode-card-title">{{ __('tournaments.setup_finals_mode_placement') }}</div>
-										<p class="finals-mode-card-hint" id="finals_mode_placement_hint">{{ __('tournaments.setup_finals_mode_placement_hint') }}</p>
-									</div>
-								</div>
-							</label>
-
-							<label class="finals-mode-card radio-item" id="finals_mode_card_bracket">
-								<div class="finals-mode-card-head">
-									<input type="radio" name="finals_mode" value="bracket" id="finals_mode_bracket">
-									<div class="custom-radio"></div>
-									<div class="finals-mode-card-title">{{ __('tournaments.setup_finals_mode_bracket') }}</div>
-								</div>
-							</label>
-							{{-- ВНЕ <label> карточки bracket намеренно (баг №5): select внутри того же
-							     <label>, что и radio, ловил клик-форвардинг браузера на radio (дефолтное
-							     поведение label без "for" — не блокируется e.stopPropagation() в
-							     createCustomSelect(), т.к. это activation behavior, а не JS-слушатель).
-							     Клик по кастомному дропдауну открывал его и тут же закрывал обработчиком
-							     "клик вне" — select физически не открывался. Визуально блок остаётся
-							     "под" карточкой bracket за счёт margin-top/border-top ниже. --}}
-							<div class="finals-mode-card-extra finals-mode-card-extra--outside" id="third_place_match_field">
-								<label>{{ __('tournaments.setup_stage_third_place') }}</label>
-								<select name="third_place_match" style="max-width:16rem">
-									<option value="0">{{ __('tournaments.no') }}</option>
-									<option value="1">{{ __('tournaments.yes') }}</option>
-								</select>
-							</div>
-
-							<label class="finals-mode-card radio-item" id="finals_mode_card_divisions">
-								<div class="finals-mode-card-head">
-									<input type="radio" name="finals_mode" value="divisions" id="finals_mode_divisions">
-									<div class="custom-radio"></div>
-									<div>
-										<div class="finals-mode-card-title">{{ __('tournaments.setup_finals_mode_divisions') }}</div>
-										<p class="finals-mode-card-hint">{{ __('tournaments.setup_finals_mode_divisions_hint') }}</p>
-									</div>
-								</div>
-								<div class="finals-mode-card-extra" id="finals_mode_divisions_fields" style="display:none">
-									{{-- Больше не редактируемое поле — чистое вычисление
-									     groups_count × advance_count (Section 2 «Групповой этап»),
-									     не отправляется в форме. createStage() на бэкенде считает
-									     то же самое число тем же способом (см. контроллер). --}}
-									<p class="f-13" id="advance_per_group_summary" style="color:#6b7280;margin:0"></p>
-
-									{{-- Формат матча по дивизионам — для любого числа групп (2, 3, 4+),
-									     ключ по точному имени дивизиона (div_format_medium-1 и т.п.). --}}
-									<div class="mt-2" id="divisions_format_fields"></div>
-								</div>
-							</label>
 						</div>
 
 						{{-- Ручное распределение --}}
@@ -1641,10 +1571,69 @@ $tourNumber = $seasonData
 						</div>
 					</div>
 
+					<div class="stage-section" id="finals_mode_fields">
+						<div class="stage-section-label">{{ __('tournaments.setup_stage_step_2_h') }}</div>
+
+						<label class="finals-mode-card radio-item" id="finals_mode_card_placement">
+							<div class="finals-mode-card-head">
+								<input type="radio" name="finals_mode" value="placement" id="finals_mode_placement" checked>
+								<div class="custom-radio"></div>
+								<div>
+									<div class="finals-mode-card-title">{{ __('tournaments.setup_finals_mode_placement') }}</div>
+									<p class="finals-mode-card-hint" id="finals_mode_placement_hint">{{ __('tournaments.setup_finals_mode_placement_hint') }}</p>
+								</div>
+							</div>
+						</label>
+
+						<label class="finals-mode-card radio-item" id="finals_mode_card_bracket">
+							<div class="finals-mode-card-head">
+								<input type="radio" name="finals_mode" value="bracket" id="finals_mode_bracket">
+								<div class="custom-radio"></div>
+								<div class="finals-mode-card-title">{{ __('tournaments.setup_finals_mode_bracket') }}</div>
+							</div>
+						</label>
+						{{-- ВНЕ <label> карточки bracket намеренно (баг №5): select внутри того же
+						     <label>, что и radio, ловил клик-форвардинг браузера на radio (дефолтное
+						     поведение label без "for" — не блокируется e.stopPropagation() в
+						     createCustomSelect(), т.к. это activation behavior, а не JS-слушатель).
+						     Клик по кастомному дропдауну открывал его и тут же закрывал обработчиком
+						     "клик вне" — select физически не открывался. Визуально блок остаётся
+						     "под" карточкой bracket за счёт margin-top/border-top ниже. --}}
+						<div class="finals-mode-card-extra finals-mode-card-extra--outside" id="third_place_match_field">
+							<label>{{ __('tournaments.setup_stage_third_place') }}</label>
+							<select name="third_place_match" style="max-width:16rem">
+								<option value="0">{{ __('tournaments.no') }}</option>
+								<option value="1">{{ __('tournaments.yes') }}</option>
+							</select>
+						</div>
+
+						<label class="finals-mode-card radio-item" id="finals_mode_card_divisions">
+							<div class="finals-mode-card-head">
+								<input type="radio" name="finals_mode" value="divisions" id="finals_mode_divisions">
+								<div class="custom-radio"></div>
+								<div>
+									<div class="finals-mode-card-title">{{ __('tournaments.setup_finals_mode_divisions') }}</div>
+									<p class="finals-mode-card-hint">{{ __('tournaments.setup_finals_mode_divisions_hint') }}</p>
+								</div>
+							</div>
+							<div class="finals-mode-card-extra" id="finals_mode_divisions_fields" style="display:none">
+								{{-- Больше не редактируемое поле — чистое вычисление
+								     groups_count × advance_count (Section 2 «Групповой этап»),
+								     не отправляется в форме. createStage() на бэкенде считает
+								     то же самое число тем же способом (см. контроллер). --}}
+								<p class="f-13" id="advance_per_group_summary" style="color:#6b7280;margin:0"></p>
+
+								{{-- Формат матча по дивизионам — для любого числа групп (2, 3, 4+),
+								     ключ по точному имени дивизиона (div_format_medium-1 и т.п.). --}}
+								<div class="mt-2" id="divisions_format_fields"></div>
+							</div>
+						</label>
+					</div>
+
 					{{-- Корты — общий блок для группового этапа и King of the Beach --}}
 					<div class="mt-2" id="courts_shared_fields" style="overflow:visible">
 						<div class="stage-section">
-							<div class="stage-section-label"><span class="stage-section-num">4</span>{{ __('tournaments.setup_section_courts_h') }}</div>
+							<div class="stage-section-label">{{ __('tournaments.setup_section_courts_h') }}</div>
 
 							{{-- Расписание (опционально) — объединено с "Площадками" в одну секцию
 							     (та же карточка настроек стадии). Видно только для группового формата,
@@ -1731,6 +1720,10 @@ $tourNumber = $seasonData
 						// Дисциплина турнира — дефолт радио "Режим финалов" зависит от неё
 						// (пляжка чаще играет финальные группы по уровням, классика — финал за места).
 						window.__eventDirection = @json($event->direction);
+						// Локаль для склонения "N команд" в каскад-предпросмотре ниже (ru — три формы
+						// команда/команды/команд, en — team/teams) — считать на бэкенде один раз,
+						// не гадать по document.documentElement.lang на клиенте.
+						window.__appLocale = @json(app()->getLocale());
 						// Названия финальных групп по groups_count (1..16, тот же диапазон,
 						// что у input[name=groups_count] min/max) — считаем ОДИН РАЗ на
 						// бэкенде через TournamentStage::divisionNamesFor() (та же формула,
@@ -2703,11 +2696,11 @@ $tourNumber = $seasonData
 		// массив-аргумент внутри @json(__(...)) ломает извлечение аргументов
 		// blade-директивы ("Unclosed '[' does not match ')'"), см. CLAUDE.md.
 		$cascadeSingleGroupText = __('tournaments.setup_cascade_single_group');
-		$cascadeDirectOnlyText = __('tournaments.setup_cascade_direct_only', ['direct' => 'DIRECT_N', 'size' => 'SIZE_N']);
+		$cascadeDirectOnlyText = __('tournaments.setup_cascade_direct_only', ['direct' => 'DIRECT_N', 'noun' => 'NOUN_WORD', 'verb' => 'VERB_WORD', 'size' => 'SIZE_N']);
 		$cascadeRank2Text = __('tournaments.setup_cascade_rank_2');
 		$cascadeRank3Text = __('tournaments.setup_cascade_rank_3');
 		$cascadeRankGenericText = __('tournaments.setup_cascade_rank_generic', ['n' => 'RANK_N']);
-		$cascadeDirectPlusBestText = __('tournaments.setup_cascade_direct_plus_best', ['direct' => 'DIRECT_N', 'take' => 'TAKE_N', 'rank' => 'RANK_WORD', 'size' => 'SIZE_N']);
+		$cascadeDirectPlusBestText = __('tournaments.setup_cascade_direct_plus_best', ['direct' => 'DIRECT_N', 'noun' => 'NOUN_WORD', 'verb' => 'VERB_WORD', 'take' => 'TAKE_N', 'rank' => 'RANK_WORD', 'size' => 'SIZE_N']);
 	@endphp
 
 	<script>
@@ -2787,6 +2780,22 @@ $tourNumber = $seasonData
 						.replace('X', g * a).replace('Y', a)
 					: '';
 			}
+			// Склонение "N команда/команды/команд" + согласование глагола
+			// "выходит"/"выходят" с числом direct — без этого JS всегда подставлял
+			// родительный падеж мн. числа ("4 команд" вместо "4 команды").
+			// Упрощённое правило (без редких форм вида "21 команда") — этого
+			// достаточно для реалистичных groups_count×advance_count на этой форме.
+			function cascadeTeamForms(n) {
+				if (window.__appLocale === 'ru') {
+					var mod10 = n % 10, mod100 = n % 100;
+					var noun = (mod10 === 1 && mod100 !== 11) ? 'команда'
+						: (mod10 >= 2 && mod10 <= 4 && !(mod100 >= 12 && mod100 <= 14)) ? 'команды'
+						: 'команд';
+					var verb = (n === 1) ? 'выходит' : 'выходят';
+					return { noun: noun, verb: verb };
+				}
+				return { noun: (n === 1) ? 'team' : 'teams', verb: (n === 1) ? 'advances' : 'advance' };
+			}
 			// Живой каскад-предпросмотр (Кусок 3, TournamentBracketService — добор
 			// лучших до полной сетки, практика FIVB): сколько команд идёт напрямую
 			// в плей-офф и сколько добирается лучшими из невыходящих мест, чтобы
@@ -2818,9 +2827,11 @@ $tourNumber = $seasonData
 				var size = 1;
 				while (size < direct) size *= 2;
 				var needed = size - direct;
+				var directForms = cascadeTeamForms(direct);
 				if (needed <= 0) {
 					cascadeText.textContent = @json($cascadeDirectOnlyText)
-						.replace('DIRECT_N', direct).replace('SIZE_N', size);
+						.replace('DIRECT_N', direct).replace('NOUN_WORD', directForms.noun).replace('VERB_WORD', directForms.verb)
+						.replace('SIZE_N', size);
 				} else {
 					var take = Math.min(needed, g);
 					var rankIdx = a + 1;
@@ -2830,7 +2841,8 @@ $tourNumber = $seasonData
 							? @json($cascadeRank3Text)
 							: @json($cascadeRankGenericText).replace('RANK_N', rankIdx);
 					cascadeText.textContent = @json($cascadeDirectPlusBestText)
-						.replace('DIRECT_N', direct).replace('TAKE_N', take).replace('RANK_WORD', rankWord).replace('SIZE_N', size);
+						.replace('DIRECT_N', direct).replace('NOUN_WORD', directForms.noun).replace('VERB_WORD', directForms.verb)
+						.replace('TAKE_N', take).replace('RANK_WORD', rankWord).replace('SIZE_N', size);
 				}
 				cascadePreview.style.display = '';
 			}
