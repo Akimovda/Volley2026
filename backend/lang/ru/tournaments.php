@@ -706,6 +706,12 @@ return [
     'setup_finals_mode_override_label' => 'Формат',
     'setup_finals_mode_disabled_short' => 'только при 2 группах',
 
+    'setup_launch_hint_h2' => 'Запуск финальной стадии',
+    'setup_launch_hint_bracket' => ':n команд выйдут в плей-офф',
+    'setup_launch_hint_placement' => ':n команд разыграют прямые матчи за места',
+    'setup_launch_hint_btn' => 'Запустить финалы',
+    'setup_launch_hint_confirm' => 'Запустить финалы?',
+
     'setup_no_finals_stage_h4' => '⚠️ Финальная стадия не создана',
     'setup_no_finals_stage_hint' => 'Группы завершены, но стадии для финалов ещё нет (например, была удалена). Одним кликом создайте её и сразу получите готовые матчи финалов.',
     'setup_no_finals_stage_confirm_title' => 'Создать финальную стадию и сгенерировать матчи?',

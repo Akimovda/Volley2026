@@ -111,6 +111,27 @@ class TournamentSetupService
 
         $stage->update(['status' => TournamentStage::STATUS_IN_PROGRESS]);
 
+        // Паритет со старым advance() (TournamentController) — уведомляем продвинувшиеся
+        // команды. В отличие от старого пути, список берём из уже полученного $matches
+        // (раунд 1 сразу содержит team_home_id/team_away_id), не перезапрашивая БД.
+        try {
+            $advancedTeamIds = $matches->pluck('team_home_id')
+                ->merge($matches->pluck('team_away_id'))
+                ->filter()
+                ->unique();
+
+            $event = $stage->event;
+            $notificationService = app(\App\Services\TournamentNotificationService::class);
+            foreach ($advancedTeamIds as $teamId) {
+                $team = \App\Models\EventTeam::find($teamId);
+                if ($team) {
+                    $notificationService->notifyAdvancement($team, $event, $stage->name);
+                }
+            }
+        } catch (\Throwable $e) {
+            \Log::warning('Уведомления о продвижении не отправлены: ' . $e->getMessage());
+        }
+
         $scheduled = $this->maybeGenerateInitialSchedule($stage, $params);
 
         return [

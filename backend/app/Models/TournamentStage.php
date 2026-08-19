@@ -167,6 +167,70 @@ class TournamentStage extends Model
     }
 
     /**
+     * Доступные переходы к стадии-продолжению для ТЕКУЩЕГО состояния этой
+     * стадии — чистая функция, без обращений к БД (не проверяет реально
+     * существующие companion-стадии/матчи, только структурные факты
+     * тип+конфиг). Справочный источник для будущего диспетчера переходов
+     * (см. report/kusok2_transitions_dump_2026-08-18.md) — сегодня этот
+     * метод никем не вызывается, ничего в существующем поведении не меняет.
+     *
+     * Правила:
+     * - Инкрементальные форматы (swiss/king_of_court/king_beach) — у них
+     *   своя логика "следующий раунд/матч" (generateNextRound()/
+     *   generateNextMatch()/advanceToNextRound()), не через finals_mode —
+     *   переходов в этом смысле нет.
+     * - Bracket-стадии (single_elim/double_elim) — сами являются финалом,
+     *   продолжения не бывает.
+     * - Групповые (round_robin/groups_playoff/thai, трейт group_stage) —
+     *   набор зависит от числа групп: 1 группа → финал не нужен (мини-турнир,
+     *   см. коммит f3ac0463 "одногрупповой турнир без финала"); 2 группы →
+     *   доступны все 3 режима (placement требует РОВНО 2 группы —
+     *   TournamentBracketService::generateGroupCrossover() кидает
+     *   InvalidArgumentException при другом числе); 3+ групп — без placement.
+     *
+     * @return array<int, array{type: string, label: string}>
+     */
+    public function getAvailableTransitions(): array
+    {
+        if ($this->hasIncrementalMatchGeneration()) {
+            return [];
+        }
+
+        if ($this->isBracketStage()) {
+            return [];
+        }
+
+        if ($this->canHaveFollowupStage()) {
+            $groupsCount = (int) $this->cfg('groups_count', 0);
+
+            if ($groupsCount === 1) {
+                return [
+                    ['type' => 'none', 'label' => 'Финал не нужен — единственная группа сама определяет итоговые места'],
+                ];
+            }
+
+            if ($groupsCount === 2) {
+                return [
+                    ['type' => 'bracket', 'label' => 'Плей-офф с финалами (полуфиналы кросс-посевом → финал + матч за 3-4)'],
+                    ['type' => 'placement', 'label' => 'Прямые матчи за места (1-е места за 1-2, 2-е за 3-4, без полуфиналов)'],
+                    ['type' => 'divisions', 'label' => 'Финальные группы по уровням'],
+                ];
+            }
+
+            if ($groupsCount >= 3) {
+                return [
+                    ['type' => 'bracket', 'label' => 'Плей-офф с финалами (полуфиналы кросс-посевом → финал + матч за 3-4)'],
+                    ['type' => 'divisions', 'label' => 'Финальные группы по уровням'],
+                ];
+            }
+
+            return [];
+        }
+
+        return [];
+    }
+
+    /**
      * Значения типов с трейтом group_stage — единый источник для JS-списка в
      * setup.blade.php (форма "Добавить стадию", поля групп), чтобы не держать
      * независимую копию списка в JS.
