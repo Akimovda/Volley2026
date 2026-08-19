@@ -60,16 +60,29 @@ class TournamentController extends Controller
         $selectedOccurrence = null;
         $leagueTeams = collect();
 
+        // occurrence_id из query читается для ЛЮБОГО повторяющегося турнира
+        // (не только сезонного) — это явное указание пользователя на конкретный
+        // тур, приоритетнее любого fallback. Раньше чтение было заперто внутри
+        // if(season_id), из-за чего для несезонных турниров параметр молча
+        // игнорировался и после старта тура страницу уводило на следующий.
+        $occId = (int) $request->query('occurrence_id', 0);
+        if ($occId > 0) {
+            $selectedOccurrence = $event->occurrences()
+                ->whereNull('cancelled_at')
+                ->firstWhere('id', $occId);
+        }
+
         if ($event->season_id) {
             $occurrences = $event->occurrences()
                 ->whereNull('cancelled_at')
                 ->orderBy('starts_at')
                 ->get();
 
-            $occId = (int) $request->query('occurrence_id', 0);
-            $selectedOccurrence = $occId > 0
-                ? $occurrences->firstWhere('id', $occId)
-                : $occurrences->first();
+            // $selectedOccurrence мог быть уже установлен из occurrence_id выше;
+            // если нет (параметра не было) — берём первый occurrence серии.
+            if (!$selectedOccurrence) {
+                $selectedOccurrence = $occurrences->first();
+            }
 
             // Находим сезон/лигу по выбранному туру: тур может принадлежать другому сезону
             $seasonEvtForOcc = $selectedOccurrence
@@ -1246,14 +1259,6 @@ class TournamentController extends Controller
      */
     protected function formDivisionsCore(Event $event, TournamentStage $stage, Request $request): array
     {
-        // Поле убрано с пульта (избыточно/no-op при 3+ группах) — значение теперь
-        // всегда из конфига стадии, заданного в мастере при её создании. Оставляем
-        // $request->input() приоритетным на случай прямого API-вызова с явным
-        // параметром (форма его больше не отправляет).
-        $advancePerGroup = max(1, (int) $request->input(
-            'advance_per_group',
-            $stage->cfg('advance_per_group') ?? $stage->cfg('advance_count', 2)
-        ));
         $groups = $stage->groups()->with(['standings' => fn($q) => $q->orderBy('rank')])->get();
         $groupsCount = $groups->count();
 
@@ -1264,26 +1269,21 @@ class TournamentController extends Controller
         // Определяем названия дивизионов
         $divisionNames = TournamentStage::divisionNamesFor($groupsCount);
 
-        // Собираем standings по рангам с очками для умного распределения
-        $byRank = []; // rank => [['team_id' => X, 'points' => Y, 'group_name' => Z], ...]
+        // Собираем standings по рангам — храним сами объекты TournamentStanding
+        // (не расплющенные массивы), чтобы сортировать единым критерием
+        // compareStrength() (Кусок 3 — тот же "кто сильнее", что и в
+        // TournamentBracketService::advanceToPlayoff() для добора в плей-офф),
+        // а не дублировать формулу очки→сеты→мячи вручную второй раз.
+        $byRank = []; // rank => [TournamentStanding, ...]
         foreach ($groups as $group) {
             foreach ($group->standings->sortBy('rank') as $standing) {
-                $byRank[$standing->rank][] = [
-                    'team_id' => $standing->team_id,
-                    'points'  => $standing->rating_points,
-                    'sets_diff' => $standing->sets_won - $standing->sets_lost,
-                    'pts_diff' => $standing->points_scored - $standing->points_conceded,
-                ];
+                $byRank[$standing->rank][] = $standing;
             }
         }
 
-        // Сортируем внутри каждого ранга по очкам (desc), потом по разнице сетов, потом очков
+        // Сортируем внутри каждого ранга единым критерием "кто сильнее"
         foreach ($byRank as $rank => &$teams) {
-            usort($teams, function($a, $b) {
-                return $b['points'] <=> $a['points']
-                    ?: $b['sets_diff'] <=> $a['sets_diff']
-                    ?: $b['pts_diff'] <=> $a['pts_diff'];
-            });
+            usort($teams, fn($a, $b) => $this->standingsService->compareStrength($a, $b));
         }
         unset($teams);
 
@@ -1296,68 +1296,34 @@ class TournamentController extends Controller
         // (раздел «Турниры» — баг Medium-N в formDivisions()).
         $teamsByDivision = array_fill_keys($divisionNames, []);
 
-        if ($groupsCount === 2) {
-            // 2 группы: top-advance → Hard, остальные → Lite
-            [$hardName, $liteName] = $divisionNames;
-            foreach ($groups as $group) {
-                $standings = $group->standings->sortBy('rank')->values();
-                foreach ($standings as $i => $standing) {
-                    $teamsByDivision[$i < $advancePerGroup ? $hardName : $liteName][] = $standing->team_id;
-                }
+        // Единый алгоритм раскладки (модель A — ровные размеры дивизионов).
+        // $byRank уже отсортирован внутри каждого ранга через compareStrength()
+        // выше, поэтому плоский список по рангам идёт строго по силе, и нарезка
+        // array_slice подряд = добор лучших в старшие дивизионы (та же механика
+        // "кто сильнее", что и добор в плей-офф, но цель — целевой размер
+        // дивизиона, а не степень двойки). Остаток от неровного деления идёт
+        // в старшие дивизионы (вариант B: 7 команд на 3 → 3/2/2).
+        $allTeamsByQuality = [];
+        ksort($byRank); // ранги строго по возрастанию: 1, 2, 3...
+        foreach ($byRank as $teams) {
+            foreach ($teams as $t) {
+                $allTeamsByQuality[] = $t; // TournamentStanding, уже отсортирован по силе
             }
-        } elseif ($groupsCount === 3) {
-            // 3 группы: Hard = все 1-е + лучшее 2-е (= 4 команды)
-            // Medium = оставшиеся 2-е + 2 лучших 3-х (= 4 команды)
-            // Lite = все остальные
-            [$hardName, $mediumName, $liteName] = $divisionNames;
+        }
 
-            // Все первые места → Hard
-            $teamsByDivision[$hardName] = array_column($byRank[1] ?? [], 'team_id');
+        $totalTeams    = count($allTeamsByQuality);
+        $divisionCount = count($divisionNames);
+        $base          = $divisionCount > 0 ? intdiv($totalTeams, $divisionCount) : 0;
+        $remainder     = $divisionCount > 0 ? $totalTeams % $divisionCount : 0;
 
-            // Вторые места: лучший → Hard, остальные → Medium
-            $seconds = $byRank[2] ?? [];
-            if (count($seconds) > 0) {
-                $teamsByDivision[$hardName][] = $seconds[0]['team_id']; // лучший 2-й → Hard
-                for ($i = 1; $i < count($seconds); $i++) {
-                    $teamsByDivision[$mediumName][] = $seconds[$i]['team_id'];
-                }
-            }
-
-            // Третьи места: 2 лучших → Medium, остальные → Lite
-            $thirds = $byRank[3] ?? [];
-            $thirdToMedium = min(2, count($thirds));
-            for ($i = 0; $i < count($thirds); $i++) {
-                if ($i < $thirdToMedium) {
-                    $teamsByDivision[$mediumName][] = $thirds[$i]['team_id'];
-                } else {
-                    $teamsByDivision[$liteName][] = $thirds[$i]['team_id'];
-                }
-            }
-
-            // Четвёртые и дальше → Lite
-            foreach ($byRank as $rank => $teams) {
-                if ($rank <= 3) continue;
-                foreach ($teams as $t) {
-                    $teamsByDivision[$liteName][] = $t['team_id'];
-                }
-            }
-        } else {
-            // 4+ групп: делим все команды на count($divisionNames) частей по
-            // качеству (1 = Hard, последняя = Lite), каждая часть — СВОЙ
-            // дивизион по индексу, включая отдельные Medium-1/Medium-2/...
-            $allTeamsByQuality = [];
-            foreach ($byRank as $rank => $teams) {
-                foreach ($teams as $t) {
-                    $allTeamsByQuality[] = array_merge($t, ['rank' => $rank]);
-                }
-            }
-            // Уже отсортированы по рангу + внутри ранга по очкам
-            $perDiv = (int) ceil(count($allTeamsByQuality) / count($divisionNames));
-            $chunks = array_chunk($allTeamsByQuality, $perDiv);
-
-            foreach ($divisionNames as $idx => $name) {
-                $teamsByDivision[$name] = array_column($chunks[$idx] ?? [], 'team_id');
-            }
+        $offset = 0;
+        foreach ($divisionNames as $idx => $name) {
+            $size = $idx < $remainder ? $base + 1 : $base;
+            $teamsByDivision[$name] = array_column(
+                array_slice($allTeamsByQuality, $offset, $size),
+                'team_id'
+            );
+            $offset += $size;
         }
 
         // occurrence_id из текущей стадии или из query
