@@ -485,6 +485,8 @@ return [
     'setup_stage_groups_count' => 'Groups count',
     'setup_stage_groups_advance' => 'Advance from group',
     'setup_stage_groups_advance_hint' => 'Only used if you later create a separate playoff stage. If the group stage is the tournament\'s only stage (places are decided by round-robin results), you can leave this field as is.',
+    'setup_stage_groups_advance_hint_divisions' => 'With final divisions this field is not used — teams are split by strength automatically.',
+    'setup_stage_groups_advance_hint_placement' => 'With placement matches this field is not used — pairings come from group results.',
     'setup_stage_third_place' => '3rd place match',
     'setup_finals_mode_label' => 'Finals format after groups',
     'setup_finals_mode_bracket' => 'Playoff bracket (cross-seeded semifinals → final + 3rd place match)',

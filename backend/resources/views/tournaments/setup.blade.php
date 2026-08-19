@@ -1511,7 +1511,7 @@ $tourNumber = $seasonData
 									<div class="col-lg-4 col-md-6">
 										<label>{{ __('tournaments.setup_stage_groups_advance') }}</label>
 										<input name="advance_count" type="number" value="2" min="1" max="8">
-										<p class="f-16">{{ __('tournaments.setup_stage_groups_advance_hint') }}</p>
+										<p class="f-16" id="advance_count_hint">{{ __('tournaments.setup_stage_groups_advance_hint') }}</p>
 									</div>
 									<div class="col-lg-4 col-md-6">
 										<label>{{ __('tournaments.setup_stage_seed') }}</label>
@@ -3004,13 +3004,30 @@ $tourNumber = $seasonData
 					}
 				});
 			}
+			// Подсказка advance_count зависит от finals_mode: поле реально влияет
+			// только на bracket (для placement/divisions игнорируется на сервере).
+			var advanceHints = {
+				bracket:   @json(__('tournaments.setup_stage_groups_advance_hint')),
+				divisions: @json(__('tournaments.setup_stage_groups_advance_hint_divisions')),
+				placement: @json(__('tournaments.setup_stage_groups_advance_hint_placement'))
+			};
+			function updateAdvanceCountHint() {
+				var hintEl = document.getElementById('advance_count_hint');
+				if (!hintEl) return;
+				var mode = 'bracket';
+				if (finalsModeDivisions && finalsModeDivisions.checked) mode = 'divisions';
+				else if (finalsModePlacement && finalsModePlacement.checked) mode = 'placement';
+				hintEl.textContent = advanceHints[mode] || advanceHints.bracket;
+			}
 			[finalsModePlacement, finalsModeBracket, finalsModeDivisions].forEach(function(radio) {
 				if (radio) radio.addEventListener('change', syncDivisionsFields);
 				if (radio) radio.addEventListener('change', syncCascadePreview);
+				if (radio) radio.addEventListener('change', updateAdvanceCountHint);
 			});
 			if (groupsCountInput) {
-				groupsCountInput.addEventListener('input', function() { syncFinalsModeGuard(); syncDivisionsFields(); syncCascadePreview(); });
+				groupsCountInput.addEventListener('input', function() { syncFinalsModeGuard(); syncDivisionsFields(); syncCascadePreview(); updateAdvanceCountHint(); });
 				syncFinalsModeGuard();
+				updateAdvanceCountHint();
 			}
 			if (advanceCountInput) {
 				advanceCountInput.addEventListener('input', function() { syncDivisionsFields(); syncCascadePreview(); });
