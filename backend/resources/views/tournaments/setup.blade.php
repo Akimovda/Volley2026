@@ -147,6 +147,16 @@
 			   же карточки: без зазора и верхней рамки сверху (продолжает bracket-card),
 			   со своей рамкой по бокам/снизу и скруглением только нижних углов. */
 			#finals_mode_card_bracket { margin-bottom: 0; }
+			/* Зазор перед divisions держался только на margin-bottom блока
+			   "третье место" (.finals-mode-card-extra--outside, 1.2rem ниже) —
+			   тот виден ТОЛЬКО при finals_mode=bracket (setBlockActive() в JS).
+			   При placement/divisions блок display:none, его margin с ним
+			   исчезает, а margin-bottom у bracket-карточки навсегда занулён
+			   строкой выше → зазора не остаётся вовсе. Свой margin-top на
+			   divisions даёт стабильный зазор независимо от видимости блока
+			   (тот же 1.2rem, что уже используется card-to-card — визуально
+			   ничего не меняется, когда третье место видно). */
+			#finals_mode_card_divisions { margin-top: 1.2rem; }
 			.finals-mode-card-extra--outside {
 				margin: 0 0 1.2rem; padding: 1.4rem 2rem;
 				border: 0.2rem solid rgba(0, 0, 0, .1); border-top: none;
@@ -1522,6 +1532,7 @@ $tourNumber = $seasonData
 						     на сервер — чистый предпросмотр. --}}
 						<div id="cascade_preview" class="alert-info p-2 mb-2" style="display:none">
 							<span id="cascade_text"></span>
+							<span id="cascade_dobor_hint" class="f-13 cascade-hint" style="display:block;margin-top:.3rem"></span>
 						</div>
 
 						{{-- Ручное распределение --}}
@@ -1572,7 +1583,7 @@ $tourNumber = $seasonData
 					</div>
 
 					<div class="stage-section" id="finals_mode_fields">
-						<div class="stage-section-label">{{ __('tournaments.setup_stage_step_2_h') }}</div>
+						<div class="stage-section-label" style="margin-top:2rem">{{ __('tournaments.setup_stage_step_2_h') }}</div>
 
 						<label class="finals-mode-card radio-item" id="finals_mode_card_placement">
 							<div class="finals-mode-card-head">
@@ -2764,6 +2775,7 @@ $tourNumber = $seasonData
 		$cascadeRank3Text = __('tournaments.setup_cascade_rank_3');
 		$cascadeRankGenericText = __('tournaments.setup_cascade_rank_generic', ['n' => 'RANK_N']);
 		$cascadeDirectPlusBestText = __('tournaments.setup_cascade_direct_plus_best', ['direct' => 'DIRECT_N', 'noun' => 'NOUN_WORD', 'verb' => 'VERB_WORD', 'take' => 'TAKE_N', 'rank' => 'RANK_WORD', 'size' => 'SIZE_N']);
+		$cascadeNoDoborHintText = __('tournaments.setup_cascade_no_dobor_hint', ['z' => 'Z_N']);
 	@endphp
 
 	<script>
@@ -2787,6 +2799,7 @@ $tourNumber = $seasonData
 			var divisionsFormatTouched = {};
 			var cascadePreview = document.getElementById('cascade_preview');
 			var cascadeText = document.getElementById('cascade_text');
+			var cascadeDoborHint = document.getElementById('cascade_dobor_hint');
 			// group_fields и king_beach_fields содержат поля с ОДИНАКОВЫМИ name (draw_mode) —
 			// display:none не мешает браузеру отправить их оба на сервер. Отключаем инпуты
 			// скрытого блока через disabled, чтобы в форму попадали только видимые поля.
@@ -2849,10 +2862,14 @@ $tourNumber = $seasonData
 				if (!isDivisions || !advancePerGroupSummary) return;
 				var g = parseInt(groupsCountInput ? groupsCountInput.value : 0, 10) || 0;
 				var a = parseInt(advanceCountInput ? advanceCountInput.value : 0, 10) || 0;
-				advancePerGroupSummary.textContent = (g && a)
-					? @json(__('tournaments.setup_divisions_advance_summary', ['total' => 'X', 'per_group' => 'Y']))
-						.replace('X', g * a).replace('Y', a)
-					: '';
+				if (g && a) {
+					var total = g * a;
+					var totalNoun = cascadeTeamForms(total).noun;
+					advancePerGroupSummary.textContent = @json(__('tournaments.setup_divisions_advance_summary'))
+						.replace(':total', total).replace(':noun', totalNoun).replace(':per_group', a);
+				} else {
+					advancePerGroupSummary.textContent = '';
+				}
 			}
 			// Склонение "N команда/команды/команд" + согласование глагола
 			// "выходит"/"выходят" с числом direct — без этого JS всегда подставлял
@@ -2884,7 +2901,9 @@ $tourNumber = $seasonData
 				}
 				var g = parseInt(groupsCountInput ? groupsCountInput.value : 0, 10) || 0;
 				var a = parseInt(advanceCountInput ? advanceCountInput.value : 0, 10) || 0;
+				if (cascadeDoborHint) cascadeDoborHint.textContent = '';
 				if (g === 1) {
+					cascadePreview.className = 'alert-info p-2 mb-2';
 					cascadeText.textContent = @json($cascadeSingleGroupText);
 					cascadePreview.style.display = '';
 					return;
@@ -2903,10 +2922,12 @@ $tourNumber = $seasonData
 				var needed = size - direct;
 				var directForms = cascadeTeamForms(direct);
 				if (needed <= 0) {
+					cascadePreview.className = 'alert-success p-2 mb-2';
 					cascadeText.textContent = @json($cascadeDirectOnlyText)
 						.replace('DIRECT_N', direct).replace('NOUN_WORD', directForms.noun).replace('VERB_WORD', directForms.verb)
 						.replace('SIZE_N', size);
 				} else {
+					cascadePreview.className = 'alert-warning p-2 mb-2';
 					var take = Math.min(needed, g);
 					var rankIdx = a + 1;
 					var rankWord = (rankIdx === 2)
@@ -2917,6 +2938,20 @@ $tourNumber = $seasonData
 					cascadeText.textContent = @json($cascadeDirectPlusBestText)
 						.replace('DIRECT_N', direct).replace('NOUN_WORD', directForms.noun).replace('VERB_WORD', directForms.verb)
 						.replace('TAKE_N', take).replace('RANK_WORD', rankWord).replace('SIZE_N', size);
+					// Рекомендация "без добора": ближайшее меньшее advance_count (a),
+					// при котором g*a' сразу степень двойки — не всегда существует
+					// (напр. g=3: 3*1=3 не степень двойки), тогда подсказка не показывается.
+					var z = null;
+					for (var candidate = a - 1; candidate >= 1; candidate--) {
+						var directCandidate = g * candidate;
+						if (directCandidate >= 2 && (directCandidate & (directCandidate - 1)) === 0) {
+							z = candidate;
+							break;
+						}
+					}
+					if (z !== null && cascadeDoborHint) {
+						cascadeDoborHint.textContent = @json($cascadeNoDoborHintText).replace('Z_N', z);
+					}
 				}
 				cascadePreview.style.display = '';
 			}
