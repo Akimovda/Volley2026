@@ -60,16 +60,29 @@ class TournamentController extends Controller
         $selectedOccurrence = null;
         $leagueTeams = collect();
 
+        // occurrence_id из query читается для ЛЮБОГО повторяющегося турнира
+        // (не только сезонного) — это явное указание пользователя на конкретный
+        // тур, приоритетнее любого fallback. Раньше чтение было заперто внутри
+        // if(season_id), из-за чего для несезонных турниров параметр молча
+        // игнорировался и после старта тура страницу уводило на следующий.
+        $occId = (int) $request->query('occurrence_id', 0);
+        if ($occId > 0) {
+            $selectedOccurrence = $event->occurrences()
+                ->whereNull('cancelled_at')
+                ->firstWhere('id', $occId);
+        }
+
         if ($event->season_id) {
             $occurrences = $event->occurrences()
                 ->whereNull('cancelled_at')
                 ->orderBy('starts_at')
                 ->get();
 
-            $occId = (int) $request->query('occurrence_id', 0);
-            $selectedOccurrence = $occId > 0
-                ? $occurrences->firstWhere('id', $occId)
-                : $occurrences->first();
+            // $selectedOccurrence мог быть уже установлен из occurrence_id выше;
+            // если нет (параметра не было) — берём первый occurrence серии.
+            if (!$selectedOccurrence) {
+                $selectedOccurrence = $occurrences->first();
+            }
 
             // Находим сезон/лигу по выбранному туру: тур может принадлежать другому сезону
             $seasonEvtForOcc = $selectedOccurrence
