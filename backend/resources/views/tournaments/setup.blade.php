@@ -2529,90 +2529,153 @@ $tourNumber = $seasonData
 		     2/3 всплывали и для родительской "Групповой этап", и для уже терминальной
 		     "Группа Hard", хотя финалы (дивизионы) уже сформированы (event 376, см.
 		     report_league_tournament_setup_diag_2026-08-07.md). --}}
+		@php
+			// Кусок 2, шаг 2+3 (B-полный): если у этого occurrence РОВНО один pending
+			// single_elim скелет (bracket/placement, созданный в createStage() —
+			// см. Кусок 2, шаг 2b) — показываем прямую подсказку "запустить именно
+			// его" вместо общего select'а. При 0 (нет скелета вообще — своё "Состояние
+			// 3" ниже) или 2+ (организатор вручную создал несколько single_elim
+			// стадий — редкий edge case, на dev не встречается, см.
+			// report/kusok_bpolny_step23_dump_2026-08-19.md) — остаётся старый блок
+			// с явным выбором целевой стадии (fallback, без изменений).
+			$pendingSkeletons = $finalsTargetStages->filter(fn($s) => $s->isPending());
+			$bpSkeleton = $pendingSkeletons->count() === 1 ? $pendingSkeletons->first() : null;
+			$bpMode = $bpSkeleton?->cfg('finals_mode') ?? $finalsMode;
+		@endphp
 		@if(!$allCompleted && $stage->isCompleted() && $stage->canHaveFollowupStage()
 			&& $finalsMode !== 'divisions' && !$hasDivStages && $finalsTargetStages->isNotEmpty()
 			&& $finalsTargetStages->contains(fn($s) => !$s->isCompleted()))
-		<div class="p-3 mt-2" style="background:rgba(41,103,186,.08);border-radius:10px" id="generate_finals_block">
-			<div class="b-700 mb-2">{{ __('tournaments.setup_generate_finals_h4') }}</div>
-			<div class="d-flex fvc" style="gap:10px;flex-wrap:wrap">
-				<div>
-					<label class="f-13 b-600 mb-1 d-block">{{ __('tournaments.setup_promote_stage') }}</label>
-					<select id="finals_target_stage_select">
-						@foreach($finalsTargetStages as $ns)
-						<option value="{{ $ns->id }}">{{ $ns->name }}</option>
-						@endforeach
-					</select>
-				</div>
-				<div>
-					<label class="f-13 b-600 mb-1 d-block">{{ __('tournaments.setup_finals_mode_override_label') }}</label>
-					<select id="finals_mode_override_select">
-						<option value="placement" {{ $finalsModeDefault === 'placement' ? 'selected' : '' }} {{ !$isTwoGroups ? 'disabled' : '' }}>
-							{{ __('tournaments.setup_finals_mode_placement') }}{{ !$isTwoGroups ? ' (' . __('tournaments.setup_finals_mode_disabled_short') . ')' : '' }}
-						</option>
-						<option value="bracket" {{ $finalsModeDefault === 'bracket' ? 'selected' : '' }}>{{ __('tournaments.setup_finals_mode_bracket') }}</option>
-					</select>
-				</div>
-				<div id="finals_bracket_extra">
-					<label class="f-13 b-600 mb-1 d-block">{{ __('tournaments.setup_promote_advance') }}</label>
-					<input type="number" id="finals_advance_per_group" value="{{ $stage->cfg('advance_count', 2) }}" min="1" max="8" style="width:100px">
-				</div>
-				<div id="finals_placement_extra" style="display:none">
-					<label class="f-13 b-600 mb-1 d-block">{{ __('tournaments.setup_crossover_places') }}</label>
-					<select id="finals_places_count">
-						<option value="2">{{ __('tournaments.setup_crossover_places_2') }}</option>
-						<option value="4" selected>{{ __('tournaments.setup_crossover_places_4') }}</option>
-					</select>
-				</div>
-				<button type="button" id="finals_generate_btn" class="btn btn-primary">{{ __('tournaments.setup_generate_finals_btn') }}</button>
+			@if($bpSkeleton && $bpMode !== 'divisions')
+			{{-- Подсказка для единственного pending-скелета — по образцу divisions-подсказки
+			     выше (isDivSkeleton): цель предопределена ($bpSkeleton), режим уже решён в
+			     мастере при создании стадии — organizr только подтверждает запуск, без
+			     переопределения режима и без выбора стадии из списка. --}}
+			<div class="ramka" id="launch_finals_hint">
+				<h2 class="-mt-05">{{ __('tournaments.setup_launch_hint_h2') }}</h2>
+				<p>
+					@if($bpMode === 'bracket')
+					{{ __('tournaments.setup_launch_hint_bracket', ['n' => $stage->groups->count() * (int) $stage->cfg('advance_count', 2)]) }}
+					@else
+					{{ __('tournaments.setup_launch_hint_placement', ['n' => 4]) }}
+					@endif
+					— <strong>{{ $bpMode === 'bracket' ? __('tournaments.setup_finals_mode_bracket') : __('tournaments.setup_finals_mode_placement') }}</strong>
+				</p>
+				<form method="POST" action="{{ route('tournament.stages.launch', $bpSkeleton) }}" class="form">
+					@csrf
+					<div class="card mb-2">
+						@if($bpMode === 'bracket')
+						<label>{{ __('tournaments.setup_promote_advance') }}</label>
+						<input type="number" name="advance_per_group" value="{{ (int) $stage->cfg('advance_count', 2) }}" min="1" max="8" style="width:100px">
+						@else
+						<label>{{ __('tournaments.setup_crossover_places') }}</label>
+						<select name="places_count">
+							<option value="2">{{ __('tournaments.setup_crossover_places_2') }}</option>
+							<option value="4" selected>{{ __('tournaments.setup_crossover_places_4') }}</option>
+						</select>
+						@endif
+					</div>
+					<div class="card mb-2">
+						<label>{{ __('tournaments.setup_stage_schedule') }}</label>
+						<p>{{ __('tournaments.setup_groups_schedule_hint') }}</p><hr class="mb-1">
+						<div class="d-flex" style="gap:12px;flex-wrap:wrap;align-items:flex-end">
+							<div><label>{{ __('tournaments.setup_stage_start') }}</label><input type="datetime-local" name="schedule_start" value="{{ \Carbon\Carbon::now($event->timezone ?? 'Europe/Moscow')->format('Y-m-d\TH:i') }}"></div>
+							<div><label>{{ __('tournaments.setup_stage_match_min') }}</label><input type="number" name="schedule_match_duration" value="30" min="15" max="180"></div>
+							<div><label>{{ __('tournaments.setup_stage_break_min') }}</label><input type="number" name="schedule_break_duration" value="5" min="0" max="60"></div>
+						</div>
+					</div>
+					<button type="submit" class="btn btn-primary btn-alert" data-title="{{ __('tournaments.setup_launch_hint_confirm') }}" data-icon="question" data-confirm-text="{{ __('tournaments.yes') }}" data-cancel-text="{{ __('tournaments.btn_cancel') }}">{{ __('tournaments.setup_launch_hint_btn') }}</button>
+				</form>
 			</div>
+			@else
+			{{-- FALLBACK — старый блок без изменений: 0 pending-скелетов среди
+			     $finalsTargetStages (тут не может быть — тогда $finalsTargetStages
+			     было бы empty и внешний @if не пройдёт), 2+ pending-скелетов (organizer
+			     создал несколько single_elim вручную), либо остались только
+			     in_progress/completed-но-недоигранные стадии (напр. дозаполнение
+			     матча за 3-4 после того как за 1-2 уже сыграли) — во всех этих
+			     случаях нужен явный выбор целевой стадии, оставляем как было. --}}
+			<div class="p-3 mt-2" style="background:rgba(41,103,186,.08);border-radius:10px" id="generate_finals_block">
+				<div class="b-700 mb-2">{{ __('tournaments.setup_generate_finals_h4') }}</div>
+				<div class="d-flex fvc" style="gap:10px;flex-wrap:wrap">
+					<div>
+						<label class="f-13 b-600 mb-1 d-block">{{ __('tournaments.setup_promote_stage') }}</label>
+						<select id="finals_target_stage_select">
+							@foreach($finalsTargetStages as $ns)
+							<option value="{{ $ns->id }}">{{ $ns->name }}</option>
+							@endforeach
+						</select>
+					</div>
+					<div>
+						<label class="f-13 b-600 mb-1 d-block">{{ __('tournaments.setup_finals_mode_override_label') }}</label>
+						<select id="finals_mode_override_select">
+							<option value="placement" {{ $finalsModeDefault === 'placement' ? 'selected' : '' }} {{ !$isTwoGroups ? 'disabled' : '' }}>
+								{{ __('tournaments.setup_finals_mode_placement') }}{{ !$isTwoGroups ? ' (' . __('tournaments.setup_finals_mode_disabled_short') . ')' : '' }}
+							</option>
+							<option value="bracket" {{ $finalsModeDefault === 'bracket' ? 'selected' : '' }}>{{ __('tournaments.setup_finals_mode_bracket') }}</option>
+						</select>
+					</div>
+					<div id="finals_bracket_extra">
+						<label class="f-13 b-600 mb-1 d-block">{{ __('tournaments.setup_promote_advance') }}</label>
+						<input type="number" id="finals_advance_per_group" value="{{ $stage->cfg('advance_count', 2) }}" min="1" max="8" style="width:100px">
+					</div>
+					<div id="finals_placement_extra" style="display:none">
+						<label class="f-13 b-600 mb-1 d-block">{{ __('tournaments.setup_crossover_places') }}</label>
+						<select id="finals_places_count">
+							<option value="2">{{ __('tournaments.setup_crossover_places_2') }}</option>
+							<option value="4" selected>{{ __('tournaments.setup_crossover_places_4') }}</option>
+						</select>
+					</div>
+					<button type="button" id="finals_generate_btn" class="btn btn-primary">{{ __('tournaments.setup_generate_finals_btn') }}</button>
+				</div>
 
-			{{-- Реальные формы — скрыты, JS сабмитит нужную по выбранному режиму --}}
-			<form method="POST" action="{{ route('tournament.stages.advance', $stage) }}" id="finals_bracket_form" style="display:none">
-				@csrf
-				<input type="hidden" name="playoff_stage_id">
-				<input type="hidden" name="advance_per_group">
-			</form>
-			<form method="POST" action="{{ route('tournament.stages.advanceCrossover', $stage) }}" id="finals_placement_form" style="display:none">
-				@csrf
-				<input type="hidden" name="playoff_stage_id">
-				<input type="hidden" name="places_count">
-			</form>
-		</div>
-		<script>
-			(function() {
-				var modeSel = document.getElementById('finals_mode_override_select');
-				var targetSel = document.getElementById('finals_target_stage_select');
-				var bracketExtra = document.getElementById('finals_bracket_extra');
-				var placementExtra = document.getElementById('finals_placement_extra');
-				var advanceInput = document.getElementById('finals_advance_per_group');
-				var placesSelect = document.getElementById('finals_places_count');
-				var btn = document.getElementById('finals_generate_btn');
-				var bracketForm = document.getElementById('finals_bracket_form');
-				var placementForm = document.getElementById('finals_placement_form');
-				if (!modeSel || !btn) return;
+				{{-- Реальные формы — скрыты, JS сабмитит нужную по выбранному режиму --}}
+				<form method="POST" action="{{ route('tournament.stages.advance', $stage) }}" id="finals_bracket_form" style="display:none">
+					@csrf
+					<input type="hidden" name="playoff_stage_id">
+					<input type="hidden" name="advance_per_group">
+				</form>
+				<form method="POST" action="{{ route('tournament.stages.advanceCrossover', $stage) }}" id="finals_placement_form" style="display:none">
+					@csrf
+					<input type="hidden" name="playoff_stage_id">
+					<input type="hidden" name="places_count">
+				</form>
+			</div>
+			<script>
+				(function() {
+					var modeSel = document.getElementById('finals_mode_override_select');
+					var targetSel = document.getElementById('finals_target_stage_select');
+					var bracketExtra = document.getElementById('finals_bracket_extra');
+					var placementExtra = document.getElementById('finals_placement_extra');
+					var advanceInput = document.getElementById('finals_advance_per_group');
+					var placesSelect = document.getElementById('finals_places_count');
+					var btn = document.getElementById('finals_generate_btn');
+					var bracketForm = document.getElementById('finals_bracket_form');
+					var placementForm = document.getElementById('finals_placement_form');
+					if (!modeSel || !btn) return;
 
-				function syncVisibility() {
-					var isPlacement = modeSel.value === 'placement';
-					bracketExtra.style.display = isPlacement ? 'none' : '';
-					placementExtra.style.display = isPlacement ? '' : 'none';
-				}
-				modeSel.addEventListener('change', syncVisibility);
-				syncVisibility();
-
-				btn.addEventListener('click', function() {
-					var stageId = targetSel.value;
-					if (modeSel.value === 'placement') {
-						placementForm.querySelector('[name="playoff_stage_id"]').value = stageId;
-						placementForm.querySelector('[name="places_count"]').value = placesSelect.value;
-						placementForm.submit();
-					} else {
-						bracketForm.querySelector('[name="playoff_stage_id"]').value = stageId;
-						bracketForm.querySelector('[name="advance_per_group"]').value = advanceInput.value;
-						bracketForm.submit();
+					function syncVisibility() {
+						var isPlacement = modeSel.value === 'placement';
+						bracketExtra.style.display = isPlacement ? 'none' : '';
+						placementExtra.style.display = isPlacement ? '' : 'none';
 					}
-				});
-			})();
-		</script>
+					modeSel.addEventListener('change', syncVisibility);
+					syncVisibility();
+
+					btn.addEventListener('click', function() {
+						var stageId = targetSel.value;
+						if (modeSel.value === 'placement') {
+							placementForm.querySelector('[name="playoff_stage_id"]').value = stageId;
+							placementForm.querySelector('[name="places_count"]').value = placesSelect.value;
+							placementForm.submit();
+						} else {
+							bracketForm.querySelector('[name="playoff_stage_id"]').value = stageId;
+							bracketForm.querySelector('[name="advance_per_group"]').value = advanceInput.value;
+							bracketForm.submit();
+						}
+					});
+				})();
+			</script>
+			@endif
 		@endif
 
 		{{-- Состояние 3 из 3 — "Финальная стадия не создана": целевой single_elim

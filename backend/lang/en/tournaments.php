@@ -687,6 +687,12 @@ return [
     'setup_finals_mode_override_label' => 'Format',
     'setup_finals_mode_disabled_short' => 'only with 2 groups',
 
+    'setup_launch_hint_h2' => 'Launch final stage',
+    'setup_launch_hint_bracket' => ':n teams will advance to the playoff',
+    'setup_launch_hint_placement' => ':n teams will play direct placement matches',
+    'setup_launch_hint_btn' => 'Launch finals',
+    'setup_launch_hint_confirm' => 'Launch finals?',
+
     'setup_no_finals_stage_h4' => '⚠️ No finals stage yet',
     'setup_no_finals_stage_hint' => 'Groups are complete, but there is no finals stage yet (e.g. it was deleted). Create it in one click and get ready-to-play final matches instantly.',
     'setup_no_finals_stage_confirm_title' => 'Create the finals stage and generate matches?',

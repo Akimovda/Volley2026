@@ -1659,6 +1659,15 @@ class TournamentController extends Controller
             return back()->with('error', 'Предыдущая стадия ещё не завершена.');
         }
 
+        // Паритет со старыми advance()/advanceCrossover() — там эти параметры были
+        // required с тем же диапазоном; здесь nullable, т.к. launchStage()/
+        // TournamentSetupService умеет фолбэчиться на cfg('advance_count')/дефолт 2.
+        if ($finalsMode === 'bracket') {
+            $request->validate(['advance_per_group' => 'nullable|integer|min:1|max:8']);
+        } elseif ($finalsMode === 'placement') {
+            $request->validate(['places_count' => 'nullable|integer|in:2,4,6,8']);
+        }
+
         try {
             if ($finalsMode === 'divisions') {
                 $divisionNames = $this->formDivisionsCore($event, $prevStage, $request);
