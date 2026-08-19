@@ -513,7 +513,7 @@ return [
     'setup_finals_mode_divisions_hint' => 'После группового этапа участники переформируются в финальные группы по уровню (например, Hard/Lite) — организатор запускает это на пульте вручную, когда группа сыграна',
     'setup_stage_advance_per_group_label' => 'Сколько команд выходит в финальный этап',
     'setup_stage_advance_per_group_hint' => 'По умолчанию: :n (из расчёта групп × проход из группы), можно изменить',
-    'setup_divisions_advance_summary' => 'В финальный этап выйдет :total :noun: по :per_group из каждой группы',
+    'setup_divisions_advance_summary' => ':count :noun по дивизионам: :breakdown',
     'setup_cascade_single_group' => 'Одна группа — финал не нужен, места определяются по итоговой таблице (1, 2, 3)',
     'setup_cascade_direct_only' => ':direct :noun :verb напрямую → ровная сетка на :size, без добора',
     'setup_cascade_direct_plus_best' => ':direct :noun :verb напрямую + :take лучших :rank мест добираются до полной сетки на :size',

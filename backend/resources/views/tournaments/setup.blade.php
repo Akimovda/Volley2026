@@ -1743,6 +1743,7 @@ $tourNumber = $seasonData
 						window.__divisionNamesByGroupsCount = @json(
 							collect(range(1, 16))->mapWithKeys(fn ($n) => [$n => \App\Models\TournamentStage::divisionNamesFor($n)])
 						);
+						window.__totalTeamsForDivisions = @json($teams->count());
 					</script>
 					<script>
 						(function(){
@@ -2851,26 +2852,37 @@ $tourNumber = $seasonData
 					if (card) card.classList.toggle('is-selected', !!(pair[1] && pair[1].checked));
 				});
 			}
-			// "Сколько команд выходит в финальный этап" — чистое вычисление
-			// (groups_count × advance_count из Section 2), НЕ редактируемое поле и
-			// НЕ отправляется в форме. createStage() на бэкенде считает то же самое
-			// число тем же способом при finals_mode=divisions (см. контроллер).
-			function syncDivisionsFields() {
-				var isDivisions = !!(finalsModeDivisions && finalsModeDivisions.checked);
-				setBlockActive(divisionsFields, isDivisions);
-				if (isDivisions) rebuildDivisionFormatFields();
-				if (!isDivisions || !advancePerGroupSummary) return;
-				var g = parseInt(groupsCountInput ? groupsCountInput.value : 0, 10) || 0;
-				var a = parseInt(advanceCountInput ? advanceCountInput.value : 0, 10) || 0;
-				if (g && a) {
-					var total = g * a;
-					var totalNoun = cascadeTeamForms(total).noun;
-					advancePerGroupSummary.textContent = @json(__('tournaments.setup_divisions_advance_summary'))
-						.replace(':total', total).replace(':noun', totalNoun).replace(':per_group', a);
-				} else {
-					advancePerGroupSummary.textContent = '';
-				}
-			}
+            // Подсказка раскладки по дивизионам (модель A — ровные размеры).
+            // Backend (formDivisionsCore) делит РЕАЛЬНЫЕ команды со standings
+            // завершённого группового этапа. На форме их ещё нет — показываем
+            // ОЦЕНКУ по текущему числу зарегистрированных команд
+            // (window.__totalTeamsForDivisions). advance_count в раскладку
+            // дивизионов не входит (влияет только на bracket/placement).
+            function syncDivisionsFields() {
+                var isDivisions = !!(finalsModeDivisions && finalsModeDivisions.checked);
+                setBlockActive(divisionsFields, isDivisions);
+                if (isDivisions) rebuildDivisionFormatFields();
+                if (!isDivisions || !advancePerGroupSummary) return;
+                var g = parseInt(groupsCountInput ? groupsCountInput.value : 0, 10) || 0;
+                var totalTeams = window.__totalTeamsForDivisions || 0;
+                var divisionNames = (window.__divisionNamesByGroupsCount || {})[g] || [];
+                var divisionCount = divisionNames.length;
+                if (totalTeams < 1 || divisionCount < 1) {
+                    advancePerGroupSummary.textContent = '';
+                    return;
+                }
+                var base = Math.floor(totalTeams / divisionCount);
+                var remainder = totalTeams % divisionCount;
+                var parts = [];
+                divisionNames.forEach(function(name, idx) {
+                    var size = idx < remainder ? base + 1 : base;
+                    if (size > 0) parts.push(name + ' ' + size);
+                });
+                advancePerGroupSummary.textContent = @json(__('tournaments.setup_divisions_advance_summary'))
+                    .replace(':count', totalTeams)
+                    .replace(':noun', cascadeTeamForms(totalTeams).noun)
+                    .replace(':breakdown', parts.join(', '));
+            }
 			// Склонение "N команда/команды/команд" + согласование глагола
 			// "выходит"/"выходят" с числом direct — без этого JS всегда подставлял
 			// родительный падеж мн. числа ("4 команд" вместо "4 команды").
