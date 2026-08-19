@@ -1839,6 +1839,12 @@ body.dark .alert-warning {
     color: #ffc085;
 }
 
+/* Подсказка "без добора" внутри каскад-предпросмотра (tournaments/setup.blade.php) —
+   приглушённый текст относительно основного цвета алерта; #6b7280 почти не читается
+   на тёмном фоне alert-warning, поэтому в body.dark берём светлее. */
+.cascade-hint { color: #6b7280; }
+body.dark .cascade-hint { color: #9ca3af; }
+
 /* Danger/Error Alert */
 .alert-danger,
 .alert-error {
