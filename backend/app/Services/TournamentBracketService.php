@@ -332,6 +332,11 @@ class TournamentBracketService
                 $upperByRound[$upperRounds][0]->update([
                     'next_match_id'   => $grandFinal->id,
                     'next_match_slot' => 'home',
+                    // no-reset double elim: проигравший UB-финала падает в LB-финал.
+                    // home LB-финала уже занят победителем LB-полуфинала (цикл lower-связей
+                    // ниже), поэтому проигравший UB-финала идёт в свободный away.
+                    'loser_next_match_id'   => $lowerByRound[$lowerRounds][0]->id ?? null,
+                    'loser_next_match_slot' => 'away',
                 ]);
             }
 
