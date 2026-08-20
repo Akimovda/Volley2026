@@ -301,6 +301,22 @@ class TournamentBracketService
             ]);
             $allMatches->push($grandFinal);
 
+            // === GRAND FINAL RESET ===
+            // Создаётся заранее пустым (без team_home_id/team_away_id и без
+            // входящих next_match_id связей) — bracket reset обязателен всегда
+            // в FIVB double elimination. Слоты заполняет reset-логика
+            // submitScore(GF1) отдельным кодом (не через пропагацию), только
+            // если победитель GF1 пришёл из нижней сетки.
+            $grandFinalReset = TournamentMatch::create([
+                'stage_id'        => $stage->id,
+                'round'           => $grandFinal->round + 1,
+                'bracket_position' => 'upper',
+                'match_number'    => $matchNumber++,
+                'status'          => TournamentMatch::STATUS_SCHEDULED,
+                'court'           => 'Grand Final Reset',
+            ]);
+            $allMatches->push($grandFinalReset);
+
             // === Связи upper bracket ===
             for ($round = 1; $round < $upperRounds; $round++) {
                 foreach ($upperByRound[$round] as $i => $match) {
