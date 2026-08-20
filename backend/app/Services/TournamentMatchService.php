@@ -148,6 +148,40 @@ class TournamentMatchService
     }
 
     /**
+     * Bracket reset (double elimination): запрет рескоринга GF1, если GF2 уже
+     * разрешён. GF2 заполняется/отменяется спецкодом (handleGrandFinalReset()),
+     * не через next_match_id — обычный resetScore(GF1) откатывает только сам
+     * GF1 и никак не трогает GF2, поэтому автоматический откат невозможен без
+     * риска рассинхрона (GF2 остался бы заполнен/сыгран под уже несуществующий
+     * результат GF1). Организатор должен сначала вручную откатить GF2.
+     *
+     * @throws InvalidArgumentException  если GF2 не в исходном состоянии
+     *         (заполнен, cancelled или completed)
+     */
+    public function guardGrandFinalRescore(TournamentMatch $match): void
+    {
+        if ($match->court !== 'Grand Final') {
+            return;
+        }
+
+        $grandFinalReset = TournamentMatch::where('stage_id', $match->stage_id)
+            ->where('court', 'Grand Final Reset')
+            ->first();
+
+        if (!$grandFinalReset) {
+            return; // не-DE или старые стадии без pre-created GF2
+        }
+
+        $isPristine = $grandFinalReset->status === TournamentMatch::STATUS_SCHEDULED
+            && $grandFinalReset->team_home_id === null
+            && $grandFinalReset->team_away_id === null;
+
+        if (!$isPristine) {
+            throw new InvalidArgumentException(__('tournaments.gf1_rescore_blocked'));
+        }
+    }
+
+    /**
      * Отменить счёт (откат результата матча).
      */
     public function resetScore(TournamentMatch $match): TournamentMatch

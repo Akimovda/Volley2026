@@ -903,4 +903,7 @@ return [
 
     // Топ-игроки школы (volleyball_school/show.blade.php)
     'school_top_players_title'      => '🏆 Лучшие игроки',
+
+    // Bracket reset (double elimination) — рескоринг GF1
+    'gf1_rescore_blocked'           => 'Нельзя пересчитать результат финала: уже разрешён решающий матч (Grand Final Reset). Сначала откатите его результат.',
 ];
