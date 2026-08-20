@@ -2524,6 +2524,57 @@ class TournamentController extends Controller
                 return;
             }
 
+            // === АВТОЗАПУСК bracket-плей-офф (только несезонные туры) ===
+            // Сезонные туры сюда не доходят (early return выше) — у них запуск ручной.
+            // Для несезонных после завершения группового этапа автоматически
+            // запускаем pending-скелет с finals_mode='bracket'. Placement и divisions
+            // остаются ручными. Защита от гонки: два последних матча группы могут
+            // завершиться почти одновременно (параллельные корты, два запроса) — оба
+            // дойдут сюда, а advanceToPlayoff() неатомарен (delete→create), что дало
+            // бы дубли сетки. Атомарный claim pending→in_progress одним UPDATE
+            // пропускает ровно один параллельный запрос (affected=1), остальные видят
+            // affected=0 и просто ничего не делают. launchStage обёрнут в транзакцию
+            // (advanceToPlayoff сам неатомарен) — при сбое откатывается, claim
+            // возвращается в pending, чтобы организатор мог запустить вручную.
+            $autoNext = $event->tournamentStages()
+                ->where('occurrence_id', $stage->occurrence_id)
+                ->where('sort_order', '>', $stage->sort_order)
+                ->where('status', TournamentStage::STATUS_PENDING)
+                ->orderBy('sort_order')
+                ->first();
+
+            if ($autoNext && $autoNext->cfg('finals_mode') === 'bracket') {
+                $claimed = TournamentStage::where('id', $autoNext->id)
+                    ->where('status', TournamentStage::STATUS_PENDING)
+                    ->update(['status' => TournamentStage::STATUS_IN_PROGRESS]);
+
+                if ($claimed === 1) {
+                    $autoPrev = $event->tournamentStages()
+                        ->where('occurrence_id', $autoNext->occurrence_id)
+                        ->where('sort_order', '<', $autoNext->sort_order)
+                        ->orderByDesc('sort_order')
+                        ->first();
+
+                    if ($autoPrev && $autoPrev->isCompleted()) {
+                        try {
+                            DB::transaction(function () use ($autoNext, $autoPrev) {
+                                $this->setupService->launchStage($autoNext->fresh(), $autoPrev, []);
+                            });
+                            \Log::warning("Автозапуск bracket-стадии {$autoNext->id} после завершения группы {$stage->id}");
+                        } catch (\Throwable $e) {
+                            TournamentStage::where('id', $autoNext->id)
+                                ->update(['status' => TournamentStage::STATUS_PENDING]);
+                            \Log::warning("Ошибка автозапуска bracket-стадии {$autoNext->id}, статус возвращён в pending: " . $e->getMessage());
+                        }
+                    } else {
+                        // предшественник ещё не завершён (не должно происходить, т.к. мы
+                        // сюда попадаем именно из завершения группы) — откатить claim
+                        TournamentStage::where('id', $autoNext->id)
+                            ->update(['status' => TournamentStage::STATUS_PENDING]);
+                    }
+                }
+            }
+
             // 'divisions' (финальные группы по уровням) — эта группа завершена,
             // но турнир НЕ закончен: для divisions companion-стадия сознательно
             // не создаётся при createStage() (см. комментарий там), поэтому без
