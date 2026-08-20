@@ -102,9 +102,49 @@ class TournamentMatchService
             $this->advanceWinner($match, $winnerId);
             $this->advanceLoser($match);
             $this->maybeScheduleNextRound($match);
+
+            $this->handleGrandFinalReset($match);
         });
 
         return $match->fresh();
+    }
+
+    /**
+     * Bracket reset (double elimination): после Grand Final (GF1) решаем судьбу
+     * pre-created GF2 ('Grand Final Reset', см. generateDoubleElimination()).
+     * Инвариант генератора: team_home_id GF1 — представитель верхней сетки,
+     * team_away_id — представитель нижней. Победил home → у представителя
+     * нижней сетки уже второе поражение, турнир окончен, reset не нужен —
+     * GF2 отменяется. Победил away → у обоих участников по одному поражению,
+     * нужен решающий матч — GF2 заполняется теми же двумя командами (спецкодом,
+     * не через next_match_id — у GF2 нет входящих связей).
+     */
+    protected function handleGrandFinalReset(TournamentMatch $match): void
+    {
+        if ($match->court !== 'Grand Final') {
+            return;
+        }
+
+        $grandFinalReset = TournamentMatch::where('stage_id', $match->stage_id)
+            ->where('court', 'Grand Final Reset')
+            ->first();
+
+        if (!$grandFinalReset) {
+            return; // defensive: старые DE-стадии без pre-created GF2
+        }
+
+        if ($match->winner_team_id === $match->team_home_id) {
+            // Победил представитель верхней сетки — турнир окончен без reset
+            $grandFinalReset->update([
+                'status' => TournamentMatch::STATUS_CANCELLED,
+            ]);
+        } else {
+            // Победил представитель нижней сетки — нужен решающий матч
+            $grandFinalReset->update([
+                'team_home_id' => $match->team_home_id,
+                'team_away_id' => $match->team_away_id,
+            ]);
+        }
     }
 
     /**
