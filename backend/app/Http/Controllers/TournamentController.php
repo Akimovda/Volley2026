@@ -438,7 +438,9 @@ class TournamentController extends Controller
 
                     $this->setupService->drawManual($assignments);
                 } elseif ($drawMode === 'seeded') {
-                    $sorted = $teams->sortByDesc(fn($t) => $this->setupService->getTeamRating($t, $event->id))->values();
+                    // getTeamRating() не существует (Fatal Error); используем готовый sortByRating(),
+                    // читающий PlayerCareerStats.elo_rating по составу команды с учётом direction.
+                    $sorted = $this->setupService->sortByRating($teams, $stage)->values();
                 } else {
                     $sorted = $teams->shuffle();
                 }
