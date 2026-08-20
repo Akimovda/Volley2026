@@ -313,14 +313,22 @@ class TournamentBracketService
                     ];
 
                     // Проигравший → нижняя сетка
-                    $lowerRoundIdx = ($round - 1) * 2 + 1; // нечётный раунд нижней
-                    if (isset($lowerByRound[$lowerRoundIdx])) {
-                        $loserIdx = min($i, count($lowerByRound[$lowerRoundIdx]) - 1);
-                        if (isset($lowerByRound[$lowerRoundIdx][$loserIdx])) {
-                            $loserSlot = ($i % 2 === 0) ? 'home' : 'away';
-                            $updates['loser_next_match_id'] = $lowerByRound[$lowerRoundIdx][$loserIdx]->id;
-                            $updates['loser_next_match_slot'] = $loserSlot;
-                        }
+                    if ($round === 1) {
+                        // pair-раунд (lr=1): проигравшие UB-раунда 1 ложатся попарно
+                        $lowerRoundIdx = 1;
+                        $loserIdx  = intdiv($i, 2);
+                        $loserSlot = ($i % 2 === 0) ? 'home' : 'away';
+                    } else {
+                        // merge-раунд (lr=2*(round-1)): проигравший UB-раунда r>=2 идёт
+                        // тождественно в свой матч, слот 'away' (home зарезервирован
+                        // под победителя предыдущего internal-раунда нижней сетки)
+                        $lowerRoundIdx = 2 * ($round - 1);
+                        $loserIdx  = $i;
+                        $loserSlot = 'away';
+                    }
+                    if (isset($lowerByRound[$lowerRoundIdx][$loserIdx])) {
+                        $updates['loser_next_match_id'] = $lowerByRound[$lowerRoundIdx][$loserIdx]->id;
+                        $updates['loser_next_match_slot'] = $loserSlot;
                     }
 
                     $match->update($updates);
@@ -332,16 +340,31 @@ class TournamentBracketService
                 $upperByRound[$upperRounds][0]->update([
                     'next_match_id'   => $grandFinal->id,
                     'next_match_slot' => 'home',
+                    // no-reset double elim: проигравший UB-финала падает в LB-финал.
+                    // home LB-финала уже занят победителем LB-полуфинала (цикл lower-связей
+                    // ниже), поэтому проигравший UB-финала идёт в свободный away.
+                    'loser_next_match_id'   => $lowerByRound[$lowerRounds][0]->id ?? null,
+                    'loser_next_match_slot' => 'away',
                 ]);
             }
 
             // Связи lower bracket между раундами
             for ($lr = 1; $lr < $lowerRounds; $lr++) {
                 if (!isset($lowerByRound[$lr]) || !isset($lowerByRound[$lr + 1])) continue;
+                $curSize  = count($lowerByRound[$lr]);
+                $nextSize = count($lowerByRound[$lr + 1]);
                 foreach ($lowerByRound[$lr] as $i => $match) {
-                    $nextIdx = min(intdiv($i, 2), count($lowerByRound[$lr + 1]) - 1);
+                    if ($nextSize === $curSize) {
+                        // merge-переход: победитель идёт тождественно в свой матч,
+                        // слот 'home' (away зарезервирован под свежий дроп из upper)
+                        $nextIdx = $i;
+                        $slot    = 'home';
+                    } else {
+                        // internal-переход (halving): два победителя встречаются
+                        $nextIdx = intdiv($i, 2);
+                        $slot    = ($i % 2 === 0) ? 'home' : 'away';
+                    }
                     if (isset($lowerByRound[$lr + 1][$nextIdx])) {
-                        $slot = ($i % 2 === 0) ? 'home' : 'away';
                         $match->update([
                             'next_match_id'   => $lowerByRound[$lr + 1][$nextIdx]->id,
                             'next_match_slot' => $slot,
