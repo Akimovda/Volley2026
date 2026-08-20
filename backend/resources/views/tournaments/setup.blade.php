@@ -2283,7 +2283,13 @@ $tourNumber = $seasonData
 											<td style="text-align:center">{{ $match->setsScore() ?? '—' }}</td>
 											<td style="text-align:center">{{ $match->detailedScore() ?: '—' }}</td>
 											<td style="text-align:center">{{ $match->scheduled_at ? $match->scheduled_at->setTimezone($event->timezone ?? 'Europe/Moscow')->format('H:i') : '—' }}</td>
-											<td style="text-align:center">{{ $match->court ?? '—' }}</td>
+											<td style="text-align:center">
+												{{ match($match->court) {
+													'Grand Final' => 'Финал',
+													'Grand Final Reset' => 'Решающий матч',
+													default => $match->court ?? '—',
+												} }}
+											</td>
 											<td style="text-align:center">
 												<div class="text-center d-flex gap-1">
 													@if($match->isCompleted())
@@ -2293,10 +2299,13 @@ $tourNumber = $seasonData
 													@endif
 													@elseif($match->status === 'live')
 													<span class="b-600 alert-danger pt-05 pb-05 p-1">LIVE</span>
+													@elseif($match->status === 'cancelled')
+													{{-- Bracket reset: GF2 отменён — reset не потребовался, победил upper-представитель --}}
+													<span class="b-600 alert-info pt-05 pb-05 p-1">Не потребовался</span>
 													@else
 													<span class="b-600 alert-warning pt-05 pb-05 p-1">{{ __('tournaments.setup_match_pending') }}</span>
 													@endif
-												</div>	
+												</div>
 											</td>
 											<td class="p-1">
 												@if(($match->isScheduled() || $match->isLive()) && $match->hasTeams())

@@ -27,8 +27,15 @@
     box-shadow:0 2px 8px rgba(16,185,129,.1);
 }
 .bk-match--empty{border-color:rgba(0,0,0,.07);border-left-color:#d1d5db}
+.bk-match--cancelled{border-color:rgba(0,0,0,.07);border-left-color:#d1d5db;opacity:.65}
 .bk-match--third{border-left-color:#f59e0b}
 .bk-match--third.bk-match--completed{border-left-color:#10b981}
+
+/* ── Bracket reset: GF2 отменён (reset не потребовался) ── */
+.bk-cancelled-note{
+    padding:16px 10px;text-align:center;
+    font-size:.78rem;color:#9ca3af;font-style:italic;
+}
 
 /* ── Шапка матча ── */
 .bk-header{
@@ -116,6 +123,8 @@
 body.dark .bk-match{background:#1e293b;border-color:rgba(255,255,255,.1);border-left-color:#3b82f6}
 body.dark .bk-match--completed{border-color:rgba(16,185,129,.3);border-left-color:#10b981}
 body.dark .bk-match--empty{border-color:rgba(255,255,255,.07);border-left-color:#475569}
+body.dark .bk-match--cancelled{border-color:rgba(255,255,255,.07);border-left-color:#475569}
+body.dark .bk-cancelled-note{color:#64748b}
 body.dark .bk-header{background:rgba(255,255,255,.03);color:#94a3b8;border-color:rgba(255,255,255,.06)}
 body.dark .bk-court{background:rgba(59,130,246,.15);color:#93c5fd}
 body.dark .bk-team{border-color:rgba(255,255,255,.05)}
@@ -148,6 +157,25 @@ for ($r = 1; $r <= $totalRounds; $r++) {
         ->sortBy('match_number')
         ->values();
 }
+
+// Bracket reset (double elimination): GF1 (court='Grand Final') и GF2
+// (court='Grand Final Reset') — их раунды всегда старше остальных, определяем
+// по court, а не по позиции в $totalRounds (тот теперь указывает на GF2, если
+// он есть, из-за чего наивная арифметика "$total-$r" ниже съезжает). Для
+// single_elim (нет такого court вообще) — не влияет, работает как раньше.
+$gf1Round = $mainMatches->first(fn($m) => $m->court === 'Grand Final')?->round;
+$gf2Round = $mainMatches->first(fn($m) => $m->court === 'Grand Final Reset')?->round;
+// Раунд-"точка отсчёта" для generic-лейблов (Финал/Полуфинал/...) — GF1, если он
+// есть (тот же ориентир, что был до появления GF2), иначе $totalRounds как раньше.
+$labelReferenceRound = $gf1Round ?? $totalRounds;
+
+$courtLabel = function (?string $court) {
+    return match ($court) {
+        'Grand Final'       => 'Финал',
+        'Grand Final Reset' => 'Решающий матч',
+        default             => $court,
+    };
+};
 
 // Вертикальное выравнивание раундов:
 // cardH ≈ 184px (header 30 + 2 команды × 2 игрока × 30px + padding)
@@ -283,7 +311,16 @@ $tz = $stage->event->timezone ?? 'Europe/Moscow';
         $roundMatches = $matchesByRound[$r] ?? collect();
         $padTop = (int) round($stepH * (pow(2, $r - 1) - 1));
         $gap    = $r === 1 ? $baseGap : (int) round($stepH * pow(2, $r) - $cardH);
-        $label  = $roundLabel($r, $totalRounds);
+        // Bracket reset: GF1/GF2-раунды получают явную подпись по court, а не
+        // из арифметики $total-$r (см. $gf1Round/$gf2Round выше) — иначе после
+        // добавления GF2 (round=max) подписи "Финал"/"Полуфинал" съезжают местами.
+        if ($gf2Round !== null && $r === $gf2Round) {
+            $label = 'Решающий матч';
+        } elseif ($gf1Round !== null && $r === $gf1Round) {
+            $label = 'Финал';
+        } else {
+            $label = $roundLabel($r, $labelReferenceRound);
+        }
     @endphp
 
     @if($r > 1)<div class="bk-col-gap"></div>@endif
@@ -294,23 +331,32 @@ $tz = $stage->event->timezone ?? 'Europe/Moscow';
             @foreach($roundMatches as $m)
             @php
                 $isCompleted = $m->status === 'completed';
+                // Bracket reset: GF2 cancelled = reset не потребовался (upper-
+                // представитель выиграл GF1 напрямую) — это не "матч ожидает
+                // команды" (bk-match--empty), а осознанно неигранный матч.
+                $isCancelled = $m->status === 'cancelled';
                 $homeWin = $m->winner_team_id && $m->winner_team_id === $m->team_home_id;
                 $awayWin = $m->winner_team_id && $m->winner_team_id === $m->team_away_id;
                 $cls = 'bk-match';
-                if ($isCompleted)                              $cls .= ' bk-match--completed';
-                elseif (!$m->team_home_id || !$m->team_away_id) $cls .= ' bk-match--empty';
+                if ($isCompleted)                                $cls .= ' bk-match--completed';
+                elseif ($isCancelled)                            $cls .= ' bk-match--cancelled';
+                elseif (!$m->team_home_id || !$m->team_away_id)  $cls .= ' bk-match--empty';
             @endphp
             <div class="{{ $cls }}" data-match-id="{{ $m->id }}" data-next-match-id="{{ $m->next_match_id }}">
                 {{-- Шапка --}}
                 <div class="bk-header">
                     <span>Матч&thinsp;{{ $m->match_number }}</span>
-                    @if($m->court)<span class="bk-court">{{ $m->court }}</span>@endif
+                    @if($m->court)<span class="bk-court">{{ $courtLabel($m->court) }}</span>@endif
                     @if($m->scheduled_at)<span class="bk-time">{{ $m->scheduled_at->setTimezone($tz)->format('H:i') }}</span>@endif
                     @if($isCompleted)<span class="bk-check">✓</span>@endif
                 </div>
+                @if($isCancelled)
+                <div class="bk-cancelled-note">Решающий матч не потребовался</div>
+                @else
                 {{-- Команды --}}
                 {!! $renderTeam($m->teamHome, $homeWin, $isCompleted ? $m->sets_home : null, $isCompleted) !!}
                 {!! $renderTeam($m->teamAway, $awayWin, $isCompleted ? $m->sets_away : null, $isCompleted) !!}
+                @endif
             </div>
             @endforeach
         </div>
@@ -340,7 +386,7 @@ $tz = $stage->event->timezone ?? 'Europe/Moscow';
     <div class="{{ $cls3 }}" style="max-width:244px">
         <div class="bk-header">
             <span>Матч&thinsp;{{ $m3->match_number }}</span>
-            @if($m3->court)<span class="bk-court">{{ $m3->court }}</span>@endif
+            @if($m3->court)<span class="bk-court">{{ $courtLabel($m3->court) }}</span>@endif
             @if($m3->scheduled_at)<span class="bk-time">{{ $m3->scheduled_at->setTimezone($tz)->format('H:i') }}</span>@endif
             @if($c3)<span class="bk-check">✓</span>@endif
         </div>
