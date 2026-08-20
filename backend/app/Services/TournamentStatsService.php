@@ -456,6 +456,47 @@ class TournamentStatsService
                     }
                 }
             }
+
+            if ($bracketStage->type === TournamentStage::TYPE_DOUBLE_ELIM) {
+                // no-reset double elim: места 3..N по структуре нижней сетки.
+                // Место 3 = проигравший LB-финала, 4 = LB-полуфинала, далее тирами
+                // (5-6, 7-8, 9-12...) — внутри тира порядок по силе (та же формула
+                // compareStrength, что для дивизионов/добора; standings у сетки нет,
+                // поэтому агрегируем из сыгранных матчей и оборачиваем в непесистентный
+                // TournamentStanding). Места уникальны (тайбрейк решает порядок в тире).
+                $lowerMatches = $bracketStage->matches()
+                    ->where('bracket_position', 'lower')
+                    ->orderByDesc('round')
+                    ->get()
+                    ->groupBy('round'); // тиры от LB-финала к первому lower-раунду
+
+                foreach ($lowerMatches as $tier) {
+                    // Проигравшие ТОЛЬКО завершённых матчей тира
+                    $losers = [];
+                    foreach ($tier as $m) {
+                        if ($m->status !== TournamentMatch::STATUS_COMPLETED) continue;
+                        $lid = $m->loserId();
+                        if ($lid && !in_array($lid, $assignedTeams)) $losers[] = $lid;
+                    }
+                    if (empty($losers)) continue; // недоигранный тир пропускаем (уйдёт в fallback)
+
+                    // Тайбрейк внутри тира по силе (для тира из 1 команды — сортировка no-op)
+                    if (count($losers) > 1) {
+                        $standingsService = app(TournamentStandingsService::class);
+                        usort($losers, function ($a, $b) use ($bracketStage, $standingsService) {
+                            $sa = $this->buildAdHocStanding($bracketStage, $a);
+                            $sb = $this->buildAdHocStanding($bracketStage, $b);
+                            return $standingsService->compareStrength($sa, $sb);
+                        });
+                    }
+
+                    foreach ($losers as $lid) {
+                        $team = EventTeam::find($lid);
+                        $classification[] = ['place' => $place++, 'team_id' => $lid, 'team_name' => $team->name ?? '?'];
+                        $assignedTeams[] = $lid;
+                    }
+                }
+            }
         }
 
         // 2. Оставшиеся команды — по standings последней ЗАВЕРШЁННОЙ стадии с группами.
@@ -520,6 +561,43 @@ class TournamentStatsService
         }
 
         return $classification;
+    }
+
+    /**
+     * Непесистентный (без ->save()) агрегат TournamentStanding для команды по ВСЕЙ
+     * bracket-стадии (upper+lower) — тайбрейк мест 3..N в double_elim, где реальных
+     * standings нет (initStandings() требует TournamentGroup, которого у сетки нет).
+     * Переиспользует поля, которые понимает TournamentStandingsService::compareStrength().
+     */
+    private function buildAdHocStanding(TournamentStage $stage, int $teamId): TournamentStanding
+    {
+        $matches = TournamentMatch::where('stage_id', $stage->id)
+            ->where('status', TournamentMatch::STATUS_COMPLETED)
+            ->where(fn($q) => $q->where('team_home_id', $teamId)->orWhere('team_away_id', $teamId))
+            ->get();
+
+        $wins = 0;
+        $setsWon = 0;
+        $setsLost = 0;
+        $pointsScored = 0;
+        $pointsConceded = 0;
+
+        foreach ($matches as $m) {
+            $isHome = $m->team_home_id === $teamId;
+            $setsWon += $isHome ? $m->sets_home : $m->sets_away;
+            $setsLost += $isHome ? $m->sets_away : $m->sets_home;
+            $pointsScored += $isHome ? $m->total_points_home : $m->total_points_away;
+            $pointsConceded += $isHome ? $m->total_points_away : $m->total_points_home;
+            if ($m->winner_team_id === $teamId) $wins++;
+        }
+
+        return new TournamentStanding([
+            'rating_points'    => $wins,
+            'sets_won'         => $setsWon,
+            'sets_lost'        => $setsLost,
+            'points_scored'    => $pointsScored,
+            'points_conceded'  => $pointsConceded,
+        ]);
     }
 
     /**
