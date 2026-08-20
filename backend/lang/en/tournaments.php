@@ -884,4 +884,7 @@ return [
 
     // Top players of a school (volleyball_school/show.blade.php)
     'school_top_players_title'      => '🏆 Top players',
+
+    // Bracket reset (double elimination) — GF1 rescore
+    'gf1_rescore_blocked'           => 'Cannot recalculate the final result: the decider match (Grand Final Reset) has already been resolved. Roll back its result first.',
 ];

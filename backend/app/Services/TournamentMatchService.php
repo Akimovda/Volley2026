@@ -102,9 +102,83 @@ class TournamentMatchService
             $this->advanceWinner($match, $winnerId);
             $this->advanceLoser($match);
             $this->maybeScheduleNextRound($match);
+
+            $this->handleGrandFinalReset($match);
         });
 
         return $match->fresh();
+    }
+
+    /**
+     * Bracket reset (double elimination): после Grand Final (GF1) решаем судьбу
+     * pre-created GF2 ('Grand Final Reset', см. generateDoubleElimination()).
+     * Инвариант генератора: team_home_id GF1 — представитель верхней сетки,
+     * team_away_id — представитель нижней. Победил home → у представителя
+     * нижней сетки уже второе поражение, турнир окончен, reset не нужен —
+     * GF2 отменяется. Победил away → у обоих участников по одному поражению,
+     * нужен решающий матч — GF2 заполняется теми же двумя командами (спецкодом,
+     * не через next_match_id — у GF2 нет входящих связей).
+     */
+    protected function handleGrandFinalReset(TournamentMatch $match): void
+    {
+        if ($match->court !== 'Grand Final') {
+            return;
+        }
+
+        $grandFinalReset = TournamentMatch::where('stage_id', $match->stage_id)
+            ->where('court', 'Grand Final Reset')
+            ->first();
+
+        if (!$grandFinalReset) {
+            return; // defensive: старые DE-стадии без pre-created GF2
+        }
+
+        if ($match->winner_team_id === $match->team_home_id) {
+            // Победил представитель верхней сетки — турнир окончен без reset
+            $grandFinalReset->update([
+                'status' => TournamentMatch::STATUS_CANCELLED,
+            ]);
+        } else {
+            // Победил представитель нижней сетки — нужен решающий матч
+            $grandFinalReset->update([
+                'team_home_id' => $match->team_home_id,
+                'team_away_id' => $match->team_away_id,
+            ]);
+        }
+    }
+
+    /**
+     * Bracket reset (double elimination): запрет рескоринга GF1, если GF2 уже
+     * разрешён. GF2 заполняется/отменяется спецкодом (handleGrandFinalReset()),
+     * не через next_match_id — обычный resetScore(GF1) откатывает только сам
+     * GF1 и никак не трогает GF2, поэтому автоматический откат невозможен без
+     * риска рассинхрона (GF2 остался бы заполнен/сыгран под уже несуществующий
+     * результат GF1). Организатор должен сначала вручную откатить GF2.
+     *
+     * @throws InvalidArgumentException  если GF2 не в исходном состоянии
+     *         (заполнен, cancelled или completed)
+     */
+    public function guardGrandFinalRescore(TournamentMatch $match): void
+    {
+        if ($match->court !== 'Grand Final') {
+            return;
+        }
+
+        $grandFinalReset = TournamentMatch::where('stage_id', $match->stage_id)
+            ->where('court', 'Grand Final Reset')
+            ->first();
+
+        if (!$grandFinalReset) {
+            return; // не-DE или старые стадии без pre-created GF2
+        }
+
+        $isPristine = $grandFinalReset->status === TournamentMatch::STATUS_SCHEDULED
+            && $grandFinalReset->team_home_id === null
+            && $grandFinalReset->team_away_id === null;
+
+        if (!$isPristine) {
+            throw new InvalidArgumentException(__('tournaments.gf1_rescore_blocked'));
+        }
     }
 
     /**

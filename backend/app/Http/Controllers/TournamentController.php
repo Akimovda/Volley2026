@@ -937,6 +937,10 @@ class TournamentController extends Controller
         }
 
         try {
+            // Bracket reset (double elimination): рескоринг GF1 запрещён, если GF2
+            // уже разрешён (заполнен/cancelled/completed) — иначе рассинхрон.
+            $this->matchService->guardGrandFinalRescore($match);
+
             \Illuminate\Support\Facades\DB::transaction(function () use ($match, $sets, $request, $stage) {
                 $this->matchService->resetScore($match);
                 $this->matchService->recordScore($match->fresh(), $sets, $request->user());
@@ -2998,6 +3002,17 @@ class TournamentController extends Controller
                     ->route('tournament.matches.score.form', $match)
                     ->with('error', 'Нельзя исправить счёт — группы уже сформированы. Откатите распределение и повторите.');
             }
+        }
+
+        // Bracket reset (double elimination): та же защита, что в rescoreMatch() —
+        // resetScore(GF1) не тронет уже разрешённый GF2, откатывать через
+        // ball-by-ball reopen нельзя, пока GF2 не откачен вручную.
+        try {
+            $this->matchService->guardGrandFinalRescore($match);
+        } catch (\InvalidArgumentException $e) {
+            return redirect()
+                ->route('tournament.matches.score.form', $match)
+                ->with('error', $e->getMessage());
         }
 
         $this->matchService->resetScore($match);

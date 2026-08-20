@@ -414,7 +414,30 @@ class TournamentStatsService
             // при регресс-тестировании фикса event 402, см. report_402_finals_fix.md
             // п.4) — единственный надёжный признак финала — явное исключение
             // court='3rd place' из выбора, а не порядок номеров матчей.
-            $finalMatch = $bracketStage->matches()
+            //
+            // Bracket reset (double elimination): GF2 ('Grand Final Reset',
+            // TournamentBracketService::generateDoubleElimination()) существует и
+            // ещё scheduled → победитель GF1 пришёл из нижней сетки, решающий матч
+            // не сыгран. Объявлять финал по GF1 рано (места 1-2 назначит уже GF2,
+            // когда доиграется) — иначе преждевременный чемпион. Если GF2 cancelled
+            // (reset не понадобился) или completed (reset сыгран) — ниже сработает
+            // как раньше: max round completed корректно берёт GF1 или GF2.
+            //
+            // Места 1-2 резервируются в счётчике $place (без записи в
+            // $classification), НЕ пропускаются молча — иначе нижние тиры (блок
+            // ниже) съезжают на 1-2 позиции вверх и команда из нижней сетки
+            // получает "место 1" вместо реального 3+ — это хуже исходной проблемы
+            // (посторонняя команда выглядит чемпионом вместо участника GF1).
+            $grandFinalReset = $bracketStage->type === TournamentStage::TYPE_DOUBLE_ELIM
+                ? $bracketStage->matches()->where('court', 'Grand Final Reset')->first()
+                : null;
+            $resetPending = $grandFinalReset && $grandFinalReset->status === TournamentMatch::STATUS_SCHEDULED;
+
+            if ($resetPending) {
+                $place += 2;
+            }
+
+            $finalMatch = $resetPending ? null : $bracketStage->matches()
                 ->where('status', TournamentMatch::STATUS_COMPLETED)
                 ->where(function ($q) {
                     $q->whereNull('court')->orWhere('court', '!=', '3rd place');
