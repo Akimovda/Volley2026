@@ -298,7 +298,9 @@ class TournamentSetupService
     {
         $seedBy    = $stage->configValue('draw_seed_by', 'elo');
         $event     = $stage->event;
-        $direction = $event->tournament_settings->direction ?? 'classic';
+        // direction хранится прямой колонкой events.direction (универсальный паттерн проекта);
+        // $event->tournament_settings — несуществующий путь, всегда давал 'classic' (тихий баг beach).
+        $direction = $event->direction ?? 'classic';
 
         return $teams->sortByDesc(function (EventTeam $team) use ($seedBy, $direction) {
             return match ($seedBy) {
