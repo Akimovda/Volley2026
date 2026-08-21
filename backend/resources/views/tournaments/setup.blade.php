@@ -1410,7 +1410,7 @@ $tourNumber = $seasonData
 									<label>{{ __('tournaments.setup_stage_label_name') }}</label>
 									<input name="name" value="{{ old('name', __('tournaments.setup_stage_default_name')) }}" required>
 								</div>
-								<div class="col-lg-4 col-md-6">
+								<div class="col-lg-4 col-md-6" id="match_format_field">
 									<label>{{ __('tournaments.setup_stage_match_format') }}</label>
 									<select name="match_format" id="match_format_select">
 										<option value="bo3">Best of 3 (Bo3)</option>
@@ -2806,6 +2806,8 @@ $tourNumber = $seasonData
 			var groupFields = document.getElementById('group_fields');
 			var kbFields = document.getElementById('king_beach_fields');
 			var kocFields = document.getElementById('king_of_court_fields');
+			var matchFormatField = document.getElementById('match_format_field');
+			var decidingSetWrap = document.getElementById('deciding_set_wrap');
 			var courtsFields = document.getElementById('courts_shared_fields');
 			var scheduleFields = document.getElementById('schedule_fields');
 			var finalsModeFields = document.getElementById('finals_mode_fields');
@@ -3109,6 +3111,12 @@ $tourNumber = $seasonData
 					setBlockActive(groupFields, showGroup);
 					setBlockActive(kbFields, showKb);
 					setBlockActive(kocFields, showKoc);
+					// King of the Beach и King of the Court форсируют match_format=bo1 и
+					// deciding_set_points на бэкенде (createStage()) независимо от того, что
+					// выбрано в этих полях — организатору нечего в них выбирать, показывать
+					// их только сбивает с толку (выглядит как Bo3, играется как Bo1).
+					setBlockActive(matchFormatField, !(showKb || showKoc));
+					setBlockActive(decidingSetWrap, !(showKb || showKoc));
 					// Корты — общий блок для групповых форматов и King of the Beach
 					setBlockActive(courtsFields, showGroup || showKb);
 					// Расписание — только для группового формата (объединено с "Площадками" в
