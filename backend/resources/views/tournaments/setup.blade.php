@@ -1400,7 +1400,8 @@ $tourNumber = $seasonData
 										     выбора в форме (1A), тип и валидатор не трогаем. king_of_court и
 										     king_beach показываем только для пляжного турнира. --}}
 										@if($isBeach)
-										<option value="king_of_court">{{ __('tournaments.setup_stage_king_of_court') }}</option>
+										{{-- king_of_court временно скрыт до достройки afterMatch/standings/завершения — см. бэклог --}}
+										{{-- <option value="king_of_court">{{ __('tournaments.setup_stage_king_of_court') }}</option> --}}
 										<option value="king_beach">{{ __('tournaments.setup_stage_king_beach') }}</option>
 										@endif
 									</select>
