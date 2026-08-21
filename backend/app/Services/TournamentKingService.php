@@ -98,6 +98,17 @@ class TournamentKingService
 
     /**
      * После завершения матча: победитель = новый king, проигравший → конец очереди.
+     *
+     * Чистая стейт-машина — rating_points сюда не пишем: при group_id на
+     * standings/matches (см. initialize()/generateNextMatch()) штатный путь
+     * submitScore() сам вызывает StandingsService::recalculateGroup() сразу
+     * после этого метода (см. report/kotc_deps_recon_2026-08-21.md, п.1).
+     *
+     * Идемпотентность: НЕ полная — повторный вызов на одном и том же матче
+     * задвоил бы проигравшего в очереди (queue[] += $loserId второй раз).
+     * На практике повтор невозможен: хук вызывается ровно один раз из
+     * submitScore() (сразу после проставления winner_team_id), а рескор
+     * завершённого KotC-матча запрещён guardKotcRescore() — см. коммит 5.
      */
     public function afterMatch(TournamentStage $stage, TournamentMatch $match): void
     {
@@ -118,12 +129,5 @@ class TournamentKingService
 
         $config['queue'] = $queue;
         $stage->update(['config' => $config]);
-
-        // Бонусные очки king за удержание
-        $standing = TournamentStanding::where('stage_id', $stage->id)
-            ->where('team_id', $match->winner_team_id)->first();
-        if ($standing) {
-            $standing->increment('rating_points'); // +1 за удержание
-        }
     }
 }
