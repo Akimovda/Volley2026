@@ -192,6 +192,24 @@ class TournamentMatchService
     }
 
     /**
+     * King of the Court: полный запрет рескора завершённого матча (вариант А,
+     * без частичного отката). TournamentKingService::afterMatch() необратим —
+     * очередь FIFO, откат счёта одного матча не восстанавливает состояние
+     * "король + очередь" на момент ДО этого матча без отката всех сыгранных
+     * после него. См. report/kotc_deps_recon_2026-08-21.md, п.3.
+     */
+    public function guardKotcRescore(TournamentMatch $match): void
+    {
+        if ($match->stage->type !== TournamentStage::TYPE_KING_OF_COURT) {
+            return;
+        }
+
+        if ($match->isCompleted()) {
+            throw new InvalidArgumentException(__('tournaments.kotc_rescore_blocked'));
+        }
+    }
+
+    /**
      * Отменить счёт (откат результата матча).
      */
     public function resetScore(TournamentMatch $match): TournamentMatch

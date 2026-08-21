@@ -887,4 +887,7 @@ return [
 
     // Bracket reset (double elimination) — GF1 rescore
     'gf1_rescore_blocked'           => 'Cannot recalculate the final result: the decider match (Grand Final Reset) has already been resolved. Roll back its result first.',
+
+    // King of the Court — completed match score can never be edited
+    'kotc_rescore_blocked'          => 'King of the Court match score cannot be edited after completion — revert the stage instead.',
 ];

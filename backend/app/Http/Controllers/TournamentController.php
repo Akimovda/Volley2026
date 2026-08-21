@@ -957,6 +957,10 @@ class TournamentController extends Controller
             // уже разрешён (заполнен/cancelled/completed) — иначе рассинхрон.
             $this->matchService->guardGrandFinalRescore($match);
 
+            // King of the Court: рескор завершённого матча запрещён полностью
+            // (вариант А) — см. TournamentMatchService::guardKotcRescore().
+            $this->matchService->guardKotcRescore($match);
+
             \Illuminate\Support\Facades\DB::transaction(function () use ($match, $sets, $request, $stage) {
                 $this->matchService->resetScore($match);
                 $this->matchService->recordScore($match->fresh(), $sets, $request->user());
@@ -3025,6 +3029,10 @@ class TournamentController extends Controller
         // ball-by-ball reopen нельзя, пока GF2 не откачен вручную.
         try {
             $this->matchService->guardGrandFinalRescore($match);
+
+            // King of the Court: рескор завершённого матча запрещён полностью
+            // (вариант А) — см. TournamentMatchService::guardKotcRescore().
+            $this->matchService->guardKotcRescore($match);
         } catch (\InvalidArgumentException $e) {
             return redirect()
                 ->route('tournament.matches.score.form', $match)

@@ -906,4 +906,7 @@ return [
 
     // Bracket reset (double elimination) — рескоринг GF1
     'gf1_rescore_blocked'           => 'Нельзя пересчитать результат финала: уже разрешён решающий матч (Grand Final Reset). Сначала откатите его результат.',
+
+    // King of the Court — полный запрет рескора завершённого матча
+    'kotc_rescore_blocked'          => 'Счёт матча King of the Court нельзя изменить после завершения — откатите стадию целиком.',
 ];
