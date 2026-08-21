@@ -229,6 +229,22 @@ class TournamentController extends Controller
             $request->merge(['match_format' => 'bo1', 'deciding_set_points' => '15']);
         }
 
+        // King of the Court: "удержание корта" = один выигранный мини-сет —
+        // match_format принудительно bo1, даже если форма прислала другое
+        // значение. Организатор выбирает только set_points (форма показывает
+        // 15/21 — king_of_court доступен только для пляжных турниров, см.
+        // @if($isBeach) в setup.blade.php); если поле всё же не пришло —
+        // дефолт 15. deciding_set_points при bo1 не используется
+        // (validateScore() решающий сет для Bo1 не считает), форсируем как у
+        // king_beach — по тому же прецеденту.
+        if ($request->input('type') === TournamentStage::TYPE_KING_OF_COURT) {
+            $request->merge([
+                'match_format'        => 'bo1',
+                'set_points'          => $request->input('set_points') ?: '15',
+                'deciding_set_points' => '15',
+            ]);
+        }
+
         $validated = $request->validate([
             'type'        => 'required|in:' . implode(',', TournamentStage::TYPES),
             'name'        => 'required|string|max:100',
