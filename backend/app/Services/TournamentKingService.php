@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\TournamentStage;
 use App\Models\TournamentMatch;
 use App\Models\TournamentStanding;
+use App\Models\TournamentGroup;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -20,11 +21,21 @@ class TournamentKingService
      */
     public function initialize(TournamentStage $stage, array $teamIds): void
     {
+        // Обёрточная TournamentGroup — без неё standings/matches никогда не
+        // попадут в рендер $group->standings в setup.blade.php (та рендерит
+        // турнирную таблицу только через $stage->groups, см.
+        // report/kotc_deps_recon_2026-08-21.md, п.5).
+        $group = TournamentGroup::create([
+            'stage_id'   => $stage->id,
+            'name'       => 'King of the Court',
+            'sort_order' => 1,
+        ]);
+
         // Standings для всех
         foreach ($teamIds as $teamId) {
             TournamentStanding::firstOrCreate([
                 'stage_id' => $stage->id,
-                'group_id' => null,
+                'group_id' => $group->id,
                 'team_id'  => $teamId,
             ]);
         }
@@ -35,6 +46,7 @@ class TournamentKingService
                 'king_team_id'  => null,
                 'queue'         => $teamIds,
                 'current_round' => 0,
+                'king_group_id' => $group->id,
             ]),
         ]);
     }
@@ -48,6 +60,7 @@ class TournamentKingService
         $queue = $config['queue'] ?? [];
         $kingId = $config['king_team_id'] ?? null;
         $round = ($config['current_round'] ?? 0) + 1;
+        $groupId = $config['king_group_id'] ?? null;
 
         if (count($queue) < 1) {
             return null; // Турнир окончен
@@ -67,6 +80,7 @@ class TournamentKingService
 
         $match = TournamentMatch::create([
             'stage_id'     => $stage->id,
+            'group_id'     => $groupId,
             'round'        => $round,
             'match_number' => $matchNum,
             'team_home_id' => $homeId,
