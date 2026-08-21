@@ -40,13 +40,24 @@ class TournamentKingService
             ]);
         }
 
+        // rounds_count — сколько матчей сыграть всего, до завершения стадии.
+        // Организатор задаёт при создании стадии (форма setup.blade.php); если
+        // не задал — дефолт 2 матча на команду (каждая успевает хотя бы раз
+        // побывать королём и хотя бы раз челленджером).
+        $config = $stage->config ?? [];
+        $roundsCount = (int) ($config['rounds_count'] ?? 0);
+        if ($roundsCount < 1) {
+            $roundsCount = max(1, count($teamIds) * 2);
+        }
+
         $stage->update([
             'status' => TournamentStage::STATUS_IN_PROGRESS,
-            'config' => array_merge($stage->config ?? [], [
+            'config' => array_merge($config, [
                 'king_team_id'  => null,
                 'queue'         => $teamIds,
                 'current_round' => 0,
                 'king_group_id' => $group->id,
+                'rounds_count'  => $roundsCount,
             ]),
         ]);
     }
@@ -61,6 +72,14 @@ class TournamentKingService
         $kingId = $config['king_team_id'] ?? null;
         $round = ($config['current_round'] ?? 0) + 1;
         $groupId = $config['king_group_id'] ?? null;
+        $roundsCount = (int) ($config['rounds_count'] ?? 0);
+
+        // Лимит матчей (rounds_count) исчерпан — не плодим матчи сверх него.
+        // 0 — legacy-защита для стадий без rounds_count в config (не должно
+        // случаться после initialize(), тот всегда проставляет дефолт).
+        if ($roundsCount > 0 && ($config['current_round'] ?? 0) >= $roundsCount) {
+            return null;
+        }
 
         if (count($queue) < 1) {
             return null; // Турнир окончен

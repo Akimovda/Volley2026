@@ -1498,6 +1498,18 @@ $tourNumber = $seasonData
 							</div>
 						</div>
 					</div>
+					{{-- King of the Court: специфичные настройки --}}
+					<div class="mt-2" id="king_of_court_fields" style="display:none">
+						<div class="row">
+							<div class="col-md-6">
+								<div class="card">
+									<label>{{ __('tournaments.setup_stage_koc_rounds') }}</label>
+									<input type="number" name="rounds_count" id="koc_rounds_count_input" min="1" max="500" placeholder="{{ __('tournaments.setup_stage_koc_rounds_placeholder') }}">
+									<p class="f-16">{{ __('tournaments.setup_stage_koc_rounds_hint') }}</p>
+								</div>
+							</div>
+						</div>
+					</div>
 
 					<div class="mt-2 stage-section" id="group_fields">
 						<div class="stage-section-label">{{ __('tournaments.setup_stage_step_1_h') }}</div>
@@ -2794,6 +2806,7 @@ $tourNumber = $seasonData
 			var typeSelect = document.getElementById('stage_type_select');
 			var groupFields = document.getElementById('group_fields');
 			var kbFields = document.getElementById('king_beach_fields');
+			var kocFields = document.getElementById('king_of_court_fields');
 			var courtsFields = document.getElementById('courts_shared_fields');
 			var scheduleFields = document.getElementById('schedule_fields');
 			var finalsModeFields = document.getElementById('finals_mode_fields');
@@ -3092,9 +3105,11 @@ $tourNumber = $seasonData
 					var t = typeSelect.value;
 					var showGroup = window.__stageGroupTypes.indexOf(t) !== -1;
 					var showKb = (t === 'king_beach');
+					var showKoc = (t === 'king_of_court');
 					var isFollowup = window.__stageFollowupTypes.indexOf(t) !== -1;
 					setBlockActive(groupFields, showGroup);
 					setBlockActive(kbFields, showKb);
+					setBlockActive(kocFields, showKoc);
 					// Корты — общий блок для групповых форматов и King of the Beach
 					setBlockActive(courtsFields, showGroup || showKb);
 					// Расписание — только для группового формата (объединено с "Площадками" в
