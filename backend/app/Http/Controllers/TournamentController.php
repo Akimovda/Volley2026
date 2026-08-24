@@ -2682,18 +2682,32 @@ class TournamentController extends Controller
         $batchStages = $stages->reject(fn($s) => $s->hasIncrementalMatchGeneration());
 
         if ($batchStages->isEmpty()) {
-            // Событие целиком состоит из инкрементальных стадий (например, один
-            // swiss/king_of_court/king_beach без companion-стадии) — консервативно
-            // НЕ закрываем турнир автоматически вообще: лучше не закрыть вовремя,
-            // чем закрыть раньше времени. ИЗВЕСТНОЕ ОГРАНИЧЕНИЕ: для таких турниров
-            // "Турнир завершён!" не отправится автоматически никогда — явная кнопка
-            // "Завершить стадию" для организатора остаётся в backlog
-            // (report_stage_type_branching_audit.md §4.4), не реализована в этом проходе.
-            return;
+            // Событие целиком состоит из инкрементальных стадий. Область этой
+            // проверки — ТОЛЬКО swiss/king_of_court: для них isCompleted()===true
+            // достигается исключительно либо честным исчерпанием rounds_count
+            // (guard'ы выше в checkStageCompletion()), либо явным ручным
+            // finishStage() — оба случая означают реальное завершение. king_beach
+            // тоже incremental, но у него НЕТ такого guard'а в checkStageCompletion()
+            // (completed выставляется безусловно по total===completed) — включать
+            // его сюда было бы преждевременным закрытием турнира. Если среди
+            // инкрементальных стадий события есть king_beach — сохраняем прежнее
+            // консервативное поведение (return), это отдельный backlog, не в
+            // рамках этого прохода (report/finish_stage_recon_2026-08-21.md).
+            $onlySwissOrKotc = $stages->every(
+                fn($s) => in_array($s->type, [TournamentStage::TYPE_SWISS, TournamentStage::TYPE_KING_OF_COURT], true)
+            );
+
+            if (!$onlySwissOrKotc) {
+                return;
+            }
+
+            $countableStages = $stages;
+        } else {
+            $countableStages = $batchStages;
         }
 
-        $allStages = $batchStages->count();
-        $completedStages = $batchStages->filter(fn($s) => $s->isCompleted())->count();
+        $allStages = $countableStages->count();
+        $completedStages = $countableStages->filter(fn($s) => $s->isCompleted())->count();
 
         if ($allStages > 0 && $allStages === $completedStages) {
             try {
