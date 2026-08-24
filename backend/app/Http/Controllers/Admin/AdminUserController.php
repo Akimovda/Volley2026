@@ -19,7 +19,11 @@ class AdminUserController extends Controller
         // Filters
         // -----------------------------
         $q = trim((string) $request->get('q', ''));
-        $role = $request->get('role'); // admin|organizer|staff|user|null
+        $role = $request->get('role'); // admin|organizer|staff|user|banned|null
+
+        // 'banned' — виртуальный псевдо-роль-фильтр из ссылки "Бан-лист" на дашборде.
+        // Реального users.role='banned' не существует — блокировка живёт в user_restrictions.
+        $isBannedView = ($role === 'banned');
 
         // Только events-блокировки:
         // all | restricted | not_restricted
@@ -27,9 +31,9 @@ class AdminUserController extends Controller
 
         // Опции для select в blade (раньше отсутствовали => ошибка)
         $restrictedOptions = [
-            'all'            => 'Все',
-            'restricted'     => 'Только с блокировками (events)',
-            'not_restricted' => 'Только без блокировок',
+            'all'            => __('admin.restricted_all'),
+            'restricted'     => __('admin.restricted_restricted'),
+            'not_restricted' => __('admin.restricted_not_restricted'),
         ];
 
         // -----------------------------
@@ -54,36 +58,67 @@ class AdminUserController extends Controller
             });
         }
 
-        if (!empty($role)) {
-            $query->where('role', $role);
-        }
+        $now = now();
 
-        // -----------------------------
-        // Restriction filter (active events restrictions)
-        // active = ends_at is null OR ends_at > now()
-        // scope = 'events'
-        // -----------------------------
-        if ($restricted === 'restricted' || $restricted === 'not_restricted') {
-            $now = now();
-
-            $restrictedUserIdsSubquery = DB::table('user_restrictions')
+        if ($isBannedView) {
+            // Бан-лист: показываем пользователей с активным ограничением (scope=events),
+            // независимо от их реальной users.role.
+            $bannedUserIdsSubquery = DB::table('user_restrictions')
                 ->select('user_id')
                 ->where('scope', 'events')
-                ->where(function ($q) use ($now) {
-                    $q->whereNull('ends_at')
+                ->where(function ($w) use ($now) {
+                    $w->whereNull('ends_at')
                       ->orWhere('ends_at', '>', $now);
                 });
 
-            if ($restricted === 'restricted') {
-                $query->whereIn('id', $restrictedUserIdsSubquery);
-            } else { // not_restricted
-                $query->whereNotIn('id', $restrictedUserIdsSubquery);
+            $query->whereIn('id', $bannedUserIdsSubquery);
+        } else {
+            if (!empty($role)) {
+                $query->where('role', $role);
+            }
+
+            // -----------------------------
+            // Restriction filter (active events restrictions)
+            // active = ends_at is null OR ends_at > now()
+            // scope = 'events'
+            // -----------------------------
+            if ($restricted === 'restricted' || $restricted === 'not_restricted') {
+                $restrictedUserIdsSubquery = DB::table('user_restrictions')
+                    ->select('user_id')
+                    ->where('scope', 'events')
+                    ->where(function ($w) use ($now) {
+                        $w->whereNull('ends_at')
+                          ->orWhere('ends_at', '>', $now);
+                    });
+
+                if ($restricted === 'restricted') {
+                    $query->whereIn('id', $restrictedUserIdsSubquery);
+                } else { // not_restricted
+                    $query->whereNotIn('id', $restrictedUserIdsSubquery);
+                }
             }
         }
 
         $users = $query->orderByDesc('id')->paginate(25)->withQueryString();
         $roles = ['user', 'admin', 'organizer', 'staff'];
         $dupCount = count(app(\App\Services\UserMergeService::class)->findDuplicates());
+
+        // Для бан-листа подтягиваем саму запись ограничения (дата блокировки, event_ids)
+        // по одной активной записи scope=events на пользователя.
+        $restrictionsByUser = collect();
+        if ($isBannedView && $users->count() > 0) {
+            $restrictionsByUser = DB::table('user_restrictions')
+                ->where('scope', 'events')
+                ->whereIn('user_id', $users->pluck('id'))
+                ->where(function ($w) use ($now) {
+                    $w->whereNull('ends_at')
+                      ->orWhere('ends_at', '>', $now);
+                })
+                ->orderByDesc('id')
+                ->get()
+                ->unique('user_id')
+                ->keyBy('user_id');
+        }
 
         return view('admin.users.index', compact(
             'users',
@@ -92,7 +127,9 @@ class AdminUserController extends Controller
             'role',
             'restricted',
             'restrictedOptions',
-            'dupCount'
+            'dupCount',
+            'isBannedView',
+            'restrictionsByUser'
         ));
     }
 

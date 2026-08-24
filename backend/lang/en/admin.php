@@ -120,6 +120,17 @@ return [
     'col_google'       => 'Google',
     'col_registration' => 'Registration',
 
+    // === users/index — ban list (role=banned) ===
+    'users_role_banned'       => '🚫 Banned',
+    'col_login_provider'      => 'Login provider',
+    'col_login_provider_phone' => 'Phone',
+    'col_ban_date'            => 'Ban date',
+    'col_ban_events'          => 'Events',
+    'ban_col_actions'         => 'Action',
+    'ban_cancel_btn'          => 'Lift ban',
+    'ban_cancel_confirm'      => 'Remove all active restrictions for this user?',
+    'ban_list_empty'          => 'No banned users found',
+
     'show_title'         => 'User',
     'show_breadcrumb'    => 'User card',
     'show_back_to_list'  => '← To list',

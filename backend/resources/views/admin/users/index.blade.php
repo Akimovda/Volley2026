@@ -158,8 +158,10 @@ body.dark .btn-count-badge {
 									@foreach (($roles ?? []) as $r)
 									<option value="{{ $r }}" @selected(($role ?? null) === $r)>{{ $r }}</option>
 									@endforeach
+									<option value="banned" @selected(($role ?? null) === 'banned')>{{ __('admin.users_role_banned') }}</option>
 								</select>
 							</div>
+							@if(!($isBannedView ?? false))
 							<div class="col-12 col-md-4">
 								{{-- Restrictions (events) --}}
 								@php
@@ -171,13 +173,14 @@ body.dark .btn-count-badge {
 								];
 								$restricted = $restricted ?? 'all';
 								@endphp
-								
+
 								<select name="restricted">
 									@foreach ($restrictedOptions as $key => $label)
 									<option value="{{ $key }}" @selected($restricted === $key)>{{ $label }}</option>
 									@endforeach
 								</select>
 							</div>
+							@endif
 							
 							<div class="col-12">
 								<div class="admin-users-actions-row">
@@ -199,10 +202,78 @@ body.dark .btn-count-badge {
 			</div>
 		</div>	
 		
-		<div class="ramka">	
+		<div class="ramka">
 			<div class="table-scrollable mb-0">
-			<div class="table-drag-indicator"></div>		
+			<div class="table-drag-indicator"></div>
 			<table class="table">
+				@if($isBannedView ?? false)
+				<thead class="text-gray-600">
+					<tr>
+						<th>{{ __('admin.col_id') }}</th>
+						<th>{{ __('admin.col_user') }}</th>
+						<th>{{ __('admin.col_role') }}</th>
+						<th>{{ __('admin.col_login_provider') }}</th>
+						<th>{{ __('admin.col_ban_date') }}</th>
+						<th>{{ __('admin.col_ban_events') }}</th>
+						<th>{{ __('admin.ban_col_actions') }}</th>
+					</tr>
+				</thead>
+
+				<tbody>
+					@forelse ($users as $u)
+					@php
+					$restriction = ($restrictionsByUser ?? collect())->get($u->id);
+
+					$providers = [];
+					if ($u->telegram_id) { $providers[] = 'Telegram'; }
+					if ($u->vk_id) { $providers[] = 'VK'; }
+					if ($u->yandex_id) { $providers[] = 'Yandex'; }
+					if ($u->apple_id) { $providers[] = 'Apple'; }
+					if ($u->google_id) { $providers[] = 'Google'; }
+					if ($u->phone) { $providers[] = __('admin.col_login_provider_phone'); }
+
+					$eventIds = [];
+					if ($restriction && !empty($restriction->event_ids)) {
+					$decoded = is_string($restriction->event_ids) ? json_decode($restriction->event_ids, true) : $restriction->event_ids;
+					$eventIds = is_array($decoded) ? $decoded : [];
+					}
+					@endphp
+					<tr>
+						<td data-label="ID">{{ $u->id }}</td>
+
+						<td data-label="{{ __('admin.col_user') }}">
+<a class="blink b-600" href="{{ route('admin.users.show', $u) }}">
+@if($u->last_name || $u->first_name)
+    {{ trim(($u->last_name ?? '') . ' ' . ($u->first_name ?? '')) }}
+@else
+    {{ $u->name }}
+@endif
+</a>
+@if($u->name && ($u->last_name || $u->first_name))
+<div class="f-13" style="opacity:.4">{{ $u->name }}</div>
+@endif
+						</td>
+
+						<td data-label="{{ __('admin.col_role') }}">{{ $u->role ?? 'user' }}</td>
+						<td data-label="{{ __('admin.col_login_provider') }}">{{ count($providers) ? implode(', ', $providers) : '—' }}</td>
+						<td data-label="{{ __('admin.col_ban_date') }}">{{ $restriction ? \Carbon\Carbon::parse($restriction->created_at)->format('Y-m-d H:i') : '—' }}</td>
+						<td data-label="{{ __('admin.col_ban_events') }}">{{ count($eventIds) ? implode(', ', $eventIds) : 'all' }}</td>
+						<td data-label="{{ __('admin.ban_col_actions') }}">
+							<form method="POST" action="{{ route('admin.users.restrictions.clear', $u) }}"
+								onsubmit="return confirm({{ Js::from(__('admin.ban_cancel_confirm')) }});">
+								@csrf
+								<input type="hidden" name="confirm" value="yes">
+								<button class="btn btn-danger" type="submit">{{ __('admin.ban_cancel_btn') }}</button>
+							</form>
+						</td>
+					</tr>
+					@empty
+					<tr>
+						<td colspan="7" class="text-center">{{ __('admin.ban_list_empty') }}</td>
+					</tr>
+					@endforelse
+				</tbody>
+				@else
 				<thead class="text-gray-600">
 					<tr>
 						<th>{{ __('admin.col_id') }}</th>
@@ -216,12 +287,12 @@ body.dark .btn-count-badge {
 						<th>{{ __('admin.col_registration') }}</th>
 					</tr>
 				</thead>
-				
+
 				<tbody>
 					@foreach ($users as $u)
 					<tr>
 						<td data-label="ID">{{ $u->id }}</td>
-						
+
 						<td data-label="{{ __('admin.col_user') }}">
 <a class="blink b-600" href="{{ route('admin.users.show', $u) }}">
 @if($u->last_name || $u->first_name)
@@ -234,7 +305,7 @@ body.dark .btn-count-badge {
 <div class="f-13" style="opacity:.4">{{ $u->name }}</div>
 @endif
 						</td>
-						
+
 						<td data-label="{{ __('admin.col_role') }}">{{ $u->role ?? 'user' }}</td>
 						<td data-label="Telegram" class="text-center">{{ $u->telegram_id ? '✅' : '—' }}</td>
 						<td data-label="VK" class="text-center">{{ $u->vk_id ? '✅' : '—' }}</td>
@@ -245,10 +316,11 @@ body.dark .btn-count-badge {
 					</tr>
 					@endforeach
 				</tbody>
+				@endif
 			</table>
 		</div>
 
-		</div>	
+		</div>
 				{{ $users->links() }}
 	</div>		
 </x-voll-layout>
