@@ -118,6 +118,8 @@
     font-size:.72rem;font-weight:700;color:#9ca3af;
     text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px;
 }
+/* double_elim: бронза без дискретного матча — просто имя команды, без карточки счёта */
+.bk-third-place-name{font-size:.95rem;font-weight:700;color:#111827}
 
 /* ── Dark mode ── */
 body.dark .bk-match{background:#1e293b;border-color:rgba(255,255,255,.1);border-left-color:#3b82f6}
@@ -135,6 +137,7 @@ body.dark .bk-score--lose{background:rgba(255,255,255,.1);color:#94a3b8}
 body.dark .bk-third-section{border-color:rgba(255,255,255,.08)}
 body.dark .bk-team-name-link{color:#93c5fd}
 body.dark .bk-team--win .bk-team-name-link{color:#6ee7b7}
+body.dark .bk-third-place-name{color:#e2e8f0}
 </style>
 @endonce
 
@@ -406,6 +409,27 @@ $tz = $stage->event->timezone ?? 'Europe/Moscow';
         {!! $renderTeam($m3->teamAway, $a3, $c3 ? $m3->sets_away : null, $c3) !!}
     </div>
 </div>
+@endif
+
+{{-- double_elim: дискретного матча за 3-е нет (канонически — бронза это
+     проигравший LB-финала, уже определяется TournamentStatsService::
+     calculateFinalClassification(), см. report/recon_third_place_de.md).
+     Гейт строго по типу стадии — для остальных типов (single_elim/crossover
+     уже отрисован выше через $thirdPlace) эта ветка не вызывается вовсе,
+     дублирования витрины нет. $event виден из скоупа родителя show.blade.php
+     (тот же паттерн вызова, что show.blade.php:368, вкладка «Результаты»). --}}
+@if($stage->type === \App\Models\TournamentStage::TYPE_DOUBLE_ELIM)
+@php
+    $deClassification = app(\App\Services\TournamentStatsService::class)
+        ->calculateFinalClassification($event, $selectedOccurrence?->id ?? null);
+    $deThirdPlaceEntry = collect($deClassification)->firstWhere('place', 3);
+@endphp
+@if($deThirdPlaceEntry)
+<div class="bk-third-section">
+    <div class="bk-third-section-label">🥉 3-е место</div>
+    <div class="bk-third-place-name">{{ $deThirdPlaceEntry['team_name'] }}</div>
+</div>
+@endif
 @endif
 
 {{-- JS: SVG bezier-линии по реальным DOM-координатам --}}
