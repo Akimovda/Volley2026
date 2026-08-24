@@ -28,7 +28,9 @@ class TournamentSwissService
         $maxRounds = (int) $stage->cfg('rounds_count', 5);
 
         if ($currentRound > $maxRounds) {
-            throw new \InvalidArgumentException("Максимум туров ({$maxRounds}) уже достигнут.");
+            // Туры исчерпаны — не ошибка конфигурации, а нормальное завершение
+            // формата (контракт как у King of the Court::generateNextMatch()).
+            return collect();
         }
 
         $groupId = $stage->cfg('swiss_group_id');
