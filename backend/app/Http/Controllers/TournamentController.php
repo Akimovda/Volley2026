@@ -1735,6 +1735,37 @@ class TournamentController extends Controller
     }
 
     /**
+     * Ручное завершение инкрементальной стадии (swiss/king_of_court) — действие
+     * «Завершить стадию» (без подтверждения). Доступно только когда ВСЕ матчи
+     * стадии уже сыграны (нет scheduled/live) — иначе нужно
+     * finishStageForce(). В отличие от checkStageCompletion() минует guard'ы
+     * rounds_count (см. выше) — организатор явно хочет закрыть стадию раньше
+     * исчерпания лимита туров/матчей.
+     */
+    public function finishStage(Request $request, TournamentStage $stage)
+    {
+        $event = $stage->event;
+        $this->authorizeOrganizer($request, $event);
+
+        if (!in_array($stage->type, [TournamentStage::TYPE_SWISS, TournamentStage::TYPE_KING_OF_COURT], true)) {
+            return back()->with('error', 'Ручное завершение доступно только для Swiss и King of the Court.');
+        }
+
+        $hasUnplayed = $stage->matches()
+            ->whereIn('status', [TournamentMatch::STATUS_SCHEDULED, TournamentMatch::STATUS_LIVE])
+            ->exists();
+
+        if ($hasUnplayed) {
+            return back()->with('error', 'Есть несыгранные матчи — используйте «Отменить несыгранные и завершить».');
+        }
+
+        $stage->update(['status' => TournamentStage::STATUS_COMPLETED]);
+        $this->afterStageCompleted($stage);
+
+        return $this->redirectToSetup($event, 'Стадия завершена.', false, "stage_{$stage->id}");
+    }
+
+    /**
      * Быстрое создание финальной стадии одним кликом — для случая, когда
      * организатор удалил единственную single_elim стадию (revert/delete,
      * см. инцидент event 402) и застрял без штатного способа создать её
