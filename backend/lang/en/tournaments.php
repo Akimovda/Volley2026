@@ -518,6 +518,17 @@ return [
 
     'setup_stage_manual_distribution' => 'Manual distribution into groups',
     'setup_stage_manual_pick_group' => 'Pick a group for each team. Position is optional: it sets the seeding order within the group and affects how pairs are distributed across rounds in a round-robin. Leave it empty to keep the list order.',
+
+    // Standalone bracket/incremental stages (single_elim/double_elim/swiss/king_of_court
+    // as the FIRST, not companion, stage) — honest per-format messages and shortfall errors.
+    'setup_stage_error_min_single_elim' => 'Not enough teams for a single-elimination bracket: need at least :min, have :count.',
+    'setup_stage_error_min_double_elim' => 'Not enough teams for double elimination: need at least :min, have :count.',
+    'setup_stage_error_min_swiss' => 'Not enough teams for a Swiss system: need at least :min, have :count.',
+    'setup_stage_error_min_king_of_court' => 'Not enough teams for King of the Court: need at least :min, have :count.',
+    'setup_stage_created_single_elim' => 'Stage created: single-elimination bracket generated — teams: :teams, matches: :matches.',
+    'setup_stage_created_double_elim' => 'Stage created: double-elimination bracket generated — teams: :teams, matches: :matches.',
+    'setup_stage_created_swiss' => 'Stage created: Swiss system started, round 1 generated — teams: :teams, matches: :matches.',
+    'setup_stage_created_king_of_court' => 'Stage created: King of the Court started, first match generated — teams: :teams.',
     'setup_stage_col_group' => 'Group',
     'setup_stage_manual_position_col' => 'Position',
     'setup_stage_group_letter' => 'Group :l',

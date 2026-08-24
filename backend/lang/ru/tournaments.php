@@ -537,6 +537,17 @@ return [
 
     'setup_stage_manual_distribution' => 'Ручное распределение по группам',
     'setup_stage_manual_pick_group' => 'Выберите группу для каждой команды. Позиция необязательна: она задаёт порядок посева внутри группы и влияет на распределение пар по турам круговой системы. Если не заполнить — порядок будет как в списке команд.',
+
+    // Standalone bracket/incremental стадии (single_elim/double_elim/swiss/king_of_court
+    // как ПЕРВАЯ, не companion, стадия) — честные per-format сообщения и ошибки недобора.
+    'setup_stage_error_min_single_elim' => 'Недостаточно команд для сетки на выбывание: нужно минимум :min, сейчас :count.',
+    'setup_stage_error_min_double_elim' => 'Недостаточно команд для double elimination: нужно минимум :min, сейчас :count.',
+    'setup_stage_error_min_swiss' => 'Недостаточно команд для швейцарской системы: нужно минимум :min, сейчас :count.',
+    'setup_stage_error_min_king_of_court' => 'Недостаточно команд для King of the Court: нужно минимум :min, сейчас :count.',
+    'setup_stage_created_single_elim' => 'Стадия создана: сетка на выбывание сгенерирована — команд: :teams, матчей: :matches.',
+    'setup_stage_created_double_elim' => 'Стадия создана: сетка double elimination сгенерирована — команд: :teams, матчей: :matches.',
+    'setup_stage_created_swiss' => 'Стадия создана: швейцарская система запущена, тур 1 сгенерирован — команд: :teams, матчей: :matches.',
+    'setup_stage_created_king_of_court' => 'Стадия создана: King of the Court запущен, первый матч сгенерирован — команд: :teams.',
     'setup_stage_col_group' => 'Группа',
     'setup_stage_manual_position_col' => 'Позиция',
     'setup_stage_group_letter' => 'Группа :l',
