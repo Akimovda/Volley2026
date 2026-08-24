@@ -1707,6 +1707,9 @@ class TournamentController extends Controller
         try {
             if ($stage->type === 'swiss') {
                 $matches = $this->swissService->generateNextRound($stage);
+                if ($matches->isEmpty()) {
+                    return back()->with('error', 'Все туры уже сыграны.');
+                }
                 return $this->redirectToSetup($event, 'Тур ' . $matches->first()->round . ' сгенерирован (' . $matches->count() . ' матчей).');
 
             } elseif ($stage->type === 'king_of_court') {
