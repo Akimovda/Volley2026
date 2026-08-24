@@ -2395,9 +2395,29 @@ $tourNumber = $seasonData
 				</form>
 			</div>
 			@endif
-			
+
+			{{-- Завершить стадию (Swiss/King) --}}
+			@if($stage->isInProgress() && in_array($stage->type, ['swiss', 'king_of_court']))
+			@php
+			$hasUnplayedForFinish = $stage->matches->whereIn('status', ['scheduled', 'live'])->isNotEmpty();
+			@endphp
+			<div class="mt-2 d-flex" style="gap:10px;flex-wrap:wrap">
+				@if(!$hasUnplayedForFinish)
+				<form method="POST" action="{{ route('tournament.stages.finish', $stage) }}">
+					@csrf
+					<button type="submit" class="btn btn-primary f-14">{{ __('tournaments.setup_btn_finish_stage') }}</button>
+				</form>
+				@else
+				<form method="POST" action="{{ route('tournament.stages.finishForce', $stage) }}">
+					@csrf
+					<button type="submit" class="btn btn-secondary f-14 btn-alert" data-title="{{ __('tournaments.setup_finish_force_title') }}" data-text="{{ __('tournaments.setup_finish_force_text') }}" data-icon="warning" data-confirm-text="{{ __('tournaments.setup_btn_finish_force_confirm') }}" data-cancel-text="{{ __('tournaments.btn_cancel') }}">{{ __('tournaments.setup_btn_finish_force') }}</button>
+				</form>
+				@endif
+			</div>
+			@endif
+
 		</div>
-		
+
 		@endif
 		{{-- Продвижение / Группы --}}
 		@php

@@ -683,6 +683,12 @@ return [
     'setup_btn_koc_next'    => 'Следующий матч King of the Court',
     'setup_btn_next_arrow'  => 'Далее →',
 
+    'setup_btn_finish_stage'      => 'Завершить стадию',
+    'setup_btn_finish_force'      => 'Отменить несыгранные и завершить',
+    'setup_finish_force_title'    => 'Отменить несыгранные матчи?',
+    'setup_finish_force_text'     => 'Все несыгранные матчи стадии будут отменены, стадия — завершена. Действие необратимо.',
+    'setup_btn_finish_force_confirm' => 'Да, отменить и завершить',
+
     'setup_groups_h2'       => 'Настройка финальных групп',
     'setup_launch_wait_prev' => 'Групповой этап ещё не завершён — запуск финальных групп будет доступен после.',
     'setup_groups_redistribute' => 'По результатам группового этапа команды распределяются в :n групп:plural:',

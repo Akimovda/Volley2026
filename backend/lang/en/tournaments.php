@@ -664,6 +664,12 @@ return [
     'setup_btn_koc_next'    => 'Next King of the Court match',
     'setup_btn_next_arrow'  => 'Next →',
 
+    'setup_btn_finish_stage'      => 'Finish stage',
+    'setup_btn_finish_force'      => 'Cancel unplayed and finish',
+    'setup_finish_force_title'    => 'Cancel unplayed matches?',
+    'setup_finish_force_text'     => 'All unplayed matches of this stage will be cancelled and the stage finished. This cannot be undone.',
+    'setup_btn_finish_force_confirm' => 'Yes, cancel and finish',
+
     'setup_groups_h2'       => 'Final groups setup',
     'setup_launch_wait_prev' => 'The group stage is not finished yet — launching final groups will be available afterwards.',
     'setup_groups_redistribute' => 'Based on group stage results, teams are split into :n groups:',
