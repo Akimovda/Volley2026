@@ -1766,6 +1766,35 @@ class TournamentController extends Controller
     }
 
     /**
+     * Ручное завершение инкрементальной стадии (swiss/king_of_court) с отменой
+     * всех несыгранных матчей — действие «Отменить несыгранные и завершить».
+     * Отмена безопасна для standings: recalculateGroup() и так использует
+     * allow-list [completed, forfeit] — scheduled/live/cancelled матчи никогда
+     * не учитывались в подсчёте (report/finish_stage_recon_2026-08-21.md §3).
+     */
+    public function finishStageForce(Request $request, TournamentStage $stage)
+    {
+        $event = $stage->event;
+        $this->authorizeOrganizer($request, $event);
+
+        if (!in_array($stage->type, [TournamentStage::TYPE_SWISS, TournamentStage::TYPE_KING_OF_COURT], true)) {
+            return back()->with('error', 'Ручное завершение доступно только для Swiss и King of the Court.');
+        }
+
+        DB::transaction(function () use ($stage) {
+            $stage->matches()
+                ->whereIn('status', [TournamentMatch::STATUS_SCHEDULED, TournamentMatch::STATUS_LIVE])
+                ->update(['status' => TournamentMatch::STATUS_CANCELLED]);
+
+            $stage->update(['status' => TournamentStage::STATUS_COMPLETED]);
+        });
+
+        $this->afterStageCompleted($stage);
+
+        return $this->redirectToSetup($event, 'Несыгранные матчи отменены, стадия завершена.', false, "stage_{$stage->id}");
+    }
+
+    /**
      * Быстрое создание финальной стадии одним кликом — для случая, когда
      * организатор удалил единственную single_elim стадию (revert/delete,
      * см. инцидент event 402) и застрял без штатного способа создать её
