@@ -1704,6 +1704,14 @@ class TournamentController extends Controller
         $event = $stage->event;
         $this->authorizeOrganizer($request, $event);
 
+        // Defense-in-depth: без этой проверки повторный/прямой POST после
+        // finishStage()/finishStageForce() (или естественного завершения) мог бы
+        // "разморозить" уже закрытую стадию — ни generateNextRound(), ни
+        // generateNextMatch() сами статус не проверяют (report/finish_stage_recon_2026-08-21.md §4).
+        if (!$stage->isInProgress()) {
+            return back()->with('error', 'Стадия уже завершена.');
+        }
+
         try {
             if ($stage->type === 'swiss') {
                 $matches = $this->swissService->generateNextRound($stage);
@@ -1732,6 +1740,66 @@ class TournamentController extends Controller
         } catch (\InvalidArgumentException $e) {
             return back()->with('error', $e->getMessage());
         }
+    }
+
+    /**
+     * Ручное завершение инкрементальной стадии (swiss/king_of_court) — действие
+     * «Завершить стадию» (без подтверждения). Доступно только когда ВСЕ матчи
+     * стадии уже сыграны (нет scheduled/live) — иначе нужно
+     * finishStageForce(). В отличие от checkStageCompletion() минует guard'ы
+     * rounds_count (см. выше) — организатор явно хочет закрыть стадию раньше
+     * исчерпания лимита туров/матчей.
+     */
+    public function finishStage(Request $request, TournamentStage $stage)
+    {
+        $event = $stage->event;
+        $this->authorizeOrganizer($request, $event);
+
+        if (!in_array($stage->type, [TournamentStage::TYPE_SWISS, TournamentStage::TYPE_KING_OF_COURT], true)) {
+            return back()->with('error', 'Ручное завершение доступно только для Swiss и King of the Court.');
+        }
+
+        $hasUnplayed = $stage->matches()
+            ->whereIn('status', [TournamentMatch::STATUS_SCHEDULED, TournamentMatch::STATUS_LIVE])
+            ->exists();
+
+        if ($hasUnplayed) {
+            return back()->with('error', 'Есть несыгранные матчи — используйте «Отменить несыгранные и завершить».');
+        }
+
+        $stage->update(['status' => TournamentStage::STATUS_COMPLETED]);
+        $this->afterStageCompleted($stage);
+
+        return $this->redirectToSetup($event, 'Стадия завершена.', false, "stage_{$stage->id}");
+    }
+
+    /**
+     * Ручное завершение инкрементальной стадии (swiss/king_of_court) с отменой
+     * всех несыгранных матчей — действие «Отменить несыгранные и завершить».
+     * Отмена безопасна для standings: recalculateGroup() и так использует
+     * allow-list [completed, forfeit] — scheduled/live/cancelled матчи никогда
+     * не учитывались в подсчёте (report/finish_stage_recon_2026-08-21.md §3).
+     */
+    public function finishStageForce(Request $request, TournamentStage $stage)
+    {
+        $event = $stage->event;
+        $this->authorizeOrganizer($request, $event);
+
+        if (!in_array($stage->type, [TournamentStage::TYPE_SWISS, TournamentStage::TYPE_KING_OF_COURT], true)) {
+            return back()->with('error', 'Ручное завершение доступно только для Swiss и King of the Court.');
+        }
+
+        DB::transaction(function () use ($stage) {
+            $stage->matches()
+                ->whereIn('status', [TournamentMatch::STATUS_SCHEDULED, TournamentMatch::STATUS_LIVE])
+                ->update(['status' => TournamentMatch::STATUS_CANCELLED]);
+
+            $stage->update(['status' => TournamentStage::STATUS_COMPLETED]);
+        });
+
+        $this->afterStageCompleted($stage);
+
+        return $this->redirectToSetup($event, 'Несыгранные матчи отменены, стадия завершена.', false, "stage_{$stage->id}");
     }
 
     /**
@@ -2571,154 +2639,179 @@ class TournamentController extends Controller
 
         if ($total > 0 && $total === $completed) {
             $stage->update(['status' => TournamentStage::STATUS_COMPLETED]);
+            $this->afterStageCompleted($stage);
+        }
+    }
 
-            // Проверяем завершение
-            $event = $stage->event;
+    /**
+     * Хвост checkStageCompletion(), выполняемый ПОСЛЕ выставления status=completed:
+     * автозапуск companion-стадий, гейт divisions, финальная проверка завершённости
+     * всего турнира (уведомление + промоушен). Вынесен отдельным методом, чтобы
+     * его же мог переиспользовать finishStage() (ручное завершение инкрементальной
+     * стадии организатором) без прохождения через наивные guard'ы rounds_count.
+     */
+    private function afterStageCompleted(TournamentStage $stage): void
+    {
+        // Проверяем завершение
+        $event = $stage->event;
 
-            // Для сезонных турниров: НЕ отправляем "турнир завершён"
-            // Каждый тур — отдельный цикл, завершение управляется промоушеном
-            if ($event->season_id) {
-                // Проверяем только: нужно ли формировать группы Hard/Lite?
-                $occId = $stage->occurrence_id;
-                $occStages = $event->tournamentStages()->where('occurrence_id', $occId);
-                $allOccCompleted = $occStages->count() > 0
-                    && $occStages->where('status', TournamentStage::STATUS_COMPLETED)->count() === $occStages->count();
+        // Для сезонных турниров: НЕ отправляем "турнир завершён"
+        // Каждый тур — отдельный цикл, завершение управляется промоушеном
+        if ($event->season_id) {
+            // Проверяем только: нужно ли формировать группы Hard/Lite?
+            $occId = $stage->occurrence_id;
+            $occStages = $event->tournamentStages()->where('occurrence_id', $occId);
+            $allOccCompleted = $occStages->count() > 0
+                && $occStages->where('status', TournamentStage::STATUS_COMPLETED)->count() === $occStages->count();
 
-                // Ничего не делаем — организатор сам нажимает "Применить промоушен"
-                return;
-            }
+            // Ничего не делаем — организатор сам нажимает "Применить промоушен"
+            return;
+        }
 
-            // === АВТОЗАПУСК bracket-плей-офф (только несезонные туры) ===
-            // Сезонные туры сюда не доходят (early return выше) — у них запуск ручной.
-            // Для несезонных после завершения группового этапа автоматически
-            // запускаем pending-скелет с finals_mode='bracket'. Placement и divisions
-            // остаются ручными. Защита от гонки: два последних матча группы могут
-            // завершиться почти одновременно (параллельные корты, два запроса) — оба
-            // дойдут сюда, а advanceToPlayoff() неатомарен (delete→create), что дало
-            // бы дубли сетки. Атомарный claim pending→in_progress одним UPDATE
-            // пропускает ровно один параллельный запрос (affected=1), остальные видят
-            // affected=0 и просто ничего не делают. launchStage обёрнут в транзакцию
-            // (advanceToPlayoff сам неатомарен) — при сбое откатывается, claim
-            // возвращается в pending, чтобы организатор мог запустить вручную.
-            $autoNext = $event->tournamentStages()
-                ->where('occurrence_id', $stage->occurrence_id)
-                ->where('sort_order', '>', $stage->sort_order)
+        // === АВТОЗАПУСК bracket-плей-офф (только несезонные туры) ===
+        // Сезонные туры сюда не доходят (early return выше) — у них запуск ручной.
+        // Для несезонных после завершения группового этапа автоматически
+        // запускаем pending-скелет с finals_mode='bracket'. Placement и divisions
+        // остаются ручными. Защита от гонки: два последних матча группы могут
+        // завершиться почти одновременно (параллельные корты, два запроса) — оба
+        // дойдут сюда, а advanceToPlayoff() неатомарен (delete→create), что дало
+        // бы дубли сетки. Атомарный claim pending→in_progress одним UPDATE
+        // пропускает ровно один параллельный запрос (affected=1), остальные видят
+        // affected=0 и просто ничего не делают. launchStage обёрнут в транзакцию
+        // (advanceToPlayoff сам неатомарен) — при сбое откатывается, claim
+        // возвращается в pending, чтобы организатор мог запустить вручную.
+        $autoNext = $event->tournamentStages()
+            ->where('occurrence_id', $stage->occurrence_id)
+            ->where('sort_order', '>', $stage->sort_order)
+            ->where('status', TournamentStage::STATUS_PENDING)
+            ->orderBy('sort_order')
+            ->first();
+
+        if ($autoNext && $autoNext->cfg('finals_mode') === 'bracket') {
+            $claimed = TournamentStage::where('id', $autoNext->id)
                 ->where('status', TournamentStage::STATUS_PENDING)
-                ->orderBy('sort_order')
-                ->first();
+                ->update(['status' => TournamentStage::STATUS_IN_PROGRESS]);
 
-            if ($autoNext && $autoNext->cfg('finals_mode') === 'bracket') {
-                $claimed = TournamentStage::where('id', $autoNext->id)
-                    ->where('status', TournamentStage::STATUS_PENDING)
-                    ->update(['status' => TournamentStage::STATUS_IN_PROGRESS]);
+            if ($claimed === 1) {
+                $autoPrev = $event->tournamentStages()
+                    ->where('occurrence_id', $autoNext->occurrence_id)
+                    ->where('sort_order', '<', $autoNext->sort_order)
+                    ->orderByDesc('sort_order')
+                    ->first();
 
-                if ($claimed === 1) {
-                    $autoPrev = $event->tournamentStages()
-                        ->where('occurrence_id', $autoNext->occurrence_id)
-                        ->where('sort_order', '<', $autoNext->sort_order)
-                        ->orderByDesc('sort_order')
-                        ->first();
-
-                    if ($autoPrev && $autoPrev->isCompleted()) {
-                        try {
-                            DB::transaction(function () use ($autoNext, $autoPrev) {
-                                $this->setupService->launchStage($autoNext->fresh(), $autoPrev, []);
-                            });
-                            \Log::warning("Автозапуск bracket-стадии {$autoNext->id} после завершения группы {$stage->id}");
-                        } catch (\Throwable $e) {
-                            TournamentStage::where('id', $autoNext->id)
-                                ->update(['status' => TournamentStage::STATUS_PENDING]);
-                            \Log::warning("Ошибка автозапуска bracket-стадии {$autoNext->id}, статус возвращён в pending: " . $e->getMessage());
-                        }
-                    } else {
-                        // предшественник ещё не завершён (не должно происходить, т.к. мы
-                        // сюда попадаем именно из завершения группы) — откатить claim
+                if ($autoPrev && $autoPrev->isCompleted()) {
+                    try {
+                        DB::transaction(function () use ($autoNext, $autoPrev) {
+                            $this->setupService->launchStage($autoNext->fresh(), $autoPrev, []);
+                        });
+                        \Log::warning("Автозапуск bracket-стадии {$autoNext->id} после завершения группы {$stage->id}");
+                    } catch (\Throwable $e) {
                         TournamentStage::where('id', $autoNext->id)
                             ->update(['status' => TournamentStage::STATUS_PENDING]);
+                        \Log::warning("Ошибка автозапуска bracket-стадии {$autoNext->id}, статус возвращён в pending: " . $e->getMessage());
                     }
+                } else {
+                    // предшественник ещё не завершён (не должно происходить, т.к. мы
+                    // сюда попадаем именно из завершения группы) — откатить claim
+                    TournamentStage::where('id', $autoNext->id)
+                        ->update(['status' => TournamentStage::STATUS_PENDING]);
                 }
             }
+        }
 
-            // 'divisions' (финальные группы по уровням) — эта группа завершена,
-            // но турнир НЕ закончен: для divisions companion-стадия сознательно
-            // не создаётся при createStage() (см. комментарий там), поэтому без
-            // этой проверки завершённая группа была бы ЕДИНСТВЕННОЙ batch-стадией
-            // и турнир закрылся бы сразу — тот же баг, что чинили для event 402.
-            // Ждём, пока организатор явно нажмёт "Сформировать группы" на пульте
-            // (formDivisions() создаёт стадии "Группа Hard/Lite/...") — до этого
-            // момента считаем турнир незавершённым.
-            if (
-                $stage->canHaveFollowupStage()
-                && $stage->cfg('finals_mode') === 'divisions'
-                && $stage->groups->count() >= 2
-                && !$event->tournamentStages()->where('name', 'like', 'Группа %')->exists()
-            ) {
+        // 'divisions' (финальные группы по уровням) — эта группа завершена,
+        // но турнир НЕ закончен: для divisions companion-стадия сознательно
+        // не создаётся при createStage() (см. комментарий там), поэтому без
+        // этой проверки завершённая группа была бы ЕДИНСТВЕННОЙ batch-стадией
+        // и турнир закрылся бы сразу — тот же баг, что чинили для event 402.
+        // Ждём, пока организатор явно нажмёт "Сформировать группы" на пульте
+        // (formDivisions() создаёт стадии "Группа Hard/Lite/...") — до этого
+        // момента считаем турнир незавершённым.
+        if (
+            $stage->canHaveFollowupStage()
+            && $stage->cfg('finals_mode') === 'divisions'
+            && $stage->groups->count() >= 2
+            && !$event->tournamentStages()->where('name', 'like', 'Группа %')->exists()
+        ) {
+            return;
+        }
+
+        // Инкрементальные форматы (swiss/king_of_court/king_beach) генерируют матчи
+        // по ходу турнира — "все СОЗДАННЫЕ на сейчас матчи сыграны" (наивный критерий
+        // строкой выше, применённый к $stage) ложно совпадает с "формат закончен":
+        // king_of_court может закрыться после первого же матча (очередь ещё не
+        // пуста, просто следующий матч ещё не сгенерирован), swiss — после первого
+        // раунда, до клика "Следующий тур" (см. report_stage_type_branching_audit.md
+        // §3/§4.4). Поэтому при решении "весь ТУРНИР завершён" инкрементальные
+        // стадии не учитываются вовсе, если в событии есть хотя бы одна batch/bracket
+        // стадия (round_robin/groups_playoff/single_elim/double_elim/thai) —
+        // завершённость турнира определяется ТОЛЬКО ими.
+        $stages = $event->tournamentStages()->get();
+        $batchStages = $stages->reject(fn($s) => $s->hasIncrementalMatchGeneration());
+
+        if ($batchStages->isEmpty()) {
+            // Событие целиком состоит из инкрементальных стадий. Область этой
+            // проверки — ТОЛЬКО swiss/king_of_court: для них isCompleted()===true
+            // достигается исключительно либо честным исчерпанием rounds_count
+            // (guard'ы выше в checkStageCompletion()), либо явным ручным
+            // finishStage() — оба случая означают реальное завершение. king_beach
+            // тоже incremental, но у него НЕТ такого guard'а в checkStageCompletion()
+            // (completed выставляется безусловно по total===completed) — включать
+            // его сюда было бы преждевременным закрытием турнира. Если среди
+            // инкрементальных стадий события есть king_beach — сохраняем прежнее
+            // консервативное поведение (return), это отдельный backlog, не в
+            // рамках этого прохода (report/finish_stage_recon_2026-08-21.md).
+            $onlySwissOrKotc = $stages->every(
+                fn($s) => in_array($s->type, [TournamentStage::TYPE_SWISS, TournamentStage::TYPE_KING_OF_COURT], true)
+            );
+
+            if (!$onlySwissOrKotc) {
                 return;
             }
 
-            // Инкрементальные форматы (swiss/king_of_court/king_beach) генерируют матчи
-            // по ходу турнира — "все СОЗДАННЫЕ на сейчас матчи сыграны" (наивный критерий
-            // строкой выше, применённый к $stage) ложно совпадает с "формат закончен":
-            // king_of_court может закрыться после первого же матча (очередь ещё не
-            // пуста, просто следующий матч ещё не сгенерирован), swiss — после первого
-            // раунда, до клика "Следующий тур" (см. report_stage_type_branching_audit.md
-            // §3/§4.4). Поэтому при решении "весь ТУРНИР завершён" инкрементальные
-            // стадии не учитываются вовсе, если в событии есть хотя бы одна batch/bracket
-            // стадия (round_robin/groups_playoff/single_elim/double_elim/thai) —
-            // завершённость турнира определяется ТОЛЬКО ими.
-            $stages = $event->tournamentStages()->get();
-            $batchStages = $stages->reject(fn($s) => $s->hasIncrementalMatchGeneration());
+            $countableStages = $stages;
+        } else {
+            $countableStages = $batchStages;
+        }
 
-            if ($batchStages->isEmpty()) {
-                // Событие целиком состоит из инкрементальных стадий (например, один
-                // swiss/king_of_court/king_beach без companion-стадии) — консервативно
-                // НЕ закрываем турнир автоматически вообще: лучше не закрыть вовремя,
-                // чем закрыть раньше времени. ИЗВЕСТНОЕ ОГРАНИЧЕНИЕ: для таких турниров
-                // "Турнир завершён!" не отправится автоматически никогда — явная кнопка
-                // "Завершить стадию" для организатора остаётся в backlog
-                // (report_stage_type_branching_audit.md §4.4), не реализована в этом проходе.
-                return;
-            }
+        $allStages = $countableStages->count();
+        $completedStages = $countableStages->filter(fn($s) => $s->isCompleted())->count();
 
-            $allStages = $batchStages->count();
-            $completedStages = $batchStages->filter(fn($s) => $s->isCompleted())->count();
+        if ($allStages > 0 && $allStages === $completedStages) {
+            try {
+                // Атомарный claim: "турнир завершён" — событие, которое должно
+                // произойти РОВНО ОДИН РАЗ за жизнь турнира. Без guard'а этот
+                // блок срабатывает при КАЖДОМ переходе allStages===completedStages
+                // в true — если в уже завершённый турнир позже дозаполняется и
+                // завершается ещё один матч (например, дозаполнение плей-офф
+                // матчем за 3-4 место), участники получали бы повторное
+                // "Турнир завершён!" уведомление. Тот же паттерн, что и
+                // events.city_notified_at.
+                $claimed = DB::table('events')
+                    ->where('id', $event->id)
+                    ->whereNull('tournament_completed_notified_at')
+                    ->update(['tournament_completed_notified_at' => now()]);
 
-            if ($allStages > 0 && $allStages === $completedStages) {
-                try {
-                    // Атомарный claim: "турнир завершён" — событие, которое должно
-                    // произойти РОВНО ОДИН РАЗ за жизнь турнира. Без guard'а этот
-                    // блок срабатывает при КАЖДОМ переходе allStages===completedStages
-                    // в true — если в уже завершённый турнир позже дозаполняется и
-                    // завершается ещё один матч (например, дозаполнение плей-офф
-                    // матчем за 3-4 место), участники получали бы повторное
-                    // "Турнир завершён!" уведомление. Тот же паттерн, что и
-                    // events.city_notified_at.
-                    $claimed = DB::table('events')
-                        ->where('id', $event->id)
-                        ->whereNull('tournament_completed_notified_at')
-                        ->update(['tournament_completed_notified_at' => now()]);
-
-                    if ($claimed) {
-                        app(\App\Services\TournamentNotificationService::class)
-                            ->notifyTournamentCompleted($event);
-                    }
-
-                    // Пересчёт статистики/Elo/OpenSkill НЕ дублируем здесь: единственные
-                    // реальные вызывающие пути этого метода — score()/rescoreMatch() — уже
-                    // ставят RecalculateTournamentStatsJob (обёртка над recalculateTournament(),
-                    // сама ставит ratings job внутри себя) в очередь непосредственно перед
-                    // checkStageCompletion() в том же запросе — ShouldBeUnique по event_id
-                    // и так схлопнул бы повторный dispatch, но лишний вызов здесь не нужен.
-                    // (scoreKingBeach() тоже зовёт этот метод, но не через team_home_id/
-                    // winner_team_id — для king_beach recalculateTournament() безрезультатен
-                    // и раньше не вызывался вовсе, см. отдельный backlog.)
-
-                    // Авто-продвижение в сезоне (promote/relegate/reserve)
-                    app(\App\Services\TournamentPromotionService::class)
-                        ->processEvent($event);
-                } catch (\Throwable $e) {
-                    \Log::warning('Tournament completion notification failed: ' . $e->getMessage());
+                if ($claimed) {
+                    app(\App\Services\TournamentNotificationService::class)
+                        ->notifyTournamentCompleted($event);
                 }
+
+                // Пересчёт статистики/Elo/OpenSkill НЕ дублируем здесь: единственные
+                // реальные вызывающие пути этого метода — score()/rescoreMatch() — уже
+                // ставят RecalculateTournamentStatsJob (обёртка над recalculateTournament(),
+                // сама ставит ratings job внутри себя) в очередь непосредственно перед
+                // checkStageCompletion() в том же запросе — ShouldBeUnique по event_id
+                // и так схлопнул бы повторный dispatch, но лишний вызов здесь не нужен.
+                // (scoreKingBeach() тоже зовёт этот метод, но не через team_home_id/
+                // winner_team_id — для king_beach recalculateTournament() безрезультатен
+                // и раньше не вызывался вовсе, см. отдельный backlog.)
+
+                // Авто-продвижение в сезоне (promote/relegate/reserve)
+                app(\App\Services\TournamentPromotionService::class)
+                    ->processEvent($event);
+            } catch (\Throwable $e) {
+                \Log::warning('Tournament completion notification failed: ' . $e->getMessage());
             }
         }
     }

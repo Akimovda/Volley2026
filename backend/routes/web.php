@@ -1115,6 +1115,12 @@ Route::middleware([
     Route::post('/tournament-stages/{stage}/next-round', [TournamentController::class, 'nextRound'])
         ->name('tournament.stages.nextRound');
 
+    Route::post('/tournament-stages/{stage}/finish', [TournamentController::class, 'finishStage'])
+        ->name('tournament.stages.finish');
+
+    Route::post('/tournament-stages/{stage}/finish-force', [TournamentController::class, 'finishStageForce'])
+        ->name('tournament.stages.finishForce');
+
 
     Route::post('/events/{event}/tournament/mvp', [TournamentController::class, 'setMvp'])
         ->name('tournament.mvp');
