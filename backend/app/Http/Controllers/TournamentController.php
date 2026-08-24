@@ -2066,17 +2066,11 @@ class TournamentController extends Controller
                 'rating_points' => 0, 'rank' => 0,
             ]);
 
-            // Удаляем player stats для этого турнира
-            \App\Models\PlayerTournamentStats::where('event_id', $stage->event_id)->delete();
-
-            // Пересчитываем season stats
-            if ($stage->event->season_id) {
-                $season = $stage->event->season;
-                if ($season) {
-                    app(\App\Services\TournamentSeasonStatsService::class)
-                        ->rebuildForSeason($season);
-                }
-            }
+            // player_tournament_stats и (для сезонных турниров) season stats НЕ
+            // пересчитываем здесь синхронно — RecalculateTournamentStatsJob ниже
+            // делает это же полным rebuildAll() асинхронно (та самая "тяжёлая"
+            // операция ~4 сек на большой лиге, ради ухода от которой весь пересчёт
+            // и переводили на джобы — раньше она дублировалась и тут, и в джобе).
 
             $stage->update(['status' => TournamentStage::STATUS_IN_PROGRESS]);
         });

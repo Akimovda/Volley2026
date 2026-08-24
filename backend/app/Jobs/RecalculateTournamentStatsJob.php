@@ -5,7 +5,7 @@ namespace App\Jobs;
 use App\Models\Event;
 use App\Services\TournamentStatsService;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Contracts\Queue\ShouldBeUniqueUntilProcessing;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
@@ -26,12 +26,21 @@ use Illuminate\Support\Facades\Log;
  * догоняющий за пару секунд; никакого "устаревшего экрана" организатор не видит,
  * т.к. видимая ему таблица уже верна к моменту ответа страницы.
  *
- * ShouldBeUnique по event_id — если организатор быстро вводит несколько счетов
- * подряд (несколько матчей за раз), не плодим параллельные тяжёлые пересчёты
- * одного события: пока джоб для event_id в очереди/выполняется, повторный
- * dispatch с тем же ключом схлопывается в тот же джоб.
+ * ShouldBeUniqueUntilProcessing по event_id — если организатор быстро вводит
+ * несколько счетов подряд (несколько матчей за раз), не плодим параллельные
+ * тяжёлые пересчёты одного события. ВАЖНО: не обычный ShouldBeUnique — тот
+ * держит лок ВСЁ ВРЕМЯ ВЫПОЛНЕНИЯ handle() (секунды), и если во время работы
+ * джоба прилетает ещё одно изменение того же события (например, организатор
+ * исправил счёт и тут же удалил стадию), второй dispatch молча схлопывается
+ * и это изменение может не попасть ни в текущий, ни в какой-либо последующий
+ * пересчёт — итоговые данные тихо расходятся с реальностью до следующего
+ * независимого триггера для этого же event_id. ShouldBeUniqueUntilProcessing
+ * снимает лок сразу как джоб ВЗЯТ воркером из очереди (а не когда закончил) —
+ * окно гонки сжимается с "всё время выполнения" до миллисекунд между dequeue
+ * и стартом handle(), второй dispatch в реальности встаёт в очередь и досчитает
+ * актуальное состояние отдельным запуском вместо того, чтобы потеряться.
  */
-class RecalculateTournamentStatsJob implements ShouldQueue, ShouldBeUnique
+class RecalculateTournamentStatsJob implements ShouldQueue, ShouldBeUniqueUntilProcessing
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
