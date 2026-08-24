@@ -979,6 +979,11 @@ Route::get('/events/{event}/tournament/live', [TournamentPublicController::class
 Route::get('/events/{event}/tournament/bracket/{stage}', [TournamentPublicController::class, 'bracket'])
     ->name('tournament.public.bracket');
 
+// Live-фрагмент ленты "ход матча" — дёргается JS по WebSocket-сигналу
+// TournamentMatchRallyUpdated, без этого live-обновление недоступно.
+Route::get('/events/{event}/tournament/matches/{match}/progress', [TournamentPublicController::class, 'matchProgressFragment'])
+    ->name('tournament.public.match_progress');
+
 Route::get('/events/{event}/tournament/teams/{team}', [TournamentPublicController::class, 'teamRoster'])
     ->name('tournament.public.team');
 

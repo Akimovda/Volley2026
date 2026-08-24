@@ -16,6 +16,24 @@ use Illuminate\Http\Request;
 class TournamentPublicController extends Controller
 {
     /**
+     * Live-фрагмент ленты "ход матча" одного матча — рендерит тот же партиал,
+     * что и первичная загрузка show(), для честной подмены innerHTML на клиенте
+     * по WebSocket-сигналу TournamentMatchRallyUpdated (см. tournaments/public/show.blade.php).
+     */
+    public function matchProgressFragment(Event $event, TournamentMatch $match)
+    {
+        abort_unless($match->stage->event_id === $event->id, 404);
+
+        $matchProgress = app(MatchProgressService::class)->build($match->id);
+
+        return view('tournaments._partials.match_progress_fragment', [
+            'matchProgress' => $matchProgress,
+            'match'         => $match,
+            'event'         => $event,
+        ]);
+    }
+
+    /**
      * Главная публичная страница турнира (табы).
      */
     public function show(Request $request, Event $event)
@@ -92,7 +110,15 @@ class TournamentPublicController extends Controller
         // Детальная статистика по игрокам (эйсы/ошибки/блоки) — только для завершённых матчей, если заполнена
         $completedMatches = $stages->flatMap->matches->where('status', TournamentMatch::STATUS_COMPLETED)->values();
         $matchStatsByMatchId = app(PlayerMatchStatsService::class)->getMatchStatsTableForMatches($completedMatches);
-        $matchProgressByMatchId = app(MatchProgressService::class)->buildForMatches($completedMatches);
+
+        // Ход матча (лента розыгрышей) — ТАКЖЕ для матчей в статусе live, не только
+        // completed: данные в match_rally_events пишутся синхронно по ходу игры,
+        // раньше лента была видна только после завершения ВСЕГО матча (может идти
+        // час+), хотя реальной задержки в данных нет — это был чисто UI-фильтр.
+        $progressMatches = $stages->flatMap->matches
+            ->whereIn('status', [TournamentMatch::STATUS_COMPLETED, TournamentMatch::STATUS_LIVE])
+            ->values();
+        $matchProgressByMatchId = app(MatchProgressService::class)->buildForMatches($progressMatches);
 
         return view('tournaments.public.show', compact(
             'event', 'stages', 'tab', 'setting', 'totalMatches', 'totalTeams', 'occurrences', 'selectedOccurrence', 'seasonStats', 'currentSeason', 'matchStatsByMatchId', 'matchProgressByMatchId'

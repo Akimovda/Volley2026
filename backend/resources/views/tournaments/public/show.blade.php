@@ -437,7 +437,7 @@
 		@foreach($stages as $stage)
 		<div class="card p-3 mb-3">
 			<div class="b-700 f-16 mb-2">{{ $stage->name }}</div>
-			@foreach($stage->matches->where('status', 'completed')->sortBy(['round', 'match_number']) as $m)
+			@foreach($stage->matches->whereIn('status', ['completed', 'live'])->sortBy(['round', 'match_number']) as $m)
 			<div class="d-flex f-14" style="padding:5px 0;border-bottom:1px solid rgba(128,128,128,.08);gap:8px;align-items:center">
 				<span class="f-12" style="opacity:.4;width:30px">R{{ $m->round }}</span>
 				<span style="flex:1;text-align:right" class="{{ $m->winner_team_id === $m->team_home_id ? 'b-700' : '' }}">
@@ -445,9 +445,13 @@
 					@include('tournaments._partials.team_roster_line', ['team' => $m->teamHome, 'class' => 'f-11', 'style' => 'color:#6b7280'])
 				</span>
 				<span class="px-2 b-700" style="min-width:100px;text-align:center">
+					@if($m->isLive())
+					<span class="pub-live-badge" data-match-live-badge="{{ $m->id }}">🔴 {{ __('tournaments.pub_match_live') }}</span>
+					@else
 					{{ $m->setsScore() }}
 					@if($m->detailedScore())
 					<div class="f-11 b-400" style="opacity:.6">{{ $m->detailedScore() }}</div>
+					@endif
 					@endif
 				</span>
 				<span style="flex:1" class="{{ $m->winner_team_id === $m->team_away_id ? 'b-700' : '' }}">
@@ -464,18 +468,14 @@
 			</div>
 			@endif
 			<div style="text-align:center;margin:2px 0 8px">
-				<button type="button" class="btn btn-small btn-secondary" onclick="toggleMatchProgress({{ $m->id }})">▶ {{ __('tournaments.pub_match_progress_toggle') }}</button>
+				<button type="button" class="btn btn-small btn-secondary" onclick="toggleMatchProgress({{ $m->id }})">▶ {{ $m->isLive() ? '🔴 ' . __('tournaments.pub_match_progress_toggle_live') : __('tournaments.pub_match_progress_toggle') }}</button>
 			</div>
-			<div id="match-progress-r-{{ $m->id }}" class="card mb-2" style="display:none">
-				@if(!empty($matchProgressByMatchId[$m->id]['has_progress']))
-				@include('tournaments._partials.match_progress', ['progress' => $matchProgressByMatchId[$m->id], 'match' => $m, 'event' => $event])
-				@else
-				<div class="rp-empty">{{ __('tournaments.pub_match_progress_not_tracked') }}</div>
-				@endif
+			<div id="match-progress-r-{{ $m->id }}" class="card mb-2" data-match-progress="{{ $m->id }}" data-match-live="{{ $m->isLive() ? '1' : '0' }}" style="display:none">
+				@include('tournaments._partials.match_progress_fragment', ['matchProgress' => $matchProgressByMatchId[$m->id] ?? ['has_progress' => false], 'match' => $m, 'event' => $event])
 			</div>
 			@endforeach
 
-			@if($stage->matches->where('status', 'completed')->isEmpty())
+			@if($stage->matches->whereIn('status', ['completed', 'live'])->isEmpty())
 			<div class="f-13" style="opacity:.5">{{ __('tournaments.pub_no_finished_matches') }}</div>
 			@endif
 		</div>
@@ -630,6 +630,11 @@
 	
 	{{-- Live polling --}}
 	<x-slot name="script">
+		@php $hasLiveMatch = $stages->flatMap->matches->contains(fn($m) => $m->isLive()); @endphp
+		@if($hasLiveMatch)
+		<script src="/js/pusher.min.js"></script>
+		<script src="/js/echo.iife.js"></script>
+		@endif
 		<script>
 			(function() {
 				var liveUrl = @json(route('tournament.public.live', $event));
@@ -677,6 +682,60 @@
 					el.classList.toggle('rp-tab--active', el.getAttribute('data-rp-tab') === key);
 				});
 			}
+
+			{{-- Live "ход матча" — подписка на живые матчи через Reverb. Без этого блока
+			лента всё равно появляется (пусть и после перезагрузки страницы) — это
+			чисто UX-улучшение, поэтому вся инициализация обёрнута в try/catch и не
+			должна ронять остальной JS страницы, если WebSocket недоступен. --}}
+			@if($hasLiveMatch)
+			(function() {
+				var progressUrlTemplate = @json(route('tournament.public.match_progress', [$event, '__MATCH_ID__']));
+				var refreshTimers = {};
+
+				function refreshMatchProgress(matchId) {
+					var container = document.querySelector('[data-match-progress="' + matchId + '"]');
+					if (!container) return;
+					fetch(progressUrlTemplate.replace('__MATCH_ID__', matchId), {
+						headers: { 'Accept': 'text/html' },
+						credentials: 'same-origin'
+					})
+					.then(function(r) { return r.text(); })
+					.then(function(html) { container.innerHTML = html; })
+					.catch(function(e) { console.warn('[MatchProgress] refresh error:', e); });
+				}
+
+				function scheduleRefresh(matchId) {
+					clearTimeout(refreshTimers[matchId]);
+					// Небольшой дебаунс — гасит всплеск, если несколько очков/отмен
+					// прилетают почти одновременно (не дёргаем fetch на каждое).
+					refreshTimers[matchId] = setTimeout(function() {
+						refreshMatchProgress(matchId);
+					}, 400);
+				}
+
+				try {
+					window.Echo = window.Echo || new Echo({
+						broadcaster: 'reverb',
+						key: 'local',
+						wsHost: window.location.hostname,
+						wsPort: 80,
+						wssPort: 443,
+						forceTLS: window.location.protocol === 'https:',
+						enabledTransports: ['ws', 'wss']
+					});
+
+					document.querySelectorAll('[data-match-live="1"]').forEach(function(el) {
+						var matchId = el.getAttribute('data-match-progress');
+						if (!matchId) return;
+						Echo.channel('tournament-match.' + matchId).listen('.rally.updated', function() {
+							scheduleRefresh(matchId);
+						});
+					});
+				} catch (e) {
+					console.warn('[MatchProgress] realtime init failed:', e);
+				}
+			})();
+			@endif
 
 			// Android WebView не скачивает файлы по Content-Disposition: attachment
 			if (window.Capacitor && window.Capacitor.getPlatform() === 'android') {
