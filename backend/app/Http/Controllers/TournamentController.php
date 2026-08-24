@@ -352,6 +352,67 @@ class TournamentController extends Controller
             );
         }
 
+        // Standalone bracket/incremental типы (не companion, выбраны напрямую в
+        // селекторе "Тип") — до этой правки createStage() создавал для них
+        // мёртвую pending-стадию без единого матча и врал в сообщении на строке
+        // ~520 "жеребьёвка проведена". Список ЯВНЫЙ: canHaveFollowupStage()===false
+        // для всех четырёх (см. TournamentStage::TYPE_TRAITS), поэтому эта ветка не
+        // пересекается ни с companion-скелетом ниже, ни с групповым блоком —
+        // оба гейтятся canHaveFollowupStage(). king_beach НЕ входит — свои
+        // player-based эндпоинты (formKingBeachGroups и т.п.), не трогаем.
+        $standaloneBracketTypes = [
+            TournamentStage::TYPE_SINGLE_ELIM,
+            TournamentStage::TYPE_DOUBLE_ELIM,
+            TournamentStage::TYPE_SWISS,
+            TournamentStage::TYPE_KING_OF_COURT,
+        ];
+        $standaloneTeams = null;
+
+        if (in_array($validated['type'], $standaloneBracketTypes, true)) {
+            // Минимум команд проверяем ДО создания стадии ниже — setupService->
+            // createStage() создаёт запись безусловно (status=pending), недобор
+            // иначе оставлял бы пустую висячую стадию без матчей.
+            $standaloneTeams = EventTeam::where('event_id', $event->id)
+                ->when($occurrenceId, fn($q) => $q->where('occurrence_id', (int) $occurrenceId))
+                ->whereIn('status', ['submitted', 'approved', 'ready'])
+                ->with('event')
+                ->get();
+
+            // Фильтр резерва лиги — тот же паттерн, что и в групповом блоке ниже.
+            if ($event->season_id) {
+                $season = $event->season;
+                $league = $season?->leagues()->first();
+                if ($league) {
+                    $reserveTeamIds = $league->leagueTeams()
+                        ->where('status', 'reserve')
+                        ->pluck('team_id')->toArray();
+                    $standaloneTeams = $standaloneTeams->reject(fn($t) => in_array($t->id, $reserveTeamIds));
+                }
+            }
+
+            // single_elim/swiss/king_of_court — минимум 2 (Гейт A: swiss и
+            // king_of_court оба фактически требуют >=2 для первого тура/матча,
+            // просто swiss бросает исключение, а king_of_court тихо возвращает
+            // null — контроллер обязан отсечь недобор сам для обоих).
+            // double_elim — минимум 4 (TournamentBracketService::generateDoubleElimination()).
+            $minRequired = $validated['type'] === TournamentStage::TYPE_DOUBLE_ELIM ? 4 : 2;
+
+            if ($standaloneTeams->count() < $minRequired) {
+                $errorKey = match ($validated['type']) {
+                    TournamentStage::TYPE_SINGLE_ELIM   => 'tournaments.setup_stage_error_min_single_elim',
+                    TournamentStage::TYPE_DOUBLE_ELIM   => 'tournaments.setup_stage_error_min_double_elim',
+                    TournamentStage::TYPE_SWISS         => 'tournaments.setup_stage_error_min_swiss',
+                    TournamentStage::TYPE_KING_OF_COURT => 'tournaments.setup_stage_error_min_king_of_court',
+                };
+
+                return $this->redirectToSetup(
+                    $event,
+                    __($errorKey, ['min' => $minRequired, 'count' => $standaloneTeams->count()]),
+                    true
+                );
+            }
+        }
+
         $stage = $this->setupService->createStage($event, [
             'type'          => $validated['type'],
             'name'          => $validated['name'],
@@ -359,6 +420,68 @@ class TournamentController extends Controller
             'config'        => $config,
             'occurrence_id' => $occurrenceId ? (int) $occurrenceId : null,
         ]);
+
+        // Реальная жеребьёвка/генерация для standalone bracket/incremental типов —
+        // $standaloneTeams уже провалидирован (>= минимума) до создания стадии
+        // выше. Return ДО companion-скелета/группового блока/строки ~520 — те
+        // написаны для round_robin/groups_playoff и для этих 4 типов физически
+        // недостижимы (canHaveFollowupStage()===false для всех четырёх).
+        if ($standaloneTeams !== null) {
+            $drawMode = $request->input('draw_mode', 'random');
+            // getTeamRating() не существует (Fatal Error) — используем готовый
+            // sortByRating(), тот же метод, что и в групповом блоке ниже.
+            $sortedTeams = $drawMode === 'seeded'
+                ? $this->setupService->sortByRating($standaloneTeams, $stage)->values()
+                : $standaloneTeams->shuffle()->values();
+            $teamIds = $sortedTeams->pluck('id')->toArray();
+
+            $matchesCount = DB::transaction(function () use ($stage, $teamIds, $config) {
+                switch ($stage->type) {
+                    case TournamentStage::TYPE_SINGLE_ELIM:
+                        $matches = $this->bracketService->generateSingleElimination(
+                            $stage,
+                            $teamIds,
+                            (bool) ($config['third_place_match'] ?? false)
+                        );
+                        $stage->update(['status' => TournamentStage::STATUS_IN_PROGRESS]);
+                        return $matches->count();
+
+                    case TournamentStage::TYPE_DOUBLE_ELIM:
+                        $matches = $this->bracketService->generateDoubleElimination($stage, $teamIds);
+                        $stage->update(['status' => TournamentStage::STATUS_IN_PROGRESS]);
+                        return $matches->count();
+
+                    case TournamentStage::TYPE_SWISS:
+                        // initialize() сам генерит тур 1 внутри (generateNextRound()) —
+                        // отдельный вызов не нужен (Гейт A).
+                        return $this->swissService->initialize($stage, $teamIds)->count();
+
+                    case TournamentStage::TYPE_KING_OF_COURT:
+                        // initialize() НЕ генерит первый матч сам (Гейт A) — зеркалим
+                        // мёртвый draw() (строки 627-628): initialize() +
+                        // generateNextMatch() отдельным вызовом.
+                        $this->kingService->initialize($stage, $teamIds);
+                        $match = $this->kingService->generateNextMatch($stage->fresh());
+                        return $match ? 1 : 0;
+                }
+
+                return 0;
+            });
+
+            $messageKey = match ($stage->type) {
+                TournamentStage::TYPE_SINGLE_ELIM   => 'tournaments.setup_stage_created_single_elim',
+                TournamentStage::TYPE_DOUBLE_ELIM   => 'tournaments.setup_stage_created_double_elim',
+                TournamentStage::TYPE_SWISS         => 'tournaments.setup_stage_created_swiss',
+                TournamentStage::TYPE_KING_OF_COURT => 'tournaments.setup_stage_created_king_of_court',
+            };
+
+            return $this->redirectToSetup(
+                $event,
+                __($messageKey, ['teams' => count($teamIds), 'matches' => $matchesCount]),
+                false,
+                "stage_{$stage->id}"
+            );
+        }
 
         // Кусок 2, шаг 2b: явный скелет финальной стадии при создании турнира.
         // Раньше companion создавался авто и ТОЛЬКО для bracket/placement,
