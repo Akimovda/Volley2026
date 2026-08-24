@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\TournamentStage;
 use App\Models\TournamentMatch;
 use App\Models\TournamentStanding;
+use App\Models\TournamentGroup;
 use App\Models\TournamentGroupTeam;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -30,6 +31,8 @@ class TournamentSwissService
             throw new \InvalidArgumentException("Максимум туров ({$maxRounds}) уже достигнут.");
         }
 
+        $groupId = $stage->cfg('swiss_group_id');
+
         // Получаем standings отсортированные по очкам
         $standings = TournamentStanding::where('stage_id', $stage->id)
             ->orderByDesc('rating_points')
@@ -47,13 +50,14 @@ class TournamentSwissService
         // Подбираем пары
         $pairs = $this->matchTeams($standings, $playedPairs);
 
-        return DB::transaction(function () use ($stage, $pairs, $currentRound) {
+        return DB::transaction(function () use ($stage, $pairs, $currentRound, $groupId) {
             $matches = collect();
             $matchNum = ($stage->matches()->max('match_number') ?? 0) + 1;
 
             foreach ($pairs as [$homeId, $awayId]) {
                 $match = TournamentMatch::create([
                     'stage_id'     => $stage->id,
+                    'group_id'     => $groupId,
                     'round'        => $currentRound,
                     'match_number' => $matchNum++,
                     'team_home_id' => $homeId,
@@ -147,17 +151,32 @@ class TournamentSwissService
      */
     public function initialize(TournamentStage $stage, array $teamIds): Collection
     {
-        // Создаём standings для всех команд (без группы)
+        // Обёрточная TournamentGroup — без неё standings/matches никогда не
+        // попадут в рендер $group->standings в setup.blade.php (та рендерит
+        // турнирную таблицу только через $stage->groups) и recalculateGroup()
+        // никогда не вызовется из submitScore() (тот триггерится по
+        // $match->group_id). Тот же паттерн, что и у King of the Court.
+        $group = TournamentGroup::create([
+            'stage_id'   => $stage->id,
+            'name'       => 'Швейцарская система',
+            'sort_order' => 1,
+        ]);
+
+        // Создаём standings для всех команд
         foreach ($teamIds as $teamId) {
             TournamentStanding::firstOrCreate([
                 'stage_id' => $stage->id,
-                'group_id' => null,
+                'group_id' => $group->id,
                 'team_id'  => $teamId,
             ]);
         }
 
-        $stage->update(['status' => TournamentStage::STATUS_IN_PROGRESS]);
+        $config = $stage->config ?? [];
+        $stage->update([
+            'status' => TournamentStage::STATUS_IN_PROGRESS,
+            'config' => array_merge($config, ['swiss_group_id' => $group->id]),
+        ]);
 
-        return $this->generateNextRound($stage);
+        return $this->generateNextRound($stage->fresh());
     }
 }
