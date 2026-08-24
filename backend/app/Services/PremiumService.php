@@ -108,9 +108,10 @@ class PremiumService
             ->where('expires_at', '<=', now())
             ->update(['status' => 'expired']);
 
-        // Удаляем подписки на игроков — фича только для активного премиума
+        // Удаляем подписки на игроков и джобы авто-записи — фичи только для активного премиума
         if ($expiredUserIds->isNotEmpty()) {
             \App\Models\PlayerFollow::whereIn('follower_user_id', $expiredUserIds)->delete();
+            \App\Models\PremiumAutoBooking::whereIn('user_id', $expiredUserIds)->delete();
         }
 
         return $count;

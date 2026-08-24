@@ -165,7 +165,192 @@
                 @endif
             </div>
 
+            {{-- Секция: Авто-запись на мероприятия --}}
+            <div class="ramka mt-3">
+                <h2 class="-mt-05">{{ __('premium.auto_booking_title') }}</h2>
+                <div class="f-15 mb-2" style="opacity:.6;">
+                    {{ __('premium.auto_booking_desc') }}
+                </div>
+
+                @if(session('status'))
+                <div class="mt-1 mb-2 f-15" style="color:#4caf50;">{{ session('status') }}</div>
+                @endif
+                @if(session('error'))
+                <div class="mt-1 mb-2 f-15" style="color:#e74c3c;">{{ session('error') }}</div>
+                @endif
+
+                <div class="f-14 mb-2 b-600">
+                    {{ __('premium.auto_booking_count', ['count' => $autoBookings->count(), 'max' => $autoBookingsMax]) }}
+                </div>
+
+                @if($autoBookings->isEmpty())
+                <div class="f-15 mb-2" style="opacity:.5;">{{ __('premium.auto_booking_empty') }}</div>
+                @else
+                <div class="mb-2">
+                    @foreach($autoBookings as $ab)
+                    @php $abTitle = $ab->event?->title ?? ('#' . $ab->event_id); @endphp
+                    <div class="d-flex fvc between mb-1 p-1" style="background:rgba(41,103,186,.06);border-radius:8px;gap:10px">
+                        <div>
+                            <div class="b-600">{{ $abTitle }}</div>
+                            <div class="f-13" style="opacity:.6">
+                                @if($ab->event?->location?->name)
+                                {{ $ab->event->location->name }} ·
+                                @endif
+                                {{ __('premium.auto_booking_position_th') }}: {{ __('events.positions.' . $ab->position) }}
+                            </div>
+                        </div>
+                        <form method="POST" action="{{ route('premium.auto_bookings.destroy', $ab->id) }}"
+                            onsubmit="return confirm({{ Js::from(__('premium.auto_booking_delete_confirm', ['title' => $abTitle])) }})">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn btn-secondary btn-small" style="font-size:12px">{{ __('premium.auto_booking_btn_delete') }}</button>
+                        </form>
+                    </div>
+                    @endforeach
+                </div>
+                @endif
+
+                @if($autoBookings->count() < $autoBookingsMax)
+                <div class="mt-2 form" id="premium-ab-add-block">
+                    <div class="f-14 mb-1 b-600">{{ __('premium.auto_booking_add_title') }}</div>
+                    <form method="POST" action="{{ route('premium.auto_bookings.store') }}" id="premium-ab-form">
+                        @csrf
+
+                        <div class="mb-2" style="position:relative;" id="premium-ab-search-wrap">
+                            <label class="f-15 mb-05">{{ __('premium.auto_booking_search_label') }}</label>
+                            <input type="text" id="premium-ab-search-input" autocomplete="off"
+                                placeholder="{{ __('premium.auto_booking_search_ph') }}" />
+                            <div id="premium-ab-search-dd" class="form-select-dropdown trainer_dd"></div>
+                            <input type="hidden" name="event_id" id="premium-ab-event-id">
+                        </div>
+
+                        <div class="mb-2">
+                            <label class="f-15 mb-05">{{ __('premium.auto_booking_position_label') }}</label>
+                            <select name="position" id="premium_ab_position" disabled>
+                                <option value="">{{ __('premium.auto_booking_position_placeholder') }}</option>
+                            </select>
+                        </div>
+
+                        <button class="btn w-100" type="submit" id="premium-ab-submit" disabled>{{ __('premium.auto_booking_btn_add') }}</button>
+                    </form>
+                </div>
+                @endif
+            </div>
+
         </div>
     </div>
+
+    <x-slot name="script">
+    <script>
+    (function() {
+        var input        = document.getElementById('premium-ab-search-input');
+        var dd            = document.getElementById('premium-ab-search-dd');
+        var eventIdInput  = document.getElementById('premium-ab-event-id');
+        var positionSelect = document.getElementById('premium_ab_position');
+        var submitBtn     = document.getElementById('premium-ab-submit');
+        var timer         = null;
+
+        if (!input) return;
+
+        var i18n = {
+            notFound: @json(__('premium.auto_booking_search_no_results')),
+            searching: @json(__('premium.auto_booking_search_searching')),
+            positionPlaceholder: @json(__('premium.auto_booking_position_placeholder')),
+        };
+
+        function esc(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+        function showDd() { dd.classList.add('form-select-dropdown--active'); }
+        function hideDd() { dd.classList.remove('form-select-dropdown--active'); }
+
+        function setPositions(positions) {
+            positionSelect.innerHTML = '';
+
+            if (!positions || !positions.length) {
+                var opt = document.createElement('option');
+                opt.value = '';
+                opt.textContent = i18n.positionPlaceholder;
+                positionSelect.appendChild(opt);
+                positionSelect.disabled = true;
+            } else {
+                positions.forEach(function(p) {
+                    var opt = document.createElement('option');
+                    opt.value = p.value;
+                    opt.textContent = p.label;
+                    positionSelect.appendChild(opt);
+                });
+                positionSelect.disabled = false;
+            }
+
+            // select обёрнут createCustomSelect() (script.js) — перезаполнение <option>
+            // не подхватывается кастомной обёрткой само по себе, нужно пересоздать её
+            // (см. CLAUDE.md про createCustomSelect).
+            if (window.customSelect && typeof window.customSelect.destroy === 'function'
+                && typeof window.createCustomSelect === 'function' && window.jQuery) {
+                window.customSelect.destroy('premium_ab_position');
+                window.createCustomSelect(window.jQuery(positionSelect));
+            }
+        }
+
+        function pick(item) {
+            input.value = item.label;
+            eventIdInput.value = item.id;
+            hideDd();
+            setPositions(item.positions);
+            submitBtn.disabled = false;
+        }
+
+        function render(items) {
+            dd.innerHTML = '';
+            if (!items.length) {
+                dd.innerHTML = '<div class="city-message">' + i18n.notFound + '</div>';
+                showDd();
+                return;
+            }
+
+            items.forEach(function(item) {
+                var div = document.createElement('div');
+                div.className = 'trainer-item form-select-option';
+                div.innerHTML = '<div class="text-sm text-gray-900">' + esc(item.label)
+                    + (item.next_at ? ' <span style="opacity:.5">— ' + esc(item.next_at) + '</span>' : '') + '</div>';
+                div.addEventListener('click', function() { pick(item); });
+                dd.appendChild(div);
+            });
+
+            showDd();
+        }
+
+        input.addEventListener('input', function() {
+            clearTimeout(timer);
+            eventIdInput.value = '';
+            submitBtn.disabled = true;
+            setPositions([]);
+
+            var q = input.value.trim();
+            if (q.length < 2) { hideDd(); return; }
+
+            dd.innerHTML = '<div class="city-message">' + i18n.searching + '</div>';
+            showDd();
+
+            timer = setTimeout(function() {
+                fetch('{{ route('premium.auto_bookings.search_events') }}?q=' + encodeURIComponent(q), {
+                    headers: { 'Accept': 'application/json' },
+                    credentials: 'same-origin'
+                })
+                .then(function(r) { return r.json(); })
+                .then(function(data) { render(data.items || []); })
+                .catch(function() {
+                    dd.innerHTML = '';
+                    hideDd();
+                });
+            }, 250);
+        });
+
+        document.addEventListener('click', function(e) {
+            var wrap = document.getElementById('premium-ab-search-wrap');
+            if (wrap && !wrap.contains(e.target)) hideDd();
+        });
+    })();
+    </script>
+    </x-slot>
 
 </x-voll-layout>

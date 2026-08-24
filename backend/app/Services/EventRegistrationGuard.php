@@ -940,6 +940,47 @@
 		}
 
 		/**
+		 * Статическая пригодность игрока для мероприятия (возраст/личные данные/
+		 * уровень/жёсткий гендерный допуск позиции) — БЕЗ проверки окна регистрации
+		 * и БЕЗ проверки текущей занятости мест. Используется при СОЗДАНИИ premium
+		 * джоба авто-записи: на этот момент регистрация на будущую occurrence ещё
+		 * может быть не открыта (это нормально — сама запись случится позже, когда
+		 * откроется окно), поэтому checkEligibility()/check() здесь не подходят —
+		 * оба зовут checkAuthAndWindow() и вернули бы "регистрация ещё не началась".
+		 * Квота mixed_limited (сколько уже занято) сюда намеренно не входит — она
+		 * зависит от момента, проверяется отдельно в момент реальной посадки.
+		 */
+		public function checkStaticEligibility(?User $user, EventOccurrence $occurrence, ?string $position = null): GuardResult
+		{
+			$result = GuardResult::allow();
+			$event  = $occurrence->event;
+
+			if (!$event) {
+				$result->addError('Событие не найдено.');
+				return $result;
+			}
+
+			$agePolicy = $occurrence->age_policy ?? $event->age_policy ?? 'any';
+
+			$this->checkPersonalData($user, $occurrence, $event, $result);
+			$this->checkAgePolicy($user, $occurrence, $event, $agePolicy, $result);
+			$this->checkLevelPolicy($user, $occurrence, $event, $result);
+
+			if ($position !== null && empty($result->errors)) {
+				$genderResult = $this->checkGenderPositionsAllowed($user, $event->gameSettings ?? null, [$position]);
+				foreach ($genderResult->errors as $genderError) {
+					$result->errors[] = $genderError;
+				}
+			}
+
+			if (!empty($result->errors)) {
+				$result->allowed = false;
+			}
+
+			return $result;
+		}
+
+		/**
 		 * Хард-допуск позиций при mixed_limited: ограниченному полу разрешены
 		 * ТОЛЬКО позиции из gender_limited_positions — это правило политики (кто
 		 * вообще имеет право туда встать), а не квота (сколько уже занято),
