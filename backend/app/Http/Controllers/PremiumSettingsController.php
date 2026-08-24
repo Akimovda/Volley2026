@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\PlayerFollow;
+use App\Models\PremiumAutoBooking;
 use App\Services\PremiumService;
 use Illuminate\Http\Request;
 
@@ -30,7 +31,14 @@ class PremiumSettingsController extends Controller
             ->select('users.id', 'users.first_name', 'users.last_name', 'users.name')
             ->get();
 
-        return view('premium.settings', compact('sub', 'follows', 'friends'));
+        // Джобы авто-записи на мероприятия
+        $autoBookings = PremiumAutoBooking::where('user_id', $user->id)
+            ->with('event.location')
+            ->orderByDesc('id')
+            ->get();
+        $autoBookingsMax = \App\Http\Controllers\PremiumAutoBookingController::MAX_JOBS;
+
+        return view('premium.settings', compact('sub', 'follows', 'friends', 'autoBookings', 'autoBookingsMax'));
     }
 
     public function update(Request $request)

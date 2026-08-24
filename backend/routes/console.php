@@ -43,6 +43,16 @@ Schedule::command('subscriptions:auto-booking')
     ->everyFiveMinutes()
     ->withoutOverlapping();
 
+// Автозапись Premium на выбранные мероприятия при открытии регистрации
+Schedule::command('premium:auto-booking')
+    ->everyFiveMinutes()
+    ->withoutOverlapping();
+
+// Снятие premium-автозаписей, не подтверждённых игроком за 5 часов
+Schedule::command('premium:expire-auto-bookings')
+    ->everyFiveMinutes()
+    ->withoutOverlapping();
+
 // Недельная сводка для Premium (каждый понедельник в 09:00)
 Schedule::command('premium:weekly-digest')
     ->weeklyOn(1, '09:00')

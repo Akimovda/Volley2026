@@ -272,4 +272,29 @@ class SubscriptionService
             ->get()
             ->first(fn($sub) => $sub->template->appliesToEvent($eventId));
     }
+
+    /**
+     * Есть ли у игрока абонемент с включённой авто-записью, действующий на это
+     * мероприятие — та же выборка, что использует AutoBookingSubscriptionJob.
+     * Абонемент имеет приоритет над Premium-автозаписью (PremiumAutoBookingJob
+     * пропускает пользователя, если тут вернулось true).
+     */
+    public function hasUsableAutoBookingSubscription(int $userId, int $eventId): bool
+    {
+        return Subscription::with('template')
+            ->where('user_id', $userId)
+            ->where('status', 'active')
+            ->where('auto_booking', true)
+            ->where('visits_remaining', '>', 0)
+            ->where(function ($q) {
+                $q->whereNull('expires_at')->orWhere('expires_at', '>=', now()->toDateString());
+            })
+            ->get()
+            ->contains(function ($sub) use ($eventId) {
+                if (!empty($sub->auto_booking_event_ids) && !in_array($eventId, $sub->auto_booking_event_ids, true)) {
+                    return false;
+                }
+                return $sub->template->appliesToEvent($eventId);
+            });
+    }
 }

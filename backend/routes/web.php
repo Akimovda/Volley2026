@@ -1581,6 +1581,14 @@ Route::middleware([
         ->name('premium.follows.store');
     Route::delete('/premium/follows/{user}', [\App\Http\Controllers\PlayerFollowController::class, 'destroy'])
         ->name('premium.follows.destroy');
+
+    // Авто-запись на мероприятия (Premium)
+    Route::get('/premium/auto-bookings/search-events', [\App\Http\Controllers\PremiumAutoBookingController::class, 'searchEvents'])
+        ->name('premium.auto_bookings.search_events');
+    Route::post('/premium/auto-bookings', [\App\Http\Controllers\PremiumAutoBookingController::class, 'store'])
+        ->name('premium.auto_bookings.store');
+    Route::delete('/premium/auto-bookings/{autoBooking}', [\App\Http\Controllers\PremiumAutoBookingController::class, 'destroy'])
+        ->name('premium.auto_bookings.destroy');
 });
 
 /*

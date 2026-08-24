@@ -23,11 +23,17 @@ class EventRegistration extends Model
         'is_cancelled'      => 'boolean',
         'auto_booked'       => 'boolean',
         'payment_expires_at' => 'datetime',
+        'premium_auto_confirm_deadline_at' => 'datetime',
     ];
 
     public function event()
     {
         return $this->belongsTo(Event::class);
+    }
+
+    public function premiumAutoBooking()
+    {
+        return $this->belongsTo(PremiumAutoBooking::class);
     }
 
     public function user()

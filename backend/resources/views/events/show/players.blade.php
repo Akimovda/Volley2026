@@ -252,6 +252,18 @@
 		</form>
 		@elseif($myReg && $myReg->subscription_id && $myReg->auto_booked && $myReg->confirmed_at)
 		<div class="alert alert-success mt-1">{{ __('events.sp_confirmed') }}</div>
+		@elseif($myReg && $myReg->premium_auto_booking_id && !$myReg->confirmed_at)
+		<div class="alert alert-warning mt-1">
+			{{ __('events.sp_confirm_premium') }}
+			{{ $myReg->premium_auto_confirm_deadline_at?->format('d.m H:i') }}
+			{{ __('events.sp_confirm_or_cancel') }}
+		</div>
+		<form method="POST" action="{{ route('registrations.confirm', $myReg->id) }}">
+			@csrf
+			<button type="submit" class="btn w-100 mt-1">{{ __('events.sp_btn_confirm') }}</button>
+		</form>
+		@elseif($myReg && $myReg->premium_auto_booking_id && $myReg->confirmed_at)
+		<div class="alert alert-success mt-1">{{ __('events.sp_confirmed') }}</div>
 		@endif
 		@php
 	    $myPayment = null;
