@@ -147,8 +147,20 @@ body.dark .bk-team--win .bk-team-name-link{color:#6ee7b7}
  */
 
 $totalRounds = $matches->max('round') ?? 0;
-$thirdPlace  = $matches->first(fn($m) => $m->bracket_position === 'third_place');
-$mainMatches = $matches->filter(fn($m) => $m->bracket_position !== 'third_place');
+
+// Матч за 3-е место — bracket_position='third_place' никто живой не проставляет
+// (единственный писатель — неиспользуемый TournamentSetupService::generateSingleElimBracket()).
+// Реальная бронза single_elim лежит в court: crossover (generateGroupCrossover())
+// пишет "Матч за 3-4 место" (та же регулярка, что TournamentStage::placementMatch()),
+// сеточный путь (generateSingleElimination()) пишет литерал 'court' === '3rd place'.
+$isThirdPlaceMatch = function ($m) {
+    if ($m->court && preg_match('/за\s+(\d+)-\d+\s+место/u', $m->court, $groups)) {
+        return (int) $groups[1] === 3;
+    }
+    return $m->court === '3rd place';
+};
+$thirdPlace  = $matches->first($isThirdPlaceMatch);
+$mainMatches = $matches->reject(fn($m) => $thirdPlace && $m->id === $thirdPlace->id);
 
 $matchesByRound = [];
 for ($r = 1; $r <= $totalRounds; $r++) {
