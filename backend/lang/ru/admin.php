@@ -123,6 +123,17 @@ return [
     'col_google'       => 'Google',
     'col_registration' => 'Регистрация',
 
+    // === users/index — бан-лист (role=banned) ===
+    'users_role_banned'       => '🚫 Заблокированные',
+    'col_login_provider'      => 'Провайдер входа',
+    'col_login_provider_phone' => 'Телефон',
+    'col_ban_date'            => 'Дата блокировки',
+    'col_ban_events'          => 'Мероприятия',
+    'ban_col_actions'         => 'Действие',
+    'ban_cancel_btn'          => 'Отменить блокировку',
+    'ban_cancel_confirm'      => 'Снять все активные ограничения этого пользователя?',
+    'ban_list_empty'          => 'Заблокированных пользователей нет',
+
     // === users/show ===
     'show_title'         => 'Пользователь',
     'show_breadcrumb'    => 'Карточка пользователя',
