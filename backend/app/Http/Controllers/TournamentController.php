@@ -2545,14 +2545,26 @@ class TournamentController extends Controller
         // King of the Court — инкрементальная стадия: "все СОЗДАННЫЕ на сейчас
         // матчи сыграны" ложно совпадает с "формат закончен" сразу после первого
         // же матча (следующий ещё не сгенерирован). Стадию считаем завершённой
-        // только когда сыгран лимит rounds_count целиком. Тот же наивный критерий
-        // бьёт и по Swiss (см. report/kotc_deps_recon_2026-08-21.md, п.4) — там не
-        // трогаем, отдельный тикет (нет UI-поля rounds_count/явной кнопки
-        // "Завершить стадию" для Swiss).
+        // только когда сыгран лимит rounds_count целиком.
         if ($total > 0 && $total === $completed && $stage->type === TournamentStage::TYPE_KING_OF_COURT) {
             $roundsCount = (int) $stage->cfg('rounds_count', 0);
             $currentRound = (int) $stage->cfg('current_round', 0);
             if ($roundsCount > 0 && $currentRound < $roundsCount) {
+                return;
+            }
+        }
+
+        // Swiss — тот же наивный критерий ложно совпадает с "формат закончен"
+        // после каждого сыгранного тура, до клика "Следующий тур" (см.
+        // report/kotc_deps_recon_2026-08-21.md, п.4). В отличие от KotC, у Swiss
+        // нет config['current_round'] (нет одного "текущего" матча — весь тур
+        // генерируется батчем) — текущий тур вычисляется как max(round) уже
+        // СОЗДАННЫХ матчей стадии. Стадия считается завершённой только когда
+        // сыгран последний тур (rounds_count) целиком.
+        if ($total > 0 && $total === $completed && $stage->type === TournamentStage::TYPE_SWISS) {
+            $roundsCount = (int) $stage->cfg('rounds_count', 0);
+            $maxRound = (int) $stage->matches()->max('round');
+            if ($roundsCount > 0 && $maxRound < $roundsCount) {
                 return;
             }
         }
