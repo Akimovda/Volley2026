@@ -1507,6 +1507,15 @@ $tourNumber = $seasonData
 									<p class="f-16">{{ __('tournaments.setup_stage_koc_rounds_hint') }}</p>
 								</div>
 							</div>
+							<div class="col-md-6">
+								<div class="card">
+									<label>{{ __('tournaments.setup_stage_seed') }}</label>
+									<select name="draw_mode" id="koc_draw_mode_select">
+										<option value="random">{{ __('tournaments.setup_stage_seed_random') }}</option>
+										<option value="seeded">{{ __('tournaments.setup_stage_seed_seeded') }}</option>
+									</select>
+								</div>
+							</div>
 						</div>
 					</div>
 					{{-- Swiss: специфичные настройки --}}
@@ -1517,6 +1526,52 @@ $tourNumber = $seasonData
 									<label>{{ __('tournaments.setup_stage_swiss_rounds') }}</label>
 									<input type="number" name="rounds_count" id="swiss_rounds_count_input" min="1" max="500" placeholder="{{ __('tournaments.setup_stage_swiss_rounds_placeholder') }}">
 									<p class="f-16">{{ __('tournaments.setup_stage_swiss_rounds_hint') }}</p>
+								</div>
+							</div>
+							<div class="col-md-6">
+								<div class="card">
+									<label>{{ __('tournaments.setup_stage_seed') }}</label>
+									<select name="draw_mode" id="swiss_draw_mode_select">
+										<option value="random">{{ __('tournaments.setup_stage_seed_random') }}</option>
+										<option value="seeded">{{ __('tournaments.setup_stage_seed_seeded') }}</option>
+									</select>
+								</div>
+							</div>
+						</div>
+					</div>
+					{{-- Single Elimination: специфичные настройки --}}
+					<div class="mt-2" id="single_elim_fields" style="display:none">
+						<div class="row">
+							<div class="col-md-6">
+								<div class="card">
+									<label>{{ __('tournaments.setup_stage_seed') }}</label>
+									<select name="draw_mode" id="single_elim_draw_mode_select">
+										<option value="random">{{ __('tournaments.setup_stage_seed_random') }}</option>
+										<option value="seeded">{{ __('tournaments.setup_stage_seed_seeded') }}</option>
+									</select>
+								</div>
+							</div>
+							<div class="col-md-6">
+								<div class="card">
+									<label>{{ __('tournaments.setup_stage_third_place') }}</label>
+									<select name="third_place_match" id="single_elim_third_place_select">
+										<option value="0">{{ __('tournaments.no') }}</option>
+										<option value="1">{{ __('tournaments.yes') }}</option>
+									</select>
+								</div>
+							</div>
+						</div>
+					</div>
+					{{-- Double Elimination: специфичные настройки --}}
+					<div class="mt-2" id="double_elim_fields" style="display:none">
+						<div class="row">
+							<div class="col-md-6">
+								<div class="card">
+									<label>{{ __('tournaments.setup_stage_seed') }}</label>
+									<select name="draw_mode" id="double_elim_draw_mode_select">
+										<option value="random">{{ __('tournaments.setup_stage_seed_random') }}</option>
+										<option value="seeded">{{ __('tournaments.setup_stage_seed_seeded') }}</option>
+									</select>
 								</div>
 							</div>
 						</div>
@@ -2839,6 +2894,8 @@ $tourNumber = $seasonData
 			var kbFields = document.getElementById('king_beach_fields');
 			var kocFields = document.getElementById('king_of_court_fields');
 			var swissFields = document.getElementById('swiss_fields');
+			var singleElimFields = document.getElementById('single_elim_fields');
+			var doubleElimFields = document.getElementById('double_elim_fields');
 			var matchFormatField = document.getElementById('match_format_field');
 			var decidingSetWrap = document.getElementById('deciding_set_wrap');
 			var courtsFields = document.getElementById('courts_shared_fields');
@@ -3141,11 +3198,15 @@ $tourNumber = $seasonData
 					var showKb = (t === 'king_beach');
 					var showKoc = (t === 'king_of_court');
 					var showSwiss = (t === 'swiss');
+					var showSingleElim = (t === 'single_elim');
+					var showDoubleElim = (t === 'double_elim');
 					var isFollowup = window.__stageFollowupTypes.indexOf(t) !== -1;
 					setBlockActive(groupFields, showGroup);
 					setBlockActive(kbFields, showKb);
 					setBlockActive(kocFields, showKoc);
 					setBlockActive(swissFields, showSwiss);
+					setBlockActive(singleElimFields, showSingleElim);
+					setBlockActive(doubleElimFields, showDoubleElim);
 					// King of the Beach и King of the Court форсируют match_format=bo1 и
 					// deciding_set_points на бэкенде (createStage()) независимо от того, что
 					// выбрано в этих полях — организатору нечего в них выбирать, показывать
