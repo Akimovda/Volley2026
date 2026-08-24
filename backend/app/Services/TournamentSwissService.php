@@ -24,6 +24,12 @@ class TournamentSwissService
      */
     public function generateNextRound(TournamentStage $stage): Collection
     {
+        // Defense-in-depth: стадия завершена (естественно либо вручную через
+        // finishStage()/finishStageForce()) — не генерируем туры поверх.
+        if ($stage->isCompleted()) {
+            return collect();
+        }
+
         $currentRound = ($stage->matches()->max('round') ?? 0) + 1;
         $maxRounds = (int) $stage->cfg('rounds_count', 5);
 

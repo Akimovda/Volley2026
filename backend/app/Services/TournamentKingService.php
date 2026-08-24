@@ -67,6 +67,12 @@ class TournamentKingService
      */
     public function generateNextMatch(TournamentStage $stage): ?TournamentMatch
     {
+        // Defense-in-depth: стадия завершена (естественно либо вручную через
+        // finishStage()/finishStageForce()) — не генерируем матчи поверх.
+        if ($stage->isCompleted()) {
+            return null;
+        }
+
         $config = $stage->config ?? [];
         $queue = $config['queue'] ?? [];
         $kingId = $config['king_team_id'] ?? null;

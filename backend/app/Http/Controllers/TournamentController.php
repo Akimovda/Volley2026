@@ -1704,6 +1704,14 @@ class TournamentController extends Controller
         $event = $stage->event;
         $this->authorizeOrganizer($request, $event);
 
+        // Defense-in-depth: без этой проверки повторный/прямой POST после
+        // finishStage()/finishStageForce() (или естественного завершения) мог бы
+        // "разморозить" уже закрытую стадию — ни generateNextRound(), ни
+        // generateNextMatch() сами статус не проверяют (report/finish_stage_recon_2026-08-21.md §4).
+        if (!$stage->isInProgress()) {
+            return back()->with('error', 'Стадия уже завершена.');
+        }
+
         try {
             if ($stage->type === 'swiss') {
                 $matches = $this->swissService->generateNextRound($stage);
