@@ -591,6 +591,12 @@ return [
     'setup_stage_kb_players'       => 'Участники',
     'setup_stage_kb_players_hint'  => 'берутся из зарегистрированных на турнир',
     'setup_stage_kb_players_auto'  => 'авто',
+    'setup_stage_koc_rounds'             => 'Количество матчей',
+    'setup_stage_koc_rounds_placeholder' => 'по умолчанию 2 × команд',
+    'setup_stage_koc_rounds_hint'        => 'После стольки сыгранных матчей стадия завершится. Если не задано — 2 матча на каждую команду.',
+    'setup_stage_swiss_rounds'             => 'Количество туров',
+    'setup_stage_swiss_rounds_placeholder' => 'по умолчанию ceil(log2(команд))',
+    'setup_stage_swiss_rounds_hint'        => 'После стольки сыгранных туров стадия завершится. Если не задано — рассчитывается автоматически по числу команд.',
     'setup_stage_kb_advance_label' => 'проходят :n из группы',
     'setup_stage_kb_courts'        => 'Корты (через запятую)',
     'setup_stage_kb_courts_ph'     => 'Корт 1, Корт 2, Корт 3...',
@@ -906,4 +912,7 @@ return [
 
     // Bracket reset (double elimination) — рескоринг GF1
     'gf1_rescore_blocked'           => 'Нельзя пересчитать результат финала: уже разрешён решающий матч (Grand Final Reset). Сначала откатите его результат.',
+
+    // King of the Court — полный запрет рескора завершённого матча
+    'kotc_rescore_blocked'          => 'Счёт матча King of the Court нельзя изменить после завершения — откатите стадию целиком.',
 ];

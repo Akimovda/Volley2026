@@ -1410,7 +1410,7 @@ $tourNumber = $seasonData
 									<label>{{ __('tournaments.setup_stage_label_name') }}</label>
 									<input name="name" value="{{ old('name', __('tournaments.setup_stage_default_name')) }}" required>
 								</div>
-								<div class="col-lg-4 col-md-6">
+								<div class="col-lg-4 col-md-6" id="match_format_field">
 									<label>{{ __('tournaments.setup_stage_match_format') }}</label>
 									<select name="match_format" id="match_format_select">
 										<option value="bo3">Best of 3 (Bo3)</option>
@@ -1493,6 +1493,30 @@ $tourNumber = $seasonData
 								<div class="card">
 									<label>{{ __('tournaments.setup_stage_kb_players') }}</label>
 									<p class="f-16">{{ __('tournaments.setup_stage_kb_players_hint') }}</p>
+								</div>
+							</div>
+						</div>
+					</div>
+					{{-- King of the Court: специфичные настройки --}}
+					<div class="mt-2" id="king_of_court_fields" style="display:none">
+						<div class="row">
+							<div class="col-md-6">
+								<div class="card">
+									<label>{{ __('tournaments.setup_stage_koc_rounds') }}</label>
+									<input type="number" name="rounds_count" id="koc_rounds_count_input" min="1" max="500" placeholder="{{ __('tournaments.setup_stage_koc_rounds_placeholder') }}">
+									<p class="f-16">{{ __('tournaments.setup_stage_koc_rounds_hint') }}</p>
+								</div>
+							</div>
+						</div>
+					</div>
+					{{-- Swiss: специфичные настройки --}}
+					<div class="mt-2" id="swiss_fields" style="display:none">
+						<div class="row">
+							<div class="col-md-6">
+								<div class="card">
+									<label>{{ __('tournaments.setup_stage_swiss_rounds') }}</label>
+									<input type="number" name="rounds_count" id="swiss_rounds_count_input" min="1" max="500" placeholder="{{ __('tournaments.setup_stage_swiss_rounds_placeholder') }}">
+									<p class="f-16">{{ __('tournaments.setup_stage_swiss_rounds_hint') }}</p>
 								</div>
 							</div>
 						</div>
@@ -2793,6 +2817,10 @@ $tourNumber = $seasonData
 			var typeSelect = document.getElementById('stage_type_select');
 			var groupFields = document.getElementById('group_fields');
 			var kbFields = document.getElementById('king_beach_fields');
+			var kocFields = document.getElementById('king_of_court_fields');
+			var swissFields = document.getElementById('swiss_fields');
+			var matchFormatField = document.getElementById('match_format_field');
+			var decidingSetWrap = document.getElementById('deciding_set_wrap');
 			var courtsFields = document.getElementById('courts_shared_fields');
 			var scheduleFields = document.getElementById('schedule_fields');
 			var finalsModeFields = document.getElementById('finals_mode_fields');
@@ -3091,9 +3119,19 @@ $tourNumber = $seasonData
 					var t = typeSelect.value;
 					var showGroup = window.__stageGroupTypes.indexOf(t) !== -1;
 					var showKb = (t === 'king_beach');
+					var showKoc = (t === 'king_of_court');
+					var showSwiss = (t === 'swiss');
 					var isFollowup = window.__stageFollowupTypes.indexOf(t) !== -1;
 					setBlockActive(groupFields, showGroup);
 					setBlockActive(kbFields, showKb);
+					setBlockActive(kocFields, showKoc);
+					setBlockActive(swissFields, showSwiss);
+					// King of the Beach и King of the Court форсируют match_format=bo1 и
+					// deciding_set_points на бэкенде (createStage()) независимо от того, что
+					// выбрано в этих полях — организатору нечего в них выбирать, показывать
+					// их только сбивает с толку (выглядит как Bo3, играется как Bo1).
+					setBlockActive(matchFormatField, !(showKb || showKoc));
+					setBlockActive(decidingSetWrap, !(showKb || showKoc));
 					// Корты — общий блок для групповых форматов и King of the Beach
 					setBlockActive(courtsFields, showGroup || showKb);
 					// Расписание — только для группового формата (объединено с "Площадками" в

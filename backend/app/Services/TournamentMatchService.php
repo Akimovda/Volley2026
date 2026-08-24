@@ -14,6 +14,7 @@ class TournamentMatchService
     public function __construct(
         protected TournamentStandingsService $standingsService,
         protected TournamentScheduleService $scheduleService,
+        protected TournamentKingService $kingService,
     ) {}
 
 
@@ -104,6 +105,15 @@ class TournamentMatchService
             $this->maybeScheduleNextRound($match);
 
             $this->handleGrandFinalReset($match);
+
+            // King of the Court: сдвиг короля/очереди. Порядок важен — ПОСЛЕ
+            // recalculateGroup() выше (та уже посчитала rating_points по
+            // свежему winner_team_id), afterMatch() только двигает состояние
+            // очереди, таблицу больше не трогает (см. коммит "afterMatch —
+            // только стейт-машина").
+            if ($match->stage->type === TournamentStage::TYPE_KING_OF_COURT) {
+                $this->kingService->afterMatch($match->stage, $match);
+            }
         });
 
         return $match->fresh();
@@ -178,6 +188,24 @@ class TournamentMatchService
 
         if (!$isPristine) {
             throw new InvalidArgumentException(__('tournaments.gf1_rescore_blocked'));
+        }
+    }
+
+    /**
+     * King of the Court: полный запрет рескора завершённого матча (вариант А,
+     * без частичного отката). TournamentKingService::afterMatch() необратим —
+     * очередь FIFO, откат счёта одного матча не восстанавливает состояние
+     * "король + очередь" на момент ДО этого матча без отката всех сыгранных
+     * после него. См. report/kotc_deps_recon_2026-08-21.md, п.3.
+     */
+    public function guardKotcRescore(TournamentMatch $match): void
+    {
+        if ($match->stage->type !== TournamentStage::TYPE_KING_OF_COURT) {
+            return;
+        }
+
+        if ($match->isCompleted()) {
+            throw new InvalidArgumentException(__('tournaments.kotc_rescore_blocked'));
         }
     }
 

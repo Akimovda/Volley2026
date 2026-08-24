@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\TournamentStage;
 use App\Models\TournamentMatch;
 use App\Models\TournamentStanding;
+use App\Models\TournamentGroup;
 use App\Models\TournamentGroupTeam;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -27,8 +28,12 @@ class TournamentSwissService
         $maxRounds = (int) $stage->cfg('rounds_count', 5);
 
         if ($currentRound > $maxRounds) {
-            throw new \InvalidArgumentException("Максимум туров ({$maxRounds}) уже достигнут.");
+            // Туры исчерпаны — не ошибка конфигурации, а нормальное завершение
+            // формата (контракт как у King of the Court::generateNextMatch()).
+            return collect();
         }
+
+        $groupId = $stage->cfg('swiss_group_id');
 
         // Получаем standings отсортированные по очкам
         $standings = TournamentStanding::where('stage_id', $stage->id)
@@ -47,13 +52,14 @@ class TournamentSwissService
         // Подбираем пары
         $pairs = $this->matchTeams($standings, $playedPairs);
 
-        return DB::transaction(function () use ($stage, $pairs, $currentRound) {
+        return DB::transaction(function () use ($stage, $pairs, $currentRound, $groupId) {
             $matches = collect();
             $matchNum = ($stage->matches()->max('match_number') ?? 0) + 1;
 
             foreach ($pairs as [$homeId, $awayId]) {
                 $match = TournamentMatch::create([
                     'stage_id'     => $stage->id,
+                    'group_id'     => $groupId,
                     'round'        => $currentRound,
                     'match_number' => $matchNum++,
                     'team_home_id' => $homeId,
@@ -147,17 +153,46 @@ class TournamentSwissService
      */
     public function initialize(TournamentStage $stage, array $teamIds): Collection
     {
-        // Создаём standings для всех команд (без группы)
+        // Обёрточная TournamentGroup — без неё standings/matches никогда не
+        // попадут в рендер $group->standings в setup.blade.php (та рендерит
+        // турнирную таблицу только через $stage->groups) и recalculateGroup()
+        // никогда не вызовется из submitScore() (тот триггерится по
+        // $match->group_id). Тот же паттерн, что и у King of the Court.
+        $group = TournamentGroup::create([
+            'stage_id'   => $stage->id,
+            'name'       => 'Швейцарская система',
+            'sort_order' => 1,
+        ]);
+
+        // Создаём standings для всех команд
         foreach ($teamIds as $teamId) {
             TournamentStanding::firstOrCreate([
                 'stage_id' => $stage->id,
-                'group_id' => null,
+                'group_id' => $group->id,
                 'team_id'  => $teamId,
             ]);
         }
 
-        $stage->update(['status' => TournamentStage::STATUS_IN_PROGRESS]);
+        // rounds_count — сколько туров сыграть всего. Организатор задаёт при
+        // создании стадии (форма setup.blade.php); если не задал — дефолт
+        // ceil(log2(команд)), минимум 3 (стандартная эвристика числа туров
+        // швейцарки для полного разделения по очкам). count($teamIds) >= 2
+        // гарантирован вызывающей стороной (TournamentController::draw()
+        // отсекает draw() при < 2 подтверждённых команд ДО initialize()).
+        $config = $stage->config ?? [];
+        $roundsCount = (int) ($config['rounds_count'] ?? 0);
+        if ($roundsCount < 1) {
+            $roundsCount = max(3, (int) ceil(log(count($teamIds), 2)));
+        }
 
-        return $this->generateNextRound($stage);
+        $stage->update([
+            'status' => TournamentStage::STATUS_IN_PROGRESS,
+            'config' => array_merge($config, [
+                'swiss_group_id' => $group->id,
+                'rounds_count'   => $roundsCount,
+            ]),
+        ]);
+
+        return $this->generateNextRound($stage->fresh());
     }
 }

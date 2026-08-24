@@ -572,6 +572,12 @@ return [
     'setup_stage_kb_players'       => 'Players',
     'setup_stage_kb_players_hint'  => 'taken from registered participants',
     'setup_stage_kb_players_auto'  => 'auto',
+    'setup_stage_koc_rounds'             => 'Number of matches',
+    'setup_stage_koc_rounds_placeholder' => 'default: 2 × teams',
+    'setup_stage_koc_rounds_hint'        => 'The stage will finish after this many matches are played. If left empty — 2 matches per team.',
+    'setup_stage_swiss_rounds'             => 'Number of rounds',
+    'setup_stage_swiss_rounds_placeholder' => 'default: ceil(log2(teams))',
+    'setup_stage_swiss_rounds_hint'        => 'The stage will finish after this many rounds are played. If left empty — calculated automatically from the number of teams.',
     'setup_stage_kb_advance_label' => ':n advancing per group',
     'setup_stage_kb_courts'        => 'Courts (comma-separated)',
     'setup_stage_kb_courts_ph'     => 'Court 1, Court 2, Court 3...',
@@ -887,4 +893,7 @@ return [
 
     // Bracket reset (double elimination) — GF1 rescore
     'gf1_rescore_blocked'           => 'Cannot recalculate the final result: the decider match (Grand Final Reset) has already been resolved. Roll back its result first.',
+
+    // King of the Court — completed match score can never be edited
+    'kotc_rescore_blocked'          => 'King of the Court match score cannot be edited after completion — revert the stage instead.',
 ];
