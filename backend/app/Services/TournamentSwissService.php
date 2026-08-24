@@ -171,10 +171,24 @@ class TournamentSwissService
             ]);
         }
 
+        // rounds_count — сколько туров сыграть всего. Организатор задаёт при
+        // создании стадии (форма setup.blade.php); если не задал — дефолт
+        // ceil(log2(команд)), минимум 3 (стандартная эвристика числа туров
+        // швейцарки для полного разделения по очкам). count($teamIds) >= 2
+        // гарантирован вызывающей стороной (TournamentController::draw()
+        // отсекает draw() при < 2 подтверждённых команд ДО initialize()).
         $config = $stage->config ?? [];
+        $roundsCount = (int) ($config['rounds_count'] ?? 0);
+        if ($roundsCount < 1) {
+            $roundsCount = max(3, (int) ceil(log(count($teamIds), 2)));
+        }
+
         $stage->update([
             'status' => TournamentStage::STATUS_IN_PROGRESS,
-            'config' => array_merge($config, ['swiss_group_id' => $group->id]),
+            'config' => array_merge($config, [
+                'swiss_group_id' => $group->id,
+                'rounds_count'   => $roundsCount,
+            ]),
         ]);
 
         return $this->generateNextRound($stage->fresh());
