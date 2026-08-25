@@ -2481,115 +2481,136 @@ class TournamentController extends Controller
         if (!$league) {
             return back()->with('error', 'В сезоне нет дивизионов.');
         }
-        $added = 0;
-        $linked = 0;
 
-        // Направление 1: EventTeam тура → Лига (добавляем новых участников)
-        // Исключаем rejected — иначе отклонённые команды попадут в лигу
-        $teams = EventTeam::where('event_id', $event->id)
-            ->when($occurrenceId > 0, fn($q) => $q->where('occurrence_id', $occurrenceId))
-            ->whereIn('status', ['submitted', 'approved'])
-            ->get();
+        // Весь блок записи — одной транзакцией: без неё исключение на середине
+        // цикла (Направление 2) коммитило бы частично созданные EventTeam, но
+        // НЕ доходило до synced_at в конце — тур оставался бы вечно
+        // "несинхронизированным" при уже продублированных командах
+        // (см. report/roster-gate-recon.md, разбор occurrence 12209).
+        [$added, $linked] = DB::transaction(function () use ($event, $league, $occurrenceId, $seasonEvt) {
+            $added = 0;
+            $linked = 0;
 
-        foreach ($teams as $team) {
-            $exists = \App\Models\TournamentLeagueTeam::where('league_id', $league->id)
-                ->where('team_id', $team->id)
-                ->exists();
+            // Направление 1: EventTeam тура → Лига (добавляем новых участников)
+            // Исключаем rejected — иначе отклонённые команды попадут в лигу
+            $teams = EventTeam::where('event_id', $event->id)
+                ->when($occurrenceId > 0, fn($q) => $q->where('occurrence_id', $occurrenceId))
+                ->whereIn('status', ['submitted', 'approved'])
+                ->get();
 
-            if (!$exists) {
-                \App\Models\TournamentLeagueTeam::create([
-                    'league_id'  => $league->id,
-                    'team_id'    => $team->id,
-                    'user_id'    => $team->captain_user_id,
-                    'status'     => $league->hasCapacity() ? 'active' : 'reserve',
-                    'joined_at'  => now(),
-                    'reserve_position' => $league->hasCapacity() ? null : $league->nextReservePosition(),
-                ]);
-                $added++;
-            }
-        }
+            foreach ($teams as $team) {
+                $exists = \App\Models\TournamentLeagueTeam::where('league_id', $league->id)
+                    ->where('team_id', $team->id)
+                    ->exists();
 
-        // Направление 2: Участники лиги (active + reserve) → EventTeam тура (создаём если нет)
-        if ($occurrenceId > 0) {
-            $occurrence = \App\Models\EventOccurrence::find($occurrenceId);
-            if ($occurrence) {
-                $activeLeagueTeams = \App\Models\TournamentLeagueTeam::where('league_id', $league->id)
-                    ->whereIn('status', ['active', 'pending_confirmation', 'reserve'])
-                    ->with('team.members')
-                    ->get();
-
-                foreach ($activeLeagueTeams as $lt) {
-                    $captainId = $lt->team?->captain_user_id ?? $lt->user_id;
-                    if (!$captainId) continue;
-
-                    // Уже есть EventTeam для этого капитана в этом туре?
-                    $existing = EventTeam::where('event_id', $event->id)
-                        ->where('occurrence_id', $occurrenceId)
-                        ->where('captain_user_id', $captainId)
-                        ->first();
-
-                    if ($existing) {
-                        // Обновляем ссылку если нужно
-                        if ((int) $lt->team_id !== $existing->id) {
-                            $lt->update(['team_id' => $existing->id]);
-                        }
-                        continue;
-                    }
-
-                    $oldTeam = $lt->team;
-
-                    // Создаём новый EventTeam
-                    $baseName = $oldTeam?->name
-                        ?? (\App\Models\User::find($captainId)?->last_name ?? 'Команда');
-                    $name = $baseName;
-                    $i = 2;
-                    while (EventTeam::where('event_id', $event->id)
-                        ->where('occurrence_id', $occurrenceId)
-                        ->where('name', $name)->exists()) {
-                        $name = $baseName . ' ' . $i++;
-                    }
-
-                    $newTeam = EventTeam::create([
-                        'event_id'        => $event->id,
-                        'occurrence_id'   => $occurrenceId,
-                        'captain_user_id' => $captainId,
-                        'name'            => $name,
-                        'team_kind'       => $oldTeam?->team_kind ?? 'beach_pair',
-                        'status'          => 'approved',
-                        'invite_code'     => \Illuminate\Support\Str::random(8),
-                        'is_complete'     => (bool) $oldTeam?->is_complete,
-                        'last_checked_at' => now(),
-                        'confirmed_at'    => now(),
+                if (!$exists) {
+                    \App\Models\TournamentLeagueTeam::create([
+                        'league_id'  => $league->id,
+                        'team_id'    => $team->id,
+                        'user_id'    => $team->captain_user_id,
+                        'status'     => $league->hasCapacity() ? 'active' : 'reserve',
+                        'joined_at'  => now(),
+                        'reserve_position' => $league->hasCapacity() ? null : $league->nextReservePosition(),
                     ]);
-
-                    // Копируем состав из предыдущего тура
-                    if ($oldTeam && $oldTeam->members->isNotEmpty()) {
-                        foreach ($oldTeam->members as $member) {
-                            \App\Models\EventTeamMember::create([
-                                'event_team_id'       => $newTeam->id,
-                                'user_id'             => $member->user_id,
-                                'role_code'           => $member->role_code,
-                                'team_role'           => $member->team_role,
-                                'position_code'       => $member->position_code,
-                                'position_order'      => $member->position_order,
-                                'confirmation_status' => 'confirmed',
-                                'joined_at'           => now(),
-                                'responded_at'        => now(),
-                                'confirmed_at'        => now(),
-                            ]);
-                        }
-                    }
-
-                    $lt->update(['team_id' => $newTeam->id, 'status' => 'active']);
-                    $linked++;
+                    $added++;
                 }
             }
-        }
 
-        // Ручная синхронизация — помечаем тур как синхронизированный (блокирует авто-job)
-        if ($occurrenceId > 0 && $seasonEvt) {
-            $seasonEvt->update(['synced_at' => now()]);
-        }
+            // Направление 2: Участники лиги → EventTeam тура (создаём если нет).
+            // 'reserve' СОЗНАТЕЛЬНО убран из выборки — резервные команды лиги
+            // больше не тащатся в тур синком (это отдельное действие
+            // организатора — кнопка "Активировать", TournamentSeasonController::
+            // activateLeagueTeam()). Неполные (капитан без партнёра) НЕ
+            // блокируем здесь — копируем как есть, is_complete пересчитываем
+            // живым count ниже (не копируем старое значение буквально), чтобы
+            // бейдж на странице турнира не врал; жёсткий гейт — при жеребьёвке.
+            if ($occurrenceId > 0) {
+                $occurrence = \App\Models\EventOccurrence::find($occurrenceId);
+                if ($occurrence) {
+                    $activeLeagueTeams = \App\Models\TournamentLeagueTeam::where('league_id', $league->id)
+                        ->whereIn('status', ['active', 'pending_confirmation'])
+                        ->with('team.members')
+                        ->get();
+
+                    foreach ($activeLeagueTeams as $lt) {
+                        $captainId = $lt->team?->captain_user_id ?? $lt->user_id;
+                        if (!$captainId) continue;
+
+                        // Уже есть EventTeam для этого капитана в этом туре?
+                        $existing = EventTeam::where('event_id', $event->id)
+                            ->where('occurrence_id', $occurrenceId)
+                            ->where('captain_user_id', $captainId)
+                            ->first();
+
+                        if ($existing) {
+                            // Обновляем ссылку если нужно
+                            if ((int) $lt->team_id !== $existing->id) {
+                                $lt->update(['team_id' => $existing->id]);
+                            }
+                            continue;
+                        }
+
+                        $oldTeam = $lt->team;
+
+                        // Создаём новый EventTeam
+                        $baseName = $oldTeam?->name
+                            ?? (\App\Models\User::find($captainId)?->last_name ?? 'Команда');
+                        $name = $baseName;
+                        $i = 2;
+                        while (EventTeam::where('event_id', $event->id)
+                            ->where('occurrence_id', $occurrenceId)
+                            ->where('name', $name)->exists()) {
+                            $name = $baseName . ' ' . $i++;
+                        }
+
+                        $newTeam = EventTeam::create([
+                            'event_id'        => $event->id,
+                            'occurrence_id'   => $occurrenceId,
+                            'captain_user_id' => $captainId,
+                            'name'            => $name,
+                            'team_kind'       => $oldTeam?->team_kind ?? 'beach_pair',
+                            'status'          => 'approved',
+                            'invite_code'     => \Illuminate\Support\Str::random(8),
+                            'is_complete'     => false,
+                            'last_checked_at' => now(),
+                            'confirmed_at'    => now(),
+                        ]);
+
+                        // Копируем состав из предыдущего тура
+                        if ($oldTeam && $oldTeam->members->isNotEmpty()) {
+                            foreach ($oldTeam->members as $member) {
+                                \App\Models\EventTeamMember::create([
+                                    'event_team_id'       => $newTeam->id,
+                                    'user_id'             => $member->user_id,
+                                    'role_code'           => $member->role_code,
+                                    'team_role'           => $member->team_role,
+                                    'position_code'       => $member->position_code,
+                                    'position_order'      => $member->position_order,
+                                    'confirmation_status' => 'confirmed',
+                                    'joined_at'           => now(),
+                                    'responded_at'        => now(),
+                                    'confirmed_at'        => now(),
+                                ]);
+                            }
+                        }
+
+                        // is_complete — живой count ПОСЛЕ копирования состава,
+                        // не значение старой команды (см. коммент выше).
+                        $newTeam->update(['is_complete' => $this->teamService->isRosterComplete($newTeam)]);
+
+                        $lt->update(['team_id' => $newTeam->id, 'status' => 'active']);
+                        $linked++;
+                    }
+                }
+            }
+
+            // Ручная синхронизация — помечаем тур как синхронизированный (блокирует авто-job)
+            if ($occurrenceId > 0 && $seasonEvt) {
+                $seasonEvt->update(['synced_at' => now()]);
+            }
+
+            return [$added, $linked];
+        });
 
         $total = $added + $linked;
         if ($total === 0) {
