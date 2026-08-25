@@ -40,7 +40,12 @@ class TournamentPublicController extends Controller
     {
         $tab = $request->query('tab', 'overview');
 
-        // Occurrence selector для сезонных турниров
+        // Occurrence selector — для сезонных турниров и для несезонных (в т.ч.
+        // повторяющихся серий) одинаково: чтение ?occurrence_id= раньше было
+        // заперто внутри if(season_id), из-за чего несезонные турниры (напр.
+        // event 561: 105 occurrences, tournament_stages есть только у 3) не
+        // могли переключать тур вообще — $stages всегда тянул ВСЕ стадии всех
+        // туров сразу на каждую вкладку (см. report/tabs-fix-recon-A.md).
         $occurrences = collect();
         $selectedOccurrence = null;
         $currentSeason = null;
@@ -56,23 +61,47 @@ class TournamentPublicController extends Controller
                 $occurrences = $occurrences->whereIn('id', $seasonOccIds->all())->values();
                 $currentSeason = \App\Models\TournamentSeason::find($seasonIdFilter);
             }
-
-            $occId = $request->query('occurrence_id');
-            if ($occId) {
-                $selectedOccurrence = $occurrences->firstWhere('id', $occId);
+        } else {
+            // Несезонный турнир: список туров строим ТОЛЬКО из occurrences, где
+            // реально есть tournament_stages — у повторяющейся серии могут быть
+            // десятки/сотни будущих occurrences без жеребьёвки, показывать/
+            // выбирать их бессмысленно (и дефолт "последний occurrence события"
+            // упёрся бы в пустой тур без единой стадии).
+            // pluck()->unique() вместо SQL DISTINCT — tournamentStages() несёт
+            // встроенный orderBy('sort_order') (Event::tournamentStages()),
+            // а PostgreSQL требует ORDER BY-колонку в SELECT при DISTINCT.
+            $stageOccurrenceIds = $event->tournamentStages()
+                ->whereNotNull('occurrence_id')
+                ->pluck('occurrence_id')
+                ->unique();
+            if ($stageOccurrenceIds->isNotEmpty()) {
+                $occurrences = $event->occurrences()
+                    ->whereIn('id', $stageOccurrenceIds->all())
+                    ->orderBy('starts_at')
+                    ->get();
             }
-            if (!$selectedOccurrence && $occurrences->isNotEmpty()) {
-                $selectedOccurrence = $occurrences->first();
-            }
+        }
 
-            // Определяем сезон по occurrence если season_id не передан явно
-            if (!$currentSeason && $selectedOccurrence) {
-                $se = TournamentSeasonEvent::where('event_id', $event->id)
-                    ->where('occurrence_id', $selectedOccurrence->id)
-                    ->first();
-                if ($se) {
-                    $currentSeason = \App\Models\TournamentSeason::find($se->season_id);
-                }
+        $occId = $request->query('occurrence_id');
+        if ($occId) {
+            $selectedOccurrence = $occurrences->firstWhere('id', $occId);
+        }
+        if (!$selectedOccurrence && $occurrences->isNotEmpty()) {
+            // Сезонные — как и раньше, первый тур серии (список туров там —
+            // ВСЕ occurrences, не только со стадиями, порядок не менялся).
+            // Несезонные — последний СО стадиями ($occurrences уже отфильтрован
+            // выше, list отсортирован по starts_at asc → last() = самый свежий
+            // сыгранный/играемый тур), не последний occurrence события.
+            $selectedOccurrence = $event->season_id ? $occurrences->first() : $occurrences->last();
+        }
+
+        // Определяем сезон по occurrence если season_id не передан явно
+        if ($event->season_id && !$currentSeason && $selectedOccurrence) {
+            $se = TournamentSeasonEvent::where('event_id', $event->id)
+                ->where('occurrence_id', $selectedOccurrence->id)
+                ->first();
+            if ($se) {
+                $currentSeason = \App\Models\TournamentSeason::find($se->season_id);
             }
         }
 
