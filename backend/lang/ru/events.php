@@ -1082,8 +1082,8 @@ return [
     'sp_already_registered' => 'Вы уже записаны',
     'sp_position_label'     => 'позиция:',
 
-    'sp_confirm_subscription' => '⏰ <strong>Подтвердите участие</strong> по абонементу до',
-    'sp_confirm_premium'    => '⏰ <strong>Подтвердите участие</strong> в Premium-автозаписи до',
+    'sp_confirm_subscription' => '⏰ Подтвердите участие по абонементу до',
+    'sp_confirm_premium'    => '⏰ Подтвердите участие в Premium-автозаписи до',
     'sp_confirm_or_cancel'  => '— иначе запись будет отменена автоматически.',
     'sp_btn_confirm'        => '✅ Подтвердить участие',
     'sp_confirmed'          => '✅ Участие подтверждено',
