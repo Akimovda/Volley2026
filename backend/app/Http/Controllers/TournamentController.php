@@ -19,6 +19,7 @@ use App\Services\TournamentBracketService;
 use App\Services\TournamentKingService;
 use App\Services\TournamentKingBeachService;
 use App\Services\TournamentSwissService;
+use App\Services\TournamentTeamService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -39,6 +40,7 @@ class TournamentController extends Controller
         private TournamentKingService $kingService,
         private TournamentKingBeachService $kingBeachService,
         private MatchRallyService $rallyService,
+        private TournamentTeamService $teamService,
     ) {}
 
     /* ================================================================
@@ -394,16 +396,26 @@ class TournamentController extends Controller
                 ->with('event')
                 ->get();
 
-            // Фильтр резерва лиги — тот же паттерн, что и в групповом блоке ниже.
-            if ($event->season_id) {
-                $season = $event->season;
-                $league = $season?->leagues()->first();
-                if ($league) {
-                    $reserveTeamIds = $league->leagueTeams()
-                        ->where('status', 'reserve')
-                        ->pluck('team_id')->toArray();
-                    $standaloneTeams = $standaloneTeams->reject(fn($t) => in_array($t->id, $reserveTeamIds));
-                }
+            // Фильтр резерва лиги — общий метод, тот же вызывается в draw() ниже.
+            $standaloneTeams = $this->teamService->excludeLeagueReserve($standaloneTeams, $event, $occurrenceId ? (int) $occurrenceId : null);
+
+            // Гейт укомплектованности (Вариант 3 — не трогаем EventTeam, только
+            // исключаем из коллекции команд для ЭТОЙ жеребьёвки). Без
+            // force_incomplete — жёсткая ошибка со списком нарушителей;
+            // organizer может явно продавить через гибрид-кнопку.
+            $incompleteTeams = $standaloneTeams->reject(fn($t) => $this->teamService->isRosterComplete($t));
+            if ($incompleteTeams->isNotEmpty() && !$request->boolean('force_incomplete')) {
+                return $this->redirectToSetup(
+                    $event,
+                    __('tournaments.setup_stage_error_incomplete_teams', [
+                        'count' => $incompleteTeams->count(),
+                        'names' => $incompleteTeams->pluck('name')->implode(', '),
+                    ]),
+                    true
+                );
+            }
+            if ($request->boolean('force_incomplete')) {
+                $standaloneTeams = $standaloneTeams->diff($incompleteTeams)->values();
             }
 
             // single_elim/swiss/king_of_court — минимум 2 (Гейт A: swiss и
@@ -701,6 +713,22 @@ class TournamentController extends Controller
                 $this->setupService->generateRoundRobinMatches($stage, $group);
             }
             return $this->redirectToSetup($event, 'Матчи сгенерированы для группы.');
+        }
+
+        // Фильтр резерва лиги — общий метод, тот же вызывается в createStage() выше.
+        $teams = $this->teamService->excludeLeagueReserve($teams, $event, $occId);
+
+        // Гейт укомплектованности (Вариант 3 — не трогаем EventTeam, только
+        // исключаем из коллекции для ЭТОЙ жеребьёвки).
+        $incompleteTeams = $teams->reject(fn($t) => $this->teamService->isRosterComplete($t));
+        if ($incompleteTeams->isNotEmpty() && !$request->boolean('force_incomplete')) {
+            return back()->with('error', __('tournaments.setup_stage_error_incomplete_teams', [
+                'count' => $incompleteTeams->count(),
+                'names' => $incompleteTeams->pluck('name')->implode(', '),
+            ]));
+        }
+        if ($request->boolean('force_incomplete')) {
+            $teams = $teams->diff($incompleteTeams)->values();
         }
 
         if ($teams->count() < 2) {
