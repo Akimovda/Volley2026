@@ -565,16 +565,29 @@ class TournamentController extends Controller
                 ->with('event')
                 ->get();
 
-            // Фильтр резерва лиги
-            if ($event->season_id) {
-                $season = $event->season;
-                $league = $season?->leagues()->first();
-                if ($league) {
-                    $reserveTeamIds = $league->leagueTeams()
-                        ->where('status', 'reserve')
-                        ->pluck('team_id')->toArray();
-                    $teams = $teams->reject(fn($t) => in_array($t->id, $reserveTeamIds));
-                }
+            // Фильтр резерва лиги — общий метод (унификация с standalone-веткой выше).
+            $teams = $this->teamService->excludeLeagueReserve($teams, $event, $occurrenceId ? (int) $occurrenceId : null);
+
+            // Гейт укомплектованности (Вариант 3 — команды исключаются из
+            // коллекции для ЭТОЙ жеребьёвки, EventTeam не трогаем). Это
+            // РЕАЛЬНЫЙ групповой путь (round_robin/groups_playoff) — используется
+            // формой создания стадии напрямую, отдельный роут tournament.draw
+            // нигде в UI не вызывается (проверено — ни одна форма/JS на него не
+            // ссылается), но гейт там тоже стоит про запас (defense-in-depth).
+            $incompleteTeams = $teams->reject(fn($t) => $this->teamService->isRosterComplete($t));
+            if ($incompleteTeams->isNotEmpty() && !$request->boolean('force_incomplete')) {
+                return $this->redirectToSetup(
+                    $event,
+                    __('tournaments.setup_stage_error_incomplete_teams', [
+                        'count' => $incompleteTeams->count(),
+                        'names' => $incompleteTeams->pluck('name')->implode(', '),
+                    ]),
+                    true,
+                    "stage_{$stage->id}"
+                );
+            }
+            if ($request->boolean('force_incomplete')) {
+                $teams = $teams->diff($incompleteTeams)->values();
             }
 
             if ($teams->count() >= 2) {
