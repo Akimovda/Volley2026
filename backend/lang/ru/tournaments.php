@@ -549,6 +549,7 @@ return [
     'setup_stage_error_incomplete_teams' => 'Не укомплектованы игроками (:count): :names. Уберите их из состава или запустите жеребьёвку без них.',
     'setup_stage_btn_run_without_incomplete' => 'Запустить без недоукомплектованных',
     'badge_roster_incomplete' => 'Не укомплектована',
+    'setup_stage_error_min_groups' => 'Недостаточно команд для группового этапа: нужно минимум 2, сейчас :count.',
     'setup_stage_created_single_elim' => 'Стадия создана: сетка на выбывание сгенерирована — команд: :teams, матчей: :matches.',
     'setup_stage_created_double_elim' => 'Стадия создана: сетка double elimination сгенерирована — команд: :teams, матчей: :matches.',
     'setup_stage_created_swiss' => 'Стадия создана: швейцарская система запущена, тур 1 сгенерирован — команд: :teams, матчей: :matches.',

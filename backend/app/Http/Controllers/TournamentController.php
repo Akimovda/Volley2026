@@ -448,6 +448,58 @@ class TournamentController extends Controller
             }
         }
 
+        // Гейт группового пути (round_robin/groups_playoff) — ВЫШЕ создания
+        // парент-стадии, зеркалим standalone-ветку выше. Раньше резерв/
+        // укомплектованность/минимум проверялись НИЖЕ — после того как
+        // парент-стадия, companion-скелет ("Плей-офф"/"Финальные группы") и
+        // пустые TournamentGroup уже были созданы: при ошибке гейта оставалась
+        // висячая пустая стадия+companion+группы (см. report/roster-gate-recon.md,
+        // баг воспроизведён и подтверждён отдельно). Сбор кандидатов — чистый
+        // EventTeam-запрос по event+occurrence, от $stage не зависит вообще —
+        // поднимается целиком, без разделения на "проверку" и "распределение".
+        $groupTeams = null;
+        $isGroupsPath = in_array($validated['type'], TournamentStage::followupTypeValues(), true) && $groupsCount > 0;
+
+        if ($isGroupsPath) {
+            $groupTeams = EventTeam::where('event_id', $event->id)
+                ->when($occurrenceId, fn($q) => $q->where('occurrence_id', (int) $occurrenceId))
+                ->whereIn('status', ['submitted', 'approved', 'ready'])
+                ->with('event')
+                ->get();
+
+            // Фильтр резерва лиги — общий метод, тот же что и в standalone-ветке выше.
+            $groupTeams = $this->teamService->excludeLeagueReserve($groupTeams, $event, $occurrenceId ? (int) $occurrenceId : null);
+
+            // Гейт укомплектованности (Вариант 3 — команды исключаются из
+            // коллекции, EventTeam не трогаем). Без force_incomplete — жёсткая
+            // ошибка со списком нарушителей, ничего не создаётся вообще.
+            $incompleteGroupTeams = $groupTeams->reject(fn($t) => $this->teamService->isRosterComplete($t));
+            if ($incompleteGroupTeams->isNotEmpty() && !$request->boolean('force_incomplete')) {
+                return $this->redirectToSetup(
+                    $event,
+                    __('tournaments.setup_stage_error_incomplete_teams', [
+                        'count' => $incompleteGroupTeams->count(),
+                        'names' => $incompleteGroupTeams->pluck('name')->implode(', '),
+                    ]),
+                    true
+                )->with('incomplete_teams_gate', true);
+            }
+            if ($request->boolean('force_incomplete')) {
+                $groupTeams = $groupTeams->diff($incompleteGroupTeams)->values();
+            }
+
+            // Минимум команд ПОСЛЕ исключения неполных — ДО создания стадии.
+            // Раньше при недоборе групповая жеребьёвка молча пропускалась НИЖЕ
+            // (без ошибки, стадия уже была создана) — теперь честный отказ.
+            if ($groupTeams->count() < 2) {
+                return $this->redirectToSetup(
+                    $event,
+                    __('tournaments.setup_stage_error_min_groups', ['count' => $groupTeams->count()]),
+                    true
+                );
+            }
+        }
+
         $stage = $this->setupService->createStage($event, [
             'type'          => $validated['type'],
             'name'          => $validated['name'],
@@ -560,42 +612,15 @@ class TournamentController extends Controller
             }
         }
 
-        // Для Round Robin / Groups+Playoff — автосоздание групп + жеребьёвка
-        if ($stage->canHaveFollowupStage() && $config['groups_count'] > 0) {
+        // Для Round Robin / Groups+Playoff — автосоздание групп + жеребьёвка.
+        // $groupTeams уже собраны/отфильтрованы/прогейтены ВЫШЕ, до создания
+        // стадии (см. блок isGroupsPath перед createStage()) — здесь только
+        // распределение по группам, повторно не проверяем.
+        if ($isGroupsPath) {
             $this->setupService->createGroupsAuto($stage, $config['groups_count']);
 
-            // Автоматическая жеребьёвка
             $drawMode = $request->input('draw_mode', 'random');
-            $teams = EventTeam::where('event_id', $event->id)
-                ->when($occurrenceId, fn($q) => $q->where('occurrence_id', (int) $occurrenceId))
-                ->whereIn('status', ['submitted', 'approved', 'ready'])
-                ->with('event')
-                ->get();
-
-            // Фильтр резерва лиги — общий метод (унификация с standalone-веткой выше).
-            $teams = $this->teamService->excludeLeagueReserve($teams, $event, $occurrenceId ? (int) $occurrenceId : null);
-
-            // Гейт укомплектованности (Вариант 3 — команды исключаются из
-            // коллекции для ЭТОЙ жеребьёвки, EventTeam не трогаем). Это
-            // РЕАЛЬНЫЙ групповой путь (round_robin/groups_playoff) — используется
-            // формой создания стадии напрямую, отдельный роут tournament.draw
-            // нигде в UI не вызывается (проверено — ни одна форма/JS на него не
-            // ссылается), но гейт там тоже стоит про запас (defense-in-depth).
-            $incompleteTeams = $teams->reject(fn($t) => $this->teamService->isRosterComplete($t));
-            if ($incompleteTeams->isNotEmpty() && !$request->boolean('force_incomplete')) {
-                return $this->redirectToSetup(
-                    $event,
-                    __('tournaments.setup_stage_error_incomplete_teams', [
-                        'count' => $incompleteTeams->count(),
-                        'names' => $incompleteTeams->pluck('name')->implode(', '),
-                    ]),
-                    true,
-                    "stage_{$stage->id}"
-                )->with('incomplete_teams_gate', true);
-            }
-            if ($request->boolean('force_incomplete')) {
-                $teams = $teams->diff($incompleteTeams)->values();
-            }
+            $teams = $groupTeams;
 
             if ($teams->count() >= 2) {
                 $groups = $stage->groups;

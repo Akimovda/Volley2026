@@ -530,6 +530,7 @@ return [
     'setup_stage_error_incomplete_teams' => 'Not fully staffed (:count): :names. Remove them or run the draw without them.',
     'setup_stage_btn_run_without_incomplete' => 'Run without incomplete teams',
     'badge_roster_incomplete' => 'Not fully staffed',
+    'setup_stage_error_min_groups' => 'Not enough teams for a group stage: need at least 2, have :count.',
     'setup_stage_created_single_elim' => 'Stage created: single-elimination bracket generated — teams: :teams, matches: :matches.',
     'setup_stage_created_double_elim' => 'Stage created: double-elimination bracket generated — teams: :teams, matches: :matches.',
     'setup_stage_created_swiss' => 'Stage created: Swiss system started, round 1 generated — teams: :teams, matches: :matches.',
