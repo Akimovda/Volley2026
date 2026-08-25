@@ -31,7 +31,7 @@
 
     {{-- Итоговая классификация --}}
     @php
-        $classification = app(\App\Services\TournamentStatsService::class)->calculateFinalClassification($event);
+        $classification = app(\App\Services\TournamentStatsService::class)->calculateFinalClassification($event, $selectedOccurrence?->id ?? null);
     @endphp
     @php
         // dompdf не рендерит emoji (нет глифов в DejaVu Sans) и не рендерит SVG —
