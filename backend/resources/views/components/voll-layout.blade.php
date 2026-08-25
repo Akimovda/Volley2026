@@ -780,17 +780,6 @@
 					</div>  
 				</div>  
 			</div>
-			@if(request()->getHost() === 'volleyplay.club')
-			<!-- Yandex.Metrika informer -->
-			<a href="https://metrika.yandex.ru/stat/?id=49039181&amp;from=informer" target="_blank" rel="nofollow">
-				<img src="https://informer.yandex.ru/informer/49039181/2_1_FFA020FF_FF8000FF_0_uniques"
-					 style="width:80px; height:31px; border:0;"
-					 alt="Яндекс.Метрика"
-					 title="Яндекс.Метрика: данные за сегодня (уникальные посетители)"
-					 class="ym-advanced-informer" data-cid="49039181" data-lang="ru"/>
-			</a>
-			<!-- /Yandex.Metrika informer -->
-			@endif
 		</footer>	
 		
 		
