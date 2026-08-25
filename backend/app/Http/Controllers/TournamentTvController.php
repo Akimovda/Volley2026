@@ -15,18 +15,34 @@ class TournamentTvController extends Controller
      */
     public function tv(Request $request, Event $event)
     {
-        // Occurrence selector
+        // Occurrence selector — тот же подход, что в TournamentPublicController::
+        // show() (29018cdd): для сезонных турниров $occurrences = все туры серии,
+        // для несезонных — только occurrences, где реально есть tournament_stages
+        // (иначе дефолт "последний occurrence события" мог упереться в тур без
+        // единой стадии, см. report/tabs-fix-recon-A.md).
         $occurrences = collect();
         $selectedOccurrence = null;
         if ($event->season_id) {
             $occurrences = $event->occurrences()->orderBy('starts_at')->get();
-            $occId = $request->query('occurrence_id');
-            if ($occId) {
-                $selectedOccurrence = $occurrences->firstWhere('id', $occId);
+        } else {
+            $stageOccurrenceIds = $event->tournamentStages()
+                ->whereNotNull('occurrence_id')
+                ->pluck('occurrence_id')
+                ->unique();
+            if ($stageOccurrenceIds->isNotEmpty()) {
+                $occurrences = $event->occurrences()
+                    ->whereIn('id', $stageOccurrenceIds->all())
+                    ->orderBy('starts_at')
+                    ->get();
             }
-            if (!$selectedOccurrence && $occurrences->isNotEmpty()) {
-                $selectedOccurrence = $occurrences->first();
-            }
+        }
+
+        $occId = $request->query('occurrence_id');
+        if ($occId) {
+            $selectedOccurrence = $occurrences->firstWhere('id', $occId);
+        }
+        if (!$selectedOccurrence && $occurrences->isNotEmpty()) {
+            $selectedOccurrence = $event->season_id ? $occurrences->first() : $occurrences->last();
         }
 
         $stages = $event->tournamentStages()
