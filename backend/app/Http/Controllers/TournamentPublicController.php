@@ -159,7 +159,37 @@ class TournamentPublicController extends Controller
      */
     public function liveData(Request $request, Event $event)
     {
+        // Occurrence-скоуп — тот же подход, что в show()/tv()/pdf*() (29018cdd,
+        // 5c0904f4, 474f16fc). Фронтовый polling (show.blade.php, tv.blade.php)
+        // пока не передаёт ?occurrence_id= — см. report/tv-pdf-recon.md,
+        // доработка фронта отдельным тикетом; здесь закрывается скоуп на бэке.
+        $occurrences = collect();
+        $selectedOccurrence = null;
+        if ($event->season_id) {
+            $occurrences = $event->occurrences()->orderBy('starts_at')->get();
+        } else {
+            $stageOccurrenceIds = $event->tournamentStages()
+                ->whereNotNull('occurrence_id')
+                ->pluck('occurrence_id')
+                ->unique();
+            if ($stageOccurrenceIds->isNotEmpty()) {
+                $occurrences = $event->occurrences()
+                    ->whereIn('id', $stageOccurrenceIds->all())
+                    ->orderBy('starts_at')
+                    ->get();
+            }
+        }
+
+        $occId = $request->query('occurrence_id');
+        if ($occId) {
+            $selectedOccurrence = $occurrences->firstWhere('id', $occId);
+        }
+        if (!$selectedOccurrence && $occurrences->isNotEmpty()) {
+            $selectedOccurrence = $event->season_id ? $occurrences->first() : $occurrences->last();
+        }
+
         $stages = $event->tournamentStages()
+            ->when($selectedOccurrence, fn($q) => $q->where('occurrence_id', $selectedOccurrence->id))
             ->with([
                 'groups.standings' => fn($q) => $q->with('team.members.user')->orderBy('rank'),
                 'matches' => fn($q) => $q->with(['teamHome.members.user', 'teamAway.members.user', 'winner'])
