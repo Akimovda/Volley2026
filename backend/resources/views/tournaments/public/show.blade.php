@@ -84,10 +84,10 @@
 				<a href="{{ route('tournament.tv', [$event, 'occurrence_id' => $selectedOccurrence?->id]) }}" target="_blank" class="btn btn-secondary">
 					📺 TV Mode
 				</a>
-				<a href="{{ route('tournament.pdf.schedule', $event) }}" class="btn btn-secondary">
+				<a href="{{ route('tournament.pdf.schedule', [$event, 'occurrence_id' => $selectedOccurrence?->id]) }}" class="btn btn-secondary">
 					📄 {{ __('tournaments.pub_pdf_schedule_short') }}
 				</a>
-				<a href="{{ route('tournament.pdf.results', $event) }}" class="btn btn-secondary">
+				<a href="{{ route('tournament.pdf.results', [$event, 'occurrence_id' => $selectedOccurrence?->id]) }}" class="btn btn-secondary">
 					📊 {{ __('tournaments.pub_pdf_results_short') }}
 				</a>
 				@auth
