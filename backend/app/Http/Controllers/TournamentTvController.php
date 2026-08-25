@@ -65,7 +65,37 @@ class TournamentTvController extends Controller
      */
     public function pdfSchedule(Request $request, Event $event)
     {
+        // Occurrence-скоуп — тот же подход, что в show()/tv() (29018cdd, 5c0904f4):
+        // для сезонных турниров occurrences = все туры серии, для несезонных —
+        // только occurrences, где реально есть tournament_stages; дефолт без
+        // ?occurrence_id= — последний тур из этого списка.
+        $occurrences = collect();
+        $selectedOccurrence = null;
+        if ($event->season_id) {
+            $occurrences = $event->occurrences()->orderBy('starts_at')->get();
+        } else {
+            $stageOccurrenceIds = $event->tournamentStages()
+                ->whereNotNull('occurrence_id')
+                ->pluck('occurrence_id')
+                ->unique();
+            if ($stageOccurrenceIds->isNotEmpty()) {
+                $occurrences = $event->occurrences()
+                    ->whereIn('id', $stageOccurrenceIds->all())
+                    ->orderBy('starts_at')
+                    ->get();
+            }
+        }
+
+        $occId = $request->query('occurrence_id');
+        if ($occId) {
+            $selectedOccurrence = $occurrences->firstWhere('id', $occId);
+        }
+        if (!$selectedOccurrence && $occurrences->isNotEmpty()) {
+            $selectedOccurrence = $event->season_id ? $occurrences->first() : $occurrences->last();
+        }
+
         $stages = $event->tournamentStages()
+            ->when($selectedOccurrence, fn($q) => $q->where('occurrence_id', $selectedOccurrence->id))
             ->with([
                 'groups.teams',
                 'matches' => fn($q) => $q->with(['teamHome.members.user', 'teamAway.members.user'])
@@ -86,7 +116,34 @@ class TournamentTvController extends Controller
      */
     public function pdfResults(Request $request, Event $event)
     {
+        // Occurrence-скоуп — тот же подход, что в show()/tv()/pdfSchedule().
+        $occurrences = collect();
+        $selectedOccurrence = null;
+        if ($event->season_id) {
+            $occurrences = $event->occurrences()->orderBy('starts_at')->get();
+        } else {
+            $stageOccurrenceIds = $event->tournamentStages()
+                ->whereNotNull('occurrence_id')
+                ->pluck('occurrence_id')
+                ->unique();
+            if ($stageOccurrenceIds->isNotEmpty()) {
+                $occurrences = $event->occurrences()
+                    ->whereIn('id', $stageOccurrenceIds->all())
+                    ->orderBy('starts_at')
+                    ->get();
+            }
+        }
+
+        $occId = $request->query('occurrence_id');
+        if ($occId) {
+            $selectedOccurrence = $occurrences->firstWhere('id', $occId);
+        }
+        if (!$selectedOccurrence && $occurrences->isNotEmpty()) {
+            $selectedOccurrence = $event->season_id ? $occurrences->first() : $occurrences->last();
+        }
+
         $stages = $event->tournamentStages()
+            ->when($selectedOccurrence, fn($q) => $q->where('occurrence_id', $selectedOccurrence->id))
             ->with([
                 'groups.standings' => fn($q) => $q->with('team.members.user')->orderBy('rank'),
                 'matches' => fn($q) => $q->with(['teamHome.members.user', 'teamAway.members.user', 'winner'])
@@ -99,7 +156,7 @@ class TournamentTvController extends Controller
         $ratingData = app(\App\Services\TournamentStatsService::class)
             ->getParticipantRatingTable($event);
 
-        $pdf = Pdf::loadView('tournaments.pdf.results', compact('event', 'stages', 'ratingData'))
+        $pdf = Pdf::loadView('tournaments.pdf.results', compact('event', 'stages', 'ratingData', 'selectedOccurrence'))
             ->setPaper('a4', 'portrait');
 
         $filename = 'results_' . $event->id . '_' . now()->format('Ymd') . '.pdf';
