@@ -192,6 +192,13 @@ class TournamentController extends Controller
             }
         }
 
+        // Живая укомплектованность для бейджа — предвычислено здесь одним проходом,
+        // чтобы не звать сервис в цикле blade (is_complete в БД может быть stale,
+        // см. report/roster-gate-recon.md).
+        $rosterCompleteMap = $teams->mapWithKeys(
+            fn($t) => [$t->id => $this->teamService->isRosterComplete($t)]
+        );
+
         // Tiebreaker sets (множественные связки команд) — pending + resolved для отображения
         $stageIds = $stages->pluck('id');
         $tiebreakerSets = TournamentTiebreakerSet::whereIn('stage_id', $stageIds)
@@ -214,7 +221,7 @@ class TournamentController extends Controller
             'applicationMode', 'userEventPhotos',
             'seasonData', 'selectedOccurrence', 'leagueTeams',
             'tiebreakerSets', 'cleanStatsByGroup', 'outsidersByGroup',
-            'unassignedPlayers'
+            'unassignedPlayers', 'rosterCompleteMap'
         ));
     }
 
@@ -412,7 +419,7 @@ class TournamentController extends Controller
                         'names' => $incompleteTeams->pluck('name')->implode(', '),
                     ]),
                     true
-                );
+                )->with('incomplete_teams_gate', true);
             }
             if ($request->boolean('force_incomplete')) {
                 $standaloneTeams = $standaloneTeams->diff($incompleteTeams)->values();
@@ -584,7 +591,7 @@ class TournamentController extends Controller
                     ]),
                     true,
                     "stage_{$stage->id}"
-                );
+                )->with('incomplete_teams_gate', true);
             }
             if ($request->boolean('force_incomplete')) {
                 $teams = $teams->diff($incompleteTeams)->values();
@@ -738,7 +745,7 @@ class TournamentController extends Controller
             return back()->with('error', __('tournaments.setup_stage_error_incomplete_teams', [
                 'count' => $incompleteTeams->count(),
                 'names' => $incompleteTeams->pluck('name')->implode(', '),
-            ]));
+            ]))->with('incomplete_teams_gate', true);
         }
         if ($request->boolean('force_incomplete')) {
             $teams = $teams->diff($incompleteTeams)->values();
