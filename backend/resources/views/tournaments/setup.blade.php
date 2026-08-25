@@ -1394,11 +1394,14 @@ $tourNumber = $seasonData
 										<option value="round_robin">{{ __('tournaments.setup_stage_round_robin') }}</option>
 										<option value="groups_playoff">{{ __('tournaments.setup_stage_groups_playoff') }}</option>
 										<option value="single_elim">{{ __('tournaments.setup_stage_single_elim') }}</option>
-										<option value="double_elim">{{ __('tournaments.setup_stage_double_elim') }}</option>
 										<option value="swiss">{{ __('tournaments.setup_stage_swiss') }}</option>
 										{{-- thai (TournamentThaiService) нигде не вызывается бэкендом — скрыто из
 										     выбора в форме (1A), тип и валидатор не трогаем. king_of_court и
-										     king_beach показываем только для пляжного турнира. --}}
+										     king_beach показываем только для пляжного турнира.
+										     double_elim временно скрыт (Вариант A) — resolveByes() не пробрасывает
+										     BYE в нижнюю сетку при небинарном числе команд (report/double-elim-bye-stuck.md),
+										     8/15 матчей зависают в TBD. generateDoubleElimination() и разметка
+										     #double_elim_fields ниже НЕ удалены — вернём вместе с фиксом BYE. --}}
 										@if($isBeach)
 										<option value="king_of_court">{{ __('tournaments.setup_stage_king_of_court') }}</option>
 										<option value="king_beach">{{ __('tournaments.setup_stage_king_beach') }}</option>

@@ -550,6 +550,11 @@ return [
     'setup_stage_created_double_elim' => 'Стадия создана: сетка double elimination сгенерирована — команд: :teams, матчей: :matches.',
     'setup_stage_created_swiss' => 'Стадия создана: швейцарская система запущена, тур 1 сгенерирован — команд: :teams, матчей: :matches.',
     'setup_stage_created_king_of_court' => 'Стадия создана: King of the Court запущен, первый матч сгенерирован — команд: :teams.',
+    // double_elim временно скрыт из выбора и заблокирован в createStage() —
+    // resolveByes() не пробрасывает BYE в нижнюю сетку при небинарном числе
+    // команд (см. report/double-elim-bye-stuck.md). Сообщения выше про
+    // double_elim (error_min/created) не удалены — вернутся вместе с фиксом.
+    'format_temporarily_unavailable' => 'Этот формат временно недоступен — скоро вернём.',
     'setup_stage_col_group' => 'Группа',
     'setup_stage_manual_position_col' => 'Позиция',
     'setup_stage_group_letter' => 'Группа :l',

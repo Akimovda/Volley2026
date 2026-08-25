@@ -369,6 +369,22 @@ class TournamentController extends Controller
         $standaloneTeams = null;
 
         if (in_array($validated['type'], $standaloneBracketTypes, true)) {
+            // Вариант A (temp guard): double_elim скрыт из <select> в setup.blade.php,
+            // но прямой POST type=double_elim в обход формы всё ещё возможен — без
+            // этого guard'а он бы сгенерил сетку, которая застревает навсегда при
+            // небинарном числе команд (resolveByes() не пробрасывает BYE в нижнюю
+            // сетку, см. report/double-elim-bye-stuck.md). Отказ ДО createStage()
+            // ниже — иначе осталась бы висячая pending-стадия с 8/15 зависших
+            // матчей. generateDoubleElimination() и сообщения ниже НЕ трогаем —
+            // вернём вместе с фиксом BYE.
+            if ($validated['type'] === TournamentStage::TYPE_DOUBLE_ELIM) {
+                return $this->redirectToSetup(
+                    $event,
+                    __('tournaments.format_temporarily_unavailable'),
+                    true
+                );
+            }
+
             // Минимум команд проверяем ДО создания стадии ниже — setupService->
             // createStage() создаёт запись безусловно (status=pending), недобор
             // иначе оставлял бы пустую висячую стадию без матчей.

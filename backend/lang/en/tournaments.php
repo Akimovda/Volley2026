@@ -531,6 +531,11 @@ return [
     'setup_stage_created_double_elim' => 'Stage created: double-elimination bracket generated — teams: :teams, matches: :matches.',
     'setup_stage_created_swiss' => 'Stage created: Swiss system started, round 1 generated — teams: :teams, matches: :matches.',
     'setup_stage_created_king_of_court' => 'Stage created: King of the Court started, first match generated — teams: :teams.',
+    // double_elim is temporarily hidden from the picker and blocked in createStage() —
+    // resolveByes() does not propagate the BYE into the lower bracket when the team
+    // count is not a power of two (see report/double-elim-bye-stuck.md). The
+    // double_elim messages above (error_min/created) are kept — they return with the fix.
+    'format_temporarily_unavailable' => 'This format is temporarily unavailable — coming back soon.',
     'setup_stage_col_group' => 'Group',
     'setup_stage_manual_position_col' => 'Position',
     'setup_stage_group_letter' => 'Group :l',
