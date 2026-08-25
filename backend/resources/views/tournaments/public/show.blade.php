@@ -52,7 +52,9 @@
 		</div>
 	</x-slot>
 	
-	{{-- Выбор тура (сезонный турнир) --}}
+	{{-- Выбор тура — для сезонных турниров ($occurrences = все туры серии) и для
+	несезонных ($occurrences = только туры, где реально есть tournament_stages,
+	см. TournamentPublicController::show()) --}}
 	@if($occurrences->count() > 1)
 	<div class="users-filter">
 		<div class="container">
