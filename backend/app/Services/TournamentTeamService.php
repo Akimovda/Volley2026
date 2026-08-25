@@ -1700,6 +1700,69 @@ final class TournamentTeamService
         ]);
     }
 
+    /**
+     * Живая проверка укомплектованности — НЕ полагаться на закэшированный
+     * is_complete (пересчитывается только в паре мест, может быть stale
+     * после sync/ручного добавления, см. report/roster-gate-recon.md).
+     */
+    public function isRosterComplete(EventTeam $team): bool
+    {
+        $minPlayers = (int) ($team->event->tournamentSetting?->team_size_min ?? 2);
+
+        return $team->confirmedMembers()->count() >= $minPlayers;
+    }
+
+    /**
+     * Дивизион, к которому принадлежит КОНКРЕТНЫЙ тур (occurrence) — не первый
+     * дивизион сезона события. $event->season->leagues()->first() возвращает
+     * дивизион ПЕРВОГО сезона события даже если сам occurrence из другого
+     * сезона/раунда серии (см. report/roster-gate-recon.md, риск отмечен и в
+     * CLAUDE.md). Единственный надёжный путь — через привязку тура к раунду.
+     */
+    public function resolveLeagueId(Event $event, ?int $occurrenceId): ?int
+    {
+        if ($occurrenceId) {
+            $seasonEvent = TournamentSeasonEvent::where('occurrence_id', $occurrenceId)->first();
+            if ($seasonEvent?->league_id) {
+                return $seasonEvent->league_id;
+            }
+        }
+
+        return $event->season?->leagues()->first()?->id;
+    }
+
+    /**
+     * Исключить из коллекции команд те, что числятся в РЕЗЕРВЕ дивизиона
+     * этого тура. Несезонные турниры (season_id пуст) — коллекция без
+     * изменений, у них нет лиги/резерва в принципе.
+     *
+     * @param  \Illuminate\Support\Collection<int, EventTeam>  $teams
+     * @return \Illuminate\Support\Collection<int, EventTeam>
+     */
+    public function excludeLeagueReserve(\Illuminate\Support\Collection $teams, Event $event, ?int $occurrenceId): \Illuminate\Support\Collection
+    {
+        if (!$event->season_id) {
+            return $teams;
+        }
+
+        $leagueId = $this->resolveLeagueId($event, $occurrenceId);
+        if (!$leagueId) {
+            return $teams;
+        }
+
+        $reserveTeamIds = TournamentLeagueTeam::where('league_id', $leagueId)
+            ->where('status', 'reserve')
+            ->pluck('team_id')
+            ->filter()
+            ->toArray();
+
+        if (!$reserveTeamIds) {
+            return $teams;
+        }
+
+        return $teams->reject(fn($t) => in_array($t->id, $reserveTeamIds, true));
+    }
+
 
     /**
      * Проверка гендерных ограничений команды.
