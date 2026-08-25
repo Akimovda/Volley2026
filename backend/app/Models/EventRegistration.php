@@ -15,6 +15,7 @@ class EventRegistration extends Model
         'position',
         'status',
         'cancelled_at',
+        'confirmed_at',
     ];
 
     protected $casts = [
