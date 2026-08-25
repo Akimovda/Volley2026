@@ -242,7 +242,7 @@
 		@endphp
 		@if($myReg && $myReg->subscription_id && $myReg->auto_booked && !$myReg->confirmed_at)
 		<div class="alert alert-warning mt-1">
-			{{ __('events.sp_confirm_subscription') }}
+			<strong>{{ __('events.sp_confirm_subscription') }}</strong>
 			{{ \Carbon\Carbon::parse($occurrence->starts_at)->subHours(12)->format('d.m H:i') }}
 			{{ __('events.sp_confirm_or_cancel') }}
 		</div>
@@ -254,7 +254,7 @@
 		<div class="alert alert-success mt-1">{{ __('events.sp_confirmed') }}</div>
 		@elseif($myReg && $myReg->premium_auto_booking_id && !$myReg->confirmed_at)
 		<div class="alert alert-warning mt-1">
-			{{ __('events.sp_confirm_premium') }}
+			<strong>{{ __('events.sp_confirm_premium') }}</strong>
 			{{ $myReg->premium_auto_confirm_deadline_at?->format('d.m H:i') }}
 			{{ __('events.sp_confirm_or_cancel') }}
 		</div>

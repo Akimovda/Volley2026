@@ -1111,5 +1111,5 @@ return [
     'overview_btn_manage'     => 'Manage registrations',
     'player_quality'          => 'Coefficient 💪 : :value of :max',
 
-    'sp_confirm_premium'    => '⏰ <strong>Confirm your participation</strong> in the Premium auto-booking by',
+    'sp_confirm_premium'    => '⏰ Confirm your participation in the Premium auto-booking by',
 ];
