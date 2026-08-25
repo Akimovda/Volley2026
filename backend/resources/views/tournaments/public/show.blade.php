@@ -81,7 +81,7 @@
 			
 			{{-- TV Mode + PDF --}}
 			<div class="d-flex mb-2 text-center gap-1" style="flex-wrap:wrap">
-				<a href="{{ route('tournament.tv', $event) }}" target="_blank" class="btn btn-secondary">
+				<a href="{{ route('tournament.tv', [$event, 'occurrence_id' => $selectedOccurrence?->id]) }}" target="_blank" class="btn btn-secondary">
 					📺 TV Mode
 				</a>
 				<a href="{{ route('tournament.pdf.schedule', $event) }}" class="btn btn-secondary">
