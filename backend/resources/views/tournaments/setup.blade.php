@@ -967,8 +967,11 @@ $tourNumber = $seasonData
 		============================================================ --}}
 		<div class="ramka">
 			@php
-				$completeTeams   = $teams->filter(fn($t) => $t->is_complete);
-				$incompleteTeams = $teams->filter(fn($t) => !$t->is_complete);
+				// Живая укомплектованность (rosterCompleteMap предвычислена в
+				// TournamentController::setup()) — не is_complete из БД, тот кэш
+				// может быть stale (см. report/roster-gate-recon.md).
+				$completeTeams   = $teams->filter(fn($t) => $rosterCompleteMap[$t->id] ?? $t->is_complete);
+				$incompleteTeams = $teams->filter(fn($t) => !($rosterCompleteMap[$t->id] ?? $t->is_complete));
 				$isIndividualTournament = ($event->registration_mode ?? '') === 'tournament_individual';
 				$teamsHeaderKey = $isIndividualTournament ? 'tournaments.setup_teams_h2_individual' : 'tournaments.setup_teams_h2';
 			@endphp
@@ -1051,7 +1054,7 @@ $tourNumber = $seasonData
 						<div>{{ trim(($m->user->last_name ?? '') . ' ' . ($m->user->first_name ?? '')) ?: $m->user->name ?? '?' }}</div>
 						@endforeach
 						<div class="mt-1 d-flex between fvc">
-							<div class="mt-05 cd b-600" style="color:#92400e">Ищет партнёра</div>
+							<div class="mt-05 cd b-600" style="color:#dc2626">{{ __('tournaments.badge_roster_incomplete') }}</div>
 							<form method="POST" action="{{ route('tournamentTeams.destroy', [$event, $team]) }}" class="mt-1">
 								@csrf @method('DELETE')
 								<button type="submit" class="icon-delete btn-alert btn btn-danger btn-svg" data-title="{{ __('tournaments.setup_team_delete_title', ['name' => $team->name]) }}" data-icon="warning" data-confirm-text="{{ __('tournaments.btn_delete') }}" data-cancel-text="{{ __('tournaments.btn_cancel') }}">
@@ -1384,6 +1387,7 @@ $tourNumber = $seasonData
 					@if($selectedOccurrence)
 					<input type="hidden" name="occurrence_id" value="{{ $selectedOccurrence->id }}">
 					@endif
+					<input type="hidden" id="force_incomplete_field" name="force_incomplete" value="0">
 					<div class="stage-section">
 						<div class="stage-section-label">{{ __('tournaments.setup_section_type_h') }}</div>
 						<div class="card">
@@ -1800,6 +1804,9 @@ $tourNumber = $seasonData
 
 					<div class="text-center">
 						<button type="submit" class="btn btn-primary mt-2">{{ __('tournaments.setup_stage_btn_create_seed') }}</button>
+						@if(session('incomplete_teams_gate'))
+						<button type="button" class="btn btn-secondary mt-2 btn-alert" onclick="document.getElementById('force_incomplete_field').value='1'" data-title="{{ __('tournaments.setup_stage_btn_run_without_incomplete') }}" data-icon="warning" data-confirm-text="{{ __('tournaments.setup_stage_btn_run_without_incomplete') }}" data-cancel-text="{{ __('tournaments.btn_cancel') }}">{{ __('tournaments.setup_stage_btn_run_without_incomplete') }}</button>
+						@endif
 					</div>
 					<script>
 						// Единый источник списка "групповых" типов стадий — из
