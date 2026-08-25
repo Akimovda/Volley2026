@@ -718,7 +718,7 @@
 				try {
 					window.Echo = window.Echo || new Echo({
 						broadcaster: 'reverb',
-						key: 'local',
+						key: '{{ config('reverb.apps.apps.0.key') }}',
 						wsHost: window.location.hostname,
 						wsPort: 80,
 						wssPort: 443,
