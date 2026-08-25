@@ -347,7 +347,9 @@ return [
 
     'pub_match_stats_toggle' => 'Статистика матча',
     'pub_match_progress_toggle' => 'Ход матча',
+    'pub_match_progress_toggle_live' => 'Ход матча (идёт)',
     'pub_match_progress_not_tracked' => 'Хронология матча не велась. Ведите счёт по розыгрышам, чтобы она отображалась.',
+    'pub_match_live' => 'Матч идёт',
 
     // === score_rally.blade.php (поочковый ввод счёта со статистикой) ===
     'rally_title'              => 'Поочковый ввод со статистикой',

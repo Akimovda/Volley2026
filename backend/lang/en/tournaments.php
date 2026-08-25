@@ -331,7 +331,9 @@ return [
 
     'pub_match_stats_toggle' => 'Match stats',
     'pub_match_progress_toggle' => 'Match progress',
+    'pub_match_progress_toggle_live' => 'Match progress (live)',
     'pub_match_progress_not_tracked' => 'Match progress was not tracked. Score by rally to make it appear here.',
+    'pub_match_live' => 'Match live',
 
     // === score_rally.blade.php (rally-by-rally scoring with stats) ===
     'rally_title'              => 'Rally-by-rally scoring with stats',

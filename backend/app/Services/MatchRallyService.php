@@ -90,7 +90,7 @@ class MatchRallyService
             throw new InvalidArgumentException('Игрок передачи должен быть из выигравшей команды.');
         }
 
-        return DB::transaction(function () use (
+        $event = DB::transaction(function () use (
             $match, $setNumber, $scoringTeamId, $actionType, $playerId, $statTeamId,
             $digUserId, $assistUserId, $recordedBy
         ) {
@@ -137,6 +137,12 @@ class MatchRallyService
 
             return $event;
         });
+
+        // После commit — публичная страница турнира узнаёт по WebSocket, что нужно
+        // перечитать ленту "ход матча" (см. TournamentMatchRallyUpdated).
+        broadcast(new \App\Events\TournamentMatchRallyUpdated($match->id, $setNumber));
+
+        return $event;
     }
 
     public function undoLastPoint(TournamentMatch $match, int $setNumber): bool
@@ -145,7 +151,7 @@ class MatchRallyService
             throw new InvalidArgumentException('Матч уже завершён.');
         }
 
-        return DB::transaction(function () use ($match, $setNumber) {
+        $undone = DB::transaction(function () use ($match, $setNumber) {
             TournamentMatch::whereKey($match->id)->lockForUpdate()->first();
 
             $last = MatchRallyEvent::where('match_id', $match->id)
@@ -162,6 +168,12 @@ class MatchRallyService
 
             return true;
         });
+
+        if ($undone) {
+            broadcast(new \App\Events\TournamentMatchRallyUpdated($match->id, $setNumber));
+        }
+
+        return $undone;
     }
 
     public function getBoard(TournamentMatch $match, int $setNumber): array

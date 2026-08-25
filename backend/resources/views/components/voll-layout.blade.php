@@ -5,6 +5,21 @@
 <!DOCTYPE html>
 <html lang="ru">
 	<head>
+		@if(request()->getHost() === 'volleyplay.club')
+		<!-- Yandex.Metrika counter -->
+		<script type="text/javascript">
+			(function(m,e,t,r,i,k,a){
+				m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+				m[i].l=1*new Date();
+				for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+				k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
+			})(window, document,'script','https://mc.yandex.ru/metrika/tag.js', 'ym');
+
+			ym(49039181, 'init', {webvisor:true, clickmap:true, referrer: document.referrer, url: location.href, accurateTrackBounce:true, trackLinks:true});
+		</script>
+		<noscript><div><img src="https://mc.yandex.ru/watch/49039181" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+		<!-- /Yandex.Metrika counter -->
+		@endif
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 		<script>if(navigator.userAgent.includes('VolleyPlayApp')){document.documentElement.classList.add('is-app');window.addEventListener('load',function(){var btn=document.getElementById('app-back-btn');if(!btn)return;var path=window.location.pathname.replace(/\/$/,'')||'/';var roots=['/','/events'];if(roots.indexOf(path)!==-1||window.history.length<=1){btn.style.display='none';}});}</script>
@@ -765,6 +780,17 @@
 					</div>  
 				</div>  
 			</div>
+			@if(request()->getHost() === 'volleyplay.club')
+			<!-- Yandex.Metrika informer -->
+			<a href="https://metrika.yandex.ru/stat/?id=49039181&amp;from=informer" target="_blank" rel="nofollow">
+				<img src="https://informer.yandex.ru/informer/49039181/2_1_FFA020FF_FF8000FF_0_uniques"
+					 style="width:80px; height:31px; border:0;"
+					 alt="Яндекс.Метрика"
+					 title="Яндекс.Метрика: данные за сегодня (уникальные посетители)"
+					 class="ym-advanced-informer" data-cid="49039181" data-lang="ru"/>
+			</a>
+			<!-- /Yandex.Metrika informer -->
+			@endif
 		</footer>	
 		
 		
