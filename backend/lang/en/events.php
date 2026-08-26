@@ -142,6 +142,15 @@ return [
     'card_seats_full'    => 'No seats left',
     'widget_reserve_suffix' => ' (+:count in reserve)',
 
+    // Event status on card
+    'card_status_open'     => 'Registration',
+    'card_status_live'     => 'In progress',
+    'card_status_finished' => 'Finished',
+
+    // Event like
+    'card_like_title'          => 'Like',
+    'card_like_login_required' => 'Log in to like this event',
+
     // Duration short labels
     'dur_hours_short' => 'h',
     'dur_min_short'   => 'm',

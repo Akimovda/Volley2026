@@ -310,6 +310,9 @@ class EventIndexService
 
         [$joinedIds,$restrictedIds] = $this->joinedIds('occurrence_id');
 
+        $eventIdsForLikes = $occurrences->pluck('event.id')->filter()->unique()->values()->all();
+        [$eventLikeCounts, $likedEventIds] = $this->eventLikesData($eventIdsForLikes, $userId);
+
         $now = now('UTC');
         $activeLocationNames = DB::table('locations as l')
             ->whereExists(function ($sub) use ($now) {
@@ -335,7 +338,42 @@ class EventIndexService
             'restrictedEventIds' => [],
             'activeLocationNames' => $activeLocationNames,
             'windowStartDate' => $windowStart->format('Y-m-d'),
+            'eventLikeCounts' => $eventLikeCounts,
+            'likedEventIds' => $likedEventIds,
         ]);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | EVENT LIKES (счётчики + отметки текущего пользователя, events/_card.blade.php)
+    |--------------------------------------------------------------------------
+    */
+
+    private function eventLikesData(array $eventIds, int $userId): array
+    {
+        if (empty($eventIds) || !Schema::hasTable('event_likes')) {
+            return [[], []];
+        }
+
+        $counts = DB::table('event_likes')
+            ->selectRaw('event_id, count(*) as likes')
+            ->whereIn('event_id', $eventIds)
+            ->groupBy('event_id')
+            ->pluck('likes', 'event_id')
+            ->map(fn ($v) => (int) $v)
+            ->all();
+
+        $likedEventIds = [];
+        if ($userId > 0) {
+            $likedEventIds = DB::table('event_likes')
+                ->where('user_id', $userId)
+                ->whereIn('event_id', $eventIds)
+                ->pluck('event_id')
+                ->map(fn ($v) => (int) $v)
+                ->all();
+        }
+
+        return [$counts, $likedEventIds];
     }
 
     /*

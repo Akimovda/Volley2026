@@ -143,6 +143,15 @@ return [
     'card_seats_full'     => 'Мест нет',
     'widget_reserve_suffix' => ' (+:count в резерве)',
 
+    // Статус мероприятия на карточке
+    'card_status_open'     => 'Регистрация',
+    'card_status_live'     => 'Идёт сейчас',
+    'card_status_finished' => 'Завершено',
+
+    // Лайк мероприятия
+    'card_like_title'      => 'Нравится',
+    'card_like_login_required' => 'Войдите, чтобы отметить мероприятие',
+
     // Сокращения длительности
     'dur_hours_short' => 'ч',
     'dur_min_short'   => 'м',
@@ -593,7 +602,7 @@ return [
     'gender_5050'         => 'Микс 50/50',
     'gender_only_male'    => 'Только М',
     'gender_only_female'  => 'Только Ж',
-    'gender_mixed_limited' => 'М/Ж (с ограничениями)',
+    'gender_mixed_limited' => 'М/Ж (огран.)',
 
     // Тултипы карточки: подтип игры + гендерная политика (после строки организатора)
     'gender_tooltip_only_male'    => 'На это мероприятие могут записаться только мужчины.',

@@ -5528,8 +5528,8 @@ body.dark .tourn-tabs .tourn-tab--active {
 }
 body.dark .card-img-top {
 	background: rgba(255,255,255,0.05);
-}				
-.card-img-top img {				
+}
+.card-img-top img {
 	transition: all 0.8s linear;
 	will-change: transform;	
 }			
@@ -5606,6 +5606,46 @@ body.dark .event-price {
 .event-card:hover .card-img-top img {
 	transform: scale(1.05);
 }
+
+/* Статус мероприятия (регистрация/идёт сейчас/завершено) — плашка в общем
+   ряду бейджей под "Организатор" (event-badges-row), рядом с 2x2/Микс 50/50.
+   Тот же визуальный язык, что у .badge.badge-sm (тонированный фон + цветной
+   текст), просто с фиксированным цветом под смысл статуса. */
+.badge.badge-sm.status-open     { background: rgba(16,185,129,.15); color: #10b981; }
+.badge.badge-sm.status-live     { background: rgba(231,97,46,.15); color: #E7612F; }
+.badge.badge-sm.status-finished { background: rgba(120,120,128,.15); color: #6b7280; }
+body.dark .badge.badge-sm.status-finished { color: #9ca3af; }
+
+/* Лайк мероприятия — иконка+счётчик в том же ряду, без фона (не бейдж-пилюля,
+   просто меняет цвет: тёмный/светлый по теме, оранжевый при лайке). */
+.event-like-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	border: none;
+	background: none;
+	padding: 0;
+	font-size: 1.3rem;
+	font-weight: 700;
+	line-height: 1;
+	color: #222333;
+	cursor: pointer;
+}
+body.dark .event-like-badge {
+	color: #e5e7eb;
+}
+.event-like-badge .menu-icon-flame {
+	width: 18px;
+	height: 18px;
+	color: inherit;
+}
+.event-like-badge.is-liked .menu-icon-flame {
+	color: #E7612F;
+}
+.event-like-badge:disabled {
+	cursor: default;
+}
+
 .event-column {
 	display: flex;
 	gap: 1rem;

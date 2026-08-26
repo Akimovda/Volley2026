@@ -7,9 +7,14 @@
 @php
 $joinedOccurrenceIds     = $joinedOccurrenceIds ?? [];
 $restrictedOccurrenceIds = $restrictedOccurrenceIds ?? [];
+$eventLikeCounts         = $eventLikeCounts ?? [];
+$likedEventIds           = $likedEventIds ?? [];
 
 $isJoined     = in_array((int)$occ->id, $joinedOccurrenceIds, true);
 $joinDisabled = in_array((int)$occ->id, $restrictedOccurrenceIds, true);
+
+$eventLikeCount = (int) ($eventLikeCounts[(int) $event->id] ?? 0);
+$eventLiked     = in_array((int) $event->id, $likedEventIds, true);
 
 $dir = $event?->direction ?? 'classic';
 $userLevel = null;
@@ -137,7 +142,29 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 			
 			$canRegister   = $regEnabled && !$eventStarted && !$regNotStarted && !$regClosed;
 			$canCancelSelf = $regEnabled && !$eventStarted && (!$cancelUntilUtc || $nowUtc->lt($cancelUntilUtc));
-			
+
+			// Статус мероприятия на карточке (регистрация/идёт сейчас/завершено) —
+			// остальные случаи (рег. не началась/закрыта) бейджа не показывают.
+			$endsAtUtc = ($startsAtUtc && !empty($occ->duration_sec))
+			? $startsAtUtc->copy()->addSeconds((int) $occ->duration_sec)
+			: null;
+			$eventFinished = $endsAtUtc ? $nowUtc->gte($endsAtUtc) : false;
+			$eventLive     = $eventStarted && !$eventFinished;
+
+			if ($eventFinished) {
+			$cardStatus = 'finished';
+			$cardStatusLabel = __('events.card_status_finished');
+			} elseif ($eventLive) {
+			$cardStatus = 'live';
+			$cardStatusLabel = __('events.card_status_live');
+			} elseif ($canRegister) {
+			$cardStatus = 'open';
+			$cardStatusLabel = __('events.card_status_open');
+			} else {
+			$cardStatus = null;
+			$cardStatusLabel = null;
+			}
+
 			$dirLabel = ($dir === 'beach') ? __('events.card_dir_beach') : (($dir === 'classic') ? __('events.card_dir_classic') : __('events.card_dir_dash'));
 			$tzEvent  = (string)($occ->timezone ?: ($event?->timezone ?: 'UTC'));
 			$tzUser   = ($userHasCityTz ?? false) ? ($userTz ?? $tzEvent) : $tzEvent;
@@ -275,7 +302,7 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 						
 						
 						<div class="border f-0 mb-1 card-img-top">
-							<a href="{{ url('/events/' . (int)$event->id) . '?occurrence=' . (int)$occ->id }}">
+							<a href="{{ $eventPageUrl }}">
 								@if(!empty($event->event_photos) && count($event->event_photos) > 0)
 								@php $firstPhoto = \Spatie\MediaLibrary\MediaCollections\Models\Media::find($event->event_photos[0]); @endphp
 								@if($firstPhoto)
@@ -288,9 +315,9 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 								@else
 								<img src="/img/pixel.png" data-src="/img/{{ $event->direction === 'beach' ? 'beach.webp' : 'classic.webp' }}" alt="{{ $event?->title ?? '—' }}">
 								@endif
-								
+
 								<div class="event-direction {{ $event->direction === 'beach' ? 'beach-direction' : 'classic-direction' }}">{{ $dirLabel }}</div>
-								<div class="event-price">{{ $priceLabel }}</div>		
+								<div class="event-price">{{ $priceLabel }}</div>
 							</a>
 						</div>
 						
@@ -414,8 +441,8 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
                         @endif
                         @endif
 
-						@if($gsSubtype !== '' || $genderBadgeLabel)
-						<div class="event-badges-row d-flex flex-wrap gap-1 mb-05">
+						@if($gsSubtype !== '' || $genderBadgeLabel || $cardStatus)
+						<div class="event-badges-row d-flex flex-wrap align-items-center gap-1 mb-05">
 							@if($gsSubtype !== '')
 								@if($subtypeTipText)
 								<span class="info-tip js-info-tip">
@@ -432,9 +459,13 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 								<span class="info-tip-content">{{ $genderTipText }}</span>
 							</span>
 							@endif
+							@if($cardStatus)
+							<span class="badge badge-sm status-{{ $cardStatus }}">{{ $cardStatusLabel }}</span>
+							@endif
+							@include('events._partials.like_badge')
 						</div>
 						@endif
-						
+
 						{{--
                         @if($levelLabel)
                         <div class="text-muted small mt-1">
