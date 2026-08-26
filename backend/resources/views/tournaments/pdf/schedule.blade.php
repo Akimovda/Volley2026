@@ -59,11 +59,11 @@
                         <tr>
                             <td class="tc">{{ $m->match_number }}</td>
                             <td class="tc">R{{ $m->round }}</td>
-                            <td class="{{ $m->winner_team_id === $m->team_home_id ? 'bold' : '' }}">{{ $m->teamHome->name ?? 'TBD' }}</td>
-                            <td class="{{ $m->winner_team_id === $m->team_away_id ? 'bold' : '' }}">{{ $m->teamAway->name ?? 'TBD' }}</td>
+                            <td class="{{ $m->winner_team_id === $m->team_home_id ? 'bold' : '' }}">{{ $m->teamHome->name ?? ($m->status === 'completed' ? '—' : 'TBD') }}</td>
+                            <td class="{{ $m->winner_team_id === $m->team_away_id ? 'bold' : '' }}">{{ $m->teamAway->name ?? ($m->status === 'completed' ? '—' : 'TBD') }}</td>
                             <td class="tc">{{ $m->court ?? '—' }}</td>
                             <td class="tc">{{ $m->scheduled_at ? \App\Support\DateTime::formatLocal($m->scheduled_at, $event->timezone ?: 'UTC', 'H:i') : '—' }}</td>
-                            <td class="tc bold">{{ $m->setsScore() ?? '—' }}</td>
+                            <td class="tc bold">{{ ($m->status === 'completed' && (!$m->teamHome || !$m->teamAway)) ? '—' : $m->setsScore() }}</td>
                         </tr>
                     @endforeach
                 </tbody>

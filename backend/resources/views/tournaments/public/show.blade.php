@@ -443,12 +443,14 @@
 			<div class="d-flex f-14" style="padding:5px 0;border-bottom:1px solid rgba(128,128,128,.08);gap:8px;align-items:center">
 				<span class="f-12" style="opacity:.4;width:30px">R{{ $m->round }}</span>
 				<span style="flex:1;text-align:right" class="{{ $m->winner_team_id === $m->team_home_id ? 'b-700' : '' }}">
-					@include('tournaments._partials.team_name_link', ['team' => $m->teamHome, 'fallback' => '?'])
+					@include('tournaments._partials.team_name_link', ['team' => $m->teamHome, 'fallback' => '—'])
 					@include('tournaments._partials.team_roster_line', ['team' => $m->teamHome, 'class' => 'f-11', 'style' => 'color:#6b7280'])
 				</span>
 				<span class="px-2 b-700" style="min-width:100px;text-align:center">
 					@if($m->isLive())
 					<span class="pub-live-badge" data-match-live-badge="{{ $m->id }}">🔴 {{ __('tournaments.pub_match_live') }}</span>
+					@elseif(!$m->teamHome || !$m->teamAway)
+					—
 					@else
 					{{ $m->setsScore() }}
 					@if($m->detailedScore())
@@ -457,7 +459,7 @@
 					@endif
 				</span>
 				<span style="flex:1" class="{{ $m->winner_team_id === $m->team_away_id ? 'b-700' : '' }}">
-					@include('tournaments._partials.team_name_link', ['team' => $m->teamAway, 'fallback' => '?'])
+					@include('tournaments._partials.team_name_link', ['team' => $m->teamAway, 'fallback' => '—'])
 					@include('tournaments._partials.team_roster_line', ['team' => $m->teamAway, 'class' => 'f-11', 'style' => 'color:#6b7280'])
 				</span>
 			</div>
