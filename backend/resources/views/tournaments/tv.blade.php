@@ -79,6 +79,8 @@
 
         .updated-flash { animation: flash .5s ease; }
         @keyframes flash { 0%{ background:rgba(231,97,47,.2); } 100%{ background:transparent; } }
+
+        a { color: inherit; text-decoration: none; }
     </style>
 </head>
 <body>

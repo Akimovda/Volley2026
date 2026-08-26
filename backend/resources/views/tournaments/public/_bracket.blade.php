@@ -7,7 +7,7 @@
 .bk-col{flex-shrink:0;width:244px}
 .bk-col-gap{width:56px;flex-shrink:0}
 .bk-col-label{
-    text-align:center;font-size:.72rem;font-weight:700;
+    text-align:center;font-size:.85rem;font-weight:700;
     letter-spacing:.07em;text-transform:uppercase;
     color:#9ca3af;margin-bottom:12px;height:22px;line-height:22px;
 }
@@ -115,7 +115,7 @@
 /* ── Матч за 3-е ── */
 .bk-third-section{margin-top:24px;padding-top:20px;border-top:1px dashed rgba(0,0,0,.1)}
 .bk-third-section-label{
-    font-size:.72rem;font-weight:700;color:#9ca3af;
+    font-size:.8rem;font-weight:700;color:#9ca3af;
     text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px;
 }
 /* double_elim: бронза без дискретного матча — просто имя команды, без карточки счёта */
