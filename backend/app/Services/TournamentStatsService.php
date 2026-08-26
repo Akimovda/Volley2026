@@ -225,13 +225,14 @@ class TournamentStatsService
      *
      * @return array{rows: array, hasPoints: bool, hiddenCount: int, direction: string}
      */
-    public function getParticipantRatingTable(Event $event): array
+    public function getParticipantRatingTable(Event $event, ?int $occurrenceId = null): array
     {
         $direction = $event->direction;
 
         $roster = DB::table('event_team_members')
             ->join('event_teams', 'event_teams.id', '=', 'event_team_members.event_team_id')
             ->where('event_teams.event_id', $event->id)
+            ->when($occurrenceId, fn($q) => $q->where('event_teams.occurrence_id', $occurrenceId))
             ->where('event_team_members.confirmation_status', 'confirmed')
             ->select('event_team_members.user_id', 'event_teams.name as team_name')
             ->get()
