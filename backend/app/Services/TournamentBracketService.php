@@ -335,11 +335,19 @@ class TournamentBracketService
                         $loserIdx  = intdiv($i, 2);
                         $loserSlot = ($i % 2 === 0) ? 'home' : 'away';
                     } else {
-                        // merge-раунд (lr=2*(round-1)): проигравший UB-раунда r>=2 идёт
-                        // тождественно в свой матч, слот 'away' (home зарезервирован
-                        // под победителя предыдущего internal-раунда нижней сетки)
+                        // merge-раунд (lr=2*(round-1)): anti-rematch shuffle — индекс
+                        // ПЕРЕВОРАЧИВАЕТСЯ (не тождественный), иначе проигравший
+                        // UB-матча i гарантированно попадает в тот же lower-матч, куда
+                        // уже слился победитель ИЗ ТОЙ ЖЕ четверти сетки (winner(UB[i])
+                        // и loser(UB[i]) происходят из одной пары UB-раунда 1) — то есть
+                        // без переворота эти двое почти наверняка встретятся повторно на
+                        // следующем шаге нижней сетки. Переворот направляет проигравшего
+                        // в lower-матч, куда слился победитель ИЗ ДРУГОЙ четверти —
+                        // структурно исключает этот конкретный повтор (см.
+                        // report/double_elim_check_2026-08-26.md).
                         $lowerRoundIdx = 2 * ($round - 1);
-                        $loserIdx  = $i;
+                        $roundSize = count($upperByRound[$round]);
+                        $loserIdx  = $roundSize - 1 - $i;
                         $loserSlot = 'away';
                     }
                     if (isset($lowerByRound[$lowerRoundIdx][$loserIdx])) {
