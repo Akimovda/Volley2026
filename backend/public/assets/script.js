@@ -1173,3 +1173,39 @@ window.getFixedHeaderBottom = function(extra) {
 	var rect = header.getBoundingClientRect();
 	return Math.ceil(rect.bottom + (extra || 0));
 };
+
+// ===== Лайк мероприятия (events/_card.blade.php, .event-like-badge) =====
+// Гостевая кнопка открывает поп-ап логина через делегированный хендлер
+// .js-open-login-popup (auth/_login_popup.blade.php) — сюда попадают только
+// авторизованные клики.
+jQuery(document).on('click', '.js-like-toggle', function (e) {
+	e.preventDefault();
+	e.stopPropagation();
+
+	var $btn = jQuery(this);
+	if ($btn.prop('disabled')) return;
+
+	var eventId   = $btn.data('event-id');
+	var $count    = $btn.find('[data-like-count]');
+	var wasLiked  = $btn.hasClass('is-liked');
+	var prevCount = parseInt($count.text(), 10) || 0;
+
+	$btn.prop('disabled', true);
+	$btn.toggleClass('is-liked', !wasLiked);
+	$count.text(Math.max(0, prevCount + (wasLiked ? -1 : 1)));
+
+	jQuery.ajax({
+		url: '/events/' + eventId + '/like',
+		method: 'POST',
+		dataType: 'json',
+		headers: { 'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') || {}).content },
+	}).done(function (data) {
+		$btn.toggleClass('is-liked', !!data.liked);
+		if (typeof data.count !== 'undefined') $count.text(data.count);
+	}).fail(function () {
+		$btn.toggleClass('is-liked', wasLiked);
+		$count.text(prevCount);
+	}).always(function () {
+		$btn.prop('disabled', false);
+	});
+});

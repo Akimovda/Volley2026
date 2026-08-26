@@ -9,6 +9,7 @@ use App\Models\EventOccurrence;
 use App\Models\Location;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
@@ -319,13 +320,53 @@ $eventsQ->whereNotNull('starts_at')
                 ->get();
         }
 
+        $eventIdsForLikes = $occurrences->pluck('event.id')
+            ->merge($events->pluck('id'))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+        [$eventLikeCounts, $likedEventIds] = $this->eventLikesData($eventIdsForLikes, $userId);
+
         return view('locations.show', [
             'location' => $loc,
             'photos' => $photos,
             'slug' => $canonicalSlug,
             'occurrences' => $occurrences,
             'events' => $events,
+            'eventLikeCounts' => $eventLikeCounts,
+            'likedEventIds' => $likedEventIds,
         ]);
+    }
+
+    /**
+     * Счётчики лайков + отметки текущего пользователя для events/_card.blade.php.
+     */
+    private function eventLikesData(array $eventIds, int $userId): array
+    {
+        if (empty($eventIds) || !Schema::hasTable('event_likes')) {
+            return [[], []];
+        }
+
+        $counts = DB::table('event_likes')
+            ->selectRaw('event_id, count(*) as likes')
+            ->whereIn('event_id', $eventIds)
+            ->groupBy('event_id')
+            ->pluck('likes', 'event_id')
+            ->map(fn ($v) => (int) $v)
+            ->all();
+
+        $likedEventIds = [];
+        if ($userId > 0) {
+            $likedEventIds = DB::table('event_likes')
+                ->where('user_id', $userId)
+                ->whereIn('event_id', $eventIds)
+                ->pluck('event_id')
+                ->map(fn ($v) => (int) $v)
+                ->all();
+        }
+
+        return [$counts, $likedEventIds];
     }
 
     private function resolveSelectedCity(Request $request): ?City

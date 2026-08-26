@@ -10,6 +10,7 @@
 	use App\Http\Controllers\MaxBindingController;
 	use App\Http\Controllers\NotificationController;
 	use App\Http\Controllers\EventsController;
+	use App\Http\Controllers\EventLikeController;
 use App\Http\Controllers\YookassaWebhookController;
 	use App\Http\Controllers\EventCreateController;
 	use App\Http\Controllers\EventRegistrationController;
@@ -482,6 +483,9 @@ Route::post('/auth/tma-exchange', [TmaAuthController::class, 'exchange'])->name(
     'user.restricted',
 	])->group(function () {
 	    
+	    Route::post('/events/{event}/like', [EventLikeController::class, 'toggle'])
+         ->name('events.like.toggle');
+
 	    Route::post('/occurrences/{occurrence}/waitlist', [OccurrenceWaitlistController::class, 'store'])
          ->name('occurrences.waitlist.join');
 

@@ -7,6 +7,7 @@ use App\Models\EventOccurrence;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Carbon\CarbonImmutable;
 
@@ -101,7 +102,43 @@ class VolleyballSchoolController extends Controller
             $schoolTopPlayers = $this->buildSchoolTopPlayers($school->organizer_id);
         }
 
-        return view('volleyball_school.show', compact('school', 'occurrences', 'subscriptionTemplates', 'schoolTournaments', 'schoolTopPlayers'));
+        $eventIdsForLikes = $occurrences->pluck('event.id')->filter()->unique()->values()->all();
+        [$eventLikeCounts, $likedEventIds] = $this->eventLikesData($eventIdsForLikes, (int) (auth()->id() ?? 0));
+
+        return view('volleyball_school.show', compact(
+            'school', 'occurrences', 'subscriptionTemplates', 'schoolTournaments', 'schoolTopPlayers',
+            'eventLikeCounts', 'likedEventIds'
+        ));
+    }
+
+    /**
+     * Счётчики лайков + отметки текущего пользователя для events/_card.blade.php.
+     */
+    private function eventLikesData(array $eventIds, int $userId): array
+    {
+        if (empty($eventIds) || !Schema::hasTable('event_likes')) {
+            return [[], []];
+        }
+
+        $counts = DB::table('event_likes')
+            ->selectRaw('event_id, count(*) as likes')
+            ->whereIn('event_id', $eventIds)
+            ->groupBy('event_id')
+            ->pluck('likes', 'event_id')
+            ->map(fn ($v) => (int) $v)
+            ->all();
+
+        $likedEventIds = [];
+        if ($userId > 0) {
+            $likedEventIds = DB::table('event_likes')
+                ->where('user_id', $userId)
+                ->whereIn('event_id', $eventIds)
+                ->pluck('event_id')
+                ->map(fn ($v) => (int) $v)
+                ->all();
+        }
+
+        return [$counts, $likedEventIds];
     }
 
     /**
