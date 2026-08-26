@@ -405,28 +405,6 @@ class TournamentStatsService
                     $assignedTeams[] = $fourth->id;
                 }
             }
-
-            // Места 5-8 — только у double_elim-восьмёрки (report/116.png,
-            // TournamentBracketService::generateCrossoverEight()), у
-            // single_elim crossover таких матчей нет — placementMatch(5)/(7)
-            // тихо вернут null, ветка ничего не делает.
-            foreach ([5, 7] as $placeFrom) {
-                $match = $bracketStage->placementMatch($placeFrom);
-                if (!$match || $match->status !== TournamentMatch::STATUS_COMPLETED || !$match->winner_team_id) {
-                    continue;
-                }
-                $winnerTeam = EventTeam::find($match->winner_team_id);
-                $loserTeam  = EventTeam::find($match->loserId());
-
-                if ($winnerTeam && !in_array($winnerTeam->id, $assignedTeams)) {
-                    $classification[] = ['place' => $place++, 'team_id' => $winnerTeam->id, 'team_name' => $winnerTeam->name];
-                    $assignedTeams[] = $winnerTeam->id;
-                }
-                if ($loserTeam && !in_array($loserTeam->id, $assignedTeams)) {
-                    $classification[] = ['place' => $place++, 'team_id' => $loserTeam->id, 'team_name' => $loserTeam->name];
-                    $assignedTeams[] = $loserTeam->id;
-                }
-            }
         } elseif ($bracketStage) {
             // Обычная сетка (finals_mode='bracket') — финал и матч за 3-е место
             // (court='3rd place', TournamentBracketService::generateSingleElimination())
