@@ -353,6 +353,25 @@ class TournamentBracketService
                     if (isset($lowerByRound[$lowerRoundIdx][$loserIdx])) {
                         $updates['loser_next_match_id'] = $lowerByRound[$lowerRoundIdx][$loserIdx]->id;
                         $updates['loser_next_match_slot'] = $loserSlot;
+
+                        // BYE-каскад (round 1 только — BYE появляются только в
+                        // seedBracket() раунда 1): если у этого матча нет одной
+                        // из команд, проигравшего никогда не будет —
+                        // resolveByes() пробрасывает только победителя. Слот
+                        // нижней сетки, ждущий этого проигравшего, иначе висит
+                        // в TBD навсегда (report/double-elim-bye-stuck.md).
+                        // Помечаем его meta['bye_home'/'bye_away'] — как только
+                        // придёт вторая (реальная) команда, fillSlotAndCascadeBye()
+                        // в TournamentMatchService сразу отдаст ей техпобеду.
+                        if ($round === 1) {
+                            $isByeMatch = is_null($seeded[$i * 2] ?? null) || is_null($seeded[$i * 2 + 1] ?? null);
+                            if ($isByeMatch) {
+                                $target = $lowerByRound[$lowerRoundIdx][$loserIdx];
+                                $meta = $target->meta ?? [];
+                                $meta["bye_{$loserSlot}"] = true;
+                                $target->update(['meta' => $meta]);
+                            }
+                        }
                     }
 
                     $match->update($updates);
@@ -416,6 +435,35 @@ class TournamentBracketService
 
             // BYE авто-проводим
             $this->resolveByes($upperByRound[1]);
+
+            // Крайний случай малого числа команд: матч нижней сетки, у
+            // которого ОБА слота — постоянный BYE (два BYE-матча верхней
+            // сетки округлились в один и тот же lower-матч, см. report/
+            // double-elim-bye-stuck.md). Такой матч никогда не будет сыгран —
+            // отменяем и каскадно помечаем bye тот слот следующего матча,
+            // куда он вёл (иначе каскад остановится на этом уровне).
+            // Обрабатываем раунды по возрастанию — отмена в раунде $lr может
+            // породить новый двойной BYE в раунде $lr+1.
+            for ($lr = 1; $lr <= $lowerRounds; $lr++) {
+                foreach ($lowerByRound[$lr] ?? [] as $match) {
+                    $match->refresh();
+                    $meta = $match->meta ?? [];
+                    if (empty($meta['bye_home']) || empty($meta['bye_away'])) {
+                        continue;
+                    }
+
+                    $match->update(['status' => TournamentMatch::STATUS_CANCELLED]);
+
+                    if ($match->next_match_id && $match->next_match_slot) {
+                        $target = TournamentMatch::find($match->next_match_id);
+                        if ($target) {
+                            $targetMeta = $target->meta ?? [];
+                            $targetMeta["bye_{$match->next_match_slot}"] = true;
+                            $target->update(['meta' => $targetMeta]);
+                        }
+                    }
+                }
+            }
 
             return $allMatches;
         });

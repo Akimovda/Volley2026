@@ -297,10 +297,7 @@ class TournamentMatchService
             return;
         }
 
-        $slot = $match->next_match_slot;
-        TournamentMatch::where('id', $match->next_match_id)->update([
-            "team_{$slot}_id" => $winnerId,
-        ]);
+        $this->fillSlotAndCascadeBye($match->next_match_id, $match->next_match_slot, $winnerId);
     }
 
     protected function advanceLoser(TournamentMatch $match): void
@@ -314,10 +311,61 @@ class TournamentMatchService
             return;
         }
 
-        $slot = $match->loser_next_match_slot;
-        TournamentMatch::where('id', $match->loser_next_match_id)->update([
-            "team_{$slot}_id" => $loserId,
+        $this->fillSlotAndCascadeBye($match->loser_next_match_id, $match->loser_next_match_slot, $loserId);
+    }
+
+    /**
+     * Заполняет слот целевого матча и, если ВТОРОЙ его слот помечен как
+     * постоянно пустой (double_elim BYE, см.
+     * TournamentBracketService::generateDoubleElimination() —
+     * meta['bye_home']/meta['bye_away']), сразу отдаёт пришедшей команде
+     * техпобеду и каскадно продвигает её дальше через next_match_id. Без
+     * этого такой матч навсегда зависает в scheduled с одним TBD-слотом
+     * (report/double-elim-bye-stuck.md) — второй команды там просто не
+     * существует, submitScore() её никогда не дождётся.
+     */
+    private function fillSlotAndCascadeBye(int $matchId, string $slot, int $teamId): void
+    {
+        TournamentMatch::where('id', $matchId)->update([
+            "team_{$slot}_id" => $teamId,
         ]);
+
+        $match = TournamentMatch::find($matchId);
+        if (!$match || $match->status !== TournamentMatch::STATUS_SCHEDULED) {
+            return;
+        }
+
+        $otherSlot = $slot === 'home' ? 'away' : 'home';
+        if (!is_null($match->{"team_{$otherSlot}_id"})) {
+            return; // обе команды реальны — обычный, не bye-случай
+        }
+        if (empty($match->meta['bye_' . $otherSlot] ?? null)) {
+            return; // второй слот пока просто пуст, ждём реальную команду
+        }
+
+        $match->update([
+            'winner_team_id' => $teamId,
+            'status'         => TournamentMatch::STATUS_COMPLETED,
+            'score_home'     => [],
+            'score_away'     => [],
+            'scored_at'      => now(),
+        ]);
+
+        if ($match->next_match_id && $match->next_match_slot) {
+            $this->fillSlotAndCascadeBye($match->next_match_id, $match->next_match_slot, $teamId);
+        }
+
+        // У техпобеды нет реального проигравшего — если у этого матча был
+        // loser_next_match_id, помечаем ЕГО целевой слот тоже постоянно
+        // пустым, чтобы каскад продолжился при нескольких BYE подряд.
+        if ($match->loser_next_match_id && $match->loser_next_match_slot) {
+            $target = TournamentMatch::find($match->loser_next_match_id);
+            if ($target) {
+                $meta = $target->meta ?? [];
+                $meta['bye_' . $match->loser_next_match_slot] = true;
+                $target->update(['meta' => $meta]);
+            }
+        }
     }
 
     /**
