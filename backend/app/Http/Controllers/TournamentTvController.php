@@ -157,7 +157,7 @@ class TournamentTvController extends Controller
             ->get();
 
         $ratingData = app(\App\Services\TournamentStatsService::class)
-            ->getParticipantRatingTable($event);
+            ->getParticipantRatingTable($event, $selectedOccurrence?->id);
 
         $pdf = Pdf::loadView('tournaments.pdf.results', compact('event', 'stages', 'ratingData', 'selectedOccurrence'))
             ->setPaper('a4', 'portrait');
