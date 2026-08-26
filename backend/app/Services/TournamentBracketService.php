@@ -223,6 +223,14 @@ class TournamentBracketService
             throw new \InvalidArgumentException('Нужно минимум 4 команды для double elimination.');
         }
 
+        // Ровно 8 команд — регламентная схема с перекрёстными полуфиналами и
+        // явными матчами за 1/3/5/7 место (report/116.png), точнее для этого
+        // конкретного размера, чем общее "Правило 1-2" ниже. Жёстко зашита
+        // именно под 8 — не обобщается арифметически на другие размеры.
+        if ($count === 8) {
+            return $this->generateCrossoverEight($stage, $teamIds);
+        }
+
         $bracketSize = 1;
         while ($bracketSize < $count) {
             $bracketSize *= 2;
@@ -464,6 +472,97 @@ class TournamentBracketService
                     }
                 }
             }
+
+            return $allMatches;
+        });
+    }
+
+    /**
+     * Регламентная сетка double elimination ровно на 8 команд с перекрёстными
+     * полуфиналами и явными матчами за 1/3/5/7 место (report/116.png,
+     * "Сетка розыгрыша для 8 команд (выбывание после двух поражений)").
+     * Проверено вручную по каждой стрелке П-X/Пр-X на изображении — НЕ
+     * обобщение общего double_elim, а отдельная жёстко зашитая раскладка:
+     *
+     *   Верхняя R1: M1=seed1v8, M2=seed4v5, M3=seed2v7, M4=seed3v6
+     *   Верхняя R2 (полуфиналы): M5=W(M1)+W(M2), M6=W(M3)+W(M4)
+     *   Нижняя R1 (дроп внутри своей четверти): M7=L(M1)+L(M2), M8=L(M3)+L(M4)
+     *   Кроссовер (дроп полуфиналов НАКРЕСТ, в чужую четверть):
+     *     M9=L(M6)+W(M7), M10=L(M5)+W(M8)
+     *   Финал четырёх: M11=W(M5)+W(M9), M12=W(M6)+W(M10)
+     *   Терминальные: M14=W(M11)+W(M12) "за 1-2", M13=L(M11)+L(M12) "за 3-4",
+     *     M16=L(M9)+L(M10) "за 5-6", M15=L(M7)+L(M8) "за 7-8"
+     *
+     * Известное свойство ИМЕННО ЭТОЙ регламентной схемы (не ошибка реализации):
+     * кроссовер устраняет реванш СРАЗУ после дропа, но не гарантирует его
+     * отсутствие на стадии "финала четырёх" — если команда, проигравшая в M1,
+     * пробьётся через M7→M9 и выиграет там, она может встретиться в M11 с
+     * командой, которая уже обыграла её в M1 (обе — из одной исходной пары).
+     * Воспроизводим документ как есть, не пытаемся это "улучшать".
+     *
+     * Ровно 8 реальных команд, без BYE (см. диспетчер в generateDoubleElimination()).
+     */
+    private function generateCrossoverEight(TournamentStage $stage, array $teamIds): Collection
+    {
+        $seeded = $this->seedBracket($teamIds, 8);
+
+        return DB::transaction(function () use ($stage, $seeded) {
+            $allMatches = collect();
+            $matchNumber = 1;
+
+            $make = function (int $round, string $court = null) use ($stage, &$matchNumber, $allMatches) {
+                $match = TournamentMatch::create([
+                    'stage_id'     => $stage->id,
+                    'round'        => $round,
+                    'match_number' => $matchNumber++,
+                    'status'       => TournamentMatch::STATUS_SCHEDULED,
+                    'court'        => $court,
+                ]);
+                $allMatches->push($match);
+                return $match;
+            };
+
+            // Верхняя R1 (round=1)
+            $m1 = $make(1); $m2 = $make(1); $m3 = $make(1); $m4 = $make(1);
+            // Верхняя R2 / полуфиналы (round=2)
+            $m5 = $make(2); $m6 = $make(2);
+            // Нижняя R1 (round=2, параллельно полуфиналам)
+            $m7 = $make(2); $m8 = $make(2);
+            // Кроссовер (round=3)
+            $m9 = $make(3); $m10 = $make(3);
+            // Финал четырёх (round=4)
+            $m11 = $make(4); $m12 = $make(4);
+            // Терминальные (round=5)
+            $m14 = $make(5, 'Матч за 1-2 место');
+            $m13 = $make(5, 'Матч за 3-4 место');
+            $m16 = $make(5, 'Матч за 5-6 место');
+            $m15 = $make(5, 'Матч за 7-8 место');
+
+            $m1->update(['team_home_id' => $seeded[0], 'team_away_id' => $seeded[1]]);
+            $m2->update(['team_home_id' => $seeded[2], 'team_away_id' => $seeded[3]]);
+            $m3->update(['team_home_id' => $seeded[4], 'team_away_id' => $seeded[5]]);
+            $m4->update(['team_home_id' => $seeded[6], 'team_away_id' => $seeded[7]]);
+
+            $m1->update(['next_match_id' => $m5->id, 'next_match_slot' => 'home', 'loser_next_match_id' => $m7->id, 'loser_next_match_slot' => 'home']);
+            $m2->update(['next_match_id' => $m5->id, 'next_match_slot' => 'away', 'loser_next_match_id' => $m7->id, 'loser_next_match_slot' => 'away']);
+            $m3->update(['next_match_id' => $m6->id, 'next_match_slot' => 'home', 'loser_next_match_id' => $m8->id, 'loser_next_match_slot' => 'home']);
+            $m4->update(['next_match_id' => $m6->id, 'next_match_slot' => 'away', 'loser_next_match_id' => $m8->id, 'loser_next_match_slot' => 'away']);
+
+            $m5->update(['next_match_id' => $m11->id, 'next_match_slot' => 'home', 'loser_next_match_id' => $m10->id, 'loser_next_match_slot' => 'home']);
+            $m6->update(['next_match_id' => $m12->id, 'next_match_slot' => 'home', 'loser_next_match_id' => $m9->id, 'loser_next_match_slot' => 'home']);
+
+            $m7->update(['next_match_id' => $m9->id, 'next_match_slot' => 'away', 'loser_next_match_id' => $m15->id, 'loser_next_match_slot' => 'home']);
+            $m8->update(['next_match_id' => $m10->id, 'next_match_slot' => 'away', 'loser_next_match_id' => $m15->id, 'loser_next_match_slot' => 'away']);
+
+            $m9->update(['next_match_id' => $m11->id, 'next_match_slot' => 'away', 'loser_next_match_id' => $m16->id, 'loser_next_match_slot' => 'home']);
+            $m10->update(['next_match_id' => $m12->id, 'next_match_slot' => 'away', 'loser_next_match_id' => $m16->id, 'loser_next_match_slot' => 'away']);
+
+            $m11->update(['next_match_id' => $m14->id, 'next_match_slot' => 'home', 'loser_next_match_id' => $m13->id, 'loser_next_match_slot' => 'home']);
+            $m12->update(['next_match_id' => $m14->id, 'next_match_slot' => 'away', 'loser_next_match_id' => $m13->id, 'loser_next_match_slot' => 'away']);
+
+            // Ровно 8 реальных команд — BYE здесь структурно невозможен,
+            // resolveByes() не нужен (в отличие от общего generateDoubleElimination()).
+            $stage->update(['config' => array_merge($stage->config ?? [], ['finals_mode' => 'placement'])]);
 
             return $allMatches;
         });

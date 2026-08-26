@@ -380,18 +380,25 @@ class TournamentStage extends Model
     }
 
     /**
-     * Финал за места напрямую (crossover, см. TournamentBracketService::generateGroupCrossover) —
-     * в отличие от обычной сетки (bracket), это два равноправных матча первого
-     * раунда без next_match_id-связей: "за 1-2 место" и "за 3-4 место".
+     * Финал за места напрямую (явные "матчи за N-M место"), в отличие от
+     * обычной сетки, где места 3+ считаются постфактум по структуре турнира.
+     * Два варианта: (1) single_elim crossover без next_match_id-связей, см.
+     * TournamentBracketService::generateGroupCrossover() — все терминальные
+     * матчи на round=1; (2) double_elim регламентная схема на 8 команд
+     * (report/116.png), см. TournamentBracketService::generateCrossoverEight() —
+     * терминальные матчи (за 1-2/3-4/5-6/7-8 место) на разных раундах, но с
+     * тем же текстовым маркером в court.
      *
-     * Источник правды — finals_mode в config. Для стадий, созданных ДО того,
-     * как finals_mode стал частью конфига плей-офф стадии (инцидент event 402,
-     * см. report_402_finals_bug.md) — мост по факту: ровно 2 матча первого
-     * раунда с русским названием корта "Матч за N-M место".
+     * Источник правды — finals_mode в config (проставляется генератором сразу).
+     * Для стадий, созданных ДО того, как finals_mode стал частью конфига
+     * (инцидент event 402, см. report_402_finals_bug.md) — мост по факту:
+     * ровно 2 матча первого раунда с русским названием корта "Матч за N-M
+     * место" (актуально только для single_elim — у double_elim с 8 командами
+     * finals_mode проставляется всегда, до этого фоллбэка дело не доходит).
      */
     public function isPlacementFinal(): bool
     {
-        if ($this->type !== self::TYPE_SINGLE_ELIM) {
+        if (!in_array($this->type, [self::TYPE_SINGLE_ELIM, self::TYPE_DOUBLE_ELIM], true)) {
             return false;
         }
 
@@ -415,14 +422,15 @@ class TournamentStage extends Model
 
     /**
      * Матч placement-финала, начинающий диапазон мест с $placeFrom (1 = "за 1-2
-     * место", 3 = "за 3-4 место" и т.д.) — различаем по тексту корта, а не по
-     * round/match_number (у обоих матчей round=1, порядок match_number не
-     * гарантирует, какой из них "за 1-2", а какой "за 3-4").
+     * место", 3 = "за 3-4 место", 5 = "за 5-6", 7 = "за 7-8" и т.д.) —
+     * различаем по тексту корта, не по round/match_number: у single_elim
+     * crossover все терминальные матчи на round=1 (порядок match_number не
+     * гарантирует, какой из них какой), у double_elim-восьмёрки (report/116.png)
+     * они вообще на разных round — ищем по всей стадии, не только round=1.
      */
     public function placementMatch(int $placeFrom): ?TournamentMatch
     {
         return $this->matches()
-            ->where('round', 1)
             ->get()
             ->first(function (TournamentMatch $m) use ($placeFrom) {
                 if (!$m->court || !preg_match('/за\s+(\d+)-\d+\s+место/u', $m->court, $groups)) {
