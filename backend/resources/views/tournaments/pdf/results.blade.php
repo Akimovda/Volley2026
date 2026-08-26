@@ -136,9 +136,9 @@
                         <tr>
                             <td class="tc">{{ $m->match_number }}</td>
                             <td class="tc">R{{ $m->round }}</td>
-                            <td class="{{ $m->winner_team_id === $m->team_home_id ? 'bold' : '' }}">{{ $m->teamHome->name ?? 'TBD' }}</td>
-                            <td class="{{ $m->winner_team_id === $m->team_away_id ? 'bold' : '' }}">{{ $m->teamAway->name ?? 'TBD' }}</td>
-                            <td class="tc bold">{{ $m->setsScore() ?? '—' }}</td>
+                            <td class="{{ $m->winner_team_id === $m->team_home_id ? 'bold' : '' }}">{{ $m->teamHome->name ?? '—' }}</td>
+                            <td class="{{ $m->winner_team_id === $m->team_away_id ? 'bold' : '' }}">{{ $m->teamAway->name ?? '—' }}</td>
+                            <td class="tc bold">{{ ($m->teamHome && $m->teamAway) ? $m->setsScore() : '—' }}</td>
                         </tr>
                     @endforeach
                 </tbody>
@@ -175,11 +175,11 @@
                             <tr>
                                 <td class="tc">{{ $m->match_number }}</td>
                                 <td class="{{ $m->winner_team_id === $m->team_home_id ? 'bold' : '' }}">
-                                    {{ $m->teamHome->name ?? 'TBD' }}
+                                    {{ $m->teamHome->name ?? '—' }}
                                 </td>
-                                <td class="tc bold">{{ $m->setsScore() ?? '—' }}</td>
+                                <td class="tc bold">{{ ($m->teamHome && $m->teamAway) ? $m->setsScore() : '—' }}</td>
                                 <td class="{{ $m->winner_team_id === $m->team_away_id ? 'bold' : '' }}">
-                                    {{ $m->teamAway->name ?? 'TBD' }}
+                                    {{ $m->teamAway->name ?? '—' }}
                                 </td>
                                 <td class="tc bold">{{ $m->winner->name ?? '—' }}</td>
                             </tr>

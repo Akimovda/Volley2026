@@ -234,11 +234,11 @@
                             @foreach($activeStage->matches->where('group_id', $group->id)->sortBy(['round','match_number']) as $m)
                                 <div class="tv-match" data-match-id="{{ $m->id }}">
                                     <div class="team right {{ $m->winner_team_id === $m->team_home_id ? 'winner' : '' }}">
-                                        @include('tournaments._partials.team_name_link', ['team' => $m->teamHome, 'fallback' => 'TBD'])
+                                        @include('tournaments._partials.team_name_link', ['team' => $m->teamHome, 'fallback' => $m->status === 'completed' ? '—' : 'TBD'])
                                         @include('tournaments._partials.team_roster_line', ['team' => $m->teamHome, 'class' => '', 'style' => 'font-size:11px;opacity:.4'])
                                     </div>
                                     <div class="score">
-                                        @if($m->isCompleted())
+                                        @if($m->isCompleted() && $m->teamHome && $m->teamAway)
                                             {{ $m->setsScore() }}
                                             <div style="font-size:11px;opacity:.5">{{ $m->detailedScore() }}</div>
                                         @elseif($m->status === 'live')
@@ -248,7 +248,7 @@
                                         @endif
                                     </div>
                                     <div class="team {{ $m->winner_team_id === $m->team_away_id ? 'winner' : '' }}">
-                                        @include('tournaments._partials.team_name_link', ['team' => $m->teamAway, 'fallback' => 'TBD'])
+                                        @include('tournaments._partials.team_name_link', ['team' => $m->teamAway, 'fallback' => $m->status === 'completed' ? '—' : 'TBD'])
                                         @include('tournaments._partials.team_roster_line', ['team' => $m->teamAway, 'class' => '', 'style' => 'font-size:11px;opacity:.4'])
                                     </div>
                                 </div>
@@ -262,21 +262,23 @@
                     @foreach($activeStage->matches->sortBy(['round','match_number']) as $m)
                         <div class="tv-match">
                             <div class="team right {{ $m->winner_team_id === $m->team_home_id ? 'winner' : '' }}">
-                                @include('tournaments._partials.team_name_link', ['team' => $m->teamHome, 'fallback' => 'TBD'])
+                                @include('tournaments._partials.team_name_link', ['team' => $m->teamHome, 'fallback' => $m->status === 'completed' ? '—' : 'TBD'])
                                 @include('tournaments._partials.team_roster_line', ['team' => $m->teamHome, 'class' => '', 'style' => 'font-size:11px;opacity:.4'])
                             </div>
                             <div class="score">
-                                @if($m->isCompleted())
+                                @if($m->isCompleted() && $m->teamHome && $m->teamAway)
                                     {{ $m->setsScore() }}
                                     <div style="font-size:11px;opacity:.5">{{ $m->detailedScore() }}</div>
                                 @elseif($m->status === 'live')
                                     <span class="status-badge live-badge">LIVE</span>
+                                @elseif($m->isCompleted())
+                                    <span class="status-badge wait-badge">—</span>
                                 @else
                                     <span class="status-badge wait-badge">R{{ $m->round }}</span>
                                 @endif
                             </div>
                             <div class="team {{ $m->winner_team_id === $m->team_away_id ? 'winner' : '' }}">
-                                @include('tournaments._partials.team_name_link', ['team' => $m->teamAway, 'fallback' => 'TBD'])
+                                @include('tournaments._partials.team_name_link', ['team' => $m->teamAway, 'fallback' => $m->status === 'completed' ? '—' : 'TBD'])
                                 @include('tournaments._partials.team_roster_line', ['team' => $m->teamAway, 'class' => '', 'style' => 'font-size:11px;opacity:.4'])
                             </div>
                         </div>
