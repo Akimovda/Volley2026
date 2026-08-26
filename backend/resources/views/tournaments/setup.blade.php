@@ -1415,7 +1415,30 @@ $tourNumber = $seasonData
 								</div>
 								<div class="col-lg-4 col-md-6">
 									<label>{{ __('tournaments.setup_stage_label_name') }}</label>
-									<input name="name" value="{{ old('name', __('tournaments.setup_stage_default_name')) }}" required>
+									<input name="name" id="stage_name_input" value="{{ old('name', __('tournaments.setup_stage_default_name')) }}" required>
+									<script>
+										(function(){
+											var defaultNames = {
+												round_robin: @json(__('tournaments.setup_stage_default_name')),
+												groups_playoff: @json(__('tournaments.setup_stage_default_name')),
+												single_elim: @json(__('tournaments.setup_stage_name_playoff')),
+												swiss: @json(__('tournaments.setup_stage_name_swiss')),
+												king_of_court: @json(__('tournaments.setup_stage_name_kotc'))
+											};
+											var typeSel = document.getElementById('stage_type_select');
+											var nameInput = document.getElementById('stage_name_input');
+											if (!typeSel || !nameInput) return;
+											var knownNames = Object.keys(defaultNames).map(function(k) { return defaultNames[k]; });
+											typeSel.addEventListener('change', function() {
+												// Не перезаписываем, если организатор уже вписал своё название —
+												// только если поле пустое или всё ещё равно одному из дефолтов.
+												var untouched = nameInput.value === '' || knownNames.indexOf(nameInput.value) !== -1;
+												if (!untouched) return;
+												var next = defaultNames[typeSel.value];
+												if (next) nameInput.value = next;
+											});
+										})();
+									</script>
 								</div>
 								<div class="col-lg-4 col-md-6" id="match_format_field">
 									<label>{{ __('tournaments.setup_stage_match_format') }}</label>
