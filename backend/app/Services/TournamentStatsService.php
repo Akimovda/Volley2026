@@ -566,7 +566,16 @@ class TournamentStatsService
 
                 foreach ($standings as $s) {
                     if (in_array($s->team_id, $assignedTeams)) continue;
-                    $classification[] = ['place' => $place++, 'team_id' => $s->team_id, 'team_name' => $s->team->name ?? '?'];
+                    $classification[] = [
+                        'place' => $place++,
+                        'team_id' => $s->team_id,
+                        'team_name' => $s->team->name ?? '?',
+                        'wins' => $s->wins,
+                        'losses' => $s->losses,
+                        'rating_points' => $s->rating_points,
+                        'points_scored' => $s->points_scored,
+                        'points_conceded' => $s->points_conceded,
+                    ];
                     $assignedTeams[] = $s->team_id;
                 }
             }
