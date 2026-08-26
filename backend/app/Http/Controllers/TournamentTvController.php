@@ -55,7 +55,10 @@ class TournamentTvController extends Controller
             ->orderBy('sort_order')
             ->get();
 
-        $liveUrl = route('tournament.public.live', $event);
+        $liveUrl = route('tournament.public.live', array_filter([
+            'event' => $event->id,
+            'occurrence_id' => $selectedOccurrence?->id,
+        ]));
 
         return view('tournaments.tv', compact('event', 'stages', 'liveUrl', 'occurrences', 'selectedOccurrence'));
     }

@@ -641,7 +641,10 @@
 		@endif
 		<script>
 			(function() {
-				var liveUrl = @json(route('tournament.public.live', $event));
+				var liveUrl = @json(route('tournament.public.live', array_filter([
+					'event' => $event->id,
+					'occurrence_id' => $selectedOccurrence?->id ?? null,
+				])));
 				var pollInterval = 15000; // 15 сек
 				
 				function pollLive() {
