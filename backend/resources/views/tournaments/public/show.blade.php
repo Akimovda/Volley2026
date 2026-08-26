@@ -639,12 +639,15 @@
 		<script src="/js/pusher.min.js"></script>
 		<script src="/js/echo.iife.js"></script>
 		@endif
+		@php
+			$liveUrl = route('tournament.public.live', array_filter([
+				'event' => $event->id,
+				'occurrence_id' => $selectedOccurrence?->id ?? null,
+			]));
+		@endphp
 		<script>
 			(function() {
-				var liveUrl = @json(route('tournament.public.live', array_filter([
-					'event' => $event->id,
-					'occurrence_id' => $selectedOccurrence?->id ?? null,
-				])));
+				var liveUrl = @json($liveUrl);
 				var pollInterval = 15000; // 15 сек
 				
 				function pollLive() {
