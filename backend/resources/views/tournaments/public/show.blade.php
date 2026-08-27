@@ -269,24 +269,91 @@
 					<div class="card">
 						<div class="b-600 cd mb-2">{{ $group->name }}</div>
 						@if($isDivisionBracket)
-						@php $divMatches = $stage->matches->sortBy(['round', 'match_number']); @endphp
-						@if($divMatches->isNotEmpty())
-						<div class="table-scrollable">
-							@foreach($divMatches as $dm)
-							<div class="d-flex f-14" style="padding:5px 0;border-bottom:1px solid rgba(128,128,128,.08);gap:8px;align-items:center">
-								<span style="flex:1;text-align:right" class="{{ $dm->winner_team_id && $dm->winner_team_id === $dm->team_home_id ? 'b-700' : '' }}">
-									@include('tournaments._partials.team_name_link', ['team' => $dm->teamHome, 'fallback' => 'TBD'])
-								</span>
-								<span class="px-2 b-700" style="min-width:80px;text-align:center;{{ $dm->isCompleted() ? '' : 'opacity:.4' }}">
-									{{ $dm->setsScore() ?? 'vs' }}
-								</span>
-								<span style="flex:1" class="{{ $dm->winner_team_id && $dm->winner_team_id === $dm->team_away_id ? 'b-700' : '' }}">
-									@include('tournaments._partials.team_name_link', ['team' => $dm->teamAway, 'fallback' => 'TBD'])
-								</span>
-							</div>
-							@endforeach
+						@php
+						// group_id НЕ проставляется генератором сетки (см. комментарий
+						// выше) — берём все матчи стадии напрямую, не фильтруя по группе
+						// (в архитектуре дивизионов на bracket-стадию всегда ровно 1 группа).
+						$divMatches = $stage->matches->sortBy(['round', 'match_number']);
+						$isDoubleElim = $stage->type === \App\Models\TournamentStage::TYPE_DOUBLE_ELIM;
+
+						// double_elim — секции (Верхняя/Нижняя сетка, Гранд-финал), внутри
+						// секции группировка по раунду. single_elim — только по раунду
+						// (единая "main"-секция без заголовка).
+						if ($isDoubleElim) {
+							$divSections = [
+								'upper' => [
+									'label' => 'Верхняя сетка',
+									'matches' => $divMatches->filter(fn($m) =>
+										$m->bracket_position === 'upper'
+										&& !in_array($m->court, ['Grand Final', 'Grand Final Reset'])
+									),
+								],
+								'lower' => [
+									'label' => 'Нижняя сетка',
+									'matches' => $divMatches->filter(fn($m) => $m->bracket_position === 'lower'),
+								],
+								'finals' => [
+									'label' => 'Гранд-финал',
+									'matches' => $divMatches->filter(fn($m) =>
+										in_array($m->court, ['Grand Final', 'Grand Final Reset'])
+									),
+								],
+							];
+						} else {
+							$divSections = [
+								'main' => ['label' => null, 'matches' => $divMatches],
+							];
+						}
+						@endphp
+
+						@foreach($divSections as $sectionKey => $section)
+						@if($section['matches']->isNotEmpty())
+						@if($section['label'])
+						<div class="b-600 cd mb-1 mt-2" style="font-size:.8rem;text-transform:uppercase;letter-spacing:.03em">
+							{{ $section['label'] }}
 						</div>
 						@endif
+
+						@foreach($section['matches']->groupBy('round') as $round => $roundMatches)
+						@php
+						// roundLabelFor() — единая точка правды (TournamentStage), уже
+						// используется в _bracket.blade.php/score.blade.php. Для GF/GF-reset
+						// она сама читает court и возвращает готовый лейбл; для остального
+						// double_elim (upper/lower не-финальные раунды) возвращает null —
+						// фолбэк на обычный "Раунд N".
+						$roundLabel = $stage->roundLabelFor($roundMatches->first()) ?? 'Раунд ' . $round;
+						@endphp
+						<div class="b-600 cd mb-2 mt-2">{{ $roundLabel }}</div>
+
+						@foreach($roundMatches->sortBy('match_number') as $m)
+						<div class="d-flex f-14" style="padding:5px 0;border-bottom:1px solid rgba(128,128,128,.08);gap:8px;align-items:center">
+							<span style="flex:1;text-align:right" class="{{ $m->winner_team_id === $m->team_home_id ? 'b-700' : '' }}">
+								@include('tournaments._partials.team_name_link', ['team' => $m->teamHome, 'fallback' => 'TBD'])
+								@include('tournaments._partials.team_roster_line', ['team' => $m->teamHome, 'class' => 'f-11', 'style' => 'color:#6b7280'])
+							</span>
+							<span class="px-2 b-700" style="min-width:80px;text-align:center;{{ $m->isCompleted() ? '' : 'opacity:.4' }}">
+								{{ $m->setsScore() ?? 'vs' }}
+								@if($m->isCompleted() && $m->detailedScore())
+								<div class="f-11 b-400" style="opacity:.6">{{ $m->detailedScore() }}</div>
+								@endif
+							</span>
+							<span style="flex:1" class="{{ $m->winner_team_id === $m->team_away_id ? 'b-700' : '' }}">
+								@include('tournaments._partials.team_name_link', ['team' => $m->teamAway, 'fallback' => 'TBD'])
+								@include('tournaments._partials.team_roster_line', ['team' => $m->teamAway, 'class' => 'f-11', 'style' => 'color:#6b7280'])
+							</span>
+						</div>
+						@if($m->isCompleted() && !empty($matchStatsByMatchId[$m->id]['has_stats']))
+						<div style="text-align:center;margin:2px 0 8px">
+							<button type="button" class="btn btn-small btn-secondary" onclick="toggleMatchStats({{ $m->id }})">📊 {{ __('tournaments.pub_match_stats_toggle') }}</button>
+						</div>
+						<div id="match-stats-{{ $m->id }}" class="card mb-2" style="display:none">
+							@include('tournaments._partials.match_stats_pretty', ['statsData' => $matchStatsByMatchId[$m->id], 'match' => $m, 'stage' => $stage, 'event' => $event])
+						</div>
+						@endif
+						@endforeach
+						@endforeach
+						@endif
+						@endforeach
 						@elseif($group->standings->isNotEmpty())
 						<div class="table-scrollable">
 							<div class="table-drag-indicator"></div>
