@@ -57,8 +57,11 @@
 
 		{{-- Шапка матча + табы сетов --}}
 		<div class="card p-3 mb-2" style="text-align:center">
-			<div class="f-13 mb-2">
-				{{ __('tournaments.score_match_header', ['n' => $match->match_number, 'r' => $match->round]) }} · {{ strtoupper($format) }}
+			@php $roundLabel = $stage->roundLabelFor($match); @endphp
+			<div class="mb-2">
+				<span class="score-pill score-pill--blue">{{ __('tournaments.score_pill_match', ['n' => $match->match_number]) }}</span>
+				<span class="score-pill score-pill--green">{{ $roundLabel ?? __('tournaments.score_pill_round', ['r' => $match->round]) }}</span>
+				<span class="score-pill score-pill--orange">{{ strtoupper($format) }}</span>
 			</div>
 			<div class="d-flex between fvc mb-2">
 				<div style="flex:1">
@@ -71,9 +74,12 @@
 					@include('tournaments._partials.team_roster_line', ['team' => $match->teamAway, 'class' => 'f-13', 'style' => 'opacity:.7'])
 				</div>
 			</div>
-			<div class="f-13" style="opacity:.6">
-				{{ __('tournaments.rally_set_n', ['n' => $setNumber]) }} · {{ __('tournaments.score_to_pts') }} {{ $board['target_points'] }}
-				@if($board['decided']) · {{ __('tournaments.rally_set_decided') }} @endif
+			<div class="mb-2">
+				<span class="score-pill score-pill--blue">{{ __('tournaments.rally_set_n', ['n' => $setNumber]) }}</span>
+				<span class="score-pill score-pill--red">{{ __('tournaments.score_to_pts') }} {{ $board['target_points'] }}</span>
+				@if($board['decided'])
+				<span class="score-pill score-pill--green">{{ __('tournaments.rally_set_decided') }}</span>
+				@endif
 			</div>
 			<div class="d-flex gap-1 text-center mt-2" style="flex-wrap:wrap;justify-content:center">
 				@for($i = 1; $i <= $maxSets; $i++)

@@ -2349,6 +2349,32 @@ $tourNumber = $seasonData
 					$crossClean      = $cleanStatsByGroup[$groupId] ?? [];
 					$crossOutsiders  = $outsidersByGroup[$groupId] ?? [];
 					$hasCrosstable   = $groupForCross && $groupForCross->standings->isNotEmpty();
+
+					// double_elim: bracket-стадия рендерит все свои матчи одним "group_id=null"
+					// табом — плоский список без деления на секции путал верхнюю/нижнюю сетку
+					// и Гранд-финал. Секции — та же рецептура, что и в _bracket.blade.php
+					// (report_recon_bracket.md, Блок 2 п.4): court фильтруем раньше bracket_position,
+					// т.к. GF/GF-reset формально помечены bracket_position='upper'.
+					$matchRowsOrdered = $groupMatches->values();
+					$sectionLabels = [];
+					if ($stage->type === \App\Models\TournamentStage::TYPE_DOUBLE_ELIM) {
+						$deUpper  = $groupMatches->filter(fn($m) => $m->bracket_position === 'upper' && $m->court !== 'Grand Final' && $m->court !== 'Grand Final Reset');
+						$deLower  = $groupMatches->filter(fn($m) => $m->bracket_position === 'lower');
+						$deFinals = $groupMatches->filter(fn($m) => in_array($m->court, ['Grand Final', 'Grand Final Reset'], true));
+						$deSections = [
+							['label' => 'Верхняя сетка', 'matches' => $deUpper],
+							['label' => 'Нижняя сетка', 'matches' => $deLower],
+							['label' => 'Гранд-финал', 'matches' => $deFinals],
+						];
+						$matchRowsOrdered = collect();
+						foreach ($deSections as $deSection) {
+							if ($deSection['matches']->isEmpty()) continue;
+							foreach ($deSection['matches']->values() as $deIdx => $deMatch) {
+								if ($deIdx === 0) $sectionLabels[$deMatch->id] = $deSection['label'];
+								$matchRowsOrdered->push($deMatch);
+							}
+						}
+					}
 					@endphp
 					<div class="tab-pane" id="matches-group{{ $groupId }}">
 
@@ -2378,7 +2404,10 @@ $tourNumber = $seasonData
 										</tr>
 									</thead>
 									<tbody>
-										@foreach($groupMatches as $match)
+										@foreach($matchRowsOrdered as $match)
+										@if(isset($sectionLabels[$match->id]))
+										<tr><th colspan="10" style="padding:.5rem .75rem;font-size:.8rem;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;text-align:left;border-bottom:1px solid rgba(128,128,128,.2)">{{ $sectionLabels[$match->id] }}</th></tr>
+										@endif
 										<tr>
 											<td>{{ $match->match_number }}</td>
 											<td>R{{ $match->round }}</td>
