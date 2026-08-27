@@ -1422,6 +1422,7 @@ $tourNumber = $seasonData
 												round_robin: @json(__('tournaments.setup_stage_default_name')),
 												groups_playoff: @json(__('tournaments.setup_stage_default_name')),
 												single_elim: @json(__('tournaments.setup_stage_name_playoff')),
+												double_elim: @json(__('tournaments.setup_stage_lbl_double_elim')),
 												swiss: @json(__('tournaments.setup_stage_name_swiss')),
 												king_of_court: @json(__('tournaments.setup_stage_name_kotc'))
 											};
