@@ -8,32 +8,7 @@
     <x-slot name="h2">{{ __('welcome.h2') }}</x-slot>
     <x-slot name="t_description">{{ __('welcome.tagline') }}</x-slot>
 
-    <x-slot name="d_description">
-        <div class="d-flex flex-wrap gap-1 m-center">
-            @guest
-			<div class="mt-2" data-aos-delay="350" data-aos="fade-up">
-				<a href="{{ route('events.index') }}" class="btn btn-secondary">{{ __('welcome.cta_view_games') }}</a>
-			</div>
-            @else
-			<div class="mt-2" data-aos-delay="250" data-aos="fade-up">
-				<a href="{{ route('events.index') }}" class="btn">{{ __('welcome.cta_find_game') }}</a>
-			</div>
-			<div class="mt-2" data-aos-delay="350" data-aos="fade-up">
-			</div>
-            @endguest
-			<div class="mt-2" data-aos-delay="450" data-aos="fade-up">
-				<a href="{{ route('events.index', ['format' => 'tournament']) }}" class="btn btn-secondary">{{ __('welcome.cta_tournaments') }}</a>
-			</div>
-			<div class="mt-2" data-aos-delay="450" data-aos="fade-up">
-				<a href="{{ route('events.index', ['direction' => 'beach']) }}" class="btn btn-secondary">{{ __('welcome.cta_beach') }}</a>
-			</div>
-			<div class="mt-2" data-aos-delay="450" data-aos="fade-up">
-				<a href="{{ route('volleyball_school.index') }}" class="btn btn-secondary">{{ __('welcome.cta_sections') }}</a>
-			</div>
-		</div>
-	</x-slot>
-
-	<script type="application/ld+json">
+    <script type="application/ld+json">
 	{!! json_encode([
 		'@context' => 'https://schema.org',
 		'@type' => 'WebSite',

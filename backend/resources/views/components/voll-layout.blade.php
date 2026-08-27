@@ -712,6 +712,18 @@
 								<a href="/events">
 									<span class="footer-menu-text">{{ __('ui.nav_games_trainings') }}</span>
 								</a>
+								<a href="{{ route('events.index') }}">
+									<span class="footer-menu-text">{{ __('welcome.cta_find_game') }}</span>
+								</a>
+								<a href="{{ route('events.index', ['format' => 'tournament']) }}">
+									<span class="footer-menu-text">{{ __('welcome.cta_tournaments') }}</span>
+								</a>
+								<a href="{{ route('events.index', ['direction' => 'beach']) }}">
+									<span class="footer-menu-text">{{ __('welcome.cta_beach') }}</span>
+								</a>
+								<a href="{{ route('volleyball_school.index') }}">
+									<span class="footer-menu-text">{{ __('welcome.cta_sections') }}</span>
+								</a>
 								<a href="/locations">
 									<span class="footer-menu-text">{{ __('ui.nav_locations') }}</span>
 								</a>
