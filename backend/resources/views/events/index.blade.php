@@ -135,12 +135,39 @@ $levelOptions = [1, 2, 3, 4, 5, 6, 7];
 
     $hasActiveSecondaryFilters = $fFormat !== '' || $fLevel !== '' || $fLocation !== '';
     $userCityId = auth()->user()?->city_id;
+
+    // SEO: только "чистые" осмысленные комбинации format/direction получают
+    // уникальные title/description/h1 + self-canonical (реальный SSR-фильтр
+    // в EventIndexService, не косметика). Любая другая комбинация фильтров
+    // (level/location/city/остальные format) — canonical на базовый /events,
+    // чтобы не плодить в индексе дубли фасетной навигации.
+    if ($fFormat === 'tournament' && $fDir === 'beach') {
+        $seoTitle = __('events.seo_tournament_beach_title');
+        $seoDescription = __('events.seo_tournament_beach_description');
+        $seoH1 = __('events.seo_tournament_beach_h1');
+        $seoCanonical = route('events.index', ['format' => 'tournament', 'direction' => 'beach']);
+    } elseif ($fFormat === 'tournament') {
+        $seoTitle = __('events.seo_tournament_title');
+        $seoDescription = __('events.seo_tournament_description');
+        $seoH1 = __('events.seo_tournament_h1');
+        $seoCanonical = route('events.index', ['format' => 'tournament']);
+    } elseif ($fFormat === '' && $fDir === 'beach') {
+        $seoTitle = __('events.seo_beach_title');
+        $seoDescription = __('events.seo_beach_description');
+        $seoH1 = __('events.seo_beach_h1');
+        $seoCanonical = route('events.index', ['direction' => 'beach']);
+    } else {
+        $seoTitle = __('events.index_title');
+        $seoDescription = __('events.index_description');
+        $seoH1 = __('events.index_h1');
+        $seoCanonical = route('events.index');
+    }
 	@endphp
 	
 	<x-voll-layout body_class="events-page">
-		<x-slot name="title">{{ __('events.index_title') }}</x-slot>
-		<x-slot name="description">{{ __('events.index_title') }}</x-slot>
-		<x-slot name="canonical">{{ route('events.index') }}</x-slot>
+		<x-slot name="title">{{ $seoTitle }}</x-slot>
+		<x-slot name="description">{{ $seoDescription }}</x-slot>
+		<x-slot name="canonical">{!! $seoCanonical !!}</x-slot>
 		
 		<x-slot name="breadcrumbs">
 			<li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
@@ -151,7 +178,7 @@ $levelOptions = [1, 2, 3, 4, 5, 6, 7];
 			</li>
 		</x-slot>
 		
-		<x-slot name="h1">{{ __('events.index_h1') }}</x-slot>
+		<x-slot name="h1">{{ $seoH1 }}</x-slot>
 		
 		<x-slot name="h2">
             @if($isOccurrenceMode && !empty($groupedByDate))

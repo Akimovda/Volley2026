@@ -717,9 +717,10 @@ return [
     'premium_settings_h1'  => 'Premium settings 👑',
     'premium_settings_t_description' => 'Manage notifications and filters',
 
-    'school_idx_title'     => 'Volleyball schools',
-    'school_idx_description' => 'Volleyball schools and communities — trainings, education, teams',
-    'school_idx_t_description' => 'Schools, clubs and volleyball communities',
+    'school_idx_title'     => 'Volleyball Clubs and Schools — for Kids and Adults | VOLLEY CLUB',
+    'school_idx_h1'        => 'Volleyball Clubs and Schools',
+    'school_idx_description' => 'Volleyball training groups for kids, adults and teens: schools, clubs, sports sections. Training, coaching, teams near you.',
+    'school_idx_t_description' => 'Volleyball clubs, schools and communities near you — for kids, adults and teens',
     'school_create_title'  => 'Create school page',
     'school_create_t_description' => 'Tell about your school or volleyball community',
     'school_edit_title'    => 'Edit school page',
