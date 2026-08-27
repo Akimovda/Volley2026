@@ -269,13 +269,16 @@ class TournamentController extends Controller
             'finals_mode'     => 'nullable|in:bracket,placement,divisions',
             // advance_per_group больше не отправляется формой — вычисляется ниже
             // (groups_count × advance_count), см. $config.
-            // Только для finals_mode='divisions' при groups_count 2/3 (Hard/Lite или
-            // Hard/Medium/Lite) — при 4+ группах formDivisions() всё равно не читает
-            // per-division ключи вида Medium-N (известный gap), поэтому мастер этот
-            // случай не показывает и не собирает вовсе (см. blade).
-            'div_format_hard'   => 'nullable|in:bo1,bo3',
-            'div_format_medium' => 'nullable|in:bo1,bo3',
-            'div_format_lite'   => 'nullable|in:bo1,bo3',
+            // Формат следующего этапа ВНУТРИ дивизионов (после кругового распределения
+            // по силе) — ОБА поля ОДИН на все дивизионы сразу (Hard/Medium/Lite всегда
+            // играют одинаковым форматом между собой — организатор не может часть
+            // дивизионов пустить по кругу, а часть на выбывание, или дать им разный
+            // bo1/bo3). По умолчанию round_robin + "как в группах" (как было раньше,
+            // поведение не меняется, если организатор не тронул селекты).
+            // single_elim/double_elim запускают сетку на выбывание уже среди команд
+            // КАЖДОГО дивизиона отдельно — см. formDivisionsCore().
+            'divisions_stage_type' => 'nullable|in:round_robin,single_elim,double_elim',
+            'divisions_format'     => 'nullable|in:bo1,bo3',
         ]);
 
         $sortOrder = ($event->tournamentStages()->max('sort_order') ?? 0) + 1;
@@ -326,11 +329,11 @@ class TournamentController extends Controller
             // способом, что и инфо-строка в setup.blade.php: groups_count × advance_count.
             // Предзаполняет то же поле на пульте (formDivisions()).
             'advance_per_group'  => $finalsMode === 'divisions' ? $groupsCount * (int) ($validated['advance_count'] ?? 2) : null,
-            // Дефолт per-division формата матча на пульте (formDivisions()) —
-            // overridable там же на день турнира, см. setup.blade.php :2172-2196.
-            'div_format_hard'    => $validated['div_format_hard'] ?? null,
-            'div_format_medium'  => $validated['div_format_medium'] ?? null,
-            'div_format_lite'    => $validated['div_format_lite'] ?? null,
+            // Тип стадии и формат матча — ОДИН на ВСЕ финальные дивизионы сразу
+            // (Hard/Medium/Lite всегда играют между собой одинаково), читается
+            // formDivisionsCore().
+            'divisions_stage_type' => $validated['divisions_stage_type'] ?? null,
+            'divisions_format'     => $validated['divisions_format'] ?? null,
         ];
 
         // occurrence_id из hidden field (если сезонный турнир)
@@ -567,12 +570,25 @@ class TournamentController extends Controller
                 // round_robin-скелет БЕЗ groups_count — блок групп ниже
                 // (гейт groups_count > 0) его не тронет. launchStage() по нему
                 // вызовет formDivisionsCore() из standings стадии 1.
+                //
+                // divisions_stage_type/divisions_format/match_format/set_points/
+                // deciding_set_points скопированы из $config (та же информация,
+                // что уже кладётся на РОДИТЕЛЬСКУЮ групповую стадию) — иначе
+                // карточка этого скелета (setup.blade.php, до формирования
+                // дивизионов) показывает дефолты "Круговая система · Best of 3 ·
+                // до 25 очков" вместо реально выбранного организатором формата
+                // (найдено и подтверждено на event 1110, stage "Финальные группы").
                 $this->setupService->createStage($event, [
                     'type'          => TournamentStage::TYPE_ROUND_ROBIN,
                     'name'          => 'Финальные группы',
                     'sort_order'    => $sortOrder + 1,
                     'config'        => [
-                        'finals_mode' => 'divisions',
+                        'finals_mode'          => 'divisions',
+                        'divisions_stage_type' => $config['divisions_stage_type'] ?? null,
+                        'divisions_format'     => $config['divisions_format'] ?? null,
+                        'match_format'         => $config['match_format'],
+                        'set_points'           => $config['set_points'],
+                        'deciding_set_points'  => $config['deciding_set_points'],
                     ],
                     'occurrence_id' => $occurrenceId ? (int) $occurrenceId : null,
                 ]);
@@ -1309,22 +1325,28 @@ class TournamentController extends Controller
             ? ($s->division_tier > 1 && $s->division_tier !== $maxTier)
             : str_contains($s->name, 'Medium');
 
+        // rankedTeamIdsForStage() — ранжированный team_id вне зависимости от типа
+        // дивизиона: round_robin (TournamentStanding) ИЛИ single_elim/double_elim
+        // (места из результатов сетки, TournamentStatsService::extractBracketPlacements()).
+        // Прямой TournamentStanding-запрос здесь давал 0 строк для bracket-дивизиона
+        // (standings у сетки не пишутся) — релегация тихо не находила никого.
+        $statsService = app(\App\Services\TournamentStatsService::class);
+
         foreach ($stages->filter($isLiteStage) as $stage) {
-            foreach (\App\Models\TournamentStanding::where('stage_id', $stage->id)->orderBy('rank')->get() as $s) {
-                if ($s->rank > 2) $collectRelegated($s->team_id);
+            foreach ($statsService->rankedTeamIdsForStage($stage) as $idx => $teamId) {
+                if ($idx + 1 > 2) $collectRelegated($teamId);
             }
         }
         foreach ($stages->filter($isMediumStage) as $stage) {
-            foreach (\App\Models\TournamentStanding::where('stage_id', $stage->id)->orderBy('rank')->get() as $s) {
-                if ($s->rank > 3) $collectRelegated($s->team_id);
+            foreach ($statsService->rankedTeamIdsForStage($stage) as $idx => $teamId) {
+                if ($idx + 1 > 3) $collectRelegated($teamId);
             }
         }
 
-        // Все капитаны из standings
-        $allCaptainIds = $stages->flatMap(function ($stage) {
-            return \App\Models\TournamentStanding::where('stage_id', $stage->id)
-                ->join('event_teams', 'event_teams.id', '=', 'tournament_standings.team_id')
-                ->pluck('event_teams.captain_user_id');
+        // Все капитаны из ранжированных составов дивизионов (не только round_robin).
+        $allCaptainIds = $stages->flatMap(function ($stage) use ($statsService) {
+            $teamIds = $statsService->rankedTeamIdsForStage($stage);
+            return \App\Models\EventTeam::whereIn('id', $teamIds)->pluck('captain_user_id');
         })->unique()->filter()->values()->toArray();
 
         // Следующий сезон для cross-season промоушена
@@ -1479,10 +1501,10 @@ class TournamentController extends Controller
      * (divisions-ветка) для скелет-стадий, не дублируя ~150 строк
      * распределения по дивизионам. $stage здесь — ТА ЖЕ завершённая групповая
      * стадия, что и раньше (route-параметр formDivisions() или $prevStage из
-     * launchStage()) — advance_per_group/div_format_* по-прежнему читаются из
-     * ЕЁ конфига (см. комментарии ниже), а не из скелета: скелет divisions не
-     * дублирует эти поля, они и так лежат на групповой стадии с момента её
-     * создания (createStage(), config.advance_per_group/div_format_*).
+     * launchStage()) — advance_per_group/divisions_stage_type/divisions_format
+     * по-прежнему читаются из ЕЁ конфига (см. комментарии ниже), а не из
+     * скелета: скелет divisions не дублирует эти поля, они и так лежат на
+     * групповой стадии с момента её создания (createStage()).
      *
      * @return string[]  Названия сформированных дивизионов (Hard/Medium/Lite/...)
      * @throws \InvalidArgumentException  Если группы ещё не сыграны (<2 групп)
@@ -1559,23 +1581,19 @@ class TournamentController extends Controller
         // occurrence_id из текущей стадии или из query
         $occurrenceId = $stage->occurrence_id;
 
-        // Форматы матчей для групп — поле убрано с пульта (аналогично
+        // Формат матча и тип этапа — ОДИН на ВСЕ дивизионы сразу (Hard/Medium/Lite
+        // всегда играют между собой одинаково) — поля убраны с пульта (аналогично
         // advance_per_group), значение всегда из конфига стадии, заданного в
         // мастере. $request->input() остаётся приоритетным на случай прямого
         // API-вызова с явным параметром (форма его больше не отправляет).
-        // Ключ — точное имя дивизиона (div_format_medium-1, div_format_medium-2,
-        // ...), не свёрнутое "medium" на всех — иначе при 4+ группах формат для
-        // Medium-N никогда не читался (только 3 фикс-ключа hard/medium/lite).
-        $divFormats = [];
-        foreach ($divisionNames as $dn) {
-            $key = strtolower($dn);
-            $divFormats[$dn] = $request->input('div_format_' . $key) ?: $stage->cfg('div_format_' . $key);
-        }
+        $divisionsFormat = $request->input('divisions_format') ?: $stage->cfg('divisions_format');
+        $divisionsStageType = $request->input('divisions_stage_type')
+            ?: ($stage->cfg('divisions_stage_type') ?: TournamentStage::TYPE_ROUND_ROBIN);
 
         $setupService = app(\App\Services\TournamentSetupService::class);
 
         \Illuminate\Support\Facades\DB::transaction(function () use (
-            $event, $setupService, $divisionNames, $teamsByDivision, $stage, $occurrenceId, $divFormats, $request
+            $event, $setupService, $divisionNames, $teamsByDivision, $stage, $occurrenceId, $divisionsFormat, $divisionsStageType, $request
         ) {
             // Удаляем ранее созданные дивизионные стадии (Hard/Medium/Lite) перед пересозданием.
             // division_tier — основной признак; паттерн по имени остаётся фоллбэком для
@@ -1602,23 +1620,43 @@ class TournamentController extends Controller
                 $teamIds = $teamsByDivision[$divName] ?? [];
                 if (empty($teamIds)) continue;
 
-                // Создаём стадию-группу (Round Robin внутри)
+                $divStageType = $divisionsStageType;
+                $isBracketDivision = in_array($divStageType, [TournamentStage::TYPE_SINGLE_ELIM, TournamentStage::TYPE_DOUBLE_ELIM], true);
+
+                // single_elim/double_elim среди команд ОДНОГО дивизиона — тот же
+                // минимум, что и для standalone-сетки в createStage() (double_elim
+                // требует минимум 4 команды в TournamentBracketService::generateDoubleElimination()).
+                // Если дивизион не набрал минимум — молча откатываем на round_robin
+                // (не бросаем исключение внутри DB::transaction() всего formDivisions —
+                // иначе ОСТАЛЬНЫЕ дивизионы тоже не создались бы из-за одного маленького).
+                $minRequired = $divStageType === TournamentStage::TYPE_DOUBLE_ELIM ? 4 : 2;
+                if ($isBracketDivision && count($teamIds) < $minRequired) {
+                    $isBracketDivision = false;
+                    $divStageType = TournamentStage::TYPE_ROUND_ROBIN;
+                }
+
+                // Создаём стадию-дивизион (Round Robin — как раньше, либо сетка на
+                // выбывание, если организатор выбрал в мастере).
                 $divStage = $setupService->createStage($event, [
-                    'type'          => 'round_robin',
+                    'type'          => $divStageType,
                     'name'          => 'Группа ' . $divName,
                     // 1 = самый сильный (Hard) — позиция в $divisionNames, не текст имени.
                     'division_tier' => $divIndex + 1,
                     'sort_order'    => $sortOrder++,
                     'occurrence_id' => $occurrenceId,
                     'config'        => array_merge($stage->config ?? [],
-                        !empty($divFormats[$divName]) ? ['match_format' => $divFormats[$divName]] : []
-                    ), // наследуем формат + override для группы
+                        !empty($divisionsFormat) ? ['match_format' => $divisionsFormat] : []
+                    ), // наследуем формат + override для всех дивизионов сразу
                 ]);
 
-                // Создаём одну группу внутри стадии
+                // Создаём одну группу внутри стадии — контейнер для ростера/посева.
+                // Для bracket-дивизиона standings в ней не будет (не round_robin), но
+                // сам ростер (TournamentGroupTeam.seed) нужен как fallback-порядок мест
+                // для команд, не получивших явное место из результатов сетки —
+                // см. TournamentStatsService::extractBracketPlacements().
                 $group = $setupService->createGroups($divStage, 1, [$divName])->first();
 
-                // Назначаем команды
+                // Назначаем команды (посев = порядок по силе из formDivisionsCore())
                 foreach ($teamIds as $seed => $teamId) {
                     \App\Models\TournamentGroupTeam::create([
                         'group_id' => $group->id,
@@ -1627,8 +1665,21 @@ class TournamentController extends Controller
                     ]);
                 }
 
-                // Генерируем матчи Round Robin (standings создаются внутри)
-                $this->setupService->generateRoundRobinMatches($divStage, $group);
+                if ($isBracketDivision) {
+                    // third_place_match наследуется от родительской групповой стадии —
+                    // отдельного per-division переключателя не заводим (лишний UI ради
+                    // редкого случая).
+                    $thirdPlaceMatch = (bool) ($stage->cfg('third_place_match', false));
+                    if ($divStageType === TournamentStage::TYPE_DOUBLE_ELIM) {
+                        $this->bracketService->generateDoubleElimination($divStage, $teamIds);
+                    } else {
+                        $this->bracketService->generateSingleElimination($divStage, $teamIds, $thirdPlaceMatch);
+                    }
+                    $divStage->update(['status' => TournamentStage::STATUS_IN_PROGRESS]);
+                } else {
+                    // Генерируем матчи Round Robin (standings создаются внутри)
+                    $this->setupService->generateRoundRobinMatches($divStage, $group);
+                }
 
                 // Назначаем площадки группе
                 $courtKey = 'div_courts_' . strtolower($divName);

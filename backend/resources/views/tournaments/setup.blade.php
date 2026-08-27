@@ -462,7 +462,11 @@ $tourNumber = $seasonData
 		$hasStages        = $stages->isNotEmpty();
 		@endphp
 		@if($seasonData)
-		<div class="ramka" id="season_league_management">
+		{{-- z-index:6 статично — та же причина, что у соседней .ramka «Команды»
+		     ниже (add-league-captain-search/add-league-partner-search внутри
+		     тоже используют .form-select-dropdown.trainer_dd + динамический
+		     select-dropdown-open, симптом идентичный). --}}
+		<div class="ramka" id="season_league_management" style="z-index:6">
 			<style>
 				.league-table { width:100%; border-collapse:collapse; }
 				.league-table th { text-align:left; padding:8px 6px; border-bottom:2px solid #e5e7eb; font-size:13px; color:#6b7280; }
@@ -751,7 +755,7 @@ $tourNumber = $seasonData
 									<div style="position:relative" id="add-league-captain-wrap">
 										<input type="text" id="add-league-captain-search" placeholder="Поиск по имени..." autocomplete="off">
 										<input type="hidden" name="captain_user_id" id="add-league-captain-id">
-										<div id="add-league-captain-dd" class="form-select-dropdown trainer_dd"></div>
+										<div id="add-league-captain-dd" style="display:none;position:absolute;left:0;right:0;top:100%;margin-top:.4rem;z-index:50;background:var(--bg-card,#fff);border:.1rem solid var(--border-color,#eee);border-radius:1.2rem;box-shadow:0 1rem 3rem rgba(0,0,0,.1);max-height:22rem;overflow-y:auto"></div>
 									</div>
 								</div>
 							</div>
@@ -762,7 +766,7 @@ $tourNumber = $seasonData
 									<div style="position:relative" id="add-league-partner-wrap">
 										<input type="text" id="add-league-partner-search" placeholder="Поиск по имени..." autocomplete="off">
 										<input type="hidden" name="partner_user_id" id="add-league-partner-id">
-										<div id="add-league-partner-dd" class="form-select-dropdown trainer_dd"></div>
+										<div id="add-league-partner-dd" style="display:none;position:absolute;left:0;right:0;top:100%;margin-top:.4rem;z-index:50;background:var(--bg-card,#fff);border:.1rem solid var(--border-color,#eee);border-radius:1.2rem;box-shadow:0 1rem 3rem rgba(0,0,0,.1);max-height:22rem;overflow-y:auto"></div>
 									</div>
 								</div>
 							</div>
@@ -965,7 +969,18 @@ $tourNumber = $seasonData
 		{{-- ============================================================
 		Команды
 		============================================================ --}}
-		<div class="ramka">
+		{{-- z-index:6 статично (не через JS-класс select-dropdown-open, как у
+		     остальных .ramka на этой странице) — по образцу РАБОЧЕГО автокомплита
+		     на странице команды (teams/show.blade.php, органайзер добавляет
+		     игрока напрямую): там та же пара классов form-select-dropdown
+		     trainer_dd, но z-index задан статично в разметке, а не переключается
+		     JS в момент открытия дропдауна. Динамическая смена z-index у предка с
+		     backdrop-filter (см. style.css @media(min-width:992px) .ramka) именно
+		     В МОМЕНТ взаимодействия — вероятная причина, по которой в Safari на
+		     Mac (трекпад) колёсико над org-captain-search/manual-captain-search
+		     не скроллит список результатов, хотя сам список открывается и клики
+		     по пунктам работают. --}}
+		<div class="ramka" style="z-index:6">
 			@php
 				// Живая укомплектованность (rosterCompleteMap предвычислена в
 				// TournamentController::setup()) — не is_complete из БД, тот кэш
@@ -1129,13 +1144,13 @@ $tourNumber = $seasonData
 										<div style="position:relative" id="manual-captain-ac-wrap">
 											<input type="text" id="manual-captain-search" placeholder="{{ __('tournaments.setup_team_ph_captain') }}" autocomplete="off">
 											<input type="hidden" name="captain_user_id" id="manual-captain-id">
-											<div id="manual-captain-dd" class="form-select-dropdown trainer_dd"></div>
+											<div id="manual-captain-dd" style="display:none;position:absolute;left:0;right:0;top:100%;margin-top:.4rem;z-index:50;background:var(--bg-card,#fff);border:.1rem solid var(--border-color,#eee);border-radius:1.2rem;box-shadow:0 1rem 3rem rgba(0,0,0,.1);max-height:22rem;overflow-y:auto"></div>
 										</div>
 										@else
 										<div style="position:relative" id="org-captain-ac-wrap">
 											<input type="text" id="org-captain-search" placeholder="{{ __('tournaments.setup_team_ph_captain') }}" autocomplete="off">
 											<input type="hidden" name="captain_user_id" id="org-captain-id">
-											<div id="org-captain-dd" class="form-select-dropdown trainer_dd"></div>
+											<div id="org-captain-dd" style="display:none;position:absolute;left:0;right:0;top:100%;margin-top:.4rem;z-index:50;background:var(--bg-card,#fff);border:.1rem solid var(--border-color,#eee);border-radius:1.2rem;box-shadow:0 1rem 3rem rgba(0,0,0,.1);max-height:22rem;overflow-y:auto"></div>
 										</div>
 										@endif
 									</div>
@@ -1186,8 +1201,15 @@ $tourNumber = $seasonData
 				// .form-select-wrapper; этот автокомплит — отдельный самописный виджет,
 				// применяем тот же приём вручную.
 				var ramkaEl = wrap ? wrap.closest('.ramka, .card-ramka, .top-section') : null;
-				function showDd() { dd.classList.add('form-select-dropdown--active'); if (ramkaEl) ramkaEl.classList.add('select-dropdown-open'); }
-				function hideDd() { dd.classList.remove('form-select-dropdown--active'); if (ramkaEl) ramkaEl.classList.remove('select-dropdown-open'); }
+				// display:none/block (не CSS-класс с transition по opacity/visibility/
+				// transform) — тот же приём, что у РАБОЧЕГО автокомплита #ti-dd на
+				// странице команды (tournaments/teams/show.blade.php). Класс
+				// .form-select-dropdown--active даёт transition, и внутри .ramka с
+				// backdrop-filter (≥992px) Safari на Mac (трекпад) ломает scroll/wheel
+				// hit-testing на элементе, участвующем в такой transition-анимации —
+				// жёсткий display переключатель этого не провоцирует.
+				function showDd() { dd.style.display = 'block'; if (ramkaEl) ramkaEl.classList.add('select-dropdown-open'); }
+				function hideDd() { dd.style.display = 'none'; if (ramkaEl) ramkaEl.classList.remove('select-dropdown-open'); }
 
 				function setCaptain(id, label) {
 					inp.value = label;
@@ -1214,7 +1236,7 @@ $tourNumber = $seasonData
 						showDd();
 						return;
 					}
-					matches.slice(0, 8).forEach(function(p) {
+					matches.forEach(function(p) {
 						var div = document.createElement('div');
 						div.className = 'trainer-item form-select-option';
 						div.innerHTML = '<div class="text-sm">' + esc(p.label) + '</div>';
@@ -1734,18 +1756,48 @@ $tourNumber = $seasonData
 									<p class="finals-mode-card-hint">{{ __('tournaments.setup_finals_mode_divisions_hint') }}</p>
 								</div>
 							</div>
-							<div class="finals-mode-card-extra" id="finals_mode_divisions_fields" style="display:none">
-								{{-- Больше не редактируемое поле — чистое вычисление
-								     groups_count × advance_count (Section 2 «Групповой этап»),
-								     не отправляется в форме. createStage() на бэкенде считает
-								     то же самое число тем же способом (см. контроллер). --}}
-								<p class="f-13" id="advance_per_group_summary" style="color:#6b7280;margin:0"></p>
-
-								{{-- Формат матча по дивизионам — для любого числа групп (2, 3, 4+),
-								     ключ по точному имени дивизиона (div_format_medium-1 и т.п.). --}}
-								<div class="mt-2" id="divisions_format_fields"></div>
-							</div>
 						</label>
+						{{-- ВНЕ <label> карточки divisions — тот же баг №5, что уже описан выше
+						     у third_place_match_field: select внутри того же <label>, что и radio,
+						     ловит клик-форвардинг браузера на radio → кастомный дропдаун открывается
+						     и тут же закрывается обработчиком "клик вне", реально не открывается. --}}
+						<div class="finals-mode-card-extra finals-mode-card-extra--outside" id="finals_mode_divisions_fields" style="display:none">
+							{{-- Больше не редактируемое поле — чистое вычисление
+							     groups_count × advance_count (Section 2 «Групповой этап»),
+							     не отправляется в форме. createStage() на бэкенде считает
+							     то же самое число тем же способом (см. контроллер). --}}
+							<p class="f-13" id="advance_per_group_summary" style="color:#6b7280;margin:0"></p>
+
+							{{-- Тип этапа и формат матча — ОДИН на ВСЕ дивизионы сразу
+							     (Hard/Medium/Lite всегда играют между собой одинаково —
+							     нет смысла давать Hard круговую, а Lite выбывание, или
+							     разный bo1/bo3 разным дивизионам). См. formDivisionsCore().
+							     Две колонки на широком экране — иначе блок занимает много
+							     вертикального места под два обычных select-а. --}}
+							<div class="row">
+								<div class="col-sm-6 mb-2">
+									<label class="mt-1">{{ __('tournaments.setup_groups_stage_type_label') }}</label>
+									<select name="divisions_stage_type" class="f-13" style="max-width:20rem">
+										<option value="round_robin">{{ __('tournaments.setup_groups_stage_type_round_robin') }}</option>
+										<option value="single_elim">{{ __('tournaments.setup_groups_stage_type_single_elim') }}</option>
+										<option value="double_elim">{{ __('tournaments.setup_groups_stage_type_double_elim') }}</option>
+									</select>
+									{{-- Минимум команд на дивизион для bracket-типа — иначе
+									     formDivisionsCore() тихо откатывает конкретный маленький
+									     дивизион на round_robin (см. контроллер). --}}
+									<span id="div-hint-single" class="form-text text-muted" style="display:none;font-size:.8rem">{{ __('tournaments.setup_groups_stage_type_hint_single') }}</span>
+									<span id="div-hint-double" class="form-text text-muted" style="display:none;font-size:.8rem">{{ __('tournaments.setup_groups_stage_type_hint_double') }}</span>
+								</div>
+								<div class="col-sm-6 mb-2">
+									<label class="mt-1">{{ __('tournaments.setup_groups_format_label') }}</label>
+									<select name="divisions_format" class="f-13" style="max-width:20rem">
+										<option value="">{{ __('tournaments.setup_groups_format_default') }}</option>
+										<option value="bo1">Bo1</option>
+										<option value="bo3">Bo3</option>
+									</select>
+								</div>
+							</div>
+						</div>
 					</div>
 
 					{{-- Корты — общий блок для группового этапа и King of the Beach --}}
@@ -2125,8 +2177,30 @@ $tourNumber = $seasonData
 							$stageTypeLabels['single_elim'] = __('tournaments.setup_stage_lbl_placement_final');
 						}
 						$matchFormatLabels = ['bo1' => 'Best of 1', 'bo3' => 'Best of 3', 'bo5' => 'Best of 5'];
+
+						// Скелет "Финальные группы" (createStage(), finals_mode='divisions') —
+						// pending-заглушка, СОЗДАЁТСЯ вместе с групповым этапом, но сама ещё
+						// не имеет ни groups, ни division_tier (то и другое появляется только
+						// у РЕАЛЬНЫХ "Группа Hard/Lite" стадий после formDivisionsCore()).
+						// $stage->type у неё всегда 'round_robin' (хардкод при создании) —
+						// без этой ветки карточка скелета показывала дефолты самого round_robin
+						// ("Круговая система · Best of 3 · до 25 очков") вместо реально
+						// выбранного организатором типа/формата дивизионов (найдено на
+						// event 1110, стадия "Финальные группы" — divisions_stage_type
+						// в её конфиге ЕСТЬ, но не читался при рендере описания).
+						$isDivisionsSkeleton = $stage->type === 'round_robin'
+							&& $stage->division_tier === null
+							&& $stage->cfg('finals_mode') === 'divisions'
+							&& $stage->groups->isEmpty();
+						if ($isDivisionsSkeleton) {
+							$descType = $stage->cfg('divisions_stage_type') ?: 'round_robin';
+							$descFormat = $stage->cfg('divisions_format') ?: $stage->matchFormat();
+						} else {
+							$descType = $stage->type;
+							$descFormat = $stage->matchFormat();
+						}
 						@endphp
-						{{ $stageTypeLabels[$stage->type] ?? $stage->type }} · {{ $matchFormatLabels[$stage->matchFormat()] ?? strtoupper($stage->matchFormat()) }} · {{ __('tournaments.score_to_pts') }} {{ $stage->setPoints() }} {{ __('tournaments.pub_pts_label') }}
+						{{ $stageTypeLabels[$descType] ?? $descType }} · {{ $matchFormatLabels[$descFormat] ?? strtoupper($descFormat) }} · {{ __('tournaments.score_to_pts') }} {{ $stage->setPoints() }} {{ __('tournaments.pub_pts_label') }}
 					</p>
 				</div>
 				<div class="d-flex" style="gap:6px">
@@ -2600,7 +2674,15 @@ $tourNumber = $seasonData
 							<div><label>{{ __('tournaments.setup_stage_break_min') }}</label><input type="number" name="schedule_break_duration" value="5" min="0" max="60"></div>
 						</div>
 					</div>
-					<button type="submit" class="btn btn-primary btn-alert" data-title="{{ __('tournaments.setup_groups_create_title') }}" data-icon="question" data-confirm-text="{{ __('tournaments.setup_groups_create_yes') }}" data-cancel-text="{{ __('tournaments.btn_cancel') }}">{{ __('tournaments.setup_groups_btn_create') }}</button>
+					@php
+					// Подпись кнопки отражает реально выбранный тип этапа дивизионов
+					// (divisions_stage_type, задан в мастере) — иначе "Сформировать
+					// группы" вводит в заблуждение, когда выбран single_elim/double_elim.
+					$divFormBtnLabel = in_array($stage->cfg('divisions_stage_type'), ['single_elim', 'double_elim'], true)
+						? __('tournaments.setup_groups_btn_create_bracket')
+						: __('tournaments.setup_groups_btn_create');
+					@endphp
+					<button type="submit" class="btn btn-primary btn-alert" data-title="{{ $divFormBtnLabel }}?" data-icon="question" data-confirm-text="{{ __('tournaments.setup_groups_create_yes') }}" data-cancel-text="{{ __('tournaments.btn_cancel') }}">{{ $divFormBtnLabel }}</button>
 				</form>
 			@endif
 		</div>
@@ -2691,8 +2773,13 @@ $tourNumber = $seasonData
 							</div>
 						</div>
 					</div>
-					
-					<button type="submit" class="btn btn-primary btn-alert" data-title="{{ __('tournaments.setup_groups_create_title') }}" data-icon="question" data-confirm-text="{{ __('tournaments.setup_groups_create_yes') }}" data-cancel-text="{{ __('tournaments.btn_cancel') }}">{{ __('tournaments.setup_groups_btn_create') }}</button>
+
+					@php
+					$divFormBtnLabel = in_array($stage->cfg('divisions_stage_type'), ['single_elim', 'double_elim'], true)
+						? __('tournaments.setup_groups_btn_create_bracket')
+						: __('tournaments.setup_groups_btn_create');
+					@endphp
+					<button type="submit" class="btn btn-primary btn-alert" data-title="{{ $divFormBtnLabel }}?" data-icon="question" data-confirm-text="{{ __('tournaments.setup_groups_create_yes') }}" data-cancel-text="{{ __('tournaments.btn_cancel') }}">{{ $divFormBtnLabel }}</button>
 				</form>
 			</div>
 		</div>
@@ -2970,8 +3057,6 @@ $tourNumber = $seasonData
 			var divisionsFields = document.getElementById('finals_mode_divisions_fields');
 			var thirdPlaceField = document.getElementById('third_place_match_field');
 			var advancePerGroupSummary = document.getElementById('advance_per_group_summary');
-			var divisionsFormatFields = document.getElementById('divisions_format_fields');
-			var divisionsFormatTouched = {};
 			var cascadePreview = document.getElementById('cascade_preview');
 			var cascadeText = document.getElementById('cascade_text');
 			var cascadeDoborHint = document.getElementById('cascade_dobor_hint');
@@ -3035,7 +3120,6 @@ $tourNumber = $seasonData
             function syncDivisionsFields() {
                 var isDivisions = !!(finalsModeDivisions && finalsModeDivisions.checked);
                 setBlockActive(divisionsFields, isDivisions);
-                if (isDivisions) rebuildDivisionFormatFields();
                 if (!isDivisions || !advancePerGroupSummary) return;
                 var g = parseInt(groupsCountInput ? groupsCountInput.value : 0, 10) || 0;
                 var totalTeams = window.__totalTeamsForDivisions || 0;
@@ -3056,6 +3140,24 @@ $tourNumber = $seasonData
                     .replace(':count', totalTeams)
                     .replace(':noun', cascadeTeamForms(totalTeams).noun)
                     .replace(':breakdown', parts.join(', '));
+            }
+            // Подсказка минимума команд для bracket-типа этапа дивизионов —
+            // formDivisionsCore() тихо откатывает конкретный маленький дивизион
+            // на round_robin, если команд не хватает (см. контроллер), подсказка
+            // предупреждает об этом заранее. По умолчанию (round_robin) оба
+            // hint'а скрыты.
+            function divStageTypeHint(val) {
+                document.getElementById('div-hint-single').style.display = val === 'single_elim' ? '' : 'none';
+                document.getElementById('div-hint-double').style.display = val === 'double_elim' ? '' : 'none';
+            }
+            // addEventListener, не inline onchange="" в разметке — вся эта функция
+            // (как и остальной JS в этом файле рядом) объявлена ВНУТРИ замыкания
+            // document.addEventListener('DOMContentLoaded', function(){...}), не в
+            // глобальной области — inline onchange-атрибут выполняется в global
+            // scope и не видит локальную divStageTypeHint (ReferenceError: not defined).
+            var divStageTypeSelect = document.querySelector('select[name="divisions_stage_type"]');
+            if (divStageTypeSelect) {
+                divStageTypeSelect.addEventListener('change', function() { divStageTypeHint(this.value); });
             }
 			// Склонение "N команда/команды/команд" + согласование глагола
 			// "выходит"/"выходят" с числом direct — без этого JS всегда подставлял
@@ -3140,43 +3242,6 @@ $tourNumber = $seasonData
 					}
 				}
 				cascadePreview.style.display = '';
-			}
-			// Формат матча по дивизионам (div_format_hard/_medium-N/_lite) — для
-			// любого числа групп (2, 3, 4+). Названия дивизионов берём из
-			// window.__divisionNamesByGroupsCount (посчитано PHP один раз при загрузке
-			// страницы — TournamentStage::divisionNamesFor(), та же формула, что и в
-			// formDivisions()/на пульте — НЕ дублировать формулу тут). formDivisions()
-			// теперь читает per-division ключ по точному имени (div_format_medium-1,
-			// div_format_medium-2, ...) — раньше при 4+ группах поле для Medium-N не
-			// читалось вообще (см. CLAUDE.md, баг Medium-N), заметка про gap убрана.
-			function rebuildDivisionFormatFields() {
-				if (!divisionsFormatFields) return;
-				var g = parseInt(groupsCountInput ? groupsCountInput.value : 0, 10) || 0;
-				var names = window.__divisionNamesByGroupsCount[g] || [];
-				var html = '';
-				names.forEach(function(name) {
-					var key = name.toLowerCase();
-					var current = divisionsFormatFields.querySelector('[name="div_format_' + key + '"]');
-					var val = current ? current.value : (divisionsFormatTouched[key] || '');
-					html += '<label class="mt-1">' + @json(__('tournaments.setup_groups_format_for', ['name' => 'X'])).replace('X', name) + '</label>';
-					html += '<select name="div_format_' + key + '" class="f-13" style="max-width:16rem">';
-					html += '<option value=""' + (val === '' ? ' selected' : '') + '>' + @json(__('tournaments.setup_groups_format_default')) + '</option>';
-					html += '<option value="bo1"' + (val === 'bo1' ? ' selected' : '') + '>Bo1</option>';
-					html += '<option value="bo3"' + (val === 'bo3' ? ' selected' : '') + '>Bo3</option>';
-					html += '</select>';
-				});
-				divisionsFormatFields.innerHTML = html;
-				divisionsFormatFields.querySelectorAll('select').forEach(function(sel) {
-					sel.addEventListener('change', function() { divisionsFormatTouched[sel.name.replace('div_format_', '')] = sel.value; });
-					// Динамически вставленный <select> внутри .form схлопывается в 1px
-					// сайтовым правилом (.form select{position:absolute;width:1px...}
-					// под @media(hover:hover)) без обёртки .form-select-wrapper — та же
-					// логика, что уже задокументирована в проекте и используется в
-					// admin/locations/edit.blade.php, occurrence_edit.blade.php и др.
-					if (window.createCustomSelect && window.jQuery) {
-						window.createCustomSelect(window.jQuery(sel));
-					}
-				});
 			}
 			// Подсказка advance_count зависит от finals_mode: поле реально влияет
 			// только на bracket (для placement/divisions игнорируется на сервере).
@@ -3325,8 +3390,10 @@ $tourNumber = $seasonData
 			// См. комментарий у manual-captain-search выше — тот же приём поднятия
 			// z-index родительской .ramka, что и у createCustomSelect() в script.js.
 			var ramkaEl = wrap ? wrap.closest('.ramka, .card-ramka, .top-section') : null;
-			function showDd() { dd.classList.add('form-select-dropdown--active'); if (ramkaEl) ramkaEl.classList.add('select-dropdown-open'); }
-			function hideDd() { dd.classList.remove('form-select-dropdown--active'); if (ramkaEl) ramkaEl.classList.remove('select-dropdown-open'); }
+			// display:none/block (не CSS-класс с transition) — см. подробный
+			// комментарий у manual-captain-search выше (Safari/backdrop-filter).
+			function showDd() { dd.style.display = 'block'; if (ramkaEl) ramkaEl.classList.add('select-dropdown-open'); }
+			function hideDd() { dd.style.display = 'none'; if (ramkaEl) ramkaEl.classList.remove('select-dropdown-open'); }
 
 			inp.addEventListener('input', function() {
 				clearTimeout(timer);
@@ -3348,7 +3415,7 @@ $tourNumber = $seasonData
 							showDd();
 							return;
 						}
-						items.slice(0, 8).forEach(function(u) {
+						items.forEach(function(u) {
 							var label = u.label || u.name || '#' + u.id;
 							var div = document.createElement('div');
 							div.className = 'trainer-item form-select-option';
@@ -3392,8 +3459,10 @@ $tourNumber = $seasonData
 			// См. комментарий у manual-captain-search — тот же приём поднятия
 			// z-index родительской .ramka, что и у createCustomSelect() в script.js.
 			var ramkaEl = wrap ? wrap.closest('.ramka, .card-ramka, .top-section') : null;
-			function showDd() { dd.classList.add('form-select-dropdown--active'); if (ramkaEl) ramkaEl.classList.add('select-dropdown-open'); }
-			function hideDd() { dd.classList.remove('form-select-dropdown--active'); if (ramkaEl) ramkaEl.classList.remove('select-dropdown-open'); }
+			// display:none/block (не CSS-класс с transition) — см. подробный
+			// комментарий у manual-captain-search выше (Safari/backdrop-filter).
+			function showDd() { dd.style.display = 'block'; if (ramkaEl) ramkaEl.classList.add('select-dropdown-open'); }
+			function hideDd() { dd.style.display = 'none'; if (ramkaEl) ramkaEl.classList.remove('select-dropdown-open'); }
 			inp.addEventListener('input', function() {
 				clearTimeout(timer);
 				hidden.value = '';
@@ -3410,7 +3479,7 @@ $tourNumber = $seasonData
 						dd.innerHTML = '';
 						var items = data.items || data || [];
 						if (!items.length) { dd.innerHTML = '<div class="city-message">Не найдено</div>'; showDd(); return; }
-						items.slice(0,8).forEach(function(u) {
+						items.forEach(function(u) {
 							var label = u.label || u.name || '#'+u.id;
 							var div = document.createElement('div');
 							div.className = 'trainer-item form-select-option';
