@@ -582,9 +582,13 @@ class TournamentStatsService
         }
 
         // 3. Все оставшиеся команды
+        // occurrence-скоуп: без него для повторяющегося события сюда попадали
+        // team_id ВСЕХ occurrences серии (см. report_double_elim_recon3.md, баг 2.3) —
+        // $occurrenceId уже используется выше для $stages, здесь пропускался.
         $allTeamIds = DB::table('event_teams')
             ->where('event_id', $event->id)
             ->where('status', 'submitted')
+            ->when($occurrenceId, fn($q) => $q->where('occurrence_id', $occurrenceId))
             ->pluck('id');
 
         foreach ($allTeamIds as $tid) {
