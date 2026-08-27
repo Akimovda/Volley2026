@@ -11,9 +11,22 @@ return [
     'channel_announcement_finalized_button'          => '🏁 Event finished',
 
     // Events list: meta + header
-    'index_title'         => 'Events',
-    'index_h1'            => 'Events',
-    'index_t_description' => 'Games and training on your platform',
+    'index_title'         => 'Find a Volleyball Game — Games, Training and Tournaments | VOLLEY CLUB',
+    'index_description'   => 'Upcoming volleyball and beach volleyball games, training sessions and tournaments near you. Find a game and sign up online.',
+    'index_h1'            => 'Find a Volleyball Game: Events and Tournaments',
+    'index_t_description' => 'Games, training and tournaments in volleyball and beach volleyball near you',
+
+    'seo_beach_title'       => 'Find a Beach Volleyball Game — Games and Tournaments | VOLLEY CLUB',
+    'seo_beach_description' => 'Upcoming beach volleyball games and tournaments near you. Find a game and sign up online.',
+    'seo_beach_h1'          => 'Find a Beach Volleyball Game',
+
+    'seo_tournament_title'       => 'Volleyball Tournaments 2026 — Schedule and Registration | VOLLEY CLUB',
+    'seo_tournament_description' => 'Volleyball tournaments near you: schedule, team rosters, results. Register online for upcoming volleyball tournaments.',
+    'seo_tournament_h1'          => 'Volleyball Tournaments',
+
+    'seo_tournament_beach_title'       => 'Beach Volleyball Tournaments — Schedule and Registration | VOLLEY CLUB',
+    'seo_tournament_beach_description' => 'Beach volleyball tournaments: schedule, team rosters, match results. Find the nearest beach volleyball tournament and sign up online.',
+    'seo_tournament_beach_h1'          => 'Beach Volleyball Tournaments',
 
     // Top buttons
     'btn_filter'      => 'Filter',

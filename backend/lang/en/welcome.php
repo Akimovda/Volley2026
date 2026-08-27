@@ -2,12 +2,16 @@
 
 return [
     // Meta + slots
-    'meta_title'       => 'VOLLEY CLUB — volleyball service',
-    'meta_description' => 'A platform for volleyball players, coaches, organizers and sports venues. Sign up for games, find partners, manage events.',
-    'h2'               => 'Volleyball service',
-    'tagline'          => 'Bringing the volleyball community together — from amateurs to pros',
+    'meta_title'       => 'VOLLEY CLUB — Volleyball in Your City: Tournaments, Clubs, Games',
+    'meta_description' => 'Looking for a volleyball game? Tournaments in volleyball and beach volleyball, training groups for kids and adults, events near you. Sign up online.',
+    'h1'               => 'VOLLEY CLUB — Volleyball in Your City',
+    'h2'               => 'Tournaments, Training Groups and Games in Volleyball and Beach Volleyball',
+    'tagline'          => 'Tournaments, training groups and events in volleyball and beach volleyball — find a game nearby and register online',
     'cta_view_games'   => 'Browse games',
     'cta_find_game'    => 'Find a game',
+    'cta_tournaments'  => 'Volleyball tournaments',
+    'cta_beach'        => 'Beach volleyball',
+    'cta_sections'     => 'Volleyball clubs and schools',
 
     // Stats
     'stat_players'   => 'players in the community',

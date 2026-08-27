@@ -4,7 +4,7 @@
     <x-slot name="title">{{ __('profile.school_idx_title') }}</x-slot>
     <x-slot name="description">{{ __('profile.school_idx_description') }}</x-slot>
     <x-slot name="canonical">{{ route('volleyball_school.index') }}</x-slot>
-    <x-slot name="h1">{{ __('profile.school_idx_title') }}</x-slot>
+    <x-slot name="h1">{{ __('profile.school_idx_h1') }}</x-slot>
     <x-slot name="t_description">{{ __('profile.school_idx_t_description') }}</x-slot>
 
     <x-slot name="image">
