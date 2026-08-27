@@ -24,6 +24,10 @@ class GenerateSitemap extends Command
         $static = [
             ['/', 'daily', '1.0'],
             ['/events', 'hourly', '0.9'],
+            ['/events?format=tournament', 'hourly', '0.8'],
+            ['/events?direction=beach', 'hourly', '0.7'],
+            ['/events?format=tournament&direction=beach', 'hourly', '0.6'],
+            ['/volleyball_school', 'weekly', '0.8'],
             ['/locations', 'weekly', '0.8'],
             ['/users', 'daily', '0.6'],
             ['/about', 'monthly', '0.5'],
@@ -73,6 +77,21 @@ class GenerateSitemap extends Command
                 'changefreq' => 'weekly',
                 'priority'   => '0.6',
             ];
+        }
+
+        // Школы волейбола (только опубликованные)
+        if (class_exists(\App\Models\VolleyballSchool::class)) {
+            $schools = \App\Models\VolleyballSchool::where('is_published', true)
+                ->get(['slug', 'updated_at']);
+
+            foreach ($schools as $school) {
+                $urls[] = [
+                    'loc'        => $baseUrl . '/volleyball_school/' . $school->slug,
+                    'lastmod'    => $school->updated_at?->toW3cString() ?? $now,
+                    'changefreq' => 'weekly',
+                    'priority'   => '0.6',
+                ];
+            }
         }
 
         // Пользователи (только не боты)
