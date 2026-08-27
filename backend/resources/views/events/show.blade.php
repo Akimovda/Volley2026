@@ -145,7 +145,7 @@ $hasCoords =
 		<x-slot name="breadcrumbs">
 			<li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
 				<a href="{{ route('events.index') }}" itemprop="item">
-					<span itemprop="name">{{ __('events.index_title') }}</span>
+					<span itemprop="name">{{ __('events.index_breadcrumb') }}</span>
 				</a>
 				<meta itemprop="position" content="2">
 			</li>
