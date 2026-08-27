@@ -13,8 +13,9 @@ return [
     // Events list: meta + header
     'index_title'         => 'Find a Volleyball Game — Games, Training and Tournaments | VOLLEY CLUB',
     'index_description'   => 'Upcoming volleyball and beach volleyball games, training sessions and tournaments near you. Find a game and sign up online.',
-    'index_h1'            => 'Find a Volleyball Game: Events and Tournaments',
+    'index_h1'            => 'Events and Tournaments',
     'index_t_description' => 'Games, training and tournaments in volleyball and beach volleyball near you',
+    'index_breadcrumb'    => 'Events and Tournaments',
 
     'seo_beach_title'       => 'Find a Beach Volleyball Game — Games and Tournaments | VOLLEY CLUB',
     'seo_beach_description' => 'Upcoming beach volleyball games and tournaments near you. Find a game and sign up online.',
