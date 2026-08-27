@@ -78,10 +78,47 @@ use App\Http\Controllers\Admin\ImpersonationController;
 	
 	/*
 		|--------------------------------------------------------------------------
+		| robots.txt — динамический, т.к. dev/prod общий код но разные домены:
+		| dev (volley-bot.store) закрыт от индексации полностью, prod (volleyplay.club) открыт.
+		| Статический public/robots.txt удалён — иначе он отдавался бы напрямую веб-сервером
+		| в обход роутинга, и при следующем merge dev->prod затирал бы прод-версию.
+		|--------------------------------------------------------------------------
+	*/
+
+	Route::get('/robots.txt', function () {
+		$isProd = str_contains((string) config('app.url'), 'volleyplay.club');
+
+		if (!$isProd) {
+			$body = "User-agent: *\nDisallow: /\n";
+		} else {
+			$base = rtrim((string) config('app.url'), '/');
+			$disallow = [
+				'/admin', '/api', '/ajax', '/auth', '/login', '/logout', '/my',
+				'/account', '/activity', '/premium', '/payments', '/platform-payment',
+				'/dashboard', '/org', '/club', '/staff', '/audits', '/impersonate',
+				'/debug', '/notifications', '/notification-templates', '/settings',
+				'/profile', '/friends', '/promotions', '/substitutions', '/team-invites',
+				'/court-bookings', '/coupon', '/coupons', '/registrations', '/occurrences',
+				'/division-teams', '/tournament-tiebreakers', '/tournament-tiebreaker-sets',
+				'/tournament-stages', '/tournament-matches', '/integrations',
+				'/organizer-requests', '/broadcasts', '/embed', '/e', '/lang', '/cities',
+			];
+			$body = "User-agent: *\n";
+			foreach ($disallow as $path) {
+				$body .= "Disallow: {$path}\n";
+			}
+			$body .= "\nSitemap: {$base}/sitemap.xml\n";
+		}
+
+		return response($body, 200)->header('Content-Type', 'text/plain; charset=UTF-8');
+	});
+
+	/*
+		|--------------------------------------------------------------------------
 		| Home
 		|--------------------------------------------------------------------------
 	*/
-	
+
 	Route::get('/', function () {
 		$ua = request()->header('User-Agent', '');
 		if (str_contains($ua, 'VolleyPlayApp')) {
