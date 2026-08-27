@@ -26,12 +26,13 @@
     $levelScope = level_terminology_scope_for_user($u);
 
     $profileUrl = route('users.show', ['user' => $u->id]);
+    $isPremium = $u->isPremium();
 @endphp
 
 <div data-aos="fade" class="card-ramka user-card">
     <div class="user-avatar-wrapper">
         <a href="{{ $profileUrl }}" class="user-avatar-link">
-            <div class="user-avatar-img-wrapper">
+            <div class="user-avatar-img-wrapper {{ $isPremium ? 'avatar-premium' : '' }}">
                 <img
                     src="{{ $u->profile_photo_url }}"
                     alt=""
@@ -91,7 +92,7 @@
         @endif
     </div>
 @endif
-@if($u->isPremium())
+@if($isPremium)
 	    <div class="user-meta-list">
     <div class="user-meta-item mt-05">
         <span class="premium-badge-card"><span class="user-meta-icon">👑</span>  <span class="user-meta-text f-16">{{ __('profile.card_premium') }}</span></span>
