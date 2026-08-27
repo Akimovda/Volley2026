@@ -1115,7 +1115,9 @@ $showWaitlistViewer = !$isTournament && !$eventStarted && $waitlistCount > 0;
 				<div class="d-flex fvc" style="gap:0.5rem;margin-bottom:0.3rem;">
 					<span class="f-13 text-muted" style="width:16px;text-align:right;flex-shrink:0;">{{ $loop->iteration }}.</span>
 					<a href="{{ route('users.show', $mUser) }}">
-						<img src="{{ $mUser->profile_photo_url }}" alt="" style="width:34px;height:34px;border-radius:50%;object-fit:cover;flex-shrink:0;">
+						<span class="avatar-mini {{ $mUser->isPremium() ? 'avatar-premium' : '' }}" style="display:inline-block;position:relative;">
+							<img src="{{ $mUser->profile_photo_url }}" alt="" style="width:34px;height:34px;border-radius:50%;object-fit:cover;flex-shrink:0;">
+						</span>
 					</a>
 					<span class="level-dot" style="background:{{ $mColor }}"></span>
 					<a href="{{ route('users.show', $mUser) }}" class="blink f-15">{{ $mName }}</a>
@@ -1187,7 +1189,9 @@ $showWaitlistViewer = !$isTournament && !$eventStarted && $waitlistCount > 0;
 					<div class="d-flex fvc" style="gap:0.5rem;margin-bottom:0.3rem">
 						<span class="f-13 text-muted" style="width:16px;text-align:right;flex-shrink:0">{{ $loop->iteration }}.</span>
 						<a href="{{ route('users.show', $mUser) }}">
-							<img src="{{ $mUser->profile_photo_url }}" alt="" style="width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0">
+							<span class="avatar-mini {{ $mUser->isPremium() ? 'avatar-premium' : '' }}" style="display:inline-block;position:relative;">
+								<img src="{{ $mUser->profile_photo_url }}" alt="" style="width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0">
+							</span>
 						</a>
 						<span class="level-dot level-dot--sm" style="background:{{ $mColor }}"></span>
 						<a href="{{ route('users.show', $mUser) }}" class="blink f-14">{{ $mName }}</a>
