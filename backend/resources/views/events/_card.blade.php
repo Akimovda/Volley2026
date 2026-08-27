@@ -383,21 +383,19 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 								data-is-tournament="{{ $isTournamentFmt ? '1' : '0' }}"
 								data-tournament-team-size="{{ $teamSizeForTmnt }}"
 								>
+									{{-- Слово-юнит ("команд"/"игроков") и подпись "Мест нет" убраны с карточки
+									     по просьбе — оставлены только числа "X из Y" и полоска прогресса.
+									     seatline_script.blade.php по-прежнему ищет [data-seat-unit] и
+									     [data-seat-progress-full] через querySelector — оба null-guarded
+									     (if(unitEl)/if(fullLbl)), удаление разметки ничего не ломает. --}}
 									<div>
 										<span class="b-600" data-left>0</span>
 										<span class="text-muted">{{ __('events.card_seats_of') }}</span>
 										<span class="b-600" data-total>{{ (int)$maxPlayersCard }}</span>
-										@if($isTournamentFmt)
-										<span class="text-muted" data-seat-unit
-										data-unit-teams="{{ __('events.card_seats_teams') }}"
-										data-unit-players="{{ __('events.card_seats_players') }}"
-										>{{ __('events.card_seats_teams') }}</span>
-										@endif
 									</div>
 									<div class="progress mt-1 mb-0" data-seat-progress-wrap>
 										<div class="progress-bar bg-success" data-seat-progress-bar style="width:0%"></div>
 									</div>
-									<div class="text-muted f-12" data-seat-progress-full style="display:none">{{ __('events.card_seats_full') }}</div>
 								</div>
 								@elseif($regEnabled)
 								{{ __('events.card_no_limit') }}
