@@ -254,11 +254,40 @@
 				$pendingTbTeamIds = $groupTbs->where('status', 'pending')
 				->flatMap(fn($tb) => [$tb->team_a_id, $tb->team_b_id])
 				->unique()->toArray();
+				// Финальный дивизион (Hard/Medium/Lite), сыгранный сеткой на выбывание
+				// (не Round Robin) — у него никогда не будет TournamentStanding
+				// (initStandings() требует round_robin), а матчи сетки пишутся БЕЗ
+				// group_id (generateSingleElimination()/generateDoubleElimination()
+				// используют только stage_id) — раздел "Матчи групповой стадии" ниже
+				// (фильтр whereNotNull('group_id')) их тоже не находит. Без этой
+				// ветки карточка дивизиона на вкладке «Группы» была пустой — только
+				// название, ни таблицы, ни матчей.
+				$isDivisionBracket = $stage->division_tier !== null
+				&& in_array($stage->type, ['single_elim', 'double_elim'], true);
 				@endphp
 				<div class="col-md-12">
 					<div class="card">
 						<div class="b-600 cd mb-2">{{ $group->name }}</div>
-						@if($group->standings->isNotEmpty())
+						@if($isDivisionBracket)
+						@php $divMatches = $stage->matches->sortBy(['round', 'match_number']); @endphp
+						@if($divMatches->isNotEmpty())
+						<div class="table-scrollable">
+							@foreach($divMatches as $dm)
+							<div class="d-flex f-14" style="padding:5px 0;border-bottom:1px solid rgba(128,128,128,.08);gap:8px;align-items:center">
+								<span style="flex:1;text-align:right" class="{{ $dm->winner_team_id && $dm->winner_team_id === $dm->team_home_id ? 'b-700' : '' }}">
+									@include('tournaments._partials.team_name_link', ['team' => $dm->teamHome, 'fallback' => 'TBD'])
+								</span>
+								<span class="px-2 b-700" style="min-width:80px;text-align:center;{{ $dm->isCompleted() ? '' : 'opacity:.4' }}">
+									{{ $dm->setsScore() ?? 'vs' }}
+								</span>
+								<span style="flex:1" class="{{ $dm->winner_team_id && $dm->winner_team_id === $dm->team_away_id ? 'b-700' : '' }}">
+									@include('tournaments._partials.team_name_link', ['team' => $dm->teamAway, 'fallback' => 'TBD'])
+								</span>
+							</div>
+							@endforeach
+						</div>
+						@endif
+						@elseif($group->standings->isNotEmpty())
 						<div class="table-scrollable">
 							<div class="table-drag-indicator"></div>
 							<table class="table">
