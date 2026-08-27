@@ -147,6 +147,12 @@ return [
     'card_status_live'     => 'In progress',
     'card_status_finished' => 'Finished',
 
+    // Age restriction badge on card (only when a real restriction is set)
+    'card_age_adult'      => '18+',
+    'card_age_child'      => 'Kids',
+    'card_age_child_range' => ':min-:max',
+    'card_age_child_max'   => 'up to :max',
+
     // Event like
     'card_like_title'          => 'Like',
     'card_like_login_required' => 'Log in to like this event',

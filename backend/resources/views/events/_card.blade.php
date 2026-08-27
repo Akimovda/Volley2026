@@ -165,6 +165,25 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 			$cardStatusLabel = null;
 			}
 
+			// Бейдж возрастного ограничения — показываем ТОЛЬКО когда реально есть
+			// ограничение (adult/child). Для "any" (без ограничений) бейдж не
+			// рисуем вовсе — пустая пилюля "0+"/"Все" не несёт информации.
+			$agePolicy = (string)($event?->age_policy ?? 'any');
+			$ageBadgeLabel = null;
+			if ($agePolicy === 'adult') {
+				$ageBadgeLabel = __('events.card_age_adult');
+			} elseif ($agePolicy === 'child') {
+				$childMin = $event?->child_age_min;
+				$childMax = $event?->child_age_max;
+				if (!is_null($childMin) && !is_null($childMax)) {
+					$ageBadgeLabel = __('events.card_age_child_range', ['min' => (int)$childMin, 'max' => (int)$childMax]);
+				} elseif (!is_null($childMax)) {
+					$ageBadgeLabel = __('events.card_age_child_max', ['max' => (int)$childMax]);
+				} else {
+					$ageBadgeLabel = __('events.card_age_child');
+				}
+			}
+
 			$dirLabel = ($dir === 'beach') ? __('events.card_dir_beach') : (($dir === 'classic') ? __('events.card_dir_classic') : __('events.card_dir_dash'));
 			$tzEvent  = (string)($occ->timezone ?: ($event?->timezone ?: 'UTC'));
 			$tzUser   = ($userHasCityTz ?? false) ? ($userTz ?? $tzEvent) : $tzEvent;
@@ -441,7 +460,7 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
                         @endif
                         @endif
 
-						@if($gsSubtype !== '' || $genderBadgeLabel || $cardStatus)
+						@if($gsSubtype !== '' || $genderBadgeLabel || $ageBadgeLabel || $cardStatus)
 						<div class="event-badges-row d-flex flex-wrap align-items-center gap-1 mb-05">
 							@if($gsSubtype !== '')
 								@if($subtypeTipText)
@@ -450,7 +469,7 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 									<span class="info-tip-content">{{ $subtypeTipText }}</span>
 								</span>
 								@else
-								<span class="badge badge-sm">{{ $gsSubtype }}</span>
+								<span class="badge-holder"><span class="badge badge-sm">{{ $gsSubtype }}</span></span>
 								@endif
 							@endif
 							@if($genderBadgeLabel)
@@ -459,8 +478,11 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 								<span class="info-tip-content">{{ $genderTipText }}</span>
 							</span>
 							@endif
+							@if($ageBadgeLabel)
+							<span class="badge-holder"><span class="badge badge-sm">{{ $ageBadgeLabel }}</span></span>
+							@endif
 							@if($cardStatus)
-							<span class="badge badge-sm status-{{ $cardStatus }}">{{ $cardStatusLabel }}</span>
+							<span class="badge-holder"><span class="badge badge-sm status-{{ $cardStatus }}">{{ $cardStatusLabel }}</span></span>
 							@endif
 							@include('events._partials.like_badge')
 						</div>

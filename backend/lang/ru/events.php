@@ -148,6 +148,12 @@ return [
     'card_status_live'     => 'Идёт сейчас',
     'card_status_finished' => 'Завершено',
 
+    // Бейдж возрастного ограничения на карточке (только когда есть ограничение)
+    'card_age_adult'      => '18+',
+    'card_age_child'      => 'Дети',
+    'card_age_child_range' => ':min-:max',
+    'card_age_child_max'   => 'до :max',
+
     // Лайк мероприятия
     'card_like_title'      => 'Нравится',
     'card_like_login_required' => 'Войдите, чтобы отметить мероприятие',
