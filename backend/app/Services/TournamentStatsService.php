@@ -340,6 +340,22 @@ class TournamentStatsService
             });
 
             foreach ($sorted as $divStage) {
+                // Дивизион сыгран как сетка на выбывание (single_elim/double_elim) —
+                // новая опция «после распределения по уровням играть плей-офф внутри
+                // Hard/Medium/Lite», а не по умолчанию Round Robin. Standings у такой
+                // стадии нет (не round_robin) — места берём из результатов сетки той
+                // же логикой, что и для сквозного bracket турнира ниже.
+                if ($divStage->isBracketStage()) {
+                    $divisionLabel = str_replace('Группа ', '', $divStage->name);
+                    $entries = $this->extractBracketPlacements($divStage, $assignedTeams, $place);
+                    foreach ($entries as &$entry) {
+                        $entry['division'] = $divisionLabel;
+                    }
+                    unset($entry);
+                    $classification = array_merge($classification, $entries);
+                    continue;
+                }
+
                 $divStandings = TournamentStanding::where('stage_id', $divStage->id)
                     ->with('team')
                     ->orderBy('rank')
@@ -369,159 +385,7 @@ class TournamentStatsService
 
         // 1. Bracket стадия (single/double elim) — финал определяет 1-2 место
         $bracketStage = $stages->filter(fn($s) => $s->isBracketStage())->last();
-        if ($bracketStage && $bracketStage->isPlacementFinal()) {
-            // Финал за места напрямую (crossover, finals_mode='placement') — два
-            // равноправных матча первого раунда без иерархии bracket-раундов,
-            // различаем по placeFrom ("за 1-2 место" / "за 3-4 место"), а не по
-            // round/match_number и не по литералу '3rd place' (см. ветку else —
-            // это ровно то, что было причиной неверного победителя у event 402,
-            // report_402_finals_bug.md).
-            $finalMatch = $bracketStage->placementMatch(1);
-            if ($finalMatch && $finalMatch->status === TournamentMatch::STATUS_COMPLETED && $finalMatch->winner_team_id) {
-                $winner = EventTeam::find($finalMatch->winner_team_id);
-                $loser = EventTeam::find($finalMatch->loserId());
-
-                if ($winner) {
-                    $classification[] = ['place' => $place++, 'team_id' => $winner->id, 'team_name' => $winner->name];
-                    $assignedTeams[] = $winner->id;
-                }
-                if ($loser) {
-                    $classification[] = ['place' => $place++, 'team_id' => $loser->id, 'team_name' => $loser->name];
-                    $assignedTeams[] = $loser->id;
-                }
-            }
-
-            $thirdMatch = $bracketStage->placementMatch(3);
-            if ($thirdMatch && $thirdMatch->status === TournamentMatch::STATUS_COMPLETED && $thirdMatch->winner_team_id) {
-                $third = EventTeam::find($thirdMatch->winner_team_id);
-                $fourth = EventTeam::find($thirdMatch->loserId());
-
-                if ($third && !in_array($third->id, $assignedTeams)) {
-                    $classification[] = ['place' => $place++, 'team_id' => $third->id, 'team_name' => $third->name];
-                    $assignedTeams[] = $third->id;
-                }
-                if ($fourth && !in_array($fourth->id, $assignedTeams)) {
-                    $classification[] = ['place' => $place++, 'team_id' => $fourth->id, 'team_name' => $fourth->name];
-                    $assignedTeams[] = $fourth->id;
-                }
-            }
-        } elseif ($bracketStage) {
-            // Обычная сетка (finals_mode='bracket') — финал и матч за 3-е место
-            // (court='3rd place', TournamentBracketService::generateSingleElimination())
-            // оказываются в ОДНОМ round у последнего раунда сетки, а матч за 3-е
-            // место создаётся ПОСЛЕ цикла по раундам — то есть получает БОЛЬШИЙ
-            // match_number, чем сам финал. Сортировка по match_number при равном
-            // round раньше выбирала именно матч за 3-е как "финал" (БАГ 4, найден
-            // при регресс-тестировании фикса event 402, см. report_402_finals_fix.md
-            // п.4) — единственный надёжный признак финала — явное исключение
-            // court='3rd place' из выбора, а не порядок номеров матчей.
-            //
-            // Bracket reset (double elimination): GF2 ('Grand Final Reset',
-            // TournamentBracketService::generateDoubleElimination()) существует и
-            // ещё scheduled → победитель GF1 пришёл из нижней сетки, решающий матч
-            // не сыгран. Объявлять финал по GF1 рано (места 1-2 назначит уже GF2,
-            // когда доиграется) — иначе преждевременный чемпион. Если GF2 cancelled
-            // (reset не понадобился) или completed (reset сыгран) — ниже сработает
-            // как раньше: max round completed корректно берёт GF1 или GF2.
-            //
-            // Места 1-2 резервируются в счётчике $place (без записи в
-            // $classification), НЕ пропускаются молча — иначе нижние тиры (блок
-            // ниже) съезжают на 1-2 позиции вверх и команда из нижней сетки
-            // получает "место 1" вместо реального 3+ — это хуже исходной проблемы
-            // (посторонняя команда выглядит чемпионом вместо участника GF1).
-            $grandFinalReset = $bracketStage->type === TournamentStage::TYPE_DOUBLE_ELIM
-                ? $bracketStage->matches()->where('court', 'Grand Final Reset')->first()
-                : null;
-            $resetPending = $grandFinalReset && $grandFinalReset->status === TournamentMatch::STATUS_SCHEDULED;
-
-            if ($resetPending) {
-                $place += 2;
-            }
-
-            $finalMatch = $resetPending ? null : $bracketStage->matches()
-                ->where('status', TournamentMatch::STATUS_COMPLETED)
-                ->where(function ($q) {
-                    $q->whereNull('court')->orWhere('court', '!=', '3rd place');
-                })
-                ->orderByDesc('round')
-                ->orderByDesc('match_number')
-                ->first();
-
-            if ($finalMatch && $finalMatch->winner_team_id) {
-                $winner = EventTeam::find($finalMatch->winner_team_id);
-                $loser = EventTeam::find($finalMatch->loserId());
-
-                if ($winner) {
-                    $classification[] = ['place' => $place++, 'team_id' => $winner->id, 'team_name' => $winner->name];
-                    $assignedTeams[] = $winner->id;
-                }
-                if ($loser) {
-                    $classification[] = ['place' => $place++, 'team_id' => $loser->id, 'team_name' => $loser->name];
-                    $assignedTeams[] = $loser->id;
-                }
-
-                // Матч за 3 место
-                $thirdMatch = $bracketStage->matches()
-                    ->where('status', TournamentMatch::STATUS_COMPLETED)
-                    ->where('court', '3rd place')
-                    ->first();
-
-                if ($thirdMatch && $thirdMatch->winner_team_id) {
-                    $third = EventTeam::find($thirdMatch->winner_team_id);
-                    $fourth = EventTeam::find($thirdMatch->loserId());
-
-                    if ($third && !in_array($third->id, $assignedTeams)) {
-                        $classification[] = ['place' => $place++, 'team_id' => $third->id, 'team_name' => $third->name];
-                        $assignedTeams[] = $third->id;
-                    }
-                    if ($fourth && !in_array($fourth->id, $assignedTeams)) {
-                        $classification[] = ['place' => $place++, 'team_id' => $fourth->id, 'team_name' => $fourth->name];
-                        $assignedTeams[] = $fourth->id;
-                    }
-                }
-            }
-
-            if ($bracketStage->type === TournamentStage::TYPE_DOUBLE_ELIM) {
-                // no-reset double elim: места 3..N по структуре нижней сетки.
-                // Место 3 = проигравший LB-финала, 4 = LB-полуфинала, далее тирами
-                // (5-6, 7-8, 9-12...) — внутри тира порядок по силе (та же формула
-                // compareStrength, что для дивизионов/добора; standings у сетки нет,
-                // поэтому агрегируем из сыгранных матчей и оборачиваем в непесистентный
-                // TournamentStanding). Места уникальны (тайбрейк решает порядок в тире).
-                $lowerMatches = $bracketStage->matches()
-                    ->where('bracket_position', 'lower')
-                    ->orderByDesc('round')
-                    ->get()
-                    ->groupBy('round'); // тиры от LB-финала к первому lower-раунду
-
-                foreach ($lowerMatches as $tier) {
-                    // Проигравшие ТОЛЬКО завершённых матчей тира
-                    $losers = [];
-                    foreach ($tier as $m) {
-                        if ($m->status !== TournamentMatch::STATUS_COMPLETED) continue;
-                        $lid = $m->loserId();
-                        if ($lid && !in_array($lid, $assignedTeams)) $losers[] = $lid;
-                    }
-                    if (empty($losers)) continue; // недоигранный тир пропускаем (уйдёт в fallback)
-
-                    // Тайбрейк внутри тира по силе (для тира из 1 команды — сортировка no-op)
-                    if (count($losers) > 1) {
-                        $standingsService = app(TournamentStandingsService::class);
-                        usort($losers, function ($a, $b) use ($bracketStage, $standingsService) {
-                            $sa = $this->buildAdHocStanding($bracketStage, $a);
-                            $sb = $this->buildAdHocStanding($bracketStage, $b);
-                            return $standingsService->compareStrength($sa, $sb);
-                        });
-                    }
-
-                    foreach ($losers as $lid) {
-                        $team = EventTeam::find($lid);
-                        $classification[] = ['place' => $place++, 'team_id' => $lid, 'team_name' => $team->name ?? '?'];
-                        $assignedTeams[] = $lid;
-                    }
-                }
-            }
-        }
+        $classification = array_merge($classification, $this->extractBracketPlacements($bracketStage, $assignedTeams, $place));
 
         // 2. Оставшиеся команды — по standings последней ЗАВЕРШЁННОЙ стадии с группами.
         // Если групп несколько (Группа A/B/...) — выводим каждую как отдельный «дивизион»,
@@ -598,6 +462,241 @@ class TournamentStatsService
         }
 
         return $classification;
+    }
+
+    /**
+     * Извлечь места 1..N из результатов bracket-стадии (single_elim/double_elim) —
+     * единая точка для ДВУХ вызывающих контекстов: сквозная bracket-стадия всего
+     * турнира (calculateFinalClassification()) и bracket-стадия ОТДЕЛЬНОГО дивизиона
+     * (Hard/Medium/Lite после кругового распределения по силе, formDivisionsCore()).
+     * Вынесено из calculateFinalClassification() (было inline только для глобального
+     * случая) — сама логика извлечения не менялась, только перестала быть завязана
+     * на переменные метода-вызывающего.
+     *
+     * $assignedTeams/$place — по ссылке, накопительные счётчики вызывающего кода
+     * (единая нумерация мест через несколько bracket-стадий подряд, как раньше).
+     *
+     * "Хвост" — команды стадии, не получившие явное место из результатов сетки
+     * (у single_elim без матча за 3-е место — это уже полуфиналисты; у любой
+     * сетки — четвертьфиналисты и выше). Для СКВОЗНОЙ bracket-стадии турнира
+     * такой хвост исторически не возникает — единственный потребитель сам гасит
+     * его через standings ПРЕДШЕСТВУЮЩЕЙ группового этапа (секция 2 вызывающего
+     * метода). У дивизиона предшествующего кругового этапа ВНУТРИ него самого
+     * нет (дивизион создаётся сразу как сетка, TournamentGroup только хранит
+     * ростер+посев, standings не пишутся) — поэтому здесь же, если у стадии есть
+     * группа (только у дивизионов, см. formDivisionsCore()), досыпаем оставшихся
+     * по исходному посеву (seed) — тот же принцип, что и глобальный fallback на
+     * группы, просто источник другой (посев при формировании дивизиона, а не
+     * standings кругового этапа).
+     *
+     * @return array<int, array{place:int, team_id:int, team_name:string}>
+     */
+    private function extractBracketPlacements(?TournamentStage $bracketStage, array &$assignedTeams, int &$place): array
+    {
+        $entries = [];
+        if (!$bracketStage) {
+            return $entries;
+        }
+
+        if ($bracketStage->isPlacementFinal()) {
+            // Финал за места напрямую (crossover, finals_mode='placement') — два
+            // равноправных матча первого раунда без иерархии bracket-раундов,
+            // различаем по placeFrom ("за 1-2 место" / "за 3-4 место"), а не по
+            // round/match_number и не по литералу '3rd place' (см. ветку else —
+            // это ровно то, что было причиной неверного победителя у event 402,
+            // report_402_finals_bug.md).
+            $finalMatch = $bracketStage->placementMatch(1);
+            if ($finalMatch && $finalMatch->status === TournamentMatch::STATUS_COMPLETED && $finalMatch->winner_team_id) {
+                $winner = EventTeam::find($finalMatch->winner_team_id);
+                $loser = EventTeam::find($finalMatch->loserId());
+
+                if ($winner) {
+                    $entries[] = ['place' => $place++, 'team_id' => $winner->id, 'team_name' => $winner->name];
+                    $assignedTeams[] = $winner->id;
+                }
+                if ($loser) {
+                    $entries[] = ['place' => $place++, 'team_id' => $loser->id, 'team_name' => $loser->name];
+                    $assignedTeams[] = $loser->id;
+                }
+            }
+
+            $thirdMatch = $bracketStage->placementMatch(3);
+            if ($thirdMatch && $thirdMatch->status === TournamentMatch::STATUS_COMPLETED && $thirdMatch->winner_team_id) {
+                $third = EventTeam::find($thirdMatch->winner_team_id);
+                $fourth = EventTeam::find($thirdMatch->loserId());
+
+                if ($third && !in_array($third->id, $assignedTeams)) {
+                    $entries[] = ['place' => $place++, 'team_id' => $third->id, 'team_name' => $third->name];
+                    $assignedTeams[] = $third->id;
+                }
+                if ($fourth && !in_array($fourth->id, $assignedTeams)) {
+                    $entries[] = ['place' => $place++, 'team_id' => $fourth->id, 'team_name' => $fourth->name];
+                    $assignedTeams[] = $fourth->id;
+                }
+            }
+        } else {
+            // Обычная сетка (finals_mode='bracket') — финал и матч за 3-е место
+            // (court='3rd place', TournamentBracketService::generateSingleElimination())
+            // оказываются в ОДНОМ round у последнего раунда сетки, а матч за 3-е
+            // место создаётся ПОСЛЕ цикла по раундам — то есть получает БОЛЬШИЙ
+            // match_number, чем сам финал. Сортировка по match_number при равном
+            // round раньше выбирала именно матч за 3-е как "финал" (БАГ 4, найден
+            // при регресс-тестировании фикса event 402, см. report_402_finals_fix.md
+            // п.4) — единственный надёжный признак финала — явное исключение
+            // court='3rd place' из выбора, а не порядок номеров матчей.
+            //
+            // Bracket reset (double elimination): GF2 ('Grand Final Reset',
+            // TournamentBracketService::generateDoubleElimination()) существует и
+            // ещё scheduled → победитель GF1 пришёл из нижней сетки, решающий матч
+            // не сыгран. Объявлять финал по GF1 рано (места 1-2 назначит уже GF2,
+            // когда доиграется) — иначе преждевременный чемпион. Если GF2 cancelled
+            // (reset не понадобился) или completed (reset сыгран) — ниже сработает
+            // как раньше: max round completed корректно берёт GF1 или GF2.
+            //
+            // Места 1-2 резервируются в счётчике $place (без записи в $entries),
+            // НЕ пропускаются молча — иначе нижние тиры (блок ниже) съезжают на
+            // 1-2 позиции вверх и команда из нижней сетки получает "место 1"
+            // вместо реального 3+ — это хуже исходной проблемы (посторонняя
+            // команда выглядит чемпионом вместо участника GF1).
+            $grandFinalReset = $bracketStage->type === TournamentStage::TYPE_DOUBLE_ELIM
+                ? $bracketStage->matches()->where('court', 'Grand Final Reset')->first()
+                : null;
+            $resetPending = $grandFinalReset && $grandFinalReset->status === TournamentMatch::STATUS_SCHEDULED;
+
+            if ($resetPending) {
+                $place += 2;
+            }
+
+            $finalMatch = $resetPending ? null : $bracketStage->matches()
+                ->where('status', TournamentMatch::STATUS_COMPLETED)
+                ->where(function ($q) {
+                    $q->whereNull('court')->orWhere('court', '!=', '3rd place');
+                })
+                ->orderByDesc('round')
+                ->orderByDesc('match_number')
+                ->first();
+
+            if ($finalMatch && $finalMatch->winner_team_id) {
+                $winner = EventTeam::find($finalMatch->winner_team_id);
+                $loser = EventTeam::find($finalMatch->loserId());
+
+                if ($winner) {
+                    $entries[] = ['place' => $place++, 'team_id' => $winner->id, 'team_name' => $winner->name];
+                    $assignedTeams[] = $winner->id;
+                }
+                if ($loser) {
+                    $entries[] = ['place' => $place++, 'team_id' => $loser->id, 'team_name' => $loser->name];
+                    $assignedTeams[] = $loser->id;
+                }
+
+                // Матч за 3 место
+                $thirdMatch = $bracketStage->matches()
+                    ->where('status', TournamentMatch::STATUS_COMPLETED)
+                    ->where('court', '3rd place')
+                    ->first();
+
+                if ($thirdMatch && $thirdMatch->winner_team_id) {
+                    $third = EventTeam::find($thirdMatch->winner_team_id);
+                    $fourth = EventTeam::find($thirdMatch->loserId());
+
+                    if ($third && !in_array($third->id, $assignedTeams)) {
+                        $entries[] = ['place' => $place++, 'team_id' => $third->id, 'team_name' => $third->name];
+                        $assignedTeams[] = $third->id;
+                    }
+                    if ($fourth && !in_array($fourth->id, $assignedTeams)) {
+                        $entries[] = ['place' => $place++, 'team_id' => $fourth->id, 'team_name' => $fourth->name];
+                        $assignedTeams[] = $fourth->id;
+                    }
+                }
+            }
+
+            if ($bracketStage->type === TournamentStage::TYPE_DOUBLE_ELIM) {
+                // no-reset double elim: места 3..N по структуре нижней сетки.
+                // Место 3 = проигравший LB-финала, 4 = LB-полуфинала, далее тирами
+                // (5-6, 7-8, 9-12...) — внутри тира порядок по силе (та же формула
+                // compareStrength, что для дивизионов/добора; standings у сетки нет,
+                // поэтому агрегируем из сыгранных матчей и оборачиваем в непесистентный
+                // TournamentStanding). Места уникальны (тайбрейк решает порядок в тире).
+                $lowerMatches = $bracketStage->matches()
+                    ->where('bracket_position', 'lower')
+                    ->orderByDesc('round')
+                    ->get()
+                    ->groupBy('round'); // тиры от LB-финала к первому lower-раунду
+
+                foreach ($lowerMatches as $tier) {
+                    // Проигравшие ТОЛЬКО завершённых матчей тира
+                    $losers = [];
+                    foreach ($tier as $m) {
+                        if ($m->status !== TournamentMatch::STATUS_COMPLETED) continue;
+                        $lid = $m->loserId();
+                        if ($lid && !in_array($lid, $assignedTeams)) $losers[] = $lid;
+                    }
+                    if (empty($losers)) continue; // недоигранный тир пропускаем (уйдёт в fallback)
+
+                    // Тайбрейк внутри тира по силе (для тира из 1 команды — сортировка no-op)
+                    if (count($losers) > 1) {
+                        $standingsService = app(TournamentStandingsService::class);
+                        usort($losers, function ($a, $b) use ($bracketStage, $standingsService) {
+                            $sa = $this->buildAdHocStanding($bracketStage, $a);
+                            $sb = $this->buildAdHocStanding($bracketStage, $b);
+                            return $standingsService->compareStrength($sa, $sb);
+                        });
+                    }
+
+                    foreach ($losers as $lid) {
+                        $team = EventTeam::find($lid);
+                        $entries[] = ['place' => $place++, 'team_id' => $lid, 'team_name' => $team->name ?? '?'];
+                        $assignedTeams[] = $lid;
+                    }
+                }
+            }
+        }
+
+        // "Хвост" по исходному посеву — только у дивизионных bracket-стадий (см.
+        // докблок метода выше). У сквозной bracket-стадии турнира группы нет
+        // никогда (generateSingleElimination()/generateDoubleElimination() не
+        // используют TournamentGroup) — цикл ниже для неё пустой no-op.
+        $group = $bracketStage->groups->first();
+        if ($group) {
+            $seededTeamIds = $group->groupTeams()->orderBy('seed')->pluck('team_id');
+            foreach ($seededTeamIds as $tid) {
+                if (in_array($tid, $assignedTeams)) continue;
+                $team = EventTeam::find($tid);
+                $entries[] = ['place' => $place++, 'team_id' => $tid, 'team_name' => $team->name ?? '?'];
+                $assignedTeams[] = $tid;
+            }
+        }
+
+        return $entries;
+    }
+
+    /**
+     * Ранжированный список team_id стадии (1-е место первым) — работает и для
+     * round_robin (TournamentStanding по rank), и для bracket-дивизиона
+     * (single_elim/double_elim, через extractBracketPlacements() с локальными
+     * "одноразовыми" счётчиками — глобальная нумерация мест турнира здесь не
+     * нужна, только относительный порядок ВНУТРИ этой стадии). Используется
+     * TournamentController::applyDivisionPromotion() — промоушен между
+     * дивизионами сезона обязан работать одинаково независимо от того, как
+     * дивизион был сыгран.
+     *
+     * @return int[]
+     */
+    public function rankedTeamIdsForStage(TournamentStage $stage): array
+    {
+        if (!$stage->isBracketStage()) {
+            return TournamentStanding::where('stage_id', $stage->id)
+                ->orderBy('rank')
+                ->pluck('team_id')
+                ->all();
+        }
+
+        $localAssigned = [];
+        $localPlace = 1;
+        $entries = $this->extractBracketPlacements($stage, $localAssigned, $localPlace);
+        usort($entries, fn($a, $b) => $a['place'] <=> $b['place']);
+
+        return array_column($entries, 'team_id');
     }
 
     /**

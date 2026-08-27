@@ -722,10 +722,19 @@ return [
     'setup_groups_format_for' => 'Формат :name',
     'setup_groups_format_default' => 'как в группах',
 
+    'setup_groups_stage_type_label' => 'Формат этапа в дивизионах',
+    'setup_groups_format_label' => 'Формат матча в дивизионах',
+    'setup_groups_stage_type_round_robin' => 'Круговая (Round Robin)',
+    'setup_groups_stage_type_single_elim' => 'На выбывание (Single)',
+    'setup_groups_stage_type_double_elim' => 'Double Elimination',
+    'setup_groups_stage_type_hint_single' => 'Минимум 2 команды на дивизион. Меньше — автоматически Round Robin.',
+    'setup_groups_stage_type_hint_double' => 'Минимум 4 команды на дивизион. Меньше — автоматически Round Robin.',
+
     'setup_groups_courts_for' => 'Площадки для групп',
     'setup_groups_schedule_label' => 'Расписание (опционально)',
     'setup_groups_schedule_hint' => 'Если указать время начала — матчи автоматически получат расписание и площадки.',
     'setup_groups_btn_create' => 'Сформировать группы',
+    'setup_groups_btn_create_bracket' => 'Сформировать сетку',
     'setup_groups_create_title' => 'Сформировать группы?',
     'setup_groups_create_yes' => 'Да, сформировать',
 

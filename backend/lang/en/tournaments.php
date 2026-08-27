@@ -703,10 +703,19 @@ return [
     'setup_groups_format_for' => 'Format for :name',
     'setup_groups_format_default' => 'as in groups',
 
+    'setup_groups_stage_type_label' => 'Division stage format',
+    'setup_groups_format_label' => 'Division match format',
+    'setup_groups_stage_type_round_robin' => 'Round Robin',
+    'setup_groups_stage_type_single_elim' => 'Single Elimination',
+    'setup_groups_stage_type_double_elim' => 'Double Elimination',
+    'setup_groups_stage_type_hint_single' => 'Minimum 2 teams per division. Fewer — falls back to Round Robin automatically.',
+    'setup_groups_stage_type_hint_double' => 'Minimum 4 teams per division. Fewer — falls back to Round Robin automatically.',
+
     'setup_groups_courts_for' => 'Courts for groups',
     'setup_groups_schedule_label' => 'Schedule (optional)',
     'setup_groups_schedule_hint' => 'If a start time is set — matches will get a schedule and courts automatically.',
     'setup_groups_btn_create' => 'Form groups',
+    'setup_groups_btn_create_bracket' => 'Generate bracket',
     'setup_groups_create_title' => 'Form groups?',
     'setup_groups_create_yes' => 'Yes, form',
 
