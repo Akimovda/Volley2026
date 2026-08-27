@@ -102,11 +102,22 @@
 			
 			{{-- Табы --}}
 			@php
-			$hasBracketStages = $stages->whereIn('type', ['single_elim', 'double_elim'])->isNotEmpty();
+			// double_elim временно исключён из whereIn — раскладка _bracket.blade.php
+			// рассчитана только на один upper-трек (группировка матчей по round без
+			// разделения upper/lower), для double_elim визуально разъезжается.
+			// Скрыто до отдельной upper/lower раскладки (заход 2, report_double_elim_ui_recon2.md).
+			// single_elim НЕ трогать — там сетка работает корректно.
+			$hasBracketStages = $stages->whereIn('type', ['single_elim'])->isNotEmpty();
 			$tabs = [
             'overview' => __('tournaments.pub_tab_overview'),
-            'groups'   => __('tournaments.pub_tab_groups'),
 			];
+			// Вкладка "Группы" — только если реально есть групповая стадия (round_robin/
+			// groups_playoff/thai, trait group_stage). Standalone bracket (single/double_elim
+			// без companion-группового этапа) групп не имеет — раньше вкладка показывалась
+			// всегда и вела на пустую страницу.
+			if ($stages->contains(fn($s) => $s->isGroupStage())) {
+            $tabs['groups'] = __('tournaments.pub_tab_groups');
+			}
 			if ($hasBracketStages) {
             $tabs['bracket'] = __('tournaments.pub_tab_bracket');
 			}
