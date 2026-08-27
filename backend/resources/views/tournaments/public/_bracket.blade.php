@@ -121,6 +121,13 @@
 /* double_elim: бронза без дискретного матча — просто имя команды, без карточки счёта */
 .bk-third-place-name{font-size:.95rem;font-weight:700;color:#111827}
 
+/* ── Заголовок секции double_elim (Верхняя/Нижняя сетка, Гранд-финал) ── */
+.bk-section-title{
+    font-size:.85rem;font-weight:700;color:#9ca3af;
+    padding:.75rem 0 .25rem;letter-spacing:.07em;text-transform:uppercase;
+}
+.bk-section-title:first-child{padding-top:0}
+
 /* ── Dark mode ── */
 body.dark .bk-match{background:#1e293b;border-color:rgba(255,255,255,.1);border-left-color:#3b82f6}
 body.dark .bk-match--completed{border-color:rgba(16,185,129,.3);border-left-color:#10b981}
@@ -165,24 +172,13 @@ $isThirdPlaceMatch = function ($m) {
 $thirdPlace  = $matches->first($isThirdPlaceMatch);
 $mainMatches = $matches->reject(fn($m) => $thirdPlace && $m->id === $thirdPlace->id);
 
-$matchesByRound = [];
-for ($r = 1; $r <= $totalRounds; $r++) {
-    $matchesByRound[$r] = $mainMatches
-        ->filter(fn($m) => $m->round == $r)
-        ->sortBy('match_number')
-        ->values();
-}
-
-// Bracket reset (double elimination): GF1 (court='Grand Final') и GF2
-// (court='Grand Final Reset') — их раунды всегда старше остальных, определяем
-// по court, а не по позиции в $totalRounds (тот теперь указывает на GF2, если
-// он есть, из-за чего наивная арифметика "$total-$r" ниже съезжает). Для
-// single_elim (нет такого court вообще) — не влияет, работает как раньше.
-$gf1Round = $mainMatches->first(fn($m) => $m->court === 'Grand Final')?->round;
-$gf2Round = $mainMatches->first(fn($m) => $m->court === 'Grand Final Reset')?->round;
-// Раунд-"точка отсчёта" для generic-лейблов (Финал/Полуфинал/...) — GF1, если он
-// есть (тот же ориентир, что был до появления GF2), иначе $totalRounds как раньше.
-$labelReferenceRound = $gf1Round ?? $totalRounds;
+// double_elim: раскладка в одну линию колонок по глобальному round (как для
+// single_elim ниже) визуально разъезжается — upper/lower идут вперемешку одна
+// колонка за другой, хотя это два параллельных трека + отдельная секция
+// Гранд-финала. Секции по рецептуре из генератора (TournamentBracketService::
+// generateDoubleElimination()): GF/GF-reset формально bracket_position='upper',
+// поэтому фильтруем по court ПЕРЕД bracket_position (см. report_recon_bracket.md).
+$isDoubleElim = $stage->type === \App\Models\TournamentStage::TYPE_DOUBLE_ELIM;
 
 $courtLabel = function (?string $court) {
     return match ($court) {
@@ -200,6 +196,12 @@ $courtLabel = function (?string $court) {
 $cardH   = 184;
 $baseGap = 20;
 $stepH   = ($cardH + $baseGap) / 2; // 102
+
+// Захвачены по use() в $renderMatchCard ниже — обязаны быть определены ДО неё
+// (баг: раньше объявлялись после closure, PHP резолвит use() при определении
+// функции, не при вызове → ErrorException "Undefined variable $tz").
+$bracketId = 'bk-' . $stage->id;
+$tz = $stage->event->timezone ?? 'Europe/Moscow';
 
 $roundLabel = function(int $r, int $total): string {
     return match ($total - $r) {
@@ -308,8 +310,99 @@ $renderTeam = function(?object $team, bool $isWinner, ?int $sets, bool $isComple
     return $html;
 };
 
-$bracketId = 'bk-' . $stage->id;
-$tz = $stage->event->timezone ?? 'Europe/Moscow';
+// Отрисовка одной карточки матча (шапка + обе команды/счёт) — вынесено из
+// прежнего инлайн-@foreach, чтобы переиспользовать без дублирования разметки
+// и для single_elim (одна секция), и для double_elim (upper/lower/GF секции).
+$renderMatchCard = function (object $m) use ($courtLabel, $tz, $renderTeam): string {
+    $isCompleted = $m->status === 'completed';
+    // Bracket reset: GF2 cancelled = reset не потребовался (upper-представитель
+    // выиграл GF1 напрямую) — это не "матч ожидает команды" (bk-match--empty),
+    // а осознанно неигранный матч.
+    $isCancelled = $m->status === 'cancelled';
+    $homeWin = $m->winner_team_id && $m->winner_team_id === $m->team_home_id;
+    $awayWin = $m->winner_team_id && $m->winner_team_id === $m->team_away_id;
+    $cls = 'bk-match';
+    if ($isCompleted)                                $cls .= ' bk-match--completed';
+    elseif ($isCancelled)                            $cls .= ' bk-match--cancelled';
+    elseif (!$m->team_home_id || !$m->team_away_id)  $cls .= ' bk-match--empty';
+
+    $html = '<div class="' . $cls . '" data-match-id="' . $m->id . '" data-next-match-id="' . e($m->next_match_id) . '">';
+    $html .= '<div class="bk-header">';
+    $html .= '<span>Матч&thinsp;' . e($m->match_number) . '</span>';
+    if ($m->court)         $html .= '<span class="bk-court">' . e($courtLabel($m->court)) . '</span>';
+    if ($m->scheduled_at)  $html .= '<span class="bk-time">' . e($m->scheduled_at->setTimezone($tz)->format('H:i')) . '</span>';
+    if ($isCompleted)      $html .= '<span class="bk-check">✓</span>';
+    $html .= '</div>';
+
+    if ($isCancelled) {
+        $html .= '<div class="bk-cancelled-note">Решающий матч не потребовался</div>';
+    } else {
+        $html .= $renderTeam($m->teamHome, $homeWin, $isCompleted ? $m->sets_home : null, $isCompleted);
+        $html .= $renderTeam($m->teamAway, $awayWin, $isCompleted ? $m->sets_away : null, $isCompleted);
+    }
+
+    $html .= '</div>'; // .bk-match
+    return $html;
+};
+
+// Отрисовка одной колонки (раунд): вертикальное выравнивание по той же
+// экспоненциальной формуле, что и раньше (padTop/gap от stepH) — для upper-
+// секции double_elim она структурно верна (полная бинарная сетка, как
+// single_elim), для lower-секции — приближение (реальная форма нижней сетки
+// сложнее степени двойки), SVG-коннекторы всё равно рисуются по фактическим
+// координатам DOM, а не по этой формуле, так что визуально это не критично.
+$renderColumn = function ($roundMatches, string $label, int $relR) use ($stepH, $baseGap, $cardH, $renderMatchCard): string {
+    $padTop = (int) round($stepH * (pow(2, $relR - 1) - 1));
+    $gap    = $relR === 1 ? $baseGap : (int) round($stepH * pow(2, $relR) - $cardH);
+
+    $html  = '<div class="bk-col">';
+    $html .= '<div class="bk-col-label">' . e($label) . '</div>';
+    $html .= '<div class="bk-matches" style="gap:' . $gap . 'px;padding-top:' . $padTop . 'px">';
+    foreach ($roundMatches as $m) {
+        $html .= $renderMatchCard($m);
+    }
+    $html .= '</div></div>';
+    return $html;
+};
+
+if ($isDoubleElim) {
+    // Группировка по секциям (рецептура из генератора, report_recon_bracket.md
+    // Блок 2 п.4): GF/GF-reset формально bracket_position='upper' — фильтруем
+    // по court ПЕРВЫМ, иначе они попадут в $upperMatches.
+    $upperMatches = $mainMatches->filter(fn($m) =>
+        $m->bracket_position === 'upper'
+        && $m->court !== 'Grand Final'
+        && $m->court !== 'Grand Final Reset'
+    );
+    $lowerMatches = $mainMatches->filter(fn($m) => $m->bracket_position === 'lower');
+    $gfMatch      = $mainMatches->first(fn($m) => $m->court === 'Grand Final');
+    $gfReset      = $mainMatches->first(fn($m) => $m->court === 'Grand Final Reset');
+
+    // round → коллекция матчей этого раунда, отсортированная по match_number;
+    // ключи (реальные round) отсортированы по возрастанию, но НОМЕРА КОЛОНОК
+    // считаются относительно секции (см. $renderColumn($ms, $label, $relR)
+    // ниже — $relR = порядковый индекс среди раундов ЭТОЙ секции, не глобальный
+    // round=4,5... как было бы при обычной группировке).
+    $upperByRound = $upperMatches->groupBy('round')->sortKeys()
+        ->map(fn($ms) => $ms->sortBy('match_number')->values());
+    $lowerByRound = $lowerMatches->groupBy('round')->sortKeys()
+        ->map(fn($ms) => $ms->sortBy('match_number')->values());
+} else {
+    $matchesByRound = [];
+    for ($r = 1; $r <= $totalRounds; $r++) {
+        $matchesByRound[$r] = $mainMatches
+            ->filter(fn($m) => $m->round == $r)
+            ->sortBy('match_number')
+            ->values();
+    }
+
+    // Bracket reset (single_elim этого не имеет — court='Grand Final'/'Grand
+    // Final Reset' пишет только generateDoubleElimination() — здесь всегда
+    // null, ветка исторически защитная, оставлена как была до рефакторинга).
+    $gf1Round = $mainMatches->first(fn($m) => $m->court === 'Grand Final')?->round;
+    $gf2Round = $mainMatches->first(fn($m) => $m->court === 'Grand Final Reset')?->round;
+    $labelReferenceRound = $gf1Round ?? $totalRounds;
+}
 @endphp
 
 @if($totalRounds === 0)
@@ -317,6 +410,57 @@ $tz = $stage->event->timezone ?? 'Europe/Moscow';
         Сетка появится после жеребьёвки плей-офф
     </div>
 @else
+@if($isDoubleElim)
+
+    {{-- ═══ Верхняя сетка ═══ --}}
+    <div class="bk-section-title">Верхняя сетка</div>
+    <div class="bk-wrap">
+    <div class="bk-inner" id="{{ $bracketId }}-upper">
+    <div class="bk-rounds">
+        @foreach($upperByRound as $round => $roundMatches)
+        @if(!$loop->first)<div class="bk-col-gap"></div>@endif
+        {!! $renderColumn($roundMatches, 'Раунд ' . ($loop->index + 1), $loop->index + 1) !!}
+        @endforeach
+    </div>{{-- .bk-rounds --}}
+    <svg id="{{ $bracketId }}-upper-svg" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:visible"></svg>
+    </div>{{-- .bk-inner --}}
+    </div>{{-- .bk-wrap --}}
+
+    {{-- ═══ Нижняя сетка ═══ --}}
+    <div class="bk-section-title">Нижняя сетка</div>
+    <div class="bk-wrap">
+    <div class="bk-inner" id="{{ $bracketId }}-lower">
+    <div class="bk-rounds">
+        @foreach($lowerByRound as $round => $roundMatches)
+        @if(!$loop->first)<div class="bk-col-gap"></div>@endif
+        {!! $renderColumn($roundMatches, 'Раунд ' . ($loop->index + 1), $loop->index + 1) !!}
+        @endforeach
+    </div>{{-- .bk-rounds --}}
+    <svg id="{{ $bracketId }}-lower-svg" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:visible"></svg>
+    </div>{{-- .bk-inner --}}
+    </div>{{-- .bk-wrap --}}
+
+    {{-- ═══ Гранд-финал (+ Переигровка, если существует) ═══ --}}
+    @if($gfMatch)
+    <div class="bk-section-title">Гранд-финал</div>
+    <div class="bk-wrap">
+    <div class="bk-inner">
+    <div class="bk-rounds">
+        <div class="bk-col">
+            <div class="bk-col-label">Гранд-финал</div>
+            <div class="bk-matches" style="gap:{{ $baseGap }}px">
+                {!! $renderMatchCard($gfMatch) !!}
+                @if($gfReset)
+                {!! $renderMatchCard($gfReset) !!}
+                @endif
+            </div>
+        </div>
+    </div>{{-- .bk-rounds --}}
+    </div>{{-- .bk-inner --}}
+    </div>{{-- .bk-wrap --}}
+    @endif{{-- $gfMatch --}}
+
+@else{{-- !$isDoubleElim --}}
 <div class="bk-wrap">
 <div class="bk-inner" id="{{ $bracketId }}">
 
@@ -324,8 +468,6 @@ $tz = $stage->event->timezone ?? 'Europe/Moscow';
 @for($r = 1; $r <= $totalRounds; $r++)
     @php
         $roundMatches = $matchesByRound[$r] ?? collect();
-        $padTop = (int) round($stepH * (pow(2, $r - 1) - 1));
-        $gap    = $r === 1 ? $baseGap : (int) round($stepH * pow(2, $r) - $cardH);
         // Bracket reset: GF1/GF2-раунды получают явную подпись по court, а не
         // из арифметики $total-$r (см. $gf1Round/$gf2Round выше) — иначе после
         // добавления GF2 (round=max) подписи "Финал"/"Полуфинал" съезжают местами.
@@ -340,42 +482,7 @@ $tz = $stage->event->timezone ?? 'Europe/Moscow';
 
     @if($r > 1)<div class="bk-col-gap"></div>@endif
 
-    <div class="bk-col">
-        <div class="bk-col-label">{{ $label }}</div>
-        <div class="bk-matches" style="gap:{{ $gap }}px;padding-top:{{ $padTop }}px">
-            @foreach($roundMatches as $m)
-            @php
-                $isCompleted = $m->status === 'completed';
-                // Bracket reset: GF2 cancelled = reset не потребовался (upper-
-                // представитель выиграл GF1 напрямую) — это не "матч ожидает
-                // команды" (bk-match--empty), а осознанно неигранный матч.
-                $isCancelled = $m->status === 'cancelled';
-                $homeWin = $m->winner_team_id && $m->winner_team_id === $m->team_home_id;
-                $awayWin = $m->winner_team_id && $m->winner_team_id === $m->team_away_id;
-                $cls = 'bk-match';
-                if ($isCompleted)                                $cls .= ' bk-match--completed';
-                elseif ($isCancelled)                            $cls .= ' bk-match--cancelled';
-                elseif (!$m->team_home_id || !$m->team_away_id)  $cls .= ' bk-match--empty';
-            @endphp
-            <div class="{{ $cls }}" data-match-id="{{ $m->id }}" data-next-match-id="{{ $m->next_match_id }}">
-                {{-- Шапка --}}
-                <div class="bk-header">
-                    <span>Матч&thinsp;{{ $m->match_number }}</span>
-                    @if($m->court)<span class="bk-court">{{ $courtLabel($m->court) }}</span>@endif
-                    @if($m->scheduled_at)<span class="bk-time">{{ $m->scheduled_at->setTimezone($tz)->format('H:i') }}</span>@endif
-                    @if($isCompleted)<span class="bk-check">✓</span>@endif
-                </div>
-                @if($isCancelled)
-                <div class="bk-cancelled-note">Решающий матч не потребовался</div>
-                @else
-                {{-- Команды --}}
-                {!! $renderTeam($m->teamHome, $homeWin, $isCompleted ? $m->sets_home : null, $isCompleted) !!}
-                {!! $renderTeam($m->teamAway, $awayWin, $isCompleted ? $m->sets_away : null, $isCompleted) !!}
-                @endif
-            </div>
-            @endforeach
-        </div>
-    </div>
+    {!! $renderColumn($roundMatches, $label, $r) !!}
 @endfor
 </div>{{-- .bk-rounds --}}
 
@@ -386,6 +493,7 @@ $tz = $stage->event->timezone ?? 'Europe/Moscow';
 
 </div>{{-- .bk-inner --}}
 </div>{{-- .bk-wrap --}}
+@endif
 
 {{-- Матч за 3-е место --}}
 @if($thirdPlace)
@@ -432,13 +540,17 @@ $tz = $stage->event->timezone ?? 'Europe/Moscow';
 @endif
 @endif
 
-{{-- JS: SVG bezier-линии по реальным DOM-координатам --}}
+{{-- JS: SVG bezier-линии по реальным DOM-координатам. double_elim рисует
+     ДВЕ независимые секции (upper/lower) каждая в своём bk-inner/svg — линии
+     upper-финал→ГФ и lower-финал→ГФ НЕ рисуются (ГФ физически в другом
+     bk-wrap/скролл-контейнере, координаты между секциями не связаны) —
+     ограничение этого захода, см. отчёт. --}}
 <script>
 (function(){
-    function draw(){
-        var inner = document.getElementById('{{ $bracketId }}');
+    function drawOne(containerId, svgId){
+        var inner = document.getElementById(containerId);
         if(!inner) return;
-        var svg = document.getElementById('{{ $bracketId }}-svg');
+        var svg = document.getElementById(svgId);
         if(!svg) return;
         svg.innerHTML = '';
 
@@ -468,6 +580,14 @@ $tz = $stage->event->timezone ?? 'Europe/Moscow';
             p.setAttribute('stroke-linecap','round');
             svg.appendChild(p);
         });
+    }
+    function draw(){
+        @if($isDoubleElim)
+        drawOne('{{ $bracketId }}-upper', '{{ $bracketId }}-upper-svg');
+        drawOne('{{ $bracketId }}-lower', '{{ $bracketId }}-lower-svg');
+        @else
+        drawOne('{{ $bracketId }}', '{{ $bracketId }}-svg');
+        @endif
     }
     if(document.readyState==='loading'){
         document.addEventListener('DOMContentLoaded', draw);

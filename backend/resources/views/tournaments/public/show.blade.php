@@ -102,12 +102,9 @@
 			
 			{{-- Табы --}}
 			@php
-			// double_elim временно исключён из whereIn — раскладка _bracket.blade.php
-			// рассчитана только на один upper-трек (группировка матчей по round без
-			// разделения upper/lower), для double_elim визуально разъезжается.
-			// Скрыто до отдельной upper/lower раскладки (заход 2, report_double_elim_ui_recon2.md).
-			// single_elim НЕ трогать — там сетка работает корректно.
-			$hasBracketStages = $stages->whereIn('type', ['single_elim'])->isNotEmpty();
+			// double_elim вернулся: _bracket.blade.php теперь раскладывает
+			// upper/lower/Гранд-финал отдельными секциями (заход 2).
+			$hasBracketStages = $stages->whereIn('type', ['single_elim', 'double_elim'])->isNotEmpty();
 			$tabs = [
             'overview' => __('tournaments.pub_tab_overview'),
 			];
