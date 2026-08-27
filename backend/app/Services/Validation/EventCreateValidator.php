@@ -483,6 +483,18 @@
 			'max:10080'
             ],
 
+            // Запрет отмены при наличии листа ожидания — без этих правил
+            // Validator::validate() молча вырезает поля из $data (нет ключа
+            // в rules() → нет в validated()), buildRegistrationWindows()
+            // не находит ни cancel_lock_waitlist_h/_m, ни _minutes_before
+            // и cancel_self_until_waitlist навсегда остаётся NULL при создании.
+            'cancel_lock_waitlist_minutes_before' => [
+			'nullable',
+			'integer',
+			'min:0',
+			'max:10080'
+            ],
+
             // Named select fields (server-side computation)
             'reg_starts_d' => ['nullable', 'integer', 'min:0', 'max:90'],
             'reg_starts_h' => ['nullable', 'integer', 'min:0', 'max:23'],
@@ -490,6 +502,8 @@
             'reg_ends_m'   => ['nullable', 'integer', 'min:0', 'max:59'],
             'cancel_lock_h' => ['nullable', 'integer', 'min:0', 'max:24'],
             'cancel_lock_m' => ['nullable', 'integer', 'min:0', 'max:59'],
+            'cancel_lock_waitlist_h' => ['nullable', 'integer', 'min:0', 'max:24'],
+            'cancel_lock_waitlist_m' => ['nullable', 'integer', 'min:0', 'max:59'],
 			
 			]);
 			
