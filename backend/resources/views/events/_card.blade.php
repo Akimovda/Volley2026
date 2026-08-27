@@ -309,8 +309,11 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 						<div class="mb-1 -mt-05">
 							<a href="{{ url('/events/' . (int)$event->id) . '?occurrence=' . (int)$occ->id }}" class="blink cd b-600 card-title ">
 								@if(!empty($event?->is_private))
-								<span class="emo" title="{{ __('events.card_private_title') }}">🙈</span>
-								@endif						
+								<x-menu-icon name="eye-off" class="cd" title="{{ __('events.card_private_title') }}" />
+								@endif
+								@if($isTournamentFmt)
+								<x-menu-icon name="trophy" class="cd" />
+								@endif
 								{{ $event?->title ?? '—' }}
 							</a>
 						</div>	
