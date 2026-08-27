@@ -5734,7 +5734,8 @@ body.dark .event-col-icon svg {
 
 /* Золотая рамка для премиум аватара - исправленная версия */
 .profile-avatar.avatar-premium,
-.avatar-small.avatar-premium {
+.avatar-small.avatar-premium,
+.user-avatar-img-wrapper.avatar-premium {
 	position: relative;
 	border: 0.4rem solid transparent;
 	background-clip: padding-box;
@@ -5742,7 +5743,8 @@ body.dark .event-col-icon svg {
 }
 
 .profile-avatar.avatar-premium > img,
-.avatar-small.avatar-premium > img {
+.avatar-small.avatar-premium > img,
+.user-avatar-img-wrapper.avatar-premium > img {
 	border-radius: 50%;
 	display: block;
 	width: 100%;
@@ -5752,7 +5754,8 @@ body.dark .event-col-icon svg {
 
 /* Псевдоэлемент для золотой рамки (работает как border) */
 .profile-avatar.avatar-premium::before,
-.avatar-small.avatar-premium::before {
+.avatar-small.avatar-premium::before,
+.user-avatar-img-wrapper.avatar-premium::before {
 	content: "";
 	position: absolute;
 	top: -0.4rem;
@@ -5761,16 +5764,16 @@ body.dark .event-col-icon svg {
 	bottom: -0.4rem;
 	border-radius: 50%;
 	z-index: -1;
-	background: linear-gradient(135deg, 
-	#f7e8d0 0%, 
-	#e8c894 15%, 
-	#b8865b 30%, 
-	#f7e8d0 45%, 
-	#ffdab9 55%, 
-	#e8c894 70%, 
-	#b8865b 85%, 
+	background: linear-gradient(135deg,
+	#f7e8d0 0%,
+	#e8c894 15%,
+	#b8865b 30%,
+	#f7e8d0 45%,
+	#ffdab9 55%,
+	#e8c894 70%,
+	#b8865b 85%,
 	#f7e8d0 100%);
-	box-shadow: 
+	box-shadow:
 		0 0 0 .1rem rgba(255, 236, 130, 0.5),
 		0 0 0 .2rem rgba(139, 105, 20, 0.3),
 		0 0 1.5rem .4rem rgba(218, 165, 32, 0.4),
@@ -5780,7 +5783,8 @@ body.dark .event-col-icon svg {
 }
 
 body.dark .profile-avatar.avatar-premium::before,
-body.dark .avatar-small.avatar-premium::before {
+body.dark .avatar-small.avatar-premium::before,
+body.dark .user-avatar-img-wrapper.avatar-premium::before {
 	background: linear-gradient(135deg, 
 	#f7e8d0 0%, 
 	#e8c894 15%, 
@@ -5825,6 +5829,45 @@ body.dark .avatar-small.avatar-premium::before {
 }
 body.dark .profile-avatar.avatar-premium:after {
 	filter: drop-shadow(0 0 4px rgba(207, 192, 159, 0.5)) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+/* Компактная золотая рамка для маленьких инлайн-аватаров (списки игроков, ~30-40px) */
+.avatar-mini.avatar-premium {
+	display: inline-block;
+	position: relative;
+	border-radius: 50%;
+}
+.avatar-mini.avatar-premium > img {
+	display: block;
+	border-radius: 50%;
+}
+.avatar-mini.avatar-premium::before {
+	content: "";
+	position: absolute;
+	top: -0.2rem;
+	left: -0.2rem;
+	right: -0.2rem;
+	bottom: -0.2rem;
+	border-radius: 50%;
+	z-index: -1;
+	background: linear-gradient(135deg,
+	#f7e8d0 0%,
+	#e8c894 15%,
+	#b8865b 30%,
+	#f7e8d0 45%,
+	#ffdab9 55%,
+	#e8c894 70%,
+	#b8865b 85%,
+	#f7e8d0 100%);
+	box-shadow:
+		0 0 0 .07rem rgba(255, 236, 130, 0.5),
+		0 0 0 .14rem rgba(139, 105, 20, 0.3),
+		0 0 .6rem .2rem rgba(218, 165, 32, 0.4);
+	filter: brightness(1.2);
+	animation: goldGlowL 20s ease-in-out infinite;
+}
+body.dark .avatar-mini.avatar-premium::before {
+	animation: goldGlow 20s ease-in-out infinite;
 }
 /* Premium бейдж на карточке пользователя */
 .premium-badge-card {

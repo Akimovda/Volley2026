@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\EventOccurrence;
 use App\Models\EventRegistration;
+use App\Models\PremiumSubscription;
 use Illuminate\Support\Facades\DB;
 
 class OccurrenceParticipantsController extends Controller
@@ -27,7 +28,15 @@ class OccurrenceParticipantsController extends Controller
             ->orderBy('id')
             ->get();
 
-        $players = $registrations->map(function ($reg) use ($isBeach) {
+        // Батчем, не по одному — избегаем N+1 (isPremium() на модели делает отдельный запрос на каждого)
+        $userIds = $registrations->pluck('user.id')->filter()->unique()->values();
+        $premiumUserIds = PremiumSubscription::where('status', 'active')
+            ->where('expires_at', '>', now())
+            ->whereIn('user_id', $userIds)
+            ->pluck('user_id')
+            ->flip();
+
+        $players = $registrations->map(function ($reg) use ($isBeach, $premiumUserIds) {
             $u = $reg->user;
             if (!$u) return null;
 
@@ -42,14 +51,15 @@ class OccurrenceParticipantsController extends Controller
                 : ($u->classic_level ?? 0);
 
             return [
-                'id'        => $u->id,
-                'name'      => $displayName,
-                'position'  => $reg->position,
-                'avatar'    => $u->profile_photo_url,
-                'level'     => $level,
-                'is_bot'    => (bool) $u->is_bot,
-                'group_key' => $reg->group_key ?? null,
-                'url'       => '/user/' . $u->id,
+                'id'         => $u->id,
+                'name'       => $displayName,
+                'position'   => $reg->position,
+                'avatar'     => $u->profile_photo_url,
+                'level'      => $level,
+                'is_bot'     => (bool) $u->is_bot,
+                'is_premium' => $premiumUserIds->has($u->id),
+                'group_key'  => $reg->group_key ?? null,
+                'url'        => '/user/' . $u->id,
             ];
         })->filter()->values();
 
