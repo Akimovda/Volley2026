@@ -203,15 +203,6 @@ $stepH   = ($cardH + $baseGap) / 2; // 102
 $bracketId = 'bk-' . $stage->id;
 $tz = $stage->event->timezone ?? 'Europe/Moscow';
 
-$roundLabel = function(int $r, int $total): string {
-    return match ($total - $r) {
-        0 => 'Финал',
-        1 => 'Полуфинал',
-        2 => 'Четвертьфинал',
-        default => 'Раунд ' . $r,
-    };
-};
-
 // Цвета аватаров (когда нет фото)
 $palette = ['#2967BA','#10b981','#f59e0b','#8b5cf6','#ec4899','#06b6d4','#84cc16','#ef4444'];
 $avatarColor = function(?string $seed) use ($palette): string {
@@ -396,12 +387,6 @@ if ($isDoubleElim) {
             ->values();
     }
 
-    // Bracket reset (single_elim этого не имеет — court='Grand Final'/'Grand
-    // Final Reset' пишет только generateDoubleElimination() — здесь всегда
-    // null, ветка исторически защитная, оставлена как была до рефакторинга).
-    $gf1Round = $mainMatches->first(fn($m) => $m->court === 'Grand Final')?->round;
-    $gf2Round = $mainMatches->first(fn($m) => $m->court === 'Grand Final Reset')?->round;
-    $labelReferenceRound = $gf1Round ?? $totalRounds;
 }
 @endphp
 
@@ -468,16 +453,11 @@ if ($isDoubleElim) {
 @for($r = 1; $r <= $totalRounds; $r++)
     @php
         $roundMatches = $matchesByRound[$r] ?? collect();
-        // Bracket reset: GF1/GF2-раунды получают явную подпись по court, а не
-        // из арифметики $total-$r (см. $gf1Round/$gf2Round выше) — иначе после
-        // добавления GF2 (round=max) подписи "Финал"/"Полуфинал" съезжают местами.
-        if ($gf2Round !== null && $r === $gf2Round) {
-            $label = 'Решающий матч';
-        } elseif ($gf1Round !== null && $r === $gf1Round) {
-            $label = 'Финал';
-        } else {
-            $label = $roundLabel($r, $labelReferenceRound);
-        }
+        // Наименование раунда — единая точка правды TournamentStage::roundLabelFor()
+        // (GF/GF-reset по court, Финал/Полуфинал/Четвертьфинал по номеру раунда от
+        // конца сетки), не дублируется здесь inline-closure'ом.
+        $repMatch = $roundMatches->first();
+        $label = $repMatch ? ($stage->roundLabelFor($repMatch) ?? 'Раунд ' . $r) : 'Раунд ' . $r;
     @endphp
 
     @if($r > 1)<div class="bk-col-gap"></div>@endif

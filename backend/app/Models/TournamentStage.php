@@ -137,6 +137,41 @@ class TournamentStage extends Model
     }
 
     /**
+     * Человекочитаемое название раунда сетки на выбывание (Финал/Полуфинал/
+     * Четвертьфинал) — вынесено из ранее приватной inline-closure
+     * `$roundLabel` в resources/views/tournaments/public/_bracket.blade.php,
+     * чтобы не дублировать ту же логику на /score (score.blade.php,
+     * score_rally.blade.php). null — если для этого матча человекочитаемое
+     * название неприменимо, вызывающий код должен фолбэкнуться на обычное
+     * "Раунд N" / "Тур N".
+     *
+     * double_elim НЕ покрыт (кроме Гранд-финала по $match->court) — раунды
+     * double_elim идут по отдельным upper/lower секциям (см. _bracket.blade.php),
+     * единой оси "N раундов до финала" для них нет.
+     */
+    public function roundLabelFor(TournamentMatch $match): ?string
+    {
+        if ($match->court === 'Grand Final Reset') {
+            return 'Решающий матч';
+        }
+        if ($match->court === 'Grand Final') {
+            return 'Финал';
+        }
+        if ($this->type !== self::TYPE_SINGLE_ELIM) {
+            return null;
+        }
+
+        $totalRounds = $this->matches->max('round') ?? $match->round;
+
+        return match ($totalRounds - $match->round) {
+            0 => 'Финал',
+            1 => 'Полуфинал',
+            2 => 'Четвертьфинал',
+            default => null,
+        };
+    }
+
+    /**
      * При создании стадии этого типа нужно сразу создать парную стадию-продолжение —
      * иначе checkStageCompletion() закроет турнир сразу после этой стадии
      * (round_robin, groups_playoff; НЕ thai — см. докстринг TYPE_TRAITS выше).

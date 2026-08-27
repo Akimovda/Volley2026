@@ -39,8 +39,9 @@
 					@if($match->group)
 					<div class="b-700 f-22 mb-1">{{ $match->group->name }}</div>
 					@endif
+					@php $roundLabel = $stage->roundLabelFor($match); @endphp
 					<span class="score-pill score-pill--blue">{{ __('tournaments.score_pill_match', ['n' => $match->match_number]) }}</span>
-					<span class="score-pill score-pill--green">{{ __('tournaments.score_pill_round', ['r' => $match->round]) }}</span>
+					<span class="score-pill score-pill--green">{{ $roundLabel ?? __('tournaments.score_pill_round', ['r' => $match->round]) }}</span>
 					<span class="score-pill score-pill--orange">{{ strtoupper($stage->matchFormat()) }}</span>
 					<span class="score-pill score-pill--red">{{ __('tournaments.score_to_pts') }} {{ $stage->setPoints() }}</span>
 				</div>
