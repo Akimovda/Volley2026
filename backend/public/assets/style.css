@@ -1172,6 +1172,10 @@ body.dark input[type="datetime-local"]::-webkit-calendar-picker-indicator {
     z-index: 1000;
     max-height: 32rem;
     overflow-y: auto;
+    /* Без этого прокрутка колёсиком до конца списка "перетекает" на скролл
+       всей страницы (scroll chaining) — ощущается как "список не скроллится
+       мышкой, скроллится вся страница". */
+    overscroll-behavior: contain;
     opacity: 0;
     visibility: hidden;
     transform: translateY(-1rem);
@@ -4247,8 +4251,12 @@ body.dark .formula-box pre {
 	border-color: #1a1b27;
 	color: #e3e7eb;
 }
-/* в твой <style> где .ac-dd */
-#trainer_dd { max-height: 320px; overflow:auto; }
+/* Выпадающий список автокомплита (поиск капитана/тренера и т.п.) — .trainer_dd
+   класс на элементе (`<div class="form-select-dropdown trainer_dd">`), не id.
+   Правило было записано как #trainer_dd (id-селектор) и никогда не применялось —
+   список рос без ограничения высоты, наведение мышкой на него прокручивало
+   всю страницу вместо списка (overflow:auto не задан). */
+.trainer_dd { max-height: 320px; overflow:auto; }
 .users-filter {
 	transition: 0.4s;
 	transform: scaleY(0);

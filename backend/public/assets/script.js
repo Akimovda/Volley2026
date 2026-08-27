@@ -755,6 +755,34 @@ function initCustomSelects() {
 initCustomSelects();
 
 
+// Safari на Mac (десктоп, трекпад) — известный баг: элементы с position:absolute
+// внутри предка с backdrop-filter (.ramka/.card-ramka, style.css
+// @media(min-width:992px)) получают СЛОМАННЫЙ e.target для wheel-события —
+// событие прилетает не на сам выпадающий список (.form-select-dropdown), а
+// мимо (на предка/страницу), даже когда курсор физически над списком. Поэтому
+// e.target.closest('.form-select-dropdown') в Safari может не найти список,
+// хотя визуально курсор точно над ним — полагаться на e.target нельзя.
+// Вместо этого проверяем геометрически: курсор (e.clientX/Y) внутри границ
+// КАКОГО-ЛИБО активного (.form-select-dropdown--active) списка — эта проверка
+// не зависит от того, что Safari считает "целью" события.
+document.addEventListener('wheel', function(e) {
+	var openDropdowns = document.querySelectorAll('.form-select-dropdown--active');
+	if (!openDropdowns.length) return;
+	for (var i = 0; i < openDropdowns.length; i++) {
+		var dd = openDropdowns[i];
+		var r = dd.getBoundingClientRect();
+		if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) continue;
+		if (dd.scrollHeight <= dd.clientHeight) return; // нечего скроллить — не вмешиваемся
+		var atTop = dd.scrollTop <= 0;
+		var atBottom = dd.scrollTop + dd.clientHeight >= dd.scrollHeight - 1;
+		if ((e.deltaY < 0 && atTop) || (e.deltaY > 0 && atBottom)) return; // на границе — обычное поведение
+		dd.scrollTop += e.deltaY;
+		e.preventDefault();
+		return;
+	}
+}, { passive: false });
+
+
 
 // Публичные методы для использования извне
 window.customSelect = {
