@@ -5739,6 +5739,7 @@ body.dark .event-col-icon svg {
 	border: 0.4rem solid transparent;
 	background-clip: padding-box;
 	background-color: transparent;
+	isolation: isolate;
 }
 
 .profile-avatar.avatar-premium > img,
@@ -5804,6 +5805,7 @@ body.dark .avatar-small.avatar-premium::before {
 	border: 0.2rem solid transparent;
 	background-clip: padding-box;
 	background-color: transparent;
+	isolation: isolate;
 }
 .user-avatar-img-wrapper.avatar-premium > img {
 	border-radius: 50%;
@@ -5876,6 +5878,10 @@ body.dark .profile-avatar.avatar-premium:after {
 	display: inline-block;
 	position: relative;
 	border-radius: 50%;
+	/* Свой stacking context — иначе ::before с z-index:-1 "убегает" под
+	   непрозрачный фон родителя (например .card в списке команд турнира)
+	   вместо того чтобы просто лечь под саму аватарку */
+	isolation: isolate;
 }
 .avatar-mini.avatar-premium > img {
 	display: block;
