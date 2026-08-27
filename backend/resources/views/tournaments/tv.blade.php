@@ -81,6 +81,21 @@
         @keyframes flash { 0%{ background:rgba(231,97,47,.2); } 100%{ background:transparent; } }
 
         a { color: inherit; text-decoration: none; }
+
+        /* Графическая сетка (_bracket.blade.php) переиспользует CSS-переменные
+           светлой темы сайта — TV-страница инлайн-стилевая, тёмная тема без
+           body.dark, поэтому переменные переопределяются локально под #tv-view-bracket */
+        #tv-view-bracket {
+            --surface-1: #1a1d27;
+            --surface-2: #22263a;
+            --text-primary: #e8eaf0;
+            --text-secondary: #9ca0b0;
+            --text-muted: #606478;
+            --border: rgba(255,255,255,.1);
+            --border-strong: rgba(255,255,255,.18);
+            --bg-success: rgba(29,158,117,.18);
+            --text-success: #5dcaa5;
+        }
     </style>
 </head>
 <body>
@@ -259,6 +274,23 @@
             @else
                 <div class="tv-panel" style="flex:2">
                     <h3>{{ $activeStage->name }}</h3>
+
+                    <div id="tv-view-switch" style="display:flex;gap:6px;margin-bottom:12px;">
+                        <button id="tv-btn-bracket" onclick="tvSetView('bracket')"
+                            style="padding:4px 14px;border-radius:6px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.15);color:#fff;font-size:.8rem;cursor:pointer;">
+                            Сетка
+                        </button>
+                        <button id="tv-btn-table" onclick="tvSetView('table')"
+                            style="padding:4px 14px;border-radius:6px;border:1px solid rgba(255,255,255,.1);background:transparent;color:rgba(255,255,255,.55);font-size:.8rem;cursor:pointer;">
+                            Таблица
+                        </button>
+                    </div>
+
+                    <div id="tv-view-bracket">
+                        @include('tournaments.public._bracket', ['stage' => $activeStage, 'matches' => $activeStage->matches])
+                    </div>
+
+                    <div id="tv-view-table" style="display:none;">
                     @foreach($activeStage->matches->sortBy(['round','match_number']) as $m)
                         <div class="tv-match">
                             <div class="team right {{ $m->winner_team_id === $m->team_home_id ? 'winner' : '' }}">
@@ -283,6 +315,7 @@
                             </div>
                         </div>
                     @endforeach
+                    </div>
                 </div>
             @endif
         @else
@@ -316,6 +349,16 @@
 
         setInterval(poll, interval);
     })();
+
+    function tvSetView(view) {
+        var isBracket = view === 'bracket';
+        document.getElementById('tv-view-bracket').style.display = isBracket ? 'block' : 'none';
+        document.getElementById('tv-view-table').style.display   = isBracket ? 'none'  : 'block';
+        document.getElementById('tv-btn-bracket').style.background = isBracket ? 'rgba(255,255,255,.15)' : 'transparent';
+        document.getElementById('tv-btn-bracket').style.color      = isBracket ? '#fff' : 'rgba(255,255,255,.55)';
+        document.getElementById('tv-btn-table').style.background   = isBracket ? 'transparent' : 'rgba(255,255,255,.15)';
+        document.getElementById('tv-btn-table').style.color        = isBracket ? 'rgba(255,255,255,.55)' : '#fff';
+    }
     </script>
 
 </body>
