@@ -26,29 +26,39 @@ class OccurrenceAnnouncementMessageBuilder
             ? (string) $options['private_link']
             : route('events.show', ['event' => $event->id, 'occurrence' => $occurrence->id]);
 
-        // Картинка
-        $imageUrl = null;
+        // Картинка(и)
+        $imageUrl  = null;
+        $imageUrls = [];
         if ((bool) ($options['include_image'] ?? true)) {
             // 1. Сначала ищем cover (загруженный файл напрямую на Event)
             $media = $event->media?->first();
-        
+
             if ($media) {
-                $imageUrl = $media->getUrl();
+                $imageUrl  = $media->getUrl();
+                $imageUrls = [$imageUrl];
             } else {
                 // 2. Потом ищем из галереи организатора (event_photos — JSON массив ID)
                 $photoIds = $event->event_photos ?? [];
                 if (is_string($photoIds)) {
                     $photoIds = json_decode($photoIds, true) ?: [];
                 }
-        
+
                 if (!empty($photoIds)) {
-                    $galleryMedia = \Spatie\MediaLibrary\MediaCollections\Models\Media::find($photoIds[0]);
-                    if ($galleryMedia) {
-                        $imageUrl = $galleryMedia->getUrl();
+                    // Коллаж — до 10 фото (технический потолок Telegram media-группы)
+                    $galleryMediaItems = \Spatie\MediaLibrary\MediaCollections\Models\Media::query()
+                        ->whereIn('id', array_slice($photoIds, 0, 10))
+                        ->get()
+                        ->keyBy('id');
+                    foreach (array_slice($photoIds, 0, 10) as $pid) {
+                        $m = $galleryMediaItems->get($pid);
+                        if ($m) {
+                            $imageUrls[] = $m->getUrl();
+                        }
                     }
+                    $imageUrl = $imageUrls[0] ?? null;
                 }
             }
-        
+
             // 3. Фолбэк — дефолтная картинка по направлению
             if (!$imageUrl) {
                 $direction = (string) ($event->direction ?? 'classic');
@@ -56,14 +66,22 @@ class OccurrenceAnnouncementMessageBuilder
                 $imageUrl  = $direction === 'beach'
                     ? $appUrl . '/img/beach.webp'
                     : $appUrl . '/img/classic.webp';
+                $imageUrls = [$imageUrl];
             }
         }
-        // Для MAX конвертируем WebP → JPEG
+        // Для MAX конвертируем WebP → JPEG (rich message/коллаж — только Telegram, MAX не касается)
         if (!empty($imageUrl) && ($options['platform'] ?? '') === 'max') {
             $imageUrl = $this->convertWebpToJpegUrl($imageUrl) ?? null;
         }
+
+        // Список игроков/команд — строится один раз, используется и внутри общего $text
+        // (VK/MAX/телеграм-фолбэк), и отдельно как listTitle/listText (телеграм details-блок)
+        $listTitle = null;
+        $listText  = null;
+        $textShort = null;
+
         // Текст анонса
-        $text = $this->buildText($occurrence, $options, $starts, $ends, $tz, $platform);
+        $text = $this->buildText($occurrence, $options, $starts, $ends, $tz, $platform, $listTitle, $listText, $textShort);
 
         $finalized = (bool) ($options['finalized'] ?? false);
 
@@ -77,6 +95,10 @@ class OccurrenceAnnouncementMessageBuilder
             imageUrl:   $imageUrl,
             silent:     (bool) ($options['silent'] ?? false),
             messageThreadId: $options['message_thread_id'] ?? null,
+            imageUrls:  $imageUrls,
+            listTitle:  $listTitle,
+            listText:   $listText,
+            textShort:  $textShort,
         );
     }
 
@@ -88,7 +110,10 @@ class OccurrenceAnnouncementMessageBuilder
         Carbon $starts,
         ?Carbon $ends,
         string $tz,
-        string $platform
+        string $platform,
+        ?string &$listTitle = null,
+        ?string &$listText = null,
+        ?string &$textShort = null
     ): string {
         $event     = $occurrence->event;
         $location  = $event->location;
@@ -224,6 +249,10 @@ class OccurrenceAnnouncementMessageBuilder
             }
         }
 
+        // Снимок текста ДО списка — для rich-параграфа Telegram (список рендерится
+        // отдельно в details-блоке, не должен дублироваться внутри параграфа)
+        $textShort = implode("\n", $lines);
+
         // ── Список игроков / команд ───────────────────────────────────────────
         $includeList = (bool) ($options['include_registered_list'] ?? true);
         if ($includeList) {
@@ -233,11 +262,17 @@ class OccurrenceAnnouncementMessageBuilder
                     $lines[] = '';
                     $lines[] = $this->bold($platform, 'Список команд:');
                     $lines[] = $mainList;
+
+                    $listTitle = 'Список команд';
+                    $listText  = $mainList;
                 }
                 if ($reserveList !== '') {
                     $lines[] = '';
                     $lines[] = $this->bold($platform, '⏳ Лист ожидания:');
                     $lines[] = $reserveList;
+
+                    $listText = ($listText !== null ? $listText . "\n\n" : '')
+                        . "⏳ Лист ожидания:\n" . $reserveList;
                 }
             } else {
                 $regCount = isset($registered) ? $registered : $this->countRegistered((int) $occurrence->id);
@@ -247,6 +282,9 @@ class OccurrenceAnnouncementMessageBuilder
                         $lines[] = '';
                         $lines[] = $this->bold($platform, 'Список игроков:');
                         $lines[] = $playerList;
+
+                        $listTitle = 'Список игроков';
+                        $listText  = $playerList;
                     }
                 }
             }
@@ -461,7 +499,7 @@ class OccurrenceAnnouncementMessageBuilder
                 $q->whereNull('er.status')->orWhere('er.status', 'confirmed');
             })
             ->orderBy('er.id')
-            ->limit(30)
+            ->limit(100)
             ->get(['u.name', 'u.first_name', 'u.last_name', 'er.position']);
 
         if ($rows->isEmpty()) {
@@ -555,7 +593,7 @@ class OccurrenceAnnouncementMessageBuilder
             ->where('occurrence_id', $occurrenceId)
             ->where('status', '!=', 'rejected')
             ->orderBy('id')
-            ->limit(30)
+            ->limit(100)
             ->get(['id', 'name', 'reserve_position']);
 
         if ($teams->isEmpty()) {
