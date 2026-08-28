@@ -22,6 +22,31 @@ class EventRegistrationsManagementController extends Controller
     ) {}
 
     /**
+     * Обновление анонса в каналах (Telegram/VK/MAX) после изменения состава организатором.
+     * Тот же паттерн, что и в EventRegistrationController/TournamentTeamController/EventManagementController —
+     * addPlayer/updatePosition/cancel/destroy пишут напрямую через DB::table(), без него анонс
+     * не узнаёт об изменениях состава, сделанных со страницы «Управление регистрациями».
+     */
+    private function dispatchAnnounceUpdate(int $eventId, ?int $occurrenceId): void
+    {
+        if (!$occurrenceId) {
+            return;
+        }
+
+        $hasChannels = DB::table('event_notification_channels')
+            ->where('event_id', $eventId)
+            ->exists();
+
+        if (!$hasChannels) {
+            return;
+        }
+
+        \App\Jobs\RefreshOccurrenceAnnouncementJob::dispatch($occurrenceId)
+            ->onQueue('default')
+            ->afterCommit();
+    }
+
+    /**
      * GET /events/{event}/registrations
      */
     public function index(Request $request, Event $event)
@@ -503,6 +528,8 @@ class EventRegistrationsManagementController extends Controller
                     )->onQueue('default')->afterCommit();
                 }
 
+                $this->dispatchAnnounceUpdate((int) $event->id, $occurrenceId ?: null);
+
                 return back()->with('status', 'Игрок восстановлен ✅');
             }
 
@@ -553,6 +580,8 @@ class EventRegistrationsManagementController extends Controller
                 $pos ?: null
             )->onQueue('default')->afterCommit();
         }
+
+        $this->dispatchAnnounceUpdate((int) $event->id, $occurrenceId ?: null);
 
         // Лог Staff
         if ($authUser->isStaff()) {
@@ -654,6 +683,8 @@ class EventRegistrationsManagementController extends Controller
                 'position' => $newPos,
                 'updated_at' => now(),
             ]);
+
+        $this->dispatchAnnounceUpdate((int) $event->id, $occId ?: null);
 
         return back()->with('status', 'Место обновлено ✅');
     }
@@ -802,6 +833,8 @@ class EventRegistrationsManagementController extends Controller
                 )->onQueue('default')->afterCommit();
             }
 
+            $this->dispatchAnnounceUpdate((int) $event->id, $occId ?: null);
+
             return back()->with('status', 'Восстановлено ✅');
         }
 
@@ -822,6 +855,8 @@ class EventRegistrationsManagementController extends Controller
                 $row->position ?: null
             )->onQueue('default')->afterCommit();
         }
+
+        $this->dispatchAnnounceUpdate((int) $event->id, $occId ?: null);
 
         // Лог Staff
         if ($authUser->isStaff()) {
@@ -895,6 +930,8 @@ class EventRegistrationsManagementController extends Controller
                 $row->position ?: null
             )->onQueue('default')->afterCommit();
         }
+
+        $this->dispatchAnnounceUpdate((int) $event->id, $row->occurrence_id ? (int) $row->occurrence_id : null);
 
         // Лог Staff
         if ($authUser->isStaff()) {
