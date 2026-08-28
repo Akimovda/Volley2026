@@ -288,7 +288,7 @@
 									     читать именно эти два булевых поля, менять их не пришлось. --}}
 									<div class="row mt-2" id="tournament_reg_mode_row">
 										<div class="col-md-12">
-											<div class="card" style="background:var(--card-bg,#f9fafb)">
+											<div class="card">
 												<label>{{ __('events.tournament_reg_mode_label') }}</label>
 												<div class="radio-group">
 													<label class="radio-item">

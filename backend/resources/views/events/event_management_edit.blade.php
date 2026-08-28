@@ -558,7 +558,7 @@
 
                         {{-- Индивидуальная запись игроков --}}
                         <div class="col-md-12">
-                            <div class="card" style="background:var(--card-bg,#f9fafb)">
+                            <div class="card">
                                 <input type="hidden" name="tournament_individual_reg" value="0">
                                 <label class="checkbox-item">
                                     <input type="checkbox" name="tournament_individual_reg" value="1"
