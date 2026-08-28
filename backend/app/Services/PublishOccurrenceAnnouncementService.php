@@ -110,15 +110,20 @@ class PublishOccurrenceAnnouncementService
                     continue;
                 }
 
-                $oldMessageKind = data_get($record->meta, 'message_kind');
-
-                // Платформа поддерживает редактирование и есть message_id → редактируем
-                // MAX photo: update() сам передаёт photo_id обратно, чтобы сохранить вложение
+                // Платформа поддерживает редактирование и есть message_id → редактируем.
+                // Раньше здесь ещё требовалось совпадение oldMessageKind===messageKind —
+                // после введения kind='rich' (Rich Messages, 2026-08-28) это условие стало
+                // ложным навсегда для ЛЮБОГО occurrence сразу после первой регистрации
+                // (0 игроков ⇒ photo/text, 1+ игрок ⇒ rich, назад пути нет) — update()
+                // переставал вызываться вообще, анонс замирал на старом составе навсегда.
+                // Оба паблишера умеют сами обработать смену kind: TelegramChannelPublisher::
+                // update() делает delete+resend при несовпадении kind, MaxChannelPublisher::
+                // update() вообще не различает kind (просто редактирует текст/фото по факту) —
+                // проверка равенства kind здесь была лишней и вредной.
                 if (
                     $link->update_message &&
                     $publisher->supportsUpdate() &&
-                    !empty($record->external_message_id) &&
-                    $oldMessageKind === $messageKind
+                    !empty($record->external_message_id)
                 ) {
                     try {
                         $result = $publisher->update(
