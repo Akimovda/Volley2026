@@ -44,6 +44,7 @@ class TelegramNotifyWebhookController extends Controller
                 ->where('id', $userId)
                 ->update([
                     'telegram_notify_chat_id' => $data['telegram_chat_id'],
+                    'telegram_user_id' => $data['telegram_user_id'],
                     'telegram_notify_linked_at' => now(),
                     'updated_at' => now(),
                 ]);

@@ -67,7 +67,8 @@ class PublishOccurrenceAnnouncementService
                 'message_thread_id'       => $threadId ? (int) $threadId : null,
             ]);
 
-            $messageKind = $message->imageUrl ? 'photo' : 'text';
+            $isRich = count($message->imageUrls ?? []) > 1 || !empty($message->listText);
+            $messageKind = $isRich ? 'rich' : ($message->imageUrl ? 'photo' : 'text');
 
             $hash = sha1(json_encode([
                 'text'        => $message->text,
@@ -75,6 +76,9 @@ class PublishOccurrenceAnnouncementService
                 'button_text' => $message->buttonText,
                 'image_url'   => $message->imageUrl,
                 'silent'      => $message->silent,
+                'image_urls'  => $message->imageUrls,
+                'list_title'  => $message->listTitle,
+                'list_text'   => $message->listText,
             ], JSON_UNESCAPED_UNICODE));
 
             $record = EventChannelMessage::query()->firstOrNew([
@@ -278,6 +282,10 @@ class PublishOccurrenceAnnouncementService
                 imageUrl:        $original->imageUrl,
                 silent:          $original->silent,
                 messageThreadId: $original->messageThreadId,
+                imageUrls:       $original->imageUrls,
+                listTitle:       $original->listTitle,
+                listText:        $original->listText,
+                textShort:       $original->textShort !== null ? $banner . "\n\n" . $original->textShort : null,
             );
 
             try {
