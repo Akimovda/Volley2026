@@ -327,7 +327,7 @@
 										</div>
 									</div>
 
-									<div class="row">
+									<div class="row mt-2">
 										<div class="col-md-4">
                                             <div class="card">
 												<label>{{ __('events.tournament_scheme') }}</label>
@@ -516,7 +516,7 @@
 											</div>
 										</div>
 										<div class="col-md-4">
-											<div class="card">
+											<div class="card" id="tournament_notifs_card">
 												<label>{{ __('events.tournament_notifs') }}</label>
 												<label class="checkbox-item">
 													<input type="hidden" name="tournament_captain_confirms_members" value="0">
@@ -926,13 +926,12 @@
     if (!cb) return;
     var noteEl = document.getElementById('tournament_individual_reg_note');
     // Cards that become irrelevant in individual mode: captain confirms, auto-submit, etc.
-    // They're inside col-md-4 which is the 3rd column in tournament_settings_block row.
-    // We just visually dim them and show a note — values are still submitted but ignored.
+    // Values are still submitted but ignored — we just visually dim them and show a note.
     function apply(){
         var on = cb.checked;
         if (noteEl) noteEl.style.display = on ? '' : 'none';
         // Dim the team-specific notifications card
-        var notifCard = cb.closest('.ramka') ? cb.closest('.ramka').querySelector('.col-md-4 .card') : null;
+        var notifCard = document.getElementById('tournament_notifs_card');
         if (notifCard) notifCard.style.opacity = on ? '0.4' : '';
     }
     cb.addEventListener('change', apply);
