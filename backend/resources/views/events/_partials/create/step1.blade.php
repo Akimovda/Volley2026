@@ -278,7 +278,7 @@
 									</div>
 								</div>
 								
-								<div class="ramka" id="tournament_settings_block" data-show-if="format=tournament">
+								<div class="ramka no-highlight" id="tournament_settings_block" data-show-if="format=tournament">
 									<h2 class="-mt-05">{{ __('events.tournament_settings') }}</h2>
 
 									{{-- Тип регистрации команд — единая radio-группа: обычная командная / King-Queen
