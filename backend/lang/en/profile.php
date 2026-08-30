@@ -243,6 +243,7 @@ return [
     'premium_offer_li_3'  => '👥 Profile friends and visitors',
     'premium_offer_li_4'  => '📊 Detailed game history and analytics',
     'premium_offer_li_5'  => '🔔 Weekly digest of games in your city',
+    'premium_offer_li_6'  => '⚡ Auto-booking for events — pick a game in advance, and the system registers you automatically once registration opens',
     'premium_subscribe_btn' => '👑 Subscribe to Premium',
     'premium_price_from'  => 'from 199₽ / month',
 

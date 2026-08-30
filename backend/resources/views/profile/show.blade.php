@@ -1193,6 +1193,7 @@
 									<li>{{ __('profile.premium_offer_li_3') }}</li>
 									<li>{{ __('profile.premium_offer_li_4') }}</li>
 									<li>{{ __('profile.premium_offer_li_5') }}</li>
+									<li>{{ __('profile.premium_offer_li_6') }}</li>
 								</ul>
 							</div>
 							<div class="col-md-4 text-center" style="display:flex;flex-direction:column;justify-content:center;gap:1rem;">
