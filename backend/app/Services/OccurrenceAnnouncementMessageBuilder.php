@@ -378,7 +378,9 @@ class OccurrenceAnnouncementMessageBuilder
     }
 
     /**
-     * Строка уровня: «1 ⚪️ – 4 🔵»
+     * Строка уровня: «🟠 Ср- – 🔴 КМС». Сокращения и терминология (в т.ч.
+     * питерская Lite/Medium/Hard для событий в СПб/ЛО) — те же, что и на сайте
+     * (level_name_short() + level_terminology_scope_for_event()).
      */
     private function buildLevelLine(object $event, string $direction): string
     {
@@ -392,7 +394,8 @@ class OccurrenceAnnouncementMessageBuilder
             return '';
         }
 
-        $fmt = fn ($v) => $v . ' ' . $this->levelEmoji((int) $v);
+        $scope = level_terminology_scope_for_event($event);
+        $fmt = fn ($v) => $this->levelEmoji((int) $v) . ' ' . level_name_short((int) $v, $scope);
 
         if ($min !== null && $max !== null) {
             return $fmt($min) . ' – ' . $fmt($max);
