@@ -3657,7 +3657,16 @@ body.dark .card-ramka {
 .ramka.no-highlight::after,
 .card-ramka.no-highlight::after {
 	display: none;
-} 
+}
+/* Вложенный .ramka внутри блока "НАСТРОЙКИ МЕРОПРИЯТИЯ" (tournament_settings_block, events/create step1) —
+   двойной backdrop-filter/градиент поверх уже блюрнутого фона родителя "выбеливал" блок, особенно в тёмной теме.
+   Убираем собственный фон/тень у вложенного блока — оформление (включая h2) наследуется от родительского .ramka. */
+.ramka #tournament_settings_block {
+	background-image: none;
+	background-color: transparent;
+	backdrop-filter: none;
+	box-shadow: none;
+}
 main {
 	position: relative;
 	box-shadow: 0 1rem 2.2rem rgba(0, 0, 0, 0.05), 0 0.5rem 1.2rem rgba(0, 0, 0, 0.03);
