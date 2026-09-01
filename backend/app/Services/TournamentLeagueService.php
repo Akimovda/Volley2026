@@ -368,6 +368,18 @@ class TournamentLeagueService
             throw new InvalidArgumentException('Нельзя удалить лигу с командами.');
         }
 
+        // tournament_season_events.league_id -> cascadeOnDelete(): без этой проверки
+        // удаление дивизиона молча снесло бы привязку тура/мероприятия к сезону
+        // (сам Event/матчи не удаляются, но пропадает бухгалтерия тура в сезоне) —
+        // тот же класс риска, что был у deleteSeason() до фикса.
+        $linkedEvents = TournamentSeasonEvent::where('league_id', $league->id)->count();
+        if ($linkedEvents > 0) {
+            throw new InvalidArgumentException(
+                "Нельзя удалить дивизион: к нему привязано {$linkedEvents} тур(ов)/мероприятий. "
+                . 'Сначала отвяжите их или перенесите в другой дивизион/сезон.'
+            );
+        }
+
         $league->delete();
     }
 
