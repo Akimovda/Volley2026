@@ -1,6 +1,8 @@
 {{-- resources/views/events/_partials/like_badge.blade.php --}}
 {{-- Плашка "лайк" мероприятия. Ожидает переменные из events/_card.blade.php:
-     $event, $eventLikeCount, $eventLiked, $eventPageUrl. Гость — открывает общий
+     $event, $occ, $eventLikeCount, $eventLiked, $eventPageUrl. Лайк привязан к
+     конкретному туру ($occ->id), а не к серии ($event->id) — иначе он показывался
+     бы на всех датах повторяющегося мероприятия сразу. Гость — открывает общий
      поп-ап логина (см. auth/_login_popup.blade.php), авторизованный — toggle
      через делегированный клик-хендлер в public/assets/script.js (.js-like-toggle). --}}
 @if(auth()->check())
@@ -8,6 +10,7 @@
     type="button"
     class="event-like-badge js-like-toggle{{ $eventLiked ? ' is-liked' : '' }}"
     data-event-id="{{ (int) $event->id }}"
+    data-occurrence-id="{{ (int) $occ->id }}"
     title="{{ __('events.card_like_title') }}"
 >
     <x-menu-icon name="flame" />

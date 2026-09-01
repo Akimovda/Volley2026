@@ -8,11 +8,16 @@ class EventLike extends Model
 {
     public $timestamps = false;
 
-    protected $fillable = ['event_id', 'user_id', 'created_at'];
+    protected $fillable = ['event_id', 'occurrence_id', 'user_id', 'created_at'];
 
     public function event()
     {
         return $this->belongsTo(Event::class);
+    }
+
+    public function occurrence()
+    {
+        return $this->belongsTo(EventOccurrence::class);
     }
 
     public function user()

@@ -1213,10 +1213,11 @@ jQuery(document).on('click', '.js-like-toggle', function (e) {
 	var $btn = jQuery(this);
 	if ($btn.prop('disabled')) return;
 
-	var eventId   = $btn.data('event-id');
-	var $count    = $btn.find('[data-like-count]');
-	var wasLiked  = $btn.hasClass('is-liked');
-	var prevCount = parseInt($count.text(), 10) || 0;
+	var eventId      = $btn.data('event-id');
+	var occurrenceId = $btn.data('occurrence-id');
+	var $count       = $btn.find('[data-like-count]');
+	var wasLiked     = $btn.hasClass('is-liked');
+	var prevCount    = parseInt($count.text(), 10) || 0;
 
 	$btn.prop('disabled', true);
 	$btn.toggleClass('is-liked', !wasLiked);
@@ -1225,6 +1226,7 @@ jQuery(document).on('click', '.js-like-toggle', function (e) {
 	jQuery.ajax({
 		url: '/events/' + eventId + '/like',
 		method: 'POST',
+		data: { occurrence_id: occurrenceId },
 		dataType: 'json',
 		headers: { 'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') || {}).content },
 	}).done(function (data) {
