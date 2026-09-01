@@ -163,12 +163,24 @@ class TournamentSeasonService
     }
 
     /**
-     * Удалить сезон (только draft).
+     * Удалить сезон (в любом статусе — draft/active/completed).
+     *
+     * Блокируем удаление, только если к сезону всё ещё привязаны туры
+     * (tournament_season_events) — иначе организатор случайно потеряет
+     * привязку статистики/промоушена к живым мероприятиям. Сначала нужно
+     * отвязать туры (кнопка ✕ в списке «Привязанные турниры») или перенести
+     * их в другой сезон/дивизион (страница мероприятия → блок «Сезон»).
      */
     public function deleteSeason(TournamentSeason $season): void
     {
-        if (!$season->isDraft()) {
-            throw new InvalidArgumentException('Можно удалить только сезон в статусе draft.');
+        $linkedEvents = TournamentSeasonEvent::where('season_id', $season->id)->count();
+
+        if ($linkedEvents > 0) {
+            throw new InvalidArgumentException(
+                "Нельзя удалить сезон: к нему привязано {$linkedEvents} тур(ов)/мероприятий. "
+                . 'Сначала отвяжите их (кнопка ✕ в списке «Привязанные турниры» ниже) '
+                . 'или перенесите в другой сезон через настройки мероприятия.'
+            );
         }
 
         $season->delete();

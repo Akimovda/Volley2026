@@ -108,9 +108,13 @@ class TournamentSeasonController extends Controller
     {
         $this->authorizeSeason($request, $season);
 
+        // 'direction' форма не отправляет (поле неизменяемо, задаётся лигой при
+        // создании сезона) — 'required' здесь молча ронял validate() на КАЖДОМ
+        // сохранении настроек сезона (страница не показывала $errors), из-за чего
+        // казалось, что сезон (особенно завершённый) вообще нельзя отредактировать.
         $validated = $request->validate([
             'name'      => 'required|string|max:255',
-            'direction' => 'required|in:classic,beach',
+            'direction' => 'sometimes|string|in:classic,beach',
             'starts_at' => 'nullable|date',
             'ends_at'   => 'nullable|date|after_or_equal:starts_at',
             'config'    => 'nullable|array',
@@ -741,7 +745,12 @@ class TournamentSeasonController extends Controller
     private function authorizeSeason(Request $request, TournamentSeason $season): void
     {
         $user = $request->user();
-        if ($season->organizer_id !== $user->id && !$user->isAdmin()) {
+        $isSeasonOwner = (int) $season->organizer_id === (int) $user->id;
+        // Владелец лиги должен управлять сезоном и в случае, если сезон создавал
+        // не он сам (например, админ от имени лиги) — season->organizer_id тогда
+        // указывает на создателя, а не на владельца лиги.
+        $isLeagueOwner = (int) ($season->league?->organizer_id ?? 0) === (int) $user->id;
+        if (!$isSeasonOwner && !$isLeagueOwner && !$user->isAdmin()) {
             abort(403, 'Вы не являетесь организатором этого сезона.');
         }
     }

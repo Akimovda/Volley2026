@@ -185,27 +185,39 @@
                     </div>
                 </div>
             </div>
+            @else
+            <div class="alert alert-warning mb-2" style="padding-top:6px;padding-bottom:6px">
+                Не найден активный сезон для даты этого мероприятия. Дивизион можно выбрать вручную из любого сезона ниже.
+            </div>
+            @endif
 
+            @if($allSeasons->flatMap(fn($s) => $s->leagues)->isNotEmpty())
             <form method="POST" action="{{ route('events.event_management.update-season', $event) }}" class="form">
                 @csrf
                 <div class="card mb-2" style="overflow:visible">
-                    <label>Дивизион</label>
+                    <label>Дивизион <span class="cd f-13">(лига — сезон)</span></label>
                     <select name="division_id">
                         <option value="">— не выбран —</option>
-                        @foreach($seasonDivisions as $d)
-                        <option value="{{ $d->id }}"
-                            {{ (int)$currentDivisionId === (int)$d->id ? 'selected' : '' }}>
-                            {{ $d->name }}
-                        </option>
+                        @foreach($allSeasons as $s)
+                            @if($s->leagues->isNotEmpty())
+                            <optgroup label="{{ $s->league->name ?? '—' }} — {{ $s->name }}">
+                                @foreach($s->leagues as $d)
+                                <option value="{{ $d->id }}"
+                                    {{ (int)$currentDivisionId === (int)$d->id ? 'selected' : '' }}>
+                                    {{ $d->name }}
+                                </option>
+                                @endforeach
+                            </optgroup>
+                            @endif
                         @endforeach
                     </select>
+                    <div class="f-13 cd mt-1">Можно перенести турнир в дивизион любого своего сезона — не только совпадающего по дате. Пригодится, если исходный сезон нужно удалить.</div>
                 </div>
                 <button type="submit" class="btn btn-primary" style="padding:8px 24px">Сохранить привязку</button>
             </form>
-
             @else
             <div class="alert alert-warning" style="padding-top:6px;padding-bottom:6px">
-                Не найден активный сезон для даты этого мероприятия. Проверьте даты сезонов в разделе управления лигами.
+                У вас пока нет ни одной лиги с дивизионами. Создайте лигу и сезон в разделе «Мои лиги и сезоны».
             </div>
             @endif
         </div>

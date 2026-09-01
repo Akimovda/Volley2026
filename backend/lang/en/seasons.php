@@ -199,6 +199,7 @@ return [
     'btn_activate' => 'Activate',
     'confirm_delete_season' => 'Delete season?',
     'delete_season_text' => 'All divisions will also be deleted. Cannot be undone!',
+    'delete_season_blocked_hint' => 'This season has linked tours/events — unlink them below (✕ button) or move them to another season via the event settings first, otherwise deletion will be rejected.',
     'confirm_complete_season' => 'Complete the season?',
     'btn_complete_season' => 'Complete season',
     'add_division_h2' => 'Add division',

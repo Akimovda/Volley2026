@@ -49,11 +49,18 @@
 		</div>
 		@endif
 		@if(session('error'))
-		<div class="ramka">	
+		<div class="ramka">
 			<div class="alert alert-danger">{{ session('error') }} ❌</div>
 		</div>
 		@endif
-		
+		@if($errors->any())
+		<div class="ramka">
+			<div class="alert alert-danger">
+				@foreach($errors->all() as $err)<div>{{ $err }} ❌</div>@endforeach
+			</div>
+		</div>
+		@endif
+
 		<div class="row row2 form">
 			<div class="col-lg-4">
 				{{-- Настройки --}}
@@ -155,16 +162,6 @@
 							@csrf
 							<button class="btn w-100">{{ __('seasons.btn_activate') }}</button>
 						</form>
-						<form action="{{ route('seasons.destroy', $season) }}" method="POST" style="flex:1"
-						onsubmit="return confirm({!! json_encode(__('seasons.confirm_delete_season')) !!})">
-							@csrf @method('DELETE')
-							<button class="btn btn-danger btn-alert w-100"
-							data-title="{{ __('seasons.confirm_delete_season') }}"
-							data-text="{{ __('seasons.delete_season_text') }}"
-							data-icon="warning"
-							data-confirm-text="{{ __('seasons.btn_delete') }}"
-							data-cancel-text="{{ __('seasons.btn_cancel') }}">{{ __('seasons.btn_delete') }}</button>
-						</form>
 						@elseif($season->isActive())
 						<form action="{{ route('seasons.complete', $season) }}" method="POST" style="flex:1"
 						onsubmit="return confirm({!! json_encode(__('seasons.confirm_complete_season')) !!})">
@@ -172,8 +169,20 @@
 							<button class="btn btn-secondary w-100">{{ __('seasons.btn_complete_season') }}</button>
 						</form>
 						@endif
+						{{-- Удаление доступно в любом статусе (draft/active/completed) —
+						     заблокировано на сервере, только если к сезону привязаны туры. --}}
+						<form action="{{ route('seasons.destroy', $season) }}" method="POST" style="flex:1"
+						onsubmit="return confirm({!! json_encode(__('seasons.confirm_delete_season')) !!})">
+							@csrf @method('DELETE')
+							<button class="btn btn-danger btn-alert w-100"
+							data-title="{{ __('seasons.confirm_delete_season') }}"
+							data-text="{{ $season->seasonEvents->isNotEmpty() ? __('seasons.delete_season_blocked_hint') : __('seasons.delete_season_text') }}"
+							data-icon="warning"
+							data-confirm-text="{{ __('seasons.btn_delete') }}"
+							data-cancel-text="{{ __('seasons.btn_cancel') }}">{{ __('seasons.btn_delete') }}</button>
+						</form>
 					</div>
-					
+
 					<div class="mt-2">
 						{{ __('seasons.leagues_public_link_label') }} <br><a class="blink" href="{{ route('seasons.show.slug', [$season->league?->slug ?? 'league', $season->slug]) }}" target="_blank">/l/{{ $season->league?->slug ?? 'league' }}/s/{{ $season->slug }}</a>
 					</div>
