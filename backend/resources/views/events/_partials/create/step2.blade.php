@@ -305,7 +305,7 @@ if (hiddenH) hiddenH.value = h;
 											<div class="col-sm-4">
 												<label>{{ __('events.reg_ends_label') }}</label>
 												<input type="hidden" name="reg_ends_minutes_before" id="reg_ends_minutes_before" value="{{ $oldRegEndsMinutesBefore }}">
-												<div class="d-flex" id="reg_ends_hm_wrap" style="gap:.5rem;align-items:center">
+												<div id="reg_ends_hm_wrap" style="display:flex;gap:.5rem;align-items:center">
 												<select id="reg_ends_hours" name="reg_ends_h" style="width:auto">
 												@for ($h = 0; $h <= 24; $h++)
 													<option value="{{ $h }}" @selected($regEndsHours == $h)>{{ $h }} {{ __('events.dur_h_short') }}</option>
@@ -317,7 +317,7 @@ if (hiddenH) hiddenH.value = h;
 												@endforeach
 												</select>
 												</div>
-												<div class="d-flex" id="reg_ends_dh_wrap" style="display:none;gap:.5rem;align-items:center">
+												<div id="reg_ends_dh_wrap" style="display:none;gap:.5rem;align-items:center">
 												<select id="reg_ends_days_alt" style="width:auto">
 												@for ($d = 0; $d <= 60; $d++)
 													<option value="{{ $d }}" @selected($regEndsDaysAlt == $d)>{{ $d }} {{ __('events.dur_d_short') }}</option>
@@ -339,7 +339,7 @@ if (hiddenH) hiddenH.value = h;
 											<div class="col-sm-4">
 												<label>{{ __('events.cancel_lock_label') }}</label>
 												<input type="hidden" name="cancel_lock_minutes_before" id="cancel_lock_minutes_before" value="{{ $oldCancelLockMinutesBefore }}">
-												<div class="d-flex" id="cancel_lock_hm_wrap" style="gap:.5rem;align-items:center">
+												<div id="cancel_lock_hm_wrap" style="display:flex;gap:.5rem;align-items:center">
 												<select id="cancel_lock_hours" name="cancel_lock_h" style="width:auto">
 												@for ($h = 0; $h <= 24; $h++)
 													<option value="{{ $h }}" @selected($cancelLockHours == $h)>{{ $h }} {{ __('events.dur_h_short') }}</option>
@@ -351,7 +351,7 @@ if (hiddenH) hiddenH.value = h;
 												@endforeach
 												</select>
 												</div>
-												<div class="d-flex" id="cancel_lock_dh_wrap" style="display:none;gap:.5rem;align-items:center">
+												<div id="cancel_lock_dh_wrap" style="display:none;gap:.5rem;align-items:center">
 												<select id="cancel_lock_days_alt" style="width:auto">
 												@for ($d = 0; $d <= 60; $d++)
 													<option value="{{ $d }}" @selected($cancelLockDaysAlt == $d)>{{ $d }} {{ __('events.dur_d_short') }}</option>
@@ -375,7 +375,7 @@ if (hiddenH) hiddenH.value = h;
 											<div class="col-sm-8">
 												<label>{{ __('events.cancel_lock_waitlist_label') }}</label>
 												<input type="hidden" name="cancel_lock_waitlist_minutes_before" id="cancel_lock_waitlist_minutes_before" value="{{ $oldCancelLockWaitlistMinutesBefore }}">
-												<div class="d-flex" id="cancel_lock_waitlist_hm_wrap" style="gap:.5rem;align-items:center">
+												<div id="cancel_lock_waitlist_hm_wrap" style="display:flex;gap:.5rem;align-items:center">
 												<select id="cancel_lock_waitlist_hours" name="cancel_lock_waitlist_h" style="width:auto">
 												<option value="0" @selected($cancelLockWaitlistHours == 0)>0 {{ __('events.dur_h_short') }}</option>
 												@for ($h = 1; $h <= 24; $h++)
@@ -388,7 +388,7 @@ if (hiddenH) hiddenH.value = h;
 												@endforeach
 												</select>
 												</div>
-												<div class="d-flex" id="cancel_lock_waitlist_dh_wrap" style="display:none;gap:.5rem;align-items:center">
+												<div id="cancel_lock_waitlist_dh_wrap" style="display:none;gap:.5rem;align-items:center">
 												<select id="cancel_lock_waitlist_days_alt" style="width:auto">
 												@for ($d = 0; $d <= 60; $d++)
 													<option value="{{ $d }}" @selected($cancelLockWaitlistDaysAlt == $d)>{{ $d }} {{ __('events.dur_d_short') }}</option>
@@ -727,8 +727,8 @@ if (hiddenH) hiddenH.value = h;
             var mSel = document.getElementById(f.mSel);
             var hintHm = document.getElementById(f.hintHm);
             var hintDh = document.getElementById(f.hintDh);
-            if (hmWrap) hmWrap.style.display = daysMode ? 'none' : '';
-            if (dhWrap) dhWrap.style.display = daysMode ? '' : 'none';
+            if (hmWrap) hmWrap.style.display = daysMode ? 'none' : 'flex';
+            if (dhWrap) dhWrap.style.display = daysMode ? 'flex' : 'none';
             if (hintHm) hintHm.style.display = daysMode ? 'none' : '';
             if (hintDh) hintDh.style.display = daysMode ? '' : 'none';
             // Отключаем неактивные named-селекты, чтобы их значения не попадали в POST
