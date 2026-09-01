@@ -254,8 +254,18 @@ class LeagueController extends Controller
         $seasonIds = $league->seasons()->pluck('id');
         $tlIds = DB::table('tournament_leagues')->whereIn('season_id', $seasonIds)->pluck('id');
 
+        // events.season_id — денормализованный указатель на ТЕКУЩИЙ сезон серии
+        // (TournamentSeasonAutoCreateService двигает его вперёд при каждом новом туре).
+        // tournament_season_events хранит историю всех туров по факту, включая уже
+        // прошедшие сезоны, на которые events.season_id больше не указывает — без
+        // этой проверки удаление лиги молча каскадно стирало бы историю/результаты
+        // старых туров (tournament_season_events.league_id/season_id cascadeOnDelete),
+        // даже когда $hasEvents (по текущему указателю) ложно показывает "пусто".
         $hasEvents = $seasonIds->isNotEmpty()
-            && DB::table('events')->whereIn('season_id', $seasonIds)->exists();
+            && (
+                DB::table('events')->whereIn('season_id', $seasonIds)->exists()
+                || DB::table('tournament_season_events')->whereIn('season_id', $seasonIds)->exists()
+            );
         $hasTeams = $tlIds->isNotEmpty()
             && DB::table('tournament_league_teams')->whereIn('league_id', $tlIds)->exists();
 
