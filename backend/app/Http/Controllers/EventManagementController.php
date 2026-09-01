@@ -269,10 +269,13 @@ if ($role === 'admin') {
             'include_registered_list' => (bool) ($first->include_registered_list ?? true),
         ];
 
-        // Автоопределение сезона по дате события + дивизионы для выбора
+        // Автоопределение сезона по дате события (только подсказка) +
+        // полный список дивизионов по ВСЕМ лигам/сезонам организатора для
+        // ручного переноса турнира в любой сезон (не только совпадающий по дате) —
+        // нужно, например, чтобы освободить сезон перед его удалением.
         $detectedSeason   = null;
         $detectedLeague   = null;
-        $seasonDivisions  = collect();
+        $allSeasons       = collect();
         $currentDivisionId = null;
         if (($event->format ?? '') === 'tournament') {
             $eventDate = $event->starts_at
@@ -282,6 +285,11 @@ if ($role === 'admin') {
             $leagues = \App\Models\League::where('organizer_id', $event->organizer_id)
                 ->orderBy('name')->get();
 
+            $allSeasons = \App\Models\TournamentSeason::whereIn('league_id', $leagues->pluck('id'))
+                ->with(['leagues', 'league'])
+                ->orderByDesc('starts_at')
+                ->get();
+
             foreach ($leagues as $lg) {
                 $season = \App\Models\TournamentSeason::where('league_id', $lg->id)
                     ->where(function ($q) use ($eventDate) {
@@ -290,14 +298,12 @@ if ($role === 'admin') {
                     ->where(function ($q) use ($eventDate) {
                         $q->whereNull('ends_at')->orWhere('ends_at', '>=', $eventDate);
                     })
-                    ->with('leagues')
                     ->orderByDesc('starts_at')
                     ->first();
 
                 if ($season) {
                     $detectedSeason  = $season;
                     $detectedLeague  = $lg;
-                    $seasonDivisions = $season->leagues;
                     break;
                 }
             }
@@ -321,7 +327,7 @@ if ($role === 'admin') {
             'seasonInfo'       => $seasonInfo,
             'detectedSeason'   => $detectedSeason,
             'detectedLeague'   => $detectedLeague,
-            'seasonDivisions'  => $seasonDivisions,
+            'allSeasons'       => $allSeasons,
             'currentDivisionId' => $currentDivisionId,
             'orgPaySettings'   => $orgPaySettings,
             'levelScope'       => $levelScope,
@@ -345,21 +351,41 @@ if ($role === 'admin') {
         $divisionId = (int) $request->input('division_id');
 
         // Находим сезон по дивизиону
-        $division = \App\Models\TournamentLeague::findOrFail($divisionId);
+        $division = \App\Models\TournamentLeague::with('season.league')->findOrFail($divisionId);
+        if (
+            (int) ($division->season?->league?->organizer_id ?? 0) !== (int) $event->organizer_id
+            && !$user->isAdmin()
+        ) {
+            abort(403, 'Дивизион принадлежит другой лиге.');
+        }
         $seasonId = $division->season_id;
 
         // Обновляем season_id на событии
         $event->season_id = $seasonId;
         $event->save();
 
-        // Обновляем tournament_season_events для всех occurrence этого события
+        // Обновляем tournament_season_events для occurrence этого события.
+        // ВАЖНО: не трогаем туры со status=completed — у них уже есть результаты/статистика,
+        // привязанные к их исходному сезону/дивизиону. Перепривязываем только текущие/будущие
+        // (pending) туры — иначе смена дивизиона стирала бы завершённую историю серии,
+        // разбросанной по нескольким прошлым сезонам.
         if ($seasonId && $divisionId) {
             $occurrences = DB::table('event_occurrences')
                 ->where('event_id', $event->id)
                 ->pluck('id');
 
-            // Удаляем старые записи
-            DB::table('tournament_season_events')->where('event_id', $event->id)->delete();
+            $completedOccurrenceIds = DB::table('tournament_season_events')
+                ->where('event_id', $event->id)
+                ->where('status', 'completed')
+                ->whereNotNull('occurrence_id')
+                ->pluck('occurrence_id')
+                ->all();
+
+            // Удаляем только незавершённые записи (в т.ч. без occurrence_id)
+            DB::table('tournament_season_events')
+                ->where('event_id', $event->id)
+                ->where('status', '!=', 'completed')
+                ->delete();
 
             // Определяем round_number — берём максимальный существующий в этом сезоне + 1
             $maxRound = DB::table('tournament_season_events')
@@ -368,6 +394,9 @@ if ($role === 'admin') {
 
             $round = $maxRound + 1;
             foreach ($occurrences as $occId) {
+                if (in_array($occId, $completedOccurrenceIds, true)) {
+                    continue; // тур уже завершён в своём сезоне — не переносим
+                }
                 DB::table('tournament_season_events')->insert([
                     'season_id'     => $seasonId,
                     'league_id'     => $divisionId,
