@@ -13,8 +13,8 @@ $likedEventIds           = $likedEventIds ?? [];
 $isJoined     = in_array((int)$occ->id, $joinedOccurrenceIds, true);
 $joinDisabled = in_array((int)$occ->id, $restrictedOccurrenceIds, true);
 
-$eventLikeCount = (int) ($eventLikeCounts[(int) $event->id] ?? 0);
-$eventLiked     = in_array((int) $event->id, $likedEventIds, true);
+$eventLikeCount = (int) ($eventLikeCounts[(int) $occ->id] ?? 0);
+$eventLiked     = in_array((int) $occ->id, $likedEventIds, true);
 
 $dir = $event?->direction ?? 'classic';
 $userLevel = null;

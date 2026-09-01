@@ -310,8 +310,8 @@ class EventIndexService
 
         [$joinedIds,$restrictedIds] = $this->joinedIds('occurrence_id');
 
-        $eventIdsForLikes = $occurrences->pluck('event.id')->filter()->unique()->values()->all();
-        [$eventLikeCounts, $likedEventIds] = $this->eventLikesData($eventIdsForLikes, $userId);
+        $occurrenceIdsForLikes = $occurrences->pluck('id')->filter()->unique()->values()->all();
+        [$eventLikeCounts, $likedEventIds] = $this->eventLikesData($occurrenceIdsForLikes, $userId);
 
         $now = now('UTC');
         $activeLocationNames = DB::table('locations as l')
@@ -346,34 +346,36 @@ class EventIndexService
     /*
     |--------------------------------------------------------------------------
     | EVENT LIKES (счётчики + отметки текущего пользователя, events/_card.blade.php)
+    | Ключ — occurrence_id (конкретный тур), а не event_id (серия) — иначе лайк
+    | на одной дате повторяющегося мероприятия показывался бы на всех датах.
     |--------------------------------------------------------------------------
     */
 
-    private function eventLikesData(array $eventIds, int $userId): array
+    private function eventLikesData(array $occurrenceIds, int $userId): array
     {
-        if (empty($eventIds) || !Schema::hasTable('event_likes')) {
+        if (empty($occurrenceIds) || !Schema::hasTable('event_likes')) {
             return [[], []];
         }
 
         $counts = DB::table('event_likes')
-            ->selectRaw('event_id, count(*) as likes')
-            ->whereIn('event_id', $eventIds)
-            ->groupBy('event_id')
-            ->pluck('likes', 'event_id')
+            ->selectRaw('occurrence_id, count(*) as likes')
+            ->whereIn('occurrence_id', $occurrenceIds)
+            ->groupBy('occurrence_id')
+            ->pluck('likes', 'occurrence_id')
             ->map(fn ($v) => (int) $v)
             ->all();
 
-        $likedEventIds = [];
+        $likedOccurrenceIds = [];
         if ($userId > 0) {
-            $likedEventIds = DB::table('event_likes')
+            $likedOccurrenceIds = DB::table('event_likes')
                 ->where('user_id', $userId)
-                ->whereIn('event_id', $eventIds)
-                ->pluck('event_id')
+                ->whereIn('occurrence_id', $occurrenceIds)
+                ->pluck('occurrence_id')
                 ->map(fn ($v) => (int) $v)
                 ->all();
         }
 
-        return [$counts, $likedEventIds];
+        return [$counts, $likedOccurrenceIds];
     }
 
     /*
