@@ -9,6 +9,7 @@ use App\Models\EventOccurrence;
 use App\Services\TournamentTeamService;
 use App\Services\TournamentTeamDistributionService;
 use App\Models\EventTournamentSetting;
+use App\Services\EventCancellationGuard;
 use App\Services\WaitlistService;
 use DomainException;
 use Illuminate\Http\RedirectResponse;
@@ -891,6 +892,10 @@ class TournamentTeamController extends Controller
         $user = $request->user();
         abort_unless($user, 403);
 
+        if ($lockError = $this->cancelLockError($event, $team, $user)) {
+            return back()->withErrors(['leave' => $lockError]);
+        }
+
         $addToWaitlist = $request->boolean('add_to_waitlist');
         $occurrenceId  = $team->occurrence_id ? (int) $team->occurrence_id : null;
         $teamKind      = $team->team_kind;
@@ -977,6 +982,25 @@ class TournamentTeamController extends Controller
         $result = $service->distributeRandom($event, $occurrence);
 
         return response()->json($result, $result['ok'] ? 200 : 422);
+    }
+
+    /**
+     * Запрет отмены записи (cancel_self_until / cancel_self_until_waitlist) — тот же
+     * гейт, что и для индивидуальной отмены регистрации (EventCancellationGuard),
+     * но для самостоятельного выхода из командного состава турнира/кемпа.
+     */
+    private function cancelLockError(Event $event, EventTeam $team, \App\Models\User $user): ?string
+    {
+        $occurrence = $team->occurrence
+            ?: EventOccurrence::where('event_id', $event->id)->orderBy('starts_at')->first();
+
+        if (!$occurrence) {
+            return null;
+        }
+
+        $result = app(EventCancellationGuard::class)->check($user, $occurrence);
+
+        return $result->allowed ? null : implode(' ', $result->errors);
     }
 
     private function dispatchAnnounceRefresh(Event $event, ?int $occurrenceId): void
@@ -1094,6 +1118,10 @@ class TournamentTeamController extends Controller
         $isOrganizer = (int) $event->organizer_id === (int) $user->id || $user->isAdmin();
         $isCaptain   = (int) $team->captain_user_id === (int) $user->id;
         abort_unless($isCaptain || $isOrganizer, 403);
+
+        if (!$isOrganizer && ($lockError = $this->cancelLockError($event, $team, $user))) {
+            return back()->withErrors(['disband' => $lockError]);
+        }
 
         try {
             $occurrenceId = $team->occurrence_id ? (int) $team->occurrence_id : null;

@@ -216,6 +216,14 @@ if ($initialStep < 1 || $initialStep > 3) {
     $oldRegEndsMinutesBefore           = $regEndsHours * 60 + $regEndsMinutes;
     $oldCancelLockMinutesBefore        = $cancelLockHours * 60 + $cancelLockMinutes;
     $oldCancelLockWaitlistMinutesBefore = $cancelLockWaitlistHours * 60 + $cancelLockWaitlistMinutes;
+
+    // Дни+часы вариант (Турниры/Кемпы) — те же минуты, разложенные на дни+часы
+    $regEndsDaysAlt              = intdiv($oldRegEndsMinutesBefore, 1440);
+    $regEndsHoursAlt             = intdiv($oldRegEndsMinutesBefore % 1440, 60);
+    $cancelLockDaysAlt           = intdiv($oldCancelLockMinutesBefore, 1440);
+    $cancelLockHoursAlt          = intdiv($oldCancelLockMinutesBefore % 1440, 60);
+    $cancelLockWaitlistDaysAlt   = intdiv($oldCancelLockWaitlistMinutesBefore, 1440);
+    $cancelLockWaitlistHoursAlt  = intdiv($oldCancelLockWaitlistMinutesBefore % 1440, 60);
 	@endphp
 	
 	

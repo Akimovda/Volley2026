@@ -469,18 +469,19 @@
 			'max:365'
             ],
 
+            // max:87780 = 60 дней 23 часа — верхняя граница дни+часы UI (Турниры/Кемпы)
             'reg_ends_minutes_before' => [
 			'nullable',
 			'integer',
 			'min:0',
-			'max:10080'
+			'max:87780'
             ],
 
             'cancel_lock_minutes_before' => [
 			'nullable',
 			'integer',
 			'min:0',
-			'max:10080'
+			'max:87780'
             ],
 
             // Запрет отмены при наличии листа ожидания — без этих правил
@@ -492,7 +493,7 @@
 			'nullable',
 			'integer',
 			'min:0',
-			'max:10080'
+			'max:87780'
             ],
 
             // Named select fields (server-side computation)

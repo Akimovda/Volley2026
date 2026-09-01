@@ -904,9 +904,10 @@ if ($role === 'admin') {
             'age_policy'               => ['nullable', 'string', 'in:adult,child,any'],
             'reg_starts_days_before'   => ['nullable', 'integer', 'min:0', 'max:365'],
             'reg_starts_hours_before'  => ['nullable', 'integer', 'min:0', 'max:23'],
-            'reg_ends_minutes_before'  => ['nullable', 'integer', 'min:0', 'max:10080'],
-            'cancel_lock_minutes_before'          => ['nullable', 'integer', 'min:0', 'max:10080'],
-            'cancel_lock_waitlist_minutes_before' => ['nullable', 'integer', 'min:0', 'max:10080'],
+            // max:87780 = 60 дней 23 часа — верхняя граница дни+часы UI (Турниры/Кемпы)
+            'reg_ends_minutes_before'  => ['nullable', 'integer', 'min:0', 'max:87780'],
+            'cancel_lock_minutes_before'          => ['nullable', 'integer', 'min:0', 'max:87780'],
+            'cancel_lock_waitlist_minutes_before' => ['nullable', 'integer', 'min:0', 'max:87780'],
             'game_max_players'             => ['nullable', 'integer', 'min:0'],
             'game_min_players'             => ['nullable', 'integer', 'min:0'],
             'game_reserve_players_max'     => ['nullable', 'integer', 'min:0', 'max:20'],
