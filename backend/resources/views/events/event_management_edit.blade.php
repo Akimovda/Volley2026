@@ -802,7 +802,7 @@
                             <div class="card" style="overflow:visible">
                                 <label>{{ __('events.reg_ends_until_start') }}</label>
                                 <input type="hidden" name="reg_ends_minutes_before" id="mgmt_reg_ends_min" value="{{ $regEndsMinCurrent }}">
-                                <div class="d-flex" id="mgmt_reg_ends_hm_wrap" style="gap:.5rem;align-items:center">
+                                <div id="mgmt_reg_ends_hm_wrap" style="display:flex;gap:.5rem;align-items:center">
                                     <select id="mgmt_reg_ends_h" style="width:auto">
                                         @for ($h = 0; $h <= 24; $h++)
                                             <option value="{{ $h }}" @selected($regEndsHours == $h)>{{ $h }} {{ __('events.dur_h_short') }}</option>
@@ -814,7 +814,7 @@
                                         @endforeach
                                     </select>
                                 </div>
-                                <div class="d-flex" id="mgmt_reg_ends_dh_wrap" style="display:none;gap:.5rem;align-items:center">
+                                <div id="mgmt_reg_ends_dh_wrap" style="display:none;gap:.5rem;align-items:center">
                                     <select id="mgmt_reg_ends_d_alt" style="width:auto">
                                         @for ($d = 0; $d <= 60; $d++)
                                             <option value="{{ $d }}" @selected($regEndsDaysAlt == $d)>{{ $d }} {{ __('events.dur_d_short') }}</option>
@@ -837,7 +837,7 @@
                             <div class="card" style="overflow:visible">
                                 <label>{{ __('events.cancel_lock_until_start') }}</label>
                                 <input type="hidden" name="cancel_lock_minutes_before" id="mgmt_cancel_min" value="{{ $cancelMinCurrent }}">
-                                <div class="d-flex" id="mgmt_cancel_hm_wrap" style="gap:.5rem;align-items:center">
+                                <div id="mgmt_cancel_hm_wrap" style="display:flex;gap:.5rem;align-items:center">
                                     <select id="mgmt_cancel_h" style="width:auto">
                                         @for ($h = 0; $h <= 24; $h++)
                                             <option value="{{ $h }}" @selected($cancelHours == $h)>{{ $h }} {{ __('events.dur_h_short') }}</option>
@@ -849,7 +849,7 @@
                                         @endforeach
                                     </select>
                                 </div>
-                                <div class="d-flex" id="mgmt_cancel_dh_wrap" style="display:none;gap:.5rem;align-items:center">
+                                <div id="mgmt_cancel_dh_wrap" style="display:none;gap:.5rem;align-items:center">
                                     <select id="mgmt_cancel_d_alt" style="width:auto">
                                         @for ($d = 0; $d <= 60; $d++)
                                             <option value="{{ $d }}" @selected($cancelLockDaysAlt == $d)>{{ $d }} {{ __('events.dur_d_short') }}</option>
@@ -872,7 +872,7 @@
                             <div class="card" style="overflow:visible">
                                 <label>{{ __('events.cancel_lock_waitlist_label') }}</label>
                                 <input type="hidden" name="cancel_lock_waitlist_minutes_before" id="mgmt_cancel_waitlist_min" value="{{ $cancelWaitlistMinCurrent }}">
-                                <div class="d-flex" id="mgmt_cancel_waitlist_hm_wrap" style="gap:.5rem;align-items:center">
+                                <div id="mgmt_cancel_waitlist_hm_wrap" style="display:flex;gap:.5rem;align-items:center">
                                     <select id="mgmt_cancel_waitlist_h" style="width:auto">
                                         <option value="0" @selected($cancelWaitlistHours == 0)>0 {{ __('events.dur_h_short') }}</option>
                                         @for ($h = 1; $h <= 24; $h++)
@@ -885,7 +885,7 @@
                                         @endforeach
                                     </select>
                                 </div>
-                                <div class="d-flex" id="mgmt_cancel_waitlist_dh_wrap" style="display:none;gap:.5rem;align-items:center">
+                                <div id="mgmt_cancel_waitlist_dh_wrap" style="display:none;gap:.5rem;align-items:center">
                                     <select id="mgmt_cancel_waitlist_d_alt" style="width:auto">
                                         @for ($d = 0; $d <= 60; $d++)
                                             <option value="{{ $d }}" @selected($cancelLockWaitlistDaysAlt == $d)>{{ $d }} {{ __('events.dur_d_short') }}</option>
@@ -1642,19 +1642,24 @@
             function applyMgmtRegWindowGranularity() {
                 var daysMode = mgmtIsDaysMode();
                 var pairs = [
-                    { hmWrap: 'mgmt_reg_ends_hm_wrap', dhWrap: 'mgmt_reg_ends_dh_wrap', hintHm: 'mgmt_reg_ends_hint_hm', hintDh: 'mgmt_reg_ends_hint_dh' },
-                    { hmWrap: 'mgmt_cancel_hm_wrap', dhWrap: 'mgmt_cancel_dh_wrap', hintHm: 'mgmt_cancel_hint_hm', hintDh: 'mgmt_cancel_hint_dh' },
-                    { hmWrap: 'mgmt_cancel_waitlist_hm_wrap', dhWrap: 'mgmt_cancel_waitlist_dh_wrap', hintHm: 'mgmt_cancel_waitlist_hint_hm', hintDh: 'mgmt_cancel_waitlist_hint_dh' }
+                    { hmWrap: 'mgmt_reg_ends_hm_wrap', dhWrap: 'mgmt_reg_ends_dh_wrap', hintHm: 'mgmt_reg_ends_hint_hm', hintDh: 'mgmt_reg_ends_hint_dh', hSel: regEndsH, mSel: regEndsM },
+                    { hmWrap: 'mgmt_cancel_hm_wrap', dhWrap: 'mgmt_cancel_dh_wrap', hintHm: 'mgmt_cancel_hint_hm', hintDh: 'mgmt_cancel_hint_dh', hSel: cancelH, mSel: cancelM },
+                    { hmWrap: 'mgmt_cancel_waitlist_hm_wrap', dhWrap: 'mgmt_cancel_waitlist_dh_wrap', hintHm: 'mgmt_cancel_waitlist_hint_hm', hintDh: 'mgmt_cancel_waitlist_hint_dh', hSel: cancelWH, mSel: cancelWM }
                 ];
                 pairs.forEach(function(p) {
                     var hmWrap = document.getElementById(p.hmWrap);
                     var dhWrap = document.getElementById(p.dhWrap);
                     var hintHm = document.getElementById(p.hintHm);
                     var hintDh = document.getElementById(p.hintDh);
-                    if (hmWrap) hmWrap.style.display = daysMode ? 'none' : '';
-                    if (dhWrap) dhWrap.style.display = daysMode ? '' : 'none';
+                    if (hmWrap) hmWrap.style.display = daysMode ? 'none' : 'flex';
+                    if (dhWrap) dhWrap.style.display = daysMode ? 'flex' : 'none';
                     if (hintHm) hintHm.style.display = daysMode ? 'none' : '';
                     if (hintDh) hintDh.style.display = daysMode ? '' : 'none';
+                    // Старые селекты (часы+минуты) без name — в POST и так не попадают,
+                    // но отключаем их и визуально, чтобы не оставлять псевдо-интерактивные
+                    // поля видимыми при скрытом состоянии (устойчивость к .d-flex !important).
+                    if (p.hSel) p.hSel.disabled = daysMode;
+                    if (p.mSel) p.mSel.disabled = daysMode;
                 });
                 if (daysMode) {
                     syncRegDH(regEndsD, regEndsHAlt, regEndsHid);
