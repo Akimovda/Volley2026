@@ -305,7 +305,7 @@ if (hiddenH) hiddenH.value = h;
 											<div class="col-sm-4">
 												<label>{{ __('events.reg_ends_label') }}</label>
 												<input type="hidden" name="reg_ends_minutes_before" id="reg_ends_minutes_before" value="{{ $oldRegEndsMinutesBefore }}">
-												<div class="d-flex" style="gap:.5rem;align-items:center">
+												<div class="d-flex" id="reg_ends_hm_wrap" style="gap:.5rem;align-items:center">
 												<select id="reg_ends_hours" name="reg_ends_h" style="width:auto">
 												@for ($h = 0; $h <= 24; $h++)
 													<option value="{{ $h }}" @selected($regEndsHours == $h)>{{ $h }} {{ __('events.dur_h_short') }}</option>
@@ -317,16 +317,29 @@ if (hiddenH) hiddenH.value = h;
 												@endforeach
 												</select>
 												</div>
+												<div class="d-flex" id="reg_ends_dh_wrap" style="display:none;gap:.5rem;align-items:center">
+												<select id="reg_ends_days_alt" style="width:auto">
+												@for ($d = 0; $d <= 60; $d++)
+													<option value="{{ $d }}" @selected($regEndsDaysAlt == $d)>{{ $d }} {{ __('events.dur_d_short') }}</option>
+												@endfor
+												</select>
+												<select id="reg_ends_hours_alt" style="width:auto">
+												@for ($h = 0; $h <= 23; $h++)
+													<option value="{{ $h }}" @selected($regEndsHoursAlt == $h)>{{ $h }} {{ __('events.dur_h_short') }}</option>
+												@endfor
+												</select>
+												</div>
 												<ul class="list f-16 mt-1">
 													<li>{{ __('events.until_event_start') }}</li>
-													<li>{{ __('events.reg_ends_default') }}</li>
+													<li id="reg_ends_hint_hm">{{ __('events.reg_ends_default') }}</li>
+													<li id="reg_ends_hint_dh" style="display:none">{{ __('events.reg_ends_default_days') }}</li>
 												</ul>
 											</div>
-											
+
 											<div class="col-sm-4">
 												<label>{{ __('events.cancel_lock_label') }}</label>
 												<input type="hidden" name="cancel_lock_minutes_before" id="cancel_lock_minutes_before" value="{{ $oldCancelLockMinutesBefore }}">
-												<div class="d-flex" style="gap:.5rem;align-items:center">
+												<div class="d-flex" id="cancel_lock_hm_wrap" style="gap:.5rem;align-items:center">
 												<select id="cancel_lock_hours" name="cancel_lock_h" style="width:auto">
 												@for ($h = 0; $h <= 24; $h++)
 													<option value="{{ $h }}" @selected($cancelLockHours == $h)>{{ $h }} {{ __('events.dur_h_short') }}</option>
@@ -338,9 +351,22 @@ if (hiddenH) hiddenH.value = h;
 												@endforeach
 												</select>
 												</div>
+												<div class="d-flex" id="cancel_lock_dh_wrap" style="display:none;gap:.5rem;align-items:center">
+												<select id="cancel_lock_days_alt" style="width:auto">
+												@for ($d = 0; $d <= 60; $d++)
+													<option value="{{ $d }}" @selected($cancelLockDaysAlt == $d)>{{ $d }} {{ __('events.dur_d_short') }}</option>
+												@endfor
+												</select>
+												<select id="cancel_lock_hours_alt" style="width:auto">
+												@for ($h = 0; $h <= 23; $h++)
+													<option value="{{ $h }}" @selected($cancelLockHoursAlt == $h)>{{ $h }} {{ __('events.dur_h_short') }}</option>
+												@endfor
+												</select>
+												</div>
 												<ul class="list f-16 mt-1">
 													<li>{{ __('events.until_event_start') }}</li>
-													<li>{{ __('events.cancel_lock_default') }}</li>
+													<li id="cancel_lock_hint_hm">{{ __('events.cancel_lock_default') }}</li>
+													<li id="cancel_lock_hint_dh" style="display:none">{{ __('events.cancel_lock_default_days') }}</li>
 												</ul>
 											</div>
 										</div>
@@ -349,7 +375,7 @@ if (hiddenH) hiddenH.value = h;
 											<div class="col-sm-8">
 												<label>{{ __('events.cancel_lock_waitlist_label') }}</label>
 												<input type="hidden" name="cancel_lock_waitlist_minutes_before" id="cancel_lock_waitlist_minutes_before" value="{{ $oldCancelLockWaitlistMinutesBefore }}">
-												<div class="d-flex" style="gap:.5rem;align-items:center">
+												<div class="d-flex" id="cancel_lock_waitlist_hm_wrap" style="gap:.5rem;align-items:center">
 												<select id="cancel_lock_waitlist_hours" name="cancel_lock_waitlist_h" style="width:auto">
 												<option value="0" @selected($cancelLockWaitlistHours == 0)>0 {{ __('events.dur_h_short') }}</option>
 												@for ($h = 1; $h <= 24; $h++)
@@ -362,9 +388,22 @@ if (hiddenH) hiddenH.value = h;
 												@endforeach
 												</select>
 												</div>
+												<div class="d-flex" id="cancel_lock_waitlist_dh_wrap" style="display:none;gap:.5rem;align-items:center">
+												<select id="cancel_lock_waitlist_days_alt" style="width:auto">
+												@for ($d = 0; $d <= 60; $d++)
+													<option value="{{ $d }}" @selected($cancelLockWaitlistDaysAlt == $d)>{{ $d }} {{ __('events.dur_d_short') }}</option>
+												@endfor
+												</select>
+												<select id="cancel_lock_waitlist_hours_alt" style="width:auto">
+												@for ($h = 0; $h <= 23; $h++)
+													<option value="{{ $h }}" @selected($cancelLockWaitlistHoursAlt == $h)>{{ $h }} {{ __('events.dur_h_short') }}</option>
+												@endfor
+												</select>
+												</div>
 												<ul class="list f-16 mt-1">
-													<li>{{ __('events.cancel_lock_waitlist_hint') }}</li>
-													<li>{{ __('events.cancel_lock_waitlist_zero_hint') }}</li>
+													<li id="cancel_lock_waitlist_hint_common">{{ __('events.cancel_lock_waitlist_hint') }}</li>
+													<li id="cancel_lock_waitlist_hint_hm">{{ __('events.cancel_lock_waitlist_zero_hint') }}</li>
+													<li id="cancel_lock_waitlist_hint_dh" style="display:none">{{ __('events.cancel_lock_waitlist_zero_hint_days') }}</li>
 												</ul>
 											</div>
 										</div>
@@ -651,7 +690,71 @@ if (hiddenH) hiddenH.value = h;
     window.applyAllowRegShowIf = applyAllowRegShowIf;
     applyAllowRegShowIf();
 })();
-</script>	
+</script>
+<script>
+(function(){
+    var formatEl = document.getElementById('format');
+
+    // Турниры и Кемпы — окно регистрации/запрет отмены в днях+часах (не часах+минутах).
+    var fields = [
+        { hmWrap: 'reg_ends_hm_wrap', dhWrap: 'reg_ends_dh_wrap', hSel: 'reg_ends_hours', mSel: 'reg_ends_mins', dAlt: 'reg_ends_days_alt', hAlt: 'reg_ends_hours_alt', hidden: 'reg_ends_minutes_before', hintHm: 'reg_ends_hint_hm', hintDh: 'reg_ends_hint_dh' },
+        { hmWrap: 'cancel_lock_hm_wrap', dhWrap: 'cancel_lock_dh_wrap', hSel: 'cancel_lock_hours', mSel: 'cancel_lock_mins', dAlt: 'cancel_lock_days_alt', hAlt: 'cancel_lock_hours_alt', hidden: 'cancel_lock_minutes_before', hintHm: 'cancel_lock_hint_hm', hintDh: 'cancel_lock_hint_dh' },
+        { hmWrap: 'cancel_lock_waitlist_hm_wrap', dhWrap: 'cancel_lock_waitlist_dh_wrap', hSel: 'cancel_lock_waitlist_hours', mSel: 'cancel_lock_waitlist_mins', dAlt: 'cancel_lock_waitlist_days_alt', hAlt: 'cancel_lock_waitlist_hours_alt', hidden: 'cancel_lock_waitlist_minutes_before', hintHm: 'cancel_lock_waitlist_hint_hm', hintDh: 'cancel_lock_waitlist_hint_dh' }
+    ];
+
+    function isDaysMode() {
+        var v = formatEl ? formatEl.value : 'game';
+        return v === 'tournament' || v === 'camp';
+    }
+
+    function syncHM(f) {
+        var h = document.getElementById(f.hSel), m = document.getElementById(f.mSel), hidden = document.getElementById(f.hidden);
+        if (!h || !m || !hidden) return;
+        hidden.value = parseInt(h.value || 0, 10) * 60 + parseInt(m.value || 0, 10);
+    }
+    function syncDH(f) {
+        var d = document.getElementById(f.dAlt), h = document.getElementById(f.hAlt), hidden = document.getElementById(f.hidden);
+        if (!d || !h || !hidden) return;
+        hidden.value = parseInt(d.value || 0, 10) * 1440 + parseInt(h.value || 0, 10) * 60;
+    }
+
+    function applyRegWindowGranularity() {
+        var daysMode = isDaysMode();
+        fields.forEach(function(f){
+            var hmWrap = document.getElementById(f.hmWrap);
+            var dhWrap = document.getElementById(f.dhWrap);
+            var hSel = document.getElementById(f.hSel);
+            var mSel = document.getElementById(f.mSel);
+            var hintHm = document.getElementById(f.hintHm);
+            var hintDh = document.getElementById(f.hintDh);
+            if (hmWrap) hmWrap.style.display = daysMode ? 'none' : '';
+            if (dhWrap) dhWrap.style.display = daysMode ? '' : 'none';
+            if (hintHm) hintHm.style.display = daysMode ? 'none' : '';
+            if (hintDh) hintDh.style.display = daysMode ? '' : 'none';
+            // Отключаем неактивные named-селекты, чтобы их значения не попадали в POST
+            // (backend приоритизирует reg_ends_h/m и т.п. над *_minutes_before, если они присутствуют в запросе).
+            if (hSel) hSel.disabled = daysMode;
+            if (mSel) mSel.disabled = daysMode;
+            if (daysMode) syncDH(f); else syncHM(f);
+        });
+    }
+
+    fields.forEach(function(f){
+        ['hSel','mSel'].forEach(function(k){
+            var el = document.getElementById(f[k]);
+            if (el) el.addEventListener('change', function(){ if (!isDaysMode()) syncHM(f); });
+        });
+        ['dAlt','hAlt'].forEach(function(k){
+            var el = document.getElementById(f[k]);
+            if (el) el.addEventListener('change', function(){ if (isDaysMode()) syncDH(f); });
+        });
+    });
+
+    if (formatEl) formatEl.addEventListener('change', applyRegWindowGranularity);
+    window.applyRegWindowGranularity = applyRegWindowGranularity;
+    applyRegWindowGranularity();
+})();
+</script>
 								
 								
 							</div>
