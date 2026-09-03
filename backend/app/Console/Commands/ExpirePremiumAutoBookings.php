@@ -12,7 +12,7 @@ class ExpirePremiumAutoBookings extends Command
 {
     protected $signature = 'premium:expire-auto-bookings';
 
-    protected $description = 'Отменяет premium-автозаписи, не подтверждённые игроком в течение 5 часов';
+    protected $description = 'Отменяет premium-автозаписи, не подтверждённые игроком в течение 12 часов';
 
     public function handle(UserNotificationService $notificationService): int
     {
@@ -43,7 +43,7 @@ class ExpirePremiumAutoBookings extends Command
                     type: 'premium_auto_booking_unconfirmed',
                     title: '❌ Автозапись Premium отменена',
                     body: 'Вы не подтвердили участие в «' . ($event->title ?? 'мероприятии')
-                        . '» в течение 5 часов — запись автоматически отменена.',
+                        . '» в течение 12 часов — запись автоматически отменена.',
                     payload: [
                         'event_id'      => $reg->event_id,
                         'occurrence_id' => $reg->occurrence_id,

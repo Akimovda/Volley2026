@@ -169,7 +169,7 @@
             <div class="ramka mt-3">
                 <h2 class="-mt-05">{{ __('premium.auto_booking_title') }}</h2>
                 <div class="f-15 mb-2" style="opacity:.6;">
-                    {{ __('premium.auto_booking_desc') }}
+                    {!! __('premium.auto_booking_desc') !!}
                 </div>
 
                 @if(session('status'))

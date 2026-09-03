@@ -91,7 +91,7 @@ class PremiumAutoBookingJob implements ShouldQueue
                     userId: $user->id,
                     type: 'premium_auto_booking_created',
                     title: '🤖 Автозапись Premium выполнена',
-                    body: "Вы записаны на «{$event->title}». Подтвердите участие в течение 5 часов, иначе запись будет автоматически отменена.",
+                    body: "Вы записаны на «{$event->title}». Подтвердите участие в течение 12 часов, иначе запись будет автоматически отменена.",
                     payload: [
                         'event_id'         => $event->id,
                         'occurrence_id'    => $occurrence->id,
@@ -153,7 +153,7 @@ class PremiumAutoBookingJob implements ShouldQueue
                 $existing->position = $position;
                 $existing->auto_booked = true;
                 $existing->premium_auto_booking_id = $autoBooking->id;
-                $existing->premium_auto_confirm_deadline_at = now()->addHours(5);
+                $existing->premium_auto_confirm_deadline_at = now()->addHours(12);
                 $existing->confirmed_at = null;
                 $existing->payment_status = null;
                 $existing->payment_id = null;
@@ -175,7 +175,7 @@ class PremiumAutoBookingJob implements ShouldQueue
                 $reg->position = $position;
                 $reg->auto_booked = true;
                 $reg->premium_auto_booking_id = $autoBooking->id;
-                $reg->premium_auto_confirm_deadline_at = now()->addHours(5);
+                $reg->premium_auto_confirm_deadline_at = now()->addHours(12);
                 $reg->save();
             }
 

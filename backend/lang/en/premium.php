@@ -1,7 +1,7 @@
 <?php
 return [
     'auto_booking_title'    => '🤖 Auto-booking for events',
-    'auto_booking_desc'     => 'Pick an event and a position — as soon as registration opens for the next occurrence, the system will register you automatically. You will need to confirm your participation within 5 hours, otherwise the booking will be cancelled automatically.',
+    'auto_booking_desc'     => 'Pick an event and a position — as soon as registration opens for the next occurrence, the system will register you automatically. You will need to <strong>confirm your participation within 12 hours</strong>, otherwise the booking will be cancelled automatically.',
     'auto_booking_count'    => 'Active: :count of :max',
     'auto_booking_empty'    => 'No active auto-bookings.',
     'auto_booking_position_th' => 'Position',
