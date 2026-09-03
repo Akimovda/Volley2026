@@ -48,7 +48,7 @@ Schedule::command('premium:auto-booking')
     ->everyFiveMinutes()
     ->withoutOverlapping();
 
-// Снятие premium-автозаписей, не подтверждённых игроком за 5 часов
+// Снятие premium-автозаписей, не подтверждённых игроком за 12 часов
 Schedule::command('premium:expire-auto-bookings')
     ->everyFiveMinutes()
     ->withoutOverlapping();
