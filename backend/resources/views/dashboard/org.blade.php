@@ -102,9 +102,18 @@
             </div>
         </div>
 
-        {{-- ДИНАМИКА ПО МЕСЯЦАМ --}}
+        {{-- ДИНАМИКА ЗАПИСЕЙ --}}
         <div class="ramka">
-            <h2 class="-mt-05">{{ __('profile.dash_org_h2_dynamics') }}</h2>
+            <div class="section-title-row">
+                <h2 class="-mt-05">{{ __('profile.dash_org_h2_dynamics') }}</h2>
+                <div class="filter-tabs" id="dynamics-period-tabs">
+                    <button class="filter-tab dynamics-period-btn" data-period="30d">30 дней</button>
+                    <button class="filter-tab dynamics-period-btn" data-period="90d">3 месяца</button>
+                    <button class="filter-tab dynamics-period-btn" data-period="180d">6 месяцев</button>
+                    <button class="filter-tab dynamics-period-btn active" data-period="365d">Год</button>
+                    <button class="filter-tab dynamics-period-btn" data-period="all">Всё время</button>
+                </div>
+            </div>
             <div class="card">
                 <canvas id="monthlyChart" height="80"></canvas>
             </div>
@@ -113,7 +122,16 @@
         {{-- ЗАГРУЗКА МЕРОПРИЯТИЙ --}}
         @if($occurrenceLoad->count() > 0)
         <div class="ramka">
-            <h2 class="-mt-05">{{ __('profile.dash_org_h2_load') }}</h2>
+            <div class="section-title-row">
+                <h2 class="-mt-05">{{ __('profile.dash_org_h2_load') }}</h2>
+                <div class="filter-tabs" id="load-period-tabs">
+                    <button class="filter-tab load-period-btn" data-period="30d">30 дней</button>
+                    <button class="filter-tab load-period-btn active" data-period="90d">3 месяца</button>
+                    <button class="filter-tab load-period-btn" data-period="180d">6 месяцев</button>
+                    <button class="filter-tab load-period-btn" data-period="365d">Год</button>
+                    <button class="filter-tab load-period-btn" data-period="all">Всё время</button>
+                </div>
+            </div>
             <div class="card">
                 <canvas id="loadChart" height="100"></canvas>
             </div>
@@ -127,23 +145,8 @@
                             <th>{{ __('profile.dash_org_col_avg_load') }}</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        @foreach($occurrenceLoad as $row)
-                        <tr>
-                            <td>{{ $row->title }}</td>
-                            <td>{{ $row->occurrences_count }}</td>
-                            <td>{{ $row->total_registered ?? 0 }}</td>
-                            <td>
-                                @php $pct = round($row->avg_load_pct ?? 0); @endphp
-                                <div style="display:flex;align-items:center;gap:8px">
-                                    <div style="flex:1;background:#eee;border-radius:4px;height:8px">
-                                        <div style="width:{{ min(100,$pct) }}%;background:{{ $pct>=75?'#28a745':($pct>=40?'#ffc107':'#dc3545') }};height:8px;border-radius:4px"></div>
-                                    </div>
-                                    <span class="f-14 b-600">{{ $pct }}%</span>
-                                </div>
-                            </td>
-                        </tr>
-                        @endforeach
+                    <tbody id="load-table-body">
+                        {{-- рендерится через JS --}}
                     </tbody>
                 </table>
             </div>
@@ -426,24 +429,40 @@
     <script>
     document.addEventListener('DOMContentLoaded', function() {
 
-        // Динамика по месяцам
+        // --- ДИНАМИКА ЗАПИСЕЙ — переключатель периодов ---
+        // Один запрос тянет всю историю по месяцам (уже отфильтрованную на сервере: только
+        // прошедшие occurrences с закрытой регистрацией), период меняет только окно показа.
         const monthlyData = @json($monthlyStats);
+        const monthlyPeriodDays = { '30d': 30, '90d': 90, '180d': 180, '365d': 365, 'all': null };
         const monthlyCtx = document.getElementById('monthlyChart');
-        if (monthlyCtx && monthlyData.length) {
-            new Chart(monthlyCtx, {
+        let monthlyChart = null;
+
+        function renderMonthly(period) {
+            if (!monthlyCtx) return;
+            const days = monthlyPeriodDays[period];
+            let filtered = monthlyData;
+            if (days !== null) {
+                const cutoff = new Date();
+                cutoff.setDate(cutoff.getDate() - days);
+                const cutoffMonth = cutoff.getFullYear() + '-' + String(cutoff.getMonth() + 1).padStart(2, '0');
+                filtered = monthlyData.filter(r => r.month >= cutoffMonth);
+            }
+            if (monthlyChart) monthlyChart.destroy();
+            if (!filtered.length) return;
+            monthlyChart = new Chart(monthlyCtx, {
                 type: 'bar',
                 data: {
-                    labels: monthlyData.map(r => r.month),
+                    labels: filtered.map(r => r.month),
                     datasets: [
                         {
                             label: 'Записи',
-                            data: monthlyData.map(r => r.registrations),
+                            data: filtered.map(r => r.registrations),
                             backgroundColor: 'rgba(40, 167, 69, 0.7)',
                             borderRadius: 4,
                         },
                         {
                             label: 'Отмены',
-                            data: monthlyData.map(r => r.cancellations),
+                            data: filtered.map(r => r.cancellations),
                             backgroundColor: 'rgba(220, 53, 69, 0.5)',
                             borderRadius: 4,
                         }
@@ -457,18 +476,67 @@
             });
         }
 
-        // Загрузка мероприятий
+        const dynamicsTabs = document.getElementById('dynamics-period-tabs');
+        if (dynamicsTabs) {
+            dynamicsTabs.addEventListener('click', function(e) {
+                const btn = e.target.closest('.dynamics-period-btn');
+                if (!btn) return;
+                this.querySelectorAll('.dynamics-period-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                renderMonthly(btn.dataset.period);
+            });
+        }
+        renderMonthly('365d');
+
+        // --- ЗАГРУЗКА МЕРОПРИЯТИЙ — переключатель периодов ---
+        // Один запрос считает агрегаты сразу для всех периодов (occurrences_count_*,
+        // total_registered_*, avg_load_pct_*), JS выбирает нужный набор полей, пересортировывает
+        // топ-10 по числу записей и перерисовывает таблицу+график без похода на сервер.
         const loadData = @json($occurrenceLoad);
         const loadCtx = document.getElementById('loadChart');
-        if (loadCtx && loadData.length) {
-            new Chart(loadCtx, {
+        const loadTableBody = document.getElementById('load-table-body');
+        let loadChart = null;
+
+        function renderLoad(period) {
+            const rows = loadData
+                .map(r => ({
+                    title: r.title,
+                    occurrences_count: r['occurrences_count_' + period] || 0,
+                    total_registered: r['total_registered_' + period] || 0,
+                    avg_load_pct: r['avg_load_pct_' + period] || 0,
+                }))
+                .filter(r => r.occurrences_count > 0)
+                .sort((a, b) => b.total_registered - a.total_registered)
+                .slice(0, 10);
+
+            if (loadTableBody) {
+                let html = '';
+                rows.forEach(r => {
+                    const pct = Math.round(r.avg_load_pct || 0);
+                    const color = pct >= 75 ? '#28a745' : (pct >= 40 ? '#ffc107' : '#dc3545');
+                    html += '<tr>'
+                        + '<td>' + r.title.replace(/</g, '&lt;') + '</td>'
+                        + '<td>' + r.occurrences_count + '</td>'
+                        + '<td>' + r.total_registered + '</td>'
+                        + '<td><div style="display:flex;align-items:center;gap:8px">'
+                        + '<div style="flex:1;background:#eee;border-radius:4px;height:8px">'
+                        + '<div style="width:' + Math.min(100, pct) + '%;background:' + color + ';height:8px;border-radius:4px"></div>'
+                        + '</div><span class="f-14 b-600">' + pct + '%</span></div></td>'
+                        + '</tr>';
+                });
+                loadTableBody.innerHTML = html || '<tr><td colspan="4" class="text-center" style="opacity:.5">Нет данных за этот период</td></tr>';
+            }
+
+            if (loadChart) loadChart.destroy();
+            if (!loadCtx || !rows.length) return;
+            loadChart = new Chart(loadCtx, {
                 type: 'bar',
                 data: {
-                    labels: loadData.map(r => r.title.length > 25 ? r.title.substring(0, 25) + '…' : r.title),
+                    labels: rows.map(r => r.title.length > 25 ? r.title.substring(0, 25) + '…' : r.title),
                     datasets: [{
                         label: 'Средняя загрузка %',
-                        data: loadData.map(r => Math.round(r.avg_load_pct || 0)),
-                        backgroundColor: loadData.map(r => {
+                        data: rows.map(r => Math.round(r.avg_load_pct || 0)),
+                        backgroundColor: rows.map(r => {
                             const pct = r.avg_load_pct || 0;
                             return pct >= 75 ? 'rgba(40,167,69,0.7)' : pct >= 40 ? 'rgba(255,193,7,0.7)' : 'rgba(220,53,69,0.7)';
                         }),
@@ -483,6 +551,18 @@
                 }
             });
         }
+
+        const loadTabs = document.getElementById('load-period-tabs');
+        if (loadTabs) {
+            loadTabs.addEventListener('click', function(e) {
+                const btn = e.target.closest('.load-period-btn');
+                if (!btn) return;
+                this.querySelectorAll('.load-period-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                renderLoad(btn.dataset.period);
+            });
+        }
+        renderLoad('90d');
     });
     </script>
     </x-slot>
