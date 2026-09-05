@@ -75,18 +75,58 @@
         <div class="ramka">
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <h2 class="-mt-05">🏆 Самые активные игроки</h2>
-                <div class="d-flex gap-1 flex-wrap" id="period-tabs">
-                    <button class="btn btn-sm btn-outline-secondary period-btn active" data-period="30d">30 дней</button>
-                    <button class="btn btn-sm btn-outline-secondary period-btn" data-period="90d">3 месяца</button>
-                    <button class="btn btn-sm btn-outline-secondary period-btn" data-period="180d">6 месяцев</button>
-                    <button class="btn btn-sm btn-outline-secondary period-btn" data-period="365d">Год</button>
-                    <button class="btn btn-sm btn-outline-secondary period-btn" data-period="all">Всё время</button>
+                <div class="filter-tabs" id="period-tabs">
+                    <button class="filter-tab period-btn active" data-period="30d">30 дней</button>
+                    <button class="filter-tab period-btn" data-period="90d">3 месяца</button>
+                    <button class="filter-tab period-btn" data-period="180d">6 месяцев</button>
+                    <button class="filter-tab period-btn" data-period="365d">Год</button>
+                    <button class="filter-tab period-btn" data-period="all">Всё время</button>
                 </div>
             </div>
 
             <div id="top-players-list">
                 {{-- рендерится через JS --}}
                 <div class="text-center" style="opacity:.4;padding:2rem">Загрузка...</div>
+            </div>
+        </div>
+
+        {{-- ВСЯ АУДИТОРИЯ + РАЗРЕЗ ПО ЛОКАЦИЯМ --}}
+        <div class="ramka" style="overflow:visible">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h2 class="-mt-05">👥 Вся ваша аудитория</h2>
+                <div class="d-flex gap-1 flex-wrap">
+                    <a href="#" id="audience-export-pdf" class="btn btn-sm btn-secondary" target="_blank">📄 PDF</a>
+                    <a href="#" id="audience-export-csv" class="btn btn-sm btn-secondary" target="_blank">📊 Excel (CSV)</a>
+                </div>
+            </div>
+
+            @if($locations->count() > 1)
+            <div class="filter-tabs mt-2" id="audience-location-tabs">
+                <button class="filter-tab audience-location-btn active" data-location="all">Все локации</button>
+                @foreach($locations as $loc)
+                <button class="filter-tab audience-location-btn" data-location="{{ $loc->id }}">{{ $loc->name }}</button>
+                @endforeach
+            </div>
+            @endif
+
+            <div class="filter-tabs mt-2" id="audience-period-tabs">
+                <button class="filter-tab audience-period-btn" data-period="30d">30 дней</button>
+                <button class="filter-tab audience-period-btn" data-period="90d">3 месяца</button>
+                <button class="filter-tab audience-period-btn" data-period="180d">6 месяцев</button>
+                <button class="filter-tab audience-period-btn" data-period="365d">Год</button>
+                <button class="filter-tab audience-period-btn active" data-period="all">Всё время</button>
+            </div>
+
+            <div class="f-13 mt-2" style="opacity:.6" id="audience-total-line"></div>
+
+            <div class="mt-2" id="audience-list">
+                <div class="text-center" style="opacity:.4;padding:2rem">Загрузка...</div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mt-2" id="audience-pagination" style="display:none">
+                <button class="btn btn-sm btn-secondary" id="audience-prev">← Назад</button>
+                <span class="f-13" style="opacity:.6" id="audience-page-info"></span>
+                <button class="btn btn-sm btn-secondary" id="audience-next">Вперёд →</button>
             </div>
         </div>
 
@@ -131,7 +171,7 @@
                     </div>
                 </div>
                 <div class="text-right">
-                    @php $days = now()->diffInDays(\Carbon\Carbon::parse($p->last_visit)); @endphp
+                    @php $days = round((now()->timestamp - \Carbon\Carbon::parse($p->last_visit)->timestamp) / 86400, 1); @endphp
                     <span class="f-14 b-600" style="color:#f59e0b">{{ $days }} дн.</span>
                     <div class="f-12" style="opacity:.5">назад</div>
                 </div>
@@ -297,6 +337,104 @@
         });
 
         renderTopPlayers('30d');
+
+        // ВСЯ АУДИТОРИЯ — локация + период + пагинация
+        (function() {
+            const listEl   = document.getElementById('audience-list');
+            const totalEl  = document.getElementById('audience-total-line');
+            const pagEl    = document.getElementById('audience-pagination');
+            const pageInfo = document.getElementById('audience-page-info');
+            const prevBtn  = document.getElementById('audience-prev');
+            const nextBtn  = document.getElementById('audience-next');
+            const pdfLink  = document.getElementById('audience-export-pdf');
+            const csvLink  = document.getElementById('audience-export-csv');
+            const locTabs  = document.getElementById('audience-location-tabs');
+            const perTabs  = document.getElementById('audience-period-tabs');
+
+            let state = { location: 'all', period: 'all', page: 1 };
+
+            function updateExportLinks() {
+                const qs = 'location=' + encodeURIComponent(state.location) + '&period=' + encodeURIComponent(state.period);
+                pdfLink.href = '{{ route('org.players.audience.export_pdf') }}?' + qs;
+                csvLink.href = '{{ route('org.players.audience.export_csv') }}?' + qs;
+            }
+
+            function load() {
+                listEl.innerHTML = '<div class="text-center" style="opacity:.4;padding:2rem">Загрузка...</div>';
+                pagEl.style.display = 'none';
+                const url = '{{ route('org.players.audience') }}?location=' + encodeURIComponent(state.location)
+                    + '&period=' + encodeURIComponent(state.period) + '&page=' + state.page;
+
+                fetch(url, { headers: { 'Accept': 'application/json' } })
+                    .then(r => r.json())
+                    .then(data => {
+                        totalEl.textContent = 'Всего игроков: ' + data.total;
+
+                        if (!data.items.length) {
+                            listEl.innerHTML = '<div class="text-center" style="opacity:.5;padding:1rem">Нет данных за выбранный период</div>';
+                            return;
+                        }
+
+                        let html = '';
+                        const offset = (data.current_page - 1) * 15;
+                        data.items.forEach((p, i) => {
+                            html += `
+                            <div class="d-flex between fvc py-1 ${i > 0 ? 'border-top' : ''}">
+                                <div class="d-flex fvc gap-2">
+                                    <span class="f-13 b-600" style="width:28px;opacity:.4">${offset + i + 1}</span>
+                                    <a href="/users/${p.id}" class="f-15">${p.name}</a>
+                                </div>
+                                <div class="text-right">
+                                    <span class="f-15 b-600">${p.visits}</span>
+                                    <span class="f-13" style="opacity:.5"> визит${p.visits == 1 ? '' : (p.visits < 5 ? 'а' : 'ов')}</span>
+                                </div>
+                            </div>`;
+                        });
+                        listEl.innerHTML = html;
+
+                        if (data.last_page > 1) {
+                            pagEl.style.display = '';
+                            pageInfo.textContent = 'Стр. ' + data.current_page + ' из ' + data.last_page;
+                            prevBtn.disabled = data.current_page <= 1;
+                            nextBtn.disabled = data.current_page >= data.last_page;
+                        }
+
+                        updateExportLinks();
+                    });
+            }
+
+            if (locTabs) {
+                locTabs.addEventListener('click', function(e) {
+                    const btn = e.target.closest('.audience-location-btn');
+                    if (!btn) return;
+                    this.querySelectorAll('.audience-location-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    state.location = btn.dataset.location;
+                    state.page = 1;
+                    load();
+                });
+            }
+
+            perTabs.addEventListener('click', function(e) {
+                const btn = e.target.closest('.audience-period-btn');
+                if (!btn) return;
+                this.querySelectorAll('.audience-period-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                state.period = btn.dataset.period;
+                state.page = 1;
+                load();
+            });
+
+            prevBtn.addEventListener('click', function() {
+                if (state.page > 1) { state.page--; load(); }
+            });
+            nextBtn.addEventListener('click', function() {
+                state.page++; load();
+            });
+
+            updateExportLinks();
+            load();
+        })();
 
         // ГРАФИКИ УРОВНЕЙ
         const isDark = document.body.classList.contains('dark');
