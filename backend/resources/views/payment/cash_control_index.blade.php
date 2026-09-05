@@ -33,18 +33,21 @@
                                 <th>{{ __('profile.pay_ccidx_col_num') }}</th>
                                 <th>{{ __('profile.pay_ccidx_col_date') }}</th>
                                 <th>{{ __('profile.pay_ccidx_col_title') }}</th>
-                                <th>{{ __('profile.pay_ccidx_col_action') }}</th>
+                                <th>{{ __('profile.pay_ccidx_col_location') }}</th>
+                                <th class="text-center">{{ __('profile.pay_ccidx_col_action') }}</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach($occurrences as $i => $occ)
+                            @php $loc = $occ->location ?? $occ->event->location; @endphp
                             <tr>
                                 <td>{{ $occurrences->firstItem() + $i }}</td>
                                 <td class="nowrap">{{ $occ->starts_at->setTimezone('Europe/Moscow')->format('d.m.Y H:i') }}</td>
                                 <td>
                                     <a href="{{ route('events.show', $occ->event_id) }}?occurrence={{ $occ->id }}">{{ $occ->event->title }}</a>
                                 </td>
-                                <td>
+                                <td>{{ $loc->name ?? '—' }}</td>
+                                <td class="text-center">
                                     <a href="{{ route('payments.event_control', ['event' => $occ->event_id, 'occurrence' => $occ->id]) }}" class="btn btn-outline-primary btn-sm" title="{{ __('profile.pay_ctrl_title') }}">
                                         <x-menu-icon name="check" style="width:1.4rem;height:1.4rem" />
                                     </a>

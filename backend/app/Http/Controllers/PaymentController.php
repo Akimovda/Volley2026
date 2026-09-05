@@ -210,6 +210,8 @@ class PaymentController extends Controller
     public function cashControlIndex(Request $request)
     {
         $user = $request->user();
+        $now = now('UTC');
+        $cutoff = $now->copy()->subHours(24);
 
         $occurrences = EventOccurrence::query()
             ->whereHas('event', function ($q) use ($user) {
@@ -217,8 +219,22 @@ class PaymentController extends Controller
                     ->where('cash_payment_tracking_enabled', true);
             })
             ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
-            ->with('event:id,title')
-            ->orderByDesc('starts_at')
+            // Есть активная регистрация — иначе мероприятию нечего контролировать
+            ->whereExists(function ($q) {
+                $q->select(DB::raw(1))
+                    ->from('event_registrations as er')
+                    ->whereColumn('er.occurrence_id', 'event_occurrences.id')
+                    ->whereRaw('(er.is_cancelled IS NULL OR er.is_cancelled = false)')
+                    ->where('er.status', '!=', 'cancelled');
+            })
+            // Ещё не завершилось ИЛИ завершилось не позже 24ч назад (дальше уже
+            // подхватывает payments:process-unattended-cash — в списке делать нечего)
+            ->whereRaw('starts_at + make_interval(secs => COALESCE(duration_sec, 0)) >= ?', [$cutoff])
+            ->with(['event:id,title,location_id', 'event.location:id,name', 'location:id,name'])
+            // Сначала прошедшие (нужно действие быстрее всех — 24ч дедлайн), потом
+            // текущие/будущие; внутри группы — по дате.
+            ->orderByRaw('(starts_at + make_interval(secs => COALESCE(duration_sec, 0)) <= ?) DESC', [$now])
+            ->orderBy('starts_at')
             ->paginate(30);
 
         return view('payment.cash_control_index', compact('occurrences'));

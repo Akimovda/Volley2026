@@ -678,6 +678,7 @@ return [
     'pay_ccidx_col_num'        => '№',
     'pay_ccidx_col_date'       => 'Дата',
     'pay_ccidx_col_title'      => 'Название',
+    'pay_ccidx_col_location'   => 'Локация',
     'pay_ccidx_col_action'     => 'Действие',
     'pay_ccidx_empty'          => 'Нет мероприятий с включённым учётом оплаты наличными.',
 

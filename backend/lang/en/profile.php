@@ -674,6 +674,7 @@ return [
     'pay_ccidx_col_num'        => '#',
     'pay_ccidx_col_date'       => 'Date',
     'pay_ccidx_col_title'      => 'Title',
+    'pay_ccidx_col_location'   => 'Location',
     'pay_ccidx_col_action'     => 'Action',
     'pay_ccidx_empty'          => 'No events with cash payment tracking enabled.',
 
