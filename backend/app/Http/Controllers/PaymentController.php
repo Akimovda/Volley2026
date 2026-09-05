@@ -1,8 +1,11 @@
 <?php
 namespace App\Http\Controllers;
 
+use App\Models\Event;
+use App\Models\EventOccurrence;
 use App\Models\Payment;
 use App\Models\PaymentSetting;
+use App\Services\CashPaymentTrackingService;
 use App\Services\PaymentService;
 use App\Services\UserNotificationService;
 use App\Services\YookassaService;
@@ -16,6 +19,7 @@ class PaymentController extends Controller
         private PaymentService $paymentService,
         private UserNotificationService $notificationService,
         private YookassaService $yookassa,
+        private CashPaymentTrackingService $cashTracking,
     ) {}
 
     /**
@@ -176,7 +180,7 @@ class PaymentController extends Controller
         $user = $request->user();
 
         $payments = Payment::where('organizer_id', $user->id)
-            ->with(['user:id,first_name,last_name', 'event:id,title'])
+            ->with(['user:id,first_name,last_name', 'event:id,title,payment_method,cash_payment_tracking_enabled'])
             ->orderByDesc('id')
             ->paginate(20);
 
@@ -192,6 +196,69 @@ class PaymentController extends Controller
         ];
 
         return view('payment.transactions', compact('payments', 'stats'));
+    }
+
+    /**
+     * Учёт наличных платежей — страница организатора по конкретному туру.
+     * GET /profile/transactions/{event}?occurrence={occurrence}
+     */
+    public function eventPaymentControl(Request $request, Event $event)
+    {
+        $user = $request->user();
+        if ((int) $event->organizer_id !== (int) $user->id && !$user->isAdmin()) {
+            abort(403);
+        }
+
+        if (!$event->cash_payment_tracking_enabled) {
+            return redirect()->route('profile.transactions')
+                ->with('error', 'Для этого мероприятия не включён «Учёт платежей».');
+        }
+
+        $occurrenceId = (int) $request->query('occurrence');
+        $occurrence = $occurrenceId
+            ? EventOccurrence::where('id', $occurrenceId)->where('event_id', $event->id)->first()
+            : null;
+
+        if (!$occurrence) {
+            return redirect()->route('profile.transactions')
+                ->with('error', 'Тур мероприятия не найден.');
+        }
+
+        $rows = $this->cashTracking->getTrackingRows($event, $occurrence);
+
+        return view('payment.event_control', compact('event', 'occurrence', 'rows'));
+    }
+
+    /**
+     * Сохранение отметок «оплатил» — единственная точка, где статус наличного
+     * платежа становится подтверждённым. POST /profile/transactions/{event}
+     */
+    public function eventPaymentControlSave(Request $request, Event $event)
+    {
+        $user = $request->user();
+        if ((int) $event->organizer_id !== (int) $user->id && !$user->isAdmin()) {
+            abort(403);
+        }
+
+        if (!$event->cash_payment_tracking_enabled) {
+            abort(403);
+        }
+
+        $data = $request->validate([
+            'occurrence_id'   => ['required', 'integer'],
+            'paid_user_ids'   => ['nullable', 'array'],
+            'paid_user_ids.*' => ['integer'],
+        ]);
+
+        $occurrence = EventOccurrence::where('id', $data['occurrence_id'])
+            ->where('event_id', $event->id)
+            ->firstOrFail();
+
+        $result = $this->cashTracking->save($event, $occurrence, $data['paid_user_ids'] ?? [], $user);
+
+        return redirect()
+            ->route('payments.event_control', ['event' => $event->id, 'occurrence' => $occurrence->id])
+            ->with('status', "Сохранено: подтверждено оплат — {$result['confirmed']}, отправлено напоминаний — {$result['reminded']}.");
     }
 
     /**

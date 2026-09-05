@@ -65,6 +65,10 @@ class PaymentService
         $settings = PaymentSetting::where('organizer_id', $organizerId)->first();
         $holdMin  = $settings?->payment_hold_minutes ?? 15;
 
+        // Организатор, записавшийся на собственное мероприятие, не платит сам себе —
+        // платёж сразу считается подтверждённым, независимо от способа оплаты.
+        $isOrganizerSelf = $organizerId > 0 && $userId === $organizerId;
+
         $payment = Payment::create([
             'user_id'         => $userId,
             'organizer_id'    => $organizerId,
@@ -72,17 +76,19 @@ class PaymentService
             'occurrence_id'   => $occurrence->id,
             'registration_id' => $registration->id,
             'method'          => $method,
-            'status'          => 'pending',
+            'status'          => $isOrganizerSelf ? 'paid' : 'pending',
             'amount_minor'    => $amountMinor,
             'currency'        => $event->price_currency ?? 'RUB',
-            'expires_at'      => in_array($method, ['yoomoney'])
+            'org_confirmed'    => $isOrganizerSelf,
+            'org_confirmed_at' => $isOrganizerSelf ? now() : null,
+            'expires_at'      => (!$isOrganizerSelf && in_array($method, ['yoomoney']))
                 ? now()->addMinutes($holdMin)
                 : null,
         ]);
 
         // Обновляем регистрацию
         $registration->update([
-            'payment_status'   => 'pending',
+            'payment_status'   => $isOrganizerSelf ? 'paid' : 'pending',
             'payment_id'       => $payment->id,
             'payment_expires_at' => $payment->expires_at,
         ]);

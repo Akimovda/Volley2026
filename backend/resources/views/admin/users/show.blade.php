@@ -487,6 +487,12 @@
 								<strong>Действует до:</strong> 
 								<span>{{ $until }}</span>
 							</div>
+							@if($r->scope === 'organizer')
+							<div class="small mb-2">
+								<strong>Организатор:</strong>
+								<span class="b-700 red">{{ $r->organizer_name ?: ('#'.$r->organizer_id) }} — все мероприятия (неоплата наличными)</span>
+							</div>
+							@else
 							<div class="small mb-2">
 								<strong>Events:</strong>
 								@if(count($ids))
@@ -497,6 +503,7 @@
 								<span class="b-700 red">{{ __('admin.restriction_events_all_label') }}</span>
 								@endif
 							</div>
+							@endif
 							<div class="small mb-2">
 								<strong>Причина:</strong> {{ $r->reason ?: '—' }}
 							</div>

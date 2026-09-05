@@ -653,6 +653,24 @@ return [
     'pay_tx_h2'            => 'История транзакций',
     'pay_tx_empty'         => 'Транзакций пока нет.',
 
+    // === payment/event_control (учёт наличных платежей) ===
+    'pay_ctrl_title'          => 'Учёт платежей',
+    'pay_ctrl_t_description'  => 'Отметьте, кто из участников оплатил наличными',
+    'pay_ctrl_col_player'     => 'Игрок',
+    'pay_ctrl_col_amount'     => 'Сумма',
+    'pay_ctrl_col_status'     => 'Статус',
+    'pay_ctrl_col_paid'       => 'Оплатил',
+    'pay_ctrl_empty'          => 'На этот тур нет активных регистраций.',
+    'pay_ctrl_status_paid'    => '✅ Оплачено',
+    'pay_ctrl_status_pending' => '⏳ Не оплачено',
+    'pay_ctrl_status_banned'  => '⛔ Забанен за неоплату',
+    'pay_ctrl_hint'           => 'Если снять галочку у игрока — ему отправится напоминание об оплате. Если он не будет отмечен оплатившим в течение 12 часов после сохранения — доступ к записи на мероприятия этого организатора будет автоматически ограничен.',
+    'pay_ctrl_btn_save'       => 'Сохранить',
+    'pay_ctrl_confirm_title'  => 'Сохранить отметки об оплате?',
+    'pay_ctrl_confirm_text'   => 'Неотмеченным участникам будет отправлено напоминание об оплате. Действие нельзя отменить одним кликом.',
+    'pay_ctrl_confirm_yes'    => 'Сохранить',
+    'pay_ctrl_confirm_no'     => 'Отмена',
+
     // === dashboard/player and dashboard/org ===
     'dash_player_title'    => 'Моя статистика',
     'dash_player_t_description' => 'Ваша активность на площадке',

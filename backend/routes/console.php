@@ -53,6 +53,11 @@ Schedule::command('premium:expire-auto-bookings')
     ->everyFiveMinutes()
     ->withoutOverlapping();
 
+// Бан у организатора за неоплату наличными в течение 12 часов после отметки на /profile/transactions/{event}
+Schedule::command('payments:ban-unpaid-cash')
+    ->everyFiveMinutes()
+    ->withoutOverlapping();
+
 // Недельная сводка для Premium (каждый понедельник в 09:00)
 Schedule::command('premium:weekly-digest')
     ->weeklyOn(1, '09:00')

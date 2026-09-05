@@ -1454,6 +1454,11 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         ->name('payments.org_reject');
     Route::get('/profile/transactions', [\App\Http\Controllers\PaymentController::class, 'transactions'])
         ->name('profile.transactions');
+    Route::get('/profile/transactions/{event}', [\App\Http\Controllers\PaymentController::class, 'eventPaymentControl'])
+        ->name('payments.event_control');
+    Route::post('/profile/transactions/{event}', [\App\Http\Controllers\PaymentController::class, 'eventPaymentControlSave'])
+        ->name('payments.event_control.save')
+        ->middleware('block.impersonation');
     Route::get('/wallet', [\App\Http\Controllers\PaymentController::class, 'wallet'])
         ->name('wallet.index');
 });

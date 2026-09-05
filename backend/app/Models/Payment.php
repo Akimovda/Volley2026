@@ -11,6 +11,7 @@ class Payment extends Model
         'yoomoney_payment_id', 'yoomoney_confirmation_url', 'yoomoney_meta',
         'expires_at',
         'user_confirmed', 'org_confirmed', 'user_confirmed_at', 'org_confirmed_at',
+        'cash_ban_deadline_at', 'cash_banned_at',
         'team_id', 'team_member_id', 'court_booking_id',
         'refund_amount_minor', 'refund_reason', 'refunded_at',
     ];
@@ -19,6 +20,8 @@ class Payment extends Model
         'expires_at'          => 'datetime',
         'user_confirmed_at'   => 'datetime',
         'org_confirmed_at'    => 'datetime',
+        'cash_ban_deadline_at' => 'datetime',
+        'cash_banned_at'      => 'datetime',
         'refunded_at'         => 'datetime',
         'user_confirmed'      => 'boolean',
         'org_confirmed'       => 'boolean',
