@@ -490,62 +490,6 @@ if ($initialStep < 1 || $initialStep > 3) {
 			if (!$select.length) {
 				//console.log('Селект не найден:', selector);
 				return;
-// Переключение способа оплаты
-(function() {
-    const sel = document.getElementById('payment_method');
-    const linkWrap = document.getElementById('payment_link_wrap');
-    const hintCash = document.getElementById('hint_cash');
-    const hintLink = document.getElementById('hint_link');
-    const hintYoo  = document.getElementById('hint_yoomoney');
-    const methodWrap = document.getElementById('payment_method_wrap');
-    const isPaid = document.getElementById('is_paid');
-    const cashTrackingWrap = document.getElementById('cash_tracking_wrap');
-
-    const orgSettings = {
-        tbank: '{{ $orgPaySettings?->tbank_link ?? "" }}',
-        sber:  '{{ $orgPaySettings?->sber_link ?? "" }}',
-    };
-
-    const refundWrap = document.getElementById('refund_wrap');
-
-    function syncPaymentMethod() {
-        if (!sel) return;
-        const v = sel.value;
-        const isLink = v === 'tbank_link' || v === 'sber_link';
-
-        if (linkWrap) linkWrap.style.display = isLink ? '' : 'none';
-        if (hintCash) hintCash.style.display = v === 'cash' ? '' : 'none';
-        if (hintLink) hintLink.style.display = isLink ? '' : 'none';
-        if (hintYoo)  hintYoo.style.display  = v === 'yoomoney' ? '' : 'none';
-        if (cashTrackingWrap) cashTrackingWrap.style.display = v === 'cash' ? '' : 'none';
-
-        // Политика возврата — только для ЮМани
-        if (refundWrap) refundWrap.style.display = v === 'yoomoney' ? '' : 'none';
-
-        // Автозаполнение ссылки из настроек
-        const linkInput = linkWrap?.querySelector('[name="payment_link"]');
-        if (linkInput && !linkInput.value) {
-            if (v === 'tbank_link') linkInput.value = orgSettings.tbank;
-            if (v === 'sber_link')  linkInput.value = orgSettings.sber;
-        }
-    }
-
-    function syncIsPaid() {
-        if (!methodWrap || !isPaid) return;
-        const paid = isPaid.checked;
-        methodWrap.style.display = paid ? '' : 'none';
-        if (!paid && refundWrap) refundWrap.style.display = 'none';
-        if (paid) syncPaymentMethod();
-    }
-
-    sel?.addEventListener('change', syncPaymentMethod);
-    isPaid?.addEventListener('change', syncIsPaid);
-
-    syncPaymentMethod();
-    syncIsPaid();
-})();
-
-// Логика tournament_payment_mode перенесена в events-create.js
 			}
 			
 			const $wrapper = $select.prev('.form-select-wrapper');
@@ -575,6 +519,62 @@ if ($initialStep < 1 || $initialStep > 3) {
 				//console.log('Нет кастомной обертки для:', selector);
 			}
 		}
+
+		// Переключение способа оплаты
+		(function() {
+		    const sel = document.getElementById('payment_method');
+		    const linkWrap = document.getElementById('payment_link_wrap');
+		    const hintCash = document.getElementById('hint_cash');
+		    const hintLink = document.getElementById('hint_link');
+		    const hintYoo  = document.getElementById('hint_yoomoney');
+		    const methodWrap = document.getElementById('payment_method_wrap');
+		    const isPaid = document.getElementById('is_paid');
+		    const cashTrackingWrap = document.getElementById('cash_tracking_wrap');
+
+		    const orgSettings = {
+		        tbank: '{{ $orgPaySettings?->tbank_link ?? "" }}',
+		        sber:  '{{ $orgPaySettings?->sber_link ?? "" }}',
+		    };
+
+		    const refundWrap = document.getElementById('refund_wrap');
+
+		    function syncPaymentMethod() {
+		        if (!sel) return;
+		        const v = sel.value;
+		        const isLink = v === 'tbank_link' || v === 'sber_link';
+
+		        if (linkWrap) linkWrap.style.display = isLink ? '' : 'none';
+		        if (hintCash) hintCash.style.display = v === 'cash' ? '' : 'none';
+		        if (hintLink) hintLink.style.display = isLink ? '' : 'none';
+		        if (hintYoo)  hintYoo.style.display  = v === 'yoomoney' ? '' : 'none';
+		        if (cashTrackingWrap) cashTrackingWrap.style.display = v === 'cash' ? '' : 'none';
+
+		        // Политика возврата — только для ЮМани
+		        if (refundWrap) refundWrap.style.display = v === 'yoomoney' ? '' : 'none';
+
+		        // Автозаполнение ссылки из настроек
+		        const linkInput = linkWrap?.querySelector('[name="payment_link"]');
+		        if (linkInput && !linkInput.value) {
+		            if (v === 'tbank_link') linkInput.value = orgSettings.tbank;
+		            if (v === 'sber_link')  linkInput.value = orgSettings.sber;
+		        }
+		    }
+
+		    function syncIsPaid() {
+		        if (!methodWrap || !isPaid) return;
+		        const paid = isPaid.checked;
+		        methodWrap.style.display = paid ? '' : 'none';
+		        if (!paid && refundWrap) refundWrap.style.display = 'none';
+		        if (paid) syncPaymentMethod();
+		    }
+
+		    sel?.addEventListener('change', syncPaymentMethod);
+		    isPaid?.addEventListener('change', syncIsPaid);
+
+		    syncPaymentMethod();
+		    syncIsPaid();
+		})();
+		// Логика tournament_payment_mode перенесена в events-create.js
 		
 		// Существующая функция для всех селектов
 		function safeRerenderAll() {
