@@ -155,7 +155,7 @@
 									<span class="level-color-badge" style="color:{{ level_color((int)$levelMax) }};font-weight:700;">{{ level_name($levelMax, $levelScope) }}</span>
 									@endif
 								@else
-									<span class="badge badge-sm">{{ __('events.show_desc_level_any') }}</span>
+									<span class="level-color-badge" style="color:#888;font-weight:700;">{{ __('events.show_desc_level_any') }}</span>
 								@endif
 							</span>
 						</div>
@@ -225,7 +225,7 @@
 					<span class="level-color-badge" style="color:{{ level_color((int)$levelMax) }};font-weight:700;">{{ level_name($levelMax, $levelScope) }}</span>
 					@endif
 					@else
-					<span class="badge badge-sm">{{ __('events.show_desc_level_any') }}</span>
+					<span class="level-color-badge" style="color:#888;font-weight:700;">{{ __('events.show_desc_level_any') }}</span>
 					@endif
 					</span>
 					</div>

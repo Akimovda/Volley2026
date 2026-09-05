@@ -364,7 +364,7 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 										{!! $levelLabel !!}
 									</button>
 									@else
-									<span class="badge badge-sm">{{ __('events.card_level_any') }}</span>
+									<span class="levelmark levelmark--event level-any">{{ __('events.card_level_any') }}</span>
 									@endif
 								</div>
 							</div>
