@@ -64,6 +64,10 @@ class EventOccurrence extends Model
         'trainer_user_id',
         'requires_personal_data',
         'bot_assistant_enabled',
+
+        // cash payment tracking
+        'cash_payment_reviewed_at',
+        'cash_payment_autoprocessed_at',
     ];
 
     protected $casts = [
@@ -104,6 +108,9 @@ class EventOccurrence extends Model
         'refund_partial_pct' => 'integer',
         'trainer_user_id' => 'integer',
         'requires_personal_data' => 'boolean',
+
+        'cash_payment_reviewed_at' => 'datetime',
+        'cash_payment_autoprocessed_at' => 'datetime',
     ];
     /* ===================== Teams ===================== */
      /**

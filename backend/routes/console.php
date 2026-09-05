@@ -58,6 +58,13 @@ Schedule::command('payments:ban-unpaid-cash')
     ->everyFiveMinutes()
     ->withoutOverlapping();
 
+// Через 24ч после окончания мероприятия: если организатор не проверял оплату
+// наличными вообще — считаем всех оплатившими; если проверял частично — шлём
+// напоминание неотмеченным (запускает тот же флоу дедлайна/бана выше).
+Schedule::command('payments:process-unattended-cash')
+    ->everyFifteenMinutes()
+    ->withoutOverlapping();
+
 // Недельная сводка для Premium (каждый понедельник в 09:00)
 Schedule::command('premium:weekly-digest')
     ->weeklyOn(1, '09:00')
