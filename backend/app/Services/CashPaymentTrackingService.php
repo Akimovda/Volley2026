@@ -89,6 +89,14 @@ class CashPaymentTrackingService
         $paidUserIds = array_map('intval', $paidUserIds);
         $rows = $this->getTrackingRows($event, $occurrence);
 
+        // Метка "организатор хотя бы раз заходил на учёт платежей этого occurrence" —
+        // используется ProcessUnattendedCashPayments, чтобы отличить "забыл проверить"
+        // (тогда через 24ч после мероприятия считаем всех оплаченными) от "частично
+        // отметил" (тогда неотмеченным шлём напоминание вместо молчаливого автооплата).
+        if (is_null($occurrence->cash_payment_reviewed_at)) {
+            $occurrence->update(['cash_payment_reviewed_at' => now()]);
+        }
+
         $confirmed = 0;
         $reminded = 0;
 
