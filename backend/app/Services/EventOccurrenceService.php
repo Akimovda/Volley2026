@@ -317,10 +317,6 @@ if ($endType === 'until') {
 			}
 			
 			foreach ([
-            'classic_level_min',
-            'classic_level_max',
-            'beach_level_min',
-            'beach_level_max',
             'registration_starts_at',
             'registration_ends_at',
             'cancel_self_until',
