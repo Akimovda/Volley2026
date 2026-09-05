@@ -192,10 +192,14 @@ class OccurrenceAnnouncementMessageBuilder
         }
 
         // ── Цена ──────────────────────────────────────────────────────────────
-        if ($event->is_paid && $event->price_minor > 0) {
+        if ($event->price_minor > 0) {
             $amount   = number_format($event->price_minor / 100, 2, ',', ' ');
             $currency = $this->currencySymbol((string) ($event->price_currency ?? 'RUB'));
             $lines[] = "💸 {$amount} {$currency}";
+        } elseif (!empty($event->price_text)) {
+            $lines[] = "💸 {$event->price_text}";
+        } else {
+            $lines[] = '💸 ' . __('events.channel_announcement_price_free', [], 'ru');
         }
 
         $lines[] = '';
@@ -391,7 +395,7 @@ class OccurrenceAnnouncementMessageBuilder
         $max = $event->$maxField ?? null;
 
         if ($min === null && $max === null) {
-            return '';
+            return '🔘 ' . __('events.channel_announcement_level_any', [], 'ru');
         }
 
         $scope = level_terminology_scope_for_event($event);

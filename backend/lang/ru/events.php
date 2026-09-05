@@ -9,6 +9,8 @@ return [
     'channel_announcement_cancelled_deleted_fallback' => "❌ Мероприятие отменено 😢\n\n:title\n:date",
     'channel_announcement_finalized_line'            => '🏁 Мероприятие завершено!',
     'channel_announcement_finalized_button'          => '🏁 Мероприятие завершено',
+    'channel_announcement_level_any'                 => 'для всех',
+    'channel_announcement_price_free'                => 'Бесплатно!',
 
     // Список мероприятий: meta + хедер
     // Базовый вариант (без format/direction) — таргет "поиграть в волейбол" /
