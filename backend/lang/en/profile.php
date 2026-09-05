@@ -661,7 +661,7 @@ return [
     'pay_ctrl_status_paid'    => '✅ Paid',
     'pay_ctrl_status_pending' => '⏳ Not paid',
     'pay_ctrl_status_banned'  => '⛔ Banned for non-payment',
-    'pay_ctrl_hint'           => 'Unchecking a player sends them a payment reminder. If they are not marked as paid within 12 hours of saving, they will be automatically restricted from signing up for this organizer\'s events.',
+    'pay_ctrl_hint'           => 'If a player has no mark, they will get a reminder to pay. Important! If they are not marked as paid within 12 hours of saving (this rule only applies after your edits, once the event has started or ended), they will be automatically restricted from signing up for your events.',
     'pay_ctrl_btn_save'       => 'Save',
     'pay_ctrl_confirm_title'  => 'Save payment marks?',
     'pay_ctrl_confirm_text'   => 'Unmarked participants will receive a payment reminder. This cannot be undone with one click.',
