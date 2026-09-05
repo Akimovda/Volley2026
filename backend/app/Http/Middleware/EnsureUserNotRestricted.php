@@ -146,9 +146,12 @@ class EnsureUserNotRestricted
         }
 
         // -----------------------------
-        // 6) Бан по организатору — не пускаем на ЛЮБОЕ его мероприятие
+        // 6) Бан по организатору — не пускаем на ЛЮБОЕ его мероприятие.
+        //    Админов этот бан не касается никогда (защита от случайной самоблокировки
+        //    при тестировании, см. BanUnpaidCashPayments — оно и само их не банит,
+        //    это дополнительный defense-in-depth на случай ручного создания записи).
         // -----------------------------
-        if (!empty($restrictedOrganizerIds)) {
+        if (!empty($restrictedOrganizerIds) && !$user->isAdmin()) {
             $eventOrganizerId = (int) DB::table('events')->where('id', $eventId)->value('organizer_id');
             if ($eventOrganizerId && in_array($eventOrganizerId, $restrictedOrganizerIds, true)) {
                 return redirect()

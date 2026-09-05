@@ -19,13 +19,15 @@ class BanUnpaidCashPayments extends Command
     {
         $dryRun = (bool) $this->option('dry-run');
 
-        $payments = Payment::with('event:id,title,organizer_id')
+        $payments = Payment::with(['event:id,title,organizer_id', 'user:id,role'])
             ->where('method', 'cash')
             ->where('status', 'pending')
             ->whereNotNull('cash_ban_deadline_at')
             ->where('cash_ban_deadline_at', '<=', now())
             ->whereNull('cash_banned_at')
-            ->get();
+            ->get()
+            // Администраторов не баним никогда, даже случайно (в т.ч. при тестировании фичи самими собой)
+            ->reject(fn (Payment $p) => $p->user?->isAdmin());
 
         if ($dryRun) {
             $this->info("Кандидатов на бан: {$payments->count()}");

@@ -52,6 +52,9 @@ class CashPaymentTrackingService
                 ->first();
 
             if (!$payment) {
+                // Организатор, записавшийся на собственное мероприятие, не платит сам себе.
+                $isOrganizerSelf = (int) $event->organizer_id > 0 && (int) $reg->user_id === (int) $event->organizer_id;
+
                 $payment = Payment::create([
                     'user_id'         => $reg->user_id,
                     'organizer_id'    => $event->organizer_id,
@@ -59,9 +62,11 @@ class CashPaymentTrackingService
                     'occurrence_id'   => $occurrence->id,
                     'registration_id' => $reg->id,
                     'method'          => 'cash',
-                    'status'          => 'pending',
+                    'status'          => $isOrganizerSelf ? 'paid' : 'pending',
                     'amount_minor'    => (int) ($event->price_minor ?? 0),
                     'currency'        => $event->price_currency ?? 'RUB',
+                    'org_confirmed'    => $isOrganizerSelf,
+                    'org_confirmed_at' => $isOrganizerSelf ? now() : null,
                 ]);
             }
 
