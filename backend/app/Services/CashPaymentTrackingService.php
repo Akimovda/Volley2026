@@ -11,6 +11,7 @@ use App\Models\Payment;
 use App\Models\PaymentLateMark;
 use App\Models\User;
 use App\Models\UserRestriction;
+use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -18,7 +19,13 @@ use Illuminate\Support\Facades\DB;
  * Учёт наличных платежей организатором — страница /profile/transactions/{event}.
  * Единственное место, где отметка "оплатил"/"не оплатил" переводится в реальный
  * статус Payment. Дедлайн авто-бана (12ч) считается от момента КАЖДОГО сохранения
- * этой формы, не от момента регистрации — так решил организатор в задаче.
+ * этой формы (пока мероприятие уже началось), не от момента регистрации.
+ *
+ * Уведомления и 12ч-отсчёт до бана включаются ТОЛЬКО если occurrence уже началась
+ * (идёт или закончилась) на момент сохранения — организатор часто размечает оплату
+ * заранее, до старта, по факту получения денег, и в этом случае игроки и так знают,
+ * что оплатили/не оплатили: рассылка была бы избыточной (и дублировалась бы при
+ * повторном сохранении той же формы).
  */
 class CashPaymentTrackingService
 {
@@ -98,6 +105,9 @@ class CashPaymentTrackingService
             $occurrence->update(['cash_payment_reviewed_at' => now()]);
         }
 
+        $startsAtUtc = Carbon::parse($occurrence->getRawOriginal('starts_at'), 'UTC');
+        $hasStarted = $startsAtUtc->lte(now('UTC'));
+
         $confirmed = 0;
         $reminded = 0;
 
@@ -106,11 +116,12 @@ class CashPaymentTrackingService
             $payment = $row['payment'];
             $userId = (int) $row['registration']->user_id;
             $isPaidNow = in_array($userId, $paidUserIds, true);
+            $wasAlreadyConfirmed = (bool) $payment->org_confirmed;
             // Новый инцидент задержки — только переход "не был отмечен" -> "отмечен не
             // оплатившим", не при повторном сохранении уже отмеченной строки.
             $isNewLateMark = !$isPaidNow && $payment->cash_ban_deadline_at === null;
 
-            DB::transaction(function () use ($payment, $isPaidNow, $event, $userId) {
+            DB::transaction(function () use ($payment, $isPaidNow, $event, $userId, $hasStarted) {
                 if ($isPaidNow) {
                     if (!$payment->isPaid()) {
                         $this->paymentService->markPaid($payment);
@@ -129,26 +140,34 @@ class CashPaymentTrackingService
                         EventRegistration::where('id', $payment->registration_id)
                             ->update(['payment_status' => 'pending']);
                     }
-                    $payment->update([
-                        'cash_ban_deadline_at' => now()->addHours(self::BAN_HOURS),
-                        'cash_banned_at'       => null,
-                    ]);
+                    // Отсчёт до бана включаем только если мероприятие уже началось —
+                    // до старта отметка "не оплатил" ничего не запускает.
+                    if ($hasStarted) {
+                        $payment->update([
+                            'cash_ban_deadline_at' => now()->addHours(self::BAN_HOURS),
+                            'cash_banned_at'       => null,
+                        ]);
+                    }
                 }
             });
 
             if ($isPaidNow) {
                 $confirmed++;
-                $this->notificationService->create(
-                    userId: $userId,
-                    type: 'cash_payment_confirmed',
-                    title: '✅ Оплата получена',
-                    body: 'Организатор подтвердил получение оплаты за «' . $event->title . '».',
-                    payload: ['payment_id' => $payment->id, 'event_id' => $event->id, 'occurrence_id' => $occurrence->id],
-                    channels: ['in_app', 'telegram', 'vk', 'max'],
-                );
+                // Подтверждение шлём только после старта мероприятия и только один раз
+                // (не при повторном сохранении уже подтверждённой строки) — до старта
+                // игрок и так знает, что оплатил, а до повтора сообщение дублировалось.
+                if ($hasStarted && !$wasAlreadyConfirmed) {
+                    $this->notificationService->create(
+                        userId: $userId,
+                        type: 'cash_payment_confirmed',
+                        title: '✅ Оплата получена',
+                        body: 'Ваш платёж учтён за «' . $event->title . '»' . $this->formatEventDetailsSuffix($event, $occurrence) . '.',
+                        payload: ['payment_id' => $payment->id, 'event_id' => $event->id, 'occurrence_id' => $occurrence->id],
+                        channels: ['in_app', 'telegram', 'vk', 'max'],
+                    );
+                }
             } else {
-                $reminded++;
-                if ($isNewLateMark) {
+                if ($hasStarted && $isNewLateMark) {
                     PaymentLateMark::create([
                         'payment_id'   => $payment->id,
                         'user_id'      => $userId,
@@ -156,20 +175,45 @@ class CashPaymentTrackingService
                         'event_id'     => $event->id,
                         'marked_at'    => now(),
                     ]);
+                    $this->notificationService->create(
+                        userId: $userId,
+                        type: 'cash_payment_reminder',
+                        title: '⚠️ Требуется оплата',
+                        body: 'Организатор отметил, что вы ещё не оплатили участие в «' . $event->title . '». '
+                            . 'Оплатите в течение ' . self::BAN_HOURS . ' часов, иначе доступ к записи на мероприятия этого организатора будет ограничен.',
+                        payload: ['payment_id' => $payment->id, 'event_id' => $event->id, 'occurrence_id' => $occurrence->id],
+                        channels: ['in_app', 'telegram', 'vk', 'max'],
+                    );
+                    $reminded++;
                 }
-                $this->notificationService->create(
-                    userId: $userId,
-                    type: 'cash_payment_reminder',
-                    title: '⚠️ Требуется оплата',
-                    body: 'Организатор отметил, что вы ещё не оплатили участие в «' . $event->title . '». '
-                        . 'Оплатите в течение ' . self::BAN_HOURS . ' часов, иначе доступ к записи на мероприятия этого организатора будет ограничен.',
-                    payload: ['payment_id' => $payment->id, 'event_id' => $event->id, 'occurrence_id' => $occurrence->id],
-                    channels: ['in_app', 'telegram', 'vk', 'max'],
-                );
             }
         }
 
         return ['confirmed' => $confirmed, 'reminded' => $reminded];
+    }
+
+    /**
+     * " (5 сентября, 19:00, Зал Спорт, Москва)" — дата/время (в TZ occurrence) + адрес,
+     * для текста уведомления игроку. Пустая строка, если ни даты, ни адреса нет.
+     */
+    private function formatEventDetailsSuffix(Event $event, EventOccurrence $occurrence): string
+    {
+        $tz = $occurrence->timezone ?: ($event->timezone ?: 'UTC');
+        $rawStart = $occurrence->getRawOriginal('starts_at');
+        $dateStr = $rawStart
+            ? Carbon::parse($rawStart, 'UTC')->setTimezone($tz)->locale('ru')->translatedFormat('j F, H:i')
+            : null;
+
+        $location = $occurrence->location ?? $event->location;
+        $addrParts = array_filter([
+            $location?->city?->name,
+            $location?->address,
+        ]);
+        $address = $addrParts ? implode(', ', $addrParts) : $location?->name;
+
+        $parts = array_filter([$dateStr, $address]);
+
+        return $parts ? ' (' . implode(', ', $parts) . ')' : '';
     }
 
     /**
