@@ -595,7 +595,7 @@
 			@endif
 			<button
 			type="submit"
-			class="d-flex between btn {{ $key === 'reserve' ? 'btn-secondary' : 'btn-primary' }} w-100 mb-1"
+			class="d-flex between btn {{ $key === 'reserve' ? 'btn-outline-primary' : 'btn-primary' }} w-100 mb-1"
 			{{ $free <= 0 ? 'disabled' : '' }}>
 				{{ position_name($key) }}
 				<span>

@@ -138,49 +138,42 @@
 						@endif
 						
 						{{-- УРОВЕНЬ --}}
-						@if(
-						$event->classic_level_min || $event->classic_level_max ||
-						$event->beach_level_min || $event->beach_level_max
-						)
-						
 						@php
-
 						$levelMin = $event->classic_level_min ?? $event->beach_level_min;
 						$levelMax = $event->classic_level_max ?? $event->beach_level_max;
 						$levelScope = level_terminology_scope_for_event($event);
-
 						@endphp
-
-						@if($levelMin || $levelMax)
 						<div class="event-row between" style="flex-wrap: wrap;gap:.5rem;">
 							<span class="b-600"><x-menu-icon name="level" class="cd event-row-icon" /> {{ __('events.show_desc_level_label') }}</span>
 							<span>
-								@if($levelMin)
-								<span class="level-color-badge" style="color:{{ level_color((int)$levelMin) }};font-weight:700;">{{ level_name($levelMin, $levelScope) }}</span>
-								@endif
-								@if($levelMin && $levelMax && $levelMin != $levelMax)
-								<span style="opacity:.5;"> – </span>
-								<span class="level-color-badge" style="color:{{ level_color((int)$levelMax) }};font-weight:700;">{{ level_name($levelMax, $levelScope) }}</span>
+								@if($levelMin || $levelMax)
+									@if($levelMin)
+									<span class="level-color-badge" style="color:{{ level_color((int)$levelMin) }};font-weight:700;">{{ level_name($levelMin, $levelScope) }}</span>
+									@endif
+									@if($levelMin && $levelMax && $levelMin != $levelMax)
+									<span style="opacity:.5;"> – </span>
+									<span class="level-color-badge" style="color:{{ level_color((int)$levelMax) }};font-weight:700;">{{ level_name($levelMax, $levelScope) }}</span>
+									@endif
+								@else
+									<span class="badge badge-sm">{{ __('events.show_desc_level_any') }}</span>
 								@endif
 							</span>
 						</div>
-						@endif
-						
-						@endif
-						
-						
+
+
 						{{-- ОПЛАТА --}}
-						@if(!is_null($event->price_minor))
 						<div class="event-row">
 							<span class="b-600"><x-menu-icon name="money" class="cd event-row-icon" /> {{ __('events.show_desc_payment_label') }}</span>
-							<span>{{ money_human($event->price_minor, $event->price_currency) }}</span>
+							<span>
+								@if(!is_null($event->price_minor))
+									{{ money_human($event->price_minor, $event->price_currency) }}
+								@elseif(!empty($event->price_text))
+									{{ $event->price_text }}
+								@else
+									{{ __('events.show_desc_payment_free') }}
+								@endif
+							</span>
 						</div>
-						@elseif(!empty($event->price_text))
-						<div class="event-row">
-							<span class="b-600"><x-menu-icon name="money" class="cd event-row-icon" /> {{ __('events.show_desc_payment_label') }}</span>
-							<span>{{ $event->price_text }}</span>
-						</div>
-						@endif
 						
 					</div>
 					
@@ -215,16 +208,15 @@
 					</div>
 					@endif
 
-					@if($event->classic_level_min || $event->classic_level_max || $event->beach_level_min || $event->beach_level_max)
 					@php
 					$levelMin = $event->classic_level_min ?? $event->beach_level_min;
 					$levelMax = $event->classic_level_max ?? $event->beach_level_max;
 					$levelScope = level_terminology_scope_for_event($event);
 					@endphp
-					@if($levelMin || $levelMax)
 					<div class="event-row" style="flex-direction:column;gap:.5rem;">
 					<span class="b-600"><x-menu-icon name="level" class="cd event-row-icon" /> {{ __('events.show_desc_level_label') }}</span>
 					<span>
+					@if($levelMin || $levelMax)
 					@if($levelMin)
 					<span class="level-color-badge" style="color:{{ level_color((int)$levelMin) }};font-weight:700;">{{ level_name($levelMin, $levelScope) }}</span>
 					@endif
@@ -232,22 +224,24 @@
 					<span style="opacity:.5;"> – </span>
 					<span class="level-color-badge" style="color:{{ level_color((int)$levelMax) }};font-weight:700;">{{ level_name($levelMax, $levelScope) }}</span>
 					@endif
+					@else
+					<span class="badge badge-sm">{{ __('events.show_desc_level_any') }}</span>
+					@endif
 					</span>
 					</div>
-					@endif
-					@endif
 
+					<div class="event-row">
+					<span class="b-600"><x-menu-icon name="money" class="cd event-row-icon" /> {{ __('events.show_desc_payment_label') }}</span>
+					<span>
 					@if(!is_null($event->price_minor))
-					<div class="event-row">
-					<span class="b-600"><x-menu-icon name="money" class="cd event-row-icon" /> {{ __('events.show_desc_payment_label') }}</span>
-					<span>{{ money_human($event->price_minor, $event->price_currency) }}</span>
-					</div>
+					{{ money_human($event->price_minor, $event->price_currency) }}
 					@elseif(!empty($event->price_text))
-					<div class="event-row">
-					<span class="b-600"><x-menu-icon name="money" class="cd event-row-icon" /> {{ __('events.show_desc_payment_label') }}</span>
-					<span>{{ $event->price_text }}</span>
-					</div>
+					{{ $event->price_text }}
+					@else
+					{{ __('events.show_desc_payment_free') }}
 					@endif
+					</span>
+					</div>
 
 					</div>
 

@@ -154,6 +154,8 @@ return [
     'card_seats_players' => ' players',
     'card_no_limit'      => 'No limit set',
     'card_seats_full'    => 'No seats left',
+    'card_level_any'     => 'all levels',
+    'card_price_free'    => 'Free',
     'widget_reserve_suffix' => ' (+:count in reserve)',
 
     // Event status on card
@@ -260,7 +262,9 @@ return [
     'show_desc_teams_label'        => 'Teams:',
     'show_desc_lineup_label'       => 'Lineup:',
     'show_desc_level_label'        => 'Level:',
+    'show_desc_level_any'          => 'all levels',
     'show_desc_payment_label'      => 'Payment:',
+    'show_desc_payment_free'       => 'Free!',
     'show_desc_restrictions_label' => 'Restrictions:',
     'show_desc_for_kids'           => 'For kids',
     'show_desc_age_range'          => 'from :min to :max y.o.',
