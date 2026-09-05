@@ -6,6 +6,7 @@ namespace App\Console\Commands;
 
 use App\Models\EventOccurrence;
 use App\Models\Payment;
+use App\Models\PaymentLateMark;
 use App\Services\PaymentService;
 use App\Services\UserNotificationService;
 use Illuminate\Console\Command;
@@ -99,6 +100,14 @@ class ProcessUnattendedCashPayments extends Command
                         foreach ($untouched as $payment) {
                             $payment->update([
                                 'cash_ban_deadline_at' => now()->addHours(self::BAN_HOURS),
+                            ]);
+
+                            PaymentLateMark::create([
+                                'payment_id'   => $payment->id,
+                                'user_id'      => $payment->user_id,
+                                'organizer_id' => (int) $event->organizer_id,
+                                'event_id'     => $event->id,
+                                'marked_at'    => now(),
                             ]);
 
                             $notificationService->create(

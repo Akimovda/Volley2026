@@ -250,6 +250,22 @@ class OrgDashboardController extends Controller
             ->limit(10)
             ->get();
 
+        // --- ЧАСТО ЗАДЕРЖИВАЮТ ОПЛАТУ (payment_late_marks — append-only лог, см.
+        //     PaymentLateMark) --- считаем сразу все периоды одним запросом, JS
+        //     переключает/пересортировывает без похода на сервер.
+        $latePeriods = ['30d' => 30, '60d' => 60, '180d' => 180];
+        $lateSelects = [];
+        foreach ($latePeriods as $key => $days) {
+            $lateSelects[] = DB::raw("COUNT(CASE WHEN plm.marked_at >= NOW() - INTERVAL '{$days} days' THEN 1 END) as late_count_{$key}");
+        }
+
+        $topLatePayers = DB::table('payment_late_marks as plm')
+            ->join('users as u', 'u.id', '=', 'plm.user_id')
+            ->where('plm.organizer_id', $orgId)
+            ->select(array_merge(['u.id', 'u.first_name', 'u.last_name'], $lateSelects))
+            ->groupBy('u.id', 'u.first_name', 'u.last_name')
+            ->get();
+
         // --- СТАТИСТИКА АБОНЕМЕНТОВ ---
         $subStats = \DB::table('subscriptions')
             ->where('organizer_id', $orgId)
@@ -291,7 +307,7 @@ class OrgDashboardController extends Controller
             'playersStats', 'newPlayers',
             'monthlyStats', 'occurrenceLoad',
             'botEffect', 'pageViews', 'profileViews',
-            'topPlayers', 'topCancellers',
+            'topPlayers', 'topCancellers', 'topLatePayers',
             'subStats', 'subRevenue', 'topSubTemplates', 'couponStats'
         ));
     }

@@ -320,7 +320,23 @@
                     </div>
                 </div>
             </div>
-  
+
+        {{-- ЧАСТО ЗАДЕРЖИВАЮТ ОПЛАТУ (наличные) --}}
+        @if($topLatePayers->count() > 0)
+        <div class="ramka">
+            <div class="section-title-row">
+                <h2 class="-mt-05">{{ __('profile.dash_org_h2_late_payers') }}</h2>
+                <div class="filter-tabs" id="late-payers-period-tabs">
+                    <button class="filter-tab late-payers-period-btn active" data-period="30d">30 дней</button>
+                    <button class="filter-tab late-payers-period-btn" data-period="60d">60 дней</button>
+                    <button class="filter-tab late-payers-period-btn" data-period="180d">Полгода</button>
+                </div>
+            </div>
+            <div id="late-payers-list">
+                {{-- рендерится через JS --}}
+            </div>
+        </div>
+        @endif
 
 
         {{-- АБОНЕМЕНТЫ И КУПОНЫ --}}
@@ -563,6 +579,60 @@
             });
         }
         renderLoad('90d');
+
+        // --- ЧАСТО ЗАДЕРЖИВАЮТ ОПЛАТУ — переключатель периодов ---
+        // Один запрос считает count сразу для 30/60/180 дней (late_count_*), JS выбирает
+        // нужное поле, пересортировывает и режет топ-10 без похода на сервер.
+        const latePayersData = @json($topLatePayers);
+        const latePayersList = document.getElementById('late-payers-list');
+
+        function pluralRaz(n) {
+            const mod100 = Math.abs(n) % 100;
+            const mod10 = mod100 % 10;
+            if (mod100 > 10 && mod100 < 20) return 'раз';
+            if (mod10 > 1 && mod10 < 5) return 'раза';
+            return 'раз';
+        }
+
+        function renderLatePayers(period) {
+            if (!latePayersList) return;
+            const rows = latePayersData
+                .map(r => ({
+                    id: r.id,
+                    name: (r.first_name + ' ' + r.last_name).trim() || ('#' + r.id),
+                    count: r['late_count_' + period] || 0,
+                }))
+                .filter(r => r.count > 0)
+                .sort((a, b) => b.count - a.count)
+                .slice(0, 10);
+
+            let html = '';
+            rows.forEach((r, i) => {
+                html += '<div class="d-flex between fvc py-1' + (i > 0 ? ' border-top' : '') + '">'
+                    + '<div class="d-flex fvc gap-2">'
+                    + '<span class="f-14 b-600" style="width:20px;opacity:.5">' + (i + 1) + '</span>'
+                    + '<a href="/user/' + r.id + '" class="f-16">' + r.name.replace(/</g, '&lt;') + '</a>'
+                    + '</div>'
+                    + '<div class="text-right">'
+                    + '<span class="f-16 b-600 red">' + r.count + '</span>'
+                    + ' <span>' + pluralRaz(r.count) + '</span>'
+                    + '</div>'
+                    + '</div>';
+            });
+            latePayersList.innerHTML = html || '<div style="opacity:.5">Нет данных за этот период</div>';
+        }
+
+        const latePayersTabs = document.getElementById('late-payers-period-tabs');
+        if (latePayersTabs) {
+            latePayersTabs.addEventListener('click', function(e) {
+                const btn = e.target.closest('.late-payers-period-btn');
+                if (!btn) return;
+                this.querySelectorAll('.late-payers-period-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                renderLatePayers(btn.dataset.period);
+            });
+        }
+        renderLatePayers('30d');
     });
     </script>
     </x-slot>

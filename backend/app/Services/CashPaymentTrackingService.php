@@ -8,6 +8,7 @@ use App\Models\Event;
 use App\Models\EventOccurrence;
 use App\Models\EventRegistration;
 use App\Models\Payment;
+use App\Models\PaymentLateMark;
 use App\Models\User;
 use App\Models\UserRestriction;
 use Illuminate\Support\Collection;
@@ -105,6 +106,9 @@ class CashPaymentTrackingService
             $payment = $row['payment'];
             $userId = (int) $row['registration']->user_id;
             $isPaidNow = in_array($userId, $paidUserIds, true);
+            // Новый инцидент задержки — только переход "не был отмечен" -> "отмечен не
+            // оплатившим", не при повторном сохранении уже отмеченной строки.
+            $isNewLateMark = !$isPaidNow && $payment->cash_ban_deadline_at === null;
 
             DB::transaction(function () use ($payment, $isPaidNow, $event, $userId) {
                 if ($isPaidNow) {
@@ -144,6 +148,15 @@ class CashPaymentTrackingService
                 );
             } else {
                 $reminded++;
+                if ($isNewLateMark) {
+                    PaymentLateMark::create([
+                        'payment_id'   => $payment->id,
+                        'user_id'      => $userId,
+                        'organizer_id' => (int) $event->organizer_id,
+                        'event_id'     => $event->id,
+                        'marked_at'    => now(),
+                    ]);
+                }
                 $this->notificationService->create(
                     userId: $userId,
                     type: 'cash_payment_reminder',
