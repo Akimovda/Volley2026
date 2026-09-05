@@ -53,13 +53,23 @@ class OrgDashboardController extends Controller
             ->select(DB::raw('COUNT(DISTINCT er.user_id) as cnt'))
             ->value('cnt');
 
-        // --- ДИНАМИКА ПО МЕСЯЦАМ (12 месяцев) ---
+        // --- Общий фильтр "прошедшее мероприятие с завершённой регистрацией" ---
+        // Используется и в "Динамике записей", и в "Загрузке мероприятий" — учитываем только
+        // occurrences, которые реально закончились (starts_at + duration) И регистрация на
+        // которые уже закрыта (registration_ends_at), иначе будущие/идущие мероприятия искажают
+        // статистику (регистрации ещё продолжают поступать/отменяться).
+        $occurrenceFinishedExpr = "(eo.starts_at + make_interval(secs => COALESCE(eo.duration_sec, e.duration_sec, 0)::int) <= now())";
+        $registrationClosedExpr = "(COALESCE(eo.registration_ends_at, e.registration_ends_at, eo.starts_at) <= now())";
+
+        // --- ДИНАМИКА ЗАПИСЕЙ (переключатели периодов на фронте, тянем всю историю разом) ---
         $monthlyStats = DB::table('event_registrations as er')
+            ->join('event_occurrences as eo', 'eo.id', '=', 'er.occurrence_id')
             ->join('events as e', 'e.id', '=', 'er.event_id')
             ->join('users as u', 'u.id', '=', 'er.user_id')
             ->where('e.organizer_id', $orgId)
             ->where('u.is_bot', false)
-            ->where('er.created_at', '>=', now()->subMonths(12))
+            ->whereRaw($occurrenceFinishedExpr)
+            ->whereRaw($registrationClosedExpr)
             ->select(
                 DB::raw("TO_CHAR(er.created_at, 'YYYY-MM') as month"),
                 DB::raw('COUNT(CASE WHEN er.is_cancelled = false THEN 1 END) as registrations'),
@@ -120,31 +130,42 @@ class OrgDashboardController extends Controller
                     COALESCE(NULLIF(egs.max_players, 0), 0) + COALESCE(egs.reserve_players_max, 0)
             END)";
 
+        // Только реально прошедшие occurrences с закрытой регистрацией (см. $occurrenceFinishedExpr
+        // выше) — без верхней границы по датам раньше сюда попадали и БУДУЩИЕ occurrences
+        // (фильтр был только "starts_at >= now()-3мес", без "< now()"), искажая среднюю загрузку.
         $occurrenceLoadSub = DB::table('event_occurrences as eo')
             ->join('events as e', 'e.id', '=', 'eo.event_id')
             ->leftJoin('event_game_settings as egs', 'egs.event_id', '=', 'e.id')
             ->leftJoin('event_tournament_settings as ets', 'ets.event_id', '=', 'e.id')
             ->where('e.organizer_id', $orgId)
-            ->where('eo.starts_at', '>=', now()->subMonths(3))
             ->whereRaw('(eo.is_cancelled IS NULL OR eo.is_cancelled = false)')
+            ->whereRaw($occurrenceFinishedExpr)
+            ->whereRaw($registrationClosedExpr)
             ->select(
                 'e.id as event_id',
                 'e.title',
+                'eo.starts_at',
                 DB::raw("{$registeredExpr} as registered"),
                 DB::raw("{$capacityExpr} as capacity")
             );
 
+        // Переключатели периодов на фронте (30д/3мес/6мес/год/всё время) — считаем сразу все
+        // варианты одним запросом (тот же паттерн, что и "Топ активных игроков" на /org/players),
+        // JS выбирает нужный набор полей и пересортировывает топ-10 без похода на сервер.
+        $loadPeriods = ['30d' => 30, '90d' => 90, '180d' => 180, '365d' => 365];
+        $loadPeriodSelects = [];
+        foreach ($loadPeriods as $key => $days) {
+            $loadPeriodSelects[] = DB::raw("COUNT(CASE WHEN starts_at >= NOW() - INTERVAL '{$days} days' THEN 1 END) as occurrences_count_{$key}");
+            $loadPeriodSelects[] = DB::raw("SUM(CASE WHEN starts_at >= NOW() - INTERVAL '{$days} days' THEN registered END) as total_registered_{$key}");
+            $loadPeriodSelects[] = DB::raw("AVG(CASE WHEN starts_at >= NOW() - INTERVAL '{$days} days' AND capacity > 0 THEN registered::float / capacity * 100 END) as avg_load_pct_{$key}");
+        }
+        $loadPeriodSelects[] = DB::raw('COUNT(*) as occurrences_count_all');
+        $loadPeriodSelects[] = DB::raw('SUM(registered) as total_registered_all');
+        $loadPeriodSelects[] = DB::raw('AVG(CASE WHEN capacity > 0 THEN registered::float / capacity * 100 END) as avg_load_pct_all');
+
         $occurrenceLoad = DB::query()->fromSub($occurrenceLoadSub, 't')
-            ->select(
-                'event_id',
-                'title',
-                DB::raw('COUNT(*) as occurrences_count'),
-                DB::raw('SUM(registered) as total_registered'),
-                DB::raw('AVG(CASE WHEN capacity > 0 THEN registered::float / capacity * 100 END) as avg_load_pct')
-            )
+            ->select(array_merge(['event_id', 'title'], $loadPeriodSelects))
             ->groupBy('event_id', 'title')
-            ->orderByDesc('total_registered')
-            ->limit(10)
             ->get();
 
         // --- ЭФФЕКТИВНОСТЬ БОТОВ ---
