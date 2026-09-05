@@ -160,6 +160,8 @@ return [
     'card_seats_players'  => ' игроков',
     'card_no_limit'       => 'Лимит не задан',
     'card_seats_full'     => 'Мест нет',
+    'card_level_any'      => 'для всех',
+    'card_price_free'     => 'Бесплатно',
     'widget_reserve_suffix' => ' (+:count в резерве)',
 
     // Статус мероприятия на карточке
@@ -266,7 +268,9 @@ return [
     'show_desc_teams_label'        => 'Команд:',
     'show_desc_lineup_label'       => 'Состав:',
     'show_desc_level_label'        => 'Уровень:',
+    'show_desc_level_any'          => 'для всех',
     'show_desc_payment_label'      => 'Оплата:',
+    'show_desc_payment_free'       => 'Бесплатно!',
     'show_desc_restrictions_label' => 'Ограничения:',
     'show_desc_for_kids'           => 'Для детей',
     'show_desc_age_range'          => 'от :min до :max лет',

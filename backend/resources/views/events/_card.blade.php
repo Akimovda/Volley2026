@@ -273,6 +273,9 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 			$priceLabel = trim((string) $event->price_text);
 			}
 			}
+			if ($priceLabel === null) {
+			$priceLabel = __('events.card_price_free');
+			}
 			
 			$trainerUrl = null;
 			if ($isTrainingFmt && $trainerColumn && $event) {
@@ -353,18 +356,22 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 									<span class="d-inline-block">{{ $dateLong }}</span><span class="d-inline-block">{{ $timeRange }}</span>
 								</div>
 							</div>
-							@if($levelLabel)
 							<div class="event-col">
 								<div class="event-col-icon icon-level"></div>
 								<div class="event-col-data">
+									@if($levelLabel)
 									<button type="button" class="level-badge-trigger js-open-level-info" data-target="level-info-{{ (int)$occ->id }}">
 										{!! $levelLabel !!}
 									</button>
+									@else
+									<span class="badge badge-sm">{{ __('events.card_level_any') }}</span>
+									@endif
 								</div>
 							</div>
 							{{-- Поп-ап (fancybox) с полным описанием диапазона уровня — было
 							тултипом-подсказкой, но при 3+ уровнях в диапазоне контент не
 							помещался и не скроллился на экране. --}}
+							@if($levelLabel)
 							<div id="level-info-{{ (int)$occ->id }}" style="display:none; max-width: 44rem">
 								<h2 class="title-h -mt-05">{{ __('events.level_info_title') }}</h2>
 								<div class="level-tip-modal-body">
