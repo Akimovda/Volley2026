@@ -18,6 +18,9 @@
 
     <x-slot name="d_description">
         <div class="d-flex gap-2 mt-2">
+            @if($hasCashTracking)
+            <a href="{{ route('payments.cash_control_index') }}" class="btn btn-secondary">💵 {{ __('profile.pay_tx_cash_control_btn') }}</a>
+            @endif
             <a href="{{ route('profile.payment_settings') }}" class="btn btn-secondary">⚙️ {{ __('profile.pay_settings_title') }}</a>
         </div>
     </x-slot>

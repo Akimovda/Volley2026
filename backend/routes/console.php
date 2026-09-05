@@ -65,6 +65,12 @@ Schedule::command('payments:process-unattended-cash')
     ->everyFifteenMinutes()
     ->withoutOverlapping();
 
+// Вскоре после начала мероприятия с включённым учётом наличных — напомнить
+// организатору проставить отметки об оплате (ссылка на страницу учёта).
+Schedule::command('payments:remind-cash-control')
+    ->everyFifteenMinutes()
+    ->withoutOverlapping();
+
 // Недельная сводка для Premium (каждый понедельник в 09:00)
 Schedule::command('premium:weekly-digest')
     ->weeklyOn(1, '09:00')

@@ -652,6 +652,7 @@ return [
     'pay_tx_title'         => 'Транзакции',
     'pay_tx_h2'            => 'История транзакций',
     'pay_tx_empty'         => 'Транзакций пока нет.',
+    'pay_tx_cash_control_btn' => 'Контроль наличных',
 
     // === payment/event_control (учёт наличных платежей) ===
     'pay_ctrl_title'          => 'Учёт платежей',
@@ -670,6 +671,15 @@ return [
     'pay_ctrl_confirm_text'   => 'Неотмеченным участникам будет отправлено напоминание об оплате. Действие нельзя отменить одним кликом.',
     'pay_ctrl_confirm_yes'    => 'Сохранить',
     'pay_ctrl_confirm_no'     => 'Отмена',
+
+    // === payment/cash_control_index (список мероприятий с учётом наличных) ===
+    'pay_ccidx_title'          => 'Контроль наличных',
+    'pay_ccidx_t_description'  => 'Мероприятия с включённым учётом оплаты наличными',
+    'pay_ccidx_col_num'        => '№',
+    'pay_ccidx_col_date'       => 'Дата',
+    'pay_ccidx_col_title'      => 'Название',
+    'pay_ccidx_col_action'     => 'Действие',
+    'pay_ccidx_empty'          => 'Нет мероприятий с включённым учётом оплаты наличными.',
 
     // === dashboard/player and dashboard/org ===
     'dash_player_title'    => 'Моя статистика',

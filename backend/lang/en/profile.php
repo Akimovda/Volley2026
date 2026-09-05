@@ -648,6 +648,7 @@ return [
     'pay_tx_title'         => 'Transactions',
     'pay_tx_h2'            => 'Transaction history',
     'pay_tx_empty'         => 'No transactions yet.',
+    'pay_tx_cash_control_btn' => 'Cash control',
 
     // === payment/event_control (cash payment tracking) ===
     'pay_ctrl_title'          => 'Payment tracking',
@@ -666,6 +667,15 @@ return [
     'pay_ctrl_confirm_text'   => 'Unmarked participants will receive a payment reminder. This cannot be undone with one click.',
     'pay_ctrl_confirm_yes'    => 'Save',
     'pay_ctrl_confirm_no'     => 'Cancel',
+
+    // === payment/cash_control_index (occurrences with cash tracking) ===
+    'pay_ccidx_title'          => 'Cash control',
+    'pay_ccidx_t_description'  => 'Events with cash payment tracking enabled',
+    'pay_ccidx_col_num'        => '#',
+    'pay_ccidx_col_date'       => 'Date',
+    'pay_ccidx_col_title'      => 'Title',
+    'pay_ccidx_col_action'     => 'Action',
+    'pay_ccidx_empty'          => 'No events with cash payment tracking enabled.',
 
     'dash_player_title'    => 'My stats',
     'dash_player_t_description' => 'Your activity on the platform',

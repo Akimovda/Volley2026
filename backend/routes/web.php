@@ -1454,6 +1454,10 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         ->name('payments.org_reject');
     Route::get('/profile/transactions', [\App\Http\Controllers\PaymentController::class, 'transactions'])
         ->name('profile.transactions');
+    // Статичный сегмент — ДО {event}, иначе Route Model Binding попытается резолвить
+    // "cash-control" как id мероприятия.
+    Route::get('/profile/transactions/cash-control', [\App\Http\Controllers\PaymentController::class, 'cashControlIndex'])
+        ->name('payments.cash_control_index');
     Route::get('/profile/transactions/{event}', [\App\Http\Controllers\PaymentController::class, 'eventPaymentControl'])
         ->name('payments.event_control');
     Route::post('/profile/transactions/{event}', [\App\Http\Controllers\PaymentController::class, 'eventPaymentControlSave'])

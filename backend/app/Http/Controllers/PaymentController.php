@@ -195,7 +195,33 @@ class PaymentController extends Controller
                 ->count(),
         ];
 
-        return view('payment.transactions', compact('payments', 'stats'));
+        $hasCashTracking = Event::where('organizer_id', $user->id)
+            ->where('cash_payment_tracking_enabled', true)
+            ->exists();
+
+        return view('payment.transactions', compact('payments', 'stats', 'hasCashTracking'));
+    }
+
+    /**
+     * Список мероприятий с включённым «Учётом платежей» — точка входа для организатора,
+     * чтобы быстро найти нужное мероприятие и перейти к отметке оплаты (см. eventPaymentControl).
+     * GET /profile/transactions/cash-control
+     */
+    public function cashControlIndex(Request $request)
+    {
+        $user = $request->user();
+
+        $occurrences = EventOccurrence::query()
+            ->whereHas('event', function ($q) use ($user) {
+                $q->where('organizer_id', $user->id)
+                    ->where('cash_payment_tracking_enabled', true);
+            })
+            ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
+            ->with('event:id,title')
+            ->orderByDesc('starts_at')
+            ->paginate(30);
+
+        return view('payment.cash_control_index', compact('occurrences'));
     }
 
     /**
