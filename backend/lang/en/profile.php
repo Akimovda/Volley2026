@@ -718,6 +718,7 @@ return [
     'dash_org_col_repeats' => 'Repeats',
     'dash_org_col_total_regs' => 'Total regs',
     'dash_org_col_avg_load' => 'Avg load',
+    'dash_org_h2_late_payers' => '⏰ Frequently late on payment',
 
     'dash_orgt_title'      => 'Tournament analytics',
     'dash_orgt_breadcrumb_dash' => 'Organizer dashboard',

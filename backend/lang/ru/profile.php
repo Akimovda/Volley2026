@@ -723,6 +723,7 @@ return [
     'dash_org_col_repeats' => 'Повторов',
     'dash_org_col_total_regs' => 'Всего записей',
     'dash_org_col_avg_load' => 'Средняя загрузка',
+    'dash_org_h2_late_payers' => '⏰ Часто задерживают оплату',
 
     'dash_orgt_title'      => 'Аналитика турниров',
     'dash_orgt_breadcrumb_dash' => 'Панель организатора',
