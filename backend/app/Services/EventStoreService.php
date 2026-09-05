@@ -384,6 +384,9 @@ class EventStoreService
             $event->price_minor = $data['price_minor'] ?? null;
             $event->price_currency = $data['price_currency'] ?? ($event->is_paid ? 'RUB' : null);
             $event->payment_method = $event->is_paid ? ($data['payment_method'] ?? 'cash') : null;
+            $event->cash_payment_tracking_enabled = ($event->is_paid && $event->payment_method === 'cash')
+                ? (bool) ($data['cash_payment_tracking_enabled'] ?? false)
+                : false;
             $event->payment_link   = $event->is_paid ? ($data['payment_link'] ?? null) : null;
             $event->refund_hours_full    = $event->is_paid ? ($data['refund_hours_full'] ?? null) : null;
             $event->refund_hours_partial = $event->is_paid ? ($data['refund_hours_partial'] ?? null) : null;

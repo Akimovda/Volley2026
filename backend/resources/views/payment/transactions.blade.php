@@ -88,7 +88,9 @@
                                     @endif
                                 </td>
                                 <td>
-                                    @if($p->event)
+                                    @if($p->event && $p->method === 'cash' && $p->event->cash_payment_tracking_enabled && $p->occurrence_id)
+                                        <a href="{{ route('payments.event_control', ['event' => $p->event_id, 'occurrence' => $p->occurrence_id]) }}">{{ $p->event->title }}</a>
+                                    @elseif($p->event)
                                         <a href="{{ route('events.show', $p->event_id) }}">{{ $p->event->title }}</a>
                                     @else —
                                     @endif

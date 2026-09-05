@@ -499,6 +499,7 @@ if ($initialStep < 1 || $initialStep > 3) {
     const hintYoo  = document.getElementById('hint_yoomoney');
     const methodWrap = document.getElementById('payment_method_wrap');
     const isPaid = document.getElementById('is_paid');
+    const cashTrackingWrap = document.getElementById('cash_tracking_wrap');
 
     const orgSettings = {
         tbank: '{{ $orgPaySettings?->tbank_link ?? "" }}',
@@ -516,6 +517,7 @@ if ($initialStep < 1 || $initialStep > 3) {
         if (hintCash) hintCash.style.display = v === 'cash' ? '' : 'none';
         if (hintLink) hintLink.style.display = isLink ? '' : 'none';
         if (hintYoo)  hintYoo.style.display  = v === 'yoomoney' ? '' : 'none';
+        if (cashTrackingWrap) cashTrackingWrap.style.display = v === 'cash' ? '' : 'none';
 
         // Политика возврата — только для ЮМани
         if (refundWrap) refundWrap.style.display = v === 'yoomoney' ? '' : 'none';

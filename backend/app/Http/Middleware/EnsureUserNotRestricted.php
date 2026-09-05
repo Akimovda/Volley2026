@@ -9,7 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 /**
- * EnsureUserNotRestricted (ONLY events restrictions)
+ * EnsureUserNotRestricted (события + бан по организатору)
  *
  * Что делает:
  * - НЕ блокирует админку (и вообще ничего кроме join/вступления в вейтлист)
@@ -17,6 +17,9 @@ use Illuminate\Support\Facades\DB;
  *   occurrences.waitlist.join), если event_id входит в активный запрет
  *   пользователя, либо если у пользователя активен глобальный бан
  *   (event_ids пуст/NULL — запрет на ВСЕ мероприятия, "event_all").
+ * - scope=organizer — запрет записи на ЛЮБЫЕ мероприятия конкретного
+ *   организатора (используется авто-баном за неоплату наличными,
+ *   см. CashPaymentTrackingService/BanUnpaidCashPayments).
  * - Отмену записи (events.leave) НЕ блокируем (пусть может выйти).
  */
 class EnsureUserNotRestricted
@@ -71,23 +74,31 @@ class EnsureUserNotRestricted
         }
 
         // -----------------------------
-        // 3) Собираем активные restrictions scope=events
+        // 3) Собираем активные restrictions scope=events|organizer
         //    active = ends_at IS NULL OR ends_at > now()
-        //    event_ids пуст/NULL у строки => глобальный бан (event_all, все мероприятия)
+        //    event_ids пуст/NULL у строки (scope=events) => глобальный бан (event_all)
         // -----------------------------
         $rows = DB::table('user_restrictions')
-            ->select(['event_ids'])
+            ->select(['scope', 'event_ids', 'organizer_id'])
             ->where('user_id', (int) $user->id)
-            ->where('scope', 'events')
+            ->whereIn('scope', ['events', 'organizer'])
             ->where(function ($q) {
                 $q->whereNull('ends_at')->orWhere('ends_at', '>', now());
             })
             ->get();
 
         $restrictedEventIds = [];
+        $restrictedOrganizerIds = [];
         $hasGlobalBan = false;
 
         foreach ($rows as $r) {
+            if ($r->scope === 'organizer') {
+                if (is_numeric($r->organizer_id)) {
+                    $restrictedOrganizerIds[] = (int) $r->organizer_id;
+                }
+                continue;
+            }
+
             // event_ids может быть json строкой или уже массивом (зависит от драйвера/каста)
             $decoded = $r->event_ids;
 
@@ -110,6 +121,7 @@ class EnsureUserNotRestricted
         }
 
         $restrictedEventIds = array_values(array_unique($restrictedEventIds));
+        $restrictedOrganizerIds = array_values(array_unique($restrictedOrganizerIds));
 
         // -----------------------------
         // 4) Глобальный бан — не пускаем независимо от event_id
@@ -131,6 +143,18 @@ class EnsureUserNotRestricted
             return redirect()
                 ->to('/events')
                 ->with('error', __('events.restriction_blocked_event'));
+        }
+
+        // -----------------------------
+        // 6) Бан по организатору — не пускаем на ЛЮБОЕ его мероприятие
+        // -----------------------------
+        if (!empty($restrictedOrganizerIds)) {
+            $eventOrganizerId = (int) DB::table('events')->where('id', $eventId)->value('organizer_id');
+            if ($eventOrganizerId && in_array($eventOrganizerId, $restrictedOrganizerIds, true)) {
+                return redirect()
+                    ->to('/events')
+                    ->with('error', __('events.restriction_blocked_organizer'));
+            }
         }
 
         return $next($request);

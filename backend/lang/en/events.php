@@ -604,6 +604,7 @@ return [
     'restrictions_title'  => 'Restrictions',
     'restriction_blocked_event' => 'Your account has restrictions for this event.',
     'restriction_blocked_all'   => 'Your account is restricted from signing up for events. Please contact support.',
+    'restriction_blocked_organizer' => 'You have not paid for a previous event by this organizer. Registration is restricted until payment is confirmed.',
     'age_policy_label'    => 'Age restrictions',
     'age_policy_adult'    => 'Adults',
     'age_policy_child'    => 'Kids',
@@ -793,6 +794,8 @@ return [
     'pay_hint_link'          => 'Player taps "I\'ve paid", you confirm manually',
     'pay_hint_yoomoney'      => 'Seat is held for :n min. Sign-up is confirmed automatically after payment',
     'pay_method_not_configured' => 'This payment method is not configured in your profile. Add your details in the payment settings.',
+    'cash_tracking_label'    => 'Payment tracking',
+    'cash_tracking_hint'     => 'You will be able to mark which players paid in cash on the "Transactions" page → event. Unpaid players receive a reminder, and if payment is not confirmed within 12 hours, the player is restricted from signing up for your events.',
 
     'broadcast_title'           => 'Message all participants',
     'broadcast_main_count'      => 'In main roster: :n player(s)',

@@ -1009,6 +1009,19 @@
                                         value="{{ old('payment_link', $event->payment_link ?? '') }}">
                                 </div>
 
+                                <div class="mt-2" id="cash_tracking_wrap_edit" style="display:none">
+                                    <label class="checkbox-item">
+                                        <input type="hidden" name="cash_payment_tracking_enabled" value="0">
+                                        <input type="checkbox" name="cash_payment_tracking_enabled" value="1" id="cash_payment_tracking_enabled_edit"
+                                            @checked(old('cash_payment_tracking_enabled', $event->cash_payment_tracking_enabled ?? false))>
+                                        <div class="custom-checkbox"></div>
+                                        <span>{{ __('events.cash_tracking_label') }}</span>
+                                    </label>
+                                    <ul class="list f-14 mt-1">
+                                        <li>{{ __('events.cash_tracking_hint') }}</li>
+                                    </ul>
+                                </div>
+
                                 {{-- Режим оплаты турнира --}}
                                 @if($event->format === 'tournament')
                                 <div class="mt-2" id="tournament_payment_mode_edit_wrap">
@@ -1977,10 +1990,12 @@
             // === Payment link toggle ===
             const payMethodSel = document.querySelector('select[name="payment_method"]');
             const payLinkBlock = document.getElementById('payment-link-block');
+            const cashTrackingWrapEdit = document.getElementById('cash_tracking_wrap_edit');
             function syncPayLink() {
-                if (!payMethodSel || !payLinkBlock) return;
+                if (!payMethodSel) return;
                 const needsLink = ['tbank_link','sber_link'].includes(payMethodSel.value);
-                payLinkBlock.style.display = needsLink ? '' : 'none';
+                if (payLinkBlock) payLinkBlock.style.display = needsLink ? '' : 'none';
+                if (cashTrackingWrapEdit) cashTrackingWrapEdit.style.display = payMethodSel.value === 'cash' ? '' : 'none';
             }
             syncPayLink();
             payMethodSel?.addEventListener('change', syncPayLink);

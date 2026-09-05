@@ -953,6 +953,7 @@ if ($role === 'admin') {
             'price_amount'             => ['nullable', 'numeric', 'min:0', 'max:500000'],
             'price_currency'           => ['nullable', 'string', 'max:3'],
             'payment_method'           => ['nullable', 'string', \Illuminate\Validation\Rule::in($payMethodAllowed)],
+            'cash_payment_tracking_enabled' => ['sometimes', 'boolean'],
             'payment_link'             => ['nullable', 'string', 'max:500'],
             'tournament_payment_mode'  => ['nullable', 'string', 'in:team,per_player'],
             'teams_count'              => ['nullable', 'integer', 'min:2', 'max:200'],
@@ -1155,6 +1156,9 @@ if ($role === 'admin') {
             $event->payment_method    = $event->is_paid
                 ? ($data['payment_method'] ?? 'cash')
                 : null;
+            $event->cash_payment_tracking_enabled = ($event->is_paid && $event->payment_method === 'cash')
+                ? (bool) ($data['cash_payment_tracking_enabled'] ?? false)
+                : false;
             $event->payment_link      = $event->is_paid
                 ? ($data['payment_link'] ?? null)
                 : null;

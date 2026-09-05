@@ -122,6 +122,19 @@
                                                 <li id="hint_link" style="display:none">{{ __('events.pay_hint_link') }}</li>
                                                 <li id="hint_yoomoney" style="display:none">{{ __('events.pay_hint_yoomoney', ['n' => $orgPaySettings?->payment_hold_minutes ?? 15]) }}</li>
                                             </ul>
+
+                                            <div class="mt-2" id="cash_tracking_wrap" style="display:none">
+                                                <label class="checkbox-item">
+                                                    <input type="hidden" name="cash_payment_tracking_enabled" value="0">
+                                                    <input type="checkbox" name="cash_payment_tracking_enabled" value="1" id="cash_payment_tracking_enabled"
+                                                        @checked((bool) old('cash_payment_tracking_enabled', $prefill['cash_payment_tracking_enabled'] ?? false))>
+                                                    <div class="custom-checkbox"></div>
+                                                    <span>{{ __('events.cash_tracking_label') }}</span>
+                                                </label>
+                                                <ul class="list f-14 mt-1">
+                                                    <li>{{ __('events.cash_tracking_hint') }}</li>
+                                                </ul>
+                                            </div>
                                         </div>
 
                                         {{-- РЕЖИМ ОПЛАТЫ ТУРНИРА (только для format=tournament) --}}

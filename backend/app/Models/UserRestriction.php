@@ -11,9 +11,10 @@ class UserRestriction extends Model
 {
     protected $fillable = [
         'user_id',
-        'scope',      // site|events
-        'ends_at',    // null = пожизненно
-        'event_ids',  // array|null
+        'scope',        // site|events|organizer
+        'organizer_id', // для scope=organizer — запрет записи на ВСЕ мероприятия этого организатора
+        'ends_at',      // null = пожизненно
+        'event_ids',    // array|null, для scope=events
         'reason',
         'created_by',
     ];
@@ -31,6 +32,11 @@ class UserRestriction extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function organizer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'organizer_id');
     }
 
     public function isActive(): bool

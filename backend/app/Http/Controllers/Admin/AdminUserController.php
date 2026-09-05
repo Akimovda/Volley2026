@@ -163,12 +163,25 @@ class AdminUserController extends Controller
             $now = now();
             $restrictions = DB::table('user_restrictions')
                 ->where('user_id', $user->id)
-                ->where('scope', 'events')
+                ->whereIn('scope', ['events', 'organizer'])
                 ->where(function ($q) use ($now) {
                     $q->whereNull('ends_at')->orWhere('ends_at', '>', $now);
                 })
                 ->orderByDesc('id')
                 ->get();
+
+            $restrictionOrganizerIds = $restrictions->pluck('organizer_id')->filter()->unique()->values();
+            if ($restrictionOrganizerIds->isNotEmpty()) {
+                $organizerNames = \App\Models\User::whereIn('id', $restrictionOrganizerIds)
+                    ->get(['id', 'first_name', 'last_name'])
+                    ->keyBy('id');
+                $restrictions = $restrictions->map(function ($r) use ($organizerNames) {
+                    $r->organizer_name = $r->organizer_id && $organizerNames->has($r->organizer_id)
+                        ? trim($organizerNames[$r->organizer_id]->first_name . ' ' . $organizerNames[$r->organizer_id]->last_name)
+                        : null;
+                    return $r;
+                });
+            }
         }
 
         $roles = ['user', 'admin', 'organizer', 'staff'];
