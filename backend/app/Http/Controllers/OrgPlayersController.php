@@ -6,6 +6,21 @@ use Illuminate\Support\Facades\DB;
 
 class OrgPlayersController extends Controller
 {
+    private const PERIOD_DAYS = [
+        '30d'  => 30,
+        '90d'  => 90,
+        '180d' => 180,
+        '365d' => 365,
+    ];
+
+    private const PERIOD_LABELS = [
+        '30d'  => 'за последние 30 дней',
+        '90d'  => 'за последние 3 месяца',
+        '180d' => 'за последние 6 месяцев',
+        '365d' => 'за последний год',
+        'all'  => 'за всё время',
+    ];
+
     public function index(Request $request)
     {
         $user  = $request->user();
@@ -133,10 +148,151 @@ class OrgPlayersController extends Controller
             ->limit(10)
             ->get();
 
+        // --- ЛОКАЦИИ ОРГАНИЗАТОРА (для разреза аудитории) ---
+        $locations = DB::table('events')
+            ->join('locations', 'locations.id', '=', 'events.location_id')
+            ->where('events.organizer_id', $orgId)
+            ->whereNotNull('events.location_id')
+            ->select('locations.id', 'locations.name')
+            ->distinct()
+            ->orderBy('locations.name')
+            ->get();
+
         return view('dashboard.org_players', compact(
             'topPlayers', 'newPlayers', 'churnRisk',
             'genderStats', 'classicLevels', 'beachLevels',
-            'reservePlayers'
+            'reservePlayers', 'locations'
         ));
+    }
+
+    /**
+     * Базовый запрос аудитории: количество визитов по игроку,
+     * с фильтром по локации и периоду. Переиспользуется для страницы, AJAX-пагинации и экспортов.
+     */
+    private function audienceBaseQuery(int $orgId, ?string $locationId, string $period)
+    {
+        $q = DB::table('event_registrations as er')
+            ->join('events as e', 'e.id', '=', 'er.event_id')
+            ->join('users as u', 'u.id', '=', 'er.user_id')
+            ->where('e.organizer_id', $orgId)
+            ->where('u.is_bot', false)
+            ->where('er.is_cancelled', false);
+
+        if ($locationId !== null && $locationId !== '' && $locationId !== 'all') {
+            $q->where('e.location_id', (int) $locationId);
+        }
+
+        if (isset(self::PERIOD_DAYS[$period])) {
+            $q->where('er.created_at', '>=', now()->subDays(self::PERIOD_DAYS[$period]));
+        }
+
+        return $q->select(
+                'u.id',
+                'u.first_name', 'u.last_name', 'u.patronymic',
+                DB::raw('COUNT(er.id) as visits')
+            )
+            ->groupBy('u.id', 'u.first_name', 'u.last_name', 'u.patronymic')
+            ->orderByDesc('visits')
+            ->orderBy('u.last_name');
+    }
+
+    private function audienceLocationLabel(?string $locationId): string
+    {
+        if ($locationId === null || $locationId === '' || $locationId === 'all') {
+            return 'Вся аудитория (все локации)';
+        }
+        $name = DB::table('locations')->where('id', (int) $locationId)->value('name');
+        return $name ?: ('Локация #' . $locationId);
+    }
+
+    private function audienceFullName(object $row): string
+    {
+        return trim(implode(' ', array_filter([
+            $row->last_name ?? '',
+            $row->first_name ?? '',
+            $row->patronymic ?? '',
+        ]))) ?: ('#' . $row->id);
+    }
+
+    /**
+     * GET /org/players/audience — постраничный список аудитории (JSON), 15 на страницу.
+     */
+    public function audienceData(Request $request)
+    {
+        $orgId      = $request->user()->id;
+        $locationId = (string) $request->query('location', 'all');
+        $period     = (string) $request->query('period', 'all');
+        $page       = max(1, (int) $request->query('page', 1));
+
+        $paginator = $this->audienceBaseQuery($orgId, $locationId, $period)
+            ->paginate(15, ['*'], 'page', $page);
+
+        $items = collect($paginator->items())->map(fn ($row) => [
+            'id'     => $row->id,
+            'name'   => $this->audienceFullName($row),
+            'visits' => (int) $row->visits,
+        ])->values();
+
+        return response()->json([
+            'items'        => $items,
+            'total'        => $paginator->total(),
+            'current_page' => $paginator->currentPage(),
+            'last_page'    => $paginator->lastPage(),
+        ]);
+    }
+
+    /**
+     * GET /org/players/audience/export/csv — выгрузка в CSV (открывается и редактируется в Excel).
+     */
+    public function audienceExportCsv(Request $request)
+    {
+        $orgId      = $request->user()->id;
+        $locationId = (string) $request->query('location', 'all');
+        $period     = (string) $request->query('period', 'all');
+
+        $rows = $this->audienceBaseQuery($orgId, $locationId, $period)->get();
+
+        $locationLabel = $this->audienceLocationLabel($locationId);
+        $periodLabel   = self::PERIOD_LABELS[$period] ?? self::PERIOD_LABELS['all'];
+
+        $filename = 'audience-' . now()->format('Ymd_His') . '.csv';
+
+        return response()->streamDownload(function () use ($rows, $locationLabel, $periodLabel) {
+            $out = fopen('php://output', 'w');
+            fwrite($out, "\xEF\xBB\xBF");
+            fputcsv($out, [$locationLabel . ', ' . $periodLabel], ';');
+            fputcsv($out, ['#', 'Игрок', 'Визитов'], ';');
+            foreach ($rows as $i => $r) {
+                fputcsv($out, [$i + 1, $this->audienceFullName($r), $r->visits], ';');
+            }
+            fclose($out);
+        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    /**
+     * GET /org/players/audience/export/pdf — выгрузка в PDF.
+     */
+    public function audienceExportPdf(Request $request)
+    {
+        $orgId      = $request->user()->id;
+        $locationId = (string) $request->query('location', 'all');
+        $period     = (string) $request->query('period', 'all');
+
+        $rows = $this->audienceBaseQuery($orgId, $locationId, $period)->get()
+            ->map(fn ($row) => (object) [
+                'name'   => $this->audienceFullName($row),
+                'visits' => (int) $row->visits,
+            ]);
+
+        $locationLabel = $this->audienceLocationLabel($locationId);
+        $periodLabel   = self::PERIOD_LABELS[$period] ?? self::PERIOD_LABELS['all'];
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('dashboard.org_players_audience_pdf', [
+            'rows'          => $rows,
+            'locationLabel' => $locationLabel,
+            'periodLabel'   => $periodLabel,
+        ])->setPaper('a4', 'portrait');
+
+        return $pdf->download('audience-' . now()->format('Ymd_His') . '.pdf');
     }
 }

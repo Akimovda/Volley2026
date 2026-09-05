@@ -2130,6 +2130,46 @@ body.dark .tab-highlight {
 	text-align: center;
 }
 
+/* Фильтр-табы (подчёркивание снизу) — компактнее .tabs, для рядов переключателей период/локация/т.п. */
+.filter-tabs {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 1.6rem;
+	border-bottom: 1px solid rgba(0, 0, 0, .08);
+}
+.filter-tab {
+	background: transparent;
+	border: none;
+	padding: .6rem .1rem;
+	margin: 0 0 -1px 0;
+	font-size: 1.3rem;
+	font-weight: 600;
+	color: rgba(0, 0, 0, .55);
+	cursor: pointer;
+	border-bottom: 2px solid transparent;
+	transition: color .2s, border-color .2s;
+	white-space: nowrap;
+}
+.filter-tab:hover:not(.active) {
+	color: #2967BA;
+}
+.filter-tab.active {
+	color: #2967BA;
+	border-bottom-color: #2967BA;
+}
+body.dark .filter-tabs {
+	border-bottom-color: rgba(255, 255, 255, .08);
+}
+body.dark .filter-tab {
+	color: rgba(255, 255, 255, .6);
+}
+body.dark .filter-tab:hover:not(.active) {
+	color: #E7612F;
+}
+body.dark .filter-tab.active {
+	color: #E7612F;
+	border-bottom-color: #E7612F;
+}
 
 
 /* Базовые стили для скроллимой таблицы */
