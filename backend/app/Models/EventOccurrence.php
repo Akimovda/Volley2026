@@ -68,6 +68,7 @@ class EventOccurrence extends Model
         // cash payment tracking
         'cash_payment_reviewed_at',
         'cash_payment_autoprocessed_at',
+        'cash_payment_reminder_sent_at',
     ];
 
     protected $casts = [
@@ -111,6 +112,7 @@ class EventOccurrence extends Model
 
         'cash_payment_reviewed_at' => 'datetime',
         'cash_payment_autoprocessed_at' => 'datetime',
+        'cash_payment_reminder_sent_at' => 'datetime',
     ];
     /* ===================== Teams ===================== */
      /**
