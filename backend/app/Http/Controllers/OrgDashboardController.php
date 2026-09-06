@@ -261,7 +261,15 @@ class OrgDashboardController extends Controller
 
         $topLatePayers = DB::table('payment_late_marks as plm')
             ->join('users as u', 'u.id', '=', 'plm.user_id')
+            ->join('payments as p', 'p.id', '=', 'plm.payment_id')
+            ->join('event_occurrences as eo', 'eo.id', '=', 'p.occurrence_id')
             ->where('plm.organizer_id', $orgId)
+            // Защита от инцидентов, отмеченных ДО старта occurrence (баг старой версии
+            // CashPaymentTrackingService::save() до коммита ece674f5 — отсчёт бана и
+            // отметка "не оплатил" срабатывали независимо от времени начала мероприятия).
+            // Блок должен показывать только тех, кого реально заметили неоплатившими
+            // после начала/окончания мероприятия.
+            ->whereColumn('plm.marked_at', '>=', 'eo.starts_at')
             ->select(array_merge(['u.id', 'u.first_name', 'u.last_name'], $lateSelects))
             ->groupBy('u.id', 'u.first_name', 'u.last_name')
             ->get();
