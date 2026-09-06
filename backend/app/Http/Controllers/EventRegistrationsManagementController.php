@@ -73,7 +73,7 @@ class EventRegistrationsManagementController extends Controller
         $direction          = (string) ($event->direction ?? 'classic');
         $gameSubtype        = (string) ($event->gameSettings?->subtype ?? '');
         $liberoMode         = (string) ($event->gameSettings?->libero_mode ?? 'with_libero');
-        $availablePositions = $this->resolvePositions($direction, $gameSubtype, $liberoMode);
+        $availablePositions = app(\App\Services\EventRoleSlotService::class)->resolvePositions($direction, $gameSubtype, $liberoMode);
 
         $occurrenceId = (int) $request->query('occurrence', 0);
         $occurrence   = null;
@@ -386,7 +386,7 @@ class EventRegistrationsManagementController extends Controller
 
         $event->loadMissing('gameSettings');
         $addDirection = (string)($event->direction ?? 'classic');
-        $addPositions = $this->resolvePositions(
+        $addPositions = app(\App\Services\EventRoleSlotService::class)->resolvePositions(
             $addDirection,
             (string)($event->gameSettings?->subtype ?? ''),
             (string)($event->gameSettings?->libero_mode ?? 'with_libero')
@@ -514,7 +514,7 @@ class EventRegistrationsManagementController extends Controller
                 $this->userNotificationService->createRegistrationCreatedNotification(
                     userId: $userId,
                     eventId: (int) $event->id,
-                    occurrenceId: null,
+                    occurrenceId: $occurrenceId ?: null,
                     eventTitle: (string) ($event->title ?? ('Мероприятие #' . $event->id))
                 );
 
@@ -609,7 +609,7 @@ class EventRegistrationsManagementController extends Controller
 
         $event->loadMissing('gameSettings');
         $updDirection = (string)($event->direction ?? 'classic');
-        $updPositions = $this->resolvePositions(
+        $updPositions = app(\App\Services\EventRoleSlotService::class)->resolvePositions(
             $updDirection,
             (string)($event->gameSettings?->subtype ?? ''),
             (string)($event->gameSettings?->libero_mode ?? 'with_libero')
@@ -1271,37 +1271,6 @@ class EventRegistrationsManagementController extends Controller
         return $genderResult->errors[0] ?? null;
     }
 
-    private function resolvePositions(string $direction, string $subtype, string $liberoMode): array
-    {
-        if ($direction === 'beach') return [];
- 
-        $labels = [
-            'setter'   => 'Связующий',
-            'outside'  => 'Доигровщик',
-            'opposite' => 'Диагональный',
-            'middle'   => 'Центральный',
-            'libero'   => 'Либеро',
-        ];
- 
-        $map = [
-            '4x2' => ['setter', 'outside'],
-            '4x4' => ['setter', 'outside', 'opposite'],
-            '5x1' => ['setter', 'outside', 'opposite', 'middle'],
-        ];
- 
-        $keys = $map[$subtype] ?? array_keys($labels);
- 
-        if ($subtype === '5x1' && $liberoMode === 'with_libero') {
-            $keys[] = 'libero';
-        }
- 
-        $result = [];
-        foreach ($keys as $key) {
-            $result[$key] = $labels[$key] ?? $key;
-        }
-        return $result;
-    }
-    
     // -------------------------------------------------------------------------
     // GET /events/{event}/registrations/broadcast
     // -------------------------------------------------------------------------

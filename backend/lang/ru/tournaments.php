@@ -472,6 +472,12 @@ return [
     'setup_unassigned_empty' => 'Все зарегистрированные игроки распределены по командам.',
     'setup_unassigned_level' => 'Уровень',
 
+    'setup_btn_add_player'   => '➕ Добавить игрока',
+    'setup_add_player_label_search' => 'Игрок (поиск)',
+    'setup_add_player_label_position' => 'Позиция',
+    'setup_add_player_position_placeholder' => '— выбрать —',
+    'setup_add_player_select_required' => 'Выберите игрока из списка результатов поиска.',
+
     'setup_add_stage_h2'    => 'Настройки турнира',
     'setup_btn_add_stage'   => '➕ Добавить стадию',
     'setup_btn_add_stage_subdued' => '+ добавить ещё одну стадию вручную',

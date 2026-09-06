@@ -142,7 +142,8 @@ class TournamentController extends Controller
         // Индивидуальная запись: игроки, зарегистрированные на тур, но ещё не попавшие ни в одну команду —
         // нужны для блока "Команды/Игроки" (список + ручное/случайное распределение).
         $unassignedPlayers = collect();
-        if (($event->registration_mode ?? '') === 'tournament_individual' && $selectedOccurrence) {
+        $isIndividualTournament = ($event->registration_mode ?? '') === 'tournament_individual';
+        if ($isIndividualTournament && $selectedOccurrence) {
             $assignedUserIds = \App\Models\EventTeamMember::whereHas(
                 'team',
                 fn($q) => $q->where('event_id', $event->id)->where('occurrence_id', $selectedOccurrence->id)
@@ -157,6 +158,32 @@ class TournamentController extends Controller
                 ->pluck('user')
                 ->filter()
                 ->values();
+        }
+
+        // Позиции для формы "Добавить игрока" (кнопка на этой странице для
+        // tournament_individual — регистрация на occurrence напрямую со страницы
+        // управления турниром, см. EventRegistrationsManagementController::addPlayer(),
+        // тот же список позиций, чтобы select не расходился с валидацией на сервере).
+        $availablePositions = [];
+        if ($isIndividualTournament) {
+            $event->loadMissing('gameSettings');
+            $roleSlotService = app(\App\Services\EventRoleSlotService::class);
+            $addDirection = (string) ($event->direction ?? 'classic');
+            $availablePositions = $roleSlotService->resolvePositions(
+                $addDirection,
+                (string) ($event->gameSettings?->subtype ?? ''),
+                (string) ($event->gameSettings?->libero_mode ?? 'with_libero')
+            );
+            if ($addDirection === 'classic') {
+                $slots = $roleSlotService->getSlots($event);
+                $reserveSlot = $slots->firstWhere('role', 'reserve');
+                $reserveMax = $reserveSlot
+                    ? (int) $reserveSlot->max_slots
+                    : (int) ($event->gameSettings?->reserve_players_max ?? 0);
+                if ($reserveMax > 0) {
+                    $availablePositions['reserve'] = __('events.positions.reserve');
+                }
+            }
         }
 
         // Все «активные» заявки: ожидающие модерации (pending) + неполные (incomplete).
@@ -221,7 +248,8 @@ class TournamentController extends Controller
             'applicationMode', 'userEventPhotos',
             'seasonData', 'selectedOccurrence', 'leagueTeams',
             'tiebreakerSets', 'cleanStatsByGroup', 'outsidersByGroup',
-            'unassignedPlayers', 'rosterCompleteMap'
+            'unassignedPlayers', 'rosterCompleteMap',
+            'isIndividualTournament', 'availablePositions'
         ));
     }
 
