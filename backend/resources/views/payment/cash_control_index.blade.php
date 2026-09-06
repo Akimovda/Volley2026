@@ -31,7 +31,7 @@
                         <thead>
                             <tr>
                                 <th>{{ __('profile.pay_ccidx_col_num') }}</th>
-                                <th>{{ __('profile.pay_ccidx_col_date') }}</th>
+                                <th class="text-center">{{ __('profile.pay_ccidx_col_date') }}</th>
                                 <th>{{ __('profile.pay_ccidx_col_title') }}</th>
                                 <th>{{ __('profile.pay_ccidx_col_location') }}</th>
                                 <th class="text-center">{{ __('profile.pay_ccidx_col_action') }}</th>
@@ -42,7 +42,10 @@
                             @php $loc = $occ->location ?? $occ->event->location; @endphp
                             <tr>
                                 <td>{{ $occurrences->firstItem() + $i }}</td>
-                                <td class="nowrap">{{ $occ->starts_at->setTimezone('Europe/Moscow')->format('d.m.Y H:i') }}</td>
+                                <td class="text-center nowrap">
+                                    <div>{{ $occ->starts_at->setTimezone('Europe/Moscow')->locale('ru')->translatedFormat('j F') }}</div>
+                                    <div>{{ $occ->starts_at->setTimezone('Europe/Moscow')->format('H:i') }}</div>
+                                </td>
                                 <td>
                                     <a href="{{ route('events.show', $occ->event_id) }}?occurrence={{ $occ->id }}">{{ $occ->event->title }}</a>
                                 </td>
