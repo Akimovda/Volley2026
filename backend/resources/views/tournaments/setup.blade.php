@@ -987,7 +987,8 @@ $tourNumber = $seasonData
 				// может быть stale (см. report/roster-gate-recon.md).
 				$completeTeams   = $teams->filter(fn($t) => $rosterCompleteMap[$t->id] ?? $t->is_complete);
 				$incompleteTeams = $teams->filter(fn($t) => !($rosterCompleteMap[$t->id] ?? $t->is_complete));
-				$isIndividualTournament = ($event->registration_mode ?? '') === 'tournament_individual';
+				// $isIndividualTournament теперь считается в TournamentController::setup()
+				// (нужен там же для $availablePositions формы "Добавить игрока").
 				$teamsHeaderKey = $isIndividualTournament ? 'tournaments.setup_teams_h2_individual' : 'tournaments.setup_teams_h2';
 			@endphp
 			<h2 class="-mt-05" style="cursor:pointer;user-select:none" onclick="var b=document.getElementById('teams-body');b.style.display=b.style.display==='none'?'':'none';this.querySelector('.toggle-icon').textContent=b.style.display==='none'?'▶':'▼'">{{ __($teamsHeaderKey, ['n' => $completeTeams->count()]) }} <span class="toggle-icon" style="font-size:14px">{{ $hasStages ? '▶' : '▼' }}</span></h2>
@@ -1117,6 +1118,63 @@ $tourNumber = $seasonData
 				@endforeach
 			</div>
 			@endif
+				
+				{{-- Добавить игрока напрямую в регистрации тура (для распределения по
+				     командам) — переиспользует events.registrations.add, тот же метод,
+				     что и на странице "Управление регистрациями" (проверка прав
+				     организатора, лимит слота позиции, гендерная квота). --}}
+				@if($selectedOccurrence)
+				<div class="mt-1">
+					<details>
+						<summary class="btn btn-secondary">{{ __('tournaments.setup_btn_add_player') }}</summary>
+						<form method="POST" action="{{ route('events.registrations.add', $event) }}" class="mt-2 form" id="add-player-form">
+							@csrf
+							<input type="hidden" name="occurrence_id" value="{{ $selectedOccurrence->id }}">
+							<div class="row">
+								<div class="col-md-6">
+									<div class="card" style="overflow:visible">
+										<label>{{ __('tournaments.setup_add_player_label_search') }}</label>
+										<div style="position:relative" id="add-player-ac-wrap">
+											<input type="text" id="add-player-search" placeholder="{{ __('tournaments.setup_team_ph_captain') }}" autocomplete="off">
+											<input type="hidden" name="user_id" id="add-player-id">
+											<div id="add-player-dd" style="display:none;position:absolute;left:0;right:0;top:100%;margin-top:.4rem;z-index:50;background:var(--bg-card,#fff);border:.1rem solid var(--border-color,#eee);border-radius:1.2rem;box-shadow:0 1rem 3rem rgba(0,0,0,.1);max-height:22rem;overflow-y:auto"></div>
+										</div>
+									</div>
+								</div>
+								@if(count($availablePositions) > 0)
+								<div class="col-md-6">
+									<div class="card">
+										<label>{{ __('tournaments.setup_add_player_label_position') }}</label>
+										<select name="position">
+											<option value="">{{ __('tournaments.setup_add_player_position_placeholder') }}</option>
+											@foreach($availablePositions as $key => $label)
+											<option value="{{ $key }}">{{ $label }}</option>
+											@endforeach
+										</select>
+									</div>
+								</div>
+								@endif
+								<div class="col-md-12 text-center">
+									<button type="submit" class="btn">{{ __('tournaments.setup_btn_add_player') }}</button>
+								</div>
+							</div>
+						</form>
+					</details>
+				</div>
+				<script>
+				(function(){
+					var form = document.getElementById('add-player-form');
+					var hidden = document.getElementById('add-player-id');
+					if (!form || !hidden) return;
+					form.addEventListener('submit', function(e){
+						if (!hidden.value) {
+							e.preventDefault();
+							swal({ title: @json(__('tournaments.setup_add_player_select_required')), icon: 'warning', button: 'Ок' });
+						}
+					});
+				})();
+				</script>
+				@endif
 			@endif
 
 			{{-- Создать команду организатором --}}
@@ -3500,6 +3558,7 @@ $tourNumber = $seasonData
 		}
 		makeAC('add-league-captain-search','add-league-captain-id','add-league-captain-dd','add-league-captain-wrap');
 		makeAC('add-league-partner-search','add-league-partner-id','add-league-partner-dd','add-league-partner-wrap');
+		makeAC('add-player-search','add-player-id','add-player-dd','add-player-ac-wrap');
 
 		// Предупреждение о лимите дивизиона
 		(function(){

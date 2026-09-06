@@ -453,6 +453,12 @@ return [
     'setup_unassigned_empty' => 'All registered players are assigned to a team.',
     'setup_unassigned_level' => 'Level',
 
+    'setup_btn_add_player'   => '➕ Add player',
+    'setup_add_player_label_search' => 'Player (search)',
+    'setup_add_player_label_position' => 'Position',
+    'setup_add_player_position_placeholder' => '— select —',
+    'setup_add_player_select_required' => 'Select a player from the search results.',
+
     'setup_add_stage_h2'    => 'Tournament settings',
     'setup_btn_add_stage'   => '➕ Add stage',
     'setup_btn_add_stage_subdued' => '+ add another stage manually',

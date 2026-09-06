@@ -154,4 +154,42 @@ class EventRoleSlotService
     {
         Cache::forget($this->cacheKey($event));
     }
+
+    /**
+     * Список позиций классики по game_subtype (4x2/4x4/5x1) + либеро.
+     * Единая точка правды — раньше был приватным дублем в
+     * EventRegistrationsManagementController (index/addPlayer/updatePosition),
+     * теперь используется и оттуда, и из TournamentController::setup()
+     * (кнопка "Добавить игрока" для tournament_individual).
+     */
+    public function resolvePositions(string $direction, string $subtype, string $liberoMode): array
+    {
+        if ($direction === 'beach') return [];
+
+        $labels = [
+            'setter'   => 'Связующий',
+            'outside'  => 'Доигровщик',
+            'opposite' => 'Диагональный',
+            'middle'   => 'Центральный',
+            'libero'   => 'Либеро',
+        ];
+
+        $map = [
+            '4x2' => ['setter', 'outside'],
+            '4x4' => ['setter', 'outside', 'opposite'],
+            '5x1' => ['setter', 'outside', 'opposite', 'middle'],
+        ];
+
+        $keys = $map[$subtype] ?? array_keys($labels);
+
+        if ($subtype === '5x1' && $liberoMode === 'with_libero') {
+            $keys[] = 'libero';
+        }
+
+        $result = [];
+        foreach ($keys as $key) {
+            $result[$key] = $labels[$key] ?? $key;
+        }
+        return $result;
+    }
 }
