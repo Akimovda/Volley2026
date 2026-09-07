@@ -6,6 +6,10 @@
     <title>{{ $event->title }} — TV Mode</title>
     <style>
         * { margin:0; padding:0; box-sizing:border-box; }
+        /* Android Chrome/WebView увеличивает шрифт в узких блоках ("font boosting") —
+           iOS так не делает, см. подробности в style.css. Страница TV Mode не
+           подключает общий style.css (самостоятельный HTML-документ) — дублируем. */
+        html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
         body {
             background: #0f1117;
             color: #e5e7eb;

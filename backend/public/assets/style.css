@@ -2,6 +2,17 @@
 html {
 	font-size: 62.5%; /* 10px */
 	scroll-behavior: smooth;
+	/* Android Chrome/WebView (Blink) автоматически УВЕЛИЧИВАЕТ шрифт в узких
+	   текстовых блоках/ячейках таблиц ("font boosting"/Text Autosizer) — iOS
+	   WKWebView так не делает, отсюда разный визуальный размер шрифта на одном
+	   и том же HTML/CSS (жалоба пользователя 2026-09-07: шрифт в Android-
+	   приложении выглядит крупнее, чем на iOS, и таблица статистики матча —
+	   .ms-ptable, узкие числовые колонки — вылезает за пределы .card именно там,
+	   хотя тот же CSS-viewport в headless Chrome без Android font boosting
+	   рендерится без переполнения). 100% = отключить автоувеличение, размер
+	   всегда ровно как задано в CSS, как на iOS. */
+	-webkit-text-size-adjust: 100%;
+	text-size-adjust: 100%;
 }
 /* Планшет */
 @media (max-width: 1200px) {
