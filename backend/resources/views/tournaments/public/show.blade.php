@@ -238,6 +238,45 @@
 		============================================================ --}}
 		@elseif($tab === 'groups')
 		@foreach($stages as $stage)
+		@if($stage->type === 'king_of_court')
+		{{-- King of the Court: нет групп/мест 1-2-3-4, только рейтинг по очкам. --}}
+		@php
+		$kocColors = (array) $stage->cfg('team_colors', []);
+		$kocTeamsById = \App\Models\EventTeam::whereIn('id', (array) $stage->cfg('court_team_ids', []))->get()->keyBy('id');
+		$kocStandings = \App\Models\TournamentStanding::where('stage_id', $stage->id)->where('group_id', null)
+			->orderByDesc('points_scored')->get();
+		@endphp
+		@if($kocTeamsById->isNotEmpty())
+		<div class="ramka">
+			<h2 class="-mt-05">{{ $stage->name }}</h2>
+			<div class="card p-3">
+				@if($kocStandings->isEmpty())
+				<div class="f-13" style="opacity:.5">{{ __('tournaments.pub_no_finished_matches') }}</div>
+				@else
+				<div class="b-700 f-16 mb-2">🏆 {{ __('tournaments.koc_lbl_final_standings') }}</div>
+				<div class="table-scrollable">
+					<table class="table f-14">
+						<tbody>
+							@foreach($kocStandings as $i => $s)
+							<tr>
+								<td class="b-700" style="width:2rem">{{ $i + 1 }}</td>
+								<td>
+									<span class="badge badge-sm" style="{{ !empty($kocColors[$s->team_id]) ? 'background:'.$kocColors[$s->team_id].';color:#fff' : '' }}">
+										@include('tournaments._partials.team_name_link', ['team' => $kocTeamsById->get($s->team_id), 'fallback' => '?'])
+									</span>
+								</td>
+								<td class="b-700" style="text-align:right">{{ $s->points_scored }} {{ __('tournaments.pub_pts_label') }}</td>
+							</tr>
+							@endforeach
+						</tbody>
+					</table>
+				</div>
+				@endif
+			</div>
+		</div>
+		@endif
+		@continue
+		@endif
 		@if($stage->groups->isNotEmpty())
 		@php
 		$stageTiebreakers = \App\Models\TournamentTiebreaker::where('stage_id', $stage->id)

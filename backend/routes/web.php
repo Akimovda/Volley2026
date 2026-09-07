@@ -33,6 +33,7 @@ use App\Http\Controllers\YookassaWebhookController;
 	use App\Http\Controllers\TournamentTeamController;
 	use App\Http\Controllers\TournamentTeamInviteController;
 use App\Http\Controllers\TournamentController;
+use App\Http\Controllers\TournamentKingOfCourtController;
 use App\Http\Controllers\TournamentPublicController;
 use App\Http\Controllers\TournamentTvController;
 use App\Http\Controllers\TournamentSeasonController;
@@ -1185,6 +1186,25 @@ Route::middleware([
 
     Route::delete('/tournament-stages/{stage}', [TournamentController::class, 'destroyStage'])
         ->name('tournament.stages.destroy');
+
+    // King of the Court — переделано под официальные правила 2026-09-07,
+    // отдельный контроллер (TournamentController.php уже >3800 строк).
+    Route::get('/tournament-stages/{stage}/king-of-court/assign', [TournamentKingOfCourtController::class, 'assignForm'])
+        ->name('tournament.kingOfCourt.assignForm');
+    Route::post('/tournament-stages/{stage}/king-of-court/assign', [TournamentKingOfCourtController::class, 'assign'])
+        ->name('tournament.kingOfCourt.assign');
+    Route::get('/tournament-stages/{stage}/king-of-court/score', [TournamentKingOfCourtController::class, 'scoreForm'])
+        ->name('tournament.kingOfCourt.scoreForm');
+    Route::post('/tournament-stages/{stage}/king-of-court/point', [TournamentKingOfCourtController::class, 'point'])
+        ->name('tournament.kingOfCourt.point');
+    Route::post('/tournament-stages/{stage}/king-of-court/undo', [TournamentKingOfCourtController::class, 'undo'])
+        ->name('tournament.kingOfCourt.undo');
+    Route::post('/tournament-stages/{stage}/king-of-court/end-round', [TournamentKingOfCourtController::class, 'endRound'])
+        ->name('tournament.kingOfCourt.endRound');
+    Route::post('/tournament-stages/{stage}/king-of-court/next-round', [TournamentKingOfCourtController::class, 'nextRound'])
+        ->name('tournament.kingOfCourt.nextRound');
+    Route::post('/tournament-stages/{stage}/king-of-court/colors', [TournamentKingOfCourtController::class, 'saveColors'])
+        ->name('tournament.kingOfCourt.saveColors');
 });
 
 

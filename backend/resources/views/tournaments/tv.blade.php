@@ -230,7 +230,58 @@
 
         @elseif($activeStage)
             {{-- Текущий этап --}}
-            @if($activeStage->groups->isNotEmpty())
+            @if($activeStage->type === 'king_of_court')
+                {{-- King of the Court: нет мест 1-2-3-4, только рейтинг по очкам —
+                     цветные плашки команд (config['team_colors']) вместо медалей. --}}
+                @php
+                    $kocColors = (array) $activeStage->cfg('team_colors', []);
+                    $kocTeamsById = \App\Models\EventTeam::whereIn('id', (array) $activeStage->cfg('court_team_ids', []))->get()->keyBy('id');
+                    $kocStandings = \App\Models\TournamentStanding::where('stage_id', $activeStage->id)->where('group_id', null)
+                        ->orderByDesc('points_scored')->get();
+                    $kocState = $activeStage->cfg('round_status') === 'in_progress'
+                        ? app(\App\Services\TournamentKingService::class)->currentState($activeStage)
+                        : null;
+                @endphp
+                <div class="tv-panel" style="flex:2">
+                    <h3>{{ $activeStage->name }} — {{ __('tournaments.koc_lbl_round_n') }} {{ max((int) $activeStage->cfg('current_round', 1), 1) }}</h3>
+
+                    @if($kocState)
+                    <div style="display:flex;gap:24px;margin-bottom:16px">
+                        <div>
+                            <div style="font-size:12px;opacity:.6">👑 {{ __('tournaments.koc_lbl_king') }}</div>
+                            <div style="font-size:22px;font-weight:800">{{ $kocTeamsById->get($kocState['king_team_id'])?->name ?? '?' }}</div>
+                        </div>
+                        <div>
+                            <div style="font-size:12px;opacity:.6">🙋 {{ __('tournaments.koc_lbl_challenger') }}</div>
+                            <div style="font-size:22px;font-weight:800">{{ $kocTeamsById->get($kocState['challenger_team_id'])?->name ?? '?' }}</div>
+                        </div>
+                    </div>
+                    @endif
+
+                    <table class="tv-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>{{ __('tournaments.standings_col_team') }}</th>
+                                <th class="tc">{{ __('tournaments.tv_pts_col') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($kocStandings as $i => $s)
+                            <tr>
+                                <td class="rank">{{ $i + 1 }}</td>
+                                <td>
+                                    <span style="{{ !empty($kocColors[$s->team_id]) ? 'padding:2px 10px;border-radius:6px;background:'.$kocColors[$s->team_id].';color:#fff' : '' }}">
+                                        @include('tournaments._partials.team_name_link', ['team' => $kocTeamsById->get($s->team_id), 'fallback' => '?'])
+                                    </span>
+                                </td>
+                                <td class="tc pts">{{ $s->points_scored }}</td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @elseif($activeStage->groups->isNotEmpty())
                 @foreach($activeStage->groups as $group)
                     <div class="tv-panel" data-group-id="{{ $group->id }}">
                         <h3>{{ $activeStage->name }}: {{ $group->name }}</h3>

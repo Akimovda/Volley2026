@@ -16,7 +16,6 @@ use App\Services\TournamentSetupService;
 use App\Services\TournamentMatchService;
 use App\Services\TournamentStandingsService;
 use App\Services\TournamentBracketService;
-use App\Services\TournamentKingService;
 use App\Services\TournamentKingBeachService;
 use App\Services\TournamentSwissService;
 use App\Services\TournamentTeamService;
@@ -37,7 +36,6 @@ class TournamentController extends Controller
         private TournamentStandingsService $standingsService,
         private TournamentBracketService $bracketService,
         private TournamentSwissService $swissService,
-        private TournamentKingService $kingService,
         private TournamentKingBeachService $kingBeachService,
         private MatchRallyService $rallyService,
         private TournamentTeamService $teamService,
@@ -266,18 +264,18 @@ class TournamentController extends Controller
             $request->merge(['match_format' => 'bo1', 'deciding_set_points' => '15']);
         }
 
-        // King of the Court: "удержание корта" = один выигранный мини-сет —
-        // match_format принудительно bo1, даже если форма прислала другое
-        // значение. Организатор выбирает только set_points (форма показывает
-        // 15/21 — king_of_court доступен только для пляжных турниров, см.
-        // @if($isBeach) в setup.blade.php); если поле всё же не пришло —
-        // дефолт 15. deciding_set_points при bo1 не используется
-        // (validateScore() решающий сет для Bo1 не считает), форсируем как у
-        // king_beach — по тому же прецеденту.
+        // King of the Court (переписано 2026-09-07, официальные правила —
+        // очко только за розыгрыш на "королевской" стороне, не за сет) больше
+        // НЕ использует match_format/set_points/deciding_set_points вообще —
+        // своя механика раундов (TournamentKingService). Поля здесь заполняем
+        // только чтобы удовлетворить общие required-правила валидации ниже
+        // (общие для всех типов стадий), реальные king_of_court-настройки
+        // (round_duration_min/final_target_points) задаются позже, на форме
+        // "Назначить корт" (TournamentKingOfCourtController::assign()).
         if ($request->input('type') === TournamentStage::TYPE_KING_OF_COURT) {
             $request->merge([
                 'match_format'        => 'bo1',
-                'set_points'          => $request->input('set_points') ?: '15',
+                'set_points'          => '15',
                 'deciding_set_points' => '15',
             ]);
         }
@@ -396,15 +394,18 @@ class TournamentController extends Controller
         // селекторе "Тип") — до этой правки createStage() создавал для них
         // мёртвую pending-стадию без единого матча и врал в сообщении на строке
         // ~520 "жеребьёвка проведена". Список ЯВНЫЙ: canHaveFollowupStage()===false
-        // для всех четырёх (см. TournamentStage::TYPE_TRAITS), поэтому эта ветка не
+        // для всех трёх (см. TournamentStage::TYPE_TRAITS), поэтому эта ветка не
         // пересекается ни с companion-скелетом ниже, ни с групповым блоком —
         // оба гейтятся canHaveFollowupStage(). king_beach НЕ входит — свои
         // player-based эндпоинты (formKingBeachGroups и т.п.), не трогаем.
+        // king_of_court (переписано 2026-09-07) тоже НЕ входит — команды (3-5)
+        // назначаются ПОСЛЕ создания пустой стадии, отдельной формой
+        // (TournamentKingOfCourtController::assign()), а не здесь при выборе
+        // типа — см. явную ветку сразу после $this->setupService->createStage() ниже.
         $standaloneBracketTypes = [
             TournamentStage::TYPE_SINGLE_ELIM,
             TournamentStage::TYPE_DOUBLE_ELIM,
             TournamentStage::TYPE_SWISS,
-            TournamentStage::TYPE_KING_OF_COURT,
         ];
         $standaloneTeams = null;
 
@@ -440,10 +441,8 @@ class TournamentController extends Controller
                 $standaloneTeams = $standaloneTeams->diff($incompleteTeams)->values();
             }
 
-            // single_elim/swiss/king_of_court — минимум 2 (Гейт A: swiss и
-            // king_of_court оба фактически требуют >=2 для первого тура/матча,
-            // просто swiss бросает исключение, а king_of_court тихо возвращает
-            // null — контроллер обязан отсечь недобор сам для обоих).
+            // single_elim/swiss — минимум 2 (Гейт A: swiss фактически требует
+            // >=2 для первого тура, бросает исключение при недоборе).
             // double_elim — минимум 4 (TournamentBracketService::generateDoubleElimination()).
             $minRequired = $validated['type'] === TournamentStage::TYPE_DOUBLE_ELIM ? 4 : 2;
 
@@ -452,7 +451,6 @@ class TournamentController extends Controller
                     TournamentStage::TYPE_SINGLE_ELIM   => 'tournaments.setup_stage_error_min_single_elim',
                     TournamentStage::TYPE_DOUBLE_ELIM   => 'tournaments.setup_stage_error_min_double_elim',
                     TournamentStage::TYPE_SWISS         => 'tournaments.setup_stage_error_min_swiss',
-                    TournamentStage::TYPE_KING_OF_COURT => 'tournaments.setup_stage_error_min_king_of_court',
                 };
 
                 return $this->redirectToSetup(
@@ -523,11 +521,24 @@ class TournamentController extends Controller
             'occurrence_id' => $occurrenceId ? (int) $occurrenceId : null,
         ]);
 
+        // King of the Court (переписано 2026-09-07) — стадия создаётся ПУСТОЙ
+        // (без команд/раунда), организатор назначает 3-5 команд на корт и
+        // стартует раунд 1 отдельной формой (TournamentKingOfCourtController::
+        // assign(), кнопка "Назначить корт" на карточке стадии).
+        if ($stage->type === TournamentStage::TYPE_KING_OF_COURT) {
+            return $this->redirectToSetup(
+                $event,
+                "Стадия \"{$stage->name}\" создана — назначьте 3-5 команд на корт.",
+                false,
+                "stage_{$stage->id}"
+            );
+        }
+
         // Реальная жеребьёвка/генерация для standalone bracket/incremental типов —
         // $standaloneTeams уже провалидирован (>= минимума) до создания стадии
         // выше. Return ДО companion-скелета/группового блока/строки ~520 — те
-        // написаны для round_robin/groups_playoff и для этих 4 типов физически
-        // недостижимы (canHaveFollowupStage()===false для всех четырёх).
+        // написаны для round_robin/groups_playoff и для этих типов физически
+        // недостижимы (canHaveFollowupStage()===false для всех трёх).
         if ($standaloneTeams !== null) {
             $drawMode = $request->input('draw_mode', 'random');
             // getTeamRating() не существует (Fatal Error) — используем готовый
@@ -557,14 +568,6 @@ class TournamentController extends Controller
                         // initialize() сам генерит тур 1 внутри (generateNextRound()) —
                         // отдельный вызов не нужен (Гейт A).
                         return $this->swissService->initialize($stage, $teamIds)->count();
-
-                    case TournamentStage::TYPE_KING_OF_COURT:
-                        // initialize() НЕ генерит первый матч сам (Гейт A) — зеркалим
-                        // мёртвый draw() (строки 627-628): initialize() +
-                        // generateNextMatch() отдельным вызовом.
-                        $this->kingService->initialize($stage, $teamIds);
-                        $match = $this->kingService->generateNextMatch($stage->fresh());
-                        return $match ? 1 : 0;
                 }
 
                 return 0;
@@ -574,7 +577,6 @@ class TournamentController extends Controller
                 TournamentStage::TYPE_SINGLE_ELIM   => 'tournaments.setup_stage_created_single_elim',
                 TournamentStage::TYPE_DOUBLE_ELIM   => 'tournaments.setup_stage_created_double_elim',
                 TournamentStage::TYPE_SWISS         => 'tournaments.setup_stage_created_swiss',
-                TournamentStage::TYPE_KING_OF_COURT => 'tournaments.setup_stage_created_king_of_court',
             };
 
             return $this->redirectToSetup(
@@ -859,13 +861,6 @@ class TournamentController extends Controller
             if ($validated['mode'] === 'random') { shuffle($teamIds); }
 
             $this->swissService->initialize($stage, $teamIds);
-
-        } elseif ($stage->type === 'king_of_court') {
-            $teamIds = $teams->pluck('id')->toArray();
-            if ($validated['mode'] === 'random') { shuffle($teamIds); }
-
-            $this->kingService->initialize($stage, $teamIds);
-            $this->kingService->generateNextMatch($stage);
 
         } elseif ($stage->isPlayerBasedMatches()) {
             $playerIds = $this->resolveKingBeachPlayers($event, $occurrenceId, $request);
@@ -1204,10 +1199,6 @@ class TournamentController extends Controller
             // Bracket reset (double elimination): рескоринг GF1 запрещён, если GF2
             // уже разрешён (заполнен/cancelled/completed) — иначе рассинхрон.
             $this->matchService->guardGrandFinalRescore($match);
-
-            // King of the Court: рескор завершённого матча запрещён полностью
-            // (вариант А) — см. TournamentMatchService::guardKotcRescore().
-            $this->matchService->guardKotcRescore($match);
 
             \Illuminate\Support\Facades\DB::transaction(function () use ($match, $sets, $request, $stage) {
                 $this->matchService->resetScore($match);
@@ -1995,13 +1986,6 @@ class TournamentController extends Controller
                 }
                 return $this->redirectToSetup($event, 'Тур ' . $matches->first()->round . ' сгенерирован (' . $matches->count() . ' матчей).');
 
-            } elseif ($stage->type === 'king_of_court') {
-                $match = $this->kingService->generateNextMatch($stage);
-                if (!$match) {
-                    return back()->with('error', 'Нет больше соперников в очереди.');
-                }
-                return $this->redirectToSetup($event, 'Следующий матч King of the Court создан.');
-
             } elseif ($stage->isPlayerBasedMatches()) {
                 $nextStage = $this->kingBeachService->advanceToNextRound($stage);
                 if (!$nextStage) {
@@ -2018,20 +2002,22 @@ class TournamentController extends Controller
     }
 
     /**
-     * Ручное завершение инкрементальной стадии (swiss/king_of_court) — действие
+     * Ручное завершение инкрементальной стадии (swiss) — действие
      * «Завершить стадию» (без подтверждения). Доступно только когда ВСЕ матчи
      * стадии уже сыграны (нет scheduled/live) — иначе нужно
      * finishStageForce(). В отличие от checkStageCompletion() минует guard'ы
      * rounds_count (см. выше) — организатор явно хочет закрыть стадию раньше
      * исчерпания лимита туров/матчей.
+     * king_of_court (переписано 2026-09-07) сюда больше не входит — своё
+     * завершение раунда/стадии через TournamentKingOfCourtController::endRound().
      */
     public function finishStage(Request $request, TournamentStage $stage)
     {
         $event = $stage->event;
         $this->authorizeOrganizer($request, $event);
 
-        if (!in_array($stage->type, [TournamentStage::TYPE_SWISS, TournamentStage::TYPE_KING_OF_COURT], true)) {
-            return back()->with('error', 'Ручное завершение доступно только для Swiss и King of the Court.');
+        if ($stage->type !== TournamentStage::TYPE_SWISS) {
+            return back()->with('error', 'Ручное завершение доступно только для Swiss.');
         }
 
         $hasUnplayed = $stage->matches()
@@ -2049,7 +2035,7 @@ class TournamentController extends Controller
     }
 
     /**
-     * Ручное завершение инкрементальной стадии (swiss/king_of_court) с отменой
+     * Ручное завершение инкрементальной стадии (swiss) с отменой
      * всех несыгранных матчей — действие «Отменить несыгранные и завершить».
      * Отмена безопасна для standings: recalculateGroup() и так использует
      * allow-list [completed, forfeit] — scheduled/live/cancelled матчи никогда
@@ -2060,8 +2046,8 @@ class TournamentController extends Controller
         $event = $stage->event;
         $this->authorizeOrganizer($request, $event);
 
-        if (!in_array($stage->type, [TournamentStage::TYPE_SWISS, TournamentStage::TYPE_KING_OF_COURT], true)) {
-            return back()->with('error', 'Ручное завершение доступно только для Swiss и King of the Court.');
+        if ($stage->type !== TournamentStage::TYPE_SWISS) {
+            return back()->with('error', 'Ручное завершение доступно только для Swiss.');
         }
 
         DB::transaction(function () use ($stage) {
@@ -2892,6 +2878,14 @@ class TournamentController extends Controller
 
     private function checkStageCompletion(TournamentStage $stage): void
     {
+        // King of the Court (переписано 2026-09-07) больше не создаёт
+        // TournamentMatch вообще — завершение стадии целиком управляется
+        // TournamentKingOfCourtController::endRound() (финализация после
+        // 3-го раунда), эта функция для него неприменима.
+        if ($stage->type === TournamentStage::TYPE_KING_OF_COURT) {
+            return;
+        }
+
         $total = $stage->matches()
             ->whereNotIn('status', [TournamentMatch::STATUS_CANCELLED])
             ->count();
@@ -2899,18 +2893,6 @@ class TournamentController extends Controller
         $completed = $stage->matches()
             ->where('status', TournamentMatch::STATUS_COMPLETED)
             ->count();
-
-        // King of the Court — инкрементальная стадия: "все СОЗДАННЫЕ на сейчас
-        // матчи сыграны" ложно совпадает с "формат закончен" сразу после первого
-        // же матча (следующий ещё не сгенерирован). Стадию считаем завершённой
-        // только когда сыгран лимит rounds_count целиком.
-        if ($total > 0 && $total === $completed && $stage->type === TournamentStage::TYPE_KING_OF_COURT) {
-            $roundsCount = (int) $stage->cfg('rounds_count', 0);
-            $currentRound = (int) $stage->cfg('current_round', 0);
-            if ($roundsCount > 0 && $currentRound < $roundsCount) {
-                return;
-            }
-        }
 
         // Swiss — тот же наивный критерий ложно совпадает с "формат закончен"
         // после каждого сыгранного тура, до клика "Следующий тур" (см.
@@ -3026,36 +3008,35 @@ class TournamentController extends Controller
             return;
         }
 
-        // Инкрементальные форматы (swiss/king_of_court/king_beach) генерируют матчи
-        // по ходу турнира — "все СОЗДАННЫЕ на сейчас матчи сыграны" (наивный критерий
+        // Инкрементальные форматы (swiss/king_beach) генерируют матчи по ходу
+        // турнира — "все СОЗДАННЫЕ на сейчас матчи сыграны" (наивный критерий
         // строкой выше, применённый к $stage) ложно совпадает с "формат закончен":
-        // king_of_court может закрыться после первого же матча (очередь ещё не
-        // пуста, просто следующий матч ещё не сгенерирован), swiss — после первого
-        // раунда, до клика "Следующий тур" (см. report_stage_type_branching_audit.md
-        // §3/§4.4). Поэтому при решении "весь ТУРНИР завершён" инкрементальные
-        // стадии не учитываются вовсе, если в событии есть хотя бы одна batch/bracket
-        // стадия (round_robin/groups_playoff/single_elim/double_elim/thai) —
-        // завершённость турнира определяется ТОЛЬКО ими.
+        // swiss закрывается после первого раунда, до клика "Следующий тур" (см.
+        // report_stage_type_branching_audit.md §3/§4.4). king_of_court
+        // (переписано 2026-09-07) сюда вообще не попадает — TournamentMatch для
+        // него больше не создаются, checkStageCompletion() возвращается для
+        // него рано, до этой функции. Поэтому при решении "весь ТУРНИР завершён"
+        // инкрементальные стадии не учитываются вовсе, если в событии есть хотя
+        // бы одна batch/bracket стадия (round_robin/groups_playoff/single_elim/
+        // double_elim/thai) — завершённость турнира определяется ТОЛЬКО ими.
         $stages = $event->tournamentStages()->get();
         $batchStages = $stages->reject(fn($s) => $s->hasIncrementalMatchGeneration());
 
         if ($batchStages->isEmpty()) {
             // Событие целиком состоит из инкрементальных стадий. Область этой
-            // проверки — ТОЛЬКО swiss/king_of_court: для них isCompleted()===true
-            // достигается исключительно либо честным исчерпанием rounds_count
-            // (guard'ы выше в checkStageCompletion()), либо явным ручным
-            // finishStage() — оба случая означают реальное завершение. king_beach
-            // тоже incremental, но у него НЕТ такого guard'а в checkStageCompletion()
-            // (completed выставляется безусловно по total===completed) — включать
-            // его сюда было бы преждевременным закрытием турнира. Если среди
+            // проверки — ТОЛЬКО swiss: для него isCompleted()===true достигается
+            // исключительно либо честным исчерпанием rounds_count (guard'ы выше
+            // в checkStageCompletion()), либо явным ручным finishStage() — оба
+            // случая означают реальное завершение. king_beach тоже incremental,
+            // но у него НЕТ такого guard'а в checkStageCompletion() (completed
+            // выставляется безусловно по total===completed) — включать его сюда
+            // было бы преждевременным закрытием турнира. Если среди
             // инкрементальных стадий события есть king_beach — сохраняем прежнее
             // консервативное поведение (return), это отдельный backlog, не в
             // рамках этого прохода (report/finish_stage_recon_2026-08-21.md).
-            $onlySwissOrKotc = $stages->every(
-                fn($s) => in_array($s->type, [TournamentStage::TYPE_SWISS, TournamentStage::TYPE_KING_OF_COURT], true)
-            );
+            $onlySwiss = $stages->every(fn($s) => $s->type === TournamentStage::TYPE_SWISS);
 
-            if (!$onlySwissOrKotc) {
+            if (!$onlySwiss) {
                 return;
             }
 
@@ -3450,10 +3431,6 @@ class TournamentController extends Controller
         // ball-by-ball reopen нельзя, пока GF2 не откачен вручную.
         try {
             $this->matchService->guardGrandFinalRescore($match);
-
-            // King of the Court: рескор завершённого матча запрещён полностью
-            // (вариант А) — см. TournamentMatchService::guardKotcRescore().
-            $this->matchService->guardKotcRescore($match);
         } catch (\InvalidArgumentException $e) {
             return redirect()
                 ->route('tournament.matches.score.form', $match)
