@@ -603,6 +603,7 @@ return [
     'setup_stage_kb_players_hint'  => 'taken from registered participants',
     'setup_stage_kb_players_auto'  => 'auto',
     'setup_stage_koc_hint' => 'Teams (3-5), round duration and final target points are set after the stage is created, via the "Assign court" button on its card.',
+    'koc_form_courts_alt_hint' => 'If you have 9 or more teams — skip this form and split everyone into multiple courts at once instead:',
     'setup_stage_swiss_rounds'             => 'Number of rounds',
     'setup_stage_swiss_rounds_placeholder' => 'default: ceil(log2(teams))',
     'setup_stage_swiss_rounds_hint'        => 'The stage will finish after this many rounds are played. If left empty — calculated automatically from the number of teams.',

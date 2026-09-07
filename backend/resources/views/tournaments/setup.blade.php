@@ -1449,7 +1449,6 @@ $tourNumber = $seasonData
 		@if(!$allCompleted)
 		<div class="ramka">
 			<h2 class="-mt-05">{{ __('tournaments.setup_add_stage_h2') }}</h2>
-			<a href="{{ route('tournament.kingOfCourt.formCourtsForm', $event) }}{{ $selectedOccurrence ? '?occurrence_id=' . $selectedOccurrence->id : '' }}" class="btn btn-secondary btn-small mb-1" style="display:inline-block">🏆 {{ __('tournaments.koc_btn_form_courts') }}</a>
 			@if($hasStages)
 			{{-- Стадии уже есть — тоггл приглушён (не конкурирует визуально с
 			     карточками активных стадий ниже), но функция та же: разворачивает
@@ -1613,6 +1612,8 @@ $tourNumber = $seasonData
 					<div class="mt-2" id="king_of_court_fields" style="display:none">
 						<div class="card">
 							<p class="f-16">{{ __('tournaments.setup_stage_koc_hint') }}</p>
+							<p class="f-16">{{ __('tournaments.koc_form_courts_alt_hint') }}</p>
+							<a href="{{ route('tournament.kingOfCourt.formCourtsForm', $event) }}{{ $selectedOccurrence ? '?occurrence_id=' . $selectedOccurrence->id : '' }}" class="btn btn-secondary btn-small" style="display:inline-block">🏆 {{ __('tournaments.koc_btn_form_courts') }}</a>
 						</div>
 					</div>
 					{{-- Swiss: специфичные настройки --}}
