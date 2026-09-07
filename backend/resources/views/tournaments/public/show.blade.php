@@ -560,10 +560,12 @@
 			$placementLabel = $stage->placementLabelFor($m);
 			@endphp
 			<div class="d-flex f-14 match-row" style="padding:5px 0;border-bottom:1px solid rgba(128,128,128,.08);gap:8px;align-items:center">
-				<span class="f-12 match-row-badge">R{{ $m->round }}</span>
-				@if($placementLabel)
-				<span class="f-12 cd b-600 match-row-placement">{{ $placementLabel }}</span>
-				@endif
+				<div class="match-row-meta">
+					<span class="f-12 match-row-badge">R{{ $m->round }}</span>
+					@if($placementLabel)
+					<span class="f-12 cd b-600 match-row-placement">{{ $placementLabel }}</span>
+					@endif
+				</div>
 				<span class="match-team-cell match-team-cell--right {{ $m->winner_team_id === $m->team_home_id ? 'b-700' : '' }}">
 					@include('tournaments._partials.team_name_link', ['team' => $m->teamHome, 'fallback' => '—'])
 					@include('tournaments._partials.team_roster_line', ['team' => $m->teamHome, 'class' => 'f-11', 'style' => 'color:#6b7280'])
