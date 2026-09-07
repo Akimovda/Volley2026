@@ -81,12 +81,14 @@ $kocStandings = $stage->isCompleted() || $kocHistory
 			<summary class="f-13" style="cursor:pointer;opacity:.7">{{ __('tournaments.koc_lbl_colors') }}</summary>
 			<form method="POST" action="{{ route('tournament.kingOfCourt.saveColors', $stage) }}" class="form mt-1">
 				@csrf
-				<div class="d-flex" style="gap:10px;flex-wrap:wrap">
+				<div class="d-flex" style="gap:14px;flex-wrap:wrap">
 					@foreach($kocCourtTeamIds as $tId)
-					@php $t = $kocTeamsById->get($tId); @endphp
-					<label class="d-flex fvc" style="gap:4px">
-						<span class="f-13">{{ $t?->name ?? '?' }}</span>
-						<input type="color" name="colors[{{ $tId }}]" value="{{ $kocColors[$tId] ?? '#2967BA' }}">
+					@php $t = $kocTeamsById->get($tId); $tColorInit = $kocColors[$tId] ?? '#2967BA'; @endphp
+					<label class="d-flex fvc" style="gap:8px">
+						<input type="color" name="colors[{{ $tId }}]" value="{{ $tColorInit }}"
+							style="width:2.6rem;height:2.6rem;padding:0;border:none;cursor:pointer"
+							oninput="this.nextElementSibling.style.borderBottom='4px solid '+this.value">
+						<span class="f-14 b-600" style="border-bottom:4px solid {{ $tColorInit }};padding-bottom:2px">{{ $t?->name ?? '?' }}</span>
 					</label>
 					@endforeach
 				</div>
