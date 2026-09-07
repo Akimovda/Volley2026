@@ -177,6 +177,12 @@ return [
     'card_age_child_range' => ':min-:max',
     'card_age_child_max'   => 'до :max',
 
+    // Пилюля способа оплаты на карточке (только для платных мероприятий)
+    'card_pay_cash'            => 'Нал.',
+    'card_pay_cashless'        => 'Безнал.',
+    'card_pay_tooltip_cash'    => 'Наличными на месте.',
+    'card_pay_tooltip_cashless' => 'Онлайн картой или переводом.',
+
     // Лайк мероприятия
     'card_like_title'      => 'Нравится',
     'card_like_login_required' => 'Войдите, чтобы отметить мероприятие',

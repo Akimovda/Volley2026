@@ -184,6 +184,29 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 				}
 			}
 
+			// Пилюля способа оплаты (нал/безнал) — только для платных мероприятий
+			// с явно заданным payment_method. "cash" -> «Нал.», остальные методы
+			// (tbank_link/sber_link/yoomoney — все онлайн-переводом/картой) ->
+			// «Безнал.», тултип уточняет конкретный способ теми же лейблами,
+			// что и в форме управления мероприятием (events.pay_method_*).
+			$payMethod = (string)($event?->payment_method ?? '');
+			$payBadgeLabel = null;
+			$payTipText = null;
+			if (!empty($event?->is_paid) && $payMethod !== '') {
+				if ($payMethod === 'cash') {
+					$payBadgeLabel = __('events.card_pay_cash');
+					$payTipText = __('events.card_pay_tooltip_cash');
+				} else {
+					$payBadgeLabel = __('events.card_pay_cashless');
+					$payMethodLabels = [
+						'tbank_link' => __('events.pay_method_tbank'),
+						'sber_link'  => __('events.pay_method_sber'),
+						'yoomoney'   => __('events.pay_method_yookassa'),
+					];
+					$payTipText = $payMethodLabels[$payMethod] ?? __('events.card_pay_tooltip_cashless');
+				}
+			}
+
 			$dirLabel = ($dir === 'beach') ? __('events.card_dir_beach') : (($dir === 'classic') ? __('events.card_dir_classic') : __('events.card_dir_dash'));
 			$tzEvent  = (string)($occ->timezone ?: ($event?->timezone ?: 'UTC'));
 			$tzUser   = ($userHasCityTz ?? false) ? ($userTz ?? $tzEvent) : $tzEvent;
@@ -468,7 +491,7 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
                         @endif
                         @endif
 
-						@if($gsSubtype !== '' || $genderBadgeLabel || $ageBadgeLabel || $cardStatus)
+						@if($gsSubtype !== '' || $genderBadgeLabel || $ageBadgeLabel || $payBadgeLabel || $cardStatus)
 						<div class="event-badges-row d-flex flex-wrap align-items-center gap-1 mb-05">
 							@if($gsSubtype !== '')
 								@if($subtypeTipText)
@@ -488,6 +511,12 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 							@endif
 							@if($ageBadgeLabel)
 							<span class="badge-holder"><span class="badge badge-sm">{{ $ageBadgeLabel }}</span></span>
+							@endif
+							@if($payBadgeLabel)
+							<span class="info-tip js-info-tip">
+								<span class="info-tip-trigger badge badge-sm">{{ $payBadgeLabel }}</span>
+								<span class="info-tip-content">{{ $payTipText }}</span>
+							</span>
 							@endif
 							@if($cardStatus)
 							<span class="badge-holder"><span class="badge badge-sm status-{{ $cardStatus }}">{{ $cardStatusLabel }}</span></span>

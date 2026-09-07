@@ -169,6 +169,12 @@ return [
     'card_age_child_range' => ':min-:max',
     'card_age_child_max'   => 'up to :max',
 
+    // Payment method badge on card (paid events only)
+    'card_pay_cash'            => 'Cash',
+    'card_pay_cashless'        => 'Cashless',
+    'card_pay_tooltip_cash'    => 'Cash on site.',
+    'card_pay_tooltip_cashless' => 'Online by card or transfer.',
+
     // Event like
     'card_like_title'          => 'Like',
     'card_like_login_required' => 'Log in to like this event',
