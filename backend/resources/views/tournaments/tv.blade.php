@@ -309,6 +309,16 @@
 
                     <div id="tv-view-table" style="display:none;">
                     @foreach($activeStage->matches->sortBy(['round','match_number']) as $m)
+                        @php
+                        // placement-финал (2 группы, прямые матчи "за 1-2"/"за 3-4
+                        // место") — оба матча round=1, без подписи неразличимы в
+                        // плоском списке (тот же запрос, что и для публичной
+                        // страницы турнира, см. TournamentStage::placementLabelFor()).
+                        $placementLabel = $activeStage->placementLabelFor($m);
+                        @endphp
+                        @if($placementLabel)
+                        <div style="font-size:12px;font-weight:700;color:#E7612F;opacity:.85;margin:10px 0 2px">{{ $placementLabel }}</div>
+                        @endif
                         <div class="tv-match">
                             <div class="team right {{ $m->winner_team_id === $m->team_home_id ? 'winner' : '' }}">
                                 @include('tournaments._partials.team_name_link', ['team' => $m->teamHome, 'fallback' => $m->status === 'completed' ? '—' : 'TBD'])
