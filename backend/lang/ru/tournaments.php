@@ -977,7 +977,6 @@ return [
     'koc_assign_no_teams'      => 'Нет свободных команд для назначения на корт (все уже назначены на другие корты этого турнира, или заявок ещё нет).',
     'koc_assign_pick_teams'    => 'Выберите команды',
     'koc_lbl_round_duration'   => 'Длительность раунда (мин)',
-    'koc_lbl_final_target'     => 'Очков до победы в финале',
     'koc_assign_selected'      => 'Выбрано',
     'koc_assign_count_error'   => 'Нужно выбрать от :min до :max команд.',
 
@@ -987,7 +986,8 @@ return [
     'koc_lbl_challenge_side'   => 'Challenge side',
     'koc_hint_challenge_tap'   => 'Тап = претендент выигрывает розыгрыш и становится королём',
     'koc_btn_fault'            => 'Ошибка на подаче (без очка, следующая пара)',
-    'koc_lbl_queue'            => 'Очередь',
+    'koc_lbl_all_teams'        => 'Команды на корте',
+    'koc_btn_back_to_setup'    => 'К управлению турниром',
     'koc_end_round_confirm_title' => 'Завершить текущий раунд?',
     'koc_btn_end_round'        => 'Завершить раунд',
     'koc_lbl_time_up'          => 'Время вышло',

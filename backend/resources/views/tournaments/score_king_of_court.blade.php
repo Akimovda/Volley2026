@@ -12,7 +12,6 @@
 @php
 	$kingTeam = $teamsById->get($state['king_team_id']);
 	$challengerTeam = $teamsById->get($state['challenger_team_id']);
-	$queueTeams = collect($state['queue'])->map(fn($id) => $teamsById->get($id));
 	$kingPoints = (int) ($state['round_points'][$state['king_team_id']] ?? 0);
 	$roundDurationMin = (int) $stage->cfg('round_duration_min', 15);
 	$roundStartedAt = $stage->cfg('round_started_at');
@@ -26,8 +25,12 @@
 
 	<div class="ramka">
 
+		<div class="d-flex between fvc mb-2" style="flex-wrap:wrap;gap:8px">
+			<a href="{{ route('tournament.setup', $event) }}#stage_{{ $stage->id }}" class="btn btn-secondary btn-small">← {{ __('tournaments.koc_btn_back_to_setup') }}</a>
+		</div>
+
 		<div class="card p-2 mb-2" style="text-align:center">
-			<span class="score-pill score-pill--blue">{{ __('tournaments.koc_lbl_round') }} {{ $state['round_number'] }}</span>
+			<span class="score-pill score-pill--blue">{{ __('tournaments.koc_lbl_title') }} · {{ __('tournaments.koc_lbl_round_n') }} {{ $state['round_number'] }}</span>
 			<span class="score-pill score-pill--orange" id="koc-timer" data-started-at="{{ $roundStartedAt }}" data-duration-min="{{ $roundDurationMin }}">--:--</span>
 		</div>
 
@@ -60,17 +63,24 @@
 			<button type="submit" class="btn btn-secondary btn-small">⚠ {{ __('tournaments.koc_btn_fault') }}</button>
 		</form>
 
-		{{-- Очередь --}}
-		@if($queueTeams->isNotEmpty())
+		{{-- Все команды корта — одна строка, очки раунда сверху, цвет команды снизу
+		     подчёркиванием пилюли (тот же team_colors, что и в TV-режиме/лидерборде). --}}
 		<div class="card mt-2 p-2">
-			<div class="f-13 mb-1" style="opacity:.7">{{ __('tournaments.koc_lbl_queue') }}</div>
-			<div class="d-flex" style="gap:6px;flex-wrap:wrap">
-				@foreach($queueTeams as $qt)
-				<span class="badge badge-sm">{{ $qt?->name ?? '?' }}</span>
+			<div class="f-13 mb-1" style="opacity:.7">{{ __('tournaments.koc_lbl_all_teams') }}</div>
+			<div class="d-flex" style="gap:12px;overflow-x:auto;padding-bottom:4px">
+				@foreach($courtTeamIds as $tId)
+				@php
+					$t = $teamsById->get($tId);
+					$tPoints = (int) ($state['round_points'][$tId] ?? 0);
+					$tColor = $teamColors[$tId] ?? null;
+				@endphp
+				<div class="text-center" style="flex:0 0 auto">
+					<div class="b-700 f-14">{{ $tPoints }}</div>
+					<span class="badge badge-sm" style="{{ $tColor ? 'border-bottom:3px solid '.$tColor : '' }}">{{ $t?->name ?? '?' }}</span>
+				</div>
 				@endforeach
 			</div>
 		</div>
-		@endif
 
 		<div class="d-flex text-center gap-1 mt-2" style="flex-wrap:wrap">
 			<form method="POST" action="{{ route('tournament.kingOfCourt.undo', $stage) }}" style="flex:1">

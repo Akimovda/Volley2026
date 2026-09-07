@@ -1550,7 +1550,7 @@ $tourNumber = $seasonData
 								</div>
 							</div>
 							<div class="row mt-2">
-								<div class="col-md-6">
+								<div class="col-md-6" id="set_points_field">
 									<label>{{ __('tournaments.setup_stage_set_pts') }}</label>
 									<select name="set_points">
 										@if(!$isBeach)
@@ -3099,6 +3099,7 @@ $tourNumber = $seasonData
 			var doubleElimFields = document.getElementById('double_elim_fields');
 			var matchFormatField = document.getElementById('match_format_field');
 			var decidingSetWrap = document.getElementById('deciding_set_wrap');
+			var setPointsField = document.getElementById('set_points_field');
 			var courtsFields = document.getElementById('courts_shared_fields');
 			var scheduleFields = document.getElementById('schedule_fields');
 			var finalsModeFields = document.getElementById('finals_mode_fields');
@@ -3392,6 +3393,11 @@ $tourNumber = $seasonData
 					// их только сбивает с толку (выглядит как Bo3, играется как Bo1).
 					setBlockActive(matchFormatField, !(showKb || showKoc));
 					setBlockActive(decidingSetWrap, !(showKb || showKoc));
+					// set_points тоже форсируется (15) и вообще не используется в механике
+					// King of the Court (нет очковой границы, только время) — но у King of
+					// the Beach set_points ВСЁ ЕЩЁ значим (реальная длина мини-сета
+					// удержания корта, читается setPoints()), там его показывать нужно.
+					setBlockActive(setPointsField, !showKoc);
 					// Корты — общий блок для групповых форматов и King of the Beach
 					setBlockActive(courtsFields, showGroup || showKb);
 					// Расписание — только для группового формата (объединено с "Площадками" в

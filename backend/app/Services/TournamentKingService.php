@@ -54,7 +54,6 @@ class TournamentKingService
             'config' => array_merge($config, [
                 'court_team_ids'      => array_values($teamIds),
                 'round_duration_min'  => (int) ($config['round_duration_min'] ?? 15),
-                'final_target_points' => (int) ($config['final_target_points'] ?? 15),
                 'total_rounds'        => self::TOTAL_ROUNDS,
                 'current_round'       => 0,
                 'round_status'        => 'pending',
@@ -225,13 +224,6 @@ class TournamentKingService
             'round_points'        => $points,
             'created_by_user_id'  => $recordedByUserId,
         ]);
-
-        $targetPoints = (int) $stage->cfg('final_target_points', 15);
-        $isFinalRound = $roundNumber === (int) $stage->cfg('total_rounds', self::TOTAL_ROUNDS);
-
-        if ($isFinalRound && $type === self::EVENT_KING_POINT && ($points[$king] ?? 0) >= $targetPoints) {
-            $this->endRound($stage);
-        }
 
         return [
             'round_number'       => $roundNumber,
