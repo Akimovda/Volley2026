@@ -555,7 +555,6 @@ return [
     'setup_stage_error_min_single_elim' => 'Недостаточно команд для сетки на выбывание: нужно минимум :min, сейчас :count.',
     'setup_stage_error_min_double_elim' => 'Недостаточно команд для double elimination: нужно минимум :min, сейчас :count.',
     'setup_stage_error_min_swiss' => 'Недостаточно команд для швейцарской системы: нужно минимум :min, сейчас :count.',
-    'setup_stage_error_min_king_of_court' => 'Недостаточно команд для King of the Court: нужно минимум :min, сейчас :count.',
     'setup_stage_error_incomplete_teams' => 'Не укомплектованы игроками (:count): :names. Уберите их из состава или запустите жеребьёвку без них.',
     'setup_stage_btn_run_without_incomplete' => 'Запустить без недоукомплектованных',
     'badge_roster_incomplete' => 'Не укомплектована',
@@ -563,7 +562,6 @@ return [
     'setup_stage_created_single_elim' => 'Стадия создана: сетка на выбывание сгенерирована — команд: :teams, матчей: :matches.',
     'setup_stage_created_double_elim' => 'Стадия создана: сетка double elimination сгенерирована — команд: :teams, матчей: :matches.',
     'setup_stage_created_swiss' => 'Стадия создана: швейцарская система запущена, тур 1 сгенерирован — команд: :teams, матчей: :matches.',
-    'setup_stage_created_king_of_court' => 'Стадия создана: King of the Court запущен, первый матч сгенерирован — команд: :teams.',
     // double_elim временно скрыт из выбора и заблокирован в createStage() —
     // resolveByes() не пробрасывает BYE в нижнюю сетку при небинарном числе
     // команд (см. report/double-elim-bye-stuck.md). Сообщения выше про
@@ -623,9 +621,7 @@ return [
     'setup_stage_kb_players'       => 'Участники',
     'setup_stage_kb_players_hint'  => 'берутся из зарегистрированных на турнир',
     'setup_stage_kb_players_auto'  => 'авто',
-    'setup_stage_koc_rounds'             => 'Количество матчей',
-    'setup_stage_koc_rounds_placeholder' => 'по умолчанию 2 × команд',
-    'setup_stage_koc_rounds_hint'        => 'После стольки сыгранных матчей стадия завершится. Если не задано — 2 матча на каждую команду.',
+    'setup_stage_koc_hint' => 'Команды (3-5), длительность раунда и очки финала задаются после создания стадии, кнопкой «Назначить корт» на её карточке.',
     'setup_stage_swiss_rounds'             => 'Количество туров',
     'setup_stage_swiss_rounds_placeholder' => 'по умолчанию ceil(log2(команд))',
     'setup_stage_swiss_rounds_hint'        => 'После стольки сыгранных туров стадия завершится. Если не задано — рассчитывается автоматически по числу команд.',
@@ -712,7 +708,6 @@ return [
 
     'setup_btn_start_results' => '▶ Приступить к заполнению результатов',
     'setup_btn_swiss_next'  => 'Сгенерировать следующий тур',
-    'setup_btn_koc_next'    => 'Следующий матч King of the Court',
     'setup_btn_next_arrow'  => 'Далее →',
 
     'setup_btn_finish_stage'      => 'Завершить стадию',
@@ -960,6 +955,40 @@ return [
     // Bracket reset (double elimination) — рескоринг GF1
     'gf1_rescore_blocked'           => 'Нельзя пересчитать результат финала: уже разрешён решающий матч (Grand Final Reset). Сначала откатите его результат.',
 
-    // King of the Court — полный запрет рескора завершённого матча
-    'kotc_rescore_blocked'          => 'Счёт матча King of the Court нельзя изменить после завершения — откатите стадию целиком.',
+    // King of the Court (официальные правила, переписано 2026-09-07)
+    'koc_lbl_title'            => 'Король площадки — King of the Court',
+    'koc_lbl_round'            => 'раунд :n из :total',
+    'koc_hint_not_assigned'    => 'Корт ещё не собран — назначьте 3-5 команд, чтобы начать раунд 1.',
+    'koc_btn_assign'           => 'Назначить корт',
+    'koc_lbl_court_teams'      => 'Команды на корте',
+    'koc_lbl_eliminated'       => 'выбыла',
+    'koc_lbl_colors'           => 'Цвета команд (для TV-режима)',
+    'koc_lbl_king'             => 'Король (King side)',
+    'koc_lbl_challenger'       => 'Претендент (Challenge side)',
+    'koc_btn_score'            => 'Ввести счёт',
+    'koc_hint_round_finished'  => 'Раунд завершён.',
+    'koc_btn_next_round'       => 'Начать раунд :n',
+    'koc_lbl_history'          => 'История раундов',
+    'koc_lbl_round_n'          => 'Раунд',
+    'koc_lbl_final_standings'  => 'Итоговый рейтинг',
+
+    'koc_assign_title'         => 'King of the Court — назначить корт',
+    'koc_assign_hint'          => 'Выберите от :min до :max команд, которые будут играть на этом корте.',
+    'koc_assign_no_teams'      => 'Нет свободных команд для назначения на корт (все уже назначены на другие корты этого турнира, или заявок ещё нет).',
+    'koc_assign_pick_teams'    => 'Выберите команды',
+    'koc_lbl_round_duration'   => 'Длительность раунда (мин)',
+    'koc_lbl_final_target'     => 'Очков до победы в финале',
+    'koc_assign_selected'      => 'Выбрано',
+    'koc_assign_count_error'   => 'Нужно выбрать от :min до :max команд.',
+
+    'koc_score_title'          => 'King of the Court — счёт',
+    'koc_lbl_king_side'        => 'King side',
+    'koc_hint_king_tap'        => 'Тап = очко королю, король остаётся',
+    'koc_lbl_challenge_side'   => 'Challenge side',
+    'koc_hint_challenge_tap'   => 'Тап = претендент выигрывает розыгрыш и становится королём',
+    'koc_btn_fault'            => 'Ошибка на подаче (без очка, следующая пара)',
+    'koc_lbl_queue'            => 'Очередь',
+    'koc_end_round_confirm_title' => 'Завершить текущий раунд?',
+    'koc_btn_end_round'        => 'Завершить раунд',
+    'koc_lbl_time_up'          => 'Время вышло',
 ];

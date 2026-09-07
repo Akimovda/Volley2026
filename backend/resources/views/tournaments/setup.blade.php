@@ -1605,25 +1605,13 @@ $tourNumber = $seasonData
 							</div>
 						</div>
 					</div>
-					{{-- King of the Court: специфичные настройки --}}
+					{{-- King of the Court: команды (3-5), длительность раунда, очки
+					     финала и жеребьёвка задаются ПОСЛЕ создания стадии, на форме
+					     "Назначить корт" (карточка стадии) — здесь ничего настраивать
+					     не нужно, стадия создаётся пустой. --}}
 					<div class="mt-2" id="king_of_court_fields" style="display:none">
-						<div class="row">
-							<div class="col-md-6">
-								<div class="card">
-									<label>{{ __('tournaments.setup_stage_koc_rounds') }}</label>
-									<input type="number" name="rounds_count" id="koc_rounds_count_input" min="1" max="500" placeholder="{{ __('tournaments.setup_stage_koc_rounds_placeholder') }}">
-									<p class="f-16">{{ __('tournaments.setup_stage_koc_rounds_hint') }}</p>
-								</div>
-							</div>
-							<div class="col-md-6">
-								<div class="card">
-									<label>{{ __('tournaments.setup_stage_seed') }}</label>
-									<select name="draw_mode" id="koc_draw_mode_select">
-										<option value="random">{{ __('tournaments.setup_stage_seed_random') }}</option>
-										<option value="seeded">{{ __('tournaments.setup_stage_seed_seeded') }}</option>
-									</select>
-								</div>
-							</div>
+						<div class="card">
+							<p class="f-16">{{ __('tournaments.setup_stage_koc_hint') }}</p>
 						</div>
 					</div>
 					{{-- Swiss: специфичные настройки --}}
@@ -2203,6 +2191,13 @@ $tourNumber = $seasonData
 		@include('tournaments._partials.king_beach_stage', ['stage' => $stage, 'event' => $event, 'selectedOccurrence' => $selectedOccurrence])
 		@continue
 		@endif
+
+		{{-- King of the Court (официальные правила, переписано 2026-09-07):
+		     отдельный рендеринг — нет TournamentMatch/групп, своя механика раундов. --}}
+		@if($stage->type === 'king_of_court')
+		@include('tournaments._partials.king_of_court_stage', ['stage' => $stage, 'event' => $event, 'selectedOccurrence' => $selectedOccurrence])
+		@continue
+		@endif
 		<div class="ramka" id="stage_{{ $stage->id }}">
 			<div class="d-flex between fvc" style="flex-wrap:wrap;gap:8px">
 				<div>
@@ -2630,21 +2625,22 @@ $tourNumber = $seasonData
 			@endif
 			
 			
-			{{-- Следующий тур (Swiss/King) --}}
-			@if($stage->isInProgress() && in_array($stage->type, ['swiss', 'king_of_court']))
+			{{-- Следующий тур (Swiss) — king_of_court рендерится отдельным партиалом
+			     выше (@continue), сюда не доходит. --}}
+			@if($stage->isInProgress() && $stage->type === 'swiss')
 			<div class="p-3 mt-2" style="background:rgba(231,97,47,.08);border-radius:10px">
 				<form method="POST" action="{{ route('tournament.stages.nextRound', $stage) }}" class="d-flex fvc" style="gap:10px">
 					@csrf
 					<div class="b-600">
-						{{ $stage->type === 'swiss' ? __('tournaments.setup_btn_swiss_next') : __('tournaments.setup_btn_koc_next') }}
+						{{ __('tournaments.setup_btn_swiss_next') }}
 					</div>
 					<button type="submit" class="btn btn-primary">{{ __('tournaments.setup_btn_next_arrow') }}</button>
 				</form>
 			</div>
 			@endif
 
-			{{-- Завершить стадию (Swiss/King) --}}
-			@if($stage->isInProgress() && in_array($stage->type, ['swiss', 'king_of_court']))
+			{{-- Завершить стадию (Swiss) --}}
+			@if($stage->isInProgress() && $stage->type === 'swiss')
 			@php
 			$hasUnplayedForFinish = $stage->matches->whereIn('status', ['scheduled', 'live'])->isNotEmpty();
 			@endphp

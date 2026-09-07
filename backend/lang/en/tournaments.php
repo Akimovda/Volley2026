@@ -536,7 +536,6 @@ return [
     'setup_stage_error_min_single_elim' => 'Not enough teams for a single-elimination bracket: need at least :min, have :count.',
     'setup_stage_error_min_double_elim' => 'Not enough teams for double elimination: need at least :min, have :count.',
     'setup_stage_error_min_swiss' => 'Not enough teams for a Swiss system: need at least :min, have :count.',
-    'setup_stage_error_min_king_of_court' => 'Not enough teams for King of the Court: need at least :min, have :count.',
     'setup_stage_error_incomplete_teams' => 'Not fully staffed (:count): :names. Remove them or run the draw without them.',
     'setup_stage_btn_run_without_incomplete' => 'Run without incomplete teams',
     'badge_roster_incomplete' => 'Not fully staffed',
@@ -544,7 +543,6 @@ return [
     'setup_stage_created_single_elim' => 'Stage created: single-elimination bracket generated — teams: :teams, matches: :matches.',
     'setup_stage_created_double_elim' => 'Stage created: double-elimination bracket generated — teams: :teams, matches: :matches.',
     'setup_stage_created_swiss' => 'Stage created: Swiss system started, round 1 generated — teams: :teams, matches: :matches.',
-    'setup_stage_created_king_of_court' => 'Stage created: King of the Court started, first match generated — teams: :teams.',
     // double_elim is temporarily hidden from the picker and blocked in createStage() —
     // resolveByes() does not propagate the BYE into the lower bracket when the team
     // count is not a power of two (see report/double-elim-bye-stuck.md). The
@@ -604,9 +602,7 @@ return [
     'setup_stage_kb_players'       => 'Players',
     'setup_stage_kb_players_hint'  => 'taken from registered participants',
     'setup_stage_kb_players_auto'  => 'auto',
-    'setup_stage_koc_rounds'             => 'Number of matches',
-    'setup_stage_koc_rounds_placeholder' => 'default: 2 × teams',
-    'setup_stage_koc_rounds_hint'        => 'The stage will finish after this many matches are played. If left empty — 2 matches per team.',
+    'setup_stage_koc_hint' => 'Teams (3-5), round duration and final target points are set after the stage is created, via the "Assign court" button on its card.',
     'setup_stage_swiss_rounds'             => 'Number of rounds',
     'setup_stage_swiss_rounds_placeholder' => 'default: ceil(log2(teams))',
     'setup_stage_swiss_rounds_hint'        => 'The stage will finish after this many rounds are played. If left empty — calculated automatically from the number of teams.',
@@ -693,7 +689,6 @@ return [
 
     'setup_btn_start_results' => '▶ Start filling results',
     'setup_btn_swiss_next'  => 'Generate next round',
-    'setup_btn_koc_next'    => 'Next King of the Court match',
     'setup_btn_next_arrow'  => 'Next →',
 
     'setup_btn_finish_stage'      => 'Finish stage',
@@ -941,6 +936,40 @@ return [
     // Bracket reset (double elimination) — GF1 rescore
     'gf1_rescore_blocked'           => 'Cannot recalculate the final result: the decider match (Grand Final Reset) has already been resolved. Roll back its result first.',
 
-    // King of the Court — completed match score can never be edited
-    'kotc_rescore_blocked'          => 'King of the Court match score cannot be edited after completion — revert the stage instead.',
+    // King of the Court (official rules, rewritten 2026-09-07)
+    'koc_lbl_title'            => 'King of the Court',
+    'koc_lbl_round'            => 'round :n of :total',
+    'koc_hint_not_assigned'    => 'Court not set up yet — assign 3-5 teams to start round 1.',
+    'koc_btn_assign'           => 'Assign court',
+    'koc_lbl_court_teams'      => 'Teams on court',
+    'koc_lbl_eliminated'       => 'eliminated',
+    'koc_lbl_colors'           => 'Team colors (for TV mode)',
+    'koc_lbl_king'             => 'King (King side)',
+    'koc_lbl_challenger'       => 'Challenger (Challenge side)',
+    'koc_btn_score'            => 'Enter score',
+    'koc_hint_round_finished'  => 'Round finished.',
+    'koc_btn_next_round'       => 'Start round :n',
+    'koc_lbl_history'          => 'Round history',
+    'koc_lbl_round_n'          => 'Round',
+    'koc_lbl_final_standings'  => 'Final standings',
+
+    'koc_assign_title'         => 'King of the Court — assign court',
+    'koc_assign_hint'          => 'Pick :min to :max teams that will play on this court.',
+    'koc_assign_no_teams'      => 'No free teams to assign to a court (either all are already assigned to other courts of this tournament, or there are no applications yet).',
+    'koc_assign_pick_teams'    => 'Pick teams',
+    'koc_lbl_round_duration'   => 'Round duration (min)',
+    'koc_lbl_final_target'     => 'Points to win the final',
+    'koc_assign_selected'      => 'Selected',
+    'koc_assign_count_error'   => 'Pick between :min and :max teams.',
+
+    'koc_score_title'          => 'King of the Court — score',
+    'koc_lbl_king_side'        => 'King side',
+    'koc_hint_king_tap'        => 'Tap = point for the king, king stays',
+    'koc_lbl_challenge_side'   => 'Challenge side',
+    'koc_hint_challenge_tap'   => 'Tap = challenger wins the rally and becomes king',
+    'koc_btn_fault'            => 'Serve fault (no point, next team)',
+    'koc_lbl_queue'            => 'Queue',
+    'koc_end_round_confirm_title' => 'End the current round?',
+    'koc_btn_end_round'        => 'End round',
+    'koc_lbl_time_up'          => 'Time up',
 ];
