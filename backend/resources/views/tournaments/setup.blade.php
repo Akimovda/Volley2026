@@ -1449,6 +1449,7 @@ $tourNumber = $seasonData
 		@if(!$allCompleted)
 		<div class="ramka">
 			<h2 class="-mt-05">{{ __('tournaments.setup_add_stage_h2') }}</h2>
+			<a href="{{ route('tournament.kingOfCourt.formCourtsForm', $event) }}{{ $selectedOccurrence ? '?occurrence_id=' . $selectedOccurrence->id : '' }}" class="btn btn-secondary btn-small mb-1" style="display:inline-block">🏆 {{ __('tournaments.koc_btn_form_courts') }}</a>
 			@if($hasStages)
 			{{-- Стадии уже есть — тоггл приглушён (не конкурирует визуально с
 			     карточками активных стадий ниже), но функция та же: разворачивает
@@ -2179,7 +2180,28 @@ $tourNumber = $seasonData
 			</div>
 		</div>
 		@endif
-		
+
+		@php
+		// King of the Court — групповой этап: карточка каждого корта-"квалификатора"
+		// (config['koc_batch_id']) должна знать, все ли корты её батча уже
+		// завершены и не создан ли для батча финал (config['koc_final_of_batch']),
+		// чтобы показать кнопку "Сформировать финал" ровно один раз, на каждой
+		// карточке батча одновременно (клик на любой создаёт финал один раз —
+		// формFinal() в сервисе идемпотентен). Считаем один раз до цикла, а не
+		// в партиале — иначе N карточек одного батча делали бы одинаковый обход
+		// $stages N раз.
+		$kocStages = $stages->where('type', 'king_of_court');
+		$kocFinalBatchIds = $kocStages->map(fn($s) => $s->cfg('koc_final_of_batch'))->filter()->values();
+		$kocBatches = [];
+		foreach ($kocStages->groupBy(fn($s) => $s->cfg('koc_batch_id')) as $batchId => $batchStages) {
+			if (!$batchId) continue;
+			$kocBatches[$batchId] = [
+				'allCompleted' => $batchStages->every(fn($s) => $s->isCompleted()),
+				'hasFinal'     => $kocFinalBatchIds->contains($batchId),
+			];
+		}
+		@endphp
+
 		@foreach($stages as $stage)
 		@php
 		$borderColor = $stage->isCompleted() ? '#10b981' : ($stage->isInProgress() ? '#2967BA' : '#555');
@@ -2195,7 +2217,7 @@ $tourNumber = $seasonData
 		{{-- King of the Court (официальные правила, переписано 2026-09-07):
 		     отдельный рендеринг — нет TournamentMatch/групп, своя механика раундов. --}}
 		@if($stage->type === 'king_of_court')
-		@include('tournaments._partials.king_of_court_stage', ['stage' => $stage, 'event' => $event, 'selectedOccurrence' => $selectedOccurrence])
+		@include('tournaments._partials.king_of_court_stage', ['stage' => $stage, 'event' => $event, 'selectedOccurrence' => $selectedOccurrence, 'batchInfo' => $kocBatches[$stage->cfg('koc_batch_id')] ?? null])
 		@continue
 		@endif
 		<div class="ramka" id="stage_{{ $stage->id }}">

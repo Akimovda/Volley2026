@@ -19,6 +19,13 @@ $kocStandings = $stage->isCompleted() || $kocHistory
     ? TournamentStanding::where('stage_id', $stage->id)->where('group_id', null)
         ->orderByDesc('points_scored')->get()
     : collect();
+
+// Групповой этап (несколько кортов + финал среди победителей) — необязательная
+// фича поверх одиночного корта, см. TournamentKingService::formCourts()/formFinal().
+$kocBatchId = $stage->cfg('koc_batch_id');
+$kocIsFinal = (bool) $stage->cfg('koc_final_of_batch');
+$batchInfo = $batchInfo ?? null;
+$kocShowFormFinalBtn = $kocBatchId && $stage->isCompleted() && $batchInfo && $batchInfo['allCompleted'] && !$batchInfo['hasFinal'];
 @endphp
 
 <div class="ramka" id="stage_{{ $stage->id }}">
@@ -36,6 +43,11 @@ $kocStandings = $stage->isCompleted() || $kocHistory
 				@endif
 			</h2>
 			<p>{{ __('tournaments.koc_lbl_title') }}
+				@if($kocIsFinal)
+				· {{ __('tournaments.koc_lbl_final_stage') }}
+				@elseif($kocBatchId)
+				· {{ __('tournaments.koc_lbl_qualifier_batch') }}
+				@endif
 				@if($kocAssigned)
 				· {{ __('tournaments.koc_lbl_round', ['n' => max($kocCurrentRound, 1), 'total' => $kocTotalRounds]) }}
 				@endif
@@ -181,6 +193,17 @@ $kocStandings = $stage->isCompleted() || $kocHistory
 				</tbody>
 			</table>
 		</div>
+	</div>
+	@endif
+
+	{{-- Групповой этап: все корты батча завершены, финал ещё не создан. --}}
+	@if($kocShowFormFinalBtn)
+	<div class="card mt-2 p-3" style="text-align:center">
+		<p class="f-16 mb-1">{{ __('tournaments.koc_hint_batch_completed') }}</p>
+		<form method="POST" action="{{ route('tournament.kingOfCourt.formFinal', $stage) }}">
+			@csrf
+			<button type="submit" class="btn btn-primary">🏆 {{ __('tournaments.koc_btn_form_final') }}</button>
+		</form>
 	</div>
 	@endif
 

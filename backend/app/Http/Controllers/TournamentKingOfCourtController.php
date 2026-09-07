@@ -66,9 +66,9 @@ class TournamentKingOfCourtController extends Controller
 
     /**
      * Команды события, ещё не назначенные ни на один king_of_court корт этого
-     * события (у каждой стадии свой независимый корт/набор из 3-5 команд).
+     * события/тура (у каждой стадии свой независимый корт/набор из 3-5 команд).
      */
-    private function unassignedTeams(Event $event, TournamentStage $stage): \Illuminate\Support\Collection
+    private function unassignedTeams(Event $event, ?int $occurrenceId): \Illuminate\Support\Collection
     {
         $assignedIds = TournamentStage::where('event_id', $event->id)
             ->where('type', TournamentStage::TYPE_KING_OF_COURT)
@@ -78,7 +78,7 @@ class TournamentKingOfCourtController extends Controller
             ->values();
 
         return EventTeam::where('event_id', $event->id)
-            ->when($stage->occurrence_id, fn($q) => $q->where('occurrence_id', $stage->occurrence_id))
+            ->when($occurrenceId, fn($q) => $q->where('occurrence_id', $occurrenceId))
             ->whereIn('status', ['submitted', 'approved', 'ready'])
             ->whereNotIn('id', $assignedIds)
             ->get();
@@ -89,7 +89,7 @@ class TournamentKingOfCourtController extends Controller
         $event = $stage->event;
         $this->authorizeOrganizer($request, $event);
 
-        $teams = $this->unassignedTeams($event, $stage);
+        $teams = $this->unassignedTeams($event, $stage->occurrence_id);
 
         return view('tournaments.king_of_court_assign', [
             'event' => $event,
@@ -110,6 +110,7 @@ class TournamentKingOfCourtController extends Controller
             'team_ids.*'        => 'integer|distinct|exists:event_teams,id',
             'draw_mode'         => 'nullable|in:random,seeded',
             'round_duration_min'  => 'nullable|integer|min:1|max:60',
+            'final_target_points' => 'nullable|integer|min:1|max:99',
             'force_incomplete'  => 'nullable|boolean',
         ]);
 
@@ -145,6 +146,7 @@ class TournamentKingOfCourtController extends Controller
             $stage->update([
                 'config' => array_merge($stage->config ?? [], [
                     'round_duration_min'  => (int) ($validated['round_duration_min'] ?? 15),
+                    'final_target_points' => (int) ($validated['final_target_points'] ?? 15),
                 ]),
             ]);
 
@@ -261,5 +263,118 @@ class TournamentKingOfCourtController extends Controller
         ]);
 
         return $this->redirectToSetup($event, 'Цвета команд сохранены.', false, "stage_{$stage->id}");
+    }
+
+    /**
+     * Групповой этап King of the Court (несколько кортов сразу) — форма
+     * выбора числа групп (подсказанный диапазон) + режима распределения.
+     */
+    public function formCourtsForm(Request $request, Event $event)
+    {
+        $this->authorizeOrganizer($request, $event);
+
+        $occurrenceId = $request->query('occurrence_id') ? (int) $request->query('occurrence_id') : null;
+        $teams = $this->unassignedTeams($event, $occurrenceId);
+        $range = TournamentKingService::validGroupsRange($teams->count());
+
+        return view('tournaments.king_of_court_form_courts', [
+            'event'        => $event,
+            'occurrenceId' => $occurrenceId,
+            'teams'        => $teams,
+            'range'        => $range,
+            'minTeams'     => TournamentKingService::MIN_TEAMS,
+            'maxTeams'     => TournamentKingService::MAX_TEAMS,
+        ]);
+    }
+
+    public function formCourtsStore(Request $request, Event $event)
+    {
+        $this->authorizeOrganizer($request, $event);
+
+        $validated = $request->validate([
+            'occurrence_id'    => 'nullable|integer',
+            'mode'             => 'required|in:random,manual',
+            'team_ids'         => 'nullable|array',
+            'team_ids.*'       => 'integer|distinct|exists:event_teams,id',
+            'groups_count'     => 'nullable|integer|min:' . TournamentKingService::MIN_TEAMS . '|max:' . TournamentKingService::MAX_TEAMS,
+            'draw_mode'        => 'nullable|in:random,seeded',
+            'assign'           => 'nullable|array',
+            'round_duration_min'  => 'nullable|integer|min:1|max:60',
+            'final_target_points' => 'nullable|integer|min:1|max:99',
+            'force_incomplete' => 'nullable|boolean',
+        ]);
+
+        $occurrenceId = $validated['occurrence_id'] ?? null;
+
+        try {
+            if ($validated['mode'] === 'manual') {
+                $labels = array_filter((array) ($validated['assign'] ?? []), fn($label) => trim((string) $label) !== '');
+                if (empty($labels)) {
+                    throw new \InvalidArgumentException('Отметьте команды хотя бы по одной группе.');
+                }
+
+                $buckets = [];
+                foreach ($labels as $teamId => $label) {
+                    $buckets[$label][] = (int) $teamId;
+                }
+
+                $teams = EventTeam::whereIn('id', array_keys($labels))->get();
+            } else {
+                $teamIds = $validated['team_ids'] ?? [];
+                if (empty($teamIds)) {
+                    // Без явного выбора — берём весь пул ещё не назначенных команд.
+                    $teamIds = $this->unassignedTeams($event, $occurrenceId)->pluck('id')->toArray();
+                }
+                $teams = EventTeam::whereIn('id', $teamIds)->get();
+                $buckets = null;
+            }
+
+            $incompleteTeams = $teams->reject(fn($t) => $this->teamService->isRosterComplete($t));
+            if ($incompleteTeams->isNotEmpty() && !$request->boolean('force_incomplete')) {
+                return $this->redirectToSetup(
+                    $event,
+                    'Состав не укомплектован у команд: ' . $incompleteTeams->pluck('name')->implode(', ') . '.',
+                    true
+                );
+            }
+
+            $stages = $this->kingService->formCourts(
+                $event,
+                $occurrenceId,
+                $teams->pluck('id')->toArray(),
+                (int) ($validated['groups_count'] ?? 0),
+                $validated['draw_mode'] ?? 'random',
+                $buckets,
+                (int) ($validated['round_duration_min'] ?? 15),
+                (int) ($validated['final_target_points'] ?? 15),
+            );
+        } catch (\InvalidArgumentException $e) {
+            return $this->redirectToSetup($event, $e->getMessage(), true);
+        }
+
+        return $this->redirectToSetup(
+            $event,
+            'Создано кортов: ' . $stages->count() . ', раунд 1 начат на каждом.',
+            false,
+            "stage_{$stages->first()->id}"
+        );
+    }
+
+    /**
+     * Сформировать финал по итогам группового этапа — кнопка на карточке
+     * любого корта батча (все корты батча должны быть уже завершены).
+     */
+    public function formFinal(Request $request, TournamentStage $stage)
+    {
+        $event = $stage->event;
+        $this->authorizeOrganizer($request, $event);
+
+        try {
+            $finalStage = $this->kingService->formFinal($stage);
+        } catch (\InvalidArgumentException $e) {
+            return $this->redirectToSetup($event, $e->getMessage(), true, "stage_{$stage->id}");
+        }
+
+        return $this->redirectToSetup($event, 'Финал сформирован, раунд 1 начат.', false, "stage_{$finalStage->id}");
     }
 }

@@ -1205,6 +1205,13 @@ Route::middleware([
         ->name('tournament.kingOfCourt.nextRound');
     Route::post('/tournament-stages/{stage}/king-of-court/colors', [TournamentKingOfCourtController::class, 'saveColors'])
         ->name('tournament.kingOfCourt.saveColors');
+    // Групповой этап (несколько кортов сразу) + финал по итогам групп.
+    Route::get('/events/{event}/tournament/king-of-court/form-courts', [TournamentKingOfCourtController::class, 'formCourtsForm'])
+        ->name('tournament.kingOfCourt.formCourtsForm');
+    Route::post('/events/{event}/tournament/king-of-court/form-courts', [TournamentKingOfCourtController::class, 'formCourtsStore'])
+        ->name('tournament.kingOfCourt.formCourtsStore');
+    Route::post('/tournament-stages/{stage}/king-of-court/form-final', [TournamentKingOfCourtController::class, 'formFinal'])
+        ->name('tournament.kingOfCourt.formFinal');
 });
 
 

@@ -39,7 +39,7 @@
 			</div>
 
 			<div class="row">
-				<div class="col-md-6">
+				<div class="col-md-4">
 					<div class="card">
 						<label>{{ __('tournaments.setup_stage_seed') }}</label>
 						<select name="draw_mode">
@@ -48,10 +48,16 @@
 						</select>
 					</div>
 				</div>
-				<div class="col-md-6">
+				<div class="col-md-4">
 					<div class="card">
 						<label>{{ __('tournaments.koc_lbl_round_duration') }}</label>
 						<input type="number" name="round_duration_min" min="1" max="60" value="15">
+					</div>
+				</div>
+				<div class="col-md-4">
+					<div class="card">
+						<label>{{ __('tournaments.koc_lbl_final_target') }}</label>
+						<input type="number" name="final_target_points" min="1" max="99" value="15">
 					</div>
 				</div>
 			</div>
