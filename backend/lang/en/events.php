@@ -639,6 +639,7 @@ return [
 
     'subtype_tooltip' => [
         'classic' => [
+            '4x4'        => 'Mini-volleyball 4-4: 4 players per team — setter, 2 hitters and an opposite.',
             '4x2'        => '4-2 system: 4 hitters and 2 setters.',
             '5x1'        => '5-1 system: 5 hitters and 1 setter.',
             '5x1_libero' => '5-1 system with libero: 5 hitters, 1 setter and a libero.',

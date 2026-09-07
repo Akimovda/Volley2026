@@ -856,11 +856,31 @@ $(document).on('click', '.js-info-tip > .info-tip-trigger', function(e) {
 	e.stopPropagation();
 	const $tip = $(this).closest('.info-tip');
 	const wasOpen = $tip.hasClass('is-open');
+	$('.info-tip.is-open').find('.info-tip-content').css('transform', '');
 	$('.info-tip.is-open').removeClass('is-open');
 	$('.card-ramka.info-tip-open').removeClass('info-tip-open');
 	if (!wasOpen) {
 		$tip.addClass('is-open');
 		$tip.closest('.card-ramka').addClass('info-tip-open');
+		// Контент центрирован на триггере (left:50%+translateX(-50%)) — у пилюль
+		// близко к краю экрана (первая пилюля в ряду часто у самого левого края
+		// карточки) это уводит тултип за пределы вьюпорта, часть текста не видна
+		// и не скроллится (position:absolute, скролла нет). Сдвигаем вправо/влево
+		// на недостающее расстояние, не трогая саму разметку/CSS-центрирование.
+		const content = $tip.find('.info-tip-content')[0];
+		if (content) {
+			const margin = 12;
+			const rect = content.getBoundingClientRect();
+			let shift = 0;
+			if (rect.left < margin) {
+				shift = margin - rect.left;
+			} else if (rect.right > window.innerWidth - margin) {
+				shift = (window.innerWidth - margin) - rect.right;
+			}
+			if (shift !== 0) {
+				content.style.transform = 'translateX(calc(-50% + ' + shift + 'px))';
+			}
+		}
 	}
 });
 $(document).on('click', function() {
