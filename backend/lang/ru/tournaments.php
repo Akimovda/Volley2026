@@ -977,6 +977,7 @@ return [
     'koc_assign_no_teams'      => 'Нет свободных команд для назначения на корт (все уже назначены на другие корты этого турнира, или заявок ещё нет).',
     'koc_assign_pick_teams'    => 'Выберите команды',
     'koc_lbl_round_duration'   => 'Длительность раунда (мин)',
+    'koc_lbl_final_target'     => 'Очков до победы в финале',
     'koc_assign_selected'      => 'Выбрано',
     'koc_assign_count_error'   => 'Нужно выбрать от :min до :max команд.',
 
@@ -991,4 +992,17 @@ return [
     'koc_end_round_confirm_title' => 'Завершить текущий раунд?',
     'koc_btn_end_round'        => 'Завершить раунд',
     'koc_lbl_time_up'          => 'Время вышло',
+
+    // Групповой этап King of the Court (несколько кортов) + финал
+    'koc_btn_form_courts'         => 'Разбить на корты King of the Court',
+    'koc_form_courts_title'       => 'King of the Court — групповой этап',
+    'koc_form_courts_hint_range'  => 'Команд: :n. Допустимое число групп/кортов: от :min до :max (каждая группа — 3-5 команд).',
+    'koc_form_courts_hint_unavailable' => 'Команд: :n. Автоматическое разбиение на группы King of the Court недоступно для этого числа — нужно от 9 команд (минимум 3 группы по 3) и не больше 25 (максимум 5 групп по 5). Создайте корты по отдельности вручную.',
+    'koc_lbl_groups_count'        => 'Количество групп/кортов',
+    'koc_lbl_manual_mode'         => 'Вручную',
+    'koc_manual_hint'             => 'Впишите одинаковый ярлык (например 1, 2, 3 или A, B, C) у команд одной группы. В каждой группе должно быть от 3 до 5 команд. Пустой ярлык — команда не участвует.',
+    'koc_lbl_qualifier_batch'     => 'групповой этап',
+    'koc_lbl_final_stage'         => 'финал',
+    'koc_hint_batch_completed'    => 'Все корты группового этапа завершены.',
+    'koc_btn_form_final'          => 'Сформировать финал',
 ];

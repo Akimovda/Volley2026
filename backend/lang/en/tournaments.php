@@ -958,6 +958,7 @@ return [
     'koc_assign_no_teams'      => 'No free teams to assign to a court (either all are already assigned to other courts of this tournament, or there are no applications yet).',
     'koc_assign_pick_teams'    => 'Pick teams',
     'koc_lbl_round_duration'   => 'Round duration (min)',
+    'koc_lbl_final_target'     => 'Points to win the final',
     'koc_assign_selected'      => 'Selected',
     'koc_assign_count_error'   => 'Pick between :min and :max teams.',
 
@@ -972,4 +973,17 @@ return [
     'koc_end_round_confirm_title' => 'End the current round?',
     'koc_btn_end_round'        => 'End round',
     'koc_lbl_time_up'          => 'Time up',
+
+    // King of the Court group stage (multiple courts) + final
+    'koc_btn_form_courts'         => 'Split into King of the Court courts',
+    'koc_form_courts_title'       => 'King of the Court — group stage',
+    'koc_form_courts_hint_range'  => 'Teams: :n. Allowed number of groups/courts: :min to :max (each group is 3-5 teams).',
+    'koc_form_courts_hint_unavailable' => 'Teams: :n. Automatic King of the Court group split is not available for this number — need at least 9 (minimum 3 groups of 3) and no more than 25 (maximum 5 groups of 5). Create courts individually by hand instead.',
+    'koc_lbl_groups_count'        => 'Number of groups/courts',
+    'koc_lbl_manual_mode'         => 'Manual',
+    'koc_manual_hint'             => 'Type the same label (e.g. 1, 2, 3 or A, B, C) for teams in the same group. Each group must have 3 to 5 teams. Empty label — team does not participate.',
+    'koc_lbl_qualifier_batch'     => 'group stage',
+    'koc_lbl_final_stage'         => 'final',
+    'koc_hint_batch_completed'    => 'All courts of the group stage are finished.',
+    'koc_btn_form_final'          => 'Form the final',
 ];

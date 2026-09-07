@@ -2,10 +2,13 @@
 
 namespace App\Services;
 
+use App\Models\Event;
+use App\Models\EventTeam;
 use App\Models\KingOfCourtEvent;
 use App\Models\TournamentStage;
 use App\Models\TournamentStanding;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 /**
  * King of the Court — официальные правила (probeach.ru), переписано 2026-09-07.
@@ -28,6 +31,11 @@ class TournamentKingService
     public const EVENT_FAULT       = 'fault';
     public const EVENT_TAKEOVER    = 'takeover';
 
+    public function __construct(
+        private TournamentSetupService $setupService,
+    ) {
+    }
+
     /**
      * Назначить команды на корт (3-5 шт) — создаёт TournamentStanding на
      * каждую (лидерборд без мест, только по очкам) и раундовые дефолты в
@@ -49,12 +57,21 @@ class TournamentKingService
             ]);
         }
 
+        // Финальный раунд ВСЕГДА играется ровно тремя командами (кульминация
+        // формата — race to N очков) — это НЕ "всегда 3-й раунд по счёту", а
+        // "раунд, на старте которого осталось 3 команды". При старте с 5
+        // команд: 5→4→3(финал) — 3 раунда. С 4: 4→3(финал) — 2 раунда. С 3:
+        // сразу 3(финал) — 1 раунд, без единого выбывания. Формула —
+        // teamsCount-2, что для 3/4/5 команд даёт 1/2/3 ровно как нужно.
+        $totalRounds = max(1, count($teamIds) - 2);
+
         $config = $stage->config ?? [];
         $stage->update([
             'config' => array_merge($config, [
                 'court_team_ids'      => array_values($teamIds),
                 'round_duration_min'  => (int) ($config['round_duration_min'] ?? 15),
-                'total_rounds'        => self::TOTAL_ROUNDS,
+                'final_target_points' => (int) ($config['final_target_points'] ?? 15),
+                'total_rounds'        => $totalRounds,
                 'current_round'       => 0,
                 'round_status'        => 'pending',
                 'round_started_at'    => null,
@@ -63,6 +80,206 @@ class TournamentKingService
                 'team_colors'         => $config['team_colors'] ?? [],
             ]),
         ]);
+    }
+
+    /**
+     * Валидный диапазон количества групп/кортов для N команд — раз финал сам
+     * является king_of_court кортом (3-5 команд), число групп G обязано быть
+     * в диапазоне 3-5, а размер каждой группы (при равномерном делении с
+     * остатком) — тоже 3-5. G_min = max(ceil(N/5), 3), G_max = min(floor(N/3), 5).
+     * Если G_min > G_max — авто-разбиение для этого N невозможно (напр. N=7 —
+     * мало для ≥3 групп по ≥3 команды; N>25 — уже не помещается ни в одну
+     * комбинацию). Возвращает null в этом случае.
+     */
+    public static function validGroupsRange(int $teamsCount): ?array
+    {
+        $min = max((int) ceil($teamsCount / self::MAX_TEAMS), self::MIN_TEAMS);
+        $max = min((int) intdiv($teamsCount, self::MIN_TEAMS), self::MAX_TEAMS);
+
+        return $min <= $max ? [$min, $max] : null;
+    }
+
+    /**
+     * Разбить пул команд на несколько king_of_court кортов ("групповой
+     * этап") — по одной операции сразу создаёт $groupsCount стадий, каждую
+     * инициализирует и стартует раунд 1. Все стадии батча помечаются общим
+     * config['koc_batch_id'] — по нему formFinal() потом соберёт победителей.
+     *
+     * $manualBuckets (ручной режим) — [label => [team_id,...]], уже
+     * сгруппировано контроллером из формы assign[team_id]=label (тот же
+     * паттерн, что TournamentController::kingBeachAssignManual()). Каждый
+     * непустой бакет обязан быть размером 3-5 — all-or-nothing, при ошибке
+     * ничего не создаётся.
+     *
+     * Без $manualBuckets (случайный/seeded режим) — $groupsCount обязан
+     * попадать в validGroupsRange(count($teamIds)); команды делятся на
+     * $groupsCount кусков близкого размера (base/остаток).
+     */
+    public function formCourts(
+        Event $event,
+        ?int $occurrenceId,
+        array $teamIds,
+        int $groupsCount,
+        string $drawMode = 'random',
+        ?array $manualBuckets = null,
+        int $roundDurationMin = 15,
+        int $finalTargetPoints = 15,
+    ): \Illuminate\Support\Collection {
+        if ($manualBuckets !== null) {
+            $badLabels = [];
+            foreach ($manualBuckets as $label => $ids) {
+                $n = count($ids);
+                if ($n < self::MIN_TEAMS || $n > self::MAX_TEAMS) {
+                    $badLabels[] = "{$label} ({$n})";
+                }
+            }
+            if (!empty($badLabels)) {
+                throw new \InvalidArgumentException(
+                    'В каждой группе должно быть от ' . self::MIN_TEAMS . ' до ' . self::MAX_TEAMS
+                    . ' команд, нарушено: ' . implode(', ', $badLabels) . '.'
+                );
+            }
+            $buckets = array_values($manualBuckets);
+        } else {
+            $range = self::validGroupsRange(count($teamIds));
+            if (!$range || $groupsCount < $range[0] || $groupsCount > $range[1]) {
+                throw new \InvalidArgumentException(
+                    'Для ' . count($teamIds) . ' команд число групп должно быть '
+                    . ($range ? "от {$range[0]} до {$range[1]}" : 'недоступно — авто-разбиение не подходит для этого количества команд')
+                    . '.'
+                );
+            }
+
+            if ($drawMode === 'seeded') {
+                // sortByRating() исторически принимает TournamentStage (читает
+                // draw_seed_by из его config + event через связь) — на этом
+                // этапе ни одна стадия батча ещё не создана. Собираем
+                // временный несохранённый TournamentStage только чтобы
+                // передать нужные данные (event для direction, дефолтный
+                // config → 'elo' по умолчанию в самом sortByRating()).
+                $transientStage = new TournamentStage(['event_id' => $event->id]);
+                $transientStage->setRelation('event', $event);
+
+                $order = $this->setupService
+                    ->sortByRating(EventTeam::whereIn('id', $teamIds)->get(), $transientStage)
+                    ->pluck('id')->toArray();
+            } else {
+                $order = collect($teamIds)->shuffle()->values()->toArray();
+            }
+
+            $n = count($order);
+            $base = intdiv($n, $groupsCount);
+            $remainder = $n % $groupsCount;
+            $buckets = [];
+            $cursor = 0;
+            for ($i = 0; $i < $groupsCount; $i++) {
+                $size = $base + ($i < $remainder ? 1 : 0);
+                $buckets[] = array_slice($order, $cursor, $size);
+                $cursor += $size;
+            }
+        }
+
+        $batchId = Str::random(12);
+        $sortOrder = ($event->tournamentStages()->max('sort_order') ?? 0) + 1;
+
+        return DB::transaction(function () use ($event, $occurrenceId, $buckets, $batchId, &$sortOrder, $roundDurationMin, $finalTargetPoints) {
+            $stages = collect();
+            foreach ($buckets as $i => $ids) {
+                $stage = TournamentStage::create([
+                    'event_id'      => $event->id,
+                    'occurrence_id' => $occurrenceId,
+                    'type'          => TournamentStage::TYPE_KING_OF_COURT,
+                    'name'          => 'Корт ' . ($i + 1),
+                    'sort_order'    => $sortOrder++,
+                    'status'        => TournamentStage::STATUS_PENDING,
+                    'config'        => [
+                        'koc_batch_id'        => $batchId,
+                        'round_duration_min'  => $roundDurationMin,
+                        'final_target_points' => $finalTargetPoints,
+                    ],
+                ]);
+
+                $this->initialize($stage, $ids);
+                $stage->update(['status' => TournamentStage::STATUS_IN_PROGRESS]);
+                $this->startRound($stage->fresh(), $ids);
+
+                $stages->push($stage->fresh());
+            }
+            return $stages;
+        });
+    }
+
+    /**
+     * Сформировать финал по итогам отборочного этапа (батча кортов).
+     * Принимает любую стадию батча (кнопка есть на карточке каждой) — читает
+     * её koc_batch_id, собирает ВСЕ стадии события/тура с тем же батчем,
+     * требует, чтобы все были завершены, берёт по 1 победителю (rank 1 по
+     * points_scored) с каждой, создаёт новую king_of_court стадию "Финал" с
+     * этими командами. Идемпотентно: если финал для этого батча уже создан
+     * (config['koc_final_of_batch'] === $batchId у другой стадии) — бросает
+     * исключение вместо дубля (защита от повторного клика/двойного сабмита).
+     */
+    public function formFinal(TournamentStage $anyQualifierStage): TournamentStage
+    {
+        $batchId = $anyQualifierStage->cfg('koc_batch_id');
+        if (!$batchId) {
+            throw new \InvalidArgumentException('Эта стадия не относится к групповому этапу King of the Court.');
+        }
+
+        $event = $anyQualifierStage->event;
+        $allStages = $event->tournamentStages()
+            ->where('type', TournamentStage::TYPE_KING_OF_COURT)
+            ->when($anyQualifierStage->occurrence_id, fn($q) => $q->where('occurrence_id', $anyQualifierStage->occurrence_id))
+            ->get();
+
+        if ($allStages->contains(fn($s) => $s->cfg('koc_final_of_batch') === $batchId)) {
+            throw new \InvalidArgumentException('Финал для этого группового этапа уже сформирован.');
+        }
+
+        $qualifiers = $allStages->filter(fn($s) => $s->cfg('koc_batch_id') === $batchId);
+
+        if ($qualifiers->contains(fn($s) => !$s->isCompleted())) {
+            throw new \InvalidArgumentException('Не все корты группового этапа завершены.');
+        }
+
+        $winnerIds = [];
+        foreach ($qualifiers as $q) {
+            $winner = TournamentStanding::where('stage_id', $q->id)
+                ->where('group_id', null)
+                ->orderByDesc('points_scored')
+                ->first();
+            if ($winner) {
+                $winnerIds[] = $winner->team_id;
+            }
+        }
+
+        $sortOrder = ($qualifiers->max('sort_order') ?? $event->tournamentStages()->max('sort_order') ?? 0) + 1;
+        // Настройки раунда (длительность/цель по очкам) наследуем от кортов
+        // батча — так же задавались одной формой на всех при formCourts().
+        $roundDurationMin = (int) $anyQualifierStage->cfg('round_duration_min', 15);
+        $finalTargetPoints = (int) $anyQualifierStage->cfg('final_target_points', 15);
+
+        return DB::transaction(function () use ($event, $anyQualifierStage, $winnerIds, $batchId, $sortOrder, $roundDurationMin, $finalTargetPoints) {
+            $finalStage = TournamentStage::create([
+                'event_id'      => $event->id,
+                'occurrence_id' => $anyQualifierStage->occurrence_id,
+                'type'          => TournamentStage::TYPE_KING_OF_COURT,
+                'name'          => 'Финал',
+                'sort_order'    => $sortOrder,
+                'status'        => TournamentStage::STATUS_PENDING,
+                'config'        => [
+                    'koc_final_of_batch'  => $batchId,
+                    'round_duration_min'  => $roundDurationMin,
+                    'final_target_points' => $finalTargetPoints,
+                ],
+            ]);
+
+            $this->initialize($finalStage, $winnerIds);
+            $finalStage->update(['status' => TournamentStage::STATUS_IN_PROGRESS]);
+            $this->startRound($finalStage->fresh(), collect($winnerIds)->shuffle()->values()->toArray());
+
+            return $finalStage->fresh();
+        });
     }
 
     /**
@@ -224,6 +441,18 @@ class TournamentKingService
             'round_points'        => $points,
             'created_by_user_id'  => $recordedByUserId,
         ]);
+
+        // Финальный раунд (всегда ровно 3 команды на старте, см. initialize())
+        // ограничен ОБОИМИ условиями сразу — очки И время, что раньше
+        // наступит. Время — организатор завершает вручную (таймер только
+        // визуальный подсказчик). Очки — проверяем здесь и завершаем раунд
+        // сами в момент, когда король их набрал, не дожидаясь клика.
+        $targetPoints = (int) $stage->cfg('final_target_points', 15);
+        $isFinalRound = $roundNumber === (int) $stage->cfg('total_rounds', self::TOTAL_ROUNDS);
+
+        if ($isFinalRound && $type === self::EVENT_KING_POINT && ($points[$king] ?? 0) >= $targetPoints) {
+            $this->endRound($stage);
+        }
 
         return [
             'round_number'       => $roundNumber,
