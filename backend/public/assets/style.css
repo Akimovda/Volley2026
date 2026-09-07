@@ -5424,9 +5424,24 @@ body.dark .btn-outline-primary:hover {
 		   успевал показать смазанный кусок себя поверх чипов. */
 		opacity: 0 !important;
 		visibility: hidden;
-		transition: max-height .25s ease, opacity .2s ease, margin .25s ease, border-color .2s ease, visibility 0s linear .2s;
+		transition: max-height .25s ease, opacity .2s ease, margin .25s ease, padding .25s ease, border-color .2s ease, visibility 0s linear .2s;
 		margin: 0 !important;
+		/* padding-bottom (0.8rem) и border-bottom-width (2px) из правила выше
+		   не зависят от max-height:0 (max-height клипует только высоту
+		   контента, паддинги/бордер остаются в потоке) — без обнуления здесь
+		   схлопнутый топбар всё равно занимал ~1.4rem пустой высоты сверху
+		   ленты дат. */
+		padding-bottom: 0 !important;
+		border-bottom-width: 0 !important;
 		pointer-events: none;
+	}
+	/* Второй источник той же пустоты: flex-gap контейнера (.event-dates-ramka
+	   { gap: 1.6rem }) добавляет отступ МЕЖДУ топбаром и лентой дат независимо
+	   от того, что сам топбар схлопнут в 0 — gap не связан с max-height
+	   ребёнка. В свёрнутом состоянии он не нужен вообще. */
+	.event-dates-ramka.is-scrolled {
+		gap: 0;
+		transition: gap .25s ease;
 	}
 }
 .events-page #daysStrip {
