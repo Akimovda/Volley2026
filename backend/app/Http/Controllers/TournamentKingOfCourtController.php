@@ -293,7 +293,7 @@ class TournamentKingOfCourtController extends Controller
 
         $validated = $request->validate([
             'occurrence_id'    => 'nullable|integer',
-            'mode'             => 'required|in:random,manual',
+            'mode'             => 'required|in:single,random,manual',
             'team_ids'         => 'nullable|array',
             'team_ids.*'       => 'integer|distinct|exists:event_teams,id',
             'groups_count'     => 'nullable|integer|min:' . TournamentKingService::MIN_TEAMS . '|max:' . TournamentKingService::MAX_TEAMS,
@@ -307,6 +307,8 @@ class TournamentKingOfCourtController extends Controller
         $occurrenceId = $validated['occurrence_id'] ?? null;
 
         try {
+            $groupsCount = (int) ($validated['groups_count'] ?? 0);
+
             if ($validated['mode'] === 'manual') {
                 $labels = array_filter((array) ($validated['assign'] ?? []), fn($label) => trim((string) $label) !== '');
                 if (empty($labels)) {
@@ -319,12 +321,20 @@ class TournamentKingOfCourtController extends Controller
                 }
 
                 $teams = EventTeam::whereIn('id', array_keys($labels))->get();
-            } else {
+            } elseif ($validated['mode'] === 'single') {
+                // Один корт — команды выбраны вручную чекбоксами, groups_count
+                // всегда 1 независимо от того, что пришло в форме (в UI для
+                // этого режима такого поля нет вообще).
                 $teamIds = $validated['team_ids'] ?? [];
                 if (empty($teamIds)) {
-                    // Без явного выбора — берём весь пул ещё не назначенных команд.
-                    $teamIds = $this->unassignedTeams($event, $occurrenceId)->pluck('id')->toArray();
+                    throw new \InvalidArgumentException('Отметьте команды для корта.');
                 }
+                $teams = EventTeam::whereIn('id', $teamIds)->get();
+                $buckets = null;
+                $groupsCount = 1;
+            } else {
+                // random — весь пул ещё не назначенных команд, без ручного выбора.
+                $teamIds = $this->unassignedTeams($event, $occurrenceId)->pluck('id')->toArray();
                 $teams = EventTeam::whereIn('id', $teamIds)->get();
                 $buckets = null;
             }
@@ -342,7 +352,7 @@ class TournamentKingOfCourtController extends Controller
                 $event,
                 $occurrenceId,
                 $teams->pluck('id')->toArray(),
-                (int) ($validated['groups_count'] ?? 0),
+                $groupsCount,
                 $validated['draw_mode'] ?? 'random',
                 $buckets,
                 (int) ($validated['round_duration_min'] ?? 15),

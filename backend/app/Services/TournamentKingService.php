@@ -141,13 +141,30 @@ class TournamentKingService
             }
             $buckets = array_values($manualBuckets);
         } else {
-            $range = self::validGroupsRange(count($teamIds));
-            if (!$range || $groupsCount < $range[0] || $groupsCount > $range[1]) {
-                throw new \InvalidArgumentException(
-                    'Для ' . count($teamIds) . ' команд число групп должно быть '
-                    . ($range ? "от {$range[0]} до {$range[1]}" : 'недоступно — авто-разбиение не подходит для этого количества команд')
-                    . '.'
-                );
+            // Один корт (groupsCount===1) — не "групповой этап" в смысле
+            // формата (нет последующего финала, batch_id не ставится, см.
+            // ниже), просто прямое создание единственной стадии из 3-5
+            // выбранных команд. formCourts()/formFinal() — ЕДИНАЯ точка входа
+            // для King of the Court независимо от числа команд, отдельной
+            // формы/кнопки "Создать стадию" для этого типа в UI больше нет
+            // (см. setup.blade.php) — поэтому валидация здесь та же самая
+            // (3-5), что раньше делал controller у старого assign().
+            if ($groupsCount === 1) {
+                $n = count($teamIds);
+                if ($n < self::MIN_TEAMS || $n > self::MAX_TEAMS) {
+                    throw new \InvalidArgumentException(
+                        'Для одного корта нужно от ' . self::MIN_TEAMS . ' до ' . self::MAX_TEAMS . ' команд, выбрано ' . $n . '.'
+                    );
+                }
+            } else {
+                $range = self::validGroupsRange(count($teamIds));
+                if (!$range || $groupsCount < $range[0] || $groupsCount > $range[1]) {
+                    throw new \InvalidArgumentException(
+                        'Для ' . count($teamIds) . ' команд число групп должно быть '
+                        . ($range ? "от {$range[0]} до {$range[1]}" : 'недоступно — авто-разбиение не подходит для этого количества команд')
+                        . '.'
+                    );
+                }
             }
 
             if ($drawMode === 'seeded') {
@@ -179,24 +196,32 @@ class TournamentKingService
             }
         }
 
-        $batchId = Str::random(12);
+        // batch_id — только когда кортов реально несколько (нужен формат
+        // "группы → финал"). Один корт (ручной label на единственную группу
+        // ИЛИ groupsCount===1) — самодостаточная стадия, не ждёт финала.
+        $isSingleCourt = count($buckets) === 1;
+        $batchId = $isSingleCourt ? null : Str::random(12);
         $sortOrder = ($event->tournamentStages()->max('sort_order') ?? 0) + 1;
 
-        return DB::transaction(function () use ($event, $occurrenceId, $buckets, $batchId, &$sortOrder, $roundDurationMin, $finalTargetPoints) {
+        return DB::transaction(function () use ($event, $occurrenceId, $buckets, $batchId, $isSingleCourt, &$sortOrder, $roundDurationMin, $finalTargetPoints) {
             $stages = collect();
             foreach ($buckets as $i => $ids) {
+                $config = [
+                    'round_duration_min'  => $roundDurationMin,
+                    'final_target_points' => $finalTargetPoints,
+                ];
+                if (!$isSingleCourt) {
+                    $config['koc_batch_id'] = $batchId;
+                }
+
                 $stage = TournamentStage::create([
                     'event_id'      => $event->id,
                     'occurrence_id' => $occurrenceId,
                     'type'          => TournamentStage::TYPE_KING_OF_COURT,
-                    'name'          => 'Корт ' . ($i + 1),
+                    'name'          => $isSingleCourt ? 'Корт' : ('Корт ' . ($i + 1)),
                     'sort_order'    => $sortOrder++,
                     'status'        => TournamentStage::STATUS_PENDING,
-                    'config'        => [
-                        'koc_batch_id'        => $batchId,
-                        'round_duration_min'  => $roundDurationMin,
-                        'final_target_points' => $finalTargetPoints,
-                    ],
+                    'config'        => $config,
                 ]);
 
                 $this->initialize($stage, $ids);
