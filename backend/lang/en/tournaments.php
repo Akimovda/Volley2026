@@ -958,7 +958,6 @@ return [
     'koc_assign_no_teams'      => 'No free teams to assign to a court (either all are already assigned to other courts of this tournament, or there are no applications yet).',
     'koc_assign_pick_teams'    => 'Pick teams',
     'koc_lbl_round_duration'   => 'Round duration (min)',
-    'koc_lbl_final_target'     => 'Points to win the final',
     'koc_assign_selected'      => 'Selected',
     'koc_assign_count_error'   => 'Pick between :min and :max teams.',
 
@@ -968,7 +967,8 @@ return [
     'koc_lbl_challenge_side'   => 'Challenge side',
     'koc_hint_challenge_tap'   => 'Tap = challenger wins the rally and becomes king',
     'koc_btn_fault'            => 'Serve fault (no point, next team)',
-    'koc_lbl_queue'            => 'Queue',
+    'koc_lbl_all_teams'        => 'Teams on court',
+    'koc_btn_back_to_setup'    => 'Back to tournament management',
     'koc_end_round_confirm_title' => 'End the current round?',
     'koc_btn_end_round'        => 'End round',
     'koc_lbl_time_up'          => 'Time up',

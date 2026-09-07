@@ -110,7 +110,6 @@ class TournamentKingOfCourtController extends Controller
             'team_ids.*'        => 'integer|distinct|exists:event_teams,id',
             'draw_mode'         => 'nullable|in:random,seeded',
             'round_duration_min'  => 'nullable|integer|min:1|max:60',
-            'final_target_points' => 'nullable|integer|min:1|max:99',
             'force_incomplete'  => 'nullable|boolean',
         ]);
 
@@ -146,7 +145,6 @@ class TournamentKingOfCourtController extends Controller
             $stage->update([
                 'config' => array_merge($stage->config ?? [], [
                     'round_duration_min'  => (int) ($validated['round_duration_min'] ?? 15),
-                    'final_target_points' => (int) ($validated['final_target_points'] ?? 15),
                 ]),
             ]);
 
@@ -168,16 +166,16 @@ class TournamentKingOfCourtController extends Controller
             return $this->redirectToSetup($event, 'Раунд ещё не начат.', true, "stage_{$stage->id}");
         }
 
-        $teamsById = EventTeam::whereIn('id', array_merge(
-            [$state['king_team_id'], $state['challenger_team_id']],
-            $state['queue']
-        ))->get()->keyBy('id');
+        $courtTeamIds = (array) $stage->cfg('court_team_ids', []);
+        $teamsById = EventTeam::whereIn('id', $courtTeamIds)->get()->keyBy('id');
 
         return view('tournaments.score_king_of_court', [
             'event'    => $event,
             'stage'    => $stage,
             'state'    => $state,
             'teamsById' => $teamsById,
+            'courtTeamIds' => $courtTeamIds,
+            'teamColors' => (array) $stage->cfg('team_colors', []),
         ]);
     }
 
