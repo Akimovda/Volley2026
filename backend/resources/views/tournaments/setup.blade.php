@@ -1923,7 +1923,7 @@ $tourNumber = $seasonData
 						</div>
 					</div>
 
-					<div class="text-center">
+					<div class="text-center" id="create_stage_submit_wrap">
 						<button type="submit" class="btn btn-primary mt-2">{{ __('tournaments.setup_stage_btn_create_seed') }}</button>
 						@if(session('incomplete_teams_gate'))
 						<button type="button" class="btn btn-secondary mt-2 btn-alert" onclick="document.getElementById('force_incomplete_field').value='1'" data-title="{{ __('tournaments.setup_stage_btn_run_without_incomplete') }}" data-icon="warning" data-confirm-text="{{ __('tournaments.setup_stage_btn_run_without_incomplete') }}" data-cancel-text="{{ __('tournaments.btn_cancel') }}">{{ __('tournaments.setup_stage_btn_run_without_incomplete') }}</button>
@@ -3123,6 +3123,7 @@ $tourNumber = $seasonData
 			var matchFormatField = document.getElementById('match_format_field');
 			var decidingSetWrap = document.getElementById('deciding_set_wrap');
 			var setPointsField = document.getElementById('set_points_field');
+			var createStageSubmitWrap = document.getElementById('create_stage_submit_wrap');
 			var courtsFields = document.getElementById('courts_shared_fields');
 			var scheduleFields = document.getElementById('schedule_fields');
 			var finalsModeFields = document.getElementById('finals_mode_fields');
@@ -3421,6 +3422,13 @@ $tourNumber = $seasonData
 					// the Beach set_points ВСЁ ЕЩЁ значим (реальная длина мини-сета
 					// удержания корта, читается setPoints()), там его показывать нужно.
 					setBlockActive(setPointsField, !showKoc);
+					// King of the Court — единственный вход теперь кнопка "Разбить на
+					// корты" внутри #king_of_court_fields (работает и для 1 корта, и
+					// для группового этапа) — общая кнопка "Создать стадию и провести
+					// жеребьёвку" для этого типа только сбивает с толку (для king_of_court
+					// она и так не проводит никакую жеребьёвку, просто создаёт пустую
+					// стадию) и дублирует более простой путь.
+					setBlockActive(createStageSubmitWrap, !showKoc);
 					// Корты — общий блок для групповых форматов и King of the Beach
 					setBlockActive(courtsFields, showGroup || showKb);
 					// Расписание — только для группового формата (объединено с "Площадками" в
