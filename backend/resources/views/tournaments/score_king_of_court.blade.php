@@ -10,8 +10,21 @@
 </x-slot>
 
 @php
+	// Названия команд иногда содержат уточнение в скобках (напр. "Пара 7
+	// (Лебедев/Гусева)") — при крупном шрифте на кнопках такое не помещается
+	// в одну строку. Разбиваем на 2 строки по первой "(", если она есть;
+	// если скобок нет — показываем как одну строку без изменений.
+	$splitTeamName = function (?string $name) {
+		if (!$name) return ['?', null];
+		$pos = strpos($name, '(');
+		if ($pos === false) return [$name, null];
+		return [rtrim(substr($name, 0, $pos)), substr($name, $pos)];
+	};
+
 	$kingTeam = $teamsById->get($state['king_team_id']);
 	$challengerTeam = $teamsById->get($state['challenger_team_id']);
+	[$kingLine1, $kingLine2] = $splitTeamName($kingTeam?->name);
+	[$challengerLine1, $challengerLine2] = $splitTeamName($challengerTeam?->name);
 	$kingPoints = (int) ($state['round_points'][$state['king_team_id']] ?? 0);
 	$roundDurationMin = (int) $stage->cfg('round_duration_min', 15);
 	$roundStartedAt = $stage->cfg('round_started_at');
@@ -39,8 +52,10 @@
 			@csrf
 			<input type="hidden" name="event_type" value="king_point">
 			<button type="submit" class="koc-side-btn koc-side-king w-100">
-				<div class="f-13">👑 {{ __('tournaments.koc_lbl_king_side') }}</div>
-				<div class="b-800 f-24">{{ $kingTeam?->name ?? '?' }}</div>
+				<div class="f-20">👑</div>
+				<div class="f-13">{{ __('tournaments.koc_lbl_king_side') }}</div>
+				<div class="b-800 f-24">{{ $kingLine1 }}</div>
+				@if($kingLine2)<div class="f-16">{{ $kingLine2 }}</div>@endif
 				<div class="f-18">{{ $kingPoints }} {{ __('tournaments.pub_pts_label') }}</div>
 				<div class="f-12 mt-1" style="opacity:.85">{{ __('tournaments.koc_hint_king_tap') }}</div>
 			</button>
@@ -51,8 +66,10 @@
 			@csrf
 			<input type="hidden" name="event_type" value="takeover">
 			<button type="submit" class="koc-side-btn koc-side-challenge w-100">
-				<div class="f-13">🙋 {{ __('tournaments.koc_lbl_challenge_side') }}</div>
-				<div class="b-800 f-24">{{ $challengerTeam?->name ?? '?' }}</div>
+				<div class="f-20">🙋</div>
+				<div class="f-13">{{ __('tournaments.koc_lbl_challenge_side') }}</div>
+				<div class="b-800 f-24">{{ $challengerLine1 }}</div>
+				@if($challengerLine2)<div class="f-16">{{ $challengerLine2 }}</div>@endif
 				<div class="f-12 mt-1" style="opacity:.85">{{ __('tournaments.koc_hint_challenge_tap') }}</div>
 			</button>
 		</form>
@@ -63,20 +80,25 @@
 			<button type="submit" class="btn btn-secondary btn-small">⚠ {{ __('tournaments.koc_btn_fault') }}</button>
 		</form>
 
-		{{-- Все команды корта — одна строка, очки раунда сверху, цвет команды снизу
-		     подчёркиванием пилюли (тот же team_colors, что и в TV-режиме/лидерборде). --}}
+		{{-- Все команды корта — одна строка (по центру), очки раунда сверху крупно,
+		     ниже название команды (тоже крупно) с цветным подчёркиванием снизу
+		     (тот же team_colors, что и в TV-режиме/лидерборде). --}}
 		<div class="card mt-2 p-2">
-			<div class="f-13 mb-1" style="opacity:.7">{{ __('tournaments.koc_lbl_all_teams') }}</div>
-			<div class="d-flex" style="gap:12px;overflow-x:auto;padding-bottom:4px">
+			<div class="f-13 mb-1 text-center" style="opacity:.7">{{ __('tournaments.koc_lbl_all_teams') }}</div>
+			<div class="d-flex" style="gap:20px;flex-wrap:wrap;justify-content:center">
 				@foreach($courtTeamIds as $tId)
 				@php
 					$t = $teamsById->get($tId);
+					[$tLine1, $tLine2] = $splitTeamName($t?->name);
 					$tPoints = (int) ($state['round_points'][$tId] ?? 0);
 					$tColor = $teamColors[$tId] ?? null;
 				@endphp
 				<div class="text-center" style="flex:0 0 auto">
-					<div class="b-700 f-14">{{ $tPoints }}</div>
-					<span class="badge badge-sm" style="{{ $tColor ? 'border-bottom:3px solid '.$tColor : '' }}">{{ $t?->name ?? '?' }}</span>
+					<div class="b-800 f-20">{{ $tPoints }}</div>
+					<div class="b-700 f-16" style="{{ $tColor ? 'border-bottom:4px solid '.$tColor.';padding-bottom:2px' : '' }}">
+						{{ $tLine1 }}
+						@if($tLine2)<div class="f-13">{{ $tLine2 }}</div>@endif
+					</div>
 				</div>
 				@endforeach
 			</div>
