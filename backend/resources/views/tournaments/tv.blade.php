@@ -68,14 +68,31 @@
             border-bottom: 1px solid rgba(255,255,255,.05);
             font-size: 16px;
         }
-        .tv-match .team { flex: 1; }
+        .tv-match .team { flex: 1; min-width: 0; overflow-wrap: break-word; word-break: break-word; }
         .tv-match .team.right { text-align: right; }
-        .tv-match .score { min-width: 100px; text-align: center; font-weight: 800; font-size: 18px; }
+        .tv-match .score { flex-shrink: 0; min-width: 100px; text-align: center; font-weight: 800; font-size: 18px; }
         .tv-match .winner { color: #10b981; font-weight: 700; }
         .tv-match .status-badge { font-size: 12px; padding: 3px 8px; border-radius: 6px; }
         .tv-match .live-badge { background: #dc2626; color: #fff; }
         .tv-match .done-badge { background: rgba(16,185,129,.2); color: #10b981; }
         .tv-match .wait-badge { opacity: .3; }
+
+        /* Открыто на узком экране телефона (задумано под ТВ/проектор — .tv-body
+           горизонтально из нескольких .tv-panel по flex:1, body{overflow:hidden;
+           height:100vh} без скролла) — панели сжимались в нечитаемые колонки
+           вплотную друг к другу (запрос пользователя 2026-09-07). На узких экранах
+           переключаем на вертикальный стек с обычным скроллом страницы; таблицы
+           (7 колонок) скроллятся по горизонтали внутри своей панели, а не давят
+           колонки друг на друга. */
+        @media (max-width: 768px) {
+            body { overflow: visible; height: auto; min-height: 100vh; }
+            .tv-header { padding: 14px 16px; flex-wrap: wrap; gap: 10px; }
+            .tv-title { font-size: 20px; }
+            .tv-body { flex-direction: column; height: auto; overflow: visible; padding: 16px; gap: 16px; }
+            .tv-panel { overflow-x: auto; }
+            .tv-table { min-width: 460px; font-size: 14px; }
+            .tv-match .score { min-width: 70px; font-size: 15px; }
+        }
 
         .updated-flash { animation: flash .5s ease; }
         @keyframes flash { 0%{ background:rgba(231,97,47,.2); } 100%{ background:transparent; } }
