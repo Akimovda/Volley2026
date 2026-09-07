@@ -215,6 +215,7 @@ return [
     'pub_final_standings'  => 'Итоговая классификация',
     'pub_results_not_ready' => 'Турнир ещё не завершён — итоговая классификация появится после завершения группового этапа.',
     'pub_no_finished_matches' => 'Нет завершённых матчей.',
+    'pub_placement_match'  => 'Матч за :from-:to место',
     'pub_player_ranking'   => 'Рейтинг игроков',
     'pub_swipe_left_hint'  => 'Свайпайте таблицу влево',
 

@@ -544,6 +544,18 @@
 		<div class="card p-3 mb-3">
 			<div class="b-700 f-16 mb-2">{{ $stage->name }}</div>
 			@foreach($stage->matches->whereIn('status', ['completed', 'live'])->sortBy(['round', 'match_number']) as $m)
+			@php
+			// placement-финал (finals_mode='placement', см. TournamentBracketService::
+			// generateGroupCrossover()) — оба матча имеют round=1, стандартный "R1"
+			// не различает "за 1-2 место" и "за 3-4 место", организатор видел два
+			// неотличимых матча в одном блоке "Финал" (задача 2026-09-07). Для
+			// остальных типов стадий placementLabelFor() возвращает null — вид не
+			// меняется.
+			$placementLabel = $stage->placementLabelFor($m);
+			@endphp
+			@if($placementLabel)
+			<div class="cd b-600 mb-1 mt-2" style="font-size:1.2rem">{{ $placementLabel }}</div>
+			@endif
 			<div class="d-flex f-14" style="padding:5px 0;border-bottom:1px solid rgba(128,128,128,.08);gap:8px;align-items:center">
 				<span class="f-12" style="opacity:.4;width:30px">R{{ $m->round }}</span>
 				<span class="match-team-cell match-team-cell--right {{ $m->winner_team_id === $m->team_home_id ? 'b-700' : '' }}">
