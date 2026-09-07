@@ -204,6 +204,7 @@ return [
     'pub_final_standings'  => 'Final standings',
     'pub_results_not_ready' => 'The tournament is not finished yet — final standings will appear once the group stage is completed.',
     'pub_no_finished_matches' => 'No finished matches.',
+    'pub_placement_match'  => 'Match for :from-:to place',
     'pub_player_ranking'   => 'Player ranking',
     'pub_swipe_left_hint'  => 'Swipe the table left',
 

@@ -477,6 +477,35 @@ class TournamentStage extends Model
             });
     }
 
+    /**
+     * Человекочитаемая подпись "Матч за N-M место" для КОНКРЕТНОГО матча
+     * placement-финала (в отличие от roundLabelFor(), который для этого типа
+     * стадии не различает 1-2/3-4 — у обоих round=1, totalRounds=1, оба
+     * получают одинаковое "Финал"). null — если стадия не placement-финал
+     * (обычный bracket/round_robin), вызывающий код должен использовать
+     * прежний источник заголовка (roundLabelFor()/название стадии).
+     */
+    public function placementLabelFor(TournamentMatch $m): ?string
+    {
+        if (!$this->isPlacementFinal()) {
+            return null;
+        }
+
+        $from = $m->meta['placement_from'] ?? null;
+        $to   = $m->meta['placement_to'] ?? null;
+
+        if ($from === null && $m->court && preg_match('/за\s+(\d+)-(\d+)\s+место/u', $m->court, $groups)) {
+            $from = (int) $groups[1];
+            $to   = (int) $groups[2];
+        }
+
+        if ($from === null) {
+            return null;
+        }
+
+        return __('tournaments.pub_placement_match', ['from' => $from, 'to' => $to ?? ((int) $from + 1)]);
+    }
+
     public function drawMode(): string
     {
         return $this->configValue('draw_mode', self::DRAW_SEEDED);
