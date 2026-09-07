@@ -450,9 +450,15 @@ class TournamentStage extends Model
 
     /**
      * Матч placement-финала, начинающий диапазон мест с $placeFrom (1 = "за 1-2
-     * место", 3 = "за 3-4 место" и т.д.) — различаем по тексту корта, а не по
-     * round/match_number (у обоих матчей round=1, порядок match_number не
-     * гарантирует, какой из них "за 1-2", а какой "за 3-4").
+     * место", 3 = "за 3-4 место" и т.д.) — различаем по round/match_number
+     * ненадёжно (у обоих матчей round=1, порядок match_number не гарантирует,
+     * какой из них "за 1-2", а какой "за 3-4"). Источник правды —
+     * meta.placement_from (пишется в TournamentBracketService::
+     * generateGroupCrossover()); текст корта — только фоллбэк для матчей,
+     * созданных ДО того, как появилось поле meta (баг события 422: организатор
+     * назначил реальную площадку через TournamentScheduleService::
+     * generateSchedule(), который безусловно перезаписывает court — метка "за
+     * N-M место" терялась, а вместе с ней и определение мест 1-4).
      */
     public function placementMatch(int $placeFrom): ?TournamentMatch
     {
@@ -460,6 +466,10 @@ class TournamentStage extends Model
             ->where('round', 1)
             ->get()
             ->first(function (TournamentMatch $m) use ($placeFrom) {
+                $metaFrom = $m->meta['placement_from'] ?? null;
+                if ($metaFrom !== null) {
+                    return (int) $metaFrom === $placeFrom;
+                }
                 if (!$m->court || !preg_match('/за\s+(\d+)-\d+\s+место/u', $m->court, $groups)) {
                     return false;
                 }
