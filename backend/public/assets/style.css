@@ -6801,7 +6801,12 @@ body:not(.dark) .ms-set-win { color: #E7612F; }
 	white-space: nowrap;
 }
 .ms-team-table-title--away { text-align: right; }
-.ms-ptable { width: 100%; border-collapse: collapse; font-size: 1.5rem; }
+/* table-layout:fixed — БЕЗ него ширина колонок считается по content (auto), и таблица
+   может стать шире 100% родителя (.card), выламываясь за его границы (жалоба
+   пользователя 2026-09-07, скриншот report/2026-09-07 16.17.29.jpg — обрезанная
+   справа колонка "Подача"). С fixed ширины колонок берутся из th ниже и никогда не
+   раздувают таблицу — длинные имена игроков просто уходят в эллипсис (.ms-player-name). */
+.ms-ptable { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 1.5rem; }
 .ms-ptable th {
 	text-align: center;
 	font-size: .66rem;
@@ -6811,12 +6816,14 @@ body:not(.dark) .ms-set-win { color: #E7612F; }
 	padding: 4px 4px 6px;
 	border-bottom: 1px solid rgba(0, 0, 0, .08);
 }
-.ms-ptable th:first-child { text-align: left; }
+.ms-ptable th:first-child { width: 42%; text-align: left; }
+.ms-ptable th:not(:first-child) { width: 14.5%; }
 .ms-ptable td {
 	padding: 6px 4px;
 	border-bottom: 1px solid rgba(0, 0, 0, .05);
 	text-align: center;
 	vertical-align: middle;
+	overflow: hidden;
 }
 .ms-td-player { text-align: left; }
 .ms-player-cell { display: flex; align-items: center; gap: 8px; min-width: 0; }
@@ -7125,7 +7132,8 @@ body.dark .ms-ptable td { border-color: rgba(255, 255, 255, .07); }
 @media (max-width: 480px) {
 	.match-row {
 		flex-direction: column;
-		align-items: stretch;
+		align-items: center;
+		text-align: center;
 		gap: 2px !important;
 	}
 	.match-row-badge,
@@ -7135,12 +7143,19 @@ body.dark .ms-ptable td { border-color: rgba(255, 255, 255, .07); }
 	.match-row-placement {
 		white-space: normal;
 	}
+	.match-row .match-team-cell,
 	.match-row .match-team-cell--right {
-		text-align: left;
+		flex: 0 0 auto;
+		max-width: 100%;
+		text-align: center;
+	}
+	.match-row .match-team-cell .team-roster-line--avatars,
+	.match-row .match-team-cell .team-roster-member {
+		justify-content: center;
 	}
 	.match-row .match-score-cell {
 		min-width: 0;
-		text-align: left;
+		text-align: center;
 		padding: 0;
 	}
 }
