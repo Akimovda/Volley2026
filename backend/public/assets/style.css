@@ -1227,10 +1227,17 @@ body.dark input[type="datetime-local"]::-webkit-calendar-picker-indicator {
     z-index: 100 !important;
 }
 /* Открытый .info-tip на карточке мероприятия (уровни/подтип/гендер) — поднимаем
-   карточку (.card-ramka) целиком над соседними, иначе тултип уходит под
-   следующую карточку в сетке (см. script.js .js-info-tip). */
+   карточку (.card-ramka) целиком над соседними (у них z-index:3 из общего
+   правила .card-ramka), иначе тултип уходит под следующую карточку в сетке
+   (см. script.js .js-info-tip). Значение НЕ должно превышать z-index липкой
+   ленты дат (.mob-sticky, 5 !important в lib.css) и шапки (.fix-header, 20) —
+   раньше стояло 50: когда карточка со скроллом уже частично зашла ПОД
+   .mob-sticky (нормально, т.к. у него z-index выше), поднятие карточки до 50
+   переворачивало порядок — вся карточка целиком (включая непрозрачный фон)
+   перекрывала собой ленту дат сверху, визуально "стирая" фильтр с экрана. 4
+   уже выше соседних карточек (3), этого достаточно. */
 .card-ramka.info-tip-open {
-    z-index: 50 !important;
+    z-index: 4 !important;
 }
 .form-select-option {
     padding: 0.8rem 2rem;
@@ -5424,9 +5431,24 @@ body.dark .btn-outline-primary:hover {
 		   успевал показать смазанный кусок себя поверх чипов. */
 		opacity: 0 !important;
 		visibility: hidden;
-		transition: max-height .25s ease, opacity .2s ease, margin .25s ease, border-color .2s ease, visibility 0s linear .2s;
+		transition: max-height .25s ease, opacity .2s ease, margin .25s ease, padding .25s ease, border-color .2s ease, visibility 0s linear .2s;
 		margin: 0 !important;
+		/* padding-bottom (0.8rem) и border-bottom-width (2px) из правила выше
+		   не зависят от max-height:0 (max-height клипует только высоту
+		   контента, паддинги/бордер остаются в потоке) — без обнуления здесь
+		   схлопнутый топбар всё равно занимал ~1.4rem пустой высоты сверху
+		   ленты дат. */
+		padding-bottom: 0 !important;
+		border-bottom-width: 0 !important;
 		pointer-events: none;
+	}
+	/* Второй источник той же пустоты: flex-gap контейнера (.event-dates-ramka
+	   { gap: 1.6rem }) добавляет отступ МЕЖДУ топбаром и лентой дат независимо
+	   от того, что сам топбар схлопнут в 0 — gap не связан с max-height
+	   ребёнка. В свёрнутом состоянии он не нужен вообще. */
+	.event-dates-ramka.is-scrolled {
+		gap: 0;
+		transition: gap .25s ease;
 	}
 }
 .events-page #daysStrip {
@@ -7103,6 +7125,15 @@ body.dark .ms-ptable td { border-color: rgba(255, 255, 255, .07); }
 	display: flex;
 	align-items: center;
 }
+/* Обёртка R-бейджа+метки места ("Матч за 1-2 место" и т.п.) — по умолчанию
+   (узкие экраны, см. @media(max-width:480px) ниже) display:contents делает
+   её "прозрачной": R-бейдж/метка остаются прямыми flex-детьми .match-row,
+   порядок column-стека (R1, метка, команда, счёт, команда — задача
+   2026-09-07) не меняется. На широких экранах (см. ниже) становится
+   реальным flex-блоком на всю ширину строки. */
+.match-row-meta {
+	display: contents;
+}
 .match-row-badge {
 	flex-shrink: 0;
 	width: 30px;
@@ -7112,6 +7143,28 @@ body.dark .ms-ptable td { border-color: rgba(255, 255, 255, .07); }
 	flex-shrink: 0;
 	opacity: .6;
 	white-space: nowrap;
+}
+/* Широкий экран: R-бейдж/метка места раньше стояли ВНУТРИ строки перед
+   именами команд — переменная ширина метки ("Матч за 1-2 место" против
+   голого "R1") сдвигала стартовую позицию домашней команды (flex:1,
+   text-align:right) на разное расстояние от левого края в разных строках,
+   из-за чего счёт по центру и обе команды визуально "гуляли" между строками
+   одной и той же таблицы результатов (report/скриншот 2026-09-07, вкладка
+   "Результаты" турнира). Приём: .match-row-meta растягивается на всю ширину
+   строки (flex:0 0 100%) и переносится через flex-wrap — команда/счёт/
+   команда всегда начинают СЛЕДУЮЩУЮ строку с одной и той же нулевой
+   позиции, независимо от наличия и длины метки места. */
+@media (min-width: 481px) {
+	.match-row {
+		flex-wrap: wrap;
+	}
+	.match-row-meta {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		flex: 0 0 100%;
+		margin-bottom: 4px;
+	}
 }
 .match-score-cell {
 	flex-shrink: 0;

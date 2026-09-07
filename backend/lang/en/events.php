@@ -169,6 +169,12 @@ return [
     'card_age_child_range' => ':min-:max',
     'card_age_child_max'   => 'up to :max',
 
+    // Payment method badge on card (paid events only)
+    'card_pay_cash'            => 'Cash',
+    'card_pay_cashless'        => 'Cashless',
+    'card_pay_tooltip_cash'    => 'Cash on site.',
+    'card_pay_tooltip_cashless' => 'Online by card or transfer.',
+
     // Event like
     'card_like_title'          => 'Like',
     'card_like_login_required' => 'Log in to like this event',
@@ -639,6 +645,7 @@ return [
 
     'subtype_tooltip' => [
         'classic' => [
+            '4x4'        => 'Mini-volleyball 4-4: 4 players per team — setter, 2 hitters and an opposite.',
             '4x2'        => '4-2 system: 4 hitters and 2 setters.',
             '5x1'        => '5-1 system: 5 hitters and 1 setter.',
             '5x1_libero' => '5-1 system with libero: 5 hitters, 1 setter and a libero.',
