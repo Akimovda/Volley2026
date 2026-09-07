@@ -617,7 +617,17 @@ class TournamentBracketService
                     'team_home_id' => $homeId,
                     'team_away_id' => $awayId,
                     'status'       => TournamentMatch::STATUS_SCHEDULED,
+                    // 'court' изначально дублирует placement-метку текстом ("Матч за
+                    // N-M место") для читаемости до первого расписания — но это же
+                    // поле переписывается TournamentScheduleService::generateSchedule()
+                    // при назначении реальной площадки/времени, после чего текстовая
+                    // метка теряется безвозвратно. meta.placement_from/to — источник
+                    // правды, не зависящий от последующих изменений court (см.
+                    // TournamentStage::placementMatch()) — баг события 422, где
+                    // назначение корта стёрло метку и итоговая таблица откатилась на
+                    // сырые standings группового этапа вместо результатов кросс-матчей.
                     'court'        => "Матч за {$placeFrom}-{$placeTo} место",
+                    'meta'         => ['placement_from' => $placeFrom, 'placement_to' => $placeTo],
                 ]);
                 $matches->push($match);
             }

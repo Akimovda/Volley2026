@@ -160,10 +160,17 @@ $totalRounds = $matches->max('round') ?? 0;
 
 // Матч за 3-е место — bracket_position='third_place' никто живой не проставляет
 // (единственный писатель — неиспользуемый TournamentSetupService::generateSingleElimBracket()).
-// Реальная бронза single_elim лежит в court: crossover (generateGroupCrossover())
-// пишет "Матч за 3-4 место" (та же регулярка, что TournamentStage::placementMatch()),
+// Реальная бронза single_elim лежит в: crossover (generateGroupCrossover()) пишет
+// meta.placement_from=3 (источник правды, та же логика что TournamentStage::
+// placementMatch()) + текст "Матч за 3-4 место" в court как фоллбэк для матчей
+// без meta — court перезаписывается TournamentScheduleService::generateSchedule()
+// при назначении реальной площадки, метка по тексту терялась (баг события 422);
 // сеточный путь (generateSingleElimination()) пишет литерал 'court' === '3rd place'.
 $isThirdPlaceMatch = function ($m) {
+    $metaFrom = $m->meta['placement_from'] ?? null;
+    if ($metaFrom !== null) {
+        return (int) $metaFrom === 3;
+    }
     if ($m->court && preg_match('/за\s+(\d+)-\d+\s+место/u', $m->court, $groups)) {
         return (int) $groups[1] === 3;
     }
