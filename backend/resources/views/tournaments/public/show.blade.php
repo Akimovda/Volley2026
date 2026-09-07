@@ -327,7 +327,7 @@
 
 						@foreach($roundMatches->sortBy('match_number') as $m)
 						<div class="d-flex f-14" style="padding:5px 0;border-bottom:1px solid rgba(128,128,128,.08);gap:8px;align-items:center">
-							<span style="flex:1;text-align:right" class="{{ $m->winner_team_id === $m->team_home_id ? 'b-700' : '' }}">
+							<span class="match-team-cell match-team-cell--right {{ $m->winner_team_id === $m->team_home_id ? 'b-700' : '' }}">
 								@include('tournaments._partials.team_name_link', ['team' => $m->teamHome, 'fallback' => 'TBD'])
 								@include('tournaments._partials.team_roster_line', ['team' => $m->teamHome, 'class' => 'f-11', 'style' => 'color:#6b7280'])
 							</span>
@@ -337,7 +337,7 @@
 								<div class="f-11 b-400" style="opacity:.6">{{ $m->detailedScore() }}</div>
 								@endif
 							</span>
-							<span style="flex:1" class="{{ $m->winner_team_id === $m->team_away_id ? 'b-700' : '' }}">
+							<span class="match-team-cell {{ $m->winner_team_id === $m->team_away_id ? 'b-700' : '' }}">
 								@include('tournaments._partials.team_name_link', ['team' => $m->teamAway, 'fallback' => 'TBD'])
 								@include('tournaments._partials.team_roster_line', ['team' => $m->teamAway, 'class' => 'f-11', 'style' => 'color:#6b7280'])
 							</span>
@@ -412,7 +412,7 @@
 				<div class="b-600 f-13 mb-1 mt-2" style="opacity:.5">Тур {{ $round }}</div>
 				@foreach($matches->sortBy('match_number') as $m)
 				<div class="d-flex f-14" style="padding:5px 0;border-bottom:1px solid rgba(128,128,128,.08);gap:8px;align-items:center">
-					<span style="flex:1;text-align:right" class="{{ $m->winner_team_id === $m->team_home_id ? 'b-700' : '' }}">
+					<span class="match-team-cell match-team-cell--right {{ $m->winner_team_id === $m->team_home_id ? 'b-700' : '' }}">
 						@include('tournaments._partials.team_name_link', ['team' => $m->teamHome, 'fallback' => 'TBD'])
 						@include('tournaments._partials.team_roster_line', ['team' => $m->teamHome, 'class' => 'f-11', 'style' => 'color:#6b7280'])
 					</span>
@@ -422,7 +422,7 @@
 						<div class="f-11 b-400" style="opacity:.6">{{ $m->detailedScore() }}</div>
 						@endif
 					</span>
-					<span style="flex:1" class="{{ $m->winner_team_id === $m->team_away_id ? 'b-700' : '' }}">
+					<span class="match-team-cell {{ $m->winner_team_id === $m->team_away_id ? 'b-700' : '' }}">
 						@include('tournaments._partials.team_name_link', ['team' => $m->teamAway, 'fallback' => 'TBD'])
 						@include('tournaments._partials.team_roster_line', ['team' => $m->teamAway, 'class' => 'f-11', 'style' => 'color:#6b7280'])
 					</span>
@@ -546,7 +546,7 @@
 			@foreach($stage->matches->whereIn('status', ['completed', 'live'])->sortBy(['round', 'match_number']) as $m)
 			<div class="d-flex f-14" style="padding:5px 0;border-bottom:1px solid rgba(128,128,128,.08);gap:8px;align-items:center">
 				<span class="f-12" style="opacity:.4;width:30px">R{{ $m->round }}</span>
-				<span style="flex:1;text-align:right" class="{{ $m->winner_team_id === $m->team_home_id ? 'b-700' : '' }}">
+				<span class="match-team-cell match-team-cell--right {{ $m->winner_team_id === $m->team_home_id ? 'b-700' : '' }}">
 					@include('tournaments._partials.team_name_link', ['team' => $m->teamHome, 'fallback' => '—'])
 					@include('tournaments._partials.team_roster_line', ['team' => $m->teamHome, 'class' => 'f-11', 'style' => 'color:#6b7280'])
 				</span>
@@ -562,7 +562,7 @@
 					@endif
 					@endif
 				</span>
-				<span style="flex:1" class="{{ $m->winner_team_id === $m->team_away_id ? 'b-700' : '' }}">
+				<span class="match-team-cell {{ $m->winner_team_id === $m->team_away_id ? 'b-700' : '' }}">
 					@include('tournaments._partials.team_name_link', ['team' => $m->teamAway, 'fallback' => '—'])
 					@include('tournaments._partials.team_roster_line', ['team' => $m->teamAway, 'class' => 'f-11', 'style' => 'color:#6b7280'])
 				</span>
@@ -609,11 +609,11 @@
 				<div class="cd b-600 mb-1" style="opacity:.6">{{ $stage->name }}</div>
 				@foreach($stageCompletedForStatsTab as $m)
 				<div class="d-flex f-14" style="padding:5px 0;border-bottom:1px solid rgba(128,128,128,.08);gap:8px;align-items:center">
-					<span style="flex:1;text-align:right" class="{{ $m->winner_team_id === $m->team_home_id ? 'b-700' : '' }}">
+					<span class="match-team-cell match-team-cell--right {{ $m->winner_team_id === $m->team_home_id ? 'b-700' : '' }}">
 						@include('tournaments._partials.team_name_link', ['team' => $m->teamHome, 'fallback' => '?'])
 					</span>
 					<span class="px-2 b-700" style="min-width:80px;text-align:center">{{ $m->setsScore() }}</span>
-					<span style="flex:1" class="{{ $m->winner_team_id === $m->team_away_id ? 'b-700' : '' }}">
+					<span class="match-team-cell {{ $m->winner_team_id === $m->team_away_id ? 'b-700' : '' }}">
 						@include('tournaments._partials.team_name_link', ['team' => $m->teamAway, 'fallback' => '?'])
 					</span>
 				</div>

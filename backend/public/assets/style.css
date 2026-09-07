@@ -7063,3 +7063,21 @@ body.dark .ms-ptable td { border-color: rgba(255, 255, 255, .07); }
 	width: 100%;
 	max-width: 32rem;
 }
+
+/* Строка матча на публичной странице турнира (tournaments/public/show.blade.php,
+   4 одинаковых блока — вкладки Обзор/Группы/Результаты/Статистика): колонки
+   команд были голым style="flex:1" без min-width:0/overflow-wrap. Flex-айтем по
+   умолчанию не сжимается уже своего min-content — если название команды
+   (капитана) состоит из одного длинного слова без пробелов (напр. "Сюрстремминг"),
+   ему некуда перенестись, и вся строка распирает .card вширь: .card не имеет
+   overflow:hidden, поэтому текст визуально вылезает за скруглённую рамку на
+   мобильном/в Android-приложении (репродукция — событие 422, вкладка «Результаты»). */
+.match-team-cell {
+	flex: 1;
+	min-width: 0;
+	overflow-wrap: break-word;
+	word-break: break-word;
+}
+.match-team-cell--right {
+	text-align: right;
+}
