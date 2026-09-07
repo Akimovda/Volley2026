@@ -326,12 +326,12 @@
 						<div class="b-600 cd mb-2 mt-2">{{ $roundLabel }}</div>
 
 						@foreach($roundMatches->sortBy('match_number') as $m)
-						<div class="d-flex f-14" style="padding:5px 0;border-bottom:1px solid rgba(128,128,128,.08);gap:8px;align-items:center">
+						<div class="d-flex f-14 match-row" style="padding:5px 0;border-bottom:1px solid rgba(128,128,128,.08);gap:8px;align-items:center">
 							<span class="match-team-cell match-team-cell--right {{ $m->winner_team_id === $m->team_home_id ? 'b-700' : '' }}">
 								@include('tournaments._partials.team_name_link', ['team' => $m->teamHome, 'fallback' => 'TBD'])
 								@include('tournaments._partials.team_roster_line', ['team' => $m->teamHome, 'class' => 'f-11', 'style' => 'color:#6b7280'])
 							</span>
-							<span class="px-2 b-700" style="min-width:80px;text-align:center;{{ $m->isCompleted() ? '' : 'opacity:.4' }}">
+							<span class="match-score-cell match-score-cell--sm b-700" style="{{ $m->isCompleted() ? '' : 'opacity:.4' }}">
 								{{ $m->setsScore() ?? 'vs' }}
 								@if($m->isCompleted() && $m->detailedScore())
 								<div class="f-11 b-400" style="opacity:.6">{{ $m->detailedScore() }}</div>
@@ -411,12 +411,12 @@
 				@foreach($gMatches->sortBy('round')->groupBy('round') as $round => $matches)
 				<div class="b-600 f-13 mb-1 mt-2" style="opacity:.5">Тур {{ $round }}</div>
 				@foreach($matches->sortBy('match_number') as $m)
-				<div class="d-flex f-14" style="padding:5px 0;border-bottom:1px solid rgba(128,128,128,.08);gap:8px;align-items:center">
+				<div class="d-flex f-14 match-row" style="padding:5px 0;border-bottom:1px solid rgba(128,128,128,.08);gap:8px;align-items:center">
 					<span class="match-team-cell match-team-cell--right {{ $m->winner_team_id === $m->team_home_id ? 'b-700' : '' }}">
 						@include('tournaments._partials.team_name_link', ['team' => $m->teamHome, 'fallback' => 'TBD'])
 						@include('tournaments._partials.team_roster_line', ['team' => $m->teamHome, 'class' => 'f-11', 'style' => 'color:#6b7280'])
 					</span>
-					<span class="px-2 b-700" style="min-width:80px;text-align:center;{{ $m->isCompleted() ? '' : 'opacity:.4' }}">
+					<span class="match-score-cell match-score-cell--sm b-700" style="{{ $m->isCompleted() ? '' : 'opacity:.4' }}">
 						{{ $m->setsScore() ?? 'vs' }}
 						@if($m->isCompleted() && $m->detailedScore())
 						<div class="f-11 b-400" style="opacity:.6">{{ $m->detailedScore() }}</div>
@@ -551,18 +551,24 @@
 			// неотличимых матча в одном блоке "Финал" (задача 2026-09-07). Для
 			// остальных типов стадий placementLabelFor() возвращает null — вид не
 			// меняется.
+			//
+			// Метка — ВНУТРИ .match-row (после R-бейджа), не отдельной строкой перед
+			// ним: на узких экранах строка распадается в столбец (.match-row в колонку,
+			// см. .match-row в style.css) и порядок DOM-детей становится порядком строк
+			// — R1, метка места, команда+капитан, счёт, команда+капитан (запрошенный
+			// порядок, а не R1+счёт в одну строку с обрезкой длинных имён).
 			$placementLabel = $stage->placementLabelFor($m);
 			@endphp
-			@if($placementLabel)
-			<div class="cd b-600 mb-1 mt-2" style="font-size:1.2rem">{{ $placementLabel }}</div>
-			@endif
-			<div class="d-flex f-14" style="padding:5px 0;border-bottom:1px solid rgba(128,128,128,.08);gap:8px;align-items:center">
-				<span class="f-12" style="opacity:.4;width:30px">R{{ $m->round }}</span>
+			<div class="d-flex f-14 match-row" style="padding:5px 0;border-bottom:1px solid rgba(128,128,128,.08);gap:8px;align-items:center">
+				<span class="f-12 match-row-badge">R{{ $m->round }}</span>
+				@if($placementLabel)
+				<span class="f-12 cd b-600 match-row-placement">{{ $placementLabel }}</span>
+				@endif
 				<span class="match-team-cell match-team-cell--right {{ $m->winner_team_id === $m->team_home_id ? 'b-700' : '' }}">
 					@include('tournaments._partials.team_name_link', ['team' => $m->teamHome, 'fallback' => '—'])
 					@include('tournaments._partials.team_roster_line', ['team' => $m->teamHome, 'class' => 'f-11', 'style' => 'color:#6b7280'])
 				</span>
-				<span class="px-2 b-700" style="min-width:100px;text-align:center">
+				<span class="match-score-cell b-700">
 					@if($m->isLive())
 					<span class="pub-live-badge" data-match-live-badge="{{ $m->id }}">🔴 {{ __('tournaments.pub_match_live') }}</span>
 					@elseif(!$m->teamHome || !$m->teamAway)
@@ -620,11 +626,11 @@
 			<div class="mb-2">
 				<div class="cd b-600 mb-1" style="opacity:.6">{{ $stage->name }}</div>
 				@foreach($stageCompletedForStatsTab as $m)
-				<div class="d-flex f-14" style="padding:5px 0;border-bottom:1px solid rgba(128,128,128,.08);gap:8px;align-items:center">
+				<div class="d-flex f-14 match-row" style="padding:5px 0;border-bottom:1px solid rgba(128,128,128,.08);gap:8px;align-items:center">
 					<span class="match-team-cell match-team-cell--right {{ $m->winner_team_id === $m->team_home_id ? 'b-700' : '' }}">
 						@include('tournaments._partials.team_name_link', ['team' => $m->teamHome, 'fallback' => '?'])
 					</span>
-					<span class="px-2 b-700" style="min-width:80px;text-align:center">{{ $m->setsScore() }}</span>
+					<span class="match-score-cell match-score-cell--sm b-700">{{ $m->setsScore() }}</span>
 					<span class="match-team-cell {{ $m->winner_team_id === $m->team_away_id ? 'b-700' : '' }}">
 						@include('tournaments._partials.team_name_link', ['team' => $m->teamAway, 'fallback' => '?'])
 					</span>

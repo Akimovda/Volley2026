@@ -2,6 +2,17 @@
 html {
 	font-size: 62.5%; /* 10px */
 	scroll-behavior: smooth;
+	/* Android Chrome/WebView (Blink) автоматически УВЕЛИЧИВАЕТ шрифт в узких
+	   текстовых блоках/ячейках таблиц ("font boosting"/Text Autosizer) — iOS
+	   WKWebView так не делает, отсюда разный визуальный размер шрифта на одном
+	   и том же HTML/CSS (жалоба пользователя 2026-09-07: шрифт в Android-
+	   приложении выглядит крупнее, чем на iOS, и таблица статистики матча —
+	   .ms-ptable, узкие числовые колонки — вылезает за пределы .card именно там,
+	   хотя тот же CSS-viewport в headless Chrome без Android font boosting
+	   рендерится без переполнения). 100% = отключить автоувеличение, размер
+	   всегда ровно как задано в CSS, как на iOS. */
+	-webkit-text-size-adjust: 100%;
+	text-size-adjust: 100%;
 }
 /* Планшет */
 @media (max-width: 1200px) {
@@ -7080,4 +7091,56 @@ body.dark .ms-ptable td { border-color: rgba(255, 255, 255, .07); }
 }
 .match-team-cell--right {
 	text-align: right;
+}
+.match-row {
+	display: flex;
+	align-items: center;
+}
+.match-row-badge {
+	flex-shrink: 0;
+	width: 30px;
+	opacity: .4;
+}
+.match-row-placement {
+	flex-shrink: 0;
+	opacity: .6;
+	white-space: nowrap;
+}
+.match-score-cell {
+	flex-shrink: 0;
+	min-width: 100px;
+	text-align: center;
+	padding: 0 .8rem;
+}
+.match-score-cell--sm {
+	min-width: 80px;
+}
+
+/* Узкий экран (Android-приложение/телефон) — "R1 · метка места · команда · счёт ·
+   команда" в одну строку не помещается даже с overflow-wrap: длинные фамилии/
+   названия без пробелов переносятся почти по одной букве (report/IMG_2655.JPG,
+   report/IMG_2656.JPG). Раскладываем .match-row в столбец — порядок строк
+   становится порядком DOM-детей: R1, метка места (если есть), команда-хозяин,
+   счёт, команда-гость — без переносов и без обрезки текста (задача 2026-09-07). */
+@media (max-width: 480px) {
+	.match-row {
+		flex-direction: column;
+		align-items: stretch;
+		gap: 2px !important;
+	}
+	.match-row-badge,
+	.match-row-placement {
+		width: auto;
+	}
+	.match-row-placement {
+		white-space: normal;
+	}
+	.match-row .match-team-cell--right {
+		text-align: left;
+	}
+	.match-row .match-score-cell {
+		min-width: 0;
+		text-align: left;
+		padding: 0;
+	}
 }
