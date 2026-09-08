@@ -43,11 +43,14 @@
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="card text-center">
+                        <div class="f-14">{{ __('profile.pay_tx_stat_pending_amount') }} (₽)</div>
+                        <div class="f-32 b-700 cd">{{ number_format($stats['total_pending_sum'], 2) }}</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card text-center">
                         <div class="f-14">Ожидают оплаты</div>
                         <div class="f-32 b-700 cd">{{ $stats['total_pending'] }}</div>
-                        @if($stats['total_pending'] > 0)
-                            <div class="f-13" style="opacity:.6">{{ __('profile.pay_tx_stat_pending_sum') }} {{ number_format($stats['total_pending_sum'], 2) }} ₽</div>
-                        @endif
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
@@ -165,7 +168,13 @@
                                 <td class="nowrap">{{ $p->created_at->setTimezone('Europe/Moscow')->format('d.m.Y H:i') }}</td>
                                 <td class="nowrap">
                                     @if($p->method === 'cash' && $p->event && $p->event->cash_payment_tracking_enabled && $p->occurrence_id)
-                                        <a href="{{ route('payments.event_control', ['event' => $p->event_id, 'occurrence' => $p->occurrence_id]) }}" class="btn btn-small btn-secondary">✅ {{ __('profile.pay_tx_action_mark_payment') }}</a>
+                                        <a href="{{ route('payments.event_control', ['event' => $p->event_id, 'occurrence' => $p->occurrence_id]) }}" class="btn btn-small btn-secondary">
+                                            @if($p->status === 'paid')
+                                                {{ __('profile.pay_tx_action_unmark_payment') }}
+                                            @else
+                                                ✅ {{ __('profile.pay_tx_action_mark_payment') }}
+                                            @endif
+                                        </a>
                                     @endif
                                     @if($p->status === 'pending' && $p->user_confirmed && !$p->org_confirmed)
                                         <form method="POST" action="{{ route('payments.org_confirm', $p->id) }}" class="d-inline">
