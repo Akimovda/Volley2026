@@ -304,6 +304,19 @@ strong, b {
 body.dark .red {
 	color: #ffbdbd;
 }
+/* Статусы платежей (payment/transactions.blade.php) — цвет вместо эмодзи */
+.status-paid {
+	color: #1e8449;
+}
+body.dark .status-paid {
+	color: #8bde9b;
+}
+.status-pending {
+	color: #E7612F;
+}
+body.dark .status-pending {
+	color: #FFB171;
+}
 .center {
 	text-align: center;
 }

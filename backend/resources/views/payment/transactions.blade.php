@@ -36,33 +36,32 @@
             <h2 class="-mt-05">📊 Сводка</h2>
 
             @php $activePeriod = (int) request('period'); @endphp
-            <div class="d-flex flex-wrap gap-2 mb-2">
+            <div class="filter-tabs mb-2">
                 @foreach([30 => 'pay_tx_period_30', 60 => 'pay_tx_period_60', 180 => 'pay_tx_period_180', 365 => 'pay_tx_period_365'] as $days => $labelKey)
                     <a href="{{ route('profile.transactions', array_merge(request()->except(['period', 'date_from', 'date_to', 'page']), ['period' => $days])) }}"
-                       class="btn btn-small {{ $activePeriod === $days ? '' : 'btn-secondary' }}">{{ __('profile.'.$labelKey) }}</a>
+                       class="filter-tab {{ $activePeriod === $days ? 'active' : '' }}">{{ __('profile.'.$labelKey) }}</a>
                 @endforeach
-                @if($activePeriod)
-                    <a href="{{ route('profile.transactions', request()->except(['period', 'date_from', 'date_to', 'page'])) }}" class="btn btn-small btn-secondary">{{ __('profile.pay_tx_period_all') }}</a>
-                @endif
+                <a href="{{ route('profile.transactions', request()->except(['period', 'date_from', 'date_to', 'page'])) }}"
+                   class="filter-tab {{ $activePeriod ? '' : 'active' }}">{{ __('profile.pay_tx_period_all') }}</a>
             </div>
 
             <div class="row row2">
                 <div class="col-6 col-md-3">
                     <div class="card text-center">
                         <div class="f-14">Получено (₽)</div>
-                        <div class="f-32 b-700 cs">{{ number_format($stats['total_paid'], 2) }}</div>
+                        <div class="f-32 b-700 status-paid">{{ number_format($stats['total_paid'], 2) }}</div>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="card text-center">
                         <div class="f-14">{{ __('profile.pay_tx_stat_pending_amount') }} (₽)</div>
-                        <div class="f-32 b-700 cd">{{ number_format($stats['total_pending_sum'], 2) }}</div>
+                        <div class="f-32 b-700 status-pending">{{ number_format($stats['total_pending_sum'], 2) }}</div>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="card text-center">
                         <div class="f-14">Ожидают оплаты</div>
-                        <div class="f-32 b-700 cd">{{ $stats['total_pending'] }}</div>
+                        <div class="f-32 b-700 status-pending">{{ $stats['total_pending'] }}</div>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
@@ -79,24 +78,31 @@
         <div class="ramka">
             <h2 class="-mt-05">📋 История платежей</h2>
 
+            @php $filterLabelStyle = 'display:block;margin-bottom:.4rem;font-weight:600;font-size:1.2rem;opacity:.7'; @endphp
             <form method="GET" class="form d-flex flex-wrap gap-2 mb-2" style="align-items:flex-end;justify-content:center">
                 <div>
-                    <label class="f-13" style="opacity:.7">{{ __('profile.pay_tx_filter_date_from') }}</label><br>
+                    <label style="{{ $filterLabelStyle }}">{{ __('profile.pay_tx_filter_date_from') }}</label>
                     <input type="date" name="date_from" value="{{ request('date_from') }}">
                 </div>
                 <div>
-                    <label class="f-13" style="opacity:.7">{{ __('profile.pay_tx_filter_date_to') }}</label><br>
+                    <label style="{{ $filterLabelStyle }}">{{ __('profile.pay_tx_filter_date_to') }}</label>
                     <input type="date" name="date_to" value="{{ request('date_to') }}">
                 </div>
                 <div>
-                    <label class="f-13" style="opacity:.7">{{ __('profile.pay_tx_filter_player') }}</label><br>
+                    <label style="{{ $filterLabelStyle }}">{{ __('profile.pay_tx_filter_player') }}</label>
                     <input type="text" name="player_q" value="{{ request('player_q') }}">
                 </div>
-                <button type="submit" class="btn btn-outline-primary btn-sm" title="{{ __('profile.pay_tx_filter_submit') }}">
-                    <x-menu-icon name="search" style="width:1.6rem;height:1.6rem" />
-                </button>
+                <div>
+                    <label style="{{ $filterLabelStyle }};opacity:0" aria-hidden="true">&nbsp;</label>
+                    <button type="submit" class="btn btn-outline-primary" style="padding:1.2rem 1.8rem" title="{{ __('profile.pay_tx_filter_submit') }}">
+                        <x-menu-icon name="search" style="width:1.8rem;height:1.8rem" />
+                    </button>
+                </div>
                 @if(request()->hasAny(['date_from', 'date_to', 'player_q']))
-                    <a href="{{ route('profile.transactions') }}" class="btn btn-small btn-secondary">{{ __('profile.pay_tx_filter_reset') }}</a>
+                    <div>
+                        <label style="{{ $filterLabelStyle }};opacity:0" aria-hidden="true">&nbsp;</label>
+                        <a href="{{ route('profile.transactions') }}" class="btn btn-small btn-secondary">{{ __('profile.pay_tx_filter_reset') }}</a>
+                    </div>
                 @endif
             </form>
 
@@ -111,7 +117,7 @@
                                 <th>{{ __('profile.col_player') }}</th>
                                 <th>{{ __('profile.col_event') }}</th>
                                 <th>Метод</th>
-                                <th>Сумма</th>
+                                <th style="width:1%">Сумма</th>
                                 <th>Статус</th>
                                 <th>Дата</th>
                                 <th>Действия</th>
@@ -141,7 +147,7 @@
                                     @php $methodLabels = ['cash'=>'💵 Нал','tbank_link'=>'🏦 Т-Банк','sber_link'=>'💚 Сбер','yoomoney'=>'🟡 ЮМани','wallet'=>'👛 Кошелёк']; @endphp
                                     {{ $methodLabels[$p->method] ?? $p->method }}
                                 </td>
-                                <td class="b-600">{{ number_format($p->amount_minor/100, 2) }} ₽</td>
+                                <td class="b-600 nowrap">{{ number_format($p->amount_minor/100, 2) }} ₽</td>
                                 @php
                                     // Наличные без учёта платежей (cash_payment_tracking_enabled=false) —
                                     // здесь никто никогда не подтверждает Payment.status (нет страницы учёта),
@@ -153,22 +159,22 @@
                                 <td>
                                     @if($isCashNoTracking)
                                         @if($regCancelled)
-                                            <span style="opacity:.5">❌ Отменён</span>
+                                            <span style="opacity:.5">Отменён</span>
                                         @else
-                                            <span class="cs b-600">✅ Оплачено</span>
+                                            <span class="status-paid b-600">Оплачено</span>
                                         @endif
                                     @elseif($p->status === 'paid')
-                                        <span class="cs b-600">✅ Оплачено</span>
+                                        <span class="status-paid b-600">Оплачено</span>
                                     @elseif($p->status === 'pending' && $p->user_confirmed && !$p->org_confirmed)
-                                        <span class="cd b-600">👀 Проверьте</span>
+                                        <span class="cd b-600">Проверьте</span>
                                     @elseif($p->status === 'pending')
-                                        <span style="opacity:.6">⏳ Ожидание</span>
+                                        <span class="status-pending b-600">Ожидание</span>
                                     @elseif($p->status === 'refunded')
-                                        <span class="cd">↩️ Возврат</span>
+                                        <span class="cd">Возврат</span>
                                     @elseif($p->status === 'expired')
-                                        <span style="opacity:.5">⌛ Истёк</span>
+                                        <span style="opacity:.5">Истёк</span>
                                     @elseif($p->status === 'cancelled')
-                                        <span style="opacity:.5">❌ Отменён</span>
+                                        <span style="opacity:.5">Отменён</span>
                                     @else
                                         {{ $p->status }}
                                     @endif
