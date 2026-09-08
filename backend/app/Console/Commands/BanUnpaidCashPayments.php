@@ -25,6 +25,14 @@ class BanUnpaidCashPayments extends Command
             ->whereNotNull('cash_ban_deadline_at')
             ->where('cash_ban_deadline_at', '<=', now())
             ->whereNull('cash_banned_at')
+            // Игрок мог отменить запись после того, как ему выставили дедлайн бана —
+            // payment_id у event_registrations не проставляется для наличных, поэтому
+            // persistCancellation() не гасит такой платёж (см. CLAUDE.md); без этой
+            // проверки уже отменённого игрока всё равно бы забанило.
+            ->whereHas('registration', function ($q) {
+                $q->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
+                    ->where('status', '!=', 'cancelled');
+            })
             ->get()
             // Администраторов не баним никогда, даже случайно (в т.ч. при тестировании фичи самими собой)
             ->reject(fn (Payment $p) => $p->user?->isAdmin());

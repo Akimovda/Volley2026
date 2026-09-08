@@ -76,9 +76,17 @@ class ProcessUnattendedCashPayments extends Command
 
             try {
                 DB::transaction(function () use ($occurrence, $event, $wasReviewed, $paymentService, $notificationService, &$autoPaid, &$reminded) {
+                    // Регистрация могла быть отменена уже после создания платежа (payment_id
+                    // у event_registrations не проставляется для наличных — persistCancellation()
+                    // не находит что гасить — см. CLAUDE.md); без этой проверки отменившему
+                    // запись игроку всё равно уходило бы "Требуется оплата"/бан.
                     $pendingPayments = Payment::where('occurrence_id', $occurrence->id)
                         ->where('method', 'cash')
                         ->where('status', 'pending')
+                        ->whereHas('registration', function ($q) {
+                            $q->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
+                                ->where('status', '!=', 'cancelled');
+                        })
                         ->get();
 
                     if (!$wasReviewed) {

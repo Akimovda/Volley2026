@@ -704,6 +704,16 @@ class EventRegistrationController extends Controller
                     }
                 }
             }
+
+            // event_registrations.payment_id не заполняется для наличных (createForRegistration
+            // пишет его через update() с полями вне $fillable — тихо игнорируется), поэтому блок
+            // выше для cash-платежей не срабатывает. Гасим их отдельно по registration_id —
+            // без этого отменённая регистрация оставляла pending cash-платёж висеть навсегда,
+            // и его позже подхватывали payments:process-unattended-cash/ban-unpaid-cash.
+            \App\Models\Payment::where('registration_id', $reg->id)
+                ->where('status', 'pending')
+                ->update(['status' => 'cancelled', 'refund_reason' => 'registration_cancelled']);
+
             $reg->payment_status    = null;
             $reg->payment_id        = null;
             $reg->payment_expires_at = null;
