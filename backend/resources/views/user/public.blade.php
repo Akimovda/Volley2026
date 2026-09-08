@@ -57,11 +57,16 @@
     $age = $years . ' ' . $ending;
 	}
     
-	$birth = $user->birth_date 
+	$birth = $user->birth_date
     ? $user->birth_date->isoFormat('D MMMM YYYY') . ' г.'
     : '—';
-	
-    @endphp	
+
+	// Публичная страница — порядок "Фамилия Имя" (не $user->name, который
+	// везде по проекту в порядке "Имя Фамилия"), с тем же фолбэком на $user->name
+	// если имя/фамилия не заполнены.
+	$reversedName = trim(($user->last_name ?? '') . ' ' . ($user->first_name ?? '')) ?: $user->name;
+
+    @endphp
 	
     <x-slot name="title">
         @if($isSelf)
@@ -182,7 +187,7 @@ body.dark .gradient-marker-line,
 	</x-slot>
 	
     <x-slot name="h2">
-		{{ $user->name }}
+		{{ $reversedName }}
 	</x-slot>
 	
     <x-slot name="t_description">
@@ -201,7 +206,7 @@ body.dark .gradient-marker-line,
                 @if($isSelf)
 				Ваш публичный профиль
                 @else
-				{{ $user->name }}
+				{{ $reversedName }}
                 @endif
 			</span>
             <meta itemprop="position" content="2">
