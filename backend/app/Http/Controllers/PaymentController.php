@@ -179,8 +179,18 @@ class PaymentController extends Controller
     {
         $user = $request->user();
 
-        // Общий билдер для таблицы и сводки — фильтры (дата/мероприятие/игрок)
-        // должны одинаково применяться и там, и там.
+        // Быстрый выбор периода (кнопки в сводке) — просто подставляет date_from/date_to,
+        // дальше идёт по общей логике фильтра ниже. Только допустимые значения — иначе
+        // произвольный период можно было бы передать и через period, и через date_from/to.
+        if ($request->filled('period') && in_array((int) $request->input('period'), [30, 60, 180, 365], true)) {
+            $request->merge([
+                'date_from' => now()->subDays((int) $request->input('period'))->toDateString(),
+                'date_to'   => now()->toDateString(),
+            ]);
+        }
+
+        // Общий билдер для таблицы и сводки — фильтры (дата/игрок) должны одинаково
+        // применяться и там, и там.
         $baseQuery = function () use ($user, $request) {
             $q = Payment::where('organizer_id', $user->id);
 
@@ -189,10 +199,6 @@ class PaymentController extends Controller
             }
             if ($request->filled('date_to')) {
                 $q->whereDate('created_at', '<=', $request->input('date_to'));
-            }
-            if ($request->filled('event_q')) {
-                $eventQ = $request->input('event_q');
-                $q->whereHas('event', fn ($eq) => $eq->where('title', 'ILIKE', '%' . $eventQ . '%'));
             }
             if ($request->filled('player_q')) {
                 $playerQ = $request->input('player_q');

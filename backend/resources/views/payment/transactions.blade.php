@@ -34,6 +34,18 @@
         {{-- СТАТИСТИКА --}}
         <div class="ramka">
             <h2 class="-mt-05">📊 Сводка</h2>
+
+            @php $activePeriod = (int) request('period'); @endphp
+            <div class="d-flex flex-wrap gap-2 mb-2">
+                @foreach([30 => 'pay_tx_period_30', 60 => 'pay_tx_period_60', 180 => 'pay_tx_period_180', 365 => 'pay_tx_period_365'] as $days => $labelKey)
+                    <a href="{{ route('profile.transactions', array_merge(request()->except(['period', 'date_from', 'date_to', 'page']), ['period' => $days])) }}"
+                       class="btn btn-small {{ $activePeriod === $days ? '' : 'btn-secondary' }}">{{ __('profile.'.$labelKey) }}</a>
+                @endforeach
+                @if($activePeriod)
+                    <a href="{{ route('profile.transactions', request()->except(['period', 'date_from', 'date_to', 'page'])) }}" class="btn btn-small btn-secondary">{{ __('profile.pay_tx_period_all') }}</a>
+                @endif
+            </div>
+
             <div class="row row2">
                 <div class="col-6 col-md-3">
                     <div class="card text-center">
@@ -67,7 +79,7 @@
         <div class="ramka">
             <h2 class="-mt-05">📋 История платежей</h2>
 
-            <form method="GET" class="form d-flex flex-wrap gap-2 mb-2" style="align-items:flex-end">
+            <form method="GET" class="form d-flex flex-wrap gap-2 mb-2" style="align-items:flex-end;justify-content:center">
                 <div>
                     <label class="f-13" style="opacity:.7">{{ __('profile.pay_tx_filter_date_from') }}</label><br>
                     <input type="date" name="date_from" value="{{ request('date_from') }}">
@@ -77,19 +89,15 @@
                     <input type="date" name="date_to" value="{{ request('date_to') }}">
                 </div>
                 <div>
-                    <label class="f-13" style="opacity:.7">{{ __('profile.pay_tx_filter_event') }}</label><br>
-                    <input type="text" name="event_q" value="{{ request('event_q') }}">
-                </div>
-                <div>
                     <label class="f-13" style="opacity:.7">{{ __('profile.pay_tx_filter_player') }}</label><br>
                     <input type="text" name="player_q" value="{{ request('player_q') }}">
                 </div>
-                <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-secondary btn-small">{{ __('profile.pay_tx_filter_submit') }}</button>
-                    @if(request()->hasAny(['date_from', 'date_to', 'event_q', 'player_q']))
-                        <a href="{{ route('profile.transactions') }}" class="btn btn-small">{{ __('profile.pay_tx_filter_reset') }}</a>
-                    @endif
-                </div>
+                <button type="submit" class="btn btn-outline-primary btn-sm" title="{{ __('profile.pay_tx_filter_submit') }}">
+                    <x-menu-icon name="search" style="width:1.6rem;height:1.6rem" />
+                </button>
+                @if(request()->hasAny(['date_from', 'date_to', 'player_q']))
+                    <a href="{{ route('profile.transactions') }}" class="btn btn-small btn-secondary">{{ __('profile.pay_tx_filter_reset') }}</a>
+                @endif
             </form>
 
             @if($payments->isEmpty())
@@ -165,7 +173,10 @@
                                         {{ $p->status }}
                                     @endif
                                 </td>
-                                <td class="nowrap">{{ $p->created_at->setTimezone('Europe/Moscow')->format('d.m.Y H:i') }}</td>
+                                <td class="nowrap">
+                                    <div>{{ $p->created_at->setTimezone('Europe/Moscow')->format('d.m.Y') }}</div>
+                                    <div>{{ $p->created_at->setTimezone('Europe/Moscow')->format('H:i') }}</div>
+                                </td>
                                 <td class="nowrap">
                                     @if($p->method === 'cash' && $p->event && $p->event->cash_payment_tracking_enabled && $p->occurrence_id)
                                         <a href="{{ route('payments.event_control', ['event' => $p->event_id, 'occurrence' => $p->occurrence_id]) }}" class="btn btn-small btn-secondary">
