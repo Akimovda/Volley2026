@@ -1081,7 +1081,7 @@
 		public function checkGenderQuotaForUser(
 			User $user,
 			EventOccurrence $occurrence,
-			?int $excludeRegistrationId = null,
+			int|array|null $excludeRegistrationId = null,
 			?string $onlyPosition = null,
 			bool $excludeLimitedQuota = false
 		): GuardResult {
@@ -1100,8 +1100,14 @@
 				->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
 				->whereRaw("(status IS NULL OR status != 'cancelled')");
 
+			// Массив — для двустороннего свопа позиций: обе стороны обмена исключаются
+			// из подсчёта квоты сразу для ОБЕИХ проверок (каждый игрок проверяется на
+			// позицию, в которую переходит, без учёта текущего места ни его самого,
+			// ни второго участника обмена — иначе ещё не освобождённая позиция
+			// партнёра по свопу ложно засчитывается как "занято").
 			if ($excludeRegistrationId) {
-				$query->where('id', '!=', $excludeRegistrationId);
+				$excludeIds = is_array($excludeRegistrationId) ? $excludeRegistrationId : [$excludeRegistrationId];
+				$query->whereNotIn('id', $excludeIds);
 			}
 
 			$registrations = $query->get();

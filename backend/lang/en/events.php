@@ -1068,6 +1068,16 @@ return [
     'regs_history_hint'      => 'Last :n events. Data before the log was launched is restored from registrations.',
     'regs_org_note_ph'       => 'Note…',
 
+    // Swap positions between two players
+    'regs_btn_swap_position'      => 'Swap position with another player',
+    'regs_swap_title'             => 'Swap positions',
+    'regs_swap_pick_player'       => 'Swap with:',
+    'regs_swap_hint'               => 'The two players\' positions will be swapped. If the target position has a gender quota that is already full, the swap will be rejected with an explanation.',
+    'regs_swap_choose'            => 'Choose a player…',
+    'regs_swap_submit'            => 'Swap',
+    'regs_action_position_swapped'=> 'Position swap',
+    'regs_swap_with'              => 'swapped with :name',
+
     // Waitlist — organizer management
     'waitlist_title'           => 'Waitlist',
     'waitlist_add_btn'         => 'Add player to waitlist',

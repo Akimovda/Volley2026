@@ -43,6 +43,27 @@ return $statusText($r) === __('events.regs_status_cancelled');
 $activeRegistrations = $registrations->filter(fn($r) => !$isCancelled($r))->values();
 $searchUrl = route('api.users.search');
 
+// Обмен позициями: локальный (без сети) список уже записавшихся — для JS-фильтра
+// в модалке "Поменять позицию с другим игроком" (по образцу captain-picker'а
+// на tournaments/setup.blade.php).
+$swapCandidates = $hasPositions
+? $activeRegistrations->map(function ($r) use ($posLabels) {
+    $full = trim(implode(' ', array_filter([
+    $r->last_name  ?? '',
+    $r->first_name ?? '',
+    $r->patronymic ?? '',
+    ])));
+    $nm     = $full !== '' ? $full : ($r->name ?: ($r->email ?: ('User_' . $r->user_id)));
+    $posKey = $r->position ?: '';
+    return [
+    'registration_id' => (int) $r->id,
+    'user_id'         => (int) $r->user_id,
+    'name'            => $nm,
+    'position_label'  => $posKey ? ($posLabels[$posKey] ?? $posKey) : '—',
+    ];
+})->values()
+: collect();
+
 $actionLabel = fn(string $a) => match($a) {
 'registered'                    => ['text' => __('events.regs_action_registered'),               'cls' => 'alert-success'],
 'cancelled'                     => ['text' => __('events.regs_action_cancelled'),                 'cls' => 'alert-error'],
@@ -51,15 +72,25 @@ $actionLabel = fn(string $a) => match($a) {
 'waitlist_left'                 => ['text' => __('events.regs_action_waitlist_left'),             'cls' => 'alert-warning'],
 'waitlist_auto_booked'          => ['text' => __('events.regs_action_waitlist_auto_booked'),      'cls' => 'alert-success'],
 'waitlist_removed_by_organizer' => ['text' => __('events.regs_action_waitlist_removed_by_organizer'), 'cls' => 'alert-error'],
+'position_swapped'              => ['text' => __('events.regs_action_position_swapped'),           'cls' => 'alert-info'],
 default                         => ['text' => $a,             'cls' => ''],
 };
 
 // Деталь позиции из meta (jsonb) — для waitlist-типов, где нет привязки к
-// event_registrations.position (её может ещё/уже не быть).
+// event_registrations.position (её может ещё/уже не быть), и для обмена позициями.
 $logPositionDetail = function ($log) {
     if (empty($log->meta)) return null;
     $meta = json_decode($log->meta, true);
     if (!is_array($meta)) return null;
+    if ($log->action === 'position_swapped') {
+        $old  = !empty($meta['old_position']) ? position_name($meta['old_position']) : '—';
+        $new  = !empty($meta['position']) ? position_name($meta['position']) : '—';
+        $line = $old . ' → ' . $new;
+        if (!empty($meta['swap_with_name'])) {
+            $line .= ' (' . __('events.regs_swap_with', ['name' => $meta['swap_with_name']]) . ')';
+        }
+        return $line;
+    }
     if (!empty($meta['position'])) return position_name($meta['position']);
     if (!empty($meta['positions']) && is_array($meta['positions'])) {
         return implode(', ', array_map('position_name', $meta['positions']));
@@ -357,6 +388,16 @@ $logPositionDetail = function ($log) {
 										title="{{ __('events.regs_btn_reject') }}">
 										</button>
 									</form>
+									@if($hasPositions)
+									<button type="button"
+									class="btn btn-secondary btn-svg icon-swap swap-position-trigger"
+									title="{{ __('events.regs_btn_swap_position') }}"
+									data-reg-id="{{ $r->id }}"
+									data-user-id="{{ $r->user_id }}"
+									data-name="{{ $name }}"
+									data-position-label="{{ $posLabel }}">
+									</button>
+									@endif
 									@elseif(!$hasPositions)
 									{{-- Отменённый без позиций (пляжка): кнопка восстановления --}}
 									<form method="POST"
@@ -402,7 +443,27 @@ $logPositionDetail = function ($log) {
 				</div>
 				@endif
 			</div>
-			
+
+			{{-- Модалка обмена позициями между двумя игроками --}}
+			@if($hasPositions)
+			<div id="swap-position-modal" style="max-width:480px; display:none">
+				<h3 class="title-h -mt-05">{{ __('events.regs_swap_title') }}</h3>
+				<p class="f-14 mt-1" style="opacity:.7" id="swap-position-current"></p>
+				<p class="f-13" style="opacity:.6">{{ __('events.regs_swap_hint') }}</p>
+				<form method="POST" action="{{ route('events.registrations.swap', ['event' => $event->id]) }}" class="mt-1">
+					@csrf
+					<input type="hidden" name="registration_id_a" id="swap-position-reg-a">
+					<label class="f-14 d-block mb-05">{{ __('events.regs_swap_pick_player') }}</label>
+					<select name="registration_id_b" id="swap-position-select" required style="width:100%">
+						<option value="">{{ __('events.regs_swap_choose') }}</option>
+					</select>
+					<div class="text-center mt-2">
+						<button type="submit" class="btn btn-secondary">{{ __('events.regs_swap_submit') }}</button>
+					</div>
+				</form>
+			</div>
+			@endif
+
 			{{-- Лист ожидания --}}
 			@if($occurrenceId && isset($waitlistEntries))
 			<div class="ramka">
@@ -1018,6 +1079,29 @@ $logPositionDetail = function ($log) {
 							ta.css('border-color', '#ef4444');
 						}
 					});
+				});
+
+				// --- Обмен позициями между двумя игроками ---
+				var swapCandidates = @json($swapCandidates ?? []);
+				$(document).on('click', '.swap-position-trigger', function() {
+					var $btn   = $(this);
+					var regId  = parseInt($btn.data('reg-id'), 10);
+					var userId = $btn.data('user-id');
+					var name   = $btn.data('name');
+					var posLbl = $btn.data('position-label');
+
+					$('#swap-position-reg-a').val(regId);
+					$('#swap-position-current').text(name + ' (#' + userId + ' · reg #' + regId + ') — ' + posLbl);
+
+					var $sel = $('#swap-position-select');
+					$sel.empty().append($('<option>', { value: '', text: @json(__('events.regs_swap_choose')) }));
+					swapCandidates.forEach(function(p) {
+						if (p.registration_id === regId) return;
+						var label = p.name + ' (#' + p.user_id + ' · reg #' + p.registration_id + ') — ' + p.position_label;
+						$sel.append($('<option>', { value: p.registration_id, text: label }));
+					});
+
+					jQuery.fancybox.open({ src: '#swap-position-modal', type: 'inline' });
 				});
 			</script>
 		</x-slot>

@@ -690,6 +690,148 @@ class EventRegistrationsManagementController extends Controller
     }
 
     /**
+     * POST /events/{event}/registrations/swap
+     * Меняет местами позиции (амплуа) двух уже записанных на один и тот же occurrence
+     * игроков — кнопка 🔄 в блоке действий на странице «Управление регистрациями».
+     * Регистрации не создаются/не удаляются, только поле position у обеих строк.
+     */
+    public function swapPositions(Request $request, Event $event)
+    {
+        $authUser = $request->user();
+        if (!$authUser) return redirect()->route('login');
+
+        $this->ensureCanCreateEvents($authUser);
+        $this->ensureCanManageEvent($authUser, $event);
+
+        if (!Schema::hasColumn('event_registrations', 'position')) {
+            return back()->with('error', 'В таблице event_registrations нет колонки position (место).');
+        }
+
+        $data = $request->validate([
+            'registration_id_a' => ['required', 'integer'],
+            'registration_id_b' => ['required', 'integer', 'different:registration_id_a'],
+        ]);
+
+        $rows = DB::table('event_registrations')
+            ->where('event_id', (int) $event->id)
+            ->whereIn('id', [(int) $data['registration_id_a'], (int) $data['registration_id_b']])
+            ->whereNull('cancelled_at')
+            ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
+            ->whereRaw("(status IS NULL OR status != 'cancelled')")
+            ->get(['id', 'position', 'occurrence_id', 'user_id'])
+            ->keyBy('id');
+
+        $regA = $rows->get((int) $data['registration_id_a']);
+        $regB = $rows->get((int) $data['registration_id_b']);
+
+        if (!$regA || !$regB) {
+            return back()->with('error', 'Одна из регистраций не найдена или отменена.');
+        }
+
+        if ((int) $regA->occurrence_id !== (int) $regB->occurrence_id) {
+            return back()->with('error', 'Игроки должны быть записаны на один и тот же тур.');
+        }
+
+        $userA = User::find((int) $regA->user_id);
+        $userB = User::find((int) $regB->user_id);
+        if (!$userA || !$userB) {
+            return back()->with('error', 'Не удалось найти игроков для обмена.');
+        }
+
+        $occId = (int) $regA->occurrence_id;
+        $posA  = (string) ($regA->position ?? '');
+        $posB  = (string) ($regB->position ?? '');
+
+        if ($posA === $posB) {
+            return back()->with('error', 'У выбранных игроков уже одинаковая позиция.');
+        }
+
+        // Гендерная квота — проверяем каждого игрока на позицию, в которую он переходит.
+        // Исключаем ОБЕ регистрации свопа из подсчёта (не только "свою") — иначе ещё
+        // не освобождённая позиция партнёра по обмену ложно считается занятой.
+        // Лимит слотов (max_slots) не проверяем: это парный своп между двумя уже
+        // занятыми позициями, суммарная занятость каждой роли после обмена не меняется.
+        $occurrence = $occId ? \App\Models\EventOccurrence::find($occId) : null;
+        if ($occurrence) {
+            $guard      = app(\App\Services\EventRegistrationGuard::class);
+            $excludeIds = [(int) $regA->id, (int) $regB->id];
+
+            if ($posB !== '') {
+                $err = $guard->checkGenderQuotaForUser($userA, $occurrence, $excludeIds, $posB)->errors[0] ?? null;
+                if ($err) return back()->with('error', $err);
+            }
+            if ($posA !== '') {
+                $err = $guard->checkGenderQuotaForUser($userB, $occurrence, $excludeIds, $posA)->errors[0] ?? null;
+                if ($err) return back()->with('error', $err);
+            }
+        }
+
+        $event->loadMissing('gameSettings');
+        $swapPositions = app(\App\Services\EventRoleSlotService::class)->resolvePositions(
+            (string) ($event->direction ?? 'classic'),
+            (string) ($event->gameSettings?->subtype ?? ''),
+            (string) ($event->gameSettings?->libero_mode ?? 'with_libero')
+        );
+        $swapPositions['reserve'] ??= __('events.positions.reserve');
+        $labelA = $posA !== '' ? ($swapPositions[$posA] ?? $posA) : '—';
+        $labelB = $posB !== '' ? ($swapPositions[$posB] ?? $posB) : '—';
+
+        $nameOf = fn (User $u) => trim(implode(' ', array_filter([$u->last_name, $u->first_name, $u->patronymic])))
+            ?: ($u->name ?: ('User_' . $u->id));
+
+        DB::transaction(function () use ($regA, $regB, $posA, $posB, $event, $occId, $authUser, $nameOf, $userA, $userB) {
+            DB::table('event_registrations')->where('id', $regA->id)->update(['position' => $posB, 'updated_at' => now()]);
+            DB::table('event_registrations')->where('id', $regB->id)->update(['position' => $posA, 'updated_at' => now()]);
+
+            if (Schema::hasTable('event_registration_logs')) {
+                DB::table('event_registration_logs')->insert([
+                    [
+                        'registration_id' => (int) $regA->id,
+                        'event_id'        => (int) $event->id,
+                        'occurrence_id'   => $occId ?: null,
+                        'user_id'         => (int) $regA->user_id,
+                        'actor_id'        => (int) $authUser->id,
+                        'action'          => 'position_swapped',
+                        'meta'            => json_encode([
+                            'position'          => $posB,
+                            'old_position'      => $posA,
+                            'swap_with_user_id' => (int) $regB->user_id,
+                            'swap_with_reg_id'  => (int) $regB->id,
+                            'swap_with_name'    => $nameOf($userB),
+                        ]),
+                        'created_at'      => now(),
+                    ],
+                    [
+                        'registration_id' => (int) $regB->id,
+                        'event_id'        => (int) $event->id,
+                        'occurrence_id'   => $occId ?: null,
+                        'user_id'         => (int) $regB->user_id,
+                        'actor_id'        => (int) $authUser->id,
+                        'action'          => 'position_swapped',
+                        'meta'            => json_encode([
+                            'position'          => $posA,
+                            'old_position'      => $posB,
+                            'swap_with_user_id' => (int) $regA->user_id,
+                            'swap_with_reg_id'  => (int) $regA->id,
+                            'swap_with_name'    => $nameOf($userA),
+                        ]),
+                        'created_at'      => now(),
+                    ],
+                ]);
+            }
+        });
+
+        $this->dispatchAnnounceUpdate((int) $event->id, $occId ?: null);
+
+        if ($authUser->isStaff()) {
+            $orgId = $authUser->getOrganizerIdForStaff();
+            if ($orgId) app(StaffLogService::class)->log($authUser, $orgId, 'swap_position', 'event', $event->id, "Поменял местами позиции игроков в мероприятии: {$event->title}");
+        }
+
+        return back()->with('status', "Позиции обменены: «{$labelA}» ↔ «{$labelB}» ✅");
+    }
+
+    /**
      * PATCH /events/{event}/registrations/{registration}/cancel
      * toggle:
      * - если активна -> отменяем (cancelled_at = now)
