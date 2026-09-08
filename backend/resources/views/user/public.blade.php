@@ -540,14 +540,30 @@ body.dark .gradient-marker-line,
                         ->whereNotNull('occurrence_id')
                         ->pluck('occurrence_id', 'event_id');
 
+                    // Итоговое место команды в турнире — ТОЛЬКО через
+                    // calculateFinalClassification() (учитывает плей-офф после
+                    // группового этапа), НЕ через "голый" tournament_standings.rank —
+                    // тот содержит место внутри группового этапа (1 или 2 при группах
+                    // по 2 команды), а не итоговое место в турнире. Раньше здесь читался
+                    // rank напрямую — для турниров с групповым этапом + плей-офф за места
+                    // (round_robin + single_elim) это давало неверную медаль (см. событие 422,
+                    // команда с rank=2 в своей группе на деле заняла 4-е место турнира,
+                    // проиграв и групповой матч, и матч за 3-4 место).
                     $teamIds = $tStats->pluck('team_id')->unique()->filter();
-                    $rankByTeam = $teamIds->isNotEmpty()
-                        ? \Illuminate\Support\Facades\DB::table('tournament_standings')
-                            ->whereIn('team_id', $teamIds)
-                            ->selectRaw('team_id, MIN(rank) as best_rank')
-                            ->groupBy('team_id')
-                            ->pluck('best_rank', 'team_id')
-                        : collect();
+                    $rankByTeam = collect();
+                    if ($teamIds->isNotEmpty()) {
+                        $statsService = app(\App\Services\TournamentStatsService::class);
+                        foreach ($tStats->pluck('event_id')->unique() as $clsEventId) {
+                            $clsEvent = $tStats->firstWhere('event_id', $clsEventId)?->event;
+                            if (!$clsEvent) continue;
+                            $clsOccId = $occByEvent[$clsEventId] ?? null;
+                            foreach ($statsService->calculateFinalClassification($clsEvent, $clsOccId) as $row) {
+                                if (!$rankByTeam->has($row['team_id']) || $row['place'] < $rankByTeam[$row['team_id']]) {
+                                    $rankByTeam[$row['team_id']] = $row['place'];
+                                }
+                            }
+                        }
+                    }
 
                     $partnerStats = $teamIds->isNotEmpty()
                         ? \App\Models\PlayerTournamentStats::whereIn('team_id', $teamIds)
