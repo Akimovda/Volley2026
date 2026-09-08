@@ -31,6 +31,19 @@ class TournamentKingService
     public const EVENT_FAULT       = 'fault';
     public const EVENT_TAKEOVER    = 'takeover';
 
+    /**
+     * Визуально различимые цвета для авто-назначения командам корта (до 5 команд
+     * на корте, но разных кортов/финалов может быть много — палитра шире, чтобы
+     * реже повторяться между ними) — организатор может изменить в форме "Цвета команд".
+     * Все оттенки достаточно тёмные/насыщенные для белого текста поверх (см. badge style="color:#fff").
+     */
+    public const COLOR_PALETTE = [
+        '#2967BA', '#E7612F', '#2E7D32', '#8E24AA', '#C2185B', '#F9A825', '#00838F', '#5D4037',
+        '#1565C0', '#D84315', '#43A047', '#6A1B9A', '#AD1457', '#F57F17', '#00695C', '#4E342E',
+        '#3949AB', '#EF6C00', '#7CB342', '#EC407A', '#FBC02D', '#6D4C41',
+        '#5E35B1', '#FF7043', '#558B2F', '#D32F2F', '#0277BD', '#C0CA33',
+    ];
+
     public function __construct(
         private TournamentSetupService $setupService,
     ) {
@@ -77,9 +90,36 @@ class TournamentKingService
                 'round_started_at'    => null,
                 'eliminated_team_ids' => [],
                 'rounds_history'      => [],
-                'team_colors'         => $config['team_colors'] ?? [],
+                'team_colors'         => $this->assignRandomColors($teamIds, $config['team_colors'] ?? []),
             ]),
         ]);
+    }
+
+    /**
+     * Каждой команде без уже назначенного цвета — случайный цвет из палитры,
+     * без повторов среди команд этого же корта (пока хватает палитры).
+     * Существующие назначения (организатор уже сохранил через форму "Цвета
+     * команд") не трогаем.
+     */
+    private function assignRandomColors(array $teamIds, array $existingColors): array
+    {
+        $colors = $existingColors;
+        $missingIds = array_values(array_filter($teamIds, fn($id) => empty($colors[$id])));
+        if (empty($missingIds)) {
+            return $colors;
+        }
+
+        $available = array_values(array_diff(self::COLOR_PALETTE, $colors));
+        if (count($available) < count($missingIds)) {
+            $available = self::COLOR_PALETTE;
+        }
+        shuffle($available);
+
+        foreach ($missingIds as $i => $teamId) {
+            $colors[$teamId] = $available[$i % count($available)];
+        }
+
+        return $colors;
     }
 
     /**
