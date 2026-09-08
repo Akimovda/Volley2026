@@ -4722,6 +4722,40 @@ body.dark .badge.badge-muted {
 	font-weight: 600;
 	padding: 0.35rem 0.75rem;
 }
+/* Блок "Король/Претендент" King of the Court — grid вместо space-between-флекса:
+   разделитель между сторонами — реальный grid-элемент (вертикальная линия на
+   широком экране), на узком экране (см. .badge, .card p-3 и общий брейкпоинт
+   480px в этом файле) превращается в горизонтальную линию между блоками,
+   поставленными друг под другом, вместо кривого прижатия по краям карточки. */
+.koc-vs-row {
+	display: grid;
+	grid-template-columns: 1fr auto 1fr;
+	align-items: center;
+	gap: 16px;
+}
+.koc-vs-side {
+	min-width: 0;
+}
+.koc-vs-divider {
+	width: 0.1rem;
+	align-self: stretch;
+	background: rgba(0, 0, 0, .1);
+	border-radius: 1px;
+}
+body.dark .koc-vs-divider {
+	background: rgba(255, 255, 255, .1);
+}
+@media (max-width: 480px) {
+	.koc-vs-row {
+		grid-template-columns: 1fr;
+		gap: 10px;
+	}
+	.koc-vs-divider {
+		width: 100%;
+		height: 0.1rem;
+		margin: 2px 0;
+	}
+}
 
 /* ── Тултипы карточки мероприятия (уровни, подтип игры, гендерная политика) ──
    Тап открывает/закрывает (см. script.js .js-info-tip) — работает и на мобиле
