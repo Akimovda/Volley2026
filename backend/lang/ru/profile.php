@@ -654,14 +654,15 @@ return [
     'pay_tx_h2'            => 'История транзакций',
     'pay_tx_empty'         => 'Транзакций пока нет.',
     'pay_tx_cash_control_btn' => 'Контроль наличных',
-    'pay_tx_stat_pending_sum'  => 'на сумму',
+    'pay_tx_stat_pending_amount' => 'Ожидает получения',
     'pay_tx_filter_date_from'  => 'Дата с',
     'pay_tx_filter_date_to'    => 'Дата по',
     'pay_tx_filter_event'      => 'Мероприятие',
     'pay_tx_filter_player'     => 'Игрок',
     'pay_tx_filter_submit'     => 'Найти',
     'pay_tx_filter_reset'      => 'Сбросить',
-    'pay_tx_action_mark_payment' => 'Отметить оплату',
+    'pay_tx_action_mark_payment' => 'Отметить',
+    'pay_tx_action_unmark_payment' => 'Отменить',
 
     // === payment/event_control (учёт наличных платежей) ===
     'pay_ctrl_title'          => 'Учёт платежей',
