@@ -1399,11 +1399,17 @@
 				'gender_blocked'   => $genderBlocked
 			];
 
-			// Данные команд для турнира (командного и tournament_individual — там команды формируются
-			// ПОСЛЕ регистрации, поэтому лимит команд всё равно нужен для честного счётчика на карточке)
+			// Данные команд для турнира — ТОЛЬКО для реально командной регистрации (игрок
+			// записывается сразу в составе команды). tournament_individual сюда специально
+			// НЕ входит: там игрок записывается сам за себя, команды формируются ПОСЛЕ
+			// регистрации жеребьёвкой — натуральная единица счётчика мест это игроки, а не
+			// команды (иначе карточка показывает "6 из 4 команд" при 24 живых игроках —
+			// см. CLAUDE.md, событие 423). Для tournament_individual ниже просто не заходим
+			// в этот блок, и общий else в seatline_script.blade.php честно посчитает по
+			// total_capacity/registered_total, как на странице самого мероприятия.
 			if (
                 (string)($occurrence->event->format ?? '') === 'tournament' &&
-                in_array((string)($occurrence->event->registration_mode ?? ''), ['team_classic', 'team_beach', 'team', 'tournament_individual'], true)
+                in_array((string)($occurrence->event->registration_mode ?? ''), ['team_classic', 'team_beach', 'team'], true)
             ) {
 				$regMode   = (string)($occurrence->event->registration_mode ?? '');
 				// game_scheme (напр. "4x2"/"5x1") — ЗАПРЕЩЕНО парсить team_size регуляркой
