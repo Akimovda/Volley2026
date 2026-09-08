@@ -657,12 +657,16 @@ return [
     'pay_tx_stat_pending_amount' => 'Ожидает получения',
     'pay_tx_filter_date_from'  => 'Дата с',
     'pay_tx_filter_date_to'    => 'Дата по',
-    'pay_tx_filter_event'      => 'Мероприятие',
     'pay_tx_filter_player'     => 'Игрок',
     'pay_tx_filter_submit'     => 'Найти',
     'pay_tx_filter_reset'      => 'Сбросить',
     'pay_tx_action_mark_payment' => 'Отметить',
     'pay_tx_action_unmark_payment' => 'Отменить',
+    'pay_tx_period_30'  => '30 дней',
+    'pay_tx_period_60'  => '60 дней',
+    'pay_tx_period_180' => 'Полгода',
+    'pay_tx_period_365' => 'Год',
+    'pay_tx_period_all' => 'Всё время',
 
     // === payment/event_control (учёт наличных платежей) ===
     'pay_ctrl_title'          => 'Учёт платежей',

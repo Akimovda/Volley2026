@@ -653,12 +653,16 @@ return [
     'pay_tx_stat_pending_amount' => 'Awaiting receipt',
     'pay_tx_filter_date_from'  => 'From date',
     'pay_tx_filter_date_to'    => 'To date',
-    'pay_tx_filter_event'      => 'Event',
     'pay_tx_filter_player'     => 'Player',
     'pay_tx_filter_submit'     => 'Search',
     'pay_tx_filter_reset'      => 'Reset',
     'pay_tx_action_mark_payment' => 'Mark',
     'pay_tx_action_unmark_payment' => 'Cancel',
+    'pay_tx_period_30'  => '30 days',
+    'pay_tx_period_60'  => '60 days',
+    'pay_tx_period_180' => 'Half a year',
+    'pay_tx_period_365' => 'Year',
+    'pay_tx_period_all' => 'All time',
 
     // === payment/event_control (cash payment tracking) ===
     'pay_ctrl_title'          => 'Payment tracking',
