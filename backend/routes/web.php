@@ -717,7 +717,10 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
 		
 		Route::patch('/events/{event}/registrations/{registration}/position', [EventRegistrationsManagementController::class, 'updatePosition'])
         ->name('events.registrations.position');
-		
+
+		Route::post('/events/{event}/registrations/swap', [EventRegistrationsManagementController::class, 'swapPositions'])
+        ->name('events.registrations.swap');
+
 		Route::patch('/events/{event}/registrations/{registration}/cancel', [EventRegistrationsManagementController::class, 'cancel'])
         ->name('events.registrations.cancel');
 
