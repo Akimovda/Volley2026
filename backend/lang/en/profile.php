@@ -641,6 +641,7 @@ return [
     'pay_tx_t_description' => 'Payment history for your events',
     'check_fields'         => 'Check the fields',
     'col_event'            => 'Event',
+    'col_player'           => 'Player',
 
     'pay_settings_title'   => 'Payment settings',
     'pay_settings_h2'      => 'Payment processing settings',
@@ -649,6 +650,14 @@ return [
     'pay_tx_h2'            => 'Transaction history',
     'pay_tx_empty'         => 'No transactions yet.',
     'pay_tx_cash_control_btn' => 'Cash control',
+    'pay_tx_stat_pending_sum'  => 'totaling',
+    'pay_tx_filter_date_from'  => 'From date',
+    'pay_tx_filter_date_to'    => 'To date',
+    'pay_tx_filter_event'      => 'Event',
+    'pay_tx_filter_player'     => 'Player',
+    'pay_tx_filter_submit'     => 'Search',
+    'pay_tx_filter_reset'      => 'Reset',
+    'pay_tx_action_mark_payment' => 'Mark payment',
 
     // === payment/event_control (cash payment tracking) ===
     'pay_ctrl_title'          => 'Payment tracking',

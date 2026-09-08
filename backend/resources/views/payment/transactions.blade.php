@@ -45,6 +45,9 @@
                     <div class="card text-center">
                         <div class="f-14">Ожидают оплаты</div>
                         <div class="f-32 b-700 cd">{{ $stats['total_pending'] }}</div>
+                        @if($stats['total_pending'] > 0)
+                            <div class="f-13" style="opacity:.6">{{ __('profile.pay_tx_stat_pending_sum') }} {{ number_format($stats['total_pending_sum'], 2) }} ₽</div>
+                        @endif
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
@@ -60,6 +63,31 @@
         {{-- ТАБЛИЦА --}}
         <div class="ramka">
             <h2 class="-mt-05">📋 История платежей</h2>
+
+            <form method="GET" class="form d-flex flex-wrap gap-2 mb-2" style="align-items:flex-end">
+                <div>
+                    <label class="f-13" style="opacity:.7">{{ __('profile.pay_tx_filter_date_from') }}</label><br>
+                    <input type="date" name="date_from" value="{{ request('date_from') }}">
+                </div>
+                <div>
+                    <label class="f-13" style="opacity:.7">{{ __('profile.pay_tx_filter_date_to') }}</label><br>
+                    <input type="date" name="date_to" value="{{ request('date_to') }}">
+                </div>
+                <div>
+                    <label class="f-13" style="opacity:.7">{{ __('profile.pay_tx_filter_event') }}</label><br>
+                    <input type="text" name="event_q" value="{{ request('event_q') }}">
+                </div>
+                <div>
+                    <label class="f-13" style="opacity:.7">{{ __('profile.pay_tx_filter_player') }}</label><br>
+                    <input type="text" name="player_q" value="{{ request('player_q') }}">
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-secondary btn-small">{{ __('profile.pay_tx_filter_submit') }}</button>
+                    @if(request()->hasAny(['date_from', 'date_to', 'event_q', 'player_q']))
+                        <a href="{{ route('profile.transactions') }}" class="btn btn-small">{{ __('profile.pay_tx_filter_reset') }}</a>
+                    @endif
+                </div>
+            </form>
 
             @if($payments->isEmpty())
                 <div class="alert alert-info">{{ __('profile.pay_tx_empty') }}</div>
@@ -103,8 +131,22 @@
                                     {{ $methodLabels[$p->method] ?? $p->method }}
                                 </td>
                                 <td class="b-600">{{ number_format($p->amount_minor/100, 2) }} ₽</td>
+                                @php
+                                    // Наличные без учёта платежей (cash_payment_tracking_enabled=false) —
+                                    // здесь никто никогда не подтверждает Payment.status (нет страницы учёта),
+                                    // он так и остался бы вечным "⏳ Ожидание". Статус берём из факта записи:
+                                    // регистрация активна — оплачено (наличные на месте), отменена — отменено.
+                                    $isCashNoTracking = $p->method === 'cash' && (!$p->event || !$p->event->cash_payment_tracking_enabled);
+                                    $regCancelled = $p->registration && ($p->registration->is_cancelled || $p->registration->status === 'cancelled');
+                                @endphp
                                 <td>
-                                    @if($p->status === 'paid')
+                                    @if($isCashNoTracking)
+                                        @if($regCancelled)
+                                            <span style="opacity:.5">❌ Отменён</span>
+                                        @else
+                                            <span class="cs b-600">✅ Оплачено</span>
+                                        @endif
+                                    @elseif($p->status === 'paid')
                                         <span class="cs b-600">✅ Оплачено</span>
                                     @elseif($p->status === 'pending' && $p->user_confirmed && !$p->org_confirmed)
                                         <span class="cd b-600">👀 Проверьте</span>
@@ -122,6 +164,9 @@
                                 </td>
                                 <td class="nowrap">{{ $p->created_at->setTimezone('Europe/Moscow')->format('d.m.Y H:i') }}</td>
                                 <td class="nowrap">
+                                    @if($p->method === 'cash' && $p->event && $p->event->cash_payment_tracking_enabled && $p->occurrence_id)
+                                        <a href="{{ route('payments.event_control', ['event' => $p->event_id, 'occurrence' => $p->occurrence_id]) }}" class="btn btn-small btn-secondary">✅ {{ __('profile.pay_tx_action_mark_payment') }}</a>
+                                    @endif
                                     @if($p->status === 'pending' && $p->user_confirmed && !$p->org_confirmed)
                                         <form method="POST" action="{{ route('payments.org_confirm', $p->id) }}" class="d-inline">
                                             @csrf
