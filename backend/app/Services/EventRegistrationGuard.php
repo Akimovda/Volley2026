@@ -1406,8 +1406,16 @@
                 in_array((string)($occurrence->event->registration_mode ?? ''), ['team_classic', 'team_beach', 'team', 'tournament_individual'], true)
             ) {
 				$regMode   = (string)($occurrence->event->registration_mode ?? '');
-				$gsSubtype = (string)($occurrence->event->gameSettings?->subtype ?? '');
-				$teamSize  = preg_match('/^(\d+)x\d+$/i', $gsSubtype, $m) ? (int)$m[1] : 2;
+				// game_scheme (напр. "4x2"/"5x1") — ЗАПРЕЩЕНО парсить team_size регуляркой
+				// (даёт неверное число, см. CLAUDE.md: "4x2" распознавался бы как team_size=4,
+				// хотя реальный team_size_min может быть 6 и больше) — источник истины
+				// event_tournament_settings.team_size_min, регэксп — только legacy-фолбэк,
+				// если строки настроек турнира ещё нет.
+				$teamSize = (int) ($occurrence->event->tournamentSetting?->team_size_min ?: 0);
+				if ($teamSize <= 0) {
+					$gsSubtype = (string)($occurrence->event->gameSettings?->subtype ?? '');
+					$teamSize  = preg_match('/^(\d+)x\d+$/i', $gsSubtype, $m) ? (int)$m[1] : 2;
+				}
 
 				// Приоритет источников — см. комментарий выше по коду (первый блок team_classic/team_beach).
 				// Если лимит команд нигде не настроен (типично для tournament_individual до жеребьёвки) —
