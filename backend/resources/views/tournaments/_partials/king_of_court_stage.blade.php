@@ -76,7 +76,7 @@ $kocShowFormFinalBtn = $kocBatchId && $stage->isCompleted() && $batchInfo && $ba
 	{{-- Состав корта --}}
 	<div class="card mt-2 p-3">
 		<div class="b-700 f-16 mb-1">{{ __('tournaments.koc_lbl_court_teams') }}</div>
-		<div class="d-flex" style="gap:8px;flex-wrap:wrap">
+		<div class="d-flex koc-court-teams" style="gap:8px;flex-wrap:wrap">
 			@foreach($kocCourtTeamIds as $tId)
 			@php $t = $kocTeamsById->get($tId); @endphp
 			<span class="badge badge-sm" style="{{ !empty($kocColors[$tId]) ? 'background:'.$kocColors[$tId].';color:#fff' : '' }}">
@@ -182,7 +182,7 @@ $kocShowFormFinalBtn = $kocBatchId && $stage->isCompleted() && $batchInfo && $ba
 					@foreach($kocStandings as $st)
 					<tr>
 						<td class="b-700" style="width:2rem">{{ $loop->iteration }}</td>
-						<td>
+						<td class="koc-court-teams">
 							<span class="badge badge-sm" style="{{ !empty($kocColors[$st->team_id]) ? 'background:'.$kocColors[$st->team_id].';color:#fff' : '' }}">
 								@include('tournaments._partials.team_name_link', ['team' => $kocTeamsById->get($st->team_id), 'fallback' => '?'])
 							</span>

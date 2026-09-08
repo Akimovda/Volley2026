@@ -4714,6 +4714,14 @@ body.dark .badge.badge-muted {
 	background: rgba(239,68,68,.15);
 	color: #ef4444;
 }
+/* Состав корта King of the Court (setup.blade.php) — крупнее базового
+   .badge.badge-sm, т.к. это единственный текст, идентифицирующий команду на
+   странице управления (не мелкая служебная пометка). */
+.koc-court-teams .badge.badge-sm {
+	font-size: 1rem;
+	font-weight: 600;
+	padding: 0.35rem 0.75rem;
+}
 
 /* ── Тултипы карточки мероприятия (уровни, подтип игры, гендерная политика) ──
    Тап открывает/закрывает (см. script.js .js-info-tip) — работает и на мобиле
