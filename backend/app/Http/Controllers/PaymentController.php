@@ -179,15 +179,43 @@ class PaymentController extends Controller
     {
         $user = $request->user();
 
-        $payments = Payment::where('organizer_id', $user->id)
-            ->with(['user:id,first_name,last_name', 'event:id,title,payment_method,cash_payment_tracking_enabled'])
+        // Общий билдер для таблицы и сводки — фильтры (дата/мероприятие/игрок)
+        // должны одинаково применяться и там, и там.
+        $baseQuery = function () use ($user, $request) {
+            $q = Payment::where('organizer_id', $user->id);
+
+            if ($request->filled('date_from')) {
+                $q->whereDate('created_at', '>=', $request->input('date_from'));
+            }
+            if ($request->filled('date_to')) {
+                $q->whereDate('created_at', '<=', $request->input('date_to'));
+            }
+            if ($request->filled('event_q')) {
+                $eventQ = $request->input('event_q');
+                $q->whereHas('event', fn ($eq) => $eq->where('title', 'ILIKE', '%' . $eventQ . '%'));
+            }
+            if ($request->filled('player_q')) {
+                $playerQ = $request->input('player_q');
+                $q->whereHas('user', fn ($uq) => $uq->whereRaw(
+                    "(first_name || ' ' || last_name) ILIKE ?",
+                    ['%' . $playerQ . '%']
+                ));
+            }
+
+            return $q;
+        };
+
+        $payments = $baseQuery()
+            ->with(['user:id,first_name,last_name', 'event:id,title,payment_method,cash_payment_tracking_enabled', 'registration:id,is_cancelled,status'])
             ->orderByDesc('id')
-            ->paginate(20);
+            ->paginate(20)
+            ->withQueryString();
 
         $stats = [
-            'total_paid'    => Payment::where('organizer_id', $user->id)->where('status', 'paid')->sum('amount_minor') / 100,
-            'total_pending' => Payment::where('organizer_id', $user->id)->where('status', 'pending')->count(),
-            'link_pending'  => Payment::where('organizer_id', $user->id)
+            'total_paid'        => $baseQuery()->where('status', 'paid')->sum('amount_minor') / 100,
+            'total_pending'     => $baseQuery()->where('status', 'pending')->count(),
+            'total_pending_sum' => $baseQuery()->where('status', 'pending')->sum('amount_minor') / 100,
+            'link_pending'      => $baseQuery()
                 ->where('status', 'pending')
                 ->whereIn('method', ['tbank_link', 'sber_link'])
                 ->where('user_confirmed', true)
