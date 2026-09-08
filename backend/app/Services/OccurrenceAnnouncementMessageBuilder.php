@@ -9,11 +9,18 @@ use Illuminate\Support\Facades\DB;
 
 class OccurrenceAnnouncementMessageBuilder
 {
+    // Консервативный потолок длины анонса для VK/MAX (rich-сообщений с безлимитным
+    // параграфом там нет — весь текст, включая длинное описание кемпа, идёт одним
+    // куском в API площадки). Точные официальные лимиты не проверялись, значение
+    // выбрано с запасом ниже типичных ограничений на пост/сообщение.
+    private const CAMP_TEXT_LIMIT_VK_MAX = 4000;
+
     public function build(EventOccurrence $occurrence, array $options = []): ChannelMessageData
     {
         $event    = $occurrence->event;
         $tz       = $occurrence->timezone ?: ($event->timezone ?: 'UTC');
         $platform = (string) ($options['platform'] ?? '');
+        $isCamp   = (string) ($event->format ?? '') === 'camp';
 
         $starts = Carbon::parse($occurrence->starts_at, 'UTC')->setTimezone($tz);
 
@@ -74,14 +81,25 @@ class OccurrenceAnnouncementMessageBuilder
             $imageUrl = $this->convertWebpToJpegUrl($imageUrl) ?? null;
         }
 
+        // Кемп — всегда одно фото, без коллажа. Коллаж переключает Telegram на rich-
+        // сообщение, а его параграф не парсит HTML → жирный/курсив/подчёркивание из
+        // описания кемпа отобразились бы как обычный текст (см. buildCampText()).
+        if ($isCamp && count($imageUrls) > 1) {
+            $imageUrls = array_slice($imageUrls, 0, 1);
+        }
+
         // Список игроков/команд — строится один раз, используется и внутри общего $text
         // (VK/MAX/телеграм-фолбэк), и отдельно как listTitle/listText (телеграм details-блок)
         $listTitle = null;
         $listText  = null;
         $textShort = null;
 
-        // Текст анонса
-        $text = $this->buildText($occurrence, $options, $starts, $ends, $tz, $platform, $listTitle, $listText, $textShort);
+        // Текст анонса — у кемпа принципиально другой макет (даты кемпа вместо
+        // времени начала/окончания, без блока "Мест/Команд", без списка игроков,
+        // с описанием мероприятия) — см. buildCampText().
+        $text = $isCamp
+            ? $this->buildCampText($occurrence, $starts, $ends, $platform, $textShort)
+            : $this->buildText($occurrence, $options, $starts, $ends, $tz, $platform, $listTitle, $listText, $textShort);
 
         $finalized = (bool) ($options['finalized'] ?? false);
 
@@ -100,6 +118,293 @@ class OccurrenceAnnouncementMessageBuilder
             listText:   $listText,
             textShort:  $textShort,
         );
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Макет анонса для мероприятий формата "camp" (кемп): фото → название → даты
+     * кемпа → адрес → организатор → формат игры → уровень → цена → описание →
+     * кнопка записи. Без блока "Мест/Команд" и без списка записавшихся — описание
+     * кемпа может быть длинным и не должно конкурировать за лимит длины сообщения.
+     */
+    private function buildCampText(
+        EventOccurrence $occurrence,
+        Carbon $starts,
+        ?Carbon $ends,
+        string $platform,
+        ?string &$textShort = null
+    ): string {
+        $event     = $occurrence->event;
+        $location  = $event->location;
+        $organizer = $event->organizer;
+
+        $lines = [];
+
+        // ── Название ──────────────────────────────────────────────────────────
+        $lines[] = $this->bold($platform, (string) $event->title);
+        $lines[] = '';
+
+        // ── Даты кемпа ────────────────────────────────────────────────────────
+        $lines[] = '🗓 ' . $this->formatCampDateRange($starts, $ends);
+
+        // ── Адрес ─────────────────────────────────────────────────────────────
+        if ($location) {
+            $addrParts = array_filter([
+                $location->metro ?? null,
+                $location->city?->name ?? null,
+                $location->address ?? null,
+            ]);
+            $addr = $addrParts ? implode(', ', $addrParts) : ($location->name ?? null);
+            if ($addr) {
+                $lines[] = "📍 {$addr}";
+            }
+        }
+
+        // ── Организатор ───────────────────────────────────────────────────────
+        if ($organizer) {
+            $orgName = trim((string) ($organizer->name ?? ''));
+            if ($orgName !== '') {
+                $lines[] = "👤 Организатор: {$orgName}";
+            }
+        }
+
+        $lines[] = '';
+
+        // ── Формат ────────────────────────────────────────────────────────────
+        $gameSettings = $this->loadGameSettings((int) $event->id);
+        $subtype      = (string) ($gameSettings['subtype'] ?? '');
+        $direction    = (string) ($event->direction ?? 'classic');
+
+        $formatLabel = $this->formatLabel($direction, $subtype);
+        if ($formatLabel !== '') {
+            $lines[] = "🏐 Формат: {$formatLabel}";
+        }
+
+        // ── Уровень ───────────────────────────────────────────────────────────
+        $levelLine = $this->buildLevelLine($event, $direction);
+        if ($levelLine !== '') {
+            $lines[] = "📈 Уровень: {$levelLine}";
+        }
+
+        // ── Цена ──────────────────────────────────────────────────────────────
+        if ($event->price_minor > 0) {
+            $amount   = number_format($event->price_minor / 100, 2, ',', ' ');
+            $currency = $this->currencySymbol((string) ($event->price_currency ?? 'RUB'));
+            $lines[] = "💸 {$amount} {$currency}";
+        } elseif (!empty($event->price_text)) {
+            $lines[] = "💸 {$event->price_text}";
+        } else {
+            $lines[] = '💸 ' . __('events.channel_announcement_price_free', [], 'ru');
+        }
+
+        // ── Описание ──────────────────────────────────────────────────────────
+        // Telegram отправляется classic-сообщением (parse_mode=HTML) — сохраняем
+        // жирный/курсив/подчёркнутый/зачёркнутый текст и ссылки из Trix-описания.
+        // VK/MAX HTML не поддерживают вообще — только чистый текст.
+        $rawDescription = (string) ($event->description_html ?? '');
+        $description = $platform === 'telegram'
+            ? $this->htmlToTelegramSafe($rawDescription)
+            : $this->htmlToPlainText($rawDescription);
+        if ($description !== '') {
+            $lines[] = '';
+            $lines[] = $description;
+        }
+
+        $text = implode("\n", $lines);
+
+        // VK/MAX не поддерживают rich-сообщения с безлимитным параграфом — обрезаем
+        // весь текст целиком консервативным лимитом, чтобы не упереться в лимит API.
+        if (in_array($platform, ['vk', 'max'], true) && mb_strlen($text) > self::CAMP_TEXT_LIMIT_VK_MAX) {
+            $text = mb_substr($text, 0, self::CAMP_TEXT_LIMIT_VK_MAX - 1) . '…';
+        }
+
+        $textShort = $text;
+
+        return $text;
+    }
+
+    /**
+     * Диапазон дат кемпа: «8 сентября» (один день), «8-10 сентября» (в пределах
+     * одного месяца), «28 августа – 2 сентября» (на стыке месяцев/лет).
+     */
+    private function formatCampDateRange(Carbon $starts, ?Carbon $ends): string
+    {
+        $startsRu = $starts->locale('ru');
+
+        if (!$ends || $ends->isSameDay($starts)) {
+            return $startsRu->translatedFormat('j F');
+        }
+
+        $endsRu = $ends->locale('ru');
+
+        if ($starts->year !== $ends->year) {
+            return $startsRu->translatedFormat('j F Y') . ' – ' . $endsRu->translatedFormat('j F Y');
+        }
+
+        if ($starts->month === $ends->month) {
+            return $starts->day . '-' . $endsRu->translatedFormat('j F');
+        }
+
+        return $startsRu->translatedFormat('j F') . ' – ' . $endsRu->translatedFormat('j F');
+    }
+
+    /**
+     * HTML описания (Trix) → чистый текст с сохранением переносов строк:
+     * <br> и закрывающие блочные теги → \n, <li> → "- ", остальные теги вырезаются.
+     */
+    private function htmlToPlainText(string $html): string
+    {
+        if (trim($html) === '') {
+            return '';
+        }
+
+        $text = preg_replace('/<br\s*\/?>/i', "\n", $html);
+        $text = preg_replace('/<\/(p|li|div|h[1-6])>/i', "\n", $text);
+        $text = preg_replace('/<li[^>]*>/i', '- ', $text);
+        $text = strip_tags($text);
+        $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5);
+        $text = preg_replace('/\n{3,}/', "\n\n", $text);
+        $lines = array_map('rtrim', explode("\n", $text));
+
+        return trim(implode("\n", $lines));
+    }
+
+    /**
+     * Inline-теги Trix-описания, которые Telegram parse_mode=HTML понимает нативно.
+     * Ключ — тег из Trix/Purifier-разметки, значение — safe-тег для вывода в Telegram.
+     */
+    private const TELEGRAM_SAFE_INLINE_TAGS = [
+        'b' => 'b', 'strong' => 'b',
+        'i' => 'i', 'em' => 'i',
+        'u' => 'u',
+        's' => 's', 'strike' => 's', 'del' => 's',
+    ];
+
+    /** Блочные теги Trix-разметки — переносятся строкой, собственной разметки не имеют. */
+    private const TELEGRAM_BLOCK_TAGS = ['p', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'tr', 'figure', 'figcaption'];
+
+    /**
+     * Целевая длина ГОТОВОГО HTML описания кемпа для Telegram (с тегами разметки) —
+     * запас под остальные строки анонса (дата/адрес/организатор/формат/уровень/цена),
+     * чтобы classic caption (лимит 1024 символа) не обрезался Telegram'ом посередине тега.
+     */
+    private const TELEGRAM_DESCRIPTION_HTML_BUDGET = 600;
+
+    /**
+     * HTML описания (Trix) → Telegram-safe HTML: жирный/курсив/подчёркивание/зачёркивание/
+     * ссылки сохраняются как реальные теги (parse_mode=HTML), остальная разметка (заголовки,
+     * списки, таблицы, картинки) сводится к переносам строк и "- " для пунктов списка.
+     * Обрезка текста — на уровне DOM (бюджет символов), а не сырой HTML-строки, поэтому
+     * теги всегда остаются закрытыми и Telegram не падает с ошибкой парсинга.
+     */
+    private function htmlToTelegramSafe(string $html): string
+    {
+        if (trim($html) === '') {
+            return '';
+        }
+
+        libxml_use_internal_errors(true);
+        $dom = new \DOMDocument();
+        $loaded = $dom->loadHTML(
+            '<?xml encoding="utf-8"?><div>' . $html . '</div>',
+            LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD
+        );
+        libxml_clear_errors();
+
+        $root = $loaded ? $dom->getElementsByTagName('div')->item(0) : null;
+        if (!$root) {
+            return htmlspecialchars($this->htmlToPlainText($html), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        }
+
+        // Бюджет считает видимые символы, а не байты разметки — теги (<b>, <a href="...">
+        // и т.п.) добавляют сверху. Поэтому целимся итеративно: если готовый HTML всё ещё
+        // длиннее целевого лимита, уменьшаем текстовый бюджет и рендерим заново (DOM не
+        // меняется, только счётчик, поэтому пересчёт дёшев и детерминирован).
+        $textBudget = self::TELEGRAM_DESCRIPTION_HTML_BUDGET;
+        $text = '';
+        for ($attempt = 0; $attempt < 8; $attempt++) {
+            $consumed = $textBudget;
+            $text = $this->renderTelegramSafeNode($root, $consumed);
+            $overshoot = mb_strlen($text) - self::TELEGRAM_DESCRIPTION_HTML_BUDGET;
+            if ($overshoot <= 0 || $textBudget <= 0) {
+                break;
+            }
+            $textBudget = max(0, $textBudget - $overshoot - 5);
+        }
+
+        $text  = preg_replace('/\n{3,}/', "\n\n", $text);
+        $lines = array_map('rtrim', explode("\n", $text));
+
+        return trim(implode("\n", $lines));
+    }
+
+    private function renderTelegramSafeNode(\DOMNode $node, int &$budget): string
+    {
+        $out = '';
+        foreach ($node->childNodes as $child) {
+            if ($budget <= 0) {
+                break;
+            }
+
+            if ($child->nodeType === XML_TEXT_NODE) {
+                $textContent = $child->textContent;
+                if (mb_strlen($textContent) > $budget) {
+                    $textContent = mb_substr($textContent, 0, $budget) . '…';
+                    $budget = 0;
+                } else {
+                    $budget -= mb_strlen($textContent);
+                }
+                $out .= htmlspecialchars($textContent, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                continue;
+            }
+
+            if ($child->nodeType !== XML_ELEMENT_NODE) {
+                continue;
+            }
+
+            $tag = strtolower($child->nodeName);
+
+            if ($tag === 'br') {
+                $out .= "\n";
+                continue;
+            }
+            if ($tag === 'img') {
+                continue;
+            }
+
+            $inner = $this->renderTelegramSafeNode($child, $budget);
+
+            if (isset(self::TELEGRAM_SAFE_INLINE_TAGS[$tag])) {
+                $safeTag = self::TELEGRAM_SAFE_INLINE_TAGS[$tag];
+                $out .= "<{$safeTag}>{$inner}</{$safeTag}>";
+                continue;
+            }
+
+            if ($tag === 'a' && $child instanceof \DOMElement) {
+                $href = $child->getAttribute('href');
+                $out .= $href !== ''
+                    ? '<a href="' . htmlspecialchars($href, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '">' . $inner . '</a>'
+                    : $inner;
+                continue;
+            }
+
+            if ($tag === 'li') {
+                $out .= '- ' . $inner . "\n";
+                continue;
+            }
+
+            if (in_array($tag, self::TELEGRAM_BLOCK_TAGS, true)) {
+                $out .= $inner . "\n";
+                continue;
+            }
+
+            // span/mark/sub/sup/ul/ol/table/thead/tbody/td/th и т.п. — прозрачные
+            // обёртки, разворачиваем содержимое без собственной разметки
+            $out .= $inner;
+        }
+
+        return $out;
     }
 
     // ─────────────────────────────────────────────────────────────────────────
