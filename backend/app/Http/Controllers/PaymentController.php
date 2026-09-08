@@ -211,10 +211,33 @@ class PaymentController extends Controller
             ->paginate(20)
             ->withQueryString();
 
+        // Наличные без включённого «Учёта платежей» считаются оплаченными сразу при
+        // регистрации (та же логика, что и в колонке "Статус" таблицы истории ниже —
+        // для таких мероприятий Payment.status навсегда остаётся 'pending', подтверждать
+        // его в БД некому). Без этого фильтра сводка считала их "ожидающими получения",
+        // хотя реально деньги уже получены наличными.
+        $untrackedCash = function ($q) {
+            $q->where('method', 'cash')->where(function ($qq) {
+                $qq->whereDoesntHave('event')
+                    ->orWhereHas('event', fn ($e) => $e->where(function ($ee) {
+                        $ee->whereNull('cash_payment_tracking_enabled')->orWhere('cash_payment_tracking_enabled', false);
+                    }));
+            });
+        };
+        $genuinelyPending = function ($q) {
+            $q->where(function ($qq) {
+                $qq->where('method', '!=', 'cash')
+                    ->orWhereHas('event', fn ($e) => $e->where('cash_payment_tracking_enabled', true));
+            });
+        };
+
         $stats = [
-            'total_paid'        => $baseQuery()->where('status', 'paid')->sum('amount_minor') / 100,
-            'total_pending'     => $baseQuery()->where('status', 'pending')->count(),
-            'total_pending_sum' => $baseQuery()->where('status', 'pending')->sum('amount_minor') / 100,
+            'total_paid'        => (
+                $baseQuery()->where('status', 'paid')->sum('amount_minor')
+                + $baseQuery()->where('status', 'pending')->where($untrackedCash)->sum('amount_minor')
+            ) / 100,
+            'total_pending'     => $baseQuery()->where('status', 'pending')->where($genuinelyPending)->count(),
+            'total_pending_sum' => $baseQuery()->where('status', 'pending')->where($genuinelyPending)->sum('amount_minor') / 100,
             'link_pending'      => $baseQuery()
                 ->where('status', 'pending')
                 ->whereIn('method', ['tbank_link', 'sber_link'])
