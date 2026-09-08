@@ -67,6 +67,12 @@
                     $cityText = $part;
                 }
             }
+            // $cityLabel без региона (Москва/СПб — region_display=null для городов
+            // федерального значения) не содержит скобок и не проходит guess-проверку
+            // выше — назначаем явно, а не угадыванием по содержимому строки.
+            if ($cityLabel && $cityText === '') {
+                $cityText = $cityLabel;
+            }
         @endphp
         
         @if($cityText)
