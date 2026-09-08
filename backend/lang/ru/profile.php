@@ -681,6 +681,9 @@ return [
     'pay_ccidx_col_location'   => 'Локация',
     'pay_ccidx_col_action'     => 'Действие',
     'pay_ccidx_empty'          => 'Нет мероприятий с включённым учётом оплаты наличными.',
+    'pay_ccidx_archive_title'  => 'Архив',
+    'pay_ccidx_archive_hint'   => 'Прошедшие мероприятия — оплата уже обработана автоматически, но отметки всё ещё можно посмотреть и поправить.',
+    'pay_ccidx_archive_empty'  => 'Архив пуст.',
 
     // === dashboard/player and dashboard/org ===
     'dash_player_title'    => 'Моя статистика',

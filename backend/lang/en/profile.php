@@ -677,6 +677,9 @@ return [
     'pay_ccidx_col_location'   => 'Location',
     'pay_ccidx_col_action'     => 'Action',
     'pay_ccidx_empty'          => 'No events with cash payment tracking enabled.',
+    'pay_ccidx_archive_title'  => 'Archive',
+    'pay_ccidx_archive_hint'   => 'Past events — payments have already been processed automatically, but you can still view and adjust the marks.',
+    'pay_ccidx_archive_empty'  => 'Archive is empty.',
 
     'dash_player_title'    => 'My stats',
     'dash_player_t_description' => 'Your activity on the platform',

@@ -67,6 +67,58 @@
             @endif
         </div>
 
+        <div class="ramka mt-3">
+            <h2 class="f-20 mb-1" style="cursor:pointer" onclick="var b=document.getElementById('cash-archive-body'); var open=b.style.display!=='none'; b.style.display=open?'none':''; this.querySelector('[data-arrow]').textContent=open?'▶':'▼';">
+                <span data-arrow>▶</span> {{ __('profile.pay_ccidx_archive_title') }} ({{ $archiveOccurrences->total() }})
+            </h2>
+            <div class="text-muted f-14 mb-2">{{ __('profile.pay_ccidx_archive_hint') }}</div>
+
+            <div id="cash-archive-body" style="display:none">
+                @if($archiveOccurrences->isEmpty())
+                    <div class="alert alert-info">{{ __('profile.pay_ccidx_archive_empty') }}</div>
+                @else
+                    <div class="table-scrollable mb-0">
+                        <table class="table f-16">
+                            <thead>
+                                <tr>
+                                    <th>{{ __('profile.pay_ccidx_col_num') }}</th>
+                                    <th class="text-center">{{ __('profile.pay_ccidx_col_date') }}</th>
+                                    <th>{{ __('profile.pay_ccidx_col_title') }}</th>
+                                    <th>{{ __('profile.pay_ccidx_col_location') }}</th>
+                                    <th class="text-center">{{ __('profile.pay_ccidx_col_action') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($archiveOccurrences as $i => $occ)
+                                @php $loc = $occ->location ?? $occ->event->location; @endphp
+                                <tr>
+                                    <td>{{ $archiveOccurrences->firstItem() + $i }}</td>
+                                    <td class="text-center nowrap">
+                                        <div>{{ $occ->starts_at->setTimezone('Europe/Moscow')->locale('ru')->translatedFormat('j F Y') }}</div>
+                                        <div>{{ $occ->starts_at->setTimezone('Europe/Moscow')->format('H:i') }}</div>
+                                    </td>
+                                    <td>
+                                        <a href="{{ route('events.show', $occ->event_id) }}?occurrence={{ $occ->id }}">{{ $occ->event->title }}</a>
+                                    </td>
+                                    <td>{{ $loc->name ?? '—' }}</td>
+                                    <td class="text-center">
+                                        <a href="{{ route('payments.event_control', ['event' => $occ->event_id, 'occurrence' => $occ->id]) }}" class="btn btn-outline-primary btn-sm" title="{{ __('profile.pay_ctrl_title') }}">
+                                            <x-menu-icon name="check" style="width:1.4rem;height:1.4rem" />
+                                        </a>
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="mt-2">
+                        {{ $archiveOccurrences->links() }}
+                    </div>
+                @endif
+            </div>
+        </div>
+
     </div>
 
 </x-voll-layout>

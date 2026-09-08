@@ -237,7 +237,28 @@ class PaymentController extends Controller
             ->orderBy('starts_at')
             ->paginate(30);
 
-        return view('payment.cash_control_index', compact('occurrences'));
+        // Архив — мероприятия с учётом платежей, завершившиеся больше 24ч назад (уже
+        // подхвачены payments:process-unattended-cash и пропали из основного списка выше).
+        // Отдельная история для организатора: посмотреть, кто как платил в прошлом.
+        $archiveOccurrences = EventOccurrence::query()
+            ->whereHas('event', function ($q) use ($user) {
+                $q->where('organizer_id', $user->id)
+                    ->where('cash_payment_tracking_enabled', true);
+            })
+            ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
+            ->whereExists(function ($q) {
+                $q->select(DB::raw(1))
+                    ->from('event_registrations as er')
+                    ->whereColumn('er.occurrence_id', 'event_occurrences.id')
+                    ->whereRaw('(er.is_cancelled IS NULL OR er.is_cancelled = false)')
+                    ->where('er.status', '!=', 'cancelled');
+            })
+            ->whereRaw('starts_at + make_interval(secs => COALESCE(duration_sec, 0)) < ?', [$cutoff])
+            ->with(['event:id,title,location_id', 'event.location:id,name', 'location:id,name'])
+            ->orderByDesc('starts_at')
+            ->paginate(30, ['*'], 'archive_page');
+
+        return view('payment.cash_control_index', compact('occurrences', 'archiveOccurrences'));
     }
 
     /**
