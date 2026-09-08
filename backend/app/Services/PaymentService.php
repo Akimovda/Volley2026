@@ -69,6 +69,15 @@ class PaymentService
         // платёж сразу считается подтверждённым, независимо от способа оплаты.
         $isOrganizerSelf = $organizerId > 0 && $userId === $organizerId;
 
+        // Повторный вызов для той же регистрации (cancel+rejoin реактивирует старую
+        // строку и снова создаёт платёж) иначе оставляет старый Payment осиротевшим
+        // в status=pending навсегда — его не видно на /profile/transactions/{event}
+        // (там берётся latest()), но payments:process-unattended-cash / ban-unpaid-cash
+        // сканируют ВСЕ pending-платежи напрямую и банили бы игрока за уже оплаченное.
+        Payment::where('registration_id', $registration->id)
+            ->where('status', 'pending')
+            ->update(['status' => 'cancelled']);
+
         $payment = Payment::create([
             'user_id'         => $userId,
             'organizer_id'    => $organizerId,
