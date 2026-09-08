@@ -114,13 +114,14 @@ $kocShowFormFinalBtn = $kocBatchId && $stage->isCompleted() && $batchInfo && $ba
 	@php $kocState = app(TournamentKingService::class)->currentState($stage); @endphp
 	@if($kocState)
 	<div class="card mt-2 p-3" style="text-align:center">
-		<div class="d-flex between fvc" style="flex-wrap:wrap;gap:8px">
-			<div>
+		<div class="koc-vs-row">
+			<div class="koc-vs-side">
 				<div class="f-12" style="opacity:.6">👑 {{ __('tournaments.koc_lbl_king') }}</div>
 				<div class="b-700 f-18">{{ $kocTeamsById->get($kocState['king_team_id'])?->name ?? '?' }}</div>
 				<div class="f-14">{{ (int) ($kocState['round_points'][$kocState['king_team_id']] ?? 0) }} {{ __('tournaments.pub_pts_label') }}</div>
 			</div>
-			<div>
+			<div class="koc-vs-divider"></div>
+			<div class="koc-vs-side">
 				<div class="f-12" style="opacity:.6">🙋 {{ __('tournaments.koc_lbl_challenger') }}</div>
 				<div class="b-700 f-18">{{ $kocTeamsById->get($kocState['challenger_team_id'])?->name ?? '?' }}</div>
 			</div>
