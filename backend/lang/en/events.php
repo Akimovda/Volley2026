@@ -9,6 +9,9 @@ return [
     'channel_announcement_cancelled_deleted_fallback' => "❌ Event cancelled 😢\n\n:title\n:date",
     'channel_announcement_finalized_line'            => '🏁 Event finished!',
     'channel_announcement_finalized_button'          => '🏁 Event finished',
+    'channel_announcement_price_free'                => 'Free!',
+    'channel_announcement_no_players'                => 'No one has signed up yet',
+    'channel_announcement_no_teams'                  => 'No team has been formed yet',
 
     // Events list: meta + header
     'index_title'         => 'Find a Volleyball Game — Games, Training and Tournaments | VOLLEY CLUB',

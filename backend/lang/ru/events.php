@@ -11,6 +11,8 @@ return [
     'channel_announcement_finalized_button'          => '🏁 Мероприятие завершено',
     'channel_announcement_level_any'                 => 'для всех',
     'channel_announcement_price_free'                => 'Бесплатно!',
+    'channel_announcement_no_players'                => 'Пока никто не записался',
+    'channel_announcement_no_teams'                  => 'Пока ни одна команда не сформирована',
 
     // Список мероприятий: meta + хедер
     // Базовый вариант (без format/direction) — таргет "поиграть в волейбол" /
