@@ -124,7 +124,13 @@ class ProcessUnattendedCashPayments extends Command
                                 title: '⚠️ Требуется оплата',
                                 body: 'Организатор ещё не подтвердил вашу оплату участия в «' . $event->title . '». '
                                     . 'Оплатите в течение ' . self::BAN_HOURS . ' часов, иначе доступ к записи на мероприятия этого организатора будет ограничен.',
-                                payload: ['payment_id' => $payment->id, 'event_id' => $event->id, 'occurrence_id' => $occurrence->id],
+                                payload: [
+                                    'payment_id'    => $payment->id,
+                                    'event_id'      => $event->id,
+                                    'occurrence_id' => $occurrence->id,
+                                    'button_text'   => 'Открыть мероприятие',
+                                    'button_url'    => route('events.show', ['event' => $event->id, 'occurrence' => $occurrence->id]),
+                                ],
                                 channels: ['in_app', 'telegram', 'vk', 'max'],
                             );
                             $reminded++;

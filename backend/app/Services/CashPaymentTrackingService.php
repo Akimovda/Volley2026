@@ -162,7 +162,13 @@ class CashPaymentTrackingService
                         type: 'cash_payment_confirmed',
                         title: '✅ Оплата получена',
                         body: 'Ваш платёж учтён за «' . $event->title . '»' . $this->formatEventDetailsSuffix($event, $occurrence) . '.',
-                        payload: ['payment_id' => $payment->id, 'event_id' => $event->id, 'occurrence_id' => $occurrence->id],
+                        payload: [
+                            'payment_id'    => $payment->id,
+                            'event_id'      => $event->id,
+                            'occurrence_id' => $occurrence->id,
+                            'button_text'   => 'Открыть мероприятие',
+                            'button_url'    => route('events.show', ['event' => $event->id, 'occurrence' => $occurrence->id]),
+                        ],
                         channels: ['in_app', 'telegram', 'vk', 'max'],
                     );
                 }
@@ -181,7 +187,13 @@ class CashPaymentTrackingService
                         title: '⚠️ Требуется оплата',
                         body: 'Организатор отметил, что вы ещё не оплатили участие в «' . $event->title . '». '
                             . 'Оплатите в течение ' . self::BAN_HOURS . ' часов, иначе доступ к записи на мероприятия этого организатора будет ограничен.',
-                        payload: ['payment_id' => $payment->id, 'event_id' => $event->id, 'occurrence_id' => $occurrence->id],
+                        payload: [
+                            'payment_id'    => $payment->id,
+                            'event_id'      => $event->id,
+                            'occurrence_id' => $occurrence->id,
+                            'button_text'   => 'Открыть мероприятие',
+                            'button_url'    => route('events.show', ['event' => $event->id, 'occurrence' => $occurrence->id]),
+                        ],
                         channels: ['in_app', 'telegram', 'vk', 'max'],
                     );
                     $reminded++;
