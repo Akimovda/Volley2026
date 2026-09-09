@@ -74,13 +74,24 @@ class TelegramChannelPublisher implements ChannelPublisher
     }
 
     /**
-     * Rich Message (Bot API 10.1+) — коллаж из нескольких фото и/или сворачиваемый
-     * details-блок для списка игроков. Схема блоков подтверждена вживую тестовыми
-     * вызовами sendRichMessage (2026-08-28), не только по документации.
+     * ОТКЛЮЧЕНО 2026-09-09: реальная схема Bot API 10.1 sendRichMessage/rich_message —
+     * InputRichMessage.blocks из документированных классов (RichBlockParagraph,
+     * RichBlockPhoto, RichBlockCollage и т.д.), где текстовые узлы — структурированный
+     * rich-текст (RichTextBold/...), а НЕ голая строка; сворачиваемого блока с полями
+     * summary/is_open (как мы его отправляли для списка игроков) в документации вообще
+     * нет — ближайший реальный класс RichBlockExpandableBlockQuotation имеет другую
+     * форму. Наша реализация ("Rich Messages", 2026-08-28) собирала кастомную JSON-схему
+     * (похожую на формат MAX-мессенджера, не на реальный Telegram), которую API
+     * принимало (ok:true, эхо на неизвестные поля), но клиенты не могли полностью
+     * распарсить — на бою это обрывало видимый текст анонса на полуслове и прятало
+     * список игроков (найдено 2026-09-09 по жалобе на анонс occurrence 12514, где
+     * реально было 14 записавшихся, а видимый текст обрывался после адреса/организатора).
+     * Возвращаем false — публикация идёт по проверенному classic sendPhoto-пути
+     * (список игроков — в подписи, с truncateCaption по 1024 символам, как раньше).
      */
     private function isRichEligible(ChannelMessageData $message): bool
     {
-        return count($message->imageUrls ?? []) > 1 || !empty($message->listText);
+        return false;
     }
 
     private function resolveMessageKind(ChannelMessageData $message): string
