@@ -563,39 +563,46 @@ class OccurrenceAnnouncementMessageBuilder
         $textShort = implode("\n", $lines);
 
         // ── Список игроков / команд ───────────────────────────────────────────
+        // ВАЖНО: listTitle/listText ниже выставляются ВСЕГДА, когда includeList=true —
+        // даже при нулевом составе (плейсхолдер "Пока никто не записался/не сформирована").
+        // Раньше list-переменные оставались null, пока никто не зарегистрирован → у Telegram
+        // TelegramChannelPublisher::isRichEligible() переключался kind text/photo↔rich при
+        // КАЖДОМ переходе через 0 регистраций (кто-то вышел — kind назад, кто-то зашёл —
+        // kind вперёд) → update() делал delete+resend вместо редактирования на каждый такой
+        // переход (баг найден 2026-09-09 по скачущему external_message_id в channel_publish_logs
+        // на бою). kind должен быть стабилен на весь срок жизни анонса — не зависеть от того,
+        // пуст список прямо сейчас или нет.
         $includeList = (bool) ($options['include_registered_list'] ?? true);
         if ($includeList) {
             if ($isTournament && !$isIndividualTournament) {
                 [$mainList, $reserveList] = $this->buildTeamList((int) $occurrence->id, $direction, $reserveTeamIds, $reserveTeamPositions);
-                if ($mainList !== '') {
-                    $lines[] = '';
-                    $lines[] = $this->bold($platform, 'Список команд:');
-                    $lines[] = $mainList;
+                $mainListOrPlaceholder = $mainList !== '' ? $mainList : __('events.channel_announcement_no_teams', [], 'ru');
 
-                    $listTitle = 'Список команд';
-                    $listText  = $mainList;
-                }
+                $lines[] = '';
+                $lines[] = $this->bold($platform, 'Список команд:');
+                $lines[] = $mainListOrPlaceholder;
+
+                $listTitle = 'Список команд';
+                $listText  = $mainListOrPlaceholder;
+
                 if ($reserveList !== '') {
                     $lines[] = '';
                     $lines[] = $this->bold($platform, '⏳ Лист ожидания:');
                     $lines[] = $reserveList;
 
-                    $listText = ($listText !== null ? $listText . "\n\n" : '')
-                        . "⏳ Лист ожидания:\n" . $reserveList;
+                    $listText .= "\n\n⏳ Лист ожидания:\n" . $reserveList;
                 }
             } else {
                 $regCount = isset($registered) ? $registered : $this->countRegistered((int) $occurrence->id);
-                if ($regCount > 0) {
-                    $playerList = $this->buildPlayerList((int) $occurrence->id);
-                    if ($playerList !== '') {
-                        $lines[] = '';
-                        $lines[] = $this->bold($platform, 'Список игроков:');
-                        $lines[] = $playerList;
+                $playerList = $regCount > 0 ? $this->buildPlayerList((int) $occurrence->id) : '';
+                $playerListOrPlaceholder = $playerList !== '' ? $playerList : __('events.channel_announcement_no_players', [], 'ru');
 
-                        $listTitle = 'Список игроков';
-                        $listText  = $playerList;
-                    }
-                }
+                $lines[] = '';
+                $lines[] = $this->bold($platform, 'Список игроков:');
+                $lines[] = $playerListOrPlaceholder;
+
+                $listTitle = 'Список игроков';
+                $listText  = $playerListOrPlaceholder;
             }
         }
 
