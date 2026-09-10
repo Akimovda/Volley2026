@@ -30,11 +30,15 @@ final class FcmChannel implements PushChannelInterface
         $token       = $deviceToken->token;
         $accessToken = $this->getAccessToken();
 
+        // FCM v1 требует для 'data' JSON-объект (карту), а json_encode([]) даёт JSON-список []
+        // ("Cannot bind a list to map for field 'data'") — при пустом массиве кастуем в stdClass.
+        $dataMap = array_map('strval', array_filter($data, fn($v) => is_scalar($v)));
+
         $payload = json_encode([
             'message' => [
                 'token'        => $token,
                 'notification' => ['title' => $title, 'body' => $body],
-                'data'         => array_map('strval', array_filter($data, fn($v) => is_scalar($v))),
+                'data'         => $dataMap === [] ? (object) [] : $dataMap,
                 'android'      => ['priority' => 'high'],
             ],
         ], JSON_UNESCAPED_UNICODE);
