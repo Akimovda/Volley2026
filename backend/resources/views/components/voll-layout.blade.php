@@ -937,6 +937,9 @@
 		
 		<script>
 			if (navigator.userAgent.includes('VolleyPlayApp') && window.Capacitor) {
+				var pushPlatform = (window.Capacitor && window.Capacitor.getPlatform)
+					? window.Capacitor.getPlatform()
+					: 'ios';
 				Capacitor.Plugins.PushNotifications.addListener('registration', function(token) {
 					localStorage.setItem('push_token', token.value);
 					fetch('/api/device-token', {
@@ -946,7 +949,7 @@
 							'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content
 						},
 						credentials: 'same-origin',
-						body: JSON.stringify({ platform: 'ios', token: token.value })
+						body: JSON.stringify({ platform: pushPlatform, token: token.value })
 					});
 				});
 				Capacitor.Plugins.PushNotifications.addListener('pushNotificationActionPerformed', function(action) {
@@ -991,7 +994,7 @@
 						'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content
 					},
 					credentials: 'same-origin',
-					body: JSON.stringify({ platform: 'ios', token: token })
+					body: JSON.stringify({ platform: pushPlatform, token: token })
 					}).then(function(r) {
 					if (r.ok) localStorage.removeItem('push_token');
 				});
