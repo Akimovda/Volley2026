@@ -19,6 +19,7 @@ class DeviceTokenController extends Controller
         $userId   = $request->user()->id;
         $token    = $validated['token'];
         $platform = $validated['platform'];
+        $pushProvider = $platform === 'android' ? 'fcm' : 'apns';
 
         // Перепривязать токен, если принадлежит другому пользователю
         DeviceToken::where('token', $token)
@@ -27,7 +28,7 @@ class DeviceTokenController extends Controller
 
         DeviceToken::updateOrCreate(
             ['token' => $token],
-            ['user_id' => $userId, 'platform' => $platform, 'is_active' => true]
+            ['user_id' => $userId, 'platform' => $platform, 'push_provider' => $pushProvider, 'is_active' => true]
         );
 
         return response()->json(['ok' => true]);
