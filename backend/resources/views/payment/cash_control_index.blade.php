@@ -53,7 +53,7 @@
                 @if($search !== '' || $range !== 'current' || $unpaidOnly)
                     <div>
                         <label style="{{ $filterLabelStyle }};opacity:0" aria-hidden="true">&nbsp;</label>
-                        <a href="{{ route('payments.cash_control_index') }}" class="btn btn-small btn-secondary">{{ __('profile.pay_ccidx_filter_reset') }}</a>
+                        <a href="{{ route('payments.cash_control_index') }}" class="btn btn-outline-danger" style="padding:1.2rem 1.8rem">{{ __('profile.pay_ccidx_filter_reset') }}</a>
                     </div>
                 @endif
             </form>

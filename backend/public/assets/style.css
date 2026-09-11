@@ -1773,6 +1773,29 @@ body.dark .btn-outline:hover {
 	border-color: #FFC085;
 	color: #FFC085;
 }
+/* Прозрачная кнопка, красная обводка — сброс активного фильтра и т.п. */
+.btn-outline-danger {
+	background: transparent;
+	border: 2px solid #b00000;
+	color: #b00000;
+	box-shadow: none;
+}
+.btn-outline-danger:hover {
+	background: rgba(176, 0, 0, 0.08);
+	border-color: #8f0000;
+	color: #8f0000;
+	transform: translateY(-2px);
+	box-shadow: 0 4px 8px rgba(176, 0, 0, 0.15);
+}
+body.dark .btn-outline-danger {
+	border-color: #ffbdbd;
+	color: #ffbdbd;
+}
+body.dark .btn-outline-danger:hover {
+	background: rgba(255, 189, 189, 0.1);
+	border-color: #ffd0d0;
+	color: #ffd0d0;
+}
 .btn:focus {
 	outline: none;
 }
