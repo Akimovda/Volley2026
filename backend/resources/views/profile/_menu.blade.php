@@ -339,6 +339,14 @@
                         <span class="menu-text">{{ __('profile.menu_school_edit') }}</span>
                     @endif
                 </a>
+                <a href="{{ route('volleyball_school.trainers.index', $mySchool) }}"
+                   class="menu-item {{ $activeMenu === 'school_trainers' ? 'active' : '' }}">
+                    @if($activeMenu === 'school_trainers')
+                        <strong class="cd menu-text">{{ __('trainers.school_roster_title') }}</strong>
+                    @else
+                        <span class="menu-text">{{ __('trainers.school_roster_title') }}</span>
+                    @endif
+                </a>
                 <a href="{{ route('volleyball_school.show', $mySchool->slug) }}"
                    class="menu-item">
                     <span class="menu-text">{{ __('profile.menu_school_show') }}</span>

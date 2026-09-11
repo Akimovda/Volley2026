@@ -569,4 +569,9 @@ public function getNameAttribute($value): string
         return $this->trainerProfile()->exists();
     }
 
+    public function schoolMemberships(): HasMany
+    {
+        return $this->hasMany(SchoolTrainer::class, 'user_id');
+    }
+
 }

@@ -397,6 +397,24 @@ final class UserNotificationService
         );
     }
 
+    public function createTrainerAssignedNotification(
+        int $userId,
+        int $schoolId,
+        string $schoolName,
+    ): UserNotification {
+        return $this->create(
+            userId: $userId,
+            type: 'trainer_assigned',
+            title: 'Вас пригласили тренером',
+            body: "Вас пригласили тренером в школу «{$schoolName}». Подтвердите приглашение в тренерском профиле.",
+            payload: [
+                'school_id'   => $schoolId,
+                'school_name' => $schoolName,
+            ],
+            channels: ['in_app', 'telegram', 'vk', 'max', 'push']
+        );
+    }
+
     public function createRegistrationCancelledNotification(
         int $userId,
         int $eventId,

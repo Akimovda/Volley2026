@@ -12,7 +12,12 @@ class TrainerProfileController extends Controller
         $user    = $request->user();
         $profile = $user->trainerProfile;
 
-        return view('trainer.profile_edit', compact('profile'));
+        $pendingMemberships = $user->schoolMemberships()
+            ->where('status', \App\Models\SchoolTrainer::STATUS_PENDING)
+            ->with('school:id,name,slug')
+            ->get();
+
+        return view('trainer.profile_edit', compact('profile', 'pendingMemberships'));
     }
 
     public function update(Request $request, TrainerProfileService $service)

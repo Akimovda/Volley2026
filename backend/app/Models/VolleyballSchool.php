@@ -30,6 +30,25 @@ class VolleyballSchool extends Model implements HasMedia
         return $this->belongsTo(\App\Models\City::class, 'city_id');
     }
 
+    public function trainers()
+    {
+        return $this->hasMany(SchoolTrainer::class, 'school_id');
+    }
+
+    public function confirmedTrainers()
+    {
+        return $this->trainers()->where('status', SchoolTrainer::STATUS_CONFIRMED);
+    }
+
+    /**
+     * volleyball_schools.timezone колонки нет — берём таймзону из связанного города,
+     * иначе дефолт проекта (тот же паттерн, что Location::effectiveTimezone()).
+     */
+    public function effectiveTimezone(): string
+    {
+        return $this->cityModel?->timezone ?: 'Europe/Moscow';
+    }
+
     public function registerMediaCollections(): void
     {
         $this->addMediaCollection('logo')
