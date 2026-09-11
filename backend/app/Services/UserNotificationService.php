@@ -427,7 +427,7 @@ final class UserNotificationService
             userId: $userId,
             type: 'trainer_rating_request',
             title: '⭐ Оцените тренера',
-            body: "Как прошло занятие «{$eventTitle}»? Оцените тренера {$trainerName} — это займёт минуту.",
+            body: "Нам очень важно Ваше мнение! Как прошло занятие «{$eventTitle}»? Будем признательны за оценку тренера {$trainerName} — это займёт минуту.",
             payload: [
                 'event_id'      => $eventId,
                 'occurrence_id' => $occurrenceId,
