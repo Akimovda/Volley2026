@@ -260,8 +260,34 @@ class PaymentController extends Controller
     }
 
     /**
-     * Список мероприятий с включённым «Учётом платежей» — точка входа для организатора,
-     * чтобы быстро найти нужное мероприятие и перейти к отметке оплаты (см. eventPaymentControl).
+     * Коррелированный подзапрос "активные регистрации occurrence без организаторского
+     * подтверждения наличной оплаты" — единая точка правды и для счётчика (SELECT
+     * COUNT(*)), и для фильтра "только неоплаченные" (WHERE EXISTS). Платёж создаётся
+     * при регистрации (PaymentService::createForRegistration) для ЛЮБОГО метода —
+     * здесь фильтруем именно method='cash', т.к. это учёт наличных.
+     */
+    private function unpaidRegistrationsSubquery(): \Illuminate\Database\Query\Builder
+    {
+        return DB::table('event_registrations as er')
+            ->whereColumn('er.occurrence_id', 'event_occurrences.id')
+            ->whereRaw('(er.is_cancelled IS NULL OR er.is_cancelled = false)')
+            ->where('er.status', '!=', 'cancelled')
+            ->whereNotExists(function ($q) {
+                $q->select(DB::raw(1))
+                    ->from('payments as p')
+                    ->whereColumn('p.registration_id', 'er.id')
+                    ->where('p.method', 'cash')
+                    ->where('p.org_confirmed', true);
+            });
+    }
+
+    /**
+     * Единая таблица мероприятий с включённым «Учётом платежей» — точка входа для
+     * организатора, чтобы найти нужный тур и перейти к отметке оплаты (см.
+     * eventPaymentControl). Раньше было два раздельных блока (текущие/архив) —
+     * объединено в одну таблицу с фильтром: диапазон (текущие/архив/все), поиск по
+     * названию/локации, и чекбокс "только с неполной оплатой" (по счётчику
+     * unpaid_count — используется и для подсветки названия в таблице).
      * GET /profile/transactions/cash-control
      */
     public function cashControlIndex(Request $request)
@@ -270,7 +296,14 @@ class PaymentController extends Controller
         $now = now('UTC');
         $cutoff = $now->copy()->subHours(24);
 
-        $occurrences = EventOccurrence::query()
+        $range = $request->query('range', 'current');
+        if (!in_array($range, ['current', 'archive', 'all'], true)) {
+            $range = 'current';
+        }
+        $search = trim((string) $request->query('q', ''));
+        $unpaidOnly = $request->boolean('unpaid_only');
+
+        $query = EventOccurrence::query()
             ->whereHas('event', function ($q) use ($user) {
                 $q->where('organizer_id', $user->id)
                     ->where('cash_payment_tracking_enabled', true);
@@ -284,38 +317,39 @@ class PaymentController extends Controller
                     ->whereRaw('(er.is_cancelled IS NULL OR er.is_cancelled = false)')
                     ->where('er.status', '!=', 'cancelled');
             })
-            // Ещё не завершилось ИЛИ завершилось не позже 24ч назад (дальше уже
-            // подхватывает payments:process-unattended-cash — в списке делать нечего)
-            ->whereRaw('starts_at + make_interval(secs => COALESCE(duration_sec, 0)) >= ?', [$cutoff])
-            ->with(['event:id,title,location_id', 'event.location:id,name', 'location:id,name'])
-            // Сначала прошедшие (нужно действие быстрее всех — 24ч дедлайн), потом
-            // текущие/будущие; внутри группы — по дате.
-            ->orderByRaw('(starts_at + make_interval(secs => COALESCE(duration_sec, 0)) <= ?) DESC', [$now])
-            ->orderBy('starts_at')
-            ->paginate(30);
+            ->addSelect(['unpaid_count' => $this->unpaidRegistrationsSubquery()->selectRaw('count(*)')])
+            ->with(['event:id,title,location_id', 'event.location:id,name', 'location:id,name']);
 
-        // Архив — мероприятия с учётом платежей, завершившиеся больше 24ч назад (уже
-        // подхвачены payments:process-unattended-cash и пропали из основного списка выше).
-        // Отдельная история для организатора: посмотреть, кто как платил в прошлом.
-        $archiveOccurrences = EventOccurrence::query()
-            ->whereHas('event', function ($q) use ($user) {
-                $q->where('organizer_id', $user->id)
-                    ->where('cash_payment_tracking_enabled', true);
-            })
-            ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
-            ->whereExists(function ($q) {
-                $q->select(DB::raw(1))
-                    ->from('event_registrations as er')
-                    ->whereColumn('er.occurrence_id', 'event_occurrences.id')
-                    ->whereRaw('(er.is_cancelled IS NULL OR er.is_cancelled = false)')
-                    ->where('er.status', '!=', 'cancelled');
-            })
-            ->whereRaw('starts_at + make_interval(secs => COALESCE(duration_sec, 0)) < ?', [$cutoff])
-            ->with(['event:id,title,location_id', 'event.location:id,name', 'location:id,name'])
-            ->orderByDesc('starts_at')
-            ->paginate(30, ['*'], 'archive_page');
+        if ($search !== '') {
+            $query->where(function ($q) use ($search) {
+                $q->whereHas('event', fn ($e) => $e->where('title', 'ILIKE', '%' . $search . '%'))
+                    ->orWhereHas('event.location', fn ($l) => $l->where('name', 'ILIKE', '%' . $search . '%'))
+                    ->orWhereHas('location', fn ($l) => $l->where('name', 'ILIKE', '%' . $search . '%'));
+            });
+        }
 
-        return view('payment.cash_control_index', compact('occurrences', 'archiveOccurrences'));
+        if ($unpaidOnly) {
+            $query->whereExists($this->unpaidRegistrationsSubquery()->select(DB::raw(1)));
+        }
+
+        if ($range === 'archive') {
+            // Завершилось больше 24ч назад — уже подхвачено payments:process-unattended-cash.
+            $query->whereRaw('starts_at + make_interval(secs => COALESCE(duration_sec, 0)) < ?', [$cutoff])
+                ->orderByDesc('starts_at');
+        } elseif ($range === 'all') {
+            $query->orderByDesc('starts_at');
+        } else {
+            // 'current' (по умолчанию) — ещё не завершилось ИЛИ завершилось не позже
+            // 24ч назад; сначала прошедшие (нужно действие быстрее всех — 24ч дедлайн),
+            // потом текущие/будущие, внутри группы — по дате.
+            $query->whereRaw('starts_at + make_interval(secs => COALESCE(duration_sec, 0)) >= ?', [$cutoff])
+                ->orderByRaw('(starts_at + make_interval(secs => COALESCE(duration_sec, 0)) <= ?) DESC', [$now])
+                ->orderBy('starts_at');
+        }
+
+        $occurrences = $query->paginate(30)->withQueryString();
+
+        return view('payment.cash_control_index', compact('occurrences', 'range', 'search', 'unpaidOnly'));
     }
 
     /**
