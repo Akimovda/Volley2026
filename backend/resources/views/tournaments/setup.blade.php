@@ -1061,7 +1061,7 @@ $tourNumber = $seasonData
 			<div class="row">
 				@foreach($incompleteTeams as $team)
 				<div class="col-md-6 col-xl-3">
-					<div class="card" style="opacity:.8;border-style:dashed">
+					<div class="card" style="opacity:.8;border-style:dashed;overflow:visible">
 						<a href="{{ route('tournamentTeams.show', [$event, $team]) }}" class="blink b-600 d-block mb-1">
 							{{ $team->name }}
 						</a>
@@ -1077,10 +1077,44 @@ $tourNumber = $seasonData
 								</button>
 							</form>
 						</div>
+						{{-- Ручное распределение: добавить нераспределённого игрока прямо в эту
+						     неполную команду, переиспользуя tournamentTeams.addMemberByOrganizer
+						     (тот же роут, что и "Добавить в состав" на странице команды). --}}
+						@if($isIndividualTournament && $unassignedPlayers->isNotEmpty())
+						<form method="POST" action="{{ route('tournamentTeams.addMemberByOrganizer', [$event, $team]) }}" class="form mt-1" style="display:flex;gap:6px;align-items:center">
+							@csrf
+							<input type="hidden" name="team_role" value="player">
+							<input type="hidden" name="position_code" id="add2team-pos-{{ $team->id }}">
+							<select name="user_id" class="add2team-select" data-team-id="{{ $team->id }}" required style="flex:1;min-width:0">
+								<option value="">{{ __('tournaments.setup_add_to_team_placeholder') }}</option>
+								@foreach($unassignedPlayers as $p)
+								@php $addOptPos = in_array($p->reg_position, ['setter','outside','opposite','middle','libero'], true) ? $p->reg_position : ''; @endphp
+								<option value="{{ $p->id }}" data-position="{{ $addOptPos }}">{{ trim(($p->last_name ?? '') . ' ' . ($p->first_name ?? '')) ?: ($p->name ?? '?') }}@if($p->reg_position) — {{ __('events.positions.' . $p->reg_position) }}@endif</option>
+								@endforeach
+							</select>
+							<button type="submit" class="btn btn-secondary btn-small">{{ __('tournaments.setup_add_to_team_btn') }}</button>
+						</form>
+						@endif
 					</div>
 				</div>
 				@endforeach
 			</div>
+			@if($isIndividualTournament && $unassignedPlayers->isNotEmpty())
+			<script>
+			(function(){
+				// Селекты "Добавить в команду" на карточках неполных команд — при
+				// выборе игрока переносим его известное амплуа (data-position на
+				// <option>) в соседнее скрытое поле position_code перед отправкой формы.
+				document.addEventListener('change', function(e) {
+					if (!e.target.classList || !e.target.classList.contains('add2team-select')) return;
+					var hidden = document.getElementById('add2team-pos-' + e.target.dataset.teamId);
+					if (!hidden) return;
+					var opt = e.target.options[e.target.selectedIndex];
+					hidden.value = opt ? (opt.dataset.position || '') : '';
+				});
+			})();
+			</script>
+			@endif
 			@endif
 
 			@if($isIndividualTournament)
@@ -1111,6 +1145,9 @@ $tourNumber = $seasonData
 									<span class="levelmark levelmark--event level-na">!?</span>
 									@endif
 								</div>
+								@if($p->reg_position)
+								<div class="f-13" style="opacity:.85">{{ __('tournaments.setup_unassigned_position') }}: <span class="b-600">{{ __('events.positions.' . $p->reg_position) }}</span></div>
+								@endif
 							</div>
 						</div>
 					</div>
@@ -1202,6 +1239,7 @@ $tourNumber = $seasonData
 										<div style="position:relative" id="manual-captain-ac-wrap">
 											<input type="text" id="manual-captain-search" placeholder="{{ __('tournaments.setup_team_ph_captain') }}" autocomplete="off">
 											<input type="hidden" name="captain_user_id" id="manual-captain-id">
+											<input type="hidden" name="captain_position_code" id="manual-captain-position">
 											<div id="manual-captain-dd" style="display:none;position:absolute;left:0;right:0;top:100%;margin-top:.4rem;z-index:50;background:var(--bg-card,#fff);border:.1rem solid var(--border-color,#eee);border-radius:1.2rem;box-shadow:0 1rem 3rem rgba(0,0,0,.1);max-height:22rem;overflow-y:auto"></div>
 										</div>
 										@else
@@ -1222,7 +1260,7 @@ $tourNumber = $seasonData
 											<label class="checkbox-item" data-user-id="{{ $p->id }}" style="display:flex;align-items:center;gap:6px;margin:0">
 												<input type="checkbox" name="member_user_ids[]" value="{{ $p->id }}">
 												<div class="custom-checkbox"></div>
-												<span>{{ trim(($p->last_name ?? '') . ' ' . ($p->first_name ?? '')) ?: ($p->name ?? '?') }} ({{ $p->gender === 'f' ? '♀' : '♂' }})</span>
+												<span>{{ trim(($p->last_name ?? '') . ' ' . ($p->first_name ?? '')) ?: ($p->name ?? '?') }} ({{ $p->gender === 'f' ? '♀' : '♂' }})@if($p->reg_position) — {{ __('events.positions.' . $p->reg_position) }}@endif</span>
 											</label>
 											@endforeach
 										</div>
@@ -1241,12 +1279,32 @@ $tourNumber = $seasonData
 			@if($isIndividualTournament && $unassignedPlayers->isNotEmpty())
 			<script>
 			(function(){
-				var players = @json($unassignedPlayers->map(fn($p) => [
-					'id' => $p->id,
-					'label' => trim(($p->last_name ?? '') . ' ' . ($p->first_name ?? '')) ?: ($p->name ?? ('#' . $p->id)),
-				])->values());
+				{{--
+					positionLabel — только для отображения в дропдауне; positionCode —
+					только известные амплуа классики (не reserve/player — они не валидны
+					как captain_position_code на сервере). Массив собирается заранее в
+					@php (см. CLAUDE.md, раздел про @json(__(...))) — сложное
+					многострочное выражение ПРЯМО внутри @json(...) ломает извлечение
+					аргумента директивы Blade (регэксп с рекурсивным подсчётом скобок не
+					вытягивает такую вложенность и обрезает выражение раньше времени).
+				--}}
+				@php
+					$playersForJs = $unassignedPlayers->map(function ($p) {
+						$posCode = in_array($p->reg_position, ['setter', 'outside', 'opposite', 'middle', 'libero'], true)
+							? $p->reg_position
+							: null;
+						return [
+							'id' => $p->id,
+							'label' => trim(($p->last_name ?? '') . ' ' . ($p->first_name ?? '')) ?: ($p->name ?? ('#' . $p->id)),
+							'positionLabel' => $p->reg_position ? __('events.positions.' . $p->reg_position) : null,
+							'positionCode' => $posCode,
+						];
+					})->values();
+				@endphp
+				var players = @json($playersForJs);
 				var inp = document.getElementById('manual-captain-search');
 				var hidden = document.getElementById('manual-captain-id');
+				var hiddenPos = document.getElementById('manual-captain-position');
 				var dd = document.getElementById('manual-captain-dd');
 				var wrap = document.getElementById('manual-captain-ac-wrap');
 				if (!inp || !dd || !hidden) return;
@@ -1272,6 +1330,10 @@ $tourNumber = $seasonData
 				function setCaptain(id, label) {
 					inp.value = label;
 					hidden.value = String(id);
+					if (hiddenPos) {
+						var p = players.find(function(pl) { return pl.id === id; });
+						hiddenPos.value = (p && p.positionCode) ? p.positionCode : '';
+					}
 					hideDd();
 					document.querySelectorAll('#manual-members-list [data-user-id]').forEach(function(row) {
 						var cb = row.querySelector('input[type=checkbox]');
@@ -1284,6 +1346,7 @@ $tourNumber = $seasonData
 
 				inp.addEventListener('input', function() {
 					hidden.value = '';
+					if (hiddenPos) hiddenPos.value = '';
 					document.querySelectorAll('#manual-members-list input[type=checkbox]').forEach(function(cb) { cb.disabled = false; });
 					var q = inp.value.trim().toLowerCase();
 					if (q.length < 1) { hideDd(); dd.innerHTML = ''; return; }
@@ -1297,7 +1360,7 @@ $tourNumber = $seasonData
 					matches.forEach(function(p) {
 						var div = document.createElement('div');
 						div.className = 'trainer-item form-select-option';
-						div.innerHTML = '<div class="text-sm">' + esc(p.label) + '</div>';
+						div.innerHTML = '<div class="text-sm">' + esc(p.label) + (p.positionLabel ? ' — ' + esc(p.positionLabel) : '') + '</div>';
 						div.addEventListener('click', function() { setCaptain(p.id, p.label); });
 						dd.appendChild(div);
 					});
@@ -1365,6 +1428,78 @@ $tourNumber = $seasonData
 								location.reload();
 							} else {
 								swal({ title: 'Ошибка', text: data.message || 'Не удалось распределить игроков.', icon: 'error', button: 'Понятно' });
+								btn.disabled = false;
+								btn.textContent = defaultText;
+							}
+						})
+						.catch(function() {
+							swal({ title: 'Ошибка', text: 'Ошибка соединения.', icon: 'error', button: 'Понятно' });
+							btn.disabled = false;
+							btn.textContent = defaultText;
+						});
+					});
+				});
+			})();
+			</script>
+			@endif
+
+			@if($isIndividualTournament && ($completeTeams->count() + $incompleteTeams->count()) > 0)
+			{{-- Отменить распределение: разбирает ВСЕ команды тура (и случайные, и
+			     созданные вручную), возвращая всех игроков в пул нераспределённых.
+			     Регистрации на мероприятие не трогает — см. disbandAllTeams(). Только
+			     для индивидуальной записи — у остальных типов турниров нет пула
+			     "нераспределённых", команды там формируются по-другому. --}}
+			@php
+				$disbandConfirmText = __('events.tournament_disband_confirm', [
+					'n' => $completeTeams->count() + $incompleteTeams->count(),
+				]);
+			@endphp
+			<div class="mt-1">
+				<button type="button" id="disband-teams-btn" class="btn btn-secondary btn-alert"
+					data-event-id="{{ $event->id }}"
+					data-occurrence-id="{{ $selectedOccurrence?->id }}">
+					{{ __('events.tournament_disband_btn') }}
+				</button>
+			</div>
+			<script>
+			(function() {
+				var btn = document.getElementById('disband-teams-btn');
+				if (!btn) return;
+				var defaultText = btn.textContent.trim();
+				btn.addEventListener('click', function() {
+					var eventId = btn.dataset.eventId;
+					var occurrenceId = btn.dataset.occurrenceId;
+
+					swal({
+						title: @json(__('events.tournament_disband_btn')),
+						text: @json($disbandConfirmText),
+						icon: 'warning',
+						buttons: {
+							cancel: { text: @json(__('tournaments.btn_cancel')), value: null, visible: true, closeModal: true },
+							confirm: { text: @json(__('events.tournament_disband_btn')), value: true, visible: true, closeModal: true },
+						},
+						dangerMode: true,
+					}).then(function(confirmed) {
+						if (!confirmed) return;
+
+						btn.disabled = true;
+						btn.textContent = '...';
+						fetch('/events/' + eventId + '/disband-all-teams', {
+							method: 'POST',
+							headers: {
+								'Content-Type': 'application/json',
+								'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+								'Accept': 'application/json',
+							},
+							body: JSON.stringify({ occurrence_id: occurrenceId ? parseInt(occurrenceId) : null }),
+							credentials: 'same-origin',
+						})
+						.then(function(r) { return r.json(); })
+						.then(function(data) {
+							if (data.ok) {
+								location.reload();
+							} else {
+								swal({ title: 'Ошибка', text: data.message || 'Не удалось разобрать команды.', icon: 'error', button: 'Понятно' });
 								btn.disabled = false;
 								btn.textContent = defaultText;
 							}

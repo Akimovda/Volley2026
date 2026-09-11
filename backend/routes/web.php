@@ -506,6 +506,8 @@ Route::post('/auth/tma-exchange', [TmaAuthController::class, 'exchange'])->name(
 
     Route::post('/events/{event}/distribute-individual', [TournamentTeamController::class, 'distributeIndividual'])
         ->name('tournamentTeams.distributeIndividual');
+    Route::post('/events/{event}/disband-all-teams', [TournamentTeamController::class, 'disbandAllTeams'])
+        ->name('tournamentTeams.disbandAllTeams');
 	});
 	
 	/*
