@@ -77,6 +77,7 @@ class EventOccurrence extends Model
         'duration_sec' => 'integer',
         'cancelled_at' => 'datetime',
         'is_cancelled' => 'boolean',
+        'trainer_rating_notified_at' => 'datetime',
 
         'location_id' => 'integer',
         'allow_registration' => 'boolean',

@@ -415,6 +415,31 @@ final class UserNotificationService
         );
     }
 
+    public function createTrainerRatingRequestNotification(
+        int $userId,
+        int $eventId,
+        int $occurrenceId,
+        string $eventTitle,
+        string $trainerName,
+        string $eventUrl,
+    ): UserNotification {
+        return $this->create(
+            userId: $userId,
+            type: 'trainer_rating_request',
+            title: '⭐ Оцените тренера',
+            body: "Как прошло занятие «{$eventTitle}»? Оцените тренера {$trainerName} — это займёт минуту.",
+            payload: [
+                'event_id'      => $eventId,
+                'occurrence_id' => $occurrenceId,
+                'event_title'   => $eventTitle,
+                'trainer_name'  => $trainerName,
+                'button_text'   => 'Оценить тренера',
+                'button_url'    => $eventUrl,
+            ],
+            channels: ['in_app', 'telegram', 'vk', 'max', 'push']
+        );
+    }
+
     public function createRegistrationCancelledNotification(
         int $userId,
         int $eventId,

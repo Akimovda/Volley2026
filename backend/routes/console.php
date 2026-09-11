@@ -106,6 +106,13 @@ Schedule::command('events:finalize-announcements --limit=100')
     ->everyFiveMinutes()
     ->withoutOverlapping();
 
+// Просьба оценить тренера после завершения тура (каждые 5 минут):
+// выключено по умолчанию config('trainers.rating_request_notify_enabled') — команда
+// сама выходит без побочных эффектов, пока флаг не включён (тексты требуют согласования).
+Schedule::command('trainers:notify-rating-request')
+    ->everyFiveMinutes()
+    ->withoutOverlapping();
+
 // Автозапись из waitlist при открытии гендерного окна (каждые 5 минут):
 // находит occurrences где gender_limited_reg_starts_days_before прошёл и
 // запускает autoBookNext для ожидающих пользователей ограничиваемого пола.
