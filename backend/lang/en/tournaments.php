@@ -453,6 +453,10 @@ return [
     'setup_unassigned_h3'    => 'Not assigned to a team (:n)',
     'setup_unassigned_empty' => 'All registered players are assigned to a team.',
     'setup_unassigned_level' => 'Level',
+    'setup_unassigned_position' => 'Position',
+
+    'setup_add_to_team_placeholder' => '— add a player —',
+    'setup_add_to_team_btn'  => 'Add',
 
     'setup_btn_add_player'   => '➕ Add player',
     'setup_add_player_label_search' => 'Player (search)',

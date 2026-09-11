@@ -1215,6 +1215,12 @@ return [
     'tournament_distribute_error_no_players'  => 'Нет записавшихся игроков для формирования команд.',
     'tournament_distribute_error_exists'      => 'Команды уже сформированы. Сначала удалите существующие команды.',
     'tournament_distribute_not_individual'    => 'Этот турнир не поддерживает индивидуальную запись.',
+
+    'tournament_disband_btn'          => 'Отменить распределение',
+    'tournament_disband_confirm'      => 'Разобрать все :n команд(ы) этого тура? Все игроки вернутся в список нераспределённых, регистрации на мероприятие не отменяются.',
+    'tournament_disband_success'      => 'Команды разобраны, игроки возвращены в список нераспределённых.',
+    'tournament_disband_error_empty'  => 'В этом туре пока нет ни одной команды.',
+
     'tournament_individual_players_h2'        => 'Участники',
     'tournament_individual_no_players'        => 'Нет записавшихся игроков.',
     'sp_individual_tournament_hint'           => 'Турнир с индивидуальной записью. Выберите амплуа и запишитесь.',

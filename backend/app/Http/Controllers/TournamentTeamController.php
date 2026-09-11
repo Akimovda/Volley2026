@@ -985,6 +985,57 @@ class TournamentTeamController extends Controller
     }
 
     /**
+     * "Отменить распределение" — разбирает ВСЕ команды текущего тура (и созданные
+     * "Распределить случайно", и вручную через "Создать команду"/"Добавить в
+     * команду"), возвращая всех игроков в пул нераспределённых. Регистрации на
+     * occurrence (event_registrations) не трогаются — тот же принцип, что и у
+     * обычного удаления одной команды (destroy()): команда/участники команды —
+     * это отдельный слой над регистрацией, а не сама регистрация.
+     */
+    public function disbandAllTeams(Request $request, Event $event): \Illuminate\Http\JsonResponse
+    {
+        $user = $request->user();
+        abort_unless($user, 403);
+        abort_unless(
+            $user->role === 'admin' || (int) $event->organizer_id === (int) $user->id,
+            403
+        );
+
+        $occurrenceId = (int) $request->input('occurrence_id', 0);
+        $occurrence   = $occurrenceId
+            ? EventOccurrence::where('event_id', $event->id)->findOrFail($occurrenceId)
+            : EventOccurrence::where('event_id', $event->id)->orderBy('starts_at')->firstOrFail();
+
+        $teams = EventTeam::where('event_id', $event->id)
+            ->where('occurrence_id', $occurrence->id)
+            ->get();
+
+        if ($teams->isEmpty()) {
+            return response()->json([
+                'ok'      => false,
+                'message' => __('events.tournament_disband_error_empty'),
+            ], 422);
+        }
+
+        DB::transaction(function () use ($teams) {
+            foreach ($teams as $team) {
+                \App\Models\EventTeamApplication::where('event_team_id', $team->id)->delete();
+                \App\Models\EventTeamInvite::where('event_team_id', $team->id)->delete();
+                $team->members()->delete();
+                $team->delete();
+            }
+        });
+
+        $this->dispatchAnnounceRefresh($event, (int) $occurrence->id);
+
+        return response()->json([
+            'ok'          => true,
+            'message'     => __('events.tournament_disband_success'),
+            'teams_count' => $teams->count(),
+        ]);
+    }
+
+    /**
      * Запрет отмены записи (cancel_self_until / cancel_self_until_waitlist) — тот же
      * гейт, что и для индивидуальной отмены регистрации (EventCancellationGuard),
      * но для самостоятельного выхода из командного состава турнира/кемпа.

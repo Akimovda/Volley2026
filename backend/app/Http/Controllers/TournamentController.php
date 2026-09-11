@@ -153,8 +153,16 @@ class TournamentController extends Controller
                 ->whereNotIn('user_id', $assignedUserIds)
                 ->with('user')
                 ->get()
-                ->pluck('user')
-                ->filter()
+                ->filter(fn ($reg) => $reg->user)
+                // Позиция (амплуа), с которой игрок записался на тур — нужна для
+                // подписи в списке нераспределённых и для ручного распределения
+                // (setup.blade.php: автокомплит капитана, чекбоксы участников,
+                // форма "Добавить в команду" на карточке неполной команды).
+                // Динамическое свойство на модели User, не персистится.
+                ->map(function ($reg) {
+                    $reg->user->reg_position = $reg->position;
+                    return $reg->user;
+                })
                 ->values();
         }
 

@@ -472,6 +472,10 @@ return [
     'setup_unassigned_h3'    => 'Не распределены по командам (:n)',
     'setup_unassigned_empty' => 'Все зарегистрированные игроки распределены по командам.',
     'setup_unassigned_level' => 'Уровень',
+    'setup_unassigned_position' => 'Амплуа',
+
+    'setup_add_to_team_placeholder' => '— добавить игрока —',
+    'setup_add_to_team_btn'  => 'Добавить',
 
     'setup_btn_add_player'   => '➕ Добавить игрока',
     'setup_add_player_label_search' => 'Игрок (поиск)',

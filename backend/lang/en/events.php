@@ -1147,6 +1147,12 @@ return [
     'tournament_distribute_error_no_players'  => 'No registered players to form teams from.',
     'tournament_distribute_error_exists'      => 'Teams already exist. Delete existing teams first.',
     'tournament_distribute_not_individual'    => 'This tournament does not support individual registration.',
+
+    'tournament_disband_btn'          => 'Undo team assignment',
+    'tournament_disband_confirm'      => 'Disband all :n team(s) of this round? All players will return to the unassigned list; their registrations for the event are not cancelled.',
+    'tournament_disband_success'      => 'Teams disbanded, players returned to the unassigned list.',
+    'tournament_disband_error_empty'  => 'There are no teams for this round yet.',
+
     'tournament_individual_players_h2'        => 'Participants',
     'tournament_individual_no_players'        => 'No registered players.',
     'sp_individual_tournament_hint'           => 'Individual registration tournament. Choose your position and sign up.',
