@@ -50,6 +50,56 @@
             </div>
         </div>
 
+        {{-- Недельный календарь занятости (Фаза 4) --}}
+        <div class="ramka">
+            <h2 class="-mt-05">{{ __('trainers.calendar_title') }}</h2>
+            <div class="d-flex fvc between mb-1" style="flex-wrap:wrap;gap:8px;">
+                <div class="f-15 b-600">
+                    {{ $calendar['weekStart']->format('d.m') }} – {{ $calendar['weekEndDisplay']->format('d.m.Y') }}
+                </div>
+                <div class="d-flex gap-1">
+                    <a href="?week={{ $calendar['prevWeek'] }}" class="btn btn-secondary btn-small">◀</a>
+                    @if($calendar['weekStart']->format('Y-m-d') !== $calendar['thisWeek'])
+                    <a href="?week={{ $calendar['thisWeek'] }}" class="btn btn-secondary btn-small">{{ __('trainers.calendar_today') }}</a>
+                    @endif
+                    <a href="?week={{ $calendar['nextWeek'] }}" class="btn btn-secondary btn-small">▶</a>
+                </div>
+            </div>
+
+            @if($calendar['trainers']->isEmpty())
+            <div class="f-15" style="opacity:.6;">{{ __('trainers.calendar_no_trainers') }}</div>
+            @else
+            @php $calDays = __('trainers.calendar_days'); @endphp
+            <div style="overflow-x:auto;">
+                <div style="display:grid;grid-template-columns:14rem repeat(7,minmax(11rem,1fr));gap:1px;background:rgba(0,0,0,.08);min-width:60rem;">
+                    <div style="background:#fff;padding:.6rem;"></div>
+                    @foreach($calendar['days'] as $day)
+                    <div class="b-600 f-13 text-center" style="background:#fff;padding:.6rem;">
+                        {{ $calDays[$day->dayOfWeekIso - 1] ?? '' }}<br>
+                        <span style="opacity:.6;font-weight:400;">{{ $day->format('d.m') }}</span>
+                    </div>
+                    @endforeach
+
+                    @foreach($calendar['trainers'] as $m)
+                    <div class="b-600 f-14" style="background:#fff;padding:.6rem;">
+                        {{ $m->trainer?->name ?? ('#' . $m->user_id) }}
+                    </div>
+                    @for($d = 0; $d < 7; $d++)
+                    <div style="background:#fff;padding:.4rem;">
+                        @foreach($calendar['grid'][$m->user_id][$d] ?? [] as $block)
+                        <a href="{{ $block['url'] }}" style="display:block;background:{{ $block['color'] }};color:#fff;border-radius:.6rem;padding:.4rem .6rem;margin-bottom:.4rem;font-size:1.2rem;line-height:1.4;text-decoration:none;">
+                            <div class="b-600">{{ $block['time'] }}{{ $block['tournament'] ? ' 🏆' : '' }}</div>
+                            <div style="opacity:.9;">{{ $block['title'] }}</div>
+                        </a>
+                        @endforeach
+                    </div>
+                    @endfor
+                    @endforeach
+                </div>
+            </div>
+            @endif
+        </div>
+
         {{-- Список тренеров --}}
         <div class="ramka">
             <h2 class="-mt-05">{{ __('trainers.school_roster_list_title') }}</h2>

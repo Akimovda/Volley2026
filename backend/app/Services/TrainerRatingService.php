@@ -11,6 +11,10 @@ class TrainerRatingService
 {
     public const EDIT_WINDOW_DAYS = 14;
 
+    public function __construct(private TrainerResolverService $resolver)
+    {
+    }
+
     /**
      * Создать/обновить оценку тренера игроком.
      *
@@ -39,7 +43,7 @@ class TrainerRatingService
 
         abort_unless($occurrence->isFinished(), 403, 'Оценить тренера можно только после завершения тура.');
 
-        $effectiveTrainerIds = $this->effectiveTrainerIds($occurrence);
+        $effectiveTrainerIds = $this->resolver->effectiveTrainerIds($occurrence);
         abort_unless(in_array($trainerUserId, $effectiveTrainerIds, true), 403, 'Этот пользователь не был тренером на данном туре.');
 
         $existing = TrainerRating::where('occurrence_id', $occurrenceId)
@@ -62,20 +66,6 @@ class TrainerRatingService
             'score'           => $score,
             'comment'         => $comment,
         ]);
-    }
-
-    /**
-     * §2.1: тренеры occurrence (override), иначе тренеры серии.
-     */
-    private function effectiveTrainerIds(EventOccurrence $occurrence): array
-    {
-        $occurrence->loadMissing('trainers');
-        if ($occurrence->trainers->isNotEmpty()) {
-            return $occurrence->trainers->pluck('id')->map(fn ($v) => (int) $v)->all();
-        }
-
-        $occurrence->event?->loadMissing('trainers');
-        return $occurrence->event?->trainers->pluck('id')->map(fn ($v) => (int) $v)->all() ?? [];
     }
 
     /**

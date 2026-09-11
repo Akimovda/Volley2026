@@ -17,21 +17,29 @@
         {{ $existingScore ? __('trainers.rate_edit_btn') : __('trainers.rate_btn') }}
     </button>
 
-    <div class="tr-rate-panel card" style="display:none;margin-top:8px;height:auto;">
-        <div class="tr-rate-slider-wrap" style="position:relative;padding-top:36px;max-width:320px;">
-            <div class="tr-rate-flag" style="position:absolute;top:0;left:0;transform:translateX(-50%);font-size:26px;line-height:1;">😐</div>
-            <svg width="100%" height="12" viewBox="0 0 300 12" preserveAspectRatio="none" style="display:block;">
-                <line x1="5" y1="6" x2="295" y2="6" stroke="#ddd" stroke-width="4" stroke-linecap="round"/>
-                <circle class="tr-rate-dot" cx="5" cy="6" r="7" fill="#2967BA"/>
-            </svg>
-            <input type="range" class="tr-rate-range" min="1" max="10" step="1"
-                   value="{{ $existingScore ?? 5 }}" style="width:100%;margin-top:6px;">
-            <div class="tr-rate-value f-15 b-600 mt-1">{{ $existingScore ?? 5 }}/10</div>
+    <div id="{{ $trUid }}-modal" style="display:none">
+        <div class="card form tr-rate-panel" style="height:auto;max-width:400px;">
+            <h3 class="-mt-05">{{ $trainerName }}</h3>
+
+            <div class="tr-rate-slider-wrap" style="position:relative;padding-top:36px;">
+                <div class="tr-rate-flag" style="position:absolute;top:0;left:0;transform:translateX(-50%);font-size:26px;line-height:1;">😐</div>
+                <svg width="100%" height="12" viewBox="0 0 300 12" preserveAspectRatio="none" style="display:block;">
+                    <line x1="5" y1="6" x2="295" y2="6" stroke="#ddd" stroke-width="4" stroke-linecap="round"/>
+                    <circle class="tr-rate-dot" cx="5" cy="6" r="7" fill="#2967BA"/>
+                </svg>
+                <input type="range" class="tr-rate-range" min="1" max="10" step="1"
+                       value="{{ $existingScore ?? 5 }}" style="width:100%;margin-top:6px;">
+                <div class="tr-rate-value f-15 b-600 mt-1">{{ $existingScore ?? 5 }}/10</div>
+            </div>
+
+            <div class="mt-2">
+                <textarea class="tr-rate-comment" rows="3" maxlength="2000" style="min-height:auto;"
+                          placeholder="{{ __('trainers.rate_comment_ph') }}">{{ $existingComment }}</textarea>
+            </div>
+
+            <button type="button" class="btn mt-2 tr-rate-submit">{{ __('trainers.rate_submit_btn') }}</button>
+            <div class="tr-rate-status f-13 mt-1"></div>
         </div>
-        <textarea class="tr-rate-comment" rows="2" maxlength="2000"
-                  placeholder="{{ __('trainers.rate_comment_ph') }}">{{ $existingComment }}</textarea>
-        <button type="button" class="btn btn-small mt-1 tr-rate-submit">{{ __('trainers.rate_submit_btn') }}</button>
-        <div class="tr-rate-status f-13 mt-1"></div>
     </div>
 </div>
 
@@ -50,16 +58,18 @@
         root.__trBooted = true;
 
         var openBtn = root.querySelector('.tr-rate-open');
-        var panel   = root.querySelector('.tr-rate-panel');
-        var range   = root.querySelector('.tr-rate-range');
-        var valueEl = root.querySelector('.tr-rate-value');
-        var flag    = root.querySelector('.tr-rate-flag');
-        var dot     = root.querySelector('.tr-rate-dot');
-        var comment = root.querySelector('.tr-rate-comment');
-        var submit  = root.querySelector('.tr-rate-submit');
-        var status  = root.querySelector('.tr-rate-status');
+        var modalId = '#' + root.id + '-modal';
+        var modal   = document.querySelector(modalId);
+        if (!openBtn || !modal) return;
+        var range   = modal.querySelector('.tr-rate-range');
+        var valueEl = modal.querySelector('.tr-rate-value');
+        var flag    = modal.querySelector('.tr-rate-flag');
+        var dot     = modal.querySelector('.tr-rate-dot');
+        var comment = modal.querySelector('.tr-rate-comment');
+        var submit  = modal.querySelector('.tr-rate-submit');
+        var status  = modal.querySelector('.tr-rate-status');
         var url     = root.getAttribute('data-url');
-        if (!openBtn || !panel || !range || typeof jQuery === 'undefined') return;
+        if (!range || typeof jQuery === 'undefined') return;
 
         function render(v){
             valueEl.textContent = v + '/10';
@@ -70,7 +80,7 @@
         }
 
         openBtn.addEventListener('click', function(){
-            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+            jQuery.fancybox.open({ src: modalId, type: 'inline' });
         });
 
         render(parseInt(range.value, 10));
@@ -101,6 +111,9 @@
                 status.style.color = '#4caf50';
                 status.textContent = @json(__('trainers.rate_submit_ok'));
                 openBtn.textContent = @json(__('trainers.rate_edit_btn'));
+                setTimeout(function(){
+                    if (typeof jQuery.fancybox !== 'undefined') jQuery.fancybox.close();
+                }, 900);
             }).fail(function(xhr){
                 status.style.color = '#e53e3e';
                 var msg = (xhr.responseJSON && xhr.responseJSON.message) || @json(__('trainers.rate_submit_error'));

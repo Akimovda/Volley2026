@@ -3,6 +3,12 @@
 return [
     'menu_profile' => 'Trainer profile',
 
+    'profile_section_title'        => 'Trainer',
+    'profile_section_lead_create'  => 'Do you run trainings? Fill in your trainer profile — it will show up in your event descriptions, and players will be able to leave ratings.',
+    'profile_section_lead_exists'  => 'Your trainer profile is already filled in.',
+    'profile_section_btn_create'   => 'Fill in trainer profile',
+    'profile_section_btn_edit'     => 'Edit trainer profile',
+
     'profile_edit_title' => 'Trainer profile',
     'profile_edit_h1'    => 'Trainer profile',
 
@@ -59,6 +65,12 @@ return [
     'membership_decline_btn'  => 'Decline',
     'membership_confirmed'    => '✅ Invitation confirmed.',
     'membership_declined'     => 'Invitation declined.',
+
+    // Weekly workload calendar (Phase 4, §6.3)
+    'calendar_title'      => 'Weekly workload calendar',
+    'calendar_today'      => 'Today',
+    'calendar_no_trainers' => 'No confirmed trainers yet — the calendar will appear once invitations are confirmed.',
+    'calendar_days'       => ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
 
     // Trainer rating widget
     'rate_btn'            => '⭐ Rate trainer',

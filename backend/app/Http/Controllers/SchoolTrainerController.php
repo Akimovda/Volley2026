@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\EventOccurrence;
 use App\Models\SchoolTrainer;
 use App\Models\VolleyballSchool;
 use App\Services\SchoolTrainerService;
 use App\Services\TrainerRateService;
+use App\Services\TrainerResolverService;
+use App\Support\DateTime as DateTimeSupport;
 use Carbon\Carbon;
 use DomainException;
 use Illuminate\Http\Request;
@@ -40,7 +43,100 @@ class SchoolTrainerController extends Controller
             $currentRates[$m->user_id] = $rateService->effectiveRate($school, $m->user_id, $now);
         }
 
-        return view('volleyball_school.trainers', compact('school', 'memberships', 'currentRates'));
+        $calendar = $this->buildWeekCalendar($request, $school, $memberships);
+
+        return view('volleyball_school.trainers', compact('school', 'memberships', 'currentRates', 'calendar'));
+    }
+
+    /**
+     * Фаза 4 (§6.3): недельный календарь занятости confirmed-тренеров школы.
+     * Строки = confirmed-тренеры, колонки = дни недели (Пн..Вс, TZ школы),
+     * блоки = occurrences событий организатора школы, где тренер эффективен (§2.1).
+     */
+    private function buildWeekCalendar(Request $request, VolleyballSchool $school, \Illuminate\Support\Collection $memberships): array
+    {
+        $tz = $school->effectiveTimezone();
+
+        $confirmed = $memberships->where('status', SchoolTrainer::STATUS_CONFIRMED)->values();
+        $confirmedIds = $confirmed->pluck('user_id')->map(fn ($v) => (int) $v)->all();
+
+        $weekParam = $request->query('week');
+        $anchor = null;
+        if ($weekParam) {
+            try {
+                $anchor = Carbon::createFromFormat('Y-m-d', $weekParam, $tz);
+            } catch (\Exception $e) {
+                $anchor = null;
+            }
+        }
+        $anchor ??= Carbon::now($tz);
+
+        $weekStart = $anchor->copy()->startOfWeek(Carbon::MONDAY)->startOfDay();
+        $weekEndExclusive = $weekStart->copy()->addDays(7);
+
+        $utcFrom = DateTimeSupport::parseLocalToUtc($weekStart->format('Y-m-d H:i:s'), $tz);
+        $utcTo   = DateTimeSupport::parseLocalToUtc($weekEndExclusive->format('Y-m-d H:i:s'), $tz);
+
+        $days = collect(range(0, 6))->map(fn ($i) => $weekStart->copy()->addDays($i));
+
+        $grid = [];
+        foreach ($confirmedIds as $tid) {
+            $grid[$tid] = array_fill(0, 7, []);
+        }
+
+        if ($confirmedIds) {
+            $occurrences = EventOccurrence::query()
+                ->whereHas('event', fn ($q) => $q->where('organizer_id', $school->organizer_id))
+                ->whereBetween('starts_at', [$utcFrom, $utcTo])
+                ->where(function ($q) {
+                    $q->whereNull('is_cancelled')->orWhere('is_cancelled', false);
+                })
+                ->with(['event:id,title,direction,format', 'trainers:id'])
+                ->get();
+
+            $resolver = app(TrainerResolverService::class);
+
+            foreach ($occurrences as $occ) {
+                $effIds = array_values(array_intersect($resolver->effectiveTrainerIds($occ), $confirmedIds));
+                if (!$effIds || !$occ->event) {
+                    continue;
+                }
+
+                $rawUtc = $occ->getRawOriginal('starts_at');
+                $local = DateTimeSupport::utcToLocal($rawUtc, $tz);
+                if (!$local) {
+                    continue;
+                }
+                $dayIndex = $local->dayOfWeekIso - 1;
+                if ($dayIndex < 0 || $dayIndex > 6) {
+                    continue;
+                }
+
+                $direction = $occ->event->direction ?? 'classic';
+                $block = [
+                    'title'      => $occ->event->title,
+                    'time'       => $local->format('H:i'),
+                    'url'        => route('events.show', ['event' => $occ->event_id]) . '?occurrence=' . $occ->id,
+                    'color'      => $direction === 'beach' ? '#E7612F' : '#2967BA',
+                    'tournament' => ($occ->event->format ?? null) === 'tournament',
+                ];
+
+                foreach ($effIds as $tid) {
+                    $grid[$tid][$dayIndex][] = $block;
+                }
+            }
+        }
+
+        return [
+            'weekStart' => $weekStart,
+            'weekEndDisplay' => $weekStart->copy()->addDays(6),
+            'prevWeek'  => $weekStart->copy()->subDays(7)->format('Y-m-d'),
+            'nextWeek'  => $weekStart->copy()->addDays(7)->format('Y-m-d'),
+            'thisWeek'  => Carbon::now($tz)->startOfWeek(Carbon::MONDAY)->format('Y-m-d'),
+            'days'      => $days,
+            'trainers'  => $confirmed,
+            'grid'      => $grid,
+        ];
     }
 
     public function store(Request $request, VolleyballSchool $school, SchoolTrainerService $service)
