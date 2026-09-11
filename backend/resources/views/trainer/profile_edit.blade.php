@@ -28,6 +28,23 @@
         </div>
         @endif
 
+        @if(isset($confirmedMemberships) && $confirmedMemberships->isNotEmpty())
+        <div class="ramka">
+            <h2 class="-mt-05">{{ __('trainers.my_schools_title') }}</h2>
+            @foreach($confirmedMemberships as $membership)
+            <div class="card mb-1" style="height:auto;">
+                <div class="d-flex fvc between" style="flex-wrap:wrap;gap:8px;">
+                    <div class="b-600">{{ $membership->school?->name ?? ('#' . $membership->school_id) }}</div>
+                    @if($membership->can_view_analytics)
+                    <a href="{{ route('volleyball_school.trainers.analytics', [$membership->school_id, $membership->id]) }}"
+                       class="btn btn-secondary btn-small">{{ __('trainers.analytics_btn') }}</a>
+                    @endif
+                </div>
+            </div>
+            @endforeach
+        </div>
+        @endif
+
         <div class="ramka">
 
             <form method="POST" action="{{ route('trainer.profile.update') }}" class="form">

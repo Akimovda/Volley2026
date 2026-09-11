@@ -123,11 +123,16 @@
                         {{ $m->trainer?->name ?? ('#' . $m->user_id) }}
                         <span class="f-13" style="opacity:.6;">— {{ $statusLabel }}</span>
                     </div>
-                    <form method="POST" action="{{ route('volleyball_school.trainers.destroy', [$school, $m]) }}" onsubmit="return confirm('{{ __('trainers.school_trainer_remove_confirm') }}');">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" class="btn btn-secondary btn-small">{{ __('trainers.school_trainer_remove_btn') }}</button>
-                    </form>
+                    <div class="d-flex" style="gap:8px;">
+                        @if($m->status === 'confirmed')
+                        <a href="{{ route('volleyball_school.trainers.analytics', [$school, $m]) }}" class="btn btn-secondary btn-small">{{ __('trainers.analytics_btn') }}</a>
+                        @endif
+                        <form method="POST" action="{{ route('volleyball_school.trainers.destroy', [$school, $m]) }}" onsubmit="return confirm('{{ __('trainers.school_trainer_remove_confirm') }}');">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn btn-secondary btn-small">{{ __('trainers.school_trainer_remove_btn') }}</button>
+                        </form>
+                    </div>
                 </div>
 
                 @if($m->status === 'confirmed')

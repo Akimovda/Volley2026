@@ -66,6 +66,33 @@ return [
     'membership_confirmed'    => '✅ Приглашение подтверждено.',
     'membership_declined'     => 'Приглашение отклонено.',
 
+    'my_schools_title' => 'Мои школы',
+    'analytics_btn'     => '📊 Аналитика',
+
+    // Аналитика тренера (Фаза 5, §6.4)
+    'analytics_title'          => 'Аналитика тренера',
+    'analytics_period_month'      => 'Этот месяц',
+    'analytics_period_last_month' => 'Прошлый месяц',
+    'analytics_period_quarter'    => 'Квартал',
+    'analytics_period_year'       => 'Год',
+    'analytics_period_custom'     => 'Свой период',
+    'analytics_period_apply'      => 'Показать',
+    'analytics_from_label'        => 'С',
+    'analytics_to_label'          => 'По',
+    'analytics_m_hours'            => 'Часы',
+    'analytics_m_unique_players'   => 'Уникальные игроки',
+    'analytics_m_retention'        => 'Возвращаемость',
+    'analytics_m_fill_rate'        => 'Заполняемость',
+    'analytics_m_sessions'         => 'Занятий',
+    'analytics_m_revenue'          => 'Выручка',
+    'analytics_m_cost'             => 'Стоимость тренера',
+    'analytics_m_margin'           => 'Маржа',
+    'analytics_m_to_pay'           => 'К выплате за период',
+    'analytics_no_data'            => 'нет данных',
+    'analytics_no_sessions'        => 'За выбранный период нет завершённых занятий этого тренера.',
+    'analytics_without_rate_badge' => ':n туров без заданной ставки — не включены в стоимость/к выплате.',
+    'analytics_finance_hidden'     => 'Выручка и маржа видны только организатору.',
+
     // Недельный календарь занятости (Фаза 4, §6.3)
     'calendar_title'      => 'Недельный календарь занятости',
     'calendar_today'      => 'Сегодня',

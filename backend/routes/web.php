@@ -1463,6 +1463,8 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         ->name('volleyball_school.trainers.destroy');
     Route::post('/volleyball_school/{school}/trainers/{membership}/rate', [\App\Http\Controllers\SchoolTrainerController::class, 'rate'])
         ->name('volleyball_school.trainers.rate');
+    Route::get('/volleyball_school/{school}/trainers/{membership}/analytics', [\App\Http\Controllers\SchoolTrainerController::class, 'analytics'])
+        ->name('volleyball_school.trainers.analytics');
 
     // Подтверждение/отказ приглашения тренером
     Route::post('/trainers/memberships/{membership}/confirm', [\App\Http\Controllers\TrainerMembershipController::class, 'confirm'])

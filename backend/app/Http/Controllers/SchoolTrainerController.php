@@ -7,6 +7,7 @@ use App\Models\SchoolTrainer;
 use App\Models\VolleyballSchool;
 use App\Services\SchoolTrainerService;
 use App\Services\TrainerRateService;
+use App\Services\TrainerAnalyticsService;
 use App\Services\TrainerResolverService;
 use App\Support\DateTime as DateTimeSupport;
 use Carbon\Carbon;
@@ -216,5 +217,83 @@ class SchoolTrainerController extends Controller
         }
 
         return back()->with('status', __('trainers.school_rate_saved'));
+    }
+
+    /**
+     * §6.4: карточка аналитики тренера за период.
+     * Организатор/админ — всегда, включая финблок (выручка/маржа).
+     * Сам тренер — только если membership confirmed И can_view_analytics, без финблока.
+     */
+    private function authorizeAnalytics(Request $request, VolleyballSchool $school, SchoolTrainer $membership): bool
+    {
+        $user = $request->user();
+        if ($user->isAdmin() || (int) $school->organizer_id === (int) $user->id) {
+            return true;
+        }
+
+        return (int) $membership->user_id === (int) $user->id
+            && $membership->status === SchoolTrainer::STATUS_CONFIRMED
+            && $membership->can_view_analytics;
+    }
+
+    private function resolvePeriod(Request $request, string $tz): array
+    {
+        $period = $request->query('period', 'month');
+        $now = Carbon::now($tz);
+
+        switch ($period) {
+            case 'last_month':
+                $from = $now->copy()->subMonthNoOverflow()->startOfMonth();
+                $to   = $from->copy()->addMonthNoOverflow();
+                break;
+            case 'quarter':
+                $from = $now->copy()->firstOfQuarter()->startOfDay();
+                $to   = $now->copy()->lastOfQuarter()->addDay()->startOfDay();
+                break;
+            case 'year':
+                $from = $now->copy()->startOfYear();
+                $to   = $now->copy()->startOfYear()->addYear();
+                break;
+            case 'custom':
+                try {
+                    $from = Carbon::createFromFormat('Y-m-d', (string) $request->query('from'), $tz)->startOfDay();
+                    $to   = Carbon::createFromFormat('Y-m-d', (string) $request->query('to'), $tz)->addDay()->startOfDay();
+                } catch (\Exception $e) {
+                    $period = 'month';
+                    $from = $now->copy()->startOfMonth();
+                    $to   = $now->copy()->addMonthNoOverflow()->startOfMonth();
+                }
+                break;
+            case 'month':
+            default:
+                $period = 'month';
+                $from = $now->copy()->startOfMonth();
+                $to   = $now->copy()->startOfMonth()->addMonthNoOverflow();
+        }
+
+        return [$period, $from, $to];
+    }
+
+    public function analytics(Request $request, VolleyballSchool $school, SchoolTrainer $membership, TrainerAnalyticsService $service)
+    {
+        $this->scopedMembership($school, $membership);
+        abort_unless($this->authorizeAnalytics($request, $school, $membership), 403);
+
+        $isOrganizerView = $request->user()->isAdmin() || (int) $school->organizer_id === (int) $request->user()->id;
+
+        $tz = $school->effectiveTimezone();
+        [$period, $from, $to] = $this->resolvePeriod($request, $tz);
+
+        $metrics = $service->metricsForTrainer($school, (int) $membership->user_id, $from, $to, $isOrganizerView);
+
+        return view('volleyball_school.trainer_analytics', [
+            'school'          => $school,
+            'membership'      => $membership,
+            'metrics'         => $metrics,
+            'period'          => $period,
+            'from'            => $from,
+            'to'              => $to->copy()->subDay(),
+            'isOrganizerView' => $isOrganizerView,
+        ]);
     }
 }

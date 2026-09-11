@@ -66,6 +66,33 @@ return [
     'membership_confirmed'    => '✅ Invitation confirmed.',
     'membership_declined'     => 'Invitation declined.',
 
+    'my_schools_title' => 'My schools',
+    'analytics_btn'     => '📊 Analytics',
+
+    // Trainer analytics (Phase 5, §6.4)
+    'analytics_title'          => 'Trainer analytics',
+    'analytics_period_month'      => 'This month',
+    'analytics_period_last_month' => 'Last month',
+    'analytics_period_quarter'    => 'Quarter',
+    'analytics_period_year'       => 'Year',
+    'analytics_period_custom'     => 'Custom period',
+    'analytics_period_apply'      => 'Show',
+    'analytics_from_label'        => 'From',
+    'analytics_to_label'          => 'To',
+    'analytics_m_hours'            => 'Hours',
+    'analytics_m_unique_players'   => 'Unique players',
+    'analytics_m_retention'        => 'Retention',
+    'analytics_m_fill_rate'        => 'Fill rate',
+    'analytics_m_sessions'         => 'Sessions',
+    'analytics_m_revenue'          => 'Revenue',
+    'analytics_m_cost'             => 'Trainer cost',
+    'analytics_m_margin'           => 'Margin',
+    'analytics_m_to_pay'           => 'To pay for period',
+    'analytics_no_data'            => 'no data',
+    'analytics_no_sessions'        => 'No finished sessions for this trainer in the selected period.',
+    'analytics_without_rate_badge' => ':n sessions without a set rate — excluded from cost/payout.',
+    'analytics_finance_hidden'     => 'Revenue and margin are visible to the organizer only.',
+
     // Weekly workload calendar (Phase 4, §6.3)
     'calendar_title'      => 'Weekly workload calendar',
     'calendar_today'      => 'Today',

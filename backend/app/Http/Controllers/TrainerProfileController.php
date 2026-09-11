@@ -17,7 +17,12 @@ class TrainerProfileController extends Controller
             ->with('school:id,name,slug')
             ->get();
 
-        return view('trainer.profile_edit', compact('profile', 'pendingMemberships'));
+        $confirmedMemberships = $user->schoolMemberships()
+            ->where('status', \App\Models\SchoolTrainer::STATUS_CONFIRMED)
+            ->with('school:id,name,slug')
+            ->get();
+
+        return view('trainer.profile_edit', compact('profile', 'pendingMemberships', 'confirmedMemberships'));
     }
 
     public function update(Request $request, TrainerProfileService $service)
