@@ -59,4 +59,13 @@ return [
     'membership_decline_btn'  => 'Decline',
     'membership_confirmed'    => '✅ Invitation confirmed.',
     'membership_declined'     => 'Invitation declined.',
+
+    // Trainer rating widget
+    'rate_btn'            => '⭐ Rate trainer',
+    'rate_edit_btn'       => '⭐ Edit rating',
+    'rate_comment_ph'     => 'Comment (optional)',
+    'rate_submit_btn'     => 'Submit rating',
+    'rate_submit_ok'      => 'Thanks, your rating is saved!',
+    'rate_submit_error'   => 'Failed to save the rating.',
+    'rating_saved'        => '✅ Rating saved.',
 ];

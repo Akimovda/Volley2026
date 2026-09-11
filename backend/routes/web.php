@@ -1469,6 +1469,10 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         ->name('trainer.memberships.confirm');
     Route::post('/trainers/memberships/{membership}/decline', [\App\Http\Controllers\TrainerMembershipController::class, 'decline'])
         ->name('trainer.memberships.decline');
+
+    // Оценка тренера игроком
+    Route::post('/occurrences/{occurrence}/trainers/{trainer}/rating', [\App\Http\Controllers\TrainerRatingController::class, 'store'])
+        ->name('occurrences.trainers.rating');
 });
 
 // Динамический {slug} — ПОСЛЕ статичных

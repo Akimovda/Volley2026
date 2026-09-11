@@ -125,6 +125,23 @@
 							</div>
 						</div>
 
+						@if(!empty($occurrenceTrainers[$reg->occurrence_id]))
+						<div class="mt-1">
+							@foreach($occurrenceTrainers[$reg->occurrence_id] as $trainerUser)
+							@php
+								$myRating = $myTrainerRatings[$reg->occurrence_id][$trainerUser->id] ?? null;
+							@endphp
+							@include('trainer._rating_widget', [
+								'occurrenceId'    => $reg->occurrence_id,
+								'trainerUserId'   => $trainerUser->id,
+								'trainerName'     => $trainerUser->name ?? ('#' . $trainerUser->id),
+								'existingScore'   => $myRating?->score,
+								'existingComment' => $myRating?->comment,
+							])
+							@endforeach
+						</div>
+						@endif
+
 					</div>
 
 					@endforeach

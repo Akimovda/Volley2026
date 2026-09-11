@@ -255,6 +255,40 @@ class PlayerDashboardController extends Controller
 
         $registrations = $query->paginate(20)->withQueryString();
 
-        return view('player.my-bookings', compact('registrations', 'filter', 'userTz'));
+        // Тренеры + мои оценки — только для архива (оценивать можно лишь прошедший тур)
+        $occurrenceTrainers = [];
+        $myTrainerRatings = [];
+        if ($filter !== 'current' && $registrations->isNotEmpty()) {
+            $occurrenceIds = $registrations->pluck('occurrence_id')->unique()->values();
+
+            $occurrences = \App\Models\EventOccurrence::whereIn('id', $occurrenceIds)
+                ->with(['trainers:id,first_name,last_name,name', 'event.trainers:id,first_name,last_name,name'])
+                ->get()
+                ->keyBy('id');
+
+            foreach ($occurrences as $occ) {
+                // Тот же критерий "тур прошёл", что и в TrainerRatingService::rate() — isFinished()
+                // возвращает false без duration_sec, поэтому не показываем виджет,
+                // если сервис его всё равно отклонит.
+                if (!$occ->isFinished()) {
+                    continue;
+                }
+                $trainers = $occ->trainers->isNotEmpty() ? $occ->trainers : ($occ->event?->trainers ?? collect());
+                if ($trainers->isNotEmpty()) {
+                    $occurrenceTrainers[$occ->id] = $trainers;
+                }
+            }
+
+            if (!empty($occurrenceTrainers)) {
+                $myTrainerRatings = \App\Models\TrainerRating::where('rater_user_id', $userId)
+                    ->whereIn('occurrence_id', array_keys($occurrenceTrainers))
+                    ->get()
+                    ->groupBy('occurrence_id')
+                    ->map(fn ($rows) => $rows->keyBy('trainer_user_id'))
+                    ->all();
+            }
+        }
+
+        return view('player.my-bookings', compact('registrations', 'filter', 'userTz', 'occurrenceTrainers', 'myTrainerRatings'));
     }
 }

@@ -59,4 +59,13 @@ return [
     'membership_decline_btn'  => 'Отклонить',
     'membership_confirmed'    => '✅ Приглашение подтверждено.',
     'membership_declined'     => 'Приглашение отклонено.',
+
+    // Виджет оценки тренера
+    'rate_btn'            => '⭐ Оценить тренера',
+    'rate_edit_btn'       => '⭐ Изменить оценку',
+    'rate_comment_ph'     => 'Комментарий (необязательно)',
+    'rate_submit_btn'     => 'Отправить оценку',
+    'rate_submit_ok'      => 'Спасибо, оценка сохранена!',
+    'rate_submit_error'   => 'Не удалось сохранить оценку.',
+    'rating_saved'        => '✅ Оценка сохранена.',
 ];

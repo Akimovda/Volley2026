@@ -132,7 +132,18 @@ class UserPublicController extends Controller
         $canSeeTrainerRating = false;
         if ($trainerProfile) {
             $trainerRating = app(TrainerRatingService::class)->summary($user->id);
-            $canSeeTrainerRating = $isSelf || (auth()->check() && auth()->user()->isPremium());
+
+            $isSchoolOrganizerOfTrainer = false;
+            if ($authId && !$isSelf) {
+                $isSchoolOrganizerOfTrainer = \App\Models\SchoolTrainer::where('user_id', $user->id)
+                    ->where('status', \App\Models\SchoolTrainer::STATUS_CONFIRMED)
+                    ->whereHas('school', fn ($q) => $q->where('organizer_id', $authId))
+                    ->exists();
+            }
+
+            $canSeeTrainerRating = $isSelf
+                || (auth()->check() && auth()->user()->isPremium())
+                || $isSchoolOrganizerOfTrainer;
         }
 
         return view('user.public', [
