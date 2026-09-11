@@ -10,6 +10,7 @@ use App\Models\PlayerRatingHistory;
 use App\Models\User;
 use App\Models\UserLevelVote;
 use App\Models\UserPlayLike;
+use App\Services\TrainerRatingService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -125,10 +126,22 @@ class UserPublicController extends Controller
             }
         }
 
+        // Тренерский профиль
+        $trainerProfile = $user->trainerProfile;
+        $trainerRating  = null;
+        $canSeeTrainerRating = false;
+        if ($trainerProfile) {
+            $trainerRating = app(TrainerRatingService::class)->summary($user->id);
+            $canSeeTrainerRating = $isSelf || (auth()->check() && auth()->user()->isPremium());
+        }
+
         return view('user.public', [
             'user'             => $user,
             'isSelf'           => $isSelf,
             'photos'           => $photos,
+            'trainerProfile'      => $trainerProfile,
+            'trainerRating'       => $trainerRating,
+            'canSeeTrainerRating' => $canSeeTrainerRating,
             'classicVotes'     => $classicVotes,
             'beachVotes'       => $beachVotes,
             'classicAvg'       => $classicAvg,

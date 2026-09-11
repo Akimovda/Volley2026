@@ -163,6 +163,14 @@
                     <span class="menu-text">{{ __('profile.menu_my_visitors_premium') }}</span>
                 </a>
                 @endif
+                <a href="{{ route('trainer.profile.edit') }}"
+                   class="menu-item {{ $activeMenu === 'trainer_profile' ? 'active' : '' }}">
+                    @if($activeMenu === 'trainer_profile')
+                        <strong class="cd menu-text">{{ __('trainers.menu_profile') }}</strong>
+                    @else
+                        <span class="menu-text">{{ __('trainers.menu_profile') }}</span>
+                    @endif
+                </a>
                 <form method="POST" action="{{ route('logout') }}" class="logout-form" x-data>
                     @csrf
                     <button type="submit" class="menu-item">{{ __('profile.menu_logout') }}</button>
@@ -472,6 +480,14 @@
         <span class="menu-text">{{ __('profile.menu_my_visitors_premium') }}</span>
     </a>
     @endif
+    <a href="{{ route('trainer.profile.edit') }}"
+       class="menu-item {{ $activeMenu === 'trainer_profile' ? 'active' : '' }}">
+        @if($activeMenu === 'trainer_profile')
+            <strong class="cd menu-text">{{ __('trainers.menu_profile') }}</strong>
+        @else
+            <span class="menu-text">{{ __('trainers.menu_profile') }}</span>
+        @endif
+    </a>
     <a href="{{ route('profile.show') }}#delete-account"
        class="menu-item {{ $activeMenu === 'delete_account' ? 'active' : '' }}"
        style="color:#e53e3e">

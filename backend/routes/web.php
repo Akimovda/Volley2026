@@ -1686,6 +1686,19 @@ Route::middleware([
 
 /*
 |--------------------------------------------------------------------------
+| Тренерский профиль
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified'])
+    ->group(function () {
+        Route::get('/trainer/profile/edit', [\App\Http\Controllers\TrainerProfileController::class, 'edit'])
+            ->name('trainer.profile.edit');
+        Route::post('/trainer/profile', [\App\Http\Controllers\TrainerProfileController::class, 'update'])
+            ->name('trainer.profile.update');
+    });
+
+/*
+|--------------------------------------------------------------------------
 | Staff (помощники организатора)
 |--------------------------------------------------------------------------
 */
