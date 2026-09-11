@@ -397,6 +397,49 @@ final class UserNotificationService
         );
     }
 
+    public function createTrainerAssignedNotification(
+        int $userId,
+        int $schoolId,
+        string $schoolName,
+    ): UserNotification {
+        return $this->create(
+            userId: $userId,
+            type: 'trainer_assigned',
+            title: 'Вас пригласили тренером',
+            body: "Вас пригласили тренером в школу «{$schoolName}». Подтвердите приглашение в тренерском профиле.",
+            payload: [
+                'school_id'   => $schoolId,
+                'school_name' => $schoolName,
+            ],
+            channels: ['in_app', 'telegram', 'vk', 'max', 'push']
+        );
+    }
+
+    public function createTrainerRatingRequestNotification(
+        int $userId,
+        int $eventId,
+        int $occurrenceId,
+        string $eventTitle,
+        string $trainerName,
+        string $eventUrl,
+    ): UserNotification {
+        return $this->create(
+            userId: $userId,
+            type: 'trainer_rating_request',
+            title: '⭐ Оцените тренера',
+            body: "Нам очень важно Ваше мнение! Как прошло занятие «{$eventTitle}»? Будем признательны за оценку тренера {$trainerName} — это займёт минуту.",
+            payload: [
+                'event_id'      => $eventId,
+                'occurrence_id' => $occurrenceId,
+                'event_title'   => $eventTitle,
+                'trainer_name'  => $trainerName,
+                'button_text'   => 'Оценить тренера',
+                'button_url'    => $eventUrl,
+            ],
+            channels: ['in_app', 'telegram', 'vk', 'max', 'push']
+        );
+    }
+
     public function createRegistrationCancelledNotification(
         int $userId,
         int $eventId,

@@ -77,7 +77,11 @@
 				</div>
 			</div>
             <div class="col-lg-8 col-xl-9" style="order:1;">
-				
+
+				<div class="ramka">
+					<a href="{{ route('volleyball_school.trainers.index', $school) }}" class="btn btn-secondary">{{ __('trainers.school_roster_title') }}</a>
+				</div>
+
 				@if ($errors->any())
 				<div class="ramka">
 					<div class="alert alert-error">

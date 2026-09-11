@@ -1451,6 +1451,30 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         ->name('volleyball_school.update');
     Route::delete('/volleyball_school/{school}', [\App\Http\Controllers\VolleyballSchoolController::class, 'destroy'])
         ->name('volleyball_school.destroy');
+
+    // Ростер тренеров школы (организатор школы / админ)
+    Route::get('/volleyball_school/{school}/trainers', [\App\Http\Controllers\SchoolTrainerController::class, 'index'])
+        ->name('volleyball_school.trainers.index');
+    Route::post('/volleyball_school/{school}/trainers', [\App\Http\Controllers\SchoolTrainerController::class, 'store'])
+        ->name('volleyball_school.trainers.store');
+    Route::patch('/volleyball_school/{school}/trainers/{membership}', [\App\Http\Controllers\SchoolTrainerController::class, 'updatePermissions'])
+        ->name('volleyball_school.trainers.update');
+    Route::delete('/volleyball_school/{school}/trainers/{membership}', [\App\Http\Controllers\SchoolTrainerController::class, 'destroy'])
+        ->name('volleyball_school.trainers.destroy');
+    Route::post('/volleyball_school/{school}/trainers/{membership}/rate', [\App\Http\Controllers\SchoolTrainerController::class, 'rate'])
+        ->name('volleyball_school.trainers.rate');
+    Route::get('/volleyball_school/{school}/trainers/{membership}/analytics', [\App\Http\Controllers\SchoolTrainerController::class, 'analytics'])
+        ->name('volleyball_school.trainers.analytics');
+
+    // Подтверждение/отказ приглашения тренером
+    Route::post('/trainers/memberships/{membership}/confirm', [\App\Http\Controllers\TrainerMembershipController::class, 'confirm'])
+        ->name('trainer.memberships.confirm');
+    Route::post('/trainers/memberships/{membership}/decline', [\App\Http\Controllers\TrainerMembershipController::class, 'decline'])
+        ->name('trainer.memberships.decline');
+
+    // Оценка тренера игроком
+    Route::post('/occurrences/{occurrence}/trainers/{trainer}/rating', [\App\Http\Controllers\TrainerRatingController::class, 'store'])
+        ->name('occurrences.trainers.rating');
 });
 
 // Динамический {slug} — ПОСЛЕ статичных
@@ -1683,6 +1707,19 @@ Route::middleware([
     Route::delete('/premium/auto-bookings/{autoBooking}', [\App\Http\Controllers\PremiumAutoBookingController::class, 'destroy'])
         ->name('premium.auto_bookings.destroy');
 });
+
+/*
+|--------------------------------------------------------------------------
+| Тренерский профиль
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified'])
+    ->group(function () {
+        Route::get('/trainer/profile/edit', [\App\Http\Controllers\TrainerProfileController::class, 'edit'])
+            ->name('trainer.profile.edit');
+        Route::post('/trainer/profile', [\App\Http\Controllers\TrainerProfileController::class, 'update'])
+            ->name('trainer.profile.update');
+    });
 
 /*
 |--------------------------------------------------------------------------

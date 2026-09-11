@@ -555,4 +555,23 @@ public function getNameAttribute($value): string
         return $this->hasMany(ActivitySession::class);
     }
 
+    // ──────────────────────────────────────────────────────
+    // Тренерский модуль
+    // ──────────────────────────────────────────────────────
+
+    public function trainerProfile(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(TrainerProfile::class);
+    }
+
+    public function isTrainer(): bool
+    {
+        return $this->trainerProfile()->exists();
+    }
+
+    public function schoolMemberships(): HasMany
+    {
+        return $this->hasMany(SchoolTrainer::class, 'user_id');
+    }
+
 }

@@ -383,8 +383,71 @@ body.dark .gradient-marker-line,
 							</div>
 						</div>
 					</div>
-				</div>	
-				
+				</div>
+
+                {{-- ===== ТРЕНЕР ===== --}}
+                @if($trainerProfile && ($trainerProfile->is_public || $isSelf))
+                @php
+                    $trainerScoreColor = static function (?float $score): string {
+                        if ($score === null) return '#9e9e9e';
+                        if ($score >= 9) return '#4caf50';
+                        if ($score >= 7) return '#2196f3';
+                        if ($score >= 5) return '#ff9800';
+                        return '#ef4444';
+                    };
+                    $trainerAvg = $trainerRating['avg'] ?? null;
+                    $trainerColor = $trainerScoreColor($trainerAvg);
+                @endphp
+                <div class="ramka">
+                    <h2 class="-mt-05">{{ __('trainers.block_title') }}</h2>
+                    <div class="card">
+                        <div class="d-flex fvc" style="gap:16px;flex-wrap:wrap;">
+                            <div style="position:relative;flex:0 0 auto;">
+                                @if($canSeeTrainerRating)
+                                <svg width="72" height="72" viewBox="0 0 72 72">
+                                    <circle cx="36" cy="36" r="32" fill="none" stroke="rgba(0,0,0,.08)" stroke-width="6"/>
+                                    <circle cx="36" cy="36" r="32" fill="none" stroke="{{ $trainerColor }}" stroke-width="6"
+                                            stroke-dasharray="{{ $trainerAvg !== null ? round(($trainerAvg / 10) * 201, 1) : 0 }} 201"
+                                            stroke-linecap="round" transform="rotate(-90 36 36)"/>
+                                    <text x="36" y="41" text-anchor="middle" font-size="20" font-weight="600" fill="{{ $trainerColor }}">{{ $trainerAvg ?? '—' }}</text>
+                                </svg>
+                                @else
+                                <svg width="72" height="72" viewBox="0 0 72 72" style="filter:blur(4px);">
+                                    <circle cx="36" cy="36" r="32" fill="none" stroke="rgba(0,0,0,.08)" stroke-width="6"/>
+                                    <circle cx="36" cy="36" r="32" fill="none" stroke="#9e9e9e" stroke-width="6"
+                                            stroke-dasharray="140 201" stroke-linecap="round" transform="rotate(-90 36 36)"/>
+                                    <text x="36" y="41" text-anchor="middle" font-size="20" font-weight="600" fill="#9e9e9e">?</text>
+                                </svg>
+                                <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:22px;">🔒</div>
+                                @endif
+                            </div>
+                            <div style="flex:1 1 240px;min-width:200px;">
+                                @if($trainerProfile->specialization)
+                                <div class="b-600 mb-1">{{ $trainerProfile->specialization }}</div>
+                                @endif
+                                @if($trainerProfile->experience_years)
+                                <div class="f-15 mb-1" style="opacity:.7;">{{ __('trainers.experience_years', ['n' => $trainerProfile->experience_years]) }}</div>
+                                @endif
+                                @if($trainerProfile->bio)
+                                <div class="f-15">{{ $trainerProfile->bio }}</div>
+                                @endif
+
+                                @if($canSeeTrainerRating)
+                                <div class="f-13 mt-1" style="opacity:.6;">
+                                    {{ $trainerRating['count'] > 0 ? __('trainers.rating_count', ['n' => $trainerRating['count']]) : __('trainers.no_ratings') }}
+                                </div>
+                                @else
+                                <div class="f-13 mt-1" style="opacity:.6;">
+                                    {{ __('trainers.premium_locked') }}
+                                    — <a href="{{ route('premium.index') }}" class="cd">{{ __('trainers.premium_cta') }}</a>
+                                </div>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                @endif
+
                 {{-- ===== ОЦЕНКА УРОВНЯ ===== --}}
                 @php
 				$levelEmojis = [1=>"⚪️",2=>"🟡",3=>"🟠",4=>"🔵",5=>"🟣",6=>"🔴",7=>"⚫️"];

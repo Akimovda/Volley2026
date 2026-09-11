@@ -1161,6 +1161,18 @@
 				@endif
 				
 				<div class="ramka">
+					<h2 class="-mt-05">{{ __('trainers.profile_section_title') }}</h2>
+					@php $myTrainerProfile = auth()->user()->trainerProfile; @endphp
+					@if($myTrainerProfile)
+						<p>{{ __('trainers.profile_section_lead_exists') }}</p>
+						<a href="{{ route('trainer.profile.edit') }}" class="btn btn-secondary">{{ __('trainers.profile_section_btn_edit') }}</a>
+					@else
+						<p>{{ __('trainers.profile_section_lead_create') }}</p>
+						<a href="{{ route('trainer.profile.edit') }}" class="btn">{{ __('trainers.profile_section_btn_create') }}</a>
+					@endif
+				</div>
+				
+				<div class="ramka">
 					@php $activePremium = auth()->user()->activePremium(); @endphp
 					<h2 class="-mt-05">{{ __('profile.sec_premium') }}</h2>
 					<div class="card">

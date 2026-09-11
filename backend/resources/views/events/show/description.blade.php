@@ -78,6 +78,21 @@
 								{{ $trainer->name ?? $trainer->nickname ?? '—' }}
 							</a>
 						</div>
+						@if(($isRegistered ?? false) && $occurrence->isFinished())
+						@php
+							$myTrainerRating = \App\Models\TrainerRating::where('occurrence_id', $occurrence->id)
+								->where('trainer_user_id', $trainer->id)
+								->where('rater_user_id', auth()->id())
+								->first();
+						@endphp
+						@include('trainer._rating_widget', [
+							'occurrenceId'    => $occurrence->id,
+							'trainerUserId'   => $trainer->id,
+							'trainerName'     => $trainer->name ?? $trainer->nickname ?? ('#' . $trainer->id),
+							'existingScore'   => $myTrainerRating?->score,
+							'existingComment' => $myTrainerRating?->comment,
+						])
+						@endif
 						@endforeach
 					</div>
 				</div>
