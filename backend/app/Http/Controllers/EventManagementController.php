@@ -185,7 +185,7 @@ if ($role === 'admin') {
             abort(403);
         }
 
-        $event->load(['location.city', 'gameSettings', 'tournamentSetting']);
+        $event->load(['location.city', 'gameSettings', 'tournamentSetting', 'trainers']);
 
         // Информация о связанных лиге/сезоне/дивизионе для tournament-формата
         $seasonInfo = null;
@@ -331,6 +331,7 @@ if ($role === 'admin') {
             'currentDivisionId' => $currentDivisionId,
             'orgPaySettings'   => $orgPaySettings,
             'levelScope'       => $levelScope,
+            'trainers'         => $event->trainers,
         ]);
     }
 
@@ -996,7 +997,25 @@ if ($role === 'admin') {
             'king_beach_min_players'              => ['nullable', 'integer', 'min:4', 'max:200'],
             'king_beach_max_players'              => ['nullable', 'integer', 'min:4', 'max:200'],
             'timeline_color' => ['nullable', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+
+            'trainer_user_id'   => ['nullable', 'integer', 'exists:users,id'],
+            'trainer_user_ids'   => ['nullable', 'array'],
+            'trainer_user_ids.*' => ['integer', 'exists:users,id'],
         ]);
+
+        // Тренеры серии — обязательны для форматов, где это уже требуется при создании
+        // события (EventStoreService), UI-редактор показан для того же набора форматов,
+        // что и в create-форме (step1.blade.php: data-show-if=training|training_game|camp|coach_student).
+        $needTrainers = in_array(
+            $data['format'] ?? $event->format,
+            ['training', 'training_game', 'camp', 'coach_student'],
+            true
+        );
+        $trainerResult = app(\App\Services\EventTrainerService::class)->normalizeTrainerIds($data, $needTrainers);
+        if (!empty($trainerResult['errors'])) {
+            throw \Illuminate\Validation\ValidationException::withMessages($trainerResult['errors']);
+        }
+        $trainerIds = $trainerResult['trainerIds'];
 
         // Переключение режима регистрации турнира (командная <-> индивидуальная):
         // если уже есть команды дальше стадии draft, менять режим нельзя — данные потеряются.
@@ -1080,7 +1099,7 @@ if ($role === 'admin') {
             $data['king_beach_max_players'] = $kbMax;
         }
 
-        DB::transaction(function () use ($event, $data, $user, $staysKingBeach) {
+        DB::transaction(function () use ($event, $data, $user, $staysKingBeach, $needTrainers, $trainerIds) {
             $tz = (string) $data['timezone'];
             $startsUtc = Carbon::parse($data['starts_at'], $tz)->utc();
             // duration: приоритет у duration_sec (вычислен JS), fallback hours+min
@@ -1202,7 +1221,54 @@ if ($role === 'admin') {
             $event->recurrence_rule = $recResult['isRecurring'] ? $recResult['recRule'] : null;
 
             $event->save();
-    
+
+            // Тренеры серии. Меняем только для БУДУЩИХ occurrences — прошедшие туры
+            // не должны задним числом менять тренера (ставки/аналитика/оценки уже
+            // привязаны к тому, кто реально вёл занятие). Occurrence-override
+            // (event_occurrence_trainers) сам по себе приоритетнее event->trainers
+            // (см. TrainerResolverService::effectiveTrainerIds()) — если список
+            // меняется, "замораживаем" старый список явным override на все ПРОШЕДШИЕ
+            // occurrences, у которых своего override ещё нет (иначе они бы тихо
+            // унаследовали новый список). Будущие occurrences без override унаследуют
+            // новый список автоматически — их трогать не нужно.
+            $oldTrainerIds = $event->trainers()->pluck('users.id')->map(fn ($v) => (int) $v)->sort()->values()->all();
+            $newTrainerIdsSorted = collect($trainerIds)->sort()->values()->all();
+
+            if ($oldTrainerIds !== $newTrainerIdsSorted && !empty($oldTrainerIds) && Schema::hasTable('event_occurrence_trainers')) {
+                $pastOccurrenceIds = DB::table('event_occurrences')
+                    ->where('event_id', $event->id)
+                    ->where('starts_at', '<=', now('UTC'))
+                    ->pluck('id');
+
+                if ($pastOccurrenceIds->isNotEmpty()) {
+                    $alreadyOverridden = DB::table('event_occurrence_trainers')
+                        ->whereIn('occurrence_id', $pastOccurrenceIds)
+                        ->pluck('occurrence_id')
+                        ->unique();
+
+                    $toFreeze = $pastOccurrenceIds->diff($alreadyOverridden);
+                    if ($toFreeze->isNotEmpty()) {
+                        $now = now();
+                        $rows = [];
+                        foreach ($toFreeze as $occId) {
+                            foreach ($oldTrainerIds as $uid) {
+                                $rows[] = [
+                                    'occurrence_id' => $occId,
+                                    'user_id'       => $uid,
+                                    'created_at'    => $now,
+                                    'updated_at'    => $now,
+                                ];
+                            }
+                        }
+                        DB::table('event_occurrence_trainers')->insert($rows);
+                    }
+                }
+            }
+
+            app(\App\Services\EventTrainerService::class)->sync($event, $needTrainers, $trainerIds);
+            $event->trainer_user_id = $trainerIds[0] ?? null;
+            $event->save();
+
             $glp = $data['game_gender_limited_positions'] ?? null;
             if (is_array($glp)) {
                 $glp = json_encode(array_values($glp), JSON_UNESCAPED_UNICODE);

@@ -566,6 +566,9 @@ return [
     'trainers_multi_hint'   => 'Multiple coaches can be selected.',
     'trainers_clear'        => 'Reset',
 
+    'mgmt_trainers_title'   => 'Event coaches',
+    'mgmt_trainers_hint'    => 'Changes apply to the whole series. Reflected in the coach module (rates, analytics, rating request) starting from the next session — if a specific session overrides its coach separately (on the occurrence edit page), that override is preserved.',
+
     'subtype_label'         => 'Subtype',
     'teams_label'           => 'Teams',
     'min_label'             => 'Minimum',
