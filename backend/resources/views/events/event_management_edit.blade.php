@@ -327,6 +327,199 @@
                     </div>
                 </div>
 
+                {{-- ===== БЛОК 1.1: Тренеры (только training/training_game/camp/coach_student) ===== --}}
+                @php
+                    $mgmtTrainerFormats = ['training', 'training_game', 'camp', 'coach_student'];
+                    $mgmtShowTrainers = in_array(old('format', $event->format), $mgmtTrainerFormats, true);
+
+                    $mgmtTrainerOldIds = old('trainer_user_ids');
+                    if (is_string($mgmtTrainerOldIds)) $mgmtTrainerOldIds = [$mgmtTrainerOldIds];
+                    if (!is_array($mgmtTrainerOldIds)) {
+                        $mgmtTrainerOldIds = ($trainers ?? collect())->pluck('id')->map(fn ($v) => (int) $v)->all();
+                    } else {
+                        $mgmtTrainerOldIds = array_values(array_filter(array_map('intval', $mgmtTrainerOldIds), fn ($v) => $v > 0));
+                    }
+
+                    $mgmtTrainerNamesById = ($trainers ?? collect())->keyBy('id')->map(fn ($u) => $u->name)->all();
+                    $mgmtTrainerMissing = array_diff($mgmtTrainerOldIds, array_keys($mgmtTrainerNamesById));
+                    if (!empty($mgmtTrainerMissing)) {
+                        foreach (\App\Models\User::whereIn('id', $mgmtTrainerMissing)->get() as $u) {
+                            $mgmtTrainerNamesById[$u->id] = $u->name;
+                        }
+                    }
+                @endphp
+                <div class="ramka" id="mgmt_trainers_block" @if(!$mgmtShowTrainers) style="display:none" @endif>
+                    <h2 class="-mt-05">{{ __('events.mgmt_trainers_title') }}</h2>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="card" style="overflow:visible">
+                                <label>{{ __('events.trainers_label') }}</label>
+                                <div class="f-13">{{ __('events.mgmt_trainers_hint') }}</div>
+
+                                <div class="ac-box" data-users-search-url="{{ route('api.users.search') }}">
+                                    <div id="mgmt_trainer_chips" class="mb-1">
+                                        @foreach($mgmtTrainerOldIds as $tid)
+                                            <span class="chip custom-chip" data-chip-id="{{ $tid }}">
+                                                {{ $mgmtTrainerNamesById[$tid] ?? ('User #' . $tid) }}
+                                                <span class="mgmt-trainer-chip-remove chip-remove" data-id="{{ $tid }}">×</span>
+                                            </span>
+                                            <input type="hidden" name="trainer_user_ids[]" value="{{ $tid }}" data-mgmt-trainer-hidden="{{ $tid }}">
+                                        @endforeach
+                                    </div>
+
+                                    <input type="text"
+                                           id="mgmt_trainer_search"
+                                           placeholder="{{ __('events.trainers_search_ph') }}"
+                                           value=""
+                                           autocomplete="off">
+
+                                    <div id="mgmt_trainer_dd" class="form-select-dropdown trainer_dd"></div>
+                                </div>
+
+                                <ul class="list f-16 mt-1">
+                                    <li>{{ __('events.trainers_multi_hint') }}</li>
+                                    <li><a onclick="return false;" href="#" type="button" id="mgmt_trainer_clear" class="f-16 blink">{{ __('events.trainers_clear') }}</a></li>
+                                </ul>
+
+                                @error('trainer_user_ids')
+                                    <div class="text-xs text-red-600 mt-1">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <script>
+                (function(){
+                    // Тренеры серии — chips + autocomplete, по образцу events._partials.trainer,
+                    // но без семантики "override/наследование" (тут редактируется сама серия).
+                    function boot(){
+                        var el    = document.getElementById('mgmt_trainer_search');
+                        var dd    = document.getElementById('mgmt_trainer_dd');
+                        var chips = document.getElementById('mgmt_trainer_chips');
+                        var clr   = document.getElementById('mgmt_trainer_clear');
+                        if (!el || !dd || !chips || typeof jQuery === 'undefined') {
+                            return setTimeout(boot, 150);
+                        }
+                        if (window.__mgmtTrainerBooted) return;
+                        window.__mgmtTrainerBooted = true;
+
+                        var acBox = el.closest('.ac-box');
+                        var url = acBox && acBox.getAttribute('data-users-search-url');
+                        if (!url) return;
+
+                        if (dd.parentNode !== document.body) document.body.appendChild(dd);
+
+                        function pos(){
+                            var r = el.getBoundingClientRect();
+                            dd.style.cssText = 'position:fixed;left:'+r.left+'px;top:'+(r.bottom+2)+'px;width:'+r.width+'px;z-index:99999;background:#fff;border:1px solid #ccc;max-height:30rem;overflow:auto;box-shadow:0 .4rem 1.2rem rgba(0,0,0,.15);display:block';
+                        }
+                        function hide(){ dd.style.display='none'; dd.innerHTML=''; }
+
+                        function currentIds(){
+                            var a=[];
+                            chips.querySelectorAll('input[data-mgmt-trainer-hidden]').forEach(function(h){
+                                var v=parseInt(h.value,10); if(v>0)a.push(v);
+                            });
+                            return a;
+                        }
+
+                        function addChip(id,label){
+                            id=parseInt(id,10);
+                            if(!(id>0)||currentIds().indexOf(id)>-1)return;
+                            var s=document.createElement('span');
+                            s.className='chip custom-chip';
+                            s.setAttribute('data-chip-id',String(id));
+                            s.textContent=label||('#'+id);
+                            var b=document.createElement('span');
+                            b.className='chip-remove';
+                            b.setAttribute('data-id',String(id));
+                            b.textContent='×';
+                            b.style.cssText='margin-left:.5rem;cursor:pointer';
+                            b.addEventListener('click',function(){rmChip(id);});
+                            s.appendChild(b);
+                            var h=document.createElement('input');
+                            h.type='hidden'; h.name='trainer_user_ids[]';
+                            h.value=String(id); h.setAttribute('data-mgmt-trainer-hidden',String(id));
+                            chips.appendChild(s); chips.appendChild(h);
+                        }
+                        function rmChip(id){
+                            id=parseInt(id,10);
+                            chips.querySelectorAll('[data-mgmt-trainer-hidden="'+id+'"]').forEach(function(x){x.remove();});
+                            chips.querySelectorAll('[data-chip-id="'+id+'"]').forEach(function(x){x.remove();});
+                        }
+
+                        chips.addEventListener('click',function(e){
+                            var t=e.target;
+                            if(t&&t.classList&&t.classList.contains('chip-remove')){
+                                var id=t.getAttribute('data-id'); if(id)rmChip(id);
+                            }
+                        });
+                        if(clr) clr.addEventListener('click',function(e){e.preventDefault();chips.innerHTML='';});
+
+                        function render(items){
+                            if(!items.length){hide();return;}
+                            var ex={}; currentIds().forEach(function(i){ex[i]=true;});
+                            dd.innerHTML=items.map(function(u){
+                                var dis=ex[u.id]?';opacity:.4;pointer-events:none':'';
+                                var lbl=String(u.label).replace(/</g,'&lt;').replace(/"/g,'&quot;');
+                                var meta=u.meta?'<div style="font-size:1.3rem;color:#888">'+String(u.meta).replace(/</g,'&lt;')+'</div>':'';
+                                var botBadge=u.is_bot?'<span style="display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600;background:#fef3c7;color:#92400e;margin-left:.5rem">🤖 бот</span>':'';
+                                return '<div class="trainer-item" data-id="'+u.id+'" data-label="'+lbl+'" style="padding:.6rem 1rem;cursor:pointer;border-bottom:1px solid #eee;color:#222'+dis+'">'+lbl+botBadge+meta+'</div>';
+                            }).join('');
+                            pos();
+                            dd.querySelectorAll('.trainer-item').forEach(function(it){
+                                it.addEventListener('click',function(){
+                                    addChip(it.getAttribute('data-id'),it.getAttribute('data-label'));
+                                    el.value=''; hide();
+                                });
+                            });
+                        }
+
+                        var timer=null, last=el.value.trim();
+                        setInterval(function(){
+                            var v=(el.value||'').trim();
+                            if(v===last)return;
+                            last=v;
+                            clearTimeout(timer);
+                            if(v.length<2){hide();return;}
+                            timer=setTimeout(function(){
+                                jQuery.ajax({
+                                    url:url, data:{q:v,limit:10}, dataType:'json',
+                                    success:function(d){ render((d&&d.items)||[]); },
+                                    error:function(){ hide(); }
+                                });
+                            },200);
+                        },200);
+
+                        el.addEventListener('keydown',function(e){
+                            if(e.key==='Enter'){e.preventDefault();}
+                        });
+
+                        document.addEventListener('click',function(e){
+                            if(e.target===el)return;
+                            if(dd.contains(e.target))return;
+                            hide();
+                        });
+
+                        window.addEventListener('scroll',function(){ if(dd.style.display==='block')pos(); },true);
+                        window.addEventListener('resize',function(){ if(dd.style.display==='block')pos(); });
+                        hide();
+                    }
+                    boot();
+
+                    // Показ/скрытие блока в зависимости от типа мероприятия
+                    var mgmtTrainerFormats = ['training', 'training_game', 'camp', 'coach_student'];
+                    var mgmtTrainerFormatEl = document.getElementById('mgmt_format');
+                    var mgmtTrainerBlockEl = document.getElementById('mgmt_trainers_block');
+                    function applyMgmtTrainerVisibility(){
+                        if (!mgmtTrainerFormatEl || !mgmtTrainerBlockEl) return;
+                        mgmtTrainerBlockEl.style.display = mgmtTrainerFormats.indexOf(mgmtTrainerFormatEl.value) > -1 ? '' : 'none';
+                    }
+                    mgmtTrainerFormatEl?.addEventListener('change', applyMgmtTrainerVisibility);
+                })();
+                </script>
+
                 {{-- ===== БЛОК 2: Локация ===== --}}
                 <div class="ramka" style="z-index: 5">
                     <h2 class="-mt-05">{{ __('events.location_section') }}</h2>
