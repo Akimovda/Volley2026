@@ -50,17 +50,18 @@
 				$cancelUntil = Carbon::parse($event->cancel_self_until, 'UTC');
 			}
 
-			// Более строгий (ранний) дедлайн "при наличии листа ожидания" применяется
-			// НЕ ко всем подряд, а только к игроку, чья текущая позиция реально
-			// востребована кем-то в очереди (OccurrenceWaitlist.positions). Если в
-			// очереди никого нет — или там ждут только других позиций — действует
-			// обычный $cancelUntil, как будто очереди нет вовсе.
+			// Если позиция игрока СОВПАДАЕТ с чьей-то заявкой в листе ожидания —
+			// вместо обычного $cancelUntil действует отдельный, более поздний
+			// (мягкий) дедлайн cancel_self_until_waitlist: отменять безопасно
+			// дольше, потому что освободившееся место гарантированно тут же
+			// займёт кандидат из очереди (WaitlistService::autoBookNext()). Если
+			// совпадения нет — очередь на игрока не влияет, действует обычный
+			// $cancelUntil, как если бы очереди не было вовсе.
 			$myPosition = EventRegistration::query()
 				->where('user_id', $user->id)
 				->where('occurrence_id', $occurrence->id)
 				->value('position');
 
-			$cancelUntilWaitlist = null;
 			if (!empty($myPosition)) {
 				$hasWaitlistDemandForMyPosition = OccurrenceWaitlist::where('occurrence_id', $occurrence->id)
 					->get()
@@ -69,11 +70,7 @@
 				if ($hasWaitlistDemandForMyPosition) {
 					$raw = $occurrence->cancel_self_until_waitlist ?? $event->cancel_self_until_waitlist ?? null;
 					if ($raw) {
-						$cancelUntilWaitlist = Carbon::parse($raw, 'UTC');
-						// Строже основного лимита — значит раньше по времени
-						if ($cancelUntil === null || $cancelUntilWaitlist->lessThan($cancelUntil)) {
-							$cancelUntil = $cancelUntilWaitlist;
-						}
+						$cancelUntil = Carbon::parse($raw, 'UTC');
 					}
 				}
 			}
