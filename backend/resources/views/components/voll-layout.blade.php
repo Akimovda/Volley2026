@@ -15,7 +15,13 @@
 				k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
 			})(window, document,'script','https://mc.yandex.ru/metrika/tag.js', 'ym');
 
-			ym(49039181, 'init', {webvisor:true, clickmap:true, referrer: document.referrer, url: location.href, accurateTrackBounce:true, trackLinks:true});
+			// webvisor/clickmap вешают собственные глобальные обработчики кликов/DOM-снапшоты —
+			// внутри Capacitor-обёртки (нативное приложение) это не нужно и подозревается как
+			// причина "Maximum call stack size exceeded" на реальном устройстве (webvisor ловит
+			// CORS/ATS ошибки на beacon-запросы внутри WKWebView, но код всё равно выполняется и
+			// вешает обработчики). Счётчик визитов (ym init) продолжает работать и в приложении.
+			var __isVolleyApp = navigator.userAgent.indexOf('VolleyPlayApp') !== -1;
+			ym(49039181, 'init', {webvisor: !__isVolleyApp, clickmap: !__isVolleyApp, referrer: document.referrer, url: location.href, accurateTrackBounce:true, trackLinks:true});
 		</script>
 		<noscript><div><img src="https://mc.yandex.ru/watch/49039181" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
 		<!-- /Yandex.Metrika counter -->
