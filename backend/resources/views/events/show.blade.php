@@ -327,10 +327,13 @@ $hasCoords =
 		<x-slot name="script">
 			@include('events.show.scripts')
 			@php
-				$calStart = $starts ? $starts->toIso8601String() : '';
+				// VolleyCalendarPlugin.swift ожидает строгий ISO8601 в UTC с "Z" на конце
+				// (ISO8601DateFormatter().withInternetDateTime / базовый формат без опций) —
+				// toIso8601ZuluString() даёт ровно "Y-m-d\TH:i:s\Z", без офсета/дробных секунд.
+				$calStart = $starts ? $starts->toIso8601ZuluString() : '';
 				$calEnd   = $ends
-					? $ends->toIso8601String()
-					: ($starts ? $starts->copy()->addHours(2)->toIso8601String() : '');
+					? $ends->toIso8601ZuluString()
+					: ($starts ? $starts->copy()->addHours(2)->toIso8601ZuluString() : '');
 				$calLoc   = $address ?? '';
 				$calNotes = strip_tags($event->description ?? '');
 			@endphp
@@ -364,58 +367,20 @@ $hasCoords =
 
 				if (calBtn) {
 					calBtn.addEventListener('click', function () {
-						if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.VolleyCalendar) {
-							window.Capacitor.Plugins.VolleyCalendar.addEvent({
+						// Единая точка правды для календаря — capacitor-native.js
+						// (VolleyNative.addToCalendar): сам решает, звать нативный
+						// VolleyCalendar-плагин или скачать .ics, сам показывает
+						// пользователю успех/ошибку. Дублировать эту проверку
+						// здесь больше не нужно (раньше было два независимых
+						// пути, разъехавшихся между собой).
+						if (window.VolleyNative) {
+							window.VolleyNative.addToCalendar({
 								title: @json($event->title ?? __('events.show_calendar_default_title')),
-								location: @json($event->location->name ?? ''),
-								notes: @json(strip_tags($event->description ?? '')),
-								startDate: @json($event->starts_at?->toIso8601String() ?? ''),
-								endDate: @json($event->ends_at?->toIso8601String() ?? '')
-							}).then(function(r) {
-								swal(@json(__('events.show_calendar_done_title')), @json(__('events.show_calendar_done_text')), 'success');
-							}).catch(function(e) {
-								console.log('[Calendar] error:', e);
+								location: @json($calLoc),
+								notes: @json($calNotes),
+								startDate: @json($calStart),
+								endDate: @json($calEnd)
 							});
-						} else {
-							var title    = @json($event->title ?? '');
-							var location = @json($calLoc);
-							var notes    = @json($calNotes);
-							var start    = new Date(@json($calStart));
-							var end      = new Date(@json($calEnd));
-
-							function icsDate(d) {
-								return d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
-							}
-							// RFC 5545: экранировать бэкслеш, запятую, точку с запятой, перевод строки
-							function icsEscape(s) {
-								return (s || '')
-									.replace(/\\/g, '\\\\')
-									.replace(/;/g, '\\;')
-									.replace(/,/g, '\\,')
-									.replace(/\n/g, '\\n');
-							}
-							var uid = 'event-' + @json($occurrence->id ?? 0) + '@volleyplay.club';
-							var ics = [
-								'BEGIN:VCALENDAR',
-								'VERSION:2.0',
-								'PRODID:-//VolleyPlay//RU',
-								'BEGIN:VEVENT',
-								'UID:' + uid,
-								'DTSTAMP:' + icsDate(new Date()),
-								'DTSTART:' + icsDate(start),
-								'DTEND:' + icsDate(end),
-								'SUMMARY:' + icsEscape(title),
-								'LOCATION:' + icsEscape(location),
-								'DESCRIPTION:' + icsEscape(notes.substring(0, 500)),
-								'END:VEVENT',
-								'END:VCALENDAR'
-							].join('\r\n');
-
-							var blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
-							var a = document.createElement('a');
-							a.href = URL.createObjectURL(blob);
-							a.download = 'event.ics';
-							a.click();
 						}
 					});
 				}
