@@ -4,6 +4,7 @@
 	
 	use App\Models\User;
 	use App\Models\EventOccurrence;
+	use App\Models\EventRegistration;
 	use App\Models\OccurrenceWaitlist;
 	use Illuminate\Support\Carbon;
 	
@@ -49,16 +50,30 @@
 				$cancelUntil = Carbon::parse($event->cancel_self_until, 'UTC');
 			}
 
-			// Если есть лист ожидания — применить более ранний запрет отмены
+			// Более строгий (ранний) дедлайн "при наличии листа ожидания" применяется
+			// НЕ ко всем подряд, а только к игроку, чья текущая позиция реально
+			// востребована кем-то в очереди (OccurrenceWaitlist.positions). Если в
+			// очереди никого нет — или там ждут только других позиций — действует
+			// обычный $cancelUntil, как будто очереди нет вовсе.
+			$myPosition = EventRegistration::query()
+				->where('user_id', $user->id)
+				->where('occurrence_id', $occurrence->id)
+				->value('position');
+
 			$cancelUntilWaitlist = null;
-			$hasWaitlist = OccurrenceWaitlist::where('occurrence_id', $occurrence->id)->exists();
-			if ($hasWaitlist) {
-				$raw = $occurrence->cancel_self_until_waitlist ?? $event->cancel_self_until_waitlist ?? null;
-				if ($raw) {
-					$cancelUntilWaitlist = Carbon::parse($raw, 'UTC');
-					// Используем только если строже основного лимита
-					if ($cancelUntil === null || $cancelUntilWaitlist->greaterThan($cancelUntil)) {
-						$cancelUntil = $cancelUntilWaitlist;
+			if (!empty($myPosition)) {
+				$hasWaitlistDemandForMyPosition = OccurrenceWaitlist::where('occurrence_id', $occurrence->id)
+					->get()
+					->contains(fn (OccurrenceWaitlist $entry) => $entry->subscribedToPosition($myPosition));
+
+				if ($hasWaitlistDemandForMyPosition) {
+					$raw = $occurrence->cancel_self_until_waitlist ?? $event->cancel_self_until_waitlist ?? null;
+					if ($raw) {
+						$cancelUntilWaitlist = Carbon::parse($raw, 'UTC');
+						// Строже основного лимита — значит раньше по времени
+						if ($cancelUntil === null || $cancelUntilWaitlist->lessThan($cancelUntil)) {
+							$cancelUntil = $cancelUntilWaitlist;
+						}
 					}
 				}
 			}
