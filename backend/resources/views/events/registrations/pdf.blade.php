@@ -72,7 +72,7 @@ thead tr { background: #1a56db; color: #fff; }
 thead th { padding: 7px 8px; text-align: left; font-weight: bold; font-size: 10px; }
 tbody tr:nth-child(even) { background: #f4f7ff; }
 tbody tr { border-bottom: 1px solid #e2e8f0; }
-tbody td { padding: 6px 8px; vertical-align: top; font-size: 10px; }
+tbody td { padding: 6px 8px; vertical-align: top; font-size: 14px; }
 .num { color: #999; }
 .note { color: #555; font-style: italic; }
 .pos { color: #444; }
@@ -138,16 +138,27 @@ tbody td { padding: 6px 8px; vertical-align: top; font-size: 10px; }
     <tbody>
         @forelse($registrations as $i => $r)
         @php
-            $fullName = trim(implode(' ', array_filter([
-                $r->last_name  ?? '',
+            $restOfName = trim(implode(' ', array_filter([
                 $r->first_name ?? '',
                 $r->patronymic ?? '',
             ])));
-            $displayName = $fullName ?: ($r->name ?: ('User #' . $r->user_id));
+            $hasLastName = !empty($r->last_name);
+            $displayName = $hasLastName || $restOfName
+                ? trim(($r->last_name ?? '') . ' ' . $restOfName)
+                : ($r->name ?: ('User #' . $r->user_id));
         @endphp
         <tr>
             <td class="num">{{ $i + 1 }}</td>
-            @if($showName)<td>{{ $displayName }}@if(!empty($r->is_bot)) (бот)@endif</td>@endif
+            @if($showName)
+            <td>
+                @if($hasLastName)
+                    <strong>{{ $r->last_name }}</strong>@if($restOfName) {{ $restOfName }}@endif
+                @else
+                    {{ $displayName }}
+                @endif
+                @if(!empty($r->is_bot)) (бот)@endif
+            </td>
+            @endif
             @if($showPhone)<td>{{ $r->phone ?: '—' }}</td>@endif
             @if($showPosition)<td class="pos">{{ $posLabels[$r->position ?? ''] ?? ($r->position ?: '—') }}</td>@endif
             <td class="note">{{ $r->organizer_note ?: '' }}</td>
