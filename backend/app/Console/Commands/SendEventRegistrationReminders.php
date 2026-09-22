@@ -74,7 +74,12 @@ class SendEventRegistrationReminders extends Command
                 'e.title as event_title',
                 'cit.timezone as location_city_timezone',
             ])
-            ->whereNotNull('er.occurrence_id');
+            ->whereNotNull('er.occurrence_id')
+            ->where(function ($w) {
+                $w->whereNull('eo.is_cancelled')
+                  ->orWhere('eo.is_cancelled', false);
+            })
+            ->whereNull('eo.cancelled_at');
 
         if (Schema::hasColumn('event_registrations', 'deleted_at')) {
             $q->whereNull('er.deleted_at');
