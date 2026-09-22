@@ -1074,7 +1074,17 @@ body.dark .gradient-marker-line,
                 <div class="ramka">
                     <div class="card-body">
 						<h2 class="-mt-05">Контакты</h2>
-						
+
+						@auth
+						@if((auth()->user()->isAdmin() || auth()->user()->isOrganizer() || auth()->user()->isStaff()) && $user->phone)
+						<div class="d-flex flex-wrap gap-1 fc mb-1">
+							<a class="btn" href="tel:{{ $user->phone }}">
+								{{ $user->formatted_phone }}
+							</a>
+						</div>
+						@endif
+						@endauth
+
                         @if(!$allowContact)
 						<div class="alert alert-info">
 							Пользователь запретил связываться с ним через Telegram/VK.
@@ -1089,16 +1099,7 @@ body.dark .gradient-marker-line,
 						</div>
                         @elseif($canShowContactButtons)
 						<div class="d-flex flex-wrap gap-1 fc">
-							
-							@auth
-							@if(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isOrganizer()) && $user->phone)
-							<a class="btn" href="tel:{{ $user->phone }}">
-								{{ $user->formatted_phone }}
-							</a>
-							@endif
-							@endauth	
-							
-							
+
 							@if($tgUrl)
 							<a class="btn"
 							href="{{ $tgUrl }}" target="_blank" rel="noopener noreferrer">
