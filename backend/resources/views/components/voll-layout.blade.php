@@ -62,6 +62,22 @@
 		@if(isset($canonical))
         <link rel="canonical" href="{{ trim($canonical) }}">
 		@endif
+		@php
+			$ogTitle = trim($title ?? __('ui.site_title'));
+			$ogDescription = trim($description ?? __('ui.site_description'));
+			$ogUrl = isset($canonical) ? trim($canonical) : url()->current();
+			$ogImage = isset($og_image) ? trim($og_image) : asset('icons/app-logo.png');
+		@endphp
+		<meta property="og:type" content="website">
+		<meta property="og:site_name" content="{{ __('ui.site_title') }}">
+		<meta property="og:title" content="{{ $ogTitle }}">
+		<meta property="og:description" content="{{ $ogDescription }}">
+		<meta property="og:url" content="{{ $ogUrl }}">
+		<meta property="og:image" content="{{ $ogImage }}">
+		<meta name="twitter:card" content="summary_large_image">
+		<meta name="twitter:title" content="{{ $ogTitle }}">
+		<meta name="twitter:description" content="{{ $ogDescription }}">
+		<meta name="twitter:image" content="{{ $ogImage }}">
 		<script>
 			if (!document.documentElement.classList.contains('is-app')) {
 				var s = document.createElement('script');
