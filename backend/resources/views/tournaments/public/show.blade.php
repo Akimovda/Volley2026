@@ -3,6 +3,20 @@
 	<x-slot name="description">{{ $event->title }} — {{ __('tournaments.pub_description') }}</x-slot>
 	<x-slot name="canonical">{{ route('tournament.public.show', $event) }}</x-slot>
 	<x-slot name="h1">{{ $event->title }}</x-slot>
+
+	@php
+		$ogImage = null;
+		if (!empty($event->event_photos) && count($event->event_photos) > 0) {
+			$ogFirstPhoto = \Spatie\MediaLibrary\MediaCollections\Models\Media::find($event->event_photos[0]);
+			if ($ogFirstPhoto) {
+				$ogImage = $ogFirstPhoto->getUrl('event_thumb');
+			}
+		}
+		if (!$ogImage) {
+			$ogImage = asset('img/' . ($event->direction === 'beach' ? 'beach.webp' : 'classic.webp'));
+		}
+	@endphp
+	<x-slot name="og_image">{{ $ogImage }}</x-slot>
 	
 	{{-- Активный тур --}}
 	@if($selectedOccurrence)

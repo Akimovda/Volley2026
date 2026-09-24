@@ -115,7 +115,21 @@ $hasCoords =
 		<x-slot name="canonical">
 			{{ route('events.show', ['event' => $event->id, 'occurrence' => $occurrence?->id]) }}
 		</x-slot>
-		
+
+		@php
+			$ogImage = null;
+			if (!empty($event->event_photos) && count($event->event_photos) > 0) {
+				$ogFirstPhoto = \Spatie\MediaLibrary\MediaCollections\Models\Media::find($event->event_photos[0]);
+				if ($ogFirstPhoto) {
+					$ogImage = $ogFirstPhoto->getUrl('event_thumb');
+				}
+			}
+			if (!$ogImage) {
+				$ogImage = asset('img/' . ($event->direction === 'beach' ? 'beach.webp' : 'classic.webp'));
+			}
+		@endphp
+		<x-slot name="og_image">{{ $ogImage }}</x-slot>
+
 		<x-slot name="h1">
 			{{ $event->title }}
 		</x-slot>
