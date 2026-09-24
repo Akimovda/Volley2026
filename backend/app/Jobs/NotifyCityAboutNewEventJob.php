@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\Event;
+use App\Models\EventOccurrence;
 use App\Models\User;
 use App\Models\UserNotification;
 use App\Services\UserNotificationService;
@@ -17,8 +18,12 @@ use Illuminate\Support\Facades\Log;
  * Рассылка «новое мероприятие в городе» жителям — чанками, цепочкой (каждый job
  * обрабатывает один чанк получателей и диспатчит следующий с новым offset).
  * Дедуп на уровне события — events.city_notified_at (проставляется атомарно
- * ДО первого диспатча, см. EventStoreService::store()). Rate-limit (1/сутки на
+ * ДО первого диспатча, см. EventStoreService::store()). Rate-limit (1/час на
  * пользователя, per type) — здесь, батчем на чанк, перед вызовом create().
+ * Уведомления, чья occurrence с тех пор отменена/удалена, в счёт лимита НЕ
+ * идут (alreadyNotifiedUserIds()) — иначе организатор, поправивший ошибку
+ * (создал новое взамен отменённого мероприятия в течение того же часа),
+ * не смог бы известить жителей о верном мероприятии.
  */
 class NotifyCityAboutNewEventJob implements ShouldQueue
 {
@@ -74,13 +79,8 @@ class NotifyCityAboutNewEventJob implements ShouldQueue
             return;
         }
 
-        $rateLimitHours = (int) config('notifications.new_event_city_notify_rate_limit_hours', 24);
-        $alreadyNotifiedIds = UserNotification::query()
-            ->whereIn('user_id', $chunkUsers->pluck('id'))
-            ->where('type', 'new_event_in_city')
-            ->where('created_at', '>=', now()->subHours($rateLimitHours))
-            ->pluck('user_id')
-            ->all();
+        $rateLimitHours = (int) config('notifications.new_event_city_notify_rate_limit_hours', 1);
+        $alreadyNotifiedIds = $this->alreadyNotifiedUserIds($chunkUsers->pluck('id')->all(), $rateLimitHours);
 
         $address = $this->buildAddress($event);
 
@@ -110,6 +110,48 @@ class NotifyCityAboutNewEventJob implements ShouldQueue
             self::dispatch($this->eventId, $this->cityId, $this->organizerId, $this->offset + $chunkSize)
                 ->onQueue('broadcasts');
         }
+    }
+
+    /**
+     * user_id тех, кто уже получал new_event_in_city в пределах rate-limit окна
+     * И чья occurrence (из payload прошлого уведомления) всё ещё актуальна —
+     * не отменена и не удалена физически.
+     */
+    private function alreadyNotifiedUserIds(array $userIds, int $rateLimitHours): array
+    {
+        $recentNotifs = UserNotification::query()
+            ->whereIn('user_id', $userIds)
+            ->where('type', 'new_event_in_city')
+            ->where('created_at', '>=', now()->subHours($rateLimitHours))
+            ->get(['user_id', 'payload']);
+
+        if ($recentNotifs->isEmpty()) {
+            return [];
+        }
+
+        $occurrenceIds = $recentNotifs
+            ->map(fn (UserNotification $n) => $n->payload['occurrence_id'] ?? null)
+            ->filter()
+            ->unique()
+            ->values();
+
+        $activeOccurrenceIds = EventOccurrence::query()
+            ->whereIn('id', $occurrenceIds)
+            ->whereNull('cancelled_at')
+            ->pluck('id')
+            ->all();
+
+        $result = [];
+        foreach ($recentNotifs as $n) {
+            $occId = $n->payload['occurrence_id'] ?? null;
+            if ($occId !== null && !in_array($occId, $activeOccurrenceIds, true)) {
+                // occurrence отменена или физически удалена — не считаем за лимит
+                continue;
+            }
+            $result[] = $n->user_id;
+        }
+
+        return array_values(array_unique($result));
     }
 
     private function buildAddress(Event $event): string

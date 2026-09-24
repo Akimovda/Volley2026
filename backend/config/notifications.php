@@ -10,7 +10,9 @@ return [
     'new_event_city_notify_enabled' => (bool) env('NEW_EVENT_CITY_NOTIFY_ENABLED', true),
 
     // Максимум 1 уведомление этого типа на пользователя за N часов (rate-limit).
-    'new_event_city_notify_rate_limit_hours' => (int) env('NEW_EVENT_CITY_NOTIFY_RATE_LIMIT_HOURS', 24),
+    // Уведомления про мероприятия, отменённые/удалённые после отправки, в счёт
+    // лимита не идут — см. NotifyCityAboutNewEventJob::alreadyNotifiedUserIds().
+    'new_event_city_notify_rate_limit_hours' => (int) env('NEW_EVENT_CITY_NOTIFY_RATE_LIMIT_HOURS', 1),
 
     // Размер чанка получателей на одну job (цепочка job-ов, не одна большая).
     'new_event_city_notify_chunk_size' => (int) env('NEW_EVENT_CITY_NOTIFY_CHUNK_SIZE', 75),
