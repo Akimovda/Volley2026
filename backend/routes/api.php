@@ -26,7 +26,7 @@ Route::post('/integrations/max/complete-personal-bind', [MaxBindWebhookControlle
 Route::get(
     '/occurrences/{occurrence}/participants',
     [OccurrenceParticipantsController::class, 'index']
-);
+)->middleware('throttle:30,1');
 
 Route::post('/integrations/channels/complete-bind', [\App\Http\Controllers\Api\ChannelBindWebhookController::class, 'complete']);
 Route::post('/integrations/vk/complete-notify-bind', [VkNotifyWebhookController::class, 'complete']);
