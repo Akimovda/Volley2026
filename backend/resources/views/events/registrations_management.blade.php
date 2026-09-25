@@ -378,7 +378,7 @@
         if (!input) return;
 
         // URL роута поиска пользователей
-        var searchUrl = '{{ route("api.users.search") }}';
+        var searchUrl = '{{ route("ajax.users.search") }}';
 
         function clearSelection() {
             hidden.value = '';

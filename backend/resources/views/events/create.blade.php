@@ -437,7 +437,7 @@ if ($initialStep < 1 || $initialStep > 3) {
 				data-initial-step="{{ $initialStep }}"
 				data-admin-id="{{ auth()->id() }}"
 				data-organizer-city-id="{{ auth()->user()->city_id ?? '' }}"
-				data-users-search-url="{{ route('api.users.search') }}"
+				data-users-search-url="{{ route('ajax.users.search') }}"
 				data-has-errors="{{ $errors->any() ? '1' : '0' }}"
 				enctype="multipart/form-data"
                 >

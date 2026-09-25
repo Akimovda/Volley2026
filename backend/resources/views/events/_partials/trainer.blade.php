@@ -42,7 +42,7 @@
                     <div class="f-13">{{ __('events.occ_trainers_override') }}</div>
                 @endif
 
-                <div class="ac-box" data-users-search-url="{{ route('api.users.search') }}">
+                <div class="ac-box" data-users-search-url="{{ route('ajax.users.search') }}">
                     <div id="occ_trainer_chips" class="mb-1">
                         @foreach($oldIds as $tid)
                             <span class="chip custom-chip" data-chip-id="{{ $tid }}">

@@ -41,7 +41,7 @@ return $statusText($r) === __('events.regs_status_cancelled');
 };
 
 $activeRegistrations = $registrations->filter(fn($r) => !$isCancelled($r))->values();
-$searchUrl = route('api.users.search');
+$searchUrl = route('ajax.users.search');
 
 // Обмен позициями: локальный (без сети) список уже записавшихся — для JS-фильтра
 // в модалке "Поменять позицию с другим игроком" (по образцу captain-picker'а
