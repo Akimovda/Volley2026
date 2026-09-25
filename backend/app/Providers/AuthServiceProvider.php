@@ -34,6 +34,15 @@ class AuthServiceProvider extends ServiceProvider
             $u && method_exists($u, 'isStaff') && $u->isStaff()
         );
 
+        /**
+         * "Доверенный" пользователь: admin/superadmin, organizer или staff.
+         * Единая точка для доступа к чувствительным полям (telegram, точный
+         * поиск и т.п.) в публичных/полу-публичных разделах сайта.
+         */
+        Gate::define('is-trusted', fn (?User $u) =>
+            $u && ($u->isAdmin() || $u->isOrganizer() || (method_exists($u, 'isStaff') && $u->isStaff()))
+        );
+
         // --------------------------------------------------
         // ЗАЯВКИ / УПРАВЛЕНИЕ РОЛЯМИ
         // --------------------------------------------------

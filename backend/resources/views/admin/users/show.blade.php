@@ -417,8 +417,11 @@
 									const q = this.value.trim();
 									if (q.length < 2) { results.style.display = 'none'; return; }
 									timer = setTimeout(async function() {
-										const res  = await fetch('/api/users/search?q=' + encodeURIComponent(q) + '&roles=organizer,admin');
-										const data = await res.json();
+										const res  = await fetch('/ajax/users/search?q=' + encodeURIComponent(q) + '&roles=organizer,admin', {
+											headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+											credentials: 'same-origin'
+										});
+										const data = res.status === 401 ? { ok: false, items: [] } : await res.json();
 										if (!data.ok || !data.items.length) {
 											results.innerHTML = '<div class="p-2 f-14" style="opacity:.6;">Ничего не найдено</div>';
 											results.style.display = ''; return;

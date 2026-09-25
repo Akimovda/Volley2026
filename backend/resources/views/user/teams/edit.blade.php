@@ -242,9 +242,9 @@ if (request()->has('event_id') || session('return_event_id')) {
             if (q.length < 2) { hideDd(); return; }
             dd.innerHTML = '<div class="city-message">Поиск…</div>'; showDd();
             timer = setTimeout(function() {
-                fetch('/api/users/search?q=' + encodeURIComponent(q), {
-                    headers: {'Accept':'application/json'}, credentials:'same-origin'
-                }).then(function(r){return r.json();}).then(function(data){
+                fetch('/ajax/users/search?q=' + encodeURIComponent(q), {
+                    headers: {'Accept':'application/json','X-Requested-With':'XMLHttpRequest'}, credentials:'same-origin'
+                }).then(function(r){return r.status === 401 ? { items: [] } : r.json();}).then(function(data){
                     dd.innerHTML = '';
                     var items = data.items || [];
                     if (!items.length) { dd.innerHTML = '<div class="city-message">Ничего не найдено</div>'; showDd(); return; }

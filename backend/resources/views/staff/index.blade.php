@@ -126,8 +126,11 @@
                 clearTimeout(searchTimeout);
                 if (q.length < 2) { resultsBox.style.display = 'none'; return; }
                 searchTimeout = setTimeout(async function() {
-                    const res  = await fetch('/api/users/search?q=' + encodeURIComponent(q));
-                    const data = await res.json();
+                    const res  = await fetch('/ajax/users/search?q=' + encodeURIComponent(q), {
+                        headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                        credentials: 'same-origin'
+                    });
+                    const data = res.status === 401 ? { ok: false, items: [] } : await res.json();
                     if (!data.ok || !data.items.length) {
                         resultsBox.innerHTML = '<div class="p-2 f-14" style="opacity:.6;">Ничего не найдено</div>';
                         resultsBox.style.display = '';

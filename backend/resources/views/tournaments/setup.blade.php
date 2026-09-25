@@ -949,15 +949,21 @@ $tourNumber = $seasonData
 				clearTimeout(t); var q = this.value.trim();
 				if(q.length < 2) return;
 				t = setTimeout(function(){
-					jQuery.ajax({url:'/api/users/search', data:{q:q}, success:function(r){
-						var el = document.getElementById('subSearchResults'); el.innerHTML='';
-						(r.items||[]).forEach(function(u){
-							var d=document.createElement('div');
-							d.style.cssText='padding:5px 0;border-bottom:1px solid rgba(128,128,128,.08);display:flex;align-items:center;gap:8px;cursor:pointer';
-							d.innerHTML='<span style="flex:1">'+(u.label||u.name)+'</span><button type="button" class="btn btn-small" onclick="selectSubstitute('+u.id+',\''+(u.label||u.name).replace(/'/g,"\\'")+'\',\'external\')">{{ __("tournaments.invite_substitute") }}</button>';
-							el.appendChild(d);
-						});
-					}});
+					jQuery.ajax({
+						url:'/ajax/users/search',
+						data:{q:q},
+						headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'},
+						success:function(r){
+							var el = document.getElementById('subSearchResults'); el.innerHTML='';
+							(r.items||[]).forEach(function(u){
+								var d=document.createElement('div');
+								d.style.cssText='padding:5px 0;border-bottom:1px solid rgba(128,128,128,.08);display:flex;align-items:center;gap:8px;cursor:pointer';
+								d.innerHTML='<span style="flex:1">'+(u.label||u.name)+'</span><button type="button" class="btn btn-small" onclick="selectSubstitute('+u.id+',\''+(u.label||u.name).replace(/'/g,"\\'")+'\',\'external\')">{{ __("tournaments.invite_substitute") }}</button>';
+								el.appendChild(d);
+							});
+						},
+						error:function(){ /* 401 или сеть — молча пустой результат */ }
+					});
 				}, 300);
 			});
 		})();
@@ -3628,11 +3634,11 @@ $tourNumber = $seasonData
 				dd.innerHTML = '<div class="city-message">' + @json(__('tournaments.setup_search_loading')) + '</div>';
 				showDd();
 				timer = setTimeout(function() {
-					fetch('/api/users/search?q=' + encodeURIComponent(q), {
-						headers: { 'Accept': 'application/json' },
+					fetch('/ajax/users/search?q=' + encodeURIComponent(q), {
+						headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
 						credentials: 'same-origin'
 					})
-					.then(function(r) { return r.json(); })
+					.then(function(r) { return r.status === 401 ? { items: [] } : r.json(); })
 					.then(function(data) {
 						dd.innerHTML = '';
 						var items = data.items || data || [];
@@ -3697,10 +3703,10 @@ $tourNumber = $seasonData
 				dd.innerHTML = '<div class="city-message">Загрузка...</div>';
 				showDd();
 				timer = setTimeout(function() {
-					fetch('/api/users/search?q=' + encodeURIComponent(q), {
-						headers: {'Accept':'application/json'}, credentials:'same-origin'
+					fetch('/ajax/users/search?q=' + encodeURIComponent(q), {
+						headers: {'Accept':'application/json','X-Requested-With':'XMLHttpRequest'}, credentials:'same-origin'
 					})
-					.then(function(r){ return r.json(); })
+					.then(function(r){ return r.status === 401 ? { items: [] } : r.json(); })
 					.then(function(data){
 						dd.innerHTML = '';
 						var items = data.items || data || [];

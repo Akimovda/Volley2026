@@ -5,18 +5,26 @@ namespace App\Http\Controllers;
 use App\Models\City;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class UserDirectoryController extends Controller
 {
     public function index(Request $request)
     {
-        $q = trim((string) $request->query('q', ''));
-        $cityId = $request->query('city_id');
-        $gender = $request->query('gender'); // m|f
-        $classic = $request->query('classic_level');
-        $beach = $request->query('beach_level');
-        $ageMin = $request->query('age_min');
-        $ageMax = $request->query('age_max');
+        $viewer = $request->user();
+        $isTrusted = Gate::forUser($viewer)->allows('is-trusted');
+
+        // Гость не может фильтровать/искать — форма ему не показывается,
+        // но параметры в query-строке всё равно должны игнорироваться сервером.
+        $filtersAllowed = (bool) $viewer;
+
+        $q = $filtersAllowed ? trim((string) $request->query('q', '')) : '';
+        $cityId = $filtersAllowed ? $request->query('city_id') : null;
+        $gender = $filtersAllowed ? $request->query('gender') : null; // m|f
+        $classic = $filtersAllowed ? $request->query('classic_level') : null;
+        $beach = $filtersAllowed ? $request->query('beach_level') : null;
+        $ageMin = $filtersAllowed ? $request->query('age_min') : null;
+        $ageMax = $filtersAllowed ? $request->query('age_max') : null;
 
         $users = User::query()
             ->with('city')
@@ -24,13 +32,16 @@ class UserDirectoryController extends Controller
             ->where(function ($q2) {
                 $q2->whereNull('is_hidden')->orWhere('is_hidden', false);
             })
-            ->when($q !== '', function ($query) use ($q) {
-                $query->where(function ($qq) use ($q) {
+            ->when($q !== '', function ($query) use ($q, $isTrusted) {
+                $query->where(function ($qq) use ($q, $isTrusted) {
                     $qq->whereRaw("CONCAT(last_name, ' ', first_name) ILIKE ?", ["%{$q}%"])
                        ->orWhereRaw("CONCAT(first_name, ' ', last_name) ILIKE ?", ["%{$q}%"])
                        ->orWhere('first_name', 'ilike', "%{$q}%")
-                       ->orWhere('last_name', 'ilike', "%{$q}%")
-                       ->orWhere('telegram_username', 'ilike', "%{$q}%");
+                       ->orWhere('last_name', 'ilike', "%{$q}%");
+
+                    if ($isTrusted) {
+                        $qq->orWhere('telegram_username', 'ilike', "%{$q}%");
+                    }
                 });
             })
             ->when($cityId, fn ($query) => $query->where('city_id', $cityId))
@@ -51,15 +62,18 @@ class UserDirectoryController extends Controller
             ->paginate(24)
             ->withQueryString();
 
-        $cities = City::query()
-            ->whereIn('id', \App\Models\User::whereNotNull('city_id')->pluck('city_id')->unique())
-            ->orderBy('name')
-            ->limit(300)
-            ->get();
+        $cities = $filtersAllowed
+            ? City::query()
+                ->whereIn('id', \App\Models\User::whereNotNull('city_id')->pluck('city_id')->unique())
+                ->orderBy('name')
+                ->limit(300)
+                ->get()
+            : collect();
 
         return view('users.index', [
             'users' => $users,
             'cities' => $cities,
+            'canFilter' => $filtersAllowed,
 
             // фильтры в форму
             'filters' => [

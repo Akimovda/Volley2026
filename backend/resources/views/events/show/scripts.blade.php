@@ -27,6 +27,10 @@
 	
 	(function () {
 		const occurrenceId = @json($occurrence->id ?? null);
+		// Токен приватного мероприятия (/e/{token} либо ?token=) — нужен, чтобы
+		// /api/occurrences/{id}/participants мог подтвердить доступ гостю по той же
+		// ссылке, без сессии (EventVisibilityService::canViewPrivateEvent).
+		const privateEventToken = @json(request()->route('token') ?? request()->query('token'));
 		const isTournament = @json($event->format === 'tournament');
 		// Единый источник цвета уровня — тот же PHP-хелпер level_color(), что и на
 		// турнирных карточках (events/show/players.blade.php), карта не дублируется вручную.
@@ -137,7 +141,12 @@
 			}
 
 			try {
-				const res = await fetch(`/api/occurrences/${occurrenceId}/participants`);
+				const participantsUrl = `/api/occurrences/${occurrenceId}/participants`
+					+ (privateEventToken ? `?token=${encodeURIComponent(privateEventToken)}` : '');
+				const res = await fetch(participantsUrl);
+				if (res.status === 404) {
+					return;
+				}
 				const data = await res.json();
 
 				const mainPlayers    = data.filter(p => p.position !== 'reserve');

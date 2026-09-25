@@ -457,65 +457,6 @@ use App\Services\StaffLogService;
             
 			return response()->json(['ok' => true, 'items' => $items]);
 		}
-		/**
-			* ✅ AJAX поиск пользователей для выбора тренера
-		*/
-       public function search(Request $request)
-{
-    $q = trim((string)$request->query('q',''));
-
-    if (mb_strlen($q) < 2) {
-        return response()->json([
-            'ok' => true,
-            'items' => []
-        ]);
-    }
-
-    $like = '%'.$q.'%';
-
-    $users = User::query()
-        ->where(function ($w) use ($like) {
-
-            $w->where('first_name','ILIKE',$like)
-              ->orWhere('last_name','ILIKE',$like)
-              ->orWhereRaw("(first_name || ' ' || last_name) ILIKE ?", [$like])
-              ->orWhere('telegram_username','ILIKE',$like)
-              ->orWhere('email','ILIKE',$like);
-
-        })
-        ->orderBy('last_name')
-        ->orderBy('first_name')
-        ->limit(15)
-        ->get([
-            'id',
-            'first_name',
-            'last_name',
-            'telegram_username',
-            'email'
-        ]);
-
-    $items = $users->map(function ($u) {
-
-        $name = trim(($u->first_name ?? '').' '.($u->last_name ?? ''));
-
-        if ($name === '') {
-            $name = $u->email;
-        }
-
-        return [
-            'id' => (int)$u->id,
-            'label' => $name,
-            'meta' => $u->telegram_username ?? '',
-            'sub' => $u->email
-        ];
-
-    })->values();
-
-    return response()->json([
-        'ok' => true,
-        'items' => $items
-    ]);
-}
         public function searchCities(Request $request)
         {
             $user = $request->user();

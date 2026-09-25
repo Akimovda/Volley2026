@@ -1243,7 +1243,7 @@ $showWaitlistViewer = !$isTournament && !$eventStarted && $waitlistCount > 0;
 				var btn     = document.getElementById('invite-submit-btn');
 				var form    = document.getElementById('invite-player-form');
 				var timer   = null;
-				var url     = '/api/users/search';
+				var url     = '/ajax/users/search';
 				var selected = {}; // id -> label
 				
 				if (!input) return;
@@ -1369,10 +1369,10 @@ $showWaitlistViewer = !$isTournament && !$eventStarted && $waitlistCount > 0;
 					
 					timer = setTimeout(function() {
 						fetch(url + '?q=' + encodeURIComponent(q), {
-							headers: { 'Accept': 'application/json' },
+							headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
 							credentials: 'same-origin'
 						})
-						.then(function(r) { return r.json(); })
+						.then(function(r) { return r.status === 401 ? { items: [] } : r.json(); })
 						.then(function(data) {
 							render(data.items || []);
 						})
@@ -1463,11 +1463,11 @@ $showWaitlistViewer = !$isTournament && !$eventStarted && $waitlistCount > 0;
 					showDd();
 					
 					timer = setTimeout(function() {
-						fetch('/api/users/search?exclude_bots=1&q=' + encodeURIComponent(q), {
-							headers: { 'Accept': 'application/json' },
+						fetch('/ajax/users/search?exclude_bots=1&q=' + encodeURIComponent(q), {
+							headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
 							credentials: 'same-origin'
 						})
-						.then(function(r) { return r.json(); })
+						.then(function(r) { return r.status === 401 ? { items: [] } : r.json(); })
 						.then(function(data) { render(data.items || []); })
 						.catch(function() {
 							dd.innerHTML = '<div class="city-message">' + i18n.error + '</div>';

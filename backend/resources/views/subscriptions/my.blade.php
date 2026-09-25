@@ -224,11 +224,11 @@
                 dd.innerHTML = '<div class="city-message">' + @json(__('subscriptions.my_search_searching')) + '</div>';
                 showDd();
                 timer = setTimeout(function() {
-                    fetch('/api/users/search?q=' + encodeURIComponent(q), {
-                        headers: {'Accept': 'application/json'},
+                    fetch('/ajax/users/search?q=' + encodeURIComponent(q), {
+                        headers: {'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest'},
                         credentials: 'same-origin'
                     })
-                    .then(function(r) { return r.json(); })
+                    .then(function(r) { return r.status === 401 ? { items: [] } : r.json(); })
                     .then(function(data) {
                         dd.innerHTML = '';
                         var items = data.items || [];

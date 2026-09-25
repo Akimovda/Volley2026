@@ -5,15 +5,30 @@ use App\Http\Controllers\Controller;
 use App\Models\EventOccurrence;
 use App\Models\EventRegistration;
 use App\Models\PremiumSubscription;
+use App\Services\EventVisibilityService;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class OccurrenceParticipantsController extends Controller
 {
-    public function index($occurrenceId)
+    public function __construct(private EventVisibilityService $visibility)
+    {
+    }
+
+    public function index(Request $request, $occurrenceId)
     {
         // Определяем направление мероприятия чтобы показать правильный уровень
-        $occurrence = EventOccurrence::with('event:id,direction')->find($occurrenceId);
-        $direction  = $occurrence?->event?->direction ?? 'classic';
+        $occurrence = EventOccurrence::with('event')->find($occurrenceId);
+        $event      = $occurrence?->event;
+
+        // Приватное мероприятие — та же проверка видимости, что и на странице
+        // события (EventShowService::buildEventPage), включая доступ по ?token=.
+        if ($event && $this->visibility->isPrivateEventRow($event)
+            && !$this->visibility->canViewPrivateEvent($event, $request->user())) {
+            abort(404);
+        }
+
+        $direction  = $event?->direction ?? 'classic';
         $isBeach    = $direction === 'beach';
 
         $registrations = EventRegistration::query()

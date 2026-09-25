@@ -11,7 +11,7 @@ class VkNotifyWebhookController extends Controller
     protected function assertSecret(Request $request): void
     {
         $incoming = (string) $request->header('X-Bind-Secret', '');
-        $expected = (string) config('services.bind.secret', env('BIND_WEBHOOK_SECRET', ''));
+        $expected = (string) config('services.bind.secret');
 
         abort_if($expected === '', 500, 'BIND_WEBHOOK_SECRET is not configured.');
         abort_if(!hash_equals($expected, $incoming), 403, 'Invalid secret.');

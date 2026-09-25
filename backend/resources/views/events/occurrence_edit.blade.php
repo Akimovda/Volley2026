@@ -380,7 +380,7 @@
             }, 10);
         });
 
-        // ===== Поиск тренера (reuse /api/users/search если есть) =====
+        // ===== Поиск тренера (reuse /ajax/users/search) =====
         var trainerInput = document.getElementById('occ_trainer_search');
         var trainerId = document.getElementById('occ_trainer_id');
         var trainerResults = document.getElementById('occ_trainer_results');
@@ -399,12 +399,13 @@
                 if (q.length < 2) return;
 
                 searchTimer = setTimeout(function() {
-                    fetch('/api/users/search?q=' + encodeURIComponent(q), {
-                        headers: { 'Accept': 'application/json' }
+                    fetch('/ajax/users/search?q=' + encodeURIComponent(q), {
+                        headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                        credentials: 'same-origin'
                     })
-                    .then(function(r) { return r.json(); })
+                    .then(function(r) { return r.status === 401 ? { items: [] } : r.json(); })
                     .then(function(data) {
-                        var list = Array.isArray(data) ? data : (data.data || []);
+                        var list = Array.isArray(data) ? data : (data.items || data.data || []);
                         if (!list.length) {
                             trainerResults.innerHTML = '<div class="card f-13" style="margin-top:.5rem">Ничего не найдено</div>';
                             return;

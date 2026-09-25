@@ -464,9 +464,9 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
             dd.innerHTML = '<div class="city-message">{{ __("events.show_pl_js_searching") }}</div>';
             showDd();
             timer = setTimeout(function(){
-                fetch('/api/users/search?q=' + encodeURIComponent(q), {
-                    headers:{'Accept':'application/json'}, credentials:'same-origin'
-                }).then(function(r){ return r.json(); }).then(function(data){
+                fetch('/ajax/users/search?q=' + encodeURIComponent(q), {
+                    headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'}, credentials:'same-origin'
+                }).then(function(r){ return r.status === 401 ? { items: [] } : r.json(); }).then(function(data){
                     var items = data.items || [];
                     dd.innerHTML = '';
                     if (!items.length){ dd.innerHTML='<div class="city-message">{{ __("events.show_pl_js_not_found") }}</div>'; showDd(); return; }
@@ -961,17 +961,23 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
         clearTimeout(t); var q = this.value.trim();
         if (q.length < 2) return;
         t = setTimeout(function(){
-            jQuery.ajax({url: '/api/users/search', data: {q: q}, success: function(r){
-                var el = document.getElementById('subSearchResults'); el.innerHTML = '';
-                (r.items || []).forEach(function(u){
-                    var d = document.createElement('div');
-                    d.style.cssText = 'padding:5px 0;border-bottom:1px solid rgba(128,128,128,.08);display:flex;align-items:center;gap:8px';
-                    d.innerHTML = '<span style="flex:1">' + (u.label || u.name) + '</span>'
-                        + '<button type="button" class="btn btn-small" onclick="selectSubstitute(' + u.id + ',\''
-                        + (u.label || u.name).replace(/'/g, "\\'") + '\',\'external\')">Пригласить</button>';
-                    el.appendChild(d);
-                });
-            }});
+            jQuery.ajax({
+                url: '/ajax/users/search',
+                data: {q: q},
+                headers: {'Accept':'application/json','X-Requested-With':'XMLHttpRequest'},
+                success: function(r){
+                    var el = document.getElementById('subSearchResults'); el.innerHTML = '';
+                    (r.items || []).forEach(function(u){
+                        var d = document.createElement('div');
+                        d.style.cssText = 'padding:5px 0;border-bottom:1px solid rgba(128,128,128,.08);display:flex;align-items:center;gap:8px';
+                        d.innerHTML = '<span style="flex:1">' + (u.label || u.name) + '</span>'
+                            + '<button type="button" class="btn btn-small" onclick="selectSubstitute(' + u.id + ',\''
+                            + (u.label || u.name).replace(/'/g, "\\'") + '\',\'external\')">Пригласить</button>';
+                        el.appendChild(d);
+                    });
+                },
+                error: function(){ /* 401 или сеть — молча пустой результат */ }
+            });
         }, 300);
     });
     document.getElementById('subModal').addEventListener('click', function(e){ if (e.target === this) closeSubModal(); });
@@ -992,8 +998,8 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
         if(q.length<2){dd.style.display='none';return;}
         dd.innerHTML='<div style="padding:1rem 1.6rem;font-size:1.5rem">Поиск…</div>';dd.style.display='block';
         timer=setTimeout(function(){
-            fetch('/api/users/search?exclude_bots=1&q='+encodeURIComponent(q),{headers:{'Accept':'application/json'},credentials:'same-origin'})
-            .then(function(r){return r.json();}).then(function(data){
+            fetch('/ajax/users/search?exclude_bots=1&q='+encodeURIComponent(q),{headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'},credentials:'same-origin'})
+            .then(function(r){return r.status === 401 ? { items: [] } : r.json();}).then(function(data){
                 var items=data.items||[];dd.innerHTML='';
                 if(!items.length){dd.innerHTML='<div style="padding:1rem 1.6rem;font-size:1.5rem">Ничего не найдено</div>';return;}
                 items.forEach(function(item){
