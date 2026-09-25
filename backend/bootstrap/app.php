@@ -26,6 +26,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'profile.completed'   => \App\Http\Middleware\EnsureProfileCompleted::class,
             'block.impersonation' => \App\Http\Middleware\BlockInImpersonation::class,
             'no-store-html'       => \App\Http\Middleware\NoStoreHtml::class,
+            'abilities'           => \Laravel\Sanctum\Http\Middleware\CheckAbilities::class,
         ]);
         $middleware->appendToGroup('web', \App\Http\Middleware\SetLocale::class);
         $middleware->appendToGroup('web', \App\Http\Middleware\EnsureProfileCompleted::class);
