@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\AccountLink;
 use App\Models\User;
 use App\Support\UserPhotoFromProviderService;
 use Illuminate\Http\Request;
@@ -108,7 +109,8 @@ class VkAuthController extends Controller
 
             $current = $request->user();
 
-            if (User::where('vk_id', $vkId)->where('id', '!=', $current->id)->exists()) {
+            if (User::where('vk_id', $vkId)->where('id', '!=', $current->id)->exists()
+                || AccountLink::isTaken('vk', $vkId, $current->id)) {
                 return redirect('/user/profile')->with('error', 'Этот VK уже привязан к другому аккаунту.');
             }
 
@@ -132,6 +134,12 @@ class VkAuthController extends Controller
                 $user->vk_id = $vkId;
                 $user->save();
             }
+        }
+
+        if (!$user) {
+            // Провайдер id мог остаться алиасом на другого пользователя после merge
+            // (UserMergeService, primary уже владел своим vk_id) — резолвим туда, не создаём дубль.
+            $user = AccountLink::resolveUser('vk', $vkId);
         }
 
         $isNewUser = false;

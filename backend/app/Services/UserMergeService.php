@@ -11,6 +11,7 @@ use App\Models\PlayerPairStats;
 use App\Models\PlayerTournamentStats;
 use App\Models\TournamentSeasonStats;
 use App\Models\User;
+use App\Support\AdminAuditLogger;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -33,16 +34,33 @@ class UserMergeService
             // secondary в конце merge() оставляет мёртвый provider id в БД — при попытке
             // повторного входа тем же провайдером новый User::save() падает на unique-индексе,
             // см. report/kernel_cleanup_recon.md). Перенос в primary — как раньше, только если
-            // у него это поле пусто; если у primary уже есть своё значение — secondary всё равно
-            // обнуляется, просто без переноса.
+            // у него это поле пусто. Если у primary уже есть своё значение — provider id
+            // secondary не теряется молча (как было до 2026-09-25, см.
+            // report/account_links_audit_2026-09-25.md), а сохраняется как псевдоним в
+            // account_links (user_id=primary, source='merge') — при повторном входе тем же
+            // провайдером старый secondary-аккаунт корректно резолвится в primary.
             $uniqueProviderFields = ['telegram_id', 'vk_id', 'yandex_id', 'apple_id', 'google_id'];
+            $providerNames = [
+                'telegram_id' => 'telegram',
+                'vk_id'       => 'vk',
+                'yandex_id'   => 'yandex',
+                'apple_id'    => 'apple',
+                'google_id'   => 'google',
+            ];
             $toNull = [];
+            $transferredToPrimary = [];
+            $movedToAccountLinks = [];
             foreach ($uniqueProviderFields as $f) {
                 if (empty($secondary->$f)) {
                     continue;
                 }
+                $provider = $providerNames[$f];
                 if (empty($primary->$f)) {
                     $primary->$f = $secondary->$f;
+                    $transferredToPrimary[$provider] = (string) $secondary->$f;
+                } else {
+                    $this->upsertAccountLink($provider, (string) $secondary->$f, $primary->id, $secondary->id);
+                    $movedToAccountLinks[$provider] = (string) $secondary->$f;
                 }
                 $toNull[$f] = null;
             }
@@ -53,6 +71,11 @@ class UserMergeService
                     $secondary->$f = null;
                 }
             }
+
+            // Цепочка мержей: если secondary сам когда-то был primary для чужих псевдонимов
+            // (account_links.user_id = secondary.id из более раннего merge), переносим их на
+            // нового primary — иначе алиас осиротеет, указывая на мягко удалённого secondary.
+            DB::table('account_links')->where('user_id', $secondary->id)->update(['user_id' => $primary->id]);
 
             // Каналы бот-уведомлений (не уникальны в БД, но по смыслу — один канал на
             // человека): перенос в primary, если у него пусто, иначе просто обнуляются у
@@ -359,6 +382,23 @@ class UserMergeService
 
             DB::table('users')->where('id', $secondary->id)->update(['deleted_at' => now()]);
 
+            // Единственный постоянный (не зависящий от LOG_LEVEL) след слияния — до
+            // 2026-09-25 merge() не оставлял в БД ничего, кроме Log::info (который на
+            // этом сервере вообще никогда не пишется, LOG_LEVEL=warning, см.
+            // report/kernel_cleanup_recon.md).
+            AdminAuditLogger::log(
+                action: 'user.merge',
+                targetType: 'user',
+                targetId: $primary->id,
+                meta: [
+                    'secondary_user_id'          => $secondary->id,
+                    'transferred_to_primary'     => $transferredToPrimary,
+                    'moved_to_account_links'      => $movedToAccountLinks,
+                    'registrations_transferred'  => $result['transferred'],
+                    'cancelled_conflicts'        => count($result['cancelled_conflicts']),
+                ],
+            );
+
             Log::info("UserMerge: #{$secondary->id} → #{$primary->id}", [
                 'transferred'         => $result['transferred'],
                 'cancelled_conflicts' => count($result['cancelled_conflicts']),
@@ -639,6 +679,42 @@ class UserMergeService
             ->whereRaw('(er.is_cancelled IS NULL OR er.is_cancelled = false)')
             ->where('eo.starts_at', '>', now('UTC'))
             ->count();
+    }
+
+    /**
+     * Сохраняет provider id secondary-аккаунта как псевдоним на primary, когда primary уже
+     * владеет своим значением этого поля (иначе id secondary просто обнулился бы без следа —
+     * баг, найденный и закрытый 2026-09-25, см. report/account_links_audit_2026-09-25.md).
+     * (provider, provider_user_id) уникальна — если строка уже существует (например, после
+     * более раннего merge той же пары), перепривязываем её к актуальному primary, а не дублируем.
+     */
+    private function upsertAccountLink(string $provider, string $providerUserId, int $primaryId, int $secondaryId): void
+    {
+        $existing = DB::table('account_links')
+            ->where('provider', $provider)
+            ->where('provider_user_id', $providerUserId)
+            ->first();
+
+        if ($existing) {
+            DB::table('account_links')->where('id', $existing->id)->update([
+                'user_id'              => $primaryId,
+                'source'               => 'merge',
+                'merged_from_user_id'  => $secondaryId,
+                'updated_at'           => now(),
+            ]);
+
+            return;
+        }
+
+        DB::table('account_links')->insert([
+            'user_id'             => $primaryId,
+            'provider'             => $provider,
+            'provider_user_id'     => $providerUserId,
+            'source'               => 'merge',
+            'merged_from_user_id'  => $secondaryId,
+            'created_at'           => now(),
+            'updated_at'           => now(),
+        ]);
     }
 
     /**

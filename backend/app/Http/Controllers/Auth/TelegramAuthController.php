@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\AccountLink;
 use App\Models\User;
 use App\Support\UserPhotoFromProviderService;
 use Firebase\JWT\JWK;
@@ -356,7 +357,8 @@ class TelegramAuthController extends Controller
                 return redirect()->to($returnTo)->with('status', 'Telegram уже привязан ✅');
             }
 
-            if (User::where('telegram_id', $tgId)->where('id', '!=', $current->id)->exists()) {
+            if (User::where('telegram_id', $tgId)->where('id', '!=', $current->id)->exists()
+                || AccountLink::isTaken('telegram', $tgId, $current->id)) {
                 return redirect('/user/profile')->with('error', 'Этот Telegram уже привязан к другому аккаунту.');
             }
 
@@ -389,6 +391,12 @@ class TelegramAuthController extends Controller
                 }
                 $user->save();
             }
+        }
+
+        if (!$user) {
+            // Провайдер id мог остаться алиасом на другого пользователя после merge
+            // (UserMergeService, primary уже владел своим telegram_id) — резолвим туда.
+            $user = AccountLink::resolveUser('telegram', $tgId);
         }
 
         if (!$user) {
@@ -493,7 +501,8 @@ class TelegramAuthController extends Controller
                 return response()->json(['redirect' => $returnTo]);
             }
 
-            if (User::where('telegram_id', $tgId)->where('id', '!=', $current->id)->exists()) {
+            if (User::where('telegram_id', $tgId)->where('id', '!=', $current->id)->exists()
+                || AccountLink::isTaken('telegram', $tgId, $current->id)) {
                 return response()->json(['error' => 'already_used', 'message' => 'Этот Telegram уже привязан к другому аккаунту.'], 422);
             }
 
@@ -520,6 +529,10 @@ class TelegramAuthController extends Controller
                 }
                 $user->save();
             }
+        }
+
+        if (!$user) {
+            $user = AccountLink::resolveUser('telegram', $tgId);
         }
 
         if (!$user) {
