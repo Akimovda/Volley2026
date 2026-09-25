@@ -33,4 +33,5 @@ Thumbs.db
 /report_*.md
 /deploy_*.md
 /diagnosis_*.md
+/report/
 public/robots.txt
