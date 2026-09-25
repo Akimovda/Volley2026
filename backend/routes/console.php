@@ -1,6 +1,36 @@
 <?php
 
+use App\Jobs\QueueHeartbeatJob;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schedule;
+
+/*
+|--------------------------------------------------------------------------
+| Heartbeat в Uptime Kuma (push-мониторы)
+|--------------------------------------------------------------------------
+| Пустой URL в конфиге (services.kuma.*) = пинг молча не отправляется, без
+| ошибок и логов — на DEV эти env-переменные не заданы намеренно.
+*/
+
+// Жив ли scheduler вообще (каждую минуту, сам факт выполнения — сигнал).
+Schedule::call(function () {
+    $url = config('services.kuma.scheduler');
+
+    if (empty($url)) {
+        return;
+    }
+
+    try {
+        Http::timeout(5)->get($url);
+    } catch (\Throwable $e) {
+        // Мониторинг не должен ронять scheduler — любые сетевые ошибки глотаем.
+    }
+})->everyMinute()->name('heartbeat:scheduler');
+
+// Жив ли воркер очереди — джоб в ту же очередь, что и основные задачи
+// (supervisor слушает queue=default,broadcasts, джоб идёт без explicit
+// onQueue() — как и остальные scheduled-джобы в этом файле — т.е. в default).
+Schedule::job(new QueueHeartbeatJob())->everyFiveMinutes();
 
 Schedule::command('premium:expire')->hourly();
 
@@ -16,7 +46,8 @@ Schedule::command('events:cancel-by-quorum')
 
 Schedule::command('events:expand-recurring --days=90 --chunk=200 --maxCreates=500')
     ->dailyAt('03:10')
-    ->withoutOverlapping();
+    ->withoutOverlapping()
+    ->pingOnSuccessIf((bool) config('services.kuma.expand_recurring'), (string) config('services.kuma.expand_recurring'));
 
 Schedule::command('channels:verify-bots')
     ->dailyAt('06:00')
@@ -135,7 +166,8 @@ Schedule::command('waitlist:cleanup-expired')
 // 3 попыток (attempts<3) с backoff 1/5/30 минут между попытками.
 Schedule::command('notifications:retry-failed')
     ->everyFiveMinutes()
-    ->withoutOverlapping();
+    ->withoutOverlapping()
+    ->pingOnSuccessIf((bool) config('services.kuma.retry_failed'), (string) config('services.kuma.retry_failed'));
 
 // Автоотклонение неполных заявок команд (каждые 30 минут):
 // находит EventTeamApplication со статусом 'incomplete' у которых

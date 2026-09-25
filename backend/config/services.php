@@ -26,6 +26,15 @@ return [
         'secret' => env('BIND_WEBHOOK_SECRET'),
     ],
 
+    // Heartbeat-пинги в Uptime Kuma (push-мониторы). Пустое значение = пинг
+    // молча не отправляется (см. вызывающий код) — на dev URL-ы не задаются.
+    'kuma' => [
+        'scheduler' => env('KUMA_PUSH_SCHEDULER'),
+        'queue' => env('KUMA_PUSH_QUEUE'),
+        'retry_failed' => env('KUMA_PUSH_RETRY_FAILED'),
+        'expand_recurring' => env('KUMA_PUSH_EXPAND_RECURRING'),
+    ],
+
     'vk' => [
         'token'           => env('VK_TOKEN'),
         'version'         => env('VK_API_VERSION', '5.199'),
