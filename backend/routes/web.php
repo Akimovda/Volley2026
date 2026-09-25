@@ -1747,7 +1747,7 @@ Route::post('/yookassa/webhook', [YookassaWebhookController::class, 'handle'])
     ->name('yookassa.webhook');
 
 Route::get('/ajax/users/search', [UserSearchController::class, 'search'])
-    ->middleware(['web', 'auth'])
+    ->middleware(['web', 'auth', 'throttle:30,1'])
     ->name('ajax.users.search');
 
 /*

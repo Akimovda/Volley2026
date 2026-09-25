@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 
 class UserSearchController extends Controller
 {
@@ -25,6 +26,10 @@ class UserSearchController extends Controller
 
         $authUser = $request->user();
         $isAdmin  = ($authUser?->role ?? null) === 'admin';
+        // Доверенный (admin/superadmin/organizer/staff) — видит telegram_username,
+        // может искать по числовому id и фильтровать по roles=. Обычный
+        // авторизованный пользователь — только поиск по имени/фамилии.
+        $isTrusted = Gate::forUser($authUser)->allows('is-trusted');
 
         // Явный фильтр ботов для контекста командных/групповых приглашений.
         // Frontend передаёт exclude_bots=1 на формах invite-в-команду / group-invite,
@@ -46,14 +51,14 @@ class UserSearchController extends Controller
                 ->orderBy('last_name')->orderBy('first_name')
                 ->limit(40)
                 ->get()
-                ->map(fn ($u) => $this->mapUserRow($u))
+                ->map(fn ($u) => $this->mapUserRow($u, $isTrusted))
                 ->values()->all();
 
             return response()->json(['ok' => true, 'items' => $items]);
         }
- 
-        // Фильтр по ролям (опционально)
-        $rolesParam  = trim((string) $request->query('roles', ''));
+
+        // Фильтр по ролям (опционально) — только для доверенных
+        $rolesParam  = $isTrusted ? trim((string) $request->query('roles', '')) : '';
         $rolesFilter = $rolesParam ? array_filter(array_map('trim', explode(',', $rolesParam))) : null;
 
         $variants = $this->buildSearchVariants($q);
@@ -80,8 +85,8 @@ class UserSearchController extends Controller
                 $w->whereNull('is_bot')->orWhere('is_bot', false);
             }))
             ->when($rolesFilter, fn($q2) => $q2->whereIn('role', $rolesFilter))
-            ->where(function ($w) use ($likes, $q) {
-                if (ctype_digit($q) && (int) $q > 0) {
+            ->where(function ($w) use ($likes, $q, $isTrusted) {
+                if ($isTrusted && ctype_digit($q) && (int) $q > 0) {
                     $w->orWhere('id', (int) $q);
                 }
 
@@ -90,8 +95,11 @@ class UserSearchController extends Controller
                         ->orWhere('last_name', 'ILIKE', $like)
                         ->orWhereRaw("(coalesce(last_name, '') || ' ' || coalesce(first_name, '')) ILIKE ?", [$like])
                         ->orWhereRaw("(coalesce(first_name, '') || ' ' || coalesce(last_name, '')) ILIKE ?", [$like])
-                        ->orWhere('name', 'ILIKE', $like)
-                        ->orWhere('telegram_username', 'ILIKE', $like);
+                        ->orWhere('name', 'ILIKE', $like);
+
+                    if ($isTrusted) {
+                        $w->orWhere('telegram_username', 'ILIKE', $like);
+                    }
                 }
             })
             ->orderByRaw("CASE WHEN coalesce(last_name, '') <> '' OR coalesce(first_name, '') <> '' THEN 0 ELSE 1 END")
@@ -100,12 +108,12 @@ class UserSearchController extends Controller
             ->orderBy('name')
             ->limit(10)
             ->get()
-            ->map(function ($u) {
+            ->map(function ($u) use ($isTrusted) {
                 $firstName = trim((string) ($u->first_name ?? ''));
                 $lastName = trim((string) ($u->last_name ?? ''));
                 $fullName = trim($lastName . ' ' . $firstName);
                 $plainName = trim((string) ($u->name ?? ''));
-                $telegramRaw = trim((string) ($u->telegram_username ?? ''));
+                $telegramRaw = $isTrusted ? trim((string) ($u->telegram_username ?? '')) : '';
                 $telegram = $this->normalizeTelegramUsername($telegramRaw);
 
                 $label = $fullName;
@@ -158,13 +166,13 @@ class UserSearchController extends Controller
             'items' => $items,
         ]);
     }
-    private function mapUserRow(object $u): array
+    private function mapUserRow(object $u, bool $isTrusted): array
     {
         $firstName = trim((string) ($u->first_name ?? ''));
         $lastName  = trim((string) ($u->last_name ?? ''));
         $fullName  = trim($lastName . ' ' . $firstName);
         $plainName = trim((string) ($u->name ?? ''));
-        $telegram  = $this->normalizeTelegramUsername($u->telegram_username ?? null);
+        $telegram  = $isTrusted ? $this->normalizeTelegramUsername($u->telegram_username ?? null) : '';
         $isBot     = (bool) ($u->is_bot ?? false);
  
         $label = $fullName ?: $plainName ?: $telegram ?: ('#' . $u->id);

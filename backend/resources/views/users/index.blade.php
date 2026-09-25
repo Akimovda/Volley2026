@@ -240,7 +240,7 @@
     var inp = document.getElementById('users-search-q');
     var dd = document.getElementById('users-search-dd');
     var timer = null;
-    var url = '/api/users/search';
+    var url = '/ajax/users/search';
     
     if (!inp || !dd) return;
     
@@ -298,10 +298,10 @@
         
         timer = setTimeout(function() {
             fetch(url + '?q=' + encodeURIComponent(q), {
-                headers: { 'Accept': 'application/json' },
+                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
                 credentials: 'same-origin'
             })
-            .then(function(r) { return r.json(); })
+            .then(function(r) { return r.status === 401 ? { items: [] } : r.json(); })
             .then(function(data) {
                 var items = Array.isArray(data) ? data : (data.items || []);
                 render(items);

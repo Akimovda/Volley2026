@@ -120,8 +120,11 @@ body.dark .btn-count-badge {
         if (q.length < 2) { hideDd(); return; }
         dd.innerHTML = '<div class="city-message">' + @json(__('admin.users_search_searching')) + '</div>'; showDd();
         timer = setTimeout(function() {
-            fetch('/api/users/search?q=' + encodeURIComponent(q))
-                .then(function(r){ return r.json(); })
+            fetch('/ajax/users/search?q=' + encodeURIComponent(q), {
+                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                credentials: 'same-origin'
+            })
+                .then(function(r){ return r.status === 401 ? { items: [] } : r.json(); })
                 .then(function(data){ render(Array.isArray(data) ? data : (data.items||[])); });
         }, 250);
     });
