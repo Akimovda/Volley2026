@@ -356,7 +356,7 @@
                                 <label>{{ __('events.trainers_label') }}</label>
                                 <div class="f-13">{{ __('events.mgmt_trainers_hint') }}</div>
 
-                                <div class="ac-box" data-users-search-url="{{ route('api.users.search') }}">
+                                <div class="ac-box" data-users-search-url="{{ route('ajax.users.search') }}">
                                     <div id="mgmt_trainer_chips" class="mb-1">
                                         @foreach($mgmtTrainerOldIds as $tid)
                                             <span class="chip custom-chip" data-chip-id="{{ $tid }}">

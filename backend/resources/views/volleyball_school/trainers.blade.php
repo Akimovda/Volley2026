@@ -40,7 +40,7 @@
             <div class="card form" style="position:relative;">
                 <form method="POST" action="{{ route('volleyball_school.trainers.store', $school) }}" id="invite-trainer-form">
                     @csrf
-                    <div class="ac-box" data-users-search-url="{{ route('api.users.search') }}" style="position:relative;">
+                    <div class="ac-box" data-users-search-url="{{ route('ajax.users.search') }}" style="position:relative;">
                         <input type="text" id="invite-trainer-search" placeholder="{{ __('trainers.school_invite_search_ph') }}" autocomplete="off">
                         <input type="hidden" name="user_id" id="invite-trainer-id">
                         <div id="invite-trainer-dd"></div>

@@ -866,7 +866,7 @@ $showWaitlistViewer = !$isTournament && !$eventStarted && $waitlistCount > 0;
 		=============================== --}}
 		@if (auth()->check() && !$eventStarted && !$isTournament)
 		@php
-		$inviteSearchUrl = route('api.users.search');
+		$inviteSearchUrl = route('ajax.users.search');
 		$inviteAction    = route('events.invite', ['event' => $event->id]);
 		$hasGroupUi      = !empty($groupUi['enabled']);
 		$gs              = $event->gameSettings ?? null;
