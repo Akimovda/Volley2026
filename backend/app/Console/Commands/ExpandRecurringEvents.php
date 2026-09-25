@@ -92,10 +92,11 @@ class ExpandRecurringEvents extends Command
 
             $expandedEvents = 0;
             $createdTotal   = 0;
+            $failedEventIds = [];
 
             $q->orderBy('id')->chunkById($chunk, function ($events) use (
                 $svc, $days, $maxCreates, $dryRun,
-                &$expandedEvents, &$createdTotal
+                &$expandedEvents, &$createdTotal, &$failedEventIds
             ) {
                 foreach ($events as $event) {
                     try {
@@ -117,12 +118,19 @@ class ExpandRecurringEvents extends Command
                         $createdTotal += $created;
                     } catch (\Throwable $e) {
                         $this->error("event #{$event->id}: ERROR: " . $e->getMessage());
+                        $failedEventIds[] = $event->id;
                     }
                 }
             });
 
             $this->info("Done. Expanded events: {$expandedEvents}");
             $this->info("Occurrences: created={$createdTotal}");
+
+            if (!empty($failedEventIds)) {
+                $this->error('Errors: ' . count($failedEventIds) . ', event ids: ' . implode(',', $failedEventIds));
+
+                return self::FAILURE;
+            }
 
             return self::SUCCESS;
         } finally {
