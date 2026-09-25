@@ -32,8 +32,11 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->appendToGroup('web', \App\Http\Middleware\EnsureProfileCompleted::class);
         $middleware->appendToGroup('web', \App\Http\Middleware\SavePushToken::class);
         $middleware->prependToGroup('api', \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class);
-        // GlitchTip/Sentry — user.id в scope (web+api), см. config/sentry.php send_default_pii=false
-        $middleware->append(\App\Http\Middleware\SentryUserContext::class);
+        // GlitchTip/Sentry — user.id в scope. Раньше был global (append()) — выполнялся
+        // ДО StartSession группы 'web', поэтому $request->user() был всегда null (см.
+        // CLAUDE.md). appendToGroup('web', ...) — после StartSession, $request->user()
+        // уже резолвится из сессии (SessionGuard не требует отдельного auth-миддлвара).
+        $middleware->appendToGroup('web', \App\Http\Middleware\SentryUserContext::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // 405 Method Not Allowed -> 404 (чтобы не палить внутренние роуты)
