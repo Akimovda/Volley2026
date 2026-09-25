@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\AccountLink;
 use App\Models\User;
 use App\Support\UserPhotoFromProviderService;
 use Illuminate\Http\Request;
@@ -86,7 +87,8 @@ class GoogleAuthController extends Controller
 
             $current = $request->user();
 
-            if (User::where('google_id', $googleId)->where('id', '!=', $current->id)->exists()) {
+            if (User::where('google_id', $googleId)->where('id', '!=', $current->id)->exists()
+                || AccountLink::isTaken('google', $googleId, $current->id)) {
                 return redirect('/user/profile')->with('error', 'Этот Google аккаунт уже привязан к другому пользователю.');
             }
 
@@ -110,6 +112,12 @@ class GoogleAuthController extends Controller
                 $user->google_id = $googleId;
                 $user->save();
             }
+        }
+
+        if (!$user) {
+            // Провайдер id мог остаться алиасом на другого пользователя после merge
+            // (UserMergeService, primary уже владел своим google_id) — резолвим туда.
+            $user = AccountLink::resolveUser('google', $googleId);
         }
 
         $isNewUser = false;

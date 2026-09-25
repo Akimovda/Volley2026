@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Account;
 
 use App\Http\Controllers\Controller;
+use App\Models\AccountLink;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -135,7 +136,8 @@ class LinkConsumeController extends Controller
                     $busy = User::query()
                         ->where('telegram_id', $tgId)
                         ->whereNotIn('id', [(int) $ownerLocked->id, (int) $currentLocked->id])
-                        ->exists();
+                        ->exists()
+                        || AccountLink::isTaken('telegram', $tgId, (int) $ownerLocked->id);
 
                     if ($busy) {
                         abort(409, 'Этот Telegram уже привязан к другому аккаунту.');
@@ -146,7 +148,8 @@ class LinkConsumeController extends Controller
                     $busy = User::query()
                         ->where('vk_id', $vkId)
                         ->whereNotIn('id', [(int) $ownerLocked->id, (int) $currentLocked->id])
-                        ->exists();
+                        ->exists()
+                        || AccountLink::isTaken('vk', $vkId, (int) $ownerLocked->id);
 
                     if ($busy) {
                         abort(409, 'Этот VK уже привязан к другому аккаунту.');

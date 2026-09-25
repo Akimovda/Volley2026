@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\AccountLink;
 use App\Models\User;
 use App\Support\UserPhotoFromProviderService;
 use Firebase\JWT\JWK;
@@ -113,7 +114,8 @@ class AppleAuthController extends Controller
                 return redirect()->to($returnTo)->with('status', 'Apple ID уже привязан ✅');
             }
 
-            if (User::where('apple_id', $appleId)->where('id', '!=', $current->id)->exists()) {
+            if (User::where('apple_id', $appleId)->where('id', '!=', $current->id)->exists()
+                || AccountLink::isTaken('apple', $appleId, $current->id)) {
                 return redirect('/user/profile')->with('error', 'Этот Apple ID уже привязан к другому аккаунту.');
             }
 
@@ -128,6 +130,13 @@ class AppleAuthController extends Controller
 
         /* LOGIN */
         $user = User::where('apple_id', $appleId)->first();
+
+        if (!$user) {
+            // Провайдер id мог остаться алиасом на другого пользователя после merge
+            // (UserMergeService, primary уже владел своим apple_id) — резолвим туда.
+            $user = AccountLink::resolveUser('apple', $appleId);
+        }
+
         $isNewUser = false;
 
         if (!$user) {
@@ -238,7 +247,8 @@ class AppleAuthController extends Controller
             }
 
             // Этот Apple ID уже принадлежит другому аккаунту
-            if (User::where('apple_id', $appleId)->where('id', '!=', $current->id)->exists()) {
+            if (User::where('apple_id', $appleId)->where('id', '!=', $current->id)->exists()
+                || AccountLink::isTaken('apple', $appleId, $current->id)) {
                 Log::warning('[APPLE_NATIVE] Link: apple_id taken', ['user_id' => $current->id]);
                 return response()->json([
                     'success' => false,
@@ -282,6 +292,12 @@ class AppleAuthController extends Controller
 
         $user      = User::where('apple_id', $appleId)->first();
         $isNewUser = false;
+
+        if (!$user) {
+            // Провайдер id мог остаться алиасом на другого пользователя после merge
+            // (UserMergeService, primary уже владел своим apple_id) — резолвим туда.
+            $user = AccountLink::resolveUser('apple', $appleId);
+        }
 
         // Не найден по apple_id — поискать по email и привязать
         if (!$user && $email !== '') {

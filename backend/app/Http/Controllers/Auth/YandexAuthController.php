@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\AccountLink;
 use App\Models\User;
 use App\Support\UserPhotoFromProviderService;
 use Illuminate\Http\Request;
@@ -107,7 +108,8 @@ class YandexAuthController extends Controller
 
             $current = $request->user();
 
-            if (User::where('yandex_id', $yandexId)->where('id', '!=', $current->id)->exists()) {
+            if (User::where('yandex_id', $yandexId)->where('id', '!=', $current->id)->exists()
+                || AccountLink::isTaken('yandex', $yandexId, $current->id)) {
                 return redirect('/user/profile')->with('error', 'Этот Яндекс уже привязан к другому аккаунту.');
             }
 
@@ -125,6 +127,13 @@ class YandexAuthController extends Controller
         /* LOGIN */
         $user = User::where('yandex_id', $yandexId)->first();
         $isNewUser = false;
+
+        if (!$user) {
+            // Провайдер id мог остаться алиасом на другого пользователя после merge
+            // (UserMergeService, primary уже владел своим yandex_id) — резолвим туда,
+            // приоритет выше эвристики по телефону ниже.
+            $user = AccountLink::resolveUser('yandex', $yandexId);
+        }
 
         // Нормализованный телефон от Яндекса
         $yandexPhone = null;
