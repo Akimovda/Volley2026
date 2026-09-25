@@ -546,8 +546,9 @@ Ops-документация (GlitchTip/Sentry SDK, Uptime Kuma, система 
 - Текущие группы на странице: Регистрация, Лист ожидания, Приглашения, Мероприятия, Платежи, Турниры, Лиги и сезоны, Социальное, Уведомления организатору, Администрирование
 
 ## Laravel 12 schedule
-- ВСЕ scheduled команды в `routes/console.php` (`Schedule::command(...)`), НЕ в Console/Kernel.php
-- `bootstrap/app.php` → `->withSchedule(...)` — наследие (одна команда), новые туда НЕ добавляем
+- ВСЕ scheduled команды объявляются ТОЛЬКО в `routes/console.php` (`Schedule::command(...)`/`Schedule::call(...)`/`Schedule::job(...)`) — единственное место, ничего в других файлах.
+- `app/Console/Kernel.php` удалён 2026-09-25 (был полностью мёртв — Laravel 12 slim-bootstrap не биндит `App\Console\Kernel` нигде, `schedule()`/`commands()` в нём никогда не выполнялись; grep по проекту подтвердил отсутствие внешних ссылок на класс). Если в будущем кто-то создаст `app/Console/Kernel.php` заново — он снова будет мёртвым кодом, пока явно не забиндлен в `bootstrap/app.php`.
+- `bootstrap/app.php` → `->withSchedule(...)` больше НЕ используется (последняя команда, `events:send-registration-reminders`, перенесена в `routes/console.php` 2026-09-25) — не добавлять туда новые задачи, даже единичные.
 - Проверка: `php artisan schedule:list`
 - **Паттерн dedupe для повторяющихся команд**: если команда запускается часто (каждые 5 мин) и выбирает записи по временному окну, НЕ использовать бизнес-поле (scored_at, completed_at) как флаг «уже обработано» — добавлять отдельную колонку `notified_*_at` (nullable timestamp). Пример: `tournament_matches.notified_upcoming_at` — команда `tournament:notify-upcoming` фильтрует `whereNull('notified_upcoming_at')`, после отправки записывает `now()`. Без этого одна запись попадает в каждый запуск пока окно перекрывается.
 
@@ -760,9 +761,8 @@ Ops-документация (GlitchTip/Sentry SDK, Uptime Kuma, система 
 ## Дубли пользователей и очистка неактивных аккаунтов
 - Поиск дублей: `UserMergeService::findDuplicates()` — по телефону + по first_name+last_name (case-insensitive)
 - Таблица стаффа: `organizer_staff` (колонка staff_user_id); роли: users.role IN ('admin','superadmin','organizer')
-- `CheckUserDuplicatesJob` — ежедневно 04:00, уведомляет в Telegram (TELEGRAM_BOT_TOKEN, TELEGRAM_ADMIN_CHAT_ID)
-- `PurgeInactiveUsersJob` — ежедневно 04:30; критерии: profile_completed_at IS NULL + нет регистраций/платежей/баланса + не bot/admin/organizer/staff
-- Artisan: `users:check-duplicates`, `users:purge-inactive [--dry-run]`
+- `CheckUserDuplicatesJob` (`users:check-duplicates`) — только уведомляет в Telegram (TELEGRAM_BOT_TOKEN, TELEGRAM_ADMIN_CHAT_ID), ничего не меняет/не удаляет. В расписании (`routes/console.php`, `weeklyOn(1, '04:00')`) с 2026-09-25.
+- `PurgeInactiveUsersJob` (`users:purge-inactive [--dry-run]`) — критерии: profile_completed_at IS NULL + нет регистраций/платежей/баланса + не bot/admin/organizer/staff, мягкое удаление (`deleted_at=now()`). **НЕ в расписании (отключена до решения)** — проверено 2026-09-25: `users_telegram_id_unique`/`vk_id`/`yandex_id`/`apple_id`/`google_id` — ПОЛНЫЕ уникальные индексы (не partial `WHERE deleted_at IS NULL`), Telegram/VK/Yandex-auth контроллеры ищут пользователя без `withTrashed()` → при возврате мягко удалённого пользователя через тот же OAuth-провайдер `save()` нового юзера падает на уникальном индексе (`UniqueConstraintViolationException`, воспроизведено эмпирически) — пользователь получает 500 и не может войти вообще, без ручного вмешательства в БД. Включать только после фикса (частичные уникальные индексы — самый чистый вариант, либо обнулять provider id при purge). Подробности — `report/kernel_cleanup_recon.md` (dev, не в git).
 
 ### UserMergeService::merge() — что переносится
 - OAuth поля (unique): telegram_id, vk_id, yandex_id, apple_id, google_id — из secondary только если у primary пусто; сначала обнуляются у secondary
