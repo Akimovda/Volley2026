@@ -42,12 +42,11 @@ class FortifyServiceProvider extends ServiceProvider
         | КЛЮЧЕВОЕ: куда редиректить после логина
         |--------------------------------------------------------------------------
         | 1. Если пользователь шёл на защищённую страницу — вернём туда
-        | 2. Если нет intended — fallback (dashboard / events)
+        | 2. Если нет intended — fallback на /events (роута 'dashboard' нет,
+        |    тот же fallback, что и в OAuth-контроллерах, см. GoogleAuthController::sanitizeReturnTo)
         */
         Fortify::redirects('login', function (Request $request) {
-            return redirect()->intended(
-                route('dashboard', absolute: false)
-            );
+            return redirect()->intended('/events');
         });
 
         /*
