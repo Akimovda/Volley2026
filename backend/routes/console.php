@@ -44,6 +44,18 @@ Schedule::command('events:cancel-by-quorum')
     ->withoutOverlapping()
     ->runInBackground();
 
+// Напоминания о регистрации (каждую минуту). Перенесено из bootstrap/app.php
+// withSchedule() — расписание собрано в одном месте (routes/console.php).
+Schedule::command('events:send-registration-reminders')
+    ->everyMinute()
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/cron-events-reminders.log'));
+
+// Поиск дублей пользователей — только уведомляет в Telegram, ничего не меняет.
+Schedule::command('users:check-duplicates')
+    ->weeklyOn(1, '04:00')
+    ->withoutOverlapping();
+
 Schedule::command('events:expand-recurring --days=90 --chunk=200 --maxCreates=500')
     ->dailyAt('03:10')
     ->withoutOverlapping()

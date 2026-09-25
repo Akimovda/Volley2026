@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -34,13 +33,6 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->prependToGroup('api', \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class);
         // GlitchTip/Sentry — user.id в scope (web+api), см. config/sentry.php send_default_pii=false
         $middleware->append(\App\Http\Middleware\SentryUserContext::class);
-    })
-    ->withSchedule(function (Schedule $schedule) {
-        // Reminders: каждую минуту
-        $schedule->command('events:send-registration-reminders')
-            ->everyMinute()
-            ->withoutOverlapping()
-            ->appendOutputTo(storage_path('logs/cron-events-reminders.log'));
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // 405 Method Not Allowed -> 404 (чтобы не палить внутренние роуты)
