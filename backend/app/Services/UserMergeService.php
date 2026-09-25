@@ -29,23 +29,45 @@ class UserMergeService
 
         DB::transaction(function () use ($primary, $secondary, &$result) {
 
-            // 1. Провайдеры — уникальные поля: сначала обнуляем у secondary, потом ставим на primary
+            // 1. Провайдеры — уникальные поля: secondary теряет их ВСЕГДА (иначе soft-delete
+            // secondary в конце merge() оставляет мёртвый provider id в БД — при попытке
+            // повторного входа тем же провайдером новый User::save() падает на unique-индексе,
+            // см. report/kernel_cleanup_recon.md). Перенос в primary — как раньше, только если
+            // у него это поле пусто; если у primary уже есть своё значение — secondary всё равно
+            // обнуляется, просто без переноса.
             $uniqueProviderFields = ['telegram_id', 'vk_id', 'yandex_id', 'apple_id', 'google_id'];
-            $toTransfer = [];
+            $toNull = [];
             foreach ($uniqueProviderFields as $f) {
-                if (empty($primary->$f) && !empty($secondary->$f)) {
-                    $toTransfer[$f] = $secondary->$f; // сохраняем значение
+                if (empty($secondary->$f)) {
+                    continue;
                 }
+                if (empty($primary->$f)) {
+                    $primary->$f = $secondary->$f;
+                }
+                $toNull[$f] = null;
             }
-            if (!empty($toTransfer)) {
+            if (!empty($toNull)) {
                 // Снимаем unique-значения у secondary до того как primary их получит
-                DB::table('users')->where('id', $secondary->id)
-                    ->update(array_fill_keys(array_keys($toTransfer), null));
-                foreach ($toTransfer as $f => $val) {
-                    $primary->$f = $val;
+                DB::table('users')->where('id', $secondary->id)->update($toNull);
+                foreach (array_keys($toNull) as $f) {
                     $secondary->$f = null;
                 }
             }
+
+            // Каналы бот-уведомлений (не уникальны в БД, но по смыслу — один канал на
+            // человека): перенос в primary, если у него пусто, иначе просто обнуляются у
+            // secondary — без этого после merge уведомления продолжали бы уходить на chat_id
+            // secondary, которого после soft-delete по факту больше нет как отдельного игрока.
+            foreach (['telegram_notify_chat_id', 'vk_notify_user_id', 'max_chat_id'] as $f) {
+                if (empty($secondary->$f)) {
+                    continue;
+                }
+                if (empty($primary->$f)) {
+                    $primary->$f = $secondary->$f;
+                }
+                $secondary->$f = null;
+            }
+
             // Не-уникальные поля провайдеров
             foreach (['telegram_username', 'yandex_phone', 'telegram_phone', 'vk_phone'] as $f) {
                 if (empty($primary->$f) && !empty($secondary->$f)) {
