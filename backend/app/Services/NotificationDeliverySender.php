@@ -32,6 +32,17 @@ final class NotificationDeliverySender
         $user = User::query()->find((int) $delivery->user_id);
 
         if (!$user) {
+            // find() выше уже исключает soft-deleted через SoftDeletingScope — если не нашли,
+            // проверяем withTrashed(), чтобы отличить «удалён/смёржен» (не будет найден никогда,
+            // ретраить бессмысленно) от «действительно нет такой строки» (по идее не должно
+            // случаться, но на всякий случай оставляем старое поведение markFailed).
+            $trashed = User::withTrashed()->find((int) $delivery->user_id);
+
+            if ($trashed && ($trashed->trashed() || $trashed->merged_into_user_id !== null)) {
+                $this->markSkipped($deliveryId, 'recipient deleted');
+                return;
+            }
+
             $this->markFailed($deliveryId, 'Пользователь не найден.', $isRetry);
             return;
         }
@@ -650,6 +661,23 @@ final class NotificationDeliverySender
                 'status'        => 'sent',
                 'sent_at'       => now(),
                 'error'         => null,
+                'next_retry_at' => null,
+                'updated_at'    => now(),
+            ]);
+    }
+
+    /**
+     * Получатель мягко удалён или смёржен в другой аккаунт — отправлять некому и незачем,
+     * это не сбой (не 'failed', ретраить бессмысленно — recipient уже никогда не станет живым).
+     */
+    private function markSkipped(int $deliveryId, string $reason): void
+    {
+        DB::table('notification_deliveries')
+            ->where('id', $deliveryId)
+            ->update([
+                'status'        => 'skipped',
+                'error'         => $reason,
+                'is_retryable'  => false,
                 'next_retry_at' => null,
                 'updated_at'    => now(),
             ]);
