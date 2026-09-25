@@ -1397,18 +1397,6 @@ Route::view('/rules', 'pages.rules')->name('rules');
 Route::view('/help', 'pages.help')->name('help');
 Route::view('/about', 'pages.about')->name('about');
 	
-	/*
-		|--------------------------------------------------------------------------
-		| Debug (optional)
-		|--------------------------------------------------------------------------
-	*/
-	
-	Route::get('/debug/session', function () {
-		return response()->json([
-        'user_id' => auth()->id(),
-        'session' => session()->all(),
-		]);
-	})->middleware('auth');	
 /*
 |--------------------------------------------------------------------------
 | User Social (votes + likes)
@@ -1735,14 +1723,6 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     });
 
 // ЮKassa webhook (без auth, без CSRF — исключён в bootstrap/app.php)
-Route::post('/yookassa/webhook', [YookassaWebhookController::class, 'handle'])
-    ->name('yookassa.webhook');
-
-/*
-|--------------------------------------------------------------------------
-| ЮKassa webhook (без auth, без CSRF)
-|--------------------------------------------------------------------------
-*/
 Route::post('/yookassa/webhook', [YookassaWebhookController::class, 'handle'])
     ->name('yookassa.webhook');
 

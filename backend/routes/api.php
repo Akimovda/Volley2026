@@ -2,7 +2,6 @@
 //api.php
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\UserSearchController;
 use App\Http\Controllers\Api\OccurrenceParticipantsController;
 use App\Http\Controllers\Api\MaxBindWebhookController;
 use App\Http\Controllers\Api\TelegramNotifyWebhookController;
@@ -13,9 +12,6 @@ Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
 
-Route::get('/users/search', [UserSearchController::class, 'search'])
-    ->name('api.users.search');
-    
 Route::post(
     '/integrations/telegram/complete-notify-bind',
     [\App\Http\Controllers\Api\TelegramNotifyWebhookController::class, 'complete']
