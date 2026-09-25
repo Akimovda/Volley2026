@@ -61,6 +61,7 @@
     </x-slot>
 
     <x-slot name="d_description">
+		@if($canFilter ?? false)
 		<div data-aos-delay="250" data-aos="fade-up">
 			<button type="button" id="btnOpenUsersFilters" class="btn mt-2">
 				<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-0.4rem;margin-right:0.6rem">
@@ -74,6 +75,7 @@
 				{{ __('profile.idx_btn_filter') }}
 			</button>
 		</div>
+		@endif
 	</x-slot>
 
     @php
@@ -83,6 +85,7 @@
     <div class="container">
 
 		{{-- Поп-ап "Фильтр" (fancybox inline) — скрыто на странице --}}
+		@if($canFilter ?? false)
 		<div id="usersFilterModal" style="display:none; max-width: 50rem">
 			<h2 class="title-h -mt-05">{{ __('profile.idx_btn_filter') }}</h2>
 			<div class="form" style="overflow: visible">
@@ -207,6 +210,7 @@
 				</form>
 			</div>
 		</div>
+		@endif
 
             {{-- Results --}}
             @if(($users ?? collect())->isEmpty())
