@@ -97,6 +97,7 @@ return [
     'p5_p1' => 'Some events require prepayment. The payment method is set by the organizer — it can be YooKassa (online), T-Bank or Sberbank (via link).',
     'p5_p2' => 'After transferring the money, click <strong>"I paid"</strong> — the organizer will get a notification and confirm your registration. With YooKassa, confirmation happens automatically.',
     'p5_p3' => 'Some organizers use <strong>subscriptions</strong> — if you have an active subscription, the event fee is charged automatically when you register. Manage your subscriptions in the "My subscriptions" section of the profile.',
+    'p5_p4' => 'If an organizer has enabled <strong>cash payment tracking</strong>, after the event they mark on their side who actually paid on site. If you are marked as unpaid, you will get a reminder to pay within 12 hours. If the organizer does not confirm your payment within that time, registering for any of that organizer\'s future events will be temporarily blocked — access is restored automatically as soon as the organizer marks your payment as received.',
 
     'p6_h'  => 'Cancelling a registration',
     'p6_p1' => 'You can cancel a registration on the event page — click <strong>"Cancel registration"</strong>. The organizer can set a deadline until which self-cancellation is possible.',
@@ -176,6 +177,7 @@ return [
     'o4_p2' => 'The full payment history is available in the <strong>"Transactions"</strong> section. There you can also confirm a link payment or issue a refund.',
     'o4_p3' => '<strong>Virtual wallet</strong> — participants can top up their balance, and event fees will be charged automatically. You can manage the balance as an organizer in each participant\'s profile.',
     'o4_p4' => '<strong>Subscriptions</strong> — create a subscription template (number of visits / duration), and players can purchase it. The system automatically deducts a visit when they register for your events.',
+    'o4_p5' => '<strong>Cash payment tracking</strong> — if you choose "Cash" as the payment method for a paid event, a "Payment tracking" checkbox appears at creation. Enable it if you want to check after the event who actually paid on site: go to "Transactions" → the event, tick the players who paid, and save. Marking someone as paid immediately lifts any restriction they may have. Marking someone as unpaid after the event has started starts a 12-hour timer — if you do not confirm the payment within that time, the player\'s access to registering for ANY of your events is automatically restricted, until you mark the payment as received. If you never open the tracking page, the system marks everyone as paid automatically 24 hours after the event ends, with no restrictions at all; if you mark only some players, the rest get a reminder and the same 12-hour timer applies.',
 
     'o6_h'  => 'Notifications to participants',
     'o6_p1' => 'When an event is changed or cancelled, all participants automatically get a notification in their connected channels (Telegram, VKontakte, MAX, push in the app).',
