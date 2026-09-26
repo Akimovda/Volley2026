@@ -655,12 +655,12 @@
 						<button type="button" class="app-icon-option" data-icon="default">
 							<img src="{{ asset('icons/app-logo.png') }}" alt="{{ __('profile.app_icon_default') }}">
 						</button>
-						@for ($i = 1; $i <= 7; $i++)
+						@for ($i = 1; $i <= 11; $i++)
 						<button type="button" class="app-icon-option" data-platform="android" data-icon="{{ $i }}" style="display:none">
 							<img src="{{ asset('icons/app-icon-gallery/android-'.$i.'.png') }}" alt="{{ __('profile.app_icon_option', ['n' => $i]) }}">
 						</button>
 						@endfor
-						@for ($i = 1; $i <= 9; $i++)
+						@for ($i = 1; $i <= 13; $i++)
 						<button type="button" class="app-icon-option" data-platform="ios" data-icon="{{ $i }}" style="display:none">
 							<img src="{{ asset('icons/app-icon-gallery/ios-'.$i.'.png') }}" alt="{{ __('profile.app_icon_option', ['n' => $i]) }}">
 						</button>
