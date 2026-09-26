@@ -6272,6 +6272,33 @@ body:not(.is-app) .native-actions {
 	padding: 4px 14px;
 	font-size: 13px;
 }
+/* ─── Галерея выбора иконки приложения (/user/profile, только is-app) ──── */
+.app-icon-gallery {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px;
+}
+.app-icon-option {
+	padding: 3px;
+	border: 2px solid transparent;
+	border-radius: 18px;
+	background: transparent;
+	cursor: pointer;
+	line-height: 0;
+}
+.app-icon-option img {
+	display: block;
+	width: 56px;
+	height: 56px;
+	border-radius: 14px;
+}
+.app-icon-option.active {
+	border-color: #E7612F;
+}
+.app-icon-option:disabled {
+	opacity: 0.6;
+	cursor: default;
+}
 /* ===== Club module: таймлайн занятости кортов (Фаза 2) ===== */
 /* HEADER_OFFSET (JS-константа) = высота .timeline-direction-label (26px, с margin) +
    .timeline-court-header (24px) = 50px — ось времени должна учитывать этот отступ,
