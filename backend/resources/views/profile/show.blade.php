@@ -648,6 +648,26 @@
 					</button>
 				</div>
 
+				<div class="ramka is-app-only" style="display:none">
+					<h2 class="-mt-05">{{ __('profile.sec_app_icon') }}</h2>
+					<p class="mb-15">{{ __('profile.app_icon_lead') }}</p>
+					<div id="app-icon-gallery" class="app-icon-gallery">
+						<button type="button" class="app-icon-option" data-icon="default">
+							<img src="{{ asset('icons/app-logo.png') }}" alt="{{ __('profile.app_icon_default') }}">
+						</button>
+						@for ($i = 1; $i <= 7; $i++)
+						<button type="button" class="app-icon-option" data-platform="android" data-icon="{{ $i }}" style="display:none">
+							<img src="{{ asset('icons/app-icon-gallery/android-'.$i.'.png') }}" alt="{{ __('profile.app_icon_option', ['n' => $i]) }}">
+						</button>
+						@endfor
+						@for ($i = 1; $i <= 9; $i++)
+						<button type="button" class="app-icon-option" data-platform="ios" data-icon="{{ $i }}" style="display:none">
+							<img src="{{ asset('icons/app-icon-gallery/ios-'.$i.'.png') }}" alt="{{ __('profile.app_icon_option', ['n' => $i]) }}">
+						</button>
+						@endfor
+					</div>
+				</div>
+
 				<div class="ramka">
 					<h2 class="-mt-05">{{ __('activity.activity_sensors_settings') }}</h2>
 					<p class="f-15 mb-2">{{ __('activity.connect_in_settings_hint') }}</p>
@@ -1568,6 +1588,49 @@
 		if (!navigator.userAgent.includes('VolleyPlayApp') || !window.Capacitor) return;
 
 		document.querySelectorAll('.is-app-only').forEach(function(el) { el.style.display = ''; });
+
+		(function() {
+			var gallery = document.getElementById('app-icon-gallery');
+			var wrap = gallery ? gallery.closest('.ramka') : null;
+			var AppIcon = window.Capacitor.Plugins.AppIcon;
+			var platform = window.Capacitor.getPlatform ? window.Capacitor.getPlatform() : null;
+
+			if (!gallery || !AppIcon || (platform !== 'ios' && platform !== 'android')) {
+				if (wrap) wrap.style.display = 'none';
+				return;
+			}
+
+			gallery.querySelectorAll('.app-icon-option[data-platform="' + platform + '"]').forEach(function(btn) {
+				btn.style.display = '';
+			});
+
+			function markActive(name) {
+				gallery.querySelectorAll('.app-icon-option').forEach(function(btn) {
+					btn.classList.toggle('active', btn.getAttribute('data-icon') === name);
+				});
+			}
+
+			AppIcon.getIcon().then(function(res) {
+				markActive(res && res.name ? res.name : 'default');
+			}).catch(function() {
+				markActive('default');
+			});
+
+			gallery.querySelectorAll('.app-icon-option').forEach(function(btn) {
+				btn.addEventListener('click', function() {
+					if (btn.classList.contains('active') || btn.disabled) return;
+					var name = btn.getAttribute('data-icon');
+					btn.disabled = true;
+					AppIcon.setIcon({ name: name }).then(function() {
+						markActive(name);
+					}).catch(function() {
+						swal({ title: @json(__('profile.app_icon_set_error')), icon: 'error', timer: 2000, buttons: false });
+					}).finally(function() {
+						btn.disabled = false;
+					});
+				});
+			});
+		})();
 
 		var NativeBiometric = window.Capacitor.Plugins.NativeBiometric;
 		if (!NativeBiometric) return;

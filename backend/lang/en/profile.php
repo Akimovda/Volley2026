@@ -137,6 +137,13 @@ return [
     'face_status_error'    => 'Could not check status.',
     'face_disable_error'   => 'Failed to disable Face ID',
     'face_unavailable_alert' => 'Face ID is not available.',
+
+    // App icon (native app only)
+    'sec_app_icon'          => 'App icon',
+    'app_icon_lead'         => 'Choose the app icon shown on your device home screen.',
+    'app_icon_default'      => 'Default',
+    'app_icon_option'       => 'Option :n',
+    'app_icon_set_error'    => 'Could not change the icon. Please try again.',
     'face_enable_error'    => 'Failed to enable Face ID',
 
     // Notifications section
