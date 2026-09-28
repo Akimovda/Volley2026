@@ -79,7 +79,11 @@
                     </div>
                     <div class="col-md-4">
                         <label>{{ __('subscriptions.issue_label_user_id') }}</label>
-                        <input type="number" name="user_id" required>
+                        <div class="ac-box">
+                            <div id="issueUserChips" class="mb-1"></div>
+                            <input type="text" id="issueUserSearch" placeholder="{{ __('subscriptions.issue_ph_user_search') }}" autocomplete="off">
+                            <div id="issueUserDd" class="form-select-dropdown"></div>
+                        </div>
                     </div>
                     <div class="col-md-4">
                         <label>{{ __('subscriptions.issue_label_reason') }}</label>
@@ -90,4 +94,29 @@
             </form>
         </div>
     </div>
+
+    <x-slot name="script">
+    <script src="/js/user-search-picker.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        if (!window.initUserSearchPicker) return;
+        window.initUserSearchPicker({
+            inputId: 'issueUserSearch',
+            dropdownId: 'issueUserDd',
+            chipsId: 'issueUserChips',
+            hiddenName: 'user_id',
+            multi: false,
+        });
+        var form = document.getElementById('issueUserSearch')?.closest('form');
+        if (form) {
+            form.addEventListener('submit', function (e) {
+                if (!document.getElementById('issueUserChips').querySelector('input[data-user-hidden]')) {
+                    e.preventDefault();
+                    swal({ title: 'Ошибка', text: 'Выберите игрока из списка', icon: 'error', button: 'Понятно' });
+                }
+            });
+        }
+    });
+    </script>
+    </x-slot>
 </x-voll-layout>

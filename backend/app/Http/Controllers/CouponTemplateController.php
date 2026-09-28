@@ -128,12 +128,13 @@ class CouponTemplateController extends Controller
         $this->authorize($couponTemplate);
 
         $data = $request->validate([
-            'user_ids'   => ['required', 'string'], // CSV: 1,2,3,4
+            'user_ids'   => ['required', 'array'],
+            'user_ids.*' => ['integer'],
             'channel'    => ['nullable', 'string', 'in:telegram,vk,max,inapp,manual'],
         ]);
 
         $userIds = array_filter(
-            array_map('intval', explode(',', $data['user_ids'])),
+            array_map('intval', $data['user_ids']),
             fn($id) => $id > 0
         );
 

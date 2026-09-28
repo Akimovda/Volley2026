@@ -28,7 +28,8 @@ return [
 
     'issue_h2'             => 'Выдать абонемент',
     'issue_label_template' => 'Шаблон',
-    'issue_label_user_id'  => 'ID пользователя',
+    'issue_label_user_id'  => 'Игрок',
+    'issue_ph_user_search' => 'Начните вводить имя игрока…',
     'issue_label_reason'   => 'Причина',
     'issue_ph_reason'      => 'Подарок, компенсация...',
     'issue_btn'            => 'Выдать абонемент',
@@ -200,6 +201,7 @@ return [
     'coupon_bulk_tpl_label' => 'Шаблон купона',
     'coupon_bulk_user_ids'  => 'ID пользователей (через запятую)',
     'coupon_bulk_user_ids_ph' => '1, 2, 3, 42, 100',
+    'coupon_bulk_user_search_ph' => 'Начните вводить имя игрока…',
     'coupon_bulk_channel'   => 'Канал',
     'coupon_channel_manual' => 'Вручную',
     'coupon_channel_inapp'  => 'В приложении',
