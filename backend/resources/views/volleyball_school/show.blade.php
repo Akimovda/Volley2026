@@ -63,7 +63,20 @@
 				100% { box-shadow: 0 0 0 0 rgba(16,185,129,0); }
 			}
 			/* Фильтр по дням — визуально как .day-chip на /events, но без привязки к её JS/скоупу */
-			.school-days-strip { display:flex; gap:0.6rem; overflow-x:auto; padding:0.5rem 0 1rem; margin-bottom:0.5rem; -webkit-overflow-scrolling:touch; }
+			.school-days-sticky { position: sticky; top: 0; z-index: 50; padding: 0.8rem 1rem 0.2rem; margin-bottom: 1.5rem; }
+			.school-days-topbar { display:flex; align-items:center; gap:0.8rem; margin-bottom:0.3rem; }
+			.school-days-filter-btn {
+				position: relative; width:4rem; height:4rem; flex-shrink:0; display:inline-flex;
+				align-items:center; justify-content:center; border-radius:50%;
+				border:0.2rem solid rgba(41,103,186,.25); background:rgba(255,255,255,.7);
+				color:#2967BA; cursor:pointer; transition:all .2s ease;
+			}
+			.school-days-filter-btn.has-active { background:#2967BA; color:#fff; border-color:#2967BA; }
+			body.dark .school-days-filter-btn { background:rgba(0,0,0,.2); }
+			.school-days-strip { display:flex; gap:0.6rem; overflow-x:auto; padding:0.5rem 0 1rem; -webkit-overflow-scrolling:touch; flex:1; }
+			@media (min-width: 768px) {
+				.school-days-strip { justify-content:center; }
+			}
 			.school-day-chip {
 				display:flex; flex-direction:column; align-items:center;
 				padding:0.9rem 1.5rem 1rem; min-width:5.2rem; text-align:center;
@@ -73,6 +86,7 @@
 			.school-day-chip .dc-dow  { font-size:12px; font-weight:700; text-transform:uppercase; opacity:.7; }
 			.school-day-chip .dc-date { font-weight:700; font-size:2.1rem; margin-top:0.1rem; }
 			.school-day-chip .dc-dot  { display:block; width:0.6rem; height:0.6rem; border-radius:50%; background:#10b981; margin:0.5rem auto 0; }
+			.school-day-chip .dc-dot.dc-dot--empty { background:transparent; }
 			.school-day-chip.is-weekend .dc-dow { color:#ef4444; opacity:1; }
 			.school-day-chip.active { background:transparent; box-shadow:inset 0 -0.3rem 0 0 #2967BA; }
 			.school-day-chip.active .dc-dow, .school-day-chip.active .dc-date { color:#2967BA; opacity:1; }
@@ -80,6 +94,10 @@
 			body.dark .school-day-chip.active .dc-dow, body.dark .school-day-chip.active .dc-date { color:#E7612F; }
 			.school-day-section-title { font-size:1.6rem; font-weight:700; margin:1.5rem 0 1rem; opacity:.85; }
 			.school-day-section:first-of-type .school-day-section-title { margin-top:0; }
+			.school-day-section-title.is-weekend { color:#ef4444; opacity:1; }
+			.school-day-chip.school-day-nav { opacity:.75; }
+			.school-day-chip.school-day-nav .dc-date { font-size:1.3rem; font-weight:600; margin-top:0.3rem; }
+			.school-day-chip.school-day-nav .dc-dow { text-transform:none; }
 		</style>
 	</x-slot>
 	
@@ -423,7 +441,7 @@
 		@endif
 		
 		{{-- МЕРОПРИЯТИЯ --}}
-		@if($occurrences->isEmpty())
+		@if(!$schoolHasAnyUpcomingEvents)
 		<div class="ramka">
 			<div class="alert alert-info">Предстоящих мероприятий пока нет.</div>
 		</div>
@@ -446,40 +464,201 @@
 		@endphp
 		
 		@php
-		$occByDate = $occurrences->groupBy(function($occ) {
-			$tz = $occ->timezone ?: 'Europe/Moscow';
-			return $occ->starts_at ? \Carbon\Carbon::parse($occ->starts_at)->setTimezone($tz)->format('Y-m-d') : 'unknown';
-		});
+			// Мероприятия по датам — как на /events: непрерывная шкала дней от
+			// первого до последнего тура, дни без мероприятий тоже есть в чипах
+			// (пустая точка), но собственную секцию в списке не занимают.
+			$occByDate = $occurrences->groupBy(function($occ) {
+				$tz = $occ->timezone ?: 'Europe/Moscow';
+				return $occ->starts_at ? \Carbon\Carbon::parse($occ->starts_at)->setTimezone($tz)->format('Y-m-d') : 'unknown';
+			});
+			$daysOfWeek = __('events.dow_short');
+
+			$fFormat = trim((string) request('format', ''));
+			$levelRaw = request('level');
+			$fLevel = ($levelRaw === null || $levelRaw === '') ? '' : (int) $levelRaw;
+			$levelOptions = [1, 2, 3, 4, 5, 6, 7];
+			$formatLabels = [
+				'game'               => __('events.fmt_game'),
+				'training'           => __('events.fmt_training'),
+				'training_game'      => __('events.fmt_training_game'),
+				'coach_student'      => __('events.fmt_coach_student'),
+				'tournament'         => __('events.fmt_tournament'),
+				'tournament_classic' => __('events.fmt_tournament_classic'),
+				'tournament_beach'   => __('events.fmt_tournament_beach'),
+				'camp'               => __('events.fmt_camp'),
+			];
+			$formatDirections = [
+				'coach_student'      => ['beach'],
+				'tournament_classic' => ['classic'],
+				'tournament_beach'   => ['beach'],
+			];
+			$formatLabelsFiltered = $school->direction === 'both'
+				? $formatLabels
+				: array_filter($formatLabels, fn($k) => in_array($school->direction, $formatDirections[$k] ?? ['classic', 'beach'], true), ARRAY_FILTER_USE_KEY);
+			$hasActiveSecondaryFilters = $fFormat !== '' || $fLevel !== '';
+
+			// Окно — ровно 10 календарных дней от $windowStartDate (вычислен в
+			// контроллере — как на /events), а не диапазон "от первого до
+			// последнего тура" — иначе пустая точка "нет событий" была бы
+			// бессмысленна (при коротком диапазоне почти все дни заполнены).
+			$today = \Carbon\Carbon::now($windowTz)->startOfDay();
+			$windowStart = \Carbon\Carbon::createFromFormat('Y-m-d', $windowStartDate, $windowTz)->startOfDay();
+			$windowDays = [];
+			for ($i = 0; $i < 10; $i++) {
+				$windowDays[] = $windowStart->copy()->addDays($i);
+			}
+
+			$prevWindowStart = $windowStart->copy()->subDays(10);
+			if ($prevWindowStart->lt($today)) $prevWindowStart = $today->copy();
+			$showPrevNav = $windowStart->gt($today);
+			$nextDateParam = $windowStart->copy()->addDays(10)->format('Y-m-d');
+			$prevDateParam = $prevWindowStart->format('Y-m-d');
+			$baseParams = array_filter([
+				'format' => $fFormat,
+				'level'  => $fLevel,
+			], fn($v) => $v !== '' && $v !== null);
 		@endphp
 
-		{{-- Фильтр по дням (как на /events) — чипы с датами, клик скроллит к секции --}}
-		@if($occByDate->count() > 1)
-		<div class="school-days-strip" id="schoolDaysStrip">
-			@foreach($occByDate as $dateKey => $dayOccs)
-				@php
-					$d = $dateKey !== 'unknown' ? \Carbon\Carbon::createFromFormat('Y-m-d', $dateKey) : null;
-					$isWeekend = $d && in_array($d->dayOfWeekIso, [6, 7], true);
-				@endphp
-				<a href="#day-{{ $dateKey }}"
-				   class="school-day-chip js-school-day-chip {{ $loop->first ? 'active' : '' }} {{ $isWeekend ? 'is-weekend' : '' }}"
-				   data-target="day-{{ $dateKey }}">
-					<span class="dc-dow">{{ $d ? $d->translatedFormat('D') : '?' }}</span>
-					<span class="dc-date">{{ $d ? $d->format('j') : '?' }}</span>
-					<span class="dc-dot"></span>
-				</a>
-			@endforeach
+		{{-- Фильтр по дням + фильтр по типу/уровню (как на /events) --}}
+		<div class="card-ramka school-days-sticky" id="schoolDaysSticky">
+			<div class="school-days-topbar">
+				<button type="button" id="schoolBtnOpenFilters"
+					class="school-days-filter-btn{{ $hasActiveSecondaryFilters ? ' has-active' : '' }}"
+					title="{{ __('events.btn_filter') }}" aria-label="{{ __('events.btn_filter') }}">
+					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+						<line x1="4" y1="6" x2="20" y2="6"></line><circle cx="9" cy="6" r="2" fill="currentColor" stroke="none"></circle>
+						<line x1="4" y1="12" x2="20" y2="12"></line><circle cx="16" cy="12" r="2" fill="currentColor" stroke="none"></circle>
+						<line x1="4" y1="18" x2="20" y2="18"></line><circle cx="11" cy="18" r="2" fill="currentColor" stroke="none"></circle>
+					</svg>
+				</button>
+				<div class="school-days-strip" id="schoolDaysStrip">
+					@if($showPrevNav)
+					<a href="{{ route('volleyball_school.show', array_merge(['slug' => $school->slug], $baseParams, ['date' => $prevDateParam])) }}"
+					   class="school-day-chip school-day-nav">
+						<span class="dc-dow">{{ __('events.days_prev') }}</span>
+						<span class="dc-date">{{ __('events.days_n_days') }}</span>
+					</a>
+					@endif
+					@foreach($windowDays as $d)
+						@php
+							$dateKey = $d->format('Y-m-d');
+							$isWeekend = in_array($d->dayOfWeekIso, [6, 7], true);
+							$hasEvents = $occByDate->has($dateKey);
+						@endphp
+						<a href="#day-{{ $dateKey }}"
+						   class="school-day-chip js-school-day-chip {{ $loop->first ? 'active' : '' }} {{ $isWeekend ? 'is-weekend' : '' }}"
+						   data-target="day-{{ $dateKey }}">
+							<span class="dc-dow">{{ $daysOfWeek[$d->dayOfWeekIso] ?? '' }}</span>
+							<span class="dc-date">{{ $d->format('j') }}</span>
+							<span class="dc-dot {{ $hasEvents ? '' : 'dc-dot--empty' }}"></span>
+						</a>
+					@endforeach
+					<a href="{{ route('volleyball_school.show', array_merge(['slug' => $school->slug], $baseParams, ['date' => $nextDateParam])) }}"
+					   class="school-day-chip school-day-nav">
+						<span class="dc-dow">{{ __('events.days_next') }}</span>
+						<span class="dc-date">{{ __('events.days_n_days') }}</span>
+					</a>
+				</div>
+			</div>
 		</div>
-		@endif
+
+		{{-- Поп-ап "Фильтры" (fancybox inline) — тип/уровень, как на /events --}}
+		<div id="schoolFilterModal" style="display:none;max-width:48rem">
+			<h2 class="title-h -mt-05">{{ __('events.btn_filter') }}</h2>
+			<div class="form" style="overflow:visible">
+				<form method="GET" action="{{ route('volleyball_school.show', $school->slug) }}">
+					<div class="row g-2">
+						<div class="col-12">
+							<label class="form-label mb-1">{{ __('events.filter_event_type') }}</label>
+							<select name="format" class="form-select">
+								<option value="" {{ $fFormat === '' ? 'selected' : '' }}>{{ __('events.filter_any') }}</option>
+								@foreach($formatLabelsFiltered as $k => $lbl)
+								<option value="{{ $k }}" {{ $fFormat === $k ? 'selected' : '' }}>{{ $lbl }}</option>
+								@endforeach
+							</select>
+						</div>
+						<div class="col-12">
+							<label class="form-label mb-1">{{ __('events.filter_level') }}</label>
+							<select name="level" class="form-select">
+								<option value="" {{ $fLevel === '' ? 'selected' : '' }}>{{ __('events.filter_any_level') }}</option>
+								@foreach($levelOptions as $lv)
+								<option value="{{ $lv }}" {{ (string) $fLevel === (string) $lv ? 'selected' : '' }}>{{ level_filter_label($lv, level_terminology_scope_for_user(auth()->user())) }}</option>
+								@endforeach
+							</select>
+						</div>
+						<div class="col-12 d-flex flex-wrap gap-2 align-items-center mt-1">
+							<button type="submit" class="btn">{{ __('events.filter_apply') }}</button>
+							<a href="{{ route('volleyball_school.show', $school->slug) }}" class="btn btn-secondary">{{ __('events.filter_reset') }}</a>
+						</div>
+					</div>
+				</form>
+			</div>
+		</div>
 
 		<div id="schoolDaysFeed">
-			@foreach($occByDate as $dateKey => $dayOccs)
-			@php $d = $dateKey !== 'unknown' ? \Carbon\Carbon::createFromFormat('Y-m-d', $dateKey) : null; @endphp
-			<section class="school-day-section" id="day-{{ $dateKey }}">
-				@if($occByDate->count() > 1)
-				<div class="school-day-section-title">{{ $d ? $d->translatedFormat('l, j F') : 'Дата не указана' }}</div>
-				@endif
+			@if(count($windowDays) > 1)
+				@foreach($windowDays as $d)
+				@php
+					$dateKey = $d->format('Y-m-d');
+					$dayOccs = $occByDate->get($dateKey, collect());
+					$isWeekendSection = in_array($d->dayOfWeekIso, [6, 7], true);
+				@endphp
+				<section class="school-day-section" id="day-{{ $dateKey }}">
+					<div class="school-day-section-title {{ $isWeekendSection ? 'is-weekend' : '' }}">{{ $d->translatedFormat('l, j F') }}</div>
+					@if($dayOccs->isEmpty())
+					<div class="ramka">
+						<div class="alert alert-info">
+							<div>{{ __('events.empty_list_day') }}</div>
+							<div class="f-13 text-muted mt-05">{{ __('events.empty_list_day_notify') }}</div>
+						</div>
+					</div>
+					@else
+					<div class="row">
+						@foreach($dayOccs as $occ)
+						@php
+						$event = $occ->event;
+						if (!$event) continue;
+						if (!isset($occ->join)) {
+						$occ->join   = $authUser ? $guard->quickCheck($authUser, $occ) : null;
+						$occ->cancel = null;
+						}
+						@endphp
+						@include('events._card', ['occ' => $occ, 'join' => $occ->join, 'cancel' => $occ->cancel])
+						@endforeach
+					</div>
+					@endif
+				</section>
+				@endforeach
+			@else
+				@foreach($occByDate as $dateKey => $dayOccs)
+				@php
+					$d = $dateKey !== 'unknown' ? \Carbon\Carbon::createFromFormat('Y-m-d', $dateKey) : null;
+					$isWeekendSection = $d && in_array($d->dayOfWeekIso, [6, 7], true);
+				@endphp
+				<section class="school-day-section" id="day-{{ $dateKey }}">
+					<div class="school-day-section-title {{ $isWeekendSection ? 'is-weekend' : '' }}">{{ $d ? $d->translatedFormat('l, j F') : 'Дата не указана' }}</div>
+					<div class="row">
+						@foreach($dayOccs as $occ)
+						@php
+						$event = $occ->event;
+						if (!$event) continue;
+						if (!isset($occ->join)) {
+						$occ->join   = $authUser ? $guard->quickCheck($authUser, $occ) : null;
+						$occ->cancel = null;
+						}
+						@endphp
+						@include('events._card', ['occ' => $occ, 'join' => $occ->join, 'cancel' => $occ->cancel])
+						@endforeach
+					</div>
+				</section>
+				@endforeach
+			@endif
+
+			@if($occByDate->has('unknown') && count($windowDays) > 1)
+			<section class="school-day-section" id="day-unknown">
+				<div class="school-day-section-title">Дата не указана</div>
 				<div class="row">
-					@foreach($dayOccs as $occ)
+					@foreach($occByDate->get('unknown') as $occ)
 					@php
 					$event = $occ->event;
 					if (!$event) continue;
@@ -492,7 +671,7 @@
 					@endforeach
 				</div>
 			</section>
-			@endforeach
+			@endif
 		</div>
 
 		@endif
@@ -537,6 +716,18 @@
 			}
 
 			// Фильтр по дням — клик по чипу скроллит к секции этого дня
+			// Sticky-лента дат — отступ от реальной высоты фикс-шапки (не хардкод, см. getFixedHeaderBottom)
+			var schoolDaysSticky = document.getElementById('schoolDaysSticky');
+			function positionSchoolDaysSticky() {
+				if (!schoolDaysSticky || !window.getFixedHeaderBottom) return;
+				schoolDaysSticky.style.top = window.getFixedHeaderBottom() + 'px';
+			}
+			positionSchoolDaysSticky();
+			window.addEventListener('resize', positionSchoolDaysSticky);
+			window.addEventListener('orientationchange', positionSchoolDaysSticky);
+			window.addEventListener('load', positionSchoolDaysSticky);
+			document.addEventListener('vp:header-resize', positionSchoolDaysSticky);
+
 			document.querySelectorAll('.js-school-day-chip').forEach(function (chip) {
 				chip.addEventListener('click', function (e) {
 					e.preventDefault();
@@ -544,10 +735,23 @@
 					if (!target) return;
 					document.querySelectorAll('.js-school-day-chip').forEach(function (c) { c.classList.remove('active'); });
 					chip.classList.add('active');
-					var top = target.getBoundingClientRect().top + window.scrollY - (window.getFixedHeaderBottom ? window.getFixedHeaderBottom(10) : 80);
+					var stickyHeight = schoolDaysSticky ? schoolDaysSticky.offsetHeight : 0;
+					var offset = (window.getFixedHeaderBottom ? window.getFixedHeaderBottom() : 0) + stickyHeight + 10;
+					var top = target.getBoundingClientRect().top + window.scrollY - offset;
 					window.scrollTo({ top: top, behavior: 'smooth' });
 				});
 			});
+
+			var schoolBtnOpenFilters = document.getElementById('schoolBtnOpenFilters');
+			if (schoolBtnOpenFilters) {
+				schoolBtnOpenFilters.addEventListener('click', function () {
+					jQuery.fancybox.open({
+						src: '#schoolFilterModal',
+						type: 'inline',
+						opts: { hideScrollbar: false, touch: false, toolbar: false, smallBtn: true, animationEffect: 'zoom-in-out', transitionEffect: 'zoom-in-out' }
+					});
+				});
+			}
 		</script>
 		<script>
 			const positionNames = {

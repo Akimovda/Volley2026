@@ -590,7 +590,11 @@ class EventIndexService
     |--------------------------------------------------------------------------
     */
 
-    private function applyLevelFilterVariantB($q,string $direction,?int $level): void
+    /**
+     * Публичный — переиспользуется VolleyballSchoolController для фильтра
+     * по уровню в списке мероприятий на странице школы (та же логика, что /events).
+     */
+    public static function applyLevelFilterVariantB($q,string $direction,?int $level): void
     {
         if (is_null($level)) return;
 
