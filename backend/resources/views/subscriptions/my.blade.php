@@ -3,7 +3,7 @@
     <x-slot name="h1">{{ __('subscriptions.my_title') }}</x-slot>
 
     <div class="container">
-    <div class="row row2">
+    <div class="row">
         <div class="col-lg-4 col-xl-3 order-2 d-none d-lg-block">
             <div class="sticky">
                 <div class="card-ramka">
@@ -79,7 +79,7 @@
                     </div>
                 </div>
 
-                <div class="row row2">
+                <div class="row">
                     <div class="col-6 col-md-3">
                         <div class="card text-center">
                             <div class="f-13" style="opacity:.6">{{ __('subscriptions.my_visits_left') }}</div>
