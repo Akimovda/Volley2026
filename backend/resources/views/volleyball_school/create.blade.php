@@ -29,9 +29,7 @@ $organizers = $isAdmin
     <x-slot name="style">
     <link rel="stylesheet" type="text/css" href="@asset_v('assets/trix.css')">
         <link href="/assets/org.css" rel="stylesheet">
-        <style>
-
-		</style>
+        <link href="/css/cropper.min.css" rel="stylesheet">
 	</x-slot>
 	
     <x-slot name="script">
@@ -115,8 +113,10 @@ $organizers = $isAdmin
 				}
 			});
 		</script>
+        <script src="/js/cropper.min.js"></script>
+        <script src="/js/school-photo-picker.js"></script>
 	</x-slot>
-	
+
     <div class="container">
         <div class="row row2">
 			
@@ -250,6 +250,8 @@ $organizers = $isAdmin
 							</div>
 						</div>
 						
+						@include('volleyball_school._partials.photo_picker', ['schoolLogos' => $schoolLogos, 'schoolCovers' => $schoolCovers])
+
 						<div class="ramka">
 							<h2 class="-mt-05">Контакты</h2>
 							<div class="row">

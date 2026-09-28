@@ -573,7 +573,7 @@ return [
     'photos_radio_gallery'   => 'To gallery',
     'photos_radio_avatar'    => 'Set as avatar',
     'photos_radio_event'     => 'Event photos',
-    'photos_radio_school_logo_disabled' => 'School logo already uploaded — delete the old one first',
+    'photos_radio_school_logo_disabled' => 'Maximum 10 logos — delete one first',
     'photos_radio_school_logo' => 'School logo',
     'photos_radio_school_cover' => 'School photos',
 

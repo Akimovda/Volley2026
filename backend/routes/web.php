@@ -602,6 +602,7 @@ Route::get('/user/photos', [UserPhotoController::class, 'index'])->name('user.ph
 Route::post('/user/photos', [UserPhotoController::class, 'store'])->name('user.photos.store');
 Route::post('/user/photos/{media}/set-avatar', [UserPhotoController::class, 'setAvatar'])->name('user.photos.setAvatar');
     Route::post('/user/photos/{media}/set-main-cover', [UserPhotoController::class, 'setMainCover'])->name('user.photos.setMainCover');
+    Route::post('/user/photos/{media}/set-main-logo', [UserPhotoController::class, 'setMainLogo'])->name('user.photos.setMainLogo');
 Route::delete('/user/photos/event/{media}', [UserPhotoController::class, 'destroyEventPhoto'])->name('user.photos.destroyEventPhoto');
 Route::delete('/user/photos/tournament/{media}', [UserPhotoController::class, 'destroyTournamentPhoto'])->name('user.photos.destroyTournamentPhoto');
 Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->name('user.photos.destroy');
