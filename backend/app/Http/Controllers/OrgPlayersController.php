@@ -291,6 +291,7 @@ class OrgPlayersController extends Controller
             'rows'          => $rows,
             'locationLabel' => $locationLabel,
             'periodLabel'   => $periodLabel,
+            'brand'         => $request->user()->brand,
         ])->setPaper('a4', 'portrait');
 
         return $pdf->download('audience-' . now()->format('Ymd_His') . '.pdf');

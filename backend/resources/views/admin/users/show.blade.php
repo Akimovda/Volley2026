@@ -343,6 +343,25 @@
 					</div>
 				</div>
 
+				{{-- Управляет приложением (бренд white-label) --}}
+				<div class="ramka">
+					<h2 class="-mt-05">Управляет приложением</h2>
+					<div class="card-body">
+						<form method="POST" action="{{ route('admin.users.brand.update', $user) }}" class="form">
+							@csrf
+							<select name="brand_id" class="form-control mb-2">
+								<option value="" @selected(!$user->brand_id)>— по умолчанию (Volley Club) —</option>
+								@foreach($brands as $b)
+								<option value="{{ $b->id }}" @selected($user->brand_id === $b->id)>{{ $b->display_name }}</option>
+								@endforeach
+							</select>
+							<button class="btn btn-primary w-100 mt-2" type="submit">
+								Сохранить
+							</button>
+						</form>
+					</div>
+				</div>
+
 				{{-- Управляющий клубом --}}
 				<div class="ramka">
 					<h2 class="-mt-05">{{ __('club.club_manager_role') }}</h2>

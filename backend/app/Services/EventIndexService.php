@@ -192,7 +192,17 @@ class EventIndexService
             $this->applyLevelFilterVariantB($q, $direction, $level);
 
             $this->visibility->applyPrivateVisibilityScope($q, $user, '');
-            
+
+            // White-label: приложение видит только мероприятия организаторов
+            // своего бренда; основное приложение (is_default) видит все бренды
+            // (приватность уже отфильтрована выше, это ортогональная ось).
+            if (\Schema::hasColumn('events', 'brand_id')) {
+                $currentBrand = app(\App\Models\Brand::class);
+                if (!$currentBrand->is_default) {
+                    $q->where('brand_id', $currentBrand->id);
+                }
+            }
+
             if ($location !== '') {
                 $like = '%' . str_replace(['%', '_'], ['\%', '\_'], $location) . '%';
                 $q->whereHas('location', function ($lq) use ($like) {

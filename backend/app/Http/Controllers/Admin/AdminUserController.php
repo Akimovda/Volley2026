@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Brand;
 use App\Models\User;
 use App\Support\AdminAuditLogger;
 use Illuminate\Http\Request;
@@ -185,8 +186,9 @@ class AdminUserController extends Controller
         }
 
         $roles = ['user', 'admin', 'organizer', 'staff'];
+        $brands = Brand::cached()->where('is_default', false);
 
-        return view('admin.users.show', compact('user', 'roles', 'linkAudits', 'adminAudits', 'restrictions'));
+        return view('admin.users.show', compact('user', 'roles', 'brands', 'linkAudits', 'adminAudits', 'restrictions'));
     }
 
     /**
