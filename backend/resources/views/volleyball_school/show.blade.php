@@ -92,7 +92,12 @@
 			.school-day-chip.active .dc-dow, .school-day-chip.active .dc-date { color:#2967BA; opacity:1; }
 			body.dark .school-day-chip.active { box-shadow:inset 0 -0.3rem 0 0 #E7612F; }
 			body.dark .school-day-chip.active .dc-dow, body.dark .school-day-chip.active .dc-date { color:#E7612F; }
-			.school-day-section-title { font-size:1.6rem; font-weight:700; margin:1.5rem 0 1rem; opacity:.85; }
+			.school-day-section-title {
+				display:flex; align-items:center; gap:1.2rem;
+				font-size:1.5rem; font-weight:700; text-transform:uppercase; letter-spacing:.02em;
+				opacity:.75; margin:1.5rem 0 1rem; padding-left:0.2rem; white-space:nowrap;
+			}
+			.school-day-section-title::after { content:''; flex:1 1 auto; height:1px; background:currentColor; opacity:.3; }
 			.school-day-section:first-of-type .school-day-section-title { margin-top:0; }
 			.school-day-section-title.is-weekend { color:#ef4444; opacity:1; }
 			.school-day-chip.school-day-nav { opacity:.75; }
@@ -553,7 +558,7 @@
 				</button>
 				<div class="school-days-strip" id="schoolDaysStrip">
 					@if($showPrevNav)
-					<a href="{{ route('volleyball_school.show', array_merge(['slug' => $school->slug], $baseParams, ['date' => $prevDateParam])) }}"
+					<a href="{{ route('volleyball_school.show', array_merge(['slug' => $school->slug], $baseParams, ['date' => $prevDateParam])) }}#schoolDaysSticky"
 					   class="school-day-chip school-day-nav">
 						<span class="dc-dow">{{ __('events.days_prev') }}</span>
 						<span class="dc-date">{{ __('events.days_n_days') }}</span>
@@ -573,7 +578,7 @@
 							<span class="dc-dot {{ $hasEvents ? '' : 'dc-dot--empty' }}"></span>
 						</a>
 					@endforeach
-					<a href="{{ route('volleyball_school.show', array_merge(['slug' => $school->slug], $baseParams, ['date' => $nextDateParam])) }}"
+					<a href="{{ route('volleyball_school.show', array_merge(['slug' => $school->slug], $baseParams, ['date' => $nextDateParam])) }}#schoolDaysSticky"
 					   class="school-day-chip school-day-nav">
 						<span class="dc-dow">{{ __('events.days_next') }}</span>
 						<span class="dc-date">{{ __('events.days_n_days') }}</span>
@@ -608,7 +613,7 @@
 						</div>
 						<div class="col-12 d-flex flex-wrap gap-2 align-items-center mt-1">
 							<button type="submit" class="btn">{{ __('events.filter_apply') }}</button>
-							<a href="{{ route('volleyball_school.show', $school->slug) }}" class="btn btn-secondary">{{ __('events.filter_reset') }}</a>
+							<a href="{{ route('volleyball_school.show', $school->slug) }}#schoolDaysSticky" class="btn btn-secondary">{{ __('events.filter_reset') }}</a>
 						</div>
 					</div>
 				</form>
@@ -622,9 +627,13 @@
 					$dateKey = $d->format('Y-m-d');
 					$dayOccs = $occByDate->get($dateKey, collect());
 					$isWeekendSection = in_array($d->dayOfWeekIso, [6, 7], true);
+					$isToday = $d->isSameDay($today);
+					$isTomorrow = $d->isSameDay($today->copy()->addDay());
+					$dayPrefix = $isToday ? __('events.day_header_today') : ($isTomorrow ? __('events.day_header_tomorrow') : null);
+					$dayHeaderLabel = ($dayPrefix ? $dayPrefix . ' · ' : '') . ($daysOfWeek[$d->dayOfWeekIso] ?? '') . ', ' . $d->translatedFormat('j F');
 				@endphp
 				<section class="school-day-section" id="day-{{ $dateKey }}">
-					<div class="school-day-section-title {{ $isWeekendSection ? 'is-weekend' : '' }}">{{ $d->translatedFormat('l, j F') }}</div>
+					<div class="school-day-section-title {{ $isWeekendSection ? 'is-weekend' : '' }}">{{ $dayHeaderLabel }}</div>
 					@if($dayOccs->isEmpty())
 					<div class="ramka">
 						<div class="alert alert-info">
@@ -735,7 +744,6 @@
 				});
 			}
 
-			// Фильтр по дням — клик по чипу скроллит к секции этого дня
 			// Sticky-лента дат — отступ от реальной высоты фикс-шапки (не хардкод, см. getFixedHeaderBottom)
 			var schoolDaysSticky = document.getElementById('schoolDaysSticky');
 			function positionSchoolDaysSticky() {
@@ -748,19 +756,121 @@
 			window.addEventListener('load', positionSchoolDaysSticky);
 			document.addEventListener('vp:header-resize', positionSchoolDaysSticky);
 
-			document.querySelectorAll('.js-school-day-chip').forEach(function (chip) {
-				chip.addEventListener('click', function (e) {
-					e.preventDefault();
-					var target = document.getElementById(chip.dataset.target);
+			// После применения фильтра/навигации prev-next (полная перезагрузка страницы
+			// через GET) браузер по умолчанию открывает страницу сверху — не полагаемся
+			// только на #schoolDaysSticky в href (GET-формы не все браузеры одинаково
+			// надёжно сохраняют fragment при сабмите), подстраховываем явным скроллом,
+			// если в URL есть признак применённого фильтра/навигации по датам.
+			if (location.search && /(?:^|[?&])(format|level|date)=/.test(location.search) && schoolDaysSticky) {
+				schoolDaysSticky.scrollIntoView({ block: 'start' });
+			}
+
+			// ===== Лента дней: чипы ↔ скролл (двусторонняя связь, как на /events) =====
+			try {
+				function schoolStickyBottom() {
+					return schoolDaysSticky ? schoolDaysSticky.getBoundingClientRect().bottom : 0;
+				}
+
+				var suppressSchoolObserverUntil = 0;
+
+				function centerSchoolChipInStrip(chip) {
+					var strip = document.getElementById('schoolDaysStrip');
+					if (!strip || !chip) return;
+					var stripRect = strip.getBoundingClientRect();
+					var chipRect = chip.getBoundingClientRect();
+					var delta = (chipRect.left + chipRect.right) / 2 - (stripRect.left + stripRect.right) / 2;
+					strip.scrollLeft += delta;
+				}
+
+				function setActiveSchoolChip(dateKey, centerChip) {
+					document.querySelectorAll('.js-school-day-chip[data-target]').forEach(function (c) {
+						c.classList.toggle('active', c.dataset.target === 'day-' + dateKey);
+					});
+					if (centerChip) {
+						var chip = document.querySelector('.js-school-day-chip[data-target="day-' + dateKey + '"]');
+						if (chip) centerSchoolChipInStrip(chip);
+					}
+				}
+
+				function scrollToSchoolDaySection(dateKey) {
+					suppressSchoolObserverUntil = performance.now() + 1500;
+					var target = document.getElementById('day-' + dateKey);
 					if (!target) return;
-					document.querySelectorAll('.js-school-day-chip').forEach(function (c) { c.classList.remove('active'); });
-					chip.classList.add('active');
-					var stickyHeight = schoolDaysSticky ? schoolDaysSticky.offsetHeight : 0;
-					var offset = (window.getFixedHeaderBottom ? window.getFixedHeaderBottom() : 0) + stickyHeight + 10;
-					var top = target.getBoundingClientRect().top + window.scrollY - offset;
-					window.scrollTo({ top: top, behavior: 'smooth' });
+
+					function alignedTop() {
+						return Math.max(0, target.getBoundingClientRect().top + window.pageYOffset - schoolStickyBottom() - 12);
+					}
+
+					window.scrollTo({ top: alignedTop(), behavior: 'smooth' });
+
+					function finalizeActiveChip() {
+						setActiveSchoolChip(dateKey, true);
+						requestAnimationFrame(function () { setActiveSchoolChip(dateKey, true); });
+					}
+
+					if ('onscrollend' in window) {
+						var onEnd = function () {
+							window.removeEventListener('scrollend', onEnd);
+							window.scrollTo({ top: alignedTop(), behavior: 'auto' });
+							finalizeActiveChip();
+						};
+						window.addEventListener('scrollend', onEnd);
+					} else {
+						var lastY = window.scrollY, stableFrames = 0, ticks = 0, maxTicks = 180;
+						function poll() {
+							ticks++;
+							var y = window.scrollY;
+							if (y === lastY) { stableFrames++; } else { stableFrames = 0; lastY = y; }
+							if (stableFrames >= 3 || ticks >= maxTicks) {
+								window.scrollTo({ top: alignedTop(), behavior: 'auto' });
+								finalizeActiveChip();
+								return;
+							}
+							requestAnimationFrame(poll);
+						}
+						requestAnimationFrame(poll);
+					}
+				}
+
+				document.querySelectorAll('.js-school-day-chip[data-target]').forEach(function (chip) {
+					chip.addEventListener('click', function (e) {
+						e.preventDefault();
+						var dateKey = chip.dataset.target.replace('day-', '');
+						setActiveSchoolChip(dateKey, true);
+						scrollToSchoolDaySection(dateKey);
+					});
 				});
-			});
+
+				if ('IntersectionObserver' in window) {
+					var schoolSections = Array.prototype.slice.call(document.querySelectorAll('.school-day-section[id^="day-"]'));
+					if (schoolSections.length) {
+						function recomputeActiveSchoolDay() {
+							if (performance.now() < suppressSchoolObserverUntil) return;
+							var boundary = schoolStickyBottom() + 12;
+							var bestDate = null, bestTop = -Infinity;
+							schoolSections.forEach(function (s) {
+								var top = s.getBoundingClientRect().top;
+								if (top <= boundary + 1 && top > bestTop) {
+									bestTop = top;
+									bestDate = s.id.replace('day-', '');
+								}
+							});
+							if (!bestDate) bestDate = schoolSections[0].id.replace('day-', '');
+							setActiveSchoolChip(bestDate, true);
+						}
+
+						var schoolStickyH = schoolDaysSticky ? schoolDaysSticky.getBoundingClientRect().height : 100;
+						var schoolObserver = new IntersectionObserver(recomputeActiveSchoolDay, {
+							root: null,
+							rootMargin: '-' + Math.ceil(schoolStickyH + 20) + 'px 0px -70% 0px',
+							threshold: 0,
+						});
+						schoolSections.forEach(function (s) { schoolObserver.observe(s); });
+					}
+				}
+			} catch (e) {
+				console.error('school day-feed scroll sync error', e);
+			}
 
 			var schoolBtnOpenFilters = document.getElementById('schoolBtnOpenFilters');
 			if (schoolBtnOpenFilters) {
@@ -768,7 +878,7 @@
 					jQuery.fancybox.open({
 						src: '#schoolFilterModal',
 						type: 'inline',
-						opts: { hideScrollbar: false, touch: false, toolbar: false, smallBtn: true, animationEffect: 'zoom-in-out', transitionEffect: 'zoom-in-out' }
+						opts: { hideScrollbar: false, touch: false, toolbar: false, smallBtn: true, animationEffect: 'zoom-in-out', transitionEffect: 'zoom-in-out', baseClass: 'school-filter-fancybox' }
 					});
 				});
 			}

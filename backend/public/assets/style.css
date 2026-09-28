@@ -5327,6 +5327,10 @@ body.dark .events-topbar .topbar-icon-btn.has-active::after {
 .fancybox-container.events-filter-fancybox .fancybox-content {
     overflow: visible;
 }
+/* Тот же фикс для поп-апа фильтров на странице школы волейбола */
+.fancybox-container.school-filter-fancybox .fancybox-content {
+    overflow: visible;
+}
 
 /* ── Компактный заголовок "Мероприятия + даты" (только /events) ───────── */
 .events-page .top-section {
