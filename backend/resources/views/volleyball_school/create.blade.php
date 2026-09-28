@@ -114,7 +114,7 @@ $organizers = $isAdmin
 			});
 		</script>
         <script src="/js/cropper.min.js"></script>
-        <script src="/js/school-photo-picker.js"></script>
+        <script src="/js/school-photo-picker.js?v=2"></script>
 	</x-slot>
 
     <div class="container">

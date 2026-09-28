@@ -435,7 +435,7 @@ class VolleyballSchoolController extends Controller
                 $originalPath = storage_path('app/public/' . $media->id . '/' . $media->file_name);
                 if (file_exists($originalPath)) {
                     $school->clearMediaCollection('logo');
-                    $school->addMediaFromDisk($originalPath, 'local')
+                    $school->addMedia($originalPath)
                         ->preservingOriginal()
                         ->usingFileName($media->file_name)
                         ->toMediaCollection('logo');
@@ -450,7 +450,7 @@ class VolleyballSchoolController extends Controller
                 $originalPath = storage_path('app/public/' . $media->id . '/' . $media->file_name);
                 if (file_exists($originalPath)) {
                     $school->clearMediaCollection('cover');
-                    $school->addMediaFromDisk($originalPath, 'local')
+                    $school->addMedia($originalPath)
                         ->preservingOriginal()
                         ->usingFileName($media->file_name)
                         ->toMediaCollection('cover');
