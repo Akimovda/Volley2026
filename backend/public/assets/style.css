@@ -1740,18 +1740,22 @@ body.dark .btn-danger {
 body.dark .btn-danger:hover {
     background: #dc2626;
 }
-/* Деструктивный secondary: красный текст (Отвязать, удалить аккаунт и т.п.) */
+/* Деструктивный secondary: красный текст+контур (Отвязать, Отключить, удалить аккаунт и т.п.) */
 .btn-secondary.btn-alert {
     color: #ef4444;
+    border: 0.15rem solid #ef4444;
 }
 .btn-secondary.btn-alert:hover {
     color: #dc2626;
+    border-color: #dc2626;
 }
 body.dark .btn-secondary.btn-alert {
     color: #f87171;
+    border-color: #f87171;
 }
 body.dark .btn-secondary.btn-alert:hover {
     color: #fca5a5;
+    border-color: #fca5a5;
 }
 /* Состояния */
 .btn:disabled{
@@ -4608,6 +4612,7 @@ body.dark .avatar-small {
 	align-items: center;
 	gap: 0.75rem;
 	margin-bottom: 1rem;
+	min-width: 0;
 }
 .provider-card__icon {
 	display: flex;
@@ -4677,6 +4682,10 @@ body.dark .icon-light .provider-card__icon svg {
 .provider-card__title {
 	font-weight: 600;
 	padding-left: 1rem;
+	min-width: 0;
+	flex: 1 1 auto;
+	overflow-wrap: break-word;
+	word-break: break-word;
 }
 .social-btns {
 	display: flex;
@@ -4967,12 +4976,30 @@ body.dark .info-tip-content .level-tip-row + .level-tip-row {
 	transform: translateY(0);
 }
 .provider-cards .card {
-	padding: 1.5rem;		
+	padding: 1.5rem;
 	display: flex;
 	flex-flow: column;
 	justify-content: space-between;
 	position: relative;
-}		
+}
+/* Узкие экраны (Android WebView, напр. Xiaomi Poco) — названия провайдеров/каналов не помещаются в 2 колонки по 50% и вылезают за карточку */
+@media (max-width: 600px) {
+	.provider-cards.fc > .col-6 {
+		width: 100%;
+	}
+	.provider-card__icon {
+		width: 3.2rem;
+		height: 3.2rem;
+	}
+	.provider-card__icon svg {
+		width: 1.6rem;
+		height: 1.6rem;
+	}
+	.provider-card__title {
+		padding-left: 0.75rem;
+		font-size: 1.4rem;
+	}
+}
 .level-wrap {
 	display: flex;
 }
