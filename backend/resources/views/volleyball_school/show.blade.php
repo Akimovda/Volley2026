@@ -345,7 +345,9 @@
 							100% { background-position: -200% 50%; }
 							}
 							.sub-gold-card .sub-buy-btn {
-							background: linear-gradient(135deg,#1a1a2e,#0f3460);
+							background: linear-gradient(115deg,#1a1a2e,#0f3460,#1a4a8a,#0f3460,#1a1a2e);
+							background-size: 300% 300%;
+							animation: buyBtnShimmer 3s ease infinite;
 							color: #f5d78e;
 							width: 100%;
 							padding: 1.2rem;
@@ -357,6 +359,11 @@
 							letter-spacing: .02em;
 							transition: opacity .2s;
 							text-transform: uppercase;
+							}
+							@keyframes buyBtnShimmer {
+							0%   { background-position: 0% 50%; }
+							50%  { background-position: 100% 50%; }
+							100% { background-position: 0% 50%; }
 							}
 							.sub-gold-card .sub-buy-btn:hover { opacity: .85; }
 							.sub-gold-card .sub-badge {
@@ -423,7 +430,15 @@
 								</button>
 								--}}
 								<button type="submit" class="sub-buy-btn">
-									<span class="sub-buy-shimmer">{{ $t->price_minor > 0 ? '💳 Купить абонемент' : '🎫 Получить абонемент' }}</span>
+									@if($t->price_minor > 0)
+								<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f5d78e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:0.4rem">
+									<rect x="2" y="5" width="20" height="14" rx="2"></rect>
+									<line x1="2" y1="10" x2="22" y2="10"></line>
+								</svg>
+								@else
+								🎫
+								@endif
+								<span class="sub-buy-shimmer">{{ $t->price_minor > 0 ? 'Купить абонемент' : 'Получить абонемент' }}</span>
 								</button>
 								
 							</form>
