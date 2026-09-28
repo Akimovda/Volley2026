@@ -81,6 +81,7 @@
                 width: 100%;
                 aspect-ratio: 16/9;
                 overflow: hidden;
+                border-radius: 1rem 1rem 0 0;
             }
             .school-card-cover-slide {
                 position: absolute;
