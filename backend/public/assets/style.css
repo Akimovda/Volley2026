@@ -2630,6 +2630,29 @@ body.dark .fix-header {
     width: 9.9rem;
 }
 
+/* White-label: логотип бренда (картинка) вместо инлайн-SVG, day/night через body.dark */
+.fix-header-logo .icon-logo img.brand-logo-img,
+.fix-header-logo .icon-mlogo img.brand-logo-img {
+	height: 6.2rem;
+	width: auto;
+	max-width: 22rem;
+}
+.footer .icon-logo img.brand-logo-img {
+	height: 62px;
+	width: auto;
+	max-width: 100%;
+	margin-bottom: 1rem;
+}
+.brand-logo-img.brand-logo-night {
+	display: none;
+}
+body.dark .brand-logo-img.brand-logo-day {
+	display: none;
+}
+body.dark .brand-logo-img.brand-logo-night {
+	display: inline;
+}
+
 
 .fix-header-logo .icon-logo .logo-path {
 	will-change: transform;
