@@ -109,9 +109,18 @@
 
                 {{-- Прогресс-бар --}}
                 <div class="mt-2 mb-2">
-                    @php $pct = $sub->visits_total > 0 ? round(($sub->visits_remaining / $sub->visits_total) * 100) : 0; @endphp
+                    @php
+                        $pct = $sub->visits_total > 0 ? round(($sub->visits_remaining / $sub->visits_total) * 100) : 0;
+                        // Плавная градация цвета от красного (мало посещений) к зелёному (много) — не 3 фиксированные ступени
+                        $ratio = max(0, min(100, $pct)) / 100;
+                        $barColor = sprintf('#%02x%02x%02x',
+                            (int) round(220 + (40 - 220) * $ratio),
+                            (int) round(53 + (167 - 53) * $ratio),
+                            69,
+                        );
+                    @endphp
                     <div style="background:#eee;border-radius:8px;height:10px">
-                        <div style="width:{{ $pct }}%;background:{{ $pct > 50 ? '#28a745' : ($pct > 20 ? '#fd7e14' : '#dc3545') }};height:10px;border-radius:8px;transition:width .3s"></div>
+                        <div style="width:{{ $pct }}%;background:{{ $barColor }};height:10px;border-radius:8px;transition:width .3s"></div>
                     </div>
                     <div class="f-13 mt-05 text-right" style="opacity:.6">{{ __('subscriptions.my_pct_left', ['pct' => $pct]) }}</div>
                 </div>

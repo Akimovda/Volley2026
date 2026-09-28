@@ -222,6 +222,8 @@ class TournamentPaymentService
         $subscription->decrement('visits_remaining');
         $subscription->increment('visits_used');
 
+        app(SubscriptionService::class)->notifyIfLowVisits($subscription);
+
         if ($settings->isTeamPayment()) {
             $team->update(['payment_status' => 'subscription']);
         } else {
