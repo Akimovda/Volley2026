@@ -473,7 +473,7 @@
 								<a href="/coupons/templates" class="menu-item">
 									<span class="menu-text"><x-menu-icon name="ticket" /> {{ __('ui.org_coupons') }}</span>
 								</a>
-								<a href="{{ route('coupons.org') }}" class="menu-item">
+								<a href="{{ route('coupons.org_index') }}" class="menu-item">
 									<span class="menu-text"><x-menu-icon name="ticket" /> {{ __('ui.org_coupons_issued') }}</span>
 								</a>
 								{{-- 10. Мои лиги и сезоны --}}
