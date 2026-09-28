@@ -192,7 +192,7 @@ return [
     'coupon_bulk_section'   => '📤 Bulk issue coupons',
     'coupon_bulk_to_users'  => '👥 Issue to specific players',
     'coupon_bulk_tpl_label' => 'Coupon template',
-    'coupon_bulk_user_ids'  => 'User IDs (comma-separated)',
+    'coupon_bulk_user_ids'  => 'Select players',
     'coupon_bulk_user_ids_ph' => '1, 2, 3, 42, 100',
     'coupon_bulk_user_search_ph' => 'Start typing player name…',
     'coupon_bulk_channel'   => 'Channel',
