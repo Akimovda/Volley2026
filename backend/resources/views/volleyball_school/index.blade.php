@@ -76,11 +76,49 @@
                 object-fit: cover;
                 border: 2px solid var(--bg2);
             }
-            .school-card-cover {
+            .school-card-cover-wrap {
+                position: relative;
                 width: 100%;
                 aspect-ratio: 16/9;
+                overflow: hidden;
+            }
+            .school-card-cover-slide {
+                position: absolute;
+                inset: 0;
+                width: 100%;
+                height: 100%;
                 object-fit: cover;
-                display: block;
+                opacity: 0;
+            }
+            .school-card-cover-mask {
+                position: absolute;
+                inset: 0;
+                background: rgba(6, 5, 1, 0.27);
+                z-index: 1;
+            }
+            .school-card-cover-slides--2 { animation: schoolCoverFade2 8s infinite; }
+            .school-card-cover-slides--3 { animation: schoolCoverFade3 12s infinite; }
+            .school-card-cover-slides--4 { animation: schoolCoverFade4 16s infinite; }
+            .school-card-cover-slides--5 { animation: schoolCoverFade5 20s infinite; }
+            @keyframes schoolCoverFade2 {
+                0%   { opacity: 0; } 2% { opacity: 1; }
+                48%  { opacity: 1; } 50% { opacity: 0; }
+                100% { opacity: 0; }
+            }
+            @keyframes schoolCoverFade3 {
+                0%     { opacity: 0; } 2%   { opacity: 1; }
+                31%    { opacity: 1; } 33.33% { opacity: 0; }
+                100%   { opacity: 0; }
+            }
+            @keyframes schoolCoverFade4 {
+                0%   { opacity: 0; } 2%  { opacity: 1; }
+                23%  { opacity: 1; } 25% { opacity: 0; }
+                100% { opacity: 0; }
+            }
+            @keyframes schoolCoverFade5 {
+                0%   { opacity: 0; } 2%  { opacity: 1; }
+                18%  { opacity: 1; } 20% { opacity: 0; }
+                100% { opacity: 0; }
             }
             .school-card-logo-wrap--overlap {
                 margin-top: -5rem;
@@ -116,11 +154,21 @@
                             $logo = $logoMedia
                                 ? ($logoMedia->hasGeneratedConversion('school_logo_thumb') ? $logoMedia->getUrl('school_logo_thumb') : $logoMedia->getUrl())
                                 : ($school->getFirstMediaUrl('logo', 'thumb') ?: $school->getFirstMediaUrl('logo'));
-                            $coverMedia = $organizer?->getMedia('school_cover')->firstWhere('id', $school->cover_media_id)
-                                ?? $organizer?->getMedia('school_cover')->sortByDesc('created_at')->first();
-                            $cover = $coverMedia
-                                ? ($coverMedia->hasGeneratedConversion('school_cover_thumb') ? $coverMedia->getUrl('school_cover_thumb') : $coverMedia->getUrl())
-                                : ($school->getFirstMediaUrl('cover', 'thumb') ?: $school->getFirstMediaUrl('cover'));
+                            $organizerCovers = $organizer?->getMedia('school_cover') ?? collect();
+                            $coverIds = $school->cover_media_ids !== null
+                                ? $school->cover_media_ids
+                                : ($school->cover_media_id ? [$school->cover_media_id] : []);
+                            $coverSlides = collect($coverIds)
+                                ->map(fn ($id) => $organizerCovers->firstWhere('id', $id))
+                                ->filter()
+                                ->map(fn ($m) => $m->hasGeneratedConversion('school_cover_thumb') ? $m->getUrl('school_cover_thumb') : $m->getUrl())
+                                ->take(5)
+                                ->values();
+                            if ($coverSlides->isEmpty()) {
+                                $legacyCover = $school->getFirstMediaUrl('cover', 'thumb') ?: $school->getFirstMediaUrl('cover');
+                                if ($legacyCover) $coverSlides = collect([$legacyCover]);
+                            }
+                            $cover = $coverSlides->first();
                             $dirLabel = match($school->direction) {
                                 'classic' => '🏐 Классический волейбол',
                                 'beach'   => '🏖 Пляжный волейбол',
@@ -131,8 +179,15 @@
                         <div class="col-sm-6 col-lg-4">
                             <a href="{{ route('volleyball_school.show', $school->slug) }}" class="school-card-link">
                                 <div class="card">
-                                    @if($cover)
-                                    <img src="{{ $cover }}" alt="{{ $school->name }}" class="school-card-cover">
+                                    @if($coverSlides->isNotEmpty())
+                                    <div class="school-card-cover-wrap">
+                                        @foreach($coverSlides as $i => $slideUrl)
+                                        <img src="{{ $slideUrl }}" alt="{{ $school->name }}"
+                                             class="school-card-cover-slide {{ $coverSlides->count() > 1 ? 'school-card-cover-slides--'.$coverSlides->count() : '' }}"
+                                             @if($coverSlides->count() > 1) style="opacity:0; animation-delay: {{ -($i * 4) }}s" @else style="opacity:1" @endif>
+                                        @endforeach
+                                        <div class="school-card-cover-mask"></div>
+                                    </div>
                                     @endif
                                     <div class="school-card-body">
                                         {{-- Логотип --}}

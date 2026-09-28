@@ -7427,3 +7427,19 @@ body.dark .cropper-image-wrapper { background: #1e1e2a; }
 .school-photo-thumb--active img {
 	outline: 2px solid #2967BA;
 }
+.school-cover-order-badge {
+	position: absolute;
+	top: 0.4rem;
+	right: 0.4rem;
+	width: 1.8rem;
+	height: 1.8rem;
+	border-radius: 50%;
+	background: #2967BA;
+	color: #fff;
+	font-size: 1.1rem;
+	font-weight: 700;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	pointer-events: none;
+}

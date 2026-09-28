@@ -14,11 +14,14 @@ class VolleyballSchool extends Model implements HasMedia
         'organizer_id', 'slug', 'name', 'direction',
         'description', 'city', 'city_id', 'phone', 'email', 'website',
         'vk_url', 'tg_url', 'max_url',
-        'logo_media_id', 'cover_media_id',
+        'logo_media_id', 'cover_media_id', 'cover_media_ids',
         'is_published',
     ];
 
-    protected $casts = ['is_published' => 'boolean'];
+    protected $casts = [
+        'is_published' => 'boolean',
+        'cover_media_ids' => 'array',
+    ];
 
     public function organizer()
     {
