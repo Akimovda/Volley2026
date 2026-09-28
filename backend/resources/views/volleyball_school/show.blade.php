@@ -331,13 +331,18 @@
 						<style>
 							.sub-gold-card {
 							background: linear-gradient(135deg, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c);
-							background-size: 300% 300%;
-							animation: goldShimmer 4s ease infinite;
+							}
+							.sub-buy-shimmer {
+							background: linear-gradient(90deg, #f5d78e 0%, #fff8e1 20%, #f5d78e 40%, #fff8e1 60%, #f5d78e 100%);
+							background-size: 200% auto;
+							-webkit-background-clip: text;
+							background-clip: text;
+							color: transparent;
+							animation: goldShimmer 2.5s linear infinite;
 							}
 							@keyframes goldShimmer {
 							0%   { background-position: 0% 50%; }
-							50%  { background-position: 100% 50%; }
-							100% { background-position: 0% 50%; }
+							100% { background-position: -200% 50%; }
 							}
 							.sub-gold-card .sub-buy-btn {
 							background: linear-gradient(135deg,#1a1a2e,#0f3460);
@@ -418,7 +423,7 @@
 								</button>
 								--}}
 								<button type="submit" class="sub-buy-btn">
-									{{ $t->price_minor > 0 ? '💳 Купить абонемент' : '🎫 Получить абонемент' }}
+									<span class="sub-buy-shimmer">{{ $t->price_minor > 0 ? '💳 Купить абонемент' : '🎫 Получить абонемент' }}</span>
 								</button>
 								
 							</form>
