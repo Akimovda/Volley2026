@@ -48,7 +48,7 @@
 			});
 		</script>
         <script src="/js/cropper.min.js"></script>
-        <script src="/js/school-photo-picker.js"></script>
+        <script src="/js/school-photo-picker.js?v=2"></script>
 	</x-slot>
 
     <x-slot name="style">
