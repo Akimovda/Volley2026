@@ -389,6 +389,9 @@
 								<a href="{{ route('player.my-bookings') }}" class="menu-item">
 									<span class="menu-text">{{ __('club.my_bookings') }}</span>
 								</a>
+								<a href="{{ route('subscriptions.my') }}" class="menu-item">
+									<span class="menu-text">{{ __('profile.menu_my_subs') }}</span>
+								</a>
 								@if(auth()->user()?->courtBookings()->exists())
 								<a href="{{ route('player.my-court-bookings') }}" class="menu-item">
 									<span class="menu-text">{{ __('club.my_court_bookings') }}</span>
