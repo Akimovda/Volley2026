@@ -1203,6 +1203,27 @@ final class UserNotificationService
         );
     }
 
+    public function createSubscriptionLowVisitsNotification(\App\Models\Subscription $subscription): UserNotification
+    {
+        $templateName = $subscription->template->name ?? 'Абонемент';
+        $school = \App\Models\VolleyballSchool::where('organizer_id', $subscription->organizer_id)->first();
+        $schoolUrl = $school ? route('volleyball_school.show', $school->slug) : route('volleyball_school.index');
+
+        return $this->create(
+            userId:  $subscription->user_id,
+            type:    'subscription_low_visits',
+            title:   '⚠️ Абонемент скоро закончится',
+            body:    "У абонемента «{$templateName}» остался последний визит.\n"
+                   . "Перейдите на страницу школы и купите новый абонемент, чтобы продолжить заниматься без перерыва.",
+            payload: [
+                'subscription_id' => $subscription->id,
+                'button_text'     => 'Страница школы',
+                'button_url'      => $schoolUrl,
+            ],
+            channels: ['in_app', 'telegram', 'vk', 'max'],
+        );
+    }
+
     public function createOrganizerProActivatedNotification(User $admin, \App\Models\OrganizerSubscription $subscription, User $organizer): void
     {
         $amount = number_format((float) $subscription->amount_rub, 0, '.', ' ');

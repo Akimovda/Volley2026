@@ -12,6 +12,38 @@ use Illuminate\Support\Facades\DB;
 
 class SubscriptionService
 {
+    public function __construct(
+        private UserNotificationService $notificationService,
+        private OrganizerChannelBroadcastService $organizerBroadcast
+    ) {}
+
+    /**
+     * Если после списания визита у абонемента остался ровно 1 — уведомить
+     * игрока (пора купить новый) и организатора во все его каналы (пора продать новый).
+     * Срабатывает только на переходе N→1 (естественно один раз на цикл использования).
+     */
+    public function notifyIfLowVisits(Subscription $subscription): void
+    {
+        if ($subscription->visits_remaining !== 1) {
+            return;
+        }
+
+        $subscription->loadMissing('template', 'user');
+
+        $this->notificationService->createSubscriptionLowVisitsNotification($subscription);
+
+        $user = $subscription->user;
+        $userName = trim(($user->last_name ?? '') . ' ' . ($user->first_name ?? '')) ?: ($user->email ?? "ID {$user->id}");
+        $templateName = $subscription->template->name ?? 'Абонемент';
+
+        $this->organizerBroadcast->sendText(
+            organizerId: $subscription->organizer_id,
+            title: '⚠️ У игрока заканчивается абонемент',
+            text: "У пользователя {$userName} заканчивается абонемент «{$templateName}» — остался последний визит.\n"
+                . 'Предложите ему купить новый.',
+        );
+    }
+
     /**
      * Выдать абонемент пользователю (вручную или при покупке)
      */
@@ -75,7 +107,7 @@ class SubscriptionService
         EventOccurrence $occurrence,
         int $registrationId
     ): SubscriptionUsage {
-        return DB::transaction(function () use ($subscription, $occurrence, $registrationId) {
+        $usage = DB::transaction(function () use ($subscription, $occurrence, $registrationId) {
             if (!$subscription->hasVisitsLeft()) {
                 throw new \Exception('Нет доступных посещений в абонементе');
             }
@@ -104,6 +136,12 @@ class SubscriptionService
 
             return $usage;
         });
+
+        // Уведомления шлём ПОСЛЕ коммита — это внешние HTTP-вызовы (Telegram/VK/MAX),
+        // не должны попасть под откат транзакции и не должны её задерживать.
+        $this->notifyIfLowVisits($subscription);
+
+        return $usage;
     }
 
     /**

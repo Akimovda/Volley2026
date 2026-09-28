@@ -34,6 +34,7 @@
                 'Лиги и сезоны'=> ['season_promotion','season_elimination','season_reserve_activated','season_confirm_participation','promotion','reserve_spot_offered'],
                 'Социальное'   => ['user_level_voted','user_play_liked','followed_player_registered'],
                 'Тренеры'      => ['trainer_assigned', 'trainer_rating_request'],
+                'Абонементы'   => ['subscription_low_visits'],
                 'Уведомления организатору' => ['organizer_player_registered','organizer_player_cancelled','organizer_player_auto_booked','organizer_player_waitlisted','organizer_registered_player','organizer_cancelled_player','organizer_deleted_player','reserve_spot_offered_organizer','organizer_broadcast'],
             'Администрирование' => ['ad_event_payment_pending','admin_broadcast'],
             ];
