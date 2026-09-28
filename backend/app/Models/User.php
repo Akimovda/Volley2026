@@ -220,6 +220,11 @@
 		{
 			return $this->belongsTo(City::class);
 		}
+
+		public function brand(): BelongsTo
+		{
+			return $this->belongsTo(\App\Models\Brand::class);
+		}
 		
 		public function classicPositions(): HasMany
 		{

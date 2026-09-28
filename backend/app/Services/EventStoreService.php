@@ -351,6 +351,11 @@ class EventStoreService
                 $data['organizer_id']
                 ?? ($this->accessService->resolveOrganizerIdForCreator($user) ?: $user->id);
 
+            $organizerForBrand = ((int) $event->organizer_id === (int) $user->id)
+                ? $user
+                : \App\Models\User::find($event->organizer_id);
+            $event->brand_id = $organizerForBrand->brand_id ?? null;
+
             $event->location_id = $location->id;
 
             $event->timezone = $tz;
