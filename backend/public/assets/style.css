@@ -3688,7 +3688,8 @@ body.dark .role-organizer .role-badge {
 	header .menu-item,
 	header .menu-item-title {
 		font-size: 2.2rem;
-	} 
+		padding: 0.7rem 1.5rem;
+	}
 	.menu-item,
 	.menu-user-login .user-name {
 		color: #000;
