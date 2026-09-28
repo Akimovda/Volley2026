@@ -65,7 +65,7 @@
         @endif
 		
 		
-		<div class="row row2">
+		<div class="row">
 			<div class="col-lg-4 col-xl-3 order-1 order-lg-1">
 				<div class="sticky">
 					<div class="ramka">
@@ -77,7 +77,7 @@
 							@endif
 						</div>
 						
-						<div class="row row2">
+						<div class="row">
 							<div class="col-sm-6 col-md-6 col-lg-12">
 								<h2 class="-mt-05">Контакты</h2>
 								@if($school->phone)    
@@ -204,7 +204,7 @@
 				</div>    
 				@endif
 			</div>  <!-- ЗАКРЫВАЕМ col-lg-8 -->
-		</div>  <!-- ЗАКРЫВАЕМ row2 -->	
+		</div>  <!-- ЗАКРЫВАЕМ row -->	
 		
 		
 		
@@ -271,7 +271,7 @@
 		@if(isset($subscriptionTemplates) && $subscriptionTemplates->isNotEmpty())
 		<div class="ramka">
 			<h2 class="-mt-05">Абонементы</h2>
-			<div class="row row2">
+			<div class="row">
 				@foreach($subscriptionTemplates as $t)
 				@php
 				$durationLabel = null;
