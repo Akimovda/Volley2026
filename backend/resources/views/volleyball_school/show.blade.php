@@ -62,6 +62,24 @@
 				70%  { box-shadow: 0 0 0 0.6rem rgba(16,185,129,0); }
 				100% { box-shadow: 0 0 0 0 rgba(16,185,129,0); }
 			}
+			/* Фильтр по дням — визуально как .day-chip на /events, но без привязки к её JS/скоупу */
+			.school-days-strip { display:flex; gap:0.6rem; overflow-x:auto; padding:0.5rem 0 1rem; margin-bottom:0.5rem; -webkit-overflow-scrolling:touch; }
+			.school-day-chip {
+				display:flex; flex-direction:column; align-items:center;
+				padding:0.9rem 1.5rem 1rem; min-width:5.2rem; text-align:center;
+				border-radius:1.2rem; text-decoration:none; color:inherit; cursor:pointer;
+				user-select:none; line-height:1.15; flex-shrink:0; transition:background .2s ease;
+			}
+			.school-day-chip .dc-dow  { font-size:12px; font-weight:700; text-transform:uppercase; opacity:.7; }
+			.school-day-chip .dc-date { font-weight:700; font-size:2.1rem; margin-top:0.1rem; }
+			.school-day-chip .dc-dot  { display:block; width:0.6rem; height:0.6rem; border-radius:50%; background:#10b981; margin:0.5rem auto 0; }
+			.school-day-chip.is-weekend .dc-dow { color:#ef4444; opacity:1; }
+			.school-day-chip.active { background:transparent; box-shadow:inset 0 -0.3rem 0 0 #2967BA; }
+			.school-day-chip.active .dc-dow, .school-day-chip.active .dc-date { color:#2967BA; opacity:1; }
+			body.dark .school-day-chip.active { box-shadow:inset 0 -0.3rem 0 0 #E7612F; }
+			body.dark .school-day-chip.active .dc-dow, body.dark .school-day-chip.active .dc-date { color:#E7612F; }
+			.school-day-section-title { font-size:1.6rem; font-weight:700; margin:1.5rem 0 1rem; opacity:.85; }
+			.school-day-section:first-of-type .school-day-section-title { margin-top:0; }
 		</style>
 	</x-slot>
 	
@@ -427,20 +445,56 @@
 		$authUser                = auth()->user();
 		@endphp
 		
-		<div class="row">
-			@foreach($occurrences as $occ)
-			@php
-			$event = $occ->event;
-			if (!$event) continue;
-			if (!isset($occ->join)) {
-			$occ->join   = $authUser ? $guard->quickCheck($authUser, $occ) : null;
-			$occ->cancel = null;
-			}
-			@endphp
-			@include('events._card', ['occ' => $occ, 'join' => $occ->join, 'cancel' => $occ->cancel])
+		@php
+		$occByDate = $occurrences->groupBy(function($occ) {
+			$tz = $occ->timezone ?: 'Europe/Moscow';
+			return $occ->starts_at ? \Carbon\Carbon::parse($occ->starts_at)->setTimezone($tz)->format('Y-m-d') : 'unknown';
+		});
+		@endphp
+
+		{{-- Фильтр по дням (как на /events) — чипы с датами, клик скроллит к секции --}}
+		@if($occByDate->count() > 1)
+		<div class="school-days-strip" id="schoolDaysStrip">
+			@foreach($occByDate as $dateKey => $dayOccs)
+				@php
+					$d = $dateKey !== 'unknown' ? \Carbon\Carbon::createFromFormat('Y-m-d', $dateKey) : null;
+					$isWeekend = $d && in_array($d->dayOfWeekIso, [6, 7], true);
+				@endphp
+				<a href="#day-{{ $dateKey }}"
+				   class="school-day-chip js-school-day-chip {{ $loop->first ? 'active' : '' }} {{ $isWeekend ? 'is-weekend' : '' }}"
+				   data-target="day-{{ $dateKey }}">
+					<span class="dc-dow">{{ $d ? $d->translatedFormat('D') : '?' }}</span>
+					<span class="dc-date">{{ $d ? $d->format('j') : '?' }}</span>
+					<span class="dc-dot"></span>
+				</a>
 			@endforeach
 		</div>
-		
+		@endif
+
+		<div id="schoolDaysFeed">
+			@foreach($occByDate as $dateKey => $dayOccs)
+			@php $d = $dateKey !== 'unknown' ? \Carbon\Carbon::createFromFormat('Y-m-d', $dateKey) : null; @endphp
+			<section class="school-day-section" id="day-{{ $dateKey }}">
+				@if($occByDate->count() > 1)
+				<div class="school-day-section-title">{{ $d ? $d->translatedFormat('l, j F') : 'Дата не указана' }}</div>
+				@endif
+				<div class="row">
+					@foreach($dayOccs as $occ)
+					@php
+					$event = $occ->event;
+					if (!$event) continue;
+					if (!isset($occ->join)) {
+					$occ->join   = $authUser ? $guard->quickCheck($authUser, $occ) : null;
+					$occ->cancel = null;
+					}
+					@endphp
+					@include('events._card', ['occ' => $occ, 'join' => $occ->join, 'cancel' => $occ->cancel])
+					@endforeach
+				</div>
+			</section>
+			@endforeach
+		</div>
+
 		@endif
 		
 	</div>
@@ -478,9 +532,22 @@
 					breakpoints: {
 						540: { slidesPerView: 2 },
 						
-					}					
+					}
 				});
 			}
+
+			// Фильтр по дням — клик по чипу скроллит к секции этого дня
+			document.querySelectorAll('.js-school-day-chip').forEach(function (chip) {
+				chip.addEventListener('click', function (e) {
+					e.preventDefault();
+					var target = document.getElementById(chip.dataset.target);
+					if (!target) return;
+					document.querySelectorAll('.js-school-day-chip').forEach(function (c) { c.classList.remove('active'); });
+					chip.classList.add('active');
+					var top = target.getBoundingClientRect().top + window.scrollY - (window.getFixedHeaderBottom ? window.getFixedHeaderBottom(10) : 80);
+					window.scrollTo({ top: top, behavior: 'smooth' });
+				});
+			});
 		</script>
 		<script>
 			const positionNames = {
