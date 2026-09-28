@@ -466,9 +466,15 @@
 								<a href="/subscriptions/templates" class="menu-item">
 									<span class="menu-text"><x-menu-icon name="id-card" /> {{ __('ui.org_subscriptions') }}</span>
 								</a>
+								<a href="{{ route('subscriptions.index') }}" class="menu-item">
+									<span class="menu-text"><x-menu-icon name="id-card" /> {{ __('ui.org_subscriptions_issued') }}</span>
+								</a>
 								{{-- 9. Купоны --}}
 								<a href="/coupons/templates" class="menu-item">
 									<span class="menu-text"><x-menu-icon name="ticket" /> {{ __('ui.org_coupons') }}</span>
+								</a>
+								<a href="{{ route('coupons.org') }}" class="menu-item">
+									<span class="menu-text"><x-menu-icon name="ticket" /> {{ __('ui.org_coupons_issued') }}</span>
 								</a>
 								{{-- 10. Мои лиги и сезоны --}}
 								<a href="/leagues" class="menu-item">

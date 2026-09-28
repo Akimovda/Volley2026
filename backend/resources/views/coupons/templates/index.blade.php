@@ -81,7 +81,11 @@
                         @endforeach
                     </select>
                     <label class="mt-1">{{ __('subscriptions.coupon_bulk_user_ids') }}</label>
-                    <textarea name="user_ids" rows="3" placeholder="{{ __('subscriptions.coupon_bulk_user_ids_ph') }}"></textarea>
+                    <div class="ac-box">
+                        <div id="couponBulkChips" class="mb-1"></div>
+                        <input type="text" id="couponBulkUserSearch" placeholder="{{ __('subscriptions.coupon_bulk_user_search_ph') }}" autocomplete="off">
+                        <div id="couponBulkUserDd" class="form-select-dropdown"></div>
+                    </div>
                     <label class="mt-1">{{ __('subscriptions.coupon_bulk_channel') }}</label>
                     <select name="channel">
                         <option value="manual">{{ __('subscriptions.coupon_channel_manual') }}</option>
@@ -131,6 +135,7 @@
 </div>
 @endif
     <x-slot name="script">
+    <script src="/js/user-search-picker.js"></script>
     <script>
     function updateBulkAction(sel) {
         document.getElementById('bulkIssueForm').action = sel.options[sel.selectedIndex].dataset.url;
@@ -138,6 +143,17 @@
     function updateLinkAction(sel) {
         document.getElementById('issueLinkForm').action = sel.options[sel.selectedIndex].dataset.url;
     }
+    document.addEventListener('DOMContentLoaded', function () {
+        if (window.initUserSearchPicker && document.getElementById('couponBulkUserSearch')) {
+            window.initUserSearchPicker({
+                inputId: 'couponBulkUserSearch',
+                dropdownId: 'couponBulkUserDd',
+                chipsId: 'couponBulkChips',
+                hiddenName: 'user_ids[]',
+                multi: true,
+            });
+        }
+    });
     </script>
     </x-slot>
 </x-voll-layout>

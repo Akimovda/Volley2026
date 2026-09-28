@@ -76,6 +76,14 @@ use App\Http\Controllers\Admin\ImpersonationController;
 	Route::pattern('location', '[0-9]+');
 	Route::pattern('invite', '[0-9]+');
 	Route::pattern('notification', '[0-9]+');
+	// Без этого — implicit route model binding на PostgreSQL кидает 500
+	// (SQLSTATE 22P02, bigint не приводится из нечисловой строки), а не 404,
+	// если в URL на месте id окажется произвольный текст (см. GlitchTip
+	// VOLLEYPLAY-BACKEND-G: /subscriptions/subscriptions/usages).
+	Route::pattern('subscription', '[0-9]+');
+	Route::pattern('subscriptionTemplate', '[0-9]+');
+	Route::pattern('coupon', '[0-9]+');
+	Route::pattern('couponTemplate', '[0-9]+');
 	
 	/*
 		|--------------------------------------------------------------------------

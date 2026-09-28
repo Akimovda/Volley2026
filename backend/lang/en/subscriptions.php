@@ -27,7 +27,8 @@ return [
 
     'issue_h2'             => 'Issue subscription',
     'issue_label_template' => 'Template',
-    'issue_label_user_id'  => 'User ID',
+    'issue_label_user_id'  => 'Player',
+    'issue_ph_user_search' => 'Start typing player name…',
     'issue_label_reason'   => 'Reason',
     'issue_ph_reason'      => 'Gift, compensation...',
     'issue_btn'            => 'Issue subscription',
@@ -193,6 +194,7 @@ return [
     'coupon_bulk_tpl_label' => 'Coupon template',
     'coupon_bulk_user_ids'  => 'User IDs (comma-separated)',
     'coupon_bulk_user_ids_ph' => '1, 2, 3, 42, 100',
+    'coupon_bulk_user_search_ph' => 'Start typing player name…',
     'coupon_bulk_channel'   => 'Channel',
     'coupon_channel_manual' => 'Manual',
     'coupon_channel_inapp'  => 'In-app',
