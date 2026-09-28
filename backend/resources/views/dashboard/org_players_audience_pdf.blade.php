@@ -5,7 +5,7 @@
 @php
     $fontNormal = base_path('vendor/dompdf/dompdf/lib/fonts/DejaVuSans.ttf');
     $fontBold   = base_path('vendor/dompdf/dompdf/lib/fonts/DejaVuSans-Bold.ttf');
-    $logoPath   = public_path('icons/web-app-manifest-192x192.png');
+    $logoPath   = (isset($brand) && $brand && $brand->logo_day_path) ? public_path($brand->logo_day_path) : public_path('icons/web-app-manifest-192x192.png');
     $logoB64    = file_exists($logoPath) ? 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath)) : null;
 @endphp
 <style>
