@@ -4592,6 +4592,7 @@ body.dark .avatar-small {
 .user-public-page .profile-avatar,
 .volleyball-school-show-page .profile-avatar {
 	width: 16rem;
+	height: 16rem;
 }
 .avatar-small {
 	margin: 1rem;

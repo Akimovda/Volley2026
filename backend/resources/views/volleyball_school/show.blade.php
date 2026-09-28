@@ -148,12 +148,6 @@
 			</div> 
 			
 			<div class="col-lg-8 col-xl-9 order-2 order-lg-2">
-				@if($school->description)
-				<div class="ramka">
-					{!! $school->description !!}
-				</div>
-				@endif
-				
 				{{-- ОБЛОЖКА / СЛАЙДЕР --}}
 				@if($allCovers->count() > 1)
 				<div class="ramka">  
@@ -201,7 +195,13 @@
 						@endif						
 						</div>
 
-				</div>    
+				</div>
+				@endif
+
+				@if($school->description)
+				<div class="ramka">
+					{!! $school->description !!}
+				</div>
 				@endif
 			</div>  <!-- ЗАКРЫВАЕМ col-lg-8 -->
 		</div>  <!-- ЗАКРЫВАЕМ row -->	
@@ -467,7 +467,7 @@
 					loop: true,
 					slidesPerView: 1,
 					spaceBetween: 20,
-					autoplay: false,
+					autoplay: { delay: 4000, disableOnInteraction: false },
 					pagination: { el: '.swiper-pagination', clickable: true },
 					breakpoints: {
 						540: { slidesPerView: 2 },
