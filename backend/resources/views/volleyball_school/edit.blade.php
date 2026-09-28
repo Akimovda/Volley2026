@@ -47,14 +47,14 @@
                 });
 			});
 		</script>
+        <script src="/js/cropper.min.js"></script>
+        <script src="/js/school-photo-picker.js"></script>
 	</x-slot>
-	
+
     <x-slot name="style">
     <link rel="stylesheet" type="text/css" href="@asset_v('assets/trix.css')">
         <link href="/assets/org.css" rel="stylesheet">
-        <style>
-			
-		</style>
+        <link href="/css/cropper.min.css" rel="stylesheet">
 	</x-slot>
 	
     <div class="container">
@@ -249,16 +249,12 @@
 							</div>
 						</div>
 						
-						<div class="ramka">
-							<h2 class="-mt-05">Фото школы</h2>
-							
-							<ul class="list mt-1">
-								<li>Управление логотипом и фотографиями школы доступно в вашей галерее.</li>
-								<li>Перейдите в раздел <a class="blink" href="{{ route('user.photos') }}" target="_blank"><strong>Ваши фотографии</strong></a></li>
-								<li>Там вы найдёте разделы «Логотип школы» и «Фотографии школы».</li>
-							</ul>							
-							
-						</div>
+						@include('volleyball_school._partials.photo_picker', [
+							'schoolLogos' => $schoolLogos,
+							'schoolCovers' => $schoolCovers,
+							'selectedLogoId' => $school->logo_media_id,
+							'selectedCoverId' => $school->cover_media_id,
+						])
 						
 						<div class="ramka text-center">
 							<button type="submit" class="btn">Сохранить изменения</button>

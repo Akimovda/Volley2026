@@ -585,6 +585,16 @@ $canUploadSchool = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
 			});
             @endif
 
+            const schoolLogoSwiper = new Swiper('.school-logo-swiper', {
+                slidesPerView: 2,
+                spaceBetween: 16,
+                pagination: { el: '.swiper-pagination', clickable: true },
+                breakpoints: {
+                    640: { slidesPerView: 3 },
+                    1024: { slidesPerView: 4 }
+				}
+			});
+
             const schoolCoverSwiper = new Swiper('.school-cover-swiper', {
                 slidesPerView: 1,
                 spaceBetween: 20,
@@ -695,7 +705,7 @@ $canUploadSchool = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
 							</label>
 							
                             @if($hasSchool ?? false)
-							@if(isset($schoolLogos) && $schoolLogos->count() >= 1)	
+							@if(isset($schoolLogos) && $schoolLogos->count() >= 10)
                             <label class="radio-item mb-1">
                                 <input type="radio" name="" value="" disabled>
                                 <div class="custom-radio"></div>
@@ -707,7 +717,7 @@ $canUploadSchool = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
 								onchange="setPhotoType('school_logo', 0, 1)">
                                 <div class="custom-radio"></div>
                                 <span>{{ __('profile.photos_radio_school_logo') }}</span>
-							</label>							
+							</label>
 							@endif
                             <label class="radio-item mb-1">
                                 <input type="radio" name="photo_type_radio" value="school_cover"
@@ -868,51 +878,55 @@ $canUploadSchool = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
                 {{-- Логотипы школы --}}
                 <div class="ramka">
                     <h2 class="-mt-05">{{ __('profile.photos_school_logo_h2') }}</h2>
+                    <p>{{ __('profile.photos_total_prefix') }} <strong class="cd">{{ isset($schoolLogos) ? $schoolLogos->count() : 0 }}</strong> {{ __('profile.photos_total_suffix') }}</p>
                     <div class="form mt-2">
                         @if(!isset($schoolLogos) || $schoolLogos->isEmpty())
                         <div class="alert alert-info">{{ __('profile.photos_school_logo_empty') }}</div>
                         @else
-						<div class="row row2">
-							@foreach($schoolLogos as $m)
-							<div class="col-5 col-sm-4 col-md-3">
-								<div class="hover-image">
-									<a href="{{ $m->getUrl() }}" class="fancybox" data-fancybox="school-logo-gallery">
-										<img src="{{ $m->hasGeneratedConversion('school_logo_thumb') ? $m->getUrl('school_logo_thumb') : $m->getUrl() }}"
-										alt="school logo" loading="lazy"/>
-										<span></span>
-										<div class="hover-image-circle"></div>
-									</a>
-								</div>
-							</div>
-							@if(!$isEditingOther || auth()->user()?->isAdmin())
-							<div class="col-7 col-sm-8 col-md-9">
-								
-								@if(isset($schoolLogos) && $schoolLogos->count() >= 1)
-								<div class="alert alert-info">
-									{{ __('profile.photos_school_logo_replace') }}
-									<div class="text-right">
-										<form method="POST" action="{{ route('user.photos.destroy', $m->id) }}"
-										onsubmit="return confirm({!! json_encode(__('profile.photos_confirm_delete_logo')) !!})">
-											@csrf @method('DELETE')
+                        <div class="swiper school-logo-swiper">
+                            <div class="swiper-wrapper">
+                                @foreach($schoolLogos as $m)
+                                <div class="swiper-slide">
+                                    <div class="hover-image" style="position:relative;">
+                                        <a href="{{ $m->getUrl() }}" class="fancybox" data-fancybox="school-logo-gallery">
+                                            <img src="{{ $m->hasGeneratedConversion('school_logo_thumb') ? $m->getUrl('school_logo_thumb') : $m->getUrl() }}"
+											alt="school logo" loading="lazy"/>
+                                            <span></span>
+                                            <div class="hover-image-circle"></div>
+										</a>
+									</div>
+
+                                    @if(!$isEditingOther || auth()->user()?->isAdmin())
+                                    <div class="mt-1 d-flex between fvc">
+                                        @if(($mainLogoMediaId ?? null) != $m->id)
+                                        <form method="POST" action="{{ route('user.photos.setMainLogo', $m->id) }}">
+                                            @csrf
+                                            <span onclick="event.preventDefault(); this.closest('form').submit();" class="blink f-16 l-11">
+                                                {!! __('profile.photos_make_main_cover') !!}
+											</span>
+										</form>
+                                        @else
+                                        <span class="cd f-16 l-11 b-600">{{ __('profile.photos_main_cover_label') }}</span>
+                                        @endif
+                                        <form method="POST" action="{{ route('user.photos.destroy', $m->id) }}"
+                                        onsubmit="return confirm({!! json_encode(__('profile.photos_confirm_delete_logo')) !!})">
+                                            @csrf @method('DELETE')
                                             <button type="submit" class="icon-delete btn-alert btn btn-danger btn-svg"
 											data-title="{{ __('profile.photos_delete_logo_title') }}" data-icon="warning"
 											data-confirm-text="{{ __('profile.photos_btn_delete_yes_short') }}" data-cancel-text="{{ __('profile.photos_crop_cancel') }}">
 											</button>
-										</form>					
+										</form>
 									</div>
+                                    @endif
 								</div>
-								@endif								
-								
-								
-								
-							</div>									
-							@endif
-							@endforeach
+								@endforeach
+							</div>
+                            <div class="swiper-pagination"></div>
 						</div>
                         @endif
 					</div>
 				</div>
-				
+
                 {{-- Обложки школы --}}
                 <div class="ramka">
                     <h2 class="-mt-05">{{ __('profile.photos_school_cover_h2') }}</h2>

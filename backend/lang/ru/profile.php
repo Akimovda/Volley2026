@@ -573,7 +573,7 @@ return [
     'photos_radio_gallery'   => 'В галерею',
     'photos_radio_avatar'    => 'Сделать аватаром',
     'photos_radio_event'     => 'Фото для мероприятий',
-    'photos_radio_school_logo_disabled' => 'Логотип школы уже загружен, сначала удали старый',
+    'photos_radio_school_logo_disabled' => 'Максимум 10 логотипов, сначала удали один',
     'photos_radio_school_logo' => 'Логотип школы',
     'photos_radio_school_cover' => 'Фотографии школы',
 

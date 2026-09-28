@@ -18,7 +18,8 @@
 	return $m->id == $school->cover_media_id ? 0 : 1;
 	}) ?? collect();
 	$coverMedia   = $allCovers->first();
-	$logoMedia    = $organizer?->getMedia('school_logo')->sortByDesc('created_at')->first();
+	$logoMedia    = $organizer?->getMedia('school_logo')->firstWhere('id', $school->logo_media_id)
+	?? $organizer?->getMedia('school_logo')->sortByDesc('created_at')->first();
 	
 	$logo = $logoMedia
 	? ($logoMedia->hasGeneratedConversion('school_logo_thumb') ? $logoMedia->getUrl('school_logo_thumb') : $logoMedia->getUrl())

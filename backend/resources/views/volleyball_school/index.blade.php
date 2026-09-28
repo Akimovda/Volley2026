@@ -76,6 +76,17 @@
                 object-fit: cover;
                 border: 2px solid var(--bg2);
             }
+            .school-card-cover {
+                width: 100%;
+                aspect-ratio: 16/9;
+                object-fit: cover;
+                display: block;
+            }
+            .school-card-logo-wrap--overlap {
+                margin-top: -5rem;
+                position: relative;
+                z-index: 2;
+            }
         </style>
     </x-slot>
 
@@ -96,14 +107,20 @@
             </div>
         @else
             <div class="ramka">
-                <div class="row row2">
+                <div class="row">
                     @foreach($schools as $school)
                         @php
                             $organizer = $school->organizer;
-                            $logoMedia = $organizer?->getMedia('school_logo')->sortByDesc('created_at')->first();
+                            $logoMedia = $organizer?->getMedia('school_logo')->firstWhere('id', $school->logo_media_id)
+                                ?? $organizer?->getMedia('school_logo')->sortByDesc('created_at')->first();
                             $logo = $logoMedia
                                 ? ($logoMedia->hasGeneratedConversion('school_logo_thumb') ? $logoMedia->getUrl('school_logo_thumb') : $logoMedia->getUrl())
                                 : ($school->getFirstMediaUrl('logo', 'thumb') ?: $school->getFirstMediaUrl('logo'));
+                            $coverMedia = $organizer?->getMedia('school_cover')->firstWhere('id', $school->cover_media_id)
+                                ?? $organizer?->getMedia('school_cover')->sortByDesc('created_at')->first();
+                            $cover = $coverMedia
+                                ? ($coverMedia->hasGeneratedConversion('school_cover_thumb') ? $coverMedia->getUrl('school_cover_thumb') : $coverMedia->getUrl())
+                                : ($school->getFirstMediaUrl('cover', 'thumb') ?: $school->getFirstMediaUrl('cover'));
                             $dirLabel = match($school->direction) {
                                 'classic' => '🏐 Классический волейбол',
                                 'beach'   => '🏖 Пляжный волейбол',
@@ -114,16 +131,21 @@
                         <div class="col-sm-6 col-lg-4">
                             <a href="{{ route('volleyball_school.show', $school->slug) }}" class="school-card-link">
                                 <div class="card">
+                                    @if($cover)
+                                    <img src="{{ $cover }}" alt="{{ $school->name }}" class="school-card-cover">
+                                    @endif
                                     <div class="school-card-body">
                                         {{-- Логотип --}}
-                                        <div class="text-center mb-2">
-                                            @if($logo)
+                                        @if($logo)
+                                        <div class="text-center mb-2 {{ $cover ? 'school-card-logo-wrap--overlap' : '' }}">
                                             <img src="{{ $logo }}" alt="logo"
-                                                 style="width:8rem;height:8rem;border-radius:50%;object-fit:cover;border:0.2rem solid var(--border-color,#eee);">
-                                            @else
-                                            <div style="width:8rem;height:8rem;border-radius:50%;background:var(--bg2,#f0f0f0);display:flex;align-items:center;justify-content:center;font-size:3rem;margin:0 auto;">🏐</div>
-                                            @endif
+                                                 style="width:8rem;height:8rem;border-radius:50%;object-fit:cover;border:0.2rem solid var(--border-color,#eee);{{ $cover ? 'background:#fff;' : '' }}">
                                         </div>
+                                        @elseif(!$cover)
+                                        <div class="text-center mb-2">
+                                            <div style="width:8rem;height:8rem;border-radius:50%;background:var(--bg2,#f0f0f0);display:flex;align-items:center;justify-content:center;font-size:3rem;margin:0 auto;">🏐</div>
+                                        </div>
+                                        @endif
 
                                         {{-- Название --}}
                                         <div class="b-600 f-18 text-center mb-1">{{ $school->name }}</div>
