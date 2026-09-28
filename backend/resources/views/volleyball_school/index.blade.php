@@ -32,8 +32,10 @@
             @php $mySchool = \App\Models\VolleyballSchool::where('organizer_id', auth()->id())->first(); @endphp
             <div class="mt-2" data-aos="fade-up" data-aos-delay="200">
                 @if($mySchool)
-                    <a href="{{ route('volleyball_school.edit') }}" class="btn btn-secondary">✏️ Редактировать мою школу</a>
-                    <a href="{{ route('volleyball_school.show', $mySchool->slug) }}" class="btn btn-secondary ml-1">👁 Моя страница</a>
+                    <div class="d-flex gap-1" style="flex-wrap:wrap">
+                        <a href="{{ route('volleyball_school.edit') }}" class="btn btn-secondary">✏️ Ред. мою школу</a>
+                        <a href="{{ route('volleyball_school.show', $mySchool->slug) }}" class="btn btn-secondary">👁 Моя страница</a>
+                    </div>
                 @else
                     <a href="{{ route('volleyball_school.create') }}" class="btn">+ Создать страницу школы</a>
                 @endif
