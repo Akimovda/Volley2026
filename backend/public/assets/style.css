@@ -2916,6 +2916,12 @@ body.dark .theme-icon {
 		box-shadow: 0 1rem 2.2rem rgba(0, 0, 0, 0.05), 0 0.5rem 1.2rem rgba(0, 0, 0, 0.03);
 		z-index: 1000;
 		transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+		/* Страховка от переполнения: меню организатора выросло до ~15 пунктов и
+		   продолжит расти — вместо обрезания нижних пунктов краем экрана даём
+		   свой скролл. top у поповера = "низ .fix-header", поэтому запас в
+		   12rem (шапка+отступы) держит попап от касания низа вьюпорта. */
+		max-height: calc(100vh - 12rem);
+		overflow-y: auto;
 	}
 	body.dark .fix-header-menu {
 		background-color: #222333;
@@ -3432,6 +3438,18 @@ body.dark .menu-user-login .user-name {
 	padding: 0.4rem 1.2rem 1rem;
 	border-radius: 1rem;
 
+}
+/* Десктопный поповер шапки (.fix-header-menu) стал длинным (много пунктов
+   организатора) — на мышином вводе тач-отступы не нужны, сжимаем вертикально,
+   чтобы больше пунктов помещалось без выхода за нижний край экрана. */
+@media (min-width: 768px) {
+	.fix-header-menu .menu-item,
+	.fix-header-menu .menu-item-title {
+		padding: 0.6rem 1.5rem;
+	}
+	.fix-header-menu .menu-nav {
+		gap: 0;
+	}
 }
 /* Иконки пунктов меню (замена эмодзи — см. components/menu-icon.blade.php) —
    инлайн-SVG, окрашивается через currentColor вместе с текстом пункта меню. */

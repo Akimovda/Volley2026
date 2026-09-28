@@ -199,7 +199,7 @@ return [
     'coupon_bulk_section'   => '📤 Массовая выдача купонов',
     'coupon_bulk_to_users'  => '👥 Выдать конкретным игрокам',
     'coupon_bulk_tpl_label' => 'Шаблон купона',
-    'coupon_bulk_user_ids'  => 'ID пользователей (через запятую)',
+    'coupon_bulk_user_ids'  => 'Выберите пользователей',
     'coupon_bulk_user_ids_ph' => '1, 2, 3, 42, 100',
     'coupon_bulk_user_search_ph' => 'Начните вводить имя игрока…',
     'coupon_bulk_channel'   => 'Канал',
