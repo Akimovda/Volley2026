@@ -1,0 +1,73 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
+
+class Brand extends Model
+{
+    protected $fillable = [
+        'slug',
+        'ua_suffix',
+        'display_name',
+        'site_title',
+        'logo_day_path',
+        'logo_night_path',
+        'og_image_path',
+        'is_default',
+    ];
+
+    protected $casts = [
+        'is_default' => 'boolean',
+    ];
+
+    protected static function booted(): void
+    {
+        static::saved(fn () => Cache::forget('brands.all'));
+        static::deleted(fn () => Cache::forget('brands.all'));
+    }
+
+    /**
+     * @return Collection<int, Brand>
+     */
+    public static function cached(): Collection
+    {
+        return Cache::rememberForever('brands.all', fn () => static::all());
+    }
+
+    public static function detectByUserAgent(?string $userAgent): self
+    {
+        $ua = (string) $userAgent;
+
+        foreach (static::cached() as $brand) {
+            if ($brand->ua_suffix !== '' && str_contains($ua, $brand->ua_suffix)) {
+                return $brand;
+            }
+        }
+
+        $default = static::cached()->firstWhere('is_default', true);
+
+        if (!$default) {
+            throw new \RuntimeException('No default brand configured — run BrandSeeder.');
+        }
+
+        return $default;
+    }
+
+    public function getLogoDayUrlAttribute(): ?string
+    {
+        return $this->logo_day_path ? asset($this->logo_day_path) : null;
+    }
+
+    public function getLogoNightUrlAttribute(): ?string
+    {
+        return $this->logo_night_path ? asset($this->logo_night_path) : null;
+    }
+
+    public function getOgImageUrlAttribute(): ?string
+    {
+        return $this->og_image_path ? asset($this->og_image_path) : null;
+    }
+}

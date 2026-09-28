@@ -28,6 +28,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'no-store-html'       => \App\Http\Middleware\NoStoreHtml::class,
             'abilities'           => \Laravel\Sanctum\Http\Middleware\CheckAbilities::class,
         ]);
+        $middleware->append(\App\Http\Middleware\DetectBrand::class);
         $middleware->appendToGroup('web', \App\Http\Middleware\SetLocale::class);
         $middleware->appendToGroup('web', \App\Http\Middleware\EnsureProfileCompleted::class);
         $middleware->appendToGroup('web', \App\Http\Middleware\SavePushToken::class);
