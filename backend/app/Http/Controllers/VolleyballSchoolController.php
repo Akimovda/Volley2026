@@ -48,9 +48,34 @@ class VolleyballSchoolController extends Controller
 
         $todayUtc = CarbonImmutable::now('UTC')->startOfDay();
 
-        $occurrences = collect();
+        // Фильтр по типу/уровню мероприятия — та же логика, что на /events
+        $fFormat = trim((string) request('format', ''));
+        $levelRaw = request('level');
+        $fLevel = ($levelRaw === null || $levelRaw === '') ? null : (int) $levelRaw;
+        $filterDirection = $school->direction === 'both' ? '' : $school->direction;
+
+        // Окно — 10 календарных дней подряд (как на /events), а не просто "следующие
+        // N мероприятий" — иначе чипы дней с пустыми точками были бы бессмысленны.
+        $windowTz = $school->effectiveTimezone();
+        $today = CarbonImmutable::now($windowTz)->startOfDay();
+
+        $dateParam = trim((string) request('date', ''));
+        $explicitDate = null;
+        if ($dateParam !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateParam)) {
+            try {
+                $explicitDate = CarbonImmutable::createFromFormat('Y-m-d', $dateParam, $windowTz)->startOfDay();
+            } catch (\Throwable $e) {
+                $explicitDate = null;
+            }
+        }
+
+        // Есть ли у школы вообще какие-то будущие мероприятия — БЕЗ учёта текущего
+        // фильтра/окна дат. Именно от этого зависит, показывать ли блок фильтра
+        // по дням (чипы+навигация) — иначе он пропадал бы целиком, если фильтр
+        // по типу/уровню (или навигация на 10 дней вперёд) сузил окно до 0 записей.
+        $schoolHasAnyUpcomingEvents = false;
         if (Schema::hasTable('event_occurrences')) {
-            $occurrences = EventOccurrence::query()
+            $schoolHasAnyUpcomingEvents = EventOccurrence::query()
                 ->whereHas('event', fn($q) => $q
                     ->where('organizer_id', $school->organizer_id)
                     ->where(fn($w) => $w->whereNull('is_private')->orWhere('is_private', false))
@@ -58,6 +83,46 @@ class VolleyballSchoolController extends Controller
                 ->whereNull('cancelled_at')
                 ->where(fn($q) => $q->whereNull('is_cancelled')->orWhere('is_cancelled', false))
                 ->where('starts_at', '>=', $todayUtc)
+                ->exists();
+        }
+
+        $occurrences = collect();
+        $windowStart = $today;
+        if (Schema::hasTable('event_occurrences')) {
+            $baseOccQuery = EventOccurrence::query()
+                ->whereHas('event', function ($q) use ($school, $fFormat, $fLevel, $filterDirection) {
+                    $q->where('organizer_id', $school->organizer_id)
+                        ->where(fn($w) => $w->whereNull('is_private')->orWhere('is_private', false));
+
+                    if ($fFormat !== '') {
+                        $q->where('format', $fFormat);
+                    }
+
+                    \App\Services\EventIndexService::applyLevelFilterVariantB($q, $filterDirection, $fLevel);
+                })
+                ->whereNull('cancelled_at')
+                ->where(fn($q) => $q->whereNull('is_cancelled')->orWhere('is_cancelled', false));
+
+            if ($explicitDate) {
+                $windowStart = $explicitDate->lt($today) ? $today : $explicitDate;
+            } else {
+                $nearestStartsAtUtc = (clone $baseOccQuery)
+                    ->where('starts_at', '>=', $todayUtc)
+                    ->orderBy('starts_at')
+                    ->value('starts_at');
+                if ($nearestStartsAtUtc) {
+                    $nearestLocalDay = CarbonImmutable::parse($nearestStartsAtUtc, 'UTC')->setTimezone($windowTz)->startOfDay();
+                    $windowStart = $nearestLocalDay->lt($today) ? $today : $nearestLocalDay;
+                } else {
+                    $windowStart = $today;
+                }
+            }
+
+            $windowEnd = $windowStart->addDays(9)->endOfDay();
+
+            $occurrences = (clone $baseOccQuery)
+                ->where('starts_at', '>=', $windowStart->setTimezone('UTC'))
+                ->where('starts_at', '<=', $windowEnd->setTimezone('UTC'))
                 ->with([
                     'event' => fn($q) => $q->with([
                         'location:id,name,address,city_id',
@@ -68,9 +133,10 @@ class VolleyballSchoolController extends Controller
                     ]),
                 ])
                 ->orderBy('starts_at')
-                ->limit(20)
                 ->get();
         }
+
+        $windowStartDate = $windowStart->format('Y-m-d');
 
         // Абонементы доступные для продажи
         $subscriptionTemplates = collect();
@@ -107,7 +173,7 @@ class VolleyballSchoolController extends Controller
 
         return view('volleyball_school.show', compact(
             'school', 'occurrences', 'subscriptionTemplates', 'schoolTournaments', 'schoolTopPlayers',
-            'eventLikeCounts', 'likedEventIds'
+            'eventLikeCounts', 'likedEventIds', 'windowStartDate', 'windowTz', 'schoolHasAnyUpcomingEvents'
         ));
     }
 
