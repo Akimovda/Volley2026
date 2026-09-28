@@ -56,6 +56,12 @@
 			.school-cover-placeholder { width:100%; height:24rem; border-radius:1rem; background:linear-gradient(135deg,var(--bg2,#f0f0f0),var(--bg3,#e0e0e0)); display:flex; align-items:center; justify-content:center; flex-direction:column; gap:1rem; }
 			.school-logo-big { width:8rem; height:8rem; border-radius:50%; object-fit:cover; border:0.3rem solid var(--bg2); flex-shrink:0; }
 			.organizer-avatar { border-radius:50%; object-fit:cover; flex-shrink:0; }
+			.live-dot { display:inline-block; width:0.8rem; height:0.8rem; border-radius:50%; background:#10b981; margin-right:0.5rem; vertical-align:middle; animation: liveDotPulse 1.5s infinite; }
+			@keyframes liveDotPulse {
+				0%   { box-shadow: 0 0 0 0 rgba(16,185,129,.6); }
+				70%  { box-shadow: 0 0 0 0.6rem rgba(16,185,129,0); }
+				100% { box-shadow: 0 0 0 0 rgba(16,185,129,0); }
+			}
 		</style>
 	</x-slot>
 	
@@ -250,12 +256,12 @@
                     @if($tourn->location) · {{ $tourn->location->name }} @endif
                 </div>
             </div>
-            <span class="f-12 p-1 px-2 b-600" style="background:rgba(41,103,186,.15);border-radius:6px">
+            @if($isActive)
+                <span class="f-12 b-600" style="color:#10b981"><span class="live-dot"></span>LIVE</span>
+            @endif
+            <span class="f-12">
                 {{ $tourn->direction === 'beach' ? '🏖' : '🏐' }} {{ $matchesCount }} матчей
             </span>
-            @if($isActive)
-                <span class="f-12 p-1 px-2 b-600" style="background:rgba(16,185,129,.15);border-radius:6px;color:#10b981">LIVE</span>
-            @endif
         </div>
     @endforeach
 
