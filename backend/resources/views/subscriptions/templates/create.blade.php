@@ -17,7 +17,7 @@
 
             <div class="ramka">
                 <h2 class="-mt-05">{{ __('subscriptions.tpl_section_main') }}</h2>
-                <div class="row row2">
+                <div class="row">
                     <div class="col-md-6">
                         <label>{{ __('subscriptions.tpl_label_name') }}</label>
                         <input type="text" name="name" value="{{ old('name') }}" required maxlength="150">
@@ -57,7 +57,7 @@
                 <div class="card mb-2 f-14" style="opacity:.7;">
                     {{ __('subscriptions.tpl_term_hint') }}
                 </div>
-                <div class="row row2">
+                <div class="row">
                     <div class="col-md-6">
                         <div class="card">
                             <label>{{ __('subscriptions.tpl_label_months') }}</label>
@@ -77,7 +77,7 @@
 
             <div class="ramka">
                 <h2 class="-mt-05">{{ __('subscriptions.tpl_section_price') }}</h2>
-                <div class="row row2">
+                <div class="row">
                     <div class="col-md-4">
                         <label>{{ __('subscriptions.tpl_label_price_rub') }}</label>
                         <input type="number" name="price_rub" value="{{ old('price_rub', 0) }}" min="0" step="1" required>
@@ -110,7 +110,7 @@
 
             <div class="ramka">
                 <h2 class="-mt-05">{{ __('subscriptions.tpl_section_rules') }}</h2>
-                <div class="row row2">
+                <div class="row">
                     <div class="col-md-6">
                         <label>{{ __('subscriptions.tpl_label_cancel_hours') }}</label>
                         <input type="number" name="cancel_hours_before" value="{{ old('cancel_hours_before', 0) }}" min="0">
@@ -135,7 +135,7 @@
 
             <div class="ramka">
                 <h2 class="-mt-05">{{ __('subscriptions.tpl_section_freeze') }}</h2>
-                <div class="row row2">
+                <div class="row">
                     <div class="col-md-12">
                         <label class="checkbox-item mb-2">
                             <input type="hidden" name="freeze_enabled" value="0">

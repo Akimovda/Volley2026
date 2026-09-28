@@ -23,7 +23,7 @@
 
             <div class="ramka">
                 <h2 class="-mt-05">{{ __('subscriptions.tpl_section_main') }}</h2>
-                <div class="row row2">
+                <div class="row">
                     <div class="col-md-6">
                         <div class="card">
                             <label>{{ __('subscriptions.tpl_label_name') }}</label>
@@ -82,7 +82,7 @@
                 <div class="card mb-2 f-14" style="opacity:.7;">
                     {{ __('subscriptions.tpl_term_hint_short') }}
                 </div>
-                <div class="row row2">
+                <div class="row">
                     <div class="col-md-6">
                         <div class="card">
                             <label>{{ __('subscriptions.tpl_label_months') }}</label>
@@ -104,7 +104,7 @@
 
             <div class="ramka">
                 <h2 class="-mt-05">{{ __('subscriptions.tpl_section_price') }}</h2>
-                <div class="row row2">
+                <div class="row">
                     <div class="col-md-4">
                         <div class="card">
                             <label>{{ __('subscriptions.tpl_label_price_rub') }}</label>
@@ -148,7 +148,7 @@
 
             <div class="ramka">
                 <h2 class="-mt-05">{{ __('subscriptions.tpl_section_extra') }}</h2>
-                <div class="row row2">
+                <div class="row">
                     <div class="col-md-4">
                         <div class="card">
                             <label>{{ __('subscriptions.tpl_label_cancel_short') }}</label>

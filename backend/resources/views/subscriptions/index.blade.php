@@ -7,7 +7,7 @@
         </div>
     </x-slot>
     <div class="container">
-    <div class="row row2">
+    <div class="row">
         <div class="col-lg-4 col-xl-3 order-2 d-none d-lg-block">
             <div class="sticky">
                 <div class="card-ramka">
@@ -68,7 +68,7 @@
             <h2 class="-mt-05">{{ __('subscriptions.issue_h2') }}</h2>
             <form method="POST" action="{{ route('subscriptions.issue') }}" class="form">
                 @csrf
-                <div class="row row2">
+                <div class="row">
                     <div class="col-md-4">
                         <label>{{ __('subscriptions.issue_label_template') }}</label>
                         <select name="template_id" required>

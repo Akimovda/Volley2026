@@ -2,7 +2,7 @@
     <x-slot name="title">{{ __('subscriptions.usages_title') }}</x-slot>
     <x-slot name="h1">{{ __('subscriptions.usages_h1') }}</x-slot>
     <div class="container">
-    <div class="row row2">
+    <div class="row">
         <div class="col-lg-4 col-xl-3 order-2 d-none d-lg-block">
             <div class="sticky">
                 <div class="card-ramka">
