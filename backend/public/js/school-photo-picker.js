@@ -161,6 +161,7 @@
         });
     }
 
+    // --- Логотип: одиночный выбор ---
     function selectSchoolThumb(el, groupSelector, hiddenInputId) {
         document.querySelectorAll(groupSelector).forEach(function (t) {
             t.classList.remove('school-photo-thumb--active');
@@ -171,41 +172,116 @@
         document.getElementById(hiddenInputId).value = el.dataset.mediaId;
     }
 
-    window.selectSchoolLogo  = function (el) { selectSchoolThumb(el, '.school-logo-thumb', 'logo_media_id_input'); };
-    window.selectSchoolCover = function (el) { selectSchoolThumb(el, '.school-cover-thumb', 'cover_media_id_input'); };
+    window.selectSchoolLogo = function (el) { selectSchoolThumb(el, '.school-logo-thumb', 'logo_media_id_input'); };
 
-    function addThumbToGallery(galleryId, emptyHintId, thumbClass, selectFnName, mediaId, thumbUrl, thumbStyle, maxCount, btnId) {
-        var gallery = document.getElementById(galleryId);
+    function addLogoToGallery(mediaId, thumbUrl) {
+        var gallery = document.getElementById('school-logo-gallery');
         if (!gallery) return;
-        var hint = document.getElementById(emptyHintId);
+        var hint = document.getElementById('school-logo-empty-hint');
         if (hint) hint.style.display = 'none';
         gallery.style.display = '';
-        gallery.querySelectorAll('.' + thumbClass).forEach(function (t) { t.classList.remove('school-photo-thumb--active'); });
+        gallery.querySelectorAll('.school-logo-thumb').forEach(function (t) { t.classList.remove('school-photo-thumb--active'); });
 
         var thumb = document.createElement('div');
-        thumb.className = thumbClass + ' school-photo-thumb--active';
+        thumb.className = 'school-logo-thumb school-photo-thumb--active';
         thumb.dataset.mediaId = mediaId;
-        thumb.onclick = function () { window[selectFnName](thumb); };
-        thumb.innerHTML = '<img src="' + thumbUrl + '" style="' + thumbStyle + 'cursor:pointer;outline:2px solid #2967BA;">';
+        thumb.onclick = function () { window.selectSchoolLogo(thumb); };
+        thumb.innerHTML = '<img src="' + thumbUrl + '" style="width:8rem;height:8rem;object-fit:cover;cursor:pointer;outline:2px solid #2967BA;">';
         gallery.prepend(thumb);
 
-        if (maxCount && gallery.querySelectorAll('.' + thumbClass).length >= maxCount) {
-            var btn = document.getElementById(btnId);
+        if (gallery.querySelectorAll('.school-logo-thumb').length >= 10) {
+            var btn = document.getElementById('school-logo-upload-btn');
             if (btn) btn.style.display = 'none';
         }
     }
 
+    // --- Обложки: множественный выбор, до MAX_COVERS штук, порядок = порядок выбора ---
+    var MAX_COVERS = 5;
+
+    function coverSelectedIds() {
+        var container = document.getElementById('cover-media-ids-inputs');
+        if (!container) return [];
+        return Array.prototype.map.call(container.querySelectorAll('input'), function (i) { return i.value; });
+    }
+
+    function renderCoverSelectionState() {
+        var ids = coverSelectedIds();
+        document.querySelectorAll('.school-cover-thumb').forEach(function (t) {
+            var pos = ids.indexOf(t.dataset.mediaId);
+            var img = t.querySelector('img');
+            var badge = t.querySelector('.school-cover-order-badge');
+            if (pos !== -1) {
+                t.classList.add('school-photo-thumb--active');
+                if (img) img.style.outline = '2px solid #2967BA';
+                if (badge) { badge.style.display = ''; badge.textContent = String(pos + 1); }
+            } else {
+                t.classList.remove('school-photo-thumb--active');
+                if (img) img.style.outline = '';
+                if (badge) { badge.style.display = 'none'; badge.textContent = ''; }
+            }
+        });
+        var btn = document.getElementById('school-cover-upload-btn');
+        if (btn) btn.style.display = ids.length >= MAX_COVERS ? 'none' : '';
+    }
+
+    function addCoverId(mediaId) {
+        var container = document.getElementById('cover-media-ids-inputs');
+        if (!container) return false;
+        if (coverSelectedIds().indexOf(String(mediaId)) !== -1) return true;
+        if (coverSelectedIds().length >= MAX_COVERS) {
+            swal({ title: 'Максимум ' + MAX_COVERS + ' обложек', text: 'Снимите одну, чтобы выбрать другую.', icon: 'warning', button: 'Понятно' });
+            return false;
+        }
+        var input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'cover_media_ids[]';
+        input.className = 'cover-media-ids-input';
+        input.value = mediaId;
+        container.appendChild(input);
+        return true;
+    }
+
+    window.toggleSchoolCover = function (el) {
+        var id = el.dataset.mediaId;
+        var container = document.getElementById('cover-media-ids-inputs');
+        var existing = container.querySelector('input[value="' + id + '"]');
+        if (existing) {
+            existing.remove();
+        } else {
+            addCoverId(id);
+        }
+        renderCoverSelectionState();
+    };
+
+    function addCoverToGallery(mediaId, thumbUrl) {
+        var gallery = document.getElementById('school-cover-gallery');
+        if (!gallery) return;
+        var hint = document.getElementById('school-cover-empty-hint');
+        if (hint) hint.style.display = 'none';
+        gallery.style.display = '';
+
+        var thumb = document.createElement('div');
+        thumb.className = 'school-cover-thumb';
+        thumb.dataset.mediaId = mediaId;
+        thumb.style.position = 'relative';
+        thumb.onclick = function () { window.toggleSchoolCover(thumb); };
+        thumb.innerHTML = '<img src="' + thumbUrl + '" style="width:9rem;aspect-ratio:16/9;object-fit:cover;cursor:pointer;">' +
+            '<span class="school-cover-order-badge" style="display:none"></span>';
+        gallery.prepend(thumb);
+
+        addCoverId(mediaId);
+        renderCoverSelectionState();
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
+        renderCoverSelectionState();
+
         setupSchoolPhotoUpload({
             btnId: 'school-logo-upload-btn', inputId: 'school-logo-upload',
             photoType: 'school_logo', aspect: 1, cropW: 360, cropH: 360,
             onUploaded: function (mediaId, thumbUrl) {
                 document.getElementById('logo_media_id_input').value = mediaId;
-                addThumbToGallery(
-                    'school-logo-gallery', 'school-logo-empty-hint', 'school-logo-thumb', 'selectSchoolLogo',
-                    mediaId, thumbUrl, 'width:8rem;height:8rem;border-radius:50%;object-fit:cover;',
-                    10, 'school-logo-upload-btn'
-                );
+                addLogoToGallery(mediaId, thumbUrl);
             }
         });
 
@@ -213,12 +289,7 @@
             btnId: 'school-cover-upload-btn', inputId: 'school-cover-upload',
             photoType: 'school_cover', aspect: 16 / 9, cropW: 640, cropH: 360,
             onUploaded: function (mediaId, thumbUrl) {
-                document.getElementById('cover_media_id_input').value = mediaId;
-                addThumbToGallery(
-                    'school-cover-gallery', 'school-cover-empty-hint', 'school-cover-thumb', 'selectSchoolCover',
-                    mediaId, thumbUrl, 'width:9rem;aspect-ratio:16/9;object-fit:cover;',
-                    null, 'school-cover-upload-btn'
-                );
+                addCoverToGallery(mediaId, thumbUrl);
             }
         });
     });

@@ -253,7 +253,9 @@
 							'schoolLogos' => $schoolLogos,
 							'schoolCovers' => $schoolCovers,
 							'selectedLogoId' => $school->logo_media_id,
-							'selectedCoverId' => $school->cover_media_id,
+							'selectedCoverIds' => $school->cover_media_ids !== null
+								? $school->cover_media_ids
+								: ($school->cover_media_id ? [$school->cover_media_id] : []),
 						])
 						
 						<div class="ramka text-center">

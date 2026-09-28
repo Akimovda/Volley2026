@@ -266,11 +266,17 @@ class VolleyballSchoolController extends Controller
             'organizer_id' => ['nullable', 'integer', 'exists:users,id'],
             'logo_media_id'  => ['nullable', 'integer'],
             'cover_media_id' => ['nullable', 'integer'],
+            'cover_media_ids'   => ['nullable', 'array', 'max:5'],
+            'cover_media_ids.*' => ['integer'],
         ], [
             'phone.regex' => 'Телефон должен быть в формате +7XXXXXXXXXX.',
             'slug.alpha_dash' => 'Slug может содержать только латиницу, цифры и дефис.',
             'slug.unique' => 'Этот URL уже занят, выберите другой.',
         ]);
+
+        if ($request->has('cover_gallery_submitted')) {
+            $data['cover_media_ids'] = $data['cover_media_ids'] ?? [];
+        }
 
         // Проверка нецензурных слов
         if ($this->containsBadWords($data['name'])) {
@@ -365,10 +371,16 @@ class VolleyballSchoolController extends Controller
             'max_url'    => ['nullable', 'url', 'max:200'],
             'logo_media_id'  => ['nullable', 'integer'],
             'cover_media_id' => ['nullable', 'integer'],
+            'cover_media_ids'   => ['nullable', 'array', 'max:5'],
+            'cover_media_ids.*' => ['integer'],
             'is_published'   => ['sometimes', 'boolean'],
         ], [
             'phone.regex' => 'Телефон должен быть в формате +7XXXXXXXXXX.',
         ]);
+
+        if ($request->has('cover_gallery_submitted')) {
+            $data['cover_media_ids'] = $data['cover_media_ids'] ?? [];
+        }
 
         if ($this->containsBadWords($data['name'])) {
             return back()->withInput()->withErrors(['name' => 'Название содержит недопустимые слова.']);
@@ -444,6 +456,21 @@ class VolleyballSchoolController extends Controller
                         ->toMediaCollection('cover');
                 }
             }
+        }
+
+        // Набор обложек для слайд-шоу карточки в списке (index) — только id из
+        // school_cover организатора, до 5 штук; порядок = порядок выбора на форме.
+        // Первая выбранная становится cover_media_id (используется show.blade.php/setMainCover).
+        // Пустой массив (а не null) — организатор осознанно снял все галочки; null — картинка
+        // ещё не настраивалась через этот пикер (тогда index.blade.php падает на legacy cover_media_id).
+        if (array_key_exists('cover_media_ids', $data)) {
+            $ownCoverIds = $organizer->getMedia('school_cover')->pluck('id')->all();
+            $validIds = array_values(array_intersect(array_map('intval', $data['cover_media_ids'] ?? []), $ownCoverIds));
+            $validIds = array_slice($validIds, 0, 5);
+            $school->update([
+                'cover_media_ids' => $validIds,
+                'cover_media_id'  => $validIds[0] ?? null,
+            ]);
         }
     }
 
