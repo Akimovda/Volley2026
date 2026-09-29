@@ -53,14 +53,35 @@ class BrandThemeService
 
     public function css(Brand $brand): string
     {
-        if (!$brand->hasTheme()) {
+        $hidden = $brand->menuHidden();
+        if (!$brand->hasTheme() && !$hidden) {
             return '';
         }
 
         $cssFile = public_path('assets/style.css');
-        $key = 'brand.theme.css.' . md5(json_encode($brand->theme) . '|' . @filemtime($cssFile));
+        $key = 'brand.theme.css.' . md5(json_encode([$brand->theme, $hidden, url('/')]) . '|' . @filemtime($cssFile));
 
-        return Cache::rememberForever($key, fn () => $this->build((array) $brand->theme, $cssFile));
+        return Cache::rememberForever($key, fn () => ($brand->hasTheme() ? $this->build((array) $brand->theme, $cssFile) : '') . $this->hiddenMenuCss($hidden));
+    }
+
+    /** Скрытие пунктов меню по href (относительный и абсолютный вид — route() отдаёт абсолютный). Только пункты из каталога. */
+    private function hiddenMenuCss(array $paths): string
+    {
+        $known = [];
+        foreach ((array) config('brand_menu.groups') as $group) {
+            foreach ($group['items'] as [$path]) {
+                $known[$path] = true;
+            }
+        }
+        $sel = [];
+        foreach ($paths as $path) {
+            if (isset($known[$path])) {
+                $sel[] = 'a.menu-item[href="' . $path . '"]';
+                $sel[] = 'a.menu-item[href="' . url($path) . '"]';
+            }
+        }
+
+        return $sel ? implode(',', $sel) . '{display:none!important}' : '';
     }
 
     private function build(array $theme, string $cssFile): string

@@ -15,6 +15,15 @@
         'menu_title'  => __('admin.app_c_menu_title'),
         'menu_accent' => __('admin.app_c_menu_accent'),
     ];
+    $linkTexts = [
+        'titleRu'   => __('admin.app_link_title_ru'),
+        'titleEn'   => __('admin.app_link_title_en'),
+        'url'       => __('admin.app_link_url'),
+        'placeSite' => __('admin.app_link_place_site'),
+        'placeUser' => __('admin.app_link_place_user'),
+        'newTab'    => __('admin.app_link_new_tab'),
+        'remove'    => __('admin.app_link_remove'),
+    ];
     $modes = [
         'day'   => __('admin.app_section_day'),
         'night' => __('admin.app_section_night'),
@@ -114,6 +123,35 @@
                 </div>
             </div>
 
+            {{-- Пункты меню --}}
+            @php
+                $hiddenNow = old('menu.hidden', $brand->menuHidden());
+                $linksNow = old('menu.links', $brand->menu['links'] ?? []);
+                $linksNow = array_values((array) $linksNow);
+            @endphp
+            <div class="ramka">
+                <h2 class="-mt-05">{{ __('admin.app_menu_h2') }}</h2>
+                <p>{{ __('admin.app_menu_hide_hint') }}</p>
+
+                @foreach($menuGroups as $group)
+                    <h3 style="margin:2rem 0 1rem;">{{ __($group['title']) }}</h3>
+                    <div style="display:flex; flex-wrap:wrap; gap:0.6rem 3rem;">
+                        @foreach($group['items'] as [$path, $labelKey])
+                            <label class="checkbox-item" style="min-width:26rem;">
+                                <input type="checkbox" name="menu[hidden][]" value="{{ $path }}" @checked(in_array($path, (array) $hiddenNow, true))>
+                                <div class="custom-checkbox"></div>
+                                <span>{{ __($labelKey) }}</span>
+                            </label>
+                        @endforeach
+                    </div>
+                @endforeach
+
+                <h3 style="margin:3rem 0 1rem;">{{ __('admin.app_links_h3') }}</h3>
+                <p>{{ __('admin.app_links_hint') }}</p>
+                <div id="menu-links-list"></div>
+                <button type="button" class="btn btn-small" id="menu-link-add">{{ __('admin.app_link_add') }}</button>
+            </div>
+
             {{-- Логотипы --}}
             <div class="ramka">
                 <h2 class="-mt-05">{{ __('admin.app_logo_h2') }}</h2>
@@ -211,6 +249,43 @@
                 renderPreview();
             });
         });
+
+
+        // --- Свои ссылки меню ---
+        var linkList = document.getElementById('menu-links-list');
+        var linkIdx = 0;
+        var linkTexts = @json($linkTexts);
+        var initialLinks = @json($linksNow);
+
+        function esc(v) {
+            return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+        }
+
+        function addLinkRow(d) {
+            d = d || {};
+            var i = linkIdx++;
+            var place = d.place === 'user' ? 'user' : 'site';
+            var row = document.createElement('div');
+            row.className = 'menu-link-row';
+            row.style.cssText = 'padding:1.4rem; margin-bottom:1.4rem; border:0.1rem solid rgba(128,128,128,.3); border-radius:1rem;';
+            row.innerHTML =
+                '<div style="display:flex; flex-wrap:wrap; gap:1.2rem; margin-bottom:1.2rem;">' +
+                '<input type="text" name="menu[links][' + i + '][title_ru]" value="' + esc(d.title_ru) + '" placeholder="' + esc(linkTexts.titleRu) + '" maxlength="60" style="flex:1; min-width:18rem;">' +
+                '<input type="text" name="menu[links][' + i + '][title_en]" value="' + esc(d.title_en) + '" placeholder="' + esc(linkTexts.titleEn) + '" maxlength="60" style="flex:1; min-width:18rem;">' +
+                '</div>' +
+                '<input type="text" name="menu[links][' + i + '][url]" value="' + esc(d.url) + '" placeholder="' + esc(linkTexts.url) + ' (https://…)" maxlength="500" style="width:100%; margin-bottom:1.2rem;">' +
+                '<div style="display:flex; flex-wrap:wrap; gap:1rem 3rem; align-items:center;">' +
+                '<label class="radio-item"><input type="radio" name="menu[links][' + i + '][place]" value="site"' + (place === 'site' ? ' checked' : '') + '><div class="custom-radio"></div><span>' + esc(linkTexts.placeSite) + '</span></label>' +
+                '<label class="radio-item"><input type="radio" name="menu[links][' + i + '][place]" value="user"' + (place === 'user' ? ' checked' : '') + '><div class="custom-radio"></div><span>' + esc(linkTexts.placeUser) + '</span></label>' +
+                '<label class="checkbox-item"><input type="checkbox" name="menu[links][' + i + '][new_tab]" value="1"' + (d.new_tab ? ' checked' : '') + '><div class="custom-checkbox"></div><span>' + esc(linkTexts.newTab) + '</span></label>' +
+                '<button type="button" class="btn btn-small" data-link-remove>' + esc(linkTexts.remove) + '</button>' +
+                '</div>';
+            row.querySelector('[data-link-remove]').addEventListener('click', function () { row.remove(); });
+            linkList.appendChild(row);
+        }
+
+        document.getElementById('menu-link-add').addEventListener('click', function () { addLinkRow({}); });
+        initialLinks.forEach(addLinkRow);
 
         renderPreview();
     })();
