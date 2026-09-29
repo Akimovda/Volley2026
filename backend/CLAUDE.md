@@ -314,6 +314,11 @@ sudo systemctl reload php8.3-fpm   # ← обязательно при изме�
 - Sticky-блок должен подписываться не только на `resize`/`orientationchange`/`load`, но и на кастомное событие `vp:header-resize` (Telegram WebApp сообщает safe area асинхронно).
 - Десктопный поповер меню — `position:absolute` (не `fixed`) внутри `.fix-header` — работает без JS-пересчёта `top`, т.к. `.fix-header` (position:fixed) — containing block для absolute-потомков.
 
+## /events в нативных приложениях (`html.is-app`) — без заголовка и дат (2026-09-29)
+- В приложениях (UA `VolleyPlayApp`/`SVSVolleyApp` → класс `is-app` на `<html>`) на `/events` скрыты `h1` и `h2` (диапазон дат) через CSS в слоте `style` `events/index.blade.php`; в HTML они остаются (SEO для браузера не тронут). `.title-description` скрыт отдельным правилом в `style.css`.
+- Резерв места под них тоже убран (`style.css`, `html.is-app .events-page .top-section`): `padding-top = env(safe-area-inset-top) + var(--fh-content-h, 5.6rem) + 2rem`, `padding-bottom:0`, `.top-section-txt {padding:0}`. `--fh-content-h` пишет JS на странице (`syncStickyOffset`).
+- **Ловушка**: запас 2rem нельзя уменьшать. `initStickyCollapse()` (`events/index.blade.php`) ставит `.is-scrolled` (сворачивает фильтр, остаются только чипы дат), если `mobSticky.getBoundingClientRect().top <= computed top + 1`, а sticky `top` в app = `safe-area + --fh-content-h + 12px`. При запасе 1rem (10px) лента «прилипала» уже на scroll=0 и фильтр был схлопнут с первого показа. Запас должен быть строго больше 12px+1px.
+
 ## Баг промаха скролла к разделу дня на /events (найден и исправлен 2026-08)
 Полное расследование — [claude_docs/claude_scroll_day_bug.md](claude_docs/claude_scroll_day_bug.md).
 - Единая функция `stickyBottom()` — используется и для цели скролла, и для определения активного дня (раньше использовались две разные границы, отсюда промах).
