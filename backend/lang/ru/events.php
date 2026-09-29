@@ -209,6 +209,8 @@ return [
 
     // Страница события (show.blade.php)
     'show_private_link_title'   => '🔗 Приватная ссылка',
+    'show_private_link_copy'    => 'Скопировать ссылку',
+    'show_private_link_copied'  => 'Скопировано ✓',
     'show_ad_payment_title'     => '💰 Оплата размещения',
     'show_ad_payment_lead'      => 'Для публикации рекламного мероприятия необходимо оплатить размещение.',
     'show_ad_price_label'       => 'Стоимость:',
