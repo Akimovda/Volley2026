@@ -8,6 +8,7 @@ use App\Services\UserMergeService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Http;
@@ -63,9 +64,10 @@ class CheckUserDuplicatesJob implements ShouldQueue
                 'text'                     => $text,
                 'parse_mode'               => 'HTML',
                 'disable_web_page_preview' => true,
-            ]);
+            ])->throw();
         } catch (\Throwable $e) {
-            Log::error('[CheckUserDuplicatesJob] Ошибка отправки в Telegram: ' . $e->getMessage());
+            $body = $e instanceof RequestException ? ' | ответ: ' . $e->response->body() : '';
+            Log::error('[CheckUserDuplicatesJob] Ошибка отправки в Telegram: ' . $e->getMessage() . $body);
         }
     }
 }
