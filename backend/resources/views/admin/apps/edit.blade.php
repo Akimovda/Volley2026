@@ -9,6 +9,12 @@
         'bg_card'   => __('admin.app_c_bg_card'),
         'text'      => __('admin.app_c_text'),
     ];
+    $menuLabels = [
+        'menu_bg'     => __('admin.app_c_menu_bg'),
+        'menu_text'   => __('admin.app_c_menu_text'),
+        'menu_title'  => __('admin.app_c_menu_title'),
+        'menu_accent' => __('admin.app_c_menu_accent'),
+    ];
     $modes = [
         'day'   => __('admin.app_section_day'),
         'night' => __('admin.app_section_night'),
@@ -61,7 +67,9 @@
                     <h2 class="-mt-05">{{ __('admin.app_colors_h2') }}: {{ $modeLabel }}</h2>
                     @if($mode === 'day')<p>{{ __('admin.app_hint_empty') }}</p>@endif
 
-                    @foreach($colorLabels as $key => $label)
+                    @foreach([$colorLabels, $menuLabels] as $gi => $labels)
+                        @if($gi === 1)<h3 style="margin:2.5rem 0 1.5rem;">{{ __('admin.app_menu_h3') }}</h3>@endif
+                    @foreach($labels as $key => $label)
                         @php
                             $val = old("theme.$mode.$key", $brand->theme[$mode][$key] ?? '');
                             $def = $themeDefaults[$mode][$key];
@@ -77,6 +85,7 @@
                             <span style="flex:1; min-width:20rem;">{{ $label }}</span>
                         </div>
                     @endforeach
+                    @endforeach
                 </div>
             @endforeach
 
@@ -90,8 +99,15 @@
                             <div data-pv="card" style="padding:1.6rem; border-radius:1rem; border:0.1rem solid rgba(128,128,128,.25);">
                                 <p data-pv="text" style="margin-bottom:1rem;">{{ __('admin.app_preview_text') }}</p>
                                 <p style="margin-bottom:1.2rem;"><a href="javascript:void(0)" data-pv="link" style="text-decoration:underline;">{{ __('admin.app_preview_link') }}</a></p>
-                                <span data-pv="primary" style="display:inline-block; padding:0.9rem 1.8rem; border-radius:0.8rem; color:#fff; margin-right:1rem;">{{ __('admin.app_preview_btn_primary') }}</span>
-                                <span data-pv="secondary" style="display:inline-block; padding:0.9rem 1.8rem; border-radius:0.8rem; color:#fff;">{{ __('admin.app_preview_btn_secondary') }}</span>
+                                <div style="display:flex; flex-wrap:wrap; gap:1.2rem;">
+                                    <span data-pv="primary" style="display:inline-block; padding:0.9rem 1.8rem; border-radius:0.8rem; color:#fff;">{{ __('admin.app_preview_btn_primary') }}</span>
+                                    <span data-pv="secondary" style="display:inline-block; padding:0.9rem 1.8rem; border-radius:0.8rem; color:#fff;">{{ __('admin.app_preview_btn_secondary') }}</span>
+                                </div>
+                            </div>
+                            <div data-pv="menu" style="margin-top:1.4rem; padding:1.2rem 1.4rem; border-radius:1rem; border:0.1rem solid rgba(128,128,128,.25);">
+                                <div data-pv="menu_title" style="font-size:1.2rem; font-weight:600; text-transform:uppercase; margin-bottom:0.6rem;">{{ __('admin.app_preview_menu_title') }}</div>
+                                <div data-pv="menu_text" style="padding:0.5rem 0;">{{ __('admin.app_preview_menu_item') }}</div>
+                                <div data-pv="menu_text" style="padding:0.5rem 0; display:inline-block;">{{ __('admin.app_preview_menu_active') }}<span data-pv="menu_accent" style="display:block; height:0.2rem; margin-top:0.2rem;"></span></div>
                             </div>
                         </div>
                     @endforeach
@@ -140,8 +156,10 @@
             </div>
 
             <div class="ramka">
-                <button type="submit" class="btn btn-primary">{{ __('admin.app_save') }}</button>
-                <a href="{{ route('admin.apps.index') }}" class="btn btn-secondary" style="margin-left:1rem;">{{ __('admin.app_back') }}</a>
+                <div style="display:flex; flex-wrap:wrap; gap:1.5rem;">
+                    <button type="submit" class="btn btn-primary">{{ __('admin.app_save') }}</button>
+                    <a href="{{ route('admin.apps.index') }}" class="btn btn-secondary">{{ __('admin.app_back') }}</a>
+                </div>
             </div>
         </form>
     </div>
@@ -167,6 +185,10 @@
                 box.querySelector('[data-pv="link"]').style.color = val(mode, 'primary');
                 box.querySelector('[data-pv="primary"]').style.background = val(mode, 'primary');
                 box.querySelector('[data-pv="secondary"]').style.background = val(mode, 'secondary');
+                box.querySelector('[data-pv="menu"]').style.background = val(mode, 'menu_bg');
+                box.querySelector('[data-pv="menu_title"]').style.color = val(mode, 'menu_title');
+                box.querySelectorAll('[data-pv="menu_text"]').forEach(function (el) { el.style.color = val(mode, 'menu_text'); });
+                box.querySelector('[data-pv="menu_accent"]').style.background = val(mode, 'menu_accent');
             });
         }
 

@@ -382,4 +382,12 @@ return [
     'app_preview_text' => 'Sample text inside a card',
     'app_save' => 'Save',
     'app_back' => '← Back to apps',
+    'app_menu_h3' => 'Menu and header',
+    'app_c_menu_bg' => 'Header and menu background',
+    'app_c_menu_text' => 'Menu item text and header user name',
+    'app_c_menu_title' => 'Menu section titles',
+    'app_c_menu_accent' => 'Menu item underline and active item',
+    'app_preview_menu_title' => 'Menu section',
+    'app_preview_menu_item' => 'Menu item',
+    'app_preview_menu_active' => 'Active item',
 ];
