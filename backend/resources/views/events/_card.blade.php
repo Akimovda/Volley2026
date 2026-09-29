@@ -364,6 +364,7 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 								<img src="/img/pixel.png" data-src="/img/{{ $event->direction === 'beach' ? 'beach.webp' : 'classic.webp' }}" alt="{{ $event?->title ?? '—' }}">
 								@endif
 
+								@include('events._partials.weather_badge', ['occ' => $occ])
 								<div class="event-direction {{ $event->direction === 'beach' ? 'beach-direction' : 'classic-direction' }}">{{ $dirLabel }}</div>
 								<div class="event-price">{{ $priceLabel }}</div>
 							</a>

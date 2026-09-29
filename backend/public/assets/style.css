@@ -5898,6 +5898,31 @@ body.dark .card-img-top {
 body.dark .event-price {
 	background: rgba(0,0,0,0.4);
 }
+/* Погода на картинке карточки — сверху по центру */
+.event-weather {
+	position: absolute;
+	top: 8px;
+	left: 50%;
+	transform: translateX(-50%);
+	z-index: 2;
+	height: 24px;
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 0 10px;
+	font-size: 1.5rem;
+	font-weight: 600;
+	white-space: nowrap;
+	color: #2C2C2C;
+	background: rgba(255,255,255,0.9);
+	border-radius: 6px;
+	backdrop-filter: blur(8px);
+}
+.event-weather-pop { font-size: 1.2rem; font-weight: 500; }
+body.dark .event-weather {
+	color: #fff;
+	background: rgba(0,0,0,0.4);
+}
 .event-card:hover .card-img-top img {
 	transform: scale(1.05);
 }

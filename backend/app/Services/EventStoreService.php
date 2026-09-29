@@ -401,6 +401,7 @@ class EventStoreService
             $event->requires_personal_data = (bool)($data['requires_personal_data'] ?? false);
 
             $event->is_snow = (bool)($data['is_snow'] ?? false);
+            $event->is_outdoor = (bool)($data['is_outdoor'] ?? false);
 
             $event->remind_registration_enabled =
                 (bool)($data['remind_registration_enabled'] ?? false);

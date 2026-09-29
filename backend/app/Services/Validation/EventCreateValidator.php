@@ -81,6 +81,7 @@
 			*/
 			
             'is_snow' => ['nullable','boolean'],
+            'is_outdoor' => ['nullable','boolean'],
             'with_minors' => ['nullable','boolean'],
 			
             /*

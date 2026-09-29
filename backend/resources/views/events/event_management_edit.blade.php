@@ -1237,6 +1237,19 @@
 
                         <div class="col-md-4">
                             <div class="card" style="overflow:visible">
+                                <label>{{ __('events.climate_label') }}</label>
+                                <label class="checkbox-item">
+                                    <input type="hidden" name="is_outdoor" value="0">
+                                    <input type="checkbox" name="is_outdoor" value="1" @checked(old('is_outdoor', $event->is_outdoor ?? false))>
+                                    <div class="custom-checkbox"></div>
+                                    <span>{{ __('events.climate_outdoor') }}</span>
+                                </label>
+                                <div class="f-13 mt-05" style="opacity:.7">{{ __('events.climate_outdoor_hint') }}</div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="card" style="overflow:visible">
                                 <label>{{ __('events.show_participants_label') }}</label>
                                 @php $showParts = old('show_participants', $event->show_participants ?? true); @endphp
                                 <label class="radio-item">

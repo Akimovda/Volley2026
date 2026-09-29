@@ -961,6 +961,7 @@ if ($role === 'admin') {
             'tournament_payment_mode'  => ['nullable', 'string', 'in:team,per_player'],
             'teams_count'              => ['nullable', 'integer', 'min:2', 'max:200'],
             'show_participants'        => ['sometimes', 'boolean'],
+            'is_outdoor'               => ['sometimes', 'boolean'],
             'remind_registration_enabled'         => ['sometimes', 'boolean'],
             'remind_registration_minutes_before'  => ['nullable', 'integer', 'min:0'],
             'description_html'         => ['nullable', 'string'],
@@ -1184,6 +1185,7 @@ if ($role === 'admin') {
                 ? ($data['payment_link'] ?? null)
                 : null;
             $event->show_participants = (bool) ($data['show_participants'] ?? false);
+            $event->is_outdoor = (bool) ($data['is_outdoor'] ?? false);
             $event->requires_personal_data             = (bool) ($data['requires_personal_data'] ?? false);
             $event->remind_registration_enabled        = (bool) ($data['remind_registration_enabled'] ?? false);
             // Fallback: если hidden-поле не пришло (JS не отработал) — оставляем текущее значение
