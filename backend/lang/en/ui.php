@@ -78,6 +78,7 @@ return [
     'admin_new_broadcast'          => 'New broadcast',
     'admin_broadcasts'             => 'Broadcasts',
     'admin_impersonate'            => '👁 Sign in as...',
+    'admin_apps'                   => '📱 App settings',
 
     // OAuth buttons
     'auth_apple'    => 'Sign in with Apple',

@@ -16,11 +16,14 @@ class Brand extends Model
         'logo_day_path',
         'logo_night_path',
         'og_image_path',
+        'app_icon_path',
+        'theme',
         'is_default',
     ];
 
     protected $casts = [
         'is_default' => 'boolean',
+        'theme' => 'array',
     ];
 
     protected static function booted(): void
@@ -64,6 +67,22 @@ class Brand extends Model
     public function getLogoNightUrlAttribute(): ?string
     {
         return $this->logo_night_path ? asset($this->logo_night_path) : null;
+    }
+
+    public function getAppIconUrlAttribute(): ?string
+    {
+        return $this->app_icon_path ? asset($this->app_icon_path) : null;
+    }
+
+    public function hasTheme(): bool
+    {
+        foreach (['day', 'night'] as $mode) {
+            if (!empty(array_filter((array) ($this->theme[$mode] ?? [])))) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function getOgImageUrlAttribute(): ?string
