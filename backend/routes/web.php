@@ -1046,7 +1046,10 @@ Route::get('/events/{event}/tournament/bracket/{stage}', [TournamentPublicContro
 Route::get('/events/{event}/tournament/matches/{match}/progress', [TournamentPublicController::class, 'matchProgressFragment'])
     ->name('tournament.public.match_progress');
 
+// whereNumber: краулеры/битые относительные src (например "null") иначе дают 500 (SQLSTATE 22P02),
+// а не 404 (GlitchTip VOLLEYPLAY-BACKEND-M: /events/561/tournament/teams/null).
 Route::get('/events/{event}/tournament/teams/{team}', [TournamentPublicController::class, 'teamRoster'])
+    ->whereNumber('team')
     ->name('tournament.public.team');
 
 Route::get('/organizer/{organizer}/tournaments', [TournamentPublicController::class, 'organizerTournaments'])
