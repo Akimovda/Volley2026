@@ -23,8 +23,8 @@ class BrandSeeder extends Seeder
             [
                 'ua_suffix' => 'SVSVolleyApp',
                 'display_name' => 'SVS Volley',
-                'logo_day_path' => 'icons/logo svs day.png',
-                'logo_night_path' => 'icons/Logo svs night.png',
+                'logo_day_path' => 'icons/logo-svs-gold.svg',
+                'logo_night_path' => 'icons/logo-svs-gold.svg',
                 'is_default' => false,
             ]
         );
