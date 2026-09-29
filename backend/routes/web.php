@@ -130,7 +130,7 @@ use App\Http\Controllers\Admin\ImpersonationController;
 
 	Route::get('/', function () {
 		$ua = request()->header('User-Agent', '');
-		if (str_contains($ua, 'VolleyPlayApp')) {
+		if (preg_match('/VolleyPlayApp|SVSVolleyApp/', $ua)) {
 			return redirect('/events');
 		}
 		return view('welcome');

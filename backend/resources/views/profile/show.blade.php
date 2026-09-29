@@ -1585,7 +1585,7 @@
 
 	<script>
 	(function() {
-		if (!navigator.userAgent.includes('VolleyPlayApp') || !window.Capacitor) return;
+		if (!/VolleyPlayApp|SVSVolleyApp/.test(navigator.userAgent) || !window.Capacitor) return;
 
 		document.querySelectorAll('.is-app-only').forEach(function(el) { el.style.display = ''; });
 
