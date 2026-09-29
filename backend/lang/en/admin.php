@@ -408,4 +408,6 @@ return [
     'app_err_url' => 'The link must start with https://, http:// or /.',
     'app_err_links_max' => 'Too many custom links.',
     'app_err_link_incomplete' => 'A custom link needs both a title and a URL.',
+    'app_c_menu_icon' => 'Header icons (login/avatar, mail, menu, theme)',
+    'app_c_menu_icon_hover' => 'Header icons on hover',
 ];

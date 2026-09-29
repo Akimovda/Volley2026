@@ -29,6 +29,8 @@ class BrandThemeService
             'menu_text'   => '#333333',
             'menu_title'  => '#2967BA',
             'menu_accent' => '#2967BA',
+            'menu_icon'       => '#E7612F',
+            'menu_icon_hover' => '#2967BA',
         ],
         'night' => [
             'primary'   => '#2967BA',
@@ -40,6 +42,8 @@ class BrandThemeService
             'menu_text'   => '#D0D0E0',
             'menu_title'  => '#528CD9',
             'menu_accent' => '#2967BA',
+            'menu_icon'       => '#E7612F',
+            'menu_icon_hover' => '#FFB171',
         ],
     ];
 
@@ -209,6 +213,18 @@ class BrandThemeService
             }
             if ($this->validHex($v['menu_title'] ?? '')) {
                 $out .= $pfx . '.menu-item-title:not(.admin){color:' . $v['menu_title'] . '}';
+            }
+            // Иконки шапки: вход/аватар, почта, гамбургер, тема (+ рамка аватара)
+            if ($this->validHex($v['menu_icon'] ?? '')) {
+                $c = $v['menu_icon'];
+                $out .= $pfx . '.fix-header-btn-user svg,' . $pfx . '.fix-header-btn-hamm svg,' . $pfx . '.fix-header-btn-mail svg,' . $pfx . '.theme-icon{fill:' . $c . '}'
+                    . $pfx . '.fix-header-btn-user .user-avatar-small img{border-color:' . $c . '}';
+            }
+            if ($this->validHex($v['menu_icon_hover'] ?? '')) {
+                $c = $v['menu_icon_hover'];
+                $out .= '@media (hover:hover) and (pointer:fine){'
+                    . $pfx . '.fix-header-btn-user:hover svg,' . $pfx . '.fix-header-btn-hamm:hover svg,' . $pfx . '.fix-header-btn-mail:hover svg,'
+                    . $pfx . '.fix-header-users:hover .fix-header-btn-user svg,' . $pfx . '.fix-header-btn-theme:hover .theme-icon{fill:' . $c . '}}';
             }
             if ($this->validHex($v['menu_accent'] ?? '')) {
                 $out .= $pfx . '.menu-item::after{background:' . $v['menu_accent'] . '}'

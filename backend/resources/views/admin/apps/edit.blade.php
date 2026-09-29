@@ -14,6 +14,8 @@
         'menu_text'   => __('admin.app_c_menu_text'),
         'menu_title'  => __('admin.app_c_menu_title'),
         'menu_accent' => __('admin.app_c_menu_accent'),
+        'menu_icon'       => __('admin.app_c_menu_icon'),
+        'menu_icon_hover' => __('admin.app_c_menu_icon_hover'),
     ];
     $linkTexts = [
         'titleRu'   => __('admin.app_link_title_ru'),
@@ -116,6 +118,11 @@
                             <div data-pv="menu" style="margin-top:1.4rem; padding:1.2rem 1.4rem; border-radius:1rem; border:0.1rem solid rgba(128,128,128,.25);">
                                 <div data-pv="menu_title" style="font-size:1.2rem; font-weight:600; text-transform:uppercase; margin-bottom:0.6rem;">{{ __('admin.app_preview_menu_title') }}</div>
                                 <div data-pv="menu_text" style="padding:0.5rem 0;">{{ __('admin.app_preview_menu_item') }}</div>
+                                <div style="display:flex; gap:0.8rem; padding:0.5rem 0;">
+                                    <span data-pv="menu_icon" style="width:2.2rem; height:2.2rem; border-radius:50%; display:inline-block;"></span>
+                                    <span data-pv="menu_icon" style="width:2.2rem; height:2.2rem; border-radius:0.4rem; display:inline-block;"></span>
+                                    <span data-pv="menu_icon_hover" style="width:2.2rem; height:2.2rem; border-radius:50%; display:inline-block; opacity:.9;"></span>
+                                </div>
                                 <div data-pv="menu_text" style="padding:0.5rem 0; display:inline-block;">{{ __('admin.app_preview_menu_active') }}<span data-pv="menu_accent" style="display:block; height:0.2rem; margin-top:0.2rem;"></span></div>
                             </div>
                         </div>
@@ -227,6 +234,8 @@
                 box.querySelector('[data-pv="menu_title"]').style.color = val(mode, 'menu_title');
                 box.querySelectorAll('[data-pv="menu_text"]').forEach(function (el) { el.style.color = val(mode, 'menu_text'); });
                 box.querySelector('[data-pv="menu_accent"]').style.background = val(mode, 'menu_accent');
+                box.querySelectorAll('[data-pv="menu_icon"]').forEach(function (el) { el.style.background = val(mode, 'menu_icon'); });
+                box.querySelector('[data-pv="menu_icon_hover"]').style.background = val(mode, 'menu_icon_hover');
             });
         }
 
