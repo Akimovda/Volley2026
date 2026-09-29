@@ -18,6 +18,8 @@ use Illuminate\Support\Facades\Cache;
 class BrandThemeService
 {
     /** Базовые цвета style.css (ключ настройки => hex по умолчанию). */
+    private const PRIMARY_GLOW = '#237EF6';
+
     public const BASE = [
         'day' => [
             'primary'   => '#2967BA',
@@ -189,15 +191,26 @@ class BrandThemeService
     {
         $base = self::BASE[$mode];
         $map = [];
-        $add = function (string $from, ?string $to) use (&$map) {
+        // $enc: акценты бывают зашиты в SVG data-URI как %23RRGGBB (иконка перетаскивания в таблицах) —
+        // подменяем и такой вид. Только для primary/secondary: у остальных цветов такие иконки
+        // (стрелка select) держат контраст с фоном полей, который от темы не зависит.
+        $add = function (string $from, ?string $to, bool $enc = false) use (&$map) {
             if ($to && $this->validHex($to) && strcasecmp($from, $to) !== 0) {
                 $map[strtolower($from)] = $to;
                 $map[strtoupper($from)] = $to;
+                if ($enc) {
+                    $map['%23' . strtolower(ltrim($from, '#'))] = '%23' . ltrim($to, '#');
+                    $map['%23' . strtoupper(ltrim($from, '#'))] = '%23' . ltrim($to, '#');
+                }
             }
         };
 
-        $add($base['primary'], $vals['primary'] ?? null);
-        $add($base['secondary'], $vals['secondary'] ?? null);
+        $add($base['primary'], $vals['primary'] ?? null, true);
+        $add($base['secondary'], $vals['secondary'] ?? null, true);
+        // #237ef6 — более яркий синий подсветки рамок (.ramka::after при наведении)
+        if (!empty($vals['primary']) && $this->validHex($vals['primary'])) {
+            $add(self::PRIMARY_GLOW, $this->mix($vals['primary'], '#FFFFFF', 0.15));
+        }
         if (!empty($vals['secondary']) && $this->validHex($vals['secondary'])) {
             $add(self::SECONDARY_LIGHT, $this->mix($vals['secondary'], '#FFFFFF', 0.4));
         }
