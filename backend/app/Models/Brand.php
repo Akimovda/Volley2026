@@ -18,12 +18,14 @@ class Brand extends Model
         'og_image_path',
         'app_icon_path',
         'theme',
+        'menu',
         'is_default',
     ];
 
     protected $casts = [
         'is_default' => 'boolean',
         'theme' => 'array',
+        'menu' => 'array',
     ];
 
     protected static function booted(): void
@@ -83,6 +85,21 @@ class Brand extends Model
         }
 
         return false;
+    }
+
+    /** @return string[] пути скрытых пунктов меню */
+    public function menuHidden(): array
+    {
+        return array_values(array_filter((array) ($this->menu['hidden'] ?? []), 'is_string'));
+    }
+
+    /** Свои ссылки меню для места ('site' — меню сайта, 'user' — меню пользователя). */
+    public function menuLinks(string $place): array
+    {
+        return array_values(array_filter(
+            (array) ($this->menu['links'] ?? []),
+            fn ($l) => is_array($l) && ($l['place'] ?? 'site') === $place && !empty($l['url']) && !empty($l['title_ru'])
+        ));
     }
 
     public function getOgImageUrlAttribute(): ?string

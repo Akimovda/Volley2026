@@ -90,7 +90,8 @@
 		<link href="@asset_v('assets/lib.css')" rel="stylesheet">
 		@livewireStyles
 		<link href="@asset_v('assets/style.css')" rel="stylesheet">
-		@if($brand->hasTheme())<style id="brand-theme">{!! app(\App\Services\BrandThemeService::class)->css($brand) !!}</style>@endif
+		@php $__brandCss = app(\App\Services\BrandThemeService::class)->css($brand); @endphp
+		@if($__brandCss !== '')<style id="brand-theme">{!! $__brandCss !!}</style>@endif
 		<style>
 			/* All environments: float header below device status bar / notch */
 			.fix-header {
@@ -419,6 +420,7 @@
 								<a href="/profile/transactions" class="menu-item">
 									<span class="menu-text">{{ __('ui.menu_transactions') }}</span>
 								</a>
+								@include('components._brand_menu_links', ['place' => 'user'])
 								<form method="POST" action="{{ route('logout') }}" class="logout-form" id="logout-form">
 									@csrf
 									<button type="button" class="menu-item" onclick="document.getElementById('logout-form').submit()">{{ __('ui.logout') }}</button>
@@ -638,6 +640,7 @@
 								<a href="/about" class="menu-item">
 									<span class="menu-text">{{ __('ui.nav_about') }}</span>
 								</a>
+								@include('components._brand_menu_links', ['place' => 'site'])
 							</nav>
 							@php $__currentLocale = app()->getLocale(); @endphp
 							<div class="mt-1 ml-3 fix-header-btn-lang" aria-label="{{ __('ui.language') }}">
