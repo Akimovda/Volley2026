@@ -51,9 +51,6 @@
                 </div>
             </div>
         @endif
-        @if($brand->is_default)
-            <div class="ramka"><div class="alert alert-warning">{{ __('admin.app_default_warning') }}</div></div>
-        @endif
 
         <form method="POST" action="{{ route('admin.apps.update', $brand) }}" enctype="multipart/form-data" class="form">
             @csrf
@@ -104,9 +101,6 @@
             {{-- Логотипы --}}
             <div class="ramka">
                 <h2 class="-mt-05">{{ __('admin.app_logo_h2') }}</h2>
-                @if($brand->is_default)
-                    <p>{{ __('admin.app_logo_default_note') }}</p>
-                @else
                     <p>{{ __('admin.app_logo_hint') }}</p>
                     @foreach(['logo_day' => ['app_logo_day', $brand->logo_day_url], 'logo_night' => ['app_logo_night', $brand->logo_night_url]] as $field => [$labelKey, $url])
                         <div style="margin-bottom:2rem;">
@@ -126,7 +120,6 @@
                             @endif
                         </div>
                     @endforeach
-                @endif
             </div>
 
             {{-- Иконка приложения --}}

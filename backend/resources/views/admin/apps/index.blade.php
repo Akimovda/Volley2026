@@ -38,7 +38,7 @@
                         </span>
                         <span style="margin-top:1rem; font-weight:600;">{{ $b->display_name }}</span>
                         <span style="font-size:1.3rem; opacity:.7;">
-                            {{ $b->slug }}@if($b->is_default) · {{ __('admin.app_default_badge') }}@endif
+                            {{ $b->slug }}
                         </span>
                     </a>
                 @endforeach
