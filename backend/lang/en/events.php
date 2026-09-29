@@ -202,6 +202,8 @@ return [
 
     // Event page (show.blade.php)
     'show_private_link_title'   => '🔗 Private link',
+    'show_private_link_copy'    => 'Copy link',
+    'show_private_link_copied'  => 'Copied ✓',
     'show_ad_payment_title'     => '💰 Listing payment',
     'show_ad_payment_lead'      => 'To publish a sponsored event, payment for the listing is required.',
     'show_ad_price_label'       => 'Price:',

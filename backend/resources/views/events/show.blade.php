@@ -146,9 +146,28 @@ $hasCoords =
                 href="{{ session('private_link') }}"
                 target="_blank"
                 rel="noopener"
+                style="overflow-wrap:anywhere;word-break:break-all;"
 				>
 					{{ session('private_link') }}
 				</a>
+				<div class="mt-1">
+					<button type="button" class="btn btn-small" id="copy-private-link"
+						data-link="{{ session('private_link') }}"
+						data-done="{{ __('events.show_private_link_copied') }}">{{ __('events.show_private_link_copy') }}</button>
+				</div>
+				<script>
+				document.getElementById('copy-private-link').addEventListener('click', function () {
+					var b = this, link = b.dataset.link, orig = b.textContent;
+					function done() { b.textContent = b.dataset.done; setTimeout(function () { b.textContent = orig; }, 2000); }
+					if (navigator.clipboard && navigator.clipboard.writeText) {
+						navigator.clipboard.writeText(link).then(done, function () { window.prompt('', link); });
+					} else {
+						var t = document.createElement('textarea'); t.value = link; document.body.appendChild(t); t.select();
+						try { document.execCommand('copy'); done(); } catch (e) { window.prompt('', link); }
+						document.body.removeChild(t);
+					}
+				});
+				</script>
 			</div>
 		</div>
 		@endif
