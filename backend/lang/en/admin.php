@@ -391,7 +391,7 @@ return [
     'app_preview_menu_item' => 'Menu item',
     'app_preview_menu_active' => 'Active item',
     'app_menu_h2' => 'Menu items',
-    'app_menu_hide_hint' => 'Check the items to HIDE in this app\'s menu. This only hides the link in the header: the pages stay reachable by direct URL.',
+    'app_menu_hide_hint' => 'Checked items are shown in this app\'s menu (all by default). Uncheck an item to HIDE it. This only hides the link in the header: the pages stay reachable by direct URL.',
     'app_menu_g_site' => 'Site menu (visible to everyone)',
     'app_menu_g_user' => 'User menu',
     'app_menu_g_organizer' => 'Organizer menu',

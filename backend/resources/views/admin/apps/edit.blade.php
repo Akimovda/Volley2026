@@ -17,6 +17,7 @@
         'menu_icon'       => __('admin.app_c_menu_icon'),
         'menu_icon_hover' => __('admin.app_c_menu_icon_hover'),
     ];
+    $menuAllPaths = collect($menuGroups)->flatMap(fn ($g) => array_column($g['items'], 0))->all();
     $linkTexts = [
         'titleRu'   => __('admin.app_link_title_ru'),
         'titleEn'   => __('admin.app_link_title_en'),
@@ -132,12 +133,13 @@
 
             {{-- Пункты меню --}}
             @php
-                $hiddenNow = old('menu.hidden', $brand->menuHidden());
+                $hiddenNow = old('menu_form') ? array_diff($menuAllPaths, (array) old('menu.visible', [])) : $brand->menuHidden();
                 $linksNow = old('menu.links', $brand->menu['links'] ?? []);
                 $linksNow = array_values((array) $linksNow);
             @endphp
             <div class="ramka">
                 <h2 class="-mt-05">{{ __('admin.app_menu_h2') }}</h2>
+                <input type="hidden" name="menu_form" value="1">
                 <p>{{ __('admin.app_menu_hide_hint') }}</p>
 
                 @foreach($menuGroups as $group)
@@ -145,7 +147,7 @@
                     <div style="display:flex; flex-wrap:wrap; gap:0.6rem 3rem;">
                         @foreach($group['items'] as [$path, $labelKey])
                             <label class="checkbox-item" style="min-width:26rem;">
-                                <input type="checkbox" name="menu[hidden][]" value="{{ $path }}" @checked(in_array($path, (array) $hiddenNow, true))>
+                                <input type="checkbox" name="menu[visible][]" value="{{ $path }}" @checked(!in_array($path, (array) $hiddenNow, true))>
                                 <div class="custom-checkbox"></div>
                                 <span>{{ __($labelKey) }}</span>
                             </label>
