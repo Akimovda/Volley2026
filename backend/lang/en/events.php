@@ -564,7 +564,7 @@ return [
     'climate_snow'          => 'Snow / winter',
     'climate_outdoor'       => 'Outdoors (not in a hall)',
     'climate_outdoor_hint'  => 'For outdoor events the card shows a weather forecast.',
-    'weather_title'         => 'Weather at event time',
+    'weather_title'         => 'Weather',
     'weather_precip'        => 'Chance of precipitation',
 
     'trainers_label'        => 'Coaches',

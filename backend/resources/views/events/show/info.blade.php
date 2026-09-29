@@ -20,7 +20,7 @@
 	@php $__w = $occurrence ? app(\App\Services\WeatherService::class)->forOccurrence($occurrence) : null; @endphp
 	@if($__w)
 	<div class="mb-1 d-flex">
-		<span class="emo">{{ $__w['icon'] }}</span>
+		<span class="emo">{{ \App\Services\WeatherService::iconHtml($__w['icon']) }}</span>
 		<span>
 			<strong>{{ __('events.weather_title') }}:</strong> {{ $__w['temp'] }}@if($__w['pop'] >= 10), {{ mb_strtolower(__('events.weather_precip')) }} {{ $__w['pop'] }}%@endif
 		</span>

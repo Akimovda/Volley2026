@@ -571,7 +571,7 @@ return [
     'climate_snow'          => 'Снег / зима',
     'climate_outdoor'       => 'На улице (не в зале)',
     'climate_outdoor_hint'  => 'Для мероприятий на улице в карточке показывается прогноз погоды.',
-    'weather_title'         => 'Погода на время мероприятия',
+    'weather_title'         => 'Погода',
     'weather_precip'        => 'Вероятность осадков',
 
     'trainers_label'        => 'Тренеры',
