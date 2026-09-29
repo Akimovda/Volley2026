@@ -15,13 +15,15 @@ class AdminAppController extends Controller
 {
     public function index()
     {
-        $brands = Brand::query()->orderByDesc('is_default')->orderBy('id')->get();
+        $brands = Brand::query()->where('is_default', false)->orderBy('id')->get();
 
         return view('admin.apps.index', compact('brands'));
     }
 
     public function edit(Brand $brand)
     {
+        abort_if($brand->is_default, 404);
+
         return view('admin.apps.edit', [
             'brand'  => $brand,
             'groups' => BrandThemeService::BASE,
@@ -30,6 +32,8 @@ class AdminAppController extends Controller
 
     public function update(Request $request, Brand $brand)
     {
+        abort_if($brand->is_default, 404);
+
         $hex = ['nullable', 'regex:/^#[0-9A-Fa-f]{6}$/'];
         $rules = [
             'logo_day'   => ['nullable', 'file', 'mimes:png,jpg,jpeg,webp,svg', 'max:2048'],
@@ -60,11 +64,8 @@ class AdminAppController extends Controller
         }
         $brand->theme = $theme ?: null;
 
-        // Логотип в шапке подставляется только у не-дефолтных брендов (у дефолтного — инлайн-SVG).
-        if (!$brand->is_default) {
-            $this->applyFile($request, $brand, 'logo_day', 'logo_day_path', 'remove_logo_day');
-            $this->applyFile($request, $brand, 'logo_night', 'logo_night_path', 'remove_logo_night');
-        }
+        $this->applyFile($request, $brand, 'logo_day', 'logo_day_path', 'remove_logo_day');
+        $this->applyFile($request, $brand, 'logo_night', 'logo_night_path', 'remove_logo_night');
         $this->applyFile($request, $brand, 'app_icon', 'app_icon_path', 'remove_app_icon');
 
         $brand->save();

@@ -352,7 +352,6 @@ return [
     'app_title' => 'App settings',
     'app_t_description' => 'Colors and logos of white-label apps (day and night)',
     'app_list_hint' => 'Choose an app to configure its colors and logo.',
-    'app_default_badge' => 'main',
     'app_no_icon' => 'no icon',
     'app_edit_title' => 'App: :name',
     'app_saved' => 'App settings saved.',
@@ -373,7 +372,6 @@ return [
     'app_logo_day' => 'Logo (day)',
     'app_logo_night' => 'Logo (night)',
     'app_logo_hint' => 'PNG, JPG, WebP or SVG, up to 2 MB. Shown in the header and footer.',
-    'app_logo_default_note' => 'The main app logo is built into the site header and cannot be changed here.',
     'app_icon_h2' => 'App icon',
     'app_icon_hint' => 'PNG, JPG or WebP, up to 2 MB. Used on the "App settings" screen.',
     'app_remove' => 'Remove file',
@@ -382,7 +380,6 @@ return [
     'app_preview_btn_primary' => 'Primary button',
     'app_preview_btn_secondary' => 'Main button',
     'app_preview_text' => 'Sample text inside a card',
-    'app_default_warning' => 'This is the main app: its colors apply to volleyplay.club for all visitors. Change with care.',
     'app_save' => 'Save',
     'app_back' => '← Back to apps',
 ];
