@@ -5392,6 +5392,15 @@ body.dark .events-topbar .topbar-icon-btn.has-active::after {
 html.is-app .events-page .title-description {
     display: none;
 }
+/* В приложении на /events заголовок и даты скрыты — убираем и резерв под них:
+   отступ сверху = только высота шапки (как у .mob-sticky), без нижних паддингов */
+html.is-app .events-page .top-section {
+    padding-top: calc(env(safe-area-inset-top, 0px) + var(--fh-content-h, 5.6rem) + 1rem);
+    padding-bottom: 0;
+}
+html.is-app .events-page .top-section-txt {
+    padding: 0;
+}
 @media (max-width: 767px) {
     .events-page .top-section {
         padding-top: 9.5rem;
