@@ -84,17 +84,28 @@
 												--}}
 												
 												
-												{{-- ✅ Климатические условия только для пляжа + "Игра" --}}
-												<div id="climate_block" class="mt-1" data-show-if="direction=beach,format=game">
+												{{-- Условия проведения: улица/зал — для ВСЕХ типов (по нему показывается погода); снег — только пляж + "Игра" --}}
+												<div id="climate_block" class="mt-1">
 													<label>{{ __('events.climate_label') }}</label>
 													
-													<label class="checkbox-item" id="is_snow_wrap">
-														<input type="hidden" name="is_snow" value="0">
-														<input type="checkbox" name="is_snow" value="1" id="is_snow"
-														@checked(old('is_snow', $prefill['is_snow'] ?? false))>
+													<label class="checkbox-item" id="is_outdoor_wrap">
+														<input type="hidden" name="is_outdoor" value="0">
+														<input type="checkbox" name="is_outdoor" value="1" id="is_outdoor"
+														@checked(old('is_outdoor', $prefill['is_outdoor'] ?? false))>
 														<div class="custom-checkbox"></div>
-														<span>{{ __('events.climate_snow') }}</span>
+														<span>{{ __('events.climate_outdoor') }}</span>
 													</label>
+													
+													<div data-show-if="direction=beach,format=game">
+														<label class="checkbox-item" id="is_snow_wrap">
+															<input type="hidden" name="is_snow" value="0">
+															<input type="checkbox" name="is_snow" value="1" id="is_snow"
+															@checked(old('is_snow', $prefill['is_snow'] ?? false))>
+															<div class="custom-checkbox"></div>
+															<span>{{ __('events.climate_snow') }}</span>
+														</label>
+													</div>
+													<div class="f-13 mt-05" style="opacity:.7">{{ __('events.climate_outdoor_hint') }}</div>
 												</div>											
 												
 												

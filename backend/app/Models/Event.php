@@ -92,6 +92,7 @@ class Event extends Model implements HasMedia
 
     protected $casts = [
         'requires_personal_data' => 'boolean',
+        'is_outdoor' => 'boolean',
 
         'classic_level_min' => 'integer',
         'classic_level_max' => 'integer',

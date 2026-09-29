@@ -332,6 +332,13 @@ sudo systemctl reload php8.3-fpm   # ← обязательно при изме�
 - **Ловушка деплоя**: приложения ходят на прод (`volleyplay.club`) — проверка «на устройстве» бессмысленна, пока правка не на проде (dev-коммит пользователь не увидит).
 - Подтверждено пользователем на Redmi после деплоя: «стало гораздо лучше».
 
+## Погода на мероприятиях на улице (feature, добавлено 2026-09-29)
+- **Флаг `events.is_outdoor`** (bool, nullable: NULL = не указано → погоды нет, false = зал, true = улица). Чекбокс «На улице (не в зале)» — шаг 1 создания (блок «Климатические условия», виден для ВСЕХ типов; `is_snow` остался только для beach+game) и страница редактирования (`event_management_edit`, отдельная карточка). Уровень события, не occurrence (наследуется всеми турами серии). Проходит через `EventCreateValidator`, `EventStoreService`, `EventManagementController::update()`, prefill копирования (`EventsController`).
+- **Источник — OpenWeather, бесплатный `/data/2.5/forecast`** (5 дней, шаг 3 ч; ключ `OPENWEATHER_API_KEY` в `.env`, `config/services.php` → `services.openweather.key`, в git не коммитить). Дальше 5 дней от сегодня погоды нет — это ограничение тарифа, не баг. Новый ключ активируется до пары часов (до этого `401 Invalid API key`).
+- **Архитектура**: `App\Services\WeatherService` — `refreshLocation()` качает и кладёт в Cache (redis) ПО ЛОКАЦИИ (`weather:owm:loc:{id}`, TTL 6 ч); `forOccurrence()` только ЧИТАЕТ кеш (без сети — безопасно из карточек списка), берёт ближайший к `starts_at` слот (сдвиг ≤1.5 ч), иначе null. Прогрев — `weather:refresh` (`everyThreeHours`, `routes/console.php`; локации ближайших 5 дней неотменённых уличных occurrence; `--dry-run`). Без ключа/при ошибках сайт погоду просто не показывает.
+- **UI**: партиал `events/_partials/weather_badge.blade.php` (карточка, сверху по центру картинки, `.event-weather` в style.css) + строка «Погода на время мероприятия» в `events/show/info.blade.php`. Значок — эмодзи по коду погоды OpenWeather (`WeatherService::icon()`), осадки показываются от 10 %.
+- У старых мероприятий флаг NULL — организаторы отмечают при редактировании (авто-бэкфилл не делали: пляж бывает и в зале).
+
 ## SEO (добавлено 2026-08-27)
 Полная документация — [claude_docs/claude_seo.md](claude_docs/claude_seo.md). Открытый TODO — память `project_seo_city_landing_todo.md`.
 - **КРИТИЧНО**: `public/robots.txt` — динамический роут (`Route::get('/robots.txt', ...)` в `routes/web.php`, выбор контента по `config('app.url')`), НЕ статический файл — иначе `git merge` откатит прод-версию на dev-заглушку (`Disallow: /`).

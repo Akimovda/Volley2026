@@ -256,6 +256,7 @@
 			// ✅ NEW: age + climate snapshot
 			'age_policy'          => $event->age_policy ?? 'any',   // adult|child|any
 			'is_snow'             => $event->is_snow ?? null,       // bool|null
+			'is_outdoor'          => $event->is_outdoor ?? null,    // bool|null
 			
 			'classic_level_min'   => $event->classic_level_min ?? null,
 			'classic_level_max'   => $event->classic_level_max ?? null,

@@ -34,6 +34,9 @@ Schedule::job(new QueueHeartbeatJob())->everyFiveMinutes();
 
 Schedule::command('premium:expire')->hourly();
 
+// Прогноз погоды для мероприятий на улице (OpenWeather, кеш по локации, TTL 6ч)
+Schedule::command('weather:refresh')->everyThreeHours()->withoutOverlapping();
+
 Schedule::command('bot:assist')
     ->everyThirtyMinutes()
     ->withoutOverlapping()
