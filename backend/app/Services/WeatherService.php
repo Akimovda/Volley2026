@@ -110,8 +110,12 @@ class WeatherService
     }
 
     /** Иконка для вывода в blade: луна — SVG (наследует цвет текста), остальные — эмодзи. */
-    public static function iconHtml(string $icon): \Illuminate\Support\HtmlString
+    public static function iconHtml(string $icon, bool $menuIcon = false): \Illuminate\Support\HtmlString
     {
+        if ($icon === '🌙' && $menuIcon) {
+            // Стиль иконок страницы мероприятия (.emo .menu-icon.cd — фирменный цвет по теме)
+            return new \Illuminate\Support\HtmlString('<span class="menu-icon cd"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z"/></svg></span>');
+        }
         if ($icon === '🌙') {
             return new \Illuminate\Support\HtmlString('<svg class="weather-moon-svg" viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" aria-hidden="true" style="vertical-align:-0.125em"><path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z"/></svg>');
         }
