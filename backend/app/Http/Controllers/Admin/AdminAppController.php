@@ -48,8 +48,8 @@ class AdminAppController extends Controller
                 $rules["theme.$mode.$key"] = $hex;
             }
         }
-        $rules['menu.hidden']          = ['nullable', 'array'];
-        $rules['menu.hidden.*']        = ['string', Rule::in($this->menuCatalogPaths())];
+        $rules['menu.visible']         = ['nullable', 'array'];
+        $rules['menu.visible.*']       = ['string', Rule::in($this->menuCatalogPaths())];
         $rules['menu.links']           = ['nullable', 'array', 'max:' . (int) config('brand_menu.max_links', 15)];
         $rules['menu.links.*.title_ru'] = ['nullable', 'string', 'max:60'];
         $rules['menu.links.*.title_en'] = ['nullable', 'string', 'max:60'];
@@ -78,26 +78,30 @@ class AdminAppController extends Controller
         }
         $brand->theme = $theme ?: null;
 
-        $links = [];
-        foreach ((array) ($data['menu']['links'] ?? []) as $i => $l) {
-            $titleRu = trim((string) ($l['title_ru'] ?? ''));
-            $url = trim((string) ($l['url'] ?? ''));
-            if ($titleRu === '' && $url === '') {
-                continue; // пустая строка формы
+        // Меню правим только если форма меню реально пришла (marker menu_form) — иначе оставляем как есть.
+        if ($request->has('menu_form')) {
+            $links = [];
+            foreach ((array) ($data['menu']['links'] ?? []) as $i => $l) {
+                $titleRu = trim((string) ($l['title_ru'] ?? ''));
+                $url = trim((string) ($l['url'] ?? ''));
+                if ($titleRu === '' && $url === '') {
+                    continue; // пустая строка формы
+                }
+                if ($titleRu === '' || $url === '') {
+                    throw ValidationException::withMessages(["menu.links.$i.url" => __('admin.app_err_link_incomplete')]);
+                }
+                $links[] = [
+                    'title_ru' => $titleRu,
+                    'title_en' => trim((string) ($l['title_en'] ?? '')),
+                    'url'      => $url,
+                    'place'    => ($l['place'] ?? 'site') === 'user' ? 'user' : 'site',
+                    'new_tab'  => !empty($l['new_tab']),
+                ];
             }
-            if ($titleRu === '' || $url === '') {
-                throw ValidationException::withMessages(["menu.links.$i.url" => __('admin.app_err_link_incomplete')]);
-            }
-            $links[] = [
-                'title_ru' => $titleRu,
-                'title_en' => trim((string) ($l['title_en'] ?? '')),
-                'url'      => $url,
-                'place'    => ($l['place'] ?? 'site') === 'user' ? 'user' : 'site',
-                'new_tab'  => !empty($l['new_tab']),
-            ];
+            // В форме отмечены ПОКАЗЫВАЕМЫЕ пункты; храним скрытые = каталог минус отмеченные.
+            $hidden = array_values(array_diff($this->menuCatalogPaths(), (array) ($data['menu']['visible'] ?? [])));
+            $brand->menu = ($hidden || $links) ? ['hidden' => $hidden, 'links' => $links] : null;
         }
-        $hidden = array_values(array_unique((array) ($data['menu']['hidden'] ?? [])));
-        $brand->menu = ($hidden || $links) ? ['hidden' => $hidden, 'links' => $links] : null;
 
         $this->applyFile($request, $brand, 'logo_day', 'logo_day_path', 'remove_logo_day');
         $this->applyFile($request, $brand, 'logo_night', 'logo_night_path', 'remove_logo_night');
