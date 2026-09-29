@@ -209,7 +209,9 @@ $levelOptions = [1, 2, 3, 4, 5, 6, 7];
 
 		<x-slot name="style">
             <style>
-				
+				/* В нативных приложениях заголовок страницы и диапазон дат не нужны */
+				html.is-app .events-page .top-section-txt h1,
+				html.is-app .events-page .top-section-txt h2 { display: none; }
 			</style>
 		</x-slot>
 		
