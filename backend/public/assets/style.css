@@ -5393,9 +5393,11 @@ html.is-app .events-page .title-description {
     display: none;
 }
 /* В приложении на /events заголовок и даты скрыты — убираем и резерв под них:
-   отступ сверху = только высота шапки (как у .mob-sticky), без нижних паддингов */
+   отступ сверху = только высота шапки (как у .mob-sticky), без нижних паддингов.
+   Запас 2rem (не меньше 12px sticky-top + 1px) — иначе JS initStickyCollapse
+   в index.blade.php считает ленту «прилипшей» уже на scroll=0 и сворачивает фильтр */
 html.is-app .events-page .top-section {
-    padding-top: calc(env(safe-area-inset-top, 0px) + var(--fh-content-h, 5.6rem) + 1rem);
+    padding-top: calc(env(safe-area-inset-top, 0px) + var(--fh-content-h, 5.6rem) + 2rem);
     padding-bottom: 0;
 }
 html.is-app .events-page .top-section-txt {
