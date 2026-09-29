@@ -21,7 +21,7 @@
 			// причина "Maximum call stack size exceeded" на реальном устройстве (webvisor ловит
 			// CORS/ATS ошибки на beacon-запросы внутри WKWebView, но код всё равно выполняется и
 			// вешает обработчики). Счётчик визитов (ym init) продолжает работать и в приложении.
-			var __isVolleyApp = navigator.userAgent.indexOf('VolleyPlayApp') !== -1;
+			var __isVolleyApp = /VolleyPlayApp|SVSVolleyApp/.test(navigator.userAgent);
 			ym(49039181, 'init', {webvisor: !__isVolleyApp, clickmap: !__isVolleyApp, referrer: document.referrer, url: location.href, accurateTrackBounce:true, trackLinks:true});
 		</script>
 		<noscript><div><img src="https://mc.yandex.ru/watch/49039181" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
@@ -29,9 +29,9 @@
 		@endif
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-		<script>if(navigator.userAgent.includes('VolleyPlayApp')){document.documentElement.classList.add('is-app');window.addEventListener('load',function(){var btn=document.getElementById('app-back-btn');if(!btn)return;var path=window.location.pathname.replace(/\/$/,'')||'/';var roots=['/','/events'];if(roots.indexOf(path)!==-1||window.history.length<=1){btn.style.display='none';}});}</script>
+		<script>if(/VolleyPlayApp|SVSVolleyApp/.test(navigator.userAgent)){document.documentElement.classList.add('is-app');window.addEventListener('load',function(){var btn=document.getElementById('app-back-btn');if(!btn)return;var path=window.location.pathname.replace(/\/$/,'')||'/';var roots=['/','/events'];if(roots.indexOf(path)!==-1||window.history.length<=1){btn.style.display='none';}});}</script>
 		<script>
-			if(navigator.userAgent.includes('VolleyPlayApp')){
+			if(/VolleyPlayApp|SVSVolleyApp/.test(navigator.userAgent)){
 				document.addEventListener('click',function(e){
 					var bell=e.target.closest('.fix-header-btn-mail');
 					if(bell){
@@ -154,7 +154,7 @@
 			/* App banner via swal — runs after lib.js is loaded */
 			(function() {
 				var ua = navigator.userAgent;
-				if (ua.includes('VolleyPlayApp')) return;
+				if (/VolleyPlayApp|SVSVolleyApp/.test(ua)) return;
 				var isAndroid = ua.includes('Android');
 				var isIOS = (ua.includes('iPhone') || ua.includes('iPad')) && !isAndroid;
 				if (!isAndroid && !isIOS) return;
@@ -968,7 +968,7 @@
 		
 		
 		<script>
-			if (navigator.userAgent.includes('VolleyPlayApp') && window.Capacitor) {
+			if (/VolleyPlayApp|SVSVolleyApp/.test(navigator.userAgent) && window.Capacitor) {
 				var pushPlatform = (window.Capacitor && window.Capacitor.getPlatform)
 					? window.Capacitor.getPlatform()
 					: 'ios';
