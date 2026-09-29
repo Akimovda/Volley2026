@@ -58,6 +58,7 @@ use App\Http\Controllers\Integrations\VkCommunityBindController;
 	use App\Http\Controllers\Admin\AdminNotificationTemplateController;
 	use App\Http\Controllers\Admin\AdminBroadcastController;
 use App\Http\Controllers\Admin\ImpersonationController;
+use App\Http\Controllers\Admin\AdminAppController;
 
 	// AJAX (city-first)
 	use App\Http\Controllers\Ajax\CityMetaController;
@@ -940,6 +941,10 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
         Route::post('/settings/deletion-delay', [AdminDashboardController::class, 'updateDeletionDelay'])->name('settings.deletion_delay');
 		
         Route::get('/audits', [AdminAuditController::class, 'index'])->name('audits.index');
+
+        Route::get('/apps', [AdminAppController::class, 'index'])->name('apps.index');
+        Route::get('/apps/{brand}', [AdminAppController::class, 'edit'])->name('apps.edit');
+        Route::post('/apps/{brand}', [AdminAppController::class, 'update'])->name('apps.update');
 		
         Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');
         Route::get('/users/{user}', [AdminUserController::class, 'show'])->name('users.show');

@@ -90,6 +90,7 @@
 		<link href="@asset_v('assets/lib.css')" rel="stylesheet">
 		@livewireStyles
 		<link href="@asset_v('assets/style.css')" rel="stylesheet">
+		@if($brand->hasTheme())<style id="brand-theme">{!! app(\App\Services\BrandThemeService::class)->css($brand) !!}</style>@endif
 		<style>
 			/* All environments: float header below device status bar / notch */
 			.fix-header {
@@ -524,6 +525,9 @@
 								</a>
 								<a href="{{ route('admin.impersonate.index') }}" class="menu-item">
 									<span class="menu-text">{{ __('ui.admin_impersonate') }}</span>
+								</a>
+								<a href="{{ route('admin.apps.index') }}" class="menu-item">
+									<span class="menu-text">{{ __('ui.admin_apps') }}</span>
 								</a>
 								
 							</nav>
