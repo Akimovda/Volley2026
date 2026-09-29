@@ -25,6 +25,10 @@ class BrandThemeService
             'bg_page'   => '#C8DCFF',
             'bg_card'   => '#FFFFFF',
             'text'      => '#2C2C2C',
+            'menu_bg'     => '#FFFFFF',
+            'menu_text'   => '#333333',
+            'menu_title'  => '#2967BA',
+            'menu_accent' => '#2967BA',
         ],
         'night' => [
             'primary'   => '#2967BA',
@@ -32,6 +36,10 @@ class BrandThemeService
             'bg_page'   => '#161721',
             'bg_card'   => '#222333',
             'text'      => '#CACACA',
+            'menu_bg'     => '#222333',
+            'menu_text'   => '#D0D0E0',
+            'menu_title'  => '#528CD9',
+            'menu_accent' => '#2967BA',
         ],
     ];
 
@@ -165,6 +173,26 @@ class BrandThemeService
             $out .= 'body.dark .card{background:' . $c . '}'
                 . 'body.dark .ramka,body.dark .card-ramka{background-image:linear-gradient(to bottom,'
                 . $this->rgba($c, 0.8) . ' 0%,' . $this->rgba($this->mix($c, '#000000', 0.12), 0.5) . ' 100%)}';
+        }
+
+        // Меню и шапка (.fix-header содержит и выпадающее меню, и кнопку пользователя)
+        foreach (['day' => ['', $day], 'night' => ['body.dark ', $night]] as [$pfx, $v]) {
+            if ($this->validHex($v['menu_bg'] ?? '')) {
+                $c = $v['menu_bg'];
+                [$a1, $a2, $c2] = $pfx ? [0.8, 0.5, $this->mix($c, '#000000', 0.12)] : [0.9, 0.7, $c];
+                $out .= $pfx . '.fix-header{background-image:linear-gradient(to bottom,'
+                    . $this->rgba($c, $a1) . ' 0%,' . $this->rgba($c2, $a2) . ' 100%)}';
+            }
+            if ($this->validHex($v['menu_text'] ?? '')) {
+                $out .= $pfx . '.menu-item,' . $pfx . '.fix-header-user{color:' . $v['menu_text'] . '}';
+            }
+            if ($this->validHex($v['menu_title'] ?? '')) {
+                $out .= $pfx . '.menu-item-title:not(.admin){color:' . $v['menu_title'] . '}';
+            }
+            if ($this->validHex($v['menu_accent'] ?? '')) {
+                $out .= $pfx . '.menu-item::after{background:' . $v['menu_accent'] . '}'
+                    . $pfx . '.fix-header-user.active{color:' . $v['menu_accent'] . '!important}';
+            }
         }
 
         return $out;

@@ -395,4 +395,12 @@ return [
     'app_preview_text' => 'Пример текста в карточке',
     'app_save' => 'Сохранить',
     'app_back' => '← К списку приложений',
+    'app_menu_h3' => 'Меню и шапка',
+    'app_c_menu_bg' => 'Фон шапки и меню',
+    'app_c_menu_text' => 'Текст пунктов меню и имени в шапке',
+    'app_c_menu_title' => 'Заголовки разделов меню',
+    'app_c_menu_accent' => 'Подчёркивание пунктов меню и активный пункт',
+    'app_preview_menu_title' => 'Раздел меню',
+    'app_preview_menu_item' => 'Пункт меню',
+    'app_preview_menu_active' => 'Активный пункт',
 ];
