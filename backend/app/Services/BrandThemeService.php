@@ -63,7 +63,7 @@ class BrandThemeService
         }
 
         $cssFile = public_path('assets/style.css');
-        $key = 'brand.theme.css.' . md5(json_encode([$brand->theme, $hidden, url('/')]) . '|' . @filemtime($cssFile));
+        $key = 'brand.theme.css.' . md5(json_encode([$brand->theme, $hidden, url('/')]) . '|' . @filemtime($cssFile) . '|' . @filemtime(__FILE__));
 
         return Cache::rememberForever($key, fn () => ($brand->hasTheme() ? $this->build((array) $brand->theme, $cssFile) : '') . $this->hiddenMenuCss($hidden));
     }
@@ -95,6 +95,11 @@ class BrandThemeService
             'night' => $this->colorMap('night', (array) ($theme['night'] ?? [])),
         ];
 
+        $rgb = [
+            'day'   => $this->rgbMap('day', (array) ($theme['day'] ?? [])),
+            'night' => $this->rgbMap('night', (array) ($theme['night'] ?? [])),
+        ];
+
         $out = '';
         foreach ($this->parseRules((string) @file_get_contents($cssFile)) as $rule) {
             $selectors = array_filter(array_map('trim', $this->splitTopLevel($rule['selector'], ',')), fn ($s) => $s !== '');
@@ -106,20 +111,31 @@ class BrandThemeService
                 array_map(fn ($s) => preg_match('/^(html|body|:root|\*)/i', $s) ? null : 'body.dark ' . $s, $light)
             );
 
-            $emit = function (array $sels, array $map, ?array $vsMap) use ($rule, &$out) {
-                if (!$sels || !$map) {
+            $emit = function (array $sels, string $mode, ?string $vsMode) use ($rule, &$out, $maps, $rgb) {
+                $map = $maps[$mode];
+                if (!$sels || (!$map && !$rgb[$mode])) {
                     return;
                 }
                 $decls = [];
-                foreach ($this->splitTopLevel($rule['body'], ';') as $decl) {
-                    $replaced = strtr($decl, $map);
+                $parts = $this->splitTopLevel($rule['body'], ';');
+                foreach ($parts as $i => $decl) {
+                    // шорткат `background:` с градиентом в оригинале перекрыт последующим `background-image` (иконка) —
+                    // он мёртв, а переизлучив его, мы бы стёрли иконку (.alert-volleyball::before)
+                    if (preg_match('/^\s*background\s*:(?!\s*#[0-9a-f]{3,8}\s*(!important)?\s*$)/i', $decl)
+                        && preg_grep('/^\s*background-image\s*:/i', array_slice($parts, $i + 1))) {
+                        continue;
+                    }
+                    $replaced = $this->applyMap($decl, $map, $rgb[$mode]);
                     if ($replaced === $decl) {
                         continue;
                     }
                     // ночной override для дневного правила нужен, только если цвет отличается от дневного
-                    if ($vsMap !== null && strtr($decl, $vsMap) === $replaced) {
+                    if ($vsMode !== null && $this->applyMap($decl, $maps[$vsMode], $rgb[$vsMode]) === $replaced) {
                         continue;
                     }
+                    // `background: #hex` — шорткат, он обнулил бы background-image (иконки .alert-*::before).
+                    // Оригинальное правило со сбросом остаётся в style.css, поэтому переизлучаем только цвет.
+                    $replaced = preg_replace('/^(\s*)background\s*:\s*(#[0-9a-f]{3,8})\s*(!important)?\s*$/i', '$1background-color:$2$3', $replaced);
                     $decls[] = trim($replaced);
                 }
                 if (!$decls) {
@@ -129,12 +145,41 @@ class BrandThemeService
                 $out .= $rule['at'] ? $rule['at'] . '{' . $block . '}' : $block;
             };
 
-            $emit($light, $maps['day'], null);
-            $emit($dark, $maps['night'], null);
-            $emit($lightNight, $maps['night'], $maps['day']);
+            $emit($light, 'day', null);
+            $emit($dark, 'night', null);
+            $emit($lightNight, 'night', 'day');
         }
 
         return $out . $this->surfaceCss($theme);
+    }
+
+    /** Подстановка hex-карты и rgba()-вариантов базовых акцентов (rgba(41, 103, 186, .1) и т.п.). */
+    private function applyMap(string $decl, array $map, array $rgb): string
+    {
+        $out = $map ? strtr($decl, $map) : $decl;
+        if (!$rgb) {
+            return $out;
+        }
+
+        return preg_replace_callback(
+            '/rgba\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,/i',
+            fn ($m) => isset($rgb["$m[1],$m[2],$m[3]"]) ? 'rgba(' . $rgb["$m[1],$m[2],$m[3]"] . ',' : $m[0],
+            $out
+        );
+    }
+
+    /** "r,g,b" базового акцента => "r,g,b" акцента бренда (только primary/secondary). */
+    private function rgbMap(string $mode, array $vals): array
+    {
+        $map = [];
+        foreach (['primary', 'secondary'] as $k) {
+            $to = $vals[$k] ?? null;
+            if ($to && $this->validHex($to) && strcasecmp(self::BASE[$mode][$k], $to) !== 0) {
+                $map[implode(',', $this->rgb(self::BASE[$mode][$k]))] = implode(',', $this->rgb($to));
+            }
+        }
+
+        return $map;
     }
 
     /**
