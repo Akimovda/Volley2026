@@ -46,7 +46,8 @@ class PremiumService
 
     /**
      * Подтверждение админом pending-платежа Premium.
-     * Срок подписки считается ОТ ДАТЫ ПЛАТЕЖА (payment->created_at), не от даты подтверждения —
+     * Срок подписки считается ОТ ДАТЫ ПЛАТЕЖА (payment->created_at), не от даты подтверждения
+     * (а при действующей подписке — от её даты окончания, см. ниже) —
      * иначе платёж, зависший месяцами (см. апрельские pending), после подтверждения дал бы
      * игроку полный новый срок вместо оставшегося.
      */
@@ -56,8 +57,18 @@ class PremiumService
             ->where('status', 'pending')
             ->firstOrFail();
 
-        $startsAt  = $payment->created_at->copy();
-        $days      = PremiumSubscription::planDays($sub->plan);
+        $days = PremiumSubscription::planDays($sub->plan);
+
+        // Продление при ещё действующей подписке прибавляет срок к её дате окончания (остаток не теряется);
+        // иначе срок считается от даты платежа (см. докблок выше).
+        $current = PremiumSubscription::where('user_id', $sub->user_id)
+            ->where('id', '!=', $sub->id)
+            ->where('status', 'active')
+            ->where('expires_at', '>', now())
+            ->orderByDesc('expires_at')
+            ->first();
+
+        $startsAt  = $current ? $current->expires_at->copy() : $payment->created_at->copy();
         $expiresAt = $startsAt->copy()->addDays($days);
 
         // Платёж мог зависнуть в pending месяцами (апрельские кейсы) — если срок, посчитанный
