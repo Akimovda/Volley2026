@@ -111,18 +111,56 @@ class PremiumService
     /** Запускать по расписанию: premium:expire */
     public function expireAll(): int
     {
-        $expiredUserIds = PremiumSubscription::where('status', 'active')
+        $expiredSubs = PremiumSubscription::where('status', 'active')
             ->where('expires_at', '<=', now())
-            ->pluck('user_id');
+            ->with('user')
+            ->get();
+
+        // Пользователи, у которых нет другой ещё действующей подписки (после продления старая уже expired,
+        // но на всякий случай не снимаем фичи у того, кто по факту остаётся Premium)
+        $expiredUserIds = $expiredSubs->pluck('user_id')->unique()
+            ->reject(fn ($uid) => PremiumSubscription::where('user_id', $uid)
+                ->where('status', 'active')->where('expires_at', '>', now())->exists())
+            ->values();
+
+        // Сколько подписок/автозаписей будет снято — считаем ДО удаления (для текста уведомления)
+        $followCounts = $expiredUserIds->isEmpty() ? collect()
+            : \App\Models\PlayerFollow::whereIn('follower_user_id', $expiredUserIds)
+                ->selectRaw('follower_user_id, count(*) c')->groupBy('follower_user_id')->pluck('c', 'follower_user_id');
+        $autoCounts = $expiredUserIds->isEmpty() ? collect()
+            : \App\Models\PremiumAutoBooking::whereIn('user_id', $expiredUserIds)
+                ->selectRaw('user_id, count(*) c')->groupBy('user_id')->pluck('c', 'user_id');
 
         $count = PremiumSubscription::where('status', 'active')
             ->where('expires_at', '<=', now())
-            ->update(['status' => 'expired']);
+            ->update(['status' => 'expired', 'expiry_notice_days' => 0]);
 
         // Удаляем подписки на игроков и джобы авто-записи — фичи только для активного премиума
         if ($expiredUserIds->isNotEmpty()) {
             \App\Models\PlayerFollow::whereIn('follower_user_id', $expiredUserIds)->delete();
             \App\Models\PremiumAutoBooking::whereIn('user_id', $expiredUserIds)->delete();
+        }
+
+        // Уведомление «Premium закончился» — только о недавно закончившихся (давние, например при первом
+        // запуске после деплоя, закрываются молча), по одному на пользователя
+        $notified = [];
+        foreach ($expiredSubs as $sub) {
+            if (!$sub->user || isset($notified[$sub->user_id]) || !$expiredUserIds->contains($sub->user_id)) {
+                continue;
+            }
+            if ($sub->expires_at->timestamp < now()->timestamp - 3 * 86400) {
+                continue;
+            }
+            $notified[$sub->user_id] = true;
+            try {
+                app(UserNotificationService::class)->createPremiumExpiredNotification(
+                    $sub->user, $sub,
+                    (int) ($followCounts[$sub->user_id] ?? 0),
+                    (int) ($autoCounts[$sub->user_id] ?? 0)
+                );
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('premium.expired_notice_failed', ['subscription_id' => $sub->id, 'error' => $e->getMessage()]);
+            }
         }
 
         return $count;

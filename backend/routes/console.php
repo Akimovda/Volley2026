@@ -34,6 +34,12 @@ Schedule::job(new QueueHeartbeatJob())->everyFiveMinutes();
 
 Schedule::command('premium:expire')->hourly();
 
+// Premium: напоминания об окончании подписки (год/квартал — за 30 и 7 дней, месяц — за 7 и 1, пробный — за 1).
+// Уведомление «закончился» шлёт сам premium:expire (см. PremiumService::expireAll).
+Schedule::command('premium:notify-expiring')
+    ->dailyAt('09:05')
+    ->withoutOverlapping();
+
 // Прогноз погоды для мероприятий на улице (OpenWeather, кеш по локации, TTL 6ч)
 Schedule::command('weather:refresh')->everyThreeHours()->withoutOverlapping();
 
