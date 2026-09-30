@@ -110,16 +110,18 @@ class WeatherService
     }
 
     /** Иконка для вывода в blade: луна — SVG (наследует цвет текста), остальные — эмодзи. */
-    public static function iconHtml(string $icon, bool $menuIcon = false): \Illuminate\Support\HtmlString
+    public static function iconHtml(string $icon): \Illuminate\Support\HtmlString
     {
-        if ($icon === '🌙' && $menuIcon) {
-            // Стиль иконок страницы мероприятия (.emo .menu-icon.cd — фирменный цвет по теме)
-            return new \Illuminate\Support\HtmlString('<span class="menu-icon cd"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z"/></svg></span>');
-        }
         if ($icon === '🌙') {
             return new \Illuminate\Support\HtmlString('<svg class="weather-moon-svg" viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" aria-hidden="true" style="vertical-align:-0.125em"><path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z"/></svg>');
         }
         return new \Illuminate\Support\HtmlString(e($icon));
+    }
+
+    /** Статичная иконка строки «Погода» на странице мероприятия (солнце с тучкой, стиль .menu-icon.cd). */
+    public static function staticMenuIcon(): \Illuminate\Support\HtmlString
+    {
+        return new \Illuminate\Support\HtmlString('<span class="menu-icon cd"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="3"/><path d="M8 2v1M2 8h1M3.8 3.8l.7.7M12.2 3.8l-.7.7"/><path d="M10 20a3.5 3.5 0 0 1-.4-6.98A5 5 0 0 1 19 14.5a3 3 0 0 1-.5 5.5z"/></svg></span>');
     }
 
     public static function icon(int $id, bool $night = false): string
