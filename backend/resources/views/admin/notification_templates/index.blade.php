@@ -36,6 +36,7 @@
                 'Тренеры'      => ['trainer_assigned', 'trainer_rating_request'],
                 'Абонементы'   => ['subscription_low_visits'],
                 'Уведомления организатору' => ['organizer_player_registered','organizer_player_cancelled','organizer_player_auto_booked','organizer_player_waitlisted','organizer_registered_player','organizer_cancelled_player','organizer_deleted_player','reserve_spot_offered_organizer','organizer_broadcast'],
+            'Организатор Pro' => ['organizer_pro_expiring','organizer_pro_expired'],
             'Администрирование' => ['ad_event_payment_pending','admin_broadcast'],
             ];
 
