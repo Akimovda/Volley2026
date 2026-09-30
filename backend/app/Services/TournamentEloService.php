@@ -51,6 +51,7 @@ class TournamentEloService
             $this->resetAll();
 
             $matches = TournamentMatch::with('stage.event')
+                ->ratable()
                 ->where('status', TournamentMatch::STATUS_COMPLETED)
                 ->whereNotNull('winner_team_id')
                 ->orderBy(DB::raw('COALESCE(scored_at, created_at)'))

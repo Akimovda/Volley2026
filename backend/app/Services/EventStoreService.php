@@ -405,6 +405,9 @@ class EventStoreService
 
             $event->is_snow = (bool)($data['is_snow'] ?? false);
             $event->is_outdoor = (bool)($data['is_outdoor'] ?? false);
+            // Статистика матчей — только для формата «Игра»; «рейтинговое» — только вместе со статистикой
+            $event->collect_stats = ($data['format'] ?? null) === 'game' && (bool)($data['collect_stats'] ?? false);
+            $event->stats_rated   = $event->collect_stats && (bool)($data['stats_rated'] ?? false);
 
             $event->remind_registration_enabled =
                 (bool)($data['remind_registration_enabled'] ?? false);

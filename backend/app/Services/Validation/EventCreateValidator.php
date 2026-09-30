@@ -82,6 +82,8 @@
 			
             'is_snow' => ['nullable','boolean'],
             'is_outdoor' => ['nullable','boolean'],
+            'collect_stats' => ['nullable','boolean'],
+            'stats_rated' => ['nullable','boolean'],
             'with_minors' => ['nullable','boolean'],
 			
             /*

@@ -1042,6 +1042,9 @@ Route::post('/admin/impersonate/leave', [ImpersonationController::class, 'leave'
 | Tournament PUBLIC pages
 |--------------------------------------------------------------------------
 */
+Route::get('/events/{event}/game/results', [\App\Http\Controllers\FriendlyGameController::class, 'results'])
+    ->name('game.results');
+
 Route::get('/events/{event}/tournament', [TournamentPublicController::class, 'show'])
     ->name('tournament.public.show');
 
@@ -1092,6 +1095,16 @@ Route::middleware([
     'verified',
     'user.restricted',
 ])->group(function () {
+    // «Игра со статистикой» (обычное мероприятие с events.collect_stats): доступ владелец/staff — в контроллере
+    Route::get('/events/{event}/game', [\App\Http\Controllers\FriendlyGameController::class, 'manage'])
+        ->name('game.manage');
+    Route::post('/events/{event}/game/matches', [\App\Http\Controllers\FriendlyGameController::class, 'storeMatch'])
+        ->name('game.matches.store');
+    Route::post('/events/{event}/game/config', [\App\Http\Controllers\FriendlyGameController::class, 'updateConfig'])
+        ->name('game.config.update');
+    Route::delete('/game-matches/{match}', [\App\Http\Controllers\FriendlyGameController::class, 'destroyMatch'])
+        ->name('game.matches.destroy');
+
     Route::get('/events/{event}/tournament/setup', [TournamentController::class, 'setup'])
         ->name('tournament.setup');
     Route::post('/events/{event}/tournament/sync-league', [TournamentController::class, 'syncAllTeamsToLeague'])

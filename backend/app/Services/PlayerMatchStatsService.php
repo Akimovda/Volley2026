@@ -200,7 +200,8 @@ class PlayerMatchStatsService
         $eventId = $event->id;
 
         // Все match_player_stats для матчей этого турнира
-        $matchIds = TournamentMatch::whereHas('stage', fn($q) => $q->where('event_id', $eventId))
+        $matchIds = TournamentMatch::ratable()
+            ->whereHas('stage', fn($q) => $q->where('event_id', $eventId))
             ->where('status', TournamentMatch::STATUS_COMPLETED)
             ->pluck('id');
 

@@ -962,6 +962,8 @@ if ($role === 'admin') {
             'teams_count'              => ['nullable', 'integer', 'min:2', 'max:200'],
             'show_participants'        => ['sometimes', 'boolean'],
             'is_outdoor'               => ['sometimes', 'boolean'],
+            'collect_stats'            => ['sometimes', 'boolean'],
+            'stats_rated'              => ['sometimes', 'boolean'],
             'remind_registration_enabled'         => ['sometimes', 'boolean'],
             'remind_registration_minutes_before'  => ['nullable', 'integer', 'min:0'],
             'description_html'         => ['nullable', 'string'],
@@ -1186,6 +1188,15 @@ if ($role === 'admin') {
                 : null;
             $event->show_participants = (bool) ($data['show_participants'] ?? false);
             $event->is_outdoor = (bool) ($data['is_outdoor'] ?? false);
+            // Статистика матчей — только для формата «Игра»; «рейтинговое» — только вместе со статистикой
+            $wasRated = (bool) $event->stats_rated;
+            $event->collect_stats = $event->format === 'game' && (bool) ($data['collect_stats'] ?? false);
+            $event->stats_rated   = $event->collect_stats && (bool) ($data['stats_rated'] ?? false);
+            // Флаг «рейтинговое» изменился — уже сыгранные матчи нужно включить/убрать из рейтингов (пересчёт в очереди,
+            // с задержкой — чтобы успело закоммититься сохранение события)
+            if ($wasRated !== $event->stats_rated) {
+                \App\Jobs\RecalculateTournamentStatsJob::dispatch($event->id)->delay(now()->addSeconds(15));
+            }
             $event->requires_personal_data             = (bool) ($data['requires_personal_data'] ?? false);
             $event->remind_registration_enabled        = (bool) ($data['remind_registration_enabled'] ?? false);
             // Fallback: если hidden-поле не пришло (JS не отработал) — оставляем текущее значение

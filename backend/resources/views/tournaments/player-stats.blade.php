@@ -4,7 +4,7 @@
 
 <x-slot name="breadcrumbs">
     <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
-        <a href="{{ route('tournament.setup', $event) }}" itemprop="item"><span itemprop="name">{{ $event->title }}</span></a>
+        <a href="{{ ($match->stage->type ?? null) === 'friendly' ? route('game.manage', $event) . '?occurrence=' . $match->stage->occurrence_id : route('tournament.setup', $event) . ($match->stage->occurrence_id ? '?occurrence_id=' . $match->stage->occurrence_id : '') }}" itemprop="item"><span itemprop="name">{{ $event->title }}</span></a>
         <meta itemprop="position" content="2">
     </li>
     <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
@@ -135,7 +135,7 @@
             💾 {{ __('tournaments.stats_btn_save') }}
         </button>
 
-        <a href="{{ route('tournament.setup', $event) }}" class="btn btn-secondary">
+        <a href="{{ ($match->stage->type ?? null) === 'friendly' ? route('game.manage', $event) . '?occurrence=' . $match->stage->occurrence_id : route('tournament.setup', $event) . ($match->stage->occurrence_id ? '?occurrence_id=' . $match->stage->occurrence_id : '') }}" class="btn btn-secondary">
             {{ __('tournaments.btn_back') }}
         </a>
 </div>		

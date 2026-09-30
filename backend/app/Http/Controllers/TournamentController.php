@@ -1074,6 +1074,12 @@ class TournamentController extends Controller
                 $request->user(),
             );
 
+            // «Игра со статистикой» (обычное мероприятие): никаких турнирных последствий —
+            // ни пересчёта турнирной статистики/рейтингов, ни завершения стадии, ни перехода на setup.
+            if ($stage->type === TournamentStage::TYPE_FRIENDLY) {
+                return $this->afterFriendlyScore($request, $event, $stage, $match);
+            }
+
             // Standings ЗАТРОНУТОЙ этим матчем группы уже пересчитаны синхронно
             // внутри recordScore()/submitScore() (быстро, одна группа) — организатор
             // видит верную таблицу без задержки. "Тяжёлый хвост" — player_tournament_stats
@@ -2747,8 +2753,38 @@ class TournamentController extends Controller
     /**
      * Redirect to setup preserving occurrence_id.
      */
+    /** После записи счёта матча «Игры со статистикой»: назад на страницу организатора. */
+    private function afterFriendlyScore(Request $request, Event $event, TournamentStage $stage, TournamentMatch $match)
+    {
+        // Рейтинговое мероприятие (events.stats_rated): результаты идут в общие рейтинги тем же путём,
+        // что и турнирные (полный пересчёт события + Elo/OpenSkill в очереди). Обычные игры — нет.
+        if ($event->stats_rated) {
+            try {
+                \App\Jobs\RecalculateTournamentStatsJob::dispatch($event->id)->afterCommit();
+            } catch (\Throwable $e) {
+                \Log::warning('Friendly game rating dispatch failed: ' . $e->getMessage());
+            }
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json(['success' => true, 'match' => $match->fresh()]);
+        }
+
+        return redirect()
+            ->route('game.manage', [$event, 'occurrence' => $stage->occurrence_id])
+            ->with('success', 'Счёт записан.');
+    }
+
     private function redirectToSetup(Event $event, ?string $message = null, bool $isError = false, ?string $anchor = null)
     {
+        // Матч «Игры со статистикой» (у роута есть {match}) — возвращаем на страницу игры, а не на турнирный setup
+        $routeMatch = request()->route('match');
+        if ($routeMatch instanceof TournamentMatch && $routeMatch->stage?->type === TournamentStage::TYPE_FRIENDLY) {
+            return redirect()
+                ->route('game.manage', [$event, 'occurrence' => $routeMatch->stage->occurrence_id])
+                ->with($isError ? 'error' : 'success', $message ?? 'Готово.');
+        }
+
         $occId = request()->input('occurrence_id')
             ?: request()->query('occurrence_id')
             ?: null;
@@ -3141,9 +3177,7 @@ class TournamentController extends Controller
         $this->authorizeOrganizer($request, $event);
 
         if (!$match->isCompleted()) {
-            return redirect()
-                ->route('tournament.setup', $event)
-                ->with('error', 'Сначала введите счёт матча.');
+            return $this->redirectToSetup($event, 'Сначала введите счёт матча.', true);
         }
 
         $match->load(['teamHome.members.user', 'teamAway.members.user', 'stage']);
@@ -3221,8 +3255,13 @@ class TournamentController extends Controller
             }
         });
 
-        // Агрегируем в tournament stats и career stats
+        // Агрегируем в tournament stats и career stats. «Игра со статистикой» без флага «рейтинговое» —
+        // статистика матча сохранена, но в турнирную/карьерную не агрегируется.
+        $skipAggregation = $match->stage->type === TournamentStage::TYPE_FRIENDLY && !$event->stats_rated;
         try {
+            if ($skipAggregation) {
+                throw new \RuntimeException('skip-aggregation');
+            }
             $playerStatsService->aggregateToTournament($event);
 
             $allUserIds = collect($allStats)->flatMap(function ($players) {
@@ -3233,7 +3272,9 @@ class TournamentController extends Controller
                 $playerStatsService->aggregateToCareer((int) $userId);
             }
         } catch (\Throwable $e) {
-            \Log::warning('Stats aggregation failed: ' . $e->getMessage());
+            if ($e->getMessage() !== 'skip-aggregation') {
+                \Log::warning('Stats aggregation failed: ' . $e->getMessage());
+            }
         }
 
         return $this->redirectToSetup($event, 'Статистика игроков сохранена.');

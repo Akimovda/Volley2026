@@ -508,7 +508,7 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
                         @endif
                         @endif
 
-						@if($gsSubtype !== '' || $genderBadgeLabel || $ageBadgeLabel || $payBadgeLabel || $cardStatus)
+						@if($gsSubtype !== '' || $genderBadgeLabel || $ageBadgeLabel || $payBadgeLabel || $cardStatus || !empty($event->stats_rated))
 						<div class="event-badges-row d-flex flex-wrap align-items-center gap-1 mb-05">
 							@if($gsSubtype !== '')
 								@if($subtypeTipText)
@@ -533,6 +533,12 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 							<span class="info-tip js-info-tip">
 								<span class="info-tip-trigger badge badge-sm">{{ $payBadgeLabel }}</span>
 								<span class="info-tip-content">{{ $payTipText }}</span>
+							</span>
+							@endif
+							@if(!empty($event->stats_rated))
+							<span class="info-tip js-info-tip">
+								<span class="info-tip-trigger badge badge-sm badge-rated">{{ __('events.card_badge_rated') }}</span>
+								<span class="info-tip-content">{{ __('events.card_badge_rated_tip') }}</span>
 							</span>
 							@endif
 							@if($cardStatus)

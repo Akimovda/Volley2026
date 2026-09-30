@@ -1248,6 +1248,40 @@
                             </div>
                         </div>
 
+                        @if(($event->format ?? null) === 'game')
+                        <div class="col-md-4">
+                            <div class="card" style="overflow:visible">
+                                <label>{{ __('events.stats_label') }}</label>
+                                <label class="checkbox-item">
+                                    <input type="hidden" name="collect_stats" value="0">
+                                    <input type="checkbox" name="collect_stats" value="1" id="collect_stats_edit" @checked(old('collect_stats', $event->collect_stats ?? false))>
+                                    <div class="custom-checkbox"></div>
+                                    <span>{{ __('events.stats_collect') }}</span>
+                                </label>
+                                <div class="f-13 mt-05" style="opacity:.7">{{ __('events.stats_collect_hint') }}</div>
+                                <div id="stats_rated_wrap_edit" style="{{ old('collect_stats', $event->collect_stats ?? false) ? '' : 'display:none' }}">
+                                    <label class="checkbox-item">
+                                        <input type="hidden" name="stats_rated" value="0">
+                                        <input type="checkbox" name="stats_rated" value="1" id="stats_rated_edit" @checked(old('stats_rated', $event->stats_rated ?? false))>
+                                        <div class="custom-checkbox"></div>
+                                        <span>{{ __('events.stats_rated') }}</span>
+                                    </label>
+                                    <div class="f-13 mt-05" style="opacity:.7">{{ __('events.stats_rated_hint') }}</div>
+                                </div>
+                                <script>
+                                document.addEventListener('DOMContentLoaded', function () {
+                                    var cs = document.getElementById('collect_stats_edit'), wrap = document.getElementById('stats_rated_wrap_edit'), rated = document.getElementById('stats_rated_edit');
+                                    if (!cs || !wrap) return;
+                                    cs.addEventListener('change', function () {
+                                        wrap.style.display = cs.checked ? '' : 'none';
+                                        if (!cs.checked && rated) rated.checked = false;
+                                    });
+                                });
+                                </script>
+                            </div>
+                        </div>
+                        @endif
+
                         <div class="col-md-4">
                             <div class="card" style="overflow:visible">
                                 <label>{{ __('events.show_participants_label') }}</label>

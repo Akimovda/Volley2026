@@ -176,6 +176,40 @@
 						</div>
 
 
+						{{-- СТАТИСТИКА МАТЧЕЙ / РЕЙТИНГ (format=game + collect_stats) --}}
+						@if($event->format === 'game' && $event->collect_stats)
+						<div class="event-row">
+							<span class="b-600"><x-menu-icon name="volleyball" class="cd event-row-icon" /> {{ __('events.show_desc_stats_label') }}</span>
+							<span>{{ __('events.show_desc_stats_value') }}</span>
+						</div>
+						@if($event->stats_rated)
+						<div class="event-row">
+							<span class="b-600"><x-menu-icon name="trophy" class="cd event-row-icon" /> {{ __('events.show_desc_rated_label') }}</span>
+							<span>{{ __('events.show_desc_yes') }}</span>
+						</div>
+						@endif
+						@php
+						// Кнопка результатов — когда сбор данных начался (есть не «ожидающий» матч или уже вводились очки);
+						// кнопка управления — владельцу/staff
+						$__gStage = !empty($occurrence) ? \App\Models\TournamentStage::where('event_id', $event->id)->where('occurrence_id', $occurrence->id)->where('type', 'friendly')->first() : null;
+						$__gStarted = $__gStage && \App\Models\TournamentMatch::where('stage_id', $__gStage->id)
+							->where(fn ($q) => $q->where('status', '!=', 'scheduled')
+								->orWhereExists(fn ($r) => $r->from('match_rally_events')->whereColumn('match_rally_events.match_id', 'tournament_matches.id')))
+							->exists();
+						$__gManage = auth()->check() && app(\App\Services\EventAccessService::class)->canManageEvent(auth()->user(), (int) $event->organizer_id);
+						@endphp
+						@if(($__gStarted || $__gManage) && !empty($occurrence))
+						<div class="d-flex flex-wrap gap-1 mt-1">
+							@if($__gStarted)
+							<a class="btn btn-small" href="{{ route('game.results', $event) }}?occurrence={{ $occurrence->id }}">📊 {{ __('games.btn_results') }}</a>
+							@endif
+							@if($__gManage)
+							<a class="btn btn-small btn-secondary" href="{{ route('game.manage', $event) }}?occurrence={{ $occurrence->id }}">⚙️ {{ __('games.btn_manage') }}</a>
+							@endif
+						</div>
+						@endif
+						@endif
+
 						{{-- ОПЛАТА --}}
 						<div class="event-row">
 							<span class="b-600"><x-menu-icon name="money" class="cd event-row-icon" /> {{ __('events.show_desc_payment_label') }}</span>
