@@ -29,10 +29,17 @@ class UserNotificationChannel extends Model
         'meta'                 => 'array',
     ];
 
-    /** Расшифрованный токен персонального бота (или null для системного) */
+    /**
+     * Расшифрованный токен персонального бота (или null — использовать системного).
+     * Персональный бот — функция Организатор Pro: без активной подписки владельца канала
+     * анонсы уходят через системного бота, сам бот и токен остаются подключёнными.
+     */
     public function resolveToken(): ?string
     {
         if ($this->bot_type !== 'user' || empty($this->user_bot_token)) {
+            return null;
+        }
+        if (!$this->user?->isOrganizerPro()) {
             return null;
         }
         return \Illuminate\Support\Facades\Crypt::decryptString($this->user_bot_token);
