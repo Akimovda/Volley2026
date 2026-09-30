@@ -362,6 +362,39 @@
 					</div>
 				</div>
 
+				{{-- Организатор Pro: ручная выдача / отключение --}}
+				@php
+				$proActiveSub = \App\Models\OrganizerSubscription::where('user_id', $user->id)
+					->where('status', 'active')->where('expires_at', '>', now())->latest('expires_at')->first();
+				@endphp
+				<div class="ramka">
+					<h2 class="-mt-05">Организатор Pro</h2>
+					<div class="card-body">
+						@if($proActiveSub)
+						<div class="mb-2">Активен: <strong>{{ \App\Models\OrganizerSubscription::planLabel($proActiveSub->plan) }}</strong>, до <strong>{{ $proActiveSub->expires_at->format('d.m.Y') }}</strong></div>
+						@else
+						<div class="mb-2" style="opacity:.7">Подписка не активна.</div>
+						@endif
+						<form method="POST" action="{{ route('admin.users.pro.grant', $user) }}" class="form">
+							@csrf
+							<select name="plan" class="form-control mb-2">
+								<option value="month">1 месяц</option>
+								<option value="quarter">3 месяца</option>
+								<option value="year">1 год</option>
+							</select>
+							<input type="text" name="note" class="form-control mb-2" maxlength="255" placeholder="Причина (необязательно, для журнала)">
+							<button class="btn btn-primary w-100" type="submit">Выдать{{ $proActiveSub ? ' (прибавить к остатку)' : '' }}</button>
+							<div class="small text-muted mt-2">Без оплаты, срок прибавляется к остатку. Действие логируется в admin_audits.</div>
+						</form>
+						@if($proActiveSub)
+						<form method="POST" action="{{ route('admin.subscriptions.pro_deactivate', $proActiveSub) }}" class="form mt-2">
+							@csrf
+							<button class="btn btn-secondary w-100" type="submit">Отключить Pro</button>
+						</form>
+						@endif
+					</div>
+				</div>
+
 				{{-- Управляющий клубом --}}
 				<div class="ramka">
 					<h2 class="-mt-05">{{ __('club.club_manager_role') }}</h2>

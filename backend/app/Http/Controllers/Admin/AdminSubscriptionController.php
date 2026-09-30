@@ -108,6 +108,50 @@ class AdminSubscriptionController extends Controller
             ->with('success', '✅ Организатор Pro подтверждён и активирован до ' . $subscription->expires_at->format('d.m.Y') . '.');
     }
 
+    /**
+     * Ручная выдача Организатор Pro из карточки пользователя (подарок, компенсация, корп. клиент).
+     * Срок прибавляется к остатку действующей подписки; без платежа, amount_rub остаётся пустым
+     * (в выручку не попадает). Действие пишется в admin_audits, пользователь получает уведомление.
+     */
+    public function grantPro(\Illuminate\Http\Request $request, User $user): RedirectResponse
+    {
+        $data = $request->validate([
+            'plan' => ['required', 'string', 'in:month,quarter,year'],
+            'note' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $subscription = app(\App\Services\OrganizerSubscriptionService::class)->activate($user, $data['plan'], 'admin');
+        $subscription->update(['amount_rub' => null]);
+
+        \App\Support\AdminAuditLogger::log(
+            'user.pro.grant',
+            'user',
+            (string) $user->id,
+            [
+                'plan'            => $data['plan'],
+                'subscription_id' => $subscription->id,
+                'expires_at'      => $subscription->expires_at->toIso8601String(),
+            ],
+            $data['note'] ?? null,
+            $request
+        );
+
+        try {
+            app(UserNotificationService::class)->create(
+                userId:   $user->id,
+                type:     'organizer_pro_granted',
+                title:    '⭐ Организатор Pro активирован',
+                body:     'Администратор активировал вам Организатор Pro до ' . $subscription->expires_at->format('d.m.Y') . '.',
+                payload:  ['subscription_id' => $subscription->id],
+                channels: ['in_app', 'telegram', 'vk', 'max'],
+            );
+        } catch (\Throwable $e) {
+            Log::warning('AdminSubscriptionController::grantPro notify failed: ' . $e->getMessage());
+        }
+
+        return back()->with('status', '✅ Организатор Pro выдан до ' . $subscription->expires_at->format('d.m.Y') . '.');
+    }
+
     public function deactivatePremium(PremiumSubscription $premiumSubscription): RedirectResponse
     {
         if ($premiumSubscription->status !== 'active') {
