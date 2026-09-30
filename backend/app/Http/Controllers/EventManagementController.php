@@ -1198,7 +1198,11 @@ if ($role === 'admin') {
             }
 
             if (array_key_exists('event_photos', $data)) {
-                $event->event_photos = json_decode($data['event_photos'] ?? '[]', true) ?: [];
+                $photoIds = json_decode($data['event_photos'] ?? '[]', true);
+                // не более 10 фото (как в форме и коллаже анонса)
+                $event->event_photos = is_array($photoIds)
+                    ? array_slice(array_values(array_unique(array_map('intval', $photoIds))), 0, 10)
+                    : [];
             }
 
             if ($allowReg) {

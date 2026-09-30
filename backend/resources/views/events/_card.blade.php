@@ -349,12 +349,28 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 						</div>
 						
 						
-						<div class="border f-0 mb-1 card-img-top">
+						@php
+						// До 3 фото на карточке: первое — основное, остальные — для автосмены (см. script.js, .card-img-top[data-gallery]).
+						// Один запрос на карточку, как и раньше; порядок — как в event_photos.
+						$cardPhotoIds = array_slice(array_values(array_filter((array) ($event->event_photos ?? []))), 0, 3);
+						$cardPhotoMedia = [];
+						if ($cardPhotoIds) {
+							$mediaById = \Spatie\MediaLibrary\MediaCollections\Models\Media::whereIn('id', $cardPhotoIds)->get()->keyBy('id');
+							foreach ($cardPhotoIds as $pid) {
+								if ($mediaById->has($pid)) $cardPhotoMedia[] = $mediaById[$pid];
+							}
+						}
+						$firstPhoto = $cardPhotoMedia[0] ?? null;
+						$extraPhotos = array_slice($cardPhotoMedia, 1);
+						@endphp
+						<div class="border f-0 mb-1 card-img-top" @if($extraPhotos) data-gallery="1" @endif>
 							<a href="{{ $eventPageUrl }}">
 								@if(!empty($event->event_photos) && count($event->event_photos) > 0)
-								@php $firstPhoto = \Spatie\MediaLibrary\MediaCollections\Models\Media::find($event->event_photos[0]); @endphp
 								@if($firstPhoto)
 								<img src="/img/pixel.png" data-src="{{ $firstPhoto->getUrl('event_thumb') }}" alt="{{ $event?->title ?? '—' }}">
+								@foreach($extraPhotos as $extraPhoto)
+								<img class="card-gal-extra card-gal-off" src="/img/pixel.png" data-gallery-src="{{ $extraPhoto->getUrl('event_thumb') }}" alt="" aria-hidden="true">
+								@endforeach
 								@else
 								<img src="/img/pixel.png" data-src="/img/{{ $event->direction === 'beach' ? 'beach.webp' : 'classic.webp' }}" alt="{{ $event?->title ?? '—' }}">
 								@endif

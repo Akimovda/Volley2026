@@ -1259,3 +1259,98 @@ jQuery(document).on('click', '.js-like-toggle', function (e) {
 		$btn.prop('disabled', false);
 	});
 });
+
+
+/* ===== Карусель фото на карточке мероприятия (автосмена, до 3 фото) =====
+   Разметка — events/_card.blade.php: .card-img-top[data-gallery] с основным <img data-src>
+   и 1–2 доп. <img class="card-gal-extra" data-gallery-src>. Один общий таймер на страницу,
+   меняются только карточки в зоне видимости; доп. фото подгружаются лениво при первом показе. */
+(function () {
+	var cards = document.querySelectorAll('.card-img-top[data-gallery]');
+	if (!cards.length || !('IntersectionObserver' in window)) return;
+	if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+	var conn = navigator.connection || {};
+	if (conn.saveData) return;
+
+	var INTERVAL = 4500;   // пауза между сменами
+	var JITTER   = 1500;   // разброс, чтобы карточки не менялись одновременно
+	var PAUSE    = 7000;   // пауза после касания/наведения
+	var TICK     = 500;
+
+	var visible = new Set();
+	var timer = null;
+
+	function state(card) {
+		if (!card._gal) {
+			var imgs = Array.prototype.slice.call(card.querySelectorAll('img'));
+			card._gal = { imgs: imgs, idx: 0, nextAt: 0, pausedUntil: 0, loaded: false };
+		}
+		return card._gal;
+	}
+
+	function mainHidden(g) {
+		// «Скрыть все фото» на /events ставит display:none на все .card-img-top img
+		return g.imgs[0].style.display === 'none' || g.imgs[0].offsetParent === null;
+	}
+
+	function loadExtras(g) {
+		if (g.loaded) return;
+		g.loaded = true;
+		g.imgs.forEach(function (img) {
+			var src = img.getAttribute('data-gallery-src');
+			if (src) { img.src = src; img.removeAttribute('data-gallery-src'); }
+		});
+	}
+
+	function ready(img) { return img.complete && img.naturalWidth > 1; }
+
+	function advance(g) {
+		var n = g.imgs.length;
+		for (var step = 1; step < n; step++) {
+			var next = (g.idx + step) % n;
+			if (ready(g.imgs[next])) {
+				g.imgs[g.idx].classList.add('card-gal-off');
+				g.imgs[next].classList.remove('card-gal-off');
+				g.idx = next;
+				return;
+			}
+		}
+	}
+
+	function tick() {
+		if (document.hidden) return;
+		var now = Date.now();
+		visible.forEach(function (card) {
+			var g = state(card);
+			if (mainHidden(g)) return;
+			if (now < g.pausedUntil || now < g.nextAt) return;
+			advance(g);
+			g.nextAt = now + INTERVAL + Math.random() * JITTER;
+		});
+	}
+
+	function startTimer() { if (!timer) timer = setInterval(tick, TICK); }
+	function stopTimer()  { if (timer && !visible.size) { clearInterval(timer); timer = null; } }
+
+	var io = new IntersectionObserver(function (entries) {
+		entries.forEach(function (e) {
+			var g = state(e.target);
+			if (e.isIntersecting) {
+				if (!mainHidden(g)) loadExtras(g);
+				g.nextAt = Date.now() + INTERVAL + Math.random() * JITTER;
+				visible.add(e.target);
+			} else {
+				visible.delete(e.target);
+			}
+		});
+		if (visible.size) startTimer(); else stopTimer();
+	}, { threshold: 0.4 });
+
+	cards.forEach(function (card) {
+		var pause = function () { state(card).pausedUntil = Date.now() + PAUSE; };
+		card.addEventListener('mouseenter', pause);
+		card.addEventListener('mousemove', pause);
+		card.addEventListener('touchstart', pause, { passive: true });
+		io.observe(card);
+	});
+})();

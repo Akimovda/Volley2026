@@ -5928,6 +5928,21 @@ body.dark .event-weather {
 	transform: scale(1.05);
 }
 
+/* Карусель фото на карточке мероприятия (до 3 фото, автосмена — script.js).
+   Доп. фото лежат поверх основного (одинаковый кроп 16:9 event_thumb — высота карточки не меняется),
+   плашки погоды/цены/направления остаются выше: они идут в DOM после <img>. */
+.card-img-top img.card-gal-extra {
+	position: absolute;
+	top: 0; left: 0;
+	width: 100%; height: 100%;
+	object-fit: cover;
+	pointer-events: none;
+}
+.card-img-top[data-gallery] img.card-gal-off { opacity: 0; }
+@media (prefers-reduced-motion: reduce) {
+	.card-img-top img.card-gal-extra { display: none; }
+}
+
 /* Статус мероприятия (регистрация/идёт сейчас/завершено) — плашка в общем
    ряду бейджей под "Организатор" (event-badges-row), рядом с 2x2/Микс 50/50.
    Тот же визуальный язык, что у .badge.badge-sm (тонированный фон + цветной
