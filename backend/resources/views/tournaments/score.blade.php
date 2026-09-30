@@ -5,7 +5,7 @@
 	
 	<x-slot name="breadcrumbs">
 		<li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
-			<a href="{{ route('tournament.setup', $event) }}{{ $match->stage->occurrence_id ? '?occurrence_id=' . $match->stage->occurrence_id : '' }}" itemprop="item"><span itemprop="name">{{ $event->title }}</span></a>
+			<a href="{{ ($match->stage->type ?? null) === 'friendly' ? route('game.manage', $event) . '?occurrence=' . $match->stage->occurrence_id : route('tournament.setup', $event) . ($match->stage->occurrence_id ? '?occurrence_id=' . $match->stage->occurrence_id : '') }}" itemprop="item"><span itemprop="name">{{ $event->title }}</span></a>
 			<meta itemprop="position" content="2">
 		</li>
 		<li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
@@ -212,7 +212,7 @@
 							@php
 							$backOccId = $match->stage->occurrence_id;
 							@endphp
-							<a href="{{ route('tournament.setup', $event) }}{{ $backOccId ? '?occurrence_id=' . $backOccId : '' }}" class="btn btn-secondary w-100 mt-2" style="text-align:center;display:block">
+							<a href="{{ ($match->stage->type ?? null) === 'friendly' ? route('game.manage', $event) . '?occurrence=' . $match->stage->occurrence_id : route('tournament.setup', $event) . ($match->stage->occurrence_id ? '?occurrence_id=' . $match->stage->occurrence_id : '') }}" class="btn btn-secondary w-100 mt-2" style="text-align:center;display:block">
 								{{ __('tournaments.btn_back') }}
 							</a>
 							

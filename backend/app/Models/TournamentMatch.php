@@ -59,6 +59,20 @@ class TournamentMatch extends Model
     public const STATUS_CANCELLED = 'cancelled';
     public const STATUS_FORFEIT   = 'forfeit';
 
+    /**
+     * Матчи, которые могут влиять на общие рейтинги (Elo/OpenSkill/карьера): все турнирные +
+     * матчи «Игры со статистикой» ТОЛЬКО у мероприятий с явным флагом events.stats_rated.
+     * Без этого фильтра любая полная переигровка рейтингов (по любому турниру) затянула бы
+     * в рейтинг и обычные игры со статистикой.
+     */
+    public function scopeRatable($query)
+    {
+        return $query->where(function ($q) {
+            $q->whereHas('stage', fn ($s) => $s->where('type', '!=', TournamentStage::TYPE_FRIENDLY))
+              ->orWhereHas('stage.event', fn ($e) => $e->where('stats_rated', true));
+        });
+    }
+
     public function stage(): BelongsTo
     {
         return $this->belongsTo(TournamentStage::class, 'stage_id');

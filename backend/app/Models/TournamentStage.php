@@ -34,6 +34,13 @@ class TournamentStage extends Model
     public const TYPE_THAI           = 'thai';
     public const TYPE_KING_BEACH     = 'king_beach';
 
+    /**
+     * «Игра со статистикой» (обычное мероприятие format=game с events.collect_stats): служебная стадия-контейнер
+     * матчей одного occurrence. Намеренно НЕ входит в TYPES/TYPE_TRAITS — не предлагается при создании турнирных
+     * стадий и не участвует в турнирных сценариях (завершение турнира, рейтинги, уведомления).
+     */
+    public const TYPE_FRIENDLY       = 'friendly';
+
     public const STATUS_PENDING     = 'pending';
     public const STATUS_IN_PROGRESS = 'in_progress';
     public const STATUS_COMPLETED   = 'completed';

@@ -257,6 +257,8 @@
 			'age_policy'          => $event->age_policy ?? 'any',   // adult|child|any
 			'is_snow'             => $event->is_snow ?? null,       // bool|null
 			'is_outdoor'          => $event->is_outdoor ?? null,    // bool|null
+			'collect_stats'       => (bool) ($event->collect_stats ?? false),
+			'stats_rated'         => (bool) ($event->stats_rated ?? false),
 			
 			'classic_level_min'   => $event->classic_level_min ?? null,
 			'classic_level_max'   => $event->classic_level_max ?? null,

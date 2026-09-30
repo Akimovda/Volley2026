@@ -107,6 +107,39 @@
 													</div>
 													<div class="f-13 mt-05" style="opacity:.7">{{ __('events.climate_outdoor_hint') }}</div>
 												</div>											
+
+												{{-- Игра со статистикой (только формат «Игра», классика и пляж) --}}
+												<div class="mt-1" id="stats_block" data-show-if="format=game">
+													<label>{{ __('events.stats_label') }}</label>
+													<label class="checkbox-item">
+														<input type="hidden" name="collect_stats" value="0">
+														<input type="checkbox" name="collect_stats" value="1" id="collect_stats"
+														@checked(old('collect_stats', $prefill['collect_stats'] ?? false))>
+														<div class="custom-checkbox"></div>
+														<span>{{ __('events.stats_collect') }}</span>
+													</label>
+													<div class="f-13 mt-05" style="opacity:.7">{{ __('events.stats_collect_hint') }}</div>
+													<div id="stats_rated_wrap" style="{{ old('collect_stats', $prefill['collect_stats'] ?? false) ? '' : 'display:none' }}">
+														<label class="checkbox-item">
+															<input type="hidden" name="stats_rated" value="0">
+															<input type="checkbox" name="stats_rated" value="1" id="stats_rated"
+															@checked(old('stats_rated', $prefill['stats_rated'] ?? false))>
+															<div class="custom-checkbox"></div>
+															<span>{{ __('events.stats_rated') }}</span>
+														</label>
+														<div class="f-13 mt-05" style="opacity:.7">{{ __('events.stats_rated_hint') }}</div>
+													</div>
+												</div>
+												<script>
+												document.addEventListener('DOMContentLoaded', function () {
+													var cs = document.getElementById('collect_stats'), wrap = document.getElementById('stats_rated_wrap'), rated = document.getElementById('stats_rated');
+													if (!cs || !wrap) return;
+													cs.addEventListener('change', function () {
+														wrap.style.display = cs.checked ? '' : 'none';
+														if (!cs.checked && rated) rated.checked = false;
+													});
+												});
+												</script>
 												
 												
 												{{-- ✅ TRAINER (только training/training_game) --}}

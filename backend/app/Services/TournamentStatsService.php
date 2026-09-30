@@ -133,7 +133,8 @@ class TournamentStatsService
         PlayerTournamentStats::where('event_id', $event->id)->delete();
 
         // Проходим все завершённые матчи
-        $matches = TournamentMatch::whereHas('stage', fn($q) => $q->where('event_id', $event->id))
+        $matches = TournamentMatch::ratable()
+            ->whereHas('stage', fn($q) => $q->where('event_id', $event->id))
             ->where('status', TournamentMatch::STATUS_COMPLETED)
             ->get();
 
