@@ -213,6 +213,12 @@ Schedule::command('activity:prompt-recording')
     ->everyMinute()
     ->withoutOverlapping();
 
+// Организатор Pro: напоминания об окончании подписки (год/квартал — за 30 и 7 дней, месяц — за 7 и 1,
+// пробный — за 1) + уведомление «закончилась» и перевод просроченных в expired. Раз в сутки.
+Schedule::command('organizer-pro:notify-expiring')
+    ->dailyAt('09:00')
+    ->withoutOverlapping();
+
 // Зависшие status=live сессии (см. report_activity_ghost_duplicates_2026-07-21.md) — старше
 // activity.sync_stale_hours данные с устройства уже не придут: пустые удаляются, частичные
 // финализируются по последним реальным сэмплам/прыжкам.

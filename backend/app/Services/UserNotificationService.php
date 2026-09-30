@@ -1224,6 +1224,50 @@ final class UserNotificationService
         );
     }
 
+    /** Организатору: подписка Pro скоро закончится (за $days дней: 30 / 7 / 1). */
+    public function createOrganizerProExpiringNotification(User $organizer, \App\Models\OrganizerSubscription $subscription, int $days): void
+    {
+        $left = match (true) {
+            $days === 1 => '1 день',
+            default     => "{$days} дней",
+        };
+        $date = $subscription->expires_at->format('d.m.Y');
+
+        $this->create(
+            userId:   $organizer->id,
+            type:     'organizer_pro_expiring',
+            title:    '⭐ Организатор Pro скоро закончится',
+            body:     "До окончания подписки осталось {$left} (до {$date}).\n"
+                    . "Продлите её, чтобы сохранить личного бота и виджет на сайте.",
+            payload:  [
+                'subscription_id' => $subscription->id,
+                'days_left'       => $days,
+                'button_text'     => 'Продлить Организатор Pro',
+                'button_url'      => route('organizer_pro.index'),
+            ],
+            channels: ['in_app', 'telegram', 'vk', 'max'],
+        );
+    }
+
+    /** Организатору: подписка Pro закончилась. */
+    public function createOrganizerProExpiredNotification(User $organizer, \App\Models\OrganizerSubscription $subscription): void
+    {
+        $this->create(
+            userId:   $organizer->id,
+            type:     'organizer_pro_expired',
+            title:    '⭐ Организатор Pro закончился',
+            body:     "Подписка закончилась. Анонсы теперь отправляет системный бот сервиса, "
+                    . "а виджет на сайте показывает сообщение о неактивной подписке.\n"
+                    . "Продлите подписку — личный бот и виджет заработают снова.",
+            payload:  [
+                'subscription_id' => $subscription->id,
+                'button_text'     => 'Продлить Организатор Pro',
+                'button_url'      => route('organizer_pro.index'),
+            ],
+            channels: ['in_app', 'telegram', 'vk', 'max'],
+        );
+    }
+
     public function createOrganizerProActivatedNotification(User $admin, \App\Models\OrganizerSubscription $subscription, User $organizer): void
     {
         $amount = number_format((float) $subscription->amount_rub, 0, '.', ' ');
