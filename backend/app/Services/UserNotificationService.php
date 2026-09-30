@@ -1325,6 +1325,48 @@ final class UserNotificationService
         );
     }
 
+    /** Админу: организатор отметил оплату Pro — нужна проверка и подтверждение. */
+    public function createOrganizerProPaymentPendingNotification(User $admin, \App\Models\Payment $payment, User $organizer, \App\Models\OrganizerSubscription $subscription): void
+    {
+        $confirmUrl = route('admin.subscriptions.pro_confirm', $payment);
+        $amount     = number_format($payment->amount_minor / 100, 0, '.', ' ');
+        $plan       = \App\Models\OrganizerSubscription::planLabel($subscription->plan);
+
+        $this->create(
+            userId:   $admin->id,
+            type:     'organizer_pro_payment_pending',
+            title:    '💳 Организатор Pro ожидает подтверждения',
+            body:     "👤 {$organizer->last_name} {$organizer->first_name}\n"
+                    . "📦 {$plan}\n"
+                    . "💵 {$amount} ₽\n"
+                    . "✅ Подтвердить: {$confirmUrl}",
+            payload:  [
+                'payment_id'  => $payment->id,
+                'button_text' => 'Подтвердить оплату',
+                'button_url'  => $confirmUrl,
+            ],
+            channels: ['in_app', 'telegram', 'vk', 'max'],
+        );
+    }
+
+    /** Организатору: оплата подтверждена, Pro активен. */
+    public function createOrganizerProPaidNotification(User $organizer, \App\Models\OrganizerSubscription $subscription): void
+    {
+        $date = $subscription->expires_at->format('d.m.Y');
+
+        $this->create(
+            userId:   $organizer->id,
+            type:     'organizer_pro_paid_activated',
+            title:    '⭐ Организатор Pro активирован',
+            body:     "Оплата подтверждена. Организатор Pro действует до {$date}.",
+            payload:  [
+                'subscription_id' => $subscription->id,
+                'expires_at'      => $subscription->expires_at->toIso8601String(),
+            ],
+            channels: ['in_app', 'telegram', 'vk', 'max'],
+        );
+    }
+
     public function createOrganizerProActivatedNotification(User $admin, \App\Models\OrganizerSubscription $subscription, User $organizer): void
     {
         $amount = number_format((float) $subscription->amount_rub, 0, '.', ' ');

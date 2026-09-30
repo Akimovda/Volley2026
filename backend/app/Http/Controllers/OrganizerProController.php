@@ -64,50 +64,35 @@ class OrganizerProController extends Controller
             ],
         ];
 
-        return view('organizer-pro.index', compact('active', 'plans'));
+        $pending         = $user ? $this->service->getPending($user) : null;
+        $pendingPayment  = $pending?->payment_id ? Payment::find($pending->payment_id) : null;
+        $platformPayment = $s;
+
+        return view('organizer-pro.index', compact('active', 'plans', 'pending', 'pendingPayment', 'platformPayment'));
     }
 
-    /** Временная активация без оплаты (trial / тест) */
+    /**
+     * Самоактивация — ТОЛЬКО пробный период (один раз). Платные тарифы включаются после подтверждённой оплаты
+     * (pay() → «Я оплатил» → подтверждение админом) либо вручную из админки.
+     */
     public function activate(Request $request): RedirectResponse
     {
         $user = $request->user();
 
-        $data = $request->validate([
-            'plan' => ['required', 'string', 'in:trial,month,quarter,year'],
+        $request->validate([
+            'plan' => ['required', 'string', 'in:trial'],
         ]);
 
-        // trial только если ещё не было
-        if ($data['plan'] === 'trial') {
-            $hadTrial = OrganizerSubscription::query()
-                ->where('user_id', $user->id)
-                ->where('plan', 'trial')
-                ->exists();
+        $hadTrial = OrganizerSubscription::query()
+            ->where('user_id', $user->id)
+            ->where('plan', 'trial')
+            ->exists();
 
-            if ($hadTrial) {
-                return back()->withErrors(['plan' => 'Пробный период уже использовался.']);
-            }
+        if ($hadTrial) {
+            return back()->withErrors(['plan' => 'Пробный период уже использовался.']);
         }
 
-        $sub = $this->service->activate($user, $data['plan']);
-
-        // Фиксируем факт оплаты как Payment — иначе оплата PRO нигде не видна в статистике
-        // (activate() создаёт только запись подписки, без payments; см. диагностику 2026-07-17)
-        if ((float) $sub->amount_rub > 0) {
-            $payment = Payment::create([
-                'user_id'           => $user->id,
-                'organizer_id'      => $user->id,
-                'method'            => 'manual',
-                'status'            => 'paid',
-                'amount_minor'      => (int) round((float) $sub->amount_rub * 100),
-                'currency'          => 'RUB',
-                'user_confirmed'    => true,
-                'user_confirmed_at' => now(),
-                'org_confirmed'     => true,
-                'org_confirmed_at'  => now(),
-            ]);
-
-            $sub->update(['payment_id' => $payment->id]);
-        }
+        $sub = $this->service->activate($user, 'trial');
 
         try {
             $platSettings   = PlatformPaymentSetting::first();
@@ -125,5 +110,67 @@ class OrganizerProController extends Controller
         return redirect()
             ->route('organizer_pro.index')
             ->with('status', '✅ Организатор Pro активирован до ' . $sub->expires_at->format('d.m.Y') . '!');
+    }
+
+    /** Заявка на платный тариф: создаём pending-подписку и платёж, дальше — оплата и «Я оплатил». */
+    public function pay(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+
+        $data = $request->validate([
+            'plan' => ['required', 'string', 'in:month,quarter,year'],
+        ]);
+
+        if (!PlatformPaymentSetting::first()) {
+            return back()->withErrors(['plan' => 'Оплата временно недоступна. Попробуйте позже.']);
+        }
+
+        [$sub, $payment, $created] = $this->service->createPending($user, $data['plan']);
+
+        if (!$created) {
+            return redirect()->route('organizer_pro.index')
+                ->with('status', 'Ваша оплата уже отправлена на проверку — администратор подтвердит её в ближайшее время.');
+        }
+
+        return redirect()->route('organizer_pro.index')->with('payment_pending', $payment->id);
+    }
+
+    /** Пользователь нажал «Я оплатил» — уведомляем администратора, подписку включает админ после проверки. */
+    public function confirmPayment(Request $request, Payment $payment): RedirectResponse
+    {
+        $user = $request->user();
+
+        $sub = OrganizerSubscription::query()
+            ->where('payment_id', $payment->id)
+            ->where('user_id', $user->id)
+            ->where('status', 'pending')
+            ->first();
+
+        if ($payment->user_id !== $user->id || !$sub || $payment->status !== 'pending') {
+            abort(403);
+        }
+
+        if (!$payment->user_confirmed) {
+            $payment->update([
+                'user_confirmed'    => true,
+                'user_confirmed_at' => now(),
+            ]);
+
+            try {
+                $platSettings   = PlatformPaymentSetting::first();
+                $paymentAdminId = (int) ($platSettings?->payment_admin_id ?? 1);
+                $admin = User::find($paymentAdminId) ?? User::where('role', 'admin')->first();
+
+                if ($admin) {
+                    app(UserNotificationService::class)
+                        ->createOrganizerProPaymentPendingNotification($admin, $payment, $user, $sub);
+                }
+            } catch (\Throwable $e) {
+                Log::warning('OrganizerProController confirmPayment notify failed: ' . $e->getMessage());
+            }
+        }
+
+        return redirect()->route('organizer_pro.index')
+            ->with('status', '✅ Спасибо! Проверим перевод и активируем Организатор Pro — обычно это занимает немного времени.');
     }
 }

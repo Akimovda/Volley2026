@@ -115,6 +115,38 @@
         @endif
         @endauth
 
+        {{-- Ожидает оплаты --}}
+        @auth
+        @if($pending)
+        <div class="ramka">
+            <div class="card mb-1" style="border:0.2rem solid #f5c842">
+                <div class="f-17 b-600 mb-1">⏳ Заявка на «{{ \App\Models\OrganizerSubscription::planLabel($pending->plan) }}» — {{ number_format((float) $pending->amount_rub, 0, '.', ' ') }} ₽</div>
+                @if($pendingPayment && !$pendingPayment->user_confirmed)
+                <div class="f-15 mb-1" style="opacity:.75">
+                    Переведите оплату и нажмите «Я оплатил» — после проверки мы активируем подписку
+                    @if($active) (срок прибавится к текущему) @endif.
+                </div>
+                @if($platformPayment)
+                <div class="mb-1">
+                    @if($platformPayment->method === 'tbank_link' && $platformPayment->tbank_link)
+                    <a href="{{ $platformPayment->tbank_link }}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">🏦 Открыть Т-Банк</a>
+                    @elseif($platformPayment->method === 'sber_link' && $platformPayment->sber_link)
+                    <a href="{{ $platformPayment->sber_link }}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">💚 Открыть Сбер</a>
+                    @endif
+                </div>
+                @endif
+                <form method="POST" action="{{ route('organizer_pro.confirm_payment', $pending->payment_id) }}">
+                    @csrf
+                    <button class="btn">✅ Я оплатил</button>
+                </form>
+                @else
+                <div class="f-16 b-600 cs">✅ Оплата отмечена вами — ожидаем проверки администратором</div>
+                @endif
+            </div>
+        </div>
+        @endif
+        @endauth
+
         {{-- Преимущества --}}
         <div class="ramka">
             <h2 class="-mt-05">Что входит в Организатор Pro</h2>
@@ -214,15 +246,17 @@
                                     ✅ Текущий тариф
                                 </button>
                             @else
-                                <form method="POST" action="{{ route('organizer_pro.activate') }}">
+                                <form method="POST" action="{{ $plan['price'] === 0 ? route('organizer_pro.activate') : route('organizer_pro.pay') }}">
                                     @csrf
                                     <input type="hidden" name="plan" value="{{ $planKey }}">
                                     <button type="submit"
                                             class="btn w-100 {{ $planKey === 'quarter' ? '' : 'btn-secondary' }}">
                                         @if($plan['price'] === 0)
                                             Попробовать бесплатно
+                                        @elseif($active)
+                                            Продлить
                                         @else
-                                            Подключить
+                                            Оплатить
                                         @endif
                                     </button>
                                 </form>
@@ -237,7 +271,7 @@
                 @endforeach
             </div>
             <div class="f-13 mt-1" style="opacity:.5">
-                * Оплата через Т-Банк. После оплаты подписка активируется автоматически.
+                * Оплата переводом. После оплаты нажмите «Я оплатил» — подписка активируется после проверки платежа.
                 Пробный период — только для новых пользователей, 1 раз.
             </div>
         </div>

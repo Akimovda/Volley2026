@@ -336,11 +336,11 @@
                         @foreach($pendingPremiumPayments as $row)
                             <tr @if($row->age_days >= 3) style="background:rgba(231,76,60,.08)" @endif>
                                 <td><a href="{{ route('admin.users.show', $row->user_id) }}">{{ $row->last_name }} {{ $row->first_name }}</a></td>
-                                <td>{{ __('admin.sub_plan_' . $row->plan) }}</td>
+                                <td>{{ $row->kind === 'pro' ? 'Pro · ' : 'Premium · ' }}{{ __('admin.sub_plan_' . $row->plan) }}</td>
                                 <td>{{ number_format($row->amount_minor / 100, 0, ',', ' ') }} ₽</td>
                                 <td class="{{ $row->age_days >= 3 ? 'red b-600' : '' }}">{{ __('admin.sub_pending_days', ['n' => $row->age_days]) }}</td>
                                 <td class="text-right">
-                                    <a href="{{ route('admin.subscriptions.premium_confirm', $row->payment_id) }}" class="btn btn-sm btn-primary">{{ __('admin.sub_pending_confirm_btn') }}</a>
+                                    <a href="{{ route($row->kind === 'pro' ? 'admin.subscriptions.pro_confirm' : 'admin.subscriptions.premium_confirm', $row->payment_id) }}" class="btn btn-sm btn-primary">{{ __('admin.sub_pending_confirm_btn') }}</a>
                                 </td>
                             </tr>
                         @endforeach
