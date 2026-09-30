@@ -26,6 +26,10 @@ class OrganizerSubscriptionService
 
     public function activate(User $user, string $plan, string $method = 'manual'): OrganizerSubscription
     {
+        // Продление прибавляет срок к остатку действующей подписки, а не отсчитывается от now()
+        $current = $this->getActive($user);
+        $base    = $current ? $current->expires_at->copy() : now();
+
         // Деактивируем предыдущие
         OrganizerSubscription::query()
             ->where('user_id', $user->id)
@@ -40,7 +44,7 @@ class OrganizerSubscriptionService
             'plan'           => $plan,
             'status'         => 'active',
             'starts_at'      => now(),
-            'expires_at'     => now()->addDays($days),
+            'expires_at'     => $base->addDays($days),
             'payment_method' => $method,
             'amount_rub'     => $price > 0 ? $price : null,
         ]);
