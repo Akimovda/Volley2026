@@ -36,6 +36,14 @@ class WidgetPublicController extends Controller
             return response('Виджет недоступен.', 403);
         }
 
+        // Виджет — функция Организатор Pro: без активной подписки владельца показываем сообщение
+        if (!$this->ownerHasPro($widget)) {
+            return response()
+                ->view('widget.unavailable', ['message' => __('profile.widget_subscription_inactive')])
+                ->header('X-Frame-Options', 'ALLOWALL')
+                ->header('Content-Security-Policy', "frame-ancestors *");
+        }
+
         $events = $this->getEvents($widget, $userId);
 
         return response()
@@ -61,6 +69,14 @@ class WidgetPublicController extends Controller
             if (!$widget->allowsDomain($domain)) {
                 return response()->json(['ok' => false, 'error' => 'Domain not allowed'], 403);
             }
+        }
+
+        if (!$this->ownerHasPro($widget)) {
+            return response()->json([
+                'ok'      => false,
+                'code'    => 'subscription_inactive',
+                'error'   => __('profile.widget_subscription_inactive'),
+            ], 403)->header('Access-Control-Allow-Origin', '*');
         }
 
         $events = $this->getEvents($widget, $widget->user_id);
@@ -116,7 +132,10 @@ class WidgetPublicController extends Controller
     fetch('{$widgetJsonUrl}?key=' + encodeURIComponent(key))
         .then(function(r) { return r.json(); })
         .then(function(data) {
-            if (!data.ok) { container.innerHTML = '<div style="color:red;padding:12px">Ошибка: ' + (data.error || 'unavailable') + '</div>'; return; }
+            if (!data.ok) {
+                if (data.code === 'subscription_inactive') { container.innerHTML = '<div style="font-family:sans-serif;color:#888;padding:12px;font-size:14px">' + data.error + '</div>'; return; }
+                container.innerHTML = '<div style="color:red;padding:12px">Ошибка: ' + (data.error || 'unavailable') + '</div>'; return;
+            }
 
             var html = '<div style="font-family:sans-serif;max-width:600px">';
             html += '<div style="font-weight:700;font-size:16px;margin-bottom:12px;color:' + color + '">🏐 Ближайшие мероприятия</div>';
@@ -148,6 +167,12 @@ JS;
             'Cache-Control'               => 'public, max-age=60',
             'Access-Control-Allow-Origin' => '*',
         ]);
+    }
+
+    /** Активен ли Организатор Pro у владельца виджета (ключ и настройки при этом не трогаем) */
+    private function ownerHasPro(OrganizerWidget $widget): bool
+    {
+        return (bool) $widget->user?->isOrganizerPro();
     }
 
     private function resolveWidget(Request $request, int $userId): ?OrganizerWidget
