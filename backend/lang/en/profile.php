@@ -799,6 +799,7 @@ return [
     'widget_breadcrumb'    => 'Widget',
     'widget_pro_section_h2' => 'Available in Organizer Pro',
     'widget_powered_by'     => 'powered by :host',
+    'widget_subscription_inactive' => 'The widget is temporarily unavailable: the organizer\'s subscription is not active.',
 
     'rating_title'         => 'Player ranking',
     'rating_label_dir'     => 'Discipline',

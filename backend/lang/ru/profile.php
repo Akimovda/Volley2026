@@ -807,6 +807,7 @@ return [
     'widget_breadcrumb'    => 'Виджет',
     'widget_pro_section_h2' => 'Доступно в Организатор Pro',
     'widget_powered_by'     => 'на базе :host',
+    'widget_subscription_inactive' => 'Виджет временно недоступен: подписка организатора не активна.',
 
     // === players/rating ===
     'rating_title'         => 'Рейтинг игроков',
