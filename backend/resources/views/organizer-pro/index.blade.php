@@ -166,14 +166,14 @@
             <div class="card mb-1">
                 <div class="f-16 b-600 mb-05">Как подключить</div>
                 <ul class="pro-feature-list" style="margin-bottom:1rem">
-                    <li>Напишите нам — обсудим название, цвета и состав меню.</li>
+                    <li>Напишите нам в Telegram (@akimovda) — обсудим название, цвета и состав меню.</li>
                     <li>Мы настроим оформление и подготовим приложение к публикации.</li>
                     <li>Вы передаёте игрокам ссылку на установку — они входят тем же аккаунтом.</li>
                 </ul>
                 <div class="f-14 mb-1" style="opacity:.6">
                     White Label подключается отдельно от подписки Организатор Pro. Стоимость зависит от объёма настройки — по запросу.
                 </div>
-                <a href="mailto:info@volleyplay.ru?subject=White%20Label%20%D0%BF%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D0%B5" class="btn">Обсудить подключение</a>
+                <a href="https://t.me/akimovda" target="_blank" rel="noopener noreferrer" class="btn">Обсудить подключение в Telegram</a>
             </div>
         </div>
 
