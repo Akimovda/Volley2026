@@ -1203,6 +1203,63 @@ final class UserNotificationService
         );
     }
 
+    /** Игроку: Premium скоро закончится (за $days дней: 30 / 7 / 1). */
+    public function createPremiumExpiringNotification(User $player, \App\Models\PremiumSubscription $subscription, int $days, int $followsCount = 0, int $autoBookingsCount = 0): void
+    {
+        $left = $days === 1 ? '1 день' : "{$days} дней";
+        $date = $subscription->expires_at->format('d.m.Y');
+
+        $body = "До окончания Premium осталось {$left} (до {$date}).";
+        if ($followsCount > 0 || $autoBookingsCount > 0) {
+            $body .= "\nПосле окончания будут сняты подписки на игроков и автозаписи на мероприятия.";
+        }
+        $body .= "\nПродлите подписку, чтобы сохранить возможности Premium и остаток дней.";
+
+        $this->create(
+            userId:   $player->id,
+            type:     'premium_expiring',
+            title:    '⭐ Premium скоро закончится',
+            body:     $body,
+            payload:  [
+                'subscription_id' => $subscription->id,
+                'days_left'       => $days,
+                'button_text'     => 'Продлить Premium',
+                'button_url'      => route('premium.index'),
+            ],
+            channels: ['in_app', 'telegram', 'vk', 'max'],
+        );
+    }
+
+    /** Игроку: Premium закончился; $followsRemoved/$autoBookingsRemoved — сколько подписок и автозаписей снято. */
+    public function createPremiumExpiredNotification(User $player, \App\Models\PremiumSubscription $subscription, int $followsRemoved = 0, int $autoBookingsRemoved = 0): void
+    {
+        $body = 'Подписка Premium закончилась.';
+        $removed = [];
+        if ($followsRemoved > 0) {
+            $removed[] = "подписки на игроков ({$followsRemoved})";
+        }
+        if ($autoBookingsRemoved > 0) {
+            $removed[] = "автозаписи на мероприятия ({$autoBookingsRemoved})";
+        }
+        if ($removed) {
+            $body .= "\nСняты: " . implode(' и ', $removed) . ' — эти возможности доступны только с активным Premium.';
+        }
+        $body .= "\nПродлите подписку — возможности Premium снова станут доступны (снятые подписки и автозаписи придётся создать заново).";
+
+        $this->create(
+            userId:   $player->id,
+            type:     'premium_expired',
+            title:    '⭐ Premium закончился',
+            body:     $body,
+            payload:  [
+                'subscription_id' => $subscription->id,
+                'button_text'     => 'Продлить Premium',
+                'button_url'      => route('premium.index'),
+            ],
+            channels: ['in_app', 'telegram', 'vk', 'max'],
+        );
+    }
+
     public function createSubscriptionLowVisitsNotification(\App\Models\Subscription $subscription): UserNotification
     {
         $templateName = $subscription->template->name ?? 'Абонемент';
