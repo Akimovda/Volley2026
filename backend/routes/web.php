@@ -818,6 +818,13 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
 	    Route::post('/organizer-pro/activate',
 	        [\App\Http\Controllers\OrganizerProController::class, 'activate'])
 	        ->name('organizer_pro.activate');
+
+	    Route::post('/organizer-pro/pay',
+	        [\App\Http\Controllers\OrganizerProController::class, 'pay'])
+	        ->name('organizer_pro.pay');
+	    Route::post('/organizer-pro/payments/{payment}/confirm',
+	        [\App\Http\Controllers\OrganizerProController::class, 'confirmPayment'])
+	        ->name('organizer_pro.confirm_payment');
 	});
 
 	/*
@@ -965,6 +972,8 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
         // Premium / PRO подписки
         Route::get('/subscriptions/premium/{payment}/confirm', [\App\Http\Controllers\Admin\AdminSubscriptionController::class, 'confirmPremium'])
             ->name('subscriptions.premium_confirm');
+        Route::get('/subscriptions/pro/{payment}/confirm', [\App\Http\Controllers\Admin\AdminSubscriptionController::class, 'confirmPro'])
+            ->name('subscriptions.pro_confirm');
         Route::post('/subscriptions/premium/{premiumSubscription}/deactivate', [\App\Http\Controllers\Admin\AdminSubscriptionController::class, 'deactivatePremium'])
             ->name('subscriptions.premium_deactivate');
         Route::post('/subscriptions/pro/{organizerSubscription}/deactivate', [\App\Http\Controllers\Admin\AdminSubscriptionController::class, 'deactivatePro'])

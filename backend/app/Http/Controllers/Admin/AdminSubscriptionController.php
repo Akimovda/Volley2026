@@ -67,6 +67,47 @@ class AdminSubscriptionController extends Controller
             ->with('success', '✅ Платёж подтверждён, но срок подписки (от даты платежа) уже истёк — ' . $subscription->expires_at->format('d.m.Y') . '. Игрок не уведомлён, реального доступа не получил.');
     }
 
+    /** Подтверждение оплаты Организатор Pro (ссылка из уведомления админу / блока на дашборде). */
+    public function confirmPro(Payment $payment): RedirectResponse
+    {
+        if ($payment->status === 'paid') {
+            return redirect()->route('admin.dashboard')->with('success', '✅ Уже подтверждено ранее.');
+        }
+        if ($payment->status !== 'pending') {
+            return redirect()->route('admin.dashboard')->with('error', 'Платёж не ожидает подтверждения.');
+        }
+
+        $pending = OrganizerSubscription::query()
+            ->where('payment_id', $payment->id)
+            ->where('status', 'pending')
+            ->first();
+
+        if (!$pending) {
+            return redirect()->route('admin.dashboard')
+                ->with('error', 'Не удалось найти заявку Организатор Pro, связанную с этим платежом.');
+        }
+
+        $subscription = app(\App\Services\OrganizerSubscriptionService::class)->activatePending($pending);
+
+        $payment->update([
+            'status'           => 'paid',
+            'org_confirmed'    => true,
+            'org_confirmed_at' => now(),
+        ]);
+
+        try {
+            $organizer = User::find($payment->user_id);
+            if ($organizer) {
+                app(UserNotificationService::class)->createOrganizerProPaidNotification($organizer, $subscription);
+            }
+        } catch (\Throwable $e) {
+            Log::warning('AdminSubscriptionController::confirmPro notify failed: ' . $e->getMessage());
+        }
+
+        return redirect()->route('admin.dashboard')
+            ->with('success', '✅ Организатор Pro подтверждён и активирован до ' . $subscription->expires_at->format('d.m.Y') . '.');
+    }
+
     public function deactivatePremium(PremiumSubscription $premiumSubscription): RedirectResponse
     {
         if ($premiumSubscription->status !== 'active') {

@@ -220,6 +220,32 @@ class AdminDashboardController extends Controller
                 return $row;
             });
 
+        $pendingPremiumPayments = $pendingPremiumPayments->map(function ($row) {
+            $row->kind = 'premium';
+            return $row;
+        });
+
+        // Организатор Pro: оплата отмечена организатором («Я оплатил»), ждёт подтверждения админом
+        $pendingProPayments = DB::table('organizer_subscriptions as os')
+            ->join('users as u', 'u.id', '=', 'os.user_id')
+            ->join('payments as p', 'p.id', '=', DB::raw('os.payment_id::bigint'))
+            ->where('os.status', 'pending')
+            ->where('p.status', 'pending')
+            ->where('p.user_confirmed', true)
+            ->select(
+                'os.id as sub_id', 'os.plan', 'u.id as user_id', 'u.first_name', 'u.last_name',
+                'p.id as payment_id', 'p.amount_minor', 'p.created_at as payment_created_at'
+            )
+            ->orderBy('p.user_confirmed_at')
+            ->get()
+            ->map(function ($row) {
+                $row->age_days = (int) now()->diffInDays(\Carbon\Carbon::parse($row->payment_created_at));
+                $row->kind = 'pro';
+                return $row;
+            });
+
+        $pendingPremiumPayments = $pendingPremiumPayments->concat($pendingProPayments)->sortBy('payment_created_at')->values();
+
         return view('admin.dashboard.index', compact(
             'totalUsers',
             'activeUsers',
