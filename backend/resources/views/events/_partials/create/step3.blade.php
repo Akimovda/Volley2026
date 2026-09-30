@@ -625,6 +625,8 @@
 										const photoSelectLabel = @json(__('events.photo_select'));
 										const photoMainLabel   = @json(__('events.photo_main'));
 										const photoPosLabel    = @json(__('events.photo_pos_n', ['n' => '']));
+										const MAX_EVENT_PHOTOS = 10;
+										const photoMaxText     = @json(__('events.photo_max_reached', ['max' => 10]));
 
 										function updateUI() {
 											document.querySelectorAll('.photo-select').forEach(checkbox => {
@@ -647,6 +649,11 @@
 											checkbox.addEventListener('change', function() {
 												const id = parseInt(this.value);
 												if (this.checked) {
+													if (selectedPhotos.length >= MAX_EVENT_PHOTOS) {
+														this.checked = false;
+														swal({ text: photoMaxText, icon: 'warning', button: 'OK' });
+														return;
+													}
 													selectedPhotos.push(id);
 												} else {
 													const index = selectedPhotos.indexOf(id);
@@ -810,7 +817,11 @@
 											const newCheckbox = document.querySelector(`.photo-select[value="${mediaId}"]`);
 											if (newCheckbox) {
 												bindCheckbox(newCheckbox);
-												selectedPhotos.unshift(mediaId);
+												if (selectedPhotos.length < MAX_EVENT_PHOTOS) {
+													selectedPhotos.unshift(mediaId);
+												} else {
+													swal({ text: photoMaxText, icon: 'warning', button: 'OK' });
+												}
 												updateUI();
 											}
 

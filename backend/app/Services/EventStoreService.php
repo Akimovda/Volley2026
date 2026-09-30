@@ -50,7 +50,10 @@ class EventStoreService
     // 👇 НОВЫЙ КОД: Обработка фото для галереи мероприятия
     if ($request->has('event_photos')) {
         $eventPhotos = json_decode($request->event_photos, true);
-        $data['event_photos'] = $eventPhotos;
+        // не более 10 фото (как в форме и коллаже анонса)
+        $data['event_photos'] = is_array($eventPhotos)
+            ? array_slice(array_values(array_unique(array_map('intval', $eventPhotos))), 0, 10)
+            : [];
     } else {
         $data['event_photos'] = [];
     }		

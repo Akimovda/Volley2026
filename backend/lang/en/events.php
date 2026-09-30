@@ -911,6 +911,7 @@ return [
     'photo_main'             => '★ Main',
     'photo_pos_n'            => 'Photo: :n',
     'photo_select_hint_1'    => 'Pick photos for the event. The first selected photo will be the main one.',
+    'photo_max_reached'      => 'You can select up to :max photos. Unselect another photo to pick this one.',
     'photo_select_hint_2_pre' => 'Photos can be added (with the "For events" check) in',
     'photo_select_hint_2_link' => 'Your photos',
     'photo_empty_p1'         => 'You have no photos for events.',

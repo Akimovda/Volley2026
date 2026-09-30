@@ -1536,6 +1536,8 @@
                                 var container = document.querySelector('.event-photos-selector-edit');
                                 var savedPhotos = JSON.parse(container.dataset.selected || '[]');
                                 var selectedPhotos = savedPhotos.slice();
+                                var MAX_EVENT_PHOTOS = 10;
+                                var photoMaxText = @json(__('events.photo_max_reached', ['max' => 10]));
 
                                 function updateUI() {
                                     document.querySelectorAll('.photo-select-edit').forEach(function(checkbox) {
@@ -1557,6 +1559,11 @@
                                     checkbox.addEventListener('change', function() {
                                         var id = parseInt(this.value);
                                         if (this.checked) {
+                                            if (selectedPhotos.length >= MAX_EVENT_PHOTOS) {
+                                                this.checked = false;
+                                                swal({ text: photoMaxText, icon: 'warning', button: 'OK' });
+                                                return;
+                                            }
                                             selectedPhotos.push(id);
                                         } else {
                                             var index = selectedPhotos.indexOf(id);
