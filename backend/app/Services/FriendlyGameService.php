@@ -299,7 +299,7 @@ class FriendlyGameService
         $scorers = array_values(array_filter($out, fn ($r) => $r['points_scored'] > 0));
         usort($scorers, fn ($a, $b) => [$b['points_scored'], $b['wins']] <=> [$a['points_scored'], $a['wins']]);
 
-        return ['rows' => $out, 'top_scorers' => array_slice($scorers, 0, 3), 'podium' => $this->buildPodium($teamPodium ? $lineups : [], $out, $users)];
+        return ['rows' => $out, 'top_scorers' => array_slice($scorers, 0, 5), 'podium' => $this->buildPodium($teamPodium ? $lineups : [], $out, $users)];
     }
 
     /**
