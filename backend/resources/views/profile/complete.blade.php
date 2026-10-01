@@ -191,6 +191,8 @@
 			</x-slot>
 
 			<x-slot name="style">
+				<link rel="stylesheet" type="text/css" href="@asset_v('assets/trix.css')">
+				<link href="/assets/org.css" rel="stylesheet">
 				<style>
 					/* День/месяц/год рождения — 3 select в один ряд (.d-flex). createCustomSelect
 					   оборачивает каждый select в свой .form-select-wrapper, но НЕ переносит
@@ -1004,6 +1006,8 @@
 										</div>											
 									</div>
 									
+									@include('profile._trainer_fields', ['user' => $user])
+
 									<div class="card-ramka mb-2 text-center">	
 										<button type="submit" class="btn">{{ __('profile.cp_btn_save') }}</button>
 									</div>
@@ -1035,6 +1039,8 @@
 				
 				
 				<x-slot name="script">
+					<script src="@asset_v('assets/trix.js')"></script>
+					<script src="/assets/org.js?v=2"></script>
 					<script src="/assets/city.js"></script>
 					<script src="/assets/fas.js"></script>
 					@if(session('profile_prompt'))

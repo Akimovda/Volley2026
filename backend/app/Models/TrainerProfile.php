@@ -16,6 +16,17 @@ class TrainerProfile extends Model
         'is_public'         => 'boolean',
     ];
 
+    /** HTML для вывода: старые записи (простой текст с переносами) приводим к HTML. */
+    public function getBioHtmlAttribute(): string
+    {
+        $bio = (string) ($this->bio ?? '');
+        if ($bio === '') {
+            return '';
+        }
+
+        return $bio === strip_tags($bio) ? nl2br(e($bio)) : $bio;
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

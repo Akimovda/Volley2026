@@ -429,7 +429,7 @@ body.dark .gradient-marker-line,
                                 <div class="f-15 mb-1" style="opacity:.7;">{{ __('trainers.experience_years', ['n' => $trainerProfile->experience_years]) }}</div>
                                 @endif
                                 @if($trainerProfile->bio)
-                                <div class="f-15">{{ $trainerProfile->bio }}</div>
+                                <div class="f-15 trix-content">{!! $trainerProfile->bio_html !!}</div>
                                 @endif
 
                                 @if($canSeeTrainerRating)
