@@ -408,13 +408,13 @@ class EventRegistrationsManagementController extends Controller
         $positionRequired = $addDirection === 'classic' && count($addPositions) > 0;
 
         $data = $request->validate([
-            'user_id' => ['required', 'integer', 'exists:users,id'],
+            'user_id' => ['required_without:user_team_id', 'nullable', 'integer', 'exists:users,id'],
+            'user_team_id' => ['nullable', 'integer', 'exists:user_teams,id'],
             'position' => $positionRequired
                 ? ['required', 'string', 'max:255', 'in:' . implode(',', array_keys($addPositions))]
                 : ['nullable', 'string', 'max:255'],
         ]);
 
-        $userId = (int) $data['user_id'];
         $pos = trim((string) ($data['position'] ?? ''));
 
         // Для не-classic направлений (пляжка/king_beach и т.п.) форма не показывает
@@ -445,6 +445,97 @@ class EventRegistrationsManagementController extends Controller
                 ->value('id');
         }
 
+        $teamId = (int) ($data['user_team_id'] ?? 0);
+        if ($teamId > 0) {
+            $team = \App\Models\UserTeam::find($teamId);
+            // Участники, чьи аккаунты объединены с другими, резолвятся в основной аккаунт
+            $memberIds = \App\Models\UserTeamMember::where('user_team_id', $teamId)
+                ->join('users as u', 'u.id', '=', 'user_team_members.user_id')
+                ->selectRaw('coalesce(u.merged_into_user_id, u.id) as uid, u.deleted_at, u.merged_into_user_id')
+                ->get()
+                ->filter(fn ($r) => $r->merged_into_user_id !== null || $r->deleted_at === null)
+                ->pluck('uid')->unique()->values()->all();
+            if (!$memberIds) {
+                return back()->with('error', 'В команде нет участников.');
+            }
+            $added = 0;
+            $skipped = [];
+            foreach ($memberIds as $mid) {
+                $res = $this->addOnePlayer($event, $authUser, (int) $mid, $pos, (int) $occurrenceId, $addDirection, $addSlots, $addPositions, $addReserveMax);
+                if ($res['ok']) {
+                    $added++;
+                } else {
+                    $u = \App\Models\User::find($mid);
+                    $nm = trim(($u->last_name ?? '') . ' ' . ($u->first_name ?? '')) ?: ('#' . $mid);
+                    $skipped[] = $nm . ' — ' . $res['msg'];
+                }
+            }
+            $msg = "Команда «{$team->name}»: добавлено {$added} из " . count($memberIds) . '.';
+            $back = back()->with($added > 0 ? 'status' : 'error', $msg);
+            return $skipped ? $back->with('error', $msg . ' Не добавлены: ' . implode('; ', $skipped)) : $back;
+        }
+
+        $res = $this->addOnePlayer($event, $authUser, (int) $data['user_id'], $pos, (int) $occurrenceId, $addDirection, $addSlots, $addPositions, $addReserveMax);
+        return back()->with($res['ok'] ? 'status' : 'error', $res['msg']);
+    }
+
+    /**
+     * GET /events/{event}/registrations/teams-search?q=
+     * Поиск сохранённых команд сайта (user_teams) по названию или капитану.
+     */
+    public function searchTeams(Request $request, Event $event)
+    {
+        $authUser = $request->user();
+        if (!$authUser) return response()->json(['ok' => false, 'items' => []], 401);
+        $this->ensureCanCreateEvents($authUser);
+        $this->ensureCanManageEvent($authUser, $event);
+
+        $q = trim((string) $request->query('q', ''));
+        if (mb_strlen($q) < 2) return response()->json(['ok' => true, 'items' => []]);
+        $like = '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $q) . '%';
+
+        $rows = DB::table('user_teams as t')
+            ->leftJoin('user_team_members as cm', function ($j) {
+                $j->on('cm.user_team_id', '=', 't.id')->where('cm.role_code', '=', 'captain');
+            })
+            ->leftJoin('users as cu', 'cu.id', '=', 'cm.user_id')
+            ->where(function ($w) use ($like) {
+                $w->where('t.name', 'ILIKE', $like)
+                    ->orWhereRaw("(coalesce(cu.last_name,'') || ' ' || coalesce(cu.first_name,'')) ILIKE ?", [$like])
+                    ->orWhereRaw("(coalesce(cu.first_name,'') || ' ' || coalesce(cu.last_name,'')) ILIKE ?", [$like]);
+            })
+            ->select('t.id', 't.name', 't.direction', 't.subtype', 'cu.first_name', 'cu.last_name',
+                DB::raw('(select count(*) from user_team_members m where m.user_team_id = t.id) as members_count'))
+            ->orderBy('t.name')
+            ->limit(8)
+            ->get();
+
+        $items = $rows->map(function ($t) {
+            $captain = trim(($t->last_name ?? '') . ' ' . ($t->first_name ?? ''));
+            $dir = $t->direction === 'beach' ? __('events.regs_team_beach') : ($t->direction === 'classic' ? __('events.regs_team_classic') : '');
+            $meta = array_filter([
+                $captain !== '' ? __('events.regs_team_captain', ['name' => $captain]) : null,
+                $dir !== '' ? $dir . ($t->subtype ? ' ' . $t->subtype : '') : null,
+                __('events.regs_team_members', ['n' => (int) $t->members_count]),
+            ]);
+            return [
+                'id'      => (int) $t->id,
+                'label'   => (string) $t->name,
+                'meta'    => implode(' • ', $meta),
+                'members' => (int) $t->members_count,
+            ];
+        })->values()->all();
+
+        return response()->json(['ok' => true, 'items' => $items]);
+    }
+
+
+    /**
+     * Добавляет одного игрока на occurrence (общая часть addPlayer для одиночного и командного добавления).
+     * @return array{ok:bool,msg:string}
+     */
+    private function addOnePlayer(Event $event, $authUser, int $userId, string $pos, int $occurrenceId, string $addDirection, $addSlots, array $addPositions, int $addReserveMax): array
+    {
         // Проверяем лимит слота позиции
         if ($pos !== '' && $occurrenceId && $addDirection === 'classic') {
             $checkSlots = $addSlots ?? app(\App\Services\EventRoleSlotService::class)->getSlots($event);
@@ -460,7 +551,7 @@ class EventRegistrationsManagementController extends Controller
                     ->count();
                 if ($taken >= $maxForPos) {
                     $lbl = $addPositions[$pos] ?? $pos;
-                    return back()->with('error', "Позиция «{$lbl}» заполнена ({$taken}/{$maxForPos}).");
+                    return ['ok' => false, 'msg' => "Позиция «{$lbl}» заполнена ({$taken}/{$maxForPos})."];
                 }
             }
         }
@@ -469,7 +560,7 @@ class EventRegistrationsManagementController extends Controller
         if ($pos !== '' && $occurrenceId) {
             $genderError = $this->checkGenderQuota($userId, $occurrenceId);
             if ($genderError) {
-                return back()->with('error', $genderError);
+                return ['ok' => false, 'msg' => $genderError];
             }
         }
 
@@ -530,10 +621,10 @@ class EventRegistrationsManagementController extends Controller
 
                 $this->dispatchAnnounceUpdate((int) $event->id, $occurrenceId ?: null);
 
-                return back()->with('status', 'Игрок восстановлен ✅');
+                return ['ok' => true, 'msg' => 'Игрок восстановлен ✅'];
             }
 
-            return back()->with('error', 'Этот игрок уже зарегистрирован на мероприятие.');
+            return ['ok' => false, 'msg' => 'Этот игрок уже зарегистрирован на мероприятие.'];
         }
 
         $insert = [
@@ -589,8 +680,9 @@ class EventRegistrationsManagementController extends Controller
             if ($orgId) app(StaffLogService::class)->log($authUser, $orgId, 'add_participant', 'event', $event->id, "Добавил участника # в мероприятие: {$event->title}");
         }
 
-        return back()->with('status', 'Игрок добавлен ✅');
+        return ['ok' => true, 'msg' => 'Игрок добавлен ✅'];
     }
+
 
     /**
      * PATCH /events/{event}/registrations/{registration}/position
