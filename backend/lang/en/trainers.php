@@ -2,11 +2,11 @@
 
 return [
     'cp_check' => 'I am a trainer',
-    'cp_hint'  => 'Do you run trainings? Fill in the trainer profile — it will appear in your event descriptions and players will be able to leave ratings. If you untick it, the profile is hidden, but ratings and data are kept.',
+    'cp_hint'  => 'Do you run trainings? Fill in the trainer profile — it will appear in your event descriptions and players will be able to leave reviews — only those who attended your sessions! If you untick it, the profile is hidden, but reviews and data are kept.',
     'menu_profile' => 'Trainer profile',
 
     'profile_section_title'        => 'Trainer',
-    'profile_section_lead_create'  => 'Do you run trainings? Fill in your trainer profile — it will show up in your event descriptions, and players will be able to leave ratings.',
+    'profile_section_lead_create'  => 'Do you run trainings? Fill in your trainer profile — it will show up in your event descriptions, and players will be able to leave reviews — only those who attended your sessions!',
     'profile_section_lead_exists'  => 'Your trainer profile is already filled in.',
     'profile_section_btn_create'   => 'Fill in trainer profile',
     'profile_section_btn_edit'     => 'Edit trainer profile',

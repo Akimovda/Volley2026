@@ -150,6 +150,7 @@
 												<div class="mt-1" id="trainer_block" data-show-if="format=training|training_game|camp|coach_student">
 													
 													<label>{{ __('events.trainers_label') }}</label>
+													@include('events._partials.trainer_self', ['mode' => 'create', 'defaultOn' => empty($oldTrainerIds)])
 													
 													<div class="ac-box">
 														{{-- chips --}}
