@@ -108,5 +108,8 @@ return [
     'rate_submit_btn'     => 'Submit rating',
     'rate_submit_ok'      => 'Thanks, your rating is saved!',
     'rate_submit_error'   => 'Failed to save the rating.',
+    'rate_anonymous_note' => 'Your rating is anonymous: the trainer and the organizer will see the score and comment, but not your name.',
+    'comments_title'      => 'Player reviews',
+    'comments_hint'       => 'Reviews are anonymous — authors\' names are not shown.',
     'rating_saved'        => '✅ Rating saved.',
 ];

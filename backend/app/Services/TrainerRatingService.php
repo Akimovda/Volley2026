@@ -86,6 +86,30 @@ class TrainerRatingService
     }
 
     /**
+     * Анонимные отзывы тренера (оценка + комментарий + тур). Автор (rater_user_id)
+     * в выборку НЕ попадает намеренно — оценки анонимны для всех, кроме БД.
+     *
+     * @param int|null $onlyOrganizerId если задан — только туры мероприятий этого организатора
+     */
+    public function anonymousComments(int $trainerUserId, ?int $onlyOrganizerId = null, int $limit = 50): \Illuminate\Support\Collection
+    {
+        $q = \Illuminate\Support\Facades\DB::table('trainer_ratings as tr')
+            ->join('event_occurrences as eo', 'eo.id', '=', 'tr.occurrence_id')
+            ->join('events as e', 'e.id', '=', 'eo.event_id')
+            ->where('tr.trainer_user_id', $trainerUserId)
+            ->whereNotNull('tr.comment')
+            ->whereRaw("TRIM(tr.comment) <> ''");
+
+        if ($onlyOrganizerId !== null) {
+            $q->where('e.organizer_id', $onlyOrganizerId);
+        }
+
+        return $q->orderByDesc('tr.updated_at')
+            ->limit($limit)
+            ->get(['tr.score', 'tr.comment', 'tr.updated_at', 'eo.starts_at', 'e.title as event_title']);
+    }
+
+    /**
      * Распределение оценок 1..10 => количество голосов.
      */
     private function distribution(\Illuminate\Support\Collection $ratings): array

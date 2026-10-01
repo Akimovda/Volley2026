@@ -445,6 +445,22 @@ body.dark .gradient-marker-line,
                             </div>
                         </div>
                     </div>
+
+                    @if(($trainerComments ?? collect())->isNotEmpty())
+                    <div class="card mt-2" style="height:auto;">
+                        <h3 class="-mt-05">{{ __('trainers.comments_title') }}</h3>
+                        <div class="f-13 mb-1" style="opacity:.6;">{{ __('trainers.comments_hint') }}</div>
+                        @foreach($trainerComments as $tc)
+                        <div class="mt-1" style="padding-top:1rem;{{ $loop->first ? '' : 'border-top:1px solid rgba(0,0,0,.08);' }}">
+                            <div class="f-13" style="opacity:.6;">
+                                {{ $tc->event_title }} · {{ \Carbon\Carbon::parse($tc->starts_at)->format('d.m.Y') }}
+                                · <span class="b-600">{{ (int) $tc->score }}/10</span>
+                            </div>
+                            <div class="f-15 mt-05">{!! nl2br(e($tc->comment)) !!}</div>
+                        </div>
+                        @endforeach
+                    </div>
+                    @endif
                 </div>
                 @endif
 
