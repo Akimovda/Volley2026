@@ -11,21 +11,27 @@ $__medals = ['🥇', '🥈', '🥉'];
 	@if(($board['podium']['type'] ?? 'players') === 'teams')
 	@foreach($board['podium']['items'] as $i => $t)
 	<div class="gm-podium-item gm-podium-{{ $i + 1 }}">
+		<div class="gm-podium-top">
 		<div class="gm-medal">{{ $__medals[$i] }}</div>
 		<span class="gm-team-tag gm-c-{{ $t['color'] }}">{{ $t['label'] }}</span>
 		<div class="f-13 mt-05" style="opacity:.8">{{ $t['users']->map(fn($u) => $__name($u))->implode(', ') }}</div>
 		<div class="f-13 mt-05" style="opacity:.7">{{ $t['wins'] }} {{ __('games.podium_wins') }} · {{ $t['win_rate'] }}%</div>
+		</div>
+		<div class="gm-step">{{ $i + 1 }}</div>
 	</div>
 	@endforeach
 	@else
 	@foreach($board['podium']['items'] ?? [] as $i => $p)
 	<div class="gm-podium-item gm-podium-{{ $i + 1 }}">
+		<div class="gm-podium-top">
 		<div class="gm-medal">{{ $__medals[$i] }}</div>
 		@if($p['user'])
 		<a href="{{ route('users.show', $p['user_id']) }}"><img class="gm-ava" src="{{ $p['user']->profile_photo_url }}" alt=""></a>
 		@endif
 		<div class="b-600 f-15">{{ $__name($p['user']) }}</div>
 		<div class="f-13" style="opacity:.7">{{ $p['wins'] }} {{ __('games.podium_wins') }} · {{ $p['win_rate'] }}%</div>
+		</div>
+		<div class="gm-step">{{ $i + 1 }}</div>
 	</div>
 	@endforeach
 	@endif
@@ -34,15 +40,13 @@ $__medals = ['🥇', '🥈', '🥉'];
 @if(!empty($board['top_scorers']))
 <h3 class="mt-2 mb-1">{{ __('games.top_scorers_title') }}</h3>
 <div class="f-13 mb-1" style="opacity:.55">{{ __('games.top_scorers_hint') }}</div>
-<div class="gm-podium mb-2">
+<div class="gm-scorers mb-2">
 	@foreach($board['top_scorers'] as $i => $p)
-	<div class="gm-podium-item gm-podium-{{ $i + 1 }}">
-		<div class="gm-medal">{{ $__medals[$i] }}</div>
-		@if($p['user'])
-		<a href="{{ route('users.show', $p['user_id']) }}"><img class="gm-ava" src="{{ $p['user']->profile_photo_url }}" alt=""></a>
-		@endif
+	<div class="gm-scorer gm-scorer-{{ $i + 1 }}">
+		<div class="gm-scorer-n">{{ $i + 1 }}</div>
+		@if($p['user'])<a href="{{ route('users.show', $p['user_id']) }}"><img src="{{ $p['user']->profile_photo_url }}" alt=""></a>@endif
 		<div class="b-600 f-15">{{ $__name($p['user']) }}</div>
-		<div class="f-13" style="opacity:.7">{{ $p['points_scored'] }} {{ __('games.top_scorers_points') }}</div>
+		<div class="gm-scorer-pts">{{ $p['points_scored'] }} {{ __('games.top_scorers_points') }}</div>
 	</div>
 	@endforeach
 </div>

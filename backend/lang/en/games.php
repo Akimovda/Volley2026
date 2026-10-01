@@ -49,7 +49,7 @@ return [
     'series_title' => 'Series standings',
     'series_evenings' => 'Game sessions: :n',
     'top_scorers_title' => 'Top scorers',
-    'top_scorers_hint' => 'Three players with the most points scored (from match statistics)',
+    'top_scorers_hint' => 'Players with the most points scored (from match statistics)',
     'top_scorers_points' => 'pts',
     'btn_score'          => 'Score by sets',
     'btn_stats'          => 'Player statistics',
