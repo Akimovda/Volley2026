@@ -355,6 +355,7 @@
                             <div class="card" style="overflow:visible">
                                 <label>{{ __('events.trainers_label') }}</label>
                                 <div class="f-13">{{ __('events.mgmt_trainers_hint') }}</div>
+                                @include('events._partials.trainer_self', ['mode' => 'edit', 'defaultOn' => false])
 
                                 <div class="ac-box" data-users-search-url="{{ route('ajax.users.search') }}">
                                     <div id="mgmt_trainer_chips" class="mb-1">
@@ -448,6 +449,8 @@
                             chips.querySelectorAll('[data-mgmt-trainer-hidden="'+id+'"]').forEach(function(x){x.remove();});
                             chips.querySelectorAll('[data-chip-id="'+id+'"]').forEach(function(x){x.remove();});
                         }
+
+                        window.__mgmtTrainerApi = { add: addChip, rm: rmChip };
 
                         chips.addEventListener('click',function(e){
                             var t=e.target;

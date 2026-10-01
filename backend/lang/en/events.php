@@ -1126,6 +1126,7 @@ return [
     'regs_export_pdf'        => '⬇ Download PDF',
     'regs_export_txt'        => '⬇ Download TXT',
 
+    'trainer_self_label'     => 'I am the trainer',
     'regs_team_label'        => 'Team',
     'regs_player_or_team_label' => 'Player / Team',
     'regs_team_captain'      => 'Captain: :name',

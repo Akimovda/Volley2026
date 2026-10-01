@@ -1134,6 +1134,7 @@ return [
     'regs_export_pdf'        => '⬇ Скачать PDF',
     'regs_export_txt'        => '⬇ Скачать TXT',
 
+    'trainer_self_label'     => 'Тренер — я',
     'regs_team_label'        => 'Команда',
     'regs_player_or_team_label' => 'Игрок / Команда',
     'regs_team_captain'      => 'Капитан: :name',
