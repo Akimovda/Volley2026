@@ -36,11 +36,15 @@
             .gm-seg label.gm-none input:checked + span { background:rgba(120,120,128,.25); color:inherit; border-color:rgba(120,120,128,.35); }
             .gm-actions { display:flex; flex-wrap:wrap; gap:.8rem; }
             .gm-lvl { font-size:1.2rem; opacity:.6; }
+            .gm-page .form-select-wrapper { min-height:0; }
+            .gm-page .form-select-custom { height:4.2rem; box-sizing:border-box; padding:0 1.4rem; font-size:1.5rem; line-height:3.8rem; }
+            @media (hover:none) and (pointer:coarse) { .gm-page .form select { height:4.2rem; box-sizing:border-box; font-size:1.5rem; } }
+            .gm-page .btn { height:4.2rem; box-sizing:border-box; padding:0 2rem; font-size:1.5rem; line-height:1; }
             .gm-color-row { display:flex; gap:1.5rem; flex-wrap:wrap; align-items:center; }
         </style>
     </x-slot>
 
-    <div class="container">
+    <div class="container gm-page">
 
         @if(session('success'))<div class="alert alert-success mb-2">{{ session('success') }}</div>@endif
         @if(session('error'))<div class="alert alert-danger mb-2">{{ session('error') }}</div>@endif
@@ -73,21 +77,41 @@
         <div class="ramka">
             <h2 class="-mt-05">{{ __('games.new_match_title') }}</h2>
 
-            <form method="POST" action="{{ route('game.config.update', $event) }}" class="form gm-color-row mb-2">
+            <form method="POST" action="{{ route('game.config.update', $event) }}" class="form gm-color-row gm-cfg-form mb-2" style="align-items:flex-start"> 
                 @csrf
                 <input type="hidden" name="occurrence_id" value="{{ $occurrence->id }}">
                 <div class="w-100 b-600">{{ __('games.format_title') }}</div>
                 <div class="w-100 f-14" style="opacity:.65;margin-top:-.8rem">{{ __('games.format_hint') }}</div>
-                <label>
+                <div style="min-width:18rem">
+                    <div class="f-14 mb-05">&nbsp;</div>
                     <select name="match_format">
                         @foreach(['bo1' => __('games.format_bo1'), 'bo3' => __('games.format_bo3'), 'bo5' => __('games.format_bo5')] as $k => $label)
                         <option value="{{ $k }}" @selected(($config['match_format'] ?? 'bo1') === $k)>{{ $label }}</option>
                         @endforeach
                     </select>
-                </label>
-                <label>{{ __('games.set_points') }}: <input type="number" name="set_points" min="5" max="50" value="{{ $config['set_points'] ?? 25 }}" style="width:8rem"></label>
-                <label>{{ __('games.deciding_points') }}: <input type="number" name="deciding_set_points" min="5" max="50" value="{{ $config['deciding_set_points'] ?? 15 }}" style="width:8rem"></label>
-                <button class="btn btn-outline btn-small" type="submit">{{ __('games.save') }}</button>
+                </div>
+                <div>
+                    <div class="f-14 mb-05">{{ __('games.set_points') }}</div>
+                    @php $cur = (int)($config['set_points'] ?? 25); $opts = range(5, 50); @endphp
+                    <select name="set_points">
+                        @foreach($opts as $n)
+                        <option value="{{ $n }}" @selected($cur === $n)>{{ $n }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <div class="f-14 mb-05">{{ __('games.deciding_points') }}</div>
+                    @php $cur = (int)($config['deciding_set_points'] ?? 15); $opts = range(5, 50); @endphp
+                    <select name="deciding_set_points">
+                        @foreach($opts as $n)
+                        <option value="{{ $n }}" @selected($cur === $n)>{{ $n }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <div class="f-14 mb-05">&nbsp;</div>
+                    <button class="btn btn-outline btn-small" type="submit">{{ __('games.save') }}</button>
+                </div>
             </form>
 
             <hr class="mb-2">
