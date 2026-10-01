@@ -37,6 +37,8 @@
                           placeholder="{{ __('trainers.rate_comment_ph') }}">{{ $existingComment }}</textarea>
             </div>
 
+            <div class="f-13 mt-1" style="opacity:.6;text-align:center;">{{ __('trainers.rate_anonymous_note') }}</div>
+
             <div class="mt-2" style="text-align:center;">
                 <button type="button" class="btn tr-rate-submit">{{ __('trainers.rate_submit_btn') }}</button>
             </div>

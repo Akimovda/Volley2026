@@ -130,6 +130,7 @@ class UserPublicController extends Controller
         $trainerProfile = $user->trainerProfile;
         $trainerRating  = null;
         $canSeeTrainerRating = false;
+        $trainerComments = collect();
         if ($trainerProfile) {
             $trainerRating = app(TrainerRatingService::class)->summary($user->id);
 
@@ -144,6 +145,17 @@ class UserPublicController extends Controller
             $canSeeTrainerRating = $isSelf
                 || (auth()->check() && auth()->user()->isPremium())
                 || $isSchoolOrganizerOfTrainer;
+
+            // Комментарии (анонимные): тренеру, админу и организатору его школы — все;
+            // организатору мероприятия — только по турам своих мероприятий. Premium их не видит.
+            $viewer = auth()->user();
+            if ($viewer) {
+                if ($isSelf || $viewer->isAdmin() || $isSchoolOrganizerOfTrainer) {
+                    $trainerComments = app(TrainerRatingService::class)->anonymousComments($user->id);
+                } elseif ($viewer->isOrganizer()) {
+                    $trainerComments = app(TrainerRatingService::class)->anonymousComments($user->id, (int) $viewer->id);
+                }
+            }
         }
 
         return view('user.public', [
@@ -153,6 +165,7 @@ class UserPublicController extends Controller
             'trainerProfile'      => $trainerProfile,
             'trainerRating'       => $trainerRating,
             'canSeeTrainerRating' => $canSeeTrainerRating,
+            'trainerComments'     => $trainerComments,
             'classicVotes'     => $classicVotes,
             'beachVotes'       => $beachVotes,
             'classicAvg'       => $classicAvg,
