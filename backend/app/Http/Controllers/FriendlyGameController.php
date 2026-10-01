@@ -42,7 +42,7 @@ class FriendlyGameController extends Controller
                 ->orderBy('match_number')->get()
             : collect();
 
-        $board = $stage ? $this->games->leaderboard($stage) : ['rows' => [], 'podium' => []];
+        $board = $stage ? $this->games->leaderboard($stage) : ['rows' => [], 'podium' => ['type' => 'players', 'items' => []]];
 
         // «Такие же составы, как в матче №N» — предзаполнение формы
         $prefill = ['home' => [], 'away' => []];
@@ -65,6 +65,7 @@ class FriendlyGameController extends Controller
             'stage'       => $stage,
             'config'      => $stage?->config ?? $this->games->defaultConfig(),
             'roster'      => $roster,
+            'positions'   => $this->games->positions($occurrence->id),
             'matches'     => $matches,
             'board'       => $board,
             'prefill'     => $prefill,
@@ -103,8 +104,8 @@ class FriendlyGameController extends Controller
         }
 
         return redirect()
-            ->route('tournament.matches.rally.form', $match)
-            ->with('success', "Матч №{$match->match_number} создан. Вводите счёт и статистику.");
+            ->route('tournament.matches.score.form', $match)
+            ->with('success', "Матч №{$match->match_number} создан. Введите счёт (или перейдите на поочковый ввод со статистикой).");
     }
 
     /** Формат матча (партии/очки) — конфиг служебной стадии */
@@ -177,7 +178,7 @@ class FriendlyGameController extends Controller
         $matchStatsByMatchId    = app(PlayerMatchStatsService::class)->getMatchStatsTableForMatches($completed);
         $matchProgressByMatchId = app(MatchProgressService::class)->buildForMatches($visible);
 
-        $board = $stage ? $this->games->leaderboard($stage) : ['rows' => [], 'podium' => []];
+        $board = $stage ? $this->games->leaderboard($stage) : ['rows' => [], 'podium' => ['type' => 'players', 'items' => []]];
 
         $occurrences = EventOccurrence::where('event_id', $event->id)
             ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
