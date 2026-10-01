@@ -295,7 +295,11 @@ class FriendlyGameService
         usort($out, fn ($a, $b) => [$b['wins'], $b['win_rate'], $b['diff'], $b['points_scored']]
             <=> [$a['wins'], $a['win_rate'], $a['diff'], $a['points_scored']]);
 
-        return ['rows' => $out, 'podium' => $this->buildPodium($teamPodium ? $lineups : [], $out, $users)];
+        // Лучшие игроки по набранным очкам (по данным статистики матчей)
+        $scorers = array_values(array_filter($out, fn ($r) => $r['points_scored'] > 0));
+        usort($scorers, fn ($a, $b) => [$b['points_scored'], $b['wins']] <=> [$a['points_scored'], $a['wins']]);
+
+        return ['rows' => $out, 'top_scorers' => array_slice($scorers, 0, 3), 'podium' => $this->buildPodium($teamPodium ? $lineups : [], $out, $users)];
     }
 
     /**
