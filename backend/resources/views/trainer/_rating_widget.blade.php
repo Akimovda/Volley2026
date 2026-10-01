@@ -19,7 +19,7 @@
 
     <div id="{{ $trUid }}-modal" style="display:none">
         <div class="card form tr-rate-panel" style="height:auto;max-width:400px;">
-            <h3 class="-mt-05">{{ $trainerName }}</h3>
+            <h3 class="-mt-05" style="text-align:center;">{{ $trainerName }}</h3>
 
             <div class="tr-rate-slider-wrap" style="position:relative;padding-top:36px;">
                 <div class="tr-rate-flag" style="position:absolute;top:0;left:0;transform:translateX(-50%);font-size:26px;line-height:1;">😐</div>
@@ -37,7 +37,9 @@
                           placeholder="{{ __('trainers.rate_comment_ph') }}">{{ $existingComment }}</textarea>
             </div>
 
-            <button type="button" class="btn mt-2 tr-rate-submit">{{ __('trainers.rate_submit_btn') }}</button>
+            <div class="mt-2" style="text-align:center;">
+                <button type="button" class="btn tr-rate-submit">{{ __('trainers.rate_submit_btn') }}</button>
+            </div>
             <div class="tr-rate-status f-13 mt-1"></div>
         </div>
     </div>
