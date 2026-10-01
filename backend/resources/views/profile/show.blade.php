@@ -1325,6 +1325,20 @@
 			</div>
 		</div>
 	</div>	
+	@if (session('organizer_request_notice'))
+	<script>
+	document.addEventListener('DOMContentLoaded', function () {
+		var el = document.getElementById('organizer-request');
+		if (el) el.scrollIntoView({ block: 'start' });
+		swal({
+			title: @json(__('profile.org_notice_title')),
+			text: @json(!empty($hasPendingOrganizerRequest) ? __('profile.org_notice_text_pending') : __('profile.org_notice_text')),
+			icon: 'info',
+			button: @json(__('profile.org_notice_ok'))
+		});
+	});
+	</script>
+	@endif
 	<script>
 	(function () {
 		var deleteBtn = document.getElementById('btn-delete-account');

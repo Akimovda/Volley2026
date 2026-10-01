@@ -9,6 +9,21 @@ use Illuminate\Validation\ValidationException;
 class EventAccessService
 {
     /**
+     * Отказ не-организатору. Обычного пользователя (role=user) отправляем на форму
+     * заявки в профиле с флагом для всплывающего пояснения; остальным — 403.
+     */
+    public static function denyNonOrganizer(?User $user): never
+    {
+        if ($user && (string) ($user->role ?? 'user') === 'user' && !request()->expectsJson()) {
+            throw new \Illuminate\Http\Exceptions\HttpResponseException(
+                redirect()->to(route('profile.show') . '#organizer-request')
+                    ->with('organizer_request_notice', true)
+            );
+        }
+        abort(403);
+    }
+
+    /**
      * Проверяет, может ли пользователь вообще создавать события.
      */
     public function ensureCanCreateEvents(User $user): void
@@ -16,7 +31,7 @@ class EventAccessService
         $role = (string) ($user->role ?? 'user');
 
         if (!in_array($role, ['admin', 'organizer', 'staff'], true)) {
-            abort(403);
+            self::denyNonOrganizer($user);
         }
     }
 

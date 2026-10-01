@@ -263,6 +263,10 @@ return [
     // Organizer status request
     'sec_organizer_request'    => 'I want to become an event organizer',
     'org_request_lead'         => 'An organizer can create events, manage participants, and assign staff.',
+    'org_notice_title'         => 'Organizer role required',
+    'org_notice_text'          => 'Only organizers can create events. Fill in the "Become an organizer" request below — once an administrator approves it, this section will be unlocked.',
+    'org_notice_text_pending'  => 'Only organizers can create events. Your request has already been sent and is awaiting review — we will let you know the decision.',
+    'org_notice_ok'            => 'Got it',
     'org_request_pending'      => 'Your request has already been submitted and is awaiting review.',
     'org_request_comment_label' => 'Comment (optional)',
     'org_request_comment_ph'   => 'For example: I regularly organize games and would like to do it through Volley',
