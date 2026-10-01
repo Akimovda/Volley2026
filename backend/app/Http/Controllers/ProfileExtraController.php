@@ -71,6 +71,18 @@ class ProfileExtraController extends Controller
 
         $allowed = $allowedByMode[$mode] ?? $allowedByMode['self'];
 
+        // Блок «Тренер» (не часть allowlist профиля игрока — обрабатывается отдельно после сохранения)
+        $trainerPresent = $mode !== 'organizer_other' && $request->boolean('trainer_present');
+        $trainerEnabled = $trainerPresent && $request->boolean('trainer.enabled');
+        $trainerData    = [];
+        if ($trainerEnabled) {
+            $trainerData = $request->validate([
+                'trainer.specialization'   => ['nullable', 'string', 'max:255'],
+                'trainer.bio'              => ['nullable', 'string', 'max:5000'],
+                'trainer.experience_years' => ['nullable', 'integer', 'min:0', 'max:80'],
+            ])['trainer'] ?? [];
+        }
+
         // ЖЁСТКО выкидываем всё лишнее из request (чтобы подмена формы не работала)
         $request->replace($request->only(array_merge($allowed, ['user_id'])));
 
@@ -249,6 +261,10 @@ class ProfileExtraController extends Controller
         // =========================
         // 5) Save (users + relations)
         // =========================
+        if ($trainerPresent) {
+            app(\App\Services\TrainerProfileService::class)->applyFromProfile($target, $trainerEnabled, $trainerData);
+        }
+
         DB::transaction(function () use (
             $target,
             $data,

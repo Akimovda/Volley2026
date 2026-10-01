@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'cp_check' => 'I am a trainer',
+    'cp_hint'  => 'Do you run trainings? Fill in the trainer profile — it will appear in your event descriptions and players will be able to leave ratings. If you untick it, the profile is hidden, but ratings and data are kept.',
     'menu_profile' => 'Trainer profile',
 
     'profile_section_title'        => 'Trainer',

@@ -694,6 +694,13 @@ Ops-документация (GlitchTip/Sentry SDK, Uptime Kuma, система 
 - Поле «Добавить игрока» ищет и игроков (`ajax.users.search`), и сохранённые команды сайта (`user_teams`, роут `events.registrations.teams-search` → `EventRegistrationsManagementController::searchTeams()`, по названию или ФИО капитана, до 8). В строке: название, «Капитан: Фамилия Имя», метка Пляжка/Классика (+subtype), число игроков.
 - Выбор команды шлёт `user_team_id` вместо `user_id`: `addPlayer()` в цикле зовёт `addOnePlayer()` (вынесенная общая часть: лимит слота, гендерная квота, восстановление/вставка, уведомления) на ВСЕХ участников с ОДНОЙ выбранной позицией; неподходящие пропускаются, в flash — список причин.
 
+## Тренерский профиль внутри формы профиля (2026-10-01)
+- Страница `/trainer/profile/edit` убрана: роут `trainer.profile.edit` — редирект на `/profile/complete?section=trainer#trainer`, `trainer.profile.update` и вью `trainer/profile_edit` удалены. `section=trainer` обязателен в ссылке: без него `ProfileCompletionController::show()` редиректит полностью заполненный профиль на `/user/profile`.
+- Блок «Я тренер» — партиал `profile/_trainer_fields.blade.php` внутри основной формы `profile.extra.update` (поля `trainer[enabled|specialization|experience_years|bio]` + `trainer_present=1`). `ProfileExtraController` читает их ДО `$request->replace(allowlist)` и сохраняет на шаге 5 через `TrainerProfileService::applyFromProfile()`. Режим `organizer_other` блок игнорирует.
+- Снятие галочки НЕ удаляет `trainer_profiles` — только `is_public=false` (оценки привязаны к user_id тренера и сохраняются; `User::isTrainer()` = exists()). Повторная галочка возвращает всё.
+- «О себе» — Trix + эмодзи-панель (`assets/trix.js` + `assets/org.js` + `org.css`, подключены в `complete.blade.php`), на сервере `Purifier::clean('default')`; вывод — accessor `TrainerProfile::bio_html` (старый plain-text → `nl2br(e())`).
+- Приглашения школ (confirm/decline) и список школ тренера теперь в блоке «Тренер» на `/user/profile`.
+
 ## Позиция reserve в регистрациях
 - `resolvePositions()` НЕ включает 'reserve' — добавляется отдельно в index()/addPlayer()/updatePosition()
 - Источник лимита: event_role_slots.role='reserve' ИЛИ game_settings.reserve_players_max (fallback)

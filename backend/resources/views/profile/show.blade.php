@@ -1183,12 +1183,48 @@
 				<div class="ramka">
 					<h2 class="-mt-05">{{ __('trainers.profile_section_title') }}</h2>
 					@php $myTrainerProfile = auth()->user()->trainerProfile; @endphp
+					@php
+						$trMemberships = auth()->user()->schoolMemberships()->with('school:id,name,slug')->get();
+						$trPending = $trMemberships->where('status', \App\Models\SchoolTrainer::STATUS_PENDING);
+						$trConfirmed = $trMemberships->where('status', \App\Models\SchoolTrainer::STATUS_CONFIRMED);
+					@endphp
+					@if($trPending->isNotEmpty())
+					<h3 class="mb-1">{{ __('trainers.pending_invites_title') }}</h3>
+					@foreach($trPending as $membership)
+					<div class="card mb-1" style="height:auto;">
+						<div class="d-flex fvc between" style="flex-wrap:wrap;gap:8px;">
+							<div class="b-600">{{ $membership->school?->name ?? ('#' . $membership->school_id) }}</div>
+							<div class="d-flex" style="gap:8px;">
+								<form method="POST" action="{{ route('trainer.memberships.confirm', $membership) }}">@csrf
+									<button type="submit" class="btn btn-small">{{ __('trainers.membership_confirm_btn') }}</button>
+								</form>
+								<form method="POST" action="{{ route('trainer.memberships.decline', $membership) }}">@csrf
+									<button type="submit" class="btn btn-secondary btn-small">{{ __('trainers.membership_decline_btn') }}</button>
+								</form>
+							</div>
+						</div>
+					</div>
+					@endforeach
+					@endif
+					@if($trConfirmed->isNotEmpty())
+					<h3 class="mb-1">{{ __('trainers.my_schools_title') }}</h3>
+					@foreach($trConfirmed as $membership)
+					<div class="card mb-1" style="height:auto;">
+						<div class="d-flex fvc between" style="flex-wrap:wrap;gap:8px;">
+							<div class="b-600">{{ $membership->school?->name ?? ('#' . $membership->school_id) }}</div>
+							@if($membership->can_view_analytics)
+							<a href="{{ route('volleyball_school.trainers.analytics', [$membership->school_id, $membership->id]) }}" class="btn btn-secondary btn-small">{{ __('trainers.analytics_btn') }}</a>
+							@endif
+						</div>
+					</div>
+					@endforeach
+					@endif
 					@if($myTrainerProfile)
 						<p>{{ __('trainers.profile_section_lead_exists') }}</p>
-						<a href="{{ route('trainer.profile.edit') }}" class="btn btn-secondary">{{ __('trainers.profile_section_btn_edit') }}</a>
+						<a href="{{ url('/profile/complete?section=trainer#trainer') }}" class="btn btn-secondary">{{ __('trainers.profile_section_btn_edit') }}</a>
 					@else
 						<p>{{ __('trainers.profile_section_lead_create') }}</p>
-						<a href="{{ route('trainer.profile.edit') }}" class="btn">{{ __('trainers.profile_section_btn_create') }}</a>
+						<a href="{{ url('/profile/complete?section=trainer#trainer') }}" class="btn">{{ __('trainers.profile_section_btn_create') }}</a>
 					@endif
 				</div>
 				

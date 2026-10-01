@@ -163,7 +163,7 @@
                     <span class="menu-text">{{ __('profile.menu_my_visitors_premium') }}</span>
                 </a>
                 @endif
-                <a href="{{ route('trainer.profile.edit') }}"
+                <a href="{{ url('/profile/complete?section=trainer#trainer') }}"
                    class="menu-item {{ $activeMenu === 'trainer_profile' ? 'active' : '' }}">
                     @if($activeMenu === 'trainer_profile')
                         <strong class="cd menu-text">{{ __('trainers.menu_profile') }}</strong>
@@ -488,7 +488,7 @@
         <span class="menu-text">{{ __('profile.menu_my_visitors_premium') }}</span>
     </a>
     @endif
-    <a href="{{ route('trainer.profile.edit') }}"
+    <a href="{{ url('/profile/complete?section=trainer#trainer') }}"
        class="menu-item {{ $activeMenu === 'trainer_profile' ? 'active' : '' }}">
         @if($activeMenu === 'trainer_profile')
             <strong class="cd menu-text">{{ __('trainers.menu_profile') }}</strong>
