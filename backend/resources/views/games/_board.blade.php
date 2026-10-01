@@ -31,6 +31,23 @@ $__medals = ['🥇', '🥈', '🥉'];
 	@endif
 </div>
 
+@if(!empty($board['top_scorers']))
+<h3 class="mt-2 mb-1">{{ __('games.top_scorers_title') }}</h3>
+<div class="f-13 mb-1" style="opacity:.55">{{ __('games.top_scorers_hint') }}</div>
+<div class="gm-podium mb-2">
+	@foreach($board['top_scorers'] as $i => $p)
+	<div class="gm-podium-item gm-podium-{{ $i + 1 }}">
+		<div class="gm-medal">{{ $__medals[$i] }}</div>
+		@if($p['user'])
+		<a href="{{ route('users.show', $p['user_id']) }}"><img class="gm-ava" src="{{ $p['user']->profile_photo_url }}" alt=""></a>
+		@endif
+		<div class="b-600 f-15">{{ $__name($p['user']) }}</div>
+		<div class="f-13" style="opacity:.7">{{ $p['points_scored'] }} {{ __('games.top_scorers_points') }}</div>
+	</div>
+	@endforeach
+</div>
+@endif
+
 <div class="f-13 mb-1" style="opacity:.55">{{ __('games.board_hint') }}</div>
 <div class="table-scrollable mb-0">
 	<div class="table-drag-indicator"></div>
